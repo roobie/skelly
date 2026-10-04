@@ -21,23 +21,22 @@ interface Flood {
 
 const seedColumn = (
   { volume, blocked, queue }: Flood,
-  {
-    top,
-    opaque,
-    skyAbove,
-  }: { top: number; opaque: SolidAt; skyAbove: ((x: number, z: number) => boolean) | undefined },
+  { top, opaque, skyAbove }: { top: number; opaque: SolidAt; skyAbove: Map<string, boolean> | undefined },
   [x, z]: [number, number],
 ): void => {
   const wx = x + volume.min[0];
   const wz = z + volume.min[2];
-  let open = skyAbove?.(wx, wz) ?? true;
-  if (!skyAbove) {
+  const key = `${wx},${wz}`;
+  let open = skyAbove?.get(key);
+  if (open === undefined) {
+    open = true;
     for (let y = top; y >= volume.max[1]; y--) {
       if (opaque(wx, y, wz)) {
         open = false;
         break;
       }
     }
+    skyAbove?.set(key, open);
   }
   let roof = open ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY;
   for (let y = volume.max[1] - 1; y >= volume.min[1]; y--) {
@@ -96,7 +95,7 @@ export const buildSkylight = (
   bounds: SkyBounds,
   top: number,
   opaque: SolidAt,
-  skyAbove?: (x: number, z: number) => boolean,
+  skyAbove?: Map<string, boolean>,
 ): SkyVolume => {
   const size = bounds.max.map((value, i) => value - bounds.min[i]!) as Vec3;
   const volume = { ...bounds, size, light: new Uint8Array(size[0] * size[1] * size[2]) };

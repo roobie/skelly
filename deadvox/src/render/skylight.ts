@@ -1,4 +1,4 @@
-// Only authored cellar sites allocate fields. One placement is active; distant placements never form a union.
+// Only authored cellar sites allocate fields. Resident placements never form a union across gaps.
 import {
   Data3DTexture,
   LinearFilter,
@@ -14,44 +14,61 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import { buildSkylight, type SkyBounds, type SkyVolume, skyIndex } from '../core/skylight.ts';
 
+const RESIDENT_FIELDS = 4;
+const FIELD_PADDING_BLOCKS = 2;
 interface Field {
+  index: number;
   bounds: SkyBounds;
   above: Map<string, boolean>;
   dirty: boolean;
-  volume?: SkyVolume;
+  volume: SkyVolume | undefined;
   entityVersion: number;
   entityKey: string;
 }
-
+const vectors = () => Array.from({ length: RESIDENT_FIELDS }, () => new Vector3());
+const volumeTexture = (light: Uint8Array, [x, y, z]: Vec3): Data3DTexture => {
+  const texture = new Data3DTexture(light, x, z, y);
+  texture.format = RedFormat;
+  texture.type = UnsignedByteType;
+  texture.minFilter = LinearFilter;
+  texture.magFilter = LinearFilter;
+  texture.unpackAlignment = 1;
+  texture.needsUpdate = true;
+  return texture;
+};
 export class Skylight {
-  private readonly texture = { value: new Data3DTexture(new Uint8Array([0]), 1, 1, 1) };
+  private readonly texture = { value: volumeTexture(new Uint8Array([255]), [1, 1, 1]) };
   private readonly patched = new WeakSet<Material>();
   private readonly fields: Field[];
-  private active: Field | undefined;
+  private active: Field[] = [];
   private readonly enabled = { value: 0 };
-  private readonly minimum = { value: new Vector3() };
-  private readonly extent = { value: new Vector3(1, 1, 1) };
-  private meshVersion = -1;
-  private entityVersion = -1;
+  private readonly minimum = { value: vectors() };
+  private readonly extent = { value: vectors() };
+  private readonly atlasScale = { value: vectors() };
+  private readonly atlasOffset = { value: new Float32Array(RESIDENT_FIELDS) };
   private readonly blockSize: number;
   private readonly top: number;
+  private readonly rangeSquared: number;
 
-  constructor(boxes: readonly SkyBounds[], blockSize: number, top: number) {
+  constructor(boxes: readonly SkyBounds[], blockSize: number, top: number, viewRadiusM: number) {
     this.blockSize = blockSize;
     this.top = top;
-    this.fields = boxes.map((box) => ({
+    this.rangeSquared = (viewRadiusM / blockSize) ** 2;
+    this.fields = boxes.map((box, index) => ({
+      index,
       bounds: {
-        min: box.min.map((value) => value - 2) as Vec3,
-        max: box.max.map((value) => value + 2) as Vec3,
+        min: box.min.map((value) => value - FIELD_PADDING_BLOCKS) as Vec3,
+        max: box.max.map((value) => value + FIELD_PADDING_BLOCKS) as Vec3,
       },
       above: new Map(),
+      volume: undefined,
       dirty: true,
       entityVersion: -1,
       entityKey: '',
     }));
   }
 
-  /** Chunk delivery/removal invalidates only intersecting columns, including cached occluders above the box. */
+  /** Data and mesh changes invalidate intersecting columns, including cached occluders above the box. */
   chunkChanged(origin: Vec3): void {
     for (const field of this.fields) {
       const { min, max } = field.bounds;
@@ -65,20 +82,24 @@ export class Skylight {
     }
   }
 
-  private nearest(position: Vec3): Field | undefined {
-    let nearest: Field | undefined;
-    let distance = (32 / this.blockSize) ** 2; // Preload within 32 m; outside, every surface has visibility 1.
-    for (const field of this.fields) {
-      const squared = position.reduce(
-        (sum, value, axis) => sum + Math.max(field.bounds.min[axis]! - value, 0, value - field.bounds.max[axis]!) ** 2,
-        0,
-      );
-      if (squared < distance) {
-        nearest = field;
-        distance = squared;
-      }
-    }
-    return nearest;
+  private nearby(position: Vec3): Field[] {
+    return (
+      this.fields
+        .map((field) => ({
+          field,
+          distance: position.reduce(
+            (sum, value, axis) =>
+              sum + Math.max(field.bounds.min[axis]! - value, 0, value - field.bounds.max[axis]!) ** 2,
+            0,
+          ),
+        }))
+        .filter(({ distance }) => distance <= this.rangeSquared)
+        .sort((a, b) => a.distance - b.distance || a.field.index - b.field.index)
+        .slice(0, RESIDENT_FIELDS)
+        .map(({ field }) => field)
+        // Atlas slots do not swap just because two already-resident fields trade nearest rank.
+        .sort((a, b) => a.index - b.index)
+    );
   }
 
   private refreshEntities(field: Field, entities: BlockEntities): void {
@@ -107,83 +128,80 @@ export class Skylight {
     }
   }
 
-  update(
-    scene: Scene,
-    position: Vec3,
-    { meshVersion, entities }: { meshVersion: number; entities: BlockEntities },
-    opaque: SolidAt,
-  ): void {
-    const field = this.nearest(position);
-    const changed = this.active !== field;
-    this.active = field;
-    this.enabled.value = field ? 1 : 0;
-    if (field) {
+  update(scene: Scene, position: Vec3, { entities }: { entities: BlockEntities }, opaque: SolidAt): void {
+    const resident = this.nearby(position);
+    let upload =
+      resident.length !== this.active.length || resident.some((field, index) => field !== this.active[index]);
+    for (const field of this.active) {
+      if (!resident.includes(field)) {
+        field.volume = undefined;
+        field.above.clear();
+        field.dirty = true;
+      }
+    }
+    this.active = resident;
+    this.enabled.value = resident.length;
+    for (const field of resident) {
       this.refreshEntities(field, entities);
       if (field.dirty) {
-        const above = (x: number, z: number): boolean => {
-          const key = `${x},${z}`;
-          const cached = field.above.get(key);
-          if (cached !== undefined) {
-            return cached;
-          }
-          let open = true;
-          for (let y = this.top; y >= field.bounds.max[1]; y--) {
-            if (opaque(x, y, z)) {
-              open = false;
-              break;
-            }
-          }
-          field.above.set(key, open);
-          return open;
-        };
-        field.volume = buildSkylight(field.bounds, this.top, opaque, above);
-      }
-      if (changed || field.dirty) {
-        const volume = field.volume!;
-        const next = new Data3DTexture(volume.light, volume.size[0], volume.size[2], volume.size[1]);
-        next.format = RedFormat;
-        next.type = UnsignedByteType;
-        next.minFilter = LinearFilter;
-        next.magFilter = LinearFilter;
-        next.unpackAlignment = 1;
-        next.needsUpdate = true;
-        this.texture.value.dispose();
-        this.texture.value = next;
-        this.minimum.value.set(...field.bounds.min).multiplyScalar(this.blockSize);
-        this.extent.value
-          .set(...field.bounds.max)
-          .multiplyScalar(this.blockSize)
-          .sub(this.minimum.value);
+        field.volume = buildSkylight(field.bounds, this.top, opaque, field.above);
         field.dirty = false;
+        upload = true;
       }
     }
-    // Material hooks are shared and survive uploads. No per-frame scene traversal.
-    if (meshVersion !== this.meshVersion || entities.version !== this.entityVersion) {
-      this.meshVersion = meshVersion;
-      this.entityVersion = entities.version;
-      scene.traverse((object) => {
-        const { material } = object as Mesh;
-        if (material) {
-          for (const entry of Array.isArray(material) ? material : [material]) {
-            this.patch(entry);
-          }
-        }
-      });
+    if (upload) {
+      this.upload();
     }
+    // Drops, lazy spent-case meshes and asynchronously prepared models need no mesh/entity revision.
+    scene.traverse((object) => {
+      const { material } = object as Mesh;
+      if (material) {
+        for (const entry of Array.isArray(material) ? material : [material]) {
+          this.patch(entry);
+        }
+      }
+    });
   }
 
-  /** Same local sky estimate as the world shader, for flashlight adaptation. Metres. */
+  private upload(): void {
+    const size: Vec3 = [
+      Math.max(1, ...this.active.map((field) => field.volume!.size[0])),
+      Math.max(
+        1,
+        this.active.reduce((sum, field) => sum + field.volume!.size[1], 0),
+      ),
+      Math.max(1, ...this.active.map((field) => field.volume!.size[2])),
+    ];
+    const light = new Uint8Array(size[0] * size[1] * size[2]).fill(255);
+    let offset = 0;
+    this.active.forEach((field, slot) => {
+      const volume = field.volume!;
+      for (let y = 0; y < volume.size[1]; y++) {
+        for (let z = 0; z < volume.size[2]; z++) {
+          const start = skyIndex(volume.size, 0, y, z);
+          light.set(volume.light.subarray(start, start + volume.size[0]), skyIndex(size, 0, offset + y, z));
+        }
+      }
+      this.minimum.value[slot]!.set(...field.bounds.min).multiplyScalar(this.blockSize);
+      this.extent.value[slot]!.set(...volume.size).multiplyScalar(this.blockSize);
+      this.atlasScale.value[slot]!.set(volume.size[0] / size[0], volume.size[2] / size[2], volume.size[1] / size[1]);
+      this.atlasOffset.value[slot] = offset / size[1];
+      offset += volume.size[1];
+    });
+    this.texture.value.dispose();
+    this.texture.value = volumeTexture(light, size);
+  }
+
+  /** Same resident-field sky estimate as the world shader, for flashlight adaptation. Metres. */
   at(position: Vec3): number {
-    const field = this.active;
-    if (!field?.volume) {
-      return 1;
+    for (const field of this.active) {
+      const { size, light } = field.volume!;
+      const cell = position.map((value, axis) => Math.floor(value / this.blockSize) - field.bounds.min[axis]!) as Vec3;
+      if (cell.every((value, axis) => value >= 0 && value < size[axis]!)) {
+        return light[skyIndex(size, ...cell)]! / 255;
+      }
     }
-    const { size, light } = field.volume;
-    const cell = position.map((value, axis) => Math.floor(value / this.blockSize) - field.bounds.min[axis]!) as Vec3;
-    if (cell.some((value, axis) => value < 0 || value >= size[axis]!)) {
-      return 1;
-    }
-    return light[skyIndex(size, ...cell)]! / 255;
+    return 1;
   }
 
   private patch(material: Material): void {
@@ -202,6 +220,8 @@ export class Skylight {
       shader.uniforms.uSkyMinimum = this.minimum;
       shader.uniforms.uSkyExtent = this.extent;
       shader.uniforms.uSkyEnabled = this.enabled;
+      shader.uniforms.uSkyAtlasScale = this.atlasScale;
+      shader.uniforms.uSkyAtlasOffset = this.atlasOffset;
       shader.vertexShader = shader.vertexShader
         .replace('#include <common>', '#include <common>\nvarying vec3 vSkyWorld;\nvarying vec3 vSkyNormal;')
         .replace(
@@ -221,16 +241,25 @@ vSkyNormal = normalize(mat3(modelMatrix) * skyNormal);`,
           '#include <common>',
           `#include <common>
 uniform highp sampler3D uSkyVolume;
-uniform vec3 uSkyMinimum;
-uniform vec3 uSkyExtent;
+uniform vec3 uSkyMinimum[${RESIDENT_FIELDS}];
+uniform vec3 uSkyExtent[${RESIDENT_FIELDS}];
+uniform vec3 uSkyAtlasScale[${RESIDENT_FIELDS}];
+uniform float uSkyAtlasOffset[${RESIDENT_FIELDS}];
 uniform float uSkyEnabled;
 varying vec3 vSkyWorld;
 varying vec3 vSkyNormal;
 float skyVisibility() {
-  if (uSkyEnabled < 0.5) return 1.0;
-  vec3 cell = (vSkyWorld + normalize(vSkyNormal) * ${this.blockSize * 0.5} - uSkyMinimum) / uSkyExtent;
-  if (any(lessThan(cell, vec3(0.0))) || any(greaterThanEqual(cell, vec3(1.0)))) return 1.0;
-  return texture(uSkyVolume, cell.xzy).r;
+  for (int i = 0; i < ${RESIDENT_FIELDS}; i++) {
+    if (float(i) >= uSkyEnabled) break;
+    vec3 cell = (vSkyWorld + normalize(vSkyNormal) * ${this.blockSize * 0.5} - uSkyMinimum[i]) / uSkyExtent[i];
+    if (any(lessThan(cell, vec3(0.0))) || any(greaterThanEqual(cell, vec3(1.0)))) continue;
+    // Clamp to this field's texel centres so linear sampling never leaks into the next atlas slice.
+    vec3 halfCell = vec3(${this.blockSize * 0.5}) / uSkyExtent[i];
+    vec3 atlas = clamp(cell, halfCell, vec3(1.0) - halfCell).xzy * uSkyAtlasScale[i];
+    atlas.z += uSkyAtlasOffset[i];
+    return texture(uSkyVolume, atlas).r;
+  }
+  return 1.0;
 }`,
         )
         .replace('#include <lights_fragment_end>', 'irradiance *= skyVisibility();\n#include <lights_fragment_end>');

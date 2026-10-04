@@ -70,6 +70,8 @@ export class Streamer {
   private center: [number, number] = [Number.NaN, Number.NaN];
   /** Called after a column is generated, to add what stands in it (furniture). */
   onColumn: (cx: number, cz: number) => void = () => undefined;
+  /** Every added/unloaded data chunk, including all-air chunks that never get meshed. */
+  onDataChange?: (origin: Vec3) => void;
   /** Handles a deterministic generation failure such as an unreadable restored chunk diff. */
   onGenerationError: ((error: unknown) => void) | undefined;
 
@@ -202,7 +204,7 @@ export class Streamer {
         const key = chunkKey(cx, cy, cz);
         if (!world.getChunk(cx, cy, cz)?.edited) {
           world.removeChunk(cx, cy, cz);
-          this.opts.meshes.onChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
+          this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
           this.dirty.delete(key);
           this.versions.delete(key);
         }
@@ -245,6 +247,7 @@ export class Streamer {
           continue; // already edited; keep it
         }
         world.addChunk(chunk);
+        this.onDataChange?.([chunk.cx * CHUNK, chunk.cy * CHUNK, chunk.cz * CHUNK]);
         if (!chunk.isEmpty()) {
           this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
         }

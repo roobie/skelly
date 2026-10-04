@@ -142,7 +142,7 @@ export class ChunkMeshes {
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
   private changes = 0;
-  /** Optional presentation invalidation, also fired for a delivered empty chunk. */
+  /** Mesh replacement/removal notification, including meshes with zero triangles. Data arrivals belong to Streamer. */
   onChange?: (origin: Vec3) => void;
 
   /** Meshes are in blocks; the group scales them to metres. */

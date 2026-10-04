@@ -55,15 +55,18 @@ export const createEngine = (config: GameConfig, view: HTMLElement, stats?: Stre
   scene.add(meshes.group);
   // Chunk meshes are culled against their tight boxes, after three.js has updated the camera.
   const boxes = worldSetup.site?.skyBounds;
-  const skylight = boxes?.length ? new Skylight(boxes, scale.blockSize, (scale.maxCy + 1) * CHUNK - 1) : undefined;
+  const skylight = boxes?.length
+    ? new Skylight(boxes, scale.blockSize, (scale.maxCy + 1) * CHUNK - 1, radiusM)
+    : undefined;
   if (skylight) {
     meshes.onChange = (origin) => skylight.chunkChanged(origin);
+    worldSetup.streamer.onDataChange = (origin) => skylight.chunkChanged(origin);
   }
   scene.onBeforeRender = (_renderer, _scene, cam) => {
     skylight?.update(
       scene,
       [camera.position.x / scale.blockSize, camera.position.y / scale.blockSize, camera.position.z / scale.blockSize],
-      { meshVersion: meshes.version, entities: worldSetup.entities },
+      { entities: worldSetup.entities },
       (x, y, z) => !worldSetup.world.getChunk(toChunk(x), toChunk(y), toChunk(z)) || worldSetup.isOpaque(x, y, z),
     );
     meshes.cull(cam);

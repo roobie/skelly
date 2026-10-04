@@ -100,14 +100,27 @@ The existing shadowed sun and flashlight contributions are not multiplied by it:
 light can physically enter an opening, and a switched-on flashlight illuminates the
 room. Existing flashlight adaptation uses the same local visibility in these bounds
 instead of treating a dark cellar at noon as bright outdoors. It otherwise retains
-its existing outdoor model. Each cellar placement has its own padded field; only
-the nearest field within 32 m is active/uploaded. There is no volume spanning the
-gaps between buildings. Changed chunk columns invalidate only intersecting fields,
-including empty-chunk deliveries/removals and occluders above the box. Each field
-caches sky-above checks and floods only its own box. Local door/geometry changes
-invalidate it; distant entities and searched/locked-only state do not. Materials
-are patched on mesh/entity revisions, not by a scene traversal every frame. Surface
-sampling is half a cell into air, so outdoor faces do not blend with solid texels.
+its existing outdoor model. Each cellar placement has its own two-block-padded
+field. Up to **K = 4 nearest fields within the configured view radius** are resident
+at once, stacked along the vertical-cell axis of one 3D texture. No volume spans
+building gaps. Atlas slots retain authored order while resident membership stays
+the same, so changing which of two cellars is nearest does not change either
+interior's light or upload the texture again. Samples clamp to each field's texel
+centres to prevent linear interpolation into the adjacent atlas slice.
+
+**Limit:** beyond K, the farthest fields have visibility 1, as do fields outside
+the view radius. Those interiors can still change light when residency changes;
+this is bounded diffuse-light approximation, not unlimited scene GI. Retired
+fields release their volume and sky-column cache; returning rebuilds them.
+
+Streamer reports every chunk-data arrival/removal, including all-air chunks which
+never request a mesh. Mesh changes separately cover edits/remeshes. Both invalidate
+only intersecting columns and cached occluders above the box. `buildSkylight` owns
+one cached top-down scan and floods only each resident box. Local door/geometry
+changes invalidate it; distant entities and searched/locked-only state do not.
+Materials are visited every frame with a WeakSet guard: dropped items, spent cases
+and asynchronous model materials can appear without a mesh/entity revision.
+Surface sampling is half a cell into air, so outdoor faces do not blend with solid texels.
 The stylized separate hands scene retains its
 existing lighting; it is not a photometric interior-light witness.
 
@@ -125,9 +138,16 @@ house or Dad's beat-3 cabin/woodshed/terrain. The lead authors those later.
 
 Walk toward the lower landing in the house, up/down with ordinary movement. In the
 cabin, the ground landing leads down; take a flashlight. The maintained
-`test/browser/stairs.mjs` uses actual keyboard movement, checks noclip stays off,
-compares HUD-free dark/beam screenshots and checks an outdoor view against the
-same scene with sky visibility forced to one. Opposite-floor resident/player
+`test/browser/stairs.mjs traversal` uses actual keyboard movement and checks
+noclip stays off. Landing settlement has a three-**simulation**-second physical
+bound, rather than a renderer wall-clock wait. Body position, velocity, onGround
+and simulation time are written to `states.json`, including on walk/settle failure.
+`test/browser/stairs.mjs lighting` independently compares HUD-free dark/beam
+screenshots and an outdoor view against sky visibility forced to one. A test-only
+second authored cabin, raised six metres so its padded top is in an all-air chunk
+at block 64, checks real Streamer-to-render cache recovery as well as both cellars
+staying dark across the nearest-cellar switch and the second atlas slot. Both stages keep the existing 300 s
+outer cap; neither retries to green. Opposite-floor resident/player
 screenshots remain historical scratch evidence, not a test that pins today's AI limitation.
 
 Shamblers currently steer directly in x/z; investigation arrival ignores floor

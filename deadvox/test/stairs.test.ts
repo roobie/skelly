@@ -79,11 +79,10 @@ describe('explicit storeys and ordinary-block flights', () => {
     authored.layers.splice(11, 2);
     authored.size = [16, 13, 16];
     expect(
-      admit().issues.some(
-        (issue) =>
-          issue.path.includes('access.stairs') && issue.message.includes('headroom') && issue.message.includes('12'),
-      ),
-    ).toBe(true);
+      admit()
+        .issues.filter((issue) => issue.path.includes('access.stairs'))
+        .map((issue) => issue.message),
+    ).toContain('flight needs standing and step-up headroom; blocked cell [8,12,4]');
   });
   it('rejects an entrance disconnected from the outside when the doorway is walled up', () => {
     const authored = structuredClone(registry.templates.get('stairs_house')!) as TemplateDef;
