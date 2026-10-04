@@ -109,15 +109,31 @@ Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
 - Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
 - Lessons from past problems: `deadvox/LESSONS.md`.
 
-## Before pushing
+## Before pushing: tiered checks
 
-From the repository root, run `npm run ci` and `npm run test:site`. For a
-subproject change, also run that project's CI checks before pushing (typecheck,
-tests, and build; Gungen also runs `test:sweeps`, and Deadvox also runs
-`test:ui-browser`). The installed pre-push hook runs the root checks; the root `prepare` script
-configures Git to use `.githooks`. If the hook is not installed, run
-`git config core.hooksPath .githooks`. Fix failures before pushing; do not use
-`--no-verify` to bypass a real failure. It is for emergencies only.
+Size each local run to the change (BR, 2026-10-04). CI runs everything, in
+parallel and unbilled, on every push to a PR, so don't repeat it locally.
+
+- **While coding:** only the test files that cover what you touched, plus typecheck.
+- **Before each push** (minutes, not tens of minutes):
+  - the touched subproject's typecheck and unit suite;
+  - `validate` if content or schema changed;
+  - Lit if UI changed;
+  - only the browser stage(s) that exercise the behaviour you changed, once each.
+  - Build only if build config changed; Gungen `test:sweeps` only if the change is in a sweep's path.
+  - The pre-push hook runs root `npm run ci` and `npm run test:site`. The root `prepare`
+    script configures Git to use `.githooks`; if the hook is missing, run
+    `git config core.hooksPath .githooks`.
+- **CI** runs the full matrix, including Deadvox's whole `test:ui-browser`. Open a draft PR
+  at a feature's first push, so every later push is checked. Cite the CI run instead of
+  re-running stages locally, and fix a red job in the next push.
+- **Mutation proof:** only where "Tests" calls for it (tricky invariants): one mutant,
+  against that rule's own test file. Don't re-prove untouched rules.
+- **Reviews:** don't re-run what CI covers. Run only the probes a specific claim needs,
+  in one reused review worktree, installing only where a lockfile changed.
+
+Fix failures before pushing; `--no-verify` is for emergencies only, never to bypass a
+real failure. Merging still needs green CI.
 
 **No local absolute paths in tracked files** (BR, 2026-10-03). This covers code,
 tests, docs, review reports, content and credits. Never write a host path

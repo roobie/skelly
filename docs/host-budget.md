@@ -11,7 +11,8 @@ not reference-laptop frame budgets or GitHub runner guarantees.
   `flock -w 900 "$XDG_RUNTIME_DIR/skelly-heavy.lock" timeout 300 …`. Acquire and
   release for **each** suite/build/browser stage, not a whole chained pipeline.
   Time waiting for the lock is not suite execution time.
-- Keep **5 GiB free disk** on the repository filesystem. Check before a new
+- Keep **1 GiB free disk** on the repository filesystem (BR lowered it from 5 GiB
+  on 2026-10-04), plus each run's own forecast. Check before a new
   worktree/install/export and at each lead mail-watch re-arm. If below the
   reserve, stop admitting these jobs and new workers, report to the lead, and
   remove only your verified merged/inactive worktrees, obsolete owned servers
@@ -52,7 +53,7 @@ checkout/install footprint, not an estimate from package download sizes.
 Shared `.git`, npm/Playwright caches, scratch evidence, browser profiles and
 subsequent generated outputs are **not** included in that per-worktree number.
 At the final capacity read, `df -B1` reported 8,749,023,232 bytes available
-(8.15 GiB); the 5 GiB reserve therefore held. Re-measure after lockfile/asset
+(8.15 GiB); the 5 GiB reserve in force then therefore held. Re-measure after lockfile/asset
 changes rather than assuming every future worktree stays at 639 MiB.
 
 ## Live memory limits, not just the nominal files
