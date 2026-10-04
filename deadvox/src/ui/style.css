@@ -1042,6 +1042,16 @@ body.inventory-open #inventory-stats {
   width: 100%;
   margin: 8px 0;
 }
+@media (max-width: 900px) {
+  /* The side catalogue cannot fit beside the inventory's detail pane on a narrow screen. */
+  body.inventory-open #inventory,
+  body.inventory-open #inventory-stats {
+    right: 24px;
+  }
+  body.inventory-open #crafting {
+    display: none;
+  }
+}
 
 /* ---- rest and sleep (1.8) ---- */
 #rest {
