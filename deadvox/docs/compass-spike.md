@@ -1,3 +1,8 @@
+---
+read_if:
+  - you review the held compass's readability, lighting or placement
+---
+
 # Held compass readability spike (d34)
 
 The `compass` is a 120 g, 1×2-cell electronic compass, available to authored item
