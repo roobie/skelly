@@ -65,8 +65,8 @@ acting").
 - **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-
   or left-handed dominant is a thing we should accomodate. This'd mean that all
   quick actions etc take this into account, and the flip of
-  activate-what's-wielded vs activate-off-hand". Hand bindings are named by
-  meaning (dominant hand, off hand), not by side.
+  activate-what's-wielded vs activate-off-hand". d47 builds it. Until then, the
+  map's right-hand and left-hand rows are the right-handed default.
 
 ## Principles
 
@@ -167,7 +167,9 @@ Notes on the proposal:
   the shared `Survival.use` path. A light primary action on either hand calls
   that same path; the other capabilities dispatch to their existing actions.
 - **R is no longer overloaded in play:** it only reloads (BR, 2026-10-04). It
-  still rotates while dragging in the inventory, where the drag is visible.
+  still rotates while dragging in the inventory, where the drag is visible. In
+  the game today R still rests and L still sleeps. Both keys go with d45 (rest
+  and sleep on restable furniture), and R gains reload with the pump (d36, #209).
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.
@@ -200,7 +202,8 @@ sit beside the hamlet. In play, these letters are free in the shipped game but
 taken in the development and playtest builds, which is where the controls get
 tested; a shipped verb on V would collide in every test session. BR ruled on
 2026-10-04 that debug keys go behind a held F1 (see "What's already ruled"),
-which frees the letters for shipped verbs.
+which frees the letters for shipped verbs, including T for the quick-action gate.
+d44 makes that change.
 
 ## Open questions for BR
 
