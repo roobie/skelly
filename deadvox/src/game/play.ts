@@ -135,6 +135,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
+    stairFlights: engine.site?.stairFlights ?? [],
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     controls: {

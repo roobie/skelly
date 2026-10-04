@@ -11,7 +11,7 @@ import { toChunk, type Vec3 } from './coords.ts';
 import { type Rolled, rollLoot } from './loot.ts';
 import { Rng } from './random.ts';
 import type { SkyBounds } from './skylight.ts';
-import { type Placement, placedPieces } from './templates.ts';
+import { type PlacedFlight, type Placement, placedPieces } from './templates.ts';
 import type { Surface } from './worldgen.ts';
 
 /** A rectangle of block columns. */
@@ -41,6 +41,7 @@ export interface ZombieSpawn {
 }
 
 export interface Site {
+  readonly stairFlights?: readonly PlacedFlight[];
   /** Bounded authored cellar interiors needing voxel sky visibility instead of unoccluded hemisphere light. */
   readonly skyBounds?: readonly SkyBounds[];
   /** The ground under the site, blended into the natural ground around it. */

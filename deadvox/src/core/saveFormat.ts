@@ -10,7 +10,7 @@ import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { MeleeActionState, ZombieState } from './zombies.ts';
+import type { MeleeActionState, ZombieRouteState, ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -99,6 +99,9 @@ interface WirePayload {
     regions: Record<string, Region>;
     zombieSystem: {
       playerAttackWait: number;
+      routeSearchCursor: number;
+      routeClock: number;
+      routes: { id: number; route: ZombieRouteState }[];
       meleeAction: MeleeActionState | null;
       nextFistHand: 'right' | 'left';
       nextEntityId: number;
@@ -450,6 +453,21 @@ const wirePayloadSchema = obj({
     ),
     zombieSystem: obj({
       playerAttackWait: nonNegative,
+      routeSearchCursor: nonNegativeInt,
+      routeClock: nonNegative,
+      routes: arr(
+        obj({
+          id: positiveInt,
+          route: obj({
+            goalKey: str(),
+            goal: vec3,
+            waypoints: arr(vec3),
+            next: nonNegativeInt,
+            pending: bool,
+            retryAt: nonNegative,
+          }),
+        }),
+      ),
       meleeAction,
       nextFistHand: enumeration(['right', 'left']),
       nextEntityId: positiveInt,
@@ -750,6 +768,16 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       regions: Object.fromEntries(regions),
       zombieSystem: {
         playerAttackWait: snapshot.world.zombies.playerAttackWait,
+        routeSearchCursor: snapshot.world.zombies.routeSearchCursor,
+        routeClock: snapshot.world.zombies.routeClock,
+        routes: snapshot.world.zombies.routes.map(({ id, route }) => ({
+          id,
+          route: {
+            ...route,
+            goal: [...route.goal],
+            waypoints: route.waypoints.map((point) => [...point]),
+          },
+        })),
         meleeAction: snapshot.world.zombies.meleeAction,
         nextFistHand: snapshot.world.zombies.nextFistHand,
         nextEntityId: snapshot.world.zombies.nextEntityId,
@@ -1103,6 +1131,21 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         }),
         zombies: obj({
           playerAttackWait: nonNegative,
+          routeSearchCursor: nonNegativeInt,
+          routeClock: nonNegative,
+          routes: arr(
+            obj({
+              id: positiveInt,
+              route: obj({
+                goalKey: str(),
+                goal: vec3,
+                waypoints: arr(vec3),
+                next: nonNegativeInt,
+                pending: bool,
+                retryAt: nonNegative,
+              }),
+            }),
+          ),
           meleeAction,
           nextFistHand: enumeration(['right', 'left']),
           nextEntityId: positiveInt,
