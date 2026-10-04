@@ -123,8 +123,10 @@ block's lower face plus 0.5 m. Trees use that final surface; tracks do not flatt
 it. Buildings default to the raw profile at the rotated footprint centre, snapped
 to 0.5 m. `npm run validate` rejects **cut or fill over 1.0 m at any footprint
 cell**, not just corners: move the lot or adjust its surrounding profile instead
-of silently burying/floating a foundation. `surfaceFoundation` is the explicit
-integration seam for d39's intentional below-ground storeys.
+of silently burying/floating a foundation. `surfaceFoundation` is the declared
+ground-floor foundation; shared `placementOf` lowers the template origin by its
+compiled `groundLayer` once for intentional below-ground storeys, without lowering
+the terrain apron or relaxing the cut/fill rule.
 
 Explicit spawns must have solid support at their feet (terrain or a stamped
 building floor), lie on a half-metre standing surface within 0.001 m, and not be
@@ -149,12 +151,12 @@ in for the tool shack, woodland north/behind the house, and a dirt track east.
 The fixed shambler's feet are at 25 m, on the second storey's floor; furniture is
 repeated upstairs by the existing stack primitive.
 
-**There is no stair connection between storeys.** Approved spike limitation, not
-finished beat-1 content. No dedicated stair block/template or stair construction
-helper exists in the current base content/structure API; ordinary half-metre
-voxel steps and player step-up physics are available for a future ASCII stair
-flight with an opening in the upper floor. Hen house, fence and actual tool shack
-are outside the spike.
+**This original spike still has no stair connection between storeys.** It is not
+finished beat-1 content. Explicit storeys, ordinary-block flights, carved cellars
+and spatial validation are now available separately: see [stairs](../docs/stairs.md)
+and `?site=stair_demo`. Neither demonstration is the final playtest house/cabin;
+`lone_house` itself remains unchanged. Hen house, fence and actual tool shack are
+outside the spike.
 
 ## Several sites and production
 
@@ -164,7 +166,8 @@ output). A Tiled `.world` can show adjacent source maps as an editor atlas, but 
 is not a runtime world loader and does not supply coordinate transforms to this
 exporter. Disconnected playtest sites need neither feature.
 
-A production pass needs proper two-storey/stair content, passability/body-headroom checks (feet support is not a navigation solver),
+A production pass needs proper playtest two-storey/stair content using the explicit
+construction/spatial checks (feet support alone is not a navigation solver),
 woodland clipping, merged-pack enum generation,
 and designer feedback for moved/rotated template rectangles. Stable authored spawn
 IDs would make chance streams independent of object reordering.

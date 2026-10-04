@@ -7,8 +7,12 @@ import { compileTemplate, type Placement, stackTemplate, type Turn } from './tem
 
 export const blocks = (position: readonly number[]): Vec3 => position.map((value) => value / HAMLET_BLOCK_SIZE) as Vec3;
 
-export const placementOf = (registry: Registry, building: SiteLayoutDef['buildings'][number]): Placement => ({
-  template: stackTemplate(compileTemplate(registry, registry.templates.get(building.template)!), building.storeys ?? 1),
-  origin: blocks(building.position),
-  turn: (building.rotation / 90) as Turn,
-});
+export const placementOf = (registry: Registry, building: SiteLayoutDef['buildings'][number]): Placement => {
+  const template = stackTemplate(
+    compileTemplate(registry, registry.templates.get(building.template)!),
+    building.storeys ?? 1,
+  );
+  const origin = blocks(building.position);
+  origin[1] -= template.groundLayer ?? 0;
+  return { template, origin, turn: (building.rotation / 90) as Turn };
+};

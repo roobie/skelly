@@ -3,6 +3,8 @@ import { placementOf } from './authoredPlacement.ts';
 import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation } from './authoredTerrain.mjs';
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
 import { type Placement, placedBlockAt } from './templates.ts';
@@ -42,13 +44,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
   };
   const footprints: { rect: Rect; index: number }[] = [];
   const placements: Placement[] = [];
-  layout.buildings.forEach((building, i) => {
-    const template = registry.templates.get(building.template);
-    if (!template) {
-      issues.push([`.buildings[${i}].template`, `no template "${building.template}"`]);
-      return;
-    }
-    const rect = buildingBounds(building, template.size);
+  const checkFootprint = (rect: Rect, i: number) => {
     check([rect.x0, rect.z0], `.buildings[${i}].position`);
     check([rect.x1, rect.z1], `.buildings[${i}].position`);
     for (const prior of footprints) {
@@ -57,6 +53,23 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       }
     }
     footprints.push({ rect, index: i });
+  };
+  layout.buildings.forEach((building, i) => {
+    const template = registry.templates.get(building.template);
+    if (!template) {
+      issues.push([`.buildings[${i}].template`, `no template "${building.template}"`]);
+      return;
+    }
+    if (template.access && (building.storeys ?? 1) !== 1) {
+      issues.push([`.buildings[${i}].storeys`, 'explicit storeys cannot be stress-test stacked']);
+      return;
+    }
+    const placement = placementOf(registry, building);
+    if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
+      issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
+    }
+    const rect = buildingBounds(building, template.size);
+    checkFootprint(rect, i);
     if (
       insideLayout(layout.bounds, [rect.x0, rect.z0]) &&
       insideLayout(layout.bounds, [rect.x1, rect.z1]) &&
@@ -64,7 +77,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
     ) {
       issues.push([`.buildings[${i}].position`, `foundation cut or fill exceeds ${FOUNDATION_TOLERANCE} m`]);
     }
-    placements.push(placementOf(registry, building));
+    placements.push(placement);
   });
   const lots = footprints.map(({ rect, index }) => lotOf(layout.buildings[index]!, rect));
   const supported = (position: Vec3, path: string) => {
