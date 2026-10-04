@@ -2,11 +2,40 @@
 import { html, render } from 'lit-html';
 import type { Readable } from '../core/readable.ts';
 
+const scrollText = (text: HTMLElement, code: string): boolean => {
+  switch (code) {
+    case 'Home':
+      text.scrollTop = 0;
+      break;
+    case 'End':
+      text.scrollTop = text.scrollHeight;
+      break;
+    case 'ArrowUp':
+      text.scrollTop -= 40;
+      break;
+    case 'ArrowDown':
+      text.scrollTop += 40;
+      break;
+    case 'PageUp':
+      text.scrollTop -= text.clientHeight * 0.8;
+      break;
+    case 'PageDown':
+    case 'Space':
+      text.scrollTop += text.clientHeight * 0.8;
+      break;
+    default:
+      return false;
+  }
+  return true;
+};
+
 export const mountReading = (host: HTMLElement, changed: () => void) => {
   let current: Readonly<Readable> | undefined;
   let previousFocus: HTMLElement | undefined;
   const close = () => {
-    if (!current) return;
+    if (!current) {
+      return;
+    }
     current = undefined;
     host.hidden = true;
     render(html``, host);
@@ -15,31 +44,39 @@ export const mountReading = (host: HTMLElement, changed: () => void) => {
     changed();
   };
   return {
-    get isOpen() { return current !== undefined; },
+    get isOpen() {
+      return current !== undefined;
+    },
     open(readable: Readonly<Readable>) {
-      if (!current) previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+      if (!current) {
+        previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : undefined;
+      }
       current = readable;
       host.hidden = false;
-      render(html`
+      render(
+        html`
         <article class="reading-paper" role="dialog" aria-modal="true" aria-labelledby="reading-title" tabindex="-1">
           <header><h1 id="reading-title">${readable.title}</h1><button type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
           <div class="reading-text" tabindex="0" aria-label="Text">${readable.text}</div>
           <footer>Esc or Tab to put away · The world keeps moving</footer>
-        </article>`, host);
+        </article>`,
+        host,
+      );
       host.querySelector<HTMLElement>('article')!.focus({ preventScroll: true });
       changed();
     },
     close,
     /** Own all keys while open: gameplay/quickbar/inventory must not also receive them. */
     onKey(event: KeyboardEvent) {
-      if (!current) return false;
+      if (!current) {
+        return false;
+      }
       if (event.code === 'Escape' || event.code === 'Tab') {
         event.preventDefault();
-        if (!event.repeat) close();
-      } else if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', 'Space'].includes(event.code)) {
-        const text = host.querySelector<HTMLElement>('.reading-text')!;
-        const delta = event.code === 'ArrowUp' ? -40 : event.code === 'ArrowDown' ? 40 : event.code === 'PageUp' ? -text.clientHeight * 0.8 : text.clientHeight * 0.8;
-        text.scrollTop = event.code === 'Home' ? 0 : event.code === 'End' ? text.scrollHeight : text.scrollTop + delta;
+        if (!event.repeat) {
+          close();
+        }
+      } else if (scrollText(host.querySelector<HTMLElement>('.reading-text')!, event.code)) {
         event.preventDefault();
       }
       return true;

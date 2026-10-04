@@ -8,8 +8,8 @@ import {
   check,
   type InferOutput,
   integer,
-  maxValue,
   maxLength,
+  maxValue,
   minLength,
   minValue,
   nonEmpty,
@@ -26,9 +26,8 @@ import {
   union,
   boolean as vBoolean,
 } from 'valibot';
-
+import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { hasReadableWords, isReadablePlainText, READABLE_TITLE_LIMIT, READABLE_TEXT_LIMIT } from './readable.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
@@ -183,8 +182,17 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
-const readableText = (limit: number) => pipe(string(), check(hasReadableWords, 'must contain non-whitespace text'), check(isReadablePlainText, 'must be plain text without markup or control characters'), maxLength(limit, `must be at most ${limit} characters`));
-export const ReadableSchema = strictObject({ title: readableText(READABLE_TITLE_LIMIT), text: readableText(READABLE_TEXT_LIMIT) });
+const readableText = (limit: number) =>
+  pipe(
+    string(),
+    check(hasReadableWords, 'must contain non-whitespace text'),
+    check(isReadablePlainText, 'must be plain text without markup or control characters'),
+    maxLength(limit, `must be at most ${limit} characters`),
+  );
+export const ReadableSchema = strictObject({
+  title: readableText(READABLE_TITLE_LIMIT),
+  text: readableText(READABLE_TEXT_LIMIT),
+});
 
 export const ItemSchema = strictObject({
   id: Id,

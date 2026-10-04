@@ -30,7 +30,6 @@ import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
-import { mountReading } from '../ui/reading.ts';
 import {
   type PlayStatus,
   playHudText,
@@ -43,6 +42,7 @@ import {
 } from '../ui/playHud.ts';
 import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
+import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
@@ -684,7 +684,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   const handleGameplayKey = (e: KeyboardEvent): void => {
-    if (e.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(e)) return;
     if (handleMainMenuKey(e)) {
       return;
     }
@@ -708,17 +707,18 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   globalThis.addEventListener('keydown', (event) => {
-    if (!handleTitleKey(event)) {
-      handleGameplayKey(event);
+    if (handleTitleKey(event)) {
+      return;
     }
+    if (event.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(event)) {
+      return;
+    }
+    handleGameplayKey(event);
   });
   globalThis.addEventListener(
     'wheel',
     (e) => {
-      if (reading.isOpen) {
-        $('reading').querySelector<HTMLElement>('.reading-text')!.scrollTop += e.deltaY;
-        e.preventDefault();
-      } else if (input.locked && mainMenuOpen) {
+      if (input.locked && mainMenuOpen) {
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer) {
@@ -764,7 +764,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       toggleDoor(entity);
     } else if (entities.defOf(entity).readable) {
       const reason = session.readFurniture(entity);
-      if (reason) showNotice(reason);
+      if (reason) {
+        showNotice(reason);
+      }
     } else if (entity.pockets) {
       playtestObserver?.beginSearch(entity, nameOf(entity));
       search(entity);

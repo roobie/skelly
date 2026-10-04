@@ -5,7 +5,6 @@
 // callbacks; nothing here draws or listens.
 
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
-import type { Readable } from '../core/readable.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -31,6 +30,7 @@ import {
   INVENTORY_CHEST,
   INVENTORY_REACH,
 } from '../core/reach.ts';
+import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
 import { Simulation } from '../core/sim.ts';
@@ -630,10 +630,16 @@ export const createSession = (options: SessionOptions) => {
     },
     /** F's gaze/occlusion selection is in play; admission shares Search's live furniture reach. */
     readFurniture: (entity: BlockEntity): string | undefined => {
-      if (entities.byUid(entity.uid) !== entity) return 'It is no longer there';
-      if (!inventory.canReachEntity(entity)) return 'Too far away';
-      const readable = entities.defOf(entity).readable;
-      if (!readable) return 'Nothing to read';
+      if (entities.byUid(entity.uid) !== entity) {
+        return 'It is no longer there';
+      }
+      if (!inventory.canReachEntity(entity)) {
+        return 'Too far away';
+      }
+      const { readable } = entities.defOf(entity);
+      if (!readable) {
+        return 'Nothing to read';
+      }
       options.onRead?.(readable);
       return undefined;
     },

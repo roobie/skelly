@@ -154,6 +154,13 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   };
 };
 
+const foodOption = (name: string, drink: boolean): UseOption => ({
+  kind: 'use',
+  label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
+  operation: 'eat',
+  plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
+});
+
 /** Eligibility only: effects remain in the domain command owner. */
 export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
@@ -177,13 +184,7 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
     return { kind: 'use', label: 'Read', operation: 'read', plan: { ok: true, time: 0 } };
   }
   if (def.food) {
-    const drink = def.category === 'drink';
-    return {
-      kind: 'use',
-      label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
-      operation: 'eat',
-      plan: { ok: true, time: drink ? DRINK_TIME : EAT_TIME },
-    };
+    return foodOption(name, def.category === 'drink');
   }
   return def.light ? lightOption(item, view) : refuseUse(`Nothing to do with the ${name} yet`);
 };

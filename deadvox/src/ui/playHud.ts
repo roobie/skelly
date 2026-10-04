@@ -123,11 +123,21 @@ export interface InteractionHint {
 }
 
 /** Describes an already selected target; never selects/executes the interaction. */
-export const playInteractionText = ({ door, open, container, readable, searched, name, fullName }: InteractionHint): string => {
+export const playInteractionText = ({
+  door,
+  open,
+  container,
+  readable,
+  searched,
+  name,
+  fullName,
+}: InteractionHint): string => {
   if (door) {
     return `F: ${open ? 'close' : 'open'} the ${name}`;
   }
-  if (readable) return `F: read the ${name}`;
+  if (readable) {
+    return `F: read the ${name}`;
+  }
   if (container) {
     return `F: ${searched ? 'look in' : 'search'} the ${name}`;
   }
