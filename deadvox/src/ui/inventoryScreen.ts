@@ -11,7 +11,7 @@ import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, type Option, options, quickMove, toHands } from '../core/options.ts';
+import { bestPocket, dropTarget, type Option, options, quickMove, toHands, type UseOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
@@ -19,6 +19,19 @@ import { workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
 export const CELL = 32;
+
+// These item commands remain inventory intents even with no selected item.
+const ITEM_COMMAND_CODES = new Set<string>([
+  ...CONTROL_CODES.quickbar,
+  CONTROL_CODES.hands,
+  CONTROL_CODES.wear,
+  CONTROL_CODES.drop,
+  CONTROL_CODES.rotate,
+  CONTROL_CODES.bestPocket,
+  CONTROL_CODES.takeAll,
+  CONTROL_CODES.use,
+  'Enter',
+]);
 
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
@@ -51,6 +64,8 @@ export interface ScreenHooks {
   notice: (text: string) => void;
   /** Uses an item (eat, drink, switch a light, load a battery); says why not, or undefined. */
   use: (item: Item) => string | undefined;
+  /** Read-only availability and handling time for the same Use command. */
+  useOption: (item: Item, view: ReachSnapshot) => UseOption;
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
   /** Assigns a quickbar slot (0–4). */
@@ -394,7 +409,9 @@ export class InventoryScreen {
       .containers()
       .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${this.hooks.reach().origin.join(',')}`;
+    const view = this.hooks.reach();
+    const use = this.selected ? this.hooks.useOption(this.selected, view) : undefined;
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${use?.label}|${JSON.stringify(use?.plan)}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -426,7 +443,7 @@ export class InventoryScreen {
       return true;
     }
     if (!item) {
-      return false;
+      return ITEM_COMMAND_CODES.has(e.code);
     }
     if (digit !== undefined) {
       this.hooks.assign(digit, item);
@@ -684,17 +701,21 @@ export class InventoryScreen {
       condition: conditionWord(item.condition),
       description: def.description,
       lines: this.inspect(item),
-      options: [...options(item, this.hooks.reach()), ...this.hooks.workOptions(item.uid)].map(
-        (option): OptionViewModel =>
-          option.plan.ok
-            ? {
-                label: option.label,
-                button: true,
-                time: secs(option.plan.time),
-                ...optionAction(option),
-              }
-            : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
-      ),
+      options: [...options(item, this.hooks.reach()), ...this.hooks.workOptions(item.uid)]
+        .map((option) =>
+          'kind' in option && option.kind === 'use' ? this.hooks.useOption(item, this.hooks.reach()) : option,
+        )
+        .map(
+          (option): OptionViewModel =>
+            option.plan.ok
+              ? {
+                  label: option.label,
+                  button: true,
+                  time: secs(option.plan.time),
+                  ...optionAction(option),
+                }
+              : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
+        ),
     };
   }
 
