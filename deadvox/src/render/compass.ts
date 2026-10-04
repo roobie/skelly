@@ -11,15 +11,9 @@ import {
   PlaneGeometry,
   SRGBColorSpace,
 } from 'three';
-import { WORLD_NORTH } from '../core/coords.ts';
+import { compassBearing, headingLabel, yawFromBearing } from '../core/coords.ts';
 
 const FULL_TURN = Math.PI * 2;
-const NORTH_YAW = Math.atan2(-WORLD_NORTH[0], -WORLD_NORTH[2]);
-const DIRECTIONS = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'] as const;
-
-/** Camera yaw is counterclockwise; a bearing is clockwise from canonical world north. */
-export const compassBearing = (yaw: number): number =>
-  ((((NORTH_YAW - yaw) % FULL_TURN) + FULL_TURN) % FULL_TURN) * (180 / Math.PI);
 
 export const createCompass = () => {
   const group = new Group();
@@ -58,20 +52,20 @@ export const createCompass = () => {
     const bearing = compassBearing(yaw);
     // Looking east puts north on the left of the held display.
     needle.rotation.z = bearing * (Math.PI / 180);
-    const rounded = Math.round(bearing) % 360;
-    if (rounded === displayed) {
+    const label = headingLabel(bearing);
+    if (label.degrees === displayed) {
       return;
     }
-    displayed = rounded;
+    displayed = label.degrees;
     context.fillStyle = '#10221c';
     context.fillRect(0, 0, canvas.width, canvas.height);
     context.fillStyle = '#d3ffe6';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.font = 'bold 110px monospace';
-    context.fillText(DIRECTIONS[Math.round(rounded / 45) % DIRECTIONS.length]!, 256, 96);
+    context.fillText(label.cardinal, 256, 96);
     context.font = 'bold 120px monospace';
-    context.fillText(`${String(rounded).padStart(3, '0')}°`, 256, 225);
+    context.fillText(`${String(label.degrees).padStart(3, '0')}°`, 256, 225);
     context.font = '22px sans-serif';
     context.fillText('NORTH POINTER', 256, 472);
     context.strokeStyle = '#608c76';
@@ -81,7 +75,7 @@ export const createCompass = () => {
     context.stroke();
     texture.needsUpdate = true;
   };
-  update(NORTH_YAW);
+  update(yawFromBearing(0));
   return {
     group,
     update,

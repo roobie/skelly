@@ -44,7 +44,7 @@ world x/z; elevation is world y. Map properties: `id` (lowercase content ID) and
 | Object class | Shape | Properties |
 | --- | --- | --- |
 | `building` | rectangle | required `template`; optional `storeys` (1–8, default 1), `elevation` (default snapped profile at rotated lot centre) |
-| `player_spawn` | point, exactly one | optional `yaw` (degrees, default 0), `elevation` (default voxel standing surface) |
+| `player_spawn` | point, exactly one | optional `bearing` (clockwise degrees from north, default 0), `elevation` (default voxel standing surface) |
 | `shambler` | point | required `zombie`; optional `chance` (0–1, default 1), `elevation` (default voxel standing surface) |
 | `woodland` | polygon | required `density` (0–1 multiplier on the seeded 2.13 field) |
 | `track` | polyline | required `width` (>0 m); optional `surface` (`dirt` or `asphalt`, default dirt) |
@@ -59,9 +59,10 @@ The house's Tiled pivot `(65,62)`, rotation 180°, exports minimum `(55,55)`; th
 shed's pivot `(52,57)`, rotation 90°, exports minimum `(49,57)`.
 
 Ground means the lower face of the top ground/foundation block. At 0.5 m blocks,
-feet rest at `ground + 0.5`. Stored player yaw is degrees; only the loader converts
-to engine radians. Spawn points must be strictly below the exclusive upper bounds;
-polygon/building edges may touch them. Track width, including end caps, must fit.
+feet rest at `ground + 0.5`. Stored player bearing is clockwise degrees from world
+north; the loader converts it to counterclockwise engine yaw. Spawn points must be
+strictly below the exclusive upper bounds; polygon/building edges may touch them.
+Track width, including end caps, must fit.
 
 ## Layout JSON and runtime
 
@@ -71,7 +72,7 @@ polygon/building edges may touch them. Track width, including end caps, must fit
 - terrain primitives `{kind:'ridge', points:[[x,z],...], rise, width}` or
   `{kind:'hill', centre:[x,z], radii:[rx,rz], rise}`;
 - `buildings: [{template, position:[x,y,z], rotation:0|90|180|270, storeys?}]`;
-- `player: {position:[x,y,z], yaw}`;
+- `player: {position:[x,y,z], bearing}`;
 - `shamblers: [{type, position:[x,y,z], chance?}]`;
 - `woodlands: [{polygon:[[x,z],...], density}]`;
 - `tracks: [{points:[[x,z],...], width, surface?}]`.
