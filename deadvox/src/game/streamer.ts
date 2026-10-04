@@ -202,6 +202,7 @@ export class Streamer {
         const key = chunkKey(cx, cy, cz);
         if (!world.getChunk(cx, cy, cz)?.edited) {
           world.removeChunk(cx, cy, cz);
+          this.opts.meshes.onChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
           this.dirty.delete(key);
           this.versions.delete(key);
         }

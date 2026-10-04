@@ -34,10 +34,12 @@ Coordinates otherwise allow half cells. For example, a three-cell flight's acros
 centre can be 5.5.
 
 Compilation fills solid wedges, both landings and all risers with `block`, and
-clears **six cells (3 m)** above each row, including its landings. This opens the
-upper floor. The player is 1.8 m tall and has a 0.3 m half-width: its box spans
-adjacent one-cell treads during the existing 0.5 m step-up sweep. Five cells were
-insufficient at the opening; six allows the actual sweep without tuning physics.
+cuts **only the upper support layer over the intermediate treads**. It never
+clears authored walls or ceilings. Validation derives clearance from the 1.8 m
+body, 0.3 m half-width and existing raise-then-move step-up sweep along a half-cell
+route. Standing requires four clear cells; overlap with future treads can require
+six at the opening edge, not over a flat landing. An ordinary 2.5 m room keeps its
+roof intact. A conflicting authored block is rejected with its cell coordinate.
 The 1.7 m shambler fits the same clearance, but fitting is not route discovery.
 Do not put furniture or doors inside this clearance volume.
 
@@ -69,11 +71,12 @@ Whole-file rejection follows the ordinary content admission path. Explicit acces
 requires:
 
 - unique floor ids/heights, a declared ground id and standing-body room;
-- a supported, unobstructed entrance;
+- a supported, unobstructed entrance whose flood reaches a standing opening in
+  the footprint's ground-storey outer ring;
 - a solid flight block, matching joined floor heights, aligned straight run and
   one-block rises;
 - supported landing cells at both ends;
-- full six-cell clearance over the entire flight, including furniture/closed doors;
+- standing and step-up body clearance along the flight, including furniture/closed doors;
 - every standing floor-space sample reachable from the entrance through openings,
   openable doors and flights, with player/shambler-sized bounds and step-up clearance.
 
@@ -97,8 +100,15 @@ The existing shadowed sun and flashlight contributions are not multiplied by it:
 light can physically enter an opening, and a switched-on flashlight illuminates the
 room. Existing flashlight adaptation uses the same local visibility in these bounds
 instead of treating a dark cellar at noon as bright outdoors. It otherwise retains
-its existing outdoor model. Fields update with mesh/furniture revisions, including
-voxel edits and open/closed doors. The stylized separate hands scene retains its
+its existing outdoor model. Each cellar placement has its own padded field; only
+the nearest field within 32 m is active/uploaded. There is no volume spanning the
+gaps between buildings. Changed chunk columns invalidate only intersecting fields,
+including empty-chunk deliveries/removals and occluders above the box. Each field
+caches sky-above checks and floods only its own box. Local door/geometry changes
+invalidate it; distant entities and searched/locked-only state do not. Materials
+are patched on mesh/entity revisions, not by a scene traversal every frame. Surface
+sampling is half a cell into air, so outdoor faces do not blend with solid texels.
+The stylized separate hands scene retains its
 existing lighting; it is not a photometric interior-light witness.
 
 Only cellar sites allocate/patch this field. Built-in forest/city and the original
@@ -116,8 +126,9 @@ house or Dad's beat-3 cabin/woodshed/terrain. The lead authors those later.
 Walk toward the lower landing in the house, up/down with ordinary movement. In the
 cabin, the ground landing leads down; take a flashlight. The maintained
 `test/browser/stairs.mjs` uses actual keyboard movement, checks noclip stays off,
-compares dark/beam screenshots and demonstrates resident upstairs/player below and
-the reverse under an actual sound stimulus.
+compares HUD-free dark/beam screenshots and checks an outdoor view against the
+same scene with sky visibility forced to one. Opposite-floor resident/player
+screenshots remain historical scratch evidence, not a test that pins today's AI limitation.
 
 Shamblers currently steer directly in x/z; investigation arrival ignores floor
 height and far hearing keeps the listener's y. They cannot discover a remote stair

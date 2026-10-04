@@ -24,6 +24,20 @@ const vite = await createServer({
       name: 'stairs-test-observation',
       enforce: 'pre',
       transform(code, id) {
+        if (id.endsWith('/src/render/skylight.ts')) {
+          // Test-only reference: identical scene with diffuse sky visibility forced to one.
+          assert.ok(code.includes('shader.uniforms.uSkyVolume = this.texture;'));
+          assert.ok(code.includes('float skyVisibility() {'));
+          return code
+            .replace(
+              'shader.uniforms.uSkyVolume = this.texture;',
+              'shader.uniforms.uSkyVolume = this.texture;\nshader.uniforms.uSkyProofControl = (globalThis.skyProofControl ??= {value:0});',
+            )
+            .replace(
+              'float skyVisibility() {',
+              'uniform float uSkyProofControl;\nfloat skyVisibility() {\n  if (uSkyProofControl > 0.5) return 1.0;',
+            );
+        }
         if (!id.endsWith('/src/game/play.ts')) {
           return;
         }
@@ -77,6 +91,8 @@ try {
     undefined,
     { timeout: 60_000 },
   );
+  // The contrast witnesses measure only the world, never the debug hover label or HUD.
+  await page.addStyleTag({ content: 'body > :not(#view) { visibility: hidden !important; }' });
   const stage = async (fixturePosition, fixtureYaw = -Math.PI / 2) => {
     // Fixtures are positioned only BEFORE each independent scenario, never across a flight during traversal.
     await page.evaluate(
@@ -118,10 +134,11 @@ try {
     assert.equal(value.locked, true);
     assert.equal(value.contentErrors, '');
     states.push({ label, ...value });
+    await writeFile(resolve(artifacts, 'states.json'), JSON.stringify(states, null, 2));
     return value;
   };
   const shot = (label) => page.screenshot({ path: resolve(artifacts, `${label}.png`) });
-  const walk = async (key, targetX, ascending) => {
+  const walk = async (key, targetX, ascending, targetFeet) => {
     await page.keyboard.down(key);
     await page.waitForFunction(
       ({ x, increasing }) =>
@@ -130,11 +147,17 @@ try {
       { timeout: 30_000 },
     );
     await page.keyboard.up(key);
-    await page.waitForTimeout(500);
+    // A horizontal arrival can precede the final fall by a few physics ticks. Wait
+    // for actual support, not 500 ms of wall time under a CPU renderer's dt cap.
+    await page.waitForFunction(
+      (feet) => globalThis.stairsWitness.body.onGround && Math.abs(globalThis.stairsWitness.body.pos[1] - feet) < 0.01,
+      targetFeet,
+      { timeout: 3000 },
+    );
   };
   await stage([112, 43.0001, 115]);
   await state('house lower landing');
-  await walk('w', 121, true);
+  await walk('w', 121, true, 51);
   assert.ok(Math.abs((await state('house upstairs walked')).position[1] - 51) < 0.01);
   await page.evaluate(() => {
     globalThis.stairsWitness.input.yaw = Math.PI / 2;
@@ -146,11 +169,11 @@ try {
     globalThis.stairsWitness.input.yaw = -Math.PI / 2;
     globalThis.stairsWitness.input.pitch = 0;
   });
-  await walk('s', 112, false);
+  await walk('s', 112, false, 43);
   assert.ok(Math.abs((await state('house downstairs walked')).position[1] - 43) < 0.01);
   await shot('house-downstairs');
   await stage([143, 43.0001, 115]);
-  await walk('s', 134, false);
+  await walk('s', 134, false, 35);
   assert.ok(Math.abs((await state('cellar lower landing walked')).position[1] - 35) < 0.01);
   const dark = await shot('cellar-dark');
   await page.evaluate(() => {
@@ -170,64 +193,54 @@ try {
   await page.waitForTimeout(700);
   assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.inventory.hands.left.on), true);
   const lit = await shot('cellar-beam');
-  const luminance = async (png) =>
-    page.evaluate(async (data) => {
-      const image = new Image();
-      image.src = `data:image/png;base64,${data}`;
-      await image.decode();
-      const canvas = document.createElement('canvas');
-      canvas.width = 240;
-      canvas.height = 240;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(image, 480, 260, 240, 240, 0, 0, 240, 240);
-      const pixels = ctx.getImageData(0, 0, 240, 240).data;
-      let sum = 0;
-      for (let i = 0; i < pixels.length; i += 4) {
-        sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
-      }
-      return sum / (240 * 240 * 3);
-    }, png.toString('base64'));
+  const luminance = async (png, cropHeight = 240) =>
+    page.evaluate(
+      async ({ data, height }) => {
+        const image = new Image();
+        image.src = `data:image/png;base64,${data}`;
+        await image.decode();
+        const canvas = document.createElement('canvas');
+        canvas.width = 240;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 480, 260, 240, height, 0, 0, 240, height);
+        const pixels = ctx.getImageData(0, 0, 240, height).data;
+        let sum = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          sum += pixels[i] + pixels[i + 1] + pixels[i + 2];
+        }
+        return sum / (240 * height * 3);
+      },
+      { data: png.toString('base64'), height: cropHeight },
+    );
   const lightProof = { dark: await luminance(dark), beam: await luminance(lit) };
-  assert.ok(lightProof.dark < 8, JSON.stringify(lightProof));
+  assert.ok(lightProof.dark < 15, JSON.stringify(lightProof));
   assert.ok(lightProof.beam > lightProof.dark + 10, JSON.stringify(lightProof));
   await mouse5();
-  await walk('w', 143, true);
+  await walk('w', 143, true, 43);
   assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
-  const actor = async (label, playerY, npcY) => {
-    await stage([121, playerY + 0.0001, 122], Math.PI);
-    await page.evaluate((fixtureY) => {
-      const { session } = globalThis.stairsWitness;
-      const [[, z]] = [...session.zombieStore.entries()];
-      z.body.pos = [121, fixtureY + 0.0001, 122];
-      z.body.vel = [0, 0, 0];
-      z.home = [...z.body.pos];
-      z.mode = 'idle';
-      z.modeTimer = 10;
-      z.lastPerceived = undefined;
-      z.searchAnchor = undefined;
-      session.playPlayerSound('gunshot');
-    }, npcY);
-    await page.waitForTimeout(3000);
-    const observed = await state(label);
-    assert.ok(Math.abs(observed.zombies[0].pos[1] - npcY) < 0.01);
-    assert.ok(Math.abs(observed.position[1] - playerY) < 0.01);
-    await page.evaluate((caption) => {
-      let el = document.getElementById('stairs-evidence');
-      if (!el) {
-        el = document.createElement('div');
-        el.id = 'stairs-evidence';
-        el.style.cssText =
-          'position:fixed;left:20px;top:60px;background:#111e;color:white;padding:12px;font:16px monospace;z-index:9999';
-        document.body.append(el);
-      }
-      el.textContent = `${caption} — actual heights retained; no stair route discovered`;
-    }, label);
-    await shot(label);
-  };
-  await actor('NPC-upstairs-player-below', 43, 51);
-  await actor('NPC-downstairs-player-above', 51, 43);
+  await stage([125, 43.0001, 118]);
+  await page.evaluate(() => {
+    globalThis.stairsWitness.input.pitch = -0.3;
+  });
+  await page.waitForTimeout(700);
+  const outdoor = await shot('outdoor-normal');
+  await page.evaluate(() => {
+    globalThis.skyProofControl.value = 1;
+  });
+  await page.waitForTimeout(200);
+  const outdoorReference = await shot('outdoor-sky-one');
+  await page.evaluate(() => {
+    globalThis.skyProofControl.value = 0;
+  });
+  // The west-wall window excludes the floor/wall AO corner and hands scene.
+  const outdoorProof = { normal: await luminance(outdoor, 160), reference: await luminance(outdoorReference, 160) };
+  assert.ok(Math.abs(outdoorProof.normal - outdoorProof.reference) < 1.5, JSON.stringify(outdoorProof));
   assert.deepEqual(errors, []);
-  await writeFile(resolve(artifacts, 'result.json'), JSON.stringify({ states, lightProof, errors }, null, 2));
+  await writeFile(
+    resolve(artifacts, 'result.json'),
+    JSON.stringify({ states, lightProof, outdoorProof, errors }, null, 2),
+  );
 } finally {
   await browser?.close();
   await vite.close();

@@ -2,11 +2,21 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { StairDef } from './schema.ts';
-import { planFlight, STAIR_HEADROOM } from './stairFlight.ts';
+import { type FlightPlan, planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from './stairFlight.ts';
 import type { CompiledTemplate } from './templates.ts';
 
-const BODY_HEIGHT = 3.6; // 1.8 m player bounds also contain the 1.7 m shambler; templates use 0.5 m blocks.
-const BODY_HALF_WIDTH = 0.6;
+const BODY_HEIGHT = STAIR_BODY_HEIGHT;
+const BODY_HALF_WIDTH = STAIR_BODY_HALF_WIDTH;
+
+function* bodyCells([x, feet, z]: Vec3): Generator<Vec3> {
+  for (let y = feet; y < Math.ceil(feet + BODY_HEIGHT); y++) {
+    for (let bz = Math.floor(z - BODY_HALF_WIDTH); bz < Math.ceil(z + BODY_HALF_WIDTH); bz++) {
+      for (let bx = Math.floor(x - BODY_HALF_WIDTH); bx < Math.ceil(x + BODY_HALF_WIDTH); bx++) {
+        yield [bx, y, bz];
+      }
+    }
+  }
+}
 export type SpatialIssue = [string, string];
 const key = (pos: Vec3): string => pos.join(',');
 
@@ -51,13 +61,9 @@ class TemplateSpace {
     );
   }
   clear([x, feet, z]: Vec3): boolean {
-    for (let y = feet; y < Math.ceil(feet + BODY_HEIGHT); y++) {
-      for (let bz = Math.floor(z - BODY_HALF_WIDTH); bz < Math.ceil(z + BODY_HALF_WIDTH); bz++) {
-        for (let bx = Math.floor(x - BODY_HALF_WIDTH); bx < Math.ceil(x + BODY_HALF_WIDTH); bx++) {
-          if (this.occupied(bx, y, bz, true)) {
-            return false;
-          }
-        }
+    for (const [bx, y, bz] of bodyCells([x, feet, z])) {
+      if (this.occupied(bx, y, bz, true)) {
+        return false;
       }
     }
     return true;
@@ -97,15 +103,45 @@ class TemplateSpace {
     if ([-1, 0, plan.rise, plan.rise + 1].flatMap(plan.row).some(([x, feet, z]) => !this.terrain(x, feet - 1, z))) {
       issues.push([path, 'flight needs supported landings at both ends']);
     }
-    const rows = Array.from({ length: plan.rise + 3 }, (_, i) => i - 1).flatMap(plan.row);
-    if (
-      rows.some(([x, feet, z]) =>
-        Array.from({ length: STAIR_HEADROOM }, (_, dy) => feet + dy).some((y) => this.occupied(x, y, z, false)),
-      )
-    ) {
-      issues.push([path, 'flight needs six clear blocks of headroom along its full length and both landings']);
+    const blocked = this.flightHeadroom(stair, plan);
+    if (blocked) {
+      issues.push([path, `flight needs standing and step-up headroom; blocked cell [${blocked.join(',')}]`]);
     }
     return issues;
+  }
+  private flightHeadroom(stair: StairDef, plan: FlightPlan): Vec3 | undefined {
+    // Sample the same half-grid route and raise-then-move envelope as the floor flood.
+    // A wide body can overlap two future treads: clearance is derived from those support
+    // heights, not a fixed six-cell cut that would erase a normal upper room's roof.
+    const rows = Array.from({ length: plan.rise + 3 }, (_, i) => i - 1).flatMap(plan.row);
+    const along = plan.direction[0] === 0 ? 2 : 0;
+    const across = along === 0 ? 2 : 0;
+    const crossMin = stair.lower[across] - stair.width / 2;
+    for (
+      let cross = Math.ceil((crossMin + BODY_HALF_WIDTH) * 2) / 2;
+      cross <= crossMin + stair.width - BODY_HALF_WIDTH;
+      cross += 0.5
+    ) {
+      let previous: Vec3 = [...stair.lower];
+      for (let distance = 0; distance <= plan.rise + 1; distance += 0.5) {
+        const pos: Vec3 = [...stair.lower];
+        pos[along] += plan.direction[along] * distance;
+        pos[across] = cross;
+        const columns = [...bodyCells([pos[0], 0, pos[2]])].filter((cell) => cell[1] === 0);
+        pos[1] = Math.max(
+          ...rows.filter(([x, , z]) => columns.some(([bx, , bz]) => bx === x && bz === z)).map((row) => row[1]),
+        );
+        const sweep = pos[1] > previous[1] ? [[previous[0], pos[1], previous[2]] as Vec3, pos] : [pos];
+        for (const sample of sweep) {
+          const blocked = [...bodyCells(sample)].find(([x, y, z]) => this.occupied(x, y, z, false));
+          if (blocked) {
+            return blocked;
+          }
+        }
+        previous = pos;
+      }
+    }
+    return undefined;
   }
   canMove(from: Vec3, next: Vec3): boolean {
     if (!this.standing(next)) {
@@ -181,5 +217,15 @@ export const templateSpatialIssues = (registry: Registry, template: CompiledTemp
   if (!space.standing(access.entrance)) {
     return [['.access.entrance', 'entrance needs support and standing headroom']];
   }
-  return space.floorIssues(space.reached(access.entrance));
+  const reached = space.reached(access.entrance);
+  const [sx, , sz] = template.size;
+  const ground = floors.get(access.ground)!;
+  const outside = [...reached].some((point) => {
+    const [x, y, z] = point.split(',').map(Number);
+    return y === ground && (x! <= 1 || x! >= sx - 1 || z! <= 1 || z! >= sz - 1);
+  });
+  if (!outside) {
+    return [['.access.entrance', 'entrance must reach a standing opening at the footprint edge on the ground storey']];
+  }
+  return space.floorIssues(reached);
 };

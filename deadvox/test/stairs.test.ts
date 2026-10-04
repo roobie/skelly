@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
+import type { TemplateDef } from '../src/core/schema.ts';
 import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { compileTemplate, placedFlights, placedPoint, type Turn } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
@@ -23,6 +24,13 @@ const set = (template: ReturnType<typeof house>, [x, y, z]: Vec3, id: number) =>
   template.blocks[x + template.size[0] * (z + template.size[2] * y)] = id;
 };
 const planks = registry.blockIds.get('planks')!;
+const stampedLanding = (world: World, endpoint: Vec3) =>
+  [-0.5, 0.5].flatMap((dx) =>
+    [-0.5, 0.5].map((dz) => {
+      const [x, z] = [Math.floor(endpoint[0] + dx), Math.floor(endpoint[2] + dz)];
+      return [world.getBlock(x, endpoint[1], z), world.getBlock(x, endpoint[1] - 1, z)];
+    }),
+  );
 
 describe('explicit storeys and ordinary-block flights', () => {
   it('admits both authorable examples including the openable bedroom door', () => {
@@ -53,6 +61,38 @@ describe('explicit storeys and ordinary-block flights', () => {
     const template = house();
     set(template, [6, 10, 4], planks);
     expect(templateSpatialIssues(registry, template).some(([, message]) => message.includes('headroom'))).toBe(true);
+  });
+  it('preserves an authored 2.5 m room roof and rejects a ceiling inside standing clearance', () => {
+    const authored = structuredClone(registry.templates.get('stairs_house')!) as TemplateDef;
+    authored.id = 'authored_ceiling';
+    authored.layers.splice(13, 1);
+    authored.size = [16, 15, 16];
+    const admit = () => buildRegistry([...sources, { source: 'ceiling.json', data: { templates: [authored] } }]);
+    const ordinary = admit();
+    expect(ordinary.issues).toEqual([]);
+    const compiled = compileTemplate(ordinary.registry, ordinary.registry.templates.get(authored.id)!);
+    for (const x of [10, 11]) {
+      for (const z of [4, 5]) {
+        expect(compiled.blocks[x + 16 * (z + 16 * 14)]).toBe(planks);
+      }
+    }
+    authored.layers.splice(11, 2);
+    authored.size = [16, 13, 16];
+    expect(
+      admit().issues.some(
+        (issue) =>
+          issue.path.includes('access.stairs') && issue.message.includes('headroom') && issue.message.includes('12'),
+      ),
+    ).toBe(true);
+  });
+  it('rejects an entrance disconnected from the outside when the doorway is walled up', () => {
+    const authored = structuredClone(registry.templates.get('stairs_house')!) as TemplateDef;
+    authored.id = 'sealed_entrance';
+    for (const y of [1, 2, 3, 4]) {
+      authored.layers[y]![0] = 'wwwwwwwwwwwwwwww';
+    }
+    const result = buildRegistry([...sources, { source: 'sealed.json', data: { templates: [authored] } }]);
+    expect(result.issues.some((issue) => issue.path.includes('access.entrance'))).toBe(true);
   });
   it('rejects upstairs floor space isolated behind a non-openable wall', () => {
     const template = house();
@@ -163,12 +203,14 @@ describe('explicit storeys and ordinary-block flights', () => {
       expect(world.getBlock(Math.floor(point[0]), point[1] - 1, Math.floor(point[2]))).toBe(
         registry.blockIds.get('stone'),
       );
-      expect(placedFlights(placement)[0]).toMatchObject({
-        from: 'cellar',
-        to: 'ground',
-        lower: placedPoint(placement, [2, 1, 5]),
-        upper: placedPoint(placement, [11, 9, 5]),
-      });
+      const [flight] = placedFlights(placement);
+      expect(flight).toMatchObject({ from: 'cellar', to: 'ground' });
+      for (const endpoint of [flight!.lower, flight!.upper]) {
+        expect(stampedLanding(world, endpoint)).toEqual(Array.from({ length: 4 }, () => [0, planks]));
+      }
+      const delta = flight!.upper.map((value, axis) => Math.abs(value - flight!.lower[axis]!));
+      expect(delta[1]).toBe(8);
+      expect(delta[0]! + delta[2]!).toBe(9);
       for (const chunk of world.chunks.values()) {
         site.stamp(chunk);
       }

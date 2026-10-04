@@ -2,8 +2,9 @@
 import type { Vec3 } from './coords.ts';
 import type { StairDef } from './schema.ts';
 
-/** 3 m: the 1.8 m body spans adjacent one-cell treads during the step-up sweep. */
-export const STAIR_HEADROOM = 6;
+/** The player body in the authored half-metre grid; also encloses the shorter shambler. */
+export const STAIR_BODY_HEIGHT = 3.6;
+export const STAIR_BODY_HALF_WIDTH = 0.6;
 export interface FlightPlan {
   rise: number;
   direction: Vec3;
@@ -43,7 +44,8 @@ export const planFlight = (stair: StairDef, size: Vec3): FlightPlan | undefined 
     [-1, rise + 1]
       .flatMap(row)
       .some(
-        ([bx, by, bz]) => bx < 0 || bx >= size[0] || bz < 0 || bz >= size[2] || by < 1 || by + STAIR_HEADROOM > size[1],
+        ([bx, by, bz]) =>
+          bx < 0 || bx >= size[0] || bz < 0 || bz >= size[2] || by < 1 || by + STAIR_BODY_HEIGHT > size[1],
       )
   ) {
     return undefined;
@@ -51,7 +53,7 @@ export const planFlight = (stair: StairDef, size: Vec3): FlightPlan | undefined 
   return { rise, direction, row };
 };
 
-/** Carve overhead, including the upper-floor opening; solid wedges support every riser and both landings. */
+/** Build solid wedges and cut only the upper support layer over the treads. Authored ceilings stay intact. */
 export const constructFlight = (blocks: Uint16Array, size: Vec3, stair: StairDef, block: number): void => {
   const plan = planFlight(stair, size);
   if (!plan) {
@@ -63,8 +65,8 @@ export const constructFlight = (blocks: Uint16Array, size: Vec3, stair: StairDef
       for (let y = stair.lower[1] - 1; y < feet; y++) {
         blocks[at(x, y, z)] = block;
       }
-      for (let y = feet; y < feet + STAIR_HEADROOM; y++) {
-        blocks[at(x, y, z)] = 0;
+      if (step > 0 && step < plan.rise) {
+        blocks[at(x, stair.upper[1] - 1, z)] = 0;
       }
     }
   }

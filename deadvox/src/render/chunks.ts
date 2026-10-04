@@ -10,6 +10,7 @@ import {
   MeshLambertMaterial,
   Sphere,
 } from 'three';
+import type { Vec3 } from '../core/coords.ts';
 import type { MeshData } from '../core/mesher.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { SURFACE_PATTERN_GLSL } from './surfacePatterns.ts';
@@ -141,6 +142,8 @@ export class ChunkMeshes {
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
   private changes = 0;
+  /** Optional presentation invalidation, also fired for a delivered empty chunk. */
+  onChange?: (origin: Vec3) => void;
 
   /** Meshes are in blocks; the group scales them to metres. */
   constructor(blockSize: number) {
@@ -199,6 +202,7 @@ export class ChunkMeshes {
   }
 
   set(key: string, origin: [number, number, number], data: MeshData): void {
+    this.onChange?.(origin);
     this.remove(key);
     if (data.indices.length === 0) {
       return;
@@ -261,6 +265,7 @@ export class ChunkMeshes {
     if (!mesh) {
       return;
     }
+    this.onChange?.([mesh.position.x, mesh.position.y, mesh.position.z]);
     this.group.remove(mesh);
     mesh.geometry.dispose();
     this.meshes.delete(key);
