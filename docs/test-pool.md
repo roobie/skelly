@@ -6,6 +6,24 @@ On the measured 7-logical-CPU VM this resolves to 3 workers; on a 2-core GitHub
 runner it resolves to 1. CLI `--maxWorkers` remains available for diagnostics.
 Changes to this shared file trigger all three subproject workflows.
 
+## Vitest temporary caches (r18)
+
+Vitest 5.0.1 leaves its root module-fetch cache behind even after a normal run;
+5.0.2 is also installed in Mobgen. Killed runs additionally skip project cleanup.
+On Linux, `testPool.ts` therefore sets Vitest-only `TMPDIR` before Vitest allocates
+these caches, beneath the invocation's `node_modules/.cache/vitest-tmp`.
+Each run has a unique PID-prefixed directory. Normal process exit removes its
+own directory; the next Vitest startup reclaims directories whose owner PID no
+longer exists. Live owners, unknown names, symlinks and uncertain liveness are
+preserved. PID reuse can conservatively retain stale data until a later startup.
+
+Package tests and external mutation configs importing the package Vite config
+share this policy. A config that bypasses `testPool.ts` is not covered. Ordinary
+Vite/browser invocations retain their caller's temp directory; browser profile
+scavenging is separate work (r19). Root `npm run ci` also runs the native
+`node:test` ownership/non-Vitest contract. No worker policy, assertion, timeout,
+or dependency is changed by this cleanup.
+
 ## Default-run time budgets (Slice 2.0)
 
 On deb39, 2026-10-03, three same-checkout default runs establish **40s Gungen,
