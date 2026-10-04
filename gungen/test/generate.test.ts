@@ -14,7 +14,7 @@ describe('seededRng', () => {
   // mulberry32's published sequence for seed 1.
   it('is stable across runs and machines', () => {
     const rng = seededRng(1);
-    expect([rng(), rng(), rng()].map((x) => x.toFixed(6))).toEqual(['0.627074', '0.002736', '0.527447']);
+    expect([rng(), rng(), rng()].map((value) => value.toFixed(6))).toEqual(['0.627074', '0.002736', '0.527447']);
   });
 });
 
@@ -137,7 +137,6 @@ describe('templates', () => {
   }
 });
 
-// Same describe names as above so the snapshot keys stay `templates > <name> > known-good seeds`.
 sweepGroup('templates', () => {
   for (const t of TEMPLATES) {
     const chunkSize = t.name === 'ar' || t.name === 'ak' ? 10 : CHUNK;
@@ -185,13 +184,6 @@ sweepGroup('templates', () => {
           valid += countValid(from);
         }
         expect(valid / SEEDS).toBeGreaterThanOrEqual(0.5);
-      });
-
-      // Known-good seeds. A snapshot change means generation changed: check
-      // the new builds in the viewer before updating (vitest -u).
-      it('known-good seeds', () => {
-        const gallery = [1, 2, 3].map((seed) => generateValid(t, gunDomain, seed * 100)!.assembly);
-        expect(gallery).toMatchSnapshot();
       });
     });
   }

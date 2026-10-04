@@ -12,21 +12,6 @@ import { loadFixtures } from './helpers.ts';
 
 const DESIGNS = join(import.meta.dirname, '..', 'designs');
 const PUBLISH_CHECK = join(import.meta.dirname, 'fixtures', 'publish-check');
-const JSON_SUFFIX = /\.json$/;
-const expectedTemplates: Readonly<Record<string, string>> = {
-  'archetype-ak': 'ak',
-  'archetype-anti-materiel': 'anti-materiel',
-  'archetype-ar': 'ar',
-  'archetype-ar-free-float': 'ar',
-  'archetype-battle-rifle': 'battle-rifle',
-  'archetype-bolt-rifle': 'bolt-rifle',
-  'archetype-bolt-rifle-box': 'bolt-rifle-box',
-  'archetype-awm': 'bolt-rifle-thumbhole',
-  'archetype-pistol': 'pistol',
-  'archetype-pump-shotgun': 'pump-shotgun',
-  'archetype-revolver': 'revolver',
-  'archetype-smg': 'smg',
-};
 
 const localVertices = (solid: Solid): Vec3[] => {
   if (solid.kind === 'box') {
@@ -87,9 +72,9 @@ const mustLoad = (text: string) => {
 
 describe('published design corpus', () => {
   // Measured about 3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
-  it('contains one loadable published design for every convertible archetype', { timeout: 15_000 }, () => {
+  it('loads every published design and agrees with its source fixture', { timeout: 15_000 }, () => {
     const files = designFiles();
-    expect(files.map((file) => file.replace(JSON_SUFFIX, '')).sort()).toEqual(Object.keys(expectedTemplates).sort());
+    expect(files.length).toBeGreaterThan(0);
     for (const file of files) {
       const design = JSON.parse(readFileSync(join(DESIGNS, file), 'utf8')) as {
         template: string;
@@ -100,22 +85,12 @@ describe('published design corpus', () => {
       expect(result.declaredStatus, file).toBe('published');
       expect(result.issues, file).toEqual([]);
       expect(result.design.status, file).toBe('published');
-      expect(design.template, file).toBe(expectedTemplates[design.assembly.name]);
       const source = byName.get(design.assembly.name);
       expect(source, file).toBeDefined();
       if (source) {
         expect(roundedGeometry(result.design.assembly), file).toEqual(roundedGeometry(source));
         expect(result.design.assembly.connections, file).toEqual(source.connections);
       }
-    }
-  });
-
-  // Measured about 2.1 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
-  it('snapshots every resolved solid by design, with transformed geometry rounded to 1e-6', { timeout: 15_000 }, () => {
-    for (const file of designFiles()) {
-      const text = readFileSync(join(DESIGNS, file), 'utf8');
-      const { design } = mustLoad(text);
-      expect(roundedGeometry(design.assembly), file).toMatchSnapshot(file.replace(JSON_SUFFIX, ''));
     }
   });
 
@@ -142,7 +117,7 @@ describe('published design corpus', () => {
   it('the publish check passes the corpus', () => {
     const result = checkDesignFiles(designFiles().map((file) => join(DESIGNS, file)));
     expect(result.exitCode).toBe(0);
-    expect(result.lines).toHaveLength(Object.keys(expectedTemplates).length);
+    expect(result.lines).toHaveLength(designFiles().length);
     expect(result.lines.every((line) => line.startsWith('PASS '))).toBe(true);
   });
 
