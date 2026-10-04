@@ -8,6 +8,8 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
+import { handlingWaitMilliseconds } from './handling-budget.ts';
 
 const { chromium } = await import('playwright');
 
@@ -24,7 +26,8 @@ const observation = {
     return code.replace(
       marker,
       `
-  Object.assign(globalThis, { pumpHandlingTest: { session, input, camera, audio } });
+  Object.assign(globalThis, { pumpHandlingTest: { session, input, camera, audio,
+    getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
     globalThis.pumpCurrentAudioEvent = source.event;
@@ -65,9 +68,11 @@ try {
   await page.addInitScript(() => {
     globalThis.pumpDecoded = [];
     globalThis.pumpRDownAt = 0;
+    globalThis.pumpRDowns = [];
     addEventListener('keydown', (event) => {
       if (event.code === 'KeyR' && !event.repeat) {
         globalThis.pumpRDownAt = event.timeStamp;
+        globalThis.pumpRDowns.push(event.timeStamp);
       }
     });
     const { start } = AudioBufferSourceNode.prototype;
@@ -108,6 +113,40 @@ try {
     }
     throw new Error(`Native arrows cannot select ${uid}`);
   };
+  const handlingWaits = [];
+  const waitForWork = async (predicate, argument, futureSeconds = 0) => {
+    const work = await page.evaluate(() => {
+      const test = globalThis.pumpHandlingTest;
+      return { seconds: test.session.queue.remaining, frameP95Ms: test.getFramePacing().p95 };
+    });
+    const timeout = handlingWaitMilliseconds(work.seconds + futureSeconds, work.frameP95Ms);
+    handlingWaits.push({ ...work, futureSeconds, timeout });
+    await page.waitForFunction(predicate, argument, { timeout });
+  };
+  const waitForHands = async (uid) => {
+    const admission = await page.evaluate((wanted) => {
+      const test = globalThis.pumpHandlingTest;
+      return {
+        right: test.session.inventory.hands.right?.uid,
+        left: test.session.inventory.hands.left?.uid,
+        godMode: test.session.sim.godMode,
+        queued: test.session.queue.jobs.some(
+          (job) =>
+            job.kind === 'move' && job.itemUid === wanted && job.target.kind === 'hand' && job.target.side === 'right',
+        ),
+        notice: test.getNotice(),
+      };
+    }, uid);
+    assert.equal(admission.godMode, true, 'inventory H must not toggle debug God mode');
+    assert.ok(
+      admission.right === uid || admission.queued,
+      `H must admit the intended right-hand move: ${JSON.stringify(admission)}`,
+    );
+    await waitForWork((wanted) => {
+      const s = globalThis.pumpHandlingTest.session;
+      return !s.queue.busy && s.inventory.hands.right?.uid === wanted;
+    }, uid);
+  };
   const observe = () =>
     page.evaluate((selectedIds) => {
       const { session, camera } = globalThis.pumpHandlingTest;
@@ -130,10 +169,7 @@ try {
   await page.keyboard.press('Tab');
   await select(ids.box);
   await page.keyboard.press('KeyH');
-  await page.waitForFunction((uid) => {
-    const s = globalThis.pumpHandlingTest.session;
-    return !s.queue.busy && s.inventory.hands.right?.uid === uid;
-  }, ids.box);
+  await waitForHands(ids.box);
   await page.keyboard.press('Tab');
   await page.mouse.click(640, 450);
   await page.waitForFunction(() =>
@@ -145,7 +181,11 @@ try {
   assert.equal(cancelled.loose, 0);
   assert.equal(cancelled.jobs, 0);
   await page.mouse.click(640, 450);
-  await page.waitForFunction((uid) => !globalThis.pumpHandlingTest.session.inventory.itemByUid(uid), ids.box);
+  await page.waitForFunction((uid) => {
+    const s = globalThis.pumpHandlingTest.session;
+    return !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack');
+  }, ids.box);
+  await waitForWork((uid) => !globalThis.pumpHandlingTest.session.inventory.itemByUid(uid), ids.box);
   const unpacked = await observe();
   assert.equal(unpacked.loose, 20);
   assert.equal(unpacked.hand, null);
@@ -155,10 +195,7 @@ try {
   await page.keyboard.press('Tab');
   await select(ids.gun);
   await page.keyboard.press('KeyH');
-  await page.waitForFunction((uid) => {
-    const s = globalThis.pumpHandlingTest.session;
-    return !s.queue.busy && s.inventory.hands.right?.uid === uid;
-  }, ids.gun);
+  await waitForHands(ids.gun);
   await page.keyboard.press('Tab');
   await page.keyboard.press('KeyR');
   await page.waitForFunction(() => performance.now() - globalThis.pumpRDownAt >= 250);
@@ -177,9 +214,21 @@ try {
   assert.equal(released.jobs, 0);
   assert.deepEqual(released.gun.tube, []);
   await page.keyboard.down('KeyR');
-  await page.waitForFunction(
+  await page.waitForFunction((uid) => {
+    const s = globalThis.pumpHandlingTest.session;
+    return (
+      s.inventory.itemByUid(uid).firearm.tube.length === 4 || s.queue.jobs.some((job) => job.jobType === 'firearm.load')
+    );
+  }, ids.gun);
+  const futureInserts = await page.evaluate((uid) => {
+    const s = globalThis.pumpHandlingTest.session;
+    const job = s.queue.jobs.find((entry) => entry.jobType === 'firearm.load');
+    return Math.max(0, 4 - s.inventory.itemByUid(uid).firearm.tube.length - 1) * (job?.duration ?? 0);
+  }, ids.gun);
+  await waitForWork(
     (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.tube.length === 4,
     ids.gun,
+    futureInserts,
   );
   await page.keyboard.up('KeyR');
   const loaded = await observe();
@@ -190,13 +239,34 @@ try {
     await mkdir(process.env.PUMP_ARTIFACT_DIR, { recursive: true });
     await page.screenshot({ path: resolve(process.env.PUMP_ARTIFACT_DIR, 'loaded.png') });
   }
-  await page.keyboard.press('KeyR');
-  await page.keyboard.press('KeyR');
+  // Submit the native key sequence in one protocol burst. Awaiting each key RPC
+  // separately lets slow software-rendered frames turn a double tap into two holds.
+  // No timestamp is supplied or fabricated; verify Chrome's actual event timestamps.
+  const keys = await page.context().newCDPSession(page);
+  await Promise.all(
+    ['keyDown', 'keyUp', 'keyDown', 'keyUp'].map((type) =>
+      keys.send('Input.dispatchKeyEvent', {
+        type,
+        code: 'KeyR',
+        key: 'r',
+        windowsVirtualKeyCode: 82,
+        nativeVirtualKeyCode: 82,
+        autoRepeat: false,
+      }),
+    ),
+  );
+  await keys.detach();
+  const doublePress = await page.evaluate(() => globalThis.pumpRDowns.slice(-2));
+  assert.equal(doublePress.length, 2);
+  assert.ok(
+    doublePress[1] - doublePress[0] < RELOAD_GESTURE_MS.doublePress,
+    'native double R arrives within its actual gesture window',
+  );
   await page.waitForFunction(
     (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.mode === 'hand',
     ids.gun,
   );
-  await page.waitForFunction((uid) => {
+  await waitForWork((uid) => {
     const s = globalThis.pumpHandlingTest.session;
     return !s.queue.busy && s.inventory.itemByUid(uid).firearm.chamber === 'round';
   }, ids.gun);
@@ -228,7 +298,7 @@ try {
     assert.ok(source.duration > 0);
   }
   process.stdout.write(
-    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, errors })}\n`,
+    `${JSON.stringify({ cancelled, unpacked, tapped, released, loaded, racked, fired, decoded, doublePress, handlingWaits, errors })}\n`,
   );
 } finally {
   await browser?.close();
