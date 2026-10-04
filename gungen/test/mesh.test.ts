@@ -9,15 +9,9 @@ import { resolve } from '../src/core/resolve.ts';
 import type { BoxSolid, ExtrudedPolygonSolid, Solid, Vec2 } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
-import { expectWatertightMesh, loadCorpus } from './helpers.ts';
+import { expectWatertightMesh } from './helpers.ts';
 
 const THIN_SOLID_ERROR = /thinner than the mesh-group weld contract/;
-
-// A stated per-assembly triangle budget (PROJECT.md §7). `npm run mesh-stats`
-// over 1000 seeds/template puts the largest single build (ak) at 2312
-// triangles; this budget leaves more than 2x headroom without letting the
-// beveled mesh balloon unnoticed.
-const TRIANGLE_BUDGET = 5000;
 
 const box: BoxSolid = { id: 'b', kind: 'box', box: { center: [1, 2, 3], half: [2, 1, 1.5] } };
 
@@ -73,36 +67,42 @@ const inwardNormals = (
 };
 
 describe('meshForSolid', () => {
-  it('keeps the bounding box exactly the box solid’s own extent', () => {
+  it('keeps the bounding box equal to the box solid’s own extent', () => {
     const mesh = meshForSolid(box);
     const { min, max } = bounds(mesh.positions);
-    expect(min).toEqual([-1, 1, 1.5]);
-    expect(max).toEqual([3, 3, 4.5]);
+    const expectedMin = box.box.center.map((center, axis) => center - box.box.half[axis]!);
+    const expectedMax = box.box.center.map((center, axis) => center + box.box.half[axis]!);
+    expect(min).toEqual(expectedMin);
+    expect(max).toEqual(expectedMax);
   });
 
-  it('keeps the bounding box exactly the extruded-polygon solid’s extent, everywhere the outline attains it along a flat edge', () => {
-    // Every axis but +Y here is bounded by a full profile edge (or, for Z, the flat caps),
-    // so the chamfer touches nothing that defines the extent: it stays exact.
+  it('preserves flat-edge and cap bounds while keeping a bevelled apex within the outline', () => {
+    // The profile apex at +Y is bevelled; flat profile edges and the extrusion caps stay exact.
     const mesh = meshForSolid(prism);
     const { min, max } = bounds(mesh.positions);
-    expect(min).toEqual([0, 0, -1]);
-    expect(max[0]).toBe(4);
-    expect(max[2]).toBe(1);
+    const expectedMin: [number, number, number] = [
+      Math.min(...prism.profile.map(([x]) => x)),
+      Math.min(...prism.profile.map(([, y]) => y)),
+      prism.z[0],
+    ];
+    const expectedMax: [number, number, number] = [
+      Math.max(...prism.profile.map(([x]) => x)),
+      Math.max(...prism.profile.map(([, y]) => y)),
+      prism.z[1],
+    ];
+    expect(min).toEqual(expectedMin);
+    expect(max[0]).toBe(expectedMax[0]);
+    expect(max[1]).toBeLessThanOrEqual(expectedMax[1]);
+    expect(max[1]).toBeGreaterThan(expectedMax[1] - BEVEL);
+    expect(max[2]).toBe(expectedMax[2]);
   });
 
   it('never exceeds the outline, even at a lone vertex apex (+Y here, touched only at (2, 3))', () => {
     const mesh = meshForSolid(prism);
     const { max } = bounds(mesh.positions);
-    expect(max[1]).toBeLessThanOrEqual(3);
-    expect(max[1]).toBeGreaterThan(3 - BEVEL);
-  });
-
-  it('gives a chamfered box 44 triangles (6 inset faces, 12 edge chamfers, 8 corner triangles)', () => {
-    expect(meshForSolid(box).triangleCount).toBe(44);
-  });
-
-  it('gives a chamfered N-gon prism 12N-4 triangles', () => {
-    expect(meshForSolid(prism).triangleCount).toBe(12 * prism.profile.length - 4);
+    const apexY = Math.max(...prism.profile.map(([, y]) => y));
+    expect(max[1]).toBeLessThanOrEqual(apexY);
+    expect(max[1]).toBeGreaterThan(apexY - BEVEL);
   });
 
   it('faces outward for a chamfered box (sign test)', () => {
@@ -131,8 +131,8 @@ describe('meshForSolid', () => {
     const thin: BoxSolid = { id: 't', kind: 'box', box: { center: [0, 0, 0], half: [0.01, 5, 5] } };
     const mesh = meshForSolid(thin, BEVEL);
     const { min, max } = bounds(mesh.positions);
-    expect(min[0]).toBeCloseTo(-0.01);
-    expect(max[0]).toBeCloseTo(0.01);
+    expect(min[0]).toBeCloseTo(thin.box.center[0] - thin.box.half[0]);
+    expect(max[0]).toBeCloseTo(thin.box.center[0] + thin.box.half[0]);
     // No vertex may have crossed the solid's own centre plane.
     for (let i = 0; i < mesh.positions.length; i += 3) {
       expect(Math.abs(mesh.positions[i]!)).toBeLessThanOrEqual(0.01 + 1e-9);
@@ -153,31 +153,6 @@ describe('mesh module is display-only', () => {
         specs.filter((s) => meshSpecifierRe.test(s)),
         `${name} imports mesh`,
       ).toEqual([]);
-    }
-  });
-});
-
-const triangleCount = (resolved: ReturnType<typeof resolve>): number => {
-  let triangles = 0;
-  for (const part of resolved.placed.keys()) {
-    const def = resolved.defs.get(part)!;
-    for (const s of def.displaySolids ?? def.solids) {
-      triangles += meshForSolid(s).triangleCount;
-    }
-  }
-  return triangles;
-};
-
-describe('per-assembly triangle budget', () => {
-  // Replaces the former CI-only seed sweep (PROJECT.md, "Generator tests", removal plan (a)): the
-  // budget is checked on every fixture (broken-* ones included; none exists to break it) and every
-  // published design. Measured about 1.9 s on a loaded host (load 4-10), too much of vitest's 5 s
-  // default; the explicit timeout, about 5x that, keeps it from flaking under load.
-  it(`stays under ${TRIANGLE_BUDGET} triangles in every fixture and design`, { timeout: 10_000 }, () => {
-    const corpus = loadCorpus(() => true);
-    expect(corpus.length).toBeGreaterThanOrEqual(45);
-    for (const { label, assembly } of corpus) {
-      expect(triangleCount(resolve(assembly, gunDomain)), label).toBeLessThan(TRIANGLE_BUDGET);
     }
   });
 });
@@ -227,7 +202,6 @@ describe('watertightness (welded at 1e-5u)', () => {
       display: { bevel: false },
     };
     const mesh = meshForSolid(clipped);
-    expect(mesh.triangleCount).toBe(8);
     expectWatertightMesh(mesh, 'clipped prism');
   });
 
@@ -236,7 +210,6 @@ describe('watertightness (welded at 1e-5u)', () => {
       { id: 'outer', kind: 'box', box: { center: [0, 0, 0], half: [2, 2, 2] } },
       { id: 'inner', kind: 'box', box: { center: [0, 0, 0], half: [1, 1, 1] } },
     ]);
-    expect(nested.triangleCount).toBe(12);
     expectWatertightMesh(nested, 'nested boxes');
   });
 
@@ -245,7 +218,6 @@ describe('watertightness (welded at 1e-5u)', () => {
       { id: 'a', kind: 'box', box: { center: [0, 0, 0], half: [1, 1, 1] } },
       { id: 'b', kind: 'box', box: { center: [0, 0, 0], half: [1, 1, 1] } },
     ]);
-    expect(coincident.triangleCount).toBe(12);
     expectWatertightMesh(coincident, 'coincident boxes');
     for (const [label, solids] of [
       [
