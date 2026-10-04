@@ -174,6 +174,15 @@ const unturned = (size: Vec3, turn: Turn, u: number, v: number): [number, number
   }
 };
 
+/** The authored block at a world cell, including air; undefined outside this placement. */
+export const placedBlockAt = (placement: Placement, [x, y, z]: Vec3): number | undefined => {
+  const { template, origin, turn } = placement;
+  const [u, v] = unturned(template.size, turn, x - origin[0], z - origin[2]);
+  const h = y - origin[1];
+  const [sx, sy, sz] = template.size;
+  return u >= 0 && u < sx && v >= 0 && v < sz && h >= 0 && h < sy ? template.blocks[u + sx * (v + sz * h)] : undefined;
+};
+
 /** Writes the part of a placed template that falls inside the chunk. */
 export const stampPlacement = (chunk: Chunk, placement: Placement): void => {
   const { template, origin, turn } = placement;

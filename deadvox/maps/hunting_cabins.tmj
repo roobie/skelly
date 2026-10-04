@@ -1,0 +1,86 @@
+{
+  "type": "map", "version": "1.10", "tiledversion": "1.11.0",
+  "orientation": "orthogonal", "renderorder": "right-down",
+  "width": 128, "height": 128, "tilewidth": 1, "tileheight": 1, "infinite": false,
+  "nextlayerid": 6, "nextobjectid": 12, "tilesets": [],
+  "properties": [
+    {"name": "id", "type": "string", "value": "hunting_cabins"},
+    {"name": "ground", "type": "float", "value": 21}
+  ],
+  "layers": [
+    {
+      "id": 1, "name": "Ridge and shoulder", "type": "objectgroup", "color": "#ae8555",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {
+          "id": 1, "name": "Clearing crest (10m above foot)", "type": "ridge",
+          "x": 36, "y": 90, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "polyline": [{"x": 0, "y": 0}, {"x": 56, "y": 0}],
+          "properties": [{"name": "rise", "type": "float", "value": 10}, {"name": "width", "type": "float", "value": 60}]
+        },
+        {
+          "id": 2, "name": "Western shoulder", "type": "hill", "ellipse": true,
+          "x": 6, "y": 47, "width": 48, "height": 58, "rotation": 0, "visible": true,
+          "properties": [{"name": "rise", "type": "float", "value": 5}]
+        }
+      ]
+    },
+    {
+      "id": 2, "name": "Clearing lots — d41 templates pending", "type": "objectgroup", "color": "#ba845c",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {
+          "id": 3, "name": "Cabin stand-in (small_house; replace with d41 cabin)", "type": "building",
+          "x": 45, "y": 87, "width": 10, "height": 7, "rotation": 0, "visible": true,
+          "properties": [{"name": "template", "type": "string", "propertytype": "template_id", "value": "small_house"}]
+        },
+        {
+          "id": 4, "name": "Dad's cabin stand-in (small_house; d41 hunter cabin, d38 lock, d39 cellar pending)", "type": "building",
+          "x": 87, "y": 94, "width": 10, "height": 7, "rotation": 180, "visible": true,
+          "properties": [{"name": "template", "type": "string", "propertytype": "template_id", "value": "small_house"}]
+        },
+        {
+          "id": 5, "name": "Woodshed stand-in (shed; replace with d41 woodshed)", "type": "building",
+          "x": 63, "y": 97, "width": 4, "height": 3, "rotation": 90, "visible": true,
+          "properties": [{"name": "template", "type": "string", "propertytype": "template_id", "value": "shed"}]
+        }
+      ]
+    },
+    {
+      "id": 3, "name": "Foot and treeline spawns", "type": "objectgroup", "color": "#e9c368",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {"id": 6, "name": "Player at foot, facing up track", "type": "player_spawn", "point": true,
+          "x": 64, "y": 20, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "properties": [{"name": "yaw", "type": "float", "value": 180}]},
+        {"id": 7, "name": "Western treeline shambler", "type": "shambler", "point": true,
+          "x": 34, "y": 90, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "properties": [{"name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler"}]},
+        {"id": 8, "name": "Eastern treeline shambler", "type": "shambler", "point": true,
+          "x": 97, "y": 91, "width": 0, "height": 0, "rotation": 0, "visible": true,
+          "properties": [{"name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "shambler"}]}
+      ]
+    },
+    {
+      "id": 4, "name": "Treeline around clearing", "type": "objectgroup", "color": "#518a4f",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {"id": 9, "name": "Western slope woodland", "type": "woodland", "x": 12, "y": 60, "rotation": 0, "visible": true,
+          "polygon": [{"x": 0, "y": 0}, {"x": 24, "y": 0}, {"x": 24, "y": 59}, {"x": 0, "y": 59}],
+          "properties": [{"name": "density", "type": "float", "value": 1}]},
+        {"id": 10, "name": "Eastern and northern treeline", "type": "woodland", "x": 36, "y": 62, "rotation": 0, "visible": true,
+          "polygon": [{"x": 59, "y": 0}, {"x": 82, "y": 0}, {"x": 82, "y": 62}, {"x": 0, "y": 62}, {"x": 0, "y": 46}, {"x": 59, "y": 46}],
+          "properties": [{"name": "density", "type": "float", "value": 1}]}
+      ]
+    },
+    {
+      "id": 5, "name": "Approach track from below", "type": "objectgroup", "color": "#957448",
+      "opacity": 1, "visible": true, "x": 0, "y": 0, "draworder": "topdown",
+      "objects": [
+        {"id": 11, "name": "Dirt climb to clearing", "type": "track", "x": 64, "y": 18, "rotation": 0, "visible": true,
+          "polyline": [{"x": 0, "y": 0}, {"x": 0, "y": 75}],
+          "properties": [{"name": "width", "type": "float", "value": 3}, {"name": "surface", "type": "string", "value": "dirt"}]}
+      ]
+    }
+  ]
+}

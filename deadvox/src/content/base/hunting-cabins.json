@@ -1,0 +1,81 @@
+{
+  "layouts": [
+    {
+      "id": "hunting_cabins",
+      "bounds": {
+        "x0": 0,
+        "z0": 0,
+        "x1": 128,
+        "z1": 128
+      },
+      "ground": 21,
+      "terrain": [
+        {
+          "kind": "ridge",
+          "points": [[36, 90], [92, 90]],
+          "rise": 10,
+          "width": 60
+        },
+        {
+          "kind": "hill",
+          "centre": [30, 76],
+          "radii": [24, 29],
+          "rise": 5
+        }
+      ],
+      "buildings": [
+        {
+          "template": "small_house",
+          "position": [45, 31, 87],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "small_house",
+          "position": [77, 31, 87],
+          "rotation": 180,
+          "storeys": 1
+        },
+        {
+          "template": "shed",
+          "position": [60, 30.5, 97],
+          "rotation": 90,
+          "storeys": 1
+        }
+      ],
+      "player": {
+        "position": [64, 21.5, 20],
+        "yaw": 180
+      },
+      "shamblers": [
+        {
+          "type": "shambler",
+          "position": [34, 31.5, 90],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [97, 31.5, 91],
+          "chance": 1
+        }
+      ],
+      "woodlands": [
+        {
+          "polygon": [[12, 60], [36, 60], [36, 119], [12, 119]],
+          "density": 1
+        },
+        {
+          "polygon": [[95, 62], [118, 62], [118, 124], [36, 124], [36, 108], [95, 108]],
+          "density": 1
+        }
+      ],
+      "tracks": [
+        {
+          "points": [[64, 18], [64, 93]],
+          "width": 3,
+          "surface": "dirt"
+        }
+      ]
+    }
+  ]
+}

@@ -1,5 +1,6 @@
 // Tiled is build-time only. This Site consumes validated layout JSON and existing ASCII templates.
-import { buildingBounds, inPolygon, polylineDistance } from './authoredLayout.ts';
+import { inPolygon } from './authoredLayout.ts';
+import { buildingBounds, layoutHeight, lotOf, polylineDistance } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
@@ -7,7 +8,7 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
-import { furnitureOf, grow, type Rect, rectDistance, type Site, smoothstep, type ZombieSpawn } from './site.ts';
+import { furnitureOf, grow, type Rect, type Site, type ZombieSpawn } from './site.ts';
 import {
   compileTemplate,
   type Placement,
@@ -47,14 +48,8 @@ export class AuthoredSite implements Site {
     const rectBlocks = (rect: Rect): Rect => ({ x0: rect.x0 / s, x1: rect.x1 / s, z0: rect.z0 / s, z1: rect.z1 / s });
     const area = rectBlocks(layout.bounds);
     const lots = layout.buildings.map((building) => {
-      const rect = rectBlocks(buildingBounds(building, registry.templates.get(building.template)!.size));
-      return {
-        rect,
-        apron: grow(rect, 2 / s),
-        floor: building.position[1] / s,
-        // Content-derived, not array order: unique for admitted non-overlapping placements.
-        key: `${building.template}:${building.position.join(',')}:${building.rotation}`,
-      };
+      const rect = buildingBounds(building, registry.templates.get(building.template)!.size);
+      return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), 2 / s) };
     });
     this.placements = layout.buildings.map((building) => ({
       template: stackTemplate(
@@ -65,29 +60,8 @@ export class AuthoredSite implements Site {
       turn: (building.rotation / 90) as Turn,
     }));
     this.spawn = { pos: [...layout.player.position], yaw: (layout.player.yaw * Math.PI) / 180 };
-    const height = (x: number, z: number, natural: number): number => {
-      // A containing footprint wins (distance zero); otherwise nearest footprint, stable-key ties.
-      // Choose ownership BEFORE apron/blend distance, so a neighbour cannot override an authored lot.
-      let closest: (typeof lots)[number] | undefined;
-      let nearestDistance = Number.POSITIVE_INFINITY;
-      for (const lot of lots) {
-        const distance = rectDistance(lot.rect, x, z);
-        if (!closest || distance < nearestDistance || (distance === nearestDistance && lot.key < closest.key)) {
-          closest = lot;
-          nearestDistance = distance;
-        }
-      }
-      if (closest) {
-        const distance = rectDistance(closest.apron, x, z);
-        if (distance < 4 / s) {
-          return Math.round(closest.floor + (layout.ground / s - closest.floor) * smoothstep(distance / (4 / s)));
-        }
-      }
-      const distance = rectDistance(area, x, z);
-      return Math.round(
-        layout.ground / s + (natural - layout.ground / s) * smoothstep(Math.min(1, distance / (16 / s))),
-      );
-    };
+    const height = (x: number, z: number, natural: number): number =>
+      Math.round(layoutHeight(layout, lots, [(x + 0.5) * s, (z + 0.5) * s], natural * s) / s);
     const trackAt = (x: number, z: number) =>
       layout.tracks.find((track) => polylineDistance([(x + 0.5) * s, (z + 0.5) * s], track.points) <= track.width / 2);
     const player = blocks(layout.player.position);

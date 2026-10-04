@@ -2,8 +2,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildingBounds } from '../src/core/authoredLayout.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
+import { buildingBounds, defaultFoundation, profileHeight, standingHeight } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
@@ -25,7 +25,7 @@ const invalid = (data: unknown, message: string) => {
   expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
     true,
   );
-  expect(result.registry.layouts.size).toBe(0); // Whole-file rejection, not partially stamped content.
+  expect([...result.registry.layouts.keys()]).toEqual([...buildRegistry(base).registry.layouts.keys()]); // No rejected file's layouts, while unrelated bundled sites survive.
 };
 
 describe('authored layout acceptance', () => {
@@ -38,6 +38,52 @@ describe('authored layout acceptance', () => {
       x1: 52,
       z1: 61,
     });
+  });
+  it('rejects floating foundations and buried interior cells even when footprint corners fit', () => {
+    invalid({ ...layout, buildings: [{ ...layout.buildings[0], position: [55, 23, 55] }] }, 'foundation cut or fill');
+    invalid(
+      { ...layout, terrain: [{ kind: 'hill', centre: [60, 58.5], radii: [1, 1], rise: 2 }] },
+      'foundation cut or fill',
+    );
+  });
+  it('rejects floating terrain spawns and unsupported or buried building spawns', () => {
+    invalid({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
+    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] }, 'supported surface');
+    invalid({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+  });
+  it('rejects ridge primitives with zero width or no non-zero segment', () => {
+    const ridge = {
+      kind: 'ridge',
+      points: [
+        [2, 2],
+        [4, 2],
+      ],
+      rise: 1,
+      width: 1,
+    };
+    expect(load({ ...layout, terrain: [ridge] }).issues).toEqual([]);
+    invalid({ ...layout, terrain: [{ ...ridge, width: 0 }] }, 'Invalid value');
+    invalid(
+      {
+        ...layout,
+        terrain: [
+          {
+            ...ridge,
+            points: [
+              [2, 2],
+              [2, 2],
+            ],
+          },
+        ],
+      },
+      'non-zero segment',
+    );
+  });
+  it('rejects hill primitives with non-positive radius or rise', () => {
+    const hill = { kind: 'hill', centre: [2, 2], radii: [1, 1], rise: 1 };
+    expect(load({ ...layout, terrain: [hill] }).issues).toEqual([]);
+    invalid({ ...layout, terrain: [{ ...hill, radii: [0, 1] }] }, 'Invalid value');
+    invalid({ ...layout, terrain: [{ ...hill, rise: -1 }] }, 'Invalid value');
   });
   it('rejects an unknown building template', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], template: 'missing' }] }, 'no template');
@@ -122,6 +168,81 @@ describe('authored layout acceptance', () => {
   it('rejects a layout that shadows a built-in site', () => {
     invalid({ ...layout, id: 'hamlet' }, 'reserved built-in site id');
   });
+});
+
+it('grounds the exported ridge lots, track and slope trees with order-independent overlapping profiles', () => {
+  const ridge = (
+    JSON.parse(readFileSync('src/content/base/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
+  ).layouts[0]!;
+  expect(buildRegistry(base).issues).toEqual([]);
+  expect(ridge.buildings.map((building) => building.position[1])).toEqual([31, 31, 30.5]);
+  expect(ridge.player.position).toEqual([64, 21.5, 20]);
+  for (const building of ridge.buildings) {
+    expect(building.position[1]).toBe(
+      defaultFoundation(ridge, buildingBounds(building, registry.templates.get(building.template)!.size)),
+    );
+  }
+  const site = new AuthoredSite(73, registry, scale, ridge);
+  const reversed = new AuthoredSite(73, registry, scale, {
+    ...ridge,
+    terrain: [...ridge.terrain].reverse(),
+    buildings: [...ridge.buildings].reverse(),
+  });
+  expect(profileHeight(ridge, 64, 90)).toBe(31);
+  expect(
+    profileHeight(
+      { ...ridge, terrain: [ridge.terrain[0]!, { kind: 'hill', centre: [64, 90], radii: [10, 10], rise: 3 }] },
+      64,
+      90,
+    ),
+  ).toBe(31); // overlaps take max, not summed heights
+  expect(profileHeight(ridge, 64, 20)).toBe(21);
+  expect(site.surface.height(128, 160, 42)).toBeGreaterThan(site.surface.height(128, 80, 42));
+  expect(site.surface.top(128, 160)).toBe(registry.blockIds.get('dirt'));
+  expect(standingHeight(ridge, [], 64, 20)).toBe(ridge.player.position[1]);
+  expect(site.trees.length).toBeGreaterThan(0);
+  expect(new Set(site.trees.map((t) => t.origin[1])).size).toBeGreaterThan(1);
+  for (const tree of site.trees) {
+    const [x, y, z] = tree.origin;
+    expect(y).toBe(site.surface.height(x, z, 42) + 1);
+  }
+  const columns: [number, number][] = [
+    [3, 4],
+    [4, 4],
+    [3, 5],
+    [4, 5],
+  ];
+  const generate = (owner: AuthoredSite, order: [number, number][]) => {
+    const world = new World();
+    for (const [cx, cz] of order) {
+      for (const chunk of generateColumn(
+        {
+          seed: 73,
+          scale,
+          blocks: {
+            grass: registry.blockIds.get('grass')!,
+            dirt: registry.blockIds.get('dirt')!,
+            stone: registry.blockIds.get('stone')!,
+            sand: registry.blockIds.get('sand')!,
+          },
+          surface: owner.surface,
+          stamp: (written) => owner.stamp(written),
+        },
+        cx,
+        cz,
+      )) {
+        world.addChunk(chunk);
+      }
+    }
+    return world;
+  };
+  const a = generate(site, columns);
+  const b = generate(reversed, [...columns].reverse());
+  for (const [key, chunk] of a.chunks) {
+    expect(Buffer.from(chunk.toArray().buffer).equals(Buffer.from(b.chunks.get(key)!.toArray().buffer)), key).toBe(
+      true,
+    );
+  }
 });
 
 it('keeps adjacent different-elevation lots and their aprons independent of building order', () => {

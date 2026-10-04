@@ -21,8 +21,6 @@ export interface Rect {
   z1: number;
 }
 
-export const smoothstep = (t: number): number => t * t * (3 - 2 * t);
-
 /** Blocks from a column to a rectangle; 0 inside. */
 export const rectDistance = (r: Rect, x: number, z: number): number => {
   const dx = x < r.x0 ? r.x0 - x : Math.max(0, x - (r.x1 - 1));
