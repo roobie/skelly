@@ -1,3 +1,8 @@
+---
+read_if:
+  - you're changing game audio or its relationship to simulation events
+---
+
 # deadvox — design
 
 The core design of the game: what it is, and the systems it's made of. Read it
@@ -702,16 +707,18 @@ decoration.
   [Combat and noise](#combat-and-noise)) also play as positional sounds, with
   occlusion shared by the player's hearing and zombie hearing.
 - **A shambler's presence should be audible even when it stands still.** It
-  should sometimes moan or groan so the player can hear that one is there. Today
-  `shambler_idle` provides an occasional groan while idling or strolling (three
-  variants). A richer idle-presence set—more variants, breathing, shuffling in
-  place, and rate/loudness shaped by state—is future work, not part of the
-  current footsteps change.
+  should sometimes moan or groan so the player can hear that one is there.
+  `shambler_idle` provides an occasional groan while idling or strolling. Each
+  shambler's vocals and body-made sounds shift lower with its realized body
+  height, so larger figures sound heavier and the runner/brute templates inherit
+  the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, clamps this
+  effect because size variation should be perceptible without making figures
+  sound cartoonish. This changes playback only, never hearing or simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   three moving shamblers emit footsteps at once. The MVP reuses pitched-down
-  player footstep recordings as an explicit stand-in. Other shambler cues can
-  follow later; the current change adds footsteps only.
+  player footstep recordings as an explicit stand-in; body size also shifts
+  their playback pitch.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory
   (zips, cans), and heavy breathing when stamina is low. You hear how much
   noise you're making.
