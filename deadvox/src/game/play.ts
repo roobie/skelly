@@ -760,9 +760,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!entities.defOf(entity).door) {
       return undefined;
     }
-    const heldKey = [inventory.hands.right, inventory.hands.left].find(
-      (item) => item && registry.items.get(item.type)?.key,
+    const heldKeys = [inventory.hands.right, inventory.hands.left].filter(
+      (item): item is Item => item !== undefined && registry.items.get(item.type)?.key !== undefined,
     );
+    const heldKey =
+      heldKeys.find((item) => registry.items.get(item.type)?.key?.lock === entity.lock?.id) ?? heldKeys[0];
     const keyLock = heldKey && registry.items.get(heldKey.type)?.key?.lock;
     if (keyLock === undefined) {
       return undefined;
@@ -906,12 +908,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         return;
       case 'noop':
         return;
+      case 'key':
+        activateKey(action.item);
+        return;
       case 'none':
-        if (registry.items.get(action.item.type)?.key) {
-          activateKey(action.item);
-        } else {
-          showNotice(primaryActionHint(registry, action.item));
-        }
+        showNotice(primaryActionHint(registry, action.item));
         return;
       default: {
         const unhandled: never = action;
