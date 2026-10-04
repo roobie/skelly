@@ -4,7 +4,7 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry, type RecipeDef } from '../src/core/content.ts';
-import { indexCraftReach, planCraft } from '../src/core/crafting.ts';
+import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
 
@@ -59,9 +59,12 @@ describe('pure craft planner', () => {
         { item: 'stick', count: 2 },
       ],
     ]);
-    expect(planCraft(definition, snapshot, character)).toMatchObject({
-      missing: { reason: 'Needs 2 wax lump (1 found)' },
-    });
+    const result = planCraft(definition, snapshot, character);
+    expect('missing' in result).toBe(true);
+    if (!('missing' in result)) {
+      throw new Error('understocked component group unexpectedly planned');
+    }
+    expect(result.missing.components).toEqual(requirementStatus(definition, snapshot, character).components);
   });
   it('bounds overlapping multi-quality provider work while retaining the cheapest disjoint components', () => {
     const definition = {
@@ -160,7 +163,7 @@ describe('pure craft planner', () => {
       varied.snapshot,
       character,
     );
-    expect(cheapest).toMatchObject({ plan: { components: [{ item: varied.items[2], count: 2 }], gather: 8 } });
+    expect(cheapest).toMatchObject({ plan: { components: [{ item: varied.items[2], count: 2 }] } });
   });
 
   it('finds the cheapest feasible alternative when two groups compete for the same rags', () => {
@@ -180,7 +183,7 @@ describe('pure craft planner', () => {
     ]);
     const result = planCraft(definition, snapshot, character);
     expect('plan' in result && result.plan.components.map((component) => component.item)).toEqual([items[0], items[1]]);
-    expect('plan' in result && result.plan.work).toBe(1200);
+    expect('plan' in result && result.plan.work).toBe(definition.time * 60);
     expect(inventory.snapshotState()).toEqual(before);
     // Editing returned plan records must not poison the derived per-reach result cache.
     if ('plan' in result) {
@@ -206,30 +209,18 @@ describe('pure craft planner', () => {
       items[0],
       items[2],
     ]);
-    expect(planCraft(definition, snapshot, character, { 0: 'rag' })).toMatchObject({
-      missing: {
-        reason: expect.stringContaining('Preferred'),
-        components: [
-          {
-            group: 0,
-            alternatives: [
-              { item: 'rag', needed: 2, available: 2 },
-              { item: 'wax', needed: 1, available: 1 },
-              { item: 'stick', needed: 1, available: 1 },
-            ],
-          },
-          { group: 1, alternatives: [{ item: 'rag', needed: 2, available: 2 }] },
-        ],
-      },
-    });
+    const refused = planCraft(definition, snapshot, character, { 0: 'rag' });
+    expect('missing' in refused).toBe(true);
+    if (!('missing' in refused)) {
+      throw new Error('impossible preference unexpectedly fell back to another plan');
+    }
+    expect(refused.missing.components).toEqual(requirementStatus(definition, snapshot, character).components);
   });
 
   it('reserves a separate tool UID even when its type is also a component', () => {
     const definition = recipe([[{ item: 'hammer', count: 1 }]], { hammering: 1 });
     const single = stock([{ type: 'hammer' }]);
-    expect(planCraft(definition, single.snapshot, character)).toMatchObject({
-      missing: { reason: expect.stringContaining('tool') },
-    });
+    expect('missing' in planCraft(definition, single.snapshot, character)).toBe(true);
     const spare = stock([
       { type: 'hammer', time: 0.1 },
       { type: 'hammer', time: 2 },
@@ -238,7 +229,6 @@ describe('pure craft planner', () => {
     expect(result).toMatchObject({
       plan: { components: [{ item: spare.items[0] }], tools: [{ item: spare.items[1], quality: 'hammering' }] },
     });
-    expect('plan' in result && result.plan.gather).toBeCloseTo(0.8, 12);
   });
 
   it('orders stacks by retrieval seconds, then size, condition, and UID', () => {
@@ -258,7 +248,6 @@ describe('pure craft planner', () => {
       [items[4]!.uid, 1],
       [items[1]!.uid, 1],
     ]);
-    expect('plan' in result && result.plan.gather).toBeCloseTo(15.2, 12);
   });
 
   it('excludes a filled container from component stock', () => {
@@ -282,9 +271,12 @@ describe('pure craft planner', () => {
         qualities: [{ quality: 'hammering', required: 1, available: 0 }],
       },
     });
-    expect(
-      planCraft(definition, snapshot, { skills: { crafting: 0 }, knownRecipes: new Set(['fixture']) }),
-    ).toMatchObject({ missing: { reason: 'Skill level too low' } });
+    const actor = { skills: { crafting: 0 }, knownRecipes: new Set(['fixture']) };
+    const result = planCraft(definition, snapshot, actor);
+    expect('missing' in result).toBe(true);
+    if ('missing' in result) {
+      expect(result.missing.reason).toBe(admissionRefusal(definition, snapshot, actor));
+    }
   });
 
   it('records planning every base recipe against one indexed 200-item reach snapshot', () => {

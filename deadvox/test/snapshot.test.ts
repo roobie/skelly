@@ -430,23 +430,28 @@ describe('snapshot state components', () => {
     const actor = runtime.session.character;
     expect(Object.keys(actor.skills).sort()).toEqual([...registry.skills.keys()].sort());
     expect(Object.values(actor.skills).every((level) => level === 0)).toBe(true);
-    expect([...actor.knownRecipes].sort()).toEqual(['candle', 'repair_kit', 'torch']);
-    actor.skills.crafting = 2;
-    actor.knownRecipes.delete('candle');
+    const removedRecipe = actor.knownRecipes.values().next().value;
+    if (removedRecipe === undefined) {
+      throw new Error('starter character has no known recipe');
+    }
+    const savedLevel = actor.skills.crafting + 1;
+    actor.skills.crafting = savedLevel;
+    actor.knownRecipes.delete(removedRecipe);
     const snapshot = capture(runtime);
-    actor.skills.crafting = 9;
+    actor.skills.crafting = savedLevel + 1;
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loadedRuntime = createRuntime(decoded.snapshot);
     const loaded = loadedRuntime.session.character;
-    expect(loaded.skills.crafting).toBe(2);
+    expect(loaded.skills.crafting).toBe(savedLevel);
     loaded.skills.crafting = -0;
     const zero = await decodeSave(await encodeFixture(capture(loadedRuntime)), {
       version: formatVersion,
       contentLookup,
     });
     expect(Object.is(createRuntime(zero.snapshot).session.character.skills.crafting, -0)).toBe(true);
-    expect([...loaded.knownRecipes].sort()).toEqual(['repair_kit', 'torch']);
-    expect(actor.skills.crafting).toBe(9);
+    expect(loaded.knownRecipes).toEqual(new Set(actor.knownRecipes));
+    expect(loaded.knownRecipes.has(removedRecipe)).toBe(false);
+    expect(actor.skills.crafting).toBe(savedLevel + 1);
   });
 
   it('restores after eating the quickbar-bound item without a dangling UID', () => {

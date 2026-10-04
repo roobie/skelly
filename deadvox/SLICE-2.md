@@ -366,6 +366,8 @@ component closure and the count, and the rejections are tested.
 
 ### 2.4 The planner and crafting
 
+Decided (BR, 2026-10-04): the crafting panel is approved as a first version; expect many iterations.
+
 **Reachability hand-off:** starting knowledge must turn 2.3's pending knowledge
 class into a hard source check; update the pinned pending-class test deliberately.
 

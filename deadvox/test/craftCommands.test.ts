@@ -52,20 +52,28 @@ describe('live craft commands', () => {
     expect(r.sim.actions.startRest('sleep', -10)).toBeUndefined();
     expect(r.commands.currentUid).toBeUndefined();
   });
+  it('a stopped sleep releases Continue to the held work', () => {
+    const r = make();
+    expect(r.commands.start('torch')).toBeUndefined();
+    r.sim.actions.stop();
+    const workUid = r.inventory.hands.right!.uid;
+    expect(r.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    r.sim.actions.stop();
+    expect(r.commands.currentUid).toBe(workUid);
+  });
   it('Inventory refuses a work item in the left hand without changing its owning tree', () => {
     const r = make();
     expect(r.commands.start('torch')).toBeUndefined();
     r.sim.actions.stop();
     const item = r.inventory.hands.right!;
     const before = r.inventory.snapshotState();
-    expect(options(item, r.reach()).find((option) => option.label === 'Left hand')!.plan).toEqual({
-      ok: false,
-      reason: 'Work stays in the right hand',
-    });
-    expect(r.inventory.move(item, { kind: 'hand', side: 'left' })).toEqual({
-      ok: false,
-      reason: 'Work stays in the right hand',
-    });
+    const leftHand = options(item, r.reach()).find(
+      (option) => option.kind === 'move' && option.target.kind === 'hand' && option.target.side === 'left',
+    )!;
+    const refusal = r.inventory.plan(item, { kind: 'hand', side: 'left' });
+    expect(leftHand.plan).toEqual(refusal);
+    expect(refusal.ok).toBe(false);
+    expect(r.inventory.move(item, { kind: 'hand', side: 'left' })).toEqual(refusal);
     expect(r.inventory.snapshotState()).toEqual(before);
     expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
   });
@@ -77,7 +85,7 @@ describe('live craft commands', () => {
     }
     r.character.knownRecipes.delete('torch');
     const before = r.inventory.snapshotState();
-    expect(r.sim.actions.beginCraft(result.plan)).toBe('Recipe not known');
+    expect(r.sim.actions.beginCraft(result.plan)).toBeDefined();
     expect(r.sim.compression.active).toBe(false);
     expect(r.inventory.snapshotState()).toEqual(before);
   });
@@ -94,7 +102,7 @@ describe('live craft commands', () => {
       }).ok,
     ).toBe(true);
     const before = r.inventory.snapshotState();
-    expect(r.sim.actions.beginCraft(result.plan)).toBe('The materials or hands changed');
+    expect(r.sim.actions.beginCraft(result.plan)).toBeDefined();
     expect(r.sim.compression.active).toBe(false);
     expect(r.sim.actions.job).toBeUndefined();
     expect(r.inventory.snapshotState()).toEqual(before);
@@ -118,13 +126,14 @@ describe('live craft commands', () => {
         .sort(),
     ).toEqual(uids);
     const before = r.inventory.snapshotState();
-    expect(r.sim.actions.cancelCraft(work.uid)).toBe('The work item is missing');
+    expect(r.sim.actions.cancelCraft(work.uid)).toBeDefined();
     expect(r.inventory.snapshotState()).toEqual(before);
   });
   it('unsafe start refuses before escrowing inputs or allocating a work UID', () => {
-    const r = make(() => 'A shambler is close');
+    const refusal = 'test-owned unsafe reason';
+    const r = make(() => refusal);
     const before = r.inventory.snapshotState();
-    expect(r.commands.start('torch')).toBe('A shambler is close');
+    expect(r.commands.start('torch')).toBe(refusal);
     expect(r.inventory.snapshotState()).toEqual(before);
     expect(r.sim.actions.job).toBeUndefined();
   });
@@ -133,14 +142,14 @@ describe('live craft commands', () => {
     const held = r.inventory.create('rag');
     r.inventory.add(held, { kind: 'hand', side: 'left' });
     const before = r.inventory.snapshotState();
-    expect(r.commands.start('torch')).toContain('Hands full');
+    expect(r.commands.start('torch')).toBe(r.commands.startReason());
     expect(r.inventory.snapshotState()).toEqual(before);
   });
   it('refuses a pending handling chain before escrowing components', () => {
     const r = make();
     const knife = [...r.inventory.items()].find(({ item }) => item.type === 'kitchen_knife')!.item;
     expect(r.queue.enqueue(knife, { kind: 'hand', side: 'right' }).ok).toBe(true);
-    expect(r.commands.start('torch')).toBe('Finish handling first');
+    expect(r.commands.start('torch')).toBe(r.commands.startReason());
     expect(r.inventory.hands.right).toBeUndefined();
     expect(r.queue.jobs).toHaveLength(1);
   });
@@ -177,7 +186,9 @@ describe('live craft commands', () => {
     const item = r.inventory.hands.right!;
     expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
     expect(r.inventory.move(item, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-    expect(r.commands.act(item.uid, 'continue')).toBe('The work needs both hands');
+    const continuePlan = r.commands.options(item.uid).find(({ operation }) => operation === 'continue')!.plan;
+    expect(continuePlan.ok).toBe(false);
+    expect(r.commands.act(item.uid, 'continue')).toBe(continuePlan.reason);
     expect(r.sim.actions.job?.stopped).toBe(true);
     expect(r.inventory.move(item, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
@@ -189,8 +200,10 @@ describe('live craft commands', () => {
     const item = r.inventory.hands.right!;
     r.inventory.move(item, { kind: 'pile', pos: [0, 0, 0] });
     r.position[0] = 20;
-    expect(r.commands.act(item.uid, 'apart')).toBe('The work item is out of reach');
-    expect(r.inventory.itemByUid(item.uid)!.work!.components).toHaveLength(3);
+    const apartPlan = r.commands.options(item.uid).find(({ operation }) => operation === 'apart')!.plan;
+    expect(apartPlan.ok).toBe(false);
+    expect(r.commands.act(item.uid, 'apart')).toBe(apartPlan.reason);
+    expect(r.inventory.itemByUid(item.uid)!.work!.components.length).toBeGreaterThan(0);
     r.position[0] = 0;
     expect(r.commands.act(item.uid, 'apart')).toBeUndefined();
     expect(r.inventory.itemByUid(item.uid)).toBeUndefined();

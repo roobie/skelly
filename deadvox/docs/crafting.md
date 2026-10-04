@@ -113,8 +113,9 @@ requirements, not stale saved provider references. Stop preserves elapsed work;
 Continue resets only the active-time cursor so stopped time is not charged. A
 running craft refuses rest with `Stop crafting first`; rest/sleep may replace a
 stopped descriptor, since progress still belongs to the work item. C and the
-status panel use the same native Continue UID: an existing rest/sleep job takes
-precedence over held work, and only no job permits the held-work fallback.
+status panel use the same native Continue UID: a live or interrupted rest/sleep
+job takes precedence over held work; a stopped rest/sleep job leaves Continue to
+the held work.
 Terminal state is cleared before effects; finish consumes escrow once and puts
 the result in the freed hand, while cancel returns exact input UIDs/counts without
 stack merging. The five ordinary `dropSpots` are shared with craft retirement;

@@ -40,8 +40,11 @@ export class CraftCommands {
   }
   get currentUid(): number | undefined {
     const { job } = this.sim.actions;
-    if (job) {
-      return job.jobType === 'craft' ? job.workUid : undefined;
+    if (job?.jobType === 'craft') {
+      return job.workUid;
+    }
+    if (this.sim.actions.rest) {
+      return undefined;
     }
     const { right } = this.inventory.hands;
     return right?.work ? right.uid : undefined;

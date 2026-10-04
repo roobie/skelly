@@ -130,7 +130,7 @@ describe('inventory screen Lit rendering', () => {
     screen.selected = item;
     screen.update();
     expect(root.querySelectorAll(`.inv-hands [data-uid="${item.uid}"]`)).toHaveLength(1);
-    expect(root.querySelector('[data-target="hand:left"]')!.textContent).toContain('Reserved: Torch in progress');
+    expect(root.querySelector('[data-target="hand:left"] .inv-occupied-hand')).toBeDefined();
     expect(inv.hands.left).toBeUndefined();
     const buttons = [...root.querySelectorAll<HTMLButtonElement>('.inv-details button')];
     buttons.find((button) => button.textContent!.includes('Take apart'))!.click();

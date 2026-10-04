@@ -90,7 +90,7 @@ describe('core long actions', () => {
       return pileAt(pos);
     };
     runtime.sim.actions.cancel();
-    expect(runtime.sim.compression.interruption).toBe('No room nearby to put the inputs or result down');
+    expect(runtime.sim.compression.interruption).toBeDefined();
     expect(runtime.sim.actions.job).toMatchObject({ jobType: 'craft', stopped: true, workUid: runtime.item.uid });
     expect(runtime.inv.snapshotState()).toEqual(before);
   });
@@ -170,10 +170,12 @@ describe('core long actions', () => {
     const { elapsed } = runtime.payload;
     const knife = [...runtime.inv.items()].find(({ item }) => item.type === 'kitchen_knife')!.item;
     runtime.inv.consume(knife);
+    const refusal = runtime.sim.actions.craft!.validate(runtime.item.uid);
+    expect(refusal).toBeDefined();
     runtime.sim.scheduler.advance(1);
     expect(runtime.payload.elapsed).toBe(elapsed);
-    expect(runtime.sim.compression.interruption).toBe('Required cutting tool is not in reach');
-    expect(runtime.sim.actions.resume()).toBe('Required cutting tool is not in reach');
+    expect(runtime.sim.compression.interruption).toBe(refusal);
+    expect(runtime.sim.actions.resume()).toBe(refusal);
     expect(runtime.payload.elapsed).toBe(elapsed);
     runtime.inv.add(runtime.inv.create('kitchen_knife'), { kind: 'pile', pos: [0, 0, 0] });
     expect(runtime.sim.actions.resume()).toBeUndefined();

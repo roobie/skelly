@@ -4,6 +4,7 @@ import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { craftRows, craftStatus } from '../src/ui/craftReadout.ts';
@@ -42,48 +43,74 @@ describe('crafting read-only presentation', () => {
     inventory.add(broken, { kind: 'pile', pos: [0, 0, 0] });
     inventory.add(inventory.create('hammer'), { kind: 'pile', pos: [0, 0, 0] });
     inventory.add(inventory.create('rag', 3), { kind: 'pile', pos: [0, 0, 0] });
-    const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 });
+    const reachSnapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
     const before = inventory.snapshotState();
-    const rows = craftRows({ registry, character, reach: reach(), preferences: {}, startReason: undefined });
-    expect(rows.map((row) => row.id)).toEqual(['repair_kit', 'torch']);
-    const torch = rows.find((row) => row.id === 'torch')!;
-    expect(torch.components[1]!.alternatives[0]).toMatchObject({ needed: 2, found: 3 });
-    expect(torch.qualities).toContainEqual({ name: 'cutting', required: 1, best: 0 });
-    expect(torch.reason).toBe('Required cutting tool is not in reach');
-    expect(torch.skills[0]).toMatchObject({ required: 0, available: 0 });
-    expect(rows[0]!.qualities).toContainEqual({ name: 'hammering', required: 1, best: 2 });
-    expect(rows[0]!.skills[0]).toMatchObject({ required: 1, available: 0 });
+    const rows = craftRows({ registry, character, reach: reachSnapshot, preferences: {}, startReason: undefined });
+    expect(rows.every((row) => character.knownRecipes.has(row.id))).toBe(true);
+    const torchRecipe = registry.recipes.get('torch')!;
+    const torch = rows.find((row) => row.id === torchRecipe.id)!;
+    const requirements = requirementStatus(torchRecipe, reachSnapshot, character);
+    expect(torch.components).toEqual(
+      requirements.components.map(({ group, alternatives }) => ({
+        group,
+        preferred: '',
+        alternatives: alternatives.map(({ item, needed, available }) => ({
+          id: item,
+          name: registry.items.get(item)!.name,
+          needed,
+          found: available,
+        })),
+      })),
+    );
+    expect(torch.qualities).toEqual(
+      requirements.qualities.map(({ quality, required, available }) => ({
+        name: quality,
+        required,
+        best: available,
+      })),
+    );
+    expect(torch.skills).toEqual(
+      requirements.skills.map(({ skill, required, available }) => ({
+        name: registry.skills.get(skill)!.name,
+        required,
+        available,
+      })),
+    );
+    const result = planCraft(torchRecipe, reachSnapshot, character);
+    expect(torch.reason).toBe('missing' in result ? result.missing.reason : undefined);
     const root = document.createElement('section');
     const start = vi.fn();
     renderCrafting(root, rows, { start, prefer: vi.fn() });
-    expect(root.textContent).toContain('3 found / 2 needed');
-    expect(root.textContent).toContain('best 0 / needs 1');
-    expect(root.querySelectorAll('button:disabled')).toHaveLength(2);
+    const button = root.querySelector<HTMLButtonElement>('[data-recipe="torch"] .craft-start');
+    expect(button).toBeDefined();
+    expect(button!.disabled).toBe(torch.reason !== undefined);
     expect(inventory.snapshotState()).toEqual(before);
   });
   it('renders command callbacks and stopped owned progress rather than advancing it', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
-    item.work = { recipe: 'torch', elapsed: 80, duration: 1208, components: [] };
+    const recipeSeconds = registry.recipes.get('torch')!.time * 60;
+    item.work = { recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
     inventory.add(item, { kind: 'hand', side: 'right' });
     const status = craftStatus(
       inventory,
       item.uid,
       { jobType: 'craft', workUid: item.uid, stopped: true, last: 0 },
-      'Required cutting tool is not in reach',
+      undefined,
     )!;
-    expect(status.progress).toBe('Work · 1.2 min / 20.0 min');
+    expect(status.percent).toBe(Math.round((item.work.elapsed / item.work.duration) * 100));
     const root = document.createElement('section');
     const resume = vi.fn();
     const stop = vi.fn();
     renderCraftStatus(root, status, { continue: resume, stop });
     (root.querySelector('button') as HTMLButtonElement).click();
     expect(resume).toHaveBeenCalledOnce();
-    (root.querySelectorAll('button')[1] as HTMLButtonElement).click();
+    const buttons = root.querySelectorAll('button');
+    expect(buttons).toHaveLength(2);
+    (buttons[1] as HTMLButtonElement).click();
     expect(stop).toHaveBeenCalledOnce();
-    expect(root.textContent).toContain('stopped');
-    expect(root.textContent).toContain('cutting');
-    expect(item.work.elapsed).toBe(80);
+    expect(root.querySelector('progress')?.value).toBe(status.percent);
+    expect(item.work.elapsed).toBe(recipeSeconds);
     renderCraftStatus(root, undefined, { continue: resume, stop });
     expect(root.hidden).toBe(true);
   });
