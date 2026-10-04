@@ -72,6 +72,8 @@ export const SIMULATION_EXCLUSIONS = [
   // What the mesher reads from the world (block arrays copied out of chunks) and its helpers: presentation only.
   'src/core/meshInput.ts',
   'src/core/occlusion.ts',
+  // Diffuse sky visibility only; does not change movement, sight, hearing or saved world state.
+  'src/core/skylight.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
   // WebAudio output/voice allocation is presentation; session admission and saved SoundPicker remain fingerprinted.

@@ -15,7 +15,8 @@ import {
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { findPieces, pieceSize } from './templates.ts';
+import { templateSpatialIssues } from './templateSpatial.ts';
+import { compileTemplate, findPieces, pieceSize } from './templates.ts';
 
 export type {
   BlockDef,
@@ -323,6 +324,19 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   return found;
 };
 
+const checkTemplateSpace = (registry: Registry, template: TemplateDef, report: Report) => {
+  const resolvable = Object.values(template.palette).every((entry) =>
+    typeof entry === 'string'
+      ? registry.blockIds.has(entry)
+      : entry.furniture === undefined || registry.furniture.has(entry.furniture),
+  );
+  if (template.access && resolvable) {
+    for (const [path, message] of templateSpatialIssues(registry, compileTemplate(registry, template))) {
+      report('templates', template.id, path, message);
+    }
+  }
+};
+
 const checkTemplates = (registry: Registry, report: Report) => {
   for (const template of registry.templates.values()) {
     for (const [char, entry] of Object.entries(template.palette)) {
@@ -335,6 +349,7 @@ const checkTemplates = (registry: Registry, report: Report) => {
         report('templates', template.id, at, `no block "${entry}"`);
       }
     }
+    checkTemplateSpace(registry, template, report);
   }
 };
 

@@ -10,6 +10,7 @@ import type { SiteLayoutDef } from './schema.ts';
 import { furnitureOf, grow, type Rect, rectDistance, type Site, smoothstep, type ZombieSpawn } from './site.ts';
 import {
   compileTemplate,
+  footprint,
   type Placement,
   placedSpawns,
   stackTemplate,
@@ -30,6 +31,7 @@ export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
+  readonly skyBounds: NonNullable<Site['skyBounds']>;
   readonly trees: readonly TreePlacement[];
   private readonly spawns: readonly ZombieSpawn[];
   private readonly treeIndex: TreeIndex;
@@ -56,14 +58,28 @@ export class AuthoredSite implements Site {
         key: `${building.template}:${building.position.join(',')}:${building.rotation}`,
       };
     });
-    this.placements = layout.buildings.map((building) => ({
-      template: stackTemplate(
+    this.placements = layout.buildings.map((building) => {
+      const template = stackTemplate(
         compileTemplate(registry, registry.templates.get(building.template)!),
         building.storeys ?? 1,
-      ),
-      origin: blocks(building.position),
-      turn: (building.rotation / 90) as Turn,
-    }));
+      );
+      const origin = blocks(building.position);
+      origin[1] -= template.groundLayer ?? 0;
+      return { template, origin, turn: (building.rotation / 90) as Turn };
+    });
+    this.skyBounds = this.placements
+      .filter((placement) => (placement.template.groundLayer ?? 0) > 0)
+      .map((placement) => {
+        const [w, d] = footprint(placement);
+        return {
+          min: [...placement.origin] as Vec3,
+          max: [
+            placement.origin[0] + w,
+            placement.origin[1] + placement.template.size[1],
+            placement.origin[2] + d,
+          ] as Vec3,
+        };
+      });
     this.spawn = { pos: [...layout.player.position], yaw: (layout.player.yaw * Math.PI) / 180 };
     const height = (x: number, z: number, natural: number): number => {
       // A containing footprint wins (distance zero); otherwise nearest footprint, stable-key ties.
