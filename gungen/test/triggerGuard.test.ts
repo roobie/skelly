@@ -34,6 +34,7 @@ describe('trigger guards', () => {
   // Measured about 3.3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.
   it('guards the trigger volume in every fixture and design', { timeout: 20_000 }, () => {
     const corpus = loadCorpus();
+    expect(corpus.length).toBeGreaterThan(0);
     for (const { label, assembly } of corpus) {
       const report = validate(assembly, gunDomain);
       const triggerOwners = [...report.resolved.defs].filter(([, def]) =>

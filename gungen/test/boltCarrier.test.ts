@@ -919,7 +919,9 @@ describe('procedural bolt carrier', () => {
     expect(port.actualX).toEqual(port.expectedX);
     expect(port.actualY).toEqual(port.expectedY);
     expect(noCarrierReceiverIntersectionsOverTravel(resolved)).toBe(true);
-    for (const progress of [0, travel / 2, travel]) {
+    const travelSteps = Math.max(1, Math.round(travel * 4));
+    for (let step = 0; step <= travelSteps; step += 1) {
+      const progress = (travel * step) / travelSteps;
       const moving = compose(transform, translation([progress, 0, 0]));
       for (const wall of tubeWalls) {
         expect(
@@ -966,9 +968,11 @@ describe('procedural bolt carrier', () => {
   it('keeps the pistol ejection aperture nonempty and inside the slide envelope', () => {
     expect(EJECTION_PORT_MARGIN_U).toBeGreaterThan(0);
     const slide = FAMILIES.slide!.build({ bore: 'M', length: 'M' });
-    const portPoints = slide.solids.filter(({ id }) => id.startsWith('ejection-port-')).flatMap(corners);
+    const portSolids = slide.solids.filter(({ id }) => id.startsWith('ejection-port-'));
+    const portPoints = portSolids.flatMap(corners);
+    expect(portPoints.length).toBeGreaterThan(0);
     const portBounds = limits(portPoints);
-    const slideBounds = limits(slide.solids.flatMap(corners));
+    const slideBounds = limits(slide.solids.filter(({ id }) => !id.startsWith('ejection-port-')).flatMap(corners));
     expect(portBounds[0]![0]!).toBeGreaterThanOrEqual(slideBounds[0]![0]!);
     expect(portBounds[0]![1]!).toBeLessThanOrEqual(slideBounds[0]![1]!);
     expect(portBounds[1]![0]!).toBeGreaterThanOrEqual(slideBounds[1]![0]!);
@@ -994,9 +998,11 @@ describe('procedural bolt carrier', () => {
     const receiverSolids = receiver.solids.map((solid) => worldSolid(resolved.placed.get('receiver')!, solid));
     const tubeSolids = tube.solids.map((solid) => worldSolid(resolved.placed.get('tube')!, solid));
     const barrelSolids = barrel.solids.map((solid) => worldSolid(resolved.placed.get('barrel')!, solid));
-    const travelSamples = [0, carrierMotion.end[0] / 2, carrierMotion.end[0]];
+    const travel = carrierMotion.end[0];
+    const travelSteps = Math.max(1, Math.round(travel * 4));
 
-    for (const progress of travelSamples) {
+    for (let step = 0; step <= travelSteps; step += 1) {
+      const progress = (travel * step) / travelSteps;
       const carrierAt = compose(carrierTransform, translation([progress, 0, 0]));
       const forendProgress = progress / carrierMotion.end[0];
       const forendAt = compose(

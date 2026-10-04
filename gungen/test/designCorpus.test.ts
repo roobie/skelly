@@ -117,7 +117,7 @@ describe('published design corpus', () => {
   it('the publish check passes the corpus', () => {
     const result = checkDesignFiles(designFiles().map((file) => join(DESIGNS, file)));
     expect(result.exitCode).toBe(0);
-    expect(result.lines.length).toBeGreaterThan(0);
+    expect(result.lines).toHaveLength(designFiles().length);
     expect(result.lines.every((line) => line.startsWith('PASS '))).toBe(true);
   });
 

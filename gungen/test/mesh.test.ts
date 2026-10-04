@@ -206,11 +206,11 @@ describe('watertightness (welded at 1e-5u)', () => {
   });
 
   it('culls nested pieces from exterior faces and preserves closed union boundaries', () => {
-    const nested = meshForSolidGroup([
-      { id: 'outer', kind: 'box', box: { center: [0, 0, 0], half: [2, 2, 2] } },
-      { id: 'inner', kind: 'box', box: { center: [0, 0, 0], half: [1, 1, 1] } },
-    ]);
-    expectWatertightMesh(nested, 'nested boxes');
+    const outer = { id: 'outer', kind: 'box' as const, box: { center: [0, 0, 0] as const, half: [2, 2, 2] as const } };
+    const inner = { id: 'inner', kind: 'box' as const, box: { center: [0, 0, 0] as const, half: [1, 1, 1] as const } };
+    const nested = meshForSolidGroup([outer, inner]);
+    const volume = expectWatertightMesh(nested, 'nested boxes');
+    expect(volume).toBeCloseTo(8 * outer.box.half[0] * outer.box.half[1] * outer.box.half[2], 6);
   });
 
   it('merges coincident, overlapping, and T-junction box groups into closed boundaries', () => {

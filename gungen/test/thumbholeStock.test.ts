@@ -119,6 +119,11 @@ describe('thumbhole stock and AWM design', () => {
     const gripX = boundsX(stock.solids.find((solid) => solid.id === 'grip')!);
     const rearX = Math.max(...rearPost.profile.map(([x]) => x));
     expect(gripX[0] - rearX).toBeGreaterThan(0);
+    const bottomBar = stock.solids.find((solid) => solid.id === 'thumbhole-bottom')!;
+    const topBar = stock.solids.find((solid) => solid.id === 'thumbhole-top')!;
+    const openingX = (rearX + gripX[0]) / 2;
+    const openingY = (bounds(bottomBar)[1]![1] + bounds(topBar)[1]![0]) / 2;
+    expect(stock.solids.some((solid) => inside(solid, openingX, openingY, 0))).toBe(false);
     const butt = stock.solids.find((solid) => solid.id === 'butt')!;
     expect(Math.min(...vertices(butt).map(([x]) => x))).toBeLessThan(gripX[0]);
     const grip = stock.solids.find((solid) => solid.id === 'grip')!;

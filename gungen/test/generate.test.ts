@@ -11,12 +11,10 @@ const SEEDS = 300;
 const CHUNK = 25;
 
 describe('seededRng', () => {
-  it('repeats values for the same seed and stays in the unit interval', () => {
-    const first = seededRng(1);
-    const second = seededRng(1);
-    const values = Array.from({ length: 3 }, () => first());
-    expect(values).toEqual(Array.from({ length: 3 }, () => second()));
-    expect(values.every((value) => value >= 0 && value < 1)).toBe(true);
+  // mulberry32's published sequence for seed 1.
+  it('is stable across runs and machines', () => {
+    const rng = seededRng(1);
+    expect([rng(), rng(), rng()].map((value) => value.toFixed(6))).toEqual(['0.627074', '0.002736', '0.527447']);
   });
 });
 
