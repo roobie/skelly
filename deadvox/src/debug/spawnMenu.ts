@@ -4,6 +4,7 @@
 
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
+import { WORK_IN_PROGRESS } from '../core/inventory.ts';
 import { installSearchInputKeyboardBoundary } from './searchInputKeyboard.ts';
 
 const WHITESPACE = /\s+/;
@@ -32,6 +33,7 @@ export const spawnMenuViewModel = (
 ): SpawnMenuViewModel => {
   const words = filter.toLowerCase().split(WHITESPACE).filter(Boolean);
   const items = [...registry.items.values()]
+    .filter((def) => def.id !== WORK_IN_PROGRESS)
     .filter((def) => words.every((w) => `${def.name} ${def.id} ${def.category}`.toLowerCase().includes(w)))
     .sort((a, b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
     .map((def) => ({ id: def.id, name: def.name, meta: `${def.category}${def.model ? ', model' : ''}` }));

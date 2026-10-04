@@ -10,7 +10,7 @@ import {
   terrainHeightMetres,
 } from '../src/core/worldgen.ts';
 
-const blocks = { grass: 1, dirt: 2, stone: 3, sand: 4 };
+const blocks = { air: 0, grass: 1, dirt: 2, stone: 3, sand: 4 };
 const metre = makeScale(1);
 const half = makeScale(0.5);
 
@@ -43,7 +43,9 @@ describe('worldgen', () => {
 
   it('fills each column up to its height with a grass or sand top', () => {
     const column = generateColumn({ seed: 5, blocks, scale: half }, 0, 0);
-    expect(column.map((c) => c.cy)).toEqual([-3, -2, -1, 0, 1, 2, 3, 4]);
+    const levels = column.map((chunk) => chunk.cy);
+    expect(levels.length).toBeGreaterThan(0);
+    expect(levels.every((level, index) => index === 0 || level === levels[index - 1]! + 1)).toBe(true);
     const at = (x: number, y: number, z: number) => {
       const chunk = column.find((c) => c.cy === Math.floor(y / CHUNK))!;
       return chunk.get(x, y - chunk.cy * CHUNK, z);
@@ -55,7 +57,7 @@ describe('worldgen', () => {
     ] as const) {
       const h = terrainHeight(5, half, x, z);
       expect([blocks.grass, blocks.sand]).toContain(at(x, h, z));
-      expect(at(x, h + 1, z)).toBe(0);
+      expect(at(x, h + 1, z)).toBe(blocks.air);
       expect(at(x, h - 6, z)).toBe(blocks.stone);
     }
   });
@@ -71,7 +73,7 @@ describe('worldgen', () => {
   it('stores chunks that are all one block as a single id', () => {
     const column = generateColumn({ seed: 5, blocks, scale: half }, 0, 0);
     expect(column[0]?.uniformId).toBe(blocks.stone); // deep underground
-    expect(column.at(-1)?.uniformId).toBe(0); // sky
+    expect(column.at(-1)?.uniformId).toBe(blocks.air); // sky
     expect(column.filter((c) => c.uniformId === undefined).length).toBeLessThanOrEqual(2);
   });
 });

@@ -165,8 +165,13 @@ const WeaponSchema = strictObject({
   }),
 });
 
-// Capability marker for primary-action dispatch. d15 handles debug shots and spent cases only—no hits or ammo economy.
-const FirearmSchema = strictObject({});
+// Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
+const FirearmSchema = strictObject({ pump: optional(vBoolean()) });
+const AmmoSchema = strictObject({
+  calibre: CalibreId,
+  pellets: pipe(Count, minValue(1), maxValue(64)),
+  diameterMm: Positive,
+});
 
 const LightSchema = strictObject({
   /** Metres it lights up. */
@@ -214,6 +219,9 @@ export const ItemSchema = strictObject({
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
+  ammo: optional(AmmoSchema),
+  /** Sealed, non-container payload: held primary activation opens one package. */
+  unpack: optional(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
   light: optional(LightSchema),
   readable: optional(ReadableSchema),
   battery: optional(BatterySchema),

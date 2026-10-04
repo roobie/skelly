@@ -4,6 +4,9 @@ description: Draft of deadvox's whole verb-to-input map for Slices 1-3, with the
 tags: [deadvox, design, controls, input, ui]
 created: 2026-09-28
 status: draft
+read_if:
+  - you plan or change player or debug input bindings
+  - you review BR's control rulings or unresolved input questions
 ---
 
 # deadvox — controls (draft)
@@ -37,6 +40,48 @@ acting").
 - **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
   ruling: holding left click performs a long use, and releasing it early
   cancels.
+- **Every key can be rebound, from one registry (BR, 2026-10-04):** "we must make
+  it so the player can rebind any keyboard input - this means we need a 100%
+  centralised registry".
+- **Debug keys sit behind F1 (BR, 2026-10-04):** "gating them all behind e.g.
+  holding down F1 then pressing the debug key? Unless some special circumstance
+  for a key need it readily available". This answers open question 6.
+- **No Ctrl or Cmd, ever (BR, 2026-10-04):** "due to the browser being the
+  browser, we cannot use Ctrl or Cmd for anything, ever." This answers open
+  question 2.
+- **Quick actions sit behind a held T (BR, 2026-10-04):** "like with F1 being
+  the debug mod key ... we'd use a non modifier key, like say 'T' as a general
+  quick action mod key", and "hold T+click on item does the quick action (auto
+  move)". T is the default; the gate is rebindable like any other key.
+- **R only reloads (BR, 2026-10-04).** "It shall mean only (re)load in the
+  default view". With a shotgun: "press and hold `R` to load it with shells from
+  inventory double-press `R` to rack", and "Single tap r does nothing". This
+  answers open question 4.
+- **No rest or sleep keys (BR, 2026-10-04).** "`rest` shouldn't have a dedicatec
+  keybind - instead, you interact with 'restable' items - e.g. beds, sofas,
+  chairs, etc", and "`L` remvoed - sleep is on sleepable objects, like bed".
+- **Wield, then activate (BR, 2026-10-04):** "diegesis: wield item->activate".
+  "using the key means wielding it, and activating it on the door". An ammo box
+  is the same: "that's not a thing you do in inventory - you wield the box and
+  activante it in oder to unpack". No inventory action or modifier chord
+  replaces it.
+- **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-
+  or left-handed dominant is a thing we should accomodate. This'd mean that all
+  quick actions etc take this into account, and the flip of
+  activate-what's-wielded vs activate-off-hand". d47 builds it. Until then, the
+  map's right-hand and left-hand rows are the right-handed default.
+
+- **R reload only in the default view (BR, 2026-10-04):** with a pump held,
+  hold to load loose shells, double-press to rack, and a short single tap does
+  nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
+  `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
+  Inventory R still rotates. **Rest has no dedicated key** (BR, 2026-10-04 12:15);
+  d45 supplies restable furniture initiation. Until d44 removes its binding,
+  L toggles sleep.
+- **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
+  activate with the held-item primary action to unpack. No inventory Unpack/Load.
+  Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
+  X cancels without loss; overflow becomes an ordinary pile.
 
 ## Principles
 
@@ -68,8 +113,8 @@ assumptions. The ones marked **verify** have not been checked for this game.
 | F10 | Firefox's menu bar | known; F9 used instead |
 | Alt | Firefox shows its menu bar on release; many Linux window managers use Alt + drag to move windows | avoid |
 | Escape | Always releases pointer lock; the browser owns it | fixed; never bind |
-| Ctrl + W, Ctrl + T, Ctrl + N, Ctrl + Q | Browser shortcuts that pages generally can't prevent outside fullscreen with the Keyboard Lock API. With Ctrl as any held modifier, W's key repeat while walking arrives as Ctrl + W: the tab closes | **verify**; if true, rules out Ctrl as a modifier and as crouch |
-| Ctrl + click on macOS | The OS treats it as a secondary click; unknown whether that still holds under pointer lock | **verify** |
+| Ctrl + W, Ctrl + T, Ctrl + N, Ctrl + Q | Browser shortcuts that pages generally can't prevent outside fullscreen with the Keyboard Lock API. With Ctrl as any held modifier, W's key repeat while walking arrives as Ctrl + W: the tab closes | ruled out: no Ctrl or Cmd bindings at all (BR, 2026-10-04) |
+| Ctrl + click on macOS | The OS treats it as a secondary click; unknown whether that still holds under pointer lock | moot: no Ctrl or Cmd bindings (BR, 2026-10-04) |
 | F5, F11, F12, Ctrl + R | Reload, fullscreen, devtools | avoid |
 | Tab | Moves browser focus; the game prevents it already | in use (inventory) |
 | Backquote | Physical key exists on all common layouts; `code` is stable | in use (debug panel) |
@@ -89,7 +134,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Use held item: light on/off | now (quickbar second press or primary action) | instant |
 | Use held item: eat, drink, bandage | now (same) | long |
 | Cancel handling | now | instant |
-| Rest, sleep, stop, continue after an interruption | now | long, state |
+| Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
 | Melee strike | now (left click/right hand or `=`/left hand, unreadied) | instant, noise |
 | Main menu | now | menu |
 | Ready a weapon, block | Slice 3 (ruled) | stance |
@@ -122,8 +167,9 @@ below).
 | Z | walk / jog toggle | — | — | — | — |
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
 | F | interact with what's outlined | interact | — | — | — |
-| R | rest; again stops | reload (Slice 3) | rotate while dragging | stop resting | — |
-| L | sleep; again stops | — | — | stop sleeping | — |
+| R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
+| L | sleep; again stops (current runtime, until d44/d45) | — | — | stop sleeping | — |
+| T, held | — | — | with a click on an item: its quick action (auto move; d44) | — | — |
 | X | cancel handling | cancel | cancel handling | stop | stop |
 | 1–5 | take the slot's item into your hands; pressing the held item's slot puts it away | same | assign the selected item to the slot | — | — |
 | Tab | inventory | inventory | close inventory | — | — |
@@ -136,9 +182,12 @@ Notes on the proposal:
 - **Quickbar second press:** using an item already in your hands still calls
   the shared `Survival.use` path. A light primary action on either hand calls
   that same path; the other capabilities dispatch to their existing actions.
-- **R is overloaded by state** (rest when unready, reload when ready, rotate while
-  dragging). Each state is visible (weapon raised, a drag in progress). If that
-  reads as too much, reload moves to a key of its own; see open question 4.
+- **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
+  `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
+  Rest has no input binding until restable furniture (d45); inventory R rotation
+  is a different view. X still stops an existing rest, C continues after interruption.
+  Until d44 removes its binding, L toggles sleep; d45 supplies furniture initiation
+  for rest and sleep.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.
@@ -169,27 +218,34 @@ then use that hand's primary action. It produces no hits, damage, or ammo use;
 each shot records one spent case. The deterministic handling range and table
 sit beside the hamlet. In play, these letters are free in the shipped game but
 taken in the development and playtest builds, which is where the controls get
-tested; a shipped verb on V would collide in every test session. Proposal: debug
-actions stay reachable from the debug panel (Backquote) and keep single-key
-shortcuts only while the panel is open, or move under one prefix (Backquote then
-a letter). That frees the letters for shipped verbs.
+tested; a shipped verb on V would collide in every test session. BR ruled on
+2026-10-04 that debug keys go behind a held F1 (see "What's already ruled"),
+which frees the letters for shipped verbs, including T for the quick-action gate.
+d44 makes that change.
+
+See `src/game/input.ts`, `CONTROL_CODES.descend`, for the debug noclip descend
+binding, separate from reload and the reserved lean inputs. `Input` owns its
+browser back-navigation refusal in the pointer-locked default view; menu text
+editing retains native key behaviour.
 
 ## Open questions for BR
 
 1. **The two hands:** BR's initial right-hand/left-hand key mapping is open to
    revision after play.
-2. **Ctrl:** verify Ctrl + W under pointer lock in Chrome and Firefox before any
-   Ctrl binding. If the tab can close, no Ctrl bindings at all. Recommendation:
-   treat Ctrl as unusable until verified.
+2. ~~**Ctrl:** verify Ctrl + W under pointer lock before any Ctrl binding.~~
+   **Answered (BR, 2026-10-04):** no Ctrl or Cmd, ever.
 3. **Press-and-hold for long uses:** confirm as the rule for every long use (eat,
    drink, bandage, read, reload), with release before completion cancelling and
    nothing applied?
-4. **Reload:** R when ready (overloaded with rest), or its own key?
-   Recommendation: R when ready; rest isn't available while ready anyway.
+4. ~~**Reload:** R when ready (overloaded with rest), or its own key?~~
+   **Answered (BR, 2026-10-04):** R only reloads, and rest has no key.
+   Pump: hold loads, double-press racks, single tap does nothing. See
+   `src/game/reloadInput.ts`, `RELOAD_GESTURE_MS`, for gesture thresholds.
 5. **Continue after an interruption:** keep C (crouch elsewhere), or make the
    interruption card a two-button choice clicked with the drawn cursor, freeing
    C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.
-6. **Debug keys:** panel-only shortcuts, or a prefix? Recommendation: panel-only.
+6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
+   2026-10-04):** behind a held F1.
 7. **Stow on the held slot's key:** confirm pressing the held item's slot puts it
    away?
 

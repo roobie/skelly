@@ -1,6 +1,46 @@
 {
   "sources": [
     {
+      "title": "The Free Firearm Sound Library — Winchester Model 12",
+      "url": "https://opengameart.org/content/the-free-firearm-sound-library",
+      "author": "Ben Jaszczak, Brian Nelson, Kevin Heras and Matthew Nanney",
+      "licence": "CC0-1.0",
+      "download": "Prepared SFX Library.7z",
+      "files": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
+      "changes": "K_22P near take, single-shot slices 0.82–1.90 s and 7.42–8.50 s. Mono 48 kHz Vorbis q5; float peak normalised to -2 dBFS before encoding; 20 ms tail fade."
+    },
+    {
+      "title": "Gun Reload Sounds — pump rack",
+      "url": "https://opengameart.org/content/gun-reload-sounds",
+      "author": "SpringySpringo",
+      "licence": "CC0-1.0",
+      "download": "shotguncock_0.wav",
+      "files": ["assets/audio/shotgun-rack-back.ogg", "assets/audio/shotgun-rack-forward.ogg"],
+      "changes": "BR-selected rack split at 0.19 s: back 0–0.19, forward 0.19–0.40. Cues at hand start and exported rearward+dwell boundary (0.65 s); no animation stretch. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade. Author requests a project link once shipped."
+    },
+    {
+      "title": "Shotgun Reload Sound Effects — individual inserts",
+      "url": "https://opengameart.org/content/shotgun-reload-sound-effects",
+      "author": "zer0_sol",
+      "licence": "CC0-1.0",
+      "download": "shotgunsounds.zip",
+      "files": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
+      "changes": "First Shell.mp3 0.32–0.90 s and Subsequent Shells.mp3 0.74–1.32 s: one insert, not a whole reload. Starts with each 0.9 s handling job. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade. Placeholder candidates; no direct chamber insertion in this slice."
+    },
+    {
+      "title": "Equipment Clicks II — hollow hull landing candidates",
+      "url": "https://opengameart.org/content/equipment-clicks-ii",
+      "author": "LFA",
+      "licence": "CC0-1.0",
+      "download": "equipmentclicks.wav",
+      "files": [
+        "assets/audio/shotgun-hull-01.ogg",
+        "assets/audio/shotgun-hull-02.ogg",
+        "assets/audio/shotgun-hull-03.ogg"
+      ],
+      "changes": "Slices 2.34–2.69, 3.75–4.12 and 5.39–5.66 s, hollow plastic click candidates, no metal layer. Placeholder, not a recorded shotshell hull. Mono 48 kHz Vorbis q5, float peak -2 dBFS, 20 ms tail fade."
+    },
+    {
       "title": "Torch",
       "url": "https://opengameart.org/content/torch",
       "author": "jpsweber",
@@ -34,7 +74,25 @@
       "licence": "CC0-1.0",
       "download": null,
       "files": ["assets/models/rifle_assault.glb"],
-      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI; cartridge metadata from the sourced 5.56x45 design; original project-built geometry, +x forward and +y up"
+      "changes": "Generated in metres from the curated archetype-ar design with gungen's export:glb CLI and --calibre 5.56x45; exported carrier/hand-only charging-handle nodes, grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up"
+    },
+    {
+      "title": "Gungen AK design export",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ak.json",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/rifle_ak.glb"],
+      "changes": "Generated in metres from the curated archetype-ak design with gungen's export:glb CLI and --calibre 7.62x39; handle geometry travels on the carrier node; exported grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up"
+    },
+    {
+      "title": "Gungen 7.62x39 cartridge exports",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/cartridges/7.62x39.json",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/models/round-7_d_62x39.glb", "assets/models/case-7_d_62x39.glb"],
+      "changes": "Generated at sourced cartridge dimensions by gungen's cartridge exporter; generic projectile profile follows its documented seating-depth assumption; case includes the fired case and primer"
     },
     {
       "title": "Gungen hunting-cabin pump design export",

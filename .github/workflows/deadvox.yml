@@ -185,6 +185,9 @@ jobs:
       - name: Case visual pool browser contract
         timeout-minutes: 1
         run: node test/browser/case-visual-pool.mjs
+      - name: Pump handling browser contract (Chromium)
+        timeout-minutes: 5
+        run: timeout 300 node test/browser/pump-handling.mjs
       - name: Stairs traversal browser contract
         timeout-minutes: 3
         run: node test/browser/stairs.mjs traversal

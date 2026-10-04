@@ -3,7 +3,7 @@
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue } from './handling.ts';
-import type { HandSide, Inventory, Plan, Target } from './inventory.ts';
+import { dropSpots, type HandSide, type Inventory, type Plan, type Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
@@ -85,20 +85,13 @@ export const playerPockets = (inv: Inventory): { owner: Item; pocket: number; la
     })),
   );
 
-export const dropSpots = (feet: Vec3): Vec3[] => [
-  feet,
-  [feet[0] + 1, feet[1], feet[2]],
-  [feet[0] - 1, feet[1], feet[2]],
-  [feet[0], feet[1], feet[2] + 1],
-  [feet[0], feet[1], feet[2] - 1],
-];
-
-/** Ordinary drop finds the first of the five existing drop spots with room. */
+/** Ordinary drop finds room for either a carried move or a fresh emission. */
 export const dropTarget = (inv: Inventory, item: Item, feet: Vec3): { target: Target; plan: Plan } => {
   let first: { target: Target; plan: Plan } | undefined;
+  const fresh = inv.locate(item) === undefined;
   for (const pos of dropSpots(feet)) {
     const target: Target = { kind: 'pile', pos };
-    const plan = inv.plan(item, target);
+    const plan = fresh ? inv.planAdd(item, target) : inv.plan(item, target);
     first ??= { target, plan };
     if (plan.ok) {
       return { target, plan };

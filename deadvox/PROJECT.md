@@ -122,7 +122,8 @@ npm run validate   # base content; add paths to validate a mod on top
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (towns, a region map).
-- Fatigue is recovered by resting (R) and sleeping (L), better on a bed. The
+- Rest has no dedicated key; restable furniture interaction arrives in d45.
+- Fatigue is recovered by the rest system and sleeping (L), better on a bed. The
   status is numbers in the HUD for now. Only food, drink, lights and batteries
   can be used.
 - A light that's switched on shines only from your hands; put away, it goes off.
@@ -132,12 +133,21 @@ npm run validate   # base content; add paths to validate a mod on top
   bundle in piles and a box in your hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
-- `models-firearms.json` has ten firearm models: eight from "CC0 Flat Guns West"
-  on OpenGameArt and two Gungen exports: `rifle_assault` from the curated AR and
-  `shotgun_pump` from the curated 12-gauge sporting pump.
-  Debug-only `debug_shotgun_pump` and `debug_rifle_assault` items (no loot table;
-  spawn with G under `?debug=1`) exercise the models in hands and piles, with
-  existing debug firing stand-ins, not production ammunition/pump gameplay.
+- `models-firearms.json` has eleven firearm models: eight from "CC0 Flat Guns West"
+  on OpenGameArt and three Gungen exports: the curated AR, AK and 12-gauge pump.
+  The three debug firearm items (no loot table; spawn with G under `?debug=1`)
+  exercise models in hands and piles. AR/AK use exported automatic and hand
+  cycles with virtual debug rounds. The playable pump uses real 00-buck shells,
+  a four-shell tube plus chamber, one-shell loading jobs and manual exported
+  hand racking. Its ammunition, nine pellets and loud F4 hearing require no
+  automatic action metadata. It has a fresh `?debug=1&loadout=pump` fixture,
+  but no loot placement yet. Sound/look/feel remain awaiting BR.
+  See [pump-shotgun.md](docs/pump-shotgun.md) for controls, estimates and provenance.
+  Synthetic 5.56/600-rpm handling,
+  calibre and case fallbacks are retired: unannotated models still validate,
+  load, spawn, hold and inspect, but mechanics refuse with a clear reason.
+  Automatic mechanics require exported fire timing/rpm; hand mechanics require
+  the hand action. No missing data is invented.
   See `gungen/PROJECT.md` §3.5 for the rifle regeneration command and
   [pump-action-export.md](../gungen/docs/pump-action-export.md) for the pump's.
 - `models-melee.json` has all 20 weapons from Pichuliru's "CC0 Flat Shaded Melee

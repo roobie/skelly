@@ -37,6 +37,22 @@ describe('explicit storeys and ordinary-block flights', () => {
     expect(issues).toEqual([]);
     expect(house().pieces.some((piece) => piece.furniture === 'wood_door')).toBe(true);
   });
+  it("rejects an upper-floor opening under reachable storey floor outside every flight's footprint and headroom", () => {
+    const template = house();
+    const stair = template.access!.stairs[0]!;
+    const [sx, , sz] = template.size;
+    set(template, [sx - 3, stair.upper[1] - 1, sz - 3], 0);
+    expect(
+      templateSpatialIssues(registry, template).some(([, message]) => message.includes('upper-storey floor opening')),
+    ).toBe(true);
+  });
+  it('allows an upper-storey notch outside reachable standing floor space', () => {
+    const template = house();
+    const stair = template.access!.stairs[0]!;
+    const [sx, , sz] = template.size;
+    set(template, [sx - 1, stair.upper[1] - 1, sz - 1], 0);
+    expect(templateSpatialIssues(registry, template)).toEqual([]);
+  });
   it('rejects a flight whose rise does not match its straight one-block treads', () => {
     const template = house();
     const access = structuredClone(template.access!);

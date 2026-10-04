@@ -181,6 +181,17 @@ export class HandlingQueue {
     this.announced = undefined;
   }
 
+  /** Withdraws one owned job without discarding unrelated queued handling. */
+  cancelJob(job: Job): void {
+    const index = this.jobs.indexOf(job);
+    if (index >= 0) {
+      this.jobs.splice(index, 1);
+      if (this.announced === job) {
+        this.announced = undefined;
+      }
+    }
+  }
+
   /** Spends `dt` seconds on the queue, finishing jobs in order. */
   tick(dt: number): TickResult {
     const result: TickResult = { done: [], failed: [], completedMoves: [] };
@@ -222,6 +233,9 @@ export class HandlingQueue {
       return plan.reason;
     }
     const from = this.inventory.locate(item)!;
+    if (from.kind === 'work') {
+      return 'Inputs are held by the work item';
+    }
     const current = this.inventory.targetState(from.kind === 'pile' ? { kind: 'pile', pos: from.pile.pos } : from);
     // An automatic grid target means this container/pile; an explicit spot still permits rearranging it.
     if ('at' in job.target && job.target.at && 'placed' in from && current.kind !== 'hand' && current.kind !== 'worn') {

@@ -18,7 +18,7 @@ import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
-import { HeldItems } from './hands.ts';
+import { type HeldFirearmPose, HeldItems } from './hands.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { ModelLibrary } from './models.ts';
@@ -71,12 +71,20 @@ export const createPlayView = (
   report: (message: string) => void,
   page: Pick<EventTarget, 'addEventListener'> = globalThis,
 ) => {
-  const { config, registry, renderer, meshes, scene, camera } = engine;
+  const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
-  applyLook(renderer, meshes, DEFAULT_LOOK);
-  engine.mood.restore(DEFAULT_MOOD);
-  engine.shadows.restore(DEFAULT_SHADOWS);
+  if (renderer) {
+    if (mood === undefined) {
+      throw new Error('rendering resources are incomplete');
+    }
+    if (shadows === undefined) {
+      throw new Error('rendering resources are incomplete');
+    }
+    applyLook(renderer, meshes, DEFAULT_LOOK);
+    mood.restore(DEFAULT_MOOD);
+    shadows.restore(DEFAULT_SHADOWS);
+  }
   const weather: Weather = { fogginess: DEFAULT_FOGGINESS };
   const models = new ModelLibrary(registry, report);
   const playerPalette = registry.figures.get('player')!.palette;
@@ -93,7 +101,7 @@ export const createPlayView = (
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(scene);
-  engine.shadows.attachTorch(flashlight.light);
+  engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
@@ -130,7 +138,7 @@ export const createPlayView = (
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour), weather);
       applySky(engine.sky, sky);
-      engine.mood.setSky(sky);
+      engine.mood?.setSky(sky);
       piles.sync(inventory);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
@@ -143,10 +151,10 @@ export const createPlayView = (
         sky,
         engine.skylight?.at([camera.position.x, camera.position.y, camera.position.z]) ?? 1,
       );
-      flashlight.shadowsAllowed = engine.shadows.torchOn;
+      flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (hour: number, sky: ReturnType<typeof skyInWeather>) => {
-      engine.shadows.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
+      engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
       const { dt, body, paused, noclip, yaw, pitch, eye } = frame;
@@ -169,17 +177,36 @@ export const createPlayView = (
       camera.rotation.copy(cameraRotation(pitch, yaw, feedback.roll));
       damage.style.opacity = String(feedback.vignetteOpacity);
     },
-    updateHeld: (dt: number, pose: MeleePoseFrame, light: Item | undefined) => {
+    updateHeld: (
+      dt: number,
+      pose: MeleePoseFrame,
+      light: Item | undefined,
+      firearms: readonly HeldFirearmPose[] = [],
+    ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
-      held.update(camera, pose, recoil);
+      held.update(camera, pose, recoil, firearms);
       flashlight.update(registry, light, held, camera);
     },
-    render: (): number => {
+    render: (): number | null => {
+      if (!renderer) {
+        return null;
+      }
+      if (!mood) {
+        return null;
+      }
       const start = performance.now();
-      engine.mood.render(() => held.render(renderer, camera, engine.sky));
+      mood.render(() => held.render(renderer, camera, engine.sky));
       return performance.now() - start;
     },
-    warmUp: () => engine.shadows.warmUp(engine.mood, [{ scene, camera }, held.warmUpTarget]),
+    warmUp: () => {
+      if (!mood) {
+        return Promise.resolve();
+      }
+      if (!shadows) {
+        return Promise.resolve();
+      }
+      return shadows.warmUp(mood, [{ scene, camera }, held.warmUpTarget]);
+    },
   };
 };

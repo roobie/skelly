@@ -3,12 +3,19 @@
 // items stack up to their type's limit.
 
 import type { ItemDef, Registry } from './content.ts';
+import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-export interface Item {
-  /** Unique per world; never reused. */
-  readonly uid: number;
-  readonly type: string;
+/** Craft inputs/progress have exactly one owner: this ordinary item subtree. */
+export interface CraftWork<Node> {
+  recipe: string;
+  elapsed: number;
+  duration: number;
+  components: Node[];
+}
+
+/** Scalar and pocket fields are shared by live items and their saved tree. */
+export interface ItemFields<Node> {
   count: number;
   /** 0 (ruined) to 1 (pristine). */
   condition: number;
@@ -22,34 +29,33 @@ export interface Item {
    */
   made?: number;
   /** One grid per pocket of the type's container, in the type's pocket order. */
-  pockets?: Placed[][];
+  pockets?: PlacedItem<Node>[][];
+  /** Chamber contents and in-flight mechanical action; separate from handling jobs. */
+  firearm?: FirearmState;
+  work?: CraftWork<Node> | undefined;
+}
+
+export interface Item extends ItemFields<Item> {
+  /** Unique per world; never reused. */
+  readonly uid: number;
+  readonly type: string;
 }
 
 /** An item in a grid, at its top-left cell. */
-export interface Placed {
-  item: Item;
+export interface PlacedItem<Node> {
+  item: Node;
   x: number;
   y: number;
   rotated: boolean;
 }
 
-export interface ItemState {
+export interface ItemState extends ItemFields<ItemState> {
   uid: number;
   type: string;
-  count: number;
-  condition: number;
-  charges?: number;
-  on?: boolean;
-  made?: number;
-  pockets?: PlacedState[][];
 }
 
-export interface PlacedState {
-  item: ItemState;
-  x: number;
-  y: number;
-  rotated: boolean;
-}
+export type Placed = PlacedItem<Item>;
+export type PlacedState = PlacedItem<ItemState>;
 
 /** Immutable, isolated item tree suitable for a save snapshot. */
 export const snapshotItem = (item: Item): Readonly<ItemState> =>
@@ -61,14 +67,33 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.charges === undefined ? {} : { charges: item.charges }),
     ...(item.on === undefined ? {} : { on: item.on }),
     ...(item.made === undefined ? {} : { made: item.made }),
+    ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
+    ...(item.work === undefined
+      ? {}
+      : {
+          work: {
+            ...item.work,
+            components: item.work.components.map((component) => snapshotItem(component) as ItemState),
+          },
+        }),
   });
 
 export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<PlacedState> =>
   freezeSnapshot({ item: snapshotItem(item) as ItemState, x, y, rotated });
 
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
-  defOf(registry, state.type);
+  const def = defOf(registry, state.type);
+  if (state.firearm !== undefined) {
+    if (!def.firearm || state.count !== 1) {
+      throw new Error('Mechanical firearm state needs one firearm');
+    }
+    assertFirearmState(state.firearm);
+    assertPumpAmmunition(registry, state.type, state.firearm);
+    if (state.firearm.roundType !== undefined) {
+      defOf(registry, state.firearm.roundType);
+    }
+  }
   const item: Item = {
     uid: state.uid,
     type: state.type,
@@ -77,10 +102,17 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.charges === undefined ? {} : { charges: state.charges }),
     ...(state.on === undefined ? {} : { on: state.on }),
     ...(state.made === undefined ? {} : { made: state.made }),
+    ...(state.firearm === undefined ? {} : { firearm: structuredClone(state.firearm) }),
     ...(state.pockets === undefined
       ? {}
       : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
   };
+  if (state.work) {
+    item.work = {
+      ...state.work,
+      components: state.work.components.map((component) => restoreItem(registry, component)),
+    };
+  }
   return item;
 };
 
@@ -130,6 +162,9 @@ export class ItemFactory {
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
     }
+    if (def.firearm?.pump) {
+      item.firearm = { chamber: 'empty', tube: [] };
+    }
     return item;
   }
 
@@ -159,6 +194,29 @@ export const defOf = (registry: Registry, type: string): ItemDef => {
   return def;
 };
 
+/** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
+export const assertPumpAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
+  const def = defOf(registry, type);
+  if (!def.firearm?.pump) {
+    if (state.tube !== undefined || state.landing !== undefined) {
+      throw new Error('Tube/landing state needs a pump firearm');
+    }
+    return;
+  }
+  const model = def.model ? registry.models.get(def.model) : undefined;
+  if (!(state.tube && model?.tube) || state.tube.length > model.tube.capacity || state.cycle?.mode === 'fire') {
+    throw new Error('Invalid exported pump tube state');
+  }
+  if ((state.chamber === 'round') !== (state.roundType !== undefined)) {
+    throw new Error('Pump chamber needs exactly one real cartridge');
+  }
+  for (const round of [...state.tube, ...(state.roundType ? [state.roundType] : [])]) {
+    if (defOf(registry, round).ammo?.calibre !== model.calibre) {
+      throw new Error('Pump ammunition calibre mismatch');
+    }
+  }
+};
+
 /** Width and height in cells, as placed. */
 export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
   rotated ? [def.size[1], def.size[0]] : [def.size[0], def.size[1]];
@@ -166,7 +224,7 @@ export const footprint = (def: ItemDef, rotated: boolean): [number, number] =>
 export const cellCount = (def: ItemDef): number => def.size[0] * def.size[1];
 
 /** True when the item has no pockets, or they're all empty. */
-export const isEmpty = (item: Item): boolean => (item.pockets ?? []).every((grid) => grid.length === 0);
+export const isEmpty = (item: Item): boolean => !item.work && (item.pockets ?? []).every((grid) => grid.length === 0);
 
 /** Condition as a word (DESIGN.md, "The item model"). */
 export const conditionWord = (condition: number): string => {
@@ -191,6 +249,8 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.condition === item.condition &&
     onto.charges === item.charges &&
     onto.made === item.made &&
+    onto.firearm === undefined &&
+    item.firearm === undefined &&
     isEmpty(onto) &&
     isEmpty(item);
   return same && def.stack !== undefined ? Math.max(0, def.stack - onto.count) : 0;
@@ -249,7 +309,27 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
     return x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
   });
 
-/** Grams, counting the stack and everything in its pockets. */
+/** Grams, counting the stack, ammunition and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
   defOf(registry, item.type).weight * item.count +
-  (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0);
+  ammunitionWeight(registry, item) +
+  (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
+  (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
+
+const ammunitionWeight = (registry: Registry, item: Item): number => {
+  const state = item.firearm;
+  if (!state?.tube) {
+    return 0;
+  }
+  const rounds = [...state.tube, ...(state.roundType ? [state.roundType] : [])];
+  const modelId = defOf(registry, item.type).model;
+  const calibre = modelId ? registry.models.get(modelId)?.calibre : undefined;
+  const hull =
+    state.chamber === 'case'
+      ? [...registry.items.values()].find((def) => {
+          const model = def.model ? registry.models.get(def.model) : undefined;
+          return model?.id.startsWith('case_') && model.calibre === calibre;
+        })
+      : undefined;
+  return rounds.reduce((sum, type) => sum + defOf(registry, type).weight, hull?.weight ?? 0);
+};

@@ -58,6 +58,8 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
   'src/core/buildRevision.ts': 'Test/build-only diagnostic helper; no game runtime imports it.',
   'src/core/reachability.ts': 'CLI/test-only static content acceptance; no game runtime imports it.',
   'src/game/debugInterface.ts': 'Type-only contracts; the imported interfaces erase from runtime code.',
+  'src/game/renderMode.ts':
+    'Presentation-only development render selection; does not alter simulation or save identity.',
   'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
 };
@@ -155,6 +157,7 @@ describe('simulation source fingerprint', () => {
       { importer: 'src/game/play.ts', excluded: 'src/render/playFrames.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/render/playView.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/audioOptions.ts' },
+      { importer: 'src/game/play.ts', excluded: 'src/ui/craftController.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/credits.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/death.ts' },
       { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
@@ -317,12 +320,33 @@ describe('simulation source fingerprint', () => {
     expect(casePresentation.reads).toBe(0);
     expect(casePresentation.value).toBe(original);
 
-    const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts', 'rpm: 600', 'rpm: 601');
+    const firearmDrawing = await mutateSimulationSource(
+      host,
+      'src/render/firearmModel.ts',
+      'return time / cycle.rearwardSeconds;',
+      'return 0;',
+    );
+    expect(firearmDrawing.reads).toBe(0);
+    expect(firearmDrawing.value).toBe(original);
+    const sharedFirearmTiming = await mutateSimulationSource(
+      host,
+      'src/core/firearmAction.ts',
+      '60 / action.rpm',
+      '61 / action.rpm',
+    );
+    expect(sharedFirearmTiming.reads).toBe(1);
+    expect(sharedFirearmTiming.value).not.toBe(original);
+    const firearmHandling = await mutateSimulationSource(
+      host,
+      'src/game/firearmHandling.ts',
+      'const CASE_SPEED = 3.5;',
+      'const CASE_SPEED = 4.5;',
+    );
     expect(firearmHandling.reads).toBe(1);
     expect(firearmHandling.value).not.toBe(original);
     const cadence = await mutateSimulationSource(
       host,
-      'src/game/firearmHandling.ts',
+      'src/game/firearmTrigger.ts',
       'const interval = 60 / weapon.rpm;',
       'const interval = 61 / weapon.rpm;',
     );

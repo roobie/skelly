@@ -1,0 +1,165 @@
+// glTF names belong to the parser, not Object3D.name (Three.js sanitizes colons).
+// Child-index paths carry the association into independent held clones without name lookup.
+import { Matrix4, type Object3D, Vector3 } from 'three';
+import type { GLTFParser } from 'three/addons/loaders/GLTFLoader.js';
+import type { ModelDef } from '../core/content.ts';
+import { actionCycleSeconds, type FirearmAction, type FirearmMode } from '../core/firearmAction.ts';
+import { heldAnchorOffset } from '../core/heldPose.ts';
+import type { HandSide } from '../core/inventory.ts';
+
+export type { FirearmAction, FirearmMode } from '../core/firearmAction.ts';
+
+export interface ActionPartPath {
+  readonly path: readonly number[];
+  readonly nodeIndex: number;
+  readonly modes: readonly FirearmMode[];
+  /** Travel in the node parent's local frame, including the exported stroke length. */
+  readonly travel: Vector3;
+}
+
+export interface HeldActionPart {
+  readonly node: Object3D;
+  readonly rest: Vector3;
+  readonly travel: Vector3;
+  readonly modes: readonly FirearmMode[];
+  readonly nodeIndex: number;
+}
+
+export interface HeldModel {
+  readonly root: Object3D;
+  readonly parts: readonly HeldActionPart[];
+}
+
+export const actionPartPaths = (
+  scene: Object3D,
+  action: FirearmAction | undefined,
+  parser: GLTFParser,
+): ActionPartPath[] => {
+  if (!action) {
+    return [];
+  }
+  scene.updateMatrixWorld(true);
+  const names = parser.json.nodes as readonly { name?: string }[];
+  return Object.values(action.parts).map((part) => {
+    const matches = names.flatMap((definition, index) => (definition.name === part.node ? [index] : []));
+    if (matches.length !== 1) {
+      throw new Error(`Action node ${part.node} needs exactly one glTF node`);
+    }
+    const nodeIndex = matches[0]!;
+    let node: Object3D | undefined;
+    scene.traverse((object) => {
+      if (parser.associations.get(object)?.nodes === nodeIndex) {
+        if (node) {
+          throw new Error(`Action node ${part.node} has multiple loaded objects`);
+        }
+        node = object;
+      }
+    });
+    if (!node?.parent) {
+      throw new Error(`Action node ${part.node} has no loaded scene object`);
+    }
+    const parentFromModel = new Matrix4().copy(node.parent.matrixWorld).invert().multiply(scene.matrixWorld);
+    const origin = new Vector3().applyMatrix4(parentFromModel);
+    const travel = new Vector3(...part.axis)
+      .multiplyScalar(part.strokeMetres)
+      .applyMatrix4(parentFromModel)
+      .sub(origin);
+    const path: number[] = [];
+    for (let current = node; current !== scene; ) {
+      const { parent } = current;
+      if (!parent) {
+        throw new Error(`Action node ${part.node} is outside its scene`);
+      }
+      path.unshift(parent.children.indexOf(current));
+      current = parent;
+    }
+    // prepareModel's held → turned → offset → cloned scene wrappers.
+    return { path: [0, 0, 0, ...path], nodeIndex, modes: part.modes, travel };
+  });
+};
+
+export const cloneHeldModel = (prepared: Object3D, paths: readonly ActionPartPath[]): HeldModel => {
+  const root = prepared.clone();
+  const parts = paths.map(({ path, ...part }) => {
+    let node = root;
+    for (const index of path) {
+      const child = node.children[index];
+      if (!child) {
+        throw new Error(`Held clone lost action node ${part.nodeIndex}`);
+      }
+      node = child;
+    }
+    return { ...part, node, rest: node.position.clone() };
+  });
+  return { root, parts };
+};
+
+/** Rendering alone samples the rear/dwell/return profile; admission/ejection remain gameplay. */
+export const sampleActionStroke = (action: FirearmAction, mode: FirearmMode, elapsed: number): number => {
+  const cycle = action[mode];
+  if (!cycle || (mode === 'fire' && action.rpm === undefined)) {
+    return 0;
+  }
+  const duration = actionCycleSeconds(action, mode);
+  const time = (elapsed * cycle.durationSeconds) / duration;
+  if (elapsed < 0 || elapsed >= duration) {
+    return 0;
+  }
+  if (time < cycle.rearwardSeconds) {
+    return time / cycle.rearwardSeconds;
+  }
+  const returnAt = cycle.rearwardSeconds + cycle.dwellSeconds;
+  if (time < returnAt) {
+    return 1;
+  }
+  return Math.max(0, 1 - (time - returnAt) / cycle.forwardSeconds);
+};
+
+/** Presentation estimate: bound the geometry-derived turn while exposing an away-facing port. */
+const MAX_RACK_CANT_RADIANS = Math.PI / 4;
+
+export const rackCant = (
+  model: ModelDef | undefined,
+  hand: HandSide,
+  frame: { readonly mode: FirearmMode | 'load'; readonly elapsed: number } | undefined,
+  grip: { readonly x: number; readonly y: number },
+): number => {
+  if (
+    !(model?.tube && model.grip && model.anchors?.ejection && model.anchors.loading_port && model.action) ||
+    frame?.mode !== 'hand'
+  ) {
+    return 0;
+  }
+  const port = heldAnchorOffset(model, 'ejection');
+  const loading = heldAnchorOffset(model, 'loading_port');
+  const across = port[0] - loading[0];
+  const portSide = Math.sign(across);
+  if (portSide * (hand === 'right' ? 1 : -1) <= 0) {
+    return 0; // The camera already sees this side from the opposite wielding hand.
+  }
+  const away = portSide * (grip.x + port[0]);
+  if (away <= 0) {
+    return 0;
+  }
+  // Clear the camera's tangent to the port, then reveal some aperture. A turn
+  // derived only from port/loading separation can leave the side still hidden.
+  const clearance = Math.atan2(away, -grip.y - port[1]);
+  const reveal = Math.atan2(Math.abs(across), Math.abs(port[1] - loading[1]));
+  const angle = Math.min(MAX_RACK_CANT_RADIANS, clearance + reveal);
+  const stroke = sampleActionStroke(model.action, 'hand', frame.elapsed);
+  const eased = stroke * stroke * (3 - 2 * stroke);
+  return portSide * angle * eased;
+};
+
+export const poseActionParts = (
+  parts: readonly HeldActionPart[],
+  mode: FirearmMode | undefined,
+  stroke: number,
+): void => {
+  for (const part of parts) {
+    part.node.position.copy(part.rest);
+    if (mode && part.modes.includes(mode)) {
+      part.node.position.addScaledVector(part.travel, stroke);
+    }
+  }
+};

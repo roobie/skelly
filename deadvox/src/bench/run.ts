@@ -9,7 +9,7 @@ import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
 import { FOREST_DENSITY_FIELD, FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
-import type { Engine } from '../game/engine.ts';
+import type { RenderedEngine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
 import type { StreamerStats } from '../game/streamer.ts';
 import { applySky } from '../render/sky.ts';
@@ -69,7 +69,7 @@ export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
 
 export const currentConfig = (run: BenchRun): BenchConfig => run.plan[run.index]!;
 
-export const environment = (engine: Engine): Environment => {
+export const environment = (engine: RenderedEngine): Environment => {
   const { renderer } = engine;
   const gl = renderer.getContext();
   const info = gl.getExtension('WEBGL_debug_renderer_info');
@@ -131,7 +131,7 @@ export const benchSiteLabel = (run: BenchRun): string =>
     testHouse: 'test house',
   })[run.site] ?? `authored site ${run.site}`;
 
-export const startBench = (engine: Engine, run: BenchRun, stats: StreamerStats): void => {
+export const startBench = (engine: RenderedEngine, run: BenchRun, stats: StreamerStats): void => {
   const { config, streamer, renderer, camera, world } = engine;
   const s = config.scale.blockSize;
   const durations = run.quick ? DURATIONS.quick : DURATIONS.full;
