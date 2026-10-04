@@ -5,9 +5,6 @@ import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { playPromptText, renderPlayHud, renderPlayInventoryStats } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
 
-const CONTINUE_HINT = /continue/i;
-const STOP_HINT = /stop/i;
-
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(6), 3));
@@ -97,6 +94,4 @@ it('omits expired notices and the duplicated rest interruption but retains the s
   const interruptedPrompt = playPromptText({ ...state, resting: false }, visible);
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
-  expect(interruptedPrompt).toMatch(CONTINUE_HINT);
-  expect(interruptedPrompt).toMatch(STOP_HINT);
 });

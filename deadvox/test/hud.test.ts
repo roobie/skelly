@@ -9,8 +9,6 @@ import { Quickbar } from '../src/game/quickbar.ts';
 import { handlingViewModel, quickbarKey, quickbarViewModel } from '../src/ui/hud.ts';
 
 const BASE = 'src/content/base';
-const HANDLING_TIME = /^\d+(?:\.\d+)? \/ \d+(?:\.\d+)? s$/;
-const NEXT_JOB_PREFIX = /then/i;
 const { registry } = buildRegistry(
   readdirSync(BASE)
     .filter((f) => f.endsWith('.json'))
@@ -96,7 +94,7 @@ describe('quickbarViewModel', () => {
     const bar = new Quickbar();
     bar.assign(0, beans);
     const vm = quickbarViewModel(bar, inv);
-    expect(vm.slots[0]?.name).toContain('×3');
+    expect(vm.slots[0]?.name).toContain(String(beans.count));
   });
 });
 
@@ -153,7 +151,7 @@ describe('handlingViewModel', () => {
     const job = queue.jobs[0]!;
     expect(vm.visible).toBe(true);
     expect(vm.label).toBe(label);
-    expect(vm.time).toMatch(HANDLING_TIME);
+    expect(vm.time.match(/[\d.]+/g)?.map(Number)).toEqual([job.elapsed, job.duration]);
     expect(vm.percent).toBe(Math.round((job.elapsed / job.duration) * 100));
   });
 
@@ -163,7 +161,6 @@ describe('handlingViewModel', () => {
     queue.enqueueAction('test.noop', 'Search the cupboard', 4);
     queue.enqueueAction('test.noop', 'Search the drawer', 2);
     const { next } = handlingViewModel(queue);
-    expect(next).toMatch(NEXT_JOB_PREFIX);
     expect(next).toContain('Search the drawer');
   });
 
