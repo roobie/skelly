@@ -53,11 +53,13 @@ describe('menu input', () => {
       input.menuPointer = true;
       input.yaw = 0.7;
       input.pitch = -0.3;
+      const cursorStart = { x: input.cursorX, y: input.cursorY };
       input.moveMenuCursor(24, -12);
       const mouseEvent = new Event('mousemove') as MouseEvent;
       Object.defineProperties(mouseEvent, { movementX: { value: 24 }, movementY: { value: -12 } });
       mousemove?.(mouseEvent);
-      expect({ x: input.cursorX, y: input.cursorY }).toEqual({ x: 344, y: 228 });
+      expect(input.cursorX).toBe(cursorStart.x + 24);
+      expect(input.cursorY).toBe(cursorStart.y - 12);
       expect({ yaw: input.yaw, pitch: input.pitch }).toEqual({ yaw: 0.7, pitch: -0.3 });
     } finally {
       for (const [key, descriptor] of descriptors) {

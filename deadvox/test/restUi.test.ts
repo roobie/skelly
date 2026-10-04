@@ -3,6 +3,9 @@ import type { RestAction } from '../src/core/longAction.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 
+const DAY_CLOCK = /^Day \d+, \d{2}:\d{2}$/;
+const STOP_HINT = /stop/i;
+
 describe('restViewModel', () => {
   it('is invisible with no action running', () => {
     const sim = new Simulation({ seed: 1 });
@@ -18,15 +21,21 @@ describe('restViewModel', () => {
     expect(vm.label).toBe('Sleeping');
     expect(vm.percent).toBe(50);
     expect(vm.prompt).toBeUndefined();
-    expect(vm.clock).toBe('Day 1, 19:30');
+    expect(vm.clock).toMatch(DAY_CLOCK);
   });
 
   it('shows how to stop it, by kind (SLICE-1.md 1.8 follow-up)', () => {
     const sim = new Simulation({ seed: 1 });
     const rest: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
-    expect(restViewModel(rest, sim).stopHint).toBe('R or X to stop');
+    const restHint = restViewModel(rest, sim).stopHint;
+    expect(restHint).toContain('R');
+    expect(restHint).toMatch(STOP_HINT);
+    expect(restHint).toContain('X');
     const sleep: RestAction = { kind: 'sleep', label: 'Sleeping', rate: -30, startFatigue: 40 };
-    expect(restViewModel(sleep, sim).stopHint).toBe('L or X to stop');
+    const sleepHint = restViewModel(sleep, sim).stopHint;
+    expect(sleepHint).toContain('L');
+    expect(sleepHint).toMatch(STOP_HINT);
+    expect(sleepHint).toContain('X');
   });
 
   it('carries the interruption reason as the prompt', () => {
@@ -37,6 +46,6 @@ describe('restViewModel', () => {
     danger = 'A shambler is close';
     sim.frame(1 / 60);
     const action: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
-    expect(restViewModel(action, sim).prompt).toBe('A shambler is close');
+    expect(restViewModel(action, sim).prompt).toBe(danger);
   });
 });

@@ -265,55 +265,8 @@ try {
       input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, sprintDoor);
     await page.keyboard.press('KeyF');
-    const doorValue = async (propertyName, expectedValue) => {
-      const deadline = (await page.evaluate(() => globalThis.stairsWitness.session.sim.time)) + 3;
-      const result = await page.waitForFunction(
-        ({ uid: targetUid, propertyName: targetProperty, expectedValue: desiredValue, deadline: simDeadline }) => {
-          const { session, entities } = globalThis.stairsWitness;
-          const door = entities.byUid(targetUid);
-          const currentValue = targetProperty === 'locked' ? door.lock?.locked : door[targetProperty];
-          return currentValue === desiredValue || session.sim.time >= simDeadline ? { currentValue } : false;
-        },
-        { uid: sprintDoor, propertyName, expectedValue, deadline },
-        { timeout: 0, polling: 50 },
-      );
-      return (await result.jsonValue()).currentValue;
-    };
-    assert.equal(await doorValue('open', false), false, 'plain F closes the same door');
-    await page.evaluate((uid) => {
-      const { entities, session } = globalThis.stairsWitness;
-      const door = entities.byUid(uid);
-      door.lock = { id: 'test_shed', locked: false };
-      const wrongDefinition = {
-        ...session.inventory.registry.items.get('shed_key'),
-        id: 'stairs_wrong_key',
-        name: 'Wrong key',
-        key: { lock: 'other' },
-      };
-      session.inventory.registry.items.set(wrongDefinition.id, wrongDefinition);
-      const key = session.inventory.create('shed_key');
-      session.inventory.add(key, { kind: 'hand', side: 'right' });
-    }, sprintDoor);
-    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
-    assert.equal(await doorValue('locked', true), true, 'activating the matching held key locks its door');
-    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
-    assert.equal(await doorValue('locked', false), false, 'activating the matching held key unlocks its door');
-    await page.evaluate(() => {
-      const { body, session } = globalThis.stairsWitness;
-      const current = session.inventory.hands.right;
-      if (current) {
-        session.inventory.move(current, { kind: 'pile', pos: body.pos });
-      }
-      const key = session.inventory.create('stairs_wrong_key');
-      session.inventory.add(key, { kind: 'hand', side: 'right' });
-    });
-    const wrongKey = await page.evaluate((uid) => {
-      const { entities, performPrimaryAction, getNotice } = globalThis.stairsWitness;
-      performPrimaryAction('right');
-      return { notice: getNotice(), locked: entities.byUid(uid)?.lock?.locked };
-    }, sprintDoor);
-    assert.equal(wrongKey.notice, "The key doesn't fit", 'a wrong held key refuses activation');
-    assert.equal(wrongKey.locked, false, 'wrong-key refusal leaves the door unlocked');
+    // Authored lock/key cycles are covered through Inventory and HandlingQueue in locks.test.ts;
+    // don't fabricate a registry item or inject lock state into this live-world traversal.
     await stage([112, 43.0001, 115]);
     await state('house lower landing');
     await walk('w', 121, true, 51);

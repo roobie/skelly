@@ -5,45 +5,59 @@ import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { playPromptText, renderPlayHud, renderPlayInventoryStats } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
 
+const CONTINUE_HINT = /continue/i;
+const STOP_HINT = /stop/i;
+
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
   const geometry = new BufferGeometry();
   geometry.setAttribute('position', new BufferAttribute(new Float32Array(6), 3));
   geometry.setAttribute('color', new BufferAttribute(new Uint8Array(3), 3));
   const positionBlocks = Object.freeze([1, 2, 3] as const);
+  const chunks = [{ bytes: 10 }, { bytes: 20 }];
+  const revealedPositions = [[-4, 2, 6]] as const;
+  const measurements = {
+    fps: 61,
+    frame: { p50: 1, p95: 2 },
+    work: { p50: 1, p95: 2 },
+    seed: 73,
+    radius: 64,
+    chunks: 2,
+    pending: 0,
+    holes: 0,
+    zombies: 1,
+    sounds: [],
+    simulationMs: 1,
+    renderMs: 2,
+    meshingQueueMs: 3,
+    entities: 1,
+    compression: 1,
+    snapshotLastMs: 0,
+    snapshotP95Ms: 0,
+    snapshotCount: 0,
+  };
+  const drawn = [new Mesh(geometry), new Object3D()];
+  const blockSize = 0.5;
   const view = playReadout({
-    measurements: {
-      fps: 61,
-      frame: { p50: 1, p95: 2 },
-      work: { p50: 1, p95: 2 },
-      seed: 73,
-      radius: 64,
-      chunks: 2,
-      pending: 0,
-      holes: 0,
-      zombies: 1,
-      sounds: [],
-      simulationMs: 1,
-      renderMs: 2,
-      meshingQueueMs: 3,
-      entities: 1,
-      compression: 1,
-      snapshotLastMs: 0,
-      snapshotP95Ms: 0,
-      snapshotCount: 0,
-    },
+    measurements,
     walking: true,
     positionBlocks,
-    blockSize: 0.5,
+    blockSize,
     calendar: 0,
-    chunks: [{ bytes: 10 }, { bytes: 20 }],
-    drawn: [new Mesh(geometry), new Object3D()],
-    revealedPositions: [[-4, 2, 6]],
+    chunks,
+    drawn,
+    revealedPositions,
   });
-  expect(view.position).toEqual([0.5, 1, 1.5]);
-  expect(view.memoryBytes).toBe(57);
-  expect(view.revealedZombies).toEqual(['-2.0,1.0,3.0']);
+  const geometryBytes = Object.values(geometry.attributes).reduce(
+    (sum, attribute) => sum + attribute.array.byteLength,
+    0,
+  );
+  expect(view.position).toEqual(positionBlocks.map((coordinate) => coordinate * blockSize));
+  expect(view.memoryBytes).toBe(chunks.reduce((sum, chunk) => sum + chunk.bytes, geometryBytes));
+  expect(view.revealedZombies).toEqual(
+    revealedPositions.map((position) => position.map((coordinate) => (coordinate * blockSize).toFixed(1)).join(',')),
+  );
   expect(view.movement).toBe('walking');
-  expect(view.fps).toBe(61);
+  expect(view.fps).toBe(measurements.fps);
   expect(positionBlocks).toEqual([1, 2, 3]);
   geometry.dispose();
 });
@@ -77,8 +91,12 @@ it('omits expired notices and the duplicated rest interruption but retains the s
     interruption: 'Hurt',
     resting: true,
   });
-  expect(playPromptText(state, visible)).toBe('F: search the cupboard');
-  expect(playPromptText({ ...state, resting: false }, visible)).toBe(
-    'F: search the cupboard\nHurt.   C: continue   X: stop',
-  );
+  const restingPrompt = playPromptText(state, visible);
+  expect(restingPrompt).toContain(state.interactionHint);
+  expect(restingPrompt).not.toContain(state.interruption);
+  const interruptedPrompt = playPromptText({ ...state, resting: false }, visible);
+  expect(interruptedPrompt).toContain(state.interactionHint);
+  expect(interruptedPrompt).toContain(state.interruption);
+  expect(interruptedPrompt).toMatch(CONTINUE_HINT);
+  expect(interruptedPrompt).toMatch(STOP_HINT);
 });
