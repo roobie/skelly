@@ -8,7 +8,7 @@ import type { HandlingQueue } from '../core/handling.ts';
 import { heldEjectionPose } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import type { UseOption } from '../core/options.ts';
+import { dropTarget, type UseOption } from '../core/options.ts';
 import { type PelletShot, pelletShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
@@ -158,8 +158,7 @@ export class FirearmMechanics {
       if (!(item && this.held(item.uid)) || item.firearm?.cycle?.mode !== 'hand') {
         return 'Firearm is no longer held';
       }
-      this.advanceCycle(item, actionCycleSeconds(firearmHandlingFor(item, inventory.registry).action, 'hand'));
-      return undefined;
+      return this.advanceCycle(item, actionCycleSeconds(firearmHandlingFor(item, inventory.registry).action, 'hand'));
     });
     queue.registerAction(LOAD_ACTION, (params): string | undefined => {
       const gun = typeof params.uid === 'number' ? inventory.itemByUid(params.uid) : undefined;
@@ -257,9 +256,26 @@ export class FirearmMechanics {
     if (!(item && this.held(uid))) {
       return 'Hold the firearm before cocking it';
     }
-    return this.queue.busy || item.firearm?.cycle
-      ? 'Already handling something'
-      : exportedActionReason(item, this.inventory.registry, 'hand');
+    if (this.queue.busy || item.firearm?.cycle) {
+      return 'Already handling something';
+    }
+    const reason = exportedActionReason(item, this.inventory.registry, 'hand');
+    if (reason) {
+      return reason;
+    }
+    const state = item.firearm;
+    const data = firearmHandlingFor(item, this.inventory.registry);
+    const type = state?.chamber === 'case' ? spentCaseItemId(data.calibre) : state?.roundType;
+    if (!type) {
+      return undefined; // Empty or virtual debug chamber has no live item to eject.
+    }
+    const pose = this.pose(uid);
+    const emission = pose ? this.emission(item, data, pose) : state?.pendingCase;
+    if (!emission) {
+      return 'No held ejection pose';
+    }
+    const drop = this.ejectionDrop(type, emission, state?.chamber === 'case');
+    return drop.plan.ok ? undefined : drop.plan.reason;
   }
 
   supportsUse(item: Item): boolean {
@@ -472,7 +488,7 @@ export class FirearmMechanics {
     });
   }
 
-  private advanceCycle(item: Item, elapsed: number): void {
+  private advanceCycle(item: Item, elapsed: number): string | undefined {
     const state = item.firearm!;
     const { cycle } = state;
     if (!cycle) {
@@ -482,7 +498,10 @@ export class FirearmMechanics {
     cycle.elapsed = Math.max(cycle.elapsed, elapsed);
     this.rackForwardCue(item, data, cycle);
     if (!cycle.ejected && cycle.elapsed + 1e-9 >= ejectSeconds(data.action, cycle.mode)) {
-      this.ejectChamber(item, state, data);
+      const reason = this.ejectChamber(item, state, data);
+      if (reason) {
+        return reason; // Revalidate before clearing ammo; a changed drop cannot lose it.
+      }
       cycle.ejected = true;
     }
     if (cycle.elapsed + 1e-9 >= actionCycleSeconds(data.action, cycle.mode)) {
@@ -490,6 +509,7 @@ export class FirearmMechanics {
       state.cycle = undefined;
       this.retire(item);
     }
+    return undefined;
   }
 
   private rackForwardCue(item: Item, data: FirearmHandlingData, cycle: FirearmCycleState): void {
@@ -500,14 +520,15 @@ export class FirearmMechanics {
     }
   }
 
-  private ejectChamber(item: Item, state: FirearmState, data: FirearmHandlingData): void {
+  private ejectChamber(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
     if (state.chamber === 'case') {
-      this.ejectCase(item, state, data);
-    } else if (state.chamber === 'round' && state.roundType !== undefined) {
-      this.ejectLive(item, state, data);
-    } else {
-      state.chamber = 'empty';
+      return this.ejectCase(item, state, data);
     }
+    if (state.chamber === 'round' && state.roundType !== undefined) {
+      return this.ejectLive(item, state, data);
+    }
+    state.chamber = 'empty';
+    return undefined;
   }
 
   private feed(item: Item, state: FirearmState, cycle: FirearmCycleState): void {
@@ -531,16 +552,37 @@ export class FirearmMechanics {
     };
   }
 
-  private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): void {
+  /** Metadata-only placement probe: never allocate a UID during read-only rack admission. */
+  private ejectionDrop(
+    type: string,
+    emission: Omit<PendingCase, 'seed'>,
+    counter = false,
+  ): ReturnType<typeof dropTarget> {
+    const probe: Item = { uid: 0, type, count: 1, condition: 1 };
+    const landing = this.landing(emission);
+    const nearby = counter
+      ? pilesInRadius(this.inventory, emission.feet, 20 / this.blockSize).find(
+          (pile) =>
+            pile.items.some(({ item }) => item.type === type) &&
+            this.inventory.planAdd(probe, { kind: 'pile', pos: pile.pos }).ok,
+        )
+      : undefined;
+    return dropTarget(this.inventory, probe, nearby?.pos ?? landing);
+  }
+
+  private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
     const pose = this.pose(item.uid);
     if (!pose) {
-      throw new Error('Live shell needs a held ejection pose');
+      return 'No held ejection pose';
     }
     const emission = this.emission(item, data, pose);
-    const landing = this.landing(emission);
     const type = state.roundType!;
-    if (!this.inventory.add(this.inventory.create(type), { kind: 'pile', pos: landing })) {
-      throw new Error('Could not place ejected live shell');
+    const drop = this.ejectionDrop(type, emission);
+    if (!drop.plan.ok) {
+      return drop.plan.reason;
+    }
+    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
+      return 'Ejection placement changed';
     }
     state.chamber = 'empty';
     state.roundType = undefined;
@@ -554,6 +596,7 @@ export class FirearmMechanics {
       seed,
       ...(modelId ? { caseModelId: modelId } : {}),
     });
+    return undefined;
   }
 
   private landing(emission: Omit<PendingCase, 'seed'>): Vec3 {
@@ -565,7 +608,7 @@ export class FirearmMechanics {
     ];
   }
 
-  private ejectCase(item: Item, state: FirearmState, data: FirearmHandlingData): void {
+  private ejectCase(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
     const pending = state.pendingCase;
     if (!pending) {
       throw new Error('Fired chamber lost its pending case');
@@ -574,12 +617,12 @@ export class FirearmMechanics {
     const emission = pose ? this.emission(item, data, pose) : pending;
     const landing = this.landing(emission);
     const type = spentCaseItemId(data.calibre);
-    const nearby = pilesInRadius(this.inventory, emission.feet, 20 / this.blockSize).find((pile) =>
-      pile.items.some(({ item: existing }) => existing.type === type),
-    );
-    const pos = nearby?.pos ?? landing;
-    if (!this.inventory.add(this.inventory.create(type), { kind: 'pile', pos })) {
-      throw new Error(`Could not add ${type} to pile ${pos.join(',')}`);
+    const drop = this.ejectionDrop(type, emission, true);
+    if (!drop.plan.ok) {
+      return drop.plan.reason;
+    }
+    if (!this.inventory.add(this.inventory.create(type), drop.target)) {
+      return 'Ejection placement changed';
     }
     state.chamber = 'empty';
     state.pendingCase = undefined;
@@ -598,5 +641,6 @@ export class FirearmMechanics {
       seed: pending.seed,
       ...(data.caseModelId ? { caseModelId: data.caseModelId } : {}),
     });
+    return undefined;
   }
 }

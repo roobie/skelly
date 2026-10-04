@@ -32,6 +32,7 @@ import {
   type FirearmMode,
   type HeldActionPart,
   poseActionParts,
+  rackCant,
   sampleActionStroke,
 } from './firearmModel.ts';
 import { LENS, type ModelLibrary } from './models.ts';
@@ -77,6 +78,7 @@ export class HeldItems {
   private readonly lockedCamera = new Quaternion();
   private readonly poseRotation = new Quaternion();
   private readonly recoilRotation = new Quaternion();
+  private readonly rackRotation = new Quaternion();
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
@@ -124,6 +126,12 @@ export class HeldItems {
       this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
       this.applyViewPose(main, pose, transform);
       this.lockCutBladeRoll(side, pose);
+      const item = this.inventory.hands[side];
+      const model = item && this.pumpModels.get(item.uid);
+      const frame = item && firearmPoses.find((entry) => entry.uid === item.uid);
+      const cant = rackCant(model, side, frame, { x: transform.offset[0], y: transform.offset[1] });
+      this.rackRotation.setFromEuler(this.poseEuler.set(0, 0, cant, 'YXZ'));
+      this.poseRotation.multiply(this.rackRotation);
       const strength = Math.max(0, Math.min(1, recoil));
       transform.offset[1] += 0.012 * strength;
       transform.offset[2] += 0.025 * strength;

@@ -5,8 +5,9 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import { weightOf } from '../src/core/items.ts';
+import { dropSpots } from '../src/core/options.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
 import { decodeSave, encodeSave, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -129,6 +130,117 @@ const runtime = (play: Parameters<typeof createSession>[0]['audio']['play'] = ()
   });
 
 describe('real pump ammunition', () => {
+  it('ejection spills from a full landing pile and refuses a rack when all drop spots are full', () => {
+    // Discover the landing through a successful public rack, not a golden coordinate
+    // or a duplicated flight estimate. The actual scenarios use independent inventories.
+    const probe = fixture();
+    probe.load(0);
+    probe.rack(1);
+    expect(probe.mechanics.cock(probe.gun.uid, 3)).toBeUndefined();
+    const duration = firearmHandlingFor(probe.gun, probe.inventory.registry).action.hand.durationSeconds;
+    probe.finish(duration, 3 + duration);
+    const landing = [...probe.inventory.piles.values()][0]?.pos;
+    expect(landing).toBeDefined();
+    const fillerType = 'owned_pile_filler';
+    const content = {
+      ...registry,
+      items: new Map(registry.items).set(fillerType, {
+        ...registry.items.get(shellType)!,
+        id: fillerType,
+        name: 'Test filler',
+        size: [1, 1] as [number, number],
+        stack: 1,
+        ammo: undefined,
+        model: undefined,
+      }),
+    };
+    const fill = (inventory: Inventory, positions: readonly [number, number, number][]) => {
+      for (const pos of positions) {
+        for (let cell = 0; cell < PILE_GRID.w * PILE_GRID.h; cell++) {
+          expect(inventory.add(inventory.create(fillerType), { kind: 'pile', pos })).toBe(true);
+        }
+      }
+    };
+    const scenarios = [
+      { spent: false, blocked: false },
+      { spent: false, blocked: true },
+      { spent: true, blocked: false },
+      { spent: true, blocked: true },
+    ];
+    const isSpillSpot = (pos: [number, number, number]) =>
+      pos.some((value, axis) => value !== landing![axis]) &&
+      dropSpots(landing!).some((spot) => spot.every((value, axis) => value === pos[axis]));
+    const capture = (f: ReturnType<typeof fixture>) =>
+      structuredClone({
+        inventory: f.inventory.snapshotState(),
+        firearm: f.gun.firearm,
+        jobs: f.queue.jobs,
+      });
+    const attemptRack = (f: ReturnType<typeof fixture>) => {
+      try {
+        const reason = f.mechanics.cock(f.gun.uid, 4);
+        if (reason === undefined) {
+          f.finish(duration, 4 + duration);
+        }
+        return { reason, error: undefined };
+      } catch (error) {
+        return { reason: undefined, error };
+      }
+    };
+    const outcomes = scenarios.map(({ spent, blocked }) => {
+      const f = fixture(content);
+      f.load(0);
+      f.rack(1);
+      if (spent) {
+        expect(f.fire(3)).toBe(true);
+      }
+      const positions = blocked ? dropSpots(landing!) : [landing!];
+      fill(f.inventory, positions);
+      const before = capture(f);
+      const { reason, error } = attemptRack(f);
+      const outputType = spent ? hullType : shellType;
+      const output = [...f.inventory.piles.values()].filter((pile) =>
+        pile.items.some(({ item }) => item.type === outputType),
+      );
+      return {
+        spent,
+        blocked,
+        error,
+        reason,
+        before,
+        after: capture(f),
+        ejected: f.effects.length === 1,
+        spilled: output.length === 1 && isSpillSpot(output[0]!.pos),
+      };
+    });
+    // Collect both live and fired outcomes before asserting, so pristine evidence
+    // exercises both former throwing branches rather than stopping at the first.
+    expect(outcomes.map((outcome) => outcome.error)).toEqual(outcomes.map(() => undefined));
+    for (const outcome of outcomes) {
+      if (outcome.blocked) {
+        expect(outcome.reason).toBeDefined();
+        expect(outcome.after).toEqual(outcome.before); // no chamber/UID/job admission side effects
+        expect(outcome.ejected).toBe(false);
+      } else {
+        expect(outcome.reason).toBeUndefined();
+        expect(outcome.ejected).toBe(true);
+        expect(outcome.spilled).toBe(true);
+      }
+    }
+    // Another actor/debug spawn can change a pile while an admitted rack runs.
+    // Completion must revalidate without clearing the chamber or throwing.
+    const concurrent = fixture(content);
+    concurrent.load(0);
+    concurrent.rack(1);
+    expect(concurrent.mechanics.cock(concurrent.gun.uid, 4)).toBeUndefined();
+    fill(concurrent.inventory, dropSpots(landing!));
+    const beforeCompletion = concurrent.inventory.snapshotState();
+    const result = concurrent.queue.tick(duration);
+    concurrent.mechanics.advanceTo(4 + duration);
+    expect(concurrent.inventory.snapshotState()).toEqual(beforeCompletion);
+    expect(concurrent.effects).toEqual([]);
+    expect(result.failed.length).toBeGreaterThan(0);
+  });
   it('cannot load authored shells from a sealed unopened box or expose box inventory Use', () => {
     const f = fixture();
     f.inventory.consume(f.shells, 20);

@@ -64,6 +64,23 @@ remain inventory items in ground piles. Ground models/prototypes do not animate.
 The renderer projects action frames, exported support/loading-port anchors and
 a shell approaching the port; it owns no ammunition/timing.
 
+Both live-shell and hull placement use ordinary drop spots when a pile is full.
+Rack admission checks fresh-item placement without allocating a UID; when all
+spots are full it refuses before starting a job or altering the chamber. Placement
+is checked again at ejection, before clearing ammunition. A spot becoming full
+mid-rack leaves the shell/hull intact and reports a handling failure, not a tick
+exception. Matching spent-case counters coalesce only when they have room.
+
+During a manual rack, the held pump rolls to expose an away-facing ejection port.
+The renderer compares the exported ejection/loading-port positions in view axes
+with the wielding hand, so an already visible port gets no turn. The held grip's
+camera clearance plus the port/loading-port geometry derive the reveal angle;
+separation alone could leave the side hidden. The roll follows
+the exported rear/dwell/return stroke with smoothstep easing, returning to zero
+on completion/cancellation. The whole held wrapper turns; indexed moving-part
+playback remains authoritative. Loading and firing poses are unchanged. This
+turn never changes gameplay aim, ejection, landing, handling state or saves.
+
 A pump shot leaves a fired hull in the chamber and **no automatic cycle**.
 Cartridge data (`gungen/cartridges/12-gauge-00-buck.json`) supplies nine pellets
 and 8.38 mm diameter. A separate seeded shot stream chooses the directions.
@@ -89,6 +106,10 @@ These are game-balance/presentation estimates, **not measured ballistics**:
   presentation estimates, not surface collision audio.
 - Loaded shell envelope/receiver/port fit allowances are exported visual fit
   estimates, not measured interior clearance.
+- Rack cant: camera clearance and port-to-loading-port geometry derive the peak
+  roll; the named
+  `MAX_RACK_CANT_RADIANS` caps it at 45° as a **presentation estimate**. Whether
+  the amount exposes the action naturally is BR's look, not a golden angle test.
 
 ## Audio candidates and provenance
 
