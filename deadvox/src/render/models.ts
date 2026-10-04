@@ -16,6 +16,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
+import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel } from './firearmModel.ts';
 
 /** The base pack's model files, by their path within the pack. */
 const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
@@ -90,7 +91,7 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
 export class ModelLibrary {
   /** Goes up each time a model loads, so what's drawn can catch up. */
   version = 0;
-  private readonly ready = new Map<string, Prepared>();
+  private readonly ready = new Map<string, Prepared & { actionParts: readonly ActionPartPath[] }>();
 
   /** `report` hears about models that can't be drawn; it's never called during construction. */
   constructor(
@@ -108,7 +109,8 @@ export class ModelLibrary {
       loader.load(
         url,
         (gltf) => {
-          this.ready.set(def.id, prepareModel(def, gltf.scene));
+          const actionParts = actionPartPaths(gltf.scene, def.action, gltf.parser);
+          this.ready.set(def.id, { ...prepareModel(def, gltf.scene), actionParts });
           this.version += 1;
         },
         undefined,
@@ -132,7 +134,8 @@ export class ModelLibrary {
   }
 
   /** A copy held at its grip in the model's configured pose. */
-  held(id: string): Object3D | undefined {
-    return this.ready.get(id)?.held.clone();
+  held(id: string): HeldModel | undefined {
+    const prepared = this.ready.get(id);
+    return prepared ? cloneHeldModel(prepared.held, prepared.actionParts) : undefined;
   }
 }

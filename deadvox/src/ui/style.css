@@ -972,6 +972,87 @@ body.bench #quickbar {
     monospace;
 }
 
+/* ---- rough crafting panel, beside inventory (2.4) ---- */
+body.inventory-open #inventory {
+  right: 372px;
+}
+body.inventory-open #inventory-stats {
+  right: 388px;
+}
+#crafting {
+  position: fixed;
+  top: 24px;
+  bottom: 24px;
+  right: 24px;
+  width: 336px;
+  padding: 16px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgb(16 18 22 / 96%);
+}
+#crafting[hidden],
+#craft-status[hidden] {
+  display: none;
+}
+#crafting h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+#crafting header p,
+.craft-time {
+  color: var(--muted);
+}
+.craft-recipe {
+  border-top: 1px solid var(--line);
+  padding: 14px 0;
+}
+.craft-recipe h3 {
+  margin: 0 0 6px;
+}
+.craft-components {
+  margin: 8px 0;
+}
+.craft-gap {
+  color: #efb78b;
+}
+.craft-reason {
+  margin: 8px 0 0;
+}
+.craft-start {
+  margin-top: 10px;
+}
+.inv-occupied-hand {
+  color: var(--muted);
+  font-size: 12px;
+}
+#craft-status {
+  position: fixed;
+  bottom: 76px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  min-width: 300px;
+}
+#craft-status progress {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+}
+@media (max-width: 900px) {
+  /* The side catalogue cannot fit beside the inventory's detail pane on a narrow screen. */
+  body.inventory-open #inventory,
+  body.inventory-open #inventory-stats {
+    right: 24px;
+  }
+  body.inventory-open #crafting {
+    display: none;
+  }
+}
+
 /* ---- rest and sleep (1.8) ---- */
 #rest {
   position: fixed;

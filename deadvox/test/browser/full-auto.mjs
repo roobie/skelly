@@ -2,13 +2,28 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner selects the installed Chromium
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 
-const { chromium } = await import('playwright');
 const root = fileURLToPath(new URL('../..', import.meta.url));
+const anchors = new Map([
+  ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
+  ['src/game/audio.ts', '    const source = context.createBufferSource();'],
+]);
+const requireAnchor = (code, file, marker) => {
+  if (!code.includes(marker)) {
+    throw new Error(`Full-auto observation anchor missing in ${file}: ${JSON.stringify(marker)}`);
+  }
+};
+// Vite reports transform failures asynchronously. Validate before starting it or a browser,
+// so an API change cannot masquerade as a later cold-audio wait timeout.
+for (const [file, marker] of anchors) {
+  requireAnchor(readFileSync(resolve(root, file), 'utf8'), file, marker);
+}
+const { chromium } = await import('playwright');
 const vite = await createServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
@@ -20,22 +35,17 @@ const vite = await createServer({
       enforce: 'pre',
       transform(code, id) {
         if (id.endsWith('/src/game/play.ts')) {
-          const marker = '  const onForwardPress = (e: MouseEvent) => {';
-          assert(code.includes(marker));
+          const marker = anchors.get('src/game/play.ts');
+          requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
             `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects } });\n  // Native audio/cadence probe, not a software-GPU frame-time benchmark.\n  renderer.render = () => {};\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
-          const marker = '    const source = context.createBufferSource();';
-          assert(code.includes(marker));
+          const marker = anchors.get('src/game/audio.ts');
+          requireAnchor(code, 'src/game/audio.ts', marker);
           return code.replace(marker, `    globalThis.fullAutoProbe.event = event;\n${marker}`);
-        }
-        if (id.endsWith('/src/game/firearmHandling.ts')) {
-          const marker = '  const data = firearmHandlingFor(input.item, input.inventory.registry);';
-          assert(code.includes(marker));
-          return code.replace(marker, `  globalThis.fullAutoProbe.shots.push(input.simTime);\n${marker}`);
         }
       },
     },
@@ -134,6 +144,22 @@ try {
     `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
   );
   await page.waitForFunction(() => document.querySelector('#debug-ui-root') && document.querySelector('#view canvas'));
+  // Observe the public admission result instead of an implementation-specific source snippet.
+  await page.evaluate(async () => {
+    const moduleUrl = '/src/game/firearmHandling.ts';
+    const { FirearmMechanics } = await import(moduleUrl);
+    if (typeof FirearmMechanics?.prototype?.fire !== 'function') {
+      throw new Error('Full-auto observer needs src/game/firearmHandling.ts FirearmMechanics.prototype.fire');
+    }
+    const { fire } = FirearmMechanics.prototype;
+    FirearmMechanics.prototype.fire = function (input) {
+      const admitted = fire.call(this, input);
+      if (admitted) {
+        globalThis.fullAutoProbe.shots.push(input.simTime);
+      }
+      return admitted;
+    };
+  });
   await page.locator('#go').click();
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.

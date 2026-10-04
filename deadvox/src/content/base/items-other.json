@@ -1,6 +1,14 @@
 {
   "items": [
     {
+      "id": "work_in_progress",
+      "name": "Work in progress",
+      "category": "material",
+      "weight": 0,
+      "size": [2, 2],
+      "twoHanded": true
+    },
+    {
       "id": "aa_battery",
       "name": "AA battery",
       "category": "battery",
@@ -75,6 +83,16 @@
       "stack": 10000,
       "description": "A spent case from debug firearm handling.",
       "model": "case_5_d_56x45"
+    },
+    {
+      "id": "spent_case_7_d_62x39",
+      "name": "Spent 7.62×39 case",
+      "category": "material",
+      "weight": 6,
+      "size": [1, 1],
+      "stack": 10000,
+      "description": "A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.",
+      "model": "case_7_d_62x39"
     },
     {
       "id": "shell_12_gauge_00_buck",

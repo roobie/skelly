@@ -5,10 +5,8 @@
 
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
@@ -16,9 +14,10 @@ import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
 } from '../test/browser/menu-pointer.mjs';
+import { createBrowserProfile } from './browser-profile.mjs';
 
 const cwd = process.cwd();
-const profile = await mkdtemp(join(tmpdir(), 'deadvox-ui-contract-'));
+const profile = createBrowserProfile();
 const freePort = async () =>
   new Promise((resolve, reject) => {
     const server = createServer();

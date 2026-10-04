@@ -49,45 +49,68 @@ const optionValues = (selectId) => {
   return [...select.matchAll(/<option\s+value="([^"]+)"/g)].map((match) => match[1]);
 };
 
+const coverageFailures = (description, supportedValues, offeredValues, intentionallyOmitted = new Set()) => {
+  const supported = new Set(supportedValues);
+  const offered = new Set(offeredValues);
+  return [
+    ...[...offered]
+      .filter((value) => !supported.has(value))
+      .map((value) => `${description} offers unsupported value ${value}`),
+    ...[...supported]
+      .filter((value) => !(offered.has(value) || intentionallyOmitted.has(value)))
+      .map((value) => `${description} does not offer supported value ${value}`),
+  ];
+};
+
 describe('site launchers track the games’ URL parameters', () => {
-  it('offers exactly the parameters deadvox reads', () => {
-    assert.deepEqual(
-      paramsOfferedBy('deadvox-form'),
-      paramsReadBy([
-        'deadvox/src/main.ts',
-        'deadvox/src/game/config.ts',
-        'deadvox/src/bench/run.ts',
-        'deadvox/src/bench/shamblers.ts',
-      ]).filter((name) => !Object.hasOwn(intentionallyUnofferedDeadvoxParams, name)),
-    );
+  it('offers every supported deadvox URL parameter except documented omissions', () => {
+    const supported = paramsReadBy([
+      'deadvox/src/main.ts',
+      'deadvox/src/game/config.ts',
+      'deadvox/src/bench/run.ts',
+      'deadvox/src/bench/shamblers.ts',
+    ]);
+    const omitted = new Set(Object.keys(intentionallyUnofferedDeadvoxParams));
+    for (const name of omitted) {
+      assert.ok(supported.includes(name), `${name} has a documented omission reason`);
+    }
+    assert.deepEqual(coverageFailures('deadvox parameter', supported, paramsOfferedBy('deadvox-form'), omitted), []);
   });
 
-  it('offers exactly the launcher-editable parameters gungen reads', () => {
-    const gungenParamsRead = paramsReadBy(['gungen/src/viewer/main.ts']);
+  it('offers every launcher-editable gungen URL parameter except documented omissions', () => {
+    const supported = paramsReadBy(['gungen/src/viewer/main.ts']);
     for (const [name, reason] of Object.entries(intentionallyUnofferedGungenParams)) {
-      assert.ok(gungenParamsRead.includes(name), `${name} is intentionally omitted: ${reason}`);
+      assert.ok(supported.includes(name), `${name} is intentionally omitted: ${reason}`);
     }
     assert.deepEqual(
-      paramsOfferedBy('gungen-form'),
-      gungenParamsRead.filter((name) => !Object.hasOwn(intentionallyUnofferedGungenParams, name)),
+      coverageFailures(
+        'gungen parameter',
+        supported,
+        paramsOfferedBy('gungen-form'),
+        new Set(Object.keys(intentionallyUnofferedGungenParams)),
+      ),
+      [],
     );
   });
 
-  it('lists the current gungen templates and fixtures', () => {
-    const templateNames = TEMPLATES.map(({ name }) => name);
-    assert.deepEqual(optionValues('gungen-template'), templateNames);
-    assert.ok(!templateNames.includes('bullpup'), 'suspended bullpup is not offered by the launcher');
+  it('offers current gungen templates, fixtures and designs without stale options', () => {
+    assert.deepEqual(
+      coverageFailures(
+        'gungen template',
+        TEMPLATES.map(({ name }) => name),
+        optionValues('gungen-template'),
+      ),
+      [],
+    );
 
     const fixtureNames = readdirSync(join(ROOT, 'gungen/fixtures'))
       .filter((name) => name.endsWith('.json'))
-      .map((name) => JSON.parse(read(`gungen/fixtures/${name}`)).name)
-      .sort();
-    assert.deepEqual(optionValues('gungen-fixture').sort(), fixtureNames);
+      .map((name) => JSON.parse(read(`gungen/fixtures/${name}`)).name);
+    assert.deepEqual(coverageFailures('gungen fixture', fixtureNames, optionValues('gungen-fixture')), []);
 
     const designNames = readdirSync(join(ROOT, 'gungen/designs'))
       .filter((name) => name.endsWith('.json'))
-      .map((name) => name.replace(JSON_FILE, ''))
-      .sort();
-    assert.deepEqual(optionValues('gungen-design').sort(), designNames);
+      .map((name) => name.replace(JSON_FILE, ''));
+    assert.deepEqual(coverageFailures('gungen design', designNames, optionValues('gungen-design')), []);
   });
 });

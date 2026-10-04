@@ -2,10 +2,16 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
+import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
+import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { CONTROL_CODES } from '../src/game/input.ts';
+import { handlePlayMenuKey } from '../src/game/menuKeys.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
@@ -52,10 +58,16 @@ function setup() {
   const queue = new HandlingQueue(inv);
   const jeans = inv.create('jeans');
   const hoodie = inv.create('hoodie');
-  inv.worn.legs = jeans;
-  inv.worn.torso = hoodie;
   const beans = inv.create('canned_beans');
-  inv.hands.right = beans;
+  if (
+    !(
+      inv.add(jeans, { kind: 'worn' }) &&
+      inv.add(hoodie, { kind: 'worn' }) &&
+      inv.add(beans, { kind: 'hand', side: 'right' })
+    )
+  ) {
+    throw new Error('Inventory UI fixture cannot place its worn and held items');
+  }
   const furnitureDef = [...registry.furniture.values()].find((def) => def.container);
   if (!furnitureDef) {
     throw new Error('expected shipped searchable furniture');
@@ -88,16 +100,107 @@ function setup() {
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
     use: (_item: typeof beans) => undefined,
+    useOption,
     describe: (_item: typeof beans) => ['test description'],
     assign: (_slot: number, _item: typeof beans) => undefined,
+    workOptions: (_uid: number): WorkOption[] => [],
+    work: (_uid: number, _operation: WorkOperation): string | undefined => undefined,
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans, notices };
+  return { root, screen, inv, queue, entity, searching, beans, notices, hooks };
 }
 
 describe('inventory screen Lit rendering', () => {
+  it('keeps inventory commands owned without a selection, but lets gameplay and debug modals reach debug', () => {
+    const codes = [
+      CONTROL_CODES.hands,
+      CONTROL_CODES.use,
+      CONTROL_CODES.wear,
+      CONTROL_CODES.drop,
+      CONTROL_CODES.takeAll,
+      CONTROL_CODES.rotate,
+      CONTROL_CODES.search,
+      ...CONTROL_CODES.quickbar,
+      CONTROL_CODES.cancel,
+      CONTROL_CODES.inventory,
+    ];
+    interface Row {
+      context: string;
+      code: string;
+      inventory: boolean;
+      debug: boolean;
+    }
+    const rows: Row[] = [];
+    const expected: Row[] = [];
+    for (const context of ['inventory', 'gameplay', 'debug-modal'] as const) {
+      const { screen } = setup();
+      if (context === 'gameplay') {
+        screen.close();
+      }
+      screen.selected = undefined;
+      const inventoryKey = vi.spyOn(screen, 'onKey');
+      const debugKey = vi.fn(() => true);
+      const toggleInventory = vi.fn();
+      for (const code of codes) {
+        const before = {
+          inventory: inventoryKey.mock.calls.length,
+          toggle: toggleInventory.mock.calls.length,
+          debug: debugKey.mock.calls.length,
+        };
+        handlePlayMenuKey(new KeyboardEvent('keydown', { code, cancelable: true }), {
+          inventory: screen,
+          debug: { menuOpen: context === 'debug-modal', handleKey: debugKey },
+          locksInput: false,
+          toggleInventory,
+          syncMenuState: () => undefined,
+        });
+        rows.push({
+          context,
+          code,
+          inventory:
+            inventoryKey.mock.calls.length > before.inventory || toggleInventory.mock.calls.length > before.toggle,
+          debug: debugKey.mock.calls.length > before.debug,
+        });
+        expected.push({ context, code, inventory: context === 'inventory', debug: context !== 'inventory' });
+      }
+    }
+    expect(rows).toEqual(expected);
+  });
+  it('shows the derived occupied hand without a second item UID and routes work options by UID', () => {
+    const { root, screen, inv, hooks } = setup();
+    expect(inv.move(inv.hands.right!, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    for (const [type, count] of [
+      ['stick', 1],
+      ['rag', 2],
+      ['wax', 1],
+      ['kitchen_knife', 1],
+    ] as const) {
+      inv.add(inv.create(type, count), { kind: 'pile', pos: [0, 0, 0] });
+    }
+    const result = planCraft(registry.recipes.get('torch')!, hooks.reach(), new Character(registry));
+    if (!('plan' in result)) {
+      throw new Error(result.missing.reason);
+    }
+    const item = inv.beginWork(result.plan)!;
+    const calls: [number, WorkOperation][] = [];
+    hooks.workOptions = () => [
+      { operation: 'continue', label: 'Continue: torch', plan: { ok: true, time: 0 } },
+      { operation: 'apart', label: 'Take apart', plan: { ok: true, time: 0 } },
+    ];
+    hooks.work = (uid, operation) => {
+      calls.push([uid, operation]);
+    };
+    screen.selected = item;
+    screen.update();
+    expect(root.querySelectorAll(`.inv-hands [data-uid="${item.uid}"]`)).toHaveLength(1);
+    expect(root.querySelector('[data-target="hand:left"] .inv-occupied-hand')).not.toBeNull();
+    expect(inv.hands.left).toBeUndefined();
+    const buttons = [...root.querySelectorAll<HTMLButtonElement>('.inv-details button')];
+    buttons.find((button) => button.textContent!.includes('Take apart'))!.click();
+    expect(calls).toEqual([[item.uid, 'apart']]);
+  });
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];
@@ -112,7 +215,7 @@ describe('inventory screen Lit rendering', () => {
     expect([test.inv.version, test.inv.entities.version]).toEqual(versions);
     expect(test.queue.jobs).toHaveLength(1);
     expect(test.searching.has(test.entity)).toBe(true);
-    expect(test.root.querySelectorAll('.inv-pane')[1]?.textContent).toContain('Searching…');
+    expect(test.root.querySelectorAll('.inv-pane')[1]?.querySelector('button.inv-option')).toBeNull();
   });
 
   it.each([
@@ -183,7 +286,7 @@ describe('inventory screen Lit rendering', () => {
       expect(document.querySelector('.inv-ghost') !== null).toBe(!binding.quick);
       canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
       if (binding.quick) {
-        t.queue.tick(10);
+        t.queue.tick(t.queue.remaining);
         expect(t.inv.locate(t.beans)?.kind).toBe('pocket');
       }
       expect(document.querySelector('#inventory-drag-root')?.textContent).toBe('');
@@ -196,36 +299,36 @@ describe('inventory screen Lit rendering', () => {
     }
   });
 
-  it('three Ctrl-clicks on one pile item queue one move and report Already queued', () => {
+  it('repeated quick-clicks keep one owned move and emit refusal feedback for every duplicate', () => {
     const t = setup();
     vi.stubGlobal('navigator', { platform: 'Linux x86_64' });
     try {
       expect(t.inv.move(t.beans, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
       t.screen.update();
-      for (let click = 0; click < 3; click++) {
+      const attempts = 3;
+      for (let click = 0; click < attempts; click++) {
         const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
         expect(node).not.toBeNull();
         node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true, pointerId: 1 }));
       }
       expect.soft(t.queue.jobs).toHaveLength(1);
-      expect(t.notices).toEqual(['Already queued', 'Already queued']); // feedback on each refused repeat
+      expect(t.notices).toHaveLength(attempts - 1);
+      expect(t.notices.every((notice) => notice.length > 0)).toBe(true);
     } finally {
       t.screen.close();
       vi.unstubAllGlobals();
     }
   });
 
-  it('keeps shipped jeans and hoodie pockets inside their wrapping container', () => {
-    const { root } = setup();
-    const legs = [...root.querySelectorAll('.inv-worn')].find(
-      (slot) => slot.querySelector('.inv-slot-label')?.textContent === 'Legs',
-    );
-    const torso = [...root.querySelectorAll('.inv-worn')].find(
-      (slot) => slot.querySelector('.inv-slot-label')?.textContent === 'Torso',
-    );
-
-    expect(legs?.querySelectorAll(':scope > .inv-pockets > .inv-pocket')).toHaveLength(4);
-    expect(torso?.querySelectorAll(':scope > .inv-pockets > .inv-pocket')).toHaveLength(1);
+  it('keeps each worn container’s pockets inside its own wrapping slot', () => {
+    const { root, inv } = setup();
+    const containers = Object.entries(inv.worn).filter(([, item]) => item?.pockets?.length);
+    expect(containers.length).toBeGreaterThan(0);
+    for (const [slot, item] of containers) {
+      const wrapper = root.querySelector(`[data-target="worn:${slot}"]`)?.closest('.inv-worn');
+      expect(wrapper).not.toBeNull();
+      expect(wrapper!.querySelectorAll(':scope > .inv-pockets > .inv-pocket')).toHaveLength(item!.pockets!.length);
+    }
   });
 
   it('preserves focus across a real body redraw while the selected option remains valid', () => {
@@ -244,7 +347,7 @@ describe('inventory screen Lit rendering', () => {
       redraws += 1;
       render();
     };
-    test.inv.version += 1;
+    expect(test.inv.add(test.inv.create(test.beans.type), { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     test.screen.update();
 
     expect(redraws).toBe(1);

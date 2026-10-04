@@ -11,7 +11,7 @@
   ],
   "recipes": [
     {
-      "id": "fixture_tool",
+      "id": "torch",
       "result": { "item": "fixture_tool", "count": 1 },
       "time": 1,
       "skills": {},
