@@ -109,10 +109,9 @@ class TemplateSpace {
     }
     return issues;
   }
-  private flightHeadroom(stair: StairDef, plan: FlightPlan): Vec3 | undefined {
+  private *flightSamples(stair: StairDef, plan: FlightPlan): Generator<Vec3> {
     // Sample the same half-grid route and raise-then-move envelope as the floor flood.
-    // A wide body can overlap two future treads: clearance is derived from those support
-    // heights, not a fixed six-cell cut that would erase a normal upper room's roof.
+    // A wide body can overlap two future treads, so clearance follows their support heights.
     const rows = Array.from({ length: plan.rise + 3 }, (_, i) => i - 1).flatMap(plan.row);
     const along = plan.direction[0] === 0 ? 2 : 0;
     const across = along === 0 ? 2 : 0;
@@ -132,16 +131,61 @@ class TemplateSpace {
           ...rows.filter(([x, , z]) => columns.some(([bx, , bz]) => bx === x && bz === z)).map((row) => row[1]),
         );
         const sweep = pos[1] > previous[1] ? [[previous[0], pos[1], previous[2]] as Vec3, pos] : [pos];
-        for (const sample of sweep) {
-          const blocked = [...bodyCells(sample)].find(([x, y, z]) => this.occupied(x, y, z, false));
-          if (blocked) {
-            return blocked;
-          }
-        }
+        yield* sweep;
         previous = pos;
       }
     }
+  }
+  private flightHeadroom(stair: StairDef, plan: FlightPlan): Vec3 | undefined {
+    for (const sample of this.flightSamples(stair, plan)) {
+      const blocked = [...bodyCells(sample)].find(([x, y, z]) => this.occupied(x, y, z, false));
+      if (blocked) {
+        return blocked;
+      }
+    }
     return undefined;
+  }
+  upperFloorOpeningIssues(): SpatialIssue[] {
+    const access = this.template.access!;
+    const floors = new Map(access.storeys.map((floor) => [floor.id, floor.floor]));
+    for (const floor of access.storeys) {
+      const stairs = access.stairs.filter(
+        (stair) => stair.to === floor.id && (floors.get(stair.from) ?? floor.floor) < floor.floor,
+      );
+      if (stairs.length === 0) {
+        continue;
+      }
+      const layer = floor.floor - 1;
+      const headroom = new Set<string>();
+      for (const stair of stairs) {
+        const plan = planFlight(stair, this.template.size);
+        if (!plan) {
+          continue;
+        }
+        for (let step = 1; step < plan.rise; step++) {
+          for (const [x, , z] of plan.row(step)) {
+            headroom.add(`${x},${z}`);
+          }
+        }
+        for (const sample of this.flightSamples(stair, plan)) {
+          for (const [x, y, z] of bodyCells(sample)) {
+            if (y === layer) {
+              headroom.add(`${x},${z}`);
+            }
+          }
+        }
+      }
+      const [sx, , sz] = this.template.size;
+      for (let z = 0; z < sz; z++) {
+        for (let x = 0; x < sx; x++) {
+          const block = this.template.blocks[x + sx * (z + sz * layer)]!;
+          if (!this.solids.has(block) && !headroom.has(`${x},${z}`)) {
+            return [['.access.stairs', 'upper-storey floor opening extends beyond flight footprint and headroom']];
+          }
+        }
+      }
+    }
+    return [];
   }
   canMove(from: Vec3, next: Vec3): boolean {
     if (!this.standing(next)) {
@@ -213,6 +257,10 @@ export const templateSpatialIssues = (registry: Registry, template: CompiledTemp
   const issues = access.stairs.flatMap((stair, index) => space.flightIssues(stair, index));
   if (issues.length > 0) {
     return issues;
+  }
+  const openingIssues = space.upperFloorOpeningIssues();
+  if (openingIssues.length > 0) {
+    return openingIssues;
   }
   if (!space.standing(access.entrance)) {
     return [['.access.entrance', 'entrance needs support and standing headroom']];
