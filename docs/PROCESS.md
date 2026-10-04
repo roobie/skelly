@@ -141,6 +141,17 @@ their cost, and date the next review.
 - **Determinism:** seeded RNG only; no `Math.random` in simulation or generators.
 - **Don't loosen a test to make room for a change.** Pin the new measured value as a documented
   expectation, so the next change to it is noticed.
+- **CI costs time, not money** (BR, 2026-10-02: "it's not _billed_ money"). The repository is
+  public, so runners are free. Rank CI changes by wasted runs and time to green, and never cut
+  checks to save money that isn't being spent.
+- **Owned work needs a decision and a date.** BR, 2026-10-03: "I can have thousands of bugs
+  assigned to me, but what if I don't address them?" An owned failure or finding is fixed,
+  scheduled into a real slot, quarantined with a revisit date, or closed with a reason, and its
+  age forces a re-decision.
+- **Mechanize every follow-up** (BR, 2026-10-03): "we should consider in every assignment
+  relation how we can mechanize the follow-up. Basic example: set a date, and add a timer unit
+  that adds a message when a decision expired". The work tracker's revisit dates and sweep do
+  this for team items. An issue carries its revisit date in its body.
 
 ## When main is red
 
