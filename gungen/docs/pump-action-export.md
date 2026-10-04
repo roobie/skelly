@@ -61,12 +61,14 @@ Three.js strips colons from names. Resolve each exact `action.parts.*.node` in
 `parser.json.nodes`, then use `parser.associations`' node index to find the object.
 Do not call `getObjectByName` with the original glTF name. Maintained Deadvox tests
 exercise that lookup and real `GLTFLoader -> prepareModel` ground/held forms.
-Runtime racking/loading in Deadvox is later work; this export supplies its data.
-The existing debug trigger still ignores action metadata and uses stand-in cycle,
-ejection and cadence (600 rpm for non-AR models). Adding calibre makes that existing
-seam resolve the 12-gauge hull instead of its old 5.56 fallback; it does **not**
-implement pumping, loading or ammunition consumption. Do not mistake this debug
-stand-in for the exported hand timeline or a playable pump action.
+This export supplies the data; playable racking, loading, ammunition and firing
+come from Deadvox's d36 feature. Deadvox mechanics require real export data:
+automatic cycles need `action.fire` and `rpm`, while hand cycles need the hand
+action. This hand-only pump samples hand motion only; no automatic pose, cadence,
+calibre or case metadata is synthesized. An unannotated model still validates,
+loads and can be held and inspected, but unsupported mechanics refuse with a
+clear reason. The former debug stand-in and its 5.56/600-rpm fallback are retired;
+exporting a calibre/hull is not itself playable ammunition handling.
 
 ## Reproduce and inspect
 
