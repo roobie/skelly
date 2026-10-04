@@ -32,8 +32,7 @@ describe('deathViewModel', () => {
 
   it('says nothing was searched when nothing was', () => {
     const vm = deathViewModel(registry, summary({ searched: 0 }));
-    expect(vm.summary).not.toContain(defOf(registry, 'can_of_beans').name.toLowerCase());
-    expect(vm.summary).not.toContain(defOf(registry, 'flashlight').name.toLowerCase());
+    expect(vm.summary.match(/\d+/g)).toBeNull();
   });
 
   it('says what was searched and taken, most looted first', () => {
