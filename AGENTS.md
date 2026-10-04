@@ -94,7 +94,8 @@ no other test catches. So:
 - Measure before adding or cutting: coverage classes show which cases exercise the same
   code; mutation testing (inject small bugs, see which tests catch them) shows which
   tests actually detect anything. A removal states what the test protected and which
-  remaining test still catches it.
+  remaining test still catches it, or, for drifting data, names its row in
+  `docs/deferred-assertions.md`.
 - Keep the default run fast and deterministic. A slow test gets split, or a timeout
   proportional to its work, never a flat generous one.
 
