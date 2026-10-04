@@ -9,6 +9,7 @@ describe('npm run validate', () => {
   it('passes on the base pack', () => {
     const run = validate();
     expect(run.status).toBe(0);
+    expect(run.stdout).toContain('0 issue(s)');
   });
 
   it.each([
@@ -44,6 +45,7 @@ describe('npm run validate', () => {
       'test/fixtures/content/reachability-craftable.json',
     );
     expect(run.status).toBe(0);
+    expect(run.stdout).toContain('0 issue(s)');
   });
 
   it('rejects a recipe with a missing component item and names its reference', () => {
@@ -69,6 +71,7 @@ describe('npm run validate', () => {
   it('passes on a pack with a model, its file and a manifest that lists it', () => {
     const run = validate('test/fixtures/packs/lamp/lamp.json', 'test/fixtures/packs/lamp/assets/manifest.json');
     // The fixture is validated on top of the base pack, including the new cartridge round and case models.
+    expect(run.stdout).toContain('0 issue(s)');
     expect(run.status).toBe(0);
   });
 

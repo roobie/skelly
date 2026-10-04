@@ -71,6 +71,9 @@ const verticalBrushSession = (spawnY: number) => {
     },
     audio: { play: () => false },
     notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in vegetation fixture');
+    },
   });
   session.sim.paused = false;
   const reader = session.sim.events.reader();
@@ -235,6 +238,9 @@ describe('passable but opaque vegetation', () => {
       },
       audio: { play: () => false },
       notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in vegetation fixture');
+      },
     });
     session.sim.paused = false;
     const reader = session.sim.events.reader();

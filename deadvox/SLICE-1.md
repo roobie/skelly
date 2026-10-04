@@ -628,8 +628,8 @@ column-spawn APIs; `test/snapshot.test.ts` asserts each population count. The
 10-hour state is used for save size and encode/decode/restore budgets; snapshot
 p95 is measured in-game through F4 under §1.11.
 
-**Latest local measurement:** on deb39 (Intel Core i7-4790 @ 3.60 GHz, Linux),
-the encoded save was 285,521 bytes; encode 158.3 ms, decode 117.5 ms, runtime
+**Latest local measurement:** on the team's development VM (a 4-core desktop
+CPU, Linux), the encoded save was 285,521 bytes; encode 158.3 ms, decode 117.5 ms, runtime
 restore 166.9 ms, and decode-plus-restore 284.4 ms. This is a local result, not
 a measurement of `ubuntu-latest` or the i7-1185G7 reference laptop.
 

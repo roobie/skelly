@@ -45,6 +45,7 @@ import {
 } from '../ui/playHud.ts';
 import { playReadout } from '../ui/playReadout.ts';
 import { primaryActionHint } from '../ui/primaryActionHint.ts';
+import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
@@ -190,6 +191,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       },
     },
     notice: (text) => showNotice(text),
+    onRead: (readable) => reading.open(readable),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
@@ -262,6 +264,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const overlay = $('overlay');
   const gameCursor = mountGameCursor($('game-cursor-root'));
   const inventoryPanel = $('inventory');
+  const reading = mountReading($('reading'), () => syncMenuState());
   const hud = $('hud');
   const inventoryStats = $('inventory-stats');
   const hudOptions = readHudOptions();
@@ -463,6 +466,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       started,
       mainMenuOpen,
       inventoryOpen: screen.isOpen,
+      readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
       pointerLocked: input.locked,
       dead: sim.dead !== undefined,
@@ -476,6 +480,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resumeRequested = false;
     }
     if (state.closeOtherMenus) {
+      reading.close();
       closeInventoryScreen();
       debugTools?.closeMenus();
     }
@@ -512,7 +517,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resume();
       return;
     }
-    if (input.locked || screen.isOpen || debugTools?.menuOpen || sim.dead) {
+    if (input.locked || screen.isOpen || reading.isOpen || debugTools?.menuOpen || sim.dead) {
       return;
     }
     resume();
@@ -692,6 +697,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!(e.repeat || sim.dead)) {
       mainMenuOpen = !mainMenuOpen;
       if (mainMenuOpen) {
+        reading.close();
         closeInventoryScreen();
         debugTools?.closeMenus();
       }
@@ -747,19 +753,20 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (e.repeat || sim.dead) {
       return;
     }
-    if (handleMenuKey(e)) {
-      return;
-    }
-    if (timeKeys(e.code)) {
+    if (handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
       return;
     }
     playKeys(e.code);
   };
 
   globalThis.addEventListener('keydown', (event) => {
-    if (!handleTitleKey(event)) {
-      handleGameplayKey(event);
+    if (handleTitleKey(event)) {
+      return;
     }
+    if (event.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(event)) {
+      return;
+    }
+    handleGameplayKey(event);
   });
   globalThis.addEventListener(
     'wheel',
@@ -815,13 +822,14 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
       container: Boolean(entity.pockets),
+      readable: Boolean(entities.defOf(entity).readable),
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
     });
   };
 
-  /** F: opens or closes a door; searches a container and opens the inventory beside it. */
+  /** F: doors first, then readable furniture, then container search/inventory. */
   function use(): void {
     const entity = lookedAt();
     if (!entity) {
@@ -829,6 +837,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     if (entities.defOf(entity).door) {
       toggleDoor(entity);
+    } else if (entities.defOf(entity).readable) {
+      const reason = session.readFurniture(entity);
+      if (reason) {
+        showNotice(reason);
+      }
     } else if (entity.pockets) {
       playtestObserver?.beginSearch(entity, nameOf(entity));
       search(entity);
@@ -1254,6 +1267,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     input.unlock();
     metrics.recordDeath(cause, time * sim.clock.ratio);
     saveMetrics();
+    reading.close();
     closeInventoryScreen();
     inventoryPanel.hidden = true;
     syncMenuState();

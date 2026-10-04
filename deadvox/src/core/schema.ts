@@ -9,6 +9,7 @@ import {
   type InferOutput,
   integer,
   literal,
+  maxLength,
   maxValue,
   minLength,
   minValue,
@@ -26,8 +27,8 @@ import {
   union,
   boolean as vBoolean,
 } from 'valibot';
-
 import { hasSegment } from './authoredTerrain.mjs';
+import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
@@ -183,6 +184,18 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
+const readableText = (limit: number) =>
+  pipe(
+    string(),
+    check(hasReadableWords, 'must contain non-whitespace text'),
+    check(isReadablePlainText, 'must be plain text without markup or control characters'),
+    maxLength(limit, `must be at most ${limit} characters`),
+  );
+export const ReadableSchema = strictObject({
+  title: readableText(READABLE_TITLE_LIMIT),
+  text: readableText(READABLE_TEXT_LIMIT),
+});
+
 export const ItemSchema = strictObject({
   id: Id,
   name: Name,
@@ -202,6 +215,7 @@ export const ItemSchema = strictObject({
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
   light: optional(LightSchema),
+  readable: optional(ReadableSchema),
   battery: optional(BatterySchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
@@ -352,6 +366,7 @@ export const FurnitureSchema = strictObject({
   size: Size,
   color: Color,
   solid: optional(vBoolean()),
+  readable: optional(ReadableSchema),
   container: optional(ContainerSchema),
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),

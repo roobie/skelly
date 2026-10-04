@@ -13,6 +13,35 @@ don't require byte-identical exports. What must still work: gungen exports a mod
 that deadvox validates and loads. Migration, especially of save games, starts
 mattering at v1.0 beta.
 
+## No host-specific information in tracked files
+
+Tracked files describe the project, not the machine the team happens to work on (BR,
+2026-10-03 and 2026-10-04). Anyone who clones the repo, and CI, must be able to use every
+tracked file as it is. This covers code, tests, docs, review reports, content and
+credits. Never commit:
+
+- **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`;
+- **addresses:** host names, LAN IPs and LAN URLs (`http://<ip>:<port>/…`), and the ports
+  of this host's own services (preview servers, proxies). A port the project or its tools
+  configure, such as Vite's `localhost:5173`, is the same for every clone and is fine;
+- **the host's size and limits:** its CPU, RAM and disk, free-disk floors, memory caps,
+  cgroup slices and scopes, lock files, and time budgets measured on it.
+
+Instead, use a path relative to the repository root or to the file, a public URL for an
+external source, an environment variable for a host location (`$XDG_RUNTIME_DIR`), or a
+page path for a review link (`/?seed=73&debug=1` on the dev server). A benchmark may
+describe its hardware generically (a 7-CPU Linux VM) so its numbers can be read; it
+doesn't name the host.
+
+**Host facts live outside the repository,** in the lead's host notes:
+`.agent-mail/HOST.md` in the main checkout, untracked. Every agent on the host follows
+them: the heavy-run lock, the free-disk floor, memory admission and the LAN address for
+review links. A host rule changes there, not through a PR.
+
+Untracked scratch and mail may use absolute paths. **Don't modify third-party files** to
+meet this rule: they stay as received, so paths embedded in their metadata (for example
+inside the `mobgen/reference/*.blend` files) are out of scope.
+
 ## Work item IDs
 
 Every coordinated work item (agent mail `X-Item`, branch, PR) has an ID:
@@ -103,7 +132,6 @@ Detail and worked numbers: `gungen/PROJECT.md`, "Testing", and issue #113.
 
 ## Further docs
 
-- Shared-host admission, capacity and default-run budgets: `docs/host-budget.md`.
 - Values tests deliberately don't assert, and when to pin them: `docs/deferred-assertions.md`.
 
 - Debugging deadvox, including seeing it without a display: `deadvox/TROUBLESHOOTING.md`.
@@ -134,13 +162,3 @@ parallel and unbilled, on every push to a PR, so don't repeat it locally.
 
 Fix failures before pushing; `--no-verify` is for emergencies only, never to bypass a
 real failure. Merging still needs green CI.
-
-**No local absolute paths in tracked files** (BR, 2026-10-03). This covers code,
-tests, docs, review reports, content and credits. Never write a host path
-(`/home/…`, `~/…`, `/run/user/1000/…`, `/tmp/…`). Use a path relative to the
-repository root or to the file, a public URL for an external source, or an
-environment variable for a host location, such as
-`"$XDG_RUNTIME_DIR/skelly-heavy.lock"`. Untracked scratch and mail may use
-absolute paths. **Don't modify third-party files** to meet this rule: they stay as
-received, so paths embedded in their metadata (for example inside the
-`mobgen/reference/*.blend` files) are out of scope.

@@ -191,6 +191,12 @@ jobs:
       - name: Stairs lighting browser contract
         timeout-minutes: 5
         run: node test/browser/stairs.mjs lighting
+      - name: Reading consumer browser contract
+        timeout-minutes: 3
+        run: node test/browser/reading.mjs consumer
+      - name: Reading lifecycle browser contract
+        timeout-minutes: 3
+        run: node test/browser/reading.mjs lifecycle
       - name: Upload browser-stage artifacts on failure
         if: failure()
         uses: actions/upload-artifact@v4
