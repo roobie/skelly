@@ -58,7 +58,7 @@ it('rack pose turns an away-facing port only during handling without changing ga
     });
   const update = () => {
     const before = state();
-    held.update(camera, undefined, 0, mechanics.frames());
+    held.update(camera, undefined, 0, { firearms: mechanics.frames() });
     expect(state()).toEqual(before);
     return held.warmUpTarget.scene.getObjectByName('rack-pose-probe')!.getWorldQuaternion(new Quaternion());
   };
