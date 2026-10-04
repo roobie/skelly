@@ -279,6 +279,7 @@ const blockEntitySchema = obj({
   facing: enumeration(['n', 'e', 's', 'w']),
   searched: bool,
   open: bool,
+  lock: opt(obj({ id: str({ id: true }), locked: bool })),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
 });
 const pileSchema = obj({ pos: tuple(safeInt, safeInt, safeInt), items: placedGrid });

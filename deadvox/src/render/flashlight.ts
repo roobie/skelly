@@ -55,11 +55,14 @@ const FADE_SHARPNESS = 5;
  * the sun's contribution at noon, partial at dusk and dawn. It approximates eye adaptation:
  * a flashlight pool vanishes in daylight although its output is the same. It keys off the
  * outdoor sky light (sun/moon plus ambient intensity, so overcast or moonlit variants follow),
- * so a dark interior at noon dims the flashlight too until voxel skylight exists; then
- * it should key off the local light instead.
+ * multiplied by local voxel sky visibility where an authored cellar provides it. Elsewhere
+ * the existing outdoor approximation remains.
  */
-export const flashlightDaylightScale = (sky: Pick<Sky, 'lightIntensity' | 'ambientIntensity'>): number => {
-  const brightness = sky.lightIntensity + sky.ambientIntensity;
+export const flashlightDaylightScale = (
+  sky: Pick<Sky, 'lightIntensity' | 'ambientIntensity'>,
+  visibility = 1,
+): number => {
+  const brightness = (sky.lightIntensity + sky.ambientIntensity) * visibility;
   return 1 / (1 + (brightness / HALF_BRIGHTNESS) ** FADE_SHARPNESS);
 };
 

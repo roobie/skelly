@@ -135,7 +135,7 @@ describe('furniture', () => {
     const sounds: { event: string; position: [number, number, number] }[] = [];
     registerDoorAction({
       queue,
-      entities: inv.entities,
+      inventory: inv,
       player: () => player,
       others: () => [],
       playWorldSound: (event, position) => {

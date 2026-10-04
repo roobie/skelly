@@ -9,6 +9,7 @@
         "z1": 128
       },
       "ground": 21,
+      "terrain": [],
       "buildings": [
         {
           "template": "small_house",

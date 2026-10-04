@@ -33,6 +33,7 @@ describe('held-item hand action', () => {
   it('dispatches by item capability, not item id', () => {
     expect(primaryActionForDefinition(registry.items.get('baseball_bat')!)).toBe('melee');
     expect(primaryActionForDefinition(registry.items.get('flashlight')!)).toBe('light');
+    expect(primaryActionForDefinition(registry.items.get('shed_key')!)).toBe('key');
     expect(primaryActionForDefinition(registry.items.get('rag')!)).toBe('none');
   });
 

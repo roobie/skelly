@@ -11,9 +11,9 @@ describe('npm run validate', () => {
     expect(run.status).toBe(0);
     expect(run.stdout).toContain('0 issue(s)');
     expect(run.stdout).toContain('Component closure: 36 item types');
-    expect(run.stdout).toContain('Content count: 36 reachable / 42 defined eligible types');
+    expect(run.stdout).toContain('Content count: 36 reachable / 43 defined eligible types');
     expect(run.stdout).toContain(
-      'Defined but unreachable: baseball_bat, fanny_pack, hiking_backpack, shell_12_gauge_00_buck, spent_case_12_h_gauge_h_00_h_buck, utility_vest',
+      'Defined but unreachable: baseball_bat, fanny_pack, hiking_backpack, shed_key, shell_12_gauge_00_buck, spent_case_12_h_gauge_h_00_h_buck, utility_vest',
     );
     expect(run.stdout).toContain('1 pending prerequisite(s)');
   });

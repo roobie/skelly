@@ -51,7 +51,17 @@ export interface PlayWorldFrame {
 type PlayViewEngine = Readonly<
   Pick<
     Engine,
-    'config' | 'registry' | 'renderer' | 'meshes' | 'scene' | 'camera' | 'mood' | 'shadows' | 'sky' | 'isSolid'
+    | 'config'
+    | 'registry'
+    | 'renderer'
+    | 'meshes'
+    | 'scene'
+    | 'camera'
+    | 'mood'
+    | 'shadows'
+    | 'sky'
+    | 'isSolid'
+    | 'skylight'
   >
 >;
 
@@ -128,7 +138,10 @@ export const createPlayView = (
       return { hour, sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {
-      flashlight.daylightScale = flashlightDaylightScale(sky);
+      flashlight.daylightScale = flashlightDaylightScale(
+        sky,
+        engine.skylight?.at([camera.position.x, camera.position.y, camera.position.z]) ?? 1,
+      );
       flashlight.shadowsAllowed = engine.shadows.torchOn;
     },
     updateShadows: (hour: number, sky: ReturnType<typeof skyInWeather>) => {

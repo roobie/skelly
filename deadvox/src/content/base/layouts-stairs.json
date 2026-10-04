@@ -1,0 +1,34 @@
+{
+  "layouts": [
+    {
+      "id": "stair_demo",
+      "bounds": {
+        "x0": 32,
+        "z0": 32,
+        "x1": 96,
+        "z1": 96
+      },
+      "ground": 21,
+      "terrain": [],
+      "buildings": [
+        {
+          "template": "stairs_house",
+          "position": [55, 21, 55],
+          "rotation": 0
+        },
+        {
+          "template": "stairs_cabin",
+          "position": [66, 21, 55],
+          "rotation": 0
+        }
+      ],
+      "player": {
+        "position": [56, 21.5, 56],
+        "yaw": 180
+      },
+      "shamblers": [],
+      "woodlands": [],
+      "tracks": []
+    }
+  ]
+}
