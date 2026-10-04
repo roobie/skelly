@@ -69,7 +69,7 @@ try {
   await page.keyboard.press('KeyB');
   assert.equal(await page.evaluate(() => globalThis.d7Review.debugTools.buildOn), true);
   await page.mouse.click(640, 360);
-  await page.waitForTimeout(150);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
   const build = await page.evaluate(() => ({
     locked: globalThis.d7Review.input.locked,
     menu: globalThis.d7Review.input.menuPointer,
@@ -87,7 +87,7 @@ try {
   });
 
   await page.keyboard.press('KeyB');
-  await page.waitForTimeout(1100);
+  assert.equal(await page.evaluate(() => globalThis.d7Review.debugTools.buildOn), false);
   const meleeAdded = await page.evaluate(() => {
     const { inventory } = globalThis.d7Review;
     return inventory.add(inventory.create('kitchen_knife'), { kind: 'hand', side: 'right' });
@@ -98,7 +98,7 @@ try {
     globalThis.d7Observed.combatStaminaBefore = globalThis.d7Review.session.sim.needs.stamina;
   });
   await page.mouse.click(640, 360);
-  await page.waitForTimeout(150);
+  await page.waitForFunction(() => globalThis.d7Observed.starts.length > 0);
   const combat = await page.evaluate(() => ({
     starts: globalThis.d7Observed.starts,
     staminaBefore: globalThis.d7Observed.combatStaminaBefore,
@@ -111,7 +111,7 @@ try {
     assert.ok(combat.staminaAfter < combat.staminaBefore);
   });
 
-  await page.waitForTimeout(1100);
+  await page.waitForFunction(() => !globalThis.d7Review.session.zombies.activeMeleeAction, null, { timeout: 10_000 });
   await page.evaluate(() => {
     globalThis.d7Observed.starts = [];
   });
@@ -122,7 +122,7 @@ try {
   );
   await page.mouse.click(640, 360);
   await page.keyboard.press('Tab');
-  await page.waitForTimeout(150);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
   const menu = await page.evaluate(() => ({
     locked: globalThis.d7Review.input.locked,
     menu: globalThis.d7Review.input.menuPointer,
