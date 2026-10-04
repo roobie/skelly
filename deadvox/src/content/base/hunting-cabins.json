@@ -45,7 +45,7 @@
       ],
       "player": {
         "position": [64, 21.5, 20],
-        "yaw": 180
+        "bearing": 180
       },
       "shamblers": [
         {
