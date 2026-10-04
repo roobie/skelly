@@ -478,6 +478,10 @@ const Metres = pipe(
   number(),
   check((value) => Number.isFinite(value), 'must be finite'),
 );
+const Degrees = pipe(
+  number(),
+  check((value) => Number.isFinite(value), 'must be finite'),
+);
 const HalfMetres = pipe(
   Metres,
   check((v) => Number.isInteger(v * 2), 'must be snapped to 0.5 m'),
@@ -520,7 +524,11 @@ export const SiteLayoutSchema = strictObject({
   ground: HalfMetres,
   terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),
-  player: strictObject({ position: MetrePosition, yaw: Metres }),
+  player: strictObject({
+    position: MetrePosition,
+    /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
+    bearing: Degrees,
+  }),
   shamblers: array(strictObject({ type: Id, position: MetrePosition, chance: optional(Fraction) })),
   woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
   tracks: array(

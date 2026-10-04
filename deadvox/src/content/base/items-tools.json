@@ -13,6 +13,14 @@
   ],
   "items": [
     {
+      "id": "compass",
+      "name": "Compass",
+      "category": "tool",
+      "weight": 120,
+      "size": [1, 2],
+      "description": "A small electronic compass with an illuminated heading display. Hold it to read it. Prototype: battery use is not yet modeled."
+    },
+    {
       "id": "crowbar",
       "name": "Crowbar",
       "category": "tool",
