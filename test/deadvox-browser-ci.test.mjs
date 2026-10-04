@@ -16,7 +16,6 @@ const quarantinedScripts = {
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
-const BROWSER_SCRIPT = /^test:(?:ui-)?browser(?::|$)/;
 const ENV_ASSIGNMENT = /^[A-Z][A-Z0-9_]*=/;
 const ENTRY = /^([\w-]+):\s*(.*)$/;
 const BLOCK_SCALAR = /^[|>]/;
@@ -59,6 +58,9 @@ const stagesOf = (script) => script.split('&&').map(parseCommand);
 const readEntry = (step, entry) => {
   const [, key, value] = entry.match(ENTRY) ?? [];
   const nested = value === '' || BLOCK_SCALAR.test(value ?? '');
+  if (key === 'if' || key === 'continue-on-error') {
+    step.coverageExcluded = true;
+  }
   if (key === 'run' && !nested) {
     step.run.push(value);
   }
@@ -111,23 +113,36 @@ const workflowSteps = (text) => {
 };
 
 const { scripts } = JSON.parse(read('deadvox/package.json'));
-const covered = new Set(
-  workflowSteps(read('.github/workflows/deadvox.yml')).flatMap((step) =>
-    step.run.flatMap((run) =>
-      run.split('&&').map((part) => {
-        const stage = parseCommand(part);
-        return describeStage({ env: { ...step.env, ...stage.env }, command: stage.command });
-      }),
-    ),
-  ),
+const browserStages = Object.fromEntries(
+  Object.entries(scripts)
+    .map(([name, script]) => [
+      name,
+      stagesOf(script).filter(
+        ({ command }) => command.startsWith('node test/browser/') || command === 'node tools/ui-browser-contract.mjs',
+      ),
+    ])
+    .filter(([, stages]) => stages.length > 0),
 );
-const browserScripts = Object.keys(scripts).filter((name) => BROWSER_SCRIPT.test(name));
-const uncovered = (name) =>
-  stagesOf(scripts[name])
-    .map(describeStage)
-    .filter((stage) => !covered.has(stage));
+const covered = new Set(
+  workflowSteps(read('.github/workflows/deadvox.yml'))
+    .filter((step) => !step.coverageExcluded)
+    .flatMap((step) =>
+      step.run.flatMap((run) =>
+        run.split('&&').map((part) => {
+          const stage = parseCommand(part);
+          return describeStage({ env: { ...step.env, ...stage.env }, command: stage.command });
+        }),
+      ),
+    ),
+);
+const browserScripts = Object.keys(browserStages);
+const uncovered = (name) => browserStages[name].map(describeStage).filter((stage) => !covered.has(stage));
 
 describe('deadvox CI runs every browser stage package.json lists', () => {
+  it('selects stages by browser command content', () => {
+    assert.ok(browserScripts.length > 0, 'no deadvox browser stages selected');
+  });
+
   it('has a workflow step for each stage of every browser script that is not quarantined', () => {
     const missing = browserScripts
       .filter((name) => !(name in quarantinedScripts))

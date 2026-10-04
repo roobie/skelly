@@ -148,6 +148,13 @@ jobs:
       - run: timeout 300 npm run validate
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
+      - name: Upload check artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deadvox-check-test-results
+          path: deadvox/test-results/
+          if-no-files-found: ignore
 
   # The Chromium stages of `npm run test:ui-browser` that `check` does not run, in parallel with it so the
   # PR's time-to-green stays at `check`'s. test/deadvox-browser-ci.test.mjs (root `npm run ci`) fails when a
@@ -182,5 +189,12 @@ jobs:
         timeout-minutes: 3
         run: node test/browser/stairs.mjs traversal
       - name: Stairs lighting browser contract
-        timeout-minutes: 6
+        timeout-minutes: 5
         run: node test/browser/stairs.mjs lighting
+      - name: Upload browser-stage artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deadvox-browser-stages-test-results
+          path: deadvox/test-results/
+          if-no-files-found: ignore
