@@ -20,6 +20,29 @@ export const firearmShotSound = (
   listenerRelative: perspective === 'player',
 });
 
+export const HEARTBEAT_FILES = {
+  slow: 'assets/audio/heartbeat-slow-beat.ogg',
+  fast: 'assets/audio/heartbeat-fast-beat.ogg',
+} as const;
+export type HeartbeatTimbre = keyof typeof HEARTBEAT_FILES;
+export const HEARTBEAT_QUIET_FLOOR = 0.003;
+
+export interface HeartbeatTarget {
+  readonly bpm: number;
+  readonly gain: number;
+  readonly fastMix: number;
+}
+
+/** Presentation only: decreasing stamina raises tempo, loudness and the fast-timbre share. */
+export const heartbeatForStamina = (stamina: number): HeartbeatTarget => {
+  const strain = Math.max(0, Math.min(1, 1 - stamina));
+  return {
+    bpm: 60 + strain * 90,
+    gain: 0.5 * strain ** 1.4,
+    fastMix: strain,
+  };
+};
+
 /** Sound policy for a move beginning; presentation-only and deliberately outside the simulation fingerprint. */
 export const handlingMoveStartCue = (
   move: MoveStart,
