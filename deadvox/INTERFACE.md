@@ -218,7 +218,7 @@ ruling.
   2026-10-05: "and the paper target with debug mode that 'pings' to make it real
   obvious where it was hit / maybe if we can make a debug-laser pointer too - ie.
   a magenta line from the muzzle that marks the trajectory exactly". The target
-  ping and F1+L laser are debug-profile tools; see `src/game/worldSetup.ts`,
+  ping and F2+L laser are debug-profile tools; see `src/game/worldSetup.ts`,
   `DebugTestHouseSite`, `src/debug/index.ts`, `createDebugActions`, and
   `src/render/impactEffects.ts`, `ImpactEffects`. BR also said on 2026-10-05:
   "also: in debug mode we should render the rage to target down by the direction
