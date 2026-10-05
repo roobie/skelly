@@ -27,6 +27,10 @@ escrow and continuation use the dominant slot and require the other hand free
 (see `src/core/craftWork.ts`, `craftActionHooks`). This enforces the two-handed work
 constraint at its owner, rather than relying on a menu to choose a valid target.
 
+Quickbar capability preferences also resolve through the actual actor; see
+`src/core/options.ts`, `quickbarHand`. A remembered source remains a physical
+Inventory target, so put-away does not reinterpret a saved placement.
+
 Input intents describe dominant and off use, not anatomy; see
 `src/game/player.ts`, `MoveIntent`, and `src/game/session.ts`, `SessionControls`.
 `src/game/primaryAction.ts`, `selectPrimaryAction`, resolves the actor's default
@@ -63,6 +67,15 @@ binds synchronously, commits entry, then invokes the explicit entry handle from
 shader warm-up does not delay it. Initialization refusal leaves saved generations
 untouched and cannot replay partially installed listeners. Continue remains a
 separate restored, paused session and does not take creation preferences.
+
+Title help does not need an actor: `src/main.ts` mounts
+`src/game/controls.ts`, `mountControlsCard`, before discovery. Keeping that
+presentation outside `startPlay` preserves help at the actorless title. Browser
+fixtures wait for accepted-launch readiness before looking for gameplay witnesses;
+see `test/browser/primary-action.mjs`, `observationPlugin`. Their pointer-lock
+harness remains separate from native gesture evidence. The UI tooling installs its
+harness before construction and observes key cancellation after propagation, since
+Input's listeners do not exist until acceptance.
 
 `index.html`, `dominant-hand`, is a native creation control, not a browser setting.
 `SaveController` validates and freezes its value at accepted launch, including

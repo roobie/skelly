@@ -79,9 +79,9 @@ try {
       (event) => {
         globalThis.__startGesture.clickTarget ??= describe(event.target);
         globalThis.__startGesture.acceptedClickActive = Boolean(event.target?.closest('#go') && event.isTrusted);
-        queueMicrotask(() => {
+        setTimeout(() => {
           globalThis.__startGesture.acceptedClickActive = false;
-        });
+        }, 0);
       },
       true,
     );

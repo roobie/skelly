@@ -7,6 +7,7 @@ import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { parseTimeOfDay } from './core/clock.ts';
 import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
+import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
 import { KEY_BINDINGS } from './game/input.ts';
 import { startPlay } from './game/play.ts';
@@ -29,6 +30,7 @@ if (bench === 'report') {
   document.body.classList.add('bench');
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
 } else if (bench === null) {
+  mountControlsCard(document.getElementById('controls')!);
   let config = configFromUrl(params);
   const saveBackend = params.get('save-backend');
   const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';

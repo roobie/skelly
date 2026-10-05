@@ -207,13 +207,17 @@ try {
     );
   await assertSaveNote('title');
   assert.equal(
-    await evaluate(`(() => {
+    await evaluate(`(async () => {
+      const { controlsCardRows } = await import('/src/game/controls.ts');
       const controls = document.querySelector('#controls');
       const entries = [...controls.querySelectorAll('dt')];
+      const rows = controlsCardRows();
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
-      return entries.length >= 13 && controls.textContent.includes('F9') &&
-        entries.every((key) => key.nextElementSibling?.tagName === 'DD') &&
-        columns.length === 1 && document.querySelector('#overlay .card').getBoundingClientRect().width <= 362;
+      const card = document.querySelector('#overlay .card').getBoundingClientRect();
+      return rows.length > 0 && entries.length === rows.length &&
+        entries.every((key, index) => key.nextElementSibling?.tagName === 'DD' &&
+          key.textContent === rows[index].keys && key.nextElementSibling.textContent === rows[index].action) &&
+        columns.length === 1 && card.left >= 0 && card.right <= innerWidth;
     })()`),
     true,
     'binding-derived controls stack in one column inside the narrower pause card',
@@ -227,14 +231,20 @@ try {
   );
   await evaluate(`(() => {
     window.__metricsBlob = undefined;
-    URL.createObjectURL = (blob) => { window.__metricsBlob = blob; return 'blob:playtest-metrics'; };
-    URL.revokeObjectURL = () => {};
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    const revokeObjectURL = URL.revokeObjectURL.bind(URL);
+    URL.createObjectURL = (blob) => {
+      if (blob.type !== 'application/json') return createObjectURL(blob);
+      window.__metricsBlob = blob;
+      return 'blob:playtest-metrics';
+    };
+    URL.revokeObjectURL = (url) => { if (url !== 'blob:playtest-metrics') revokeObjectURL(url); };
     HTMLAnchorElement.prototype.click = function() { if (this.download) window.__metricsFilename = this.download; };
   })()`);
   await evaluate(`(() => {
     window.__f4Prevented = false;
     window.addEventListener('keydown', (event) => {
-      if (event.code === 'F4') window.__f4Prevented = event.defaultPrevented;
+      if (event.code === 'F4') setTimeout(() => { window.__f4Prevented = event.defaultPrevented; }, 0);
     });
   })()`);
   await evaluate(`(() => {
@@ -296,6 +306,7 @@ try {
     'post-acceptance debug UI mount',
   );
   await pressBinding(keyBindings.mainMenu);
+  await evaluate('document.exitPointerLock()');
   await press('F3', 'F3', 114);
   assert.equal(
     await evaluate("document.querySelector('#f3-debug-overlay').hidden"),
