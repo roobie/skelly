@@ -509,17 +509,18 @@ plain box in your hands. Files are small, and follow
   full auto" led to d62-4 (#262). See `src/game/firearmHandling.ts`,
   `FirearmMechanics.fire` and `firearmHandlingFor`, `src/core/aim.ts`,
   `AimController.recordShot` and `AimController.advance`, and
-  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`. Until #267 lands, aim-sway
-  look comparisons use the current movement rules; afterward a firearm only
-  fires while ready and not sprinting, so moving-fire comparisons use the
-  skill-dependent duck-walk speed. The skill that controls duck-walk speed and
-  block success remains open in #267; BR leans toward a generic "warfare"
-  skill. d62 leaves practice unawarded until its source is ruled. The d62
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`. The #267 ruling, planned
+  in [SLICE-3.md](SLICE-3.md), makes ready stance gate firearm fire, prohibits
+  firing while sprinting, assigns duck-walk speed to firearms combat and block
+  success to melee combat. Current code has not yet implemented those rules.
+  d62 leaves practice unawarded until its source is ruled; #275 sets tiered
+  training, while tiers for existing sources and above-tier practice remain
+  open. The d62
   reading of BR's "swing" is look-turn rate; BR's answer to the d62 questions
   triggers reinterpretation. The d62 reading of BR's "reload time" is per-shell
   insertion, not magazine reload; BR's answer to the d62 questions triggers
   expansion.
-- **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. Whether rifle rounds damage shamblers or consume ammunition, and whether shamblers receive visible marks, remain open.
+- **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. BR's firearm ruling, planned in [SLICE-3.md](SLICE-3.md), settles real ammunition and magazine loading plus body-region damage by calibre. Visible shambler marks are desired ("ideally, yes") and await the 3.2 first look.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
@@ -715,11 +716,13 @@ worse the world gets.
   | Tier | Where | Simulation |
   | --- | --- | --- |
   | Active | Nearby actors | Detailed AI, body physics and bounded routes (implemented) |
-  | Background | Distant actors in loaded chunks | Reduced-rate steering along a shared flow field (planned) |
+  | Background | Distant actors in loaded chunks | Reduced-rate, large-step beeline toward the shared attention target (planned) |
   | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
 
-  Background and abstract tiers, the flow field and crowd navigation are
-  Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)), not built behavior.
+  The background tier and first horde are Slice 3 work; abstract hordes remain
+  Slice 4 work. Shared flow fields and crowd navigation are dropped from the
+  Slice 3 plan. d84's beeline brain replaces the route follow-up in
+  [#244](https://github.com/roobie/skelly/issues/244).
 
 **Decided (BR, 2026-10-04):**
 
