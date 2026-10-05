@@ -200,6 +200,11 @@ describe('the debug test-house range', () => {
     expect(spawnX).toBeLessThan(range.beside.x1);
     expect(spawnX).toBeLessThan(range.firingLine.x0);
 
+    const target = rangeFurnitureFor(builtSite).find(({ spec }) => spec.type === 'range_target');
+    expect(target).toBeDefined();
+    expect(registry.furniture.get(target!.spec.type)?.shotTarget).toBe(true);
+    expect(range.targetXs).toContain(target!.spec.pos[0]);
+
     const normal = makeConfig(13, 64);
     normal.site = 'testHouse';
     expect(buildDebugTestHouseSite(normal, registry, testHouseScene(normal, registry))).toBeUndefined();

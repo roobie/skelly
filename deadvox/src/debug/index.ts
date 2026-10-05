@@ -31,6 +31,7 @@ import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
+import { rangeToNearestShotTargetMetres, type ShotTargetBox } from './shotTargetRange.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
@@ -60,6 +61,7 @@ const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
 
 export interface Action extends GroupedAction {
   readonly code: string;
+  readonly modifier?: string;
   readonly state?: () => boolean;
   /** Current value, appended to the label in the panel. */
   readonly detail?: () => string;
@@ -122,8 +124,9 @@ const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number,
   </aside>
 `;
 
-const axisGizmoTemplate = (visible: boolean): TemplateResult => html`
+const axisGizmoTemplate = (visible: boolean, targetRange: string): TemplateResult => html`
   <canvas id="debug-axis-gizmo" width="144" height="144" ?hidden=${!visible} role="img" aria-label="World axes: positive X red, Y green, Z blue"></canvas>
+  <span id="debug-target-range" ?hidden=${targetRange === ''} aria-label="Range to shot target">${targetRange}</span>
 `;
 
 function paintAxisGizmo(canvas: HTMLCanvasElement, quaternion: readonly [number, number, number, number]): void {
@@ -377,6 +380,7 @@ interface ActionContext {
   toggleFrozen: () => void;
   isGameFrozen: () => boolean;
   toggleGameFrozen: () => void;
+  impactLaser: DebugHooks['impactLaser'];
   look: LookControls;
 }
 
@@ -397,9 +401,19 @@ export const createDebugActions = ({
   toggleFrozen,
   isGameFrozen,
   toggleGameFrozen,
+  impactLaser,
   look,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', group: 'tools', state: () => build.on, run: () => build.toggle() },
+  {
+    code: 'KeyL',
+    key: `${KEY_BINDINGS.debugModifier.label}+L`,
+    modifier: KEY_BINDINGS.debugModifier.code,
+    label: 'Impact laser',
+    group: 'tools',
+    state: impactLaser.enabled,
+    run: impactLaser.toggle,
+  },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', group: 'tools', state: () => spawnMenu.isOpen, run: toggleSpawn },
   {
     code: 'KeyH',
@@ -694,8 +708,15 @@ const keepFromBrowser = (e: KeyboardEvent): void => {
 export const SKIP_SHORT_HOURS = 1;
 export const SKIP_LONG_HOURS = 23;
 
-export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
-  const action = actions.find((candidate) => candidate.code === code);
+export const dispatchDebugAction = (
+  actions: readonly Action[],
+  code: string,
+  repeat = false,
+  debugModifierHeld = false,
+): boolean => {
+  const action = actions.find(
+    (candidate) => candidate.code === code && (candidate.modifier !== undefined) === debugModifierHeld,
+  );
   if (!action) {
     return false;
   }
@@ -790,6 +811,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let panelOpen = false;
   let f3Open = false;
   let axesVisible = true;
+  let targetRangeText = '';
   let copyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
   let axisAnimation: number | undefined;
@@ -916,6 +938,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
     },
+    impactLaser: hooks.impactLaser,
     spawnShambler: (count) => {
       const zombies = hooks.zombies();
       const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
@@ -983,7 +1006,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   function drawAxisGizmo(): void {
     const root = host.querySelector<HTMLElement>('#debug-axis-gizmo-root');
     if (root) {
-      render(axisGizmoTemplate(axesVisible), root);
+      render(axisGizmoTemplate(axesVisible, targetRangeText), root);
       const canvas = root.querySelector<HTMLCanvasElement>('#debug-axis-gizmo');
       if (canvas && axesVisible) {
         paintAxisGizmo(canvas, cameraQuaternion);
@@ -995,6 +1018,28 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       cancelAnimationFrame(axisAnimation);
       axisAnimation = undefined;
     }
+  }
+  let nextShotTargetRangeUpdate = Number.NEGATIVE_INFINITY;
+  function updateShotTargetRange(now: number): void {
+    if (now < nextShotTargetRangeUpdate) {
+      return;
+    }
+    nextShotTargetRangeUpdate = now + 400;
+    function* shotTargets(): IterableIterator<ShotTargetBox> {
+      for (const entity of hooks.engine.entities.all) {
+        const shotTarget = hooks.engine.registry.furniture.get(entity.type)?.shotTarget === true;
+        if (shotTarget) {
+          yield { pos: entity.pos, size: entity.size, shotTarget };
+        }
+      }
+    }
+    const range = rangeToNearestShotTargetMetres(
+      hooks.body.pos,
+      hooks.body.height,
+      hooks.engine.config.scale.blockSize,
+      shotTargets(),
+    );
+    targetRangeText = range === undefined ? '' : `Target range: ${range.toFixed(1)} m`;
   }
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell rendering keeps UI wiring and readout refresh together.
   function drawShell(): void {
@@ -1193,6 +1238,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (toggleOnShortcut(e, 'Backquote', togglePanel)) {
       return true;
     }
+    if (e.code === KEY_BINDINGS.debugModifier.code) {
+      e.preventDefault();
+      return true;
+    }
     if (spawnMenu.isOpen) {
       if (e.code === 'KeyG' && !(e.target instanceof HTMLInputElement) && !e.repeat) {
         toggleSpawn();
@@ -1201,7 +1250,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       }
       return true;
     }
-    if (!dispatchDebugAction(actions, e.code, e.repeat)) {
+    if (!dispatchDebugAction(actions, e.code, e.repeat, hooks.debugModifierHeld())) {
       return panelOpen;
     }
     keepFromBrowser(e);
@@ -1293,6 +1342,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     update(next: DebugReadout) {
       readout = next;
       syncCamUrl();
+      updateShotTargetRange(performance.now());
       drawShell();
     },
   };

@@ -1,14 +1,14 @@
 // Item-owned chamber/cycle facts. Existing simulation/handling schedulers advance them;
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 
-import type { AimFrame } from '../core/aim.ts';
+import { type AimFrame, aimDirection } from '../core/aim.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
 import { firearmsSkillEffects } from '../core/firearmsSkill.ts';
 import type { HandlingQueue } from '../core/handling.ts';
-import { heldEjectionPose } from '../core/heldPose.ts';
+import { heldAnchorWorldPosition, heldEjectionPose } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { dropTarget } from '../core/options.ts';
@@ -97,6 +97,12 @@ const calibreSlug = (calibre: string): string =>
     .join('');
 export const spentCaseItemId = (calibre: string): string => `spent_case_${calibreSlug(calibre)}`;
 
+export interface FirearmTrajectory {
+  readonly eye: Vec3;
+  readonly muzzle: Vec3;
+  readonly directions: readonly Vec3[];
+}
+
 export interface FirearmShotEffect {
   readonly origin: Vec3;
   readonly direction: Vec3;
@@ -137,6 +143,7 @@ export class FirearmMechanics {
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
   private readonly onShot: (shot: PelletShot, time: number) => void;
+  private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
   private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
   private readonly onCommittedShot: (seed: number, recoilKickRadians: number) => void;
   private readonly firearmsSkillLevel: () => number;
@@ -149,6 +156,7 @@ export class FirearmMechanics {
       pose,
       onEjection,
       onShot = () => undefined,
+      onTrajectory = () => undefined,
       onSound = () => undefined,
       onCommittedShot = () => undefined,
       firearmsSkillLevel = () => 0,
@@ -157,6 +165,7 @@ export class FirearmMechanics {
       pose: (uid: number) => FirearmPoseInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
       onShot?: (shot: PelletShot, time: number) => void;
+      onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
       onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
       onCommittedShot?: (seed: number, recoilKickRadians: number) => void;
       firearmsSkillLevel?: () => number;
@@ -168,6 +177,7 @@ export class FirearmMechanics {
     this.pose = pose;
     this.onEjection = onEjection;
     this.onShot = onShot;
+    this.onTrajectory = onTrajectory;
     this.onSound = onSound;
     this.onCommittedShot = onCommittedShot;
     this.firearmsSkillLevel = firearmsSkillLevel;
@@ -253,6 +263,17 @@ export class FirearmMechanics {
       return false;
     }
     const emission = this.emission(item, data, input);
+    const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
+    const muzzle = heldAnchorWorldPosition({
+      model: data.model,
+      anchor: 'muzzle',
+      side,
+      twoHanded: Boolean(defOf(this.inventory.registry, item.type).twoHanded),
+      eye: input.eye.map((value) => value * this.blockSize) as Vec3,
+      yaw: input.yaw,
+      pitch: input.pitch,
+      aimFrame: input.aimFrame,
+    }).map((value) => value / this.blockSize) as Vec3;
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
     if (pump) {
@@ -265,18 +286,17 @@ export class FirearmMechanics {
       state.chamber = 'case';
       state.roundType = undefined;
       state.pendingCase = { ...emission, seed };
-      this.onShot(
-        pelletShot({
-          ammo,
-          origin: input.eye,
-          yaw: input.yaw,
-          pitch: input.pitch,
-          aimFrame: input.aimFrame,
-          seed: input.seed,
-          key: shotKey,
-        }),
-        input.simTime,
-      );
+      const pellets = pelletShot({
+        ammo,
+        origin: input.eye,
+        yaw: input.yaw,
+        pitch: input.pitch,
+        aimFrame: input.aimFrame,
+        seed: input.seed,
+        key: shotKey,
+      });
+      this.onShot(pellets, input.simTime);
+      this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
       this.onCommittedShot(seed, data.recoilKickRadians);
     } else {
       item.firearm = {
@@ -292,6 +312,10 @@ export class FirearmMechanics {
         },
       };
       this.active.add(item.uid);
+      this.onTrajectory(
+        { eye: input.eye, muzzle, directions: [aimDirection(input.yaw, input.pitch, input.aimFrame)] },
+        input.simTime,
+      );
       this.onCommittedShot(seed, data.recoilKickRadians);
     }
     return true;

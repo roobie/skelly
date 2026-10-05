@@ -19,6 +19,7 @@ import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
+import { ImpactEffects } from './impactEffects.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
@@ -62,6 +63,7 @@ type PlayViewEngine = Readonly<
     | 'shadows'
     | 'sky'
     | 'isSolid'
+    | 'entities'
     | 'skylight'
   >
 >;
@@ -91,11 +93,19 @@ export const createPlayView = (
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
+  const targetCell = config.debug
+    ? (block: Vec3) => {
+        const entity = engine.entities.at(...block);
+        return entity !== undefined && engine.registry.furniture.get(entity.type)?.shotTarget === true;
+      }
+    : undefined;
+  const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
   const held = new HeldItems(inventory, models, playerPalette);
-  scene.add(caseEffects.mesh);
+  scene.add(caseEffects.mesh, impactEffects.group);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
+    impactEffects.dispose();
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
@@ -121,6 +131,7 @@ export const createPlayView = (
     models,
     piles,
     caseEffects,
+    impactEffects,
     furniture,
     playerMeshes,
     held,

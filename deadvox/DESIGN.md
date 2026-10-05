@@ -4,7 +4,8 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
-  - you change shambler navigation or floor-transition behavior
+  - you change shambler navigation, sight range over terrain or floor-transition
+    behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
@@ -518,6 +519,7 @@ plain box in your hands. Files are small, and follow
   triggers reinterpretation. The d62 reading of BR's "reload time" is per-shell
   insertion, not magazine reload; BR's answer to the d62 questions triggers
   expansion.
+- **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. Whether rifle rounds damage shamblers or consume ammunition, and whether shamblers receive visible marks, remain open.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
@@ -649,12 +651,19 @@ worse the world gets.
 
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
-  rain washes out).
+  rain washes out). Terrain height alone should not end a clear pursuit; sight
+  over a rise is bounded by occlusion, not by spending range on vertical distance.
+  See `src/core/zombies.ts`, `seesPlayer`.
 - **Navigation rationale:** Collision-aware routing prevents false progress
   through blockers, while bounded work protects the shared simulation tick.
   Keeping route planning separate from physics preserves collision ownership.
-  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+  A changed target leaves the current verified waypoints in use while the bounded
+  search plans toward the latest block-cell goal. Before any waypoint exists, the
+  shambler waits: a straight segment check cannot establish authored floor
+  connectivity, and waiting preserves bounded route work. See
+  `deadvox/src/core/zombies.ts`, `ZombieSystem.routeWaypoint` and
+  `ZombieSystem.serviceRouteSearches`, and `deadvox/src/core/shamblerRoutes.ts`,
+  `planShamblerRoute`.
   Explore landing connections only from the reached frontier, trying the goal
   before optional detours. Exhausting effort on an unrelated closed approach must
   not discard a complete route already found. See

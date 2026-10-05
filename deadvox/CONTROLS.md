@@ -246,10 +246,12 @@ identity takes precedence over creation controls.
 ## Debug keys
 
 The development profile binds B, G, H, K, N, P, T, U, V and Backquote
-(`src/debug/index.ts`). Debug firearm handling is available only from a
-`?debug=1` session: use G to spawn `debug_rifle_assault`, move it to a hand,
-then use that hand's primary action. It produces no hits, damage, or ammo use;
-each shot records one spent case. The deterministic handling range and table
+(`src/debug/index.ts`). F1+L toggles the debug magenta trajectory laser, which
+starts enabled; see `src/game/input.ts`, `KEY_BINDINGS.debugModifier`, and
+`src/debug/index.ts`, `createDebugActions`. Debug firearm handling is available
+only from a `?debug=1` session: use G to spawn `debug_rifle_assault`, move it to
+a hand, then use that hand's primary action. Rifle shots remain virtual: the
+trace adds no damage or ammunition use; each shot records one spent case. The deterministic handling range and table
 sit beside the hamlet. In play, these letters are free in the shipped game but
 taken in the development and playtest builds, which is where the controls get
 tested; a shipped verb on V would collide in every test session. BR ruled on

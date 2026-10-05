@@ -25,6 +25,7 @@ export interface DebugHooks {
   readonly sim: Simulation;
   /** Debug tools may set the look direction (`?cam=` restore, debug/camUrl.ts). */
   readonly input: { yaw: number; pitch: number };
+  readonly debugModifierHeld: () => boolean;
   /** The camera's current roll in radians (damage feedback; 0 otherwise). */
   readonly roll: () => number;
   readonly zombies: () => ZombieSystem | undefined;
@@ -37,6 +38,7 @@ export interface DebugHooks {
   readonly setTimeOfDay: (hour: number, minute: number) => void;
   readonly revealZombies: (enabled: boolean) => void;
   readonly measureSnapshot: () => SnapshotMeasurement;
+  readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly exportMetrics: () => void;
 }
 
