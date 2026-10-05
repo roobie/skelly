@@ -63,12 +63,6 @@
     { "path": "deadvox/docs/trees-first-look.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "deadvox/GRAPHICS.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "deadvox/INTERACTIONS.md", "check": "path", "text": "core/food.ts", "count": 1 },
-    {
-      "path": "deadvox/INTERACTIONS.md",
-      "check": "read_if",
-      "text": "read_if must be a non-empty list of non-empty strings",
-      "count": 1
-    },
     { "path": "deadvox/INTERFACE.md", "check": "line_number", "text": "src/game/input.ts:59", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playFrames.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playView.ts", "count": 1 },
