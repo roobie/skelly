@@ -184,10 +184,10 @@ item a resumable action without changing its promised output or losing the sourc
 
 ## Repair-corner stock
 
-The `repair_flashlight` recipe adds a target to the content-derived test-house scenario. See
-`src/game/testHouse.ts`, `populateTestHouseRepairCorner`: spread the complete repair stock
-across the available piles so each added repair recipe needs no hand-authored pile assignment.
-The corner demonstrates recipe reach and planning, not a fixed catalogue size.
+The content-derived test-house scenario spreads repair stock across its available piles, so
+repair recipes need no hand-authored pile assignment. See `src/game/testHouse.ts`,
+`populateTestHouseRepairCorner`. The corner demonstrates recipe reach and planning, not a
+fixed catalogue size.
 
 ## Proofs
 
