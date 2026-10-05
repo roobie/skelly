@@ -213,6 +213,18 @@ export const startPlay = (
           }
         }
       },
+      automaticFireHeld: () => {
+        const action = selectPrimaryAction(inventory);
+        return (
+          input.dominantUseHeld &&
+          config.debug &&
+          !debugTools?.buildOn &&
+          !queue.busy &&
+          action.kind === 'firearm' &&
+          !registry.items.get(action.item.type)?.firearm?.pump
+        );
+      },
+      adjustPitch: (delta) => input.adjustPitch(delta),
       useOff: () => {
         if (!debugTools?.buildOn) {
           performHandUse(offSide(inventory.character));

@@ -100,6 +100,10 @@ export interface SessionControls {
   useDominant?: () => void;
   /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
   heldDominantUse?: (time: number, pressed: boolean, held: boolean) => void;
+  /** True only while an automatic firearm is selected and its trigger is held. */
+  automaticFireHeld?: () => boolean;
+  /** Applies a requested camera-pitch shift and returns the amount accepted by its pitch limits. */
+  adjustPitch?: (delta: number) => number;
   /** Runs off-hand use on the player-tick boundary, with that tick's aim/state. */
   useOff?: () => void;
   /** Radians; 0 looks down -z. */
@@ -346,7 +350,8 @@ export const createSession = (options: SessionOptions) => {
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
-    onCommittedShot: (shotSeed, recoilKickRadians) => aim.recordShot(shotSeed, recoilKickRadians),
+    onCommittedShot: (shotSeed, recoilKickRadians) =>
+      aim.recordShot(shotSeed, recoilKickRadians, firearmsSkillEffects(firearmsSkillLevel(character)).recoilKickScale),
     onShot: (shot, time) => {
       zombieSystem.firePellets(shot);
       playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });
@@ -390,15 +395,24 @@ export const createSession = (options: SessionOptions) => {
     }
     return moving.walk ? 'walking' : 'jogging';
   };
-  const updateAim = (dt: number): void => {
+  const updateAim = (dt: number, firing: boolean): void => {
+    const skill = firearmsSkillEffects(firearmsSkillLevel(character));
     aim.advance({
       dt,
       velocity: body.vel,
       blockSize: s,
       yaw: controls.yaw(),
       pitch: controls.pitch(),
-      variance: firearmsSkillEffects(firearmsSkillLevel(character)).variance,
+      variance: skill.variance,
+      firing,
+      recoilRecoveryRate: skill.recoilRecoveryRate,
     });
+  };
+  const applyAimViewPitchShift = (): void => {
+    const requested = aim.pendingViewPitchShift;
+    if (requested !== 0) {
+      aim.applyViewPitchShift(requested, controls.adjustPitch?.(requested) ?? 0);
+    }
   };
   const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
     if (body.onGround) {
@@ -580,9 +594,10 @@ export const createSession = (options: SessionOptions) => {
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
-      updateAim(dt);
+      updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
       playerCombat.tick(dt, heldItemUids());
       dispatchPlayerActions(moving, intent);
+      applyAimViewPitchShift();
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }

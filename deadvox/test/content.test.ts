@@ -27,6 +27,44 @@ describe('content', () => {
     }
   });
 
+  it('rejects an independent dispersion cone on a pump because pellets own the cone', () => {
+    const source = 'pump-dispersion-fixture.json';
+    const item = {
+      id: 'fixture_pump',
+      name: 'Fixture pump',
+      category: 'weapon',
+      weight: 1,
+      size: [1, 1],
+      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01 },
+    };
+    const { issues } = buildRegistry([{ source, data: { items: [item] } }]);
+    expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
+    const { issues: zeroConeIssues } = buildRegistry([
+      { source, data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] } },
+    ]);
+    expect(zeroConeIssues).toEqual([]);
+  });
+
+  it('requires a firearm dispersion cone while permitting a pump with no extra cone', () => {
+    const source = 'firearm-dispersion-fixture.json';
+    const item = {
+      id: 'fixture_firearm',
+      name: 'Fixture firearm',
+      category: 'weapon',
+      weight: 1,
+      size: [1, 1],
+      firearm: { recoilKickRadians: 0.01 },
+    };
+    const missing = validateContent({ source, data: { items: [item] } });
+    expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
+    expect(
+      validateContent({
+        source,
+        data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] },
+      }),
+    ).toEqual([]);
+  });
+
   it.each([SKILL_LEVEL_MIN - 1, SKILL_LEVEL_MAX + 1])(
     'rejects recipe skill level %s outside the character scale',
     (level) => {
