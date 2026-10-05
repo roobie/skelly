@@ -1000,6 +1000,41 @@ describe('restored session world state', () => {
 });
 
 describe('hamlet save/load continuation', () => {
+  it('continues active compressed rest through the first 1 Hz tick after load', () => {
+    const source = createRuntime(undefined, true);
+    expect(startRest(source, 'sleep')).toBeUndefined();
+    advance(source, 120);
+    expect(source.sim.compression.active).toBe(true);
+    expect(source.sim.compression.c).toBeGreaterThan(1);
+    expect(source.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
+
+    const savedNeeds = { ...source.sim.needs };
+    const snapshot = capture(source);
+    const loaded = createRuntime(snapshot);
+    expect(loaded.sim.compression.active).toBe(true);
+    expect(loaded.sim.compression.c).toBeGreaterThan(1);
+    expect(loaded.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
+
+    const schedulerSystems = ['needs', 'lights', 'long-action'] as const;
+    const savedTicks = new Map(snapshot.character.simulation.scheduler.systems.map(({ id, ticks }) => [id, ticks]));
+    advance(source, 5);
+    advance(loaded, 5);
+
+    for (const id of schedulerSystems) {
+      const saved = savedTicks.get(id);
+      expect(saved).toBeDefined();
+      expect(source.sim.scheduler.tickCounts().get(id)).toBeGreaterThan(saved!);
+      expect(loaded.sim.scheduler.tickCounts().get(id)).toBeGreaterThan(saved!);
+    }
+    expect(source.sim.compression.active).toBe(true);
+    expect(loaded.sim.compression.active).toBe(true);
+    expect(source.inventory.hands.left?.charges).toBeDefined();
+    expect(loaded.inventory.hands.left?.charges).toBe(source.inventory.hands.left?.charges);
+    expect(loaded.sim.needs).toEqual(source.sim.needs);
+    expect(loaded.sim.needs).not.toEqual(savedNeeds);
+    expect(loaded.sim.actions.snapshotState()).toEqual(source.sim.actions.snapshotState());
+  });
+
   for (const interruption of [false, true]) {
     it(`deeply matches N steps with K/save/load/N−K (${interruption ? 'interrupted' : 'active'} rest)`, () => {
       const uninterrupted = createRuntime(undefined, true);

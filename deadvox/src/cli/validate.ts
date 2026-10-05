@@ -6,8 +6,8 @@
 // manifest's pack is the folder above its `assets/`, and every file in there must
 // come from a listed source.
 
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { basename, dirname, join, relative, resolve } from 'node:path';
+import { existsSync, readdirSync, readFileSync, realpathSync } from 'node:fs';
+import { basename, dirname, join, relative } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { assetFileIssues, MANIFEST_PATH, modelFileIssues, soundFileIssues, validateManifest } from '../core/assets.ts';
@@ -88,6 +88,6 @@ export const validate = (args: readonly string[], write: (line: string) => void 
   return issues.length + broken > 0 ? 1 : 0;
 };
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (process.argv[1] && realpathSync(process.argv[1]) === fileURLToPath(import.meta.url)) {
   process.exitCode = validate(process.argv.slice(2));
 }
