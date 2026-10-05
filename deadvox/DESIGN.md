@@ -762,11 +762,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Entities** are drawn with instanced meshes; zombie limbs are instanced
   boxes.
-- **Sun-shadow quality (d49-1, pending visual review):** Favor a stable edge
-  near the player over sharp shadows far beyond them. Sunlight changes smoothly,
-  but spatial shadow texels still cross an edge as the light turns; temporal
-  interpolation alone cannot remove that crawl. See `deadvox/src/render/shadows.ts`,
-  `sunShadowTexelSize` and `Shadows.update`.
+- **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
+  is still a little jaggedness. But we won't pursue this more right now, so I'll
+  approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
+  Favor a stable edge near the player over sharp shadows far beyond them; see
+  `src/render/shadows.ts`, `sunShadowTexelSize` and `Shadows.update`.
 
 ## Audio
 
