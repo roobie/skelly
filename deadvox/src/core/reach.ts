@@ -32,7 +32,7 @@ export interface ReachSnapshot {
   readonly piles: readonly Pile[];
   /** Includes unsearched furniture so callers can offer Search, never its contents. */
   readonly furniture: readonly BlockEntity[];
-  /** Furniture workstation components whose nearest box point is within 2 m. */
+  /** Furniture workstation components whose nearest box point is within INVENTORY_REACH. */
   readonly workstations: readonly {
     entity: BlockEntity;
     id: string;

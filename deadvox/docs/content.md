@@ -28,9 +28,10 @@ Skill requirements are nonnegative whole levels; quality requirements are levels
 uses exact integer multiplication and reports the count when refusing a file.
 
 - `skills` definitions contain only an id and name; character state is 2.5.
-- Quality IDs are keys declared by loaded items' `tool.qualities`, including mod
-  keys, not a new top-level section. A missing declaration is an error. Whether
-  a reachable item supplies it is the separate 2.3 acceptance check.
+- Quality IDs are keys declared by loaded items' `tool.qualities` (including
+  mod keys) or furniture `workstation.qualities`, not a new top-level section.
+  A missing declaration is an error. Whether a reachable item or placed
+  workstation supplies the quality is the separate 2.3 acceptance check.
 - Furniture workstation metadata owns its station ID, qualities, and work-time
   bonus. Plain furniture IDs are not workstation IDs. `reach()` in
   `src/core/reach.ts` exposes nearby stations, and `planCraft()` in
