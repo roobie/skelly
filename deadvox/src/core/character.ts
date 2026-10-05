@@ -24,7 +24,7 @@ export const SKILL_LEVEL_MAX = 10;
 export const SKILL_LEVEL_LEGENDARY = SKILL_LEVEL_MAX + 1;
 export const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 
-/** Effects beyond ordinary expertise remain at the highest ordinary level until BR rules otherwise. */
+/** BR ruled legendary is mostly vanity; its effects match ordinary level 10. */
 export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
 
 /** Practice required for the next level grows with the level already reached. */
