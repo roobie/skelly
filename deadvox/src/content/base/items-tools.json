@@ -322,13 +322,6 @@
       "category": "light",
       "weight": 20,
       "size": [1, 1],
-      "light": {
-        "radius": 2,
-        "seenFrom": 10,
-        "color": "#ffca7d",
-        "intensity": 0.7,
-        "fuelPerHour": 3600
-      },
       "igniter": { "capacity": 10, "perIgnition": 1 }
     }
   ]

@@ -82,6 +82,21 @@ describe('using what you hold', () => {
     expect([light.on, survival.lit]).toEqual([false, undefined]);
   });
 
+  it('does not spend or report battery fuel when matches are used alone', () => {
+    const { survival, sim, notices, hold } = setup();
+    const matches = hold('matches');
+    const fuelBefore = matches.charges;
+
+    expect(survival.use(matches)).toBe('Nothing to do with the box of matches yet');
+    sim.scheduler.advance(2);
+    expect(matches.on).not.toBe(true);
+    expect(matches.charges).toBe(fuelBefore);
+    expect(notices).toEqual([]);
+
+    matches.charges = 0;
+    expect(survival.use(matches)).toBe('Nothing to do with the box of matches yet');
+  });
+
   it('drains while on, and a dead light takes a spare battery from your pockets', () => {
     const { inventory, queue, survival, sim, notices, hold } = setup();
     const light = hold('flashlight');

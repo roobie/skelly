@@ -785,8 +785,18 @@ evidence.
 All phases exceeded 18 ms in every sampled frame, and neither run met the
 no-holes sprint condition. In this pair, the detailed shamblers coincide with
 higher blocking-render cost and jog/sprint movement cost; the look-frame tails
-vary and the sample is too small to tune from. These software-renderer results
-do not establish the reference-machine gate, which remains open.
+vary and the sample is too small to tune from. These software-renderer
+results do not establish the reference-machine gate.
+BR's reference-laptop run for the same workload passed the gate; see below.
+
+#### BR reference-laptop result (2026-10-05)
+
+BR ran the full 0.5 m / 96 m workload with 16 active lights and 60 detailed
+shamblers in Firefox 153 on an integrated Intel HD-class GPU with 8 CPU
+threads. Look measured 60 fps, 17.2 ms frame p95 and 0% of frames over 18 ms;
+jog measured 17.2 ms p95, 0% over 18 ms and 0 holes; sprint measured 17.2 ms
+p95, 0% over 18 ms and 0 holes. The specified gate (60 fps, at most 1% of
+frames over 18 ms in every phase, and no sprint holes) **passed**.
 
 ### Trees: d24-2, 2026-10-03 — CPU lookup fixed
 
