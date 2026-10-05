@@ -9,6 +9,7 @@ read_if:
   - you're reviewing long-action continuation and save ownership
   - you change item activation, crafting or appliance ownership boundaries
   - you reconcile BR's interaction rulings with actor handedness
+  - you change long-action admission or interruption behavior
 ---
 
 # deadvox — interactions
@@ -387,3 +388,4 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
    A held item must never become a fist or redirect to the other hand, and a
    restored physical fist sequence must not be reseeded from dominance.
+7. **Long-action start near a hostile (BR, d73):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". A nearby hostile must not prevent a long action from starting. Whether danger limits its compression speed remains open; interrupt events still stop the action.

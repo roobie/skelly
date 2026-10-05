@@ -72,6 +72,13 @@ inventory; movement/action input is inactive. Main-menu/pointer-loss pause rules
 are unchanged. This does not add or enable the HUD: existing HUD preferences and
 compass/watch item plans remain unchanged.
 
+A book may define both `book` and `readable`. `book` supplies the timed
+recipe-learning action; `readable` supplies authored prose for the paper surface.
+`Survival.use` starts the book action and then opens that text, so the visible
+handbook text is not an action-progress view. Closing the surface dismisses only
+the presentation; the long-action owner remains responsible for the book job and
+its progress.
+
 The maintained browser contract exercises the real sample pickup/search/handling/
 Read path, sign F interaction, input ownership, focus, scrolling and dismissal.
 It also checks maximum title/body sizes at 360×640 and 800×600 (20 px body text,

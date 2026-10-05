@@ -360,17 +360,25 @@ try {
     });
     await walk('s', signX, false);
     await aim('sample_sign');
+    await page.keyboard.press('f');
+    await page.locator('#reading').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
     await page.keyboard.press('F9');
     await page.waitForFunction(() => globalThis.readingWitness.session.sim.paused);
-    await page.keyboard.press('f');
-    await page.keyboard.press('1');
-    const menu = await record('pause menu F and quickbar');
+    const menu = await record('pause while reading');
     assert.equal(menu.readingOpen, false);
     assert.equal(menu.paused, true);
     assert.equal(menu.inventoryOpen, false);
+    assert.equal(menu.menuPointer, true);
     assert.deepEqual(menu.jobs, []);
+    assert.equal(await page.locator('#reading').isVisible(), false);
     await page.keyboard.press('F9');
     await page.waitForFunction(() => !globalThis.readingWitness.session.sim.paused);
+    const resumed = await record('resume with reading hidden');
+    assert.equal(resumed.readingOpen, false);
+    assert.equal(resumed.menuPointer, false);
+    assert.equal(await page.locator('#reading').isVisible(), false);
+    // A hidden reading surface must not capture F after resume.
     await page.keyboard.press('f');
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
@@ -382,7 +390,7 @@ try {
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { before, during, escaped, menu };
+    proof = { before, during, escaped, menu, resumed };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';

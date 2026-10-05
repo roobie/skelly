@@ -724,11 +724,6 @@ export const startPlay = (
     if (!(e.repeat || sim.dead)) {
       quickbarInput.cancel();
       mainMenuOpen = !mainMenuOpen;
-      if (mainMenuOpen) {
-        reading.close();
-        closeInventoryScreen();
-        debugTools?.closeMenus();
-      }
       syncMenuState();
     }
     return true;

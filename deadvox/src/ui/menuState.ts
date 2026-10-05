@@ -76,8 +76,11 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
   const started = input.started || input.pointerLocked;
   const pointerUnlocked = Boolean(input.pointerLockChanged && started && !input.pointerLocked && !input.dead);
   const resumed = Boolean(input.pointerLocked && input.resumeRequested && !input.dead);
-  const closeOtherMenus = pointerUnlocked || resumed;
   const { mainMenuOpen: requestedMainMenuOpen } = input;
+  const conflictingMenu = Boolean(
+    requestedMainMenuOpen && !input.dead && (input.inventoryOpen || input.readingOpen || input.debugMenuOpen),
+  );
+  const closeOtherMenus = pointerUnlocked || resumed || conflictingMenu;
   let mainMenuOpen = requestedMainMenuOpen;
   if (pointerUnlocked) {
     mainMenuOpen = true;

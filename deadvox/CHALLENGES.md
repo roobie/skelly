@@ -89,9 +89,8 @@ an interruption (a runner covers 30 m between two checks).
 
 **Plan.**
 
-- **Compression only when it's safe:** no hostile is aware of the player, and
-  none is within 30 m. That keeps the expensive active zombies out of the
-  compressed simulation.
+- **Danger and compression:** a nearby hostile must not refuse a long action.
+  Whether danger limits compression speed remains open pending BR's answer.
 - **Bigger steps, not more ticks,** for slow systems (needs, fire, power), and
   closed-form updates where they exist.
 - **Background entities** move along flow fields with larger steps and

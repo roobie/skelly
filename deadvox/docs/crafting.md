@@ -132,8 +132,8 @@ use the step-5 F7 projections. The first-person renderer already uses the generi
 two-handed stand-in box without adding a second item UID.
 
 `LongActions.beginCraft(plan)` admits recipe/knowledge/skill/equipment and secures
-safe compression before calling Inventory's structural escrow primitive. Refusal
-moves no inputs; a stale structural plan stops compression without creating a job.
+compression before calling Inventory's structural escrow primitive. Refusal moves
+no inputs; a stale structural plan stops compression without creating a job.
 Unreferenced work remains legal and can be released via `cancelCraft(workUid)`.
 Free hands and no active craft permit another work tree; a stopped descriptor is
 not a one-pending-craft restriction. Dropped half-finished work keeps its own inputs.

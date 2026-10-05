@@ -122,8 +122,8 @@ Crafting, reading, building, disassembly, repair, searching and sleeping are
 **long actions**. A long action has a duration in game time. It runs with
 compression on and shows a progress bar and the game time passing.
 
-- **Compression is only allowed when it's safe:** no hostile is aware of the
-  player, and none is within a safe radius (start at 30 m).
+- **Starting an action:** a nearby hostile does not block a long action. Whether
+  danger limits its compression speed remains an open decision.
 - **Interruptions:** a hostile noticing you, a loud noise, damage, fire, or a
   need hitting a threshold. The game drops back to real time and asks
   *Continue* or *Stop*. The progress made so far is kept.
