@@ -99,6 +99,19 @@ const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
 
+const createPlayRefusalPresenter = (
+  registry: Engine['registry'],
+  audio: GameAudio,
+  showNotice: (text: string) => void,
+) => {
+  const nope = registry.sounds.get('player_nope');
+  return createRefusalPresenter(
+    showNotice,
+    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
+    nope?.minIntervalSeconds ?? 0,
+  );
+};
+
 export interface StartPlayOptions {
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
@@ -330,12 +343,7 @@ export const startPlay = (
     notice = text;
     noticeUntil = performance.now() + 3000;
   };
-  const nope = registry.sounds.get('player_nope');
-  const showRefusal = createRefusalPresenter(
-    showNotice,
-    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
-    nope?.minIntervalSeconds ?? 0,
-  );
+  const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
   const toggleRest = (kind: RestKind, entity: BlockEntity): void => {
     const already = rest.action?.kind === kind && rest.action.furnitureUid === entity.uid;
