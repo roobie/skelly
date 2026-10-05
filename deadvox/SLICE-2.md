@@ -1,9 +1,15 @@
+---
+read_if:
+  - you're planning or building the crafting-and-mending slice
+  - you're implementing or reviewing a Slice 2 milestone and need its approved scope and proofs
+  - you're carrying Slice 2 questions into the Slice 3 playtest
+---
+
 # Slice 2 — Craft and mend
 
 The second slice on the [road to version 1](EPIC.md). It builds the crafting
-design in [INTERACTIONS.md](INTERACTIONS.md) on top of Slice 1
-([SLICE-1.md](SLICE-1.md)), and the systems in [DESIGN.md](DESIGN.md),
-"Crafting" and "Light".
+design in [INTERACTIONS.md](INTERACTIONS.md) on the first-slice foundation and
+the systems in [DESIGN.md](DESIGN.md), "Crafting" and "Light".
 
 **Status:** draft, proposed by the lead (2026-10-03), revised after review
 cr-d19. BR approves the plan. The scope follows BR's defaults of 2026-10-03
@@ -38,8 +44,8 @@ looting a purpose?** In more detail:
    how they move at night?
 
 The playtest itself runs at the end of Slice 3 (BR, 2026-10-02). These questions
-join the Slice 1 [playtest plan](SLICE-1.md#playtest-plan) there; milestone 2.0
-adds them.
+join the end-of-Slice-3 playtest plan in [EPIC.md](EPIC.md#3-flesh-and-noise);
+milestone 2.0 adds them.
 
 ## Scope
 
@@ -228,7 +234,7 @@ Paperwork; no game code.
   the host budget as three-run medians and budgets; a milestone that pushes a
   run past one says why.
 - The Slice 2 checklist issue is open, listing every milestone and gate below.
-- Slice 2's playtest questions are added to SLICE-1.md's playtest plan.
+- Slice 2's playtest questions are added to EPIC.md's end-of-Slice-3 playtest plan.
 - #143 (saves closure) is merged before any milestone that adds saved state
   (2.4 on).
 - BR has answered the questions below, or accepted their defaults.
@@ -348,13 +354,13 @@ tested.
   up.
 
 This comes before content grows, not after it, so every later content PR is
-checked as it lands. Today's validator checks references only
-(`src/core/content.ts:261-373`).
+checked as it lands. Reachable sources are part of acceptance because recipes
+must be learnable and makeable from the world; see `src/core/reachability.ts`,
+`checkReachability`.
 
-**2.3 staging policy:** components and tool-quality sources are hard failures.
-Knowledge, positive skill levels and named-but-unplaced workstations report
-`pending: no source yet` and a count, not acceptance or CI failure. The pinned
-pending-class test and 2.4/2.5/2.8 hand-offs make promotion to hard checks explicit.
+**2.3 staging policy:** component, tool-quality, knowledge, positive-skill and
+workstation sources are hard failures. The reachability check admits content
+only when its acquisition sources are represented in the world.
 Stick/wax each gain only one positive-weight entry in the placed `junk` table;
 other material growth and the four historical unreachable types remain 2.11.
 
@@ -371,8 +377,9 @@ component closure and the count, and the rejections are tested.
 
 Decided (BR, 2026-10-04): the crafting panel is approved as a first version; expect many iterations.
 
-**Reachability hand-off:** starting knowledge must turn 2.3's pending knowledge
-class into a hard source check; update the pinned pending-class test deliberately.
+**Reachability:** d55 includes reachable teaching books in the hard knowledge
+check so recipes become known only through an explicit starting source or a book
+in placed loot; see `src/core/reachability.ts`, `checkReachability`.
 
 - `planCraft(recipe, reach, character, prefer?)`, a pure function: tries the
   combinations and keeps the cheapest that works; chooses items by gathering
@@ -429,9 +436,10 @@ in the game.**
 
 ### 2.5 Skills, known recipes and books
 
-**Reachability hand-off:** practice must turn 2.3's pending positive-skill class
-into a hard source check, and reachable teaching books must extend the hard
-knowledge check from 2.4; update the pinned pending-class test deliberately.
+**Reachability:** d55 makes reachable practice a hard source check and includes
+teaching books in recipe knowledge; see `src/core/reachability.ts`,
+`checkReachability`. Practice stays activity-agnostic; a recipe's skill gate is
+accepted only when an eligible activity is reachable.
 
 - Progression on 2.4's character state: finishing a craft gives practice in the
   recipe's skills; levels never go down. A skill shortens work time and gates
@@ -491,8 +499,9 @@ recipes, and the reachability check counts what a reachable item yields.
 
 ### 2.8 Workbenches
 
-**Reachability hand-off:** placed benches must turn 2.3's pending workstation
-class into a hard source check; update the pinned pending-class test deliberately.
+**Reachability:** d60 makes placed workstation membership and qualities hard
+source checks; see `src/core/reachability.ts`, `checkReachability`. A recipe is
+accepted only when its named station exists in the placed hamlet.
 
 - A `workstation` component on furniture: qualities it gives (such as
   `hammering`, `sawing`) and a work-time bonus. Reach (2.1) starts listing it.
@@ -659,10 +668,9 @@ anyway, since the world changes.
 - The three tree shapes and the hedges stand in the hamlet without blocking
   required routes.
 - BR has approved them in the game.
-- The approved forest workload meets Slice 1's unchanged budget on the
-  reference laptop in Firefox: 60 fps at 0.5 m and 96 m, at most 1% of frames
-  over 18 ms in every benchmark phase, and no holes at sprint speed
-  (the frame budget decided in `SLICE-1.md`, 1.0).
+- The approved forest workload meets the frame budget in
+  [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks) on the reference laptop in
+  Firefox.
 - The workload, build, rendering choice and results are recorded in Results,
   and the normal hamlet workload is rechecked with trees.
 
@@ -692,9 +700,10 @@ they don't change those two counts.
 - Milestones 2.0–2.13 are merged and deployed, with CI green: Biome, types,
   tests, content validation including both reachability checks, and the save
   round trip.
-- The frame budget from 1.0 holds, unchanged. Every new per-frame cost (reach
-  rebuilds, the crafting panel's planning, made lights on the recorded
-  workload, trees on the approved forest workload) is measured on the reference laptop and recorded in Results.
+- The frame budget in [CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks)
+  remains the gate. Measure every new per-frame cost (reach rebuilds, crafting
+  panel planning, made lights on the recorded workload, trees on the approved
+  forest workload) on the reference laptop and record the results here.
 - The default test run stays within the budget recorded in 2.0.
 - The noise → positional-sound scenario test passes (2.12).
 - Slice 2's playtest questions are in the playtest plan that runs at the end of
@@ -709,6 +718,9 @@ they don't change those two counts.
 
 1. **Wear when hit:** the outermost clothing over the hit area wears. *Later:*
    items carried in that clothing can be damaged too.
+   Decided (BR, 2026-10-05): "d56:A", choosing option A as the lead put it:
+   every shambler hit lands on the torso, since shamblers grab and bite the upper
+   body; Slice 3's body model replaces it, and crawlers would add legs then.
 2. **Condition and performance:** condition matters only at ruin in Slice 2.
    *Later:* condition affects how an item performs.
 3. **Books** teach recipes only. *Later:* books may also speed up skill

@@ -59,7 +59,7 @@ const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
   hourFn: () => number = () => 12,
-  hurtPlayer: (amount: number) => void = () => undefined,
+  hurtPlayer: (amount: number, area?: 'head' | 'torso' | 'legs') => void = () => undefined,
 ) => ({
   player: playerFn,
   isSolid,
@@ -73,7 +73,6 @@ const senses = (
 const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   const frames = Math.ceil(seconds * 60);
   for (let frame = 0; frame < frames; frame++) {
-    system.tickPlayerAction(1 / 60, { right: null, left: null });
     system.tick(1 / 60);
     onStep?.();
   }
@@ -2189,15 +2188,17 @@ describe('attack windup', () => {
     expect(zombie.attackWait).toBeCloseTo(SHAMBLER.attack.cooldown, 5);
   });
 
-  it('damages the player exactly once the windup elapses, if still in reach', () => {
+  it('damages the player exactly once on the torso when the windup elapses in reach', () => {
     let damage = 0;
+    const areas: ('head' | 'torso' | 'legs' | undefined)[] = [];
     const system = new ZombieSystem(
       senses(
         () => player([0, 2, 0]),
         FLOOR,
         () => 12,
-        (amount) => {
+        (amount, area) => {
           damage += amount;
+          areas.push(area);
         },
       ),
     );
@@ -2206,6 +2207,7 @@ describe('attack windup', () => {
     expect(damage).toBe(0);
     run(system, SHAMBLER.attack.windup + 0.1);
     expect(damage).toBe(8);
+    expect(areas).toEqual(['torso']);
   });
 
   it('a miss: no damage if the player steps out of reach during the windup', () => {

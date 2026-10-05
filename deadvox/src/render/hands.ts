@@ -23,10 +23,12 @@ import {
 } from 'three';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { Job } from '../core/handling.ts';
 import { HOLD, heldAnchorOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import { createCompass } from './compass.ts';
 import {
   type FirearmAction,
   type FirearmMode,
@@ -37,6 +39,7 @@ import {
 } from './firearmModel.ts';
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
+import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Metres per grid cell for the stand-in box. */
@@ -49,6 +52,11 @@ export interface HeldFirearmPose {
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
+}
+
+export interface HeldHandlingFrame {
+  readonly firearms: readonly HeldFirearmPose[];
+  readonly job?: Readonly<Job> | undefined;
 }
 
 export class HeldItems {
@@ -67,6 +75,7 @@ export class HeldItems {
   private drawn = '';
   /** What's drawn for each held item, by uid. */
   private readonly shown = new Map<number, Object3D>();
+  private readonly compasses = new Map<number, ReturnType<typeof createCompass>>();
   private readonly firearmParts = new Map<number, { action: FirearmAction; parts: readonly HeldActionPart[] }>();
   private readonly pumpModels = new Map<number, ModelDef>();
   private readonly loadingShells = new Map<number, Object3D>();
@@ -82,13 +91,21 @@ export class HeldItems {
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
+  private rummageSupportRest: { arm: Group; position: Vector3 } | undefined;
 
   private readonly palette: FigureDef['palette'];
+  private readonly primaryHandSide: HandSide;
 
-  constructor(inventory: Inventory, models: ModelLibrary | undefined, palette: FigureDef['palette']) {
+  constructor(
+    inventory: Inventory,
+    models: ModelLibrary | undefined,
+    palette: FigureDef['palette'],
+    primaryHandSide: HandSide = 'right',
+  ) {
     this.inventory = inventory;
     this.models = models;
     this.palette = palette;
+    this.primaryHandSide = primaryHandSide;
     this.view.add(this.torso);
     this.scene.add(this.view, this.light, this.ambient);
     // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
@@ -107,8 +124,10 @@ export class HeldItems {
     main: PerspectiveCamera,
     pose?: MeleePoseFrame,
     recoil = 0,
-    firearmPoses: readonly HeldFirearmPose[] = [],
+    handling: HeldHandlingFrame = { firearms: [] },
   ): void {
+    const { firearms: firearmPoses } = handling;
+    this.restoreRummageSupport();
     this.sync();
     this.poseFirearms(firearmPoses);
     this.torso.rotation.y = pose?.torsoYaw ?? 0;
@@ -149,10 +168,55 @@ export class HeldItems {
     this.camera.quaternion.copy(main.quaternion);
     this.view.quaternion.copy(main.quaternion);
     this.view.updateMatrixWorld(true);
+    this.poseRummage(pose, handling);
+    for (const compass of this.compasses.values()) {
+      compass.update(main.rotation.y);
+    }
     for (const [side, arm] of this.arms) {
       this.updateArmChain(side, arm);
     }
     this.view.updateMatrixWorld(true);
+  }
+
+  private restoreRummageSupport(): void {
+    // A support arm parented to an item needs its local rest restored before projecting the next frame.
+    if (this.rummageSupportRest) {
+      this.rummageSupportRest.arm.position.copy(this.rummageSupportRest.position);
+      this.rummageSupportRest = undefined;
+    }
+  }
+
+  private poseRummage(pose: MeleePoseFrame | undefined, handling: HeldHandlingFrame): void {
+    if (handling.firearms.length > 0 || pose?.viewOrientation) {
+      return;
+    }
+    const frame = rummageFrame(this.inventory, handling.job, this.primaryHandSide);
+    if (!frame) {
+      return;
+    }
+    const rests = new Map<HandSide, Vec3>();
+    for (const [side, arm] of this.arms) {
+      const rest = this.view.worldToLocal(arm.getWorldPosition(new Vector3()));
+      rests.set(side, [rest.x, rest.y, rest.z]);
+    }
+    const otherSide = frame.holdingSide === 'right' ? 'left' : 'right';
+    for (const side of [frame.holdingSide, otherSide] as const) {
+      const arm = this.arms.get(side);
+      const rest = rests.get(side);
+      if (!(arm?.parent && rest)) {
+        continue;
+      }
+      const grip = rummageGrip(rest, side, frame);
+      if (arm.parent !== this.torso) {
+        this.rummageSupportRest = { arm, position: arm.position.clone() };
+      }
+      arm.position.copy(arm.parent.worldToLocal(this.view.localToWorld(new Vector3(...grip))));
+      const held = this.heldByHand.get(side);
+      if (held) {
+        this.placeHeldItem(held, arm, { offset: grip });
+      }
+      this.view.updateMatrixWorld(true);
+    }
   }
 
   private poseFirearms(frames: readonly HeldFirearmPose[]): void {
@@ -234,7 +298,7 @@ export class HeldItems {
     this.poseRotation.premultiply(this.relativeCamera);
   }
 
-  private placeHeldItem(held: Object3D, arm: Group, transform: ReturnType<typeof interpolateHandPose>): void {
+  private placeHeldItem(held: Object3D, arm: Group, transform: { offset: Vec3 }): void {
     if (arm.parent === this.torso) {
       this.handPosition.copy(arm.position).applyQuaternion(this.torso.quaternion);
       held.position.copy(this.handPosition);
@@ -299,6 +363,7 @@ export class HeldItems {
       return;
     }
     this.drawn = version;
+    this.disposeCompasses();
     this.clearArms();
     this.view.clear();
     this.view.add(this.torso);
@@ -314,6 +379,24 @@ export class HeldItems {
     this.syncHand('left', hands.left);
     this.syncFistHand('right');
     this.syncFistHand('left');
+  }
+
+  private disposeCompasses(): void {
+    for (const compass of this.compasses.values()) {
+      compass.dispose();
+    }
+    this.compasses.clear();
+  }
+
+  /** Releases the spike's owned display resources on page teardown too. */
+  dispose(): void {
+    this.disposeCompasses();
+    this.clearArms();
+    this.view.clear();
+    this.shown.clear();
+    this.heldByHand.clear();
+    // A bfcache pageshow may resume this owner; its next update must rebuild disposed displays.
+    this.drawn = '';
   }
 
   /** Detaches and disposes arm chains before rebuilding the hands scene on an inventory/model version change. */
@@ -408,7 +491,9 @@ export class HeldItems {
       return;
     }
     const def = defOf(this.inventory.registry, item.type);
-    const heldAt = HOLD[def.twoHanded ? 'both' : side];
+    // A permanently raised inspection pose keeps this small display legible without a new input route.
+    const heldAt: Vec3 =
+      item.type === 'compass' ? [side === 'right' ? 0.14 : -0.14, -0.13, -0.3] : HOLD[def.twoHanded ? 'both' : side];
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
@@ -437,6 +522,11 @@ export class HeldItems {
   }
 
   private shape(item: Item): Object3D {
+    if (item.type === 'compass') {
+      const compass = createCompass();
+      this.compasses.set(item.uid, compass);
+      return compass.group;
+    }
     const def = defOf(this.inventory.registry, item.type);
     const model = def.model === undefined ? undefined : this.models?.held(def.model);
     if (model) {

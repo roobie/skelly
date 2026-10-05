@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
+import { Character, practiceForNextLevel } from '../src/core/character.ts';
 import { buildRegistry, type RecipeDef } from '../src/core/content.ts';
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -25,6 +25,30 @@ const recipe = (components: RecipeDef['components'], qualities: RecipeDef['quali
   components,
 });
 const character = { skills: {}, knownRecipes: new Set(['fixture']) };
+const fixtureWorkstationRegistry = (workTimeBonus: number) => {
+  const built = buildRegistry([
+    ...inputs,
+    {
+      source: 'fixture-workstation.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_bench',
+            name: 'Fixture bench',
+            size: [1, 3, 1],
+            color: '#ffffff',
+            workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workTimeBonus },
+          },
+        ],
+      },
+    },
+  ]);
+  if (built.issues.length > 0) {
+    throw new Error(`Invalid fixture workstation: ${JSON.stringify(built.issues)}`);
+  }
+  return built.registry;
+};
+
 const stock = (
   specs: { type: string; count?: number; condition?: number; time?: number }[],
   definitions = registry,
@@ -50,6 +74,46 @@ const stock = (
 };
 
 describe('pure craft planner', () => {
+  it('requires its named workstation to be within two metres', () => {
+    const definitions = fixtureWorkstationRegistry(0.2);
+    const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
+    const near = stock([{ type: 'rag' }], definitions);
+    near.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
+    const nearReach = bindReach({ inventory: near.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    expect(planCraft(recipeWithStation, nearReach, character)).toMatchObject({ plan: { recipe: 'fixture' } });
+
+    const far = stock([{ type: 'rag' }], definitions);
+    far.inventory.entities.add({ type: 'fixture_bench', pos: [5, 0, 0], size: [1, 3, 1], facing: 'n' });
+    const farReach = bindReach({ inventory: far.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    expect(planCraft(recipeWithStation, farReach, character)).toMatchObject({
+      missing: { workstation: 'fixture_station' },
+    });
+  });
+
+  it('uses an in-reach workstation quality instead of requiring a tool item', () => {
+    const definitions = fixtureWorkstationRegistry(0.2);
+    const recipeWithStation = {
+      ...recipe([[{ item: 'rag', count: 1 }]], { sawing: 1 }),
+      workstation: 'fixture_station',
+    };
+    const staged = stock([{ type: 'rag' }], definitions);
+    staged.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
+    const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const result = planCraft(recipeWithStation, reach, character);
+    expect(result).toMatchObject({ plan: { tools: [] } });
+  });
+
+  it('subtracts the fixture workstation bonus from recipe work time', () => {
+    const workTimeBonus = 0.37;
+    const definitions = fixtureWorkstationRegistry(workTimeBonus);
+    const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
+    const staged = stock([{ type: 'rag' }], definitions);
+    staged.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
+    const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5 })();
+    const result = planCraft(recipeWithStation, reach, character);
+    expect('plan' in result && result.plan.work).toBe(recipeWithStation.time * 60 * (1 - workTimeBonus));
+  });
+
   it('names the first understocked component group instead of reporting allocation competition', () => {
     const { snapshot } = stock([{ type: 'rag' }, { type: 'wax' }]);
     const definition = recipe([
@@ -263,20 +327,32 @@ describe('pure craft planner', () => {
 
   it('reports knowledge, skill gaps and the best usable quality level', () => {
     const { snapshot } = stock([{ type: 'hammer', condition: 0 }]);
-    const definition = { ...recipe([[{ item: 'rag', count: 1 }]], { hammering: 1 }), skills: { crafting: 1 } };
-    expect(planCraft(definition, snapshot, { skills: { crafting: 0 }, knownRecipes: new Set() })).toMatchObject({
+    const definition = { ...recipe([[{ item: 'rag', count: 1 }]], { hammering: 1 }), skills: { mechanics: 2 } };
+    expect(planCraft(definition, snapshot, { skills: { mechanics: 1 }, knownRecipes: new Set() })).toMatchObject({
       missing: {
         knowledge: true,
-        skills: [{ skill: 'crafting', required: 1, available: 0 }],
+        skills: [{ skill: 'mechanics', required: 2, available: 1 }],
         qualities: [{ quality: 'hammering', required: 1, available: 0 }],
       },
     });
-    const actor = { skills: { crafting: 0 }, knownRecipes: new Set(['fixture']) };
+    const actor = { skills: { mechanics: 1 }, knownRecipes: new Set(['fixture']) };
     const result = planCraft(definition, snapshot, actor);
     expect('missing' in result).toBe(true);
     if ('missing' in result) {
       expect(result.missing.reason).toBe(admissionRefusal(definition, snapshot, actor));
     }
+  });
+
+  it('shortens recipe work when a required skill level rises', () => {
+    const { snapshot } = stock([{ type: 'rag' }]);
+    const definition = { ...recipe([[{ item: 'rag', count: 1 }]]), skills: { crafting: 0 } };
+    const novice = planCraft(definition, snapshot, { skills: { crafting: 0 }, knownRecipes: new Set(['fixture']) });
+    const trained = planCraft(definition, snapshot, { skills: { crafting: 1 }, knownRecipes: new Set(['fixture']) });
+    expect('plan' in novice && 'plan' in trained).toBe(true);
+    if (!('plan' in novice && 'plan' in trained)) {
+      throw new Error('Fixture craft was not plannable');
+    }
+    expect(trained.plan.work).toBeLessThan(novice.plan.work);
   });
 
   it('records planning every base recipe against one indexed 200-item reach snapshot', () => {
@@ -289,7 +365,18 @@ describe('pure craft planner', () => {
     const inventory = new Inventory(benchmarkRegistry);
     const bag = inventory.create('school_backpack');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
-    const types = ['stick', 'rag', 'wax', 'kitchen_knife', 'hammer', 'scrap_metal', 'duct_tape'];
+    const types = [
+      'stick',
+      'rag',
+      'wax',
+      'repair_kit',
+      'kitchen_knife',
+      'hammer',
+      'scrap_metal',
+      'duct_tape',
+      'copper_wire',
+      'field_patch',
+    ];
     for (let i = 0; i < 199; i += 1) {
       const type = types[i % types.length]!;
       const item = inventory.create(type, ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'].includes(type) ? 3 : 1);
@@ -297,10 +384,16 @@ describe('pure craft planner', () => {
         inventory.add(item, { kind: 'pocket', owner: bag, pocket: 0, at: { x: i * 3, y: 0, rotated: false } }),
       ).toBe(true);
     }
+    inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
     const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
-    actor.skills.crafting = 1; // Timings exercise a successful plan, including the gated repair kit.
+    actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.
+    actor.awardPractice('crafting', practiceForNextLevel(actor.skills.crafting!));
+    actor.awardPractice(
+      'mechanics',
+      practiceForNextLevel(actor.skills.mechanics!) + practiceForNextLevel(actor.skills.mechanics! + 1),
+    ); // Timings exercise successful plans, including skill-gated recipes.
     const started = performance.now();
     const index = indexCraftReach(snapshot);
     const indexMs = performance.now() - started;

@@ -354,7 +354,6 @@ export class BlockEntities {
     return Math.hypot(...d);
   }
 
-  /** The nearest bed within `radius` blocks of a point, if any (SLICE-1.md, 1.8: sleep is better on a bed). */
   bedNear(point: Vec3, radius: number): BlockEntity | undefined {
     return [...this.byAnchor.values()]
       .filter((e) => this.defOf(e).bed !== undefined && this.distance(e, point) <= radius)

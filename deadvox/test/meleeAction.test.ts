@@ -4,17 +4,12 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
+import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
-import {
-  FISTS_MELEE,
-  type MeleeActionState,
-  type MeleeWeapon,
-  type Zombie,
-  ZombieSystem,
-} from '../src/core/zombies.ts';
+import { FISTS_MELEE, type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 
@@ -37,8 +32,15 @@ const blockedPlayer = {
   lit: false,
   lightSeenFrom: 40,
 };
-const makeSystem = (isSolid: SolidAt = FLOOR, results: string[] = [], sounds: string[] = []) =>
-  new ZombieSystem({
+const playerCombats = new WeakMap<ZombieSystem, PlayerCombat>();
+const combatFor = (system: ZombieSystem): PlayerCombat => playerCombats.get(system)!;
+const makeSystem = (
+  isSolid: SolidAt = FLOOR,
+  results: string[] = [],
+  sounds: string[] = [],
+  weaponHits: number[] = [],
+) => {
+  const system = new ZombieSystem({
     player: () => blockedPlayer,
     isSolid,
     isOpaque: isSolid,
@@ -50,6 +52,9 @@ const makeSystem = (isSolid: SolidAt = FLOOR, results: string[] = [], sounds: st
     onMeleeResult: (result) => results.push(result.id === undefined ? 'miss' : 'hit'),
     onSound: (event) => sounds.push(event),
   });
+  playerCombats.set(system, new PlayerCombat(system, (uid) => weaponHits.push(uid)));
+  return system;
+};
 
 const makeTarget = (system: ZombieSystem) => {
   const id = system.add(SHAMBLER, [0, 1, 4], [0, 0, 1]);
@@ -79,7 +84,7 @@ const start = (
   profile: MeleeProfile = 'blunt',
   weapon: MeleeWeapon = BASE_WEAPON,
 ) =>
-  system.beginMeleeSwing({
+  combatFor(system).beginMeleeSwing({
     ...ray,
     weapon,
     profile,
@@ -93,7 +98,7 @@ const advance = (
   time: number,
   hands: { right: number | null; left: number | null } = { right: 11, left: null },
 ) => {
-  system.tickPlayerAction(time, hands);
+  combatFor(system).tick(time, hands);
   system.tick(time, 0);
 };
 
@@ -115,6 +120,23 @@ const actionPose = (overrides: Partial<MeleeActionState> = {}): MeleeActionState
 });
 
 describe('melee pose and contact contract', () => {
+  it('reports one weapon-wear event at confirmed contact and none on a miss', () => {
+    const hits: number[] = [];
+    const system = makeSystem(FLOOR, [], [], hits);
+    const target = makeTarget(system);
+    const ray = headRay(target.zombie, target.id);
+    expect(start(system, ray, 'blunt', BASE_WEAPON)).toBe(true);
+    advance(system, 0.25);
+    advance(system, 0.8);
+    expect(hits).toEqual([11]);
+
+    const misses: number[] = [];
+    const missSystem = makeSystem(FLOOR, [], [], misses);
+    expect(start(missSystem, { origin: [100, 2, 100], direction: [1, 0, 0] })).toBe(true);
+    advance(missSystem, 0.25);
+    expect(misses).toEqual([]);
+  });
+
   it('caps contact wind-up and shares the click-locked contact ray with the displayed pose', () => {
     expect(meleeContactTime(0.8)).toBe(0.25);
     expect(meleeContactTime(1.1)).toBe(0.25);
@@ -183,7 +205,7 @@ describe('player melee action', () => {
     const initialHealth = zombie.regions.head;
     const needs = { stamina: 100 };
     expect(
-      startPlayerMelee(system, needs, {
+      startPlayerMelee(combatFor(system), needs, {
         ...ray,
         weapon: BASE_WEAPON,
         profile: 'blunt',
@@ -194,7 +216,7 @@ describe('player melee action', () => {
     ).toBe('started');
     expect(needs.stamina).toBe(96);
     expect(zombie.regions.head).toBe(initialHealth);
-    expect(system.activeMeleeAction?.contactAt).toBe(Math.min(0.4 * BASE_WEAPON.cooldown, 0.25));
+    expect(combatFor(system).activeMeleeAction?.contactAt).toBe(Math.min(0.4 * BASE_WEAPON.cooldown, 0.25));
 
     // The player turns more than 30 degrees; the in-flight action keeps its captured ray.
     const turnedDirection: Vec3 = [1, 0, 0];
@@ -218,10 +240,10 @@ describe('player melee action', () => {
     }
     expect(zombie.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
     expect(results).toHaveLength(1);
-    expect(system.snapshotState().playerAttackWait).toBe(0);
+    expect(combatFor(system).snapshotState().playerAttackWait).toBe(0);
   });
 
-  it('routes the legacy immediate swing helper through the shared resolver and keeps cooldown-on-hit', () => {
+  it('routes immediate geometry queries through the shared resolver without owning continuation state', () => {
     const system = makeSystem();
     const { id, zombie } = makeTarget(system);
     const ray = headRay(zombie, id);
@@ -237,7 +259,6 @@ describe('player melee action', () => {
 
     expect(system.swing(ray.origin, ray.direction, BASE_WEAPON)).toBe(id);
     expect(resolvedThroughSharedPath).toBe(true);
-    expect(system.snapshotState().playerAttackWait).toBe(BASE_WEAPON.cooldown);
   });
 
   it('spends stamina and cooldown on a miss or wall impact, but refuses tired and overlapping starts', () => {
@@ -248,7 +269,7 @@ describe('player melee action', () => {
     const missRay = { origin: [0, 2, 2] as Vec3, direction: [1, 0, 0] as Vec3 };
     const needs = { stamina: 3 };
     expect(
-      startPlayerMelee(missSystem, needs, {
+      startPlayerMelee(combatFor(missSystem), needs, {
         ...missRay,
         weapon: BASE_WEAPON,
         profile: 'fists',
@@ -257,10 +278,10 @@ describe('player melee action', () => {
       }),
     ).toBe('too-tired');
     expect(needs.stamina).toBe(3);
-    expect(missSystem.activeMeleeAction).toBeUndefined();
+    expect(combatFor(missSystem).activeMeleeAction).toBeUndefined();
     needs.stamina = 100;
     expect(
-      startPlayerMelee(missSystem, needs, {
+      startPlayerMelee(combatFor(missSystem), needs, {
         ...missRay,
         weapon: BASE_WEAPON,
         profile: 'blunt',
@@ -278,7 +299,7 @@ describe('player melee action', () => {
     expect(results).toEqual(['miss']);
     expect(sounds).toContain('melee_swing');
     expect(sounds).not.toContain('melee_hit');
-    expect(missSystem.snapshotState().playerAttackWait).toBeCloseTo(0.55);
+    expect(combatFor(missSystem).snapshotState().playerAttackWait).toBeCloseTo(0.55);
 
     const unblocked = makeSystem();
     const { id, zombie: target } = makeTarget(unblocked);
@@ -300,7 +321,7 @@ describe('player melee action', () => {
     }
     expect(wallResults).toEqual(['miss']);
     expect(wallTarget.zombie.regions.head).toBe(SHAMBLER.regions.head);
-    expect(wallSystem.snapshotState().playerAttackWait).toBeCloseTo(0.55);
+    expect(combatFor(wallSystem).snapshotState().playerAttackWait).toBeCloseTo(0.55);
   });
 
   it.each([
@@ -311,7 +332,7 @@ describe('player melee action', () => {
     const original = makeSystem(FLOOR, [], originalSounds);
     const { id, zombie } = makeTarget(original);
     const ray = headRay(zombie, id);
-    expect(original.beginMeleeSwing({ ...ray, weapon, profile, twoHanded: false, hands })).toBe(true);
+    expect(combatFor(original).beginMeleeSwing({ ...ray, weapon, profile, twoHanded: false, hands })).toBe(true);
     for (let tick = 0; tick < 4; tick++) {
       advance(original, 0.05, hands);
     }
@@ -319,6 +340,7 @@ describe('player melee action', () => {
     const restoredSounds: string[] = [];
     const restored = makeSystem(FLOOR, [], restoredSounds);
     restored.restoreState(original.snapshotState(), (type) => (type === SHAMBLER.id ? SHAMBLER : undefined));
+    combatFor(restored).restoreState(combatFor(original).snapshotState());
     restored.setFrozen(true);
     advance(original, 0.05, hands);
     advance(restored, 0.05, hands);
@@ -338,11 +360,13 @@ describe('player melee action', () => {
     }
     const initialHealth = zombie.regions.head;
     const state = original.snapshotState();
+    const actionState = combatFor(original).snapshotState();
     const restoredResults: string[] = [];
     const restored = makeSystem(FLOOR, restoredResults);
     restored.restoreState(state, (type) => (type === SHAMBLER.id ? SHAMBLER : undefined));
+    combatFor(restored).restoreState(actionState);
     restored.setFrozen(true);
-    expect(restored.activeMeleeAction?.elapsed).toBe(0.2);
+    expect(combatFor(restored).activeMeleeAction?.elapsed).toBe(0.2);
     for (const system of [original, restored]) {
       advance(system, 0.05);
       expect(system.store.get(id)?.regions.head).toBe(initialHealth - BASE_WEAPON.damage);
@@ -356,7 +380,7 @@ describe('player melee action', () => {
     const first: MeleeWeapon = FISTS_MELEE;
     const heldOffhand = makeSystem();
     expect(
-      heldOffhand.beginMeleeSwing({
+      combatFor(heldOffhand).beginMeleeSwing({
         ...ray,
         weapon: first,
         profile: 'fists',
@@ -365,12 +389,12 @@ describe('player melee action', () => {
         hands: { right: null, left: 12 },
       }),
     ).toBe(true);
-    expect(heldOffhand.activeMeleeAction?.hand).toBe('right');
+    expect(combatFor(heldOffhand).activeMeleeAction?.hand).toBe('right');
     for (let tick = 0; tick < 16; tick++) {
       advance(heldOffhand, 0.05, { right: null, left: 12 });
     }
     expect(
-      heldOffhand.beginMeleeSwing({
+      combatFor(heldOffhand).beginMeleeSwing({
         ...ray,
         weapon: first,
         profile: 'fists',
@@ -378,13 +402,14 @@ describe('player melee action', () => {
         hands: { right: null, left: null },
       }),
     ).toBe(true);
-    expect(heldOffhand.activeMeleeAction?.hand, 'a right-only jab does not consume the next alternating fist').toBe(
-      'right',
-    );
+    expect(
+      combatFor(heldOffhand).activeMeleeAction?.hand,
+      'a right-only jab does not consume the next alternating fist',
+    ).toBe('right');
 
     const fists = makeSystem();
     expect(
-      fists.beginMeleeSwing({
+      combatFor(fists).beginMeleeSwing({
         ...ray,
         weapon: first,
         profile: 'fists',
@@ -392,12 +417,12 @@ describe('player melee action', () => {
         hands: { right: null, left: null },
       }),
     ).toBe(true);
-    expect(fists.activeMeleeAction?.hand).toBe('right');
+    expect(combatFor(fists).activeMeleeAction?.hand).toBe('right');
     for (let tick = 0; tick < 16; tick++) {
       advance(fists, 0.05, { right: null, left: null });
     }
     expect(
-      fists.beginMeleeSwing({
+      combatFor(fists).beginMeleeSwing({
         ...ray,
         weapon: first,
         profile: 'fists',
@@ -405,18 +430,18 @@ describe('player melee action', () => {
         hands: { right: null, left: null },
       }),
     ).toBe(true);
-    expect(fists.activeMeleeAction?.hand).toBe('left');
+    expect(combatFor(fists).activeMeleeAction?.hand).toBe('left');
 
     const swapping = makeSystem();
     const { id: swapId, zombie: swapTarget } = makeTarget(swapping);
     expect(start(swapping, headRay(swapTarget, swapId))).toBe(true);
     const health = swapTarget.regions.head;
     advance(swapping, 0.1, { right: 12, left: null });
-    expect(swapping.activeMeleeAction).toBeUndefined();
+    expect(combatFor(swapping).activeMeleeAction).toBeUndefined();
     for (let tick = 0; tick < 10; tick++) {
       advance(swapping, 0.1, { right: 12, left: null });
     }
     expect(swapTarget.regions.head).toBe(health);
-    expect(swapping.snapshotState().playerAttackWait).toBe(0);
+    expect(combatFor(swapping).snapshotState().playerAttackWait).toBe(0);
   });
 });

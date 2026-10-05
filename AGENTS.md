@@ -53,7 +53,9 @@ BR, 2026-10-04. The pillar and its reasons are in `README.md`, "Zero drift". Whe
 write a doc, a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
-  no lists, tables or values copied from code.
+  no lists, tables or values copied from code. A cited path is relative to the repo
+  root, the doc's subproject root (`deadvox/`, `gungen/`, `mobgen/`) when relevant,
+  or the doc itself.
 - A "when" names its trigger: an item ID or an issue. No "today", "currently" or
   "newly". When your PR completes an item, resolve every doc line that names it.
 - The final reason goes in a tracked doc or ADR before the merge, not only in the PR,

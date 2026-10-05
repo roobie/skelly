@@ -5,6 +5,7 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
+import { Character, practiceForNextLevel } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -14,7 +15,13 @@ import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
-import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponents } from '../src/core/saveFormat.ts';
+import {
+  decodeSave,
+  encodeSave,
+  SAVE_SCHEMA_VERSION,
+  type SaveContentKind,
+  type SaveVersionComponents,
+} from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState, type SaveSnapshot, type snapshotSession } from '../src/core/saveState.ts';
 import { chunksFor, makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
@@ -27,6 +34,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER } from '../src/game/player.ts';
+import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -209,7 +217,6 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   ),
 });
 const inspect = (runtime: Runtime): unknown => {
-  const zombieContinuation = runtime.zombies.snapshotState();
   const scheduler = (
     runtime.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
   ).entries;
@@ -268,9 +275,6 @@ const inspect = (runtime: Runtime): unknown => {
     },
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
-      playerAttackWait: zombieContinuation.playerAttackWait,
-      meleeAction: zombieContinuation.meleeAction,
-      nextFistHand: zombieContinuation.nextFistHand,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
         const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
         return [
@@ -285,6 +289,7 @@ const inspect = (runtime: Runtime): unknown => {
         ];
       }),
     },
+    playerCombat: runtime.session.playerCombat.snapshotState(),
     audio: {
       vocalNoiseId: runtime.playerAudio.vocalNoiseId,
       vocalNoise: runtime.playerAudio.vocalNoise,
@@ -437,24 +442,123 @@ describe('snapshot state components', () => {
     if (removedRecipe === undefined) {
       throw new Error('starter character has no known recipe');
     }
-    const savedLevel = actor.skills.crafting! + 1;
-    actor.skills.crafting = savedLevel;
+    const firstThreshold = practiceForNextLevel(actor.skills.crafting!);
+    const award = firstThreshold + practiceForNextLevel(actor.skills.crafting! + 1) / 2;
+    actor.awardPractice('crafting', award);
+    const savedLevel = actor.skills.crafting!;
+    const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
     const snapshot = capture(runtime);
-    actor.skills.crafting = savedLevel + 1;
+    actor.awardPractice('crafting', practiceForNextLevel(savedLevel));
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loadedRuntime = createRuntime(decoded.snapshot);
     const loaded = loadedRuntime.session.character;
     expect(loaded.skills.crafting).toBe(savedLevel);
-    loaded.skills.crafting = -0;
-    const zero = await decodeSave(await encodeFixture(capture(loadedRuntime)), {
-      version: formatVersion,
-      contentLookup,
-    });
-    expect(Object.is(createRuntime(zero.snapshot).session.character.skills.crafting, -0)).toBe(true);
+    expect(loaded.practice.crafting).toBe(savedPractice);
     expect(loaded.knownRecipes).toEqual(new Set(actor.knownRecipes));
     expect(loaded.knownRecipes.has(removedRecipe)).toBe(false);
     expect(actor.skills.crafting).toBe(savedLevel + 1);
+  });
+
+  it('advances a skill only when its accumulated practice reaches the next-level threshold', () => {
+    const actor = new Character(registry);
+    const threshold = practiceForNextLevel(actor.skills.crafting!);
+    actor.awardPractice('crafting', threshold / 2);
+    expect(actor.skills.crafting).toBe(0);
+    expect(actor.practice.crafting).toBe(threshold / 2);
+    actor.awardPractice('crafting', threshold / 2);
+    expect(actor.skills.crafting).toBe(1);
+    expect(actor.practice.crafting).toBe(0);
+  });
+
+  it('round-trips a stopped reading action with its held book uid and progress', async () => {
+    const runtime = createRuntime();
+    const feet = runtime.player.body.pos.map(Math.floor) as Vec3;
+    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
+      if (item) {
+        expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
+      }
+    }
+    const book = runtime.inventory.create('field_manual');
+    expect(runtime.inventory.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
+    runtime.sim.actions.stop();
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
+
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.actions.job).toMatchObject({
+      jobType: 'reading',
+      stopped: true,
+      bookUid: book.uid,
+      elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
+    });
+    expect(loaded.inventory.itemByUid(book.uid)?.type).toBe('field_manual');
+  });
+
+  it('saves stopped reading with the book in a pile and resumes only after it is held', async () => {
+    const runtime = createRuntime();
+    const initialFeet = runtime.player.body.pos.map(Math.floor) as Vec3;
+    const otherPile: Vec3 = [initialFeet[0] + 1, initialFeet[1], initialFeet[2]];
+    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
+      if (item) {
+        expect(runtime.inventory.move(item, { kind: 'pile', pos: otherPile }).ok).toBe(true);
+      }
+    }
+    const book = runtime.inventory.create('field_manual');
+    expect(runtime.inventory.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
+    runtime.sim.actions.stop();
+    const elapsed = runtime.sim.actions.job?.jobType === 'reading' ? runtime.sim.actions.job.elapsed : 0;
+    const feet = runtime.player.body.pos.map(Math.floor) as Vec3;
+    expect(runtime.inventory.move(book, { kind: 'pile', pos: feet }).ok).toBe(true);
+    // The test player starts in freefall; keep the pile reachable after the tick.
+    runtime.world.setBlock(feet[0], feet[1] - 1, feet[2], blockId('grass'));
+    runtime.sim.scheduler.advance(1);
+
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toMatchObject({
+      jobType: 'reading',
+      stopped: true,
+      bookUid: book.uid,
+      elapsed,
+    });
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.actions.job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid, elapsed });
+    expect(loaded.sim.actions.resume()).toBe('Keep the book in your hands');
+    const loadedBook = loaded.inventory.itemByUid(book.uid)!;
+    expect(loaded.inventory.move(loadedBook, { kind: 'hand', side: 'right' }).ok).toBe(true);
+    expect(loaded.sim.actions.resume()).toBeUndefined();
+  });
+
+  it('omits a stale stopped reading from the save without ending the live job before its next tick', async () => {
+    const runtime = createRuntime();
+    const feet = runtime.player.body.pos.map(Math.floor) as Vec3;
+    const otherPile: Vec3 = [feet[0] + 1, feet[1], feet[2]];
+    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
+      if (item) {
+        expect(runtime.inventory.move(item, { kind: 'pile', pos: otherPile }).ok).toBe(true);
+      }
+    }
+    const book = runtime.inventory.create('field_manual');
+    expect(runtime.inventory.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(2 / runtime.sim.clock.ratio + 2);
+    runtime.sim.actions.stop();
+    expect(runtime.inventory.consume(book)).toBe(true);
+
+    expect(runtime.sim.actions.snapshotState().job).toBeNull();
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toBeNull();
+    runtime.sim.scheduler.advance(1);
+    expect(runtime.sim.actions.job).toBeUndefined();
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    expect(createRuntime(decoded.snapshot).sim.actions.job).toBeUndefined();
   });
 
   it('restores after eating the quickbar-bound item without a dangling UID', () => {
@@ -471,6 +575,35 @@ describe('snapshot state components', () => {
     const snapshot = capture(runtime);
     expect(() => createRuntime(snapshot)).not.toThrow();
     expect(snapshot.character.quickbar[0]).toBeNull();
+  });
+
+  it('returns a held quickbar item to its captured source after a save round-trip', async () => {
+    const runtime = createRuntime();
+    const { inventory, player } = runtime;
+    const bag = inventory.hands.right!;
+    const { item } = bag.pockets![0]![0]!;
+    const source = inventory.targetState(inventory.targetForLocation(inventory.locate(item)!));
+    const feet = player.body.pos.map(Math.floor) as Vec3;
+    expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
+    expect(inventory.move(item, { kind: 'hand', side: 'left' }).ok).toBe(true);
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    const held = restored.inventory.itemByUid(item.uid)!;
+    const actions = new QuickbarActions({
+      inventory: restored.inventory,
+      queue: restored.handling,
+      feet: () => restored.player.body.pos.map(Math.floor) as Vec3,
+      survival: restored.survival,
+      notice: () => undefined,
+    });
+    expect(restored.inventory.quickbarOrigin(held)).toEqual(source);
+
+    actions.tap(held);
+    restored.handling.tick(restored.handling.remaining);
+
+    const at = restored.inventory.locate(held)!;
+    expect(restored.inventory.targetState(restored.inventory.targetForLocation(at))).toEqual(source);
   });
 
   it('rejects a dangling component reference at the snapshot barrier', () => {
@@ -680,6 +813,46 @@ describe('craft job codec and ownership', () => {
       await expect(encodeFixture(dangling)).rejects.toThrow('Missing craft work item');
     },
   );
+
+  it('encodes and restores an in-progress repair target and amount', async () => {
+    const runtime = createRuntime();
+    const pos: Vec3 = runtime.player.body.pos.map(Math.floor) as Vec3;
+    for (const item of Object.values(runtime.inventory.hands)) {
+      expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
+    }
+    const target = runtime.inventory.create('crowbar');
+    target.condition = 0.2;
+    expect(runtime.inventory.add(target, { kind: 'pile', pos })).toBe(true);
+    for (const [type, offset] of [
+      ['repair_kit', 1],
+      ['scrap_metal', 2],
+      ['duct_tape', 3],
+    ] as const) {
+      expect(
+        runtime.inventory.add(runtime.inventory.create(type), {
+          kind: 'pile',
+          pos: [pos[0] - 1 + offset, pos[1], pos[2]],
+        }),
+      ).toBe(true);
+    }
+    const recipe = registry.recipes.get('repair_crowbar')!;
+    const planned = runtime.session.planCraft(recipe);
+    if (!('plan' in planned)) {
+      throw new Error(planned.missing.reason);
+    }
+    const { amount } = recipe.repair!;
+    const work = runtime.inventory.beginWork(planned.plan, { targetUid: target.uid, amount });
+    if (!work) {
+      throw new Error('Cannot gather repair inputs');
+    }
+    expect(runtime.sim.actions.startCraft(work.uid)).toBeUndefined();
+    runtime.sim.actions.craft!.advance(work.uid, 37);
+    const snapshot = capture(runtime);
+    const bytes = await encodeFixture(snapshot);
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.inventory.itemByUid(work.uid)!.work).toEqual(work.work);
+  });
 });
 
 describe('restored session world state', () => {
@@ -912,7 +1085,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 10,
+  schemaVersion: SAVE_SCHEMA_VERSION,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
@@ -1071,7 +1244,7 @@ describe('canonical save format', () => {
       left: source.inventory.hands.left?.uid ?? null,
     };
     expect(
-      startPlayerMelee(source.zombies, source.sim.needs, {
+      startPlayerMelee(source.session.playerCombat, source.sim.needs, {
         origin,
         direction,
         weapon,
@@ -1085,10 +1258,10 @@ describe('canonical save format', () => {
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
-    expect(decoded.snapshot.world.zombies.meleeAction).toEqual(snapshot.world.zombies.meleeAction);
+    expect(decoded.snapshot.character.playerCombat.meleeAction).toEqual(snapshot.character.playerCombat.meleeAction);
     const loaded = createRuntime(decoded.snapshot);
     loaded.zombies.setFrozen(true);
-    expect(loaded.zombies.activeMeleeAction?.elapsed).toBe(0);
+    expect(loaded.session.playerCombat.activeMeleeAction?.elapsed).toBe(0);
 
     for (const runtime of [source, loaded]) {
       const held = {
@@ -1096,17 +1269,17 @@ describe('canonical save format', () => {
         left: runtime.inventory.hands.left?.uid ?? null,
       };
       for (let tick = 1; tick < 15; tick++) {
-        runtime.zombies.tickPlayerAction(1 / 60, held);
+        runtime.session.playerCombat.tick(1 / 60, held);
         if (tick % 3 === 0) {
           runtime.zombies.tick(0.05, tick / 20, held);
         }
         expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
       }
-      runtime.zombies.tickPlayerAction(1 / 60, held);
+      runtime.session.playerCombat.tick(1 / 60, held);
       runtime.zombies.tick(0.05, 0.25, held);
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
       for (let tick = 0; tick < 48; tick++) {
-        runtime.zombies.tickPlayerAction(1 / 60, held);
+        runtime.session.playerCombat.tick(1 / 60, held);
         if (tick % 3 === 2) {
           runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
         }
@@ -1249,12 +1422,15 @@ describe('canonical save format', () => {
   it('preserves signed zero, subnormals, the largest safe integer, and ordinary decimal values exactly', async () => {
     const snapshot = structuredClone(capture(createRuntime())) as SaveSnapshot;
     snapshot.character.player.yaw = -0;
+    snapshot.character.progression.skills.crafting = -0;
     snapshot.character.simulation.needs.stamina = Number.MIN_VALUE;
     snapshot.character.simulation.needs.calories = 2.225_073_858_507_201e-308;
     snapshot.character.player.body.pos[0] = 0.1 + 0.2;
     snapshot.character.inventory.nextItemUid = Number.MAX_SAFE_INTEGER;
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     assertNumbersObjectIs(snapshot, decoded.snapshot);
+    const loaded = createRuntime(decoded.snapshot).session.character;
+    expect(Object.is(loaded.skills.crafting, -0)).toBe(true);
 
     await Promise.all(
       [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY].map(async (value) => {

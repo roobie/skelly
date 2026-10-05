@@ -756,6 +756,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       debugMode: hooks.engine.config.debug,
       newGame: hooks.newGame,
     });
+    if (
+      hooks.newGame &&
+      new URLSearchParams(location.search).get('loadout') === 'compass' &&
+      !hooks.inventory.hands.right
+    ) {
+      hooks.inventory.add(hooks.inventory.create('compass'), { kind: 'hand', side: 'right' });
+    }
   }
   const host = document.body;
   let mouseReadout: HTMLElement | null = null;

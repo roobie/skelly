@@ -7,11 +7,13 @@ import {
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
 import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
+import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
+import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { MeleeActionState, ZombieRouteState, ZombieState } from './zombies.ts';
+import type { ZombieRouteState, ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -99,12 +101,9 @@ interface WirePayload {
     options: SaveWorldIdentity;
     regions: Record<string, Region>;
     zombieSystem: {
-      playerAttackWait: number;
       routeSearchCursor: number;
       routeClock: number;
       routes: { id: number; route: ZombieRouteState }[];
-      meleeAction: MeleeActionState | null;
-      nextFistHand: 'right' | 'left';
       nextEntityId: number;
     };
     blockEntitiesNextUid: number;
@@ -117,6 +116,7 @@ interface WirePayload {
     inventory: Omit<InventoryState, 'piles' | 'entities'>;
     progression: SaveSnapshot['character']['progression'];
     longAction: SaveSnapshot['character']['longAction'];
+    playerCombat: PlayerCombatState;
     lightUid: number | null;
     quickbar: (number | null)[];
     handling: SaveSnapshot['character']['handling'];
@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 10;
+export const SAVE_SCHEMA_VERSION = 13;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -151,7 +151,7 @@ function defaultVersion(): SaveVersionComponents {
   try {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
-      schemaVersion: SCHEMA_VERSION,
+      schemaVersion: SAVE_SCHEMA_VERSION,
       generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
@@ -209,8 +209,12 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
-const progression = obj({ skills: record(nonNegativeInt), knownRecipes: arr(str({ nonEmpty: true })) });
 const nonNegative = num({ min: 0 });
+const progression = obj({
+  skills: record(nonNegativeInt),
+  practice: record(nonNegative),
+  knownRecipes: arr(str({ nonEmpty: true })),
+});
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
@@ -278,6 +282,8 @@ itemSchema = obj({
       recipe: str({ id: true }),
       elapsed: nonNegative,
       duration: positive,
+      repairTargetUid: opt(positiveInt),
+      repairAmount: opt(num({ min: 0, max: 1 })),
       components: arr(
         lazy(() => itemSchema),
         1,
@@ -287,6 +293,15 @@ itemSchema = obj({
 });
 placedSchema = obj({ item: lazy(() => itemSchema), x: nonNegativeInt, y: nonNegativeInt, rotated: bool });
 const placedGrid = arr(lazy(() => placedSchema));
+const targetStateSchema = obj({
+  kind: enumeration(['hand', 'worn', 'pocket', 'pile', 'furniture']),
+  side: opt(enumeration(['right', 'left'])),
+  ownerUid: opt(positiveInt),
+  pocket: opt(nonNegativeInt),
+  entityUid: opt(positiveInt),
+  pos: opt(vec3),
+  at: opt(obj({ x: nonNegativeInt, y: nonNegativeInt, rotated: bool })),
+});
 const inventoryCore = obj({
   nextItemUid: positiveInt,
   hands: obj({ right: opt(lazy(() => itemSchema)), left: opt(lazy(() => itemSchema)) }),
@@ -300,6 +315,7 @@ const inventoryCore = obj({
     feet: opt(lazy(() => itemSchema)),
   }),
   looted: arr(tuple(str({ id: true }), nonNegativeInt)),
+  quickbarOrigins: arr(tuple(positiveInt, targetStateSchema)),
 });
 const blockEntitySchema = obj({
   uid: positiveInt,
@@ -322,11 +338,13 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading']),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),
       workUid: opt(positiveInt),
+      bookUid: opt(positiveInt),
+      duration: opt(positive),
       rest: opt(
         obj({
           kind: enumeration(['rest', 'sleep']),
@@ -440,6 +458,11 @@ const meleeAction = nullable(
     }),
   }),
 );
+const playerCombat = obj({
+  playerAttackWait: nonNegative,
+  meleeAction,
+  nextFistHand: enumeration(['right', 'left']),
+});
 const playerStateInventory = obj({
   ...inventoryCore.fields,
 });
@@ -479,7 +502,6 @@ const wirePayloadSchema = obj({
       }),
     ),
     zombieSystem: obj({
-      playerAttackWait: nonNegative,
       routeSearchCursor: nonNegativeInt,
       routeClock: nonNegative,
       routes: arr(
@@ -495,8 +517,6 @@ const wirePayloadSchema = obj({
           }),
         }),
       ),
-      meleeAction,
-      nextFistHand: enumeration(['right', 'left']),
       nextEntityId: positiveInt,
     }),
     blockEntitiesNextUid: positiveInt,
@@ -509,6 +529,7 @@ const wirePayloadSchema = obj({
     player,
     inventory: playerStateInventory,
     longAction,
+    playerCombat,
     lightUid: nullable(positiveInt),
     quickbar: arr(nullable(positiveInt)),
     handling,
@@ -640,7 +661,7 @@ function validateVersion(version: SaveVersionComponents): void {
   if (!HASH.test(version.simulationHash)) {
     throw new Error('Invalid simulation source hash');
   }
-  if (version.schemaVersion !== SCHEMA_VERSION) {
+  if (version.schemaVersion !== SAVE_SCHEMA_VERSION) {
     throw new Error(`Unsupported save schema version ${version.schemaVersion}`);
   }
   const packIds = new Set<string>();
@@ -794,7 +815,6 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       },
       regions: Object.fromEntries(regions),
       zombieSystem: {
-        playerAttackWait: snapshot.world.zombies.playerAttackWait,
         routeSearchCursor: snapshot.world.zombies.routeSearchCursor,
         routeClock: snapshot.world.zombies.routeClock,
         routes: snapshot.world.zombies.routes.map(({ id, route }) => ({
@@ -805,8 +825,6 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
             waypoints: route.waypoints.map((point) => [...point]),
           },
         })),
-        meleeAction: snapshot.world.zombies.meleeAction,
-        nextFistHand: snapshot.world.zombies.nextFistHand,
         nextEntityId: snapshot.world.zombies.nextEntityId,
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
@@ -831,8 +849,10 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         hands: savedInventory.hands,
         worn: savedInventory.worn,
         looted: savedInventory.looted,
+        quickbarOrigins: savedInventory.quickbarOrigins,
       },
       longAction: snapshot.character.longAction,
+      playerCombat: snapshot.character.playerCombat,
       lightUid: snapshot.character.lightUid,
       quickbar: [...snapshot.character.quickbar],
       handling: snapshot.character.handling,
@@ -1085,20 +1105,41 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   return snapshot;
 }
 
-function validateActionReferences(snapshot: SaveSnapshot): void {
-  const { job } = snapshot.character.longAction;
-  validateLongJob(job, snapshot.character.simulation.time);
-  let owns = job?.jobType !== 'craft';
-  for (const { item } of savedItemTree(snapshot.character.inventory)) {
+function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: ReadonlyMap<number, ItemState>): void {
+  for (const { item } of tree) {
     if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
       throw new Error('Invalid craft work payload');
     }
-    if (job?.jobType === 'craft' && item.uid === job.workUid && item.work) {
-      owns = true;
+    if (item.work?.repairTargetUid !== undefined) {
+      const target = itemsByUid.get(item.work.repairTargetUid);
+      if (!target || target.uid === item.uid || target.count !== 1) {
+        throw new Error('Missing repair target');
+      }
     }
   }
-  if (!owns) {
-    throw new Error('Missing craft work item');
+}
+
+function ownsLongActionItem(
+  job: SaveSnapshot['character']['longAction']['job'],
+  tree: readonly { item: ItemState }[],
+): boolean {
+  if (job?.jobType === 'craft') {
+    return tree.some(({ item }) => item.uid === job.workUid && item.work !== undefined);
+  }
+  if (job?.jobType === 'reading') {
+    return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
+  }
+  return true;
+}
+
+function validateActionReferences(snapshot: SaveSnapshot): void {
+  const { job } = snapshot.character.longAction;
+  validateLongJob(job, snapshot.character.simulation.time);
+  const tree = [...savedItemTree(snapshot.character.inventory)];
+  const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
+  validateWorkItems(tree, itemsByUid);
+  if (!ownsLongActionItem(job, tree)) {
+    throw new Error(job?.jobType === 'reading' ? 'Missing reading book' : 'Missing craft work item');
   }
 }
 
@@ -1134,6 +1175,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
   for (const skill of Object.keys(snapshot.character.progression.skills)) {
     check('skill', skill, `character.progression.skills.${skill}`);
+  }
+  for (const skill of Object.keys(snapshot.character.progression.practice)) {
+    check('skill', skill, `character.progression.practice.${skill}`);
   }
   for (const [index, recipe] of snapshot.character.progression.knownRecipes.entries()) {
     check('recipe', recipe, `character.progression.knownRecipes[${index}]`);
@@ -1178,7 +1222,6 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
           ),
         }),
         zombies: obj({
-          playerAttackWait: nonNegative,
           routeSearchCursor: nonNegativeInt,
           routeClock: nonNegative,
           routes: arr(
@@ -1194,8 +1237,6 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
               }),
             }),
           ),
-          meleeAction,
-          nextFistHand: enumeration(['right', 'left']),
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
         }),
@@ -1208,6 +1249,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         player: playerState,
         inventory,
         longAction,
+        playerCombat,
         lightUid: nullable(positiveInt),
         quickbar: arr(nullable(positiveInt)),
         handling: obj({ jobs: arr(anyJson, 0) }),
@@ -1270,7 +1312,7 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
   };
   const envelope: Envelope = {
     magic: MAGIC,
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: SAVE_SCHEMA_VERSION,
     versionIdentity: identity,
     generation,
     payloadByteLength: payloadBytes.byteLength,
@@ -1323,8 +1365,8 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   });
   validateSchema(headerSchema, envelope, 'envelope', true);
   const parsed = envelope as unknown as Envelope;
-  if (parsed.schemaVersion !== SCHEMA_VERSION) {
-    throw new Error(`Save schema mismatch: saved ${parsed.schemaVersion}, running ${SCHEMA_VERSION}`);
+  if (parsed.schemaVersion !== SAVE_SCHEMA_VERSION) {
+    throw new Error(`Save schema mismatch: saved ${parsed.schemaVersion}, running ${SAVE_SCHEMA_VERSION}`);
   }
   validateVersion(parsed.versionIdentity.components);
   if (

@@ -88,7 +88,7 @@ function objectInfo(object) {
     throw new Error(`${name}: unknown class ${cls}`);
   }
   if (cls !== 'building' && rotation !== 0) {
-    throw new Error(`${name}: only buildings may rotate; spawn yaw is a property`);
+    throw new Error(`${name}: only buildings may rotate; spawn bearing is a property`);
   }
   return { name, x, z, rotation, cls };
 }
@@ -150,7 +150,7 @@ function addSpawn(object, info, context) {
     if (layout.player) {
       throw new Error('Exactly one player_spawn is required');
     }
-    layout.player = { position, yaw: finite(scalar(object, 'yaw', 0), `${name}.yaw`) };
+    layout.player = { position, bearing: finite(scalar(object, 'bearing', 0), `${name}.bearing`) };
     return;
   }
   const type = scalar(object, 'zombie');
@@ -317,7 +317,7 @@ export function generatePropertyTypes() {
       valuesAsFlags: false,
     },
     { name: 'building', members: [member('template', 'string', '', 'template_id'), member('storeys', 'int', 1)] },
-    { name: 'player_spawn', members: [member('yaw', 'float', 0)] },
+    { name: 'player_spawn', members: [member('bearing', 'float', 0)] },
     { name: 'shambler', members: [member('zombie', 'string', '', 'zombie_type'), member('chance', 'float', 1)] },
     { name: 'woodland', members: [member('density', 'float', 1)] },
     { name: 'track', members: [member('width', 'float', 3), member('surface', 'string', 'dirt')] },

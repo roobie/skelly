@@ -24,7 +24,7 @@
       ],
       "player": {
         "position": [56, 21.5, 56],
-        "yaw": 180
+        "bearing": 180
       },
       "shamblers": [],
       "woodlands": [],
