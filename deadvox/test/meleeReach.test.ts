@@ -298,7 +298,9 @@ describe('player melee reach at shambler attack distance', () => {
     for (const weapon of weapons) {
       const edge = PLAYER_ARM_REACH_M + weapon.reach;
       expect(swingAtReachDistance(seed, standing, weapon, edge - delta), `${weapon.name} just inside edge`).toBe(true);
-      expect(swingAtReachDistance(seed, standing, weapon, edge + delta), `${weapon.name} just outside edge`).toBe(false);
+      expect(swingAtReachDistance(seed, standing, weapon, edge + delta), `${weapon.name} just outside edge`).toBe(
+        false,
+      );
     }
   });
 });
