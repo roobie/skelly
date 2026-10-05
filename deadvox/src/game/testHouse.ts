@@ -285,6 +285,7 @@ export const populateTestHouseRepairCorner = ({
   const stock = repairCornerStock(registry, recipes);
   const tools = repairCornerToolTypes(registry, recipes, stock.qualities, repairBooks);
   const pilePositions = repairCornerPilePositions(spawn, blockSize);
+  const pileIndexes = pilePositions.map((_, index) => index);
   recipes.forEach((recipe, index) => {
     const condition = 0.25 + (0.5 * (index + 1)) / (recipes.length + 1);
     placeRepairCornerItem({
@@ -294,11 +295,11 @@ export const populateTestHouseRepairCorner = ({
       type: recipe.result.item,
       count: 1,
       condition,
-      pileIndexes: [0, 1],
+      pileIndexes,
     });
   });
   for (const type of [...tools].sort()) {
-    placeRepairCornerItem({ inventory, registry, pilePositions, type, count: 1, condition: 1, pileIndexes: [0, 1] });
+    placeRepairCornerItem({ inventory, registry, pilePositions, type, count: 1, condition: 1, pileIndexes });
   }
   for (const [type, count] of [...stock.components].sort(([a], [b]) => a.localeCompare(b))) {
     placeRepairCornerItem({
@@ -308,7 +309,7 @@ export const populateTestHouseRepairCorner = ({
       type,
       count,
       condition: 1,
-      pileIndexes: [2, 3, 4, 5, 6, 7, 8],
+      pileIndexes,
     });
   }
 };

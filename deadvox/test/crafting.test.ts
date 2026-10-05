@@ -365,25 +365,48 @@ describe('pure craft planner', () => {
     const inventory = new Inventory(benchmarkRegistry);
     const bag = inventory.create('school_backpack');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
-    const types = [
-      'stick',
-      'rag',
-      'wax',
-      'repair_kit',
-      'kitchen_knife',
-      'hammer',
-      'scrap_metal',
-      'duct_tape',
-      'copper_wire',
-      'field_patch',
-    ];
-    for (let i = 0; i < 199; i += 1) {
-      const type = types[i % types.length]!;
-      const item = inventory.create(type, ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'].includes(type) ? 3 : 1);
-      expect(
-        inventory.add(item, { kind: 'pocket', owner: bag, pocket: 0, at: { x: i * 3, y: 0, rotated: false } }),
-      ).toBe(true);
+    const rows = new Map<string, number>();
+    for (const recipe of benchmarkRegistry.recipes.values()) {
+      const required = new Map<string, number>();
+      for (const alternatives of recipe.components) {
+        for (const { item, count } of alternatives) {
+          required.set(item, (required.get(item) ?? 0) + count);
+        }
+      }
+      for (const [quality, level] of Object.entries(recipe.qualities)) {
+        const provider = [...benchmarkRegistry.items.values()].find(
+          (item) => (item.tool?.qualities[quality] ?? 0) >= level,
+        );
+        if (!provider) {
+          throw new Error(`No benchmark item provides ${quality} quality for ${recipe.id}`);
+        }
+        required.set(provider.id, (required.get(provider.id) ?? 0) + 1);
+      }
+      for (const [type, count] of required) {
+        rows.set(type, Math.max(rows.get(type) ?? 0, count));
+      }
     }
+    const entries: { type: string; count: number }[] = [];
+    for (const [type, required] of rows) {
+      const stack = benchmarkRegistry.items.get(type)?.stack ?? 1;
+      for (let remaining = required; remaining > 0; remaining -= stack) {
+        entries.push({ type, count: Math.min(remaining, stack) });
+      }
+    }
+    const filler = ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'];
+    for (let index = 0; entries.length < 199; index += 1) {
+      const type = filler[index % filler.length]!;
+      entries.push({ type, count: Math.min(3, benchmarkRegistry.items.get(type)?.stack ?? 1) });
+    }
+    if (entries.length > 199) {
+      throw new Error('The benchmark recipe inputs exceed one 200-item reach snapshot');
+    }
+    entries.forEach(({ type, count }, index) => {
+      const item = inventory.create(type, count);
+      expect(
+        inventory.add(item, { kind: 'pocket', owner: bag, pocket: 0, at: { x: index * 3, y: 0, rotated: false } }),
+      ).toBe(true);
+    });
     inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
     const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
     expect(snapshot.entries).toHaveLength(200);

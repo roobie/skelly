@@ -48,12 +48,13 @@ const scenarioRegistry: Registry = {
 const repairRecipes = [...scenarioRegistry.recipes.values()].filter((recipe) => recipe.kind === 'repair');
 
 const addRepairCorner = (inventory: Inventory, site: string): void => {
+  const blockSize = 0.5;
   populateTestHouseRepairCorner({
     inventory,
     registry: scenarioRegistry,
     site,
     spawn: [-4, 0, -0.5],
-    blockSize: 0.5,
+    blockSize,
   });
 };
 

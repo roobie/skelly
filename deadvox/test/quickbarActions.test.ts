@@ -12,12 +12,27 @@ import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
 
 const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
+const { registry } = buildRegistry([
+  ...readdirSync(BASE)
     .filter((file) => file.endsWith('.json'))
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+  {
+    source: 'test/quickbarActions.test.ts',
+    data: {
+      items: [
+        {
+          id: 'fixture_two_handed_tool',
+          name: 'Fixture two-handed tool',
+          category: 'tool',
+          weight: 100,
+          size: [1, 2],
+          twoHanded: true,
+        },
+      ],
+    },
+  },
+]);
 const definition = (predicate: (def: ItemDef) => boolean) => {
   for (const def of registry.items.values()) {
     if (predicate(def)) {
@@ -127,8 +142,12 @@ describe('quickbar tap and hold actions', () => {
     settle(queue);
     expect(inventory.hands.right).toBe(tool);
     expect(inventory.hands.left).toBe(light);
+    actions.tap(tool);
+    settle(queue);
+    actions.tap(light);
+    settle(queue);
 
-    const twoHanded = inventory.create(definition((def) => Boolean(def.twoHanded)).id);
+    const twoHanded = inventory.create('fixture_two_handed_tool');
     expect(inventory.add(twoHanded, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     actions.tap(twoHanded);
     settle(queue);

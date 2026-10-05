@@ -108,6 +108,9 @@
           "weight": 1,
           "condition": [0.6, 1]
         },
+        { "item": "fanny_pack", "weight": 1, "condition": [0.5, 1] },
+        { "item": "hiking_backpack", "weight": 1, "condition": [0.5, 1] },
+        { "item": "utility_vest", "weight": 1, "condition": [0.5, 1] },
         {
           "nothing": true,
           "weight": 2
@@ -222,6 +225,17 @@
           "count": [1, 2]
         },
         { "item": "portable_radio", "weight": 1 },
+        { "item": "broken_toaster", "weight": 1 },
+        { "item": "dead_desk_lamp", "weight": 1 },
+        { "item": "broken_table_fan", "weight": 1 },
+        { "item": "cracked_phone", "weight": 2 },
+        { "item": "broken_clock", "weight": 1 },
+        { "item": "electrical_tape", "weight": 2 },
+        { "item": "fastener_pack", "weight": 2 },
+        { "item": "rubber_strip", "weight": 1 },
+        { "item": "sewing_thread", "weight": 1 },
+        { "item": "nylon_cord", "weight": 1 },
+        { "item": "lamp_oil", "weight": 1 },
         {
           "nothing": true,
           "weight": 3
@@ -242,6 +256,7 @@
           "weight": 1,
           "condition": [0.4, 1]
         },
+        { "item": "baseball_bat", "weight": 1, "condition": [0.4, 1] },
         {
           "item": "machete",
           "weight": 1,
@@ -321,6 +336,12 @@
       "entries": [
         { "item": "hammer", "weight": 3, "condition": [0.4, 1] },
         { "item": "crowbar", "weight": 3, "condition": [0.4, 1] },
+        { "item": "baseball_bat", "weight": 1, "condition": [0.4, 1] },
+        { "item": "hand_saw", "weight": 2, "condition": [0.4, 1] },
+        { "item": "screwdriver", "weight": 2, "condition": [0.4, 1] },
+        { "item": "wrench", "weight": 2, "condition": [0.4, 1] },
+        { "item": "adjustable_pliers", "weight": 1, "condition": [0.4, 1] },
+        { "item": "wire_strippers", "weight": 1, "condition": [0.4, 1] },
         { "item": "kitchen_knife", "weight": 1, "condition": [0.4, 1] },
         { "item": "machete", "weight": 1, "condition": [0.4, 1] },
         { "item": "kabar", "weight": 1, "condition": [0.4, 1] },
@@ -337,6 +358,12 @@
         { "item": "rag", "weight": 2, "count": [1, 3] },
         { "item": "stick", "weight": 2, "count": [1, 3] },
         { "item": "wax", "weight": 1, "count": [1, 3] },
+        { "item": "lamp_oil", "weight": 1 },
+        { "item": "electrical_tape", "weight": 2 },
+        { "item": "fastener_pack", "weight": 2 },
+        { "item": "rubber_strip", "weight": 1 },
+        { "item": "nylon_cord", "weight": 1 },
+        { "item": "hinge_set", "weight": 1 },
         { "nothing": true, "weight": 1 }
       ]
     },
@@ -348,6 +375,18 @@
         { "item": "duct_tape", "weight": 3 },
         { "item": "aa_battery", "weight": 2, "count": [1, 2] },
         { "item": "steel_pipe", "weight": 1 },
+        { "item": "improvised_suppressor", "weight": 1 },
+        { "item": "taped_flashlight_mount", "weight": 1 },
+        { "item": "scrap_foregrip", "weight": 1 },
+        { "item": "sewing_kit", "weight": 1 },
+        { "item": "sewing_repair_kit", "weight": 1 },
+        { "item": "electrical_repair_kit", "weight": 1 },
+        { "item": "circuit_board", "weight": 1 },
+        { "item": "fuse", "weight": 1 },
+        { "item": "glass_shards", "weight": 1 },
+        { "item": "small_spring", "weight": 1 },
+        { "item": "glass_bulb", "weight": 1 },
+        { "item": "glass_lens", "weight": 1 },
         { "item": "scrap_metal", "weight": 2, "count": [1, 2] },
         { "nothing": true, "weight": 2 }
       ]
