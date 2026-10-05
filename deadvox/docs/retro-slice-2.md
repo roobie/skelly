@@ -13,7 +13,7 @@ read_if:
 
 ## BR's view
 
-BR approved the plan's scope and steered its visual and playtest gates as the slice progressed. On 2026-10-03, after seeing the tree first look, BR said: “Overall: happy with the trees, looks good.” The next day, BR described the crafting panel as something “we're gonna need many iterations on it, but for now, I'll approve it”. After the forest runs on 2026-10-03, BR said: “I'd say it's good enough!” On 2026-10-05 BR's feedback on the handbook and long actions led to the ruling “long actions disable all actions”; for time near shamblers, BR chose “fast forward”. BR approved the hardware store and garage on 2026-10-05 after the window fixes.
+BR approved the plan's scope and steered its visual and playtest gates as the slice progressed. On 2026-10-03 at 13:04, after the tree first look, BR said: “Overall: happy with the trees, looks good.” At 17:03 after the forest run, BR said: “I'd say it's good enough!” On 2026-10-04 at 15:31, BR described the crafting panel as something “we're gonna need many iterations on it, but for now, I'll approve it”. On 2026-10-05 at 20:09, BR ruled “long actions disable all actions” and chose “fast forward” for time near shamblers. BR approved the hardware store and garage on 2026-10-05 after the window fixes.
 
 The slice delivered its crafting, repair, salvage, lighting, building, sound, and tree systems, but its checklist, test-budget item, carried-forward links, and this retrospective still need closure work. BR's in-game approvals were useful gates, not a substitute for implementation review or CI.
 
@@ -22,7 +22,7 @@ The slice delivered its crafting, repair, salvage, lighting, building, sound, an
 Status of the Definition of done in `deadvox/SLICE-2.md`:
 
 - **Milestones:** 2.0–2.9, 2.12 and 2.13 are merged. Milestones 2.10 and 2.11 have completed implementation and reached SHIP review verdicts, but their PRs remain open: #241 (2.10) and stacked #258 (2.11). CI was pending during the GitHub Actions incident; neither open PR counts as merged or green.
-- **Frame budget and per-frame measurements:** the made-light benchmark passed on BR's reference laptop, as recorded in Results. BR's Firefox reference runs for the approved tree workload met the gate; the separate software-renderer observations are explicitly not treated as a pass. The other per-frame costs are recorded with their workloads. The final Slice 2 budget item remains open: d87 is measuring the default test run against the recorded budget and must either bring it within budget or document why it exceeds it.
+- **Frame budget and per-frame measurements:** the made-light benchmark passed on BR's reference laptop, as recorded in Results. BR's Firefox reference runs for the approved tree workload met the gate; the separate software-renderer observations are explicitly not treated as a pass. The other per-frame costs are recorded with their workloads. The default-test budget remains open: after two d87 rounds, the run is still over budget. The `snapshot.test.ts` split waits for #241 and #274; d87 must bring the run within budget or document why it exceeds it.
 - **Reachability and sound:** the content validator's reachability checks and the noise-to-positional-sound scenario are delivered in #184, #177 and #250.
 - **BR's in-game approvals:** the crafting panel (#211), made lights (#252), and trees and hedges (#189) were approved.
 - **Checklist:** issue #157 is still open and stale; its milestone boxes have not been updated for later delivery. The lead will update and close it with acceptance evidence and links to carried-forward work.
@@ -57,11 +57,11 @@ The boundary with Slice 3 was porous during development. Aim sway and firearms s
 - **The plan made scope and evidence visible.** `deadvox/SLICE-2.md` separated milestones, save ownership, reachability, first looks, reference workloads, and carried-forward work. That let the slice accept BR-directed trees without treating unrelated follow-ups as hidden exit criteria.
 - **First looks caught visual defects before closure.** BR's building review initially found the store and garage hard to distinguish; subsequent looks identified closed windows and then their height. The repair remained in template content. The trees and light workloads also had separate visual and reference-machine approvals.
 - **One owner per simulation concept paid off.** `reach()` and `options()` replaced scattered queries; the long-action owner absorbed rest, sleep, craft, repair, disassembly, and reading; reachability was extended as new sources arrived. See `deadvox/src/core/reach.ts`, `deadvox/src/core/longAction.ts`, and `deadvox/src/core/reachability.ts`.
-- **Review found concrete defects before landing.** The tracker records multiple review rounds on the persistent and UI-heavy milestones. The counts below come from agent-work review records, cross-checked against PR bodies where early review records are not represented in the tracker. A FIX count means a review round returned FIX, not the number of sub-findings within that report.
+- **Review found concrete defects before landing.** The tracker records multiple review rounds on the persistent and UI-heavy milestones. The counts below are submitted review reports, reconstructed from agent-work records and saved review messages for early milestones. A FIX count means a review round returned FIX, not the number of sub-findings within that report.
 
 | Milestone | Review rounds | FIX verdicts |
 | --- | ---: | ---: |
-| 2.0 | 2 | not itemized in the tracker |
+| 2.0 | 3 (one on #156, two on #166) | 1 |
 | 2.1 | 2 | 1 |
 | 2.2 | 1 | 0 |
 | 2.3 | 2 | 1 |
@@ -71,9 +71,9 @@ The boundary with Slice 3 was porous during development. Aim sway and firearms s
 | 2.7 | 3 | 1 |
 | 2.8 | 2 | 1 |
 | 2.9 | 8 | 4 |
-| 2.10 | 4 completed, 1 in progress | 1 |
+| 2.10 | 4 submitted; PR awaits CI | 1 |
 | 2.11 | 4 | 2 |
-| 2.12 | 2 | 1 |
+| 2.12 | 3 (one on #177, two on #250) | 1 |
 | 2.13 | 3 | 1 |
 
 The review rounds improved both code and evidence: examples include the non-vacuous loot assertion in #241, the two-pocket fixture for quickbar stowing in #258, and the stop/resume and saved-progress cases in the long-action work. Review count is not a quality score; it shows where first-round handoffs did not yet satisfy the contract.
@@ -83,10 +83,12 @@ The review rounds improved both code and evidence: examples include the non-vacu
 - **The checklist drifted from delivery.** Issue #157 was opened with the plan, but later milestone boxes and carried-forward links were not maintained. By closure, the issue no longer described the shipped state, so the team had to reconstruct status from PRs and work records.
 - **Some milestones became long review chains.** The planner, books, lights, and final content had several FIX rounds. The underlying causes were not one class: persistence ownership and UI interactions, test hygiene, first-look defects, and integration each needed different corrections. A reviewer finding a test that passes vacuously or writes state outside its owner is preventing false confidence, not asking for more tests.
 - **Parallel branches created integration and sequencing work.** #258 depended on #241, and both needed mainline integration. Their stacked relationship delayed Slice 2 closure and made review/CI state harder to interpret. Earlier base checks helped, but did not remove the need to merge and verify each current tip.
-- **The measured default-test budget became a real constraint.** The 2.0 budget was explicit, while a later suite run exceeded it. d87 is addressing the excess rather than treating a larger timeout as a solution. Test-bar audits also removed vacuous or drifting assertions and fixed nondeterministic browser and unit cases; those are distinct from the budget work.
+- **The measured default-test budget became a real constraint.** The 2.0 budget was explicit, while the latest run remains over it after two d87 rounds. The `snapshot.test.ts` split waits for #241 and #274. Test-bar audits also removed vacuous or drifting assertions and fixed nondeterministic browser and unit cases; those are distinct from the budget work.
 - **Coders sometimes stopped after receiving an answer.** The lead's wake prompt did not consistently make the next action explicit. Agent-kit #33/#34 changed the wake instruction to require priming, reading new mail, acting on it, and continuing the active item. This addresses the coordination mechanism rather than relying on repeated manual nudges.
+- **Issue closure was missing from the merge steps.** BR found #134 still open on 2026-10-05 at 22:20. PR #175 cited it without a closing directive, and the lead closed #134, #183, #185 and #193. Treating issue closure as an explicit merge check would avoid leaving completed work attached to open issues.
+- **A late review still found a player-trapping defect.** `cr-d73-1` returned FIX because a sleeper hit by an interrupt remained locked in sleep; d73-3 ended the sleep, cleared the interruption and restored input. `cr-d84-1` also returned FIX on beeline pursuit, which d84-2 corrected. These playtest-driven rounds are separate from the Slice 2 milestone counts.
 - **Visual defects were expensive when discovered after implementation.** The building windows needed more than one look/fix cycle. That supports keeping the first-look gate for visual work, not skipping it to accelerate delivery.
-- **The GitHub Actions incident blocked the last integration step.** #241 and #258 had reached SHIP, but their PR CI was still pending during the incident. A review verdict is not a green CI run, and a cancelled or unavailable hosted run is not evidence that the PR passed.
+- **The GitHub Actions incident blocked integration.** At 22:49 on 2026-10-05, the service was in a major outage again. Five reviewed PRs (#241, #258, #274, #283 and #282) were waiting only on CI. A review verdict is not a green CI run, and a cancelled or unavailable hosted run is not evidence that a PR passed.
 
 ## 4. Changes for Slice 3 (proposals for BR)
 
