@@ -13,6 +13,7 @@ import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
 import { type CamPose, camUrl, camWriteDue, parseCamParam } from './camUrl.ts';
+import { setDebugFirearmsSkill } from './debugFirearmsSkill.ts';
 import { equipDebugFirearms, equipDebugStartWeapons } from './debugLoadout.ts';
 import {
   actionsByGroup,
@@ -748,6 +749,7 @@ export const equipDebugStartLight = ({
 };
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
+  setDebugFirearmsSkill(hooks.character, location.search, hooks.engine.config.debug, hooks.newGame);
   if (!equipDebugFirearms(hooks.inventory, hooks.engine.config.debug, hooks.newGame, location.search)) {
     equipDebugStartLight({
       inventory: hooks.inventory,

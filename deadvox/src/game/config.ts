@@ -1,4 +1,5 @@
 import { parseTimeOfDay, SPAWN_TIME } from '../core/clock.ts';
+import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 
@@ -19,6 +20,8 @@ export interface GameConfig {
   start: number;
   /** Debug keys are on (`?debug=1`). */
   debug: boolean;
+  /** Fresh debug games may override the start-card hand (`?handedness=left`). */
+  debugHandedness?: HandSide;
   /**
    * What stands near spawn: the hamlet, milestone 1.0's test house (the benchmark's
    * scene), or the stress-test city.
@@ -102,6 +105,9 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   );
   config.start = parseTimeOfDay(params.get('time') ?? '') ?? SPAWN_TIME;
   config.debug = params.get('debug') === '1';
+  if (config.debug && params.get('handedness') === 'left') {
+    config.debugHandedness = 'left';
+  }
   config.actors = actorRendererFromUrl(params);
   Object.assign(config, siteFromUrl(params, 'hamlet'));
   return config;

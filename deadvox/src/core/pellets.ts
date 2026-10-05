@@ -1,3 +1,4 @@
+import { type AimFrame, aimDirection } from './aim.ts';
 import type { Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { ItemDef } from './schema.ts';
@@ -21,6 +22,7 @@ export const pelletShot = ({
   origin,
   yaw,
   pitch,
+  aimFrame = { yaw: 0, pitch: 0 },
   seed,
   key,
 }: {
@@ -28,13 +30,20 @@ export const pelletShot = ({
   origin: Vec3;
   yaw: number;
   pitch: number;
+  aimFrame?: AimFrame;
   seed: number;
   key: string;
 }): PelletShot => {
   const rng = Rng.stream(seed, `buckshot:${key}`);
-  const forward: Vec3 = [-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)];
-  const right: Vec3 = [Math.cos(yaw), 0, -Math.sin(yaw)];
-  const up: Vec3 = [Math.sin(yaw) * Math.sin(pitch), Math.cos(pitch), Math.cos(yaw) * Math.sin(pitch)];
+  const resolvedYaw = yaw + aimFrame.yaw;
+  const resolvedPitch = pitch + aimFrame.pitch;
+  const forward = aimDirection(yaw, pitch, aimFrame);
+  const right: Vec3 = [Math.cos(resolvedYaw), 0, -Math.sin(resolvedYaw)];
+  const up: Vec3 = [
+    Math.sin(resolvedYaw) * Math.sin(resolvedPitch),
+    Math.cos(resolvedPitch),
+    Math.cos(resolvedYaw) * Math.sin(resolvedPitch),
+  ];
   const directions = Array.from({ length: ammo.pellets }, (): Vec3 => {
     const radius = Math.sqrt(rng.next()) * Math.tan(BUCK_HALF_ANGLE);
     const angle = rng.next() * Math.PI * 2;

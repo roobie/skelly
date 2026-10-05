@@ -1,13 +1,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { aimDirection } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import { weightOf } from '../src/core/items.ts';
-import type { PelletShot } from '../src/core/pellets.ts';
+import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
@@ -33,8 +34,15 @@ if (issues.length > 0) {
 }
 const shellType = 'shell_12_gauge_00_buck';
 const hullType = 'spent_case_12_h_gauge_h_00_h_buck';
-const pose = { feet: [0, 0, 0] as Vec3, eye: [0, 3, 0] as Vec3, yaw: 0.4, pitch: 0.2, blockSize: 0.5 };
-const fixture = (content = registry) => {
+const pose = {
+  feet: [0, 0, 0] as Vec3,
+  eye: [0, 3, 0] as Vec3,
+  yaw: 0.4,
+  pitch: 0.2,
+  aimFrame: { yaw: 0, pitch: 0 },
+  blockSize: 0.5,
+};
+const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0) => {
   // Own the capacity fixture rather than pinning the evolving exported tube count.
   const modelId = content.items.get('pump_shotgun')!.model!;
   const model = content.models.get(modelId)!;
@@ -65,6 +73,7 @@ const fixture = (content = registry) => {
     onEjection: (effect) => effects.push(effect),
     onShot: (shot) => shots.push(shot),
     onSound: (event, _position, time) => sounds.push({ event, time }),
+    firearmsSkillLevel,
   });
   const finish = (dt: number, time: number) => {
     queue.tick(dt);
@@ -452,6 +461,43 @@ describe('real pump ammunition', () => {
     expect(weightOf(registry, restored.hands.right!)).toBe(
       registry.items.get('pump_shotgun')!.weight + 3 * registry.items.get(shellType)!.weight,
     );
+  });
+
+  it('commits skill-scaled reload and rack durations to their presentation frames', () => {
+    const novice = fixture(registry, () => 0);
+    const experienced = fixture(registry, () => 12);
+    expect(novice.mechanics.load(novice.shells, 0)).toBeUndefined();
+    expect(experienced.mechanics.load(experienced.shells, 0)).toBeUndefined();
+    const noviceReload = novice.mechanics.frames()[0]!;
+    const experiencedReload = experienced.mechanics.frames()[0]!;
+    expect(experiencedReload.duration).toBeLessThan(noviceReload.duration!);
+    expect(experiencedReload.duration).toBe(experienced.queue.jobs[0]!.duration);
+
+    const noviceRack = fixture(registry, () => 0);
+    const experiencedRack = fixture(registry, () => 12);
+    expect(noviceRack.mechanics.cock(noviceRack.gun.uid, 0)).toBeUndefined();
+    expect(experiencedRack.mechanics.cock(experiencedRack.gun.uid, 0)).toBeUndefined();
+    const noviceRackFrame = noviceRack.mechanics.frames()[0]!;
+    const experiencedRackFrame = experiencedRack.mechanics.frames()[0]!;
+    expect(experiencedRackFrame.duration).toBeLessThan(noviceRackFrame.duration!);
+    expect(experiencedRackFrame.duration).toBe(experiencedRack.queue.jobs[0]!.duration);
+    expect(experiencedRack.gun.firearm!.cycle!.duration).toBe(experiencedRackFrame.duration);
+  });
+
+  it('centres pump pellets on the supplied aim frame', () => {
+    const f = fixture();
+    f.load(0);
+    f.rack(1);
+    const aimFrame = { yaw: 0.1, pitch: -0.06 };
+    expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, debugMode: false, aimFrame })).toBe(true);
+    const center = aimDirection(pose.yaw, pose.pitch, aimFrame);
+    expect(
+      f.shots[0]!.directions.every(
+        (ray) =>
+          ray.reduce((sum, component, index) => sum + component * center[index]!, 0) >=
+          Math.cos(BUCK_HALF_ANGLE) - 1e-9,
+      ),
+    ).toBe(true);
   });
 
   it('uses cartridge pellet count/diameter and a distinct deterministic shot stream', () => {

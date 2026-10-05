@@ -140,7 +140,7 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
-    handedness: options.handedness,
+    handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
@@ -234,6 +234,7 @@ export const startPlay = (
     entities,
     queue,
     firearms,
+    aim,
     quickbar,
     survival,
     rest,
@@ -459,6 +460,7 @@ export const startPlay = (
     flashlight,
     body,
     inventory,
+    character: session.character,
     newGame: options.restore === undefined,
     sim,
     input,
@@ -967,6 +969,7 @@ export const startPlay = (
 
   const fireDebugWeapon = (item: Item, time: number): boolean => {
     const fired = firearms.fire({
+      aimFrame: aim.frame,
       debugMode: config.debug,
       item,
       feet: feet(),
@@ -981,7 +984,6 @@ export const startPlay = (
       return false;
     }
     if (registry.items.get(item.type)?.firearm?.pump) {
-      view.recoil(8);
       return true;
     }
     const shot = firearmShotSound(item.type);
@@ -1225,7 +1227,7 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
-    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), job: queue.jobs[0] });
+    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), aim: aim.frame, job: queue.jobs[0] });
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
@@ -1262,8 +1264,8 @@ export const startPlay = (
     if (!debugTools) {
       return;
     }
-    const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
-    debugTools.updateAim(aim);
+    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
+    debugTools.updateAim(zombieAim);
     debugTools.updateLookedAt(eye(), lookDir(), input.locked);
   };
 

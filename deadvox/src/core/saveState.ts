@@ -3,6 +3,7 @@
 
 import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
+import type { AimState } from './aim.ts';
 import type { BlockEntitiesState } from './blockEntities.ts';
 import type { Character, CharacterState } from './character.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
@@ -28,6 +29,7 @@ export interface SaveSnapshot {
     progression: CharacterState;
     simulation: SimulationState;
     player: PlayerState;
+    aim: AimState;
     inventory: InventoryState;
     longAction: LongActionState;
     playerCombat: PlayerCombatState;
@@ -54,6 +56,7 @@ export interface SnapshotSessionInput {
   character: Character;
   simulation: Simulation;
   player: PlayerState;
+  aim: { snapshotState: () => Readonly<AimState> };
   survival: Survival;
   quickbar: readonly (number | null)[];
   zombies: ZombieSystem;
@@ -75,6 +78,7 @@ export const snapshotSession = ({
   character,
   simulation,
   player,
+  aim,
   survival,
   quickbar,
   zombies,
@@ -104,6 +108,7 @@ export const snapshotSession = ({
       progression: character.snapshotState(),
       simulation: simulation.snapshotState() as SimulationState,
       player: structuredClone(player),
+      aim: structuredClone(aim.snapshotState()) as AimState,
       inventory: inventory.snapshotState() as InventoryState,
       longAction: simulation.actions.snapshotState(),
       playerCombat: playerCombat.snapshotState(),

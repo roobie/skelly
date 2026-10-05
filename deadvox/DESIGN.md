@@ -492,7 +492,12 @@ plain box in your hands. Files are small, and follow
   blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
   items animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
-  capacity, handling and noise. Ammo and magazines are items with pockets.
+  capacity, handling and noise. Ammo and magazines are items with pockets. The
+  simulation's `AimController` publishes the same offset to shot resolution and
+  held-firearm presentation, so the weapon does not visibly aim somewhere other
+  than its shot ray. Aim state is saved because it can change hit outcomes.
+  `firearmsSkillEffects` separates accuracy, reload and rack benefits; d62 leaves
+  practice unawarded until its source is ruled.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
