@@ -76,6 +76,13 @@ particular-seed or whole-game solver. It extends each closure through actual
 disassembly and salvage outputs via `addDisassemblyOutputs` in
 `src/core/reachability.ts`; yield counts come from `disassemblyOutputs` in
 `src/core/disassembly.ts`, so zero-count yields add no reachable type.
+Self-yields are refused to prevent no-op take-apart; see
+`src/core/content.ts`, `checkDisassembly`.
+
+Disassembly closure assumes top skill is reachable: nothing checks whether a
+disassembly skill has a practice source. The skill-source check covers recipe
+requirements only; see `src/core/reachability.ts`, `addDisassemblyOutputs` and
+`skillIssues`.
 
 Tools are a separate hard check: a second loot-seeded fixed point requires both
 components and sufficient tool-quality levels before adding a result. A recipe
@@ -103,7 +110,7 @@ source file and index through ordered overrides and removal.
 `src/core/character.ts`, `Character`, owns live practice and knowledge;
 `src/core/reachability.ts`, `checkReachability`, independently proves that their
 sources are available from placed loot. The component/tool closures include
-calculated disassembly yields at top skill; the separate skill-source check must
-prove that reachable practice sources can raise a required skill. Reachability
+calculated disassembly yields at top skill; the separate recipe skill-source
+check must prove that reachable practice sources can raise a recipe's required skill. Reachability
 stores no closure or runtime state; progression, crafting and disassembly remain
 separate owners.
