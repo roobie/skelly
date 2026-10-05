@@ -1,6 +1,7 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
 import { startingKnownRecipes } from './character.ts';
 import type { RecipeDef, Registry } from './content.ts';
+import { disassemblyOutputs } from './disassembly.ts';
 import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
@@ -61,19 +62,20 @@ const inputsReady = (recipe: RecipeDef, items: ReadonlySet<string>): boolean =>
 const qualityReady = (registry: Registry, items: ReadonlySet<string>, quality: string, level: number): boolean =>
   [...items].some((id) => (registry.items.get(id)?.tool?.qualities[quality] ?? 0) >= level);
 
-/** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
 const addDisassemblyOutputs = (registry: Registry, items: Set<string>) => {
   for (const id of items) {
     const definition = registry.items.get(id);
-    for (const output of definition?.disassembly?.yields ?? []) {
-      items.add(output.item);
+    if (!definition) {
+      continue;
     }
-    for (const output of definition?.salvage ?? []) {
+    const topSkill = Math.max(0, ...(definition.disassembly?.yields.map(({ fractions }) => fractions.length - 1) ?? []));
+    for (const output of disassemblyOutputs(definition, topSkill)) {
       items.add(output.item);
     }
   }
 };
 
+/** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
 const closure = (
   registry: Registry,
   found: ReadonlySet<string>,

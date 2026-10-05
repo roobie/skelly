@@ -5,6 +5,7 @@ import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
+import { disassemblyOutputs } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
@@ -217,26 +218,58 @@ describe('live craft commands', () => {
     expect(r.inventory.move(item, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
   });
-  it('salvage returns only the fixed outputs authored for a found item', () => {
+  it('salvage consumes its source and returns only its authored outputs', () => {
     const r = make();
     const radio = r.inventory.create('portable_radio');
     radio.condition = 0;
     expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const sourceType = radio.type;
     const before = new Set([...r.inventory.items()].map(({ item }) => item.uid));
     const option = r.commands.options(radio.uid).find(({ operation }) => operation === 'disassemble')!;
     expect(option.plan.ok, JSON.stringify(option.plan)).toBe(true);
     expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
     const work = r.inventory.hands.right!;
-    expect(work.work).toMatchObject({ kind: 'disassembly', source: 'portable_radio' });
+    expect(work.work).toMatchObject({ kind: 'disassembly', source: sourceType });
     r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
-    const outputs = [...r.inventory.items()]
-      .filter(({ item }) => !before.has(item.uid))
-      .map(({ item }) => ({ item: item.type, count: item.count }))
+    const items = [...r.inventory.items()].map(({ item }) => item);
+    const outputs = items
+      .filter((item) => !before.has(item.uid))
+      .map(({ type, count }) => ({ item: type, count }))
       .sort((a, b) => a.item.localeCompare(b.item));
-    expect(outputs).toEqual([
-      { item: 'aa_battery', count: 1 },
-      { item: 'scrap_metal', count: 1 },
-    ]);
+    const expected = disassemblyOutputs(r.inventory.registry.items.get(sourceType)!, 0).sort((a, b) =>
+      a.item.localeCompare(b.item),
+    );
+    expect(r.inventory.itemByUid(radio.uid)).toBeUndefined();
+    expect(items.some(({ type }) => type === sourceType)).toBe(false);
+    expect(outputs).toEqual(expected);
+  });
+
+  it('disassembly keeps its start-skill yield after skill changes during a stopped action', () => {
+    const r = make();
+    const source = r.inventory.create('torch');
+    expect(r.inventory.add(source, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const definition = r.inventory.registry.items.get(source.type)!;
+    const before = new Set([...r.inventory.items()].map(({ item }) => item.uid));
+    const topSkill = Math.max(...definition.disassembly!.yields.map(({ fractions }) => fractions.length - 1));
+    const expected = disassemblyOutputs(definition, 0);
+    const topOutput = disassemblyOutputs(definition, topSkill);
+    expect(expected).not.toEqual(topOutput);
+
+    expect(r.commands.act(source.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.sim.actions.stop();
+    r.character.skills[definition.disassembly!.skill] = topSkill;
+    expect(r.commands.act(work.uid, 'continue')).toBeUndefined();
+    r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
+
+    const items = [...r.inventory.items()].map(({ item }) => item);
+    const outputs = items
+      .filter(({ uid }) => !before.has(uid))
+      .map(({ type, count }) => ({ item: type, count }))
+      .sort((a, b) => a.item.localeCompare(b.item));
+    expect(r.inventory.itemByUid(source.uid)).toBeUndefined();
+    expect(items.some(({ type }) => type === source.type)).toBe(false);
+    expect(outputs).toEqual(expected);
   });
   it('cancelling disassembly returns the exact source item without producing salvage', () => {
     const r = make();

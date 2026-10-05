@@ -413,7 +413,8 @@ plain box in your hands. Files are small, and follow
   containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
 - **Disassembly** is a recipe run in reverse. It returns part of the
-  components, depending on skill and the tools used.
+  components, depending on skill and the tools used. In Slice 2, that reverse is
+  an authored yield or salvage list (see [SLICE-2.md](SLICE-2.md), "2.7").
 - **Crafting runs compressed**, like other long actions, and can be interrupted
   and resumed. An interrupted craft leaves an "in progress" item that holds its
   components.

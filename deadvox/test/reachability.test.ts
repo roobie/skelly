@@ -214,6 +214,32 @@ describe('static reachability', () => {
     }
   });
 
+  it('does not close over a yield that rounds to zero at top skill', () => {
+    const registry = fresh();
+    const source = 'fixture_zero_yield_source';
+    const output = 'fixture_zero_yield_output';
+    registry.items.set(source, {
+      id: source,
+      name: source,
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      disassembly: {
+        time: 1,
+        skill: 'crafting',
+        yields: [{ item: output, count: 1, fractions: [0.9], rounding: 'floor' }],
+      },
+    });
+    registry.items.set(output, { id: output, name: output, category: 'material', weight: 1, size: [1, 1] });
+    const junk = registry.loot.get('junk')!;
+    registry.loot.set('junk', { ...junk, entries: [...junk.entries, { item: source, weight: 1 }] });
+
+    const result = checkReachability(registry);
+    expect(result.found.has(source)).toBe(true);
+    expect(result.components.has(output)).toBe(false);
+    expect(result.toolReachable.has(output)).toBe(false);
+  });
+
   it('excludes capped markers and wanderers, but allows shuffled north templates to be first', () => {
     const ten = Array.from({ length: 10 }, () => marker('certain'));
     expect(

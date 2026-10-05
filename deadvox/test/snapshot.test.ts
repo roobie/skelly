@@ -8,6 +8,7 @@ import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
@@ -684,19 +685,17 @@ describe('craft job codec and ownership', () => {
       const savedWork = disassembly.character.inventory.hands.right!;
       const sourceUid = disassembly.character.inventory.nextItemUid;
       disassembly.character.inventory.nextItemUid += 1;
+      const radio = registry.items.get('portable_radio')!;
       savedWork.work = {
         kind: 'disassembly',
-        source: 'portable_radio',
+        source: radio.id,
         skillLevel: 0,
         toolLevels: {},
-        outputs: [
-          { item: 'scrap_metal', count: 1 },
-          { item: 'aa_battery', count: 1 },
-        ],
+        outputs: disassemblyOutputs(radio, 0),
         gather: 0,
         elapsed: 37,
-        duration: 300,
-        components: [{ uid: sourceUid, type: 'portable_radio', count: 1, condition: 0 }],
+        duration: SALVAGE_DURATION,
+        components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0 }],
       };
       const decodedDisassembly = await decodeSave(await encodeFixture(disassembly), {
         version: formatVersion,

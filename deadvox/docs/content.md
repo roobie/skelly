@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're changing content validation, schema, or registry merging
+  - you're changing reachability or disassembly-output contracts
+---
+
 # Content sections and recipes
 
 The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
@@ -56,7 +62,10 @@ The least component fixed point starts at found types. A result enters only when
 at least one alternative per component group is reachable; unseeded recipe cycles
 add nothing. Content acceptance reports **every declared alternative** that is
 neither found nor craftable. It is a type closure, not a quantity/consumption,
-particular-seed or whole-game solver. It does not invent salvage sources.
+particular-seed or whole-game solver. It extends each closure through actual
+disassembly and salvage outputs via `addDisassemblyOutputs` in
+`src/core/reachability.ts`; yield counts come from `disassemblyOutputs` in
+`src/core/disassembly.ts`, so zero-count yields add no reachable type.
 
 Tools are a separate hard check: a second loot-seeded fixed point requires both
 components and sufficient tool-quality levels before adding a result. A recipe
@@ -73,15 +82,10 @@ Positive skill requirements and named-but-unplaced workstations still emit
 Placed workstation declarations are discoverable; bench behavior stays 2.8.
 `PENDING_REACHABILITY` pins only the remaining 2.5/2.8 hand-offs.
 
-Current base: 33 found types, 36 in the component closure; 36 reachable / 40
-defined eligible content types. The explicit `CONTENT_COUNT_EXCLUSIONS` policy
-leaves out the current debug-only items, spent case, and severed body-part items;
-extend this set when new excluded definitions land. `work_in_progress` is also
-excluded: it is runtime escrow, not acquired loot or a recipe result. Defined eligible but
-unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest (2.11 owns
-these gaps). Stick and wax each have one weight-1 entry in `junk`, used by placed
-crates and nested `shed_tools`; no other material/loot growth is included.
-The count does not imply full acceptance of the remaining positive-skill prerequisite.
-Reachability issues use the winning recipe's existing merge origin, preserving
-source file and index through ordered overrides/removal. Reachability stores no
-closure/state; runtime progression and crafting are separate 2.4 owners.
+Run `npm run validate` for the current closure report and content issues; do not
+copy its counts or content lists into this document. `CONTENT_COUNT_EXCLUSIONS`
+in `src/core/reachability.ts` owns the policy for definitions excluded from
+acquired-content counts. Reachability issues use the winning recipe's existing
+merge origin, preserving source file and index through ordered overrides/removal.
+Reachability stores no closure/state; runtime progression and crafting are separate
+owners.

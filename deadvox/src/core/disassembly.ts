@@ -3,6 +3,7 @@ import type { CraftCharacter } from './character.ts';
 import type { ItemDef } from './content.ts';
 import type { Item } from './items.ts';
 import { isEmpty } from './items.ts';
+import { indexCraftReach } from './crafting.ts';
 import type { ReachSnapshot } from './reach.ts';
 
 export interface DisassemblyOutput {
@@ -94,13 +95,9 @@ export const planDisassembly = (
   }
   const skill = definition.disassembly?.skill;
   const skillLevel = skill ? (character.skills[skill] ?? 0) : 0;
+  const reachIndex = indexCraftReach(reach);
   const qualityLevel = (quality: string) =>
-    Math.max(
-      0,
-      ...reach.entries.map(({ item }) =>
-        item.condition > 0 ? (reach.player.inventory.registry.items.get(item.type)?.tool?.qualities[quality] ?? 0) : 0,
-      ),
-    );
+    Math.max(0, ...(reachIndex.qualities.get(quality) ?? []).map(({ level }) => level));
   const qualities = new Set(
     definition.disassembly?.yields.flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])) ?? [],
   );

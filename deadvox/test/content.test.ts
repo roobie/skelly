@@ -28,12 +28,13 @@ describe('content', () => {
   it('validates tool-quality references in disassembly yield modifiers', () => {
     const files = structuredClone(base);
     const recipes = files.find(({ source }) => source === 'recipes.json')!.data as ContentFile;
-    const torch = recipes.items!.find(({ id }) => id === 'torch') as ItemDef;
+    const torchIndex = recipes.items!.findIndex(({ id }) => id === 'torch');
+    const torch = recipes.items![torchIndex] as ItemDef;
     torch.disassembly!.yields[0]!.toolModifier = { quality: 'unknown_quality', bonusByLevel: [0.1] };
     const { issues } = buildRegistry(files);
     expect(issues).toContainEqual({
       source: 'recipes.json',
-      path: 'items[2].disassembly.yields[0].toolModifier.quality',
+      path: `items[${torchIndex}].disassembly.yields[0].toolModifier.quality`,
       message: 'no tool quality "unknown_quality"',
     });
   });
@@ -366,6 +367,18 @@ describe('content references', () => {
   };
   const withBase = (...extra: { source: string; data: unknown }[]) => buildRegistry([...base, ...extra]);
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
+
+  it('requires an explicit disassembly yield for a recipe result', () => {
+    const missingYield = structuredClone(recipePack);
+    delete (missingYield.items[0] as { disassembly?: unknown }).disassembly;
+    const source = 'missing-disassembly.json';
+    const { issues } = withBase({ source, data: missingYield });
+    expect(issues).toContainEqual({
+      source,
+      path: 'items[0].disassembly',
+      message: 'recipe result needs an explicit disassembly yield',
+    });
+  });
 
   it('reports a loot entry for a missing item, and drops the whole file', () => {
     const { registry, issues } = withBase(fixture);
