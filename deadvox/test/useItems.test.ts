@@ -87,11 +87,12 @@ describe('using what you hold', () => {
     const matches = hold('matches');
     const fuelBefore = matches.charges;
 
-    expect(survival.use(matches)).toBe('Nothing to do with the box of matches yet');
+    const result = survival.use(matches);
     sim.scheduler.advance(2);
     expect(matches.on).not.toBe(true);
     expect(matches.charges).toBe(fuelBefore);
     expect(notices).toEqual([]);
+    expect(result).toBe('Nothing to do with the box of matches yet');
 
     matches.charges = 0;
     expect(survival.use(matches)).toBe('Nothing to do with the box of matches yet');
