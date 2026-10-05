@@ -802,7 +802,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     if (quickbarSlotForKey(e.code) !== undefined) {
       e.preventDefault();
-      quickbarInput.keyDown(e.code, e.timeStamp);
+      if (!compression.locksInput) {
+        quickbarInput.keyDown(e.code, e.timeStamp);
+      }
       return;
     }
     playKeys(e.code);

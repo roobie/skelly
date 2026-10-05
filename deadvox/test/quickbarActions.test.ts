@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory, type InventoryState } from '../src/core/inventory.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { bestPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
@@ -52,24 +53,21 @@ const runtime = () => {
   });
   return { inventory, queue, survival, actions, notices };
 };
-const carryInBag = (inventory: Inventory, item: ReturnType<Inventory['create']>) => {
+const fitsCopies = (size: ItemDef['size'], grid: ItemDef['size'], copies: number): boolean => {
+  const orientations: ItemDef['size'][] = [size, [size[1], size[0]]];
+  return orientations.some(([width, height]) => grid[0] >= copies * width && grid[1] >= height);
+};
+const carryInBag = (inventory: Inventory, item: ReturnType<Inventory['create']>, copies = 1) => {
   const { size } = registry.items.get(item.type)!;
   const bagDef = definition(
     (def) =>
-      Boolean(def.wearable) &&
-      Boolean(
-        def.container?.pockets.some(
-          ({ grid }) => (grid[0] >= size[0] && grid[1] >= size[1]) || (grid[0] >= size[1] && grid[1] >= size[0]),
-        ),
-      ),
+      Boolean(def.wearable) && Boolean(def.container?.pockets.some(({ grid }) => fitsCopies(size, grid, copies))),
   );
   const bag = inventory.create(bagDef.id);
   if (!inventory.add(bag, { kind: 'worn' })) {
     throw new Error('Fixture bag could not be worn');
   }
-  const pocket = bagDef.container!.pockets.find(
-    ({ grid }) => (grid[0] >= size[0] && grid[1] >= size[1]) || (grid[0] >= size[1] && grid[1] >= size[0]),
-  )!;
+  const pocket = bagDef.container!.pockets.find(({ grid }) => fitsCopies(size, grid, copies))!;
   return { bag, pocket: bagDef.container!.pockets.indexOf(pocket) };
 };
 
@@ -138,15 +136,44 @@ describe('quickbar tap and hold actions', () => {
     expect(inventory.hands.left).toBeUndefined();
   });
 
-  it('restores the captured source with the inventory snapshot', () => {
+  it('uses the best pocket when the captured spot is occupied', () => {
     const { inventory, queue, actions } = runtime();
-    const item = inventory.create(definition((def) => Boolean(def.weapon)).id);
-    const { bag, pocket } = carryInBag(inventory, item);
+    const itemDef = definition(
+      (def) =>
+        Boolean(def.weapon) &&
+        !def.stack &&
+        !def.twoHanded &&
+        [...registry.items.values()].some(
+          (container) =>
+            Boolean(container.wearable) &&
+            container.container?.pockets.some(({ grid }) => fitsCopies(def.size, grid, 2)),
+        ),
+    );
+    const item = inventory.create(itemDef.id);
+    const { bag, pocket } = carryInBag(inventory, item, 2);
     expect(inventory.add(item, { kind: 'pocket', owner: bag, pocket })).toBe(true);
+    const source = inventory.targetForLocation(inventory.locate(item)!);
+    if (source.kind !== 'pocket' || !source.at) {
+      throw new Error('Pocket fixture did not capture a precise source spot');
+    }
+
+    actions.tap(item);
+    settle(queue);
+    const blocker = inventory.create(item.type);
+    expect(inventory.add(blocker, { kind: 'pocket', owner: bag, pocket, at: source.at })).toBe(true);
+    const fallback = bestPocket(inventory, item);
+    if (!fallback) {
+      throw new Error('Pocket fixture has no best-pocket fallback');
+    }
+
     actions.tap(item);
     settle(queue);
 
-    const restored = Inventory.restoreState(registry, structuredClone(inventory.snapshotState()) as InventoryState);
-    expect(restored.snapshotState().quickbarOrigins).toEqual(inventory.snapshotState().quickbarOrigins);
+    const location = inventory.locate(item);
+    if (location?.kind !== 'pocket' || fallback.target.kind !== 'pocket') {
+      throw new Error('Quickbar item did not reach the best pocket');
+    }
+    expect(location.owner).toBe(fallback.target.owner);
+    expect(location.pocket).toBe(fallback.target.pocket);
   });
 });
