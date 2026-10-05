@@ -68,7 +68,10 @@ const addDisassemblyOutputs = (registry: Registry, items: Set<string>) => {
     if (!definition) {
       continue;
     }
-    const topSkill = Math.max(0, ...(definition.disassembly?.yields.map(({ fractions }) => fractions.length - 1) ?? []));
+    const topSkill = Math.max(
+      0,
+      ...(definition.disassembly?.yields.map(({ fractions }) => fractions.length - 1) ?? []),
+    );
     for (const output of disassemblyOutputs(definition, topSkill)) {
       items.add(output.item);
     }

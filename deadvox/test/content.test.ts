@@ -369,8 +369,10 @@ describe('content references', () => {
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
 
   it('requires an explicit disassembly yield for a recipe result', () => {
-    const missingYield = structuredClone(recipePack);
-    delete (missingYield.items[0] as { disassembly?: unknown }).disassembly;
+    const missingYield = {
+      ...structuredClone(recipePack),
+      items: [Object.fromEntries(Object.entries(recipePack.items[0]!).filter(([key]) => key !== 'disassembly'))],
+    };
     const source = 'missing-disassembly.json';
     const { issues } = withBase({ source, data: missingYield });
     expect(issues).toContainEqual({

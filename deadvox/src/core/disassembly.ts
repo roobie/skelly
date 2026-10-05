@@ -1,9 +1,9 @@
 // Content-owned yields for taking apart a finished item; work progress stays with Inventory.
 import type { CraftCharacter } from './character.ts';
 import type { ItemDef } from './content.ts';
+import { indexCraftReach } from './crafting.ts';
 import type { Item } from './items.ts';
 import { isEmpty } from './items.ts';
-import { indexCraftReach } from './crafting.ts';
 import type { ReachSnapshot } from './reach.ts';
 
 export interface DisassemblyOutput {
