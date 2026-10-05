@@ -13,6 +13,7 @@ const capabilities = [
   { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1 } },
   { id: 'held_gun', kind: 'firearm', firearm: {} },
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
+  { id: 'held_book', kind: 'read', book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingTime: 1 } },
   { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
   { id: 'held_plain', kind: 'none', stack: 2 },
 ] as const;
@@ -31,10 +32,20 @@ const { registry, issues } = buildRegistry([
           layers: [['D']],
         },
       ],
-      items: capabilities.map(({ kind: _kind, ...fields }) => ({
+      recipes: [
+        {
+          id: 'fixture_recipe',
+          result: { item: 'held_plain', count: 1 },
+          time: 1,
+          skills: {},
+          qualities: {},
+          components: [[{ item: 'held_plain', count: 1 }]],
+        },
+      ],
+      items: capabilities.map(({ kind, ...fields }) => ({
         ...fields,
         name: fields.id,
-        category: 'tool',
+        category: kind === 'read' ? 'book' : 'tool',
         weight: 1,
         size: [1, 1],
       })),

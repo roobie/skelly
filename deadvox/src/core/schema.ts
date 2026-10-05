@@ -42,6 +42,7 @@ const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
 const Positive = pipe(number(), minValue(Number.MIN_VALUE, 'must be more than 0'));
 const Count = pipe(number(), integer('must be a whole number'), minValue(0, 'must be 0 or more'));
 const Fraction = pipe(number(), minValue(0, 'must be 0 to 1'), maxValue(1, 'must be 0 to 1'));
+const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 
 /** An inclusive [min, max] range. */
 const range = <S extends typeof Count | typeof Fraction>(item: S) =>
@@ -149,7 +150,7 @@ const FoodSchema = strictObject({
 
 const ToolSchema = strictObject({
   /** Quality levels, such as { "prying": 2 }. */
-  qualities: record(Id, pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5))),
+  qualities: record(Id, QualityLevel),
 });
 
 const WeaponSchema = strictObject({
@@ -197,6 +198,13 @@ const HELD_DISPLAY_KINDS = Object.values(HELD_DISPLAY_KIND);
 export const PILE_DISPLAY_KIND = { scatter: 'scatter' } as const;
 const PILE_DISPLAY_KINDS = Object.values(PILE_DISPLAY_KIND);
 
+const BookSchema = strictObject({
+  title: Name,
+  recipes: pipe(array(Id), nonEmpty('needs at least one recipe')),
+  /** Game minutes spent reading. */
+  readingTime: Positive,
+});
+
 const readableText = (limit: number) =>
   pipe(
     string(),
@@ -236,6 +244,7 @@ export const ItemSchema = strictObject({
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
   /** How the item appears when it is in a ground pile. */
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
+  book: optional(BookSchema),
   battery: optional(BatterySchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
@@ -394,8 +403,14 @@ export const FurnitureSchema = strictObject({
   door: optional(strictObject({ handling: NonNegative })),
   /** You can sleep on it; 1 is a good bed. */
   bed: optional(strictObject({ quality: Fraction })),
-  /** Declared workstation id only; qualities, speed and runtime behavior come in Slice 2.8. */
-  workstation: optional(strictObject({ id: Id })),
+  /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
+  workstation: optional(
+    strictObject({
+      id: Id,
+      qualities: record(Id, QualityLevel),
+      workTimeBonus: Fraction,
+    }),
+  ),
 });
 
 // ---- loot tables ----
@@ -732,6 +747,7 @@ export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SkillDef = InferOutput<typeof SkillSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type BookDef = InferOutput<typeof BookSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

@@ -25,6 +25,29 @@ describe('content', () => {
     }
   });
 
+  it('rejects books that teach a recipe absent from the merged registry', () => {
+    const source = 'book-reference-fixture.json';
+    const data: ContentFile = {
+      items: [
+        {
+          id: 'book_reference_fixture',
+          name: 'Fixture manual',
+          category: 'book',
+          weight: 1,
+          size: [1, 1],
+          book: { title: 'Fixture manual', recipes: ['missing_recipe'], readingTime: 1 },
+        },
+      ],
+    };
+    const result = buildRegistry([...base, { source, data }]);
+    expect(result.issues).toContainEqual({
+      source,
+      path: 'items[0].book.recipes[0]',
+      message: 'no recipe "missing_recipe"',
+    });
+    expect(result.registry.items.has('book_reference_fixture')).toBe(false);
+  });
+
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
     const source = 'test/fixtures/content/loot-override-no-container.json';
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
@@ -286,7 +309,20 @@ describe('content references', () => {
     ],
     skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
     furniture: [
-      { id: 'fixture_bench', name: 'Bench', size: [1, 1, 1], color: '#ffffff', workstation: { id: 'fixture_station' } },
+      {
+        id: 'fixture_bench',
+        name: 'Bench',
+        size: [1, 1, 1],
+        color: '#ffffff',
+        workstation: {
+          id: 'fixture_station',
+          qualities: Object.fromEntries([
+            ['custom_shaping', 2],
+            ['fixture_sawing', 1],
+          ]),
+          workTimeBonus: 0.2,
+        },
+      },
       { id: 'fixture_plain_bench', name: 'Ordinary bench', size: [1, 1, 1], color: '#ffffff' },
     ],
     recipes: [
@@ -295,7 +331,10 @@ describe('content references', () => {
         result: { item: 'rag', count: 1 },
         time: 2,
         skills: Object.fromEntries([['fixture_skill', 0]]),
-        qualities: Object.fromEntries([['custom_shaping', 1]]),
+        qualities: Object.fromEntries([
+          ['custom_shaping', 1],
+          ['fixture_sawing', 1],
+        ]),
         workstation: 'fixture_station',
         components: Array.from({ length: 10 }, () => [
           { item: 'rag', count: 1 },

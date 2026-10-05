@@ -1,5 +1,5 @@
 {
-  "skills": [{ "id": "crafting", "name": "Crafting" }],
+  "skills": [{ "id": "crafting", "name": "Crafting" }, { "id": "mechanics", "name": "Mechanics" }],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
@@ -27,7 +27,9 @@
       "size": [2, 2],
       "description": "Metal patches, tape and rags for a makeshift repair.",
       "tool": { "qualities": { "repairing": 1 } }
-    }
+    },
+    { "id": "copper_wire", "name": "Salvaged wire", "category": "material", "weight": 80, "size": [1, 2] },
+    { "id": "field_patch", "name": "Field repair patch", "category": "material", "weight": 120, "size": [1, 2] }
   ],
   "recipes": [
     {
@@ -64,6 +66,22 @@
       ]
     },
     {
+      "id": "strip_wire",
+      "result": { "item": "copper_wire", "count": 1 },
+      "time": 8,
+      "skills": { "mechanics": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }]]
+    },
+    {
+      "id": "field_patch",
+      "result": { "item": "field_patch", "count": 1 },
+      "time": 12,
+      "skills": { "mechanics": 2 },
+      "qualities": {},
+      "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
       "id": "repair_crowbar",
       "kind": "repair",
       "result": { "item": "crowbar", "count": 1 },
@@ -72,6 +90,15 @@
       "skills": { "crafting": 0 },
       "qualities": { "repairing": 1 },
       "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "sawn_plank",
+      "result": { "item": "wooden_plank", "count": 1 },
+      "time": 4,
+      "skills": { "crafting": 0 },
+      "qualities": { "sawing": 1 },
+      "components": [[{ "item": "stick", "count": 2 }]],
+      "workstation": "workbench"
     }
   ]
 }
