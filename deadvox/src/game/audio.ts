@@ -279,6 +279,41 @@ export class GameAudio {
     return true;
   }
 
+  /** Plays one heartbeat recording through the same body-category and buffer path as live beats. */
+  previewHeartbeat(file: string, gainValue: number): boolean {
+    if (!Object.values(HEARTBEAT_FILES).includes(file as (typeof HEARTBEAT_FILES)[keyof typeof HEARTBEAT_FILES])) {
+      return false;
+    }
+    const url = PACK_FILES[`../content/base/${file}`];
+    const { context, nodes } = this;
+    if (!(url && context && nodes)) {
+      this.report(`heartbeat file "${file}" is not bundled`);
+      return false;
+    }
+    this.loadBuffer(context, file, url).then(async (buffer) => {
+      if (!buffer || this.context !== context) {
+        return;
+      }
+      if (context.state !== 'running') {
+        try {
+          await context.resume();
+        } catch (error) {
+          this.report(`audio context did not resume: ${String(error)}`);
+        }
+      }
+      if (context.state === 'running') {
+        this.startHeartbeat({
+          context,
+          body: nodes.categories.get('body')!,
+          buffer,
+          gainValue,
+          when: context.currentTime + 0.025,
+        });
+      }
+    });
+    return true;
+  }
+
   /** Playback voice allocation happens after decoding; pending loads consume no playback slots. */
   private stealOldestVoice(event: SoundEventId, context: AudioContext): void {
     const cap = VOICE_CAPS.get(event);

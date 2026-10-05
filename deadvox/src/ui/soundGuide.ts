@@ -1,7 +1,8 @@
+import { html } from 'lit-html';
 import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
-import { HEARTBEAT_FILES } from '../game/audioPresentation.ts';
+import { HEARTBEAT_FILES, HEARTBEAT_TUNING } from '../game/audioPresentation.ts';
 
 export interface SoundTriggerGuide {
   readonly trigger: string;
@@ -303,6 +304,46 @@ export const buildHeartbeatSoundGuide = (manifest: Manifest): HeartbeatSoundGuid
     variants: Object.values(HEARTBEAT_FILES).map((file) => soundVariant(file, byFile.get(file))),
   };
 };
+
+export const HEARTBEAT_PREVIEW_LEVELS = [
+  { label: 'at 85% stamina', gain: HEARTBEAT_TUNING.normalGain },
+  { label: 'at exhaustion', gain: HEARTBEAT_TUNING.veryHighGain },
+] as const;
+
+export const renderHeartbeatSoundGuide = (
+  heartbeat: HeartbeatSoundGuide,
+  preview: (file: string, gain: number) => void,
+) => html`
+  <article class="sound-event" data-sound-event=${heartbeat.id}>
+    <header>
+      <h2><code>${heartbeat.id}</code><span class="category">${heartbeat.category}</span></h2>
+    </header>
+    <p class="sound-trigger"><strong>How to hear:</strong> ${heartbeat.trigger}</p>
+    <p class="sound-note"><strong>BR status:</strong> ${heartbeat.status}</p>
+    <ul class="sound-variants" aria-label="Player heartbeat recordings">
+      ${heartbeat.variants.map(
+        (variant) => html`
+          <li>
+            <code class="variant-file">${variant.file}</code>
+            <span class="variant-credit">
+              ${
+                variant.sourceUrl
+                  ? html`<a href=${variant.sourceUrl} target="_blank" rel="noreferrer">${variant.sourcePack}</a>`
+                  : variant.sourcePack
+              }
+              · ${variant.author} · ${variant.licence}
+            </span>
+            ${HEARTBEAT_PREVIEW_LEVELS.map(
+              ({ label, gain }) => html`
+                <button type="button" @click=${() => preview(variant.file, gain)}>Play ${label}</button>
+              `,
+            )}
+          </li>
+        `,
+      )}
+    </ul>
+  </article>
+`;
 
 export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest): SoundGuideEntry[] => {
   const byFile = assetSourcesByFile(manifest);

@@ -12,6 +12,7 @@ const audios: GameAudio[] = [];
 
 const makeNode = () => ({ connect: vi.fn(), disconnect: vi.fn() });
 const makeParam = () => ({ value: 1, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() });
+const makeGain = () => ({ ...makeNode(), gain: makeParam() });
 const makeSource = () => ({
   ...makeNode(),
   buffer: null as AudioBuffer | null,
@@ -28,6 +29,7 @@ class FakeAudioContext {
   destination = makeNode();
   listener = { setPosition: vi.fn(), setOrientation: vi.fn() };
   sources: ReturnType<typeof makeSource>[] = [];
+  gainNodes: ReturnType<typeof makeGain>[] = [];
   panners: ReturnType<typeof makeNode>[] = [];
   peakConnectedSources = 0;
   decodeAudioData = vi.fn((data: ArrayBuffer) => {
@@ -46,7 +48,9 @@ class FakeAudioContext {
   }
 
   createGain() {
-    return { ...makeNode(), gain: makeParam() };
+    const node = makeGain();
+    this.gainNodes.push(node);
+    return node;
   }
 
   createBiquadFilter() {
@@ -179,6 +183,22 @@ describe('game audio playback', () => {
     expect(context.sources).toHaveLength(4);
     expect(sourceGain(context.sources[3]!)).toBeCloseTo(heartbeatForStamina(50).gain);
     expect(context.sources.every(({ playbackRate }) => playbackRate.value === 1)).toBe(true);
+    expect(audio.heardSounds).toHaveLength(0);
+  });
+
+  it('previews a heartbeat recording at the requested gain through the body category', async () => {
+    const { audio, context, fetchBuffer } = setup();
+    expect(audio.previewHeartbeat(HEARTBEAT_FILES.slow, 0.37)).toBe(true);
+    await flush();
+
+    expect(fetchBuffer).toHaveBeenCalledTimes(1);
+    expect(fetchBuffer.mock.calls[0]![0]).toContain(HEARTBEAT_FILES.slow);
+    expect(context.sources).toHaveLength(1);
+    const source = context.sources[0]!;
+    const sourceGain = source.connect.mock.calls[0]![0] as ReturnType<typeof makeGain>;
+    expect(sourceGain.gain.value).toBe(0.37);
+    expect(sourceGain.connect).toHaveBeenCalledWith(context.gainNodes[2]);
+    expect(source.playbackRate.value).toBe(1);
     expect(audio.heardSounds).toHaveLength(0);
   });
 
