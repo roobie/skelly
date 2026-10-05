@@ -73,26 +73,32 @@ async function sourceFilesUnder(directory: string): Promise<string[]> {
   return [...direct, ...nested.flat()].sort();
 }
 
-async function actualSimulationHost(): Promise<SimulationModuleGraphHost> {
-  const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
-  const viteResolve = config.createResolver();
-  return {
-    resolve(specifier, importer) {
-      if (specifier.startsWith('@mobgen/')) {
-        return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-      }
-      return Promise.resolve(viteResolve(specifier, importer));
-    },
-    readFile(path) {
-      return readFile(path, 'utf8');
-    },
-  };
-}
+let actualHost: Promise<SimulationModuleGraphHost> | undefined;
+const actualSimulationHost = (): Promise<SimulationModuleGraphHost> => {
+  actualHost ??= (async () => {
+    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
+    const viteResolve = config.createResolver();
+    return {
+      resolve(specifier, importer) {
+        if (specifier.startsWith('@mobgen/')) {
+          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+        }
+        return Promise.resolve(viteResolve(specifier, importer));
+      },
+      readFile(path) {
+        return readFile(path, 'utf8');
+      },
+    };
+  })();
+  return actualHost;
+};
 
-async function actualSimulationGraph() {
-  return collectSimulationSourceGraph(SIMULATION_ENTRIES, projectRoot, await actualSimulationHost(), {
-    exclude: SIMULATION_EXCLUSIONS,
-  });
+let actualGraph: ReturnType<typeof collectSimulationSourceGraph> | undefined;
+function actualSimulationGraph() {
+  actualGraph ??= actualSimulationHost().then((host) =>
+    collectSimulationSourceGraph(SIMULATION_ENTRIES, projectRoot, host, { exclude: SIMULATION_EXCLUSIONS }),
+  );
+  return actualGraph;
 }
 
 async function mutateSimulationSource(
@@ -275,21 +281,15 @@ describe('simulation source fingerprint', () => {
   });
 
   it('keeps metrics-only observer label mutations outside the actual fingerprint', async () => {
-    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
-    const viteResolve = config.createResolver();
+    const host = await actualSimulationHost();
     const hashWith = (edited: boolean) =>
       fingerprintSimulationSources(
         SIMULATION_ENTRIES,
         projectRoot,
         {
-          resolve(specifier, importer) {
-            if (specifier.startsWith('@mobgen/')) {
-              return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-            }
-            return Promise.resolve(viteResolve(specifier, importer));
-          },
+          ...host,
           async readFile(path) {
-            const source = await readFile(path, 'utf8');
+            const source = await host.readFile(path);
             return edited && path.endsWith('/src/game/playtestObserver.ts')
               ? source.replaceAll(pocketLabel, compartmentLabel)
               : source;
