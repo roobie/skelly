@@ -1,5 +1,6 @@
 import { ACESFilmicToneMapping, CustomToneMapping, NoToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_SHADOWS, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { LookControls } from '../src/debug/look.ts';
 import {
   DEFAULT_LOOK_URL_STATE,
@@ -41,7 +42,7 @@ describe('look URL parameters', () => {
       bloomClip: null,
       fogginess: 0.2,
       torch: 1,
-      shadows: { sun: true, torch: true, distance: 40 },
+      shadows: DEFAULT_SHADOWS,
       crackCheck: false,
       hotCheck: false,
     });
@@ -81,13 +82,17 @@ describe('look URL parameters', () => {
   });
 
   it('keeps both shadows on unless sunshadow=0 / torchshadow=0, and omits the defaults', () => {
-    expect(parse('sunshadow=0').shadows).toEqual({ sun: false, torch: true, distance: 40 });
-    expect(parse('torchshadow=0').shadows).toEqual({ sun: true, torch: false, distance: 40 });
+    expect(parse('sunshadow=0').shadows).toEqual({ ...DEFAULT_SHADOWS, sun: false });
+    expect(parse('torchshadow=0').shadows).toEqual({ ...DEFAULT_SHADOWS, torch: false });
     expect(parse('sunshadow=1&torchshadow=off').shadows).toEqual(DEFAULT_LOOK_URL_STATE.shadows);
     expect(write('debug=1&sunshadow=0&torchshadow=0&shadowdist=64', DEFAULT_LOOK_URL_STATE)).toBe('debug=1');
     const state = (shadows: LookUrlState['shadows']): LookUrlState => ({ ...DEFAULT_LOOK_URL_STATE, shadows });
-    expect(write('debug=1', state({ sun: false, torch: true, distance: 40 }))).toBe('debug=1&sunshadow=0');
-    expect(write('debug=1', state({ sun: true, torch: false, distance: 40 }))).toBe('debug=1&torchshadow=0');
+    expect(write('debug=1', state({ sun: false, torch: true, distance: DEFAULT_SHADOWS.distance }))).toBe(
+      'debug=1&sunshadow=0',
+    );
+    expect(write('debug=1', state({ sun: true, torch: false, distance: DEFAULT_SHADOWS.distance }))).toBe(
+      'debug=1&torchshadow=0',
+    );
   });
 
   it('clamps the shadow distance to whole metres within 16..96 and ignores nonsense', () => {
@@ -95,11 +100,15 @@ describe('look URL parameters', () => {
     expect(parse('shadowdist=33.6').shadows.distance).toBe(34);
     expect(parse('shadowdist=1').shadows.distance).toBe(16);
     expect(parse('shadowdist=500').shadows.distance).toBe(96);
-    expect(parse('shadowdist=').shadows.distance).toBe(40);
-    expect(parse('shadowdist=abc').shadows.distance).toBe(40);
-    expect(write('', { ...DEFAULT_LOOK_URL_STATE, shadows: { sun: true, torch: true, distance: 24 } })).toBe(
-      'shadowdist=24',
-    );
+    expect(parse('shadowdist=').shadows.distance).toBe(DEFAULT_SHADOWS.distance);
+    expect(parse('shadowdist=abc').shadows.distance).toBe(DEFAULT_SHADOWS.distance);
+    const nonDefaultDistance = SHADOW_DISTANCES.find((distance) => distance !== DEFAULT_SHADOWS.distance)!;
+    expect(
+      write('', {
+        ...DEFAULT_LOOK_URL_STATE,
+        shadows: { ...DEFAULT_SHADOWS, distance: nonDefaultDistance },
+      }),
+    ).toBe(`shadowdist=${nonDefaultDistance}`);
   });
 
   it('records only deviations from the defaults', () => {

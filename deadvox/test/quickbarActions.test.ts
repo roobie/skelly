@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -29,6 +30,40 @@ const { registry } = buildRegistry([
           size: [1, 2],
           twoHanded: true,
         },
+        {
+          id: 'fixture_tool',
+          name: 'Fixture tool',
+          category: 'tool',
+          weight: 100,
+          size: [1, 1],
+          tool: { qualities: { opening: 1 } },
+        },
+        {
+          id: 'fixture_light',
+          name: 'Fixture light',
+          category: 'light',
+          weight: 100,
+          size: [1, 1],
+          light: { radius: 1, seenFrom: 1 },
+        },
+        {
+          id: 'fixture_quickbar_bag',
+          name: 'Fixture quickbar bag',
+          category: 'bag',
+          weight: 100,
+          size: [2, 1],
+          wearable: { slot: 'back', encumbrance: 0 },
+          container: { pockets: [{ grid: [2, 1], handling: 0 }] },
+        },
+        {
+          id: 'fixture_small_quickbar_bag',
+          name: 'Fixture small quickbar bag',
+          category: 'bag',
+          weight: 100,
+          size: [1, 1],
+          wearable: { slot: 'back', encumbrance: 0 },
+          container: { pockets: [{ grid: [1, 1], handling: 0 }] },
+        },
       ],
     },
   },
@@ -46,8 +81,9 @@ const settle = (queue: HandlingQueue) => {
     queue.tick(queue.remaining);
   }
 };
-const runtime = () => {
-  const inventory = new Inventory(registry);
+const runtime = (handedness?: Character['handedness']) => {
+  const character = new Character(registry, { handedness });
+  const inventory = new Inventory(registry, undefined, undefined, character);
   const queue = new HandlingQueue(inventory);
   const notices: string[] = [];
   const simulation = new Simulation({ seed: 1 });
@@ -127,32 +163,57 @@ describe('quickbar tap and hold actions', () => {
     expect(inventory.hands.right).toBe(weapon);
   });
 
-  it('sends tools to the primary hand, lights off hand, and two-handed items to both', () => {
-    const { inventory, queue, actions } = runtime();
-    const light = inventory.create(definition((def) => Boolean(def.light)).id);
-    const { bag, pocket } = carryInBag(inventory, light);
-    expect(inventory.add(light, { kind: 'pocket', owner: bag, pocket })).toBe(true);
+  it.each(['right', 'left'] as const)('routes quickbar capabilities through a %s-dominant actor', (handedness) => {
+    const { inventory, queue, actions } = runtime(handedness);
+    const dominant = dominantSide(inventory.character);
+    const off = offSide(inventory.character);
+    const bag = inventory.create('fixture_quickbar_bag');
+    expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
+    const light = inventory.create('fixture_light');
+    expect(inventory.add(light, { kind: 'pocket', owner: bag, pocket: 0 })).toBe(true);
     actions.tap(light);
     settle(queue);
-    expect(inventory.hands.left).toBe(light);
+    expect(inventory.hands[off]).toBe(light);
 
-    const tool = inventory.create(definition((def) => Boolean(def.tool)).id);
+    const tool = inventory.create('fixture_tool');
     expect(inventory.add(tool, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     actions.tap(tool);
     settle(queue);
-    expect(inventory.hands.right).toBe(tool);
-    expect(inventory.hands.left).toBe(light);
-    actions.tap(tool);
-    settle(queue);
-    actions.tap(light);
-    settle(queue);
+    expect(inventory.hands[dominant]).toBe(tool);
+    expect(inventory.hands[off]).toBe(light);
 
     const twoHanded = inventory.create('fixture_two_handed_tool');
     expect(inventory.add(twoHanded, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     actions.tap(twoHanded);
     settle(queue);
-    expect(inventory.hands.right).toBe(twoHanded);
-    expect(inventory.hands.left).toBeUndefined();
+    expect(inventory.hands[dominant]).toBe(twoHanded);
+    expect(inventory.hands[off]).toBeUndefined();
+    expect(inventory.locate(tool)?.kind).toBe('pocket');
+    expect(inventory.locate(light)?.kind).toBe('pocket');
+  });
+
+  it('keeps an unstowed hand item and reports it instead of dropping or taking a two-handed item', () => {
+    const { inventory, queue, actions, notices } = runtime();
+    const bag = inventory.create('fixture_small_quickbar_bag');
+    expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
+    const light = inventory.create('fixture_light');
+    expect(inventory.add(light, { kind: 'pocket', owner: bag, pocket: 0 })).toBe(true);
+    actions.tap(light);
+    settle(queue);
+    const tool = inventory.create('fixture_tool');
+    expect(inventory.add(tool, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    actions.tap(tool);
+    settle(queue);
+    const twoHanded = inventory.create('fixture_two_handed_tool');
+    expect(inventory.add(twoHanded, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+
+    actions.tap(twoHanded);
+    expect(notices.some((notice) => notice.includes('Fixture light'))).toBe(true);
+    settle(queue);
+
+    expect(inventory.locate(tool)?.kind).toBe('pocket');
+    expect(inventory.locate(light)).toMatchObject({ kind: 'hand', side: offSide(inventory.character) });
+    expect(inventory.locate(twoHanded)?.kind).toBe('pile');
   });
 
   it('uses the best pocket when the captured spot is occupied', () => {

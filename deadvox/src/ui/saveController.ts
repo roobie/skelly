@@ -1,4 +1,5 @@
 import { html, render } from 'lit-html';
+import type { HandedCharacter } from '../core/character.ts';
 import type { ClockSettings } from '../core/clock.ts';
 import { defaultClock, simSecondsPerHour } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
@@ -101,6 +102,7 @@ export class SaveController {
   private requestedContinue = false;
   private entered = false;
   private ready = false;
+  private newWorldLauncher: ((creation: HandedCharacter) => { enter: () => void }) | undefined;
   private statusText = 'Checking saved worlds…';
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
   private simTime: (() => number) | undefined;
@@ -136,7 +138,13 @@ export class SaveController {
     );
     $('save-persist')?.addEventListener('click', () => this.requestPersistence().catch(() => undefined));
     $('save-export')?.addEventListener('click', () => this.exportCurrentRecords().catch(() => undefined));
-    $('save-replace-confirm').addEventListener('click', () => this.confirmNewWorld());
+    $('save-replace-confirm').addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      if (!$('save-confirmation').hidden) {
+        this.confirmNewWorld();
+      }
+    });
     $('save-retry').addEventListener('click', () => this.retrySave());
     $('save-rescan').addEventListener('click', () => location.reload());
     $('save-export-current').addEventListener('click', () => this.exportCurrentSnapshot().catch(() => undefined));
@@ -317,6 +325,11 @@ export class SaveController {
     return this.entered;
   }
 
+  setNewWorldLauncher(launcher: (creation: HandedCharacter) => { enter: () => void }): void {
+    this.newWorldLauncher = launcher;
+    this.render();
+  }
+
   /** The controller is the sole writer of #go; play supplies the derived menu label here. */
   setGoLabel(label: string): void {
     render(html`${label}`, $('go'));
@@ -439,7 +452,7 @@ export class SaveController {
     if (this.entered) {
       return;
     }
-    if (!this.ready) {
+    if (!(this.ready && this.newWorldLauncher)) {
       event.preventDefault();
       event.stopImmediatePropagation();
       return;
@@ -457,10 +470,35 @@ export class SaveController {
       $('save-confirmation').hidden = false;
       return;
     }
+    event.preventDefault();
+    event.stopImmediatePropagation();
     this.confirmNewWorld();
   }
 
   private confirmNewWorld(): void {
+    if (this.entered || !this.ready || !this.newWorldLauncher || this.protectedCurrent) {
+      return;
+    }
+    const handedness = ($('dominant-hand') as HTMLSelectElement).value;
+    if (handedness !== 'right' && handedness !== 'left') {
+      this.statusText = 'Choose a valid dominant hand before starting a new character.';
+      this.render();
+      return;
+    }
+    const creation: HandedCharacter = Object.freeze({ handedness });
+    let entry: { enter: () => void };
+    try {
+      entry = this.newWorldLauncher(creation);
+    } catch (error) {
+      this.newWorldLauncher = undefined;
+      this.snapshot = undefined;
+      this.simTime = undefined;
+      this.worldOptions = undefined;
+      this.failure = `Could not start the world: ${errorMessage(error)} Reload to try again; saved data is untouched.`;
+      this.statusText = this.failure;
+      this.render();
+      return;
+    }
     this.entered = true;
     $('save-confirmation').hidden = true;
     $('continue').hidden = true;
@@ -468,6 +506,7 @@ export class SaveController {
       ? `New world ready. ${this.environmentProblem ?? 'Save storage is unavailable; this session will not be saved.'}`
       : 'New world ready. The existing save is retained until the first checkpoint commits.';
     this.render();
+    entry.enter();
   }
 
   private continueWorld(event: Event): void {
@@ -603,6 +642,8 @@ export class SaveController {
       html`Saves are kept in this browser. When two tabs play the same world, the last one to save wins.`,
       $('save-note'),
     );
+    $('new-character-options').hidden = this.entered || this.requestedContinue;
+    $('go').setAttribute('aria-disabled', String(!(this.entered || (this.ready && this.newWorldLauncher))));
     button.disabled = !(this.ready && controls.continueEnabled);
     button.hidden = !(controls.showTitleControls && this.restored) || this.entered;
     $('save-rescan').hidden = this.entered || !this.storageUnavailable || Boolean(this.environmentProblem);

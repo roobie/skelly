@@ -95,8 +95,9 @@ try {
     ),
     { waitUntil: 'domcontentloaded' },
   );
-  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.deepEqual(
     await page.evaluate(() => globalThis.pumpWebGLRequests),

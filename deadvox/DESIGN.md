@@ -1,5 +1,7 @@
 ---
 read_if:
+  - you decide how sunlight and shadows should read in play
+  - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
   - you change shambler navigation or floor-transition behavior
@@ -315,7 +317,7 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
   On stowing: "putting away the shotgun from being wielded also plays rummaging
   anim - i think it kinda fits". The longer-term direction is "over time, we'll
-  maybe add more specific anims."; shell-loading feedback is d53, after d47.
+  maybe add more specific anims."; shell-loading feedback is d53.
   Approval does not pin `RUMMAGE_POSE` tuning: see
   `../docs/deferred-assertions.md`.
   Following #213's merge (d50-3), compass handling must not introduce a second
@@ -325,7 +327,10 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
-  dominant hand. Until that's built (d47), two-handed holds are right-handed.
+  dominant hand. Dominance is immutable actor identity, not a reassignment of
+  anatomy or inventory slots. Creation chooses it before the accepted launch;
+  Continue uses the saved identity. See `docs/character-handedness.md` for why
+  preferences follow roles while placement and mechanical axes stay physical.
 - **You use things from your hands:** eating, drinking, bandaging, reading,
   striking a match, switching a light on. Getting the item into your hands costs
   its handling time; using it is a separate action. A two-handed item takes both
@@ -333,14 +338,13 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
 - What you hold shows in first person, what you drop lies on the floor as a
   pile, and furniture holds what its grid shows.
 - **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
-  with the thing you're holding." The initial hand mapping (BR, 2026-10-01; open
-  to revision) is left click = right hand and `=` = left hand. A right-hand item
-  uses its action; if that hand is empty, jab with the right fist. `=` uses the
-  left-hand item's action, or does nothing when empty. Fists alternate only when
-  both hands are empty; never punch with a hand holding an item. Unsupported
-  held items give a hint. Melee keeps its current swing, and a light uses the
-  existing instant-use path. The hand mapping is `ACTION_HAND_BINDINGS`; item
-  capabilities are selected from content data.
+  with the thing you're holding." Activation follows the character's dominant
+  and off-hand roles, not a fixed physical side. A held item must never turn
+  into an unarmed attack, and a reserved support hand must not redirect an
+  action. See `src/game/input.ts`, `KEY_BINDINGS`, for inputs;
+  `src/game/primaryAction.ts`, `selectPrimaryAction`, for capability admission;
+  and `src/core/playerCombat.ts`, `PlayerCombat`, for the saved physical fist
+  sequence. Continue preserves that sequence rather than reseeding it.
 - **Long actions gather what they need.** Crafting, repair, disassembly and
   reading take their items from within reach (your hands, what you wear, and
   piles and furniture within 2 m) at the start. The gathering time is part of
@@ -823,6 +827,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Entities** are drawn with instanced meshes; zombie limbs are instanced
   boxes.
+- **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
+  is still a little jaggedness. But we won't pursue this more right now, so I'll
+  approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
+  Favor a stable edge near the player over sharp shadows far beyond them; see
+  `src/render/shadows.ts`, `sunShadowTexelSize` and `Shadows.update`.
 
 ## Audio
 
