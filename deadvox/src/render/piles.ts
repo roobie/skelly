@@ -5,8 +5,8 @@
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshLambertMaterial, Object3D } from 'three';
 import { type Inventory, PILE_GRID, type Pile } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
-import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { pileLayout } from '../core/pileLayout.ts';
+import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import type { GroundModelPart, ModelLibrary } from './models.ts';

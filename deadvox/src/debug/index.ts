@@ -31,7 +31,6 @@ import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
-
 const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
   const observedTick = result.observedTimerTickMs === null ? 'unknown' : `${result.observedTimerTickMs.toFixed(3)} ms`;
   let quantization: string;
