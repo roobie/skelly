@@ -1557,11 +1557,9 @@ describe('local route continuation', () => {
 
     target = highTarget;
     const startDistance = metres(zombie.body.pos, target);
-    const spatialDistance = Math.hypot(
-      target[0] - zombie.body.pos[0],
-      target[1] - zombie.body.pos[1],
-      target[2] - zombie.body.pos[2],
-    ) * BLOCK_SIZE;
+    const spatialDistance =
+      Math.hypot(target[0] - zombie.body.pos[0], target[1] - zombie.body.pos[1], target[2] - zombie.body.pos[2]) *
+      BLOCK_SIZE;
     expect(startDistance).toBeLessThanOrEqual(type.sight);
     expect(spatialDistance).toBeGreaterThan(type.sight);
 
