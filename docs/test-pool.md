@@ -1,3 +1,9 @@
+---
+read_if:
+  - you are changing Vitest's worker budget or temporary-cache ownership
+  - you are changing browser-test profile management
+---
+
 # Test pool budget (r4)
 
 `testPool.ts` is the shared Vitest policy for Gungen, Deadvox and Mobgen.
@@ -20,14 +26,12 @@ preserved. PID reuse can conservatively retain stale data until a later startup.
 
 Package tests and external mutation configs importing the package Vite config
 share this policy. A config that bypasses `testPool.ts` is not covered. Ordinary
-Vite/browser invocations retain their caller's temp directory. The Chromium
-`ui-browser-contract` and `save-storage` stages share a PID-owned profile root
-under that caller temp directory; startup reclaims dead stage owners but retains
-profiles with a live or uncertain native `SingletonLock` owner. Normal cleanup
-still runs after browser shutdown. Firefox continues to use Playwright-managed
-profiles. Root `npm run ci` also runs the native `node:test` ownership/non-Vitest
-contract. No worker policy, assertion, timeout, or dependency is changed by this
-cleanup.
+Vite/browser invocations retain their caller's temp directory. After #288, the
+Chromium `ui-browser-contract` and `save-storage` stages, like Firefox, use
+Playwright-managed temporary profiles. Playwright removes these profiles on
+close, so no stage reclaims browser profiles itself. Root `npm run ci` also runs
+the native `node:test` ownership/non-Vitest contract. No worker policy,
+assertion, timeout, or dependency is changed by this cleanup.
 
 ## Measurements
 
