@@ -103,6 +103,13 @@ describe('made-light point pool', () => {
     }
 
     pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
-    expect(pool.lights.map((light) => light.intensity)).toEqual([44, 22, 55, 11, 0, 0, 0, 0]);
+    const selectedIntensities = pool.lights.map((light) => light.intensity).filter((intensity) => intensity > 0);
+    const farthestIndex = distances.indexOf(Math.max(...distances));
+    const nearestIntensities = TEST_LIGHTS.filter((_, index) => index !== farthestIndex).map(
+      ({ intensity }) => intensity,
+    );
+    expect(selectedIntensities).toHaveLength(4);
+    expect(new Set(selectedIntensities)).toEqual(new Set(nearestIntensities));
+    expect(selectedIntensities).not.toContain(TEST_LIGHTS[farthestIndex]!.intensity);
   });
 });

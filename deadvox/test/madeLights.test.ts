@@ -68,7 +68,11 @@ describe('made light burn state', () => {
     expect(glowstick.on).toBe(true);
     expect(inventory.version).toBe(version);
 
-    sim.setDebugCalendarTime(glowstick.litAt! + registry.items.get('glowstick')!.light!.burnTime! * 3600 - 8);
+    const expiresAt = glowstick.litAt! + glowstick.burnRemaining! * 3600;
+    sim.setDebugCalendarTime(expiresAt - 1.5 * sim.clock.ratio);
+    sim.scheduler.advance(1);
+    expect(glowstick.on).toBe(true);
+    expect(inventory.version).toBe(version);
     sim.scheduler.advance(1);
     expect(glowstick.on).toBe(false);
     expect(inventory.version).toBe(version + 1);
