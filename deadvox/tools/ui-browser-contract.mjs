@@ -43,6 +43,8 @@ const chromeVersion =
     ? chromeVersionProbe.stdout.trim()
     : `unavailable: ${chromeVersionProbe.error?.message ?? chromeVersionProbe.stderr.trim()}`;
 const launchArgs = browserStageArgs('ui-browser-contract', [
+  '--use-gl=angle',
+  '--use-angle=swiftshader',
   '--disable-extensions',
   '--password-store=basic',
   '--window-size=1280,900',
