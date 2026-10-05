@@ -58,7 +58,7 @@ export const PLAYER_CONTROL_BINDINGS = [
     action: 'Hold to load loose shells; double-press to rack; tap does nothing; rotate while dragging in inventory',
   },
   { keys: 'Backspace', codes: [CONTROL_CODES.descend], action: 'Descend in debug noclip' },
-  { keys: 'L', codes: [CONTROL_CODES.sleep], action: 'Sleep; better on a bed; press again to stop' },
+  { keys: 'L', codes: [CONTROL_CODES.sleep], action: 'Sleep on target; better on a bed; cannot stop sleep' },
   { keys: 'Tab', codes: [CONTROL_CODES.inventory], action: 'Open / close inventory' },
   { keys: '1–5', codes: CONTROL_CODES.quickbar, action: 'Quickbar: tap to take or put away; hold to use' },
   { keys: 'C', codes: [CONTROL_CODES.continue], action: 'Continue after an interruption' },

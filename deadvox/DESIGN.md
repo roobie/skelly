@@ -125,8 +125,10 @@ compression on and shows a progress bar and the game time passing.
 
 - **Starting an action:** a nearby or aware hostile does not block a long
   action, and time still fast-forwards. BR (2026-10-05 20:09) answered
-  "fast forward"; BR (2026-10-05 22:28) said "(B) - it's up to the player to
-  make the area safe for them to do the long action. We're not holding hands".
+  "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording for
+  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
+  BR said "it's up to the player to make the area safe for them to do the long
+  action. We're not holding hands".
 - **Interruptions:** emitted events such as a hit, loud noise, fire, or a need
   hitting a threshold stop the action. A shambler noticing the player does not
   interrupt it. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits

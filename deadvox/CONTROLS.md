@@ -110,7 +110,7 @@ acting").
   ruled: "long actions disable all actions". F on the anchor or X cancels rest,
   but neither stops sleep; an interrupt wakes the sleeper and frees input. C
   resumes an interrupted rest only while the same piece remains reachable. L
-  remains a legacy sleep binding until d44 removes it and can still stop sleep.
+  remains a legacy way to start sleep until d44 removes it; it cannot stop sleep.
 - **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
   activate with the held-item primary action to unpack. No inventory Unpack/Load.
   Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
@@ -199,7 +199,7 @@ below). Implemented hand activation is not duplicated in this proposal; see
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
 | F | interact with what's outlined; start rest/sleep; F on the anchor cancels rest, not sleep | interact | — | ignored during long actions except rest cancellation | — |
 | R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
-| L | legacy sleep action on targeted sleepable furniture, until d44 removes it | — | — | legacy toggle may stop sleep | — |
+| L | legacy sleep action on targeted sleepable furniture, until d44 removes it | — | — | cannot stop sleep | — |
 | T, held | — | — | with a click on an item: its quick action (auto move; d44) | — | — |
 | X | cancel handling | cancel | cancel handling | stop rest/craft/read; ignored for sleep | stop rest/craft/read; ignored for sleep |
 | 1–5 | tap takes the slot's item into its capability-directed hand or puts it away; hold uses an available action from its location | same | assign the selected item to the slot | — | — |
@@ -223,8 +223,8 @@ Notes on the proposal:
   movement and action input are ignored during a long action. F on the anchor or
   X cancels rest, neither stops sleep, and an interrupt wakes the sleeper. C
   resumes rest after an interruption only while the same piece remains
-  reachable. L remains a legacy sleep binding until d44 removes it and can still
-  stop sleep.
+  reachable. L remains a legacy way to start sleep until d44 removes it; it
+  cannot stop sleep.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.

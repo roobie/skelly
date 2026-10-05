@@ -150,12 +150,18 @@ describe('RestController start/resume/stop', () => {
     expect(sim.time).toBeGreaterThan(start);
     expect(zombieSystem.store.get(id)!.body.pos[0]).toBeLessThan(startX!);
 
+    const emittedInterruption = sim.events.reader();
     sim.hurt(1, 'a shambler');
+    const wakeReason = emittedInterruption.read().find((event) => event.kind === 'interrupt')?.reason;
+    if (wakeReason === undefined) {
+      throw new Error('Damage did not emit a wake interruption');
+    }
     sim.frame(1 / 60);
     expect(rest.action).toBeUndefined();
     expect(sim.compression.locksInput).toBe(false);
     expect(sim.compression.interruption).toBeUndefined();
-    expect(messages).toContain("You wake up: You're hurt");
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain(wakeReason);
   });
 
   it('ends on its own once fully rested, back at 1x', () => {
@@ -239,7 +245,28 @@ describe('RestController.toggle (manual stop)', () => {
     expect(rest.canStop).toBe(true);
   });
 
-  it('does not let a second press stop sleep', () => {
+  it('ramps compression down after stopping rest without resetting fatigue', () => {
+    const { sim, rest } = makeRest();
+    const fatigueBeforeRest = sim.needs.fatigue;
+    expect(rest.toggle('rest', REST_ANCHOR)).toBeUndefined();
+    for (let i = 0; i < 20 && sim.needs.fatigue === fatigueBeforeRest; i++) {
+      rest.frame(0.5);
+    }
+    expect(sim.needs.fatigue).toBeLessThan(fatigueBeforeRest);
+    expect(sim.compression.c).toBeGreaterThan(1);
+    const fatigueAtStop = sim.needs.fatigue;
+    expect(rest.toggle('rest', REST_ANCHOR)).toBeUndefined();
+    expect(rest.action).toBeUndefined();
+    expect(sim.compression.active).toBe(false);
+    expect(sim.compression.c).toBeGreaterThan(1);
+    expect(sim.needs.fatigue).toBe(fatigueAtStop);
+    for (let i = 0; i < 60; i++) {
+      rest.frame(1 / 60);
+    }
+    expect(sim.compression.c).toBe(1);
+  });
+
+  it('keeps sleep running on a second press but permits a system stop', () => {
     const { sim, rest } = makeRest();
     expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
@@ -252,6 +279,9 @@ describe('RestController.toggle (manual stop)', () => {
     expect(rest.canStop).toBe(false);
     expect(sim.compression.active).toBe(true);
     expect(sim.needs.fatigue).toBe(fatigueAtStop);
+    rest.stop();
+    expect(rest.action).toBeUndefined();
+    expect(sim.compression.active).toBe(false);
   });
 });
 
@@ -379,12 +409,18 @@ describe('long-action interruptions', () => {
     const { sim, rest } = makeRest({}, { notice: (message) => messages.push(message) });
     sim.needs.hydration = 10.05;
     expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    const emittedInterruptions = sim.events.reader();
     for (let i = 0; i < 20_000 && rest.action !== undefined; i++) {
       rest.frame(1 / 60);
+    }
+    const wakeReason = emittedInterruptions.read().find((event) => event.kind === 'interrupt')?.reason;
+    if (wakeReason === undefined) {
+      throw new Error('Critical need did not emit a wake interruption');
     }
     expect(rest.action).toBeUndefined();
     expect(sim.compression.locksInput).toBe(false);
     expect(sim.compression.interruption).toBeUndefined();
-    expect(messages).toContain("You wake up: You're parched");
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain(wakeReason);
   });
 });

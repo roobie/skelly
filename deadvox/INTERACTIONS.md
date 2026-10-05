@@ -358,8 +358,8 @@ values), known recipes and skill levels. Two consequences for 1.9:
    than cancelling resting)". `RestController.canStop` owns sleep
    cancellability, which `src/ui/rest.ts`, `restViewModel`, uses for its hint.
    An interrupt wakes the sleeper and clears its action. BR (2026-10-05 20:14)
-   added "as for crafting: same as reading". The legacy L binding remains until
-   d44 removes it; it can still stop sleep.
+   added "as for crafting: same as reading". The legacy L binding starts sleep
+   until d44 removes it; it cannot stop sleep.
 3. **1.9, saves:** long actions and item state as plain data, as above.
 4. **Slice 2:** the inventory screen already moved to lit-html in Slice 1
    (#105), which completed ADR 0001. Slice 2 starts with the reach query and `options`, then recipes in the schema and the
@@ -382,18 +382,20 @@ Each kind keeps its own close, cancel or wake behavior:
 - Sleep: BR (2026-10-05 20:13): "as for sleeping: that's not something you
   actively stop - you wake up for reasons (whatever they may be)". Movement and
   F/X do not stop it. An interrupt wakes the player, clears sleep and frees
-  input. Existing wake triggers remain, and legacy L remains out of scope until
-  d44.
+  input. Existing wake triggers remain. L is a legacy way to start sleep until
+  d44 removes it; it does not stop sleep.
 - Craft: BR (2026-10-05 20:14): "as for crafting: same as reading". Movement does
   not stop it; its cancel key and interrupt events still do. C resumes after an
   interruption.
 
 BR (2026-10-05 morning playtest) said "if the player wants to do a long running
 op with shamblers close, that's OK". BR (2026-10-05 20:09) answered "fast
-forward". BR (2026-10-05 22:28) ruled: "(B) - it's up to the player to make the
-area safe for them to do the long action. We're not holding hands". A hostile nearby or
-noticing the player neither refuses nor interrupts a long action; emitted
-interrupt events, such as a hit or critical need, still stop it.
+forward". BR (2026-10-05 22:28) chose option B; the lead's wording for B was
+"No: only a hit or another real event (hunger, thirst...) wakes you". BR said
+"it's up to the player to make the area safe for them to do the long action.
+We're not holding hands". A hostile nearby or noticing the player neither
+refuses nor interrupts a long action; emitted interrupt events, such as a hit or
+critical need, still stop it.
 `src/core/longAction.ts`, `LongActions.syncInterruption`, wakes a sleeper and
 clears the interruption; `src/core/sim.ts`, `Simulation.checkInterruptions`,
 keeps emitted events live.
@@ -423,7 +425,7 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
    A held item must never become a fist or redirect to the other hand, and a
    restored physical fist sequence must not be reseeded from dominance.
-7. **Long-action start and speed near a hostile (BR, 2026-10-05 morning playtest; 20:09):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". To the 20:09 question about speed, BR answered "fast forward". BR (2026-10-05 22:28) added: "(B) - it's up to the player to make the area safe for them to do the long action. We're not holding hands". A nearby or aware hostile neither refuses nor interrupts an action; emitted interrupt events still stop it.
+7. **Long-action start and speed near a hostile (BR, 2026-10-05 morning playtest; 20:09):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". To the 20:09 question about speed, BR answered "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording was "No: only a hit or another real event (hunger, thirst...) wakes you". BR said "it's up to the player to make the area safe for them to do the long action. We're not holding hands". A nearby or aware hostile neither refuses nor interrupts an action; emitted interrupt events still stop it.
 8. **Handling gates primary actions (`d77-1`, 2026-10-05):** BR reported,
    "bug: while in the process of wielding something, you can attack". While handling
    is busy, primary actions from either hand are refused. Whether a one-handed job
