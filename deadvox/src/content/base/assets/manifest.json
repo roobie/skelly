@@ -357,6 +357,15 @@
         "assets/audio/gunshot-akm-pbs1-02.ogg"
       ],
       "changes": "BR's original synthetic csound shots. Trimmed trailing silence only, then converted from 48 kHz 24-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
+    },
+    {
+      "title": "BR project-recorded nope voice",
+      "url": "https://github.com/roobie/skelly",
+      "author": "BR",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/audio/player-nope-01.ogg"],
+      "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing."
     }
   ]
 }
