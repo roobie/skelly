@@ -141,8 +141,7 @@ export class AimController {
   /** Discard unaccepted overflow and rebase look sampling for the accepted camera shift. */
   applyViewPitchShift(requested: number, applied: number): void {
     if (
-      !Number.isFinite(requested) ||
-      !Number.isFinite(applied) ||
+      !(Number.isFinite(requested) && Number.isFinite(applied)) ||
       Math.abs(requested - this.viewPitchShift) > 1e-9 ||
       Math.abs(applied) > Math.abs(requested) + 1e-9 ||
       (applied !== 0 && Math.sign(applied) !== Math.sign(requested))

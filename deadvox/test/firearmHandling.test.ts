@@ -137,7 +137,10 @@ describe('debug firearm handling', () => {
     const angle = Math.acos(
       Math.max(
         -1,
-        Math.min(1, baseDirection.reduce((sum, value, index) => sum + value * direction[index]!, 0)),
+        Math.min(
+          1,
+          baseDirection.reduce((sum, value, index) => sum + value * direction[index]!, 0),
+        ),
       ),
     );
     expect(angle).toBeGreaterThan(0);

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import { assertAimState, type AimStep } from '../src/core/aim.ts';
+import { type AimStep, assertAimState } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { pelletShot } from '../src/core/pellets.ts';
 import {

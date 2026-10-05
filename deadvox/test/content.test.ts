@@ -35,11 +35,12 @@ describe('content', () => {
       size: [1, 1],
       firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01 },
     };
-    const issues = buildRegistry([{ source, data: { items: [item] } }]).issues;
+    const { issues } = buildRegistry([{ source, data: { items: [item] } }]);
     expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
-    expect(
-      buildRegistry([{ source, data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] } }]).issues,
-    ).toEqual([]);
+    const { issues: zeroConeIssues } = buildRegistry([
+      { source, data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] } },
+    ]);
+    expect(zeroConeIssues).toEqual([]);
   });
 
   it('requires a firearm dispersion cone while permitting a pump with no extra cone', () => {
