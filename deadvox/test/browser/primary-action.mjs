@@ -564,9 +564,31 @@ try {
     'a real held number uses pocket food',
   );
   assert.equal(quickbarUse.rightHandUid, quickbarFood.heldUid, 'pocket use leaves the held weapon where it is');
+  const bookUid = await page.evaluate(() => {
+    const { inventory, session, clearHand, setHand } = globalThis.primaryActionTest;
+    session.sim.ignoreUnsafe = true; // Match the debug time-skip admission for this hand-action probe.
+    clearHand('right');
+    const book = inventory.create('field_manual');
+    setHand('right', book);
+    return book.uid;
+  });
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(
+    (uid) => {
+      const { job } = globalThis.primaryActionTest.session.sim.actions;
+      return job?.jobType === 'reading' && !job.stopped && job.bookUid === uid;
+    },
+    bookUid,
+    { timeout: 10_000 },
+  );
+  await page.evaluate(() => {
+    const { session } = globalThis.primaryActionTest;
+    session.sim.actions.stop();
+    session.sim.ignoreUnsafe = false;
+  });
   assert.deepEqual(pageErrors, [], `browser errors: ${pageErrors.join('; ')}`);
   process.stdout.write(
-    'primary-action browser contract passed: hand bindings, attachment, unsupported hints, alternating fists, debug firearm cases, head-locked AKM shot audio, inventory-owned U/cock labels, and a real quickbar hold.\n',
+    'primary-action browser contract passed: hand bindings, attachment, held-book reading, unsupported hints, alternating fists, debug firearm cases, head-locked AKM shot audio, inventory-owned U/cock labels, and a real quickbar hold.\n',
   );
 } finally {
   await browser?.close();

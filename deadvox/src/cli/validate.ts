@@ -53,15 +53,10 @@ for (const issue of reachable.issues) {
   const origin = origins.get(`recipes:${issue.recipe}`)!;
   issues.push({ source: origin.source, path: origin.path + issue.path, message: issue.message });
 }
-for (const pending of reachable.pending) {
-  const origin = origins.get(`recipes:${pending.recipe}`)!;
-  console.log(`PENDING  ${origin.source} ${origin.path}${pending.path}: ${pending.message}`);
-}
 console.log(`Component closure: ${reachable.components.size} item types (${reachable.found.size} found)`);
 console.log(`Reachable components: ${[...reachable.components].sort().join(', ')}`);
 console.log(`Content count: ${reachable.count} reachable / ${reachable.defined} defined eligible types`);
 console.log(`Defined but unreachable: ${reachable.unreachable.join(', ') || 'none'}`);
-console.log(`${reachable.pending.length} pending prerequisite(s); not accepted until their source checks land`);
 issues.push(...requiredSoundIssues(registry, join(BASE, 'sounds.json')));
 let assets = 0;
 for (const source of manifests) {

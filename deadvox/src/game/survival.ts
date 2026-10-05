@@ -146,12 +146,19 @@ export class Survival {
         return undefined;
       case 'switch':
         return this.switchLight(item);
-      case 'read':
-        if (!option.readable) {
-          throw new Error('Invalid readable core option');
+      case 'read': {
+        const definition = defOf(this.inventory.registry, item.type);
+        if (definition.book) {
+          const reason = this.sim.actions.beginReading(item.uid);
+          if (reason) {
+            return reason;
+          }
         }
-        this.hooks.read(option.readable);
+        if (option.readable) {
+          this.hooks.read(option.readable);
+        }
         return undefined;
+      }
       default:
         throw new Error('Invalid usable core option');
     }
@@ -213,7 +220,7 @@ export class Survival {
     }
     if (def.food || def.battery) {
       lines.push('U: use in hand · hold its quickbar key: use from its current location');
-    } else if (def.light || def.readable) {
+    } else if (def.light || def.readable || def.book) {
       lines.push('U: use in hand · hold its quickbar key: use in hand');
     }
     return lines;
