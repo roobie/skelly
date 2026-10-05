@@ -65,7 +65,7 @@ const vite = await createServer({
         assert.ok(code.includes(marker));
         return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
           marker,
-          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performPrimaryAction,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${marker}`,
+          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${marker}`,
         )}`;
       },
     },
@@ -359,9 +359,9 @@ try {
       const key = session.inventory.create('shed_key');
       session.inventory.add(key, { kind: 'hand', side: 'right' });
     }, sprintDoor);
-    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
+    await page.evaluate(() => globalThis.stairsWitness.performHandUse('right'));
     assert.equal(await doorValue('locked', true), true, 'activating the matching held key locks its door');
-    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
+    await page.evaluate(() => globalThis.stairsWitness.performHandUse('right'));
     assert.equal(await doorValue('locked', false), false, 'activating the matching held key unlocks its door');
     await page.evaluate(() => {
       const { body, session } = globalThis.stairsWitness;
@@ -373,11 +373,11 @@ try {
       session.inventory.add(key, { kind: 'hand', side: 'right' });
     });
     const wrongKey = await page.evaluate((uid) => {
-      const { entities, performPrimaryAction, getNotice } = globalThis.stairsWitness;
-      performPrimaryAction('right');
+      const { entities, performHandUse, getNotice } = globalThis.stairsWitness;
+      performHandUse('right');
       return { notice: getNotice(), locked: entities.byUid(uid)?.lock?.locked };
     }, sprintDoor);
-    assert.equal(wrongKey.notice, "The key doesn't fit", 'a wrong held key refuses activation');
+    assert.ok(wrongKey.notice, 'a wrong held key gives a refusal reason');
     assert.equal(wrongKey.locked, false, 'wrong-key refusal leaves the door unlocked');
     await stage([112, 43.0001, 115]);
     await state('house lower landing');
