@@ -10,7 +10,7 @@ import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
 import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -66,6 +66,43 @@ const blockName = (id: number): string => {
   return found;
 };
 
+const fixtureHamlet = new Hamlet(seed, registry, scale);
+const fixtureColumns: [number, number][] = [];
+for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.bounds.z1 - 1); cz++) {
+  for (let cx = toChunk(fixtureHamlet.bounds.x0); cx <= toChunk(fixtureHamlet.bounds.x1 - 1); cx++) {
+    if (fixtureHamlet.furnitureIn(cx, cz).length > 0 || fixtureHamlet.zombiesIn(cx, cz).length > 0) {
+      fixtureColumns.push([cx, cz]);
+    }
+  }
+}
+const fixtureTerrain: Terrain = {
+  seed,
+  blocks: { grass: blockId('grass'), dirt: blockId('dirt'), stone: blockId('stone'), sand: blockId('sand') },
+  scale,
+  surface: fixtureHamlet.surface,
+  stamp: (chunk) => fixtureHamlet.stamp(chunk),
+};
+const fixtureChunks = fixtureColumns.flatMap(([cx, cz]) => generateColumn(fixtureTerrain, cx, cz));
+
+const cloneFixtureChunk = (source: Chunk): Chunk => {
+  const copy = new Chunk(source.cx, source.cy, source.cz, source.uniformId ?? 0);
+  const data = source.raw();
+  if (!data) {
+    return copy;
+  }
+  for (let y = 0; y < CHUNK; y++) {
+    for (let z = 0; z < CHUNK; z++) {
+      for (let x = 0; x < CHUNK; x++) {
+        const id = data[localIndex(x, y, z)]!;
+        if (id !== 0) {
+          copy.set(x, y, z, id);
+        }
+      }
+    }
+  }
+  return copy;
+};
+
 type Runtime = ReturnType<typeof createRuntime>;
 
 // The scenario factory builds the same session the game does (src/game/session.ts) and only
@@ -75,29 +112,13 @@ type Runtime = ReturnType<typeof createRuntime>;
 const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>, fixture: boolean | 'right' | 'left' = false) => {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
-  const hamlet = new Hamlet(seed, registry, scale);
-  const { x0, z0, x1, z1 } = hamlet.bounds;
-  const columns: [number, number][] = [];
-  for (let cz = toChunk(z0); cz <= toChunk(z1 - 1); cz++) {
-    for (let cx = toChunk(x0); cx <= toChunk(x1 - 1); cx++) {
-      if (hamlet.furnitureIn(cx, cz).length > 0 || hamlet.zombiesIn(cx, cz).length > 0) {
-        columns.push([cx, cz]);
-      }
-    }
-  }
-  const terrain: Terrain = {
-    seed,
-    blocks: { grass: blockId('grass'), dirt: blockId('dirt'), stone: blockId('stone'), sand: blockId('sand') },
-    scale,
-    surface: hamlet.surface,
-    stamp: (chunk) => hamlet.stamp(chunk),
-  };
+  const hamlet = fixtureHamlet;
+  const columns = fixtureColumns;
+  const { x1 } = hamlet.bounds;
   const world = new World();
   const sharedEntities = new BlockEntities(registry);
-  for (const [cx, cz] of columns) {
-    for (const chunk of generateColumn(terrain, cx, cz)) {
-      world.addChunk(chunk);
-    }
+  for (const chunk of fixtureChunks) {
+    world.addChunk(cloneFixtureChunk(chunk));
   }
   const [editCx, editCz] = columns[0]!;
   const editChunk = [...world.chunks.values()].find((chunk) => chunk.cx === editCx && chunk.cz === editCz)!;
