@@ -72,7 +72,7 @@ type Runtime = ReturnType<typeof createRuntime>;
 // supplies what the DOM would: controls, sound output, and the hamlet's world. Fresh and
 // restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.
-const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
+const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>, restFixture = false) => {
   const hamlet = new Hamlet(seed, registry, scale);
   const { x0, z0, x1, z1 } = hamlet.bounds;
   const columns: [number, number][] = [];
@@ -106,6 +106,18 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
   // Where the player is looking: the game reads this from its input, here it is plain state.
   const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
+  const spawn: Vec3 = [sx! + awayFromShamblers, sy! + 400, sz!];
+  const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
+  if (restFixture && !snapshot) {
+    const bed = registry.furniture.get('bed');
+    if (!bed) {
+      throw new Error('Snapshot fixture has no bed definition');
+    }
+    const placedBed = sharedEntities.add({ type: 'bed', pos: restFixturePos, size: bed.size, facing: 'n' });
+    if (!placedBed) {
+      throw new Error('Could not place the snapshot rest fixture');
+    }
+  }
   const session = createSession({
     registry,
     world,
@@ -115,7 +127,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     scale,
     seed,
     start: defaultClock.start,
-    spawn: [sx! + awayFromShamblers, sy! + 400, sz!],
+    spawn,
     ready: () => true,
     controls: {
       active: () => false,
@@ -183,8 +195,19 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     }
     world.setBlock(editCx * CHUNK + 1, editChunk.cy * CHUNK + 1, editCz * CHUNK + 1, blockId('planks'));
   }
+  const restAnchor = restFixture
+    ? [...entities.all].find(
+        (entity) =>
+          entity.type === 'bed' && entity.pos.every((coordinate, axis) => coordinate === restFixturePos[axis]),
+      )
+    : [...entities.all].find((entity) => entities.defOf(entity).rest?.sleep);
+  const restAnchorUid = restAnchor?.uid;
+  if (restAnchorUid === undefined) {
+    throw new Error('Snapshot fixture has no sleepable furniture');
+  }
   return {
     session,
+    restAnchorUid,
     hamlet,
     columns,
     world,
@@ -207,6 +230,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
 
 const capture = (runtime: Runtime) =>
   runtime.session.snapshot({ worldId: `world-${seed}`, characterId: 'character-1' });
+const startRest = (runtime: Runtime, kind: 'rest' | 'sleep') => runtime.rest.start(kind, runtime.restAnchorUid);
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
 const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
@@ -943,8 +967,8 @@ describe('restored session world state', () => {
 describe('hamlet save/load continuation', () => {
   for (const interruption of [false, true]) {
     it(`deeply matches N steps with K/save/load/N−K (${interruption ? 'interrupted' : 'active'} rest)`, () => {
-      const uninterrupted = createRuntime();
-      const split = createRuntime();
+      const uninterrupted = createRuntime(undefined, true);
+      const split = createRuntime(undefined, true);
       expect(uninterrupted.columns.length).toBeGreaterThan(0);
       expect([...uninterrupted.zombies.store.entries()].length).toBeGreaterThan(0);
       expect(uninterrupted.spawner.snapshotState().length).toBeGreaterThan(uninterrupted.zombies.store.size);
@@ -953,8 +977,8 @@ describe('hamlet save/load continuation', () => {
       );
       expect(uninterrupted.player.body.onGround).toBe(false);
       expect(uninterrupted.inventory.hands.right?.pockets?.[0]).toHaveLength(1);
-      expect(uninterrupted.rest.start('sleep')).toBeUndefined();
-      expect(split.rest.start('sleep')).toBeUndefined();
+      expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
+      expect(startRest(split, 'sleep')).toBeUndefined();
       if (interruption) {
         uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
         split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
@@ -987,10 +1011,10 @@ describe('hamlet save/load continuation', () => {
   }
 
   it('preserves an active-sleep interruption emitted between frames across save/load', () => {
-    const uninterrupted = createRuntime();
-    const split = createRuntime();
-    expect(uninterrupted.rest.start('sleep')).toBeUndefined();
-    expect(split.rest.start('sleep')).toBeUndefined();
+    const uninterrupted = createRuntime(undefined, true);
+    const split = createRuntime(undefined, true);
+    expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
+    expect(startRest(split, 'sleep')).toBeUndefined();
     advance(uninterrupted, 40);
     advance(split, 40);
 
@@ -1008,10 +1032,10 @@ describe('hamlet save/load continuation', () => {
   }, 15_000);
 
   it('preserves a pending sleep interruption across a paused snapshot and load', () => {
-    const uninterrupted = createRuntime();
-    const split = createRuntime();
-    expect(uninterrupted.rest.start('sleep')).toBeUndefined();
-    expect(split.rest.start('sleep')).toBeUndefined();
+    const uninterrupted = createRuntime(undefined, true);
+    const split = createRuntime(undefined, true);
+    expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
+    expect(startRest(split, 'sleep')).toBeUndefined();
     advance(uninterrupted, 40);
     advance(split, 40);
 
@@ -1029,8 +1053,8 @@ describe('hamlet save/load continuation', () => {
   }, 15_000);
 
   it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
-    const original = createRuntime();
-    original.rest.start('rest');
+    const original = createRuntime(undefined, true);
+    expect(startRest(original, 'rest')).toBeUndefined();
     advance(original, 12);
     prepareAudioContinuation(original);
     const saved = capture(original);
@@ -1350,8 +1374,8 @@ describe('canonical save format', () => {
   });
 
   it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
-    const source = createRuntime();
-    source.rest.start('rest');
+    const source = createRuntime(undefined, true);
+    expect(startRest(source, 'rest')).toBeUndefined();
     advance(source, 17);
     prepareAudioContinuation(source);
     const snapshot = capture(source);
@@ -1378,8 +1402,8 @@ describe('canonical save format', () => {
     advance(loaded, 90);
     expect(inspect(loaded)).toEqual(inspect(source));
 
-    const interrupted = createRuntime();
-    expect(interrupted.rest.start('sleep')).toBeUndefined();
+    const interrupted = createRuntime(undefined, true);
+    expect(startRest(interrupted, 'sleep')).toBeUndefined();
     advance(interrupted, 40);
     interrupted.sim.emit({ kind: 'interrupt', reason: 'format round-trip' });
     const interruptedSnapshot = capture(interrupted);

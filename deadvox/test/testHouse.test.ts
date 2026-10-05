@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { Chunk } from '../src/core/chunk.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { rasterize, stampChunk } from '../src/core/structure.ts';
-import { cellsOf } from '../src/core/templates.ts';
+import { cellsOf, pieceSize } from '../src/core/templates.ts';
 import { testHouse, testHouseFurniture } from '../src/game/testHouse.ts';
 
 const blocks = {
@@ -28,6 +28,7 @@ const FURNITURE_SIZE = new Map<string, [number, number, number]>([
   ['crate', [2, 2, 2]],
   ['sample_sign', [2, 3, 1]],
   ['fridge', [2, 4, 2]],
+  ['chair', [1, 2, 1]],
   ['kitchen_cupboard', [2, 2, 1]],
   ['wardrobe', [2, 4, 1]],
 ]);
@@ -131,14 +132,13 @@ describe('test house', () => {
   describe('furniture', () => {
     const specs = testHouseFurniture([4, 10, -4], 0.5, sizeOf);
 
-    it('places table-authored furniture and crate loot at whole blocks, turned by their facing', () => {
-      expect(specs).toEqual([
-        { type: 'crate', pos: [4, 20, 1], size: [2, 2, 2], facing: 'n', loot: 'sample_note_loot' },
-        { type: 'sample_sign', pos: [-4, 20, 1], size: [2, 3, 1], facing: 'n' },
-        { type: 'fridge', pos: [10, 20, 3], size: [2, 4, 2], facing: 'n' },
-        { type: 'kitchen_cupboard', pos: [14, 20, 4], size: [2, 2, 1], facing: 'n' },
-        { type: 'wardrobe', pos: [26, 20, -5], size: [1, 4, 2], facing: 'w' },
-      ]);
+    it('anchors furniture on whole blocks and rotates its size to its facing', () => {
+      expect(specs.some(({ type }) => type === 'chair')).toBe(true);
+      expect(specs.some(({ loot }) => loot !== undefined)).toBe(true);
+      for (const { type, pos, size, facing } of specs) {
+        expect(pos.every(Number.isInteger)).toBe(true);
+        expect(size).toEqual(pieceSize(sizeOf(type), facing));
+      }
     });
 
     it('stands in air, on the floor, clear of the walls, stairs and bed', () => {

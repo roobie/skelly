@@ -72,7 +72,7 @@ describe('live craft commands', () => {
     expect(r.commands.start('torch')).toBeUndefined();
     r.sim.actions.stop();
     expect(r.commands.currentUid).toBe(r.inventory.hands.right!.uid);
-    expect(r.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    expect(r.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
     expect(r.commands.currentUid).toBeUndefined();
   });
   it('a stopped sleep releases Continue to the held work', () => {
@@ -80,7 +80,7 @@ describe('live craft commands', () => {
     expect(r.commands.start('torch')).toBeUndefined();
     r.sim.actions.stop();
     const workUid = r.inventory.hands.right!.uid;
-    expect(r.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    expect(r.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
     r.sim.actions.stop();
     expect(r.commands.currentUid).toBe(workUid);
   });

@@ -380,6 +380,7 @@ const longAction = obj({
       rest: opt(
         obj({
           kind: enumeration(['rest', 'sleep']),
+          furnitureUid: positiveInt,
           label: str({ nonEmpty: true }),
           rate: finite,
           startFatigue: num({ min: 0, max: 100 }),
