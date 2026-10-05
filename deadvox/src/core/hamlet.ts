@@ -1,8 +1,5 @@
-// Slice 1's hamlet (SLICE-1.md, milestone 1.5): a short asphalt road with five
-// buildings on it, near spawn. Everything here is a pure function of the seed and a
-// position: where the hamlet goes, the ground under its road and lots, which blocks
-// its buildings put in a chunk, and what each container holds. So any chunk can be
-// generated on its own, in any order, and comes out the same.
+// Pure functions keep chunk generation independent of order and repeatable
+// for the same seed.
 
 import { smoothstep } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';

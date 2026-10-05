@@ -6,7 +6,7 @@ import type { HandSide } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { ItemDef } from '../core/schema.ts';
 
-export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'key' | 'none';
+export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'none';
 
 export const ACTION_HAND_BINDINGS = {
   primaryClick: 'right',
@@ -14,7 +14,7 @@ export const ACTION_HAND_BINDINGS = {
 } as const satisfies Readonly<Record<'primaryClick' | 'leftHandKey', HandSide>>;
 
 export type PrimaryActionSelection =
-  | { kind: 'melee' | 'light' | 'firearm' | 'key'; hand: HandSide; item: Item }
+  | { kind: 'melee' | 'light' | 'firearm' | 'key' | 'unpack'; hand: HandSide; item: Item }
   | { kind: 'fists'; hand?: HandSide }
   | { kind: 'none'; item: Item }
   | { kind: 'noop' };
@@ -30,6 +30,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'light', supports: (definition) => definition.light !== undefined },
   { kind: 'firearm', supports: (definition) => definition.firearm !== undefined },
   { kind: 'key', supports: (definition) => definition.key !== undefined },
+  { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
 ];
 
 export const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>
@@ -49,6 +50,10 @@ export const selectPrimaryAction = (
     return hands.left ? { kind: 'fists', hand: 'right' } : { kind: 'fists' };
   }
 
-  const kind = primaryActionForDefinition(defOf(registry, item.type));
+  const definition = defOf(registry, item.type);
+  const kind = primaryActionForDefinition(definition);
+  if (kind === 'melee' && item.condition <= 0) {
+    return { kind: 'none', item };
+  }
   return kind === 'none' ? { kind: 'none', item } : { kind, hand, item };
 };

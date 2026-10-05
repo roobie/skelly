@@ -2,6 +2,10 @@
 read_if:
   - you decide how sunlight and shadows should read in play
   - you trade near-player shadow detail against distance
+  - you're choosing world scale, view distance or performance targets
+  - you're changing the rules for time, survival, light or zombies
+  - you change the game's design, especially held-item feedback or hand ownership
+  - you reconcile BR's rulings with player interaction and presentation
 ---
 
 # deadvox — design
@@ -11,7 +15,6 @@ together with:
 
 - [EPIC.md](EPIC.md): the road to version 1.
 - [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle them.
-- [SLICE-1.md](SLICE-1.md): the first playable deliverable.
 - [INTERACTIONS.md](INTERACTIONS.md): how moving, using, crafting and appliances
   work in the code, and the contract with the UI (draft).
 - [PROJECT.md](PROJECT.md): the current code, how to run it, and technical decisions.
@@ -69,7 +72,7 @@ so keep their number small.
 | | |
 | --- | --- |
 | World unit | **1 unit = 1 metre.** Physics, rendering and content all use metres, and speeds are in m/s |
-| Block size | **0.5 m** (decision; measured and play-tested in milestone 1.0, see SLICE-1.md Results). One constant, `BLOCK_SIZE`, converts between blocks and metres |
+| Block size | **0.5 m**, the measured and play-tested choice. `BLOCK_SIZE` converts between blocks and metres |
 | View distance | **96 m** by default. A setting (64, 96 or 128 m) adapts it to the hardware |
 | Chunk | 32³ blocks = a 16 m cube |
 | Player | 1.8 m tall, 0.6 m wide, eyes at 1.62 m. Steps up 0.5 m (one block) without jumping. A jump clears about 1 m |
@@ -77,9 +80,13 @@ so keep their number small.
 | World height | Start at −48 m to +80 m (256 blocks, 8 chunks). Labs need depth below ground; towers need height above it |
 | Mass, liquids, item size | Grams and millilitres, as whole numbers. In inventories, an item takes w × h cells |
 
-Half-metre blocks make interiors, furniture, vehicles and body-sized details
-readable without a separate prop system. The cost is 8× the blocks per volume;
-[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks) covers the budget.
+The 2026-09-25 feel test found 0.5 m blocks far better than 1 m: doorways,
+furniture and interiors read at a human scale, and stairs are walked instead of
+jumped. A 0.25 m look on 2026-10-01 did not feel better and would have cost
+about eight times as many chunks at the same view radius, plus a redraw of
+building templates. The frame budget and why the default is 96 m are in
+[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks). The choice is implemented by
+`src/core/scale.ts`, `BLOCK_SIZE`.
 
 ### Block shapes
 
@@ -290,6 +297,21 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   aimed at its target if it has one: "using the key means wielding it, and
   activating it on the door". Ammo boxes are unpacked the same way, never from
   the inventory screen, and no modifier chord bypasses it.
+- **Rummage feedback (BR, 2026-10-04, d50):** "there is no anim for when
+  opening the box of shells / i think we should add a generic \"hands go
+  together and rummage with the held item\"". Handling needs visible feedback,
+  not a second action owner. See `src/render/rummagePose.ts`, `rummageFrame`
+  and `RUMMAGE_POSE`, and `src/render/hands.ts`, `HeldItems.poseRummage`.
+  BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
+  On stowing: "putting away the shotgun from being wielded also plays rummaging
+  anim - i think it kinda fits". The longer-term direction is "over time, we'll
+  maybe add more specific anims."; shell-loading feedback is d53, after d47.
+  Approval does not pin `RUMMAGE_POSE` tuning: see
+  `../docs/deferred-assertions.md`.
+  Following #213's merge (d50-3), compass handling must not introduce a second
+  rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
+  `HeldItems.poseRummage`. The needle's world-heading owner remains independent
+  of hand motion: see `src/render/compass.ts`, `createCompass`.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
@@ -481,8 +503,19 @@ and the sounds for severing and destruction (the audio manifest).
 
 ## Light
 
-Nights are dark and interiors are pitch black, so you have to bring light. Light
-is the visual side of noise: it lets you see, and it lets them see you.
+Nights should be dark, and voxel-lit interiors pitch black, so you have to
+bring light. Light is the visual side of noise: it lets you see, and it lets
+them see you.
+
+Interiors need voxel light to become darker than the outdoors. Until that
+arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
+A carried beam remains a three.js light because it moves every frame, unlike
+block light. The zombie light check keeps sky visibility separate from carried
+light, so adding voxel sky light won't change the carried-light rule. Keep time
+of day in the sky/fog renderer, not baked into chunks; voxel sunlight can then
+join AO in vertex colour. See `src/render/flashlight.ts`, `Flashlight.update`,
+`src/core/zombies.ts`, `isLit`, `src/render/sky.ts`, `applySky`, and
+`src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
 

@@ -338,7 +338,8 @@ body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 300px;
+  /* Packing changes must not put item click points beyond the pane's clipped hit-test area. */
+  grid-template-columns: minmax(0, 1.2fr) minmax(min-content, 1fr) minmax(180px, 1fr);
   gap: 12px;
 }
 .inv-pane,

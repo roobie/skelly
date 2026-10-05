@@ -2,6 +2,8 @@
 import { html, nothing, render } from 'lit-html';
 import type { CraftRow, CraftStatus } from './craftReadout.ts';
 
+const REPAIR_PREFIX = /^Repair: /;
+
 export interface CraftPanelActions {
   start: (id: string) => void;
   prefer: (id: string, group: number, item: string) => void;
@@ -28,7 +30,7 @@ export const renderCrafting = (root: HTMLElement, rows: readonly CraftRow[], act
       ${row.qualities.map((q) => html`<div class=${q.best < q.required ? 'craft-gap' : ''}>${q.name}: best ${q.best} / needs ${q.required}</div>`)}
       ${row.skills.map((s) => html`<div class=${s.available < s.required ? 'craft-gap' : ''}>${s.name}: level ${s.available} / needs ${s.required}</div>`)}
       ${row.workstation ? html`<div>Station: ${row.workstation}</div>` : nothing}
-      <button class="craft-start" type="button" ?disabled=${row.reason !== undefined} @click=${() => actions.start(row.id)}>Craft ${row.name.toLowerCase()}</button>
+      <button class="craft-start" type="button" ?disabled=${row.reason !== undefined} @click=${() => actions.start(row.id)}>${row.kind === 'repair' ? 'Repair' : 'Craft'} ${row.name.replace(REPAIR_PREFIX, '').toLowerCase()}</button>
       ${row.reason ? html`<p class="craft-gap craft-reason">${row.reason}</p>` : nothing}
     </article>`,
     )}

@@ -1,6 +1,3 @@
-// The results page shown after the last run: a table, the environment, and buttons
-// to copy the results as Markdown (for SLICE-1.md) or JSON.
-
 import type { ActorRenderer } from '../game/config.ts';
 import type { BenchRecord, RunResult, ShamblerRunResult } from './plan.ts';
 

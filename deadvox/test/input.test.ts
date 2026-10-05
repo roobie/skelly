@@ -1,7 +1,40 @@
 import { describe, expect, it, vi } from 'vitest';
-import { Input, isMenuOpeningKey, KEY_BINDINGS, nextMenuCursor, worldActionForKey } from '../src/game/input.ts';
+import {
+  Input,
+  isMenuOpeningKey,
+  KEY_BINDINGS,
+  nextMenuCursor,
+  restKindForControl,
+  worldActionForKey,
+} from '../src/game/input.ts';
 
 describe('menu input', () => {
+  it('keyboard controls expose sleep but no rest binding for R or dollar', () => {
+    expect(restKindForControl('KeyR')).toBeUndefined();
+    expect(restKindForControl('$')).toBeUndefined();
+    expect(restKindForControl('KeyL')).toBe('sleep');
+  });
+
+  it('Backspace suppresses browser navigation in locked play but keeps menu text editing', () => {
+    const listeners = new Map<string, (event: KeyboardEvent) => void>();
+    const target = { addEventListener: () => undefined } as unknown as HTMLElement;
+    vi.stubGlobal('addEventListener', (type: string, listener: (event: KeyboardEvent) => void) =>
+      listeners.set(type, listener),
+    );
+    vi.stubGlobal('document', { pointerLockElement: target, addEventListener: () => undefined });
+    try {
+      const input = new Input(target);
+      const preventDefault = vi.fn();
+      const event = { code: 'Backspace', repeat: false, preventDefault } as unknown as KeyboardEvent;
+      listeners.get('keydown')!(event);
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+      input.menuPointer = true;
+      listeners.get('keydown')!(event);
+      expect(preventDefault).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
   it('surfaces a native pointer-lock promise rejection without an unhandled rejection', async () => {
     const error = new Error('The browser failed to lock the pointer');
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
@@ -66,6 +99,49 @@ describe('menu input', () => {
         } else {
           Reflect.deleteProperty(globalThis, key);
         }
+      }
+    }
+  });
+
+  it('does not queue primary clicks rejected at press time', () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener');
+    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
+    const targetListeners = new Map<string, EventListener>();
+    const target = {
+      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
+        if (typeof listener === 'function') {
+          targetListeners.set(type, listener);
+        }
+      },
+    } as unknown as HTMLElement;
+    Object.defineProperty(globalThis, 'addEventListener', {
+      configurable: true,
+      value: () => undefined,
+    });
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { pointerLockElement: target, addEventListener: () => undefined },
+    });
+    let primaryActionAllowed = false;
+    try {
+      const input = new Input(target, () => primaryActionAllowed);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(false);
+      expect(input.intent().primaryActionHeld).toBe(false);
+      primaryActionAllowed = true;
+      expect(input.intent().primaryAction).toBe(false);
+      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
+      expect(input.intent().primaryAction).toBe(true);
+    } finally {
+      if (original) {
+        Object.defineProperty(globalThis, 'addEventListener', original);
+      } else {
+        Reflect.deleteProperty(globalThis, 'addEventListener');
+      }
+      if (originalDocument) {
+        Object.defineProperty(globalThis, 'document', originalDocument);
+      } else {
+        Reflect.deleteProperty(globalThis, 'document');
       }
     }
   });

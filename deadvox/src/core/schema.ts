@@ -135,6 +135,7 @@ const WearableSchema = strictObject({
   /** 0–100: how much it slows and hampers you. */
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
+  wearPerHit: optional(Fraction),
 });
 
 const FoodSchema = strictObject({
@@ -161,12 +162,19 @@ const WeaponSchema = strictObject({
     stamina: NonNegative,
     /** Impulse delivered by a melee hit, in N·s. */
     impulse: optional(NonNegative),
+    /** Condition lost when this weapon lands a melee hit. */
+    wearPerHit: optional(Fraction),
     type: picklist(['blunt', 'cut', 'pierce']),
   }),
 });
 
-// Capability marker for primary-action dispatch. d15 handles debug shots and spent cases only—no hits or ammo economy.
-const FirearmSchema = strictObject({});
+// Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
+const FirearmSchema = strictObject({ pump: optional(vBoolean()) });
+const AmmoSchema = strictObject({
+  calibre: CalibreId,
+  pellets: pipe(Count, minValue(1), maxValue(64)),
+  diameterMm: Positive,
+});
 
 const LightSchema = strictObject({
   /** Metres it lights up. */
@@ -214,6 +222,9 @@ export const ItemSchema = strictObject({
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
+  ammo: optional(AmmoSchema),
+  /** Sealed, non-container payload: held primary activation opens one package. */
+  unpack: optional(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
   light: optional(LightSchema),
   readable: optional(ReadableSchema),
   battery: optional(BatterySchema),
@@ -470,6 +481,10 @@ const Metres = pipe(
   number(),
   check((value) => Number.isFinite(value), 'must be finite'),
 );
+const Degrees = pipe(
+  number(),
+  check((value) => Number.isFinite(value), 'must be finite'),
+);
 const HalfMetres = pipe(
   Metres,
   check((v) => Number.isInteger(v * 2), 'must be snapped to 0.5 m'),
@@ -512,7 +527,11 @@ export const SiteLayoutSchema = strictObject({
   ground: HalfMetres,
   terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),
-  player: strictObject({ position: MetrePosition, yaw: Metres }),
+  player: strictObject({
+    position: MetrePosition,
+    /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
+    bearing: Degrees,
+  }),
   shamblers: array(strictObject({ type: Id, position: MetrePosition, chance: optional(Fraction) })),
   woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
   tracks: array(
@@ -651,6 +670,9 @@ const RecipeItemSchema = strictObject({ item: Id, count: pipe(Count, minValue(1,
 export const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
+  /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
+  kind: optional(picklist(['craft', 'repair'])),
+  repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
   /** Game minutes, not simulation seconds. */
   time: Positive,
   skills: record(Id, Count),

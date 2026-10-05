@@ -12,6 +12,8 @@ export interface CraftWork<Node> {
   elapsed: number;
   duration: number;
   components: Node[];
+  repairTargetUid?: number;
+  repairAmount?: number;
 }
 
 /** Scalar and pocket fields are shared by live items and their saved tree. */
@@ -89,6 +91,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
       throw new Error('Mechanical firearm state needs one firearm');
     }
     assertFirearmState(state.firearm);
+    assertPumpAmmunition(registry, state.type, state.firearm);
     if (state.firearm.roundType !== undefined) {
       defOf(registry, state.firearm.roundType);
     }
@@ -161,6 +164,9 @@ export class ItemFactory {
     if (def.container) {
       item.pockets = def.container.pockets.map(() => []);
     }
+    if (def.firearm?.pump) {
+      item.firearm = { chamber: 'empty', tube: [] };
+    }
     return item;
   }
 
@@ -188,6 +194,29 @@ export const defOf = (registry: Registry, type: string): ItemDef => {
     throw new Error(`content does not define item "${type}"`);
   }
   return def;
+};
+
+/** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
+export const assertPumpAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
+  const def = defOf(registry, type);
+  if (!def.firearm?.pump) {
+    if (state.tube !== undefined || state.landing !== undefined) {
+      throw new Error('Tube/landing state needs a pump firearm');
+    }
+    return;
+  }
+  const model = def.model ? registry.models.get(def.model) : undefined;
+  if (!(state.tube && model?.tube) || state.tube.length > model.tube.capacity || state.cycle?.mode === 'fire') {
+    throw new Error('Invalid exported pump tube state');
+  }
+  if ((state.chamber === 'round') !== (state.roundType !== undefined)) {
+    throw new Error('Pump chamber needs exactly one real cartridge');
+  }
+  for (const round of [...state.tube, ...(state.roundType ? [state.roundType] : [])]) {
+    if (defOf(registry, round).ammo?.calibre !== model.calibre) {
+      throw new Error('Pump ammunition calibre mismatch');
+    }
+  }
 };
 
 /** Width and height in cells, as placed. */
@@ -282,8 +311,27 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
     return x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
   });
 
-/** Grams, counting the stack and everything in its pockets. */
+/** Grams, counting the stack, ammunition and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
   defOf(registry, item.type).weight * item.count +
+  ammunitionWeight(registry, item) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
+
+const ammunitionWeight = (registry: Registry, item: Item): number => {
+  const state = item.firearm;
+  if (!state?.tube) {
+    return 0;
+  }
+  const rounds = [...state.tube, ...(state.roundType ? [state.roundType] : [])];
+  const modelId = defOf(registry, item.type).model;
+  const calibre = modelId ? registry.models.get(modelId)?.calibre : undefined;
+  const hull =
+    state.chamber === 'case'
+      ? [...registry.items.values()].find((def) => {
+          const model = def.model ? registry.models.get(def.model) : undefined;
+          return model?.id.startsWith('case_') && model.calibre === calibre;
+        })
+      : undefined;
+  return rounds.reduce((sum, type) => sum + defOf(registry, type).weight, hull?.weight ?? 0);
+};

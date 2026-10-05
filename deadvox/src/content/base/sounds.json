@@ -1,6 +1,60 @@
 {
   "sounds": [
     {
+      "id": "shotgun_blast",
+      "variants": ["assets/audio/shotgun-model12-01.ogg", "assets/audio/shotgun-model12-02.ogg"],
+      "gain": 1,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 100 }
+    },
+    {
+      "id": "shotgun_rack_back",
+      "variants": ["assets/audio/shotgun-rack-back.ogg"],
+      "gain": 0.65,
+      "pitchJitter": [1, 1],
+      "gainJitter": [0.95, 1.05],
+      "minIntervalSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shotgun_rack_forward",
+      "variants": ["assets/audio/shotgun-rack-forward.ogg"],
+      "gain": 0.65,
+      "pitchJitter": [1, 1],
+      "gainJitter": [0.95, 1.05],
+      "minIntervalSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shotgun_insert",
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
+      "gain": 0.5,
+      "pitchJitter": [0.98, 1.02],
+      "gainJitter": [0.95, 1.05],
+      "minIntervalSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "shotgun_hull_drop",
+      "variants": [
+        "assets/audio/shotgun-hull-01.ogg",
+        "assets/audio/shotgun-hull-02.ogg",
+        "assets/audio/shotgun-hull-03.ogg"
+      ],
+      "gain": 0.35,
+      "pitchJitter": [0.97, 1.03],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "player_hurt_light",
       "variants": [
         "assets/audio/player-hurt-light-01.ogg",

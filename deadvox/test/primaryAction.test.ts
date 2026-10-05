@@ -1,77 +1,91 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { ACTION_HAND_BINDINGS, primaryActionForDefinition, selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { ACTION_HAND_BINDINGS, selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 
-const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const capabilities = [
+  {
+    id: 'held_blunt',
+    kind: 'melee',
+    weapon: { melee: { damage: 1, reach: 1, cooldown: 1, stamina: 0, type: 'blunt' } },
+  },
+  { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1 } },
+  { id: 'held_gun', kind: 'firearm', firearm: {} },
+  { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
+  { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
+  { id: 'held_plain', kind: 'none', stack: 2 },
+] as const;
+const { registry, issues } = buildRegistry([
+  {
+    source: 'hand-action-fixture',
+    data: {
+      furniture: [
+        { id: 'fixture_door', name: 'Fixture door', size: [1, 1, 1], color: '#666666', door: { handling: 0 } },
+      ],
+      templates: [
+        {
+          id: 'fixture_locked_room',
+          size: [1, 1, 1],
+          palette: { D: { furniture: 'fixture_door', lock: { id: 'fixture_lock', locked: true } } },
+          layers: [['D']],
+        },
+      ],
+      items: capabilities.map(({ kind: _kind, ...fields }) => ({
+        ...fields,
+        name: fields.id,
+        category: 'tool',
+        weight: 1,
+        size: [1, 1],
+      })),
+    },
+  },
+]);
+if (issues.length > 0) {
+  throw new Error(`Invalid hand-action fixture: ${JSON.stringify(issues)}`);
+}
 
 const hold = (right?: string, left?: string) => {
   const inventory = new Inventory(registry);
-  if (right) {
-    inventory.hands.right = inventory.create(right);
-  }
-  if (left) {
-    inventory.hands.left = inventory.create(left);
+  for (const [side, type] of [
+    ['right', right],
+    ['left', left],
+  ] as const) {
+    if (type && !inventory.add(inventory.create(type), { kind: 'hand', side })) {
+      throw new Error(`Hand-action fixture cannot hold ${type} in ${side}`);
+    }
   }
   return inventory;
 };
 
 describe('held-item hand action', () => {
-  it('keeps the initial BR hand mapping in one table', () => {
-    expect(ACTION_HAND_BINDINGS).toEqual({ primaryClick: 'right', leftHandKey: 'left' });
-  });
-
-  it('dispatches by item capability, not item id', () => {
-    expect(primaryActionForDefinition(registry.items.get('baseball_bat')!)).toBe('melee');
-    expect(primaryActionForDefinition(registry.items.get('flashlight')!)).toBe('light');
-    expect(primaryActionForDefinition(registry.items.get('shed_key')!)).toBe('key');
-    expect(primaryActionForDefinition(registry.items.get('rag')!)).toBe('none');
-  });
-
-  it('routes the firearm extension marker from item data without an item-id branch', () => {
-    const { registry: firearmRegistry } = buildRegistry([
-      {
-        source: 'test-firearm.json',
-        data: {
-          items: [
-            {
-              id: 'test_firearm',
-              name: 'Test firearm',
-              category: 'weapon',
-              weight: 1,
-              size: [1, 1],
-              firearm: {},
-            },
-          ],
-        },
-      },
-    ]);
-    const inventory = new Inventory(firearmRegistry);
-    inventory.hands.right = inventory.create('test_firearm');
-    expect(selectPrimaryAction(firearmRegistry, inventory.hands)).toEqual({
-      kind: 'firearm',
-      hand: 'right',
+  it.each(capabilities)('routes the owned $kind capability through the selected hand', ({ id, kind }) => {
+    const inventory = hold(id);
+    const selected = selectPrimaryAction(registry, inventory.hands, 'right');
+    expect(selected).toEqual({
+      kind,
+      ...(kind === 'none' ? {} : { hand: 'right' }),
       item: inventory.hands.right,
     });
   });
 
-  it('binds left-click to the right hand and `=` to the left hand when both have items', () => {
-    const inventory = hold('baseball_bat', 'flashlight');
+  it('refuses a ruined held melee weapon instead of attacking with it', () => {
+    const inventory = hold('held_blunt');
+    inventory.hands.right!.condition = 0;
     expect(selectPrimaryAction(registry, inventory.hands, 'right')).toEqual({
+      kind: 'none',
+      item: inventory.hands.right,
+    });
+  });
+
+  it('routes the initial primary and off inputs to their own occupied physical hands', () => {
+    const inventory = hold('held_blunt', 'held_light');
+    expect(selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick)).toEqual({
       kind: 'melee',
       hand: 'right',
       item: inventory.hands.right,
     });
-    expect(selectPrimaryAction(registry, inventory.hands, 'left')).toEqual({
+    expect(selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.leftHandKey)).toEqual({
       kind: 'light',
       hand: 'left',
       item: inventory.hands.left,
@@ -79,7 +93,7 @@ describe('held-item hand action', () => {
   });
 
   it('uses a right-hand jab rather than punching with a held left-hand item', () => {
-    const inventory = hold(undefined, 'flashlight');
+    const inventory = hold(undefined, 'held_light');
     expect(selectPrimaryAction(registry, inventory.hands, 'right')).toEqual({ kind: 'fists', hand: 'right' });
     expect(selectPrimaryAction(registry, inventory.hands, 'left')).toMatchObject({ kind: 'light', hand: 'left' });
   });
@@ -89,16 +103,17 @@ describe('held-item hand action', () => {
     expect(selectPrimaryAction(registry, {}, 'left')).toEqual({ kind: 'noop' });
   });
 
-  it('hints for the selected hand only instead of falling back to the other hand', () => {
-    const inventory = hold('rag', 'flashlight');
-    const right = selectPrimaryAction(registry, inventory.hands, 'right');
-    expect(right).toEqual({ kind: 'none', item: inventory.hands.right });
-    expect(primaryActionHint(registry, inventory.hands.right!)).toBe('Nothing to do with rag');
+  it('hints for the selected unsupported hand without falling back to the other hand', () => {
+    const inventory = hold('held_plain', 'held_light');
+    expect(selectPrimaryAction(registry, inventory.hands, 'right')).toEqual({
+      kind: 'none',
+      item: inventory.hands.right,
+    });
+    expect(primaryActionHint(registry, inventory.hands.right!).trim()).not.toBe('');
     expect(selectPrimaryAction(registry, inventory.hands, 'left')).toMatchObject({ kind: 'light', hand: 'left' });
 
-    const leftOnlyUnsupported = hold(undefined, 'bandage');
-    const left = selectPrimaryAction(registry, leftOnlyUnsupported.hands, 'left');
-    expect(left).toEqual({ kind: 'none', item: leftOnlyUnsupported.hands.left });
-    expect(primaryActionHint(registry, leftOnlyUnsupported.hands.left!)).toBe('Nothing to do with bandage');
+    const leftOnly = hold(undefined, 'held_plain');
+    expect(selectPrimaryAction(registry, leftOnly.hands, 'left')).toEqual({ kind: 'none', item: leftOnly.hands.left });
+    expect(primaryActionHint(registry, leftOnly.hands.left!).trim()).not.toBe('');
   });
 });

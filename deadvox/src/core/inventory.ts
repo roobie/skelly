@@ -272,6 +272,19 @@ export class Inventory {
     return this.factory.create(this.registry, type, count, condition);
   }
 
+  changeCondition(uid: number, delta: number): boolean {
+    const item = this.itemByUid(uid);
+    if (!(item && Number.isFinite(delta))) {
+      return false;
+    }
+    const condition = Math.max(0, Math.min(1, item.condition + delta));
+    if (condition !== item.condition) {
+      item.condition = condition;
+      this.version += 1;
+    }
+    return true;
+  }
+
   name(item: Item): string {
     return defOf(this.registry, item.type).name;
   }
@@ -365,20 +378,23 @@ export class Inventory {
     return plan;
   }
 
+  /** Read-only placement for a newly created, unlocated item (not a move admission). */
+  planAdd(item: Item, target: Target): Plan {
+    switch (target.kind) {
+      case 'hand':
+        return this.hands[target.side] ? refuse('full') : { ok: true, time: 0 };
+      case 'worn': {
+        const slot = defOf(this.registry, item.type).wearable?.slot;
+        return slot && !this.worn[slot] ? { ok: true, time: 0 } : refuse('full');
+      }
+      default:
+        return this.gridPlacement(item, item.count, this.gridOf(target), target);
+    }
+  }
+
   /** Places a new item that isn't anywhere yet (spawning, loot). Returns false when it doesn't fit. */
   add(item: Item, target: Target): boolean {
-    const placement = (() => {
-      switch (target.kind) {
-        case 'hand':
-          return this.hands[target.side] ? refuse('full') : { ok: true as const, time: 0 };
-        case 'worn': {
-          const slot = defOf(this.registry, item.type).wearable?.slot;
-          return slot && !this.worn[slot] ? { ok: true as const, time: 0 } : refuse('full');
-        }
-        default:
-          return this.gridPlacement(item, item.count, this.gridOf(target), target);
-      }
-    })();
+    const placement = this.planAdd(item, target);
     if (!placement.ok) {
       return false;
     }
@@ -392,9 +408,24 @@ export class Inventory {
   }
 
   /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
-  beginWork(plan: CraftPlan): Item | undefined {
-    if (this.hands.left || this.hands.right || !this.registry.recipes.has(plan.recipe)) {
+  beginWork(plan: CraftPlan, repair?: { targetUid: number; amount: number }): Item | undefined {
+    const recipe = this.registry.recipes.get(plan.recipe);
+    if (this.hands.left || this.hands.right || !recipe || (recipe.kind === 'repair') !== (repair !== undefined)) {
       return undefined;
+    }
+    if (repair) {
+      const target = this.itemByUid(repair.targetUid);
+      if (
+        !target ||
+        plan.components.some(({ item }) => item.uid === target.uid) ||
+        target.type !== recipe.result.item ||
+        target.count !== 1 ||
+        !Number.isFinite(repair.amount) ||
+        repair.amount <= 0 ||
+        repair.amount > 1
+      ) {
+        return undefined;
+      }
     }
     const seen = new Set<number>();
     for (const { item, count } of plan.components) {
@@ -426,7 +457,13 @@ export class Inventory {
       this.remove(from);
       return item;
     });
-    work.work = { recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
+    work.work = {
+      recipe: plan.recipe,
+      elapsed: 0,
+      duration: plan.gather + plan.work,
+      components,
+      ...(repair ? { repairTargetUid: repair.targetUid, repairAmount: repair.amount } : {}),
+    };
     this.hands.right = work;
     this.version += 1;
     return work;
@@ -458,6 +495,17 @@ export class Inventory {
     return drops;
   }
 
+  private workOutputs(
+    payload: NonNullable<Item['work']>,
+    finish: boolean,
+    recipeResult: { item: string; count: number },
+  ): Item[] {
+    if (payload.repairTargetUid !== undefined) {
+      return finish ? [] : payload.components;
+    }
+    return finish ? [this.create(recipeResult.item, recipeResult.count)] : payload.components;
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, finish: boolean, feet: Vec3): void {
     const payload = work.work;
@@ -466,14 +514,22 @@ export class Inventory {
       return;
     }
     const recipe = this.registry.recipes.get(payload.recipe)!;
-    const outputs = finish ? [this.create(recipe.result.item, recipe.result.count)] : payload.components;
-    const resultInHand = finish && at.kind === 'hand';
+    const repairing = payload.repairTargetUid !== undefined;
+    const target = repairing ? this.itemByUid(payload.repairTargetUid!) : undefined;
+    if (finish && repairing && (!target || payload.repairAmount === undefined)) {
+      throw new Error('The repair target is missing');
+    }
+    const outputs = this.workOutputs(payload, finish, recipe.result);
+    const resultInHand = finish && !repairing && at.kind === 'hand';
     if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
       throw new Error('An input or result is too large to put down');
     }
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
     this.remove(at);
     work.work = undefined;
+    if (finish && target && payload.repairAmount !== undefined) {
+      target.condition = Math.min(1, target.condition + payload.repairAmount);
+    }
     this.version += 1;
     if (resultInHand && at.kind === 'hand') {
       this.put(outputs[0]!, { kind: 'hand', side: at.side });
@@ -743,8 +799,32 @@ export class Inventory {
 }
 
 /** Reject registry-invalid topology before constructing or exposing a live inventory. */
+const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemState }[]): void => {
+  const byUid = new Map(tree.map(({ item }) => [item.uid, item]));
+  for (const { item } of tree) {
+    const { work } = item;
+    const targetUid = work?.repairTargetUid;
+    if (!work || targetUid === undefined) {
+      continue;
+    }
+    const recipe = registry.recipes.get(work.recipe);
+    const target = byUid.get(targetUid);
+    if (
+      recipe?.kind !== 'repair' ||
+      !target ||
+      target.uid === item.uid ||
+      target.type !== recipe.result.item ||
+      target.count !== 1
+    ) {
+      throw new Error('Missing or invalid repair target');
+    }
+  }
+};
+
 const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
-  itemIds(savedItemTree(state), state.nextItemUid);
+  const tree = [...savedItemTree(state)];
+  itemIds(tree, state.nextItemUid);
+  validateRepairTargets(registry, tree);
   const grid = (placed: readonly PlacedState[], size: GridSize) => {
     const previous: Placed[] = [];
     for (const entry of placed) {
@@ -772,7 +852,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
       grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
     }
   };
-  for (const { item } of savedItemTree(state)) {
+  for (const { item } of tree) {
     pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
     if (item.type === WORK_IN_PROGRESS && !item.work) {
       throw new Error('Missing craft work payload');
@@ -805,6 +885,10 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
     work.elapsed < 0 ||
     work.duration < recipe.time * 60 ||
     work.elapsed > work.duration ||
+    (recipe.kind === 'repair') !== (work.repairTargetUid !== undefined && work.repairAmount !== undefined) ||
+    (work.repairTargetUid !== undefined && (!Number.isSafeInteger(work.repairTargetUid) || work.repairTargetUid < 1)) ||
+    (work.repairAmount !== undefined &&
+      (!Number.isFinite(work.repairAmount) || work.repairAmount <= 0 || work.repairAmount > 1)) ||
     work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length))
   ) {
     throw new Error('Invalid craft work payload');

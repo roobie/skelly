@@ -13,6 +13,14 @@
   ],
   "items": [
     {
+      "id": "compass",
+      "name": "Compass",
+      "category": "tool",
+      "weight": 120,
+      "size": [1, 2],
+      "description": "A small electronic compass with an illuminated heading display. Hold it to read it. Prototype: battery use is not yet modeled."
+    },
+    {
       "id": "crowbar",
       "name": "Crowbar",
       "category": "tool",
@@ -33,6 +41,7 @@
           "cooldown": 1.1,
           "stamina": 8,
           "impulse": 8,
+          "wearPerHit": 0.015,
           "type": "blunt"
         }
       }
@@ -56,6 +65,7 @@
           "cooldown": 0.8,
           "stamina": 5,
           "impulse": 6,
+          "wearPerHit": 0.012,
           "type": "blunt"
         }
       }
@@ -79,6 +89,7 @@
           "cooldown": 0.5,
           "stamina": 3,
           "impulse": 3.5,
+          "wearPerHit": 0.025,
           "type": "cut"
         }
       }
@@ -102,6 +113,7 @@
           "cooldown": 0.55,
           "stamina": 3.5,
           "impulse": 4,
+          "wearPerHit": 0.025,
           "type": "cut"
         }
       }
@@ -125,6 +137,7 @@
           "cooldown": 0.75,
           "stamina": 5,
           "impulse": 4.5,
+          "wearPerHit": 0.02,
           "type": "cut"
         }
       }
@@ -156,6 +169,7 @@
           "cooldown": 1.2,
           "stamina": 9,
           "impulse": 10,
+          "wearPerHit": 0.01,
           "type": "blunt"
         }
       }
@@ -173,6 +187,7 @@
           "cooldown": 1.2,
           "stamina": 9,
           "impulse": 8,
+          "wearPerHit": 0.015,
           "type": "blunt"
         }
       },

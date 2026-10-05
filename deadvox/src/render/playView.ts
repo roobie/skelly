@@ -18,7 +18,7 @@ import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
-import { type HeldFirearmPose, HeldItems } from './hands.ts';
+import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { ModelLibrary } from './models.ts';
@@ -90,15 +90,16 @@ export const createPlayView = (
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
+  const held = new HeldItems(inventory, models, playerPalette);
   scene.add(caseEffects.mesh);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
+    held.dispose();
   };
   page.addEventListener('pagehide', dispose);
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
-  const held = new HeldItems(inventory, models, playerPalette);
   const flashlight = new Flashlight(scene);
   engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
@@ -180,11 +181,11 @@ export const createPlayView = (
       dt: number,
       pose: MeleePoseFrame,
       light: Item | undefined,
-      firearms: readonly HeldFirearmPose[] = [],
+      handling: HeldHandlingFrame = { firearms: [] },
     ) => {
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
-      held.update(camera, pose, recoil, firearms);
+      held.update(camera, pose, recoil, handling);
       flashlight.update(registry, light, held, camera);
     },
     render: (): number | null => {

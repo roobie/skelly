@@ -85,12 +85,13 @@ export const playerPockets = (inv: Inventory): { owner: Item; pocket: number; la
     })),
   );
 
-/** Ordinary drop finds the first of the five existing drop spots with room. */
+/** Ordinary drop finds room for either a carried move or a fresh emission. */
 export const dropTarget = (inv: Inventory, item: Item, feet: Vec3): { target: Target; plan: Plan } => {
   let first: { target: Target; plan: Plan } | undefined;
+  const fresh = inv.locate(item) === undefined;
   for (const pos of dropSpots(feet)) {
     const target: Target = { kind: 'pile', pos };
-    const plan = inv.plan(item, target);
+    const plan = fresh ? inv.planAdd(item, target) : inv.plan(item, target);
     first ??= { target, plan };
     if (plan.ok) {
       return { target, plan };

@@ -1,7 +1,5 @@
-// The beam of the light in your hands: a three.js spot light at the held model's lens,
-// pointing where you look (SLICE-1.md, "Dark interiors": moving lights stay three.js
-// lights when voxel light arrives). It stays in the scene with no intensity while
-// off, so switching it doesn't recompile every material.
+// The beam stays in the scene with zero intensity while off, so switching it
+// doesn't recompile every material.
 
 import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';

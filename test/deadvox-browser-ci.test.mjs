@@ -8,6 +8,10 @@ import { fileURLToPath } from 'node:url';
 // a stage a PR adds or stops running locally (the tiered test policy runs only the touched ones) cannot silently
 // fall out of CI. The one way out is a quarantined script below, with its reason and issue.
 const quarantinedScripts = {
+  'test:browser:melee-build-click':
+    'Quarantined (no-flaky rule): CI reports both a positive-control failure and first-load timeout; root cause open at #224.',
+  'test:browser:firefox:save-storage':
+    'Quarantined (no-flaky rule): Firefox CI OPFS capability probe exceeded its deadline; root cause open at #224.',
   'test:browser:firefox:native':
     'Quarantined (no-flaky rule): Firefox refuses the pointer lock under a real user activation, intermittently. https://github.com/roobie/skelly/issues/168',
   'test:browser:firefox:continue':

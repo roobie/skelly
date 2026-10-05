@@ -46,7 +46,7 @@
           "id": 3, "name": "Player on track looking northwest", "type": "player_spawn",
           "point": true, "x": 72, "y": 65, "width": 0, "height": 0, "rotation": 0, "visible": true,
           "properties": [
-            {"name": "yaw", "type": "float", "value": 60},
+            {"name": "bearing", "type": "float", "value": 300},
             {"name": "elevation", "type": "float", "value": 21.5}
           ]
         },
