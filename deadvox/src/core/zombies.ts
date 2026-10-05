@@ -1110,7 +1110,9 @@ export class ZombieSystem {
     const key = routeGoalKey(target);
     let route = this.routes.get(id);
     if (!route || route.goalKey !== key) {
-      route = { goalKey: key, goal: copy(target), waypoints: [], next: 0, pending: true, retryAt: 0 };
+      route = route
+        ? { ...route, goalKey: key, goal: copy(target), pending: true, retryAt: 0 }
+        : { goalKey: key, goal: copy(target), waypoints: [], next: 0, pending: true, retryAt: 0 };
       this.routes.set(id, route);
     }
     if (!route.pending && route.waypoints.length === 0 && time >= route.retryAt) {
@@ -1140,12 +1142,12 @@ export class ZombieSystem {
         zombie.body.pos[2] + (next[2] - zombie.body.pos[2]) * fraction,
       ];
     }
-    if (next && probe && !route.pending && !liveRouteClearance(zombie.body, next, probe, this.options.isSolid)) {
+    if (next && probe && !liveRouteClearance(zombie.body, next, probe, this.options.isSolid)) {
       route = { ...route, waypoints: [], next: 0, pending: true, retryAt: 0 };
       this.routes.set(id, route);
       return undefined;
     }
-    return route.pending ? undefined : next;
+    return next;
   }
 
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
