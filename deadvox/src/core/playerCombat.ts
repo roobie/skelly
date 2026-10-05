@@ -1,3 +1,4 @@
+import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import {
   type MeleeActionPose,
@@ -47,11 +48,18 @@ const copy = (v: Vec3): Vec3 => [v[0], v[1], v[2]];
 export class PlayerCombat {
   private playerAttackWait = 0;
   private meleeAction: MeleeActionState | null = null;
-  private nextFistHand: MeleeHand = 'right';
+  private readonly character: HandedCharacter;
+  private nextFistHand: MeleeHand;
   private readonly targets: MeleeTargetResolver;
   private readonly onWeaponHit: (uid: number) => void;
 
-  constructor(targets: MeleeTargetResolver, onWeaponHit: (uid: number) => void = () => undefined) {
+  constructor(
+    targets: MeleeTargetResolver,
+    onWeaponHit: (uid: number) => void = () => undefined,
+    character: HandedCharacter = DEFAULT_HANDED_CHARACTER,
+  ) {
+    this.character = character;
+    this.nextFistHand = dominantSide(character);
     this.targets = targets;
     this.onWeaponHit = onWeaponHit;
   }
@@ -128,7 +136,7 @@ export class PlayerCombat {
     if (this.playerAttackWait > 0 || this.meleeAction !== null || weapon.cooldown <= 0) {
       return false;
     }
-    const hand = profile === 'fists' ? (start.hand ?? this.nextFistHand) : (start.hand ?? 'right');
+    const hand = profile === 'fists' ? (start.hand ?? this.nextFistHand) : (start.hand ?? dominantSide(this.character));
     const direction = unit(start.direction);
     if (profile === 'fists' && start.hand === undefined) {
       this.nextFistHand = hand === 'right' ? 'left' : 'right';

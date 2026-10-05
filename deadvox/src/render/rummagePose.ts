@@ -1,6 +1,6 @@
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
-import type { HandSide, Inventory } from '../core/inventory.ts';
+import { type HandSide, type Inventory, SIDES } from '../core/inventory.ts';
 
 /** Presentation estimate; BR's look, not handling mechanics, owns these values. */
 export const RUMMAGE_POSE = {
@@ -31,7 +31,6 @@ export interface RummageFrame {
 export const rummageFrame = (
   inventory: Readonly<Pick<Inventory, 'hands'>>,
   job: Readonly<Job> | undefined,
-  primaryHandSide: HandSide,
 ): RummageFrame | undefined => {
   if (!job || job.duration <= 0 || job.elapsed >= job.duration) {
     return undefined;
@@ -49,8 +48,7 @@ export const rummageFrame = (
   if (typeof uid !== 'number' || !Number.isSafeInteger(uid)) {
     return undefined;
   }
-  const offHandSide = primaryHandSide === 'right' ? 'left' : 'right';
-  const holdingSide = ([primaryHandSide, offHandSide] as const).find((side) => inventory.hands[side]?.uid === uid);
+  const holdingSide = SIDES.find((side) => inventory.hands[side]?.uid === uid);
   if (!holdingSide) {
     return undefined;
   }

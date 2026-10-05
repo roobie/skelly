@@ -5,12 +5,13 @@
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
-import type { Pile } from '../core/inventory.ts';
+import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
@@ -51,7 +52,6 @@ import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
-import { mountControlsCard } from './controls.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
@@ -77,7 +77,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
-import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
+import { selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
@@ -93,11 +93,16 @@ const USE_REACH = 2;
 const SKIP_SLACK = 1e-6;
 
 export interface StartPlayOptions {
+  readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
 }
 
-export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
+export const startPlay = (
+  engine: Engine,
+  debugModule?: DebugModule,
+  options: StartPlayOptions = {},
+): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const inputTarget = renderer?.domElement ?? $('view');
   if (options.saveController) {
@@ -115,7 +120,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
-  let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
+  let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -135,6 +140,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
+    handedness: options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
@@ -150,22 +156,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     controls: {
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
-      consumePrimaryAction: () => input.consumePrimaryAction(),
-      consumeLeftHandAction: () => input.consumeLeftHandAction(),
-      primaryAction: () => {
+      consumeDominantUse: () => input.consumeDominantUse(),
+      consumeOffUse: () => input.consumeOffUse(),
+      useDominant: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
-        const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
+        const action = selectPrimaryAction(inventory);
         if (
           !(
             debugTools?.buildOn ||
             (config.debug && action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
           )
         ) {
-          performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
+          performHandUse(dominantSide(inventory.character));
         }
       },
-      heldPrimaryAction: (time, pressed, triggerHeld) => {
-        const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
+      heldDominantUse: (time, pressed, triggerHeld) => {
+        const action = selectPrimaryAction(inventory);
         const weapon =
           config.debug &&
           !debugTools?.buildOn &&
@@ -181,9 +187,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
           }
         }
       },
-      leftHandAction: () => {
+      useOff: () => {
         if (!debugTools?.buildOn) {
-          performPrimaryAction(ACTION_HAND_BINDINGS.leftHandKey);
+          performHandUse(offSide(inventory.character));
         }
       },
       yaw: () => input.yaw,
@@ -253,14 +259,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
   const captureSnapshot = () => session.snapshot(snapshotIds);
   const snapshotHistory = createSnapshotHistory();
-  if (options.saveController) {
-    snapshotIds = options.saveController.bindSession(
-      captureSnapshot,
-      () => sim.time,
-      { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
-      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
-    );
-  } else if (!options.restore) {
+  if (!(options.saveController || options.restore)) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
   const { zombies: zombieSystem, playerCombat, zombieStore } = session;
@@ -304,7 +303,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       drawHudOptions();
     });
   drawHudOptions();
-  mountControlsCard($('controls'));
   const prompt = $('prompt');
   const quickbarBox = $('quickbar');
   const handlingBox = $('handling');
@@ -857,9 +855,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!entities.defOf(entity).door) {
       return undefined;
     }
-    const heldKeys = [inventory.hands.right, inventory.hands.left].filter(
-      (item): item is Item => item !== undefined && registry.items.get(item.type)?.key !== undefined,
-    );
+    const heldKeys = [
+      inventory.hands[dominantSide(inventory.character)],
+      inventory.hands[offSide(inventory.character)],
+    ].filter((item): item is Item => item !== undefined && registry.items.get(item.type)?.key !== undefined);
     const heldKey =
       heldKeys.find((item) => registry.items.get(item.type)?.key?.lock === entity.lock?.id) ?? heldKeys[0];
     const keyLock = heldKey && registry.items.get(heldKey.type)?.key?.lock;
@@ -923,7 +922,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     twoHanded: boolean;
     item?: (typeof inventory.hands)['right'];
   } => {
-    const handOrder: readonly ('right' | 'left')[] = preferredHand ? [preferredHand] : ['right', 'left'];
+    const handOrder: readonly ('right' | 'left')[] = preferredHand
+      ? [preferredHand]
+      : [dominantSide(inventory.character), offSide(inventory.character)];
     for (const hand of handOrder) {
       const item = inventory.hands[hand];
       const weapon = item && registry.items.get(item.type)?.weapon?.melee;
@@ -1009,8 +1010,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  performPrimaryAction = (hand: 'right' | 'left') => {
-    const action = selectPrimaryAction(registry, inventory.hands, hand);
+  performHandUse = (hand: 'right' | 'left') => {
+    const action = selectPrimaryAction(inventory, hand);
     switch (action.kind) {
       case 'unpack':
         noticeReason(unpacking.activate(action.item));
@@ -1069,7 +1070,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
       return;
     }
-    // Mouse 5 (side forward): the left hand's instant use (a light on/off), matching the left-hand action path.
+    // Instant off-hand use shares Survival's owner with a quickbar second press.
     const item = offHandUse(registry, inventory);
     const reason = item && survival.use(item);
     if (reason) {
@@ -1223,7 +1224,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
-    const pose = renderMeleePose(action, elapsed, ready);
+    const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
     view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), job: queue.jobs[0] });
   };
 
@@ -1370,8 +1371,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     };
     showDeath($('death'), registry, summary, () => location.assign(newWorldQuery(location.search, config.seed)));
   };
+  if (options.saveController) {
+    snapshotIds = options.saveController.bindSession(
+      captureSnapshot,
+      () => sim.time,
+      { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
+      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
+    );
+  }
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startPlayFrames(frame);
+  return {
+    enter: () => {
+      audio.unlock();
+      resume();
+    },
+  };
 };

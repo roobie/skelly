@@ -69,7 +69,7 @@ describe('sealed ammunition package activation', () => {
   it('held primary activation yields its authored payload and consumes the noncontainer box', () => {
     const f = fixture();
     expect(f.box.pockets).toBeUndefined();
-    expect(selectPrimaryAction(registry, f.inventory.hands)).toMatchObject({ kind: 'unpack', item: f.box });
+    expect(selectPrimaryAction(f.inventory)).toMatchObject({ kind: 'unpack', item: f.box });
     expect(f.unpacking.activate(f.box)).toBeUndefined();
     expect([...f.inventory.items()].filter(({ item }) => item.type === shellType)).toEqual([]);
     expect(f.queue.tick(BOX_UNPACK_SECONDS).failed).toEqual([]);

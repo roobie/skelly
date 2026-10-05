@@ -4,6 +4,7 @@
 // what ticking every second would, and the light goes out when the charge runs out.
 // Swapping in a fresh battery is handling; the old one comes out with what it had left.
 
+import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
 import type { Inventory, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
@@ -72,9 +73,9 @@ export const drainLight = (registry: Registry, light: Item, hours: number): numb
   return lasts;
 };
 
-/** The left-hand item if it has an instant use (today only a light's on/off), which Mouse 5 triggers. */
+/** The actor's off-hand item if it has an instant use (today only a light's on/off). */
 export const offHandUse = (registry: Registry, inventory: Inventory): Item | undefined => {
-  const item = inventory.hands.left;
+  const item = inventory.hands[offSide(inventory.character)];
   return item && defOf(registry, item.type).light ? item : undefined;
 };
 

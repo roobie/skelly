@@ -156,19 +156,22 @@ to use it:
   weapon comes up), not a HUD mode; releasing the button lowers it.
 - **Aiming down the sights is a toggle within the ready stance,** for firearms
   only: while right-click is held, a middle click or Shift switches between hip
-  and sights (the view narrows through the sights). Shift is also sprint today
-  (`src/game/input.ts:59`); while ready, Shift means sights, not sprint.
+  and sights (the view narrows through the sights). Input interpretation belongs
+  to `src/game/input.ts`, `Input`, rather than a parallel interface map.
 - **Ready is slow.** While ready you don't jog or sprint; the top speed is a
   hurried march, faster than a walk and slower than a jog. That is deliberate:
   readiness trades mobility for being able to fight.
 - **Blocking is a ready-only move:** holding right-click and backing off (S)
   blocks incoming melee. Unreadied, S is only a step back.
-- **Left click performs the right-hand item's primary action; `=` acts with the
-  left hand (BR, initial ruling 2026-10-01):** a right jab is used only if the
-  right hand is empty; fists alternate only when both hands are empty. Never
-  punch with a hand holding an item. Unsupported items show a hint, and `=` does
-  nothing when the left hand is empty. Melee swings keep d7's immediate action;
-  lights toggle through `Survival.use`. Firearms still require the ready stance to shoot.
+- **Hand activation follows actor roles (BR, 2026-10-04):** dominance is
+  identity, not a remapping of physical inventory slots. A held item cannot
+  become an unarmed attack, and a two-handed hold's support must not activate
+  the other hand's item. See `src/game/input.ts`, `KEY_BINDINGS`, and
+  `src/game/primaryAction.ts`, `selectPrimaryAction`, for bindings and admission.
+  The native creation choice precedes gameplay construction; Continue restores
+  identity rather than consulting creation preferences. See
+  `docs/character-handedness.md` for the accepted-launch and physical-pose
+  boundaries.
 - Lowered, a held item may block part of the view (as held models do today);
   readying is what brings it to where it's used.
 

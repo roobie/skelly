@@ -120,9 +120,11 @@ payload, progress, duration (game seconds), and exact input item subtrees; a
 disassembly payload also owns its source, skill/tool snapshot, and calculated
 outputs. `CraftWork` in `src/core/items.ts` defines these saved forms, and F3's
 walker includes their inputs; no job or second hand owns a copy. The native type
-reserves both hands through `twoHanded`, with one right-hand root. Inventory
-refuses a work item into the left hand with `Work stays in the right hand`.
-Inventory alone escrows/removes/releases inputs, prevents independent
+reserves both hands through `twoHanded`, with one dominant-hand root. The physical
+other hand is reserved, not a second owner or an alternate work slot. See
+`src/core/character.ts`, `dominantSide` and `offSide`, and
+`src/core/inventory.ts`, `Inventory.beginWork`, for role resolution and structural
+admission. Inventory alone escrows/removes/releases inputs, prevents independent
 consumption/moves of escrow, and maintains weights/UID lookup.
 Reach omits escrowed inputs. This core representation is required to prove F2;
 work-item options, native command wiring and the derived second-hand label now

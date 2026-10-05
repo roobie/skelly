@@ -4,7 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
 import type { ModelDef } from '../src/core/content.ts';
-import { HOLD, heldEjectionPose } from '../src/core/heldPose.ts';
+import { heldEjectionPose, heldGripOffset } from '../src/core/heldPose.ts';
 import {
   actionPartPaths,
   cloneHeldModel,
@@ -27,19 +27,24 @@ describe('exported firearm presentation', () => {
       node.name = 'not-an-exported-name';
     });
     const paths = actionPartPaths(gltf.scene, ar.action, gltf.parser);
-    expect(paths).toHaveLength(2);
+    const definitions = Object.values(ar.action!.parts);
+    expect(definitions.length).toBeGreaterThan(0);
+    expect(paths).toHaveLength(definitions.length);
     const { held } = prepareModel(ar, gltf.scene);
     const clone = cloneHeldModel(held, paths);
-    expect(clone.parts.map(({ nodeIndex }) => gltf.parser.json.nodes[nodeIndex].name)).toEqual([
-      'bolt-carrier:bolt-carrier',
-      'charging-handle:ar-charging-handle',
-    ]);
-    poseActionParts(clone.parts, 'fire', 1);
-    const [carrier, handle] = clone.parts;
-    expect(carrier!.node.position.distanceTo(carrier!.rest)).toBeCloseTo(0.074_75, 8);
-    expect(handle!.node.position.equals(handle!.rest)).toBe(true);
-    poseActionParts(clone.parts, 'hand', 1);
-    expect(handle!.node.position.distanceTo(handle!.rest)).toBeCloseTo(0.074_75, 8);
+    expect(clone.parts.map(({ nodeIndex }) => gltf.parser.json.nodes[nodeIndex].name)).toEqual(
+      definitions.map(({ node }) => node),
+    );
+    for (const mode of ['fire', 'hand'] as const) {
+      poseActionParts(clone.parts, mode, 1);
+      for (const part of clone.parts) {
+        const expected = part.rest.clone();
+        if (part.modes.includes(mode)) {
+          expected.add(part.travel);
+        }
+        expect(part.node.position.distanceTo(expected)).toBeCloseTo(0, 8);
+      }
+    }
   });
 
   it('caps fire at the rpm period while retaining rearward, dwell and return proportions', () => {
@@ -61,13 +66,12 @@ describe('exported firearm presentation', () => {
     expect(sampleActionStroke(action, 'fire', -1)).toBe(0);
   });
 
-  it('samples the exported hand-only pump without inventing an automatic pose', () => {
-    const pump = firearmContent.models.find((model) => model.id === 'shotgun_pump') as ModelDef;
-    expect(pump.action?.fire).toBeUndefined();
-    expect(pump.action?.rpm).toBeUndefined();
-    expect(sampleActionStroke(pump.action!, 'fire', 0.01)).toBe(0);
-    expect(sampleActionStroke(pump.action!, 'hand', 0.25)).toBeCloseTo(0.5);
-    expect(sampleActionStroke(pump.action!, 'hand', 0.6)).toBe(1);
+  it('samples a hand-only action without inventing an automatic pose', () => {
+    const { fire: _fire, rpm: _rpm, ...handOnly } = ar.action!;
+    const rearward = handOnly.hand.rearwardSeconds;
+    expect(sampleActionStroke(handOnly, 'fire', rearward / 2)).toBe(0);
+    expect(sampleActionStroke(handOnly, 'hand', rearward / 2)).toBeCloseTo(0.5);
+    expect(sampleActionStroke(handOnly, 'hand', rearward)).toBe(1);
   });
 
   it('keeps cloned action motion independent from another held copy and the prepared ground meshes', async () => {
@@ -89,21 +93,23 @@ describe('exported firearm presentation', () => {
     const gltf = await load();
     const model: ModelDef = { ...ar, grip: { ...ar.grip!, turn: [13, 26, -18] }, roll: 32 };
     const { held } = prepareModel(model, gltf.scene);
-    const view = new Group();
     const eye = new Vector3(10, 2, -7);
     const yaw = -1.3;
     const pitch = 0.27;
-    view.rotation.set(pitch, yaw, 0, 'YXZ');
-    view.position.copy(new Vector3(...HOLD.both).applyQuaternion(view.quaternion).add(eye));
-    view.add(held);
-    view.updateMatrixWorld(true);
-    const heldScene = held.children[0]!.children[0]!.children[0]!;
-    const expectedAt = heldScene.localToWorld(new Vector3(...model.anchors!.ejection!));
-    const expectedDirection = new Vector3(...model.action!.ejectDirection).transformDirection(heldScene.matrixWorld);
-    const actual = heldEjectionPose({ model, hold: 'both', eye: [eye.x, eye.y, eye.z], yaw, pitch });
-    for (let axis = 0; axis < 3; axis += 1) {
-      expect(actual.origin[axis]).toBeCloseTo(expectedAt.getComponent(axis), 9);
-      expect(actual.direction[axis]).toBeCloseTo(expectedDirection.getComponent(axis), 9);
+    for (const side of ['right', 'left'] as const) {
+      const view = new Group();
+      view.rotation.set(pitch, yaw, 0, 'YXZ');
+      view.position.copy(new Vector3(...heldGripOffset(side, true)).applyQuaternion(view.quaternion).add(eye));
+      view.add(held);
+      view.updateMatrixWorld(true);
+      const heldScene = held.children[0]!.children[0]!.children[0]!;
+      const expectedAt = heldScene.localToWorld(new Vector3(...model.anchors!.ejection!));
+      const expectedDirection = new Vector3(...model.action!.ejectDirection).transformDirection(heldScene.matrixWorld);
+      const actual = heldEjectionPose({ model, side, twoHanded: true, eye: [eye.x, eye.y, eye.z], yaw, pitch });
+      for (let axis = 0; axis < 3; axis += 1) {
+        expect(actual.origin[axis]).toBeCloseTo(expectedAt.getComponent(axis), 9);
+        expect(actual.direction[axis]).toBeCloseTo(expectedDirection.getComponent(axis), 9);
+      }
     }
   });
 
@@ -125,12 +131,18 @@ describe('exported firearm presentation', () => {
     const paths = actionPartPaths(gltf.scene, ar.action, gltf.parser);
     const clone = cloneHeldModel(prepareModel(ar, gltf.scene).held, paths);
     clone.root.updateMatrixWorld(true);
-    const before = clone.parts[0]!.node.getWorldPosition(new Vector3());
+    const moving = clone.parts.find((part) => part.nodeIndex === index)!;
+    const before = moving.node.getWorldPosition(new Vector3());
+    const modelScene = clone.root.children[0]!.children[0]!.children[0]!;
+    const definition = ar.action!.parts.carrier!;
+    const modelOrigin = new Vector3().applyMatrix4(modelScene.matrixWorld);
+    const expected = new Vector3(...definition.axis)
+      .multiplyScalar(definition.strokeMetres)
+      .applyMatrix4(modelScene.matrixWorld)
+      .sub(modelOrigin);
     poseActionParts(clone.parts, 'fire', 1);
     clone.root.updateMatrixWorld(true);
-    const delta = clone.parts[0]!.node.getWorldPosition(new Vector3()).sub(before);
-    expect(delta.x).toBeCloseTo(0, 8);
-    expect(delta.y).toBeCloseTo(0, 8);
-    expect(delta.z).toBeCloseTo(0.074_75, 8);
+    const delta = moving.node.getWorldPosition(new Vector3()).sub(before);
+    expect(delta.distanceTo(expected)).toBeCloseTo(0, 8);
   });
 });

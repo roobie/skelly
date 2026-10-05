@@ -4,6 +4,7 @@ read_if:
   - you're using the debug test-house range
   - you need to see the game without a display
   - a browser contract or stage fails on software GL
+  - you investigate native inventory selection or keyboard settlement in browser tests
   - you're choosing render-free or pixel mode for a browser stage
 ---
 
@@ -111,6 +112,13 @@ Firefox start-up probe, page load took 6.1 s with the default look against 2.5 s
 `post=0&sunshadow=0&torchshadow=0`. `npm run test:ui-browser` therefore opens the game with
 those three parameters (commit `3299e50`; on the full look the contract took 8m09s against
 its 300 s cap). It tests the UI, not the look.
+
+Native key delivery and the inventory's next-frame DOM update are different
+boundaries. A selection wait must compare the same empty representation as its
+pre-key sample, or it can declare success before any row is selected. See
+`test/browser/inventory-selection.ts`, `inventorySelectionChanged`, and
+`test/inventorySelectionWait.test.ts` for the missing-row regression. Wait for
+an observed UID change, not elapsed wall time or an injected selection.
 
 ## Render-free browser logic stages
 
