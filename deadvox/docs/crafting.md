@@ -71,7 +71,11 @@ reach snapshot and re-plan.
 ## Minimal character state
 
 `src/core/character.ts`, `Character`, owns skill levels, source-agnostic practice
-and recipe knowledge. Starting recipes are explicit and filtered to loaded IDs;
+and recipe knowledge; `SKILL_LEVEL_MIN` and `SKILL_LEVEL_MAX` own the scale's
+bounds. BR ruled: “skill scale: let's go for a 0-10 scale, where 0 is completely
+without understanding even that it exists, 10 is true expert (world class, like
+olymplic podium level / nobel prize level)”. Practice past the top is discarded,
+not banked. Starting recipes are explicit and filtered to loaded IDs;
 workbench-dependent base recipes join that source, while new arbitrary recipes
 are not automatically known. Reachable books add recipe knowledge without
 changing item ownership. Books teach recipes only, as BR ruled for Slice 2.

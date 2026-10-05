@@ -5,7 +5,7 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
-import { Character, practiceForNextLevel } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -867,9 +867,9 @@ describe('craft job codec and ownership', () => {
       savedWork.work = {
         kind: 'disassembly',
         source: radio.id,
-        skillLevel: 0,
+        skillLevel: SKILL_LEVEL_MIN,
         toolLevels: {},
-        outputs: disassemblyOutputs(radio, 0),
+        outputs: disassemblyOutputs(radio, SKILL_LEVEL_MIN),
         gather: 0,
         elapsed: 37,
         duration: SALVAGE_DURATION,
@@ -881,6 +881,14 @@ describe('craft job codec and ownership', () => {
       });
       const loadedDisassembly = createRuntime(decodedDisassembly.snapshot);
       expect(capture(loadedDisassembly)).toEqual(disassembly);
+
+      const invalidDisassembly = structuredClone(disassembly);
+      const invalidWork = invalidDisassembly.character.inventory.hands.right!.work!;
+      if (invalidWork.kind !== 'disassembly') {
+        throw new Error('Expected disassembly work');
+      }
+      invalidWork.skillLevel = SKILL_LEVEL_MAX + 1;
+      await expect(encodeFixture(invalidDisassembly)).rejects.toThrow();
     },
   );
 
@@ -1675,6 +1683,24 @@ describe('canonical save format', () => {
     expect((mismatch as Error).message).toContain('content packs');
     expect((mismatch as Error).message).toContain('deadvox.base');
     expect((mismatch as Error).message).toContain(formatVersion.simulationHash);
+  });
+
+  it('rejects saved skill levels outside the character scale', async () => {
+    const valid = await encodeFixture(capture(createRuntime()));
+    await Promise.all(
+      [SKILL_LEVEL_MAX + 1, SKILL_LEVEL_MIN - 1].map(async (level) => {
+        const envelope = parseEnvelope(valid);
+        const payload = getObject(envelope.payload);
+        const character = getObject(payload.character);
+        const progression = getObject(character.progression);
+        const skills = getObject(progression.skills);
+        const skill = Object.keys(skills)[0]!;
+        skills[skill] = level;
+        await expect(
+          decodeSave(await sealEnvelope(envelope), { version: formatVersion, contentLookup }),
+        ).rejects.toThrow();
+      }),
+    );
   });
 
   it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {

@@ -5,6 +5,7 @@ import {
   canonicalJsonAt as canonicalStringify,
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
 import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
@@ -213,10 +214,11 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
+const skillLevel = num({ integer: true, safe: true, min: SKILL_LEVEL_MIN, max: SKILL_LEVEL_MAX });
 const nonNegative = num({ min: 0 });
 const progression = obj({
   handedness: enumeration(['right', 'left']),
-  skills: record(nonNegativeInt),
+  skills: record(skillLevel),
   practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),
 });
@@ -315,7 +317,7 @@ itemSchema = obj({
       obj({
         kind: enumeration(['disassembly']),
         source: str({ id: true }),
-        skillLevel: nonNegativeInt,
+        skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
         gather: nonNegative,

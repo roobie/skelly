@@ -1,6 +1,6 @@
 // Pure craft planning: no removal, effect, timer or world mutation.
 import type { BlockEntity } from './blockEntities.ts';
-import type { CraftCharacter } from './character.ts';
+import { type CraftCharacter, SKILL_LEVEL_MIN } from './character.ts';
 import { CLOCK_RATIO } from './clock.ts';
 import type { RecipeDef } from './content.ts';
 import type { DisassemblyPlan } from './disassembly.ts';
@@ -288,7 +288,10 @@ const craftPlan = (
         .filter((station) => stationMatches(recipe, station))
         .sort((a, b) => b.workTimeBonus - a.workTimeBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
-  const skillLevel = Math.max(0, ...Object.keys(recipe.skills).map((skill) => character.skills[skill] ?? 0));
+  const skillLevel = Math.max(
+    SKILL_LEVEL_MIN,
+    ...Object.keys(recipe.skills).map((skill) => character.skills[skill] ?? SKILL_LEVEL_MIN),
+  );
   const work = (recipe.time * 60 * (1 - (workstation?.workTimeBonus ?? 0))) / (1 + skillLevel * 0.1);
   return {
     kind: 'craft',
