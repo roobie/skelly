@@ -190,6 +190,9 @@ describe('simulation source fingerprint', () => {
     const host = await actualSimulationHost();
     const options = { exclude: SIMULATION_EXCLUSIONS };
     const before = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, options);
+    const voice = await mutateSimulationSource(host, 'src/game/shamblerAudio.ts');
+    expect(voice.reads).toBe(0);
+    expect(voice.value).toBe(before);
     const changed = await mutateSimulationSource(host, 'src/game/audioPresentation.ts');
     expect(changed.reads).toBe(0);
     expect(changed.value).toBe(before);

@@ -856,8 +856,8 @@ decoration.
   2026-10-05 with “lgtm”. The clamp spans 0.5 to 1.3 times the prior law at the
   smallest height. BR's tuning note was, “voicePitch 0.5 to 1.3 sounds good ,but
   for different purposes / for the tiny shambler, 1.2 is good”. Debug URL
-  multipliers tune the two endpoints for the `voice_size` comparison site. This changes playback only, never hearing or
-  simulation.
+  multipliers tune the two endpoints for the `voice_size` comparison site. This
+  changes playback only, never hearing or simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   three moving shamblers emit footsteps at once. The MVP reuses pitched-down

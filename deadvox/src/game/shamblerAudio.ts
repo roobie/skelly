@@ -24,7 +24,7 @@ const TALLEST_HEIGHT = Math.max(...POOL_HEIGHTS);
 const oldLawPitch = (height: number): number => Math.sqrt(OLD_LAW_REFERENCE_HEIGHT_METRES / height);
 const SMALLEST_OLD_LAW_PITCH = oldLawPitch(SMALLEST_HEIGHT);
 
-// BR picked 1.2× the old law at the tiny end; the large end stays on its old-law pitch until the ear check.
+// BR picked 1.2× the old law at the tiny end and approved the large end at its old-law pitch (2026-10-05); see DESIGN.md.
 // The clamp envelope is 0.5×–1.3× that same old-law pitch at the tiny end.
 export const SHAMBLER_PITCH_CLAMP = [
   CLAMP_MIN_MULTIPLIER * SMALLEST_OLD_LAW_PITCH,
