@@ -63,7 +63,7 @@ if (bench === 'report') {
   if (saveController.isRestored && restored) {
     startPlay(engine, debugModule, { saveController, restore: restored });
   } else {
-    saveController.setNewWorldLauncher(() => startPlay(engine, debugModule, { saveController }));
+    saveController.setNewWorldLauncher((creation) => startPlay(engine, debugModule, { saveController, ...creation }));
   }
 } else if (bench === 'shamblers') {
   const run = shamblerRunFromUrl(params);

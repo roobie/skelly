@@ -63,3 +63,9 @@ binds synchronously, commits entry, then invokes the explicit entry handle from
 shader warm-up does not delay it. Initialization refusal leaves saved generations
 untouched and cannot replay partially installed listeners. Continue remains a
 separate restored, paused session and does not take creation preferences.
+
+`index.html`, `dominant-hand`, is a native creation control, not a browser setting.
+`SaveController` validates and freezes its value at accepted launch, including
+replacement confirmation; discovery and cancelled confirmation cannot choose an
+actor. The choice is not retained across page loads or written to URL/storage.
+Saved identity, rather than a creation form, remains authoritative on Continue.

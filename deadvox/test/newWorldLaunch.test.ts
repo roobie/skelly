@@ -71,3 +71,26 @@ it('does not commit or retry partial initialization after the launch callback fa
   document.getElementById('go')!.click();
   expect(attempts).toBe(1);
 });
+
+it('refuses invalid creation choice and freezes Left only on accepted creation', async () => {
+  const controller = title();
+  await controller.prepare();
+  const select = document.getElementById('dominant-hand') as HTMLSelectElement;
+  const actors: Character[] = [];
+  controller.setNewWorldLauncher((creation) => {
+    expect(Object.isFrozen(creation)).toBe(true);
+    actors.push(new Character(buildRegistry([]).registry, creation));
+    return { enter: () => undefined };
+  });
+  select.value = 'invalid fixture value';
+  document.getElementById('go')!.click();
+  expect(actors).toHaveLength(0);
+  select.value = 'left';
+  document.getElementById('go')!.click();
+  expect(actors).toHaveLength(1);
+  expect(actors[0]!.handedness).toBe('left');
+  select.value = 'right';
+  document.getElementById('go')!.click();
+  expect(actors).toHaveLength(1);
+  expect(actors[0]!.handedness).toBe('left');
+});

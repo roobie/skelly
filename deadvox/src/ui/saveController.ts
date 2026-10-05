@@ -1,4 +1,5 @@
 import { html, render } from 'lit-html';
+import type { HandedCharacter } from '../core/character.ts';
 import type { ClockSettings } from '../core/clock.ts';
 import { defaultClock, simSecondsPerHour } from '../core/clock.ts';
 import type { Registry } from '../core/content.ts';
@@ -101,7 +102,7 @@ export class SaveController {
   private requestedContinue = false;
   private entered = false;
   private ready = false;
-  private newWorldLauncher: (() => { enter: () => void }) | undefined;
+  private newWorldLauncher: ((creation: HandedCharacter) => { enter: () => void }) | undefined;
   private statusText = 'Checking saved worlds…';
   private snapshot: (() => Readonly<SaveSnapshot>) | undefined;
   private simTime: (() => number) | undefined;
@@ -324,7 +325,7 @@ export class SaveController {
     return this.entered;
   }
 
-  setNewWorldLauncher(launcher: () => { enter: () => void }): void {
+  setNewWorldLauncher(launcher: (creation: HandedCharacter) => { enter: () => void }): void {
     this.newWorldLauncher = launcher;
     this.render();
   }
@@ -478,9 +479,16 @@ export class SaveController {
     if (this.entered || !this.ready || !this.newWorldLauncher || this.protectedCurrent) {
       return;
     }
+    const handedness = ($('dominant-hand') as HTMLSelectElement).value;
+    if (handedness !== 'right' && handedness !== 'left') {
+      this.statusText = 'Choose a valid dominant hand before starting a new character.';
+      this.render();
+      return;
+    }
+    const creation: HandedCharacter = Object.freeze({ handedness });
     let entry: { enter: () => void };
     try {
-      entry = this.newWorldLauncher();
+      entry = this.newWorldLauncher(creation);
     } catch (error) {
       this.newWorldLauncher = undefined;
       this.snapshot = undefined;
@@ -634,6 +642,7 @@ export class SaveController {
       html`Saves are kept in this browser. When two tabs play the same world, the last one to save wins.`,
       $('save-note'),
     );
+    $('new-character-options').hidden = this.entered || this.requestedContinue;
     $('go').setAttribute('aria-disabled', String(!(this.entered || (this.ready && this.newWorldLauncher))));
     button.disabled = !(this.ready && controls.continueEnabled);
     button.hidden = !(controls.showTitleControls && this.restored) || this.entered;

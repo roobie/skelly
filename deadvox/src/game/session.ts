@@ -134,7 +134,7 @@ export interface SessionOptions {
   isOpaque: SolidAt;
   scale: Scale;
   /** Immutable choice for a new actor; saved progression wins on restore. */
-  handedness?: Character['handedness'];
+  handedness?: Character['handedness'] | undefined;
   /** The world's seed. */
   seed: number;
   /** Calendar seconds at the start of day 1. */

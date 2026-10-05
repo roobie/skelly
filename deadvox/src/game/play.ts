@@ -11,7 +11,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
-import type { Pile } from '../core/inventory.ts';
+import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
@@ -91,6 +91,7 @@ const USE_REACH = 2;
 const SKIP_SLACK = 1e-6;
 
 export interface StartPlayOptions {
+  readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
 }
@@ -137,6 +138,7 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
+    handedness: options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
