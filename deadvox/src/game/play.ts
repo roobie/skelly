@@ -1206,7 +1206,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
-    const pose = renderMeleePose(action, elapsed, ready);
+    const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
     view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), job: queue.jobs[0] });
   };
 

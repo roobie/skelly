@@ -21,6 +21,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
+import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
@@ -94,18 +95,11 @@ export class HeldItems {
   private rummageSupportRest: { arm: Group; position: Vector3 } | undefined;
 
   private readonly palette: FigureDef['palette'];
-  private readonly primaryHandSide: HandSide;
 
-  constructor(
-    inventory: Inventory,
-    models: ModelLibrary | undefined,
-    palette: FigureDef['palette'],
-    primaryHandSide: HandSide = 'right',
-  ) {
+  constructor(inventory: Inventory, models: ModelLibrary | undefined, palette: FigureDef['palette']) {
     this.inventory = inventory;
     this.models = models;
     this.palette = palette;
-    this.primaryHandSide = primaryHandSide;
     this.view.add(this.torso);
     this.scene.add(this.view, this.light, this.ambient);
     // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
@@ -190,7 +184,7 @@ export class HeldItems {
     if (handling.firearms.length > 0 || pose?.viewOrientation) {
       return;
     }
-    const frame = rummageFrame(this.inventory, handling.job, this.primaryHandSide);
+    const frame = rummageFrame(this.inventory, handling.job);
     if (!frame) {
       return;
     }
@@ -272,7 +266,7 @@ export class HeldItems {
     if (!item || defOf(this.inventory.registry, item.type).weapon?.melee?.type !== 'cut') {
       return;
     }
-    const rest = readyMeleePose(true)[side];
+    const rest = readyMeleePose(true, dominantSide(this.inventory.character))[side];
     const restOrientation = new Quaternion().setFromEuler(this.poseEuler.set(...rest.rotation, 'YXZ'));
     if (pose?.viewOrientation) {
       restOrientation.premultiply(this.relativeCamera);

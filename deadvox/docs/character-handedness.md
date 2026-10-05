@@ -47,3 +47,10 @@ contract through `src/render/hands.ts`, `HeldItems`; support placement preserves
 the authored firearm frame. Only placement is mirrored. Keeping model transforms,
 anchors and authored ejection directions unchanged preserves the firearm's actual
 mechanical side rather than manufacturing a mirrored weapon.
+
+Neutral stance exchanges leading/support roles while retaining physical arm labels;
+see `src/core/meleePose.ts`, `readyMeleePose`. Production supplies the actual actor
+through `src/game/play.ts`, `startPlay`; active attacks retain their physical hand.
+Rummaging has no preference to resolve: `src/render/rummagePose.ts`, `rummageFrame`,
+finds the unique held UID in physical slots. Passing dominance there would imply
+an identity-dependent choice where Inventory permits only one answer.
