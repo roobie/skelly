@@ -144,7 +144,7 @@ try {
   await page.goto(
     browserStageUrl(
       'primary-action',
-      `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
       renderOverride,
     ),
   );
@@ -543,14 +543,14 @@ try {
     r.setHand(r.dominant, book);
     return book.uid;
   });
-  // Use the player's debug time-skip command, not a write past the simulation owner.
-  await page.keyboard.press('Period');
-  await page.waitForFunction(() => globalThis.primaryActionTest.session.sim.ignoreUnsafe);
+  // The test-house fixture admits reading through ordinary safety, not an unsafe override.
   await page.mouse.click(640, 450);
   await page.waitForFunction((uid) => {
     const { job } = globalThis.primaryActionTest.session.sim.actions;
     return job?.jobType === 'reading' && !job.stopped && job.bookUid === uid;
   }, bookUid);
+  // The reading card owns keyboard input until it is closed.
+  await page.keyboard.press('Escape');
   await page.keyboard.press('KeyX');
   await page.waitForFunction(() => {
     const { sim } = globalThis.primaryActionTest.session;
