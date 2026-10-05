@@ -190,9 +190,10 @@ same world preserve piles left by the previous character?
   show in game via a sway on the weapon)". The firearms skill "will: 1) mitigate
   the aim variance 2) quicken reload time 3) quicken rack time (shotgun)". It
   starts as one skill, "which we will expand to separate firearm archetypes
-  later, like skill:smgs, skill:shotguns etc". After trying skill 12 with the
-  assault rifle, BR reported, "as for gun skill / i tried it at =12 / and
-  equipped the assault rifle - too much dispersion/sway at full auto". BR's
+  later, like skill:smgs, skill:shotguns etc". On the pre-revision scale, BR
+  tried skill 12 with the assault rifle and reported, "as for gun skill / i
+  tried it at =12 / and equipped the assault rifle - too much dispersion/sway at
+  full auto". BR's
   later 2026-10-05 ruling separated firearm quality's dispersion from skill:
   "dispersion is not a skill issue, but control is". Each firearm owns its
   per-round `dispersionRadians`; control skill changes movement/look sway, kick
