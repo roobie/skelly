@@ -4,20 +4,21 @@
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
-import { type Body } from '../core/physics.ts';
-import { ZombieSystem } from '../core/zombies.ts';
 import { skyAt } from '../core/sky.ts';
 import type { StorageStats } from '../core/storage.ts';
 import { storageStats } from '../core/storage.ts';
 import { FOREST_DENSITY_FIELD, FOREST_HALF_EXTENT_METRES, TREE_CELL_METRES, TREE_MIX } from '../core/vegetation.ts';
+import { ZombieSystem } from '../core/zombies.ts';
 import { type SiteName, siteFromUrl } from '../game/config.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
-import { MobActorMeshes } from '../render/mobActors.ts';
-import { flashlightDaylightScale } from '../render/flashlight.ts';
 import type { StreamerStats } from '../game/streamer.ts';
+import { flashlightDaylightScale } from '../render/flashlight.ts';
+import { MobActorMeshes } from '../render/mobActors.ts';
 import { applySky } from '../render/sky.ts';
+import { BENCH_LIGHT_COUNTS, createBenchLightFixture } from './lightFixture.ts';
 import {
   type BenchConfig,
   type BenchRecord,
@@ -32,10 +33,9 @@ import {
   saveRecord,
 } from './plan.ts';
 import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
-import { frameStats, mean, sampleStats } from './stats.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
 import { spawnShamblerRing } from './shamblerSpawn.ts';
-import { BENCH_LIGHT_COUNTS, createBenchLightFixture } from './lightFixture.ts';
+import { frameStats, mean, sampleStats } from './stats.ts';
 
 export interface BenchRun {
   plan: BenchConfig[];
@@ -64,8 +64,7 @@ const HEADING: readonly [number, number] = [-0.9, 0.44];
 
 type Phase = 'load' | 'settle' | 'look' | 'render' | 'jog' | 'sprint';
 
-const parseBenchShamblers = (value: string): number[] | undefined =>
-  value === '0' ? [0] : parseShamblerCounts(value);
+const parseBenchShamblers = (value: string): number[] | undefined => (value === '0' ? [0] : parseShamblerCounts(value));
 
 export const benchRunFromUrl = (params: URLSearchParams): BenchRun => {
   const plan = parsePlan(params.get('plan') ?? '') ?? [...DEFAULT_PLAN];
@@ -198,14 +197,17 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
                 if (!light) {
                   throw new Error(`Missing benchmark light content: ${id}`);
                 }
-                return [id, {
-                  color: light.color,
-                  emissive: light.emissive,
-                  intensity: light.intensity,
-                  radius: light.radius,
-                  seenFrom: light.seenFrom,
-                  burnTime: light.burnTime,
-                }];
+                return [
+                  id,
+                  {
+                    color: light.color,
+                    emissive: light.emissive,
+                    intensity: light.intensity,
+                    radius: light.radius,
+                    seenFrom: light.seenFrom,
+                    burnTime: light.burnTime,
+                  },
+                ];
               }),
             ),
           },
@@ -315,7 +317,6 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
     zombieMeshes.setCamera?.(camera);
     zombieMeshes.sync(zombies.store, dt, Math.min(1, zombieAccumulator * 20));
   };
-
 
   let phase: Phase = 'load';
   let phaseStart = performance.now();

@@ -440,7 +440,7 @@ export class Inventory {
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
     }
-    const light = defOf(this.registry, item.type).light;
+    const { light } = defOf(this.registry, item.type);
     if (item.on && light?.burning?.stow === 'refuse' && target.kind !== 'hand' && target.kind !== 'pile') {
       return refuse('Put it out before stowing it');
     }

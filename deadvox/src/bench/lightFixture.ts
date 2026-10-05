@@ -2,21 +2,21 @@ import type { PerspectiveCamera } from 'three';
 import { CLOCK_RATIO } from '../core/clock.ts';
 import { HandlingQueue } from '../core/handling.ts';
 import { Inventory } from '../core/inventory.ts';
+import { toggleLight } from '../core/lights.ts';
 import { bindReach } from '../core/reach.ts';
 import { Simulation } from '../core/sim.ts';
 import type { RenderedEngine } from '../game/engine.ts';
 import { Survival } from '../game/survival.ts';
-import { toggleLight } from '../core/lights.ts';
+import type { HeldItems } from '../render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../render/lightPool.ts';
 import { PileMeshes } from '../render/piles.ts';
-import type { HeldItems } from '../render/hands.ts';
 
 export const BENCH_LIGHT_COUNTS = Object.freeze({ carried: 4, dropped: 12, pointLights: POINT_LIGHT_POOL_SIZE });
 const INNER_RING_COUNT = 4;
 
 export const createBenchLightFixture = (engine: RenderedEngine, calendar: number) => {
   const { config, registry, scene, spawn } = engine;
-  const blockSize = config.scale.blockSize;
+  const { blockSize } = config.scale;
   const inventory = new Inventory(registry);
   const add = (type: string, target: Parameters<Inventory['add']>[1]) => {
     const item = inventory.create(type);
@@ -76,7 +76,7 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
   return {
     inventory,
     update: (targetCamera: PerspectiveCamera, daylightScale: number) =>
-      lightPool.update(inventory, noHeldPose, targetCamera, blockSize, daylightScale),
+      lightPool.update(inventory, { held: noHeldPose, camera: targetCamera, blockSize, daylightScale }),
     setSprinting: (sprinting: boolean) => survival.setSprinting(sprinting),
     activeCount: () => [...inventory.items()].filter(({ item }) => item.on).length,
     dispose: () => {

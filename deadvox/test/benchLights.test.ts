@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { PerspectiveCamera, Scene } from 'three';
 import { expect, it } from 'vitest';
+import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import type { RenderedEngine } from '../src/game/engine.ts';
-import { createBenchLightFixture } from '../src/bench/lightFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(

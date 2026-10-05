@@ -391,8 +391,9 @@ describe('base pack shotshells', () => {
 });
 
 describe('base pack guns', () => {
-  const base = buildRegistry([read('src/content/base/models-firearms.json')]).registry;
-  const guns = [...base.models.values()].filter((m) => m.anchors?.muzzle);
+  const firearms = buildRegistry([read('src/content/base/models-firearms.json')]).registry;
+  const { models } = firearms;
+  const guns = [...models.values()].filter((m) => m.anchors?.muzzle);
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
     const bytes = readFileSync(`src/content/base/${def.file}`);
@@ -409,7 +410,7 @@ describe('base pack guns', () => {
   });
 
   it('uses the exported AR with zero turn and its muzzle at the forward end', async () => {
-    const def = base.models.get('rifle_assault')!;
+    const def = models.get('rifle_assault')!;
     const bytes = readFileSync(`src/content/base/${def.file}`);
     const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     const bounds = new Box3().setFromObject(scene);
@@ -431,16 +432,16 @@ describe('base pack guns', () => {
   });
 
   it('lays the debug AR model in piles', () => {
-    const inventory = new Inventory(base);
-    const { models, bundle } = pileLayout(
-      base,
+    const inventory = new Inventory(firearms);
+    const { models: pileModels, bundle } = pileLayout(
+      firearms,
       {
         pos: [0, 0, 0],
         items: [{ item: inventory.create('debug_rifle_assault'), x: 0, y: 0, rotated: false }],
       },
       0.5,
     );
-    expect(models.map((model) => model.model)).toEqual(['rifle_assault']);
+    expect(pileModels.map((model) => model.model)).toEqual(['rifle_assault']);
     expect(bundle).toEqual([]);
   });
 });

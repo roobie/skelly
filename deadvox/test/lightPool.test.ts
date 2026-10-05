@@ -26,12 +26,12 @@ describe('made-light point pool', () => {
     expect(toggleLight(registry, first, 0)).toBeUndefined();
     inventory.add(first, { kind: 'pile', pos: [1, 0, 0] });
 
-    pool.update(inventory, held, camera, 1, 1);
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
     expect(pool.lights).toHaveLength(POINT_LIGHT_POOL_SIZE);
     expect(pool.lights.filter((light) => light.intensity > 0)).toHaveLength(1);
 
     inventory.consume(first);
-    pool.update(inventory, held, camera, 1, 1);
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
     expect(pool.lights).toHaveLength(POINT_LIGHT_POOL_SIZE);
     expect(pool.lights.every((light) => light.intensity === 0)).toBe(true);
   });
@@ -55,7 +55,7 @@ describe('made-light point pool', () => {
       expect(toggleLight(registry, item, 0)).toBeUndefined();
     }
 
-    pool.update(inventory, held, camera, 1, 1);
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
     const expected = [right, left, ...pocketed.slice(0, 2)].map(
       (item) => registry.items.get(item.type)!.light!.intensity,
     );

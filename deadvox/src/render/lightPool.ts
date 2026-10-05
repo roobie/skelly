@@ -1,11 +1,25 @@
-import { Group, PointLight, type PerspectiveCamera, type Scene, Vector3 } from 'three';
-import type { Inventory } from '../core/inventory.ts';
+import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
+import type { Inventory, Location } from '../core/inventory.ts';
 import type { HeldItems } from './hands.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
 export const CARRIED_POINT_LIGHTS = 4;
 export const DROPPED_POINT_LIGHTS = 4;
 export const POINT_LIGHT_POOL_SIZE = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
+
+interface LightPoolContext {
+  held: Pick<HeldItems, 'lightPositionOf'>;
+  camera: PerspectiveCamera;
+  blockSize: number;
+  daylightScale: number;
+}
+
+function handPriority(location: Location): number {
+  if (location.kind !== 'hand') {
+    return 2;
+  }
+  return location.side === 'right' ? 0 : 1;
+}
 
 export class LightPool {
   readonly group = new Group();
@@ -14,7 +28,7 @@ export class LightPool {
 
   constructor(scene: Scene) {
     this.lights = Array.from({ length: POINT_LIGHT_POOL_SIZE }, () => {
-      const light = new PointLight(0xffffff, 0, 0, 1);
+      const light = new PointLight(0xff_ff_ff, 0, 0, 1);
       light.castShadow = false;
       this.group.add(light);
       return light;
@@ -22,13 +36,7 @@ export class LightPool {
     scene.add(this.group);
   }
 
-  update(
-    inventory: Inventory,
-    held: Pick<HeldItems, 'lightPositionOf'>,
-    camera: PerspectiveCamera,
-    blockSize: number,
-    daylightScale: number,
-  ): void {
+  update(inventory: Inventory, { held, camera, blockSize, daylightScale }: LightPoolContext): void {
     const entries = [...inventory.items()]
       .map((entry, order) => ({ ...entry, order }))
       .filter(({ item }) => {
@@ -36,25 +44,29 @@ export class LightPool {
         return item.on && definition?.light?.beam === undefined && definition?.light !== undefined;
       });
     const carried = entries
-      .filter(({ path, location }) =>
-        location.kind === 'hand' ||
-        (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))),
+      .filter(
+        ({ path, location }) =>
+          location.kind === 'hand' ||
+          (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))),
       )
-      .sort((a, b) => {
-        const aHand = a.location.kind === 'hand' ? (a.location.side === 'right' ? 0 : 1) : 2;
-        const bHand = b.location.kind === 'hand' ? (b.location.side === 'right' ? 0 : 1) : 2;
-        return aHand - bHand || a.order - b.order;
-      })
+      .sort((a, b) => handPriority(a.location) - handPriority(b.location) || a.order - b.order)
       .slice(0, CARRIED_POINT_LIGHTS);
     const dropped = entries
-      .filter(({ item, location }) =>
-        location.kind === 'pile' && inventory.registry.items.get(item.type)?.light?.burning?.drop === 'stay',
+      .filter(
+        ({ item, location }) =>
+          location.kind === 'pile' && inventory.registry.items.get(item.type)?.light?.burning?.drop === 'stay',
       )
       .sort((a, b) => {
         const [ax, ay, az] = a.location.kind === 'pile' ? a.location.pile.pos : [0, 0, 0];
         const [bx, by, bz] = b.location.kind === 'pile' ? b.location.pile.pos : [0, 0, 0];
-        const distanceA = (ax - camera.position.x / blockSize) ** 2 + (ay - camera.position.y / blockSize) ** 2 + (az - camera.position.z / blockSize) ** 2;
-        const distanceB = (bx - camera.position.x / blockSize) ** 2 + (by - camera.position.y / blockSize) ** 2 + (bz - camera.position.z / blockSize) ** 2;
+        const distanceA =
+          (ax - camera.position.x / blockSize) ** 2 +
+          (ay - camera.position.y / blockSize) ** 2 +
+          (az - camera.position.z / blockSize) ** 2;
+        const distanceB =
+          (bx - camera.position.x / blockSize) ** 2 +
+          (by - camera.position.y / blockSize) ** 2 +
+          (bz - camera.position.z / blockSize) ** 2;
         return distanceA - distanceB || a.order - b.order;
       })
       .slice(0, DROPPED_POINT_LIGHTS);

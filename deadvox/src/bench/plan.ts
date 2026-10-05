@@ -1,8 +1,8 @@
 // Which configurations the benchmark runs, and where results are kept between the
 // page reloads that separate runs (each run starts from a fresh page and GPU state).
 
-import type { StorageStats } from '../core/storage.ts';
 import type { ItemDef } from '../core/content.ts';
+import type { StorageStats } from '../core/storage.ts';
 import type { ActorRenderer } from '../game/config.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
 

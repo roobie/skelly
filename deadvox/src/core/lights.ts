@@ -40,7 +40,9 @@ export const chargeOf = (registry: Registry, item: Item): number | undefined => 
 /** Charge as a share of a full battery, 0 to 1. */
 export const chargeShare = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
-  const capacity = def.battery?.capacity ?? def.igniter?.capacity ??
+  const capacity =
+    def.battery?.capacity ??
+    def.igniter?.capacity ??
     (def.light?.power ? capacityOf(registry, def.light.power.battery) : undefined);
   const charge = chargeOf(registry, item);
   return capacity === undefined || charge === undefined ? undefined : charge / capacity;
@@ -58,7 +60,7 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
       return "It can't be doused";
     }
     light.on = false;
-    delete light.litAt;
+    light.litAt = undefined;
     return undefined;
   }
   if (spec.burnTime !== undefined) {
@@ -90,7 +92,7 @@ export const drainBurnLight = (light: Item, calendar: number): boolean => {
     return false;
   }
   light.on = false;
-  delete light.litAt;
+  light.litAt = undefined;
   return true;
 };
 

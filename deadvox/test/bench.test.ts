@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  type BenchRecord,
   DEFAULT_PLAN,
   DEFAULT_SHAMBLER_COUNTS,
-  type BenchRecord,
   formatPlan,
   parsePlan,
   parseShamblerCounts,

@@ -1152,16 +1152,28 @@ const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
 
 const lightCandleInHand = (runtime: Runtime) => {
+  const pos: Vec3 = [...runtime.session.body.pos];
   const backpack = runtime.inventory.hands.right!;
-  expect(runtime.inventory.move(backpack, { kind: 'pile', pos: [...runtime.session.body.pos] }).ok).toBe(true);
+  if (!runtime.inventory.move(backpack, { kind: 'pile', pos }).ok) {
+    throw new Error('Could not clear the right hand for the light fixture');
+  }
   const flashlight = runtime.inventory.hands.left!;
-  expect(runtime.survival.use(flashlight)).toBeUndefined();
-  expect(runtime.inventory.move(flashlight, { kind: 'pile', pos: [...runtime.session.body.pos] }).ok).toBe(true);
+  const flashlightReason = runtime.survival.use(flashlight);
+  if (flashlightReason || !runtime.inventory.move(flashlight, { kind: 'pile', pos }).ok) {
+    throw new Error(flashlightReason ?? 'Could not clear the left hand for the light fixture');
+  }
   const candle = runtime.inventory.create('candle');
-  expect(runtime.inventory.add(candle, { kind: 'hand', side: 'right' })).toBe(true);
+  if (!runtime.inventory.add(candle, { kind: 'hand', side: 'right' })) {
+    throw new Error('Could not place the candle in hand');
+  }
   const matches = runtime.inventory.create('matches');
-  expect(runtime.inventory.add(matches, { kind: 'hand', side: 'left' })).toBe(true);
-  expect(runtime.survival.use(candle)).toBeUndefined();
+  if (!runtime.inventory.add(matches, { kind: 'hand', side: 'left' })) {
+    throw new Error('Could not place the matches in hand');
+  }
+  const candleReason = runtime.survival.use(candle);
+  if (candleReason) {
+    throw new Error(candleReason);
+  }
   return candle;
 };
 

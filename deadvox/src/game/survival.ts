@@ -24,6 +24,19 @@ const numberParam = (params: JobParams, key: string): number => {
   return value;
 };
 
+type LightSpec = NonNullable<ReturnType<typeof defOf>['light']>;
+type LightLocation = NonNullable<ReturnType<Inventory['locate']>>;
+
+const shouldDouse = (spec: LightSpec, location: LightLocation, sprinting: boolean): boolean => {
+  const { burning } = spec;
+  const movedOutOfHand = location.kind !== 'hand';
+  const dropped = location.kind === 'pile';
+  return (
+    (dropped ? burning?.drop !== 'stay' : movedOutOfHand && burning?.stow !== 'stay') ||
+    (sprinting && burning?.sprint === 'douse')
+  );
+};
+
 export interface SurvivalHooks {
   /** Where a spent battery with charge left is dropped. */
   feet: () => Target;
@@ -214,17 +227,8 @@ export class Survival {
     }
     for (const { item } of this.inventory.items()) {
       const spec = defOf(this.inventory.registry, item.type).light;
-      if (!(item.on && spec?.burning?.sprint === 'douse')) {
-        continue;
-      }
-      if (spec.burnTime !== undefined) {
-        drainBurnLight(item, this.sim.calendar);
-      }
-      item.on = false;
-      delete item.litAt;
-      this.inventory.version += 1;
-      if (this.lit === item) {
-        this.lit = undefined;
+      if (item.on && spec?.burning?.sprint === 'douse') {
+        this.douseLight(item, spec);
       }
     }
   }
@@ -276,13 +280,17 @@ export class Survival {
     }
     let igniter: Item | undefined;
     if (!light.on && spec.burning?.ignition === 'firestarter') {
-      igniter = [...this.inventory.items()].map(({ item }) => item).find((item) => {
-        if (!defOf(registry, item.type).igniter || !this.hooks.reach().entries.some((entry) => entry.item === item)) {
-          return false;
-        }
-        const charges = chargeOf(registry, item) ?? 0;
-        return charges >= defOf(registry, item.type).igniter!.perIgnition;
-      });
+      igniter = [...this.inventory.items()]
+        .map(({ item }) => item)
+        .find((item) => {
+          if (
+            !(defOf(registry, item.type).igniter && this.hooks.reach().entries.some((entry) => entry.item === item))
+          ) {
+            return false;
+          }
+          const charges = chargeOf(registry, item) ?? 0;
+          return charges >= defOf(registry, item.type).igniter!.perIgnition;
+        });
       if (!igniter) {
         return 'Need a firestarter in reach';
       }
@@ -299,48 +307,53 @@ export class Survival {
     return reason;
   }
 
+  /** Turns off a light without discarding its remaining burn. */
+  private douseLight(item: Item, spec: LightSpec): void {
+    if (spec.burnTime !== undefined) {
+      drainBurnLight(item, this.sim.calendar);
+    }
+    item.on = false;
+    item.litAt = undefined;
+    this.inventory.version += 1;
+    if (this.lit === item) {
+      this.lit = undefined;
+    }
+  }
+
   /** Applies owner rules and burns every active item source, including pocketed and dropped lights. */
   private tickLights(dt: number): void {
-    const { registry } = this.inventory;
     for (const { item, location } of this.inventory.items()) {
-      const spec = defOf(registry, item.type).light;
-      if (!spec || !item.on) {
-        continue;
-      }
-      const burning = spec.burning;
-      const carriedInHand = location.kind === 'hand';
-      const dropped = location.kind === 'pile';
-      const shouldDouse = dropped
-        ? burning?.drop !== 'stay'
-        : !carriedInHand && burning?.stow !== 'stay';
-      if (shouldDouse || (this.sprinting && burning?.sprint === 'douse')) {
-        if (spec.burnTime !== undefined) {
-          drainBurnLight(item, this.sim.calendar);
-        }
-        item.on = false;
-        delete item.litAt;
-        this.inventory.version += 1;
-        if (this.lit === item) {
-          this.lit = undefined;
-        }
-        continue;
-      }
-      const beforeCharge = item.charges;
-      const beforeRemaining = item.burnRemaining;
-      const expired = spec.burnTime !== undefined
-        ? drainBurnLight(item, this.sim.calendar)
-        : drainLight(registry, item, gameHours(this.sim.clock, dt)) !== undefined;
-      if (item.charges !== beforeCharge || item.burnRemaining !== beforeRemaining || expired) {
-        this.inventory.version += 1;
-      }
-      if (expired) {
-        if (this.lit === item) {
-          this.lit = undefined;
-        }
-        const reason = `The ${defOf(registry, item.type).name.toLowerCase()} died`;
-        this.hooks.notice(reason);
-        this.sim.emit({ kind: 'interrupt', reason });
-      }
+      this.tickLight(item, location, dt);
     }
+  }
+
+  private tickLight(item: Item, location: LightLocation, dt: number): void {
+    const { registry } = this.inventory;
+    const spec = defOf(registry, item.type).light;
+    if (!(spec && item.on)) {
+      return;
+    }
+    if (shouldDouse(spec, location, this.sprinting)) {
+      this.douseLight(item, spec);
+      return;
+    }
+    const beforeCharge = item.charges;
+    const beforeRemaining = item.burnRemaining;
+    const expired =
+      spec.burnTime === undefined
+        ? drainLight(registry, item, gameHours(this.sim.clock, dt)) !== undefined
+        : drainBurnLight(item, this.sim.calendar);
+    if (item.charges !== beforeCharge || item.burnRemaining !== beforeRemaining || expired) {
+      this.inventory.version += 1;
+    }
+    if (!expired) {
+      return;
+    }
+    if (this.lit === item) {
+      this.lit = undefined;
+    }
+    const reason = `The ${defOf(registry, item.type).name.toLowerCase()} died`;
+    this.hooks.notice(reason);
+    this.sim.emit({ kind: 'interrupt', reason });
   }
 }

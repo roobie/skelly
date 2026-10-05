@@ -2,7 +2,17 @@
 // the pile's grid (core/pileLayout.ts); everything else is one low bundle per pile,
 // taller the more it holds.
 
-import { BoxGeometry, Color, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial, MeshLambertMaterial, Object3D } from 'three';
+import {
+  BoxGeometry,
+  Color,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  MeshLambertMaterial,
+  Object3D,
+} from 'three';
 import { type Inventory, PILE_GRID, type Pile } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import { pileLayout } from '../core/pileLayout.ts';
@@ -35,7 +45,7 @@ export class PileMeshes {
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly material = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
   private readonly glowstickGeometry: BoxGeometry;
-  private readonly glowstickMaterial = new MeshBasicMaterial({ color: 0xffffff, vertexColors: true });
+  private readonly glowstickMaterial = new MeshBasicMaterial({ color: 0xff_ff_ff, vertexColors: true });
   private glowsticks: InstancedMesh;
   private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
@@ -225,10 +235,8 @@ export class PileMeshes {
   private drawEmissiveLights(inventory: Inventory): void {
     const sources = [...inventory.piles.values()].flatMap((pile) =>
       pile.items.flatMap(({ item }) => {
-        const light = defOf(inventory.registry, item.type).light;
-        return item.on && light?.emissive !== undefined && light.burning?.drop === 'stay'
-          ? [{ pile, light }]
-          : [];
+        const { light } = defOf(inventory.registry, item.type);
+        return item.on && light?.emissive !== undefined && light.burning?.drop === 'stay' ? [{ pile, light }] : [];
       }),
     );
     if (sources.length > this.glowsticks.count) {
