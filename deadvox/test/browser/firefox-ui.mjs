@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -146,12 +147,12 @@ try {
       document.querySelector('#view').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })),
     );
   };
-  await page.keyboard.press('g');
+  await pressAction(page, 'debug.spawn-menu-toggle');
   await page.locator('#spawn input').fill('bandage');
   await clickGameElement('#spawn .spawn-list button');
   assert.match((await page.locator('#spawn .spawn-status').textContent()) ?? '', /is at your feet/);
   await page.locator('#spawn input').evaluate((input) => input.blur());
-  await page.keyboard.press('g');
+  await pressAction(page, 'debug.spawn-menu-toggle');
   await page.keyboard.press('Tab');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {

@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { inventorySelectionChanged } from './inventory-selection.ts';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
@@ -246,7 +247,7 @@ try {
     );
   }
   // Gunshots attract shamblers; mortality is not the hand-action contract.
-  await page.keyboard.press('KeyH');
+  await pressAction(page, 'debug.god-toggle');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode), true);
   const loadout = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
@@ -400,7 +401,7 @@ try {
     r.swings = [];
   });
   const blockedBefore = await observe();
-  await page.keyboard.press('KeyB');
+  await pressAction(page, 'debug.build-toggle');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.debugTools.buildOn), true);
   await page.keyboard.press('Equal');
   await nextFrame();
@@ -408,7 +409,7 @@ try {
   assert.equal(build.on, false);
   assert.deepEqual(build.swings, []);
   assert.ok(build.stamina >= blockedBefore.stamina);
-  await page.keyboard.press('KeyB');
+  await pressAction(page, 'debug.build-toggle');
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.menuPointer), true);
   await page.keyboard.press('Equal');

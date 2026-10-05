@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
@@ -73,6 +74,28 @@ try {
       timeout: 60_000,
     },
   );
+  if (mode === 'consumer') {
+    await page.locator('.input-options > summary').click();
+    await page.locator('[data-binding-id="world.interact"] button').click();
+    await page.keyboard.press('KeyJ');
+    await page.waitForFunction(
+      async () =>
+        (await import('/src/game/inputBindings.ts')).inputBindings.chords('world.interact')[0].code === 'KeyJ',
+    );
+    await page.reload();
+    await page.waitForFunction(
+      () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+      undefined,
+      { timeout: 60_000 },
+    );
+    assert.equal(
+      await page.evaluate(
+        async () => (await import('/src/game/inputBindings.ts')).inputBindings.chords('world.interact')[0].code,
+      ),
+      'KeyJ',
+      'settings rebind persists across reload',
+    );
+  }
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.readingWitness, undefined, { timeout: 60_000 });
   await page.waitForFunction(
@@ -166,7 +189,14 @@ try {
     };
     await aim('crate');
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-    await page.keyboard.press('f');
+    const interactLabel = await page.evaluate(async () =>
+      (await import('/src/game/inputBindings.ts')).inputBindings.label('world.interact'),
+    );
+    await page.waitForFunction(
+      (label) => document.querySelector('#prompt').textContent.startsWith(`${label}: `),
+      interactLabel,
+    );
+    await pressAction(page, 'world.interact');
     await waitForSimulation(
       page,
       () => {
@@ -185,7 +215,7 @@ try {
     await note.waitFor();
     await uiClick(note);
     const handStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-    await page.keyboard.press('h');
+    await pressAction(page, 'inventory.hands');
     await waitForSimulation(
       page,
       () => {
@@ -300,7 +330,7 @@ try {
     await aim('sample_sign');
     await page.keyboard.press('F9');
     await page.waitForFunction(() => globalThis.readingWitness.session.sim.paused);
-    await page.keyboard.press('f');
+    await pressAction(page, 'world.interact');
     await page.keyboard.press('1');
     const menu = await record('pause menu F and quickbar');
     assert.equal(menu.readingOpen, false);
@@ -309,7 +339,7 @@ try {
     assert.deepEqual(menu.jobs, []);
     await page.keyboard.press('F9');
     await page.waitForFunction(() => !globalThis.readingWitness.session.sim.paused);
-    await page.keyboard.press('f');
+    await pressAction(page, 'world.interact');
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });

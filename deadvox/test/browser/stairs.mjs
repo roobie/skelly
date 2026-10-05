@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 const { chromium } = await import('playwright');
 
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
@@ -76,7 +77,7 @@ try {
   await vite.listen();
   const { port } = vite.httpServer.address();
   browser = await chromium.launch({
-    headless: true,
+    headless: process.env.BROWSER_HEADED !== '1',
     executablePath: process.env.CHROME_BIN,
     args: browserStageArgs(mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting'),
   });
@@ -86,6 +87,26 @@ try {
   });
   const errors = [];
   const states = [];
+  const helpDialogs = [];
+  page.on('dialog', async (dialog) => {
+    helpDialogs.push(dialog.message());
+    await dialog.dismiss();
+  });
+  await page.addInitScript(() => {
+    globalThis.nativeGateEvents = [];
+    for (const type of ['keydown', 'keyup']) {
+      document.addEventListener(type, (event) => {
+        globalThis.nativeGateEvents.push({
+          type,
+          code: event.code,
+          trusted: event.isTrusted,
+          prevented: event.defaultPrevented,
+          repeat: event.repeat,
+          locked: Boolean(document.pointerLockElement),
+        });
+      });
+    }
+  });
   page.on('pageerror', (error) => errors.push(error.message));
   page.on('console', (message) => {
     if (message.type() === 'error') {
@@ -106,7 +127,61 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   if (mode === 'traversal') {
-    await page.keyboard.press('KeyH');
+    await page.waitForFunction(() => Boolean(document.pointerLockElement));
+    const verifyGate = async (locked) => {
+      const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
+      const { primary, gate } = await page.evaluate(
+        `import('/src/game/inputBindings.ts').then(({ inputBindings }) => ({ primary: inputBindings.chords('debug.god-toggle')[0], gate: inputBindings.chords('debug.gate')[0] }))`,
+      );
+      await page.evaluate(() => {
+        globalThis.nativeGateEvents.length = 0;
+      });
+      await page.keyboard.press(primary.code);
+      assert.equal(
+        await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
+        before,
+        'plain debug key cannot author',
+      );
+      await pressAction(page, 'debug.god-toggle');
+      assert.equal(
+        await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
+        !before,
+        'held gate toggles the public owner exactly once',
+      );
+      await page.keyboard.press(primary.code);
+      assert.equal(
+        await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
+        !before,
+        'release cannot latch the gate',
+      );
+      const delivered = await page.evaluate(() => globalThis.nativeGateEvents);
+      const gateEvents = delivered.filter((event) => event.code === gate.code);
+      assert.equal(gateEvents.length, 2);
+      assert.ok(gateEvents.every((event) => event.trusted && event.locked === locked));
+      assert.ok(gateEvents.some((event) => event.type === 'keydown' && event.prevented));
+      assert.ok(gateEvents.some((event) => event.type === 'keyup'));
+      assert.equal(await page.evaluate(() => document.hasFocus()), true);
+      assert.equal(page.context().pages().length, 1, 'no Help tab or window');
+      assert.deepEqual(helpDialogs, [], 'no Help dialog');
+      states.push({
+        label: `native debug gate ${locked ? 'locked' : 'unlocked'}`,
+        before,
+        after: !before,
+        delivered,
+        headed: process.env.BROWSER_HEADED === '1',
+        backend: process.env.BROWSER_KEY_BACKEND ?? 'Playwright',
+      });
+      await writeFile(resolve(artifacts, 'gate-input.json'), JSON.stringify(states, null, 2));
+    };
+    await verifyGate(true);
+    await page.evaluate(() => globalThis.stairsWitness.input.unlock());
+    await page.waitForFunction(() => !document.pointerLockElement);
+    await verifyGate(false);
+    await page.locator('#go').click();
+    await page.waitForFunction(() => Boolean(document.pointerLockElement));
+    if (!(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode))) {
+      await pressAction(page, 'debug.god-toggle');
+    }
     assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode), true);
   }
   await page.waitForFunction(

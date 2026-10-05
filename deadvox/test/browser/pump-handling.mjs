@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { handlingWaitMilliseconds } from './handling-budget.ts';
+import { pressAction } from './input-actions.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
@@ -104,7 +105,7 @@ try {
     [],
     'render-free pump handling must not request a WebGL context',
   );
-  await page.keyboard.press('KeyH');
+  await pressAction(page, 'debug.god-toggle');
   assert.equal(
     await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.godMode),
     true,
