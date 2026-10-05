@@ -57,7 +57,7 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
-import { FirearmMechanics, type FirearmShotEffect } from './firearmHandling.ts';
+import { FirearmMechanics, type FirearmShotEffect, type FirearmTrajectory } from './firearmHandling.ts';
 import {
   createPlayerBody,
   type MoveIntent,
@@ -160,6 +160,8 @@ export interface SessionOptions {
   onHandlingOutcomes?: (result: TickResult) => void;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
+  /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
+  onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
@@ -343,6 +345,7 @@ export const createSession = (options: SessionOptions) => {
           }
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
+    onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     onCommittedShot: (shotSeed, recoilKickRadians) => aim.recordShot(shotSeed, recoilKickRadians),
     onShot: (shot, time) => {

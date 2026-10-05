@@ -16,6 +16,7 @@ import { World } from '../src/core/world.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
+  type FirearmTrajectory,
   firearmHandlingFor,
   SHELL_LOAD_SECONDS,
 } from '../src/game/firearmHandling.ts';
@@ -66,12 +67,14 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
   const queue = new HandlingQueue(inventory);
   const effects: FirearmShotEffect[] = [];
   const shots: PelletShot[] = [];
+  const trajectories: FirearmTrajectory[] = [];
   const sounds: { event: SoundEventId; time: number }[] = [];
   const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: pose.blockSize,
     pose: () => pose,
     onEjection: (effect) => effects.push(effect),
     onShot: (shot) => shots.push(shot),
+    onTrajectory: (trajectory) => trajectories.push(trajectory),
     onSound: (event, _position, time) => sounds.push({ event, time }),
     firearmsSkillLevel,
   });
@@ -106,6 +109,7 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
     mechanics,
     effects,
     shots,
+    trajectories,
     sounds,
     finish,
     load,
@@ -488,6 +492,7 @@ describe('real pump ammunition', () => {
     f.rack(1);
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
     expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, debugMode: false, aimFrame })).toBe(true);
+    expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
     const center = aimDirection(pose.yaw, pose.pitch, aimFrame);
     expect(
       f.shots[0]!.directions.every(

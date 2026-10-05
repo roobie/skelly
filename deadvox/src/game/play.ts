@@ -163,6 +163,7 @@ export const startPlay = (
   // ---- simulation ----
 
   let playtestObserver: PlaytestObserver | undefined;
+  let debugLaserEnabled = true;
   const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
@@ -244,6 +245,7 @@ export const startPlay = (
     onRead: (readable) => reading.open(readable),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onFirearmEjection: (effect) => caseEffects.spawn(effect),
+    onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
@@ -310,7 +312,7 @@ export const startPlay = (
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
-  const { weather, caseEffects, flashlight, zombieMeshes } = view;
+  const { weather, caseEffects, impactEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -488,6 +490,16 @@ export const startPlay = (
     newGame: options.restore === undefined,
     sim,
     input,
+    debugModifierHeld: () => input.held.has(KEY_BINDINGS.debugModifier.code),
+    impactLaser: {
+      enabled: () => debugLaserEnabled,
+      toggle: () => {
+        debugLaserEnabled = !debugLaserEnabled;
+        if (!debugLaserEnabled) {
+          impactEffects.update(0, false);
+        }
+      },
+    },
     roll: () => view.cameraRoll,
     zombies: () => zombieSystem,
     feet,
@@ -1361,6 +1373,7 @@ export const startPlay = (
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
     caseEffects.update(dt, engine.isSolid);
+    impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = performance.now() - mark;
     options.saveController?.afterFrame();
     playtestObserver?.afterFrame(
