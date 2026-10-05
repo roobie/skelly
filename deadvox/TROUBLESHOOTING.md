@@ -119,17 +119,15 @@ its 300 s cap). It tests the UI, not the look.
 ignored by production builds and benchmark URLs. Chromium logic stages pair it with
 `--disable-gpu`; visual stages retain SwiftShader and pixel coverage.
 
-The stages assigned render-free mode in `test/browser/stage-mode.mjs` are `inventory-scroll`,
-`melee-build-click`, `primary-action`, `full-auto`, `save-controller-regressions`, the normal
-`save-storage` cases, `insecure-saves`, `stairs-traversal`, both `reading` contracts, `firefox-ui`,
-and quarantined `firefox-first-click`. The Chromium OPFS Continue autosave scenario and the
-quarantined Firefox IndexedDB Continue scenario are intentional pixel-mode exceptions: each builds
-the production bundle and loads it through Vite preview.
+Stage assignments live in `test/browser/stage-mode.mjs`, `modes`. The Chromium OPFS Continue
+autosave scenario and the quarantined Firefox IndexedDB Continue scenario are intentional
+pixel-mode exceptions: each builds the production bundle and loads it through Vite preview.
 
-The `melee-build-click` logic stage is newly render-free. Add future stages to the shared mode
-helper and use its URL/launch helpers together so the render choice and browser flags stay aligned.
-Verify that the stage creates no WebGL context while its simulation and input assertions still
-pass; put pixel-only checks in an existing visual stage.
+The pump-handling stage is render-free because it checks input, inventory, handling and audio, not
+pixels. `test/browser/pump-handling.mjs` observes canvas context requests and asserts that the
+stage creates no WebGL context while its simulation and input assertions pass. Add future stages
+to the shared mode helper and use its URL/launch helpers together so the render choice and browser
+flags stay aligned; put pixel-only checks in an existing visual stage.
 
 Install Firefox once with `npx playwright install --with-deps firefox`, then from
 `deadvox/` run `xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop).

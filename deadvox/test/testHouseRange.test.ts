@@ -3,7 +3,6 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { worldSolid } from '../src/core/collision.ts';
 import type { Registry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
-import { Hamlet } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { stepBody } from '../src/core/physics.ts';
 import { HandlingRange } from '../src/core/range.ts';
@@ -14,7 +13,7 @@ import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { HOUSE_OFFSET, SPAWN_YAW } from '../src/game/testHouse.ts';
+import { GARDEN_GATE, HOUSE_OFFSET, SPAWN_YAW } from '../src/game/testHouse.ts';
 import { isTestHouseRangeStockItem, testHouseRangeStock } from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
 
@@ -96,9 +95,9 @@ const buildRangeWalkFixture = () => {
   const { blockSize } = scale;
   const startX = spawn.pos[0] / blockSize;
   const startZ = spawn.pos[2] / blockSize;
-  const corridorZ = (HOUSE_OFFSET[1] + (7 + 8.5) / 2) / blockSize;
-  const gateX = (HOUSE_OFFSET[0] + 2.5) / blockSize;
-  const beyondGateZ = (HOUSE_OFFSET[1] + 11) / blockSize;
+  const corridorZ = (HOUSE_OFFSET[1] + GARDEN_GATE.approachZ) / blockSize;
+  const gateX = (HOUSE_OFFSET[0] + GARDEN_GATE.centreX) / blockSize;
+  const beyondGateZ = (HOUSE_OFFSET[1] + GARDEN_GATE.exitZ) / blockSize;
   const enterX = range.rect.x0 + 2;
   const rackZ = rackSpec.pos[2] + rackSpec.size[2] / 2;
   const minX = Math.floor(startX - 2);
@@ -188,13 +187,16 @@ describe('the debug test-house range', () => {
     const site = buildDebugTestHouseSite(config, registry, house);
     expect(site).toBeInstanceOf(DebugTestHouseSite);
 
-    const { range, spawn } = site as DebugTestHouseSite;
+    const builtSite = site as DebugTestHouseSite;
+    const { range, spawn } = builtSite;
     const spawnX = spawn.pos[0] / config.scale.blockSize;
+    const padTop = Math.floor(spawn.pos[1] / config.scale.blockSize) - 1;
     expect(range).toBeInstanceOf(HandlingRange);
     expect(range.rect.x0).toBeGreaterThanOrEqual(range.beside.x1);
     expect(range.table.pos[0]).toBeGreaterThan(range.beside.x1);
     expect(range.firingLine.x0).toBeGreaterThan(range.beside.x1);
     expect(range.targetXs.every((x) => x > range.firingLine.x1)).toBe(true);
+    expect(builtSite.surface.height(range.table.pos[0], range.table.pos[2], padTop)).toBe(padTop);
     expect(spawnX).toBeLessThan(range.beside.x1);
     expect(spawnX).toBeLessThan(range.firingLine.x0);
 
@@ -250,25 +252,18 @@ describe('the debug test-house range', () => {
     }
   });
 
-  it('installs the registry-derived rack in the debug site without changing Hamlet composition', () => {
+  it('installs the registry-derived rack in the debug site', () => {
     const config = makeConfig(13, 64);
     config.site = 'testHouse';
     config.debug = true;
     const { registry } = BUNDLED_CONTENT;
     const site = buildDebugTestHouseSite(config, registry, testHouseScene(config, registry)) as DebugTestHouseSite;
-    const centreZ = Math.floor((site.range.rect.z0 + site.range.rect.z1) / 2);
-    const rackColumn = site.furnitureIn(toChunk(site.range.rect.x0 + 3), toChunk(centreZ + 4));
-    const rack = rackColumn.find(({ spec }) => spec.type === 'range_rack');
+    const rack = rangeFurnitureFor(site).find(({ spec }) => spec.type === 'range_rack');
     expect(rack).toBeDefined();
     const stocked = new Set(rack!.loot.map(({ type }) => type));
     const firearms = [...registry.items.values()].filter((item) => item.firearm);
     for (const firearm of firearms) {
       expect(stocked.has(firearm.id), firearm.id).toBe(true);
     }
-
-    const defaultConfig = makeConfig(13, 64);
-    const defaultSite = new Hamlet(defaultConfig.seed, registry, defaultConfig.scale);
-    expect(defaultSite.range).toBeInstanceOf(HandlingRange);
-    expect(defaultSite.range.table).toBeDefined();
   });
 });

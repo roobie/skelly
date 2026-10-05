@@ -119,7 +119,7 @@ export class DebugTestHouseSite implements Site {
     this.spawn = house.spawn;
     this.range = new HandlingRange(config.seed, registry, config.scale, {
       beside: boundsOf(this.structures),
-      floor: house.spawn.pos[1] / config.scale.blockSize,
+      floor: house.spawn.pos[1] / config.scale.blockSize - 1,
     });
     this.surface = {
       height: (x, z, natural) => this.range.approachHeight(x, z, natural),

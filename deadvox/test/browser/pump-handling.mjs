@@ -1,9 +1,8 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone native-input browser contract
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative end-to-end assertions
-// biome-ignore-all lint/style/noProcessEnv: executable and optional artifact directory are runner configuration
+// biome-ignore-all lint/style/noProcessEnv: browser executable path is runner configuration
 // biome-ignore-all lint/performance/noAwaitInLoops: native arrow navigation is sequential
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -15,18 +14,6 @@ import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 const { chromium } = await import('playwright');
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
-const trace = process.env.PUMP_TRACE === '1';
-let currentStage = 'initializing';
-const mark = (stage, detail = '') => {
-  currentStage = stage;
-  if (trace) {
-    process.stderr.write(`[pump] ${stage}${detail ? ` ${detail}` : ''}\n`);
-  }
-};
-if (trace) {
-  const progress = setInterval(() => process.stderr.write(`[pump] waiting at ${currentStage}\n`), 10_000);
-  progress.unref();
-}
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
 const observation = {
   name: 'pump-handling-readonly-observation',
@@ -60,11 +47,9 @@ const vite = await createServer({
 });
 let browser;
 try {
-  mark('vite-listen');
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
-  mark('browser-launch');
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN,
     headless: true,
@@ -77,6 +62,14 @@ try {
     globalThis.pumpDecoded = [];
     globalThis.pumpRDownAt = 0;
     globalThis.pumpRDowns = [];
+    globalThis.pumpWebGLRequests = [];
+    const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+        globalThis.pumpWebGLRequests.push(type);
+      }
+      return Reflect.apply(nativeGetContext, this, [type, ...args]);
+    };
     addEventListener('keydown', (event) => {
       if (event.code === 'KeyR' && !event.repeat) {
         globalThis.pumpRDownAt = event.timeStamp;
@@ -95,7 +88,6 @@ try {
       return start.apply(this, args);
     };
   });
-  mark('page-navigation');
   await page.goto(
     browserStageUrl(
       'pump-handling',
@@ -103,11 +95,14 @@ try {
     ),
     { waitUntil: 'domcontentloaded' },
   );
-  mark('wait-game-ready');
   await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
   await page.locator('#go').click();
-  mark('wait-pointer-lock');
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  assert.deepEqual(
+    await page.evaluate(() => globalThis.pumpWebGLRequests),
+    [],
+    'render-free pump handling must not request a WebGL context',
+  );
   await page.keyboard.press('KeyH');
   assert.equal(
     await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.godMode),
@@ -136,13 +131,11 @@ try {
       fov: globalThis.pumpHandlingTest.camera.fov,
     };
   });
-  mark('wait-range-rack');
   await page.waitForFunction(() =>
     [...globalThis.pumpHandlingTest.session.entities.all].some(
       (entity) => entity.type === 'range_rack' && entity.pockets,
     ),
   );
-  mark('check-range-stock');
   const rangeStock = await page.evaluate((gunUid) => {
     const { session } = globalThis.pumpHandlingTest;
     const { registry } = session.inventory;
@@ -164,30 +157,24 @@ try {
   }, ids.gun);
   assert.deepEqual(rangeStock, { firearm: true, compatibleRound: true, compatibleBox: true });
   const select = async (uid) => {
-    mark('select-count');
     const rows = await page
       .locator('#inventory [data-uid]')
       .evaluateAll((items) => items.map((item) => item.dataset.uid));
-    const count = rows.length;
-    const state = await page.evaluate((wanted) => {
-      const inv = globalThis.pumpHandlingTest.session.inventory;
-      const item = inv.itemByUid(wanted);
-      return {
-        right: inv.hands.right?.uid,
-        left: inv.hands.left?.uid,
-        location: item ? inv.locate(item)?.kind : undefined,
-      };
-    }, uid);
-    mark('select-items', `uid=${uid} rows=${rows.join(',')} state=${JSON.stringify(state)}`);
-    for (let i = 0; i <= count; i++) {
-      if (trace && i % 20 === 0) {
-        mark('select-progress', `uid=${uid} index=${i}`);
-      }
+    for (let i = 0; i <= rows.length; i++) {
       if (await page.locator(`#inventory [data-uid="${uid}"].selected`).count()) {
-        mark('select-complete', `uid=${uid} index=${i}`);
         return;
       }
+      const previous = await page.evaluate(
+        () => document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null,
+      );
       await page.keyboard.press('ArrowDown');
+      // Serialize key input with the selection's next-frame DOM update.
+      await page.waitForFunction(
+        (selectedUid) =>
+          (document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null) !== selectedUid,
+        previous,
+        { timeout: 1000 },
+      );
     }
     throw new Error(`Native arrows cannot select ${uid}; visible rows: ${rows.join(',')}`);
   };
@@ -199,12 +186,9 @@ try {
     });
     const timeout = handlingWaitMilliseconds(work.seconds + futureSeconds, work.frameP95Ms);
     handlingWaits.push({ ...work, futureSeconds, timeout });
-    mark('wait-handling-work', `seconds=${work.seconds} frameP95=${work.frameP95Ms} timeout=${timeout}`);
     await page.waitForFunction(predicate, argument, { timeout });
-    mark('handling-work-complete');
   };
   const waitForHands = async (uid) => {
-    mark('check-hand-admission', `uid=${uid}`);
     const admission = await page.evaluate((wanted) => {
       const test = globalThis.pumpHandlingTest;
       return {
@@ -218,7 +202,6 @@ try {
         notice: test.getNotice(),
       };
     }, uid);
-    mark('hand-admission', JSON.stringify(admission));
     assert.equal(admission.godMode, true, 'inventory H must not toggle debug God mode');
     assert.ok(
       admission.right === uid || admission.queued,
@@ -228,7 +211,6 @@ try {
       const s = globalThis.pumpHandlingTest.session;
       return !s.queue.busy && s.inventory.hands.right?.uid === wanted;
     }, uid);
-    mark('hand-ready', `uid=${uid}`);
   };
   const observe = () =>
     page.evaluate((selectedIds) => {
@@ -252,27 +234,21 @@ try {
         sounds: globalThis.pumpHandlingTest.audio.heardSounds,
       };
     }, ids);
-  mark('begin-box-unpack');
   await page.keyboard.press('Tab');
-  mark('inventory-opened');
   await select(ids.box);
-  mark('box-selected');
   await page.keyboard.press('KeyH');
   await waitForHands(ids.box);
   await page.keyboard.press('Tab');
   await page.mouse.click(640, 450);
-  mark('wait-cancellable-unpack');
   await page.waitForFunction(() =>
     globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'item.unpack'),
   );
   await page.keyboard.press('KeyX');
   const cancelled = await observe();
-  mark('unpack-cancelled', JSON.stringify(cancelled));
   assert.equal(cancelled.box, true);
   assert.equal(cancelled.loose, 0);
   assert.equal(cancelled.jobs, 0);
   await page.mouse.click(640, 450);
-  mark('wait-unpack-completion-admission');
   await page.waitForFunction((uid) => {
     const s = globalThis.pumpHandlingTest.session;
     return !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack');
@@ -281,14 +257,12 @@ try {
   const unpacked = await observe();
   assert.equal(unpacked.loose, ids.payload);
   assert.equal(unpacked.hand, null);
-  mark('reload-key-with-empty-hand');
   await page.keyboard.press('KeyR');
   await page.waitForFunction(
     (window) => performance.now() - globalThis.pumpRDownAt >= window,
     RELOAD_GESTURE_MS.doublePress,
   );
   assert.equal((await observe()).rest, null, 'R with no reloadable item does not rest');
-  mark('select-pump');
   await page.keyboard.press('Tab');
   await select(ids.gun);
   await page.keyboard.press('KeyH');
@@ -305,7 +279,6 @@ try {
   assert.deepEqual(tapped.gun.tube, []);
   assert.equal(tapped.rest, null);
   await page.keyboard.down('KeyR');
-  mark('wait-first-load-admission');
   await page.waitForFunction(() =>
     globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'firearm.load'),
   );
@@ -315,7 +288,6 @@ try {
   assert.equal(released.jobs, 0);
   assert.deepEqual(released.gun.tube, []);
   await page.keyboard.down('KeyR');
-  mark('wait-load-progress');
   await page.waitForFunction((uid) => {
     const s = globalThis.pumpHandlingTest.session;
     return (
@@ -335,12 +307,7 @@ try {
   assert.equal(loaded.loose, ids.payload - loaded.gun.tube.length);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
-  if (process.env.PUMP_ARTIFACT_DIR) {
-    await mkdir(process.env.PUMP_ARTIFACT_DIR, { recursive: true });
-    await page.screenshot({ path: resolve(process.env.PUMP_ARTIFACT_DIR, 'loaded.png') });
-  }
-  // Submit the native key sequence in one protocol burst. Awaiting each key RPC
-  // separately lets slow software-rendered frames turn a double tap into two holds.
+  // Submit the native key sequence in one protocol burst so renderer pacing cannot split the double tap.
   // No timestamp is supplied or fabricated; verify Chrome's actual event timestamps.
   const keys = await page.context().newCDPSession(page);
   await Promise.all(
@@ -386,7 +353,6 @@ try {
   assert.equal(fired.dead, null);
   assert.equal(fired.fov, ids.fov, 'handling never changes the camera field of view');
   assert.deepEqual(errors, []);
-  mark('wait-shot-audio');
   await page.waitForFunction(() => globalThis.pumpDecoded.some((source) => source.event === 'shotgun_blast'));
   const decoded = await page.evaluate(() =>
     globalThis.pumpDecoded.filter((source) => source.event === 'shotgun_insert' || source.event === 'shotgun_blast'),
