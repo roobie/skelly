@@ -8,6 +8,21 @@ export interface HandlingSoundCue {
   readonly position: Vec3;
 }
 
+/** Keeps refusal playback in presentation state, debounced on simulated time and independent of HUD visibility. */
+export const createRefusalPresenter = (
+  notice: (text: string) => void,
+  playNope: () => boolean,
+  minIntervalSeconds: number,
+): ((text: string, simulationTime: number) => void) => {
+  let lastPlayedAt = Number.NEGATIVE_INFINITY;
+  return (text, simulationTime) => {
+    if (simulationTime - lastPlayedAt >= minIntervalSeconds && playNope()) {
+      lastPlayedAt = simulationTime;
+    }
+    notice(text);
+  };
+};
+
 const FIREARM_SOUND_BY_ITEM: Readonly<Partial<Record<string, SoundEventId>>> = {};
 
 /** Item-keyed override point for future weapon-specific shot profiles. */
