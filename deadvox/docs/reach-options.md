@@ -1,3 +1,9 @@
+---
+read_if:
+  - you change inventory reach, wield preferences or quick-move admission
+  - you change delayed item use or battery selection
+---
+
 # Inventory reach and options (Slice 2.1)
 
 `src/core/reach.ts` owns inventory admission: 2 metres, inclusive. Piles retain
@@ -8,20 +14,19 @@ aggregation are not inventory admission; case aggregation uses `pilesInRadius`.
 
 A cached `reach(player)` contains carried items and recursively accessible nearby
 pile/container contents, locations, ordinary handling times, and nearby furniture.
-Unsearched furniture is visible for Search but exposes no contents. Workstations
-are empty until milestone 2.8. Inventory/entity revisions, precise position and
+Unsearched furniture is visible for Search but exposes no contents. Workstation
+reach uses the same furniture geometry; see `src/core/reach.ts`, `reach` and
+`furnitureInReach`. Inventory/entity revisions, precise position and
 scale invalidate the cache. Runtime light switching/draining also advances the
 inventory revision; the screen keys redraws on precise origin as well as revisions.
 The view is derived, never saved or authority for a delayed command. Moves and
 battery swaps recheck current ownership, reach and search at completion.
 
-The simulation fingerprint deliberately changes from main's
-`04329c8af428e3fd8882ffa26d931d007a0e0957c0f50e753f9f428ab8759ec9`
-to `7fc0930e39b8d33d1eaec3fcba2d236d5a9fc39c038c0fa96eba822aeb640fd5`:
-`core/reach.ts` and `core/options.ts` are in the fingerprint graph. This is a new
-simulation identity permitted pre-alpha; old saves are refused. No migration or
-save-schema change. The menu-pointer modifier fix itself is presentation-only,
-excluded from that graph.
+Reach and option admission affect simulation identity, unlike the menu-pointer
+adapter's presentation. See `tools/simulationFingerprint.ts`, `SIMULATION_ENTRIES`
+and `SIMULATION_EXCLUSIONS`, for that boundary rather than a copied hash.
+Exact-version save refusal prevents changed rules from silently reinterpreting
+an actor's work; no migration is owed before the compatibility milestone.
 
 `src/core/options.ts` supplies move/use plans, labels, refusal reasons and times.
 Survival retains registered queue actions and effects, not separate eligibility.
@@ -33,9 +38,11 @@ immediately or invokes use/eat/drink/switch.
 
 ## Explicit alignments
 
-- Wielded means **any right-hand item**, matching primary action dispatch. It stows
-  in the worn backpack, other worn bags, then worn clothing pockets. No fit means
-  a hint and no move/time. Left-hand items are carried and drop at the feet.
+- Wielded follows the dominant role, matching primary action dispatch; the
+  off-hand item remains carried for quick-move policy. Physical slots do not
+  change when the actor's preference changes. See `src/core/character.ts`,
+  `dominantSide` and `offSide`, and `src/core/options.ts`, `quickMove`, for
+  role resolution and placement admission. Refusal must preserve ownership.
 - Other carried items, including worn containers, drop exactly at the feet.
   Ground-grid placement now permits filled containers, with contents intact;
   pocket/furniture nesting still requires an empty bag. This also enables the

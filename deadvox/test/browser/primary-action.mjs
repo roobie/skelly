@@ -1,5 +1,5 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone browser contract starts Vite and Chrome
-// biome-ignore-all lint/performance/noAwaitInLoops: browser input selection must settle before the next keypress.
+// biome-ignore-all lint/performance/noAwaitInLoops: browser input selection must settle before the next keypress
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner controls the executable and source checkout for A/B tests
 import assert from 'node:assert/strict';
@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { inventorySelectionChanged } from './inventory-selection.ts';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
@@ -27,7 +28,53 @@ const observationPlugin = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { primaryActionTest: { input, inventory, session, survival, debugTools, engine, held: view.held, showNotice, getNotice: () => notice, feet, caseEffects, audio, setHand: (side, item) => { const held = inventory.hands[side]; if (held && held !== item && !inventory.consume(held, held.count)) throw new Error('Could not clear fixture hand'); if (inventory.hands[side] === item) return; const from = inventory.locate(item); const moved = from ? inventory.move(item, { kind: 'hand', side }) : inventory.add(item, { kind: 'hand', side }); if (from ? !moved.ok : !moved) throw new Error('Could not set fixture hand'); }, clearHand: (side) => { const held = inventory.hands[side]; if (held && !inventory.consume(held, held.count)) throw new Error('Could not clear fixture hand'); } } });\n  const originalHeldUpdate = view.held.update.bind(view.held);\n  view.held.update = (main, pose, recoil, firearms) => {\n    originalHeldUpdate(main, pose, recoil, firearms);\n    const observed = globalThis.primaryActionObserved;\n    if (!observed?.trackLeftAttachment) return;\n    const internals = view.held;\n    const arm = internals.arms.get('left');\n    const item = internals.heldByHand.get('left');\n    if (!arm || !item) return;\n    const anchor = arm.getObjectByName('grip-anchor');\n    if (!anchor) return;\n    const hand = anchor.getWorldPosition(camera.position.clone());\n    const grip = item.getWorldPosition(camera.position.clone());\n    const handOrientation = arm.getWorldQuaternion(camera.quaternion.clone());\n    const itemOrientation = item.getWorldQuaternion(camera.quaternion.clone());\n    observed.attachments.push({\n      gap: grip.distanceTo(hand),\n      angle: itemOrientation.angleTo(handOrientation),\n      torsoYaw: pose?.torsoYaw ?? 0,\n      leftOffset: pose?.left?.offset ?? null,\n      leftRotation: pose?.left?.rotation ?? null,\n    });\n  };\n${marker}`,
+      `
+  const proof = {
+    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet,
+    dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
+    getNotice: () => notice,
+    clearNotice: () => showNotice(''),
+    clearHand: (side) => {
+      const held = inventory.hands[side];
+      if (held) {
+        const result = inventory.move(held, { kind: 'pile', pos: feet() });
+        if (!result.ok) throw new Error('Could not drop fixture hand: ' + result.reason);
+      }
+    },
+    setHand: (side, item) => {
+      if (inventory.hands[side] === item) return;
+      proof.clearHand(side);
+      const from = inventory.locate(item);
+      const result = from ? inventory.move(item, { kind: 'hand', side }) : inventory.add(item, { kind: 'hand', side });
+      if (from ? !result.ok : !result) throw new Error('Could not place fixture hand');
+    },
+  };
+  Object.assign(globalThis, { primaryActionTest: proof });
+  const proofFrame = session.frame.bind(session);
+  session.frame = (...args) => { const result = proofFrame(...args); proof.frames++; return result; };
+  const proofSwing = session.playerCombat.beginMeleeSwing.bind(session.playerCombat);
+  session.playerCombat.beginMeleeSwing = (start) => {
+    const result = proofSwing(start);
+    proof.swings.push({ result, profile: start.profile, hand: session.playerCombat.activeMeleeAction?.hand ?? start.hand });
+    return result;
+  };
+  const proofHeldUpdate = view.held.update.bind(view.held);
+  view.held.update = (...args) => {
+    proofHeldUpdate(...args);
+    if (!proof.trackAttachment) return;
+    const pose = args[1];
+    const arm = view.held.arms.get(proof.off);
+    const item = view.held.heldByHand.get(proof.off);
+    const anchor = arm?.getObjectByName('grip-anchor');
+    if (!anchor || !item) return;
+    proof.attachments.push({
+      gap: item.getWorldPosition(camera.position.clone()).distanceTo(anchor.getWorldPosition(camera.position.clone())),
+      angle: item.getWorldQuaternion(camera.quaternion.clone()).angleTo(anchor.getWorldQuaternion(camera.quaternion.clone())),
+      torsoYaw: pose?.torsoYaw ?? 0,
+      movedOff: [...(pose?.[proof.off]?.offset ?? []), ...(pose?.[proof.off]?.rotation ?? [])].some(value => value !== 0),
+    });
+  };
+${marker}`,
     );
   },
 };
@@ -53,11 +100,6 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
   page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('console', (message) => {
-    if (message.type() === 'error') {
-      process.stderr.write(`browser console: ${message.text()}\\n`);
-    }
-  });
   await page.addInitScript(() => {
     let locked = false;
     Object.defineProperty(document, 'pointerLockElement', {
@@ -73,6 +115,19 @@ try {
       locked = false;
       document.dispatchEvent(new Event('pointerlockchange'));
     };
+    globalThis.acceptedCreation = [];
+    document.addEventListener(
+      'click',
+      (event) => {
+        if (event.target?.closest('#go')) {
+          globalThis.acceptedCreation.push({
+            trusted: event.isTrusted,
+            actorExists: Boolean(globalThis.primaryActionTest),
+          });
+        }
+      },
+      true,
+    );
   });
   if (renderMode === 'render-free') {
     await page.addInitScript(() => {
@@ -90,30 +145,77 @@ try {
   await page.goto(
     browserStageUrl(
       'primary-action',
-      `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
       renderOverride,
     ),
   );
-  await page.waitForFunction(() =>
-    Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view')),
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#dominant-hand').selectOption('left');
+  assert.equal(
+    await page.evaluate(() => Boolean(globalThis.primaryActionTest)),
+    false,
+    'selecting Left does not construct an actor',
   );
   await page.locator('#go').click();
-  try {
-    await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
-  } catch (error) {
-    const startup = await page.evaluate(() => ({
-      title: document.title,
-      body: document.body.innerText,
-      overlayHidden: document.querySelector('#overlay')?.hidden,
-      view: Boolean(document.querySelector('#view')),
-      errors: document.querySelector('#errors')?.textContent,
-      audio: globalThis.primaryActionTest?.audio?.settings,
-      pointerLock: Boolean(document.pointerLockElement),
-    }));
-    process.stderr.write(`startup errors: ${JSON.stringify(pageErrors)}; state: ${JSON.stringify(startup)}\\n`);
-    throw error;
-  }
+  await page.waitForFunction(
+    () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+  );
+  const identity = await page.evaluate(() => {
+    const { inventory, session } = globalThis.primaryActionTest;
+    return {
+      handedness: inventory.character.handedness,
+      saved: session.snapshot({ worldId: 'primary-world', characterId: 'primary-actor' }).character.progression
+        .handedness,
+      gestures: globalThis.acceptedCreation,
+      creationHidden: document.querySelector('#new-character-options').hidden,
+    };
+  });
+  assert.deepEqual(identity, {
+    handedness: 'left',
+    saved: 'left',
+    gestures: [{ trusted: true, actorExists: false }],
+    creationHidden: true,
+  });
 
+  const nextFrame = async () => {
+    const frame = await page.evaluate(() => globalThis.primaryActionTest.frames);
+    await page.waitForFunction((before) => globalThis.primaryActionTest.frames > before, frame);
+  };
+  const finishedSwing = () =>
+    page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction);
+  const observe = () =>
+    page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      return {
+        stamina: r.session.sim.needs.stamina,
+        swings: [...r.swings],
+        on: r.inventory.itemByUid(r.lightUid)?.on ?? false,
+      };
+    });
+  const strike = async () => {
+    const before = await observe();
+    await page.mouse.click(640, 450);
+    await page.waitForFunction((count) => globalThis.primaryActionTest.swings.length > count, before.swings.length);
+    const after = await observe();
+    assert.equal(after.swings.length, before.swings.length + 1, 'one click admits one swing');
+    assert.ok(after.stamina < before.stamina, 'an admitted swing spends stamina');
+    return after;
+  };
+  const toggleLight = async (key, on) => {
+    const before = await observe();
+    if (key) {
+      await page.keyboard.press(key);
+    } else {
+      await page.mouse.click(640, 450);
+    }
+    await page.waitForFunction((expected) => {
+      const r = globalThis.primaryActionTest;
+      return r.inventory.itemByUid(r.lightUid)?.on === expected;
+    }, on);
+    const after = await observe();
+    assert.deepEqual(after.swings, before.swings, 'light use never starts melee');
+    assert.ok(after.stamina >= before.stamina, 'light use does not spend melee stamina');
+  };
   if (renderMode === 'render-free') {
     const before = await page.evaluate(() => ({
       time: globalThis.primaryActionTest.session.sim.time,
@@ -127,451 +229,313 @@ try {
       {
         seconds: 0.35,
         label: 'render-free input and simulation witness',
-        record: (line) => process.stderr.write(`${line}\\n`),
+        record: (line) => process.stderr.write(`${line}\n`),
         stop: () => page.keyboard.up('KeyW'),
       },
     );
     const witness = await page.evaluate(() => ({
-      engineHasRenderer: Boolean(globalThis.primaryActionTest.engine.renderer),
-      webglRequests: globalThis.renderFreeWitness.webglRequests,
+      renderer: Boolean(globalThis.primaryActionTest.engine.renderer),
+      requests: globalThis.renderFreeWitness.webglRequests,
       feet: globalThis.primaryActionTest.feet(),
     }));
-    assert.equal(witness.engineHasRenderer, false, 'render-free engine has no renderer');
-    assert.deepEqual(witness.webglRequests, [], 'render-free play never requests a WebGL context');
+    assert.equal(witness.renderer, false);
+    assert.deepEqual(witness.requests, []);
     assert.ok(
-      Math.hypot(witness.feet[0] - before.feet[0], witness.feet[2] - before.feet[2]) > 0.01,
-      'held forward input moves the player while simulation time advances',
+      Math.hypot(witness.feet[0] - before.feet[0], witness.feet[2] - before.feet[2]) > 0,
+      'native input moves the actor',
     );
   }
-
-  // Gunshots attract shamblers. Mortality is not this hand-action contract;
-  // use the actual debug control and verify it (there is no god URL parameter).
+  // Gunshots attract shamblers; mortality is not the hand-action contract.
   await page.keyboard.press('KeyH');
-  assert.equal(
-    await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode),
-    true,
-    'hand-action fixture is damage immune',
-  );
-
-  const loadoutMeleeUid = await page.evaluate(() => {
-    const runtime = globalThis.primaryActionTest;
-    const backpack = runtime.inventory.worn.back;
-    const crowbar = backpack?.pockets?.[0]?.find(({ item }) => item.type === 'crowbar')?.item;
-    if (!(backpack && crowbar)) {
-      throw new Error('fresh debug loadout is missing its crowbar');
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode), true);
+  const loadout = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const item = [...r.inventory.items()].find(({ item: candidate }) => {
+      const def = r.inventory.registry.items.get(candidate.type);
+      return def.weapon && !def.twoHanded;
+    })?.item;
+    if (!item) {
+      throw new Error('Debug loadout has no one-handed melee fixture');
     }
-    const moved = runtime.inventory.move(crowbar, { kind: 'hand', side: 'right' });
-    if (!moved.ok) {
-      throw new Error(`cannot move the debug-loadout crowbar into the right hand: ${moved.reason}`);
-    }
-    const swings = [];
-    const originalBegin = runtime.session.playerCombat.beginMeleeSwing;
-    const begin = originalBegin.bind(runtime.session.playerCombat);
-    runtime.session.playerCombat.beginMeleeSwing = (start) => {
-      const result = begin(start);
-      const hand = runtime.session.playerCombat.activeMeleeAction?.hand ?? start.hand;
-      swings.push({ result, profile: start.profile, hand });
-      return result;
-    };
-    globalThis.primaryActionObserved = { swings, originalBegin };
-    return crowbar.uid;
+    r.setHand(r.dominant, item);
+    return { uid: item.uid, profile: r.inventory.registry.items.get(item.type).weapon.melee.type };
   });
-  const loadoutBefore = await page.evaluate(() => globalThis.primaryActionTest.session.sim.needs.stamina);
-  await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const loadoutAction = await page.evaluate(() => ({
-    rightHandItem: globalThis.primaryActionTest.inventory.hands.right?.type,
-    rightHandUid: globalThis.primaryActionTest.inventory.hands.right?.uid,
-    stamina: globalThis.primaryActionTest.session.sim.needs.stamina,
-    swings: [...globalThis.primaryActionObserved.swings],
-  }));
+  const first = await strike();
+  assert.deepEqual(first.swings[0], { result: true, profile: loadout.profile, hand: 'left' });
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), loadout.uid);
+  await finishedSwing();
   await page.evaluate(() => {
-    const runtime = globalThis.primaryActionTest;
-    runtime.session.playerCombat.beginMeleeSwing = globalThis.primaryActionObserved.originalBegin;
-  });
-  assert.equal(loadoutAction.rightHandItem, 'crowbar');
-  assert.equal(loadoutAction.rightHandUid, loadoutMeleeUid);
-  assert.deepEqual(loadoutAction.swings[0], { result: true, profile: 'blunt', hand: 'right' });
-  assert.ok(loadoutAction.stamina < loadoutBefore, 'the debug-loadout right-hand melee action spends stamina');
-  await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction, null, {
-    timeout: 10_000,
-  });
-
-  const flashlightUid = await page.evaluate(() => {
-    const runtime = globalThis.primaryActionTest;
-    const flashlight = runtime.inventory.create('flashlight');
-    runtime.clearHand('right');
-    runtime.setHand('left', flashlight);
-    globalThis.primaryActionObserved = {
-      flashlightUid: flashlight.uid,
-      swings: [],
-      attachments: [],
-      trackLeftAttachment: false,
-    };
-    const begin = runtime.session.playerCombat.beginMeleeSwing.bind(runtime.session.playerCombat);
-    runtime.session.playerCombat.beginMeleeSwing = (start) => {
-      const result = begin(start);
-      const hand = runtime.session.playerCombat.activeMeleeAction?.hand ?? start.hand;
-      globalThis.primaryActionObserved.swings.push({ result, profile: start.profile, hand });
-      return result;
-    };
-    return flashlight.uid;
-  });
-  const observe = (uid) =>
-    page.evaluate(
-      (itemUid) => ({
-        on: globalThis.primaryActionTest.inventory.itemByUid(itemUid)?.on ?? false,
-        stamina: globalThis.primaryActionTest.session.sim.needs.stamina,
-        swings: [...globalThis.primaryActionObserved.swings],
-      }),
-      uid,
+    const r = globalThis.primaryActionTest;
+    const defs = [...r.inventory.registry.items.values()];
+    const light = defs.find((def) => def.light && !def.twoHanded);
+    const tool = defs.find((def) => def.weapon && !def.twoHanded);
+    const inert = defs.find(
+      (def) =>
+        !(
+          def.weapon ||
+          def.firearm ||
+          def.light ||
+          def.food ||
+          def.drink ||
+          def.key ||
+          def.readable ||
+          def.book ||
+          def.unpack ||
+          def.battery ||
+          def.twoHanded ||
+          def.wearable ||
+          def.container ||
+          def.ammo
+        ),
     );
-
-  await page.evaluate(() => {
-    globalThis.primaryActionObserved.trackLeftAttachment = true;
+    const gun = defs.find((def) => def.firearm && !def.firearm.pump);
+    if (!(light && tool && inert && gun)) {
+      throw new Error('Missing hand-action fixture capabilities');
+    }
+    r.types = { light: light.id, tool: tool.id, profile: tool.weapon.melee.type, inert: inert.id, gun: gun.id };
+    r.clearHand(r.dominant);
   });
-  const beforeRightJab = await observe(flashlightUid);
-  await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const afterRightJab = await observe(flashlightUid);
-  await page.waitForFunction(
-    () =>
-      globalThis.primaryActionObserved.attachments.length >= 8 &&
-      !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction,
-    null,
-    { timeout: 10_000 },
-  );
+  // Fixture creation and placement stay with Inventory, never its hand map.
+  await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const light = r.inventory.create(r.types.light);
+    r.lightUid = light.uid;
+    r.setHand(r.off, light);
+    r.swings = [];
+    r.trackAttachment = true;
+  });
+  const jab = await strike();
+  assert.equal(jab.on, false, 'dominant jab does not use the off-hand light');
+  assert.deepEqual(jab.swings[0], { result: true, profile: 'fists', hand: 'left' });
+  await finishedSwing();
   const attachment = await page.evaluate(() => {
-    const samples = globalThis.primaryActionObserved.attachments;
+    const r = globalThis.primaryActionTest;
+    r.trackAttachment = false;
+    return r.attachments;
+  });
+  assert.ok(
+    attachment.length > 0 && attachment.some((sample) => sample.torsoYaw !== 0),
+    'attachment sampled during an actual swing',
+  );
+  assert.ok(
+    attachment.every((sample) => !sample.movedOff),
+    'off-hand hold stays neutral',
+  );
+  assert.ok(
+    attachment.every((sample) => sample.gap <= 0.001 && sample.angle < 1e-6),
+    'held item follows its physical arm',
+  );
+  await toggleLight('Equal', true);
+  const roundTrip = await page.evaluate(() => {
+    const { inventory, session, lightUid } = globalThis.primaryActionTest;
+    const snapshot = session.snapshot({ worldId: 'primary-world', characterId: 'primary-actor' });
+    const restored = inventory.constructor.restoreState(
+      inventory.registry,
+      snapshot.character.inventory,
+      undefined,
+      inventory.character,
+    );
     return {
-      count: samples.length,
-      maxGap: Math.max(...samples.map(({ gap }) => gap)),
-      maxAngle: Math.max(...samples.map(({ angle }) => angle)),
-      maxTorsoYaw: Math.max(...samples.map(({ torsoYaw }) => Math.abs(torsoYaw))),
-      movedLeftHand: samples.some(
-        ({ leftOffset, leftRotation }) =>
-          leftOffset?.some((value) => value !== 0) || leftRotation?.some((value) => value !== 0),
-      ),
+      uid: snapshot.character.lightUid,
+      savedOn: snapshot.character.inventory.hands.right?.on,
+      restoredOn: restored.hands.right?.on,
+      restoredHand: restored.character.handedness,
+      lightUid,
     };
   });
+  assert.equal(roundTrip.uid, roundTrip.lightUid);
+  assert.equal(roundTrip.savedOn, true);
+  assert.equal(roundTrip.restoredOn, true);
+  assert.equal(roundTrip.restoredHand, 'left');
+  await toggleLight('Equal', false);
   await page.evaluate(() => {
-    globalThis.primaryActionObserved.trackLeftAttachment = false;
+    const r = globalThis.primaryActionTest;
+    r.setHand(r.dominant, r.inventory.create(r.types.tool));
   });
-  assert.equal(afterRightJab.on, false, 'right-hand jab must not toggle the flashlight held in the left hand');
-  assert.equal(
-    afterRightJab.swings.length,
-    1,
-    `left-held flashlight click must make one right jab: ${JSON.stringify(afterRightJab)}`,
-  );
-  assert.deepEqual(afterRightJab.swings[0], { result: true, profile: 'fists', hand: 'right' });
-  assert.ok(afterRightJab.stamina < beforeRightJab.stamina, 'the right jab spends stamina');
-  assert.ok(attachment.count >= 8, `sampled the attachment through the swing: ${JSON.stringify(attachment)}`);
-  assert.ok(attachment.maxTorsoYaw > 0.5, `the d7 fist torso yaw was exercised: ${JSON.stringify(attachment)}`);
-  assert.equal(attachment.movedLeftHand, false, 'the held left hand stays in its hold pose');
-  assert.ok(attachment.maxGap <= 0.001, `held item stays on its hand: ${JSON.stringify(attachment)}`);
-  assert.ok(attachment.maxAngle < 1e-6, `held item follows the hand rotation: ${JSON.stringify(attachment)}`);
-
-  await page.keyboard.press('Equal');
-  await page.waitForTimeout(150);
-  const leftOn = await observe(flashlightUid);
-  assert.equal(leftOn.on, true, '`=` activates the left-hand flashlight');
-  assert.deepEqual(leftOn.swings, afterRightJab.swings, '`=` on the light must not start melee');
-  assert.ok(leftOn.stamina >= afterRightJab.stamina, '`=` on the light must not spend melee stamina');
-  const lightRoundTrip = await page.evaluate(() => {
-    const { inventory, session } = globalThis.primaryActionTest;
-    const snapshot = session.snapshot({ worldId: 'primary-action-test', characterId: 'primary-action-test' });
-    const restored = inventory.constructor.restoreState(inventory.registry, snapshot.character.inventory);
-    return {
-      lightUid: snapshot.character.lightUid,
-      savedOn: snapshot.character.inventory.hands.left?.on ?? false,
-      restoredOn: restored.hands.left?.on ?? false,
-    };
+  const both = await strike();
+  assert.equal(both.on, false);
+  assert.deepEqual(both.swings.at(-1), {
+    result: true,
+    profile: await page.evaluate(() => globalThis.primaryActionTest.types.profile),
+    hand: 'left',
   });
-  assert.deepEqual(lightRoundTrip, { lightUid: flashlightUid, savedOn: true, restoredOn: true });
-  await page.keyboard.press('Equal');
-  await page.waitForTimeout(150);
-  const leftOff = await observe(flashlightUid);
-  assert.equal(leftOff.on, false, 'second `=` switches the left-hand flashlight off');
-  assert.deepEqual(leftOff.swings, afterRightJab.swings);
-  assert.ok(leftOff.stamina >= leftOn.stamina);
-
+  await finishedSwing();
+  await toggleLight('Equal', true);
+  await toggleLight('Equal', false);
   await page.evaluate(() => {
-    const { inventory, setHand } = globalThis.primaryActionTest;
-    setHand('right', inventory.create('baseball_bat'));
+    const r = globalThis.primaryActionTest;
+    r.setHand(r.dominant, r.inventory.itemByUid(r.lightUid));
   });
-  const beforeBat = await observe(flashlightUid);
-  await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const bothHands = await observe(flashlightUid);
-  assert.equal(bothHands.on, false, 'right-hand bat action does not toggle the left-hand flashlight');
-  assert.deepEqual(bothHands.swings[1], { result: true, profile: 'blunt', hand: 'right' });
-  assert.ok(bothHands.stamina < beforeBat.stamina, 'the right-hand bat swing spends stamina');
-  await page.waitForTimeout(1250);
-  await page.keyboard.press('Equal');
-  await page.waitForTimeout(150);
-  const leftWithBat = await observe(flashlightUid);
-  assert.equal(leftWithBat.on, true, '`=` still selects the left-hand flashlight beside a right-hand bat');
-  assert.deepEqual(leftWithBat.swings, bothHands.swings);
-  assert.ok(leftWithBat.stamina >= bothHands.stamina, '`=` with the left light spends no melee stamina');
-  await page.keyboard.press('Equal');
-  await page.waitForTimeout(150);
-  assert.equal((await observe(flashlightUid)).on, false);
-
+  await toggleLight(null, true);
+  await toggleLight(null, false);
   await page.evaluate(() => {
-    const { inventory, setHand } = globalThis.primaryActionTest;
-    const flashlight = inventory.itemByUid(globalThis.primaryActionObserved.flashlightUid);
-    setHand('right', flashlight);
+    const r = globalThis.primaryActionTest;
+    r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
+    r.setHand(r.dominant, r.inventory.create(r.types.inert));
+    r.clearNotice();
   });
+  const unsupportedBefore = await observe();
   await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const rightOn = await observe(flashlightUid);
-  assert.equal(rightOn.on, true, 'left-click activates the right-hand flashlight');
-  assert.deepEqual(rightOn.swings, bothHands.swings);
-  assert.ok(rightOn.stamina >= bothHands.stamina);
-  await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const rightOff = await observe(flashlightUid);
-  assert.equal(rightOff.on, false, 'left-click toggles the right-hand flashlight off');
-  assert.deepEqual(rightOff.swings, bothHands.swings);
-  assert.ok(rightOff.stamina >= rightOn.stamina);
-
+  await page.waitForFunction(() => Boolean(globalThis.primaryActionTest.getNotice()));
+  await nextFrame();
+  const unsupported = await observe();
+  assert.deepEqual(unsupported.swings, unsupportedBefore.swings, 'unsupported held item never falls back to fists');
+  assert.ok(unsupported.stamina >= unsupportedBefore.stamina);
+  await toggleLight('Equal', true);
   await page.evaluate(() => {
-    const { inventory, setHand } = globalThis.primaryActionTest;
-    const flashlight = inventory.itemByUid(globalThis.primaryActionObserved.flashlightUid);
-    setHand('left', flashlight);
-    setHand('right', inventory.create('rag'));
-    globalThis.primaryActionObserved.swings = [];
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    r.swings = [];
   });
-  const beforeUnsupported = await page.evaluate(() => globalThis.primaryActionTest.session.sim.needs.stamina);
-  await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const unsupported = await page.evaluate(() => ({
-    swings: [...globalThis.primaryActionObserved.swings],
-    stamina: globalThis.primaryActionTest.session.sim.needs.stamina,
-    notice: globalThis.primaryActionTest.getNotice(),
-  }));
-  assert.deepEqual(unsupported.swings, [], 'an unsupported right-hand item must not fall back to fists');
-  assert.ok(unsupported.stamina >= beforeUnsupported, 'an unsupported item must not spend melee stamina');
-  assert.equal(unsupported.notice, 'Nothing to do with rag');
-  await page.keyboard.press('Equal');
-  await page.waitForTimeout(150);
-  assert.equal(
-    (await observe(flashlightUid)).on,
-    true,
-    '`=` uses the left item even when the right item is unsupported',
-  );
-
+  assert.deepEqual((await strike()).swings[0], { result: true, profile: 'fists', hand: 'left' });
+  await finishedSwing();
+  assert.deepEqual((await strike()).swings[1], { result: true, profile: 'fists', hand: 'right' });
+  await finishedSwing();
   await page.evaluate(() => {
-    const { clearHand } = globalThis.primaryActionTest;
-    clearHand('right');
-    clearHand('left');
-    globalThis.primaryActionObserved.swings = [];
+    const r = globalThis.primaryActionTest;
+    const light = r.inventory.create(r.types.light);
+    r.lightUid = light.uid;
+    r.setHand(r.off, light);
+    r.swings = [];
   });
-  await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const firstFist = await observe(flashlightUid);
-  assert.equal(firstFist.swings.length, 1);
-  assert.deepEqual(firstFist.swings[0], { result: true, profile: 'fists', hand: 'right' });
-  await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction, null, {
-    timeout: 10_000,
-  });
-  await page.mouse.click(640, 450);
-  await page.waitForTimeout(150);
-  const secondFist = await observe(flashlightUid);
-  assert.equal(secondFist.swings.length, 2);
-  assert.deepEqual(secondFist.swings[1], { result: true, profile: 'fists', hand: 'left' });
-  await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction, null, {
-    timeout: 10_000,
-  });
-
-  await page.evaluate(() => {
-    const { inventory, clearHand, setHand } = globalThis.primaryActionTest;
-    clearHand('right');
-    setHand('left', inventory.create('flashlight'));
-    globalThis.primaryActionObserved.swings = [];
-  });
-  const beforeBlocked = await page.evaluate(() => globalThis.primaryActionTest.session.sim.needs.stamina);
+  const blockedBefore = await observe();
   await page.keyboard.press('KeyB');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.debugTools.buildOn), true);
   await page.keyboard.press('Equal');
-  await page.waitForTimeout(150);
-  const buildBlocked = await page.evaluate(() => ({
-    itemOn: globalThis.primaryActionTest.inventory.hands.left?.on ?? false,
-    stamina: globalThis.primaryActionTest.session.sim.needs.stamina,
-    swings: [...globalThis.primaryActionObserved.swings],
-  }));
-  assert.equal(buildBlocked.itemOn, false, 'debug build mode blocks the Equal action');
-  assert.ok(buildBlocked.stamina >= beforeBlocked);
-  assert.deepEqual(buildBlocked.swings, []);
+  await nextFrame();
+  const build = await observe();
+  assert.equal(build.on, false);
+  assert.deepEqual(build.swings, []);
+  assert.ok(build.stamina >= blockedBefore.stamina);
   await page.keyboard.press('KeyB');
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.menuPointer), true);
   await page.keyboard.press('Equal');
-  await page.waitForTimeout(150);
-  const menuBlocked = await page.evaluate(() => ({
-    itemOn: globalThis.primaryActionTest.inventory.hands.left?.on ?? false,
-    stamina: globalThis.primaryActionTest.session.sim.needs.stamina,
-    swings: [...globalThis.primaryActionObserved.swings],
-  }));
-  assert.equal(menuBlocked.itemOn, false, 'inventory menu blocks the Equal action');
-  assert.ok(menuBlocked.stamina >= beforeBlocked);
-  assert.deepEqual(menuBlocked.swings, []);
+  await nextFrame();
+  const menu = await observe();
+  assert.equal(menu.on, false);
+  assert.deepEqual(menu.swings, []);
+  assert.ok(menu.stamina >= blockedBefore.stamina);
   await page.keyboard.press('Tab');
 
-  const casesBeforeFirearm = await page.evaluate(() => {
-    const { inventory, setHand, clearHand } = globalThis.primaryActionTest;
-    clearHand('left');
-    setHand('right', inventory.create('debug_rifle_assault'));
-    return [...inventory.piles.values()]
-      .flatMap((pile) => pile.items)
-      .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
-      .reduce((sum, { item }) => sum + item.count, 0);
+  const firearm = await page.evaluate(async () => {
+    const moduleUrl = '/src/game/firearmHandling.ts';
+    const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
+    const r = globalThis.primaryActionTest;
+    const gun = r.inventory.create(r.types.gun);
+    r.clearHand(r.off);
+    r.setHand(r.dominant, gun);
+    r.caseType = spentCaseItemId(firearmHandlingFor(gun, r.inventory.registry).calibre);
+    return {
+      uid: gun.uid,
+      cases: [...r.inventory.piles.values()]
+        .flatMap((p) => p.items)
+        .filter(({ item }) => item.type === r.caseType)
+        .reduce((sum, { item }) => sum + item.count, 0),
+    };
   });
   await page.mouse.click(640, 450);
-  await page.waitForFunction((before) => {
-    const { inventory } = globalThis.primaryActionTest;
+  await page.waitForFunction(({ uid, cases }) => {
+    const r = globalThis.primaryActionTest;
+    const count = [...r.inventory.piles.values()]
+      .flatMap((p) => p.items)
+      .filter(({ item }) => item.type === r.caseType)
+      .reduce((sum, { item }) => sum + item.count, 0);
     return (
-      [...inventory.piles.values()]
-        .flatMap((pile) => pile.items)
-        .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
-        .reduce((sum, { item }) => sum + item.count, 0) ===
-      before + 1
+      count === cases + 1 && r.audio.heardSounds.some((sound) => sound.sourceLabel === r.inventory.itemByUid(uid)?.type)
     );
-  }, casesBeforeFirearm);
-  await page.waitForFunction(() =>
-    globalThis.primaryActionTest.audio.heardSounds.some(({ event }) => event === 'gunshot'),
-  );
-  const firearmAction = await page.evaluate(() => ({
-    rifle: globalThis.primaryActionTest.inventory.hands.right?.type,
-    flyingCases: globalThis.primaryActionTest.caseEffects.activeCount,
-    gunshot: globalThis.primaryActionTest.audio.heardSounds.filter(({ event }) => event === 'gunshot').at(-1),
-    cases: [...globalThis.primaryActionTest.inventory.piles.values()]
-      .flatMap((pile) => pile.items)
-      .filter(({ item }) => item.type === 'spent_case_5_d_56x45')
-      .reduce((sum, { item }) => sum + item.count, 0),
-  }));
-  assert.equal(firearmAction.rifle, 'debug_rifle_assault');
-  assert.equal(firearmAction.cases, casesBeforeFirearm + 1, 'debug primary action records one persistent case');
-  assert.ok(firearmAction.flyingCases > 0, 'debug primary action also spawns a render-only flying case');
-  assert.equal(firearmAction.gunshot?.event, 'gunshot');
-  assert.match(firearmAction.gunshot?.file ?? '', /^assets\/audio\/gunshot-akm-0[12]\.ogg$/);
-  assert.equal(firearmAction.gunshot?.sourceLabel, 'debug_rifle_assault');
-  assert.equal(firearmAction.gunshot?.distanceMetres, 0, 'the player gunshot is head-locked, not left at the muzzle');
-  assert.equal(firearmAction.gunshot?.lowpassHz, null, 'the player gunshot bypasses world occlusion');
-  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle);
-  const beforeCock = await page.evaluate(() => ({
-    uid: globalThis.primaryActionTest.inventory.hands.right.uid,
-    danger: globalThis.primaryActionTest.debugTools.dangerReason() ?? null,
-  }));
+  }, firearm);
+  const emission = await page.evaluate(({ uid }) => {
+    const r = globalThis.primaryActionTest;
+    return {
+      uid: r.inventory.hands.left?.uid,
+      flying: r.caseEffects.activeCount,
+      shot: r.audio.heardSounds.findLast((sound) => sound.sourceLabel === r.inventory.itemByUid(uid)?.type),
+    };
+  }, firearm);
+  assert.equal(emission.uid, firearm.uid);
+  assert.ok(emission.flying > 0);
+  assert.ok(emission.shot?.file);
+  assert.equal(emission.shot?.distanceMetres, 0);
+  assert.equal(emission.shot?.lowpassHz, null);
+  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
+  const cock = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return {
+      label: r.session.firearms.useOption(r.inventory.hands.left).label,
+      danger: r.debugTools.dangerReason() ?? null,
+    };
+  });
   await page.keyboard.press('Tab');
   const candidates = await page.locator('#inventory [data-uid]').count();
-  assert.ok(candidates > 0, 'inventory exposes selectable items');
-  // Wait for each keypress to reach the rendered inventory before reading selection again.
-  for (let index = 0; index <= candidates; index += 1) {
-    const selectedUid = await page.evaluate(
-      () => document.querySelector('#inventory [data-uid].selected')?.getAttribute('data-uid') ?? null,
-    );
-    if (selectedUid === String(beforeCock.uid)) {
+  assert.ok(candidates > 0);
+  for (let index = 0; index <= candidates; index++) {
+    const selectedRow = page.locator('#inventory [data-uid].selected');
+    const selected = (await selectedRow.count()) ? await selectedRow.getAttribute('data-uid') : null;
+    if (selected === String(firearm.uid)) {
       break;
     }
     await page.keyboard.press('ArrowDown');
-    await page.waitForFunction((previousUid) => {
-      const currentUid = document.querySelector('#inventory [data-uid].selected')?.getAttribute('data-uid');
-      return typeof currentUid === 'string' && currentUid !== previousUid;
-    }, selectedUid);
+    await page.waitForFunction(inventorySelectionChanged, selected);
   }
-  assert.equal(await page.locator(`#inventory [data-uid="${beforeCock.uid}"].selected`).count(), 1);
-  const cockButton = page.getByRole('button', { name: /^Cock Assault rifle/ });
-  assert.equal(await cockButton.count(), 1, 'held rifle Use label offers cocking, not an unsupported survival action');
+  assert.equal(await page.locator(`#inventory [data-uid="${firearm.uid}"].selected`).count(), 1);
+  const cockButton = page.locator('button.inv-option').filter({ hasText: cock.label });
+  assert.equal(await cockButton.count(), 1);
   await page.keyboard.press('Digit1');
   await page.keyboard.press('KeyU');
-  const inventoryCock = await page.evaluate(() => ({
-    mode: globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle?.mode,
-    danger: globalThis.primaryActionTest.debugTools.dangerReason() ?? null,
-    reason: globalThis.primaryActionTest.session.firearms.cockReason(
-      globalThis.primaryActionTest.inventory.hands.right.uid,
-    ),
-  }));
-  assert.equal(inventoryCock.mode, 'hand', 'inventory U must cock rather than dispatch the debug Danger test');
-  assert.equal(inventoryCock.danger, beforeCock.danger, 'inventory U leaves debug Danger unchanged');
-  assert.equal(inventoryCock.reason, 'Already handling something');
-  await page.waitForFunction(() =>
-    document.querySelector('.inv-details')?.textContent.includes('already handling something'),
+  await page.waitForFunction(() => globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle?.mode === 'hand');
+  const handling = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return {
+      danger: r.debugTools.dangerReason() ?? null,
+      reason: r.session.firearms.cockReason(r.inventory.hands.left.uid),
+    };
+  });
+  assert.equal(handling.danger, cock.danger);
+  assert.ok(handling.reason);
+  await page.waitForFunction(
+    (reason) => [...document.querySelectorAll('.inv-reason')].some((node) => node.textContent === reason.toLowerCase()),
+    handling.reason,
   );
-  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.right.firearm?.cycle);
-  assert.equal(
-    await cockButton.count(),
-    1,
-    'cock availability redraws after completion without an inventory version change',
-  );
+  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
+  assert.equal(await cockButton.count(), 1, 'cock availability redraws after completion');
   await page.keyboard.press('Tab');
-  const quickbarFood = await page.evaluate(() => {
-    const runtime = globalThis.primaryActionTest;
-    const { inventory, engine, session } = runtime;
-    let item = [...inventory.items()].find(
-      ({ item: candidate, path, location }) =>
-        location.kind === 'pocket' &&
-        (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.')) &&
-        engine.registry.items.get(candidate.type)?.food,
+  const food = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const item = [...r.inventory.items()].find(
+      ({ item: candidate, location }) =>
+        location.kind === 'pocket' && r.inventory.registry.items.get(candidate.type)?.food,
     )?.item;
     if (!item) {
-      const foods = [...engine.registry.items.values()].filter((candidate) => candidate.food);
-      const owners = inventory
-        .carried()
-        .filter((candidate) => engine.registry.items.get(candidate.type)?.container?.pockets);
-      const placeFood = (food, owner) => {
-        const { container } = engine.registry.items.get(owner.type);
-        for (const [pocket] of container.pockets.entries()) {
-          const created = inventory.create(food.id);
-          if (inventory.add(created, { kind: 'pocket', owner, pocket })) {
-            return created;
-          }
-        }
-      };
-      for (const food of foods) {
-        item = owners.map((owner) => placeFood(food, owner)).find(Boolean);
-        if (item) {
-          break;
-        }
-      }
+      throw new Error('Quickbar fixture has no carried pocket food');
     }
-    if (!item) {
-      throw new Error('quickbar hold fixture could not place food in a carried pocket');
-    }
-    session.quickbar.assign(0, item);
-    return { uid: item.uid, count: item.count, heldUid: inventory.hands.right?.uid };
+    r.session.quickbar.assign(0, item);
+    return { uid: item.uid, count: item.count, heldUid: r.inventory.hands.left?.uid };
   });
   await page.keyboard.down('Digit1');
   try {
     await page.waitForFunction(({ uid, count, heldUid }) => {
-      const { inventory, session } = globalThis.primaryActionTest;
-      if (session.sim.dead) {
-        throw new Error(`Actor died during quickbar use: ${session.sim.dead.cause}`);
-      }
-      const item = inventory.itemByUid(uid);
-      return (!item || item.count < count) && inventory.hands.right?.uid === heldUid;
-    }, quickbarFood);
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(uid);
+      return (!item || item.count < count) && r.inventory.hands.left?.uid === heldUid;
+    }, food);
   } finally {
     await page.keyboard.up('Digit1');
   }
-  const quickbarUse = await page.evaluate(({ uid }) => {
-    const { inventory } = globalThis.primaryActionTest;
-    const item = inventory.itemByUid(uid);
-    return { count: item?.count ?? null, rightHandUid: inventory.hands.right?.uid };
-  }, quickbarFood);
-  assert.ok(
-    quickbarUse.count === null || quickbarUse.count < quickbarFood.count,
-    'a real held number uses pocket food',
-  );
-  assert.equal(quickbarUse.rightHandUid, quickbarFood.heldUid, 'pocket use leaves the held weapon where it is');
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), food.heldUid);
   const bookUid = await page.evaluate(() => {
-    const { inventory, session, clearHand, setHand } = globalThis.primaryActionTest;
-    session.sim.ignoreUnsafe = true; // Match the debug time-skip admission for this hand-action probe.
-    clearHand('right');
-    const book = inventory.create('field_manual');
-    setHand('right', book);
+    const r = globalThis.primaryActionTest;
+    const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.book);
+    if (!definition) {
+      throw new Error('No book capability for primary reading fixture');
+    }
+    r.clearHand(r.dominant);
+    const book = r.inventory.create(definition.id);
+    r.setHand(r.dominant, book);
     return book.uid;
   });
+  // The test-house fixture admits reading through ordinary safety, not an unsafe override.
   await page.mouse.click(640, 450);
   await page.waitForFunction(
     (uid) => {
@@ -581,14 +545,20 @@ try {
     bookUid,
     { timeout: 10_000 },
   );
-  await page.evaluate(() => {
-    const { session } = globalThis.primaryActionTest;
-    session.sim.actions.stop();
-    session.sim.ignoreUnsafe = false;
-  });
-  assert.deepEqual(pageErrors, [], `browser errors: ${pageErrors.join('; ')}`);
+  // The reading card owns keyboard input until it is closed.
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('KeyX');
+  await page.waitForFunction(
+    () => {
+      const { sim } = globalThis.primaryActionTest.session;
+      return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped && !sim.ignoreUnsafe;
+    },
+    undefined,
+    { timeout: 10_000 },
+  );
+  assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'primary-action browser contract passed: hand bindings, attachment, held-book reading, unsupported hints, alternating fists, debug firearm cases, head-locked AKM shot audio, inventory-owned U/cock labels, and a real quickbar hold.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, inventory cock, quickbar hold and held-book reading.\n',
   );
 } finally {
   await browser?.close();

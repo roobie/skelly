@@ -213,6 +213,7 @@ const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
 const nonNegative = num({ min: 0 });
 const progression = obj({
+  handedness: enumeration(['right', 'left']),
   skills: record(nonNegativeInt),
   practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),

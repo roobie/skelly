@@ -7,6 +7,8 @@ status: active
 read_if:
   - you're implementing or changing furniture-based rest and sleep
   - you're reviewing long-action continuation and save ownership
+  - you change item activation, crafting or appliance ownership boundaries
+  - you reconcile BR's interaction rulings with actor handedness
 ---
 
 # deadvox — interactions
@@ -378,10 +380,10 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    counter stays until profiling in Slice 5 shows it costs too much.
 6. **Held-item primary action (BR, 2026-09-26, issue #27):** "Left click does
    the thing with the thing you're holding." Dispatch by item capability, not
-   id. The initial hand mapping (BR, 2026-10-01; open to revision) is left click
-   for the right hand and `=` for the left. A right-hand item uses its action;
-   an empty right hand jabs with the right fist. The `=` action uses the
-   left-hand item and does nothing if that hand is empty. Fists alternate only
-   when both hands are empty; never punch with a hand holding an item. An
-   unsupported item gives a hint. Lights reuse `Survival.use` for the instant
-   toggle.
+   id. The initial hand mapping (BR, 2026-10-01; open to revision) was "left click
+   for the right hand and `=` for the left". BR's 2026-10-04 handedness ruling
+   maps right to the dominant role and left to the off-hand role, rather than
+   changing physical inventory slots. See `src/core/character.ts`, `dominantSide`
+   and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
+   A held item must never become a fist or redirect to the other hand, and a
+   restored physical fist sequence must not be reseeded from dominance.

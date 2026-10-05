@@ -1,13 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Character, practiceForNextLevel } from '../src/core/character.ts';
+import { Character, dominantSide, offSide, practiceForNextLevel } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { disassemblyOutputs } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
@@ -21,9 +21,9 @@ const { registry } = buildRegistry(
       data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
     })),
 );
-const make = (unsafe?: () => string | undefined) => {
-  const inventory = new Inventory(registry);
-  const character = new Character(registry);
+const make = (unsafe?: () => string | undefined, handedness?: HandSide) => {
+  const character = new Character(registry, handedness ? { handedness } : {});
+  const inventory = new Inventory(registry, undefined, undefined, character);
   const queue = new HandlingQueue(inventory);
   const sim = new Simulation({ seed: 1, ...(unsafe ? { unsafe } : {}) });
   const position: [number, number, number] = [0, 0, 0];
@@ -84,22 +84,28 @@ describe('live craft commands', () => {
     r.sim.actions.stop();
     expect(r.commands.currentUid).toBe(workUid);
   });
-  it('Inventory refuses a work item in the left hand without changing its owning tree', () => {
-    const r = make();
-    expect(r.commands.start('torch')).toBeUndefined();
-    r.sim.actions.stop();
-    const item = r.inventory.hands.right!;
-    const before = r.inventory.snapshotState();
-    const leftHand = options(item, r.reach()).find(
-      (option) => option.kind === 'move' && option.target.kind === 'hand' && option.target.side === 'left',
-    )!;
-    const refusal = r.inventory.plan(item, { kind: 'hand', side: 'left' });
-    expect(leftHand.plan).toEqual(refusal);
-    expect(refusal.ok).toBe(false);
-    expect(r.inventory.move(item, { kind: 'hand', side: 'left' })).toEqual(refusal);
-    expect(r.inventory.snapshotState()).toEqual(before);
-    expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
-  });
+  it.each(['right', 'left'] as const)(
+    '%s-dominant work refuses the other slot without changing its owning tree',
+    (handedness) => {
+      const r = make(undefined, handedness);
+      expect(r.commands.start('torch')).toBeUndefined();
+      r.sim.actions.stop();
+      const item = r.inventory.hands[dominantSide(r.character)]!;
+      const other = offSide(r.character);
+      expect(r.commands.currentUid).toBe(item.uid);
+      const before = r.inventory.snapshotState();
+      const otherHand = options(item, r.reach()).find(
+        (option) => option.kind === 'move' && option.target.kind === 'hand' && option.target.side === other,
+      )!;
+      const refusal = r.inventory.plan(item, { kind: 'hand', side: other });
+      expect(otherHand.plan).toEqual(refusal);
+      expect(refusal.ok).toBe(false);
+      expect(r.inventory.move(item, { kind: 'hand', side: other })).toEqual(refusal);
+      expect(r.inventory.snapshotState()).toEqual(before);
+      expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
+      expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
+    },
+  );
   it('native begin rechecks knowledge after planning before any escrow or compression', () => {
     const r = make();
     const result = r.commands.preview('torch')!;

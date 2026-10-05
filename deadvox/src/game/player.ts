@@ -76,12 +76,12 @@ export interface MoveIntent {
   sprint: boolean;
   /** Walk instead of jog. Sprinting wins over walking. */
   walk: boolean;
-  /** Edge-triggered right-hand action; the player tick consumes this once. */
-  primaryAction?: boolean;
-  /** Held primary trigger; only debug firearms repeat, not other item actions. */
-  primaryActionHeld?: boolean;
-  /** Edge-triggered left-hand action (`=`); the player tick consumes this once. */
-  leftHandAction?: boolean;
+  /** Edge-triggered dominant-hand use; the player tick consumes this once. */
+  useDominant?: boolean;
+  /** Held dominant trigger; only debug firearms repeat, not other item actions. */
+  useDominantHeld?: boolean;
+  /** Edge-triggered off-hand use; the player tick consumes this once. */
+  useOff?: boolean;
   /** Speed factor from load and handling (paceFactor); 1 when absent. */
   pace?: number;
 }
