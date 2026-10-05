@@ -213,14 +213,19 @@ try {
       const entries = [...controls.querySelectorAll('dt')];
       const rows = controlsCardRows();
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
-      const card = document.querySelector('#overlay .card').getBoundingClientRect();
+      const cardEl = document.querySelector('#overlay .card');
+      const card = cardEl.getBoundingClientRect();
+      const style = getComputedStyle(cardEl);
+      const maxWidth = Number.parseFloat(style.maxWidth) +
+        Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
       return rows.length > 0 && entries.length === rows.length &&
         entries.every((key, index) => key.nextElementSibling?.tagName === 'DD' &&
           key.textContent === rows[index].keys && key.nextElementSibling.textContent === rows[index].action) &&
-        columns.length === 1 && card.left >= 0 && card.right <= innerWidth;
+        columns.length === 1 && Number.isFinite(maxWidth) && card.width <= maxWidth &&
+        card.left >= 0 && card.right <= innerWidth;
     })()`),
     true,
-    'binding-derived controls stack in one column inside the narrower pause card',
+    'binding-derived controls stack in one column within the card computed maximum width and viewport',
   );
   assert.equal(
     await evaluate(

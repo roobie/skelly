@@ -7,6 +7,7 @@ import {
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
 import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
+import type { ItemState } from './items.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
@@ -129,8 +130,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 12;
-const SCHEMA_VERSION = SAVE_SCHEMA_VERSION;
+export const SAVE_SCHEMA_VERSION = 13;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -146,7 +146,7 @@ function defaultVersion(): SaveVersionComponents {
   try {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
-      schemaVersion: SCHEMA_VERSION,
+      schemaVersion: SAVE_SCHEMA_VERSION,
       generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
@@ -204,12 +204,13 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
+const nonNegative = num({ min: 0 });
 const progression = obj({
   handedness: enumeration(['right', 'left']),
   skills: record(nonNegativeInt),
+  practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),
 });
-const nonNegative = num({ min: 0 });
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
@@ -333,11 +334,13 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading']),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),
       workUid: opt(positiveInt),
+      bookUid: opt(positiveInt),
+      duration: opt(positive),
       rest: opt(
         obj({
           kind: enumeration(['rest', 'sleep']),
@@ -637,7 +640,7 @@ function validateVersion(version: SaveVersionComponents): void {
   if (!HASH.test(version.simulationHash)) {
     throw new Error('Invalid simulation source hash');
   }
-  if (version.schemaVersion !== SCHEMA_VERSION) {
+  if (version.schemaVersion !== SAVE_SCHEMA_VERSION) {
     throw new Error(`Unsupported save schema version ${version.schemaVersion}`);
   }
   const packIds = new Set<string>();
@@ -1069,12 +1072,7 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
   return snapshot;
 }
 
-function validateActionReferences(snapshot: SaveSnapshot): void {
-  const { job } = snapshot.character.longAction;
-  validateLongJob(job, snapshot.character.simulation.time);
-  let owns = job?.jobType !== 'craft';
-  const tree = [...savedItemTree(snapshot.character.inventory)];
-  const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
+function validateWorkItems(tree: readonly { item: ItemState }[], itemsByUid: ReadonlyMap<number, ItemState>): void {
   for (const { item } of tree) {
     if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
       throw new Error('Invalid craft work payload');
@@ -1085,12 +1083,30 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
         throw new Error('Missing repair target');
       }
     }
-    if (job?.jobType === 'craft' && item.uid === job.workUid && item.work) {
-      owns = true;
-    }
   }
-  if (!owns) {
-    throw new Error('Missing craft work item');
+}
+
+function ownsLongActionItem(
+  job: SaveSnapshot['character']['longAction']['job'],
+  tree: readonly { item: ItemState }[],
+): boolean {
+  if (job?.jobType === 'craft') {
+    return tree.some(({ item }) => item.uid === job.workUid && item.work !== undefined);
+  }
+  if (job?.jobType === 'reading') {
+    return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
+  }
+  return true;
+}
+
+function validateActionReferences(snapshot: SaveSnapshot): void {
+  const { job } = snapshot.character.longAction;
+  validateLongJob(job, snapshot.character.simulation.time);
+  const tree = [...savedItemTree(snapshot.character.inventory)];
+  const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
+  validateWorkItems(tree, itemsByUid);
+  if (!ownsLongActionItem(job, tree)) {
+    throw new Error(job?.jobType === 'reading' ? 'Missing reading book' : 'Missing craft work item');
   }
 }
 
@@ -1126,6 +1142,9 @@ function validateContentReferences(snapshot: SaveSnapshot, lookup: SaveContentLo
   }
   for (const skill of Object.keys(snapshot.character.progression.skills)) {
     check('skill', skill, `character.progression.skills.${skill}`);
+  }
+  for (const skill of Object.keys(snapshot.character.progression.practice)) {
+    check('skill', skill, `character.progression.practice.${skill}`);
   }
   for (const [index, recipe] of snapshot.character.progression.knownRecipes.entries()) {
     check('recipe', recipe, `character.progression.knownRecipes[${index}]`);
@@ -1245,7 +1264,7 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
   };
   const envelope: Envelope = {
     magic: MAGIC,
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: SAVE_SCHEMA_VERSION,
     versionIdentity: identity,
     generation,
     payloadByteLength: payloadBytes.byteLength,
@@ -1298,8 +1317,8 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   });
   validateSchema(headerSchema, envelope, 'envelope', true);
   const parsed = envelope as unknown as Envelope;
-  if (parsed.schemaVersion !== SCHEMA_VERSION) {
-    throw new Error(`Save schema mismatch: saved ${parsed.schemaVersion}, running ${SCHEMA_VERSION}`);
+  if (parsed.schemaVersion !== SAVE_SCHEMA_VERSION) {
+    throw new Error(`Save schema mismatch: saved ${parsed.schemaVersion}, running ${SAVE_SCHEMA_VERSION}`);
   }
   validateVersion(parsed.versionIdentity.components);
   if (

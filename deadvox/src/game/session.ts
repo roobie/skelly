@@ -5,6 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
@@ -340,6 +341,7 @@ export const createSession = (options: SessionOptions) => {
     read: options.onRead,
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
+  sim.actions.reading = bookReadingHooks(inventory, character);
   const rest = new RestController(sim, {
     bedQuality: () => {
       const bed = entities.bedNear(chest(), INVENTORY_REACH / s);

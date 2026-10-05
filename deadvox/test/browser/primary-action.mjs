@@ -278,6 +278,7 @@ try {
           def.drink ||
           def.key ||
           def.readable ||
+          def.book ||
           def.unpack ||
           def.battery ||
           def.twoHanded ||
@@ -525,9 +526,39 @@ try {
     await page.keyboard.up('Digit1');
   }
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), food.heldUid);
+  const bookUid = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.book);
+    if (!definition) {
+      throw new Error('No book capability for primary reading fixture');
+    }
+    const type = 'primary-fixture-book';
+    r.inventory.registry.items.set(type, {
+      ...definition,
+      id: type,
+      book: { ...definition.book, readingTime: 60 },
+    });
+    r.clearHand(r.dominant);
+    const book = r.inventory.create(type);
+    r.setHand(r.dominant, book);
+    return book.uid;
+  });
+  // Use the player's debug time-skip command, not a write past the simulation owner.
+  await page.keyboard.press('Period');
+  await page.waitForFunction(() => globalThis.primaryActionTest.session.sim.ignoreUnsafe);
+  await page.mouse.click(640, 450);
+  await page.waitForFunction((uid) => {
+    const { job } = globalThis.primaryActionTest.session.sim.actions;
+    return job?.jobType === 'reading' && !job.stopped && job.bookUid === uid;
+  }, bookUid);
+  await page.keyboard.press('KeyX');
+  await page.waitForFunction(() => {
+    const { sim } = globalThis.primaryActionTest.session;
+    return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped && !sim.ignoreUnsafe;
+  });
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, inventory cock and quickbar hold.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, inventory cock, quickbar hold and held-book reading.\n',
   );
 } finally {
   await browser?.close();
