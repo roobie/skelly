@@ -520,8 +520,8 @@ plain box in your hands. Files are small, and follow
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
   `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
   `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,
-  `SAVE_SCHEMA_VERSION`. BR's earlier 2026-10-05 report on the pre-revision
-  skill scale—that skill 12 still had "too much dispersion/sway at full auto"—
+  `SAVE_SCHEMA_VERSION`. BR's earlier 2026-10-05 report on the skill scale
+  before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling
   separates firearm quality's dispersion from skill-controlled handling.
   Until #267 lands, aim-sway look comparisons use the current movement rules;

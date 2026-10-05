@@ -190,7 +190,7 @@ same world preserve piles left by the previous character?
   show in game via a sway on the weapon)". The firearms skill "will: 1) mitigate
   the aim variance 2) quicken reload time 3) quicken rack time (shotgun)". It
   starts as one skill, "which we will expand to separate firearm archetypes
-  later, like skill:smgs, skill:shotguns etc". On the pre-revision scale, BR
+  later, like skill:smgs, skill:shotguns etc". On the skill scale before d83 (#274), BR
   tried skill 12 with the assault rifle and reported, "as for gun skill / i
   tried it at =12 / and equipped the assault rifle - too much dispersion/sway at
   full auto". BR's
@@ -198,7 +198,8 @@ same world preserve piles left by the previous character?
   "dispersion is not a skill issue, but control is". Each firearm owns its
   per-round `dispersionRadians`; control skill changes movement/look sway, kick
   per shot and recovery after release, not that cone. Legendary progression is
-  vanity and adds no mechanical control beyond ordinary expert per BR's ruling.
+  vanity and adds no mechanical control beyond ordinary expert, per BR's ruling
+  quoted in `docs/crafting.md` ("mostly vanity thing").
   During held automatic fire, recoil does not recover; at the ~7° on-screen
   limit, excess pitch scrolls the view and the gun's on-screen offset recovers
   only after release. The pump
