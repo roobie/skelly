@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
+  - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
@@ -63,6 +64,17 @@ loot. Nested tables contribute only with positive possible rolls/item counts
 (weights are already strictly positive by schema). Zombie loot comes from
 positive-chance markers that can fit the population cap, accounting for shuffled
 north templates, and roadside wanderers only when a slot can remain.
+
+For 2.10, store and garage stock stays in template palette loot overrides rather
+than position-specific runtime code. `worldSources()` in
+`src/core/reachability.ts` follows compiled pieces from `HAMLET_TEMPLATES` in
+`src/core/hamlet.ts`, so moving furniture keeps its loot source with the placed
+lot.
+
+For d65's `hardware_store` and `garage`, `window_frame` remains solid; the
+authored opening around each frame supplies the sightline without adding a
+translucent-block rule. See `src/content/base/templates.json`, `hardware_store`
+and `garage`.
 
 The least component fixed point starts at found types. A result enters only when
 at least one alternative per component group is reachable; unseeded recipe cycles
