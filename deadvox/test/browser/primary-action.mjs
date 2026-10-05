@@ -532,14 +532,8 @@ try {
     if (!definition) {
       throw new Error('No book capability for primary reading fixture');
     }
-    const type = 'primary-fixture-book';
-    r.inventory.registry.items.set(type, {
-      ...definition,
-      id: type,
-      book: { ...definition.book, readingTime: 60 },
-    });
     r.clearHand(r.dominant);
-    const book = r.inventory.create(type);
+    const book = r.inventory.create(definition.id);
     r.setHand(r.dominant, book);
     return book.uid;
   });

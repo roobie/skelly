@@ -6,7 +6,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { rm } from 'node:fs/promises';
-import { createServer } from 'node:net';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
@@ -15,21 +14,17 @@ import {
   dispatchMenuPointerMoveExpression,
 } from '../test/browser/menu-pointer.mjs';
 import { browserStageLaunchArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
+import { reserveDistinctPorts } from './browser-ports.mjs';
 import { createBrowserProfile } from './browser-profile.mjs';
 
 const cwd = process.cwd();
 const profile = createBrowserProfile();
-const freePort = async () =>
-  new Promise((resolve, reject) => {
-    const server = createServer();
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      server.close((error) => (error ? reject(error) : resolve(address.port)));
-    });
-  });
-const port = Number(process.env.UI_TEST_PORT ?? (await freePort()));
-const cdpPort = Number(process.env.UI_TEST_CDP_PORT ?? (await freePort()));
+const ports = await reserveDistinctPorts({
+  port: Number(process.env.UI_TEST_PORT ?? 0),
+  cdpPort: Number(process.env.UI_TEST_CDP_PORT ?? 0),
+});
+const { port, cdpPort } = ports;
+await ports.release();
 const vite = spawn(
   process.execPath,
   ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', `${port}`, '--strictPort'],

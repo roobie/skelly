@@ -11,6 +11,7 @@ import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -807,13 +808,40 @@ describe('craft job codec and ownership', () => {
       expect(loaded.inventory.itemByUid(work.uid)!.work).toEqual(work.work);
       expect(loaded.inventory.hands.left).toBeUndefined();
       const bad = structuredClone(snapshot);
-      bad.character.inventory.hands.right!.work!.recipe = 'unknown_craft';
+      const badWork = bad.character.inventory.hands.right!.work!;
+      if (badWork.kind !== 'craft') {
+        throw new Error('Expected craft work');
+      }
+      badWork.recipe = 'unknown_craft';
       await expect(decodeSave(await encodeFixture(bad), { version: formatVersion, contentLookup })).rejects.toThrow(
         'Unknown recipe',
       );
       const dangling = structuredClone(snapshot);
       dangling.character.longAction.job = { jobType: 'craft', stopped: true, last: 0, workUid: 999_999 };
       await expect(encodeFixture(dangling)).rejects.toThrow('Missing craft work item');
+
+      const disassembly = structuredClone(snapshot);
+      const savedWork = disassembly.character.inventory.hands.right!;
+      const sourceUid = disassembly.character.inventory.nextItemUid;
+      disassembly.character.inventory.nextItemUid += 1;
+      const radio = registry.items.get('portable_radio')!;
+      savedWork.work = {
+        kind: 'disassembly',
+        source: radio.id,
+        skillLevel: 0,
+        toolLevels: {},
+        outputs: disassemblyOutputs(radio, 0),
+        gather: 0,
+        elapsed: 37,
+        duration: SALVAGE_DURATION,
+        components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0 }],
+      };
+      const decodedDisassembly = await decodeSave(await encodeFixture(disassembly), {
+        version: formatVersion,
+        contentLookup,
+      });
+      const loadedDisassembly = createRuntime(decodedDisassembly.snapshot);
+      expect(capture(loadedDisassembly)).toEqual(disassembly);
     },
   );
 

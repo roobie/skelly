@@ -1,5 +1,5 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
-import type { CraftPlan } from './crafting.ts';
+import type { WorkPlan } from './crafting.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -30,8 +30,8 @@ export interface CraftRepair {
   amount: number;
 }
 export interface CraftActionHooks {
-  admit: (plan: CraftPlan) => string | undefined;
-  begin: (plan: CraftPlan, repair?: CraftRepair) => number | undefined;
+  admit: (plan: WorkPlan) => string | undefined;
+  begin: (plan: WorkPlan, repair?: CraftRepair) => number | undefined;
   owns: (uid: number) => boolean;
   validate: (uid: number) => string | undefined;
   advance: (uid: number, gameSeconds: number) => boolean;
@@ -165,12 +165,15 @@ export class LongActions {
     return undefined;
   }
   /** Admit and secure compression before any structural escrow effect. */
-  beginCraft(plan: CraftPlan, repair?: CraftRepair): string | undefined {
+  beginCraft(plan: WorkPlan, repair?: CraftRepair): string | undefined {
     if (!this.craft) {
       return 'Missing craft action owner';
     }
     if (this.current?.jobType === 'craft' && !this.current.stopped) {
       return 'Another craft is active';
+    }
+    if (repair && plan.kind !== 'craft') {
+      return 'A disassembly cannot repair an item';
     }
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return 'Stop reading first';

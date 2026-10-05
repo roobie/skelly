@@ -44,13 +44,6 @@
       "stack": 6
     },
     {
-      "id": "wooden_plank",
-      "name": "Wooden plank",
-      "category": "material",
-      "weight": 500,
-      "size": [2, 4]
-    },
-    {
       "id": "duct_tape",
       "name": "Duct tape",
       "category": "material",
@@ -127,6 +120,15 @@
       "description": "Water-stained. Someone underlined things."
     },
     {
+      "id": "portable_radio",
+      "name": "Portable radio",
+      "category": "misc",
+      "weight": 600,
+      "size": [2, 2],
+      "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
+      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "aa_battery", "count": 1 }]
+    },
+    {
       "id": "spent_case_5_d_56x45",
       "name": "Spent 5.56×45 case",
       "category": "material",
@@ -134,6 +136,7 @@
       "size": [1, 1],
       "stack": 10000,
       "description": "A spent case from debug firearm handling.",
+      "pileDisplay": "scatter",
       "model": "case_5_d_56x45"
     },
     {
@@ -144,6 +147,7 @@
       "size": [1, 1],
       "stack": 10000,
       "description": "A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.",
+      "pileDisplay": "scatter",
       "model": "case_7_d_62x39"
     },
     {
@@ -174,6 +178,7 @@
       "size": [1, 1],
       "stack": 10000,
       "description": "An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.",
+      "pileDisplay": "scatter",
       "model": "case_12_h_gauge_h_00_h_buck"
     },
     {

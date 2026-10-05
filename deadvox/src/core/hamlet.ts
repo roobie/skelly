@@ -6,7 +6,7 @@ import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
-import { HamletRange } from './range.ts';
+import { HandlingRange } from './range.ts';
 import type { Scale } from './scale.ts';
 import {
   type FurnitureSpawn,
@@ -133,7 +133,7 @@ export class Hamlet implements Site {
   readonly lots: readonly Lot[];
   /** Everything the hamlet touches, flattening included, in blocks. */
   readonly bounds: Rect;
-  readonly range: HamletRange;
+  readonly range: HandlingRange;
   readonly trees: readonly TreePlacement[];
   private readonly treeIndex: TreeIndex;
   readonly hedges: readonly BlockBox[];
@@ -182,7 +182,7 @@ export class Hamlet implements Site {
       },
       HAMLET.blend,
     );
-    this.range = new HamletRange(seed, registry, scale, hamletBounds);
+    this.range = new HandlingRange(seed, registry, scale, { beside: hamletBounds });
     this.bounds = grow(
       {
         x0: Math.min(hamletBounds.x0, this.range.blendBounds.x0),
