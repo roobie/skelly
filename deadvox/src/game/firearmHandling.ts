@@ -8,7 +8,7 @@ import type { HandlingQueue } from '../core/handling.ts';
 import { heldEjectionPose } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
-import { dropTarget, type UseOption } from '../core/options.ts';
+import { dropTarget } from '../core/options.ts';
 import { type PelletShot, pelletShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
@@ -258,7 +258,7 @@ export class FirearmMechanics {
     return true;
   }
 
-  /** Read-only admission policy, also used by the inventory's Use affordance. */
+  /** Read-only admission policy for manual cocking. */
   cockReason(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);
     if (!(item && this.held(uid))) {
@@ -284,22 +284,6 @@ export class FirearmMechanics {
     }
     const drop = this.ejectionDrop(type, emission, state?.chamber === 'case');
     return drop.plan.ok ? undefined : drop.plan.reason;
-  }
-
-  supportsUse(item: Item): boolean {
-    const def = defOf(this.inventory.registry, item.type);
-    return Boolean(def.firearm);
-  }
-
-  useOption(item: Item): UseOption {
-    const reason = this.supportsUse(item) ? this.cockReason(item.uid) : 'No inventory Use action for this item';
-    return {
-      kind: 'use',
-      label: `${this.isPump(item) ? 'Rack' : 'Cock'} ${this.inventory.name(item)}`,
-      plan: reason
-        ? { ok: false, reason }
-        : { ok: true, time: actionCycleSeconds(firearmHandlingFor(item, this.inventory.registry).action, 'hand') },
-    };
   }
 
   private isPump(item: Item): boolean {
@@ -388,10 +372,6 @@ export class FirearmMechanics {
     );
     this.onSound('shotgun_insert', undefined, time);
     return undefined;
-  }
-
-  use(item: Item, time: number): string | undefined {
-    return this.supportsUse(item) ? this.cock(item.uid, time) : 'No inventory Use action for this item';
   }
 
   describe(item: Item): string[] {

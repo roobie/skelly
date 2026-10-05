@@ -66,6 +66,8 @@ acting").
   is the same: "that's not a thing you do in inventory - you wield the box and
   activante it in oder to unpack". No inventory action or modifier chord
   replaces it.
+- **No U use key (BR, 2026-10-05 13:16):** "U shouldn't be a thing - where does
+  this false knowledge still stand?"
 - **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-
   or left-handed dominant is a thing we should accomodate. This'd mean that all
   quick actions etc take this into account, and the flip of
@@ -135,7 +137,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Inventory screen | now | menu |
 | Quickbar slots 1–5 | now | tap to take or put away; hold to use |
 | Use held item: light on/off | now (quickbar hold or primary action) | instant |
-| Use held item: eat, drink, bandage | now (primary action, U or quickbar hold) | long |
+| Use held item: eat, drink, bandage | now (primary action or quickbar hold) | long |
 | Cancel handling | now | instant |
 | Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
 | Melee strike | implemented; see `src/game/primaryAction.ts`, `selectPrimaryAction` | instant, noise |

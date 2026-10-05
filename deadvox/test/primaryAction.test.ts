@@ -5,7 +5,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
-import { activatePrimaryUse, selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 
@@ -123,7 +123,7 @@ describe('held-item hand action', () => {
       },
     });
 
-    const refusal = activatePrimaryUse(action, (item) => survival.use(item));
+    const refusal = survival.use(action.item);
     if (type === 'held_bandage') {
       expect(refusal).toBeTruthy();
       expect(queue.jobs).toHaveLength(0);

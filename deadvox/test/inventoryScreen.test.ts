@@ -8,7 +8,6 @@ import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { CONTROL_CODES } from '../src/game/input.ts';
 import { handlePlayMenuKey } from '../src/game/menuKeys.ts';
@@ -101,8 +100,6 @@ function setup() {
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
     refusal: (text: string) => refusals.push(text),
-    use: (_item: typeof beans) => undefined,
-    useOption,
     describe: (_item: typeof beans) => ['test description'],
     assign: (_slot: number, _item: typeof beans) => undefined,
     workOptions: (_uid: number): WorkOption[] => [],
@@ -118,7 +115,6 @@ describe('inventory screen Lit rendering', () => {
   it('keeps inventory commands owned without a selection, but lets gameplay and debug modals reach debug', () => {
     const codes = [
       CONTROL_CODES.hands,
-      CONTROL_CODES.use,
       CONTROL_CODES.wear,
       CONTROL_CODES.drop,
       CONTROL_CODES.takeAll,

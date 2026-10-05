@@ -33,12 +33,6 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
 export const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>
   CAPABILITY_DISPATCH.find(({ supports }) => supports(definition))?.kind ?? 'none';
 
-/** Runs an activatable held consumable through the same owner as other use inputs. */
-export const activatePrimaryUse = (
-  action: PrimaryActionSelection,
-  use: (item: Item) => string | undefined,
-): string | undefined => (action.kind === 'use' ? use(action.item) : undefined);
-
 /** Empty dominant fists alternate only with both hands free; a reserved support slot never punches. */
 export const selectPrimaryAction = (
   inventory: Inventory,
