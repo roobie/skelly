@@ -1188,6 +1188,70 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
 
+const lightCandleWithOffHandMatches = (runtime: Runtime) => {
+  const pos: Vec3 = [...runtime.session.body.pos];
+  const backpack = runtime.inventory.hands.right!;
+  if (!runtime.inventory.move(backpack, { kind: 'pile', pos }).ok) {
+    throw new Error('Could not clear the right hand for the light fixture');
+  }
+  const flashlight = runtime.inventory.hands.left!;
+  const flashlightReason = runtime.survival.use(flashlight);
+  if (flashlightReason || !runtime.inventory.move(flashlight, { kind: 'pile', pos }).ok) {
+    throw new Error(flashlightReason ?? 'Could not clear the left hand for the light fixture');
+  }
+  const candle = runtime.inventory.create('candle');
+  if (!runtime.inventory.add(candle, { kind: 'hand', side: 'right' })) {
+    throw new Error('Could not place the candle in hand');
+  }
+  const matches = runtime.inventory.create('matches');
+  if (!runtime.inventory.add(matches, { kind: 'hand', side: 'left' })) {
+    throw new Error('Could not place the matches in hand');
+  }
+  const candleReason = runtime.survival.use(candle);
+  if (candleReason) {
+    throw new Error(candleReason);
+  }
+  return candle;
+};
+
+it('a doused candle keeps its remaining burn through save and relighting', async () => {
+  const source = createRuntime();
+  const candle = lightCandleWithOffHandMatches(source);
+  const duration = registry.items.get('candle')!.light!.burnTime!;
+  source.sim.setDebugCalendarTime(source.sim.calendar + duration * 1800);
+  source.sim.scheduler.advance(1);
+  expect(candle.on).toBe(true);
+  const remaining = candle.burnRemaining!;
+  expect(remaining).toBeGreaterThan(0);
+  expect(source.survival.use(candle)).toBeUndefined();
+  expect(candle.on).toBe(false);
+  expect(candle.litAt).toBeUndefined();
+
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const loaded = createRuntime(decoded.snapshot);
+  const restored = loaded.inventory.itemByUid(candle.uid)!;
+  expect(restored.on).toBe(false);
+  expect(restored.burnRemaining).toBeCloseTo(remaining, 9);
+  expect(restored.litAt).toBeUndefined();
+  expect(loaded.survival.use(restored)).toBeUndefined();
+  expect(restored.on).toBe(true);
+  expect(restored.litAt).toBe(loaded.sim.calendar);
+  expect(restored.burnRemaining).toBeCloseTo(remaining, 9);
+});
+
+it('a lit light saves its active ignition time and remaining burn', async () => {
+  const source = createRuntime();
+  const candle = lightCandleWithOffHandMatches(source);
+
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const loaded = createRuntime(decoded.snapshot);
+  expect(loaded.inventory.itemByUid(candle.uid)).toMatchObject({
+    on: true,
+    burnRemaining: candle.burnRemaining,
+    litAt: source.sim.calendar,
+  });
+});
+
 it('restoring a left character ignores a fresh right choice and retains the physical inventory slots', async () => {
   const source = createRuntime(undefined, 'left');
   const saved = capture(source);

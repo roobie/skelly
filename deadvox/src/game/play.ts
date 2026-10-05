@@ -89,7 +89,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
-import { selectPrimaryAction } from './primaryAction.ts';
+import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
@@ -1086,6 +1086,15 @@ export const startPlay = (
     return true;
   };
 
+  const activateIgniter = (item: Item, hand: HandSide): void => {
+    const target = ignitionTargetForHand(inventory, hand);
+    const usable = target ?? (registry.items.get(item.type)?.light ? item : undefined);
+    if (usable) {
+      refusalReason(survival.use(usable));
+      return;
+    }
+    showRefusal(primaryActionHint(registry, item), sim.time);
+  };
   performHandUse = (hand: 'right' | 'left') => {
     if (refusePrimaryUseWhileHandling()) {
       return;
@@ -1097,6 +1106,9 @@ export const startPlay = (
         return;
       case 'melee':
         swing(action.hand);
+        return;
+      case 'ignite':
+        activateIgniter(action.item, action.hand);
         return;
       case 'light':
       case 'read':

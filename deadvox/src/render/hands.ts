@@ -1,18 +1,21 @@
 // What you hold, in first person (DESIGN.md, "Hands: what you see is what's there"):
 // the right hand, the left hand, or both for a two-handed item. Held items are drawn
 // after the world, in their own scene with the depth buffer cleared, so they never
-// clip into walls. Their lights copy the sky's, so they're dark at night. An item
+// clip into walls. World point lights cannot illuminate this scene; burning fallback
+// models need their own flame or self-lit material to stay visible at night. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
 import {
   BoxGeometry,
   type BufferGeometry,
+  ConeGeometry,
   DirectionalLight,
   Euler,
   Group,
   HemisphereLight,
   type Material,
   Mesh,
+  MeshBasicMaterial,
   MeshLambertMaterial,
   Object3D,
   PerspectiveCamera,
@@ -74,7 +77,10 @@ export class HeldItems {
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
   private readonly geometry = new BoxGeometry(1, 1, 1);
+  private readonly flameGeometry = new ConeGeometry(1, 1, 6);
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
+  private readonly lightMaterials = new Map<string, MeshBasicMaterial | MeshLambertMaterial>();
+  private readonly flameMaterials = new Map<string, MeshBasicMaterial>();
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
   private drawn = '';
@@ -358,6 +364,19 @@ export class HeldItems {
     return true;
   }
 
+  /** World position for a held light without a model-specific lens anchor. */
+  lightPositionOf(item: Item, main: PerspectiveCamera, out: Vector3): boolean {
+    const visual = this.shown.get(item.uid);
+    if (!visual) {
+      return false;
+    }
+    if (this.lensOf(item, main, out)) {
+      return true;
+    }
+    visual.getWorldPosition(out).add(main.position);
+    return true;
+  }
+
   /** Draws what's in your hands over the frame the main camera just rendered. */
   render(renderer: WebGLRenderer, main: PerspectiveCamera, sky: SkyTargets): void {
     if (this.view.children.length === 0) {
@@ -417,6 +436,15 @@ export class HeldItems {
   dispose(): void {
     this.disposeCompasses();
     this.clearArms();
+    for (const material of this.lightMaterials.values()) {
+      material.dispose();
+    }
+    this.lightMaterials.clear();
+    for (const material of this.flameMaterials.values()) {
+      material.dispose();
+    }
+    this.flameMaterials.clear();
+    this.flameGeometry.dispose();
     this.view.clear();
     this.shown.clear();
     this.heldByHand.clear();
@@ -567,15 +595,45 @@ export class HeldItems {
       }
       return model.root;
     }
+    return this.fallbackShape(item, def);
+  }
+
+  private fallbackShape(item: Item, def: ReturnType<typeof defOf>): Object3D {
     // Long side forward, short side across, and flatter than it is wide.
     const long = Math.max(...def.size) * CELL;
     const short = Math.min(...def.size) * CELL;
-    const box = new Mesh(this.geometry, this.material);
+    const materialKey = `${item.type}:${item.on ? 'lit' : 'unlit'}`;
+    let material = def.light ? this.lightMaterials.get(materialKey) : undefined;
+    if (def.light && !material) {
+      material = item.on
+        ? new MeshBasicMaterial({ color: def.light.color, toneMapped: false })
+        : new MeshLambertMaterial({ color: def.light.color });
+      this.lightMaterials.set(materialKey, material);
+    }
+    const box = new Mesh(this.geometry, material ?? this.material);
+    if (item.on && def.light) {
+      box.name = 'held-light-body';
+    }
     box.scale.set(short, short * 0.6, long);
     box.position.z = -long / 2 + short / 2; // the hand holds its near end
     const lens = new Object3D();
     lens.name = LENS;
     lens.position.z = -long + short / 2;
-    return new Group().add(box, lens);
+    const shape = new Group().add(box, lens);
+    if (item.on && def.light?.burning?.ignition === 'firestarter') {
+      const flameMaterial =
+        this.flameMaterials.get(def.light.color) ??
+        new MeshBasicMaterial({
+          color: def.light.color,
+          toneMapped: false,
+        });
+      this.flameMaterials.set(def.light.color, flameMaterial);
+      const flame = new Mesh(this.flameGeometry, flameMaterial);
+      flame.name = 'held-light-flame';
+      flame.scale.set(short * 0.5, short * 1.5, short * 0.5);
+      flame.position.set(0, short * 1.05, lens.position.z);
+      shape.add(flame);
+    }
+    return shape;
   }
 }
