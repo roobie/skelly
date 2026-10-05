@@ -13,7 +13,7 @@ import { validateLongJob } from './longAction.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { ZombieState } from './zombies.ts';
+import type { ZombieRouteState, ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -100,7 +100,12 @@ interface WirePayload {
     id: string;
     options: SaveWorldIdentity;
     regions: Record<string, Region>;
-    zombieSystem: { nextEntityId: number };
+    zombieSystem: {
+      routeSearchCursor: number;
+      routeClock: number;
+      routes: { id: number; route: ZombieRouteState }[];
+      nextEntityId: number;
+    };
     blockEntitiesNextUid: number;
     spawned: string[];
   };
@@ -130,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 15;
+export const SAVE_SCHEMA_VERSION = 18;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -215,6 +220,19 @@ const progression = obj({
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
+const zombieRoutes = arr(
+  obj({
+    id: positiveInt,
+    route: obj({
+      goalKey: str(),
+      goal: vec3,
+      waypoints: arr(vec3),
+      next: nonNegativeInt,
+      pending: bool,
+      retryAt: nonNegative,
+    }),
+  }),
+);
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),
@@ -517,7 +535,12 @@ const wirePayloadSchema = obj({
         piles: arr(obj({ order: nonNegativeInt, pile: pileSchema })),
       }),
     ),
-    zombieSystem: obj({ nextEntityId: positiveInt }),
+    zombieSystem: obj({
+      routeSearchCursor: nonNegativeInt,
+      routeClock: nonNegative,
+      routes: zombieRoutes,
+      nextEntityId: positiveInt,
+    }),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
   }),
@@ -824,7 +847,19 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         clock: snapshot.character.simulation.clock,
       },
       regions: Object.fromEntries(regions),
-      zombieSystem: { nextEntityId: snapshot.world.zombies.nextEntityId },
+      zombieSystem: {
+        routeSearchCursor: snapshot.world.zombies.routeSearchCursor,
+        routeClock: snapshot.world.zombies.routeClock,
+        routes: snapshot.world.zombies.routes.map(({ id, route }) => ({
+          id,
+          route: {
+            ...route,
+            goal: [...route.goal],
+            waypoints: route.waypoints.map((point) => [...point]),
+          },
+        })),
+        nextEntityId: snapshot.world.zombies.nextEntityId,
+      },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
       spawned: [...snapshot.world.spawned],
     },
@@ -1225,6 +1260,9 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
           ),
         }),
         zombies: obj({
+          routeSearchCursor: nonNegativeInt,
+          routeClock: nonNegative,
+          routes: zombieRoutes,
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
         }),
