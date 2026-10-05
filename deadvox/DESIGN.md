@@ -1,3 +1,9 @@
+---
+read_if:
+  - you decide how sunlight and shadows should read in play
+  - you trade near-player shadow detail against distance
+---
+
 # deadvox — design
 
 The core design of the game: what it is, and the systems it's made of. Read it
@@ -690,6 +696,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Entities** are drawn with instanced meshes; zombie limbs are instanced
   boxes.
+- **Sun-shadow quality (d49-1, pending visual review):** Favor a stable edge
+  near the player over sharp shadows far beyond them. Sunlight changes smoothly,
+  but spatial shadow texels still cross an edge as the light turns; temporal
+  interpolation alone cannot remove that crawl. See `deadvox/src/render/shadows.ts`,
+  `sunShadowTexelSize` and `Shadows.update`.
 
 ## Audio
 

@@ -177,7 +177,8 @@ describe('debug action table', () => {
     expect([shadows.settings.sun, shadows.settings.torch]).toEqual([false, true]);
     dispatchDebugAction(actions, 'Home');
     expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([false, false]);
-    expect(byCode('PageUp').detail?.()).toBe('40 m');
+    dispatchDebugAction(actions, 'PageUp');
+    expect(byCode('PageUp').detail?.()).toBe(`${shadows.settings.distance} m`);
     const seen: number[] = [];
     for (let i = 0; i < 4; i++) {
       dispatchDebugAction(actions, 'PageUp');

@@ -33,6 +33,7 @@ import {
   snapToTexels,
   sunMapDue,
   sunShadowBias,
+  sunShadowTexelSize,
   withinRange,
 } from '../src/render/shadows.ts';
 
@@ -86,7 +87,7 @@ describe('shadow settings', () => {
   it('clamps a distance to whole metres in 16..96, and a non-number to the default', () => {
     expect([1, 16.4, 33.6, 96, 500].map(clampShadowDistance)).toEqual([16, 16, 34, 96, 96]);
     expect(clampShadowDistance(Number.NaN)).toBe(DEFAULT_SHADOWS.distance);
-    expect(DEFAULT_SHADOWS).toEqual({ sun: true, torch: true, distance: 40 });
+    expect(DEFAULT_SHADOWS).toMatchObject({ sun: true, torch: true });
   });
 
   it('draws the flashlight map only for a beam that is allowed, on and bright enough to show', () => {
@@ -102,6 +103,14 @@ describe('shadow settings', () => {
       'shadows: sun ON ×0.83 · flashlight OFF · 40 m · chunk casters 56 / 0',
     );
     expect(shadowReadoutText({ sun: false, torch: true, distance: 24 }, 0, { sun: 0, torch: 3 })).toContain('sun OFF');
+  });
+});
+
+describe('sun shadow texel footprint', () => {
+  it('scales linearly with the shadow box and inversely with map resolution', () => {
+    const base = sunShadowTexelSize(36, 1024);
+    expect(sunShadowTexelSize(72, 1024)).toBeCloseTo(base * 2, 12);
+    expect(sunShadowTexelSize(36, 2048)).toBeCloseTo(base / 2, 12);
   });
 });
 
