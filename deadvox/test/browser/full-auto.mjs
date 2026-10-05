@@ -167,7 +167,7 @@ try {
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   await page.evaluate(() => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
-    window.addEventListener('keydown', (event) => {
+    globalThis.addEventListener('keydown', (event) => {
       if (event.code === 'F1') {
         globalThis.fullAutoProbe.f1DefaultPrevented = event.defaultPrevented;
       }

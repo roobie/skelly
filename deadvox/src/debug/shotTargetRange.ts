@@ -13,17 +13,18 @@ export const rangeToNearestShotTargetMetres = (
   blockSize: number,
   entities: Iterable<ShotTargetBox>,
 ): number | undefined => {
-  const playerX = playerFeet[0];
-  const playerY = playerFeet[1] + playerHeightBlocks / 2;
-  const playerZ = playerFeet[2];
+  const [playerX, playerFeetY, playerZ] = playerFeet;
+  const playerY = playerFeetY + playerHeightBlocks / 2;
   let nearest = Number.POSITIVE_INFINITY;
   for (const entity of entities) {
     if (!entity.shotTarget) {
       continue;
     }
-    const dx = entity.pos[0] + entity.size[0] / 2 - playerX;
-    const dy = entity.pos[1] + entity.size[1] / 2 - playerY;
-    const dz = entity.pos[2] + entity.size[2] / 2 - playerZ;
+    const [targetX, targetY, targetZ] = entity.pos;
+    const [targetWidth, targetHeight, targetDepth] = entity.size;
+    const dx = targetX + targetWidth / 2 - playerX;
+    const dy = targetY + targetHeight / 2 - playerY;
+    const dz = targetZ + targetDepth / 2 - playerZ;
     nearest = Math.min(nearest, Math.hypot(dx, dy, dz) * blockSize);
   }
   return Number.isFinite(nearest) ? nearest : undefined;
