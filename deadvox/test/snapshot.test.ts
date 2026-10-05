@@ -209,7 +209,6 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   ),
 });
 const inspect = (runtime: Runtime): unknown => {
-  const zombieContinuation = runtime.zombies.snapshotState();
   const scheduler = (
     runtime.sim.scheduler as unknown as { entries: { spec: { id: string }; done: number; ticks: number }[] }
   ).entries;
@@ -268,9 +267,6 @@ const inspect = (runtime: Runtime): unknown => {
     },
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
-      playerAttackWait: zombieContinuation.playerAttackWait,
-      meleeAction: zombieContinuation.meleeAction,
-      nextFistHand: zombieContinuation.nextFistHand,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
         const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
         return [
@@ -285,6 +281,7 @@ const inspect = (runtime: Runtime): unknown => {
         ];
       }),
     },
+    playerCombat: runtime.session.playerCombat.snapshotState(),
     audio: {
       vocalNoiseId: runtime.playerAudio.vocalNoiseId,
       vocalNoise: runtime.playerAudio.vocalNoise,
@@ -680,6 +677,46 @@ describe('craft job codec and ownership', () => {
       await expect(encodeFixture(dangling)).rejects.toThrow('Missing craft work item');
     },
   );
+
+  it('encodes and restores an in-progress repair target and amount', async () => {
+    const runtime = createRuntime();
+    const pos: Vec3 = runtime.player.body.pos.map(Math.floor) as Vec3;
+    for (const item of Object.values(runtime.inventory.hands)) {
+      expect(runtime.inventory.move(item!, { kind: 'pile', pos }).ok).toBe(true);
+    }
+    const target = runtime.inventory.create('crowbar');
+    target.condition = 0.2;
+    expect(runtime.inventory.add(target, { kind: 'pile', pos })).toBe(true);
+    for (const [type, offset] of [
+      ['repair_kit', 1],
+      ['scrap_metal', 2],
+      ['duct_tape', 3],
+    ] as const) {
+      expect(
+        runtime.inventory.add(runtime.inventory.create(type), {
+          kind: 'pile',
+          pos: [pos[0] - 1 + offset, pos[1], pos[2]],
+        }),
+      ).toBe(true);
+    }
+    const recipe = registry.recipes.get('repair_crowbar')!;
+    const planned = runtime.session.planCraft(recipe);
+    if (!('plan' in planned)) {
+      throw new Error(planned.missing.reason);
+    }
+    const { amount } = recipe.repair!;
+    const work = runtime.inventory.beginWork(planned.plan, { targetUid: target.uid, amount });
+    if (!work) {
+      throw new Error('Cannot gather repair inputs');
+    }
+    expect(runtime.sim.actions.startCraft(work.uid)).toBeUndefined();
+    runtime.sim.actions.craft!.advance(work.uid, 37);
+    const snapshot = capture(runtime);
+    const bytes = await encodeFixture(snapshot);
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.inventory.itemByUid(work.uid)!.work).toEqual(work.work);
+  });
 });
 
 describe('restored session world state', () => {
@@ -1071,7 +1108,7 @@ describe('canonical save format', () => {
       left: source.inventory.hands.left?.uid ?? null,
     };
     expect(
-      startPlayerMelee(source.zombies, source.sim.needs, {
+      startPlayerMelee(source.session.playerCombat, source.sim.needs, {
         origin,
         direction,
         weapon,
@@ -1085,10 +1122,10 @@ describe('canonical save format', () => {
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
-    expect(decoded.snapshot.world.zombies.meleeAction).toEqual(snapshot.world.zombies.meleeAction);
+    expect(decoded.snapshot.character.playerCombat.meleeAction).toEqual(snapshot.character.playerCombat.meleeAction);
     const loaded = createRuntime(decoded.snapshot);
     loaded.zombies.setFrozen(true);
-    expect(loaded.zombies.activeMeleeAction?.elapsed).toBe(0);
+    expect(loaded.session.playerCombat.activeMeleeAction?.elapsed).toBe(0);
 
     for (const runtime of [source, loaded]) {
       const held = {
@@ -1096,17 +1133,17 @@ describe('canonical save format', () => {
         left: runtime.inventory.hands.left?.uid ?? null,
       };
       for (let tick = 1; tick < 15; tick++) {
-        runtime.zombies.tickPlayerAction(1 / 60, held);
+        runtime.session.playerCombat.tick(1 / 60, held);
         if (tick % 3 === 0) {
           runtime.zombies.tick(0.05, tick / 20, held);
         }
         expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth);
       }
-      runtime.zombies.tickPlayerAction(1 / 60, held);
+      runtime.session.playerCombat.tick(1 / 60, held);
       runtime.zombies.tick(0.05, 0.25, held);
       expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
       for (let tick = 0; tick < 48; tick++) {
-        runtime.zombies.tickPlayerAction(1 / 60, held);
+        runtime.session.playerCombat.tick(1 / 60, held);
         if (tick % 3 === 2) {
           runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
         }

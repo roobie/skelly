@@ -25,7 +25,8 @@
       "category": "tool",
       "weight": 1250,
       "size": [2, 2],
-      "description": "Metal patches, tape and rags for a makeshift repair."
+      "description": "Metal patches, tape and rags for a makeshift repair.",
+      "tool": { "qualities": { "repairing": 1 } }
     }
   ],
   "recipes": [
@@ -61,6 +62,16 @@
         [{ "item": "duct_tape", "count": 1 }],
         [{ "item": "rag", "count": 2 }]
       ]
+    },
+    {
+      "id": "repair_crowbar",
+      "kind": "repair",
+      "result": { "item": "crowbar", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "repairing": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
     }
   ]
 }

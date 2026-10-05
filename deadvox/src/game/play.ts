@@ -258,7 +258,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   } else if (!options.restore) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
-  const { zombies: zombieSystem, zombieStore } = session;
+  const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     startingLoadout(inventory);
   }
@@ -928,7 +928,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   const swing = (preferredHand?: 'right' | 'left') => {
     const selected = meleeSelection(preferredHand);
-    const result = startPlayerMelee(zombieSystem, sim.needs, {
+    const result = startPlayerMelee(playerCombat, sim.needs, {
       origin: eye(),
       direction: lookDir(),
       weapon: selected.weapon,
@@ -1198,7 +1198,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       debugBuild: debugTools?.buildOn ?? false,
       inputLocked: compression.locksInput,
     });
-    const action = zombieSystem.activeMeleeAction;
+    const action = playerCombat.activeMeleeAction;
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;

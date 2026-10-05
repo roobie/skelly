@@ -50,6 +50,10 @@ export const selectPrimaryAction = (
     return hands.left ? { kind: 'fists', hand: 'right' } : { kind: 'fists' };
   }
 
-  const kind = primaryActionForDefinition(defOf(registry, item.type));
+  const definition = defOf(registry, item.type);
+  const kind = primaryActionForDefinition(definition);
+  if (kind === 'melee' && item.condition <= 0) {
+    return { kind: 'none', item };
+  }
   return kind === 'none' ? { kind: 'none', item } : { kind, hand, item };
 };
