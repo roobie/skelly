@@ -62,6 +62,7 @@ export interface ScreenHooks {
   /** Whether a search of it is queued. */
   searching: (entity: BlockEntity) => boolean;
   notice: (text: string) => void;
+  refusal?: ((text: string) => void) | undefined;
   /** Uses an item (eat, drink, switch a light, load a battery); says why not, or undefined. */
   use: (item: Item) => string | undefined;
   /** Read-only availability and handling time for the same Use command. */
@@ -487,9 +488,17 @@ export class InventoryScreen {
     return result.ok ? undefined : result.reason;
   }
 
+  private refuse(text: string): void {
+    if (this.hooks.refusal) {
+      this.hooks.refusal(text);
+    } else {
+      this.hooks.notice(text);
+    }
+  }
+
   private report(reason: string | undefined): void {
     if (reason) {
-      this.hooks.notice(reason);
+      this.refuse(reason);
     }
   }
 
@@ -532,7 +541,11 @@ export class InventoryScreen {
         }
       }
     }
-    this.hooks.notice(queued > 0 ? `Taking ${queued} ${category} items` : `No ${category} items to take`);
+    if (queued > 0) {
+      this.hooks.notice(`Taking ${queued} ${category} items`);
+    } else {
+      this.refuse(`No ${category} items to take`);
+    }
   }
 
   private step(dir: number): void {
@@ -833,7 +846,7 @@ export class InventoryScreen {
       if (hover?.ok) {
         this.report(this.tryQueue(drag.item, hover.target));
       } else if (hover) {
-        this.hooks.notice(hover.reason);
+        this.refuse(hover.reason);
       }
     }
     this.endDrag();

@@ -174,9 +174,10 @@ describe('content', () => {
     }
   });
 
-  it('keeps footstep audio in the body mix without a second hearing-noise path', () => {
+  it('keeps player bodily cues out of zombie-hearing noise', () => {
     const { registry } = buildRegistry(base);
     for (const id of [
+      'player_nope',
       'footstep_grass',
       'footstep_mud',
       'footstep_sand',

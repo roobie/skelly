@@ -150,8 +150,10 @@ export interface SessionOptions {
   ready: (x: number, z: number) => boolean;
   controls: SessionControls;
   audio: SessionAudio;
-  /** A message that isn't an interruption, such as why a move was refused. */
+  /** A message that isn't an interruption, such as a completion notice. */
   notice: (text: string) => void;
+  /** Presentation cue for an action the handling queue refused. */
+  refusal?: ((text: string) => void) | undefined;
   /** Authored text selected by a live domain command; presentation owns its view. */
   onRead: (readable: Readonly<Readable>) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
@@ -622,7 +624,7 @@ export const createSession = (options: SessionOptions) => {
       const result = queue.tick(dt);
       options.onHandlingOutcomes?.(result);
       for (const { job, reason } of result.failed) {
-        options.notice(`${job.label}: ${reason.toLowerCase()}`);
+        (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);
       }
     },
   });

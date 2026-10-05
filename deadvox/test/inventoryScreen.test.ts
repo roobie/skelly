@@ -82,6 +82,7 @@ function setup() {
     inv.entities.markSearched(entity);
   });
   const notices: string[] = [];
+  const refusals: string[] = [];
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
@@ -99,6 +100,7 @@ function setup() {
     },
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
+    refusal: (text: string) => refusals.push(text),
     use: (_item: typeof beans) => undefined,
     useOption,
     describe: (_item: typeof beans) => ['test description'],
@@ -109,7 +111,7 @@ function setup() {
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans, notices, hooks };
+  return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks };
 }
 
 describe('inventory screen Lit rendering', () => {
@@ -312,8 +314,8 @@ describe('inventory screen Lit rendering', () => {
         node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true, pointerId: 1 }));
       }
       expect.soft(t.queue.jobs).toHaveLength(1);
-      expect(t.notices).toHaveLength(attempts - 1);
-      expect(t.notices.every((notice) => notice.length > 0)).toBe(true);
+      expect(t.refusals).toHaveLength(attempts - 1);
+      expect(t.refusals.every((refusal) => refusal.length > 0)).toBe(true);
     } finally {
       t.screen.close();
       vi.unstubAllGlobals();
