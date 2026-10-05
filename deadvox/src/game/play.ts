@@ -83,7 +83,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
-import { selectPrimaryAction } from './primaryAction.ts';
+import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
@@ -1065,6 +1065,15 @@ export const startPlay = (
       case 'melee':
         swing(action.hand);
         return;
+      case 'ignite': {
+        const target = ignitionTargetForHand(inventory, action.hand);
+        if (target) {
+          refusalReason(survival.use(target));
+        } else {
+          showRefusal(primaryActionHint(registry, action.item), sim.time);
+        }
+        return;
+      }
       case 'light':
       case 'read':
         refusalReason(survival.use(action.item));

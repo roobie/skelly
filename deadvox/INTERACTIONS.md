@@ -387,3 +387,15 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
    A held item must never become a fist or redirect to the other hand, and a
    restored physical fist sequence must not be reseeded from dominance.
+7. **Held igniter activates the other hand's light (BR, #252 re-look,
+   2026-10-05 13:44).** BR's report:
+
+   > right hand: matches / left hand: candle / left-click->"nothing to do with box of matches"
+
+   This identified the missing primary action. Activating a held igniter lights
+   an unlit light in the other hand when that light requires a firestarter;
+   `src/game/primaryAction.ts`, `ignitionTargetForHand`, selects it, and
+   `src/game/survival.ts`, `Survival.use`, checks reach and spends one ignition's
+   charge. Without an eligible light,
+   activation is refused and spends no charge. Whether matches alone strike one
+   match for a brief light remains open for BR and is not implied by this rule.

@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { bindReach } from '../src/core/reach.ts';
+import { Simulation } from '../src/core/sim.ts';
+import { ignitionTargetForHand, selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 
 const capabilities = [
@@ -13,6 +17,24 @@ const capabilities = [
   },
   { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1 } },
   { id: 'held_gun', kind: 'firearm', firearm: {}, twoHanded: true },
+  {
+    id: 'held_igniter',
+    kind: 'ignite',
+    igniter: { capacity: 2, perIgnition: 1 },
+    light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, fuelPerHour: 1 },
+  },
+  {
+    id: 'held_candle',
+    kind: 'light',
+    light: {
+      radius: 1,
+      seenFrom: 1,
+      color: '#ffffff',
+      intensity: 1,
+      burnTime: 2,
+      burning: { ignition: 'firestarter', douse: true, sprint: 'stay', stow: 'refuse', drop: 'douse', relight: true },
+    },
+  },
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
   { id: 'held_book', kind: 'read', book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingTime: 1 } },
   { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
@@ -81,7 +103,56 @@ const hold = (right?: string, left?: string, handedness?: 'right' | 'left') => {
   return inventory;
 };
 
+const survivalFor = (inventory: Inventory) => {
+  const sim = new Simulation({ seed: 1 });
+  const queue = new HandlingQueue(inventory);
+  const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+  return new Survival(sim, inventory, queue, {
+    reach: bindReach(player),
+    feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+    notice: () => undefined,
+    read: () => {
+      throw new Error('Unexpected reading in primary-action fixture');
+    },
+  });
+};
+
 describe('held-item hand action', () => {
+  it.each([
+    { hand: 'right' as const, other: 'left' as const },
+    { hand: 'left' as const, other: 'right' as const },
+  ])('activating a held igniter lights the other hand once and refuses without a target ($hand)', ({ hand, other }) => {
+    const inventory = hold(
+      hand === 'right' ? 'held_igniter' : 'held_candle',
+      hand === 'left' ? 'held_igniter' : 'held_candle',
+    );
+    const igniter = inventory.hands[hand]!;
+    const candle = inventory.hands[other]!;
+    const survival = survivalFor(inventory);
+    const action = selectPrimaryAction(inventory, hand);
+    expect(action.kind).toBe('ignite');
+    if (action.kind !== 'ignite') {
+      throw new Error('Fixture igniter did not select ignite');
+    }
+    const target = ignitionTargetForHand(inventory, action.hand);
+    expect(target).toBe(candle);
+    expect(survival.use(target ?? action.item)).toBeUndefined();
+    expect(candle.on).toBe(true);
+    expect(igniter.charges).toBe(1);
+
+    const alone = hold(hand === 'right' ? 'held_igniter' : undefined, hand === 'left' ? 'held_igniter' : undefined);
+    const loneIgniter = alone.hands[hand]!;
+    const aloneAction = selectPrimaryAction(alone, hand);
+    expect(aloneAction.kind).toBe('ignite');
+    if (aloneAction.kind !== 'ignite') {
+      throw new Error('Fixture igniter did not select ignite');
+    }
+    expect(ignitionTargetForHand(alone, hand)).toBeUndefined();
+    expect(primaryActionHint(registry, loneIgniter).trim()).not.toBe('');
+    expect(loneIgniter.on).not.toBe(true);
+    expect(loneIgniter.charges).toBe(2);
+  });
+
   it('a two-handed item in the off slot reserves the empty dominant hand rather than punching or redirecting', () => {
     const inventory = hold('held_gun', undefined, 'left');
     expect(selectPrimaryAction(inventory)).toEqual({ kind: 'noop' });

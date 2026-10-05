@@ -33,9 +33,15 @@ acting").
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
   flashlight in hands, then left-click to activate (left-click generally means
-  'do the thing with the thing you're holding')." Dominance selects the hand
-  role; it does not move an item between physical slots. See "The two hands"
-  for the policy's owners rather than a second binding map.
+  'do the thing with the thing you're holding')." For #252, BR's 2026-10-05
+  re-look confirmed that activating a held igniter lights an unlit firestarter
+  light in the other hand; left-click uses the dominant hand and `=` the off
+  hand. An igniter with no eligible light still refuses. Whether matches strike
+  alone remains open for BR. See `src/game/primaryAction.ts`,
+  `ignitionTargetForHand`, and `src/game/survival.ts`, `Survival.use`, for the
+  action owner. Dominance selects the hand role; it does not move an item between
+  physical slots. See "The two hands" for the policy's owners rather than a
+  second binding map.
 - **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
   ruling: holding left click performs a long use, and releasing it early
   cancels.
