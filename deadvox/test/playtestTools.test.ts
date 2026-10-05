@@ -90,6 +90,37 @@ const makeJitteredClock = (quantumMs: number) => {
 };
 
 describe('snapshot measurement', () => {
+  it('accepts subtraction rounding above the timer quantum but rejects a coarser tick', () => {
+    const measureWithProbeTimestamps = (timestamps: readonly number[]) => {
+      let index = 0;
+      let time = timestamps.at(-1)!;
+      return measureSnapshots(
+        () => undefined,
+        () => 0,
+        {
+          repeats: 1,
+          now: () => {
+            if (index < timestamps.length) {
+              const timestamp = timestamps[index]!;
+              index += 1;
+              return timestamp;
+            }
+            time += 100;
+            return time;
+          },
+          timerQuantum: { browser: 'Chromium', quantumMs: 0.1 },
+        },
+      );
+    };
+    const roundedUp = measureWithProbeTimestamps([1000, 1000.1, 4096, 4096.1, 5000, 5000.1, 8192, 8192.1, 10_000]);
+    const coarser = measureWithProbeTimestamps([1000, 1000.11, 4096, 4096.11, 5000, 5000.11, 8192, 8192.11, 10_000]);
+
+    expect(roundedUp.observedTimerTickMs).toBeGreaterThan(0.1);
+    expect(roundedUp.timerQuantumCrossCheckPassed).toBe(true);
+    expect(coarser.observedTimerTickMs).toBeGreaterThan(0.1);
+    expect(coarser.timerQuantumCrossCheckPassed).toBe(false);
+  });
+
   it('reports batch-mean throughput separately from individual capture tails at a 1 ms resolution', () => {
     let clock = 0;
     let captures = 0;

@@ -314,12 +314,13 @@ const MAX_SNAPSHOT_BATCH_SIZE = 65_536;
 const MAX_INDIVIDUAL_CAPTURE_SAMPLES = 8192;
 const MAX_TIMER_PROBE_READS = 100_000;
 const MIN_TIMER_PROBE_TICKS = 8;
+const NANOSECONDS_PER_MILLISECOND = 1_000_000;
 
 const observedTickFitsQuantum = (observedTickMs: number | null, quantumMs: number): boolean =>
   observedTickMs !== null &&
   Number.isFinite(quantumMs) &&
   quantumMs > 0 &&
-  observedTickMs <= quantumMs * (1 + Number.EPSILON * 8);
+  Math.round(observedTickMs * NANOSECONDS_PER_MILLISECOND) <= quantumMs * NANOSECONDS_PER_MILLISECOND;
 
 const detectMinimumTimerTickMs = (now: () => number): number | null => {
   let previous = now();
