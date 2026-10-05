@@ -80,6 +80,7 @@ import {
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
 import type { ReloadBinding } from './reloadInput.ts';
 import { createSession } from './session.ts';
+import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -261,6 +262,13 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     startingLoadout(inventory);
+    populateTestHouseRepairCorner({
+      inventory,
+      registry,
+      site: config.site,
+      spawn: engine.spawn.pos,
+      blockSize: s,
+    });
   }
   // Furniture, with the loot rolled for it, arrives with its column.
   streamer.onColumn = (cx, cz) => {
