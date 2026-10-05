@@ -10,8 +10,15 @@ import type { ReachSnapshot } from '../core/reach.ts';
 export const craftTime = (seconds: number): string =>
   seconds >= 60 ? `${(seconds / 60).toFixed(1)} min` : `${seconds.toFixed(1)} s`;
 export const workName = (registry: Registry, item: Item): string => {
-  const recipe = item.work && registry.recipes.get(item.work.recipe);
-  return recipe ? `${registry.items.get(recipe.result.item)!.name} in progress` : registry.items.get(item.type)!.name;
+  const { work } = item;
+  if (work?.kind === 'craft') {
+    const recipe = registry.recipes.get(work.recipe)!;
+    return `${registry.items.get(recipe.result.item)!.name} in progress`;
+  }
+  if (work?.kind === 'disassembly') {
+    return `${registry.items.get(work.source)!.name} disassembly`;
+  }
+  return registry.items.get(item.type)!.name;
 };
 export interface CraftStatus {
   uid: number;
@@ -28,12 +35,17 @@ export const craftStatus = (
   reason: string | undefined,
 ): CraftStatus | undefined => {
   const item = uid === undefined ? undefined : inventory.itemByUid(uid);
-  if (!item?.work) {
+  if (!item) {
     return undefined;
   }
-  const { elapsed, duration, recipe: id } = item.work;
-  const work = inventory.registry.recipes.get(id)!.time * 60;
-  const gather = duration - work;
+  const { work: itemWork } = item;
+  if (!itemWork) {
+    return undefined;
+  }
+  const { elapsed, duration } = itemWork;
+  const work =
+    itemWork.kind === 'craft' ? inventory.registry.recipes.get(itemWork.recipe)!.time * 60 : duration - itemWork.gather;
+  const gather = itemWork.kind === 'craft' ? duration - work : itemWork.gather;
   return {
     uid: item.uid,
     name: workName(inventory.registry, item),

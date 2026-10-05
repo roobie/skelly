@@ -671,13 +671,42 @@ describe('craft job codec and ownership', () => {
       expect(loaded.inventory.itemByUid(work.uid)!.work).toEqual(work.work);
       expect(loaded.inventory.hands.left).toBeUndefined();
       const bad = structuredClone(snapshot);
-      bad.character.inventory.hands.right!.work!.recipe = 'unknown_craft';
+      const badWork = bad.character.inventory.hands.right!.work!;
+      if (badWork.kind !== 'craft') {
+        throw new Error('Expected craft work');
+      }
+      badWork.recipe = 'unknown_craft';
       await expect(decodeSave(await encodeFixture(bad), { version: formatVersion, contentLookup })).rejects.toThrow(
         'Unknown recipe',
       );
       const dangling = structuredClone(snapshot);
       dangling.character.longAction.job = { jobType: 'craft', stopped: true, last: 0, workUid: 999_999 };
       await expect(encodeFixture(dangling)).rejects.toThrow('Missing craft work item');
+
+      const disassembly = structuredClone(snapshot);
+      const savedWork = disassembly.character.inventory.hands.right!;
+      const sourceUid = disassembly.character.inventory.nextItemUid;
+      disassembly.character.inventory.nextItemUid += 1;
+      savedWork.work = {
+        kind: 'disassembly',
+        source: 'portable_radio',
+        skillLevel: 0,
+        toolLevels: {},
+        outputs: [
+          { item: 'scrap_metal', count: 1 },
+          { item: 'aa_battery', count: 1 },
+        ],
+        gather: 0,
+        elapsed: 37,
+        duration: 300,
+        components: [{ uid: sourceUid, type: 'portable_radio', count: 1, condition: 0 }],
+      };
+      const decodedDisassembly = await decodeSave(await encodeFixture(disassembly), {
+        version: formatVersion,
+        contentLookup,
+      });
+      const loadedDisassembly = createRuntime(decodedDisassembly.snapshot);
+      expect(capture(loadedDisassembly)).toEqual(disassembly);
     },
   );
 });
@@ -912,7 +941,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 10,
+  schemaVersion: 11,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

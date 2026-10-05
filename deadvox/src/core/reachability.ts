@@ -62,6 +62,18 @@ const qualityReady = (registry: Registry, items: ReadonlySet<string>, quality: s
   [...items].some((id) => (registry.items.get(id)?.tool?.qualities[quality] ?? 0) >= level);
 
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
+const addDisassemblyOutputs = (registry: Registry, items: Set<string>) => {
+  for (const id of items) {
+    const definition = registry.items.get(id);
+    for (const output of definition?.disassembly?.yields ?? []) {
+      items.add(output.item);
+    }
+    for (const output of definition?.salvage ?? []) {
+      items.add(output.item);
+    }
+  }
+};
+
 const closure = (
   registry: Registry,
   found: ReadonlySet<string>,
@@ -72,6 +84,7 @@ const closure = (
   let previous: number;
   do {
     previous = items.size;
+    addDisassemblyOutputs(registry, items);
     for (const recipe of registry.recipes.values()) {
       if (
         knowledge.has(recipe.id) &&

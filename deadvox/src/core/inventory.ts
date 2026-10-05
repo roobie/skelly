@@ -3,9 +3,15 @@
 // handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import type { Registry } from './content.ts';
+import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { CraftPlan } from './crafting.ts';
+import type { WorkPlan } from './crafting.ts';
+import {
+  disassemblyOutputs,
+  SALVAGE_DURATION,
+  sameDisassemblyOutputs,
+  validDisassemblyToolLevels,
+} from './disassembly.ts';
 import {
   cellCount,
   couldFit,
@@ -394,30 +400,58 @@ export class Inventory {
     return true;
   }
 
-  /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
-  beginWork(plan: CraftPlan): Item | undefined {
-    if (this.hands.left || this.hands.right || !this.registry.recipes.has(plan.recipe)) {
-      return undefined;
+  private validCraftPlan(plan: Extract<WorkPlan, { kind: 'craft' }>): boolean {
+    if (!this.registry.recipes.has(plan.recipe)) {
+      return false;
     }
     const seen = new Set<number>();
     for (const { item, count } of plan.components) {
-      if (
-        seen.has(item.uid) ||
-        this.itemByUid(item.uid) !== item ||
-        !this.locate(item) ||
-        !isEmpty(item) ||
-        !Number.isSafeInteger(count) ||
-        count < 1 ||
-        count > item.count
-      ) {
-        return undefined;
+      if (!this.validCraftComponent(item, count) || seen.has(item.uid)) {
+        return false;
       }
       seen.add(item.uid);
     }
-    if (plan.tools.some((tool) => seen.has(tool.item.uid))) {
-      return undefined;
+    return !plan.tools.some((tool) => seen.has(tool.item.uid));
+  }
+
+  private validCraftComponent(item: Item, count: number): boolean {
+    return (
+      this.itemByUid(item.uid) === item &&
+      Boolean(this.locate(item)) &&
+      isEmpty(item) &&
+      Number.isSafeInteger(count) &&
+      count >= 1 &&
+      count <= item.count
+    );
+  }
+
+  private validDisassemblyPlan(plan: Extract<WorkPlan, { kind: 'disassembly' }>): boolean {
+    const sourceDef = this.registry.items.get(plan.source.type);
+    if (
+      this.itemByUid(plan.source.uid) !== plan.source ||
+      !this.locate(plan.source) ||
+      !sourceDef ||
+      !(sourceDef.disassembly || sourceDef.salvage) ||
+      !validDisassemblyToolLevels(sourceDef, plan.toolLevels) ||
+      plan.source.work ||
+      !isEmpty(plan.source) ||
+      !Number.isSafeInteger(plan.skillLevel) ||
+      plan.skillLevel < 0 ||
+      !Number.isFinite(plan.gather) ||
+      plan.gather < 0 ||
+      !Number.isFinite(plan.duration) ||
+      plan.duration <= 0 ||
+      plan.outputs.some(
+        ({ item, count }) => !(this.registry.items.has(item) && Number.isSafeInteger(count)) || count < 1,
+      )
+    ) {
+      return false;
     }
-    const work = this.create(WORK_IN_PROGRESS);
+    const expected = disassemblyOutputs(sourceDef, plan.skillLevel, (quality) => plan.toolLevels[quality] ?? 0);
+    return sameDisassemblyOutputs(expected, plan.outputs);
+  }
+
+  private escrowCraft(plan: Extract<WorkPlan, { kind: 'craft' }>, work: Item): void {
     const components = plan.components.map(({ item, count }) => {
       const from = this.locate(item)!;
       if (from.kind === 'furniture') {
@@ -429,7 +463,45 @@ export class Inventory {
       this.remove(from);
       return item;
     });
-    work.work = { recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
+    work.work = { kind: 'craft', recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
+  }
+
+  private escrowDisassembly(plan: Extract<WorkPlan, { kind: 'disassembly' }>, work: Item): void {
+    const from = this.locate(plan.source)!;
+    if (from.kind === 'furniture') {
+      this.looted.set(plan.source.type, (this.looted.get(plan.source.type) ?? 0) + 1);
+    }
+    const input = plan.source.count > 1 ? this.factory.split(plan.source, 1) : plan.source;
+    if (input === plan.source) {
+      this.remove(from);
+    }
+    work.work = {
+      kind: 'disassembly',
+      source: plan.source.type,
+      skillLevel: plan.skillLevel,
+      toolLevels: { ...plan.toolLevels },
+      gather: plan.gather,
+      outputs: plan.outputs.map((output) => ({ ...output })),
+      elapsed: 0,
+      duration: plan.duration,
+      components: [input],
+    };
+  }
+
+  /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
+  beginWork(plan: WorkPlan): Item | undefined {
+    if (this.hands.left || this.hands.right) {
+      return undefined;
+    }
+    if (plan.kind === 'craft' ? !this.validCraftPlan(plan) : !this.validDisassemblyPlan(plan)) {
+      return undefined;
+    }
+    const work = this.create(WORK_IN_PROGRESS);
+    if (plan.kind === 'craft') {
+      this.escrowCraft(plan, work);
+    } else {
+      this.escrowDisassembly(plan, work);
+    }
     this.hands.right = work;
     this.version += 1;
     return work;
@@ -468,9 +540,18 @@ export class Inventory {
     if (!(payload && at)) {
       return;
     }
-    const recipe = this.registry.recipes.get(payload.recipe)!;
-    const outputs = finish ? [this.create(recipe.result.item, recipe.result.count)] : payload.components;
-    const resultInHand = finish && at.kind === 'hand';
+    let outputs: Item[];
+    if (!finish) {
+      outputs = payload.components;
+    } else if (payload.kind === 'craft') {
+      const { recipes } = this.registry;
+      const { recipe } = payload;
+      const { result } = recipes.get(recipe)!;
+      outputs = [this.create(result.item, result.count)];
+    } else {
+      outputs = payload.outputs.map(({ item, count }) => this.create(item, count));
+    }
+    const resultInHand = finish && payload.kind === 'craft' && at.kind === 'hand';
     if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
       throw new Error('An input or result is too large to put down');
     }
@@ -796,20 +877,27 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   }
 };
 
-export const validateWorkItem = (registry: Registry, item: ItemState): void => {
-  const work = item.work!;
+const validDisassemblyComponents = (work: Extract<NonNullable<ItemState['work']>, { kind: 'disassembly' }>): boolean =>
+  work.components.length === 1 && work.components[0]!.type === work.source && work.components[0]!.count === 1;
+
+const validDisassemblySnapshot = (
+  registry: Registry,
+  source: ItemDef,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'disassembly' }>,
+): boolean => {
+  const outputsAreValid = work.outputs.every(
+    ({ item, count }) => registry.items.has(item) && Number.isSafeInteger(count) && count >= 1,
+  );
+  const expected = disassemblyOutputs(source, work.skillLevel, (quality) => work.toolLevels[quality] ?? 0);
+  return outputsAreValid && sameDisassemblyOutputs(expected, work.outputs);
+};
+
+const validateCraftWorkItem = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'craft' }>,
+): void => {
   const recipe = registry.recipes.get(work.recipe);
-  if (
-    item.type !== WORK_IN_PROGRESS ||
-    item.count !== 1 ||
-    !recipe ||
-    !Number.isFinite(work.elapsed) ||
-    !Number.isFinite(work.duration) ||
-    work.elapsed < 0 ||
-    work.duration < recipe.time * 60 ||
-    work.elapsed > work.duration ||
-    work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length))
-  ) {
+  if (!recipe || work.duration < recipe.time * 60) {
     throw new Error('Invalid craft work payload');
   }
   const actual = new Map<string, number>();
@@ -832,6 +920,56 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
   };
   if (!matches(0, actual)) {
     throw new Error('Craft inputs do not match recipe');
+  }
+};
+
+const validateDisassemblyWorkItem = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'disassembly' }>,
+): void => {
+  const source = registry.items.get(work.source);
+  if (!source) {
+    throw new Error('Invalid disassembly work payload');
+  }
+  const duration = source.disassembly ? source.disassembly.time * 60 : SALVAGE_DURATION;
+  const hasDisassembly = Boolean(source.disassembly || source.salvage);
+  if (!hasDisassembly) {
+    throw new Error('Invalid disassembly work payload');
+  }
+  if (!validDisassemblyToolLevels(source, work.toolLevels)) {
+    throw new Error('Invalid disassembly work payload');
+  }
+  if (
+    !Number.isFinite(work.gather) ||
+    work.gather < 0 ||
+    work.duration !== work.gather + duration ||
+    !Number.isSafeInteger(work.skillLevel) ||
+    work.skillLevel < 0 ||
+    !validDisassemblyComponents(work) ||
+    !validDisassemblySnapshot(registry, source, work)
+  ) {
+    throw new Error('Invalid disassembly work payload');
+  }
+};
+
+export const validateWorkItem = (registry: Registry, item: ItemState): void => {
+  const work = item.work!;
+  const commonInvalid =
+    item.type !== WORK_IN_PROGRESS ||
+    item.count !== 1 ||
+    !Number.isFinite(work.elapsed) ||
+    !Number.isFinite(work.duration) ||
+    work.elapsed < 0 ||
+    work.duration <= 0 ||
+    work.elapsed > work.duration ||
+    work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length));
+  if (commonInvalid) {
+    throw new Error(work.kind === 'disassembly' ? 'Invalid disassembly work payload' : 'Invalid craft work payload');
+  }
+  if (work.kind === 'craft') {
+    validateCraftWorkItem(registry, work);
+  } else {
+    validateDisassemblyWorkItem(registry, work);
   }
 };
 

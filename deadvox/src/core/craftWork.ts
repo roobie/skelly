@@ -2,6 +2,7 @@
 import type { CraftCharacter } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import { admissionRefusal } from './crafting.ts';
+import { planDisassembly, sameDisassemblyOutputs } from './disassembly.ts';
 import { type Inventory, validateWorkItem } from './inventory.ts';
 import type { Item } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
@@ -23,8 +24,25 @@ export const craftActionHooks = (
   feet: () => Vec3,
 ): CraftActionHooks => ({
   admit: (plan) => {
-    const recipe = inventory.registry.recipes.get(plan.recipe);
-    return recipe ? admissionRefusal(recipe, reach(), character) : 'Unknown recipe';
+    const snapshot = reach();
+    if (plan.kind === 'craft') {
+      const recipe = inventory.registry.recipes.get(plan.recipe);
+      return recipe ? admissionRefusal(recipe, snapshot, character) : 'Unknown recipe';
+    }
+    const current = planDisassembly(plan.source, snapshot, character);
+    const sameTools =
+      current &&
+      Object.keys(current.toolLevels).length === Object.keys(plan.toolLevels).length &&
+      Object.entries(current.toolLevels).every(([quality, level]) => plan.toolLevels[quality] === level);
+    return current &&
+      current.source === plan.source &&
+      current.skillLevel === plan.skillLevel &&
+      current.duration === plan.duration &&
+      current.gather === plan.gather &&
+      sameTools &&
+      sameDisassemblyOutputs(current.outputs, plan.outputs)
+      ? undefined
+      : 'The item or its yield changed';
   },
   begin: (plan) => inventory.beginWork(plan)?.uid,
   owns: (uid) => inventory.itemByUid(uid)?.work !== undefined,
@@ -40,7 +58,9 @@ export const craftActionHooks = (
     if (inventory.hands.right !== item || inventory.hands.left) {
       return 'The work needs both hands';
     }
-    return admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character);
+    return work.kind === 'craft'
+      ? admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character)
+      : undefined;
   },
   advance: (uid, seconds) => {
     const work = inventory.itemByUid(uid)!.work!;

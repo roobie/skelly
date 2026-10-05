@@ -195,6 +195,40 @@ describe('live craft commands', () => {
     expect(r.inventory.move(item, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
   });
+  it('salvage returns only the fixed outputs authored for a found item', () => {
+    const r = make();
+    const radio = r.inventory.create('portable_radio');
+    radio.condition = 0;
+    expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const before = new Set([...r.inventory.items()].map(({ item }) => item.uid));
+    const option = r.commands.options(radio.uid).find(({ operation }) => operation === 'disassemble')!;
+    expect(option.plan.ok, JSON.stringify(option.plan)).toBe(true);
+    expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    expect(work.work).toMatchObject({ kind: 'disassembly', source: 'portable_radio' });
+    r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
+    const outputs = [...r.inventory.items()]
+      .filter(({ item }) => !before.has(item.uid))
+      .map(({ item }) => ({ item: item.type, count: item.count }))
+      .sort((a, b) => a.item.localeCompare(b.item));
+    expect(outputs).toEqual([
+      { item: 'aa_battery', count: 1 },
+      { item: 'scrap_metal', count: 1 },
+    ]);
+  });
+  it('cancelling disassembly returns the exact source item without producing salvage', () => {
+    const r = make();
+    const radio = r.inventory.create('portable_radio');
+    expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.sim.actions.stop();
+    expect(r.commands.act(work.uid, 'apart')).toBeUndefined();
+    expect(r.inventory.itemByUid(radio.uid)).toBe(radio);
+    expect(radio.work).toBeUndefined();
+    expect([...r.inventory.items()].map(({ item }) => item.type)).not.toContain('scrap_metal');
+    expect([...r.inventory.items()].map(({ item }) => item.type)).not.toContain('aa_battery');
+  });
   it('Take apart refuses a work UID outside reach and retains its owned input tree', () => {
     const r = make();
     r.commands.start('torch');

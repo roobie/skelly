@@ -3,6 +3,7 @@ import type { BlockEntity } from './blockEntities.ts';
 import type { CraftCharacter } from './character.ts';
 import { CLOCK_RATIO } from './clock.ts';
 import type { RecipeDef } from './content.ts';
+import type { DisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
 import { type Item, isEmpty } from './items.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
@@ -13,6 +14,7 @@ export interface CraftComponent {
   from: Location;
 }
 export interface CraftPlan {
+  kind: 'craft';
   recipe: string;
   components: CraftComponent[];
   tools: { item: Item; quality: string }[];
@@ -21,6 +23,7 @@ export interface CraftPlan {
   gather: number;
   work: number;
 }
+export type WorkPlan = CraftPlan | DisassemblyPlan;
 export interface CraftMissing {
   reason: string;
   knowledge: boolean;
@@ -282,7 +285,14 @@ const craftPlan = (
         .filter((station) => stationMatches(recipe, snapshot, station))
         .sort((a, b) => a.entity.uid - b.entity.uid)[0]?.entity
     : undefined;
-  return { recipe: recipe.id, ...allocation, tools, ...(workstation ? { workstation } : {}), work: recipe.time * 60 };
+  return {
+    kind: 'craft',
+    recipe: recipe.id,
+    ...allocation,
+    tools,
+    ...(workstation ? { workstation } : {}),
+    work: recipe.time * 60,
+  };
 };
 
 const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: CraftRequirements): string | undefined => {

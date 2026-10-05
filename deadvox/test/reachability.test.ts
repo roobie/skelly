@@ -174,6 +174,46 @@ describe('static reachability', () => {
     expect([...result.workstations]).toEqual(['placed_bench']);
   });
 
+  it('closes found items over authored disassembly and salvage outputs in both reachability sets', () => {
+    const registry = fresh();
+    for (const id of [
+      'fixture_yield_source',
+      'fixture_salvage_source',
+      'fixture_yield_output',
+      'fixture_salvage_output',
+    ]) {
+      registry.items.set(id, { id, name: id, category: 'material', weight: 1, size: [1, 1] });
+    }
+    registry.items.set('fixture_yield_source', {
+      ...registry.items.get('fixture_yield_source')!,
+      disassembly: {
+        time: 1,
+        skill: 'crafting',
+        yields: [{ item: 'fixture_yield_output', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+      },
+    });
+    registry.items.set('fixture_salvage_source', {
+      ...registry.items.get('fixture_salvage_source')!,
+      salvage: [{ item: 'fixture_salvage_output', count: 1 }],
+    });
+    const junk = registry.loot.get('junk')!;
+    registry.loot.set('junk', {
+      ...junk,
+      entries: [
+        ...junk.entries,
+        { item: 'fixture_yield_source', weight: 1 },
+        { item: 'fixture_salvage_source', weight: 1 },
+      ],
+    });
+    const result = checkReachability(registry);
+    expect(result.found.has('fixture_yield_source')).toBe(true);
+    expect(result.found.has('fixture_salvage_source')).toBe(true);
+    for (const id of ['fixture_yield_output', 'fixture_salvage_output']) {
+      expect(result.components.has(id)).toBe(true);
+      expect(result.toolReachable.has(id)).toBe(true);
+    }
+  });
+
   it('excludes capped markers and wanderers, but allows shuffled north templates to be first', () => {
     const ten = Array.from({ length: 10 }, () => marker('certain'));
     expect(

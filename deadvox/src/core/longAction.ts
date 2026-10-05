@@ -1,5 +1,5 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
-import type { CraftPlan } from './crafting.ts';
+import type { WorkPlan } from './crafting.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -19,8 +19,8 @@ export interface LongActionState {
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
 export interface CraftActionHooks {
-  admit: (plan: CraftPlan) => string | undefined;
-  begin: (plan: CraftPlan) => number | undefined;
+  admit: (plan: WorkPlan) => string | undefined;
+  begin: (plan: WorkPlan) => number | undefined;
   owns: (uid: number) => boolean;
   validate: (uid: number) => string | undefined;
   advance: (uid: number, gameSeconds: number) => boolean;
@@ -110,7 +110,7 @@ export class LongActions {
     return undefined;
   }
   /** Admit and secure compression before any structural escrow effect. */
-  beginCraft(plan: CraftPlan): string | undefined {
+  beginCraft(plan: WorkPlan): string | undefined {
     if (!this.craft) {
       return 'Missing craft action owner';
     }

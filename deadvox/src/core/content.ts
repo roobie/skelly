@@ -13,6 +13,7 @@ import {
   ContentFileSchema,
   type ContentSection,
   type ItemDef,
+  type RecipeDef,
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -259,12 +260,40 @@ const checkUnpacking = (item: ItemDef, registry: Registry, report: Report): void
 };
 
 const checkItems = (registry: Registry, report: Report) => {
+  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const item of registry.items.values()) {
     const battery = item.light?.power?.battery;
     if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
       report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
     }
     checkUnpacking(item, registry, report);
+    if (item.disassembly) {
+      if (!registry.skills.has(item.disassembly.skill)) {
+        report('items', item.id, '.disassembly.skill', `no skill "${item.disassembly.skill}"`);
+      }
+      item.disassembly.yields.forEach((yieldItem, index) => {
+        if (!registry.items.has(yieldItem.item)) {
+          report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
+        }
+        const quality = yieldItem.toolModifier?.quality;
+        if (quality !== undefined && !qualities.has(quality)) {
+          report(
+            'items',
+            item.id,
+            `.disassembly.yields[${index}].toolModifier.quality`,
+            `no tool quality "${quality}"`,
+          );
+        }
+      });
+    }
+    item.salvage?.forEach((output, index) => {
+      if (!registry.items.has(output.item)) {
+        report('items', item.id, `.salvage[${index}].item`, `no item "${output.item}"`);
+      }
+    });
+    if (item.disassembly && item.salvage) {
+      report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
+    }
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
     }
@@ -376,35 +405,63 @@ const checkZombies = (registry: Registry, report: Report) => {
   }
 };
 
+const checkRecipe = ({
+  registry,
+  recipe,
+  qualities,
+  workstations,
+  report,
+}: {
+  registry: Registry;
+  recipe: RecipeDef;
+  qualities: ReadonlySet<string>;
+  workstations: ReadonlySet<string>;
+  report: Report;
+}) => {
+  const checkItem = (id: string, path: string) => {
+    if (!registry.items.has(id)) {
+      report('recipes', recipe.id, path, `no item "${id}"`);
+    }
+  };
+  checkItem(recipe.result.item, '.result.item');
+  recipe.components.forEach((group, g) => {
+    group.forEach((component, c) => {
+      checkItem(component.item, `.components[${g}][${c}].item`);
+    });
+  });
+  for (const id of Object.keys(recipe.skills)) {
+    if (!registry.skills.has(id)) {
+      report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
+    }
+  }
+  for (const id of Object.keys(recipe.qualities)) {
+    if (!qualities.has(id)) {
+      report('recipes', recipe.id, `.qualities.${id}`, `no tool quality "${id}"`);
+    }
+  }
+  if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
+    report('recipes', recipe.id, '.workstation', `no workstation "${recipe.workstation}"`);
+  }
+};
+
 const checkRecipes = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const workstations = new Set(
     [...registry.furniture.values()].flatMap((furniture) => (furniture.workstation ? [furniture.workstation.id] : [])),
   );
   for (const recipe of registry.recipes.values()) {
-    const checkItem = (id: string, path: string) => {
-      if (!registry.items.has(id)) {
-        report('recipes', recipe.id, path, `no item "${id}"`);
-      }
-    };
-    checkItem(recipe.result.item, '.result.item');
-    recipe.components.forEach((group, g) => {
-      group.forEach((component, c) => {
-        checkItem(component.item, `.components[${g}][${c}].item`);
-      });
-    });
-    for (const id of Object.keys(recipe.skills)) {
-      if (!registry.skills.has(id)) {
-        report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
-      }
+    checkRecipe({ registry, recipe, qualities, workstations, report });
+  }
+  for (const id of new Set([...registry.recipes.values()].map((recipe) => recipe.result.item))) {
+    const item = registry.items.get(id);
+    if (!item) {
+      continue;
     }
-    for (const id of Object.keys(recipe.qualities)) {
-      if (!qualities.has(id)) {
-        report('recipes', recipe.id, `.qualities.${id}`, `no tool quality "${id}"`);
-      }
+    if (!item.disassembly) {
+      report('items', id, '.disassembly', 'recipe result needs an explicit disassembly yield');
     }
-    if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
-      report('recipes', recipe.id, '.workstation', `no workstation "${recipe.workstation}"`);
+    if (item.salvage) {
+      report('items', id, '.salvage', 'recipe results use a disassembly yield, not a salvage list');
     }
   }
 };

@@ -178,7 +178,8 @@ describe('the hamlet', () => {
     const pieces = columnsOf(hamlet).flatMap(([cx, cz]) => hamlet.furnitureIn(cx, cz));
     const loot = pieces.flatMap((p) => p.loot);
     expect(loot.length).toBeGreaterThan(10);
-    const again = columnsOf(hamlet).flatMap(([cx, cz]) => new Hamlet(5, registry, scale).furnitureIn(cx, cz));
+    const sameSeed = new Hamlet(5, registry, scale);
+    const again = columnsOf(sameSeed).flatMap(([cx, cz]) => sameSeed.furnitureIn(cx, cz));
     expect(again).toEqual(pieces);
   });
 
