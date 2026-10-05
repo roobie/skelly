@@ -4,6 +4,7 @@ import { browserStageArgs, browserStageMode, browserStageUrl } from './browser/s
 describe('browser stage rendering mode', () => {
   it('selects render-free mode and matching Chromium flags for logic stages', () => {
     expect(browserStageMode('primary-action')).toBe('render-free');
+    expect(browserStageMode('pump-handling')).toBe('render-free');
     expect(browserStageArgs('primary-action')).toContain('--disable-gpu');
     expect(browserStageArgs('primary-action')).not.toContain('--use-gl=swiftshader');
     expect(browserStageUrl('primary-action', 'http://localhost/?seed=1')).toBe('http://localhost/?seed=1&render=0');
