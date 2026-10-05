@@ -95,6 +95,18 @@ pre-push hook (below) runs checks across every subproject. Run the full install
 under "Installing check dependencies" in it before its first push, including the
 push that publishes a new branch, or that push fails.
 
+## Dependency age
+
+- Covers adding or upgrading any project dependency or tool: npm packages in
+  `package.json` or lockfiles, Python packages, project-work CLIs, and GitHub
+  Actions versions in workflows.
+- Use only versions released more than one month before they are added. Check the
+  registry or release date, and name the version and date in the PR or report.
+- If no version qualifies, stop and discuss with BR before installing. BR
+  (2026-10-05, 22:02): “yes, but find versions that are not the bleeding edge
+  (ie. use only versions older than 1 month, otherwise halt and discuss)”.
+- BR (2026-10-05, 22:03): “yes, that's a general rule”.
+
 ## Installing check dependencies
 
 Root lint resolves imports across every subproject, so install them all, as CI does, before
