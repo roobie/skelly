@@ -12,6 +12,7 @@ import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DoorLockDef } from '../src/core/schema.ts';
+import { ROUTE_MAX_WORK, ROUTE_SEARCHES_PER_TICK, ROUTE_WORK_PER_TICK } from '../src/core/shamblerRoutes.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
@@ -435,8 +436,9 @@ describe('shambler scenarios', () => {
     ).toBe(true);
   });
 
-  it('B: hears the sprinting player but cannot enter through the real locked door for 120 seconds', () => {
-    const { entities, door, solid } = makeDoorWorld({ id: 'test_shed', locked: true });
+  it('B: hears the sprinting player but does not breach a closed locked door', () => {
+    const { entities, door, solid: doorWorldSolid } = makeDoorWorld({ id: 'test_shed', locked: true });
+    const solid: SolidAt = (x, y, z) => doorWorldSolid(x, y, z) || (z === 0 && y >= 1 && y <= 4 && (x < 4 || x > 5));
     entities.setOpen(door, false);
     const target = [5, 1, -0.56] as Vec3;
     let damage = 0;
@@ -471,14 +473,6 @@ describe('shambler scenarios', () => {
     expect(firstMinuteDamage).toBe(0);
     expect(damage).toBe(0);
     expect(positions.every((position) => position[2] > 1)).toBe(true);
-    expect(entities.setLocked(door, false, ['test_shed'])).toBeUndefined();
-    entities.setOpen(door, true);
-    // A hit now telegraphs: attack start plays the sound and begins the windup; damage lands only once
-    // the windup elapses, still in reach/LOS (see withinAttackReach in src/core/zombies.ts).
-    run(system, SHAMBLER.attack.windup + 0.1);
-    expect(damage).toBe(8);
-    const end = positions.at(-1)!;
-    expect((end[2] - 1) * BLOCK_SIZE).toBeLessThanOrEqual(1.5);
   });
 
   it('still hits through a real open wood_door with a clear chest ray', () => {
@@ -501,7 +495,7 @@ describe('shambler scenarios', () => {
   });
 
   it('C: reaches the last-perceived point, loses sight, then returns within 3 m in 120 seconds', () => {
-    let target = player([10, 2, 0], [1, 0, 0]);
+    let target = player([10, 1, 0], [1, 0, 0]);
     let wallOn = false;
     const wall: SolidAt = (x, y) => FLOOR(x, y, 0) || (wallOn && x === 12 && y >= 1 && y <= 5);
     const system = new ZombieSystem(senses(() => target, wall));
@@ -509,7 +503,7 @@ describe('shambler scenarios', () => {
     system.tick(1 / 60);
     expect(system.store.get(id)!.mode).toBe('chase');
     const lastSeen = [...system.store.get(id)!.lastPerceived!] as Vec3;
-    target = player([24, 2, 0], [1, 0, 0]);
+    target = player([24, 1, 0], [1, 0, 0]);
     wallOn = true;
     let reached = false;
     for (let frame = 0; frame < 60 * 40; frame++) {
@@ -532,17 +526,18 @@ describe('shambler scenarios', () => {
     expect(metres(chaser.body.pos, chaser.home)).toBeLessThanOrEqual(12.5);
   });
 
-  it('E: steps a 0.5 m block and jumps a 1 m obstacle using player physics at game scale', () => {
-    const target = player([24, 2, 0], [-1, 0, 0]);
+  it('routes around a one-metre obstacle without intersecting it at game scale', () => {
+    const target = player([24, 1, 0], [-1, 0, 0]);
     for (const [height, seconds] of [
-      [1, 5],
-      [2, 5],
+      [1, 12],
+      [2, 12],
     ] as const) {
-      const obstacle: SolidAt = (x, y) => y === 0 || (x === 6 && y >= 1 && y <= height);
+      const obstacle: SolidAt = (x, y, z) => y === 0 || (x === 6 && z === 0 && y >= 1 && y <= height);
       const system = new ZombieSystem(senses(() => target, obstacle));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
-      run(system, seconds);
-      expect(system.store.get(id)!.body.pos[0] * BLOCK_SIZE, `obstacle height ${height}`).toBeGreaterThan(3.25);
+      const zombie = system.store.get(id)!;
+      run(system, seconds, () => expect(bodyHitsSolid(zombie.body, obstacle)).toBe(false));
+      expect(zombie.body.pos[0] * BLOCK_SIZE, `obstacle height ${height}`).toBeGreaterThan(3.25);
     }
   });
 
@@ -552,8 +547,7 @@ describe('shambler scenarios', () => {
     expect(result.states.every((state) => state.verticalVelocity <= 0)).toBe(true);
     expect(result.states.every((state) => state.mode === 'chase')).toBe(true);
     expect(result.states.slice(1).every((state) => state.onGround)).toBe(true);
-    expect(result.wallGap).toBeGreaterThanOrEqual(-0.001);
-    expect(result.wallGap).toBeLessThanOrEqual(1);
+    expect(result.wallGap).toBeGreaterThan(1);
   });
 
   it('does not jump a 1 m wall when a low ceiling leaves too little headroom', () => {
@@ -562,8 +556,7 @@ describe('shambler scenarios', () => {
     expect(result.states.every((state) => state.verticalVelocity <= 0)).toBe(true);
     expect(result.states.every((state) => state.mode === 'chase')).toBe(true);
     expect(result.states.slice(1).every((state) => state.onGround)).toBe(true);
-    expect(result.wallGap).toBeGreaterThanOrEqual(-0.001);
-    expect(result.wallGap).toBeLessThanOrEqual(1);
+    expect(result.wallGap).toBeGreaterThan(1);
   });
 
   it('stops a walking player at a standing shambler without stepping onto its body', () => {
@@ -590,7 +583,7 @@ describe('shambler scenarios', () => {
   });
 
   it('smooths a grounded shambler step in simulation-owned pose state', () => {
-    const stair: SolidAt = (_x, y, z) => y === 0 || (z === 3 && y === 1);
+    const stair: SolidAt = (_x, y, z) => y === 0 || (z >= 3 && y === 1);
     const system = new ZombieSystem(senses(() => player([0, 2, 10], [0, 0, -1]), stair));
     const id = system.add(SHAMBLER, [0, 1, 2.2], [0, 0, 1]);
     const zombie = system.store.get(id)!;
@@ -747,7 +740,7 @@ describe('shambler scenarios', () => {
     }
   });
 
-  it('keeps four chasing shamblers grounded on terrain rather than stacking down three steps', () => {
+  it('does not infer a route between floors from un-authored terrain steps', () => {
     const stairs: SolidAt = (_x, y, z) => y < stairTop(z);
     const target = [0.25, 1, 0] as Vec3;
     const system = new ZombieSystem(senses(() => player(target, [0, 0, 1], 'sprinting'), stairs));
@@ -765,7 +758,7 @@ describe('shambler scenarios', () => {
       }
       expect(terrainBodyViolations(bodies, stairs), `tick ${tick}`).toEqual([]);
     }
-    expect(ids.every((id) => system.store.get(id)!.body.pos[2] < 4)).toBe(true);
+    expect(ids.every((id) => system.store.get(id)!.body.pos[2] >= 4)).toBe(true);
   });
 
   it('pushes two overlapping shamblers apart in a one-metre corridor without wall intersections', () => {
@@ -1380,6 +1373,257 @@ describe('shambler scenarios', () => {
   });
 });
 
+describe('authored stair navigation', () => {
+  const flight = { from: 'cellar', to: 'ground', lower: [1, 1, 1] as Vec3, upper: [6, 5, 1] as Vec3, width: 2 };
+  const stair: SolidAt = (x, y, _z) => y === 0 || (x >= 2 && x <= 5 && y === x - 1) || (x === 6 && y === 4);
+  const systemFor = (start: Vec3, target: Vec3, stairFlights = [flight]) => {
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'sprinting'), stair),
+      isOpaque: () => true,
+      terrainFloor: () => 1,
+      stairFlights,
+    });
+    const id = system.add(SHAMBLER, start, [1, 0, 0]);
+    return { system, zombie: system.store.get(id)! };
+  };
+
+  it('climbs the authored cellar flight instead of arriving at its lower-floor projection', () => {
+    const { system, zombie } = systemFor(flight.lower, flight.upper);
+    system.tick(1 / 20, 1 / 20);
+    expect(zombie.mode).toBe('investigate');
+    for (let tick = 2; tick <= 20 * 12; tick++) {
+      system.tick(1 / 20, tick / 20);
+    }
+    expect(zombie.body.pos[1]).toBeGreaterThan(4.5);
+  });
+
+  it('does not report arrival at a disconnected cross-floor projection', () => {
+    const projectedTarget: Vec3 = [flight.lower[0], flight.upper[1], flight.lower[2]];
+    const { system, zombie } = systemFor(flight.lower, projectedTarget, []);
+    for (let tick = 1; tick <= 20 * 3; tick++) {
+      system.tick(1 / 20, tick / 20);
+    }
+    expect(zombie.mode).not.toBe('search');
+    expect(zombie.body.pos[1]).toBeLessThan(1.5);
+  });
+
+  it('turns into a descending flight without overshooting its adjacent treads', () => {
+    const longFlight = { ...flight, lower: [1, 1, 1] as Vec3, upper: [10, 9, 1] as Vec3 };
+    const solid: SolidAt = (x, y, z) =>
+      y === 0 ||
+      (x >= 2 && x <= 10 && z >= 0 && z < 2 && y < Math.min(x, 9)) ||
+      (y === 8 && (x < 2 || x >= 10 || z < 0 || z >= 2));
+    const system = new ZombieSystem({
+      ...senses(() => player(longFlight.lower, [-1, 0, 0], 'sprinting'), solid),
+      isOpaque: () => true,
+      terrainFloor: () => 1,
+      stairFlights: [longFlight],
+    });
+    const id = system.add(SHAMBLER, longFlight.upper, [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    system.tick(1 / 20, 1 / 20);
+    expect(zombie.mode).not.toBe('search');
+    for (let tick = 2; tick <= 20 * 12; tick++) {
+      system.tick(1 / 20, tick / 20);
+      expect(bodyHitsSolid(zombie.body, solid)).toBe(false);
+    }
+    expect(zombie.body.pos[1]).toBeLessThan(1.5);
+  });
+
+  it('replans from an authored tread when the perceived lower-floor target moves', () => {
+    const longFlight = { ...flight, lower: [1, 1, 1] as Vec3, upper: [10, 9, 1] as Vec3 };
+    const solid: SolidAt = (x, y, z) => y === 0 || (x >= 2 && x <= 10 && z === 1 && y < Math.min(x, 9));
+    let target = longFlight.lower;
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'sprinting'), solid),
+      isOpaque: () => true,
+      terrainFloor: () => 1,
+      stairFlights: [longFlight],
+    });
+    const id = system.add(SHAMBLER, longFlight.upper, [-1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    let moved = false;
+    for (let tick = 1; tick <= 20 * 12; tick++) {
+      if (!moved && zombie.body.pos[1] < longFlight.upper[1] - 2) {
+        target = [longFlight.lower[0], longFlight.lower[1], longFlight.lower[2] + 3];
+        moved = true;
+      }
+      system.tick(1 / 20, tick / 20);
+    }
+    expect(moved).toBe(true);
+    expect(zombie.body.pos[1]).toBeLessThan(1.5);
+  });
+});
+
+describe('local route continuation', () => {
+  it('projects a far rumour onto known terrain without learning the source storey', () => {
+    const terrainFloor = (x: number) => 1 + Math.max(0, Math.floor(x / 4));
+    const solid: SolidAt = (x, y) => y < terrainFloor(x) || (x >= 12 && x <= 15 && y === 8);
+    const source: Vec3 = [14, 9, 0];
+    const type = {
+      ...SHAMBLER,
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 4 },
+      hearingModel: {
+        ...SHAMBLER.hearingModel,
+        farMultiplier: 4,
+        investigationDistanceMetres: 4,
+        bearingErrorRadians: 0,
+      },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player(source, [-1, 0, 0], 'sprinting'), solid),
+      isOpaque: () => true,
+      terrainFloor,
+    });
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+    system.tick(1 / 20);
+    const zombie = system.store.get(id)!;
+    expect(zombie.investigationTier).toBe('far');
+    expect(zombie.lastPerceived).toBeDefined();
+    const [gx, gy, gz] = zombie.lastPerceived!.map(Math.floor);
+    expect(solid(gx!, gy!, gz!)).toBe(false);
+    expect(solid(gx!, gy! - 1, gz!)).toBe(true);
+    expect(zombie.lastPerceived![1]).not.toBe(source[1]);
+  });
+
+  it('keeps live clearance local while gravity settles a terrain drop', () => {
+    const terrainFloor = (x: number) => (x < 3 ? 2 : 1);
+    let queries = 0;
+    const solid: SolidAt = (x, y) => {
+      queries += 1;
+      return y < terrainFloor(x);
+    };
+    const target: Vec3 = [30, 1, 0];
+    const type = {
+      ...SHAMBLER,
+      speed: { ...SHAMBLER.speed, chase: 2 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    const system = new ZombieSystem({
+      ...senses(
+        () => player(target, [-1, 0, 0], 'still', true),
+        solid,
+        () => 23.5,
+      ),
+      isOpaque: () => false,
+      terrainFloor,
+    });
+    const id = system.add(type, [1, 2, 0], [1, 0, 0]);
+    let airborneChecks = 0;
+    for (let tick = 0; tick < 120; tick++) {
+      const { body } = system.store.get(id)!;
+      const airborne = !body.onGround && body.pos[0] > 4;
+      queries = 0;
+      system.tick(1 / 20);
+      if (airborne) {
+        airborneChecks += 1;
+        expect(queries).toBeLessThan(target[0] * Math.ceil(body.height));
+      }
+    }
+    expect(airborneChecks).toBeGreaterThan(0);
+  });
+
+  it('pursues a grounded target over graded terrain without treating height changes as storeys', () => {
+    const terrainFloor = (x: number) => 1 + Math.max(0, Math.floor(x / 5));
+    const solid: SolidAt = (x, y) => y < terrainFloor(x);
+    const target: Vec3 = [31, terrainFloor(31), 0];
+    const type = {
+      ...SHAMBLER,
+      speed: { wander: 0, chase: 2 },
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'sprinting'), solid),
+      terrainFloor,
+    });
+    const id = system.add(type, [1, terrainFloor(1), 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    for (let tick = 1; tick <= 20 * 25; tick++) {
+      system.tick(1 / 20, tick / 20);
+      expect(bodyHitsSolid(zombie.body, solid)).toBe(false);
+    }
+    expect(Math.hypot(zombie.body.pos[0] - target[0], zombie.body.pos[2] - target[2]) * BLOCK_SIZE).toBeLessThanOrEqual(
+      type.attack.reach,
+    );
+  });
+
+  it('replans around a live blocker that closes after the route was planned', () => {
+    let closed = false;
+    const solid: SolidAt = (x, y, z) => y === 0 || (closed && x === 8 && y >= 1 && y <= 5 && Math.abs(z) <= 2);
+    const target: Vec3 = [15, 1, 0];
+    const type = {
+      ...SHAMBLER,
+      speed: { wander: 0, chase: 2 },
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'sprinting'), solid),
+      isOpaque: () => true,
+    });
+    const id = system.add(type, [1, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    for (let tick = 1; tick <= 20 * 15; tick++) {
+      if (zombie.body.pos[0] >= 4) {
+        closed = true;
+      }
+      system.tick(1 / 20, tick / 20);
+      expect(bodyHitsSolid(zombie.body, solid)).toBe(false);
+    }
+    expect(closed).toBe(true);
+    expect(
+      Math.hypot(zombie.body.pos[0] - target[0], zombie.body.pos[2] - target[2]) * BLOCK_SIZE,
+      JSON.stringify({ pos: zombie.body.pos, routes: system.snapshotState().routes }),
+    ).toBeLessThanOrEqual(type.attack.reach);
+  });
+
+  it('keeps pursuing a same-floor target beyond one planning window', () => {
+    const target: Vec3 = [60, 1, 1];
+    const blockSize = 0.5;
+    const type = {
+      ...SHAMBLER,
+      sight: 1000,
+      speed: { wander: 0, chase: 2 },
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'sprinting')),
+      blockSize,
+      hour: () => 12,
+    });
+    const id = system.add(type, [1, 1, 1]);
+    const zombie = system.store.get(id)!;
+    for (let tick = 1; tick <= 20 * 40; tick++) {
+      system.tick(1 / 20, tick / 20);
+    }
+    expect(Math.hypot(zombie.body.pos[0] - target[0], zombie.body.pos[2] - target[2]) * blockSize).toBeLessThanOrEqual(
+      type.attack.reach,
+    );
+  });
+});
+
 describe('lurching chase', () => {
   it('eases each stumble into and out of a near-stop for at least 0.2 s', () => {
     const type = {
@@ -1387,7 +1631,7 @@ describe('lurching chase', () => {
       sight: 1000,
       chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSecond: 1 },
     };
-    const system = new ZombieSystem({ ...senses(() => player([2000, 1, 0])), seed: 19 });
+    const system = new ZombieSystem({ ...senses(() => player([20, 1, 0])), seed: 19 });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
     zombie.body.onGround = true;
@@ -2079,6 +2323,85 @@ describe('attack windup', () => {
     restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
 
     expect(restored.store.get(id)!.attackWindup).toBe(before);
+  });
+});
+
+describe('route scheduling', () => {
+  const expensiveFixture = () => {
+    const solid: SolidAt = (x, y) => y === 0 || (x === 3 && y >= 1 && y <= 5);
+    const type = { ...SHAMBLER, hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 } };
+    const options = {
+      ...senses(() => player([5, 1, 0], [-1, 0, 0], 'sprinting'), solid),
+      isOpaque: () => true,
+    };
+    const system = new ZombieSystem(options);
+    for (let index = 0; index < ROUTE_SEARCHES_PER_TICK; index++) {
+      system.add(type, [1, 1, (index - ROUTE_SEARCHES_PER_TICK / 2) * 1.3]);
+    }
+    return { system, type, options };
+  };
+
+  it('shares total route-work allowance across expensive requests in one tick', () => {
+    const { system } = expensiveFixture();
+    system.tick(1 / 20, 1 / 20);
+    expect([...system.store.entries()].every(([, zombie]) => zombie.mode === 'investigate')).toBe(true);
+    system.tick(1 / 20, 2 / 20);
+    const serviced = system.snapshotState().routes.filter(({ route }) => !route.pending);
+    expect(serviced.length).toBeGreaterThan(0);
+    expect(serviced.length).toBeLessThanOrEqual(Math.ceil(ROUTE_WORK_PER_TICK / ROUTE_MAX_WORK));
+  });
+
+  it('restores dispatch priority when failed routes re-pend below the cursor', () => {
+    const { system, type, options } = expensiveFixture();
+    let step = 0;
+    let state = system.snapshotState();
+    const straddlesCursor = () => {
+      const pending = state.routes.filter(({ route }) => route.pending);
+      return (
+        pending.some(({ id }) => id < state.routeSearchCursor) && pending.some(({ id }) => id > state.routeSearchCursor)
+      );
+    };
+    while (step < 2 * 20 && !straddlesCursor()) {
+      step += 1;
+      system.tick(1 / 20, step / 20);
+      state = system.snapshotState();
+    }
+    expect(straddlesCursor()).toBe(true);
+    const restored = new ZombieSystem(options);
+    restored.restoreState(state, (id) => (id === type.id ? type : undefined));
+    system.tick(1 / 20, (step + 1) / 20);
+    restored.tick(1 / 20, (step + 1) / 20);
+    expect(restored.snapshotState()).toEqual(system.snapshotState());
+  });
+
+  it('caps route searches per tick and keeps same-seed route queues identical', () => {
+    const type = { ...SHAMBLER, hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 } };
+    const create = () => {
+      const system = new ZombieSystem({ ...senses(() => player([25, 1, 5], [-1, 0, 0], 'sprinting')), seed: 47 });
+      for (let index = 0; index < ROUTE_SEARCHES_PER_TICK + 8; index++) {
+        system.add(type, [1 + (index % 8) * 0.8, 1, 1 + Math.floor(index / 8) * 0.8]);
+      }
+      return system;
+    };
+    const first = create();
+    const second = create();
+    first.tick(1 / 20, 1 / 20);
+    second.tick(1 / 20, 1 / 20);
+    expect([...first.store.entries()].every(([, zombie]) => zombie.mode === 'investigate')).toBe(true);
+    first.tick(1 / 20, 2 / 20);
+    second.tick(1 / 20, 2 / 20);
+    const state = first.snapshotState();
+    const serviced = state.routes.filter(({ route }) => !route.pending);
+    expect(serviced.length).toBeGreaterThan(0);
+    expect(serviced.length).toBeLessThanOrEqual(ROUTE_SEARCHES_PER_TICK);
+    expect(state.routes.some(({ route }) => route.pending)).toBe(true);
+    expect(state).toEqual(second.snapshotState());
+    expect(serviced.some(({ route }) => route.waypoints.length > 0)).toBe(true);
+    const restored = new ZombieSystem({ ...senses(() => player([1000, 1, 1000])), seed: 47 });
+    restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
+    first.tick(1 / 20, 3 / 20);
+    restored.tick(1 / 20, 3 / 20);
+    expect(restored.snapshotState()).toEqual(first.snapshotState());
   });
 });
 

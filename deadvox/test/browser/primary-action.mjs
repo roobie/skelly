@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { inventorySelectionChanged } from './inventory-selection.ts';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
@@ -476,10 +477,7 @@ try {
       break;
     }
     await page.keyboard.press('ArrowDown');
-    await page.waitForFunction(
-      (previous) => document.querySelector('#inventory [data-uid].selected')?.getAttribute('data-uid') !== previous,
-      selected,
-    );
+    await page.waitForFunction(inventorySelectionChanged, selected);
   }
   assert.equal(await page.locator(`#inventory [data-uid="${firearm.uid}"].selected`).count(), 1);
   const cockButton = page.locator('button.inv-option').filter({ hasText: cock.label });
