@@ -2,7 +2,7 @@ import { html } from 'lit-html';
 import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
-import { HEARTBEAT_FILES, HEARTBEAT_TUNING } from '../game/audioPresentation.ts';
+import { HEARTBEAT_FILES, HEARTBEAT_TUNING, heartbeatForStamina } from '../game/audioPresentation.ts';
 
 export interface SoundTriggerGuide {
   readonly trigger: string;
@@ -311,8 +311,11 @@ export const buildHeartbeatSoundGuide = (manifest: Manifest): HeartbeatSoundGuid
 };
 
 export const HEARTBEAT_PREVIEW_LEVELS = [
-  { label: 'at 85% stamina', gain: HEARTBEAT_TUNING.normalGain },
-  { label: 'at exhaustion', gain: HEARTBEAT_TUNING.veryHighGain },
+  {
+    label: `at ${HEARTBEAT_TUNING.startStamina}% stamina`,
+    gain: heartbeatForStamina(HEARTBEAT_TUNING.startStamina).gain,
+  },
+  { label: 'at exhaustion', gain: heartbeatForStamina(0).gain },
 ] as const;
 
 export const renderHeartbeatSoundGuide = (

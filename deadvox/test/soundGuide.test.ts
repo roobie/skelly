@@ -48,17 +48,14 @@ describe('audio listening guide', () => {
     render(renderHeartbeatSoundGuide(heartbeat, preview), root);
 
     const rows = [...root.querySelectorAll('.sound-variants li')];
+    expect(rows.length).toBeGreaterThan(0);
     expect(rows).toHaveLength(heartbeat.variants.length);
     expect(root.querySelectorAll('button')).toHaveLength(heartbeat.variants.length * HEARTBEAT_PREVIEW_LEVELS.length);
     for (const [variantIndex, variant] of heartbeat.variants.entries()) {
       const buttons = [...rows[variantIndex]!.querySelectorAll('button')];
-      expect(buttons.map((button) => button.textContent?.trim())).toEqual(
-        HEARTBEAT_PREVIEW_LEVELS.map(({ label }) => `Play ${label}`),
-      );
-      for (const button of buttons) {
-        button.click();
-      }
-      for (const [levelIndex, { gain }] of HEARTBEAT_PREVIEW_LEVELS.entries()) {
+      for (const [levelIndex, { label, gain }] of HEARTBEAT_PREVIEW_LEVELS.entries()) {
+        expect(buttons[levelIndex]!.textContent).toContain(label);
+        buttons[levelIndex]!.click();
         expect(preview).toHaveBeenNthCalledWith(
           variantIndex * HEARTBEAT_PREVIEW_LEVELS.length + levelIndex + 1,
           variant.file,

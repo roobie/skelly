@@ -196,8 +196,9 @@ describe('game audio playback', () => {
     expect(context.sources).toHaveLength(1);
     const source = context.sources[0]!;
     const sourceGain = source.connect.mock.calls[0]![0] as ReturnType<typeof makeGain>;
+    const bodyCategory = context.gainNodes[2]!;
     expect(sourceGain.gain.value).toBe(0.37);
-    expect(sourceGain.connect).toHaveBeenCalledWith(context.gainNodes[2]);
+    expect(sourceGain.connect).toHaveBeenCalledWith(bodyCategory);
     expect(source.playbackRate.value).toBe(1);
     expect(audio.heardSounds).toHaveLength(0);
   });

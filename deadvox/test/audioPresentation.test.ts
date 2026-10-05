@@ -7,6 +7,12 @@ import {
 } from '../src/game/audioPresentation.ts';
 
 describe('heartbeat audio presentation', () => {
+  it('uses the tuning anchors at the start stamina and exhaustion', () => {
+    const { startStamina, normalGain, veryHighGain } = HEARTBEAT_TUNING;
+    expect(heartbeatForStamina(startStamina).gain).toBe(normalGain);
+    expect(heartbeatForStamina(0).gain).toBe(veryHighGain);
+  });
+
   it('is silent above the ruled start and meets the ruled rate endpoints', () => {
     expect(heartbeatForStamina(100).gain).toBe(0);
     expect(heartbeatForStamina(86).gain).toBe(0);
