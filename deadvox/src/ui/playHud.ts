@@ -2,6 +2,7 @@
 import { render } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { Needs } from '../core/needs.ts';
+import { labelForAction } from '../game/inputBindings.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
 
@@ -107,7 +108,9 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {
-    lines.push(`${interruption}.   C: continue   X: stop`);
+    lines.push(
+      `${interruption}.   ${labelForAction('compression.continue')}: continue   ${labelForAction('handling.stop')}: stop`,
+    );
   }
   return lines.join('\n');
 };
@@ -137,13 +140,13 @@ export const playInteractionText = ({
   fullName,
 }: InteractionHint): string => {
   if (door) {
-    return `F: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+    return `${labelForAction('world.interact')}: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
   }
   if (readable) {
-    return `F: read the ${name}`;
+    return `${labelForAction('world.interact')}: read the ${name}`;
   }
   if (container) {
-    return `F: ${searched ? 'look in' : 'search'} the ${name}`;
+    return `${labelForAction('world.interact')}: ${searched ? 'look in' : 'search'} the ${name}`;
   }
   return fullName;
 };

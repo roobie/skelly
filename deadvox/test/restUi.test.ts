@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { formatClock } from '../src/core/clock.ts';
 import type { RestAction } from '../src/core/longAction.ts';
 import { Simulation } from '../src/core/sim.ts';
-import { labelForCode } from '../src/game/controls.ts';
-import { CONTROL_CODES } from '../src/game/input.ts';
+import { labelForAction } from '../src/game/inputBindings.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 
 describe('restViewModel', () => {
@@ -24,16 +23,14 @@ describe('restViewModel', () => {
     expect(vm.clock).toBe(formatClock(sim.calendar));
   });
 
-  it('shows how to stop it, by kind', () => {
+  it('shows the effective stop action for either rest kind', () => {
     const sim = new Simulation({ seed: 1 });
     const rest: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
-    const stopKey = labelForCode(CONTROL_CODES.cancel);
-    const sleepKey = labelForCode(CONTROL_CODES.sleep);
+    const stopKey = labelForAction('handling.stop');
     expect(restViewModel(rest, sim).stopHint).toContain(stopKey);
-    expect(restViewModel(rest, sim).stopHint).not.toContain(sleepKey);
     const sleep: RestAction = { kind: 'sleep', label: 'Sleeping', rate: -30, startFatigue: 40 };
     expect(restViewModel(sleep, sim).stopHint).toContain(stopKey);
-    expect(restViewModel(sleep, sim).stopHint).toContain(sleepKey);
+    expect(restViewModel(sleep, sim).stopHint).toBe(restViewModel(rest, sim).stopHint);
   });
 
   it('carries the interruption reason as the prompt', () => {

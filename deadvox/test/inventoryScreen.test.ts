@@ -10,8 +10,13 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { CONTROL_CODES } from '../src/game/input.ts';
-import { handlePlayMenuKey } from '../src/game/menuKeys.ts';
+import {
+  BindingRegistry,
+  INPUT_BINDINGS,
+  inputBindings,
+  KeyboardInput,
+  keyboardInput,
+} from '../src/game/inputBindings.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
@@ -112,61 +117,51 @@ function setup() {
   return { root, screen, inv, queue, entity, searching, beans, notices, hooks };
 }
 
+const holdQuickGate = () => {
+  const previous = { context: keyboardInput.context, command: keyboardInput.command };
+  keyboardInput.cancel();
+  keyboardInput.context = () => ({ context: 'inventory', debug: false });
+  keyboardInput.command = () => undefined;
+  expect(inputBindings.rebind('inventory.quick-action-gate', [{ code: 'ShiftLeft' }])).toBeDefined();
+  expect(inputBindings.rebind('inventory.quick-action-gate', [{ code: 'KeyJ' }])).toBeUndefined();
+  const event = new KeyboardEvent('keydown', inputBindings.chords('inventory.quick-action-gate')[0]);
+  expect(keyboardInput.press(event)).toBe(true);
+  return () => {
+    keyboardInput.release(event);
+    inputBindings.reset();
+    keyboardInput.context = previous.context;
+    keyboardInput.command = previous.command;
+  };
+};
+
 describe('inventory screen Lit rendering', () => {
-  it('keeps inventory commands owned without a selection, but lets gameplay and debug modals reach debug', () => {
-    const codes = [
-      CONTROL_CODES.hands,
-      CONTROL_CODES.use,
-      CONTROL_CODES.wear,
-      CONTROL_CODES.drop,
-      CONTROL_CODES.takeAll,
-      CONTROL_CODES.rotate,
-      CONTROL_CODES.search,
-      ...CONTROL_CODES.quickbar,
-      CONTROL_CODES.cancel,
-      CONTROL_CODES.inventory,
-    ];
-    interface Row {
-      context: string;
-      code: string;
-      inventory: boolean;
-      debug: boolean;
-    }
-    const rows: Row[] = [];
-    const expected: Row[] = [];
-    for (const context of ['inventory', 'gameplay', 'debug-modal'] as const) {
+  it('keeps unselected-item commands owned by inventory rather than debug', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'inventory', debug: true });
+    const commands = INPUT_BINDINGS.filter(
+      (binding) =>
+        !binding.debug &&
+        binding.commands.every(({ kind }) => kind === 'press') &&
+        (binding.id.startsWith('inventory.') || binding.id.startsWith('quickbar.assign.')),
+    );
+    expect(commands.length).toBeGreaterThan(0);
+    const received: string[] = [];
+    for (const binding of commands) {
       const { screen } = setup();
-      if (context === 'gameplay') {
-        screen.close();
-      }
-      screen.selected = undefined;
-      const inventoryKey = vi.spyOn(screen, 'onKey');
-      const debugKey = vi.fn(() => true);
-      const toggleInventory = vi.fn();
-      for (const code of codes) {
-        const before = {
-          inventory: inventoryKey.mock.calls.length,
-          toggle: toggleInventory.mock.calls.length,
-          debug: debugKey.mock.calls.length,
-        };
-        handlePlayMenuKey(new KeyboardEvent('keydown', { code, cancelable: true }), {
-          inventory: screen,
-          debug: { menuOpen: context === 'debug-modal', handleKey: debugKey },
-          locksInput: false,
-          toggleInventory,
-          syncMenuState: () => undefined,
-        });
-        rows.push({
-          context,
-          code,
-          inventory:
-            inventoryKey.mock.calls.length > before.inventory || toggleInventory.mock.calls.length > before.toggle,
-          debug: debugKey.mock.calls.length > before.debug,
-        });
-        expected.push({ context, code, inventory: context === 'inventory', debug: context !== 'inventory' });
-      }
+      expect(screen.selected).toBeUndefined();
+      keyboard.command = ({ action, phase }) => {
+        if (phase === 'down') {
+          expect(screen.onAction(action)).toBe(true);
+          received.push(action);
+        }
+      };
+      const event = new KeyboardEvent('keydown', bindings.chords(binding.id)[0]);
+      expect(keyboard.press(event)).toBe(true);
+      expect(received.at(-1)).toBe(binding.id);
+      keyboard.release(event);
+      screen.close();
     }
-    expect(rows).toEqual(expected);
   });
   it('shows the derived occupied hand without a second item UID and routes work options by UID', () => {
     const { root, screen, inv, hooks } = setup();
@@ -220,42 +215,15 @@ describe('inventory screen Lit rendering', () => {
 
   it.each([
     {
-      name: 'Ctrl (plus Alt)',
-      platform: 'Linux x86_64',
+      name: 'browser modifiers alone do not quick-move',
       ctrlKey: true,
-      metaKey: false,
-      shiftKey: false,
-      altKey: true,
-      quick: true,
-    },
-    {
-      name: 'Cmd (plus Shift, best-effort Mac mapping)',
-      platform: 'MacIntel',
-      ctrlKey: false,
       metaKey: true,
       shiftKey: true,
-      altKey: false,
-      quick: true,
-    },
-    {
-      name: 'unmodified',
-      platform: 'Linux x86_64',
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      altKey: false,
+      altKey: true,
       quick: false,
     },
-    {
-      name: 'Shift only',
-      platform: 'Linux x86_64',
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
-      altKey: false,
-      quick: false,
-    },
-  ])('$name crosses the locked-menu adapter with unchanged modifiers and inventory behavior', (binding) => {
+    { name: 'held quick gate auto-moves', ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, quick: true },
+  ])('$name through the locked-menu adapter, which preserves native flags', (binding) => {
     const t = setup();
     const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
     const canvas = document.createElement('canvas');
@@ -263,7 +231,7 @@ describe('inventory screen Lit rendering', () => {
     const input = { locked: true, menuPointer: true, cursorX: 100, cursorY: 100, moveMenuCursor: () => undefined };
     const adapter = mountMenuPointer({ input, canvas, cursor: document.createElement('div') });
     const hit = vi.spyOn(document, 'elementFromPoint').mockReturnValue(node);
-    vi.stubGlobal('navigator', { platform: binding.platform });
+    const releaseGate = binding.quick ? holdQuickGate() : () => undefined;
     const modifiers = {
       ctrlKey: binding.ctrlKey,
       metaKey: binding.metaKey,
@@ -291,6 +259,7 @@ describe('inventory screen Lit rendering', () => {
       }
       expect(document.querySelector('#inventory-drag-root')?.textContent).toBe('');
     } finally {
+      releaseGate();
       input.locked = false;
       adapter.releaseCaptures();
       t.screen.close();
@@ -301,7 +270,7 @@ describe('inventory screen Lit rendering', () => {
 
   it('repeated quick-clicks keep one owned move and emit refusal feedback for every duplicate', () => {
     const t = setup();
-    vi.stubGlobal('navigator', { platform: 'Linux x86_64' });
+    const releaseGate = holdQuickGate();
     try {
       expect(t.inv.move(t.beans, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
       t.screen.update();
@@ -309,12 +278,13 @@ describe('inventory screen Lit rendering', () => {
       for (let click = 0; click < attempts; click++) {
         const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
         expect(node).not.toBeNull();
-        node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true, pointerId: 1 }));
+        node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
       }
       expect.soft(t.queue.jobs).toHaveLength(1);
       expect(t.notices).toHaveLength(attempts - 1);
       expect(t.notices.every((notice) => notice.length > 0)).toBe(true);
     } finally {
+      releaseGate();
       t.screen.close();
       vi.unstubAllGlobals();
     }

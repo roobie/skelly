@@ -1,5 +1,3 @@
-import { quickbarSlotForKey } from './input.ts';
-
 /** Presentation estimate separating a tap from a deliberate quickbar hold. */
 export const QUICKBAR_HOLD_ESTIMATE_MS = 250;
 
@@ -18,9 +16,8 @@ export class QuickbarInput {
     this.hold = actions.hold;
   }
 
-  keyDown(code: string, at: number): void {
-    const slot = quickbarSlotForKey(code);
-    if (slot !== undefined && !this.presses.has(slot)) {
+  keyDown(slot: number, at: number): void {
+    if (!this.presses.has(slot)) {
       this.presses.set(slot, { startedAt: at, held: false });
     }
   }
@@ -34,11 +31,7 @@ export class QuickbarInput {
     }
   }
 
-  keyUp(code: string, at: number): void {
-    const slot = quickbarSlotForKey(code);
-    if (slot === undefined) {
-      return;
-    }
+  keyUp(slot: number, at: number): void {
     const press = this.presses.get(slot);
     if (!press) {
       return;

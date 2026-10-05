@@ -30,17 +30,6 @@ const { registry } = buildRegistry([
   },
 ]);
 
-const keyEvent = (key: string): KeyboardEvent => {
-  const event: { key: string; defaultPrevented: boolean; preventDefault: () => void } = {
-    key,
-    defaultPrevented: false,
-    preventDefault: () => {
-      event.defaultPrevented = true;
-    },
-  };
-  return event as unknown as KeyboardEvent;
-};
-
 describe('spawnMenuViewModel', () => {
   it('never offers payload-less native work through search or an empty filter', () => {
     const fixture = buildRegistry([
@@ -132,13 +121,13 @@ describe('spawnMenuViewModel', () => {
       toggleGameFrozen: () => undefined,
     });
 
-    expect(dispatchDebugAction(actions, 'KeyG')).toBe(true);
+    expect(dispatchDebugAction(actions, 'debug.spawn-menu-toggle')).toBe(true);
     expect(menu.isOpen).toBe(true);
     expect(field.value).toBe('');
     expect(field.focus).toHaveBeenCalledOnce();
   });
 
-  it('moves a clamped selection with arrows, spawns and closes on Enter, and closes without spawning on Tab', () => {
+  it('clamps semantic navigation, confirms a spawn, and dismisses without spawning', () => {
     const field = { value: '', focus: vi.fn(), blur: vi.fn() };
     const root = { hidden: true, querySelector: () => field, querySelectorAll: () => [] } as unknown as HTMLElement;
     const spawn = vi.fn((id: string) => `${id} spawned`);
@@ -146,22 +135,18 @@ describe('spawnMenuViewModel', () => {
     menu.setRoot(root);
     menu.open();
     expect(menu.viewModel.selectedIndex).toBe(0);
-    menu.handleKey(keyEvent('ArrowDown'));
+    menu.handleAction('spawn.next');
     expect(menu.viewModel.selectedIndex).toBe(1);
-    menu.handleKey(keyEvent('ArrowDown'));
-    menu.handleKey(keyEvent('ArrowDown'));
+    menu.handleAction('spawn.next');
+    menu.handleAction('spawn.next');
     expect(menu.viewModel.selectedIndex).toBe(2);
-    const enter = keyEvent('Enter');
-    menu.handleKey(enter);
-    expect(enter.defaultPrevented).toBe(true);
+    menu.handleAction('spawn.confirm');
     expect(spawn).toHaveBeenCalledWith('flashlight');
     expect(menu.isOpen).toBe(false);
     expect(field.blur).toHaveBeenCalledOnce();
 
     menu.open();
-    const tab = keyEvent('Tab');
-    menu.handleKey(tab);
-    expect(tab.defaultPrevented).toBe(true);
+    menu.handleAction('spawn.dismiss');
     expect(menu.isOpen).toBe(false);
     expect(spawn).toHaveBeenCalledOnce();
   });

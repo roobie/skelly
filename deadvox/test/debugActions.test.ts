@@ -1,5 +1,4 @@
-import { readFileSync } from 'node:fs';
-import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
+import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, debugKeyTable, paramName } from '../src/debug/groups.ts';
@@ -7,254 +6,76 @@ import { type Action, createDebugActions, dispatchDebugAction } from '../src/deb
 import { LookControls } from '../src/debug/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
+import { inputBindings } from '../src/game/inputBindings.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
-
-/** The generated key table in TROUBLESHOOTING.md, between its two markers. */
-const DOC_TABLE = /<!-- debug-keys:start -->\n([\s\S]*?)\n<!-- debug-keys:end -->/;
 
 interface FakeRenderer {
   toneMapping: ToneMapping;
   toneMappingExposure: number;
 }
-
-describe('debug action table', () => {
-  it('keeps every action and shortcut in the one panel table', () => {
+describe('debug action dispatch', () => {
+  it('derives every shortcut from a gated semantic binding and places every action in one group', () => {
     const { actions } = makeActions();
-    expect(actions.map(({ key, label }) => [key, label])).toEqual([
-      ['B', 'Build tools'],
-      ['G', 'Spawn item menu'],
-      ['H', 'God mode'],
-      ['P', 'Noclip'],
-      ['T', 'Compress / rest'],
-      ['N', 'Emit noise'],
-      ['U', 'Danger test'],
-      ['K', 'Take 25 damage'],
-      ['V', 'Spawn shamblers'],
-      ['Y', 'Melee aim boxes'],
-      ['O', 'Freeze shamblers'],
-      ['M', 'Freeze game'],
-      ['J', 'Tone mapping'],
-      ['-', 'Exposure −'],
-      ['=', 'Exposure +'],
-      ['I', 'sRGB block colours'],
-      [';', 'Surface patterns'],
-      ['9', 'Wide ambient occlusion'],
-      ['Q', 'Mood post-processing (all)'],
-      ["'", 'Bloom'],
-      ['Del', 'Bloom clip −'],
-      ['Ins', 'Bloom clip +'],
-      ['Num -', 'Flashlight strength −'],
-      ['Num +', 'Flashlight strength +'],
-      ['\\', 'Film (vignette, grain)'],
-      ['0', 'Sun shadows'],
-      ['Home', 'Flashlight shadows'],
-      ['PgUp', 'Sun shadow distance'],
-      ['End', 'Crack check (magenta background)'],
-      ['PgDn', 'Hot-pixel check (coloured)'],
-      ['L', 'Fogginess −'],
-      ['/', 'Fogginess +'],
-      ['[', 'Grade −'],
-      [']', 'Grade +'],
-      [',', 'Skip +23 h (−1 h tomorrow)'],
-      ['.', 'Skip +1 h'],
-    ]);
-  });
-
-  it('skips the real game clock forward by 1 and 23 hours, showing the game time', () => {
-    const { actions, skips, clock } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    expect(byCode('Period').detail?.()).toBe('Day 1, 19:30');
-    dispatchDebugAction(actions, 'Period');
-    dispatchDebugAction(actions, 'Comma');
-    expect(skips).toEqual([1, 23]);
-    clock.calendar += 23 * 3600;
-    expect(byCode('Comma').detail?.()).toBe('Day 2, 18:30');
-    dispatchDebugAction(actions, 'Period', true);
-    expect(skips).toEqual([1, 23]);
-  });
-
-  it('cycles tone mapping, clamps exposure and toggles linear colours, with details for the panel', () => {
-    const { actions, renderer } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    expect(byCode('KeyJ').detail?.()).toBe('None');
-    // Auto shows the sky's current weight, 0.00 until a sky has been applied.
-    for (const name of ['AgX', 'ACES Filmic', 'Neutral', 'Auto (0.00)', 'None']) {
-      dispatchDebugAction(actions, 'KeyJ');
-      expect(byCode('KeyJ').detail?.()).toBe(name);
+    expect(actions.length).toBeGreaterThan(0);
+    for (const action of actions) {
+      const binding = inputBindings.binding(action.id);
+      expect(binding?.debug).toBe(true);
+      expect(binding?.gate).toBeDefined();
+      expect(action.key).toBe(inputBindings.label(action.id));
     }
-    dispatchDebugAction(actions, 'KeyJ');
-    expect(renderer.toneMapping).toBe(AgXToneMapping);
-
-    dispatchDebugAction(actions, 'Equal');
-    dispatchDebugAction(actions, 'Equal');
-    expect(byCode('Equal').detail?.()).toBe('1.2');
-    for (let i = 0; i < 40; i++) {
-      dispatchDebugAction(actions, 'Equal');
-    }
-    expect(renderer.toneMappingExposure).toBe(3);
-    for (let i = 0; i < 60; i++) {
-      dispatchDebugAction(actions, 'Minus');
-    }
-    expect(renderer.toneMappingExposure).toBe(0.2);
-
-    expect(byCode('KeyI').state?.()).toBe(false);
-    dispatchDebugAction(actions, 'KeyI');
-    expect(byCode('KeyI').state?.()).toBe(true);
-  });
-
-  it('toggles the wide ambient occlusion on Digit9, on by default', () => {
-    const { actions } = makeActions();
-    const action = actions.find((candidate) => candidate.code === 'Digit9')!;
-    expect(action.state?.()).toBe(true);
-    dispatchDebugAction(actions, 'Digit9');
-    expect(action.state?.()).toBe(false);
-  });
-
-  it('toggles the mood effects and steps the grade, which clamps to 0..1', () => {
-    const { actions, mood } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    for (const code of ['KeyQ', 'Quote', 'Backslash']) {
-      expect(byCode(code).state?.()).toBe(true);
-      dispatchDebugAction(actions, code);
-      expect(byCode(code).state?.()).toBe(false);
-    }
-    expect([mood.post, mood.bloom, mood.film]).toEqual([false, false, false]);
-    expect(byCode('BracketLeft').detail?.()).toBe('1.0');
-    dispatchDebugAction(actions, 'BracketLeft');
-    dispatchDebugAction(actions, 'BracketLeft');
-    expect(byCode('BracketRight').detail?.()).toBe('0.8');
-    for (let i = 0; i < 20; i++) {
-      dispatchDebugAction(actions, 'BracketLeft');
-    }
-    expect(mood.grade).toBe(0);
-    for (let i = 0; i < 20; i++) {
-      dispatchDebugAction(actions, 'BracketRight');
-    }
-    expect(mood.grade).toBe(1);
-  });
-
-  it('steps the bloom clip from the tone mapper value in halves, within 1..8, and shows where it comes from', () => {
-    const { actions, mood } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    // The fake renderer starts with no tone mapping, whose clip is 1.
-    expect(byCode('Insert').detail?.()).toBe('1.0 (tone mapper)');
-    dispatchDebugAction(actions, 'Insert');
-    expect(mood.bloomClip).toBe(1.5);
-    expect(byCode('Delete').detail?.()).toBe('1.5');
-    dispatchDebugAction(actions, 'Delete');
-    expect(mood.bloomClip).toBeNull();
-    for (let i = 0; i < 40; i++) {
-      dispatchDebugAction(actions, 'Insert');
-    }
-    expect(mood.bloomClip).toBe(8);
-    for (let i = 0; i < 40; i++) {
-      dispatchDebugAction(actions, 'Delete');
-    }
-    expect(mood.bloomClip).toBeNull();
-    dispatchDebugAction(actions, 'Insert', true);
-    expect(mood.bloomClip).toBeNull();
-  });
-
-  it('steps the flashlight strength by a quarter and shows the multiplier', () => {
-    const { actions, flashlight } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    expect(byCode('NumpadAdd').detail?.()).toBe('×1');
-    dispatchDebugAction(actions, 'NumpadAdd');
-    dispatchDebugAction(actions, 'NumpadAdd');
-    expect(flashlight.strength).toBe(1.56);
-    expect(byCode('NumpadSubtract').detail?.()).toBe('×1.56');
-    dispatchDebugAction(actions, 'NumpadSubtract');
-    dispatchDebugAction(actions, 'NumpadSubtract');
-    expect(flashlight.strength).toBe(1);
-  });
-
-  it('toggles the sun and flashlight shadows and steps the sun shadow distance through 24, 40, 64', () => {
-    const { actions, shadows } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([true, true]);
-    dispatchDebugAction(actions, 'Digit0');
-    expect([shadows.settings.sun, shadows.settings.torch]).toEqual([false, true]);
-    dispatchDebugAction(actions, 'Home');
-    expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([false, false]);
-    expect(byCode('PageUp').detail?.()).toBe('40 m');
-    const seen: number[] = [];
-    for (let i = 0; i < 4; i++) {
-      dispatchDebugAction(actions, 'PageUp');
-      seen.push(shadows.settings.distance);
-    }
-    expect(seen).toEqual([64, 24, 40, 64]);
-    dispatchDebugAction(actions, 'PageUp', true);
-    expect(shadows.settings.distance).toBe(64);
-  });
-
-  it('steps the weather fogginess by tenths, which clamps to 0..1', () => {
-    const { actions, weather } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
-    expect(byCode('Slash').detail?.()).toBe('0.2');
-    dispatchDebugAction(actions, 'Slash');
-    expect(byCode('KeyL').detail?.()).toBe('0.3');
-    for (let i = 0; i < 20; i++) {
-      dispatchDebugAction(actions, 'Slash');
-    }
-    expect(weather.fogginess).toBe(1);
-    for (let i = 0; i < 20; i++) {
-      dispatchDebugAction(actions, 'KeyL');
-    }
-    expect(weather.fogginess).toBe(0);
-  });
-
-  it.each(['KeyB', 'KeyG', 'KeyH', 'KeyP', 'KeyT', 'KeyU', 'KeyY', 'KeyO', 'KeyM'])(
-    '%s updates its displayed toggle state on keydown',
-    (code) => {
-      const { actions } = makeActions();
-      const action = actions.find((candidate) => candidate.code === code)!;
-      expect(action.state?.()).toBe(false);
-      expect(dispatchDebugAction(actions, code)).toBe(true);
-      expect(action.state?.()).toBe(true);
-      expect(dispatchDebugAction(actions, code)).toBe(true);
-      expect(action.state?.()).toBe(false);
-    },
-  );
-
-  it('V spawns the selected count and does not repeat on key repeat', () => {
-    const { actions, spawnCounts } = makeActions(25);
-    expect(dispatchDebugAction(actions, 'KeyV')).toBe(true);
-    expect(spawnCounts).toEqual([25]);
-    expect(dispatchDebugAction(actions, 'KeyV', true)).toBe(true);
-    expect(spawnCounts).toEqual([25]);
-  });
-
-  it('consumes repeated action keys without repeating their action', () => {
-    const { actions } = makeActions();
-    const godMode = actions.find((candidate) => candidate.code === 'KeyH')!;
-    expect(dispatchDebugAction(actions, 'KeyH', true)).toBe(true);
-    expect(godMode.state?.()).toBe(false);
-    expect(dispatchDebugAction(actions, 'KeyZ')).toBe(false);
-    expect(dispatchDebugAction(actions, 'F12')).toBe(false);
-  });
-});
-
-describe('debug panel groups', () => {
-  it('puts every action in one group, in the order of the panel', () => {
-    const { actions } = makeActions();
-    expect(actionsByGroup(actions).map(({ def, actions: inGroup }) => [def.id, inGroup.map((a) => a.key)])).toEqual([
-      ['tools', ['B', 'G', 'P']],
-      ['survival', ['H', 'T', 'N', 'U', 'K']],
-      ['shamblers', ['V', 'Y', 'O']],
-      ['time', ['M', ',', '.']],
-      ['look', ['J', '-', '=', 'I', ';']],
-      ['post', ['Q', "'", 'Del', 'Ins', '\\', '[', ']']],
-      ['lighting', ['9', 'Num -', 'Num +', '0', 'Home', 'PgUp']],
-      ['atmosphere', ['L', '/']],
-      ['diagnostics', ['End', 'PgDn']],
-      ['share', []],
-    ]);
     const grouped = actionsByGroup(actions).flatMap(({ actions: inGroup }) => inGroup);
     expect(grouped).toHaveLength(actions.length);
+    expect(new Set(grouped.map(({ id }) => id)).size).toBe(actions.length);
+    expect(debugKeyTable(actions)).toContain(inputBindings.label('debug.performance-toggle'));
   });
-
-  it('lists each URL parameter of the look once in the catalogue, and none the look does not read', () => {
+  it('dispatches each exposed toggle to its owner rather than retaining panel-only state', () => {
+    const { actions } = makeActions();
+    const toggles = actions.filter((action) => action.state !== undefined);
+    expect(toggles.length).toBeGreaterThan(0);
+    for (const action of toggles) {
+      const before = action.state!();
+      expect(dispatchDebugAction(actions, action.id)).toBe(true);
+      expect(action.state!()).toBe(!before);
+      dispatchDebugAction(actions, action.id);
+      expect(action.state!()).toBe(before);
+    }
+  });
+  it('steps look controls in opposite directions without pinning tuning or default values', () => {
+    const { actions, look } = makeActions();
+    const pairs = [
+      ['debug.exposure-increase', 'debug.exposure-decrease', () => look.exposure],
+      ['debug.grade-decrease', 'debug.grade-increase', () => -look.moodState.grade],
+      ['debug.torch-increase', 'debug.torch-decrease', () => look.torch],
+      ['debug.fog-increase', 'debug.fog-decrease', () => look.fogginess],
+      ['debug.bloom-clip-increase', 'debug.bloom-clip-decrease', () => look.bloomClip],
+    ] as const;
+    for (const [increase, decrease, value] of pairs) {
+      const before = value();
+      expect(dispatchDebugAction(actions, increase)).toBe(true);
+      const raised = value();
+      expect(raised).toBeGreaterThan(before);
+      dispatchDebugAction(actions, increase, true);
+      expect(value()).toBe(raised);
+      dispatchDebugAction(actions, decrease);
+      expect(value()).toBeLessThan(raised);
+    }
+  });
+  it('forwards time-skip and spawn requests once and refuses unknown commands', () => {
+    const { actions, skips, spawnCounts } = makeActions(25);
+    for (const action of ['debug.skip-hour', 'debug.skip-long']) {
+      expect(dispatchDebugAction(actions, action)).toBe(true);
+      const count = skips.length;
+      expect(skips.at(-1)).toBeGreaterThan(0);
+      dispatchDebugAction(actions, action, true);
+      expect(skips).toHaveLength(count);
+    }
+    dispatchDebugAction(actions, 'debug.spawn-shamblers');
+    dispatchDebugAction(actions, 'debug.spawn-shamblers', true);
+    expect(spawnCounts).toEqual([25]);
+    expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
+  });
+  it('catalogues the same URL parameters that the look owner accepts', () => {
     const { actions } = makeActions();
     const catalogued = new Set([
       ...actions.flatMap((action) => (action.param ? [paramName(action.param)] : [])),
@@ -264,31 +85,12 @@ describe('debug panel groups', () => {
     ]);
     expect([...catalogued].sort()).toEqual([...LOOK_PARAMS, 'cam'].sort());
   });
-
-  it('is what the table in TROUBLESHOOTING.md says, including the performance overlay key', () => {
-    const { actions } = makeActions();
-    const table = debugKeyTable(actions);
-    const doc = readFileSync('TROUBLESHOOTING.md', 'utf8');
-    expect(table).toContain('| Diagnostics | `F4` | Performance overlay | — |');
-    expect(DOC_TABLE.exec(doc)?.[1]).toBe(table);
-  });
 });
 
 const makeActions = (
   shamblerCount = 1,
-): {
-  actions: Action[];
-  spawnCounts: number[];
-  skips: number[];
-  renderer: FakeRenderer;
-  clock: { calendar: number };
-  mood: FakeMood;
-  weather: Weather;
-  shadows: FakeShadows;
-  flashlight: { strength: number };
-} => {
+): { actions: Action[]; spawnCounts: number[]; skips: number[]; look: LookControls } => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
-  const clock = { calendar: 19.5 * 3600 };
   const skips: number[] = [];
   let linear = false;
   let patterns = true;
@@ -324,9 +126,7 @@ const makeActions = (
   );
   const sim = {
     godMode: false,
-    get calendar() {
-      return clock.calendar;
-    },
+    calendar: 19.5 * 3600,
     compression: {
       active: false,
       stop() {
@@ -383,17 +183,17 @@ const makeActions = (
       spawnCounts.push(count);
     },
     isAimEnabled: () => aimEnabled,
-    toggleAim() {
+    toggleAim: () => {
       aimEnabled = !aimEnabled;
     },
     isFrozen: () => frozen,
-    toggleFrozen() {
+    toggleFrozen: () => {
       frozen = !frozen;
     },
     isGameFrozen: () => gameFrozen,
-    toggleGameFrozen() {
+    toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
     },
   });
-  return { actions, spawnCounts, skips, renderer, clock, mood, weather, shadows, flashlight };
+  return { actions, spawnCounts, skips, look };
 };

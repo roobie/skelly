@@ -14,24 +14,11 @@ import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed,
 import { bestPocket, dropTarget, type Option, options, quickMove, toHands, type UseOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
+import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import { craftTime, workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
 export const CELL = 32;
-
-// These item commands remain inventory intents even with no selected item.
-const ITEM_COMMAND_CODES = new Set<string>([
-  ...CONTROL_CODES.quickbar,
-  CONTROL_CODES.hands,
-  CONTROL_CODES.wear,
-  CONTROL_CODES.drop,
-  CONTROL_CODES.rotate,
-  CONTROL_CODES.bestPocket,
-  CONTROL_CODES.takeAll,
-  CONTROL_CODES.use,
-  'Enter',
-]);
 
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
@@ -265,7 +252,7 @@ const inventoryTemplate = (
   <header class="inv-head">
     <h2>Inventory</h2>
     <span class="inv-weight">Carrying ${vm.weight}</span>
-    <span class="inv-help">Drag items · Ctrl/Cmd-click quick move · H hands · U use · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
+    <span class="inv-help">Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.use', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
   </header>
   <div class="inv-body">
     <section class="inv-pane">
@@ -341,7 +328,7 @@ const queueTemplate = (queue: HandlingQueue): TemplateResult => {
   return html`
     <div class="inv-queue-title">
       <strong>Doing next</strong>
-      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · half speed, no sprinting · X cancels` : 'Nothing queued'}</span>
+      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · half speed, no sprinting · ${labelForAction('handling.stop')} cancels` : 'Nothing queued'}</span>
     </div>
     ${rows.map(
       (row) => html`
@@ -411,7 +398,7 @@ export class InventoryScreen {
       .join(',');
     const view = this.hooks.reach();
     const use = this.selected ? this.hooks.useOption(this.selected, view) : undefined;
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${use?.label}|${JSON.stringify(use?.plan)}`;
+    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${use?.label}|${JSON.stringify(use?.plan)}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -419,59 +406,60 @@ export class InventoryScreen {
     this.renderQueue();
   }
 
-  /** Handles a key while the screen is open. Returns true if it was used. */
-  onKey(e: KeyboardEvent): boolean {
-    if (this.drag?.moved && e.code === CONTROL_CODES.rotate) {
+  /** The shared input owner has already selected an inventory command. */
+  onAction(action: string): boolean {
+    if (this.drag?.moved && action === 'inventory.rotate') {
       this.drag.rotated = !this.drag.rotated;
       this.drag.grab = [CELL / 2, CELL / 2];
       this.renderDrag();
       return true;
     }
-    const digit = quickbarSlotForKey(e.code);
+    const digit = action.startsWith('quickbar.assign.')
+      ? Number(action.slice('quickbar.assign.'.length)) - 1
+      : undefined;
     const item = this.selected;
-    if (e.code === CONTROL_CODES.cancel) {
+    if (action === 'handling.stop') {
       this.queue.cancel();
       return true;
     }
-    if (e.code.startsWith('Arrow')) {
-      this.step(e.code === 'ArrowDown' || e.code === 'ArrowRight' ? 1 : -1);
+    if (action === 'inventory.previous' || action === 'inventory.next') {
+      this.step(action === 'inventory.next' ? 1 : -1);
       return true;
     }
-    if (e.code === CONTROL_CODES.search) {
+    if (action === 'inventory.search') {
       const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
       this.report(next ? this.hooks.search(next) : 'Nothing here to search');
       return true;
     }
     if (!item) {
-      return ITEM_COMMAND_CODES.has(e.code);
+      return action.startsWith('inventory.') || digit !== undefined;
     }
     if (digit !== undefined) {
       this.hooks.assign(digit, item);
       return true;
     }
-    switch (e.code) {
-      case CONTROL_CODES.hands:
+    switch (action) {
+      case 'inventory.hands':
         this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));
         return true;
-      case CONTROL_CODES.wear:
+      case 'inventory.wear':
         this.wearOrTakeOff(item);
         return true;
-      case CONTROL_CODES.drop:
+      case 'inventory.drop':
         this.tryQueue(item, dropTarget(this.inv, item, this.hooks.feet()).target);
         return true;
-      case CONTROL_CODES.rotate:
+      case 'inventory.rotate':
         this.rotateInPlace(item);
         return true;
-      case 'Enter':
-      case CONTROL_CODES.bestPocket: {
+      case 'inventory.best-pocket': {
         const best = bestPocket(this.inv, item);
         this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
         return true;
       }
-      case CONTROL_CODES.takeAll:
+      case 'inventory.take-all-like':
         this.takeAllLike(item);
         return true;
-      case CONTROL_CODES.use:
+      case 'inventory.use':
         this.report(this.hooks.use(item));
         this.drawn = '';
         return true;
@@ -785,7 +773,7 @@ export class InventoryScreen {
     }
     e.preventDefault();
     this.selected = item;
-    if (quickMoveModifier(e)) {
+    if (keyboardInput.held('inventory.quick-action-gate')) {
       const option = quickMove(item, this.hooks.reach());
       this.report(option.plan.ok ? this.tryQueue(item, option.target) : option.plan.reason);
       this.drawn = '';

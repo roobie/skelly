@@ -2,8 +2,7 @@ import { html, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { RestAction } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
-import { labelForCode } from '../game/controls.ts';
-import { CONTROL_CODES } from '../game/input.ts';
+import { labelForAction } from '../game/inputBindings.ts';
 
 export interface RestViewModel {
   readonly visible: boolean;
@@ -27,7 +26,7 @@ export const restViewModel = (action: RestAction | undefined, sim: Simulation): 
     label: action.label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint: `${action.kind === 'sleep' ? `${labelForCode(CONTROL_CODES.sleep)} or ` : ''}${labelForCode(CONTROL_CODES.cancel)} to stop`,
+    stopHint: `${labelForAction('handling.stop')} to stop`,
     prompt: sim.compression.interruption,
   };
 };
@@ -40,7 +39,7 @@ const restTemplate = (vm: RestViewModel): TemplateResult => html`
     <div class="hd-bar"><div class="hd-fill" style=${`width: ${vm.percent}%`}></div></div>
     <p class="rest-time">${vm.clock}</p>
     <p class="hd-muted">${vm.stopHint}</p>
-    ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForCode(CONTROL_CODES.continue)}: continue   ${labelForCode(CONTROL_CODES.cancel)}: stop</p>` : ''}
+    ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForAction('compression.continue')}: continue   ${labelForAction('handling.stop')}: stop</p>` : ''}
   </div>
 `;
 

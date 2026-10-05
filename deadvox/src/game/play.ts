@@ -14,7 +14,6 @@ import { pickFurniture } from '../core/furniturePick.ts';
 import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import type { RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, type UseOption, useOption } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
@@ -57,17 +56,10 @@ import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
-import {
-  CONTROL_CODES,
-  Input,
-  isMenuOpeningKey,
-  KEY_BINDINGS,
-  quickbarSlotForKey,
-  worldActionForKey,
-} from './input.ts';
+import { Input } from './input.ts';
+import { type InputCommand, keyboardInput } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
-import { handlePlayMenuKey } from './menuKeys.ts';
 import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -195,7 +187,7 @@ export const startPlay = (
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
-      descending: () => input.held.has(CONTROL_CODES.descend),
+      descending: () => keyboardInput.held('noclip.descend'),
     },
     // The session works in blocks; playback is in metres.
     audio: {
@@ -320,26 +312,6 @@ export const startPlay = (
   const showNotice = (text: string) => {
     notice = text;
     noticeUntil = performance.now() + 3000;
-  };
-
-  const toggleRest = (kind: RestKind): void => {
-    if (compression.interruption !== undefined) {
-      return;
-    }
-    const already = rest.action?.kind === kind;
-    if (!already) {
-      if (compression.locksInput) {
-        return;
-      }
-      queue.cancel();
-      if (kind === 'sleep') {
-        options.saveController?.beforeSleep();
-      }
-    }
-    const reason = rest.toggle(kind);
-    if (reason) {
-      showNotice(`Can't ${kind}: ${reason}`);
-    }
   };
 
   // ---- furniture: searching and doors ----
@@ -508,6 +480,7 @@ export const startPlay = (
       debugTools?.closeMenus();
     }
     input.menuPointer = state.menuPointer;
+    keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
     if (options.saveController) {
       options.saveController.setGoLabel(state.goLabel);
@@ -640,11 +613,11 @@ export const startPlay = (
     if (compression.interruption === undefined) {
       return false;
     }
-    if (code === CONTROL_CODES.continue) {
+    if (code === 'compression.continue') {
       continueAction();
       return true;
     }
-    if (code === CONTROL_CODES.cancel) {
+    if (code === 'handling.stop') {
       stopAction();
       return true;
     }
@@ -682,72 +655,6 @@ export const startPlay = (
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
   globalThis.addEventListener('blur', () => quickbarInput.cancel());
 
-  /** Rest has no initiation key; C continues owned craft work and L still toggles sleep. */
-  const longActionKeys = new Map<string, () => void>([
-    [CONTROL_CODES.sleep, () => toggleRest('sleep')],
-    [CONTROL_CODES.continue, () => session.crafting.currentUid !== undefined && continueAction()],
-  ]);
-
-  const playKeys = (code: string) => {
-    const restAction = longActionKeys.get(code);
-    if (restAction) {
-      restAction();
-      return;
-    }
-    const action = worldActionForKey(code);
-    if (action === 'interact' && !compression.locksInput) {
-      use();
-    } else if (action === 'cancel') {
-      input.reload.cancel();
-      queue.cancel();
-      if (sim.actions.job) {
-        stopAction();
-      }
-    }
-  };
-
-  const handleMainMenuKey = (e: KeyboardEvent): boolean => {
-    if (e.code !== KEY_BINDINGS.mainMenu.code) {
-      return false;
-    }
-    e.preventDefault();
-    if (!(e.repeat || sim.dead)) {
-      quickbarInput.cancel();
-      mainMenuOpen = !mainMenuOpen;
-      if (mainMenuOpen) {
-        reading.close();
-        closeInventoryScreen();
-        debugTools?.closeMenus();
-      }
-      syncMenuState();
-    }
-    return true;
-  };
-
-  const handleTitleKey = (event: KeyboardEvent): boolean => {
-    if (!options.saveController || options.saveController.isEntered) {
-      return false;
-    }
-    if (event.code === KEY_BINDINGS.performanceOverlay.code || event.code === 'Backquote') {
-      debugTools?.handleKey(event);
-      syncMenuState();
-      return true;
-    }
-    if (event.code === 'Tab' || event.code === KEY_BINDINGS.mainMenu.code) {
-      event.preventDefault();
-    }
-    return true;
-  };
-
-  const handleMenuKey = (e: KeyboardEvent): boolean =>
-    handlePlayMenuKey(e, {
-      inventory: screen,
-      debug: debugTools,
-      locksInput: compression.locksInput,
-      toggleInventory,
-      syncMenuState,
-    });
-
   /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
   const reloadBinding = (): ReloadBinding | undefined => {
     if (!input.locked || input.menuPointer || compression.locksInput || sim.paused || sim.dead || debugTools?.buildOn) {
@@ -777,48 +684,105 @@ export const startPlay = (
     };
   };
 
-  const prepareGameplayKey = (e: KeyboardEvent): boolean => {
-    if (handleMainMenuKey(e)) {
-      return false;
-    }
-    // Prevent an opening key from becoming text in the newly focused menu.
-    if (
-      e.code === CONTROL_CODES.inventory ||
-      (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false))
-    ) {
-      e.preventDefault();
-    }
-    return !(e.repeat || sim.dead);
+  keyboardInput.context = () => ({
+    debug: config.debug,
+    context:
+      options.saveController && !options.saveController.isEntered
+        ? 'title'
+        : debugTools?.spawnOpen
+          ? 'spawn'
+          : debugTools?.menuOpen
+            ? 'debug-panel'
+            : mainMenuOpen || sim.dead
+              ? 'menu'
+              : reading.isOpen
+                ? 'reading'
+                : screen.isOpen
+                  ? 'inventory'
+                  : compression.interruption === undefined
+                    ? debugTools?.buildOn
+                      ? 'build'
+                      : debugTools?.noclip
+                        ? 'noclip'
+                        : 'play'
+                    : 'interrupted',
+  });
+  keyboardInput.cancelled = () => {
+    input.cancel();
+    quickbarInput.cancel();
   };
-
-  const handleGameplayKey = (e: KeyboardEvent): void => {
-    if (!prepareGameplayKey(e) || handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
-      return;
-    }
-    if (e.code === CONTROL_CODES.reload) {
-      e.preventDefault();
-      input.reload.keyDown(e.timeStamp, reloadBinding());
-      return;
-    }
-    if (quickbarSlotForKey(e.code) !== undefined) {
-      e.preventDefault();
-      if (!compression.locksInput) {
-        quickbarInput.keyDown(e.code, e.timeStamp);
+  keyboardInput.escape = () => reading.close();
+  keyboardInput.command = ({ action, phase, at }: InputCommand) => {
+    const slot = action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
+    if (phase === 'up') {
+      if (action === 'firearm.reload') {
+        input.reload.keyUp(at);
+      }
+      if (slot !== undefined) {
+        quickbarInput.keyUp(slot, at);
       }
       return;
     }
-    playKeys(e.code);
+    if (action.startsWith('debug.') || action.startsWith('spawn.')) {
+      debugTools?.handleAction(action);
+      syncMenuState();
+      return;
+    }
+    if (sim.dead) {
+      return;
+    }
+    if (action === 'ui.main-menu-toggle') {
+      mainMenuOpen = !mainMenuOpen;
+      if (mainMenuOpen) {
+        reading.close();
+        closeInventoryScreen();
+        debugTools?.closeMenus();
+      }
+      syncMenuState();
+      return;
+    }
+    if (reading.isOpen) {
+      reading.onAction(action);
+      return;
+    }
+    if (action === 'ui.inventory-toggle') {
+      if (!compression.locksInput) {
+        toggleInventory();
+      }
+      return;
+    }
+    if (screen.isOpen) {
+      screen.onAction(action);
+      return;
+    }
+    if (mainMenuOpen || timeKeys(action)) {
+      return;
+    }
+    if (action === 'movement.walk-toggle') {
+      input.walking = !input.walking;
+    }
+    if (action === 'hand.use-off') {
+      input.useOff();
+    }
+    if (action === 'firearm.reload') {
+      input.reload.keyDown(at, reloadBinding());
+    }
+    if (slot !== undefined && !compression.locksInput) {
+      quickbarInput.keyDown(slot, at);
+    }
+    if (action === 'world.interact' && !compression.locksInput) {
+      use();
+    }
+    if (action === 'handling.stop') {
+      input.reload.cancel();
+      queue.cancel();
+      if (sim.actions.job) {
+        stopAction();
+      }
+    }
   };
-
-  globalThis.addEventListener('keydown', (event) => {
-    if (handleTitleKey(event)) {
-      return;
-    }
-    if (event.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(event)) {
-      return;
-    }
-    handleGameplayKey(event);
-  });
+  keyboardInput.install();
+  keyboardInput.sync();
   globalThis.addEventListener(
     'wheel',
     (e) => {
@@ -831,11 +795,6 @@ export const startPlay = (
     },
     { passive: false },
   );
-
-  globalThis.addEventListener('keyup', (event) => {
-    const e = event as KeyboardEvent;
-    quickbarInput.keyUp(e.code, e.timeStamp);
-  });
 
   const lookDir = (): Vec3 => aimDirection(input.pitch, input.yaw);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
@@ -1239,7 +1198,7 @@ export const startPlay = (
       yaw: input.yaw,
       pitch: input.pitch,
       intent: input.intent(),
-      descend: input.held.has(CONTROL_CODES.descend),
+      descend: keyboardInput.held('noclip.descend'),
       dt,
     });
   };
