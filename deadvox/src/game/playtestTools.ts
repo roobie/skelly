@@ -316,6 +316,7 @@ const MAX_TIMER_PROBE_READS = 100_000;
 const MIN_TIMER_PROBE_TICKS = 8;
 const NANOSECONDS_PER_MILLISECOND = 1_000_000;
 
+// Differences of performance.now() readings can exceed an ulp-scaled tolerance; whole nanoseconds remain far below browser quanta.
 const observedTickFitsQuantum = (observedTickMs: number | null, quantumMs: number): boolean =>
   observedTickMs !== null &&
   Number.isFinite(quantumMs) &&
