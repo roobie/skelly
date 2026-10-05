@@ -446,7 +446,9 @@ accepted only when an eligible activity is reachable.
   recipes that need it.
 - A `book` component (title, recipes taught, reading time). Reading is a long
   action with the book in your hands, under 2.4's contract; finishing it
-  teaches its recipes. The `paperback` stays inert.
+  teaches its recipes. One reading teaches the recipes for Slice 2; deeper
+  learning is a later-slice direction (BR, 2026-10-05; see EPIC.md). The
+  `paperback` stays inert.
 - 4 books.
 
 **Saves:** skill practice, added to 2.4's state; a reading in progress as a long
@@ -522,8 +524,8 @@ refused out of reach; the bonus shortens work time by its amount.
 
   | Light | Ignite | Douse | Sprint | Stow in a pocket | Drop | Relight |
   | --- | --- | --- | --- | --- | --- | --- |
-  | Torch | needs a lighter or matches in reach | yes, as an action | stays lit | not while lit | goes out | yes, while it has burn time left |
-  | Candle | needs a lighter or matches in reach | yes (blow out) | goes out | goes out | goes out | yes, while it has burn time left |
+  | Torch | needs a lighter or matches in the other hand | yes, as an action | stays lit | not while lit | goes out | yes, while it has burn time left |
+  | Candle | needs a lighter or matches in the other hand | yes (blow out) | goes out | goes out | goes out | yes, while it has burn time left |
   | Glowstick | snap once; it can't be reused | no | stays lit | stays lit | keeps glowing **and lights the area around it** (BR) | no |
 
 - Remaining burn time is kept when a light goes out and is relit, and across

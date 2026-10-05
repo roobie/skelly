@@ -1188,7 +1188,7 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
 
-const lightCandleInHand = (runtime: Runtime) => {
+const lightCandleWithOffHandMatches = (runtime: Runtime) => {
   const pos: Vec3 = [...runtime.session.body.pos];
   const backpack = runtime.inventory.hands.right!;
   if (!runtime.inventory.move(backpack, { kind: 'pile', pos }).ok) {
@@ -1216,7 +1216,7 @@ const lightCandleInHand = (runtime: Runtime) => {
 
 it('a doused candle keeps its remaining burn through save and relighting', async () => {
   const source = createRuntime();
-  const candle = lightCandleInHand(source);
+  const candle = lightCandleWithOffHandMatches(source);
   const duration = registry.items.get('candle')!.light!.burnTime!;
   source.sim.setDebugCalendarTime(source.sim.calendar + duration * 1800);
   source.sim.scheduler.advance(1);
@@ -1241,7 +1241,7 @@ it('a doused candle keeps its remaining burn through save and relighting', async
 
 it('a lit light saves its active ignition time and remaining burn', async () => {
   const source = createRuntime();
-  const candle = lightCandleInHand(source);
+  const candle = lightCandleWithOffHandMatches(source);
 
   const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
   const loaded = createRuntime(decoded.snapshot);

@@ -48,15 +48,17 @@ ordinary inventory access. The shared block does not change door ownership.
 
 ## Player flow and time
 
-Select a note in inventory and take it into a hand, then choose **Read** (or U /
-hold its assigned quickbar key). A quickbar tap only takes or puts away; holding
-its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
-`QuickbarActions.hold`). `src/core/options.ts`, `useOption`, describes the
-capability; `src/game/survival.ts`, `Survival.use`, revalidates hand ownership and
-owns the read effect. There is no consumption, inventory change
-or queued handling job. Reading has **zero command time**, rather than an arbitrary
-handling cost: opening paper is presentation, while time spent actually reading
-already passes in the live world.
+Take a readable-only note into a hand and hold its assigned quickbar slot. An
+item with a book component also supports its held primary action; see
+`src/game/primaryAction.ts`, `primaryActionForDefinition`. The inventory Read command was removed under BR's
+interaction ruling in `CONTROLS.md`. A quickbar tap only takes or puts away;
+holding its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
+`QuickbarActions.hold`).
+`src/core/options.ts`, `useOption`, describes the capability;
+`src/game/survival.ts`, `Survival.use`, revalidates hand ownership and owns the
+read effect. Reading a readable-only note neither consumes nor changes the item
+and admits no handling job. Opening paper has **zero command time**; time spent
+actually reading already passes in the live world.
 
 Look at a sign and press F. Normal furniture picking includes gaze/occlusion and
 Search's reach; the session command rechecks the live entity identity and reach.
@@ -73,7 +75,8 @@ are unchanged. This does not add or enable the HUD: existing HUD preferences and
 compass/watch item plans remain unchanged.
 
 The maintained browser contract exercises the real sample pickup/search/handling/
-Read path, sign F interaction, input ownership, focus, scrolling and dismissal.
+quickbar-held Read path, sign F interaction, input ownership, focus, scrolling and
+dismissal.
 It also checks maximum title/body sizes at 360×640 and 800×600 (20 px body text,
 no horizontal overflow, footer/button visible).
 

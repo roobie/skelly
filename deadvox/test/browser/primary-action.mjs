@@ -7,7 +7,6 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { inventorySelectionChanged } from './inventory-selection.ts';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
@@ -546,47 +545,6 @@ try {
   assert.equal(emission.shot?.distanceMetres, 0);
   assert.equal(emission.shot?.lowpassHz, null);
   await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
-  const cock = await page.evaluate(() => {
-    const r = globalThis.primaryActionTest;
-    return {
-      label: r.session.firearms.useOption(r.inventory.hands.left).label,
-      danger: r.debugTools.dangerReason() ?? null,
-    };
-  });
-  await page.keyboard.press('Tab');
-  const candidates = await page.locator('#inventory [data-uid]').count();
-  assert.ok(candidates > 0);
-  for (let index = 0; index <= candidates; index++) {
-    const selectedRow = page.locator('#inventory [data-uid].selected');
-    const selected = (await selectedRow.count()) ? await selectedRow.getAttribute('data-uid') : null;
-    if (selected === String(firearm.uid)) {
-      break;
-    }
-    await page.keyboard.press('ArrowDown');
-    await page.waitForFunction(inventorySelectionChanged, selected);
-  }
-  assert.equal(await page.locator(`#inventory [data-uid="${firearm.uid}"].selected`).count(), 1);
-  const cockButton = page.locator('button.inv-option').filter({ hasText: cock.label });
-  assert.equal(await cockButton.count(), 1);
-  await page.keyboard.press('Digit1');
-  await page.keyboard.press('KeyU');
-  await page.waitForFunction(() => globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle?.mode === 'hand');
-  const handling = await page.evaluate(() => {
-    const r = globalThis.primaryActionTest;
-    return {
-      danger: r.debugTools.dangerReason() ?? null,
-      reason: r.session.firearms.cockReason(r.inventory.hands.left.uid),
-    };
-  });
-  assert.equal(handling.danger, cock.danger);
-  assert.ok(handling.reason);
-  await page.waitForFunction(
-    (reason) => [...document.querySelectorAll('.inv-reason')].some((node) => node.textContent === reason.toLowerCase()),
-    handling.reason,
-  );
-  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
-  assert.equal(await cockButton.count(), 1, 'cock availability redraws after completion');
-  await page.keyboard.press('Tab');
   const food = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     const item = [...r.inventory.items()].find(
@@ -644,7 +602,7 @@ try {
   );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, inventory cock, quickbar hold and held-book reading.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold and held-book reading.\n',
   );
 } finally {
   await browser?.close();

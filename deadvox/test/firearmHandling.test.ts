@@ -312,12 +312,9 @@ describe('debug firearm handling', () => {
       onEjection: () => undefined,
     });
     const duration = firearmHandlingFor(rifle, registry).action.hand.durationSeconds;
-    expect(mechanics.useOption(rifle)).toMatchObject({
-      kind: 'use',
-      plan: { ok: true, time: duration },
-    });
+    expect(mechanics.cockReason(rifle.uid)).toBeUndefined();
     expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
-    expect(mechanics.useOption(rifle).plan.ok).toBe(false);
+    expect(mechanics.cockReason(rifle.uid)).toBeDefined();
     expect(queue.jobs[0]?.duration).toBe(duration);
     expect(
       mechanics.fire({

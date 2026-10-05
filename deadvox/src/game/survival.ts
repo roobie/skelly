@@ -248,12 +248,7 @@ export class Survival {
       lines.push(`${def.igniter ? 'Fuel' : 'Battery'} ${Math.round(share * 100)}%${def.light ? ` · ${state}` : ''}`);
     }
     if (def.igniter) {
-      lines.push('Fuel for lighting a light source in reach');
-    }
-    if (def.food || def.battery) {
-      lines.push('U: use in hand · hold its quickbar key: use from its current location');
-    } else if (def.light || def.readable || def.book) {
-      lines.push('U: use in hand · hold its quickbar key: use in hand');
+      lines.push('Fuel for lighting a light held in the other hand');
     }
     return lines;
   }
@@ -271,6 +266,25 @@ export class Survival {
     }
   }
 
+  private heldFirestarterFor(light: Item): Item | string {
+    const hand = this.handOf(light);
+    if (!hand) {
+      return 'Take the light in your hands first';
+    }
+    const igniter = this.inventory.hands[hand === 'right' ? 'left' : 'right'];
+    if (!igniter) {
+      return 'Need a firestarter in the other hand';
+    }
+    const spec = defOf(this.inventory.registry, igniter.type).igniter;
+    if (!spec) {
+      return 'Need a firestarter in the other hand';
+    }
+    if ((chargeOf(this.inventory.registry, igniter) ?? 0) < spec.perIgnition) {
+      return "It's out of fuel";
+    }
+    return igniter;
+  }
+
   private switchLight(light: Item): string | undefined {
     const { registry } = this.inventory;
     const spec = defOf(registry, light.type).light!;
@@ -280,20 +294,11 @@ export class Survival {
     }
     let igniter: Item | undefined;
     if (!light.on && spec.burning?.ignition === 'firestarter') {
-      igniter = [...this.inventory.items()]
-        .map(({ item }) => item)
-        .find((item) => {
-          if (
-            !(defOf(registry, item.type).igniter && this.hooks.reach().entries.some((entry) => entry.item === item))
-          ) {
-            return false;
-          }
-          const charges = chargeOf(registry, item) ?? 0;
-          return charges >= defOf(registry, item.type).igniter!.perIgnition;
-        });
-      if (!igniter) {
-        return 'Need a firestarter in reach';
+      const held = this.heldFirestarterFor(light);
+      if (typeof held === 'string') {
+        return held;
       }
+      igniter = held;
     }
     const reason = toggleLight(registry, light, this.sim.calendar);
     if (reason === undefined) {

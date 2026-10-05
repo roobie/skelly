@@ -114,6 +114,27 @@ describe('made light burn state', () => {
     expect(candle.burnRemaining).toBeGreaterThan(0);
   });
 
+  it('requires the firestarter in the other hand, not merely within reach', () => {
+    const held = setup();
+    const candle = held.hold('candle');
+    const matches = held.hold('matches', 'left');
+    const heldCharge = matches.charges!;
+    expect(held.survival.use(candle)).toBeUndefined();
+    expect(candle.on).toBe(true);
+    expect(matches.charges).toBe(heldCharge - 1);
+
+    const pocketed = setup();
+    const pocketCandle = pocketed.hold('candle');
+    const jeans = pocketed.inventory.create('jeans');
+    expect(pocketed.inventory.add(jeans, { kind: 'worn' })).toBe(true);
+    const pocketMatches = pocketed.inventory.create('matches');
+    expect(pocketed.inventory.add(pocketMatches, { kind: 'pocket', owner: jeans, pocket: 0 })).toBe(true);
+    const chargeBefore = pocketMatches.charges;
+    expect(pocketed.survival.use(pocketCandle)).toEqual(expect.any(String));
+    expect(pocketCandle.on).not.toBe(true);
+    expect(pocketMatches.charges).toBe(chargeBefore);
+  });
+
   it('applies each burn light’s declared stow and sprint rules', () => {
     const burnLights = [...registry.items.values()].filter(({ light }) => light?.burnTime !== undefined);
     expect(burnLights.length).toBeGreaterThan(0);
