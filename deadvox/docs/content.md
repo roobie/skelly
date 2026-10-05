@@ -1,6 +1,7 @@
 ---
 read_if:
-  - you change content schemas or validation
+  - you change content schemas, validation, registry merging, or recipe/workstation data
+  - you change content references, static reachability, or disassembly-output contracts
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
 ---
@@ -65,7 +66,10 @@ The least component fixed point starts at found types. A result enters only when
 at least one alternative per component group is reachable; unseeded recipe cycles
 add nothing. Content acceptance reports **every declared alternative** that is
 neither found nor craftable. It is a type closure, not a quantity/consumption,
-particular-seed or whole-game solver. It does not invent salvage sources.
+particular-seed or whole-game solver. It extends each closure through actual
+disassembly and salvage outputs via `addDisassemblyOutputs` in
+`src/core/reachability.ts`; yield counts come from `disassemblyOutputs` in
+`src/core/disassembly.ts`, so zero-count yields add no reachable type.
 
 Tools are a separate hard check: a second loot-seeded fixed point requires both
 components and sufficient tool-quality levels before adding a result. A recipe
@@ -85,10 +89,15 @@ no book component and remains inert.
 `CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` keeps runtime escrow and
 the project's debug/case/body-part policy out of acquired-content totals.
 `npm run validate` reports the effective component and tool closures, content
-count, and any unreachable content. Content growth beyond the crafting/books
-milestone remains with Slice 2.11. Reachability issues use the winning recipe's
-merge origin, preserving source file and index through ordered overrides and
-removal. `src/core/character.ts`, `Character`, owns live practice and knowledge;
+count, and any unreachable content; do not copy its counts or content lists into
+this document. Content growth beyond the crafting/books milestone remains with
+Slice 2.11. Reachability issues use the winning recipe's merge origin, preserving
+source file and index through ordered overrides and removal.
+
+`src/core/character.ts`, `Character`, owns live practice and knowledge;
 `src/core/reachability.ts`, `checkReachability`, independently proves that their
-sources are available from placed loot. Reachability stores no closure/state;
-runtime progression and crafting remain separate owners.
+sources are available from placed loot. The component/tool closures include
+calculated disassembly yields at top skill; the separate skill-source check must
+prove that reachable practice sources can raise a required skill. Reachability
+stores no closure or runtime state; progression, crafting and disassembly remain
+separate owners.

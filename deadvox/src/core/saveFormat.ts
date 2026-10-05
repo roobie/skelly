@@ -179,6 +179,7 @@ type Schema =
   | { kind: 'optional'; schema: Schema }
   | { kind: 'nullable'; schema: Schema }
   | { kind: 'record'; value: Schema }
+  | { kind: 'union'; variants: readonly Schema[] }
   | { kind: 'lazy'; get: () => Schema }
   | { kind: 'json' };
 
@@ -202,6 +203,7 @@ const obj = (fields: Record<string, Schema>): Extract<Schema, { kind: 'object' }
 const opt = (schema: Schema): Schema => ({ kind: 'optional', schema });
 const nullable = (schema: Schema): Schema => ({ kind: 'nullable', schema });
 const record = (value: Schema): Schema => ({ kind: 'record', value });
+const union = (...variants: Schema[]): Schema => ({ kind: 'union', variants });
 const lazy = (get: () => Schema): Schema => ({ kind: 'lazy', get });
 const anyJson: Schema = { kind: 'json' };
 
@@ -278,17 +280,34 @@ itemSchema = obj({
     }),
   ),
   work: opt(
-    obj({
-      recipe: str({ id: true }),
-      elapsed: nonNegative,
-      duration: positive,
-      repairTargetUid: opt(positiveInt),
-      repairAmount: opt(num({ min: 0, max: 1 })),
-      components: arr(
-        lazy(() => itemSchema),
-        1,
-      ),
-    }),
+    union(
+      obj({
+        kind: enumeration(['craft']),
+        recipe: str({ id: true }),
+        elapsed: nonNegative,
+        duration: positive,
+        repairTargetUid: opt(positiveInt),
+        repairAmount: opt(num({ min: 0, max: 1 })),
+        components: arr(
+          lazy(() => itemSchema),
+          1,
+        ),
+      }),
+      obj({
+        kind: enumeration(['disassembly']),
+        source: str({ id: true }),
+        skillLevel: nonNegativeInt,
+        toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
+        outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
+        gather: nonNegative,
+        elapsed: nonNegative,
+        duration: positive,
+        components: arr(
+          lazy(() => itemSchema),
+          1,
+        ),
+      }),
+    ),
   ),
 });
 placedSchema = obj({ item: lazy(() => itemSchema), x: nonNegativeInt, y: nonNegativeInt, rotated: bool });
@@ -554,6 +573,17 @@ function validateSchema(schema: Schema, value: unknown, path: string, acceptTagg
       validateSchema(schema.schema, value, path, acceptTaggedNegativeZero);
     }
     return;
+  }
+  if (schema.kind === 'union') {
+    for (const variant of schema.variants) {
+      try {
+        validateSchema(variant, value, path, acceptTaggedNegativeZero);
+        return;
+      } catch {
+        // Try the next strict object shape.
+      }
+    }
+    throw new Error(`Invalid variant at ${path}`);
   }
   if (schema.kind === 'string') {
     if (typeof value !== 'string' || (schema.nonEmpty && value.length === 0) || (schema.id && !ID.test(value))) {
@@ -1155,8 +1185,13 @@ function validateItemContentReferences(
     item.firearm?.tube?.forEach((type, index) => {
       check('item', type, `${path}.firearm.tube[${index}]`);
     });
-    if (item.work) {
+    if (item.work?.kind === 'craft') {
       check('recipe', item.work.recipe, `${path}.work.recipe`);
+    } else if (item.work?.kind === 'disassembly') {
+      check('item', item.work.source, `${path}.work.source`);
+      item.work.outputs.forEach((output, index) => {
+        check('item', output.item, `${path}.work.outputs[${index}].item`);
+      });
     }
   }
 }

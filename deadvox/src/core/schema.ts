@@ -193,6 +193,11 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
+export const HELD_DISPLAY_KIND = { compass: 'compass' } as const;
+const HELD_DISPLAY_KINDS = Object.values(HELD_DISPLAY_KIND);
+export const PILE_DISPLAY_KIND = { scatter: 'scatter' } as const;
+const PILE_DISPLAY_KINDS = Object.values(PILE_DISPLAY_KIND);
+
 const BookSchema = strictObject({
   title: Name,
   recipes: pipe(array(Id), nonEmpty('needs at least one recipe')),
@@ -210,6 +215,40 @@ const readableText = (limit: number) =>
 export const ReadableSchema = strictObject({
   title: readableText(READABLE_TITLE_LIMIT),
   text: readableText(READABLE_TEXT_LIMIT),
+});
+
+const ItemCountSchema = strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) });
+const YieldRounding = picklist(['floor', 'round', 'ceil']);
+const SkillFractions = pipe(
+  array(Fraction),
+  minLength(2, 'needs a skill-0 and top-skill fraction'),
+  check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
+  check((fractions) => fractions.at(-1)! > fractions[0]!, 'must increase with skill'),
+);
+const ToolFractionBonus = pipe(
+  array(Fraction),
+  minLength(1, 'needs a bonus for at least one tool level'),
+  check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
+);
+const DisassemblyYieldSchema = strictObject({
+  ...ItemCountSchema.entries,
+  /** Multiplier by skill level: index 0 is skill 0; the last entry is this yield's top level. */
+  fractions: SkillFractions,
+  /** Applied independently to this yield's scaled count. */
+  rounding: YieldRounding,
+  toolModifier: optional(
+    strictObject({
+      quality: Id,
+      /** Additions by tool quality level: index 0 is level 1; higher levels saturate at the last entry. */
+      bonusByLevel: ToolFractionBonus,
+    }),
+  ),
+});
+const DisassemblySchema = strictObject({
+  /** Game minutes. */
+  time: Positive,
+  skill: Id,
+  yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
 
 export const ItemSchema = strictObject({
@@ -233,8 +272,16 @@ export const ItemSchema = strictObject({
   ammo: optional(AmmoSchema),
   /** Sealed, non-container payload: held primary activation opens one package. */
   unpack: optional(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
+  /** An authored yield for a finished item; never inferred from recipe alternatives. */
+  disassembly: optional(DisassemblySchema),
+  /** Fixed outputs for found items with no recipe. */
+  salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   light: optional(LightSchema),
   readable: optional(ReadableSchema),
+  /** Display capability shown in first person; later devices can share this rendering seam. */
+  heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
+  /** How the item appears when it is in a ground pile. */
+  pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
   /** One authored/global lock id; no per-placement key payload. */
@@ -679,7 +726,7 @@ export const FigureSchema = strictObject({
 // ---- skills and recipes ----
 
 export const SkillSchema = strictObject({ id: Id, name: Name });
-const RecipeItemSchema = strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) });
+const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
 export const RecipeSchema = strictObject({

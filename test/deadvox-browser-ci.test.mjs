@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { reserveDistinctPorts } from '../deadvox/tools/browser-ports.mjs';
 
 // Every browser stage that deadvox's package.json lists must have a step in .github/workflows/deadvox.yml, so
 // a stage a PR adds or stops running locally (the tiered test policy runs only the touched ones) cannot silently
@@ -187,6 +188,23 @@ const browserStages = Object.fromEntries(
 const covered = coveredStagesIn(read('.github/workflows/deadvox.yml'));
 const browserScripts = Object.keys(browserStages);
 const uncovered = (name) => browserStages[name].map(describeStage).filter((stage) => !covered.has(stage));
+
+describe('browser port reservation', () => {
+  it('keeps the Vite port reserved while selecting a distinct Chrome port', async () => {
+    const held = new Set();
+    const reserve = () => {
+      const port = held.has(36_483) ? 36_484 : 36_483;
+      assert.equal(held.has(port), false);
+      held.add(port);
+      return { port, close: () => held.delete(port) };
+    };
+    const ports = await reserveDistinctPorts({ reserve });
+    assert.deepEqual([ports.port, ports.cdpPort], [36_483, 36_484]);
+    assert.deepEqual([...held].sort(), [36_483, 36_484]);
+    await ports.release();
+    assert.deepEqual([...held], []);
+  });
+});
 
 describe('deadvox CI runs every browser stage package.json lists', () => {
   it('excludes job- and step-disabled commands from coverage', () => {

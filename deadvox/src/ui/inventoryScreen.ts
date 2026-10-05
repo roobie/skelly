@@ -15,7 +15,7 @@ import { bestPocket, dropTarget, type Option, options, quickMove, toHands, type 
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
-import { workName } from './craftReadout.ts';
+import { craftTime, workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
 export const CELL = 32;
@@ -711,7 +711,10 @@ export class InventoryScreen {
               ? {
                   label: option.label,
                   button: true,
-                  time: secs(option.plan.time),
+                  time:
+                    'duration' in option && option.duration !== undefined
+                      ? craftTime(option.duration)
+                      : secs(option.plan.time),
                   ...optionAction(option),
                 }
               : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
@@ -726,7 +729,9 @@ export class InventoryScreen {
     ];
     if (item.work) {
       lines.push(
-        `Recipe: ${item.work.recipe}`,
+        item.work.kind === 'craft'
+          ? `Recipe: ${item.work.recipe}`
+          : `Taking apart: ${defOf(this.inv.registry, item.work.source).name}`,
         `Progress: ${item.work.elapsed.toFixed(1)} / ${item.work.duration.toFixed(1)} game seconds`,
       );
     }

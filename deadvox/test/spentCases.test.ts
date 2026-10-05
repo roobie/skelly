@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { BoxGeometry, Group, InstancedMesh, Matrix4, MeshBasicMaterial } from 'three';
+import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshBasicMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -11,12 +11,11 @@ import { PileMeshes } from '../src/render/piles.ts';
 import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from '../src/render/spentCaseScatter.ts';
 
 const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const baseContent = readdirSync(BASE)
+  .filter((file) => file.endsWith('.json'))
+  .sort()
+  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
+const { registry } = buildRegistry(baseContent);
 
 describe('spent-case presentation', () => {
   it('scatters deterministically, spreads with count, and stops changing at its cap', () => {
@@ -46,6 +45,47 @@ describe('spent-case presentation', () => {
     expect(piles.group.children).toHaveLength(1);
     expect(piles.group.children[0]).toBeInstanceOf(InstancedMesh);
     expect((piles.group.children[0] as InstancedMesh).count).toBe(12);
+  });
+
+  it('uses validated pile-display components instead of item ids to choose scatter rendering', () => {
+    const { registry: fixtureRegistry, issues } = buildRegistry([
+      ...baseContent,
+      {
+        source: 'pile-display-fixture',
+        data: {
+          items: [
+            {
+              id: 'scattered_fixture',
+              name: 'Scattered fixture',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              pileDisplay: 'scatter',
+            },
+            {
+              id: 'ordinary_fixture',
+              name: 'Ordinary fixture',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+            },
+          ],
+        },
+      },
+    ]);
+    expect(issues).toEqual([]);
+    const inventory = new Inventory(fixtureRegistry);
+    expect(inventory.add(inventory.create('scattered_fixture'), { kind: 'pile', pos: [1, 2, 3] })).toBe(true);
+    expect(inventory.add(inventory.create('ordinary_fixture'), { kind: 'pile', pos: [4, 2, 3] })).toBe(true);
+    const piles = new PileMeshes(0.5);
+    piles.sync(inventory);
+
+    const scatter = piles.group.children.filter((child) => child instanceof InstancedMesh);
+    const bundles = piles.group.children.filter((child) => child instanceof Mesh && !(child instanceof InstancedMesh));
+    expect(scatter).toHaveLength(1);
+    expect(scatter[0]!.count).toBe(1);
+    expect(bundles).toHaveLength(1);
+    piles.dispose();
   });
 
   it('uses the exported case model for both pile scatter and flying effects when loaded', () => {

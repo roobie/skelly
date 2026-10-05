@@ -1,6 +1,6 @@
-// The debug handling range beside the hamlet. Its geometry is a deterministic function of
-// the hamlet bounds and terrain seed; it is composed into Hamlet rather than being a world Site.
+// The debug handling range shares geometry between generated sites; each caller supplies its bounds.
 
+import { smoothstep } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
@@ -22,8 +22,9 @@ export const HANDLING_RANGE = {
   tableOffset: 3,
 } as const;
 
-/** A firing lane and its worldgen additions, positioned beside a hamlet. Coordinates are blocks. */
-export class HamletRange {
+/** A firing lane and its worldgen additions, positioned beside a site's bounds. Coordinates are blocks. */
+export class HandlingRange {
+  readonly beside: Rect;
   readonly rect: Rect;
   readonly blend = HANDLING_RANGE.blend;
   readonly blendBounds: Rect;
@@ -33,8 +34,9 @@ export class HamletRange {
   readonly table: EntitySpec;
   private readonly blocks: { asphalt: number; planks: number; hazard: number; brick: number };
 
-  constructor(seed: number, registry: Registry, scale: Scale, beside: Rect) {
+  constructor(seed: number, registry: Registry, scale: Scale, { beside, floor }: { beside: Rect; floor?: number }) {
     const centreZ = Math.floor((beside.z0 + beside.z1) / 2);
+    this.beside = { ...beside };
     const x0 = beside.x1 + HANDLING_RANGE.gap;
     this.rect = {
       x0,
@@ -43,7 +45,7 @@ export class HamletRange {
       z1: centreZ + HANDLING_RANGE.width / 2,
     };
     this.blendBounds = grow(this.rect, this.blend);
-    this.floor = terrainHeight(seed, scale, Math.floor((this.rect.x0 + this.rect.x1) / 2), centreZ);
+    this.floor = floor ?? terrainHeight(seed, scale, Math.floor((this.rect.x0 + this.rect.x1) / 2), centreZ);
     const lineX = this.rect.x0 + HANDLING_RANGE.firingLineOffset;
     this.firingLine = {
       x0: lineX,
@@ -80,6 +82,21 @@ export class HamletRange {
 
   top(x: number, z: number): number | undefined {
     return rectDistance(this.firingLine, x, z) === 0 ? this.blocks.asphalt : undefined;
+  }
+
+  /** Blend the surrounding terrain into this range's level firing surface. */
+  height(x: number, z: number, natural: number): number {
+    const distance = rectDistance(this.rect, x, z);
+    if (distance >= this.blend) {
+      return natural;
+    }
+    const weight = smoothstep(1 - distance / this.blend);
+    return Math.round(natural + weight * (this.floor - natural));
+  }
+
+  approachHeight(x: number, z: number, natural: number): number {
+    const alongClearance = x >= this.beside.x1 && x < this.rect.x0 && z >= this.rect.z0 && z < this.rect.z1;
+    return alongClearance ? this.floor : this.height(x, z, natural);
   }
 
   /** Writes the three backboards and posts wherever they intersect this chunk. */

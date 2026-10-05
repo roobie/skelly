@@ -11,6 +11,7 @@ import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -159,13 +160,17 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     }
     const backpack = inventory.create('school_backpack');
     const beans = inventory.create('canned_beans');
-    inventory.hands.right = backpack;
+    if (!inventory.add(backpack, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not place snapshot backpack in hand');
+    }
     inventory.add(beans, { kind: 'pocket', owner: backpack, pocket: 0 });
     const rag = inventory.create('rag');
     inventory.add(rag, { kind: 'pile', pos: [editCx * CHUNK + 2, editChunk.cy * CHUNK + 1, editCz * CHUNK + 2] });
     const flashlight = inventory.create('flashlight');
     flashlight.on = true;
-    inventory.hands.left = flashlight;
+    if (!inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
+      throw new Error('Could not place snapshot flashlight in hand');
+    }
     survival.lit = flashlight;
     quickbar.assign(0, beans);
     const container = [...entities.all].find((entity) => entity.pockets);
@@ -804,13 +809,40 @@ describe('craft job codec and ownership', () => {
       expect(loaded.inventory.itemByUid(work.uid)!.work).toEqual(work.work);
       expect(loaded.inventory.hands.left).toBeUndefined();
       const bad = structuredClone(snapshot);
-      bad.character.inventory.hands.right!.work!.recipe = 'unknown_craft';
+      const badWork = bad.character.inventory.hands.right!.work!;
+      if (badWork.kind !== 'craft') {
+        throw new Error('Expected craft work');
+      }
+      badWork.recipe = 'unknown_craft';
       await expect(decodeSave(await encodeFixture(bad), { version: formatVersion, contentLookup })).rejects.toThrow(
         'Unknown recipe',
       );
       const dangling = structuredClone(snapshot);
       dangling.character.longAction.job = { jobType: 'craft', stopped: true, last: 0, workUid: 999_999 };
       await expect(encodeFixture(dangling)).rejects.toThrow('Missing craft work item');
+
+      const disassembly = structuredClone(snapshot);
+      const savedWork = disassembly.character.inventory.hands.right!;
+      const sourceUid = disassembly.character.inventory.nextItemUid;
+      disassembly.character.inventory.nextItemUid += 1;
+      const radio = registry.items.get('portable_radio')!;
+      savedWork.work = {
+        kind: 'disassembly',
+        source: radio.id,
+        skillLevel: 0,
+        toolLevels: {},
+        outputs: disassemblyOutputs(radio, 0),
+        gather: 0,
+        elapsed: 37,
+        duration: SALVAGE_DURATION,
+        components: [{ uid: sourceUid, type: radio.id, count: 1, condition: 0 }],
+      };
+      const decodedDisassembly = await decodeSave(await encodeFixture(disassembly), {
+        version: formatVersion,
+        contentLookup,
+      });
+      const loadedDisassembly = createRuntime(decodedDisassembly.snapshot);
+      expect(capture(loadedDisassembly)).toEqual(disassembly);
     },
   );
 
