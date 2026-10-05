@@ -59,7 +59,7 @@ Automatic cycles and pending fired cases survive a snapshot. Manual motion is
 omitted from the save copy, just like manual handling jobs, without changing the
 live action; its chamber contents remain saved. No generic durable queue, new
 timer, migration or compatibility path exists. See `deadvox/src/core/saveFormat.ts`,
-`SCHEMA_VERSION`, for the save schema identifier (the playable
+`SAVE_SCHEMA_VERSION`, for the save schema identifier (the playable
 [pump](pump-shotgun.md) adds real tube ammunition and a pending hull landing cue).
 
 The case's per-shot RNG stream/key/draw stays at shot admission; sound-picker RNG

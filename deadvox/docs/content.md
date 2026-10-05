@@ -45,7 +45,7 @@ later recipe uses part of a liquid, its stored quantity-to-ml mapping, saved
 partial use and container retention must be approved. Torch/candle result
 metadata has no light or burning component yet; those mechanics belong to 2.9.
 Slice 2.2 introduced recipes as data only. Slice 2.5 adds crafting, progression,
-and book knowledge; `src/core/saveFormat.ts`, `SCHEMA_VERSION`, and the simulation
+and book knowledge; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and the simulation
 fingerprint require old saves to be refused rather than migrated during pre-alpha.
 
 ## Static reachability (Slice 2.3)

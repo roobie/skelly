@@ -130,7 +130,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 11;
+export const SAVE_SCHEMA_VERSION = 12;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -288,6 +288,15 @@ itemSchema = obj({
 });
 placedSchema = obj({ item: lazy(() => itemSchema), x: nonNegativeInt, y: nonNegativeInt, rotated: bool });
 const placedGrid = arr(lazy(() => placedSchema));
+const targetStateSchema = obj({
+  kind: enumeration(['hand', 'worn', 'pocket', 'pile', 'furniture']),
+  side: opt(enumeration(['right', 'left'])),
+  ownerUid: opt(positiveInt),
+  pocket: opt(nonNegativeInt),
+  entityUid: opt(positiveInt),
+  pos: opt(vec3),
+  at: opt(obj({ x: nonNegativeInt, y: nonNegativeInt, rotated: bool })),
+});
 const inventoryCore = obj({
   nextItemUid: positiveInt,
   hands: obj({ right: opt(lazy(() => itemSchema)), left: opt(lazy(() => itemSchema)) }),
@@ -301,6 +310,7 @@ const inventoryCore = obj({
     feet: opt(lazy(() => itemSchema)),
   }),
   looted: arr(tuple(str({ id: true }), nonNegativeInt)),
+  quickbarOrigins: arr(tuple(positiveInt, targetStateSchema)),
 });
 const blockEntitySchema = obj({
   uid: positiveInt,
@@ -805,6 +815,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         hands: savedInventory.hands,
         worn: savedInventory.worn,
         looted: savedInventory.looted,
+        quickbarOrigins: savedInventory.quickbarOrigins,
       },
       longAction: snapshot.character.longAction,
       playerCombat: snapshot.character.playerCombat,

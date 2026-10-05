@@ -34,6 +34,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { MeleeWeapon } from '../src/core/zombies.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER } from '../src/game/player.ts';
+import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -571,6 +572,35 @@ describe('snapshot state components', () => {
     const snapshot = capture(runtime);
     expect(() => createRuntime(snapshot)).not.toThrow();
     expect(snapshot.character.quickbar[0]).toBeNull();
+  });
+
+  it('returns a held quickbar item to its captured source after a save round-trip', async () => {
+    const runtime = createRuntime();
+    const { inventory, player } = runtime;
+    const bag = inventory.hands.right!;
+    const { item } = bag.pockets![0]![0]!;
+    const source = inventory.targetState(inventory.targetForLocation(inventory.locate(item)!));
+    const feet = player.body.pos.map(Math.floor) as Vec3;
+    expect(inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok).toBe(true);
+    expect(inventory.move(item, { kind: 'hand', side: 'left' }).ok).toBe(true);
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    const held = restored.inventory.itemByUid(item.uid)!;
+    const actions = new QuickbarActions({
+      inventory: restored.inventory,
+      queue: restored.handling,
+      feet: () => restored.player.body.pos.map(Math.floor) as Vec3,
+      survival: restored.survival,
+      notice: () => undefined,
+    });
+    expect(restored.inventory.quickbarOrigin(held)).toEqual(source);
+
+    actions.tap(held);
+    restored.handling.tick(restored.handling.remaining);
+
+    const at = restored.inventory.locate(held)!;
+    expect(restored.inventory.targetState(restored.inventory.targetForLocation(at))).toEqual(source);
   });
 
   it('rejects a dangling component reference at the snapshot barrier', () => {
