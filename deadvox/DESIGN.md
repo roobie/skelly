@@ -9,6 +9,7 @@ read_if:
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
+  - you're changing firearm recoil, dispersion or aim control
 ---
 
 # deadvox — design
@@ -495,24 +496,34 @@ plain box in your hands. Files are small, and follow
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
   held-firearm presentation, so the weapon does not visibly aim somewhere other
-  than its shot ray. Aim state is saved because it can change hit outcomes. Each
-  committed shot applies the firearm's data-owned `recoilKickRadians`; full-auto
-  shots accumulate against simulation-time recovery, while
-  `firearmsSkillEffects` mitigates the resulting aim variance as skill rises.
-  BR's 2026-10-05 report that skill 12 still had "too much dispersion/sway at
-  full auto" led to d62-4 (#262). See `src/game/firearmHandling.ts`,
-  `FirearmMechanics.fire` and `firearmHandlingFor`, `src/core/aim.ts`,
-  `AimController.recordShot` and `AimController.advance`, and
-  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`. Until #267 lands, aim-sway
-  look comparisons use the current movement rules; afterward a firearm only
-  fires while ready and not sprinting, so moving-fire comparisons use the
-  skill-dependent duck-walk speed. The skill that controls duck-walk speed and
-  block success remains open in #267; BR leans toward a generic "warfare"
-  skill. d62 leaves practice unawarded until its source is ruled. The d62
-  reading of BR's "swing" is look-turn rate; BR's answer to the d62 questions
-  triggers reinterpretation. The d62 reading of BR's "reload time" is per-shell
-  insertion, not magazine reload; BR's answer to the d62 questions triggers
-  expansion.
+  than its shot ray. Aim state is saved because it can change hit outcomes. BR's
+  2026-10-05 look at the range found that "the gun on screen is climbing (and
+  plateauing)" and ruled, "at the ~7° screen limit -> start scrolling the screen
+  with it / no plateauing." While an automatic trigger is held, recoil does not
+  recover; over-limit pitch shifts the saved view pitch. The shifted view stays
+  after release while the on-screen weapon offset recovers, so mouse look can
+  counter the climb. BR also clarified that "dispersion is not a skill issue,
+  but control is": firearm-owned `dispersionRadians` is sampled per round, while
+  `firearmsSkillEffects` controls sway, kick per shot and recoil recovery. The
+  pump keeps its pellet spread and adds no firearm cone. This reuses the already
+  saved player pitch, so no aim-state field or save-schema change is needed. See
+  `src/game/firearmHandling.ts`, `FirearmMechanics.fire` and
+  `firearmHandlingFor`, `src/core/pellets.ts`, `coneDirection`,
+  `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
+  `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
+  `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,
+  `SAVE_SCHEMA_VERSION`. BR's earlier 2026-10-05 report that skill 12 still had
+  "too much dispersion/sway at full auto" led to d62-4 (#262); the later ruling
+  separates firearm quality's dispersion from skill-controlled handling.
+  Until #267 lands, aim-sway look comparisons use the current movement rules;
+  afterward a firearm only fires while ready and not sprinting, so moving-fire
+  comparisons use the skill-dependent duck-walk speed. The skill that controls
+  duck-walk speed and block success remains open in #267; BR leans toward a
+  generic "warfare" skill. d62 leaves practice unawarded until its source is
+  ruled. The d62 reading of BR's "swing" is look-turn rate; BR's answer to the
+  d62 questions triggers reinterpretation. The d62 reading of BR's "reload
+  time" is per-shell insertion, not magazine reload; BR's answer to the d62
+  questions triggers expansion.
 - **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. Whether rifle rounds damage shamblers or consume ammunition, and whether shamblers receive visible marks, remain open.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.

@@ -71,35 +71,50 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
 };
 
 describe('debug firearm handling', () => {
-  it('emits the committed automatic shot direction for the shared trajectory', () => {
-    const { inventory, rifle } = inventoryWithRifle();
+  it('emits seeded firearm dispersion independently of firearms skill', () => {
     const aimFrame = { yaw: 0.04, pitch: -0.03 };
     const yaw = 0.3;
     const pitch = -0.2;
-    let trajectory: FirearmTrajectory | undefined;
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 0.5,
-      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
-      onEjection: () => undefined,
-      onTrajectory: (published) => {
-        trajectory = published;
-      },
-    });
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        yaw,
-        pitch,
-        aimFrame,
-        debugMode: true,
-        item: rifle,
-        seed: 71,
-        simTime: 1,
-      }),
-    ).toBe(true);
-    expect(trajectory?.directions[0]).toEqual(aimDirection(yaw, pitch, aimFrame));
+    const publish = (skill: number): FirearmTrajectory => {
+      const { inventory, rifle } = inventoryWithRifle();
+      let trajectory: FirearmTrajectory | undefined;
+      const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+        blockSize: 0.5,
+        pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+        onEjection: () => undefined,
+        onTrajectory: (published) => {
+          trajectory = published;
+        },
+        firearmsSkillLevel: () => skill,
+      });
+      expect(
+        mechanics.fire({
+          ...pose,
+          feet: [...pose.feet],
+          eye: [...pose.eye],
+          yaw,
+          pitch,
+          aimFrame,
+          debugMode: true,
+          item: rifle,
+          seed: 71,
+          simTime: 1,
+        }),
+      ).toBe(true);
+      if (!trajectory) {
+        throw new Error('Committed rifle shot did not publish a trajectory');
+      }
+      return trajectory;
+    };
+    const novice = publish(0);
+    const experienced = publish(12);
+    const direction = novice.directions[0]!;
+    const base = aimDirection(yaw, pitch, aimFrame);
+    const cone = firearmHandlingFor(inventoryWithRifle().rifle, registry).dispersionRadians!;
+    const angle = Math.acos(Math.max(-1, Math.min(1, base.reduce((sum, value, index) => sum + value * direction[index]!, 0))));
+    expect(angle).toBeGreaterThan(0);
+    expect(angle).toBeLessThanOrEqual(cone + 1e-10);
+    expect(experienced.directions).toEqual(novice.directions);
   });
   it.each([
     [800, 27],
@@ -263,7 +278,7 @@ describe('debug firearm handling', () => {
               weight: 1000,
               size: [1, 1],
               model: 'pistol_full',
-              firearm: { recoilKickRadians: 0.012 },
+              firearm: { recoilKickRadians: 0.012, dispersionRadians: 0.01 },
             },
           ],
         },

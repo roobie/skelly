@@ -172,8 +172,10 @@ const WeaponSchema = strictObject({
 // Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
-  /** Camera-local aim kick per committed shot, before skill variance, in radians. */
+  /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
+  /** Half-angle of the firearm's independent per-round dispersion cone; zero adds no cone. */
+  dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
 });
 const AmmoSchema = strictObject({
   calibre: CalibreId,

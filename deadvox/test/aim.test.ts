@@ -10,6 +10,8 @@ const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) 
   yaw: 0,
   pitch: 0,
   variance: 1,
+  firing: false,
+  recoilRecoveryRate: 1,
   ...overrides,
 });
 
@@ -20,17 +22,24 @@ const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: 
   let nextShotAt = 0;
   let seed = 0;
   let peak = 0;
+  let viewPitch = 0;
+  const applyViewShift = () => {
+    const shift = aim.pendingViewPitchShift;
+    aim.applyViewPitchShift(shift);
+    viewPitch += shift;
+  };
   for (let tick = 0; tick <= burstSeconds / dt; tick++) {
     const time = tick * dt;
+    if (tick > 0) {
+      aim.advance(step({ dt, variance, firing: true }));
+      applyViewShift();
+    }
     while (nextShotAt <= time + 1e-9) {
       aim.recordShot(seed, recoilKickRadians);
       seed += 1;
       nextShotAt += cadenceSeconds;
-      peak = Math.max(peak, Math.hypot(aim.frame.yaw, aim.frame.pitch));
-    }
-    if (tick > 0) {
-      const frame = aim.advance(step({ dt, variance }));
-      peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));
+      applyViewShift();
+      peak = Math.max(peak, Math.abs(viewPitch + aim.frame.pitch));
     }
   }
   return peak;
@@ -78,6 +87,68 @@ it('committed recoil recovers in simulation time and equal inputs stay determini
   expect(Math.hypot(recovered.yaw, recovered.pitch)).toBeLessThan(Math.hypot(initial.yaw, initial.pitch));
 });
 
+it('keeps held-fire recoil climbing while shifting over-limit pitch into the view', () => {
+  const aim = new AimController();
+  const dt = 1 / 60;
+  const cadence = 60 / 800;
+  const burstSeconds = 2;
+  let nextShotAt = 0;
+  let seed = 1;
+  let viewPitch = 0;
+  let screenLimitMagnitude: number | undefined;
+  const climb: number[] = [];
+  const applyViewShift = () => {
+    const shift = aim.pendingViewPitchShift;
+    aim.applyViewPitchShift(shift);
+    viewPitch += shift;
+  };
+  for (let tick = 0; tick <= burstSeconds / dt; tick++) {
+    const time = tick * dt;
+    if (tick > 0) {
+      aim.advance(step({ dt, firing: true }));
+      applyViewShift();
+    }
+    while (nextShotAt <= time + 1e-9) {
+      aim.recordShot(seed, 0.035);
+      seed += 2;
+      applyViewShift();
+      climb.push(viewPitch + aim.frame.pitch);
+      if (viewPitch > 0) {
+        const magnitude = Math.hypot(aim.frame.yaw, aim.frame.pitch);
+        screenLimitMagnitude ??= magnitude;
+        expect(magnitude).toBeCloseTo(screenLimitMagnitude, 8);
+      }
+      nextShotAt += cadence;
+    }
+  }
+  expect(climb.length).toBeGreaterThan(1);
+  expect(climb.every((pitch, index) => index === 0 || pitch > climb[index - 1]!)).toBe(true);
+  expect(viewPitch).toBeGreaterThan(0);
+
+  const heldOffset = Math.hypot(aim.frame.yaw, aim.frame.pitch);
+  const retainedViewPitch = viewPitch;
+  for (let tick = 0; tick < 30; tick++) {
+    aim.advance(step({ dt, firing: false }));
+    applyViewShift();
+  }
+  expect(viewPitch).toBeCloseTo(retainedViewPitch, 8);
+  expect(Math.hypot(aim.frame.yaw, aim.frame.pitch)).toBeLessThan(heldOffset);
+});
+
+it('hands pitch beyond the aim-frame boundary to the view without losing it', () => {
+  const aim = new AimController();
+  aim.recordShot(1, 0.3);
+  const before = aim.frame;
+  const rawPitch = aim.snapshotState().recoilPitch;
+  aim.advance(step({ firing: true }));
+  const shift = aim.pendingViewPitchShift;
+  expect(shift).toBeGreaterThan(0);
+  aim.applyViewPitchShift(shift);
+  expect(Math.hypot(aim.frame.yaw, aim.frame.pitch)).toBeCloseTo(Math.hypot(before.yaw, before.pitch), 8);
+  expect(shift + aim.frame.pitch).toBeCloseTo(rawPitch, 8);
+  expect(aim.snapshotState().recoilPitch).toBeLessThan(rawPitch);
+});
+
 it('composes the camera-local aim basis like the held firearm at non-zero pitch', () => {
   const frame = { yaw: 0.08, pitch: -0.04 };
   const yaw = 0.3;
@@ -101,14 +172,28 @@ it('composes the camera-local aim basis like the held firearm at non-zero pitch'
 it('higher firearms skill reduces the same moving shot-recoil sway', () => {
   const novice = new AimController();
   const experienced = new AimController();
-  novice.recordShot(73, 0.02);
-  experienced.recordShot(73, 0.02);
+  novice.recordShot(73, 0.02, firearmsSkillEffects(0).recoilKickScale);
+  experienced.recordShot(73, 0.02, firearmsSkillEffects(12).recoilKickScale);
   const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(0).variance }));
   const experiencedFrame = experienced.advance(
     step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(12).variance }),
   );
   expect(Math.hypot(experiencedFrame.yaw, experiencedFrame.pitch)).toBeLessThan(
     Math.hypot(noviceFrame.yaw, noviceFrame.pitch),
+  );
+});
+
+it('higher firearms skill recovers the same released recoil faster', () => {
+  const novice = new AimController();
+  const experienced = new AimController();
+  novice.recordShot(73, 0.08);
+  experienced.recordShot(73, 0.08);
+  for (let tick = 0; tick < 20; tick++) {
+    novice.advance(step({ recoilRecoveryRate: firearmsSkillEffects(0).recoilRecoveryRate }));
+    experienced.advance(step({ recoilRecoveryRate: firearmsSkillEffects(12).recoilRecoveryRate }));
+  }
+  expect(Math.hypot(experienced.frame.yaw, experienced.frame.pitch)).toBeLessThan(
+    Math.hypot(novice.frame.yaw, novice.frame.pitch),
   );
 });
 
@@ -121,10 +206,10 @@ it('lighter firearm kick builds less aim displacement over the same full-auto bu
 });
 
 it("higher firearms skill scales a committed shot's immediate aim kick", () => {
-  const novice = new AimController(undefined, firearmsSkillEffects(0).variance);
-  const experienced = new AimController(undefined, firearmsSkillEffects(12).variance);
-  novice.recordShot(73, 0.02);
-  experienced.recordShot(73, 0.02);
+  const novice = new AimController();
+  const experienced = new AimController();
+  novice.recordShot(73, 0.02, firearmsSkillEffects(0).recoilKickScale);
+  experienced.recordShot(73, 0.02, firearmsSkillEffects(12).recoilKickScale);
   expect(Math.hypot(experienced.frame.yaw, experienced.frame.pitch)).toBeLessThan(
     Math.hypot(novice.frame.yaw, novice.frame.pitch),
   );
@@ -134,14 +219,21 @@ it('higher firearms skill reduces variance and committed handling durations', ()
   const novice = firearmsSkillEffects(0);
   const experienced = firearmsSkillEffects(12);
   expect(experienced.variance).toBeLessThan(novice.variance);
+  expect(experienced.recoilKickScale).toBeLessThan(novice.recoilKickScale);
+  expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
   expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
   expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
   const seasoned = firearmsSkillEffects(30);
   const saturated = firearmsSkillEffects(100);
-  for (const key of ['variance', 'reloadDuration', 'rackDuration'] as const) {
+  for (const key of ['variance', 'recoilKickScale', 'reloadDuration', 'rackDuration'] as const) {
     expect(seasoned[key]).toBeLessThanOrEqual(experienced[key]);
     expect(saturated[key]).toBeGreaterThan(0);
     expect(saturated[key]).toBeLessThanOrEqual(seasoned[key]);
     expect(seasoned[key] - saturated[key]).toBeLessThan(novice[key] - seasoned[key]);
   }
+  expect(seasoned.recoilRecoveryRate).toBeGreaterThanOrEqual(experienced.recoilRecoveryRate);
+  expect(saturated.recoilRecoveryRate).toBeGreaterThan(seasoned.recoilRecoveryRate);
+  expect(saturated.recoilRecoveryRate - seasoned.recoilRecoveryRate).toBeLessThan(
+    seasoned.recoilRecoveryRate - novice.recoilRecoveryRate,
+  );
 });

@@ -12,6 +12,7 @@ import {
   type SaveVersionComponents,
 } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
+import { adjustLookPitch } from '../src/game/input.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/firearmHandling.ts';
@@ -53,7 +54,11 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
       throw new Error(`Unknown content kind ${kind}`);
   }
 };
-const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>) =>
+const session = (
+  effects: FirearmShotEffect[],
+  restore?: Readonly<SaveSnapshot>,
+  look: { pitch: number } = { pitch: restore?.character.player.pitch ?? 0 },
+) =>
   createSession({
     registry,
     world: new World(),
@@ -68,7 +73,12 @@ const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>)
       active: () => false,
       intent: () => IDLE,
       yaw: () => 0,
-      pitch: () => 0,
+      pitch: () => look.pitch,
+      adjustPitch: (delta) => {
+        const adjusted = adjustLookPitch(look.pitch, delta);
+        look.pitch = adjusted.pitch;
+        return adjusted.applied;
+      },
       walking: () => false,
       descending: () => false,
     },
@@ -88,6 +98,8 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     yaw: Math.PI - 0.02,
     pitch: 0.1,
     variance: 1,
+    firing: false,
+    recoilRecoveryRate: 1,
   };
   original.aim.advance(prior);
   original.aim.recordShot(129, 0.02);
@@ -110,6 +122,24 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   ).toEqual(
     pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: originalFrame, seed: 83, key: 'resume' }),
   );
+});
+
+it('a codec save preserves the session-shifted view pitch after over-limit recoil', async () => {
+  const look = { pitch: 0 };
+  const original = session([], undefined, look);
+  original.aim.recordShot(1, 0.3);
+  original.frame(0.1);
+  expect(look.pitch).toBeGreaterThan(0);
+  const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
+  const bytes = await encodeSave(saved, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup });
+  const resumed = session([], decoded.snapshot);
+  expect(decoded.snapshot.character.player.pitch).toBeCloseTo(look.pitch, 8);
+  expect(resumed.restoredLook?.pitch).toBeCloseTo(look.pitch, 8);
 });
 
 it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {

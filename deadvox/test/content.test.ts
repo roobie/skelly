@@ -25,6 +25,26 @@ describe('content', () => {
     }
   });
 
+  it('requires a firearm dispersion cone while permitting a pump with no extra cone', () => {
+    const source = 'firearm-dispersion-fixture.json';
+    const item = {
+      id: 'fixture_firearm',
+      name: 'Fixture firearm',
+      category: 'weapon',
+      weight: 1,
+      size: [1, 1],
+      firearm: { recoilKickRadians: 0.01 },
+    };
+    const missing = validateContent({ source, data: { items: [item] } });
+    expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
+    expect(
+      validateContent({
+        source,
+        data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] },
+      }),
+    ).toEqual([]);
+  });
+
   it('accepts restable furniture quality and rejects an out-of-range value', () => {
     const source = 'restable-furniture-fixture.json';
     const data: ContentFile = {
