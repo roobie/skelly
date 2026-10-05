@@ -37,7 +37,8 @@ it('the physical support hand feeds a shell toward the port from the load job cl
   model.grip = { at: [0, 0, 0], turn: [0, 0, 0] };
   model.roll = 0;
   model.hold = undefined;
-  model.anchors = { ...model.anchors, support: [0.3, 0, 0], loading_port: [0, -0.03, 0] };
+  model.anchors = { ...model.anchors, support: [0.3, 0, 0] };
+  model.anchors.loading_port = [0, -0.03, 0];
   const content = {
     ...registry,
     models: new Map(registry.models).set(model.id, model),
@@ -73,7 +74,7 @@ it('the physical support hand feeds a shell toward the port from the load job cl
     const held = new HeldItems(inventory, models, figure.palette);
     const camera = new PerspectiveCamera();
     const supportSide = holdingSide === 'right' ? 'left' : 'right';
-    const scene = held.warmUpTarget.scene;
+    const { scene } = held.warmUpTarget;
     const state = () =>
       structuredClone({
         inventory: inventory.snapshotState(),
@@ -98,7 +99,7 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       const rest = update();
       expect(rest.wrist.distanceTo(rest.port)).toBeGreaterThan(0);
       expect(mechanics.load(shells, 0)).toBeUndefined();
-      const duration = queue.jobs[0]!.duration;
+      const { duration } = queue.jobs[0]!;
       expect(update().wrist.distanceTo(rest.wrist)).toBeCloseTo(0);
       queue.tick(duration / 2);
       const feeding = update();
