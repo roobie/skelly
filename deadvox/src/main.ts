@@ -60,10 +60,11 @@ if (bench === 'report') {
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
   const engine = createEngine(config, view, undefined, { render: !renderFree });
   const restored = await saveController.validateContent(engine.registry);
-  startPlay(engine, debugModule, {
-    saveController,
-    ...(saveController.isRestored && restored ? { restore: restored } : {}),
-  });
+  if (saveController.isRestored && restored) {
+    startPlay(engine, debugModule, { saveController, restore: restored });
+  } else {
+    saveController.setNewWorldLauncher(() => startPlay(engine, debugModule, { saveController }));
+  }
 } else if (bench === 'shamblers') {
   const run = shamblerRunFromUrl(params);
   if (run) {

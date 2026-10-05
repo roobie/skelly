@@ -95,7 +95,11 @@ export interface StartPlayOptions {
   readonly saveController?: SaveController;
 }
 
-export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
+export const startPlay = (
+  engine: Engine,
+  debugModule?: DebugModule,
+  options: StartPlayOptions = {},
+): { enter: () => void } => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
   const inputTarget = renderer?.domElement ?? $('view');
   if (options.saveController) {
@@ -249,14 +253,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
   const captureSnapshot = () => session.snapshot(snapshotIds);
   const snapshotHistory = createSnapshotHistory();
-  if (options.saveController) {
-    snapshotIds = options.saveController.bindSession(
-      captureSnapshot,
-      () => sim.time,
-      { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
-      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
-    );
-  } else if (!options.restore) {
+  if (!(options.saveController || options.restore)) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
   const { zombies: zombieSystem, playerCombat, zombieStore } = session;
@@ -1348,8 +1345,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     };
     showDeath($('death'), registry, summary, () => location.assign(newWorldQuery(location.search, config.seed)));
   };
+  if (options.saveController) {
+    snapshotIds = options.saveController.bindSession(
+      captureSnapshot,
+      () => sim.time,
+      { blockSize: s, site: config.site, storeys: config.storeys, density: config.density },
+      { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
+    );
+  }
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
   startPlayFrames(frame);
+  return {
+    enter: () => {
+      audio.unlock();
+      resume();
+    },
+  };
 };

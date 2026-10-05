@@ -54,3 +54,12 @@ through `src/game/play.ts`, `startPlay`; active attacks retain their physical ha
 Rummaging has no preference to resolve: `src/render/rummagePose.ts`, `rummageFrame`,
 finds the unique held UID in physical slots. Passing dominance there would imply
 an identity-dependent choice where Inventory permits only one answer.
+
+Fresh gameplay is constructed only at accepted launch, not storage discovery.
+`src/main.ts` installs `src/ui/saveController.ts`, `SaveController.setNewWorldLauncher`,
+after engine and content readiness. Acceptance consumes its click, constructs and
+binds synchronously, commits entry, then invokes the explicit entry handle from
+`src/game/play.ts`, `startPlay`. Audio unlock and pointer lock stay in that gesture;
+shader warm-up does not delay it. Initialization refusal leaves saved generations
+untouched and cannot replay partially installed listeners. Continue remains a
+separate restored, paused session and does not take creation preferences.
