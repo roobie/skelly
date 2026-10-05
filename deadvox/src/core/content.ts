@@ -332,12 +332,19 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   }
 };
 
+const checkItemFirearm = (item: ItemDef, report: Report): void => {
+  if (item.firearm?.pump && item.firearm.dispersionRadians !== 0) {
+    report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
   for (const item of items) {
     checkItemLight(item, hasIgniter, registry, report);
+    checkItemFirearm(item, report);
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);

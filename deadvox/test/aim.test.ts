@@ -25,7 +25,7 @@ const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: 
   let viewPitch = 0;
   const applyViewShift = () => {
     const shift = aim.pendingViewPitchShift;
-    aim.applyViewPitchShift(shift);
+    aim.applyViewPitchShift(shift, shift);
     viewPitch += shift;
   };
   for (let tick = 0; tick <= burstSeconds / dt; tick++) {
@@ -99,13 +99,15 @@ it('keeps held-fire recoil climbing while shifting over-limit pitch into the vie
   const climb: number[] = [];
   const applyViewShift = () => {
     const shift = aim.pendingViewPitchShift;
-    aim.applyViewPitchShift(shift);
+    aim.applyViewPitchShift(shift, shift);
     viewPitch += shift;
   };
   for (let tick = 0; tick <= burstSeconds / dt; tick++) {
     const time = tick * dt;
     if (tick > 0) {
+      const recoilBefore = aim.snapshotState().recoilPitch;
       aim.advance(step({ dt, firing: true }));
+      expect(aim.snapshotState().recoilPitch).toBe(recoilBefore);
       applyViewShift();
     }
     while (nextShotAt <= time + 1e-9) {
@@ -143,7 +145,7 @@ it('hands pitch beyond the aim-frame boundary to the view without losing it', ()
   aim.advance(step({ firing: true }));
   const shift = aim.pendingViewPitchShift;
   expect(shift).toBeGreaterThan(0);
-  aim.applyViewPitchShift(shift);
+  aim.applyViewPitchShift(shift, shift);
   expect(Math.hypot(aim.frame.yaw, aim.frame.pitch)).toBeCloseTo(Math.hypot(before.yaw, before.pitch), 8);
   expect(shift + aim.frame.pitch).toBeCloseTo(rawPitch, 8);
   expect(aim.snapshotState().recoilPitch).toBeLessThan(rawPitch);

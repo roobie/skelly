@@ -21,12 +21,11 @@ import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/rend
 import { prepareModel } from '../src/render/models.ts';
 
 const BASE = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(BASE)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
-);
+const base = readdirSync(BASE)
+  .filter((file) => file.endsWith('.json'))
+  .sort()
+  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
+const { registry } = buildRegistry(base);
 const caseType = spentCaseItemId('5.56x45');
 
 const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Inventory['create']> } => {
@@ -71,12 +70,35 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
 };
 
 describe('debug firearm handling', () => {
-  it('emits seeded firearm dispersion independently of firearms skill', () => {
+  it('emits fixture firearm dispersion independently of firearms skill', () => {
+    const definition = registry.items.get('debug_rifle_assault')!;
+    const fixtureBuild = buildRegistry([
+      ...base,
+      {
+        source: 'skill-dispersion-fixture.json',
+        data: {
+          items: [
+            {
+              ...definition,
+              id: 'fixture_skill_rifle',
+              name: 'Skill fixture rifle',
+              firearm: { ...definition.firearm!, dispersionRadians: 0.01 },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(fixtureBuild.issues).toEqual([]);
+    const fixtureRegistry = fixtureBuild.registry;
     const aimFrame = { yaw: 0.04, pitch: -0.03 };
     const yaw = 0.3;
     const pitch = -0.2;
     const publish = (skill: number): FirearmTrajectory => {
-      const { inventory, rifle } = inventoryWithRifle();
+      const inventory = new Inventory(fixtureRegistry);
+      const rifle = inventory.create('fixture_skill_rifle');
+      if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+        throw new Error('Could not hold the skill fixture firearm');
+      }
       let trajectory: FirearmTrajectory | undefined;
       const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
         blockSize: 0.5,
@@ -109,15 +131,13 @@ describe('debug firearm handling', () => {
     const novice = publish(0);
     const experienced = publish(12);
     const direction = novice.directions[0]!;
-    const base = aimDirection(yaw, pitch, aimFrame);
-    const cone = firearmHandlingFor(inventoryWithRifle().rifle, registry).dispersionRadians!;
+    const baseDirection = aimDirection(yaw, pitch, aimFrame);
+    const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
+    const cone = firearmHandlingFor(fixtureItem, fixtureRegistry).dispersionRadians!;
     const angle = Math.acos(
       Math.max(
         -1,
-        Math.min(
-          1,
-          base.reduce((sum, value, index) => sum + value * direction[index]!, 0),
-        ),
+        Math.min(1, baseDirection.reduce((sum, value, index) => sum + value * direction[index]!, 0)),
       ),
     );
     expect(angle).toBeGreaterThan(0);

@@ -25,6 +25,23 @@ describe('content', () => {
     }
   });
 
+  it('rejects an independent dispersion cone on a pump because pellets own the cone', () => {
+    const source = 'pump-dispersion-fixture.json';
+    const item = {
+      id: 'fixture_pump',
+      name: 'Fixture pump',
+      category: 'weapon',
+      weight: 1,
+      size: [1, 1],
+      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01 },
+    };
+    const issues = buildRegistry([{ source, data: { items: [item] } }]).issues;
+    expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
+    expect(
+      buildRegistry([{ source, data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] } }]).issues,
+    ).toEqual([]);
+  });
+
   it('requires a firearm dispersion cone while permitting a pump with no extra cone', () => {
     const source = 'firearm-dispersion-fixture.json';
     const item = {

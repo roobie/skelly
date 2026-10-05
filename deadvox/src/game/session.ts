@@ -412,7 +412,7 @@ export const createSession = (options: SessionOptions) => {
   const applyAimViewPitchShift = (): void => {
     const requested = aim.pendingViewPitchShift;
     if (requested !== 0) {
-      aim.applyViewPitchShift(controls.adjustPitch?.(requested) ?? 0);
+      aim.applyViewPitchShift(requested, controls.adjustPitch?.(requested) ?? 0);
     }
   };
   const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {

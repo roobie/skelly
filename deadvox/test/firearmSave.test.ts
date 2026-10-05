@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
-import type { AimStep } from '../src/core/aim.ts';
+import { assertAimState, type AimStep } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { pelletShot } from '../src/core/pellets.ts';
 import {
@@ -15,7 +15,7 @@ import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/firearmHandling.ts';
-import { adjustLookPitch } from '../src/game/input.ts';
+import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
@@ -58,6 +58,7 @@ const session = (
   effects: FirearmShotEffect[],
   restore?: Readonly<SaveSnapshot>,
   look: { pitch: number } = { pitch: restore?.character.player.pitch ?? 0 },
+  options: { readonly firing?: boolean; readonly adjustPitch?: boolean } = {},
 ) =>
   createSession({
     registry,
@@ -70,15 +71,20 @@ const session = (
     spawn: [0, 0, 0],
     ready: () => true,
     controls: {
-      active: () => false,
+      active: () => options.firing ?? false,
+      automaticFireHeld: () => options.firing ?? false,
       intent: () => IDLE,
       yaw: () => 0,
       pitch: () => look.pitch,
-      adjustPitch: (delta) => {
-        const adjusted = adjustLookPitch(look.pitch, delta);
-        look.pitch = adjusted.pitch;
-        return adjusted.applied;
-      },
+      ...(options.adjustPitch === false
+        ? {}
+        : {
+            adjustPitch: (delta) => {
+              const adjusted = adjustLookPitch(look.pitch, delta);
+              look.pitch = adjusted.pitch;
+              return adjusted.applied;
+            },
+          }),
       walking: () => false,
       descending: () => false,
     },
@@ -122,6 +128,15 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   ).toEqual(
     pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: originalFrame, seed: 83, key: 'resume' }),
   );
+});
+
+it('keeps headless session recoil valid when held fire has no view-pitch control', () => {
+  const headless = session([], undefined, { pitch: LOOK_PITCH_LIMIT }, { firing: true, adjustPitch: false });
+  for (let shot = 0; shot < 80; shot++) {
+    headless.aim.recordShot(shot, 0.035);
+    headless.frame(1 / 60);
+    assertAimState(headless.aim.snapshotState());
+  }
 });
 
 it('a codec save preserves the session-shifted view pitch after over-limit recoil', async () => {

@@ -174,7 +174,7 @@ const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
   recoilKickRadians: Positive,
-  /** Half-angle of the firearm's independent per-round dispersion cone; zero adds no cone. */
+  /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
   dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
 });
 const AmmoSchema = strictObject({

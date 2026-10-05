@@ -138,16 +138,18 @@ export class AimController {
     return this.viewPitchShift;
   }
 
-  /** Apply the accepted fixed-step camera handoff and rebase look sampling. */
-  applyViewPitchShift(applied: number): void {
+  /** Discard unaccepted overflow and rebase look sampling for the accepted camera shift. */
+  applyViewPitchShift(requested: number, applied: number): void {
     if (
+      !Number.isFinite(requested) ||
       !Number.isFinite(applied) ||
-      Math.abs(applied) > Math.abs(this.viewPitchShift) + 1e-9 ||
-      (applied !== 0 && Math.sign(applied) !== Math.sign(this.viewPitchShift))
+      Math.abs(requested - this.viewPitchShift) > 1e-9 ||
+      Math.abs(applied) > Math.abs(requested) + 1e-9 ||
+      (applied !== 0 && Math.sign(applied) !== Math.sign(requested))
     ) {
       throw new Error('Invalid aim view-pitch shift');
     }
-    this.state.recoilPitch -= applied;
+    this.state.recoilPitch -= requested;
     this.state.lastPitch += applied;
     this.recomputeFrame();
   }
