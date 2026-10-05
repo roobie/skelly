@@ -2,6 +2,7 @@
 read_if:
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
+  - you change shambler navigation or floor-transition behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing the debug test-house scene or firearm-handling range
@@ -612,17 +613,79 @@ worse the world gets.
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
   rain washes out).
-- **Behaviour:** a small state machine: idle, wander, investigate, chase,
-  attack, lost track. Pathfinding runs on the block grid and allows one-block
-  steps, jumps and drops. It handles dynamic changes, so a door you close
-  changes the route.
-- **Level of detail:**
+- **Navigation rationale:** Collision-aware routing prevents false progress
+  through blockers, while bounded work protects the shared simulation tick.
+  Keeping route planning separate from physics preserves collision ownership.
+  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+  Explore landing connections only from the reached frontier, trying the goal
+  before optional detours. Exhausting effort on an unrelated closed approach must
+  not discard a complete route already found. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs`.
+  A grid-expansion limit alone hides flight validation, graph preparation and
+  compression work. Account for world probes and metadata/graph work against the
+  request allowance; the expansion cap also bounds local path structures.
+  Finish at most one request beyond the dispatch slice and rotate the remaining
+  queue deterministically. The allowance is logical work, not a wall-clock deadline; see
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`, and
+  `deadvox/src/core/zombies.ts`, `serviceRouteSearches`.
+  This is a bounded pilot, not a completeness guarantee: when no route is found,
+  the shambler waits for a retry instead of steering directly through blockers.
+  Crowd navigation and cheaper tiers belong to Slice 3
+  ([#244](https://github.com/roobie/skelly/issues/244)), not larger pilot caps.
+  Persist route progress, retry time and dispatch order so loading does not
+  silently restart pursuit or change which actor receives the next search.
+  See `deadvox/src/core/zombies.ts`, `snapshotState` and `restoreState`, and
+  `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
+  Request-local native maps avoid repeated world lookups without retaining stale
+  collision across requests. Continuous swept clearance prevents a short corner
+  overlap from creating an unsafe route and endless replanning; see
+  `deadvox/src/core/shamblerRoutes.ts`, `horizontalSweepClear`.
+  Live movement checks stay local even while gravity settles a descent; checking
+  the whole future leg during that transient hides unbounded per-actor work.
+  Descending endpoints are still checked for newly blocked landings. See
+  `deadvox/src/core/zombies.ts`, `liveRouteClearance` and `routeWaypoint`.
+  Preserve height changes when compressing a terrain detour: a raised sweep is
+  not proof that the body can hover over intervening obstacles. See
+  `deadvox/src/core/shamblerRoutes.ts`, `compressFlatPath`.
+  Distant goals use successive local horizons. A verified stair exit may be the
+  useful prefix when backtracking to its landing puts that horizon outside the
+  next leg's window; this is not straight steering through a failed route. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs` and `planRoute`.
+- **Storeys:** Matching horizontal projections could connect disconnected
+  floors and falsely complete an unreachable goal. Absolute feet height also
+  cannot identify a storey on graded terrain: world ground height distinguishes
+  that surface from an authored floor above it. Terrain legs follow that supplied
+  surface; constructed storey transitions still require authored flights. See
+  `deadvox/src/core/shamblerRoutes.ts`, `terrainForLeg` and `onTerrainFloor`.
+  Far-hearing direction must not manufacture source-storey knowledge. A grounded
+  listener projects the uncertain bearing onto known terrain, not the source's
+  height; a listener above ground retains its own level. See `deadvox/src/core/zombies.ts`,
+  `sameRouteFloor` and `farBearingTarget`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+- **Level of detail:** Only the active tier is implemented, using bounded routes;
+  see `deadvox/src/core/zombies.ts`, `ZombieSystem`. The tiers remain planned design:
 
-  | Level | Where | Simulation |
+  | Tier | Where | Simulation |
   | --- | --- | --- |
-  | Active | Within about 48 m | Full AI at 20 Hz, per-frame physics |
-  | Background | Loaded chunks further away | 2 Hz, steering along a shared flow field |
-  | Abstract | Unloaded chunks | Hordes moving as groups on the region map |
+  | Active | Nearby actors | Detailed AI, body physics and bounded routes (implemented) |
+  | Background | Distant actors in loaded chunks | Reduced-rate steering along a shared flow field (planned) |
+  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
+
+  Background and abstract tiers, the flow field and crowd navigation are
+  Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)), not built behavior.
+
+**Decided (BR, 2026-10-04):**
+
+- "At some point we will make everything destructible. Door, walls, appliances,
+  furniture et[c] and yes, normal doors should be possible to breach by an
+  ordinary shambler, given enough time. But the overarching idea is to keep it
+  pretty aligned with how CDDA works"
+- "to answer the question here and now: no, let's not make shamblers breach
+  doors"
+
+A destructive-door mechanic needs its own gameplay contract, so navigation
+must not add one implicitly. See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
 
 ### Models
 
