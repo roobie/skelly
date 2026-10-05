@@ -1,8 +1,4 @@
-import {
-  SKILL_LEVEL_LEGENDARY,
-  SKILL_LEVEL_MIN,
-  skillEffectLevel,
-} from './character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 
 export interface FirearmsSkillEffects {
   readonly variance: number;
