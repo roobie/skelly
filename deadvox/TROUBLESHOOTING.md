@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're debugging deadvox and need its debug parameters or keys
+  - you're using the debug test-house range
   - you need to see the game without a display
   - a browser contract or stage fails on software GL
   - you're choosing render-free or pixel mode for a browser stage
@@ -72,7 +73,7 @@ In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
-- `site=testHouse`: the small test scene (block sizes, materials, furniture).
+- `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
 - `hotcheck=1` (PageDown): world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.

@@ -1,5 +1,5 @@
 import { AuthoredSite } from '../core/authoredSite.ts';
-import { BlockEntities } from '../core/blockEntities.ts';
+import { BlockEntities, type EntitySpec } from '../core/blockEntities.ts';
 import { StressCity } from '../core/city.ts';
 import { worldOpaque, worldSolid } from '../core/collision.ts';
 import { blockColors, blockId, type Registry } from '../core/content.ts';
@@ -9,16 +9,18 @@ import { HAMLET_BLOCK_SIZE, HAMLET_TEMPLATES, Hamlet } from '../core/hamlet.ts';
 import { rollLoot } from '../core/loot.ts';
 import { blockPatterns } from '../core/meshInput.ts';
 import { Rng } from '../core/random.ts';
+import { HandlingRange } from '../core/range.ts';
 import type { Scale } from '../core/scale.ts';
-import type { FurnitureSpawn, Site } from '../core/site.ts';
-import { type BlockBox, rasterize } from '../core/structure.ts';
+import type { FurnitureSpawn, Rect, Site } from '../core/site.ts';
+import { type BlockBox, rasterize, stampChunk } from '../core/structure.ts';
 import { World } from '../core/world.ts';
-import { terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
+import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 import type { GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
+import { testHouseRangeStock } from './testHouseRange.ts';
 
 export interface WorldSetup {
   config: GameConfig;
@@ -28,7 +30,7 @@ export interface WorldSetup {
   world: World;
   /** Furniture and doors. The game adds them as their columns generate. */
   entities: BlockEntities;
-  /** The hamlet or the city, when this world has one. */
+  /** The generated site, including a debug-only test-house range when enabled. */
   site: Site | undefined;
   /** The top of the ground in metres at a point in metres, the site's flattening included. */
   groundAt: (xm: number, zm: number) => number;
@@ -43,7 +45,7 @@ export interface WorldSetup {
 }
 
 /** The test house, rasterized, and a spawn point facing its front door. */
-const testHouseSite = (config: GameConfig, registry: Registry) => {
+export const testHouseScene = (config: GameConfig, registry: Registry) => {
   const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);
   // The test house sits on a level lot at a whole-metre height, so it lines up with any block size.
@@ -91,6 +93,78 @@ const testHouseSite = (config: GameConfig, registry: Registry) => {
   };
 };
 
+const boundsOf = (boxes: readonly BlockBox[]): Rect => {
+  if (boxes.length === 0) {
+    throw new Error('the test house has no structure bounds');
+  }
+  return {
+    x0: Math.min(...boxes.map(({ min }) => min[0])),
+    z0: Math.min(...boxes.map(({ min }) => min[2])),
+    x1: Math.max(...boxes.map(({ max }) => max[0])),
+    z1: Math.max(...boxes.map(({ max }) => max[2])),
+  };
+};
+
+/** Debug-only site wrapper: the test house remains the structure owner; the shared range owns the lane. */
+export class DebugTestHouseSite implements Site {
+  readonly range: HandlingRange;
+  readonly surface: Surface;
+  readonly spawn: Site['spawn'];
+  private readonly structures: BlockBox[];
+  private readonly rack: EntitySpec;
+  private readonly stock: ReturnType<typeof testHouseRangeStock>;
+
+  constructor(config: GameConfig, registry: Registry, house: ReturnType<typeof testHouseScene>) {
+    this.structures = house.structures;
+    this.spawn = house.spawn;
+    this.range = new HandlingRange(config.seed, registry, config.scale, {
+      beside: boundsOf(this.structures),
+      floor: house.spawn.pos[1] / config.scale.blockSize,
+    });
+    this.surface = {
+      height: (x, z, natural) => this.range.approachHeight(x, z, natural),
+      top: (x, z) => this.range.top(x, z),
+    };
+    const rackType = 'range_rack';
+    const rackSize = registry.furniture.get(rackType)?.size;
+    if (!rackSize) {
+      throw new Error(`content does not define furniture "${rackType}"`);
+    }
+    const centreZ = Math.floor((this.range.rect.z0 + this.range.rect.z1) / 2);
+    this.rack = {
+      type: rackType,
+      pos: [this.range.rect.x0 + 3, this.range.floor + 1, centreZ + 4],
+      size: [...rackSize],
+      facing: 's',
+    };
+    this.stock = testHouseRangeStock(registry);
+  }
+
+  stamp(chunk: Parameters<Site['stamp']>[0]): void {
+    stampChunk(chunk, this.structures);
+    this.range.stamp(chunk);
+  }
+
+  furnitureIn(cx: number, cz: number): FurnitureSpawn[] {
+    const spawns = this.range.furnitureIn(cx, cz);
+    if (toChunk(this.rack.pos[0]) === cx && toChunk(this.rack.pos[2]) === cz) {
+      spawns.push({ spec: this.rack, loot: this.stock });
+    }
+    return spawns;
+  }
+
+  zombiesIn(): ReturnType<Site['zombiesIn']> {
+    return [];
+  }
+}
+
+export const buildDebugTestHouseSite = (
+  config: GameConfig,
+  registry: Registry,
+  house: ReturnType<typeof testHouseScene> | undefined,
+): DebugTestHouseSite | undefined =>
+  config.site === 'testHouse' && config.debug && house ? new DebugTestHouseSite(config, registry, house) : undefined;
+
 /**
  * The hamlet or the city, if the config asks for one and content has what it needs.
  * Otherwise (other block sizes, broken content) the world has the test house.
@@ -124,10 +198,11 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   const { seed, scale } = config;
   const id = (name: string) => blockId(registry, name);
 
-  const built = buildSite(config, registry);
+  const house = config.site === 'testHouse' ? testHouseScene(config, registry) : undefined;
+  const built = buildDebugTestHouseSite(config, registry, house) ?? buildSite(config, registry);
   const site: { structures: BlockBox[]; spawn: WorldSetup['spawn']; furniture: FurnitureSpawn[] } = built
-    ? { structures: [], spawn: built.spawn, furniture: [] }
-    : testHouseSite(config, registry);
+    ? { structures: [], spawn: built.spawn, furniture: house?.furniture ?? [] }
+    : (house ?? testHouseScene(config, registry));
   // Without a site this is the formula the 1.0 and 1.1 benchmarks used, so their results still compare.
   const groundAt = (xm: number, zm: number): number => worldGroundAt({ seed, scale, surface: built?.surface, xm, zm });
 
