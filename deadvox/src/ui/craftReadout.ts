@@ -33,7 +33,7 @@ export const craftStatus = (
   inventory: Inventory,
   uid: number | undefined,
   job: Readonly<LongJob> | undefined,
-  reason: string | undefined,
+  interruption: { reason: string | undefined; messagesVisible: boolean },
 ): CraftStatus | undefined => {
   const item = uid === undefined ? undefined : inventory.itemByUid(uid);
   if (!item) {
@@ -56,7 +56,7 @@ export const craftStatus = (
         : `Work · ${craftTime(Math.max(0, elapsed - gather))} / ${craftTime(work)}`,
     percent: Math.round((elapsed / duration) * 100),
     stopped: job?.jobType !== 'craft' || job.stopped,
-    reason,
+    reason: interruption.messagesVisible ? interruption.reason : undefined,
   };
 };
 export interface CraftRow {
