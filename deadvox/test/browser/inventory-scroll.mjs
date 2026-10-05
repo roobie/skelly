@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageArgs } from './stage-mode.mjs';
 
 const { chromium, firefox } = await import('playwright');
@@ -146,18 +147,26 @@ try {
       const y = box.y + box.height / 2;
       await page.evaluate(
         (trial) => {
-          const { input, menu } = globalThis.scrollFixture;
+          const { input } = globalThis.scrollFixture;
           globalThis.scrollFixture.resetWheels();
           input.locked = trial.locked;
           input.menuPointer = trial.locked;
-          input.cursorX = trial.x;
-          input.cursorY = trial.y;
           document.querySelector(trial.selector).scrollTop = 0;
-          menu.update();
+          globalThis.scrollFixture.menu.update();
         },
-        { selector, x, y, locked },
+        { selector, locked },
       );
       if (locked) {
+        const cursor = await page.evaluate(() => {
+          const { input } = globalThis.scrollFixture;
+          return { x: input.cursorX, y: input.cursorY };
+        });
+        await page.evaluate(dispatchMenuPointerMove, {
+          canvasSelector: '#view',
+          movementX: x - cursor.x,
+          movementY: y - cursor.y,
+        });
+        await page.evaluate(() => globalThis.scrollFixture.menu.update());
         await page.evaluate(() =>
           globalThis.scrollFixture.target.dispatchEvent(
             new WheelEvent('wheel', {

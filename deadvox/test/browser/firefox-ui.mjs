@@ -127,6 +127,7 @@ try {
   let cursor = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
   const moveCursorTo = async (position) => {
     const movement = { x: position.x - cursor.x, y: position.y - cursor.y };
+    const beforeFrames = await page.evaluate(() => globalThis.firefoxUiFrames);
     await page.evaluate(dispatchMenuPointerMove, {
       canvasSelector: '#view',
       movementX: movement.x,
@@ -134,8 +135,13 @@ try {
       centerClient: true,
       alsoDispatchMouseMove: true,
     });
-    cursor = position;
-    await page.waitForTimeout(100);
+    cursor = await page.evaluate(() => {
+      const { input } = globalThis.firefoxUiTest;
+      return { x: input.cursorX, y: input.cursorY };
+    });
+    await page.waitForFunction((before) => globalThis.firefoxUiFrames >= before + 2, beforeFrames, {
+      timeout: 5000,
+    });
   };
   const clickGameElement = async (selector) => {
     const rect = await page.locator(selector).boundingBox();
