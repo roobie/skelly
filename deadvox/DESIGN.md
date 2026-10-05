@@ -123,11 +123,18 @@ Crafting, reading, building, disassembly, repair, searching and sleeping are
 **long actions**. A long action has a duration in game time. It runs with
 compression on and shows a progress bar and the game time passing.
 
-- **Compression is only allowed when it's safe:** no hostile is aware of the
-  player, and none is within a safe radius (start at 30 m).
-- **Interruptions:** a hostile noticing you, a loud noise, damage, fire, or a
-  need hitting a threshold. The game drops back to real time and asks
-  *Continue* or *Stop*. The progress made so far is kept.
+- **Starting an action:** a nearby or aware hostile does not block a long
+  action, and time still fast-forwards. BR (2026-10-05 20:09) answered
+  "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording for
+  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
+  BR said "it's up to the player to make the area safe for them to do the long
+  action. We're not holding hands".
+- **Interruptions:** emitted events such as a hit, loud noise, fire, or a need
+  hitting a threshold stop the action. A shambler noticing the player does not
+  interrupt it. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
+  emitted events; `src/core/longAction.ts`, `LongActions.syncInterruption`,
+  wakes a sleeper, clears the interruption and frees input. Other actions drop
+  back to real time and ask *Continue* or *Stop*. Progress made so far is kept.
 - **Short handling** (moving an item, reloading, wielding) is not compressed.
   It takes real seconds while the world runs at 1× (see
   [Items](#items-and-inventory)).

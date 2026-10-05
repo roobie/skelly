@@ -540,14 +540,6 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
-  const stopRestOnMovement = (intent: MoveIntent): void => {
-    if (!rest.action || (intent.forward === 0 && intent.right === 0 && !intent.jump)) {
-      return;
-    }
-    rest.stop();
-    compression.snap();
-  };
-
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
@@ -589,7 +581,6 @@ export const createSession = (options: SessionOptions) => {
     tick: (dt, time) => {
       lastPlayerStep = time;
       const requested = controls.active() ? controls.intent() : IDLE;
-      stopRestOnMovement(requested);
       const moving = controls.active() && !compression.locksInput;
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();

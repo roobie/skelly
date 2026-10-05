@@ -11,16 +11,18 @@ export interface RestViewModel {
   readonly clock: string;
   readonly percent: number;
   readonly stopHint: string;
+  readonly canStop: boolean;
   readonly prompt: string | undefined;
 }
 
 export const restViewModel = (
   action: RestAction | undefined,
+  canStop: boolean,
   sim: Simulation,
   messagesVisible: boolean,
 ): RestViewModel => {
   if (!action) {
-    return { visible: false, label: '', clock: '', percent: 0, stopHint: '', prompt: undefined };
+    return { visible: false, label: '', clock: '', percent: 0, stopHint: '', canStop: false, prompt: undefined };
   }
   const percent =
     action.startFatigue > 0
@@ -31,7 +33,8 @@ export const restViewModel = (
     label: action.label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint: `${action.kind === 'sleep' ? `${labelForCode(CONTROL_CODES.sleep)} or ` : ''}${labelForCode(CONTROL_CODES.cancel)} to stop`,
+    stopHint: canStop ? `${labelForCode(CONTROL_CODES.interact)} or ${labelForCode(CONTROL_CODES.cancel)} to stop` : '',
+    canStop,
     prompt: messagesVisible ? sim.compression.interruption : undefined,
   };
 };
@@ -43,18 +46,25 @@ const restTemplate = (vm: RestViewModel): TemplateResult => html`
     <h2>${vm.label}…</h2>
     <div class="hd-bar"><div class="hd-fill" style=${`width: ${vm.percent}%`}></div></div>
     <p class="rest-time">${vm.clock}</p>
-    <p class="hd-muted">${vm.stopHint}</p>
-    ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForCode(CONTROL_CODES.continue)}: continue   ${labelForCode(CONTROL_CODES.cancel)}: stop</p>` : ''}
+    ${vm.stopHint ? html`<p class="hd-muted">${vm.stopHint}</p>` : ''}
+    ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForCode(CONTROL_CODES.continue)}: continue${vm.canStop ? `   ${labelForCode(CONTROL_CODES.cancel)}: stop` : ''}</p>` : ''}
   </div>
 `;
 
-export const renderRest = (
-  root: HTMLElement,
-  action: RestAction | undefined,
-  sim: Simulation,
-  messagesVisible: boolean,
-): void => {
-  const vm = restViewModel(action, sim, messagesVisible);
+export const renderRest = ({
+  root,
+  action,
+  canStop,
+  sim,
+  messagesVisible,
+}: {
+  root: HTMLElement;
+  action: RestAction | undefined;
+  canStop: boolean;
+  sim: Simulation;
+  messagesVisible: boolean;
+}): void => {
+  const vm = restViewModel(action, canStop, sim, messagesVisible);
   root.hidden = !vm.visible;
   if (vm.visible) {
     render(restTemplate(vm), root);

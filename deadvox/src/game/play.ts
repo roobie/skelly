@@ -675,6 +675,9 @@ export const startPlay = (
 
   /** Stop the current long action without discarding owned progress. */
   const stopAction = (): void => {
+    if (rest.action && !rest.canStop) {
+      return;
+    }
     if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
       sim.actions.stop();
     } else if (rest.action) {
@@ -684,7 +687,7 @@ export const startPlay = (
     }
   };
 
-  /** C continues and X stops after an interruption. Returns true if the key was used. */
+  /** C continues; X stops only actions whose owner permits cancellation. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
       return false;
@@ -777,11 +780,6 @@ export const startPlay = (
     if (!(e.repeat || sim.dead)) {
       quickbarInput.cancel();
       mainMenuOpen = !mainMenuOpen;
-      if (mainMenuOpen) {
-        reading.close();
-        closeInventoryScreen();
-        debugTools?.closeMenus();
-      }
       syncMenuState();
     }
     return true;
@@ -960,6 +958,14 @@ export const startPlay = (
     useTarget(entity);
   }
 
+  function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
+    const { action } = rest;
+    if (action?.kind === kind && action.furnitureUid === entity.uid && !rest.canStop) {
+      return;
+    }
+    toggleRest(kind, entity);
+  }
+
   function useTarget(entity: BlockEntity): void {
     const def = entities.defOf(entity);
     if (def.door) {
@@ -975,7 +981,7 @@ export const startPlay = (
     }
     const kind = restKindForFurniture(def);
     if (kind) {
-      toggleRest(kind, entity);
+      toggleRestFromTarget(kind, entity);
       return;
     }
     if (!entity.pockets) {
@@ -1443,7 +1449,13 @@ export const startPlay = (
       },
     );
     document.body.classList.toggle('resting', rest.action !== undefined);
-    renderRest(restBox, rest.action, sim, visible.messages);
+    renderRest({
+      root: restBox,
+      action: rest.action,
+      canStop: rest.canStop,
+      sim,
+      messagesVisible: visible.messages,
+    });
     screen.update();
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
