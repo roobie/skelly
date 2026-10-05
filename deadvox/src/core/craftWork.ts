@@ -1,5 +1,5 @@
 // Native craft effects and live admission. Item progress/inputs stay Inventory-owned.
-import type { Character } from './character.ts';
+import { type Character, dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import { admissionRefusal } from './crafting.ts';
 import { planDisassembly, sameDisassemblyOutputs } from './disassembly.ts';
@@ -72,7 +72,7 @@ export const craftActionHooks = (
     if (!inputsValid(inventory, item)) {
       return 'Craft inputs changed';
     }
-    if (inventory.hands.right !== item || inventory.hands.left) {
+    if (inventory.hands[dominantSide(inventory.character)] !== item || inventory.hands[offSide(inventory.character)]) {
       return 'The work needs both hands';
     }
     const repairRefusal = repairTargetRefusal(inventory, item, reach());

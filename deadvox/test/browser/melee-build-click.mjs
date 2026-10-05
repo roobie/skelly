@@ -48,6 +48,8 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(browserStageUrl('melee-build-click', `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=16`));
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.d7Review));
   await page.evaluate(() => {
     const runtime = globalThis.d7Review;
@@ -60,7 +62,6 @@ try {
     };
   });
 
-  await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.d7Review.input.locked && !globalThis.d7Review.input.menuPointer);
   await page.evaluate(() => {
     globalThis.d7Observed.starts = [];

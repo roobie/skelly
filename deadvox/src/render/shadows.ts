@@ -40,10 +40,12 @@ export const SUN_MAP_SIZE = 2048;
 /** The sun's box reaches this many shadow distances towards the sun (tall things off to its side still cast) and away from it. */
 const BOX_TOWARDS_SUN = 2;
 const BOX_AWAY_FROM_SUN = 1.5;
-/** Blur radius in shadow-map texels (the PCF taps are spread over it). */
-const SUN_SHADOW_RADIUS = 2;
+// Wider PCF footprint hides texel crawl as the sun rotates without changing sampling cost.
+const SUN_SHADOW_RADIUS = 4;
 /** Frames between redraws of the sun's map while nothing it shows has changed (animated zombies still move). */
 export const IDLE_REFRESH_EVERY = 2;
+
+export const sunShadowTexelSize = (distance: number, mapSize = SUN_MAP_SIZE): number => (2 * distance) / mapSize;
 
 export interface ShadowBias {
   /** Added to the depth, as a fraction of the box's depth span; negative pulls the occluder away from the receiver. */
@@ -56,7 +58,7 @@ export interface ShadowBias {
  * surface normal. Both scale with the texel size, so they stay a similar share of a 0.5 m block at any distance.
  */
 export const sunShadowBias = (distance: number, mapSize = SUN_MAP_SIZE): ShadowBias => {
-  const texel = (2 * distance) / mapSize;
+  const texel = sunShadowTexelSize(distance, mapSize);
   const span = (BOX_TOWARDS_SUN + BOX_AWAY_FROM_SUN) * distance;
   return { bias: -texel / span, normalBias: 1.5 * texel };
 };
@@ -225,7 +227,7 @@ export class Shadows {
       return;
     }
     this.toSun.copy(light.position).normalize();
-    snapToTexels(center, this.toSun, (2 * this.state.distance) / SUN_MAP_SIZE, this.snapped);
+    snapToTexels(center, this.toSun, sunShadowTexelSize(this.state.distance), this.snapped);
     rig.position.copy(this.snapped);
     rig.updateMatrixWorld(true);
     const changed =

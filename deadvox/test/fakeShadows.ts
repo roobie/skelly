@@ -1,8 +1,8 @@
-import { clampShadowDistance, nextShadowDistance, type ShadowState } from '../src/core/mood.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, type ShadowState } from '../src/core/mood.ts';
 
 /** The state half of `Shadows`, which needs a WebGL renderer for the rest. */
 export class FakeShadows {
-  settings: ShadowState = { sun: true, torch: true, distance: 40 };
+  settings: ShadowState = { ...DEFAULT_SHADOWS };
 
   restore(state: ShadowState): void {
     this.settings = { ...state, distance: clampShadowDistance(state.distance) };

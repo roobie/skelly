@@ -65,7 +65,7 @@ export interface ShadowState {
 /** The sun's shadow distances the debug key steps through, in metres. */
 export const SHADOW_DISTANCES: readonly number[] = [24, 40, 64];
 
-export const DEFAULT_SHADOWS: ShadowState = { sun: true, torch: true, distance: 40 };
+export const DEFAULT_SHADOWS: ShadowState = { sun: true, torch: true, distance: 24 };
 
 const MIN_SHADOW_DISTANCE = 16;
 const MAX_SHADOW_DISTANCE = 96;

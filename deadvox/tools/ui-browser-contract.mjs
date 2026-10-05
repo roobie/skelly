@@ -184,8 +184,8 @@ try {
 
   await send('Runtime.enable');
   await waitFor(
-    () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
-    'debug UI mount',
+    () => evaluate("document.querySelector('#go')?.getAttribute('aria-disabled') === 'false'"),
+    'accepted-launch readiness',
   );
   const keyBindings = await evaluate("import('/src/game/input.ts').then(({ KEY_BINDINGS }) => KEY_BINDINGS)");
   const pressBinding = async (binding) => press(binding.code, binding.label, binding.virtualKeyCode);
@@ -202,16 +202,25 @@ try {
     );
   await assertSaveNote('title');
   assert.equal(
-    await evaluate(`(() => {
+    await evaluate(`(async () => {
+      const { controlsCardRows } = await import('/src/game/controls.ts');
       const controls = document.querySelector('#controls');
       const entries = [...controls.querySelectorAll('dt')];
+      const rows = controlsCardRows();
       const columns = getComputedStyle(controls).gridTemplateColumns.trim().split(/\\s+/);
-      return entries.length >= 13 && controls.textContent.includes('F9') &&
-        entries.every((key) => key.nextElementSibling?.tagName === 'DD') &&
-        columns.length === 1 && document.querySelector('#overlay .card').getBoundingClientRect().width <= 362;
+      const cardEl = document.querySelector('#overlay .card');
+      const card = cardEl.getBoundingClientRect();
+      const style = getComputedStyle(cardEl);
+      const maxWidth = Number.parseFloat(style.maxWidth) +
+        Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      return rows.length > 0 && entries.length === rows.length &&
+        entries.every((key, index) => key.nextElementSibling?.tagName === 'DD' &&
+          key.textContent === rows[index].keys && key.nextElementSibling.textContent === rows[index].action) &&
+        columns.length === 1 && Number.isFinite(maxWidth) && card.width <= maxWidth &&
+        card.left >= 0 && card.right <= innerWidth;
     })()`),
     true,
-    'binding-derived controls stack in one column inside the narrower pause card',
+    'binding-derived controls stack in one column within the card computed maximum width and viewport',
   );
   assert.equal(
     await evaluate(
@@ -222,16 +231,82 @@ try {
   );
   await evaluate(`(() => {
     window.__metricsBlob = undefined;
-    URL.createObjectURL = (blob) => { window.__metricsBlob = blob; return 'blob:playtest-metrics'; };
-    URL.revokeObjectURL = () => {};
+    const createObjectURL = URL.createObjectURL.bind(URL);
+    const revokeObjectURL = URL.revokeObjectURL.bind(URL);
+    URL.createObjectURL = (blob) => {
+      if (blob.type !== 'application/json') return createObjectURL(blob);
+      window.__metricsBlob = blob;
+      return 'blob:playtest-metrics';
+    };
+    URL.revokeObjectURL = (url) => { if (url !== 'blob:playtest-metrics') revokeObjectURL(url); };
     HTMLAnchorElement.prototype.click = function() { if (this.download) window.__metricsFilename = this.download; };
   })()`);
   await evaluate(`(() => {
     window.__f4Prevented = false;
     window.addEventListener('keydown', (event) => {
-      if (event.code === 'F4') window.__f4Prevented = event.defaultPrevented;
+      if (event.code === 'F4') setTimeout(() => { window.__f4Prevented = event.defaultPrevented; }, 0);
     });
   })()`);
+  await evaluate(`(() => {
+    const canvas = document.querySelector('canvas');
+    let locked = false;
+    window.__pointerCalls = { request: 0, exit: 0 };
+    window.__rejectNextPointerLock = false;
+    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked ? canvas : null });
+    canvas.requestPointerLock = () => {
+      window.__pointerCalls.request++;
+      if (window.__rejectNextPointerLock) {
+        window.__rejectNextPointerLock = false;
+        setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
+        return Promise.reject(new Error('pointer lock refused by contract stub'));
+      }
+      locked = true;
+      document.dispatchEvent(new Event('pointerlockchange'));
+      return Promise.resolve();
+    };
+    document.exitPointerLock = () => {
+      window.__pointerCalls.exit++;
+      locked = false;
+      document.dispatchEvent(new Event('pointerlockchange'));
+    };
+    window.__setPointerLocked = (value) => {
+      locked = value;
+      document.dispatchEvent(new Event('pointerlockchange'));
+    };
+    window.__keyEvents = [];
+    const hitTest = document.elementFromPoint.bind(document);
+    document.elementFromPoint = (x, y) => {
+      const target = hitTest(x, y);
+      window.__lastHitTest = {
+        x,
+        y,
+        insideGo: Boolean(target?.closest('#go')),
+        buttonText: target?.closest('button')?.textContent?.trim() ?? '',
+      };
+      return target;
+    };
+    document.addEventListener('click', (event) => {
+      if (event.target !== canvas) {
+        window.__lastForwardedClick = {
+          x: event.clientX,
+          y: event.clientY,
+          hitTest: window.__lastHitTest,
+        };
+      }
+    }, true);
+    window.addEventListener('keydown', (event) => {
+      const { code } = event;
+      setTimeout(() => window.__keyEvents.push({ code, defaultPrevented: event.defaultPrevented }), 0);
+    });
+    document.querySelector('#go').click();
+    window.__pointerCalls.request = 0;
+  })()`);
+  await waitFor(
+    () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
+    'post-acceptance debug UI mount',
+  );
+  await pressBinding(keyBindings.mainMenu);
+  await evaluate('document.exitPointerLock()');
   await press('F3', 'F3', 114);
   assert.equal(
     await evaluate("document.querySelector('#f3-debug-overlay').hidden"),
@@ -297,58 +372,9 @@ try {
   );
   await press('Backquote', '`', 192);
   await evaluate(`(() => {
-    const canvas = document.querySelector('canvas');
-    let locked = false;
-    window.__pointerCalls = { request: 0, exit: 0 };
-    window.__rejectNextPointerLock = false;
-    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked ? canvas : null });
-    canvas.requestPointerLock = () => {
-      window.__pointerCalls.request++;
-      if (window.__rejectNextPointerLock) {
-        window.__rejectNextPointerLock = false;
-        setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
-        return Promise.reject(new Error('pointer lock refused by contract stub'));
-      }
-      locked = true;
-      document.dispatchEvent(new Event('pointerlockchange'));
-      return Promise.resolve();
-    };
-    document.exitPointerLock = () => {
-      window.__pointerCalls.exit++;
-      locked = false;
-      document.dispatchEvent(new Event('pointerlockchange'));
-    };
-    window.__setPointerLocked = (value) => {
-      locked = value;
-      document.dispatchEvent(new Event('pointerlockchange'));
-    };
-    window.__keyEvents = [];
-    const hitTest = document.elementFromPoint.bind(document);
-    document.elementFromPoint = (x, y) => {
-      const target = hitTest(x, y);
-      window.__lastHitTest = {
-        x,
-        y,
-        insideGo: Boolean(target?.closest('#go')),
-        buttonText: target?.closest('button')?.textContent?.trim() ?? '',
-      };
-      return target;
-    };
-    document.addEventListener('click', (event) => {
-      if (event.target !== canvas) {
-        window.__lastForwardedClick = {
-          x: event.clientX,
-          y: event.clientY,
-          hitTest: window.__lastHitTest,
-        };
-      }
-    }, true);
-    window.addEventListener('keydown', (event) => {
-      const { code } = event;
-      setTimeout(() => window.__keyEvents.push({ code, defaultPrevented: event.defaultPrevented }), 0);
-    });
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
+    window.__pointerCalls.exit = 0;
   })()`);
   const emptyQuickbarReady = () =>
     evaluate(`(() => {

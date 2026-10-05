@@ -1,17 +1,12 @@
 // Item-driven hand-action dispatch (issue #27, BR ruling). Keep capability selection
 // pure so hand bindings, unsupported items, and empty-hand fists are testable without the game loop.
 
-import type { Registry } from '../core/content.ts';
-import type { HandSide } from '../core/inventory.ts';
+import { dominantSide, offSide } from '../core/character.ts';
+import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { ItemDef } from '../core/schema.ts';
 
 export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read' | 'none';
-
-export const ACTION_HAND_BINDINGS = {
-  primaryClick: 'right',
-  leftHandKey: 'left',
-} as const satisfies Readonly<Record<'primaryClick' | 'leftHandKey', HandSide>>;
 
 export type PrimaryActionSelection =
   | { kind: 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read'; hand: HandSide; item: Item }
@@ -37,18 +32,22 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
 export const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>
   CAPABILITY_DISPATCH.find(({ supports }) => supports(definition))?.kind ?? 'none';
 
-/** Left-click is right-hand-only; `=` is left-hand-only. Empty right fists alternate only when both hands are free. */
+/** Empty dominant fists alternate only with both hands free; a reserved support slot never punches. */
 export const selectPrimaryAction = (
-  registry: Registry,
-  hands: Readonly<{ right?: Item; left?: Item }>,
-  hand: HandSide = ACTION_HAND_BINDINGS.primaryClick,
+  inventory: Inventory,
+  hand: HandSide = dominantSide(inventory.character),
 ): PrimaryActionSelection => {
+  const { registry, hands, character } = inventory;
   const item = hands[hand];
   if (!item) {
-    if (hand === 'left') {
+    if (hand !== dominantSide(character)) {
       return { kind: 'noop' };
     }
-    return hands.left ? { kind: 'fists', hand: 'right' } : { kind: 'fists' };
+    const otherHeld = hands[offSide(character)];
+    if (otherHeld && defOf(registry, otherHeld.type).twoHanded) {
+      return { kind: 'noop' };
+    }
+    return otherHeld ? { kind: 'fists', hand } : { kind: 'fists' };
   }
 
   const definition = defOf(registry, item.type);

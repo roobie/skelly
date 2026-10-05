@@ -116,10 +116,10 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
         pitch: () => 0,
         walking: () => state.intent.walk,
         descending: () => false,
-        consumePrimaryAction: () => {
-          state.intent = { ...state.intent, primaryAction: false };
+        consumeDominantUse: () => {
+          state.intent = { ...state.intent, useDominant: false };
         },
-        primaryAction: () => {
+        useDominant: () => {
           state.swingOrigin = session.chest();
           state.meleeStarted =
             startPlayerMelee(session.playerCombat, session.sim.needs, {
@@ -349,7 +349,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const id = session.zombies.add(shambler, [player[0], player[1], player[2] - 1], [0, 0, 1]);
     state.actor = session.zombieStore.get(id)!;
     const health = Object.values(state.actor.regions).reduce((sum, value) => sum + value, 0);
-    state.intent = { ...IDLE, primaryAction: true };
+    state.intent = { ...IDLE, useDominant: true };
     advance(30);
     state.intent = { ...IDLE };
     observe(scenario, 'player melee started', state.meleeStarted === true);

@@ -145,7 +145,7 @@ try {
       `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
-  await page.waitForFunction(() => document.querySelector('#debug-ui-root') && document.querySelector('#view'));
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   // Observe the public admission result instead of an implementation-specific source snippet.
   await page.evaluate(async () => {
     const moduleUrl = '/src/game/firearmHandling.ts';
@@ -163,6 +163,7 @@ try {
     };
   });
   await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.
   await page.evaluate(() => {

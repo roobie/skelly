@@ -550,13 +550,11 @@ export class FirearmMechanics {
   }
 
   private emission(item: Item, data: FirearmHandlingData, pose: FirearmPoseInput): Omit<PendingCase, 'seed'> {
-    let hold: 'both' | 'right' | 'left' = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
-    if (defOf(this.inventory.registry, item.type).twoHanded) {
-      hold = 'both';
-    }
+    const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
+    const twoHanded = Boolean(defOf(this.inventory.registry, item.type).twoHanded);
     const eye: Vec3 = pose.eye.map((value) => value * pose.blockSize) as Vec3;
     return {
-      ...heldEjectionPose({ model: data.model, hold, eye, yaw: pose.yaw, pitch: pose.pitch }),
+      ...heldEjectionPose({ model: data.model, side, twoHanded, eye, yaw: pose.yaw, pitch: pose.pitch }),
       feet: [...pose.feet],
     };
   }

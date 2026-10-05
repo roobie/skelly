@@ -48,7 +48,6 @@ const url = browserStageUrl(
   'save-controller-regressions',
   `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`,
 );
-const delay = (ms) => new Promise((done) => setTimeout(done, ms));
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
 const PERSISTENCE_GRANTED = /Persistent storage granted/;
@@ -172,28 +171,26 @@ try {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true, undefined, {
-      timeout: 30_000,
-    });
-
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     const before = await page.evaluate(() => ({
-      time: deadvoxSaveTest.controller.snapshot().character.simulation.time,
+      hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
       entered: deadvoxSaveTest.controller.isEntered,
     }));
+    assert.deepEqual(before, { hasSnapshot: false, entered: false });
     await page.keyboard.press('Tab');
     await page.keyboard.press('w');
     await page.keyboard.press('F10');
-    await delay(500);
     const after = await page.evaluate(() => ({
-      time: deadvoxSaveTest.controller.snapshot().character.simulation.time,
+      hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',
       entered: deadvoxSaveTest.controller.isEntered,
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(after.entered, false);
-    assert.equal(after.time, before.time);
+    assert.equal(after.hasSnapshot, false, 'title keys cannot construct a session');
     assert.equal(after.overlayHidden, false);
 
     await page.click('#go');
+    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
     const schedule = await page.evaluate(async () => {
       const { controller } = deadvoxSaveTest;
       let time = 0;
@@ -280,10 +277,9 @@ try {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true, undefined, {
-      timeout: 30_000,
-    });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.click('#go');
+    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
 
     const race = await page.evaluate(async () => {
       const { controller, storage } = deadvoxSaveTest;
@@ -376,10 +372,9 @@ try {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true, undefined, {
-      timeout: 30_000,
-    });
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
     await page.click('#go');
+    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true);
     await page.evaluate(async () => {
       const { controller, storage, namespace } = deadvoxSaveTest;
       const snapshot = structuredClone(controller.snapshot());

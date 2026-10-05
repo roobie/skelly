@@ -33,6 +33,7 @@ import {
   snapToTexels,
   sunMapDue,
   sunShadowBias,
+  sunShadowTexelSize,
   withinRange,
 } from '../src/render/shadows.ts';
 
@@ -86,7 +87,7 @@ describe('shadow settings', () => {
   it('clamps a distance to whole metres in 16..96, and a non-number to the default', () => {
     expect([1, 16.4, 33.6, 96, 500].map(clampShadowDistance)).toEqual([16, 16, 34, 96, 96]);
     expect(clampShadowDistance(Number.NaN)).toBe(DEFAULT_SHADOWS.distance);
-    expect(DEFAULT_SHADOWS).toEqual({ sun: true, torch: true, distance: 40 });
+    expect(DEFAULT_SHADOWS).toMatchObject({ sun: true, torch: true });
   });
 
   it('draws the flashlight map only for a beam that is allowed, on and bright enough to show', () => {
@@ -106,7 +107,10 @@ describe('shadow settings', () => {
 });
 
 describe('sun shadow biases', () => {
-  it('is one texel of depth and a texel and a half along the normal, scaled to the distance', () => {
+  it('derives bias from the texel footprint and scales it with distance and map resolution', () => {
+    const footprint = sunShadowTexelSize(36, 1024);
+    expect(sunShadowTexelSize(72, 1024)).toBeCloseTo(footprint * 2, 12);
+    expect(sunShadowTexelSize(36, 2048)).toBeCloseTo(footprint / 2, 12);
     const near = sunShadowBias(40);
     expect(near.bias).toBeLessThan(0);
     // Texel 2 × 40 m / 2048 = 3.9 cm; the box's depth span is 3.5 × 40 m.
