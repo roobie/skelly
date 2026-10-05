@@ -262,8 +262,7 @@ export class Simulation {
     }
     const action = this.actions.job;
     const reason =
-      emitted?.reason ??
-      (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
+      emitted?.reason ?? (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
     if (reason === undefined) {
       return false;
     }

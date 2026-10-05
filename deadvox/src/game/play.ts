@@ -948,7 +948,7 @@ export const startPlay = (
   }
 
   function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
-    const action = rest.action;
+    const { action } = rest;
     if (kind === 'sleep' && action?.kind === 'sleep' && action.furnitureUid === entity.uid) {
       return;
     }
