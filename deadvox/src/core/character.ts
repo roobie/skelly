@@ -20,7 +20,7 @@ export interface CharacterState {
 }
 
 /** Explicit starting source, shared with CLI reachability in the next hand-off. */
-export const STARTING_RECIPES = ['torch', 'candle', 'repair_kit', 'repair_crowbar'] as const;
+export const STARTING_RECIPES = ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank'] as const;
 export const startingKnownRecipes = (registry: Registry): string[] =>
   STARTING_RECIPES.filter((id) => registry.recipes.has(id));
 

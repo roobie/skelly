@@ -72,6 +72,41 @@ it('nearest furniture cell is reachable without revealing unsearched nested cont
   expect(t.view().workstations).toEqual([]);
 });
 
+it('lists workstation components only when their furniture box is within two metres', () => {
+  const fixtureFurniture = new Map(registry.furniture);
+  fixtureFurniture.set('fixture_reach_station', {
+    id: 'fixture_reach_station',
+    name: 'Fixture station',
+    size: [1, 3, 1],
+    color: '#ffffff',
+    workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workTimeBonus: 0.2 },
+  });
+  const fixtureRegistry = { ...registry, furniture: fixtureFurniture };
+  const inventory = new Inventory(fixtureRegistry);
+  const player: ReachPlayer = { inventory, position: [0, 0, 0], blockSize: 0.5 };
+  const view = bindReach(player);
+  const near = inventory.entities.add({
+    type: 'fixture_reach_station',
+    pos: [3, 0, 0],
+    size: [1, 3, 1],
+    facing: 'n',
+  })!;
+  inventory.entities.add({
+    type: 'fixture_reach_station',
+    pos: [5, 0, 0],
+    size: [1, 3, 1],
+    facing: 'n',
+  });
+  expect(view().workstations).toEqual([
+    {
+      entity: near,
+      id: 'fixture_station',
+      qualities: { sawing: 1 },
+      workTimeBonus: 0.2,
+    },
+  ]);
+});
+
 it('a queued move rechecks proximity after its displayed option was admitted', () => {
   const t = setup();
   const item = t.add('canned_beans', { kind: 'pile', pos: [0, 0, 0] });
