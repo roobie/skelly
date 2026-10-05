@@ -98,6 +98,14 @@ describe('using what you hold', () => {
     expect(survival.use(matches)).toBe('Nothing to do with the box of matches yet');
   });
 
+  it('reports fuel rather than battery failure for an empty self-fuelled igniter', () => {
+    const t = setup();
+    const lighter = t.hold('lighter');
+    lighter.charges = 0;
+
+    expect(t.survival.use(lighter)).toBe("It's out of fuel");
+  });
+
   it('drains while on, and a dead light takes a spare battery from your pockets', () => {
     const { inventory, queue, survival, sim, notices, hold } = setup();
     const light = hold('flashlight');
