@@ -24,7 +24,7 @@ describe('debug action table', () => {
     const { actions } = makeActions();
     expect(actions.map(({ key, label }) => [key, label])).toEqual([
       ['B', 'Build tools'],
-      ['F1+L', 'Impact laser'],
+      ['F2+L', 'Impact laser'],
       ['G', 'Spawn item menu'],
       ['H', 'God mode'],
       ['P', 'Noclip'],
@@ -233,7 +233,7 @@ describe('debug action table', () => {
     expect(spawnCounts).toEqual([25]);
   });
 
-  it('requires the F1 modifier before toggling the debug impact laser', () => {
+  it('requires the F2 modifier before toggling the debug impact laser', () => {
     const { actions } = makeActions();
     const laser = actions.find((action) => action.label === 'Impact laser')!;
     expect(laser.state?.()).toBe(true);
@@ -257,7 +257,7 @@ describe('debug panel groups', () => {
   it('puts every action in one group, in the order of the panel', () => {
     const { actions } = makeActions();
     expect(actionsByGroup(actions).map(({ def, actions: inGroup }) => [def.id, inGroup.map((a) => a.key)])).toEqual([
-      ['tools', ['B', 'F1+L', 'G', 'P']],
+      ['tools', ['B', 'F2+L', 'G', 'P']],
       ['survival', ['H', 'T', 'N', 'U', 'K']],
       ['shamblers', ['V', 'Y', 'O']],
       ['time', ['M', ',', '.']],
