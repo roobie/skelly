@@ -38,7 +38,7 @@ jobs:
         run: node tools/ui-browser-contract.mjs
       - name: Melee/build-click browser contract
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
-        timeout-minutes: 2
+        timeout-minutes: 1
         run: node test/browser/melee-build-click.mjs
       - name: Primary-action browser contract
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
