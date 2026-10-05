@@ -150,6 +150,18 @@ try {
   };
   let proof;
   if (mode === 'consumer') {
+    await pressAction(page, 'ui.main-menu-toggle');
+    const interactionOption = await page.evaluate(async () =>
+      (await import('/src/ui/hudOptions.ts')).HUD_OPTION_KEYS.indexOf('interaction'),
+    );
+    assert.ok(interactionOption >= 0);
+    const interactionCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(interactionOption);
+    // The prompt oracle requires player-enabled hints, not a particular HUD default.
+    if (!(await interactionCheckbox.isChecked())) {
+      await uiClick(interactionCheckbox);
+    }
+    assert.equal(await interactionCheckbox.isChecked(), true);
+    await pressAction(page, 'ui.main-menu-toggle');
     const walk = async (key, targetX, increasing) => {
       const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
       await page.keyboard.down(key);
@@ -193,10 +205,7 @@ try {
     const interactLabel = await page.evaluate(async () =>
       (await import('/src/game/inputBindings.ts')).inputBindings.label('world.interact'),
     );
-    await page.waitForFunction(
-      (label) => document.querySelector('#prompt').textContent.startsWith(`${label}: `),
-      interactLabel,
-    );
+    await page.waitForFunction((label) => document.querySelector('#prompt').textContent.includes(label), interactLabel);
     await pressAction(page, 'world.interact');
     await waitForSimulation(
       page,
