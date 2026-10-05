@@ -4,6 +4,8 @@
 // captures is what the game runs. Sounds, notices and debug tools reach in through
 // callbacks; nothing here draws or listens.
 
+import type { Body as MobBody } from '@mobgen/core/body.ts';
+import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character } from '../core/character.ts';
@@ -72,6 +74,7 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
+import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { Survival } from './survival.ts';
 
 const PHYSICS_RATE = 60;
@@ -261,13 +264,23 @@ export const createSession = (options: SessionOptions) => {
     event: SoundEventId,
     position: Vec3,
     time: number,
-    { player, sourceLabel = null, listenerRelative = false }: SoundEmissionMeta & { player: boolean },
+    {
+      player,
+      sourceLabel = null,
+      listenerRelative = false,
+      body: mobBody,
+    }: SoundEmissionMeta & {
+      player: boolean;
+      body?: MobBody;
+    },
   ): boolean => {
-    const pick = soundPicker.pick(event, time);
-    if (!pick) {
+    const selected = soundPicker.pick(event, time);
+    if (!selected) {
       return false;
     }
     const definition = registry.sounds.get(event)!;
+    const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
+    const pick = { ...selected, pitch };
     const emittedAsNoise = player && definition.noise.enabled;
     const sound = freezeSnapshot({
       event,
@@ -300,7 +313,7 @@ export const createSession = (options: SessionOptions) => {
     event: SoundEventId,
     position: Vec3,
     time = sim.time,
-    meta: SoundEmissionMeta = {},
+    meta: SoundEmissionMeta & { body?: MobBody } = {},
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, player: true });
@@ -422,13 +435,22 @@ export const createSession = (options: SessionOptions) => {
       wearOnPlayerHit(inventory, area);
       sim.hurt(amount, 'a shambler');
     },
-    onSound: (event, position) => playWorldSound(event, position),
-    onFootstep: (position, id, mode) => {
+    onSound: (event, position, zombie) =>
+      playWorldSound(
+        event,
+        position,
+        sim.time,
+        zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {},
+      ),
+    onFootstep: (position, id, mode, zombie) => {
       const event = shamblerFootstepEventAt(position, (x, y, z) => {
         const block = world.getBlock(x, y, z);
         return registry.blocks[block]?.id ?? 'unknown';
       });
-      playWorldSound(event, position, sim.time, { sourceLabel: `shambler #${id} · ${mode}` });
+      playWorldSound(event, position, sim.time, {
+        sourceLabel: `shambler #${id} · ${mode}`,
+        body: shamblerFigure(zombie.figureSeed).realized.body,
+      });
     },
     onSevered: (zombie, region) => {
       const pos: Vec3 = [

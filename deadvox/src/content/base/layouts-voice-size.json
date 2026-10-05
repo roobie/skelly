@@ -1,0 +1,18 @@
+{
+  "layouts": [
+    {
+      "id": "voice_size",
+      "bounds": { "x0": 0, "z0": 0, "x1": 32, "z1": 32 },
+      "ground": 21,
+      "terrain": [],
+      "buildings": [],
+      "player": { "position": [16, 21.5, 16], "bearing": 0 },
+      "shamblers": [
+        { "type": "shambler", "position": [12, 21.5, 16], "chance": 1 },
+        { "type": "shambler", "position": [20, 21.5, 16], "chance": 1 }
+      ],
+      "woodlands": [],
+      "tracks": []
+    }
+  ]
+}
