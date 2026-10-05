@@ -5,6 +5,7 @@ read_if:
   - you change crafting, skill progression, recipe knowledge or reading
   - you change item ownership, resumable actions or saved work
   - you change workstation admission or craft/reachability tests
+  - you change test-house repair-corner stock or its content-driven pile placement
 ---
 
 # Crafting ownership and planning
@@ -203,6 +204,13 @@ skill change. Salvage uses the fixed work duration in `SALVAGE_DURATION`; gather
 adds its handling time. Finishing places disassembly outputs at the player's feet,
 while cancelling returns the exact source item. These rules keep taking apart an
 item a resumable action without changing its promised output or losing the source.
+
+## Repair-corner stock
+
+The content-derived test-house scenario spreads repair stock across its available piles, so
+repair recipes need no hand-authored pile assignment. See `src/game/testHouse.ts`,
+`populateTestHouseRepairCorner`. The corner demonstrates recipe reach and planning, not a
+fixed catalogue size.
 
 ## Proofs
 

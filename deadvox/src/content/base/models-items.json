@@ -1,0 +1,51 @@
+{
+  "models": [
+    {
+      "id": "hand_saw",
+      "file": "assets/models/hand_saw.glb",
+      "grip": { "at": [-0.13, 0.034, 0] },
+      "hold": "upright",
+      "roll": 90
+    },
+    {
+      "id": "screwdriver",
+      "file": "assets/models/screwdriver.glb",
+      "grip": { "at": [-0.058, 0.023, 0] },
+      "hold": "upright",
+      "roll": 90
+    },
+    {
+      "id": "wire_spool",
+      "file": "assets/models/wire_spool.glb"
+    },
+    {
+      "id": "improvised_suppressor",
+      "file": "assets/models/improvised_suppressor.glb"
+    },
+    { "id": "lamp_oil_bottle", "file": "assets/models/lamp_oil_bottle.glb" },
+    { "id": "glass_shards", "file": "assets/models/glass_shards.glb" },
+    { "id": "tape_roll", "file": "assets/models/tape_roll.glb" },
+    { "id": "fastener_pack", "file": "assets/models/fastener_pack.glb" },
+    { "id": "wood_offcut", "file": "assets/models/wood_offcut.glb" },
+    { "id": "rubber_strip", "file": "assets/models/rubber_strip.glb" },
+    { "id": "circuit_board", "file": "assets/models/circuit_board.glb" },
+    { "id": "glass_lens", "file": "assets/models/glass_lens.glb" },
+    { "id": "small_spring", "file": "assets/models/small_spring.glb" },
+    { "id": "cloth_bundle", "file": "assets/models/cloth_bundle.glb" },
+    { "id": "thread_spool", "file": "assets/models/thread_spool.glb" },
+    { "id": "fuse", "file": "assets/models/fuse.glb" },
+    { "id": "cord_coil", "file": "assets/models/cord_coil.glb" },
+    { "id": "pliers", "file": "assets/models/pliers.glb" },
+    { "id": "sewing_kit", "file": "assets/models/sewing_kit.glb" },
+    { "id": "broken_toaster", "file": "assets/models/broken_toaster.glb" },
+    { "id": "desk_lamp", "file": "assets/models/desk_lamp.glb" },
+    { "id": "table_fan", "file": "assets/models/table_fan.glb" },
+    { "id": "cracked_phone", "file": "assets/models/cracked_phone.glb" },
+    { "id": "broken_clock", "file": "assets/models/broken_clock.glb" },
+    { "id": "electrical_repair_kit", "file": "assets/models/electrical_repair_kit.glb" },
+    { "id": "flashlight_mount", "file": "assets/models/flashlight_mount.glb" },
+    { "id": "scrap_foregrip", "file": "assets/models/scrap_foregrip.glb" },
+    { "id": "hinge_set", "file": "assets/models/hinge_set.glb" },
+    { "id": "glass_bulb", "file": "assets/models/glass_bulb.glb" }
+  ]
+}

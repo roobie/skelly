@@ -11,6 +11,7 @@ read_if:
   - you change how handling gates primary actions
   - you change movement or action input during long actions
   - you reconcile BR's interaction rulings with actor handedness
+  - you change quickbar hand displacement or automatic item-stow behavior
   - you change long-action admission or interruption behavior
 ---
 
@@ -138,6 +139,16 @@ details panel, keyboard shortcuts, the quickbar and a future context menu all
 draw from the same list, and a new component (a `book` you can read) adds its
 options in one place. `Survival.use` in `src/game` moves into the core as the
 source of the "use" options and commands.
+
+## Quickbar hand transfers
+
+> BR, 2026-10-05: "atomic: no - we should do best effort, but do _not_ drop any item automatically"
+
+`src/core/options.ts`, `quickbarTake`, stows displaced hand items where they
+fit. An item with no free cell stays in its hand; any other item already stowed
+stays put. The requested item is taken only when its required hands are free,
+and the notice names each item that could not be stowed. Quickbar transfers do
+not drop items automatically.
 
 ## Crafting
 
