@@ -180,16 +180,14 @@ describe('debug action table', () => {
     expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([false, false]);
     expect(byCode('PageUp').detail?.()).toBe(`${shadows.settings.distance} m`);
     const start = SHADOW_DISTANCES.indexOf(shadows.settings.distance);
-    const expected = Array.from(
-      { length: 4 },
-      (_, i) => SHADOW_DISTANCES[(start + 1 + i) % SHADOW_DISTANCES.length]!,
-    );
+    const expected = Array.from({ length: 4 }, (_, i) => SHADOW_DISTANCES[(start + 1 + i) % SHADOW_DISTANCES.length]!);
     const seen: number[] = [];
-    for (let i = 0; i < expected.length; i++) {
+    for (const expectedDistance of expected) {
       dispatchDebugAction(actions, 'PageUp');
-      seen.push(shadows.settings.distance);
+      const { distance } = shadows.settings;
+      seen.push(distance);
+      expect(distance).toBe(expectedDistance);
     }
-    expect(seen).toEqual(expected);
     dispatchDebugAction(actions, 'PageUp', true);
     expect(shadows.settings.distance).toBe(seen.at(-1));
   });
