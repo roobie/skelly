@@ -29,12 +29,14 @@ until the key loaded. First navigation then took 28 seconds or crossed its uncha
 30-second bound (#190). A late response `Date` header did not mean Vite was slow:
 its first curl response took 8 ms, and its browser-request handler took 4–15 ms.
 
-**What to do.** Use shared `browserStageLaunchArgs` from
-`test/browser/stage-mode.mjs` for the throwaway profiles in
-`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs`. It owns the common
-headless, isolation, graphics-mode and window-size flags; each caller supplies only its
-profile, remote-debugging port and URL. This is test-profile isolation, not a setting
-for players' browsers. Do not warm up a request, retry or raise the timeout.
+**What to do.** Keep throwaway Chromium launches on Playwright's managed launch path;
+`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs` use that boundary.
+Retain test-profile isolation because #190 showed that desktop password-store
+initialization can delay the first navigation. Issue #287 established that save-storage's
+separate TCP DevTools discovery is another pre-test failure boundary; do not restore a
+custom Chrome spawn, hand-allocated debug port or `/json/version` polling there. This is
+test-profile isolation, not a setting for players' browsers. Do not warm up a request,
+retry or raise the timeout.
 
 **Proof.** Three fresh-profile launches without the flag took 27.76–28.89 seconds;
 three with it took 2.87–2.91 seconds. Cookie-key loading fell from 25.16–25.20 seconds
