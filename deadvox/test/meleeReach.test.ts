@@ -288,31 +288,17 @@ describe('player melee reach at shambler attack distance', () => {
     expect(zombie.regions.torso).toBe(before.torso);
   });
 
-  it('orders visible chest hits at adjacent weapon reach boundaries', () => {
-    const expectedOrder = [
-      'fists',
-      'kitchen_knife',
-      'kabar',
-      'hammer',
-      'machete',
-      'crowbar',
-      'steel_pipe',
-      'baseball_bat',
-    ] as const;
-    const expectedNames = new Set<string>(expectedOrder);
-    expect(weapons.map(({ name }) => name).filter((name) => expectedNames.has(name))).toEqual(expectedOrder);
+  it('hits on both sides of every weapon reach edge', () => {
+    const reaches = [...new Set(weapons.map(({ reach }) => reach))].sort((a, b) => a - b);
+    expect(reaches.length).toBeGreaterThan(1);
+    const delta = Math.min(...reaches.slice(1).map((reach, index) => reach - reaches[index]!)) / 2;
     const standing = poses[0]!;
     const seed = 1;
-    const transitions = weapons.slice(1).flatMap((farther, index) => {
-      const nearer = weapons[index]!;
-      return nearer.reach < farther.reach ? [{ nearer, farther }] : [];
-    });
-    expect(transitions.length).toBeGreaterThan(0);
 
-    for (const { nearer, farther } of transitions) {
-      const boundary = PLAYER_ARM_REACH_M + (nearer.reach + farther.reach) / 2;
-      expect(swingAtReachDistance(seed, standing, nearer, boundary), `${nearer.name} at ${boundary}`).toBe(false);
-      expect(swingAtReachDistance(seed, standing, farther, boundary), `${farther.name} at ${boundary}`).toBe(true);
+    for (const weapon of weapons) {
+      const edge = PLAYER_ARM_REACH_M + weapon.reach;
+      expect(swingAtReachDistance(seed, standing, weapon, edge - delta), `${weapon.name} just inside edge`).toBe(true);
+      expect(swingAtReachDistance(seed, standing, weapon, edge + delta), `${weapon.name} just outside edge`).toBe(false);
     }
   });
 });

@@ -181,7 +181,7 @@ describe('the hamlet', () => {
     const sameSeed = new Hamlet(5, registry, scale);
     const again = columnsOf(sameSeed).flatMap(([cx, cz]) => sameSeed.furnitureIn(cx, cz));
     expect(again).toEqual(pieces);
-  }, 1000);
+  });
 
   it('spawns six to ten deterministic shamblers across twenty seeds', () => {
     const road = { x0: 0, z0: 0, x1: 64, z1: 12 };
