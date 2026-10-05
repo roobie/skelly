@@ -4,6 +4,18 @@
     { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
     {
+      "id": "wooden_plank",
+      "name": "Wooden plank",
+      "category": "material",
+      "weight": 500,
+      "size": [2, 4],
+      "disassembly": {
+        "time": 4,
+        "skill": "crafting",
+        "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
+      }
+    },
+    {
       "id": "torch",
       "name": "Torch",
       "category": "light",
