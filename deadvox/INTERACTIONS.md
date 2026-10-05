@@ -8,6 +8,7 @@ read_if:
   - you're implementing or changing furniture-based rest and sleep
   - you're reviewing long-action continuation and save ownership
   - you change item activation, crafting or appliance ownership boundaries
+  - you change how handling gates primary actions
   - you reconcile BR's interaction rulings with actor handedness
 ---
 
@@ -387,3 +388,7 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
    A held item must never become a fist or redirect to the other hand, and a
    restored physical fist sequence must not be reseeded from dominance.
+7. **Handling gates primary actions (`d77-1`, 2026-10-05):** BR reported,
+   "bug: while in the process of wielding something, you can attack". While handling
+   is busy, primary actions from either hand are refused. Whether a one-handed job
+   should leave the free hand usable remains open for BR.
