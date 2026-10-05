@@ -189,7 +189,7 @@ export interface SnapshotMeasurementOptions {
 const FIREFOX_USER_AGENT = /Firefox\//;
 const CHROMIUM_USER_AGENT = /(?:Headless)?Chrome\/|Chromium\//;
 
-/** Default browser timer quanta (Firefox privacy reduction 1 ms; Chromium TimeClamper 0.1 ms); observed tick is a cross-check. */
+/** Default browser-profile quanta (Firefox privacy reduction 1 ms; Chromium TimeClamper 0.1 ms); observed tick is a cross-check. */
 export const snapshotTimerQuantumForUserAgent = (userAgent: string): SnapshotTimerQuantum | null => {
   if (FIREFOX_USER_AGENT.test(userAgent)) {
     return { browser: 'Firefox', quantumMs: 1 };
