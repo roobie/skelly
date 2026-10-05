@@ -25,8 +25,10 @@ not a second hand-maintained section table here.
 `time` in **game minutes**, `skills` and `qualities` maps, `components` as groups
 of `{ item, count }` alternatives, and optional `workstation` (an id or null).
 Counts are positive whole items; each component group has at least one alternative.
-Skill requirements are nonnegative whole levels; quality requirements are levels
-1–5, matching unchanged item `ToolSchema` levels. A recipe may have at most
+Skill requirements are whole levels bounded by `SKILL_LEVEL_MIN` and
+`SKILL_LEVEL_MAX` from `src/core/character.ts`; `src/core/schema.ts`, `SkillLevel`,
+validates recipe requirements. Quality requirements are levels 1–5, matching
+unchanged item `ToolSchema` levels. A recipe may have at most
 **1,024 combinations**, inclusive: the product of its group lengths. Validation
 uses exact integer multiplication and reports the count when refusing a file.
 

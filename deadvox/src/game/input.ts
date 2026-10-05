@@ -4,6 +4,15 @@ import type { MoveIntent } from './player.ts';
 import { ReloadInput } from './reloadInput.ts';
 
 const SENSITIVITY = 0.0022;
+export const LOOK_PITCH_LIMIT = 1.55;
+
+export const adjustLookPitch = (pitch: number, delta: number): { pitch: number; applied: number } => {
+  if (![pitch, delta].every(Number.isFinite)) {
+    throw new Error('Invalid pitch adjustment');
+  }
+  const next = Math.max(-LOOK_PITCH_LIMIT, Math.min(LOOK_PITCH_LIMIT, pitch + delta));
+  return { pitch: next, applied: next - pitch };
+};
 const MAC_PLATFORM = /Mac/i;
 
 /** Cmd on macOS (best effort), Ctrl elsewhere; Shift alone stays free for splitting. */
@@ -169,12 +178,25 @@ export class Input {
         return;
       }
       this.yaw -= e.movementX * SENSITIVITY;
-      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - e.movementY * SENSITIVITY));
+      this.pitch = adjustLookPitch(this.pitch, -e.movementY * SENSITIVITY).pitch;
     });
   }
 
   get locked(): boolean {
     return document.pointerLockElement === this.target;
+  }
+
+  get dominantUseHeld(): boolean {
+    return this.dominantUseDown;
+  }
+
+  adjustPitch(delta: number): number {
+    if (!Number.isFinite(delta)) {
+      throw new Error('Invalid pitch adjustment');
+    }
+    const adjusted = adjustLookPitch(this.pitch, delta);
+    this.pitch = adjusted.pitch;
+    return adjusted.applied;
   }
 
   moveMenuCursor(movementX: number, movementY: number): void {

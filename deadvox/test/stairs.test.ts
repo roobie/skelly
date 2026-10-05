@@ -8,9 +8,8 @@ import { CHUNK, type Vec3 } from '../src/core/coords.ts';
 import { CONTACT_SKIN, stepBody } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { TemplateDef } from '../src/core/schema.ts';
-import { planShamblerRoute } from '../src/core/shamblerRoutes.ts';
 import { templateSpatialIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate, placedFlights, placedPoint, type Turn } from '../src/core/templates.ts';
+import { compileTemplate, placedPoint, type Turn } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { createPlayerBody, physicsFor } from '../src/game/player.ts';
@@ -25,14 +24,6 @@ const set = (template: ReturnType<typeof house>, [x, y, z]: Vec3, id: number) =>
   template.blocks[x + template.size[0] * (z + template.size[2] * y)] = id;
 };
 const planks = registry.blockIds.get('planks')!;
-const stampedLanding = (world: World, endpoint: Vec3) =>
-  [-0.5, 0.5].flatMap((dx) =>
-    [-0.5, 0.5].map((dz) => {
-      const [x, z] = [Math.floor(endpoint[0] + dx), Math.floor(endpoint[2] + dz)];
-      return [world.getBlock(x, endpoint[1], z), world.getBlock(x, endpoint[1] - 1, z)];
-    }),
-  );
-
 describe('explicit storeys and ordinary-block flights', () => {
   it('admits both authorable examples including the openable bedroom door', () => {
     expect(issues).toEqual([]);
@@ -182,64 +173,15 @@ describe('explicit storeys and ordinary-block flights', () => {
     expect(body.pos[0]).toBeCloseTo(2, 3);
     expect(body.pos[1]).toBeCloseTo(1, 3);
   });
-  it.each([0, 1, 2, 3] as const)(
-    'carves and restamps the cellar across chunk seams at turn %i with rotated landing data',
-    (turn: Turn) => {
-      const scale = makeScale(0.5);
-      const layout = structuredClone(registry.layouts.get('stair_demo')!);
-      layout.buildings = [
-        { template: 'stairs_cabin', position: [59.5, 17, 59.5], rotation: (turn * 90) as 0 | 90 | 180 | 270 },
-      ];
-      const site = new AuthoredSite(1, registry, scale, layout);
-      const placement = site.placements[0]!;
-      expect(placement.origin[1]).toBe(26);
-      const world = new World();
-      const terrain = {
-        seed: 1,
-        scale,
-        blocks: {
-          grass: registry.blockIds.get('grass')!,
-          dirt: registry.blockIds.get('dirt')!,
-          stone: registry.blockIds.get('stone')!,
-          sand: registry.blockIds.get('sand')!,
-        },
-        surface: site.surface,
-        stamp: (chunk: Parameters<typeof site.stamp>[0]) => site.stamp(chunk),
-      };
-      const point = placedPoint(placement, [11, 1, 11]);
-      const columns = [Math.floor(placement.origin[0] / CHUNK), Math.floor(placement.origin[2] / CHUNK)];
-      for (let cx = columns[0]!; cx <= columns[0]! + 1; cx++) {
-        for (let cz = columns[1]!; cz <= columns[1]! + 1; cz++) {
-          for (const chunk of generateColumn(terrain, cx, cz)) {
-            world.addChunk(chunk);
-          }
-        }
-      }
-      expect(world.getBlock(...(point.map(Math.floor) as Vec3))).toBe(0);
-      expect(world.getBlock(Math.floor(point[0]), point[1] - 1, Math.floor(point[2]))).toBe(
-        registry.blockIds.get('stone'),
-      );
-      const [flight] = placedFlights(placement);
-      expect(flight).toMatchObject({ from: 'cellar', to: 'ground' });
-      for (const endpoint of [flight!.lower, flight!.upper]) {
-        expect(stampedLanding(world, endpoint)).toEqual(Array.from({ length: 4 }, () => [0, planks]));
-      }
-      const delta = flight!.upper.map((value, axis) => Math.abs(value - flight!.lower[axis]!));
-      expect(delta[1]).toBe(8);
-      expect(delta[0]! + delta[2]!).toBe(9);
-      for (const chunk of world.chunks.values()) {
-        site.stamp(chunk);
-      }
-      expect(world.getBlock(...(point.map(Math.floor) as Vec3))).toBe(0);
-    },
-  );
-
-  it('plans between the cellar and ground through the authored stair_demo flight', () => {
+  it.each([0, 1, 2, 3] as const)('carves and restamps the cellar across chunk seams at turn %i', (turn: Turn) => {
     const scale = makeScale(0.5);
     const layout = structuredClone(registry.layouts.get('stair_demo')!);
-    layout.buildings = [{ template: 'stairs_cabin', position: [59.5, 17, 59.5], rotation: 0 }];
+    layout.buildings = [
+      { template: 'stairs_cabin', position: [59.5, 17, 59.5], rotation: (turn * 90) as 0 | 90 | 180 | 270 },
+    ];
     const site = new AuthoredSite(1, registry, scale, layout);
     const placement = site.placements[0]!;
+    expect(placement.origin[1]).toBe(26);
     const world = new World();
     const terrain = {
       seed: 1,
@@ -253,6 +195,7 @@ describe('explicit storeys and ordinary-block flights', () => {
       surface: site.surface,
       stamp: (chunk: Parameters<typeof site.stamp>[0]) => site.stamp(chunk),
     };
+    const point = placedPoint(placement, [11, 1, 11]);
     const columns = [Math.floor(placement.origin[0] / CHUNK), Math.floor(placement.origin[2] / CHUNK)];
     for (let cx = columns[0]!; cx <= columns[0]! + 1; cx++) {
       for (let cz = columns[1]!; cz <= columns[1]! + 1; cz++) {
@@ -261,12 +204,13 @@ describe('explicit storeys and ordinary-block flights', () => {
         }
       }
     }
-    const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
-    const [flight] = site.stairFlights!;
-    const body = { pos: flight!.lower, vel: [0, 0, 0] as Vec3, halfWidth: 0.3, height: 1.8, onGround: true };
-    const route = planShamblerRoute({ body, target: flight!.upper, flights: site.stairFlights!, isSolid });
-    expect(route).toBeDefined();
-    expect(route!.at(-1)).toEqual(flight!.upper);
-    expect(route!.some((point) => point[1] > flight!.lower[1])).toBe(true);
+    expect(world.getBlock(...(point.map(Math.floor) as Vec3))).toBe(0);
+    expect(world.getBlock(Math.floor(point[0]), point[1] - 1, Math.floor(point[2]))).toBe(
+      registry.blockIds.get('stone'),
+    );
+    for (const chunk of world.chunks.values()) {
+      site.stamp(chunk);
+    }
+    expect(world.getBlock(...(point.map(Math.floor) as Vec3))).toBe(0);
   });
 });

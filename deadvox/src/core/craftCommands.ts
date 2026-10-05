@@ -1,5 +1,5 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
-import { type CraftCharacter, dominantSide } from './character.ts';
+import { type CraftCharacter, dominantSide, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import { type CraftPreference, type CraftResult, planCraft } from './crafting.ts';
 import { planDisassembly } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
@@ -87,7 +87,7 @@ export class CraftCommands {
       return 'No damaged repair target in reach';
     }
     const repair = recipe.repair!;
-    const skill = this.character.skills[repair.skill] ?? 0;
+    const skill = skillEffectLevel(this.character.skills[repair.skill] ?? SKILL_LEVEL_MIN);
     const amount = Math.min(1, repair.amount + repair.perSkill * skill);
     return this.sim.actions.beginCraft(result.plan, { targetUid: target.uid, amount });
   }

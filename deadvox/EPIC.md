@@ -2,6 +2,7 @@
 read_if:
   - you're planning a version 1 slice, milestone or playtest
   - you're deciding which features belong in deadvox version 1
+  - you're changing firearm handling or combat design for version 1
 ---
 
 # deadvox — the road to version 1
@@ -189,14 +190,30 @@ same world preserve piles left by the previous character?
   show in game via a sway on the weapon)". The firearms skill "will: 1) mitigate
   the aim variance 2) quicken reload time 3) quicken rack time (shotgun)". It
   starts as one skill, "which we will expand to separate firearm archetypes
-  later, like skill:smgs, skill:shotguns etc". After trying skill 12 with the
-  assault rifle, BR reported, "as for gun skill / i tried it at =12 / and
-  equipped the assault rifle - too much dispersion/sway at full auto". Each
-  committed shot therefore takes its kick from firearm data, while skill
-  mitigates the accumulating full-auto aim offset; see
-  `deadvox/src/game/firearmHandling.ts`, `firearmHandlingFor`,
-  `deadvox/src/core/aim.ts`, `AimController.recordShot` and `AimController.advance`,
-  and `deadvox/src/core/firearmsSkill.ts`, `firearmsSkillEffects`. Once #267
+  later, like skill:smgs, skill:shotguns etc". On the skill scale before d83 (#274), BR
+  tried skill 12 with the assault rifle and reported, "as for gun skill / i
+  tried it at =12 / and equipped the assault rifle - too much dispersion/sway at
+  full auto". BR's
+  later 2026-10-05 ruling separated firearm quality's dispersion from skill:
+  "dispersion is not a skill issue, but control is". Each firearm owns its
+  per-round `dispersionRadians`; control skill changes movement/look sway, kick
+  per shot and recovery after release, not that cone. Legendary progression is
+  vanity and adds no mechanical control beyond ordinary expert, per BR's ruling
+  quoted in `docs/crafting.md` ("mostly vanity thing").
+  During held automatic fire, recoil does not recover; at the ~7° on-screen
+  limit, excess pitch scrolls the view and the gun's on-screen offset recovers
+  only after release. The pump
+  keeps its pellet spread without an additional firearm cone. The view share
+  stays in player pitch after release so the player, not an automatic recenter,
+  chooses whether to counter it. See `deadvox/src/game/firearmHandling.ts`,
+  `FirearmMechanics.fire` and `firearmHandlingFor`, `deadvox/src/core/pellets.ts`,
+  `coneDirection`, `deadvox/src/core/aim.ts`, `AimController.recordShot`,
+  `AimController.advance` and `AimController.applyViewPitchShift`,
+  `deadvox/src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
+  `deadvox/src/game/session.ts`, `createSession`, `deadvox/src/game/input.ts`,
+  `adjustLookPitch`, and `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
+  The existing saved player pitch carries the view shift, so this change adds no
+  AimState field and leaves the save schema unchanged. Once #267
   lands, sway while firing on the move is judged at the ready duck-walk speed:
   firearms cannot fire while sprinting, and the governing skill for that gait
   remains open in #267 (BR leans toward a generic "warfare" skill).

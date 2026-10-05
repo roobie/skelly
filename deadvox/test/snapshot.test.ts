@@ -5,12 +5,12 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
-import { Character, practiceForNextLevel } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { CHUNK, toChunk } from '../src/core/coords.ts';
+import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
 import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts';
 import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -66,6 +66,43 @@ const blockName = (id: number): string => {
   return found;
 };
 
+const fixtureHamlet = new Hamlet(seed, registry, scale);
+const fixtureColumns: [number, number][] = [];
+for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.bounds.z1 - 1); cz++) {
+  for (let cx = toChunk(fixtureHamlet.bounds.x0); cx <= toChunk(fixtureHamlet.bounds.x1 - 1); cx++) {
+    if (fixtureHamlet.furnitureIn(cx, cz).length > 0 || fixtureHamlet.zombiesIn(cx, cz).length > 0) {
+      fixtureColumns.push([cx, cz]);
+    }
+  }
+}
+const fixtureTerrain: Terrain = {
+  seed,
+  blocks: { grass: blockId('grass'), dirt: blockId('dirt'), stone: blockId('stone'), sand: blockId('sand') },
+  scale,
+  surface: fixtureHamlet.surface,
+  stamp: (chunk) => fixtureHamlet.stamp(chunk),
+};
+const fixtureChunks = fixtureColumns.flatMap(([cx, cz]) => generateColumn(fixtureTerrain, cx, cz));
+
+const cloneFixtureChunk = (source: Chunk): Chunk => {
+  const copy = new Chunk(source.cx, source.cy, source.cz, source.uniformId ?? 0);
+  const data = source.raw();
+  if (!data) {
+    return copy;
+  }
+  for (let y = 0; y < CHUNK; y++) {
+    for (let z = 0; z < CHUNK; z++) {
+      for (let x = 0; x < CHUNK; x++) {
+        const id = data[localIndex(x, y, z)]!;
+        if (id !== 0) {
+          copy.set(x, y, z, id);
+        }
+      }
+    }
+  }
+  return copy;
+};
+
 type Runtime = ReturnType<typeof createRuntime>;
 
 // The scenario factory builds the same session the game does (src/game/session.ts) and only
@@ -75,29 +112,13 @@ type Runtime = ReturnType<typeof createRuntime>;
 const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>, fixture: boolean | 'right' | 'left' = false) => {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
-  const hamlet = new Hamlet(seed, registry, scale);
-  const { x0, z0, x1, z1 } = hamlet.bounds;
-  const columns: [number, number][] = [];
-  for (let cz = toChunk(z0); cz <= toChunk(z1 - 1); cz++) {
-    for (let cx = toChunk(x0); cx <= toChunk(x1 - 1); cx++) {
-      if (hamlet.furnitureIn(cx, cz).length > 0 || hamlet.zombiesIn(cx, cz).length > 0) {
-        columns.push([cx, cz]);
-      }
-    }
-  }
-  const terrain: Terrain = {
-    seed,
-    blocks: { grass: blockId('grass'), dirt: blockId('dirt'), stone: blockId('stone'), sand: blockId('sand') },
-    scale,
-    surface: hamlet.surface,
-    stamp: (chunk) => hamlet.stamp(chunk),
-  };
+  const hamlet = fixtureHamlet;
+  const columns = fixtureColumns;
+  const { x1 } = hamlet.bounds;
   const world = new World();
   const sharedEntities = new BlockEntities(registry);
-  for (const [cx, cz] of columns) {
-    for (const chunk of generateColumn(terrain, cx, cz)) {
-      world.addChunk(chunk);
-    }
+  for (const chunk of fixtureChunks) {
+    world.addChunk(cloneFixtureChunk(chunk));
   }
   const [editCx, editCz] = columns[0]!;
   const editChunk = [...world.chunks.values()].find((chunk) => chunk.cx === editCx && chunk.cz === editCz)!;
@@ -799,7 +820,7 @@ const prepareAudioContinuation = (runtime: Runtime): void => {
   idle.body.onGround = true;
   idle.mode = 'idle';
   idle.modeTimer = 100;
-  idle.idleSoundTimer = 0.6;
+  idle.idleSoundTimer = 0.02;
   idle.lastVocalNoiseId = runtime.playerAudio.vocalNoiseId;
   runtime.heardSounds.length = 0;
 };
@@ -867,9 +888,9 @@ describe('craft job codec and ownership', () => {
       savedWork.work = {
         kind: 'disassembly',
         source: radio.id,
-        skillLevel: 0,
+        skillLevel: SKILL_LEVEL_LEGENDARY,
         toolLevels: {},
-        outputs: disassemblyOutputs(radio, 0),
+        outputs: disassemblyOutputs(radio, SKILL_LEVEL_LEGENDARY),
         gather: 0,
         elapsed: 37,
         duration: SALVAGE_DURATION,
@@ -881,6 +902,14 @@ describe('craft job codec and ownership', () => {
       });
       const loadedDisassembly = createRuntime(decodedDisassembly.snapshot);
       expect(capture(loadedDisassembly)).toEqual(disassembly);
+
+      const invalidDisassembly = structuredClone(disassembly);
+      const invalidWork = invalidDisassembly.character.inventory.hands.right!.work!;
+      if (invalidWork.kind !== 'disassembly') {
+        throw new Error('Expected disassembly work');
+      }
+      invalidWork.skillLevel = SKILL_LEVEL_LEGENDARY + 1;
+      await expect(encodeFixture(invalidDisassembly)).rejects.toThrow();
     },
   );
 
@@ -979,6 +1008,41 @@ describe('restored session world state', () => {
 });
 
 describe('hamlet save/load continuation', () => {
+  it('continues active compressed rest through the first 1 Hz tick after load', () => {
+    const source = createRuntime(undefined, true);
+    expect(startRest(source, 'sleep')).toBeUndefined();
+    advance(source, 120);
+    expect(source.sim.compression.active).toBe(true);
+    expect(source.sim.compression.c).toBeGreaterThan(1);
+    expect(source.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
+
+    const savedNeeds = { ...source.sim.needs };
+    const snapshot = capture(source);
+    const loaded = createRuntime(snapshot);
+    expect(loaded.sim.compression.active).toBe(true);
+    expect(loaded.sim.compression.c).toBeGreaterThan(1);
+    expect(loaded.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
+
+    const schedulerSystems = ['needs', 'lights', 'long-action'] as const;
+    const savedTicks = new Map(snapshot.character.simulation.scheduler.systems.map(({ id, ticks }) => [id, ticks]));
+    advance(source, 4);
+    advance(loaded, 4);
+
+    for (const id of schedulerSystems) {
+      const saved = savedTicks.get(id);
+      expect(saved).toBeDefined();
+      expect(source.sim.scheduler.tickCounts().get(id)).toBeGreaterThan(saved!);
+      expect(loaded.sim.scheduler.tickCounts().get(id)).toBeGreaterThan(saved!);
+    }
+    expect(source.sim.compression.active).toBe(true);
+    expect(loaded.sim.compression.active).toBe(true);
+    expect(source.inventory.hands.left?.charges).toBeDefined();
+    expect(loaded.inventory.hands.left?.charges).toBe(source.inventory.hands.left?.charges);
+    expect(loaded.sim.needs).toEqual(source.sim.needs);
+    expect(loaded.sim.needs).not.toEqual(savedNeeds);
+    expect(loaded.sim.actions.snapshotState()).toEqual(source.sim.actions.snapshotState());
+  });
+
   for (const interruption of [false, true]) {
     it(`deeply matches N steps with K/save/load/N−K (${interruption ? 'interrupted' : 'active'} rest)`, () => {
       const uninterrupted = createRuntime(undefined, true);
@@ -997,8 +1061,8 @@ describe('hamlet save/load continuation', () => {
         uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
         split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
       }
-      advance(uninterrupted, 40);
-      advance(split, 40);
+      advance(uninterrupted, 4);
+      advance(split, 4);
       expect(split.player.body.onGround).toBe(false);
       prepareAudioContinuation(uninterrupted);
       prepareAudioContinuation(split);
@@ -1014,10 +1078,10 @@ describe('hamlet save/load continuation', () => {
       expect(snapshot.character.handling.jobs).toEqual([]);
       expect(plainDataTree(snapshot)).toBe(true);
       expect(frozenTree(snapshot)).toBe(true);
-      advance(uninterrupted, 80, interruption ? -1 : 20);
+      advance(uninterrupted, 4, interruption ? -1 : 1);
       const continuedSounds = [...uninterrupted.heardSounds];
       const loaded = createRuntime(snapshot);
-      advance(loaded, 80, interruption ? -1 : 20);
+      advance(loaded, 4, interruption ? -1 : 1);
       expect(loaded.heardSounds).toEqual(continuedSounds);
       expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
       expect(inspect(loaded)).toEqual(inspect(uninterrupted));
@@ -1029,8 +1093,8 @@ describe('hamlet save/load continuation', () => {
     const split = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
     expect(startRest(split, 'sleep')).toBeUndefined();
-    advance(uninterrupted, 40);
-    advance(split, 40);
+    advance(uninterrupted, 2);
+    advance(split, 2);
 
     uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
     split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
@@ -1039,9 +1103,9 @@ describe('hamlet save/load continuation', () => {
     expect(split.sim.compression.active).toBe(true);
     expect(split.sim.compression.interruption).toBeUndefined();
 
-    advance(uninterrupted, 80);
+    advance(uninterrupted, 1);
     const loaded = createRuntime(snapshot);
-    advance(loaded, 80);
+    advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   }, 15_000);
 
@@ -1050,8 +1114,8 @@ describe('hamlet save/load continuation', () => {
     const split = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
     expect(startRest(split, 'sleep')).toBeUndefined();
-    advance(uninterrupted, 40);
-    advance(split, 40);
+    advance(uninterrupted, 2);
+    advance(split, 2);
 
     uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
     split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
@@ -1060,25 +1124,25 @@ describe('hamlet save/load continuation', () => {
     const snapshot = capture(split);
     expect(snapshot.character.simulation.pendingInterrupt).toBe('test interruption');
 
-    advance(uninterrupted, 80);
+    advance(uninterrupted, 1);
     const loaded = createRuntime(snapshot);
-    advance(loaded, 80);
+    advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   }, 15_000);
 
   it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
     const original = createRuntime(undefined, true);
     expect(startRest(original, 'rest')).toBeUndefined();
-    advance(original, 12);
+    advance(original, 2);
     prepareAudioContinuation(original);
     const saved = capture(original);
     const baseline = createRuntime(saved);
-    advance(baseline, 20);
+    advance(baseline, 1);
 
     const noDelta = structuredClone(saved);
     noDelta.world.diffs.chunks[0]!.cells.pop();
     const withoutDelta = createRuntime(noDelta);
-    advance(withoutDelta, 20);
+    advance(withoutDelta, 1);
     expect(inspect(withoutDelta)).not.toEqual(inspect(baseline));
 
     const noAllocator = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
@@ -1473,7 +1537,7 @@ describe('canonical save format', () => {
   it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
     const source = createRuntime(undefined, true);
     expect(startRest(source, 'rest')).toBeUndefined();
-    advance(source, 17);
+    advance(source, 2);
     prepareAudioContinuation(source);
     const snapshot = capture(source);
     const sourceHash = stateHash(snapshot);
@@ -1495,21 +1559,21 @@ describe('canonical save format', () => {
     expect(decoded.snapshot).toEqual(snapshot);
     const loaded = createRuntime(decoded.snapshot);
     expect(stateHash(decoded.snapshot)).toBe(sourceHash);
-    advance(source, 90);
-    advance(loaded, 90);
+    advance(source, 1);
+    advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(source));
 
     const interrupted = createRuntime(undefined, true);
     expect(startRest(interrupted, 'sleep')).toBeUndefined();
-    advance(interrupted, 40);
+    advance(interrupted, 2);
     interrupted.sim.emit({ kind: 'interrupt', reason: 'format round-trip' });
     const interruptedSnapshot = capture(interrupted);
     expect(interruptedSnapshot.character.simulation.pendingInterrupt).toBe('format round-trip');
     const interruptedBytes = await encodeFixture(interruptedSnapshot);
     const interruptedDecoded = await decodeSave(interruptedBytes, { version: formatVersion, contentLookup });
     const interruptedLoaded = createRuntime(interruptedDecoded.snapshot);
-    advance(interrupted, 80);
-    advance(interruptedLoaded, 80);
+    advance(interrupted, 1);
+    advance(interruptedLoaded, 1);
     expect(inspect(interruptedLoaded)).toEqual(inspect(interrupted));
 
     const reversed = reverseObjectKeys(snapshot) as SaveSnapshot;
@@ -1676,6 +1740,34 @@ describe('canonical save format', () => {
     expect((mismatch as Error).message).toContain('content packs');
     expect((mismatch as Error).message).toContain('deadvox.base');
     expect((mismatch as Error).message).toContain(formatVersion.simulationHash);
+  });
+
+  it('accepts saved legendary skills and rejects levels outside the character scale', async () => {
+    const valid = await encodeFixture(capture(createRuntime()));
+    const legendary = parseEnvelope(valid);
+    const legendaryPayload = getObject(legendary.payload);
+    const legendaryCharacter = getObject(legendaryPayload.character);
+    const legendaryProgression = getObject(legendaryCharacter.progression);
+    const legendarySkills = getObject(legendaryProgression.skills);
+    const skill = Object.keys(legendarySkills)[0]!;
+    legendarySkills[skill] = SKILL_LEVEL_LEGENDARY;
+    const decoded = await decodeSave(await sealEnvelope(legendary), { version: formatVersion, contentLookup });
+    expect(decoded.snapshot.character.progression.skills[skill]).toBe(SKILL_LEVEL_LEGENDARY);
+
+    await Promise.all(
+      [SKILL_LEVEL_LEGENDARY + 1, SKILL_LEVEL_MIN - 1].map(async (level) => {
+        const envelope = parseEnvelope(valid);
+        const invalidPayload = getObject(envelope.payload);
+        const invalidCharacter = getObject(invalidPayload.character);
+        const invalidProgression = getObject(invalidCharacter.progression);
+        const invalidSkills = getObject(invalidProgression.skills);
+        const invalidSkill = Object.keys(invalidSkills)[0]!;
+        invalidSkills[invalidSkill] = level;
+        await expect(
+          decodeSave(await sealEnvelope(envelope), { version: formatVersion, contentLookup }),
+        ).rejects.toThrow();
+      }),
+    );
   });
 
   it('rejects truncated, corrupted, non-canonical, over-limit, invalid-version, and malformed payloads', async () => {

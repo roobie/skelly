@@ -106,9 +106,11 @@ acting").
   nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
   `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
   Inventory R still rotates. **Rest and sleep have no dedicated key** (BR,
-  2026-10-04 12:15): F starts them on the targeted furniture, F again or X
-  stops, movement stops, and C resumes after an interruption only while the
-  same piece remains reachable. L remains a legacy sleep binding until d44 removes it.
+  2026-10-04 12:15): F starts them on targeted furniture. BR (2026-10-05 20:09)
+  ruled: "long actions disable all actions". F on the anchor or X cancels rest,
+  but neither stops sleep; an interrupt wakes the sleeper and frees input. C
+  resumes an interrupted rest only while the same piece remains reachable. L
+  remains a legacy way to start sleep until d44 removes it; it cannot stop sleep.
 - **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
   activate with the held-item primary action to unpack. No inventory Unpack/Load.
   Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
@@ -195,11 +197,11 @@ below). Implemented hand activation is not duplicated in this proposal; see
 | Space | jump | jump | — | — | — |
 | Z | walk / jog toggle | — | — | — | — |
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
-| F | interact with what's outlined; restable furniture starts or stops its action | interact | — | — | — |
+| F | interact with what's outlined; start rest/sleep; F on the anchor cancels rest, not sleep | interact | — | ignored during long actions except rest cancellation | — |
 | R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
-| L | legacy sleep action on targeted sleepable furniture, until d44 removes it | — | — | stop sleeping | — |
+| L | legacy sleep action on targeted sleepable furniture, until d44 removes it | — | — | cannot stop sleep | — |
 | T, held | — | — | with a click on an item: its quick action (auto move; d44) | — | — |
-| X | cancel handling | cancel | cancel handling | stop | stop |
+| X | cancel handling | cancel | cancel handling | stop rest/craft/read; ignored for sleep | stop rest/craft/read; ignored for sleep |
 | 1–5 | tap takes the slot's item into its capability-directed hand or puts it away; hold uses an available action from its location | same | assign the selected item to the slot | — | — |
 | Tab | inventory | inventory | close inventory | — | — |
 | F9 | main menu | main menu | close | main menu | main menu |
@@ -217,9 +219,12 @@ Notes on the proposal:
 - **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
   `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
   Inventory R rotation is a different view. F starts rest or sleep on its
-  restable target; F again or X stops, movement stops, and C resumes after an
-  interruption only while the same piece remains reachable. L remains a legacy
-  sleep binding until d44 removes it.
+  target. BR (2026-10-05 20:09) ruled that "long actions disable all actions";
+  movement and action input are ignored during a long action. F on the anchor or
+  X cancels rest, neither stops sleep, and an interrupt wakes the sleeper. C
+  resumes rest after an interruption only while the same piece remains
+  reachable. L remains a legacy way to start sleep until d44 removes it; it
+  cannot stop sleep.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.

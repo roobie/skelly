@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
@@ -20,6 +21,7 @@ const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+const baseRegistry = buildRegistry(base).registry;
 
 interface WindowFrameRun {
   y: number;
@@ -70,6 +72,97 @@ describe('content', () => {
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
     }
+  });
+
+  it('rejects an independent dispersion cone on a pump because pellets own the cone', () => {
+    const source = 'pump-dispersion-fixture.json';
+    const item = {
+      id: 'fixture_pump',
+      name: 'Fixture pump',
+      category: 'weapon',
+      weight: 1,
+      size: [1, 1],
+      firearm: { pump: true, recoilKickRadians: 0.01, dispersionRadians: 0.01 },
+    };
+    const { issues } = buildRegistry([{ source, data: { items: [item] } }]);
+    expect(issues.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
+    const { issues: zeroConeIssues } = buildRegistry([
+      { source, data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] } },
+    ]);
+    expect(zeroConeIssues).toEqual([]);
+  });
+
+  it('requires a firearm dispersion cone while permitting a pump with no extra cone', () => {
+    const source = 'firearm-dispersion-fixture.json';
+    const item = {
+      id: 'fixture_firearm',
+      name: 'Fixture firearm',
+      category: 'weapon',
+      weight: 1,
+      size: [1, 1],
+      firearm: { recoilKickRadians: 0.01 },
+    };
+    const missing = validateContent({ source, data: { items: [item] } });
+    expect(missing.map(({ path }) => path)).toContain('items[0].firearm.dispersionRadians');
+    expect(
+      validateContent({
+        source,
+        data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] },
+      }),
+    ).toEqual([]);
+  });
+
+  it.each([SKILL_LEVEL_MIN - 1, SKILL_LEVEL_MAX + 1])(
+    'rejects recipe skill level %s outside the character scale',
+    (level) => {
+      const issues = validateContent({
+        source: 'skill-level.json',
+        data: {
+          skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
+          recipes: [
+            {
+              id: 'fixture_recipe',
+              result: { item: 'rag', count: 1 },
+              time: 1,
+              skills: Object.fromEntries([['fixture_skill', level]]),
+              qualities: {},
+              components: [],
+            },
+          ],
+        },
+      });
+      expect(issues.map(({ path }) => path)).toContain('recipes[0].skills.fixture_skill');
+    },
+  );
+
+  it('rejects disassembly fractions that extend beyond the character scale', () => {
+    const issues = validateContent({
+      source: 'skill-fractions.json',
+      data: {
+        items: [
+          {
+            id: 'fixture_tool',
+            name: 'Fixture tool',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            disassembly: {
+              time: 1,
+              skill: 'fixture_skill',
+              yields: [
+                {
+                  item: 'rag',
+                  count: 1,
+                  fractions: Array.from({ length: SKILL_LEVEL_MAX + 2 }, (_, index) => index / (SKILL_LEVEL_MAX + 1)),
+                  rounding: 'floor',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(issues.map(({ path }) => path)).toContain('items[0].disassembly.yields[0].fractions');
   });
 
   it('accepts restable furniture quality and rejects an out-of-range value', () => {
@@ -191,7 +284,7 @@ describe('content', () => {
   });
 
   it('registers the machete and Kabar as cutting melee tools and makes both findable', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     const machete = registry.items.get('machete')!;
     const kabar = registry.items.get('kabar')!;
     expect(machete).toMatchObject({
@@ -222,7 +315,7 @@ describe('content', () => {
   });
 
   it('keeps player bodily cues out of zombie-hearing noise', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     for (const id of [
       'player_nope',
       'footstep_grass',
@@ -293,7 +386,7 @@ describe('content', () => {
       source: 'mod.json',
       data: { blocks: [{ id: 'grass', name: 'Dead grass', color: '#8a7a40', solid: true }] },
     };
-    const before = buildRegistry(base).registry;
+    const before = baseRegistry;
     const after = buildRegistry([...base, mod]).registry;
     expect(after.blockIds.get('grass')).toBe(before.blockIds.get('grass'));
     expect(after.blocks[after.blockIds.get('grass')!]!.name).toBe('Dead grass');
@@ -384,7 +477,7 @@ describe('content', () => {
   });
 
   it('exposes the debug AR for manual spawning, not loot tables', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     expect(registry.items.get('debug_rifle_assault')).toMatchObject({
       model: 'rifle_assault',
       category: 'weapon',
@@ -398,7 +491,7 @@ describe('content', () => {
   });
 
   it('merges every descriptor section in the base pack, including recipes and skills', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     expect(registry.items.size).toBeGreaterThan(30);
     for (const section of CONTENT_SECTION_KEYS) {
       const count = section === 'blocks' ? registry.blocks.length - 1 : registry[section].size;
@@ -569,6 +662,8 @@ describe('content references', () => {
             speed: { wander: 0.8, chase: 2.5 },
             stepLength: 0.6,
             wander: {
+              obstacleWanderChance: 0.25,
+              obstacleWanderDistanceMetres: 10,
               idleSeconds: { min: 3, max: 10 },
               strollSeconds: { min: 3, max: 12 },
               leashMetres: 12,
@@ -776,7 +871,7 @@ describe('content', () => {
   });
 
   it('gives every base block a known pattern and patterns the stone work', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     const patternOf = (id: string) => BLOCK_PATTERNS[blockPatterns(registry)[registry.blockIds.get(id)!]!];
     expect(patternOf('brick')).toBe('brick');
     expect(patternOf('stone')).toBe('rough');

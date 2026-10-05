@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { aimDirection } from '../src/core/aim.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -466,8 +467,8 @@ describe('real pump ammunition', () => {
   });
 
   it('commits skill-scaled reload and rack durations to their presentation frames', () => {
-    const novice = fixture(registry, () => 0);
-    const experienced = fixture(registry, () => 12);
+    const novice = fixture(registry, () => SKILL_LEVEL_MIN);
+    const experienced = fixture(registry, () => SKILL_LEVEL_MAX);
     expect(novice.mechanics.load(novice.shells, 0)).toBeUndefined();
     expect(experienced.mechanics.load(experienced.shells, 0)).toBeUndefined();
     const noviceReload = novice.mechanics.frames()[0]!;
@@ -475,8 +476,8 @@ describe('real pump ammunition', () => {
     expect(experiencedReload.duration).toBeLessThan(noviceReload.duration!);
     expect(experiencedReload.duration).toBe(experienced.queue.jobs[0]!.duration);
 
-    const noviceRack = fixture(registry, () => 0);
-    const experiencedRack = fixture(registry, () => 12);
+    const noviceRack = fixture(registry, () => SKILL_LEVEL_MIN);
+    const experiencedRack = fixture(registry, () => SKILL_LEVEL_MAX);
     expect(noviceRack.mechanics.cock(noviceRack.gun.uid, 0)).toBeUndefined();
     expect(experiencedRack.mechanics.cock(experiencedRack.gun.uid, 0)).toBeUndefined();
     const noviceRackFrame = noviceRack.mechanics.frames()[0]!;
