@@ -128,7 +128,6 @@
       "count": 1
     },
     { "path": "docs/PROCESS.md", "check": "path", "text": "skills/agent-mail/TEAM.md", "count": 1 },
-    { "path": "docs/test-pool.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "gungen/cartridges/README.md", "check": "path", "text": "gun/", "count": 1 },
     { "path": "gungen/cartridges/README.md", "check": "path", "text": "viewer/", "count": 1 },
     { "path": "gungen/cartridges/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },

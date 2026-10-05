@@ -455,7 +455,7 @@ Firefox: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch
 Chromium: Snapshot: 50 batches × 128 captures/batch (6400 timed captures); batch-mean throughput p50 0.184 ms/capture, p95 0.266 ms/capture; individual tail n=6400: observed p95 0.200 ms, max 0.500 ms; at observed r=0.100 ms, true p95 <0.300 ms and max <0.600 ms; calibration 32.800 ms; net state unchanged across measurement
 ```
 
-Recomputed from BR's unchanged observed p95/max using the known browser-profile
+Recomputed from BR's unchanged observed p95/max using the known browser timer
 quantum and the jitter-safe `+2r` bound (not output by build `80644d1`): Firefox
 true p95 <3.000 ms and max <4.000 ms; Chromium true p95 <0.400 ms and max
 <0.700 ms.
