@@ -5,7 +5,13 @@ import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from
 import { Inventory } from '../src/core/inventory.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
 import { checkReachability } from '../src/core/reachability.ts';
-import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type ItemDef } from '../src/core/schema.ts';
+import {
+  BLOCK_PATTERNS,
+  CONTENT_SECTION_KEYS,
+  type ContentFile,
+  type ItemDef,
+  type TemplateDef,
+} from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 
@@ -14,6 +20,47 @@ const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+
+interface WindowFrameRun {
+  y: number;
+  z: number;
+  start: number;
+  end: number;
+}
+
+const frameRunsInRow = (row: string, frame: string): { start: number; end: number }[] => {
+  const runs: { start: number; end: number }[] = [];
+  let start: number | undefined;
+  for (const [x, cell] of Array.from(row).entries()) {
+    if (cell === frame) {
+      if (start === undefined) {
+        start = x;
+      }
+    } else if (start !== undefined) {
+      runs.push({ start, end: x });
+      start = undefined;
+    }
+  }
+  if (start !== undefined) {
+    runs.push({ start, end: row.length });
+  }
+  return runs;
+};
+
+const windowFrameRuns = (definition: TemplateDef, frame: string): WindowFrameRun[] =>
+  definition.layers.flatMap((layer, y) =>
+    layer.flatMap((row, z) => frameRunsInRow(row, frame).map(({ start, end }) => ({ y, z, start, end }))),
+  );
+
+const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: string): boolean => {
+  for (const adjacentY of [run.y - 1, run.y + 1]) {
+    const row = definition.layers[adjacentY]?.[run.z];
+    if (row?.slice(run.start, run.end).includes(air)) {
+      return true;
+    }
+  }
+  return false;
+};
 
 describe('content', () => {
   it('base content has no issues', () => {
@@ -600,38 +647,25 @@ describe('templates', () => {
 
   it('leaves an open air cell beside every window-frame run', () => {
     const { registry } = buildRegistry(base);
-    let runs = 0;
-    for (const template of registry.templates.values()) {
-      const frame = Object.entries(template.palette).find(([, value]) => value === 'window_frame')?.[0];
-      if (frame === undefined) continue;
-      const air = Object.entries(template.palette).find(([, value]) => value === 'air')?.[0];
-      expect(air, `${template.id} window palette`).toBeDefined();
-      for (let y = 0; y < template.layers.length; y++) {
-        for (let z = 0; z < template.layers[y]!.length; z++) {
-          const row = template.layers[y]![z]!;
-          for (let x = 0; x < row.length; ) {
-            if (row[x] !== frame) {
-              x++;
-              continue;
-            }
-            const start = x;
-            while (x < row.length && row[x] === frame) x++;
-            const end = x;
-            const hasOpening = [y - 1, y + 1].some(
-              (adjacentY) =>
-                adjacentY >= 0 &&
-                adjacentY < template.layers.length &&
-                Array.from({ length: end - start }, (_, offset) => start + offset).some(
-                  (windowX) => template.layers[adjacentY]![z]?.[windowX] === air,
-                ),
-            );
-            expect(hasOpening, `${template.id} window-frame run at layer ${y}, row ${z}`).toBe(true);
-            runs++;
-          }
-        }
+    const frameRuns = [...registry.templates.values()].flatMap((definition) => {
+      const frame = Object.entries(definition.palette).find(([, value]) => value === 'window_frame')?.[0];
+      if (frame === undefined) {
+        return [];
       }
+      const air = Object.entries(definition.palette).find(([, value]) => value === 'air')?.[0];
+      expect(air, `${definition.id} window palette`).toBeDefined();
+      if (air === undefined) {
+        return [];
+      }
+      return windowFrameRuns(definition, frame).map((run) => ({ definition, run, air }));
+    });
+    expect(frameRuns.length).toBeGreaterThan(0);
+    for (const { definition, run, air } of frameRuns) {
+      expect(
+        runHasAirOpening(definition, run, air),
+        `${definition.id} window-frame run at layer ${run.y}, row ${run.z}`,
+      ).toBe(true);
     }
-    expect(runs).toBeGreaterThan(0);
   });
 
   it('accepts a well-formed template', () => {
