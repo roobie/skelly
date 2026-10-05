@@ -5,9 +5,9 @@ import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import {
-  type HeartbeatTarget,
   HEARTBEAT_FILES,
   HEARTBEAT_QUIET_FLOOR,
+  type HeartbeatTarget,
   heartbeatForStamina,
   subscribeHeartbeatStamina,
 } from './audioPresentation.ts';
