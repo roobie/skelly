@@ -1,266 +1,145 @@
 ---
 id: skelly::deadvox-controls
-description: Draft of deadvox's whole verb-to-input map for Slices 1-3, with the state each input depends on and the browser and OS conflicts it must avoid
+description: Player input policy, BR's rulings, native browser boundaries and unresolved combat controls.
 tags: [deadvox, design, controls, input, ui]
 created: 2026-09-28
-status: draft
+status: active
 read_if:
   - you plan or change player or debug input bindings
   - you review BR's control rulings or unresolved input questions
+  - you change input ownership, binding preferences or their labels
 ---
 
-# deadvox — controls (draft)
+# Controls and input ownership
 
-[[THIS is_grounded_by: INTERFACE.md]]
-[[THIS is_grounded_by: DESIGN.md]]
-[[THIS is_grounded_by: EPIC.md]]
+Read with [INTERFACE.md](INTERFACE.md), especially “Afford, don't instruct” and
+“Readying before acting”. Combat proposals below are not implemented merely by
+appearing in this document.
 
-**Status:** draft for BR. Nothing here is decided unless it says "BR ruled".
-BR asked on 2026-09-28 for the whole map to be designed up front instead of one
-key per issue (#27 started it), because the failure lives in the whole map:
-a key given away today collides with a verb that arrives in Slice 3. Read with
-[INTERFACE.md](INTERFACE.md) ("Afford, don't instruct", "Readying before
-acting").
+## BR's rulings
 
-## What's already ruled
+- **One registry, player rebinding (2026-10-04):** “we must make it so the player
+  can rebind any keyboard input - this means we need a 100% centralised registry”.
+  See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, rather than a copied default
+  list. The controls card and settings are generated from that same catalogue;
+  see `src/game/controls.ts`, `controlsCardRows`, and `src/ui/inputOptions.ts`,
+  `mountInputOptions`.
+- **Physical position, not layout glyph:** `KeyboardEvent.code` identifies the
+  input; layout affects only its displayed label. This avoids moving movement
+  positions on another keyboard layout. See `BindingRegistry.loadLayout` and
+  `labelForAction` in `src/game/inputBindings.ts`.
+- **No Ctrl or Cmd, ever (2026-10-04):** “due to the browser being the browser,
+  we cannot use Ctrl or Cmd for anything, ever.” Game bindings refuse these
+  modifiers; native text editing and browser shortcuts remain native.
+- **Quick actions (2026-10-04):** “hold T+click on item does the quick action
+  (auto move)”. The held quick-action gate is rebindable. It saves clicks, not
+  handling time, and never invokes an item's use action. See
+  `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, and
+  `src/core/options.ts`, `quickMove`.
+- **Debug gate (2026-10-04):** “gating them all behind e.g. holding down F1 then
+  pressing the debug key? Unless some special circumstance for a key need it
+  readily available”. The gate is itself a binding, not a native OS modifier.
+  A consumed debug chord cannot also execute its ordinary gameplay command.
+- **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
+  remain reserved. Reserve their physical positions across contexts, including
+  debug, rather than inventing no-op lean commands.
+- **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
+  to the browser. Escape releases pointer lock and is never a game rebind.
+- **Reload only (2026-10-04):** “It shall mean only (re)load in the default
+  view”; “press and hold R to load it with shells from inventory double-press
+  R to rack”; “Single tap r does nothing”. The two gestures share one atomic
+  binding slot. Classification belongs to `src/game/reloadInput.ts`,
+  `ReloadInput`; ammunition work belongs to its existing handling owner.
+  Inventory rotation is a different visible context, not another reload gesture.
+- **No rest or sleep keys (2026-10-04):** rest uses restable furniture and
+  sleep uses sleepable furniture. Neither has a registry entry. Furniture
+  initiation belongs to d45 through ordinary world interaction; stopping and
+  continuing owned work retain their semantic controls.
+- **Wield, then activate (2026-10-04):** “diegesis: wield item->activate”. A key
+  acts on the door from a hand; an ammunition box is wielded and activated to
+  unpack. No inventory shortcut replaces those mechanics.
+- **Dominant and off roles (2026-10-04):** handedness is actor identity, not a
+  chord swap or physical slot migration. See `src/core/character.ts`,
+  `dominantSide` and `offSide`; `src/game/primaryAction.ts`,
+  `selectPrimaryAction`; and [character-handedness.md](docs/character-handedness.md).
+  Pointer action identities are in `src/game/inputBindings.ts`, `POINTER_ACTIONS`;
+  keyboard rebinding does not add mouse-rebinding UI.
+- **Quickbar (2026-10-05):** a tap takes an item into its capability-directed
+  hand or puts it away; a hold uses an available action. See
+  `src/game/quickbarInput.ts`, `QuickbarInput`, and
+  `src/game/quickbarActions.ts`, `QuickbarActions`.
 
-- **Ready before acting (BR, 2026-09-27):** holding the right mouse button
-  readies a weapon; firearms shoot only while ready. A middle click or Shift
-  toggles hip and sights while a firearm is ready; ready caps speed at a hurried
-  march; right mouse plus S blocks melee. The current melee action remains the
-  d7 left-click swing.
-- **F interacts; Q and E are reserved (BR, 2026-09-27).**
-- **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
-- **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
-  flashlight in hands, then left-click to activate (left-click generally means
-  'do the thing with the thing you're holding')." Dominance selects the hand
-  role; it does not move an item between physical slots. See "The two hands"
-  for the policy's owners rather than a second binding map.
-- **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
-  ruling: holding left click performs a long use, and releasing it early
-  cancels.
-- **Every key can be rebound, from one registry (BR, 2026-10-04):** "we must make
-  it so the player can rebind any keyboard input - this means we need a 100%
-  centralised registry".
-- **Debug keys sit behind F1 (BR, 2026-10-04):** "gating them all behind e.g.
-  holding down F1 then pressing the debug key? Unless some special circumstance
-  for a key need it readily available". This answers open question 6.
-- **No Ctrl or Cmd, ever (BR, 2026-10-04):** "due to the browser being the
-  browser, we cannot use Ctrl or Cmd for anything, ever." This answers open
-  question 2.
-- **Quick actions sit behind a held T (BR, 2026-10-04):** "like with F1 being
-  the debug mod key ... we'd use a non modifier key, like say 'T' as a general
-  quick action mod key", and "hold T+click on item does the quick action (auto
-  move)". T is the default; the gate is rebindable like any other key.
-- **R only reloads (BR, 2026-10-04).** "It shall mean only (re)load in the
-  default view". With a shotgun: "press and hold `R` to load it with shells from
-  inventory double-press `R` to rack", and "Single tap r does nothing". This
-  answers open question 4.
-- **No rest or sleep keys (BR, 2026-10-04).** "`rest` shouldn't have a dedicatec
-  keybind - instead, you interact with 'restable' items - e.g. beds, sofas,
-  chairs, etc", and "`L` remvoed - sleep is on sleepable objects, like bed".
-- **Wield, then activate (BR, 2026-10-04):** "diegesis: wield item->activate".
-  "using the key means wielding it, and activating it on the door". An ammo box
-  is the same: "that's not a thing you do in inventory - you wield the box and
-  activante it in oder to unpack". No inventory action or modifier chord
-  replaces it.
-- **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-
-  or left-handed dominant is a thing we should accomodate. This'd mean that all
-  quick actions etc take this into account, and the flip of
-  activate-what's-wielded vs activate-off-hand". The creation choice belongs to
-  actor identity and Continue restores it; see `docs/character-handedness.md`.
-  Planned controls must use semantic roles rather than physical hand names.
+## Why there is one keyboard owner
 
-- **R reload only in the default view (BR, 2026-10-04):** with a pump held,
-  hold to load loose shells, double-press to rack, and a short single tap does
-  nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
-  `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
-  Inventory R still rotates. **Rest has no dedicated key** (BR, 2026-10-04 12:15);
-  d45 supplies restable furniture initiation. Until d44 removes its binding,
-  L toggles sleep.
-- **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
-  activate with the held-item primary action to unpack. No inventory Unpack/Load.
-  Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
-  X cancels without loss; overflow becomes an ordinary pile.
+A context describes visible attention, not hidden mechanic eligibility. Menus,
+reading, inventory and debug modals shield gameplay even if no widget consumes a
+particular key. Availability, reach, ammunition and action refusal remain with
+existing gameplay owners. See `src/game/inputBindings.ts`, `KeyboardInput`, and
+`src/game/play.ts`, `startPlay`.
 
-## Principles
+One key can own several press kinds only as a declared gesture family, not as
+competing listeners. Rebinding the reload slot changes both commands together;
+there is no second gesture scheduler. Conflict refusal names the overlapping
+semantic action/context and checks all alternatives, gates and held modifiers.
+A held modifier must not silently steal sprint. See `bindingConflict` in
+`src/game/inputBindings.ts`.
 
-1. **One verb, one input, in every state where the verb exists.** A key may mean
-   different things in different states only when the state is visible on the
-   body or the screen (a menu is open, the weapon is raised). Never on hidden
-   state.
-2. **Mistakes are cheap.** Anything that spends an item, makes noise or starts a
-   long action needs a deliberate input (hold, or a stance first), so a stray
-   click does nothing costly. Noise is the real cost of a wrong click here: the
-   hearing model turns an input slip into an alerted street.
-3. **The body shows the state.** Ready, a long use in progress, which hand is
-   active: each is visible in first person, not written on the HUD.
-4. **One binding table.** Every input is read from the table in
-   `src/game/input.ts` (`KEY_BINDINGS`), so labels, help and hints can't go
-   stale and a rebind is one edit. Today most keys are still literals in
-   `play.ts`, `inventoryScreen.ts` and `debug/index.ts`.
-5. **Physical positions, not letters.** Bindings use `KeyboardEvent.code`
-   (already the case), so WASD stays in place on AZERTY or Dvorak. Labels shown
-   to the player should come from the layout map where the browser has one.
+Owner changes, lost focus, pointer-lock loss and changed bindings withdraw held
+intents and the owned reload/quickbar gestures. Already-held gameplay keys must
+be released before they can act in a new owner. Unrelated handling jobs are not
+cancelled by input cleanup. Debug unfreeze uses DOM input, not simulation ticks.
+The source guard in `test/inputLiterals.test.ts` prevents other modules from
+acquiring physical key literals or DOM keyboard interpretation.
 
-## Browser and OS constraints
+## Native browser boundary and exceptions
 
-These are facts to verify on each target before a key is assigned, not
-assumptions. The ones marked **verify** have not been checked for this game.
+Native text entry, IME, selection, clipboard, focus traversal and ordinary menu
+form activation stay with the DOM. Reimplementing a text editor or focus engine
+would add a second platform without a game-specific inadequacy. Interpreted game
+commands, custom modal navigation and held quick/debug gates remain rebindable.
+See `src/game/inputBindings.ts`, `NATIVE_INPUTS` and `NATIVE_EDITING`.
 
-| Input | Problem | Status |
-| --- | --- | --- |
-| F10 | Firefox's menu bar | known; F9 used instead |
-| Alt | Firefox shows its menu bar on release; many Linux window managers use Alt + drag to move windows | avoid |
-| Escape | Always releases pointer lock; the browser owns it | fixed; never bind |
-| Ctrl + W, Ctrl + T, Ctrl + N, Ctrl + Q | Browser shortcuts that pages generally can't prevent outside fullscreen with the Keyboard Lock API. With Ctrl as any held modifier, W's key repeat while walking arrives as Ctrl + W: the tab closes | ruled out: no Ctrl or Cmd bindings at all (BR, 2026-10-04) |
-| Ctrl + click on macOS | The OS treats it as a secondary click; unknown whether that still holds under pointer lock | moot: no Ctrl or Cmd bindings (BR, 2026-10-04) |
-| F5, F11, F12, Ctrl + R | Reload, fullscreen, devtools | avoid |
-| Tab | Moves browser focus; the game prevents it already | in use (inventory) |
-| Backquote | Physical key exists on all common layouts; `code` is stable | in use (debug panel) |
-| Middle click | Some Linux desktops paste on middle click; in a pointer-locked canvas it's harmless | acceptable |
+Noclip flight is the substantive debug exception: holding the debug gate for an
+entire flight would occupy a hand and interfere with viewing. Flight controls
+only act in the visible noclip context; entering/exiting it remains gated.
+Spawn selection and dismissal are ordinary modal navigation, not authoring.
+Actual keyboard spawning and native activation of debug buttons still require
+the gate. Mouse authoring remains available without it.
 
-## Verbs, Slices 1–3
+Alt is not refused pending BR's ruling. `REFUSED_MODIFIERS` in
+`src/game/inputBindings.ts` is the one place to extend refusal; it also drives
+capture diagnostics. A deliverable key does not prove immunity from desktop OS
+interception. Chromium/Firefox native input and pointer-lock checks do not imply
+Safari or macOS acceptance.
 
-What the player can do, and when it arrives. "Now" means in the game today.
+## Preferences, not save identity
 
-| Verb | When | Kind |
-| --- | --- | --- |
-| Move, look, jump | now | continuous |
-| Walk/jog toggle, sprint | now | stance |
-| Interact with the world (doors, furniture, piles) | now | instant |
-| Inventory screen | now | menu |
-| Quickbar slots 1–5 | now | tap to take or put away; hold to use |
-| Use held item: light on/off | now (quickbar hold or primary action) | instant |
-| Use held item: eat, drink, bandage | now (U or quickbar hold) | long |
-| Cancel handling | now | instant |
-| Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
-| Melee strike | implemented; see `src/game/primaryAction.ts`, `selectPrimaryAction` | instant, noise |
-| Main menu | now | menu |
-| Ready a weapon, block | Slice 3 (ruled) | stance |
-| Hip / sights toggle, shoot | Slice 3 (ruled) | stance, noise |
-| Reload, check magazine | Slice 3 | long |
-| Crouch | Slice 3 (sight and noise when crouching) | stance |
-| Throw (flare, glowstick, lure) | Slice 3 | instant, noise |
-| Put the held item away (stow) | now (tap its quickbar slot) | handling |
-| Use off-hand primary action | implemented; see `src/game/input.ts`, `KEY_BINDINGS` | instant |
-| Read a book, craft, repair | Slice 2 | long, menu |
-| Lean | reserved (Q, E) | stance |
+`BindingRegistry` in `src/game/inputBindings.ts` uses the same origin-local
+JSON/localStorage substrate as HUD/audio preferences. “Per player” means this
+browser profile, not a saved character or an account. HTTP/HTTPS origins do not
+share preferences. There is no migration, preference workflow or cross-tab
+coordination layer.
 
-## Proposed map
+Stored rows are untrusted: unknown/invalid overrides are dropped, conflicts are
+resolved deterministically, and defaults remain usable. A storage refusal leaves
+the session's accepted rebind usable and reports a nonfatal preference notice.
+Reset clears overrides and transient input. No save-format field changes.
 
-Shipped profile. The development profile adds the debug keys (see "Debug keys"
-below). Implemented hand activation is not duplicated in this proposal; see
-`src/game/input.ts`, `KEY_BINDINGS`, and "The two hands".
+## Combat proposals and open questions
 
-| Input | Unready | Weapon ready | Menu open | During a long action | Interruption shown |
-| --- | --- | --- | --- | --- | --- |
-| W A S D | move | move, capped at a hurried march; S backs off (block with right mouse) | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
-| Mouse | look | aim | drawn cursor | look | look |
-| Left click, hold | proposed long use of the dominant-hand item (d44); releasing early cancels, nothing applied | — | drag | keep holding | — |
-| Right mouse, hold | ready the main-hand weapon; with nothing to ready, nothing | stays ready | — | — | — |
-| Middle click | — | toggle hip / sights | — | — | — |
-| Shift | sprint | toggle hip / sights | — | — | — |
-| Space | jump | jump | — | — | — |
-| Z | walk / jog toggle | — | — | — | — |
-| C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
-| F | interact with what's outlined | interact | — | — | — |
-| R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
-| L | sleep; again stops (current runtime, until d44/d45) | — | — | stop sleeping | — |
-| T, held | — | — | with a click on an item: its quick action (auto move; d44) | — | — |
-| X | cancel handling | cancel | cancel handling | stop | stop |
-| 1–5 | tap takes the slot's item into its capability-directed hand or puts it away; hold uses an available action from its location | same | assign the selected item to the slot | — | — |
-| Tab | inventory | inventory | close inventory | — | — |
-| F9 | main menu | main menu | close | main menu | main menu |
-| Q, E | lean (reserved) | lean | — | — | — |
-| G | throw the held throwable (Slice 3) | — | — | — | — |
+BR ruled on 2026-09-27 that holding the right mouse button readies a weapon;
+firearms shoot only while ready. A middle click or Shift would toggle hip/sights
+within readiness, ready caps speed at a hurried march, and backing off while
+ready blocks melee. These proposals must not be inferred from the registry or
+silently added while porting inputs.
 
-Notes on the proposal:
-
-- **Quickbar tap/hold:** a tap only takes an item into its capability-directed
-  hand or puts it away; a hold uses its available action without making a firearm
-  rack through the quickbar. The hold estimate belongs to
-  `src/game/quickbarInput.ts`, `QuickbarInput`; the gesture is presentation state,
-  not simulation time. A light primary action on either hand still calls
-  `Survival.use`.
-- **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
-  `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
-  Rest has no input binding until restable furniture (d45); inventory R rotation
-  is a different view. X still stops an existing rest, C continues after interruption.
-  Until d44 removes its binding, L toggles sleep; d45 supplies furniture initiation
-  for rest and sleep.
-- **C is overloaded**: crouch in play, continue on an interruption card. The card
-  is on screen when C means continue, which satisfies principle 1, but it's the
-  weakest overload in the map. Open question 5.
-- **Crouch on C, not Ctrl**, whatever the Ctrl verification finds, because of
-  the Ctrl + W risk.
-- **Activation must not invent a second action owner:** capability admission
-  belongs to `src/game/primaryAction.ts`, `selectPrimaryAction`; mechanics and
-  handling retain their own costs and refusal rules.
-
-## The two hands (issue #27)
-
-**BR's handedness ruling (2026-10-04)** makes dominant and off-hand activation
-roles follow the actor. The physical slots and a restored fist sequence remain
-physical; otherwise Continue would silently move equipment or change the next
-attack. See `src/core/character.ts`, `dominantSide` and `offSide`;
-`src/game/input.ts`, `KEY_BINDINGS`; and `src/game/primaryAction.ts`,
-`selectPrimaryAction`. Mouse 5 remains the explicit off-hand instant use;
-Mouse 4 stays unbound because both side buttons can navigate browser history.
-The selector refuses unsupported items and reserved support rather than
-substituting a fist or the other hand's action.
-
-Creation must precede gameplay construction, not mutate an already-running
-actor. See `src/ui/saveController.ts`, `SaveController.setNewWorldLauncher`,
-and `src/game/play.ts`, `startPlay`, for the accepted-launch boundary. Continue's saved
-identity takes precedence over creation controls.
-
-## Debug keys
-
-The development profile binds B, G, H, K, N, P, T, U, V and Backquote
-(`src/debug/index.ts`). Debug firearm handling is available only from a
-`?debug=1` session: use G to spawn `debug_rifle_assault`, move it to a hand,
-then use that hand's primary action. It produces no hits, damage, or ammo use;
-each shot records one spent case. The deterministic handling range and table
-sit beside the hamlet. In play, these letters are free in the shipped game but
-taken in the development and playtest builds, which is where the controls get
-tested; a shipped verb on V would collide in every test session. BR ruled on
-2026-10-04 that debug keys go behind a held F1 (see "What's already ruled"),
-which frees the letters for shipped verbs, including T for the quick-action gate.
-d44 makes that change.
-
-See `src/game/input.ts`, `CONTROL_CODES.descend`, for the debug noclip descend
-binding, separate from reload and the reserved lean inputs. `Input` owns its
-browser back-navigation refusal in the pointer-locked default view; menu text
-editing retains native key behaviour.
-
-## Open questions for BR
-
-1. **The two hands:** bindings for dominant/off-hand activation remain open to
-   revision after play; physical anatomy is not a binding policy.
-2. ~~**Ctrl:** verify Ctrl + W under pointer lock before any Ctrl binding.~~
-   **Answered (BR, 2026-10-04):** no Ctrl or Cmd, ever.
-3. **Press-and-hold for long uses:** confirm as the rule for every long use (eat,
-   drink, bandage, read, reload), with release before completion cancelling and
-   nothing applied?
-4. ~~**Reload:** R when ready (overloaded with rest), or its own key?~~
-   **Answered (BR, 2026-10-04):** R only reloads, and rest has no key.
-   Pump: hold loads, double-press racks, single tap does nothing. See
-   `src/game/reloadInput.ts`, `RELOAD_GESTURE_MS`, for gesture thresholds.
-5. **Continue after an interruption:** keep C (crouch elsewhere), or make the
-   interruption card a two-button choice clicked with the drawn cursor, freeing
-   C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.
-6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
-   2026-10-04):** behind a held F1.
-7. ~~**Stow on the held slot's key:** confirm pressing the held item's slot puts it
-   away?~~ **Answered (BR, 2026-10-05):** a tap takes the item into its hand or
-   puts it away; a hold uses an available action.
-
-## Next steps
-
-1. BR rules on the open questions; this document becomes `active`.
-2. One implementation item: every input read from the binding table; left click
-   and hold as specified; the debug-key move; a guard test that no module outside
-   the table names a `code` literal; the help list and hints generated from the
-   table.
-3. Slice 3 verbs are added to the table as they land, against this map.
+1. Dominant/off activation bindings remain open to revision after play; anatomy
+   is not a binding policy.
+2. Press-and-hold for all long uses remains a direction from 2026-09-28, not a
+   universal cancellation rule. Do not redesign mouse use as part of rebinding.
+3. Continue on the interruption card versus future crouch is a visible-state
+   overload to settle before crouch lands. A clickable choice could remove it.
+4. Best-pocket's default remains BR's decision; its entry is authoritative in
+   the registry, not duplicated here.
+5. Future ready/sights, crouch, throw, lean, craft and magazine-check inputs are
+   added only when their mechanic lands, against the whole conflict model.

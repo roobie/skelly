@@ -19,14 +19,12 @@ This file describes the code as it is. The game's design and roadmap are in
 - `?radius=N` sets the view distance in metres (default 96; the start card offers
   64, 96 and 128).
 - `?time=HH:MM` sets the time of day at the start (default 19:30).
-- `?debug=1` turns on debug keys: B toggles build mode (break and place blocks,
-  1–9 to choose), T starts or stops compressed time (a stand-in for resting), N
-  makes a noise that interrupts it, U toggles a pretend danger that makes
-  compression unsafe, K takes 25 health (four presses show the death screen),
-  G opens a spawn menu that drops any item at your feet, H toggles god mode, P
-  toggles noclip (Space rises, R descends) and V spawns shamblers. Backquote
-  opens the debug panel, which has the same actions as buttons. The code is in
-  `src/debug`.
+- `?debug=1` enables debug authoring tools. Keyboard authoring requires the
+  rebindable debug gate; noclip flight and spawn navigation/dismissal are the
+  explicit exceptions. Effective chords are generated in settings and the
+  debug panel from `src/game/inputBindings.ts`, `INPUT_BINDINGS`; see
+  `CONTROLS.md` for why text editing stays native rather than becoming a second
+  input platform.
 - `?bench=1` runs the benchmark; `?bench=report` shows its last results (the
   shambler benchmark's too). `&time=HH:MM` runs it at that time of day instead
   of noon. See `src/bench/run.ts`, `benchRunFromUrl` and `startBench`.
@@ -130,9 +128,8 @@ npm run validate   # base content; add paths to validate a mod on top
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (towns, a region map).
 - Rest has no dedicated key; restable furniture interaction arrives in d45.
-- Fatigue is recovered by the rest system and sleeping (L), better on a bed. The
-  status is numbers in the HUD for now. Only food, drink, lights and batteries
-  can be used.
+- Rest/sleep mechanics recover fatigue, but neither has an initiation key;
+  furniture initiation is d45. Their status is a HUD readout.
 - A light that's switched on shines only from your hands; put away, it goes off.
 - The death screen's "time survived" is game time; its looting summary counts
   items taken out of furniture, not ones picked up from the ground.
@@ -142,7 +139,7 @@ npm run validate   # base content; add paths to validate a mod on top
   with models lying in the same pile.
 - `models-firearms.json` has eleven firearm models: eight from "CC0 Flat Guns West"
   on OpenGameArt and three Gungen exports: the curated AR, AK and 12-gauge pump.
-  The three debug firearm items (no loot table; spawn with G under `?debug=1`)
+  The three debug firearm items (no loot table; spawn through the gated debug menu under `?debug=1`)
   exercise models in hands and piles. AR/AK use exported automatic and hand
   cycles with virtual debug rounds. The playable pump uses real 00-buck shells,
   a four-shell tube plus chamber, one-shell loading jobs and manual exported

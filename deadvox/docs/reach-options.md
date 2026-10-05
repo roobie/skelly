@@ -2,6 +2,7 @@
 read_if:
   - you change inventory reach, wield preferences or quick-move admission
   - you change delayed item use or battery selection
+  - you change the quick-action gate or inventory binding labels
 ---
 
 # Inventory reach and options (Slice 2.1)
@@ -30,9 +31,12 @@ an actor's work; no migration is owed before the compatibility milestone.
 
 `src/core/options.ts` supplies move/use plans, labels, refusal reasons and times.
 Survival retains registered queue actions and effects, not separate eligibility.
-Ordinary E chooses the quickest pocket; ordinary to-hands and five-spot drop ordering
-are retained. Quick move is Ctrl-click (Cmd-click on macOS) until d44 moves it
-to hold T and click, as BR ruled on 2026-10-04 (CONTROLS.md); Shift is unchanged.
+The ordinary best-pocket command chooses the quickest pocket; ordinary to-hands
+and drop ordering are retained. Quick move uses hold T and click in the default
+profile, as BR ruled on 2026-10-04 (`CONTROLS.md`). Its rebindable gate is declared
+in `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and read by
+`src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`; no browser modifier
+selects the quick move.
 The binding only queues the ordinary whole-stack handling move, never transfers
 immediately or invokes use/eat/drink/switch.
 
@@ -57,9 +61,9 @@ immediately or invokes use/eat/drink/switch.
   then a separate next use switches the light on, as before.
 
 The locked-menu adapter preserves Ctrl, Cmd, Shift and Alt on forwarded pointer
-and click events. The inventory regression crosses that adapter from the locked
-canvas (Ctrl, best-effort Mac Cmd, ordinary click and Shift-only drag controls),
-not just the inventory's receiving handler.
+and click events without interpreting them as game bindings. The inventory
+regression crosses that adapter from the locked canvas, with browser-modifier
+flags and a rebound held quick gate, not just the inventory's receiving handler.
 
 Tests protect each quick-move rule, locked-menu pointer queue binding, searched/nested
 reach, delayed revalidation and scalar invalidation. Absolute boundary tests fail

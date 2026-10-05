@@ -1,7 +1,7 @@
 name: deadvox
 
-# Markdown-only changes skip this workflow, except TROUBLESHOOTING.md, whose generated key
-# table test/debugActions.test.ts checks against the code. Later patterns override earlier ones.
+# Keep troubleshooting changes checked with browser contracts because they describe stage modes.
+# Later patterns override earlier ones.
 on:
   push:
     branches: [main]
