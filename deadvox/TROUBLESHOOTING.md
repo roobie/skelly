@@ -75,6 +75,7 @@ In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
+- `voicePitch=<factor>` and `voicePitchLarge=<factor>` on `?site=voice_size&debug=1` tune the smallest and tallest figures' pitch anchors before interpolation and clamping. `src/game/shamblerAudio.ts`, `debugVoicePitch`, ignores them on other sites or without debug mode.
 - `hotcheck=1` (PageDown): world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.
@@ -152,10 +153,15 @@ Two single-case quarantines remain; a fresh pass does not establish a fix:
 Neither is in the default Firefox command. No retries or increased bounds; record a
 fixed trial plan and before/after/restored-before evidence before reinstating a case.
 
-Set `DEBUG=pw:browser` for native browser launch/stderr/exit traces. The Chromium UI
-launcher emits `UI_LAUNCH_FAILURE` with both executable/argument/PID/exit/signal records,
-bounded output tails, ports, HTTP status, discovery error (including its cause), and CDP
-targets. Startup fetches and JSON bodies share their stage's remaining deadline.
+Set `DEBUG=pw:browser` for Playwright browser launch and transport traces. The Chromium UI
+contract in `tools/ui-browser-contract.mjs`, `ui-browser-contract`, enables that channel before
+importing Playwright, so Chrome's GPU and launch messages appear in the job log as `pw:browser`
+lines. It starts Vite and waits for its root response before navigating a Playwright-controlled
+Chrome; a page CDP session preserves raw input. `UI_BROWSER_LAUNCH` records Chrome version and
+graphics arguments, while `UI_BROWSER_GRAPHICS` records the active WebGL renderer. When
+`chromium.launch` fails, `UI_LAUNCH_FAILURE.error` carries Playwright's browser log; the record
+also includes requested browser arguments, browser connection state/version, Vite's last
+response, navigation phase, page URL and page errors.
 
 Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
 separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,

@@ -15,7 +15,7 @@ import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, type UseOption, useOption } from '../core/options.ts';
+import { doorOptions, doorPlan } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -30,7 +30,13 @@ import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { quickbarKey, renderQuickbar } from '../ui/hud.ts';
-import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
+import {
+  type HudOptionsState,
+  hudVisibility,
+  readHudOptions,
+  renderHudOptions,
+  writeHudOptions,
+} from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
@@ -51,7 +57,13 @@ import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
-import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
+import {
+  createRefusalPresenter,
+  firearmShotSound,
+  handlingMoveCompleteCue,
+  handlingMoveStartCue,
+} from './audioPresentation.ts';
+import { labelForCode } from './controls.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
@@ -81,6 +93,7 @@ import { selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
+import { restKindForFurniture } from './rest.ts';
 import { createSession } from './session.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
@@ -214,6 +227,7 @@ export const startPlay = (
       },
     },
     notice: (text) => showNotice(text),
+    refusal: (text) => showRefusal(text, sim.time),
     onRead: (readable) => reading.open(readable),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onFirearmEjection: (effect) => caseEffects.spawn(effect),
@@ -244,8 +258,6 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
-  const useItem = (item: Item): string | undefined =>
-    firearms.supportsUse(item) ? firearms.use(item, sim.time) : survival.use(item);
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet);
   if (session.restoredLook) {
@@ -321,12 +333,18 @@ export const startPlay = (
     notice = text;
     noticeUntil = performance.now() + 3000;
   };
+  const nope = registry.sounds.get('player_nope');
+  const showRefusal = createRefusalPresenter(
+    showNotice,
+    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
+    nope?.minIntervalSeconds ?? 0,
+  );
 
-  const toggleRest = (kind: RestKind): void => {
-    if (compression.interruption !== undefined) {
+  const toggleRest = (kind: RestKind, entity: BlockEntity): void => {
+    const already = rest.action?.kind === kind && rest.action.furnitureUid === entity.uid;
+    if (compression.interruption !== undefined && !already) {
       return;
     }
-    const already = rest.action?.kind === kind;
     if (!already) {
       if (compression.locksInput) {
         return;
@@ -336,9 +354,9 @@ export const startPlay = (
         options.saveController?.beforeSleep();
       }
     }
-    const reason = rest.toggle(kind);
+    const reason = rest.toggle(kind, entity.uid);
     if (reason) {
-      showNotice(`Can't ${kind}: ${reason}`);
+      showRefusal(`Can't ${kind}: ${reason}`, sim.time);
     }
   };
 
@@ -347,7 +365,7 @@ export const startPlay = (
   const toggleDoor = (entity: BlockEntity) => {
     const option = doorOptions(inventory, entity)[0]!;
     if (!option.plan.ok) {
-      showNotice(option.plan.reason);
+      showRefusal(option.plan.reason, sim.time);
       return;
     }
     queue.enqueueAction(DOOR_ACTION, `${option.label} the ${nameOf(entity)}`, option.plan.time, {
@@ -368,7 +386,7 @@ export const startPlay = (
     const operation = entity.lock?.locked ? 'unlock' : 'lock';
     const plan = doorPlan(inventory, entity, operation, [lock]);
     if (!plan.ok) {
-      showNotice(plan.reason);
+      showRefusal(plan.reason, sim.time);
       return;
     }
     queue.enqueueAction(DOOR_ACTION, `${operation === 'lock' ? 'Lock' : 'Unlock'} the ${nameOf(entity)}`, plan.time, {
@@ -390,9 +408,7 @@ export const startPlay = (
     },
     searching: session.searching,
     notice: showNotice,
-    use: useItem,
-    useOption: (item, reachView): UseOption =>
-      firearms.supportsUse(item) ? firearms.useOption(item) : useOption(item, reachView),
+    refusal: (text) => showRefusal(text, sim.time),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
@@ -403,7 +419,7 @@ export const startPlay = (
   });
 
   const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
-    notice: showNotice,
+    notice: (text) => showRefusal(text, sim.time),
     started: () => {
       closeInventoryScreen();
       syncMenuState();
@@ -559,7 +575,7 @@ export const startPlay = (
     queue.cancel();
     const result = sim.compress();
     if (!result.ok) {
-      showNotice(`Can't rest: ${result.reason}`);
+      showRefusal(`Can't rest: ${result.reason}`, sim.time);
     }
   };
 
@@ -612,12 +628,12 @@ export const startPlay = (
     if (workUid !== undefined) {
       const reason = actOnWork(workUid, 'continue');
       if (reason) {
-        showNotice(`Can't continue: ${reason}`);
+        showRefusal(`Can't continue: ${reason}`, sim.time);
       }
     } else if (rest.action || sim.actions.job?.jobType === 'reading') {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
-        showNotice(`Can't continue: ${reason}`);
+        showRefusal(`Can't continue: ${reason}`, sim.time);
       }
     } else {
       compress();
@@ -662,11 +678,17 @@ export const startPlay = (
     syncMenuState();
   };
 
-  const quickbarActions = new QuickbarActions({ inventory, queue, feet, survival, notice: showNotice });
+  const quickbarActions = new QuickbarActions({
+    inventory,
+    queue,
+    feet,
+    survival,
+    notice: (text) => showRefusal(text, sim.time),
+  });
   const quickbarTap = (slot: number) => {
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
-      showNotice(`Quickbar ${slot + 1} is empty`);
+      showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
       return;
     }
     quickbarActions.tap(item);
@@ -674,7 +696,7 @@ export const startPlay = (
   const quickbarHold = (slot: number) => {
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
-      showNotice(`Quickbar ${slot + 1} is empty`);
+      showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
       return;
     }
     quickbarActions.hold(item);
@@ -682,9 +704,17 @@ export const startPlay = (
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
   globalThis.addEventListener('blur', () => quickbarInput.cancel());
 
-  /** Rest has no initiation key; C continues owned craft work and L still toggles sleep. */
+  /** L remains until d44 removes the legacy binding; F starts actions through furniture. */
   const longActionKeys = new Map<string, () => void>([
-    [CONTROL_CODES.sleep, () => toggleRest('sleep')],
+    [
+      CONTROL_CODES.sleep,
+      () => {
+        const entity = lookedAt();
+        if (entity && restKindForFurniture(entities.defOf(entity)) === 'sleep') {
+          toggleRest('sleep', entity);
+        }
+      },
+    ],
     [CONTROL_CODES.continue, () => session.crafting.currentUid !== undefined && continueAction()],
   ]);
 
@@ -695,7 +725,7 @@ export const startPlay = (
       return;
     }
     const action = worldActionForKey(code);
-    if (action === 'interact' && !compression.locksInput) {
+    if (action === 'interact' && (!compression.locksInput || rest.action !== undefined)) {
       use();
     } else if (action === 'cancel') {
       input.reload.cancel();
@@ -763,14 +793,14 @@ export const startPlay = (
       load: () => {
         const reason = firearms.loadNext(uid, sim.time);
         if (reason) {
-          showNotice(reason);
+          showRefusal(reason, sim.time);
         }
         return reason === undefined;
       },
       rack: () => {
         const reason = firearms.cock(uid, sim.time);
         if (reason) {
-          showNotice(reason);
+          showRefusal(reason, sim.time);
         }
       },
       cancelLoad: () => firearms.cancelLoad(uid),
@@ -880,31 +910,48 @@ export const startPlay = (
       open: entity.open,
       container: Boolean(entity.pockets),
       readable: Boolean(entities.defOf(entity).readable),
+      restAction: restKindForFurniture(entities.defOf(entity)),
+      interactLabel: labelForCode(CONTROL_CODES.interact),
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
     });
   };
 
-  /** F: doors first, then readable furniture, then container search/inventory. */
+  /** F: doors first, then readable/restable furniture, then container search/inventory. */
   function use(): void {
     const entity = lookedAt();
-    if (!entity) {
+    if (!entity || (compression.locksInput && rest.action?.furnitureUid !== entity.uid)) {
       return;
     }
-    if (entities.defOf(entity).door) {
+    useTarget(entity);
+  }
+
+  function useTarget(entity: BlockEntity): void {
+    const def = entities.defOf(entity);
+    if (def.door) {
       toggleDoor(entity);
-    } else if (entities.defOf(entity).readable) {
+      return;
+    }
+    if (def.readable) {
       const reason = session.readFurniture(entity);
       if (reason) {
-        showNotice(reason);
+        showRefusal(reason, sim.time);
       }
-    } else if (entity.pockets) {
-      playtestObserver?.beginSearch(entity, nameOf(entity));
-      search(entity);
-      if (!screen.isOpen) {
-        toggleInventory();
-      }
+      return;
+    }
+    const kind = restKindForFurniture(def);
+    if (kind) {
+      toggleRest(kind, entity);
+      return;
+    }
+    if (!entity.pockets) {
+      return;
+    }
+    playtestObserver?.beginSearch(entity, nameOf(entity));
+    search(entity);
+    if (!screen.isOpen) {
+      toggleInventory();
     }
   }
 
@@ -961,7 +1008,7 @@ export const startPlay = (
       aimPitch: input.pitch,
     });
     if (result === 'too-tired') {
-      showNotice('You are too tired to swing');
+      showRefusal('You are too tired to swing', sim.time);
     }
   };
 
@@ -996,7 +1043,7 @@ export const startPlay = (
     const reason = firearms.fireReason(weapon.uid);
     if (reason) {
       if (pressed) {
-        showNotice(reason);
+        showRefusal(reason, sim.time);
       }
       return;
     }
@@ -1004,31 +1051,43 @@ export const startPlay = (
     return rpm === undefined ? undefined : { uid: weapon.uid, rpm };
   };
 
-  const noticeReason = (reason: string | undefined): void => {
+  const refusalReason = (reason: string | undefined): void => {
     if (reason) {
-      showNotice(reason);
+      showRefusal(reason, sim.time);
     }
+  };
+  const refusePrimaryUseWhileHandling = (): boolean => {
+    if (!(queue.busy || firearms.busy)) {
+      return false;
+    }
+    showRefusal('Already handling something', sim.time);
+    return true;
   };
 
   performHandUse = (hand: 'right' | 'left') => {
+    if (refusePrimaryUseWhileHandling()) {
+      return;
+    }
     const action = selectPrimaryAction(inventory, hand);
     switch (action.kind) {
       case 'unpack':
-        noticeReason(unpacking.activate(action.item));
+        refusalReason(unpacking.activate(action.item));
         return;
       case 'melee':
         swing(action.hand);
         return;
       case 'light':
       case 'read':
-        noticeReason(survival.use(action.item));
+      case 'use':
+        refusalReason(survival.use(action.item));
         return;
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
-          showNotice(
+          showRefusal(
             config.debug || registry.items.get(action.item.type)?.firearm?.pump
               ? (firearms.fireReason(action.item.uid) ?? 'Firearm is not ready')
               : 'Firearms can only be fired in debug mode',
+            sim.time,
           );
         }
         return;
@@ -1042,7 +1101,7 @@ export const startPlay = (
         activateKey(action.item);
         return;
       case 'none':
-        showNotice(primaryActionHint(registry, action.item));
+        showRefusal(primaryActionHint(registry, action.item), sim.time);
         return;
       default: {
         const unhandled: never = action;
@@ -1070,11 +1129,14 @@ export const startPlay = (
     if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
       return;
     }
+    if (refusePrimaryUseWhileHandling()) {
+      return;
+    }
     // Instant off-hand use shares Survival's owner with a quickbar second press.
     const item = offHandUse(registry, inventory);
     const reason = item && survival.use(item);
     if (reason) {
-      showNotice(reason);
+      showRefusal(reason, sim.time);
     }
   };
   document.addEventListener('pointerdown', onForwardPress, true);
@@ -1108,7 +1170,7 @@ export const startPlay = (
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });
   const needsText = (): string => playNeedsText(statusView());
-  const hudText = (looking: string): string =>
+  const hudText = (looking: string, visible: Readonly<HudOptionsState>): string =>
     playHudText(
       {
         ...statusView(),
@@ -1122,10 +1184,9 @@ export const startPlay = (
         pending: streamer.pending,
         looking,
       },
-      hudVisibility(hudOptions),
+      visible,
     );
-  const promptText = (now: number): string => {
-    const visible = hudVisibility(hudOptions);
+  const promptText = (now: number, visible: Readonly<HudOptionsState>): string => {
     const entity = visible.interaction && input.locked && !debugTools?.buildOn ? lookedAt() : undefined;
     return playPromptText(
       {
@@ -1276,6 +1337,7 @@ export const startPlay = (
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
+    const visible = hudVisibility(hudOptions);
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
@@ -1329,19 +1391,19 @@ export const startPlay = (
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {
-        hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? ''),
-        crosshairVisible: hudVisibility(hudOptions).crosshair,
-        prompt: promptText(now),
+        hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
+        crosshairVisible: visible.crosshair,
+        prompt: promptText(now, visible),
       },
     );
     document.body.classList.toggle('resting', rest.action !== undefined);
-    renderRest(restBox, rest.action, sim);
+    renderRest(restBox, rest.action, sim, visible.messages);
     screen.update();
-    craftPanel.update(screen.isOpen && !sim.dead);
+    craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
-    quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
-    renderPlayHandling(handlingBox, queue, !screen.isOpen && hudVisibility(hudOptions).handling);
+    quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
+    renderPlayHandling(handlingBox, queue, !screen.isOpen && visible.handling);
     view.prepareLighting(sky);
     updateHeldItems(dt);
     view.updateShadows(hour, sky);

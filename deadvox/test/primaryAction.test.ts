@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { bindReach } from '../src/core/reach.ts';
+import { Simulation } from '../src/core/sim.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { Survival } from '../src/game/survival.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 
 const capabilities = [
@@ -12,6 +16,9 @@ const capabilities = [
     weapon: { melee: { damage: 1, reach: 1, cooldown: 1, stamina: 0, type: 'blunt' } },
   },
   { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1 } },
+  { id: 'held_food', kind: 'use', category: 'food', food: { calories: 1, water: 0 } },
+  { id: 'held_drink', kind: 'use', category: 'drink', food: { calories: 0, water: 1 } },
+  { id: 'held_bandage', kind: 'use', category: 'medical' },
   { id: 'held_gun', kind: 'firearm', firearm: {}, twoHanded: true },
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
   { id: 'held_book', kind: 'read', book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingTime: 1 } },
@@ -56,7 +63,7 @@ const { registry, issues } = buildRegistry([
       items: capabilities.map(({ kind, ...fields }) => ({
         ...fields,
         name: fields.id,
-        category: kind === 'read' ? 'book' : 'tool',
+        category: ('category' in fields ? fields.category : undefined) ?? (kind === 'read' ? 'book' : 'tool'),
         weight: 1,
         size: [1, 1],
       })),
@@ -94,6 +101,38 @@ describe('held-item hand action', () => {
       ...(kind === 'none' ? {} : { hand: 'right' }),
       item: inventory.hands.right,
     });
+  });
+
+  it.each(['held_food', 'held_drink', 'held_bandage'])('runs the held %s primary use through Survival.use', (type) => {
+    const inventory = hold(type);
+    const action = selectPrimaryAction(inventory, 'right');
+    if (action.kind !== 'use') {
+      throw new Error(`Expected ${type} to select its use action`);
+    }
+    const simulation = new Simulation({ seed: 1 });
+    const queue = new HandlingQueue(inventory);
+    const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+    const survival = new Survival(simulation, inventory, queue, {
+      reach: bindReach(player),
+      feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+      notice: () => {
+        throw new Error('Unexpected use notice in primary-action fixture');
+      },
+      read: () => {
+        throw new Error('Unexpected reading in primary-action fixture');
+      },
+    });
+
+    const refusal = survival.use(action.item);
+    if (type === 'held_bandage') {
+      expect(refusal).toBeTruthy();
+      expect(queue.jobs).toHaveLength(0);
+    } else {
+      expect(refusal).toBeUndefined();
+      expect(queue.jobs).toMatchObject([
+        { kind: 'action', jobType: 'survival.eat', params: { itemUid: action.item.uid } },
+      ]);
+    }
   });
 
   it('refuses a ruined held melee weapon instead of attacking with it', () => {

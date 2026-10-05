@@ -312,6 +312,7 @@ later notes (2026-09-27):
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition affects how an item performs, not only whether it's ruined.
 - Books may also speed up skill practice, not only teach recipes.
+- **Learning from books, later (BR, 2026-10-05):** “at this point it's ok to just 'learn' the recipes, but we will transition to a more in-depth leaning system in future - i.e. you don't just learn the recipe by reading it once, but rather you det to know it, and then you can use the book as reference while performing it, until learned fully”.
 - Condition may lower salvage yield.
 
 **Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”

@@ -134,6 +134,7 @@ const TRIGGER_ENTRIES = [
     },
   ],
   ['player_hurt_light', { trigger: 'Take 1–14 points of damage.' }],
+  ['player_nope', { trigger: 'Try an action the player cannot complete.' }],
   [
     'player_hurt_heavy',
     {
@@ -200,6 +201,10 @@ const ORDER = TRIGGER_ENTRIES.map(([id]) => id);
 /** BR's listening verdicts, joined into the existing guide note shown on /sounds.html. */
 const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ['player_hurt_light', 'Approved by BR (2026-10-02).'],
+  [
+    'player_nope',
+    `BR (2026-10-05 11:31): “i've added nope1_clean.wav / it's the diegetic sound (the avatar makes a nope sound) for when something doesn't work (when UI is off, and any hints are hidden)”. BR (2026-10-05 11:32): “i recorded it myself 10 minutes ago / yes, CC0” and “no, this one is not heard by shamblers (but if it were a multiplayer game, it'd be heard by other players)”. The 2026-10-05 11:46 ruling says “but the 'nope' sound shall play regardless of UI hints being on or off”.`,
+  ],
   ['player_hurt_heavy', 'Approved by BR (2026-10-02).'],
   ['player_strain', 'Approved by BR (2026-10-02).'],
   [

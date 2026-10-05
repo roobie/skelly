@@ -241,12 +241,10 @@ describe('real pump ammunition', () => {
     expect(concurrent.effects).toEqual([]);
     expect(result.failed.length).toBeGreaterThan(0);
   });
-  it('cannot load authored shells from a sealed unopened box or expose box inventory Use', () => {
+  it('cannot load authored shells from a sealed unopened box', () => {
     const f = fixture();
     f.inventory.consume(f.shells, 20);
     expect(f.box.pockets).toBeUndefined();
-    expect(f.mechanics.supportsUse(f.box)).toBe(false);
-    expect(f.mechanics.use(f.box, 0)).toBeDefined();
     expect(f.mechanics.loadNext(f.gun.uid, 0)).toBeDefined();
     expect(f.queue.jobs).toEqual([]);
     expect(f.gun.firearm?.tube).toEqual([]);

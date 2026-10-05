@@ -33,7 +33,9 @@ acting").
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
   flashlight in hands, then left-click to activate (left-click generally means
-  'do the thing with the thing you're holding')." Dominance selects the hand
+  'do the thing with the thing you're holding')." For held food, drinks and
+  bandages, BR later ruled (2026-10-05): "activate them"; bandages remain
+  refused until Slice 3's body model supplies wounds. Dominance selects the hand
   role; it does not move an item between physical slots. See "The two hands"
   for the policy's owners rather than a second binding map.
 - **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
@@ -64,6 +66,8 @@ acting").
   is the same: "that's not a thing you do in inventory - you wield the box and
   activante it in oder to unpack". No inventory action or modifier chord
   replaces it.
+- **No U use key (BR, 2026-10-05 13:16):** "U shouldn't be a thing - where does
+  this false knowledge still stand?"
 - **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-
   or left-handed dominant is a thing we should accomodate. This'd mean that all
   quick actions etc take this into account, and the flip of
@@ -75,9 +79,10 @@ acting").
   hold to load loose shells, double-press to rack, and a short single tap does
   nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
   `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
-  Inventory R still rotates. **Rest has no dedicated key** (BR, 2026-10-04 12:15);
-  d45 supplies restable furniture initiation. Until d44 removes its binding,
-  L toggles sleep.
+  Inventory R still rotates. **Rest and sleep have no dedicated key** (BR,
+  2026-10-04 12:15): F starts them on the targeted furniture, F again or X
+  stops, movement stops, and C resumes after an interruption only while the
+  same piece remains reachable. L remains a legacy sleep binding until d44 removes it.
 - **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
   activate with the held-item primary action to unpack. No inventory Unpack/Load.
   Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
@@ -132,7 +137,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Inventory screen | now | menu |
 | Quickbar slots 1–5 | now | tap to take or put away; hold to use |
 | Use held item: light on/off | now (quickbar hold or primary action) | instant |
-| Use held item: eat, drink, bandage | now (U or quickbar hold) | long |
+| Use held item: eat, drink, bandage | now (primary action or quickbar hold) | long |
 | Cancel handling | now | instant |
 | Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
 | Melee strike | implemented; see `src/game/primaryAction.ts`, `selectPrimaryAction` | instant, noise |
@@ -164,9 +169,9 @@ below). Implemented hand activation is not duplicated in this proposal; see
 | Space | jump | jump | — | — | — |
 | Z | walk / jog toggle | — | — | — | — |
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
-| F | interact with what's outlined | interact | — | — | — |
+| F | interact with what's outlined; restable furniture starts or stops its action | interact | — | — | — |
 | R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
-| L | sleep; again stops (current runtime, until d44/d45) | — | — | stop sleeping | — |
+| L | legacy sleep action on targeted sleepable furniture, until d44 removes it | — | — | stop sleeping | — |
 | T, held | — | — | with a click on an item: its quick action (auto move; d44) | — | — |
 | X | cancel handling | cancel | cancel handling | stop | stop |
 | 1–5 | tap takes the slot's item into its capability-directed hand or puts it away; hold uses an available action from its location | same | assign the selected item to the slot | — | — |
@@ -185,10 +190,10 @@ Notes on the proposal:
   `Survival.use`.
 - **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
   `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
-  Rest has no input binding until restable furniture (d45); inventory R rotation
-  is a different view. X still stops an existing rest, C continues after interruption.
-  Until d44 removes its binding, L toggles sleep; d45 supplies furniture initiation
-  for rest and sleep.
+  Inventory R rotation is a different view. F starts rest or sleep on its
+  restable target; F again or X stops, movement stops, and C resumes after an
+  interruption only while the same piece remains reachable. L remains a legacy
+  sleep binding until d44 removes it.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.

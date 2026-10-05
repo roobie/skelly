@@ -218,11 +218,6 @@ export class Survival {
       const state = item.on ? 'on' : 'off';
       lines.push(`Battery ${Math.round(share * 100)}%${def.light ? ` · ${state}` : ''}`);
     }
-    if (def.food || def.battery) {
-      lines.push('U: use in hand · hold its quickbar key: use from its current location');
-    } else if (def.light || def.readable || def.book) {
-      lines.push('U: use in hand · hold its quickbar key: use in hand');
-    }
     return lines;
   }
 

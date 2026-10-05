@@ -69,7 +69,6 @@ export const PLAYER_CONTROL_BINDINGS = [
   { keys: 'D', codes: [CONTROL_CODES.drop], action: 'Drop', context: 'inventory' },
   { keys: 'A', codes: [CONTROL_CODES.takeAll], action: 'Take all like this', context: 'inventory' },
   { keys: 'S', codes: [CONTROL_CODES.search], action: 'Search next container', context: 'inventory' },
-  { keys: 'U', codes: [CONTROL_CODES.use], action: 'Use selected item', context: 'inventory' },
   {
     keys: '↑ / ↓ / ← / →',
     codes: [CONTROL_CODES.previous, CONTROL_CODES.next, 'ArrowLeft', 'ArrowRight'],

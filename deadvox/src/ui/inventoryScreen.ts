@@ -11,7 +11,7 @@ import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, type Option, options, quickMove, toHands, type UseOption } from '../core/options.ts';
+import { bestPocket, dropTarget, type Option, options, quickMove, toHands } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
@@ -29,7 +29,6 @@ const ITEM_COMMAND_CODES = new Set<string>([
   CONTROL_CODES.rotate,
   CONTROL_CODES.bestPocket,
   CONTROL_CODES.takeAll,
-  CONTROL_CODES.use,
   'Enter',
 ]);
 
@@ -62,10 +61,7 @@ export interface ScreenHooks {
   /** Whether a search of it is queued. */
   searching: (entity: BlockEntity) => boolean;
   notice: (text: string) => void;
-  /** Uses an item (eat, drink, switch a light, load a battery); says why not, or undefined. */
-  use: (item: Item) => string | undefined;
-  /** Read-only availability and handling time for the same Use command. */
-  useOption: (item: Item, view: ReachSnapshot) => UseOption;
+  refusal?: ((text: string) => void) | undefined;
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
   /** Assigns a quickbar slot (0–4). */
@@ -265,7 +261,7 @@ const inventoryTemplate = (
   <header class="inv-head">
     <h2>Inventory</h2>
     <span class="inv-weight">Carrying ${vm.weight}</span>
-    <span class="inv-help">Drag items · Ctrl/Cmd-click quick move · H hands · U use · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
+    <span class="inv-help">Drag items · Ctrl/Cmd-click quick move · H hands · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
   </header>
   <div class="inv-body">
     <section class="inv-pane">
@@ -410,8 +406,7 @@ export class InventoryScreen {
       .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
     const view = this.hooks.reach();
-    const use = this.selected ? this.hooks.useOption(this.selected, view) : undefined;
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${use?.label}|${JSON.stringify(use?.plan)}`;
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -471,10 +466,6 @@ export class InventoryScreen {
       case CONTROL_CODES.takeAll:
         this.takeAllLike(item);
         return true;
-      case CONTROL_CODES.use:
-        this.report(this.hooks.use(item));
-        this.drawn = '';
-        return true;
       default:
         return false;
     }
@@ -487,9 +478,17 @@ export class InventoryScreen {
     return result.ok ? undefined : result.reason;
   }
 
+  private refuse(text: string): void {
+    if (this.hooks.refusal) {
+      this.hooks.refusal(text);
+    } else {
+      this.hooks.notice(text);
+    }
+  }
+
   private report(reason: string | undefined): void {
     if (reason) {
-      this.hooks.notice(reason);
+      this.refuse(reason);
     }
   }
 
@@ -532,7 +531,11 @@ export class InventoryScreen {
         }
       }
     }
-    this.hooks.notice(queued > 0 ? `Taking ${queued} ${category} items` : `No ${category} items to take`);
+    if (queued > 0) {
+      this.hooks.notice(`Taking ${queued} ${category} items`);
+    } else {
+      this.refuse(`No ${category} items to take`);
+    }
   }
 
   private step(dir: number): void {
@@ -556,8 +559,8 @@ export class InventoryScreen {
         (item, target, operation) => {
           if (operation) {
             this.report(this.hooks.work(item.uid, operation));
-          } else {
-            this.report(target ? this.tryQueue(item, target) : this.hooks.use(item));
+          } else if (target) {
+            this.report(this.tryQueue(item, target));
           }
         },
         (uid) => {
@@ -701,24 +704,23 @@ export class InventoryScreen {
       condition: conditionWord(item.condition),
       description: def.description,
       lines: this.inspect(item),
-      options: [...options(item, this.hooks.reach()), ...this.hooks.workOptions(item.uid)]
-        .map((option) =>
-          'kind' in option && option.kind === 'use' ? this.hooks.useOption(item, this.hooks.reach()) : option,
-        )
-        .map(
-          (option): OptionViewModel =>
-            option.plan.ok
-              ? {
-                  label: option.label,
-                  button: true,
-                  time:
-                    'duration' in option && option.duration !== undefined
-                      ? craftTime(option.duration)
-                      : secs(option.plan.time),
-                  ...optionAction(option),
-                }
-              : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
-        ),
+      options: [
+        ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
+        ...this.hooks.workOptions(item.uid),
+      ].map(
+        (option): OptionViewModel =>
+          option.plan.ok
+            ? {
+                label: option.label,
+                button: true,
+                time:
+                  'duration' in option && option.duration !== undefined
+                    ? craftTime(option.duration)
+                    : secs(option.plan.time),
+                ...optionAction(option),
+              }
+            : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
+      ),
     };
   }
 
@@ -833,7 +835,7 @@ export class InventoryScreen {
       if (hover?.ok) {
         this.report(this.tryQueue(drag.item, hover.target));
       } else if (hover) {
-        this.hooks.notice(hover.reason);
+        this.refuse(hover.reason);
       }
     }
     this.endDrag();

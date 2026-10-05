@@ -7,6 +7,7 @@ read_if:
   - you change shambler navigation or floor-transition behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
+  - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
 ---
 
@@ -317,8 +318,9 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
   On stowing: "putting away the shotgun from being wielded also plays rummaging
   anim - i think it kinda fits". The longer-term direction is "over time, we'll
-  maybe add more specific anims."; shell-loading feedback is d53.
-  Approval does not pin `RUMMAGE_POSE` tuning: see
+  maybe add more specific anims." The shell-loading animation is in #248; BR
+  approved it on 2026-10-05: "approved". Approval does not pin `RUMMAGE_POSE`
+  tuning: see
   `../docs/deferred-assertions.md`.
   Following #213's merge (d50-3), compass handling must not introduce a second
   rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
@@ -844,16 +846,24 @@ decoration.
   [Combat and noise](#combat-and-noise)) also play as positional sounds, with
   occlusion shared by the player's hearing and zombie hearing.
 - **A shambler's presence should be audible even when it stands still.** It
-  should sometimes moan or groan so the player can hear that one is there. Today
-  `shambler_idle` provides an occasional groan while idling or strolling (three
-  variants). A richer idle-presence set—more variants, breathing, shuffling in
-  place, and rate/loudness shaped by state—is future work, not part of the
-  current footsteps change.
+  should sometimes moan or groan so the player can hear that one is there.
+  `shambler_idle` provides an occasional groan while idling or strolling. Each
+  shambler's vocals and body-made sounds shift lower with its realized body
+  height, so larger figures sound heavier and the runner/brute templates inherit
+  the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, interpolates one
+  power curve between the pool's smallest and tallest realized bodies. The
+  smallest anchor is 1.2 times the prior square-root law at that body's height;
+  the tallest remains at the prior law. BR approved d52-4's `voicePitchLarge` on
+  2026-10-05 with “lgtm”. The clamp spans 0.5 to 1.3 times the prior law at the
+  smallest height. BR's tuning note was, “voicePitch 0.5 to 1.3 sounds good ,but
+  for different purposes / for the tiny shambler, 1.2 is good”. Debug URL
+  multipliers tune the two endpoints for the `voice_size` comparison site. This
+  changes playback only, never hearing or simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   three moving shamblers emit footsteps at once. The MVP reuses pitched-down
-  player footstep recordings as an explicit stand-in. Other shambler cues can
-  follow later; the current change adds footsteps only.
+  player footstep recordings as an explicit stand-in; body size also shifts
+  their playback pitch.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory
   (zips, cans), and heavy breathing when stamina is low. You hear how much
   noise you're making.

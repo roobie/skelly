@@ -7,7 +7,6 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { inventorySelectionChanged } from './inventory-selection.ts';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
@@ -30,7 +29,7 @@ const observationPlugin = {
       marker,
       `
   const proof = {
-    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet,
+    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
     clearNotice: () => showNotice(''),
@@ -216,6 +215,82 @@ try {
     assert.deepEqual(after.swings, before.swings, 'light use never starts melee');
     assert.ok(after.stamina >= before.stamina, 'light use does not spend melee stamina');
   };
+  const attemptDuringHandling = async (actionSide, reservedHand, useMouse5 = false) => {
+    await page.waitForFunction(() => {
+      const combat = globalThis.primaryActionTest.session.playerCombat;
+      return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
+    });
+    const outcome = await page.evaluate(
+      ({ primarySide, reservationSide, forwardButton }) => {
+        const r = globalThis.primaryActionTest;
+        const ensure = (condition, message) => {
+          if (!condition) {
+            throw new Error(message);
+          }
+        };
+        ensure(!r.session.queue.busy, 'Busy-primary fixture starts with an empty handling queue');
+        const original = r.inventory.hands[reservationSide];
+        if (original) {
+          r.clearHand(reservationSide);
+        }
+        const incoming = r.inventory.create(r.types.inert);
+        ensure(r.inventory.add(incoming, { kind: 'pile', pos: r.feet() }), 'Could not place busy-primary fixture item');
+        const queued = r.session.queue.enqueue(incoming, { kind: 'hand', side: reservationSide });
+        ensure(queued.ok, `Could not start busy-primary fixture move: ${queued.reason}`);
+        const light = r.inventory.itemByUid(r.lightUid);
+        const before = {
+          swings: r.swings.length,
+          stamina: r.session.sim.needs.stamina,
+          lightOn: Boolean(light?.on),
+        };
+        r.clearNotice();
+        r.quickbarActions.hold(incoming);
+        const expectedReason = r.getNotice();
+        r.clearNotice();
+        if (forwardButton) {
+          document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
+        } else {
+          r.performHandUse(primarySide);
+        }
+        const after = {
+          swings: r.swings.length,
+          stamina: r.session.sim.needs.stamina,
+          lightOn: Boolean(light?.on),
+        };
+        const result = {
+          busy: r.session.queue.busy,
+          inputActive: r.input.locked && !r.input.menuPointer,
+          before,
+          after,
+          expectedReason,
+          actualReason: r.getNotice(),
+        };
+        r.session.queue.cancel();
+        ensure(r.inventory.consume(incoming, incoming.count), 'Could not remove busy-primary fixture item');
+        if (original) {
+          r.setHand(reservationSide, r.inventory.itemByUid(original.uid));
+        }
+        if (light && Boolean(light.on) !== before.lightOn) {
+          const reason = r.survival.use(light);
+          ensure(!reason, `Could not restore the light fixture: ${reason}`);
+        }
+        return result;
+      },
+      { primarySide: actionSide, reservationSide: reservedHand, forwardButton: useMouse5 },
+    );
+    await page.waitForFunction(() => {
+      const combat = globalThis.primaryActionTest.session.playerCombat;
+      return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
+    });
+    return outcome;
+  };
+  const assertHandlingRefusal = (outcome, label) => {
+    assert.equal(outcome.busy, true, `${label}: the move is in progress`);
+    assert.equal(outcome.after.swings, outcome.before.swings, `${label}: does not attempt a melee swing`);
+    assert.equal(outcome.after.stamina, outcome.before.stamina, `${label}: does not spend stamina`);
+    assert.equal(outcome.after.lightOn, outcome.before.lightOn, `${label}: does not activate the light`);
+    assert.equal(outcome.actualReason, outcome.expectedReason, `${label}: uses the handling refusal`);
+  };
   if (renderMode === 'render-free') {
     const before = await page.evaluate(() => ({
       time: globalThis.primaryActionTest.session.sim.time,
@@ -308,6 +383,11 @@ try {
   assert.equal(jab.on, false, 'dominant jab does not use the off-hand light');
   assert.deepEqual(jab.swings[0], { result: true, profile: 'fists', hand: 'left' });
   await finishedSwing();
+  const roles = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return { dominant: r.dominant, off: r.off };
+  });
+  assertHandlingRefusal(await attemptDuringHandling(roles.dominant, roles.off), 'empty-hand jab');
   const attachment = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.trackAttachment = false;
@@ -360,6 +440,11 @@ try {
     hand: 'left',
   });
   await finishedSwing();
+  assertHandlingRefusal(await attemptDuringHandling(roles.dominant, roles.off), 'held-weapon attack');
+  assertHandlingRefusal(await attemptDuringHandling(roles.off, roles.dominant), 'off-hand primary action');
+  const mouse5WhileHandling = await attemptDuringHandling(roles.off, roles.dominant, true);
+  assert.equal(mouse5WhileHandling.inputActive, true, 'Mouse 5 is dispatched while the game owns input');
+  assertHandlingRefusal(mouse5WhileHandling, 'off-hand instant action');
   await toggleLight('Equal', true);
   await toggleLight('Equal', false);
   await page.evaluate(() => {
@@ -460,47 +545,6 @@ try {
   assert.equal(emission.shot?.distanceMetres, 0);
   assert.equal(emission.shot?.lowpassHz, null);
   await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
-  const cock = await page.evaluate(() => {
-    const r = globalThis.primaryActionTest;
-    return {
-      label: r.session.firearms.useOption(r.inventory.hands.left).label,
-      danger: r.debugTools.dangerReason() ?? null,
-    };
-  });
-  await page.keyboard.press('Tab');
-  const candidates = await page.locator('#inventory [data-uid]').count();
-  assert.ok(candidates > 0);
-  for (let index = 0; index <= candidates; index++) {
-    const selectedRow = page.locator('#inventory [data-uid].selected');
-    const selected = (await selectedRow.count()) ? await selectedRow.getAttribute('data-uid') : null;
-    if (selected === String(firearm.uid)) {
-      break;
-    }
-    await page.keyboard.press('ArrowDown');
-    await page.waitForFunction(inventorySelectionChanged, selected);
-  }
-  assert.equal(await page.locator(`#inventory [data-uid="${firearm.uid}"].selected`).count(), 1);
-  const cockButton = page.locator('button.inv-option').filter({ hasText: cock.label });
-  assert.equal(await cockButton.count(), 1);
-  await page.keyboard.press('Digit1');
-  await page.keyboard.press('KeyU');
-  await page.waitForFunction(() => globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle?.mode === 'hand');
-  const handling = await page.evaluate(() => {
-    const r = globalThis.primaryActionTest;
-    return {
-      danger: r.debugTools.dangerReason() ?? null,
-      reason: r.session.firearms.cockReason(r.inventory.hands.left.uid),
-    };
-  });
-  assert.equal(handling.danger, cock.danger);
-  assert.ok(handling.reason);
-  await page.waitForFunction(
-    (reason) => [...document.querySelectorAll('.inv-reason')].some((node) => node.textContent === reason.toLowerCase()),
-    handling.reason,
-  );
-  await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
-  assert.equal(await cockButton.count(), 1, 'cock availability redraws after completion');
-  await page.keyboard.press('Tab');
   const food = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     const item = [...r.inventory.items()].find(
@@ -558,7 +602,7 @@ try {
   );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, inventory cock, quickbar hold and held-book reading.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold and held-book reading.\n',
   );
 } finally {
   await browser?.close();
