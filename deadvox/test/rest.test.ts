@@ -116,7 +116,13 @@ describe('RestController start/resume/stop', () => {
   });
 
   it('fast-forwards near a shambler and still interrupts when attacked', () => {
-    const player: PlayerSense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 };
+    const player: PlayerSense = {
+      pos: [0, 1, 0],
+      facing: [0, 0, -1],
+      movement: 'still',
+      lit: false,
+      lightSeenFrom: 40,
+    };
     const zombieSystem = new ZombieSystem(zombieHooks(player));
     zombieSystem.add(SHAMBLER, [50, 1, 0], [1, 0, 0]);
     expect(zombieSystem.unsafeReason()).toBeTruthy();
@@ -263,7 +269,9 @@ describe('Session long-action input lock', () => {
       controls: {
         active: () => true,
         intent: () => intent,
-        useDominant: () => actions++,
+        useDominant: () => {
+          actions += 1;
+        },
         yaw: () => 0,
         pitch: () => 0,
         walking: () => false,
@@ -277,12 +285,13 @@ describe('Session long-action input lock', () => {
     });
 
     expect(session.rest.start(kind, anchor.uid)).toBeUndefined();
-    const time = session.sim.time;
+    const { sim } = session;
+    const { time } = sim;
     const position = [...session.body.pos];
     session.frame(1 / 60);
     expect(session.rest.action?.kind).toBe(kind);
-    expect(session.sim.compression.active).toBe(true);
-    expect(session.sim.time).toBeGreaterThan(time);
+    expect(sim.compression.active).toBe(true);
+    expect(sim.time).toBeGreaterThan(time);
     expect([session.body.pos[0], session.body.pos[2]]).toEqual([position[0], position[2]]);
     expect(actions).toBe(0);
   });

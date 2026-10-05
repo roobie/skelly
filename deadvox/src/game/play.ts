@@ -664,10 +664,11 @@ export const startPlay = (
 
   /** Stop the current long action without discarding owned progress. */
   const stopAction = (): void => {
+    if (rest.action?.kind === 'sleep') {
+      return;
+    }
     if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
       sim.actions.stop();
-    } else if (rest.action?.kind === 'sleep') {
-      return;
     } else if (rest.action) {
       rest.stop();
     } else {
@@ -946,6 +947,14 @@ export const startPlay = (
     useTarget(entity);
   }
 
+  function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
+    const action = rest.action;
+    if (kind === 'sleep' && action?.kind === 'sleep' && action.furnitureUid === entity.uid) {
+      return;
+    }
+    toggleRest(kind, entity);
+  }
+
   function useTarget(entity: BlockEntity): void {
     const def = entities.defOf(entity);
     if (def.door) {
@@ -961,10 +970,7 @@ export const startPlay = (
     }
     const kind = restKindForFurniture(def);
     if (kind) {
-      if (kind === 'sleep' && rest.action?.kind === 'sleep' && rest.action.furnitureUid === entity.uid) {
-        return;
-      }
-      toggleRest(kind, entity);
+      toggleRestFromTarget(kind, entity);
       return;
     }
     if (!entity.pockets) {
