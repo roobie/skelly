@@ -4,7 +4,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative CDP contract assertions
 
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { rm } from 'node:fs/promises';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -17,7 +17,16 @@ import { browserStageLaunchArgs, browserStageUrl } from '../test/browser/stage-m
 import { reserveDistinctPorts } from './browser-ports.mjs';
 import { createBrowserProfile } from './browser-profile.mjs';
 
+const graphicsArgument = /^--(?:use-gl|use-angle|enable-unsafe-swiftshader)/;
+const gpuInitializationFailure = /Requested GL implementation|GPU process.*(?:exited|exit|failed|unusable)/i;
+const logLine = /\r?\n/;
 const cwd = process.cwd();
+const chromeExecutable = process.env.CHROME_BIN ?? 'google-chrome';
+const chromeVersionProbe = spawnSync(chromeExecutable, ['--version'], { encoding: 'utf8' });
+const chromeVersion =
+  chromeVersionProbe.status === 0
+    ? chromeVersionProbe.stdout.trim()
+    : `unavailable: ${chromeVersionProbe.error?.message ?? chromeVersionProbe.stderr.trim()}`;
 const profile = createBrowserProfile();
 const ports = await reserveDistinctPorts({
   port: Number(process.env.UI_TEST_PORT ?? 0),
@@ -37,14 +46,15 @@ const stageUrl = browserStageUrl(
   'ui-browser-contract',
   `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
 );
-const chrome = spawn(
-  process.env.CHROME_BIN ?? 'google-chrome',
-  browserStageLaunchArgs('ui-browser-contract', [
-    `--remote-debugging-port=${cdpPort}`,
-    `--user-data-dir=${profile}`,
-    stageUrl,
-  ]),
-  { stdio: ['ignore', 'pipe', 'pipe'] },
+const chromeArgs = browserStageLaunchArgs('ui-browser-contract', [
+  `--remote-debugging-port=${cdpPort}`,
+  `--user-data-dir=${profile}`,
+  stageUrl,
+]);
+const graphicsArgs = chromeArgs.filter((arg) => graphicsArgument.test(arg));
+const chrome = spawn(chromeExecutable, chromeArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+process.stdout.write(
+  `UI_BROWSER_LAUNCH ${JSON.stringify({ launcher: 'tcp-cdp', chromeVersion, graphicsArgs, windowSize: '1280,900' })}\n`,
 );
 const startupAbort = new AbortController();
 const children = [
@@ -64,6 +74,7 @@ const children = [
   child.on('exit', (code, signal) => startupAbort.abort(new Error(`${name} failed to start: ${signal ?? code}`)));
   return state;
 });
+const chromeState = children.find(({ name }) => name === 'Chrome');
 const checkChildren = () => {
   for (const { name, child, spawnError } of children) {
     if (spawnError || child.exitCode !== null || child.signalCode !== null) {
@@ -304,6 +315,22 @@ try {
   await waitFor(
     () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
     'post-acceptance debug UI mount',
+  );
+  const graphics = await evaluate(`(() => {
+    const gl = document.querySelector('canvas')?.getContext('webgl2') ??
+      document.querySelector('canvas')?.getContext('webgl');
+    if (!gl) return { renderer: null, vendor: null };
+    const extension = gl.getExtension('WEBGL_debug_renderer_info');
+    return {
+      renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+      vendor: extension ? gl.getParameter(extension.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR),
+    };
+  })()`);
+  const gpuInitializationFailures = chromeState.stderr
+    .split(logLine)
+    .filter((line) => gpuInitializationFailure.test(line));
+  process.stdout.write(
+    `UI_BROWSER_GRAPHICS ${JSON.stringify({ chromeVersion, graphicsArgs, graphics, gpuInitializationFailures })}\n`,
   );
   await pressBinding(keyBindings.mainMenu);
   await evaluate('document.exitPointerLock()');
