@@ -8,7 +8,6 @@ import { CHUNK } from './coords.ts';
 export const WORLD_BOTTOM_M = -48;
 export const WORLD_TOP_M = 80;
 
-/** Edge length of a block in metres. Chosen in milestone 1.0 (SLICE-1.md, Results). */
 export const BLOCK_SIZE = 0.5;
 
 export interface Scale {

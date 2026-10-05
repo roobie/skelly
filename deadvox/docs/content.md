@@ -1,3 +1,11 @@
+---
+read_if:
+  - you change content schemas, validation, registry merging, or recipe/workstation data
+  - you change content references, static reachability, or disassembly-output contracts
+  - you change recipe, workstation or book reachability contracts
+  - you change static reachability checks
+---
+
 # Content sections and recipes
 
 The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
@@ -22,12 +30,14 @@ Skill requirements are nonnegative whole levels; quality requirements are levels
 uses exact integer multiplication and reports the count when refusing a file.
 
 - `skills` definitions contain only an id and name; character state is 2.5.
-- Quality IDs are keys declared by loaded items' `tool.qualities`, including mod
-  keys, not a new top-level section. A missing declaration is an error. Whether
-  a reachable item supplies it is the separate 2.3 acceptance check.
-- Workstation IDs are minimal `workstation: { id }` metadata on furniture. Plain
-  furniture IDs are not workstation IDs. Qualities/speed/reach behavior and the
-  placed workbench come in 2.8; there is no workstation registry or runtime here.
+- Quality IDs are keys declared by loaded items' `tool.qualities` (including
+  mod keys) or furniture `workstation.qualities`, not a new top-level section.
+  A missing declaration is an error. Whether a reachable item or placed
+  workstation supplies the quality is the separate 2.3 acceptance check.
+- Furniture workstation metadata owns its station ID, qualities, and work-time
+  bonus. Plain furniture IDs are not workstation IDs. `reach()` in
+  `src/core/reach.ts` exposes nearby stations, and `planCraft()` in
+  `src/core/crafting.ts` uses their qualities and bonus for a named station.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
@@ -38,9 +48,9 @@ storage or save format**. No container is consumed by these recipes. Before any
 later recipe uses part of a liquid, its stored quantity-to-ml mapping, saved
 partial use and container retention must be approved. Torch/candle result
 metadata has no light or burning component yet; those mechanics belong to 2.9.
-Recipes are data only, not a crafting runtime or knowledge system. No save change. The simulation fingerprint changes with the schema/core
-source and base-content changes, intentionally accepted pre-alpha. Old saves with
-the earlier simulation/content identity are refused; no migration is provided.
+Slice 2.2 introduced recipes as data only. Slice 2.5 adds crafting, progression,
+and book knowledge; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and the simulation
+fingerprint require old saves to be refused rather than migrated during pre-alpha.
 
 ## Static reachability (Slice 2.3)
 
@@ -56,32 +66,45 @@ The least component fixed point starts at found types. A result enters only when
 at least one alternative per component group is reachable; unseeded recipe cycles
 add nothing. Content acceptance reports **every declared alternative** that is
 neither found nor craftable. It is a type closure, not a quantity/consumption,
-particular-seed or whole-game solver. It does not invent salvage sources.
+particular-seed or whole-game solver. It extends each closure through actual
+disassembly and salvage outputs via `addDisassemblyOutputs` in
+`src/core/reachability.ts`; yield counts come from `disassemblyOutputs` in
+`src/core/disassembly.ts`, so zero-count yields add no reachable type.
+Self-yields are refused to prevent no-op take-apart; see
+`src/core/content.ts`, `checkDisassembly`.
+
+Disassembly closure assumes top skill is reachable: nothing checks whether a
+disassembly skill has a practice source. The skill-source check covers recipe
+requirements only; see `src/core/reachability.ts`, `addDisassemblyOutputs` and
+`skillIssues`.
 
 Tools are a separate hard check: a second loot-seeded fixed point requires both
 components and sufficient tool-quality levels before adding a result. A recipe
 cannot bootstrap its own quality, directly or through another tool-dependent
 recipe. Independently found or grounded crafted providers are valid.
 
-Knowledge is now a hard source check: both closures use the same explicit
-starting recipes as a new character. An unknown recipe fails at `.knowledge`,
-and its result cannot ground another recipe's components or tool quality.
-Teaching books extend this source in 2.5; declaration alone is not knowledge.
-Positive skill requirements and named-but-unplaced workstations still emit
-`pending: no source yet` with their owning milestone and pending count. They
-**are not accepted**, but do not fail CI yet. Level 0 needs no progression source.
-Placed workstation declarations are discoverable; bench behavior stays 2.8.
-`PENDING_REACHABILITY` pins only the remaining 2.5/2.8 hand-offs.
+Knowledge is a hard source check: the explicit starting recipes and recipes
+listed by reachable teaching books are the only knowledge sources. An unknown
+recipe fails at `.knowledge`, and its result cannot ground another recipe's
+components or tool quality. `src/core/reachability.ts`, `checkReachability`,
+closes reachable practice sources before accepting positive skill requirements
+and hard-checks workstation placement and quality. A recipe that cannot be
+learned and completed from reachable sources cannot bootstrap its own skill.
+`src/core/schema.ts`, `BookSchema`, owns book teaching data; the `paperback` has
+no book component and remains inert.
 
-Current base: 33 found types, 36 in the component closure; 36 reachable / 40
-defined eligible content types. The explicit `CONTENT_COUNT_EXCLUSIONS` policy
-leaves out the current debug-only items, spent case, and severed body-part items;
-extend this set when new excluded definitions land. `work_in_progress` is also
-excluded: it is runtime escrow, not acquired loot or a recipe result. Defined eligible but
-unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest (2.11 owns
-these gaps). Stick and wax each have one weight-1 entry in `junk`, used by placed
-crates and nested `shed_tools`; no other material/loot growth is included.
-The count does not imply full acceptance of the remaining positive-skill prerequisite.
-Reachability issues use the winning recipe's existing merge origin, preserving
-source file and index through ordered overrides/removal. Reachability stores no
-closure/state; runtime progression and crafting are separate 2.4 owners.
+`CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` keeps runtime escrow and
+the project's debug/case/body-part policy out of acquired-content totals.
+`npm run validate` reports the effective component and tool closures, content
+count, and any unreachable content; do not copy its counts or content lists into
+this document. Content growth beyond the crafting/books milestone remains with
+Slice 2.11. Reachability issues use the winning recipe's merge origin, preserving
+source file and index through ordered overrides and removal.
+
+`src/core/character.ts`, `Character`, owns live practice and knowledge;
+`src/core/reachability.ts`, `checkReachability`, independently proves that their
+sources are available from placed loot. The component/tool closures include
+calculated disassembly yields at top skill; the separate recipe skill-source
+check must prove that reachable practice sources can raise a recipe's required skill. Reachability
+stores no closure or runtime state; progression, crafting and disassembly remain
+separate owners.

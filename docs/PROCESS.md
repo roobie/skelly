@@ -1,3 +1,11 @@
+---
+read_if:
+  - you dispatch, build, review or merge a change and need its steps
+  - you record a decision by BR and need to know where it goes
+  - you plan refactoring, a maintainability survey or a slice retrospective
+  - you hit a working rule's situation (shared host, test pool, run bounds, units, CI cost)
+---
+
 # How work gets done in skelly
 
 The working process, kept tight: what's done, how a change moves, and the rules that came out
@@ -9,7 +17,8 @@ install conventions are in `AGENTS.md`. This file doesn't repeat them.
 
 - **BR** owns the project: rules on design, judges by eye, ear and feel, and merges.
 - **The lead** (a Claude Code session) writes specs, dispatches work, checks reports against the
-  spec, relays BR's verdicts, opens PRs and watches CI. It never merges or decides for BR.
+  spec, relays BR's verdicts, opens PRs, watches CI and merges under BR's grant (step 6). It
+  never decides for BR.
 - **Coders** build one item at a time. The **code reviewer** reviews their commits and advises
   the lead.
 
@@ -26,10 +35,27 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
    commit and says whether the worktree is clean.
 4. **Spec check, then code review:** the lead checks the report against the spec, then has the
    code reviewer review the commit. The lead forwards the must-fix and should-fix findings it
-   accepts.
+   accepts. The review checks zero drift (`README.md`, "Zero drift") too:
+   - a doc that restates code;
+   - a "when" without a trigger, or one whose item is done;
+   - a final reason left only in the PR;
+   - a doc without `read_if`.
+
+   A false doc is a defect, so it's a FIX.
 5. **BR's verdict:** anything judged by eye, ear or feel waits for BR (below). This runs in
    parallel with the code review.
-6. **PR:** the lead opens it with a description that stands on its own and watches CI. BR merges.
+6. **PR:** the lead opens it with a description that stands on its own and watches CI. Before
+   it merges, the PR resolves every doc line that names its item (`until <item>`, `with #<pr>`),
+   and any reason that outlives it is in a tracked doc. The lead merges it under BR's grant.
+   BR, 2026-10-03: "yes, until i revoke merge-rights you are granted merge-rights for PRs".
+   That needs all of these:
+   - a SHIP review;
+   - green CI on the head commit;
+   - a clean merge with main;
+   - no BR gate left: a first look, an in-game approval or a "do not merge before" note.
+
+   Otherwise BR merges. The grant covers docs PRs. Docs-only PRs get the zero-drift
+   workflow too, so green CI on the head commit applies to them as well.
 7. **Clean up after the merge:** remove the worktree, stop its dev server, and delete the remote
    branch.
 
@@ -65,9 +91,12 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 - **Small rulings** go inline, where the thing is specified: "Decided (BR, YYYY-MM-DD): …" in the
   subproject's `PROJECT.md`, `DESIGN.md` or `SLICE-*.md`.
 - **Cross-cutting or format-defining decisions** get an ADR in `<subproject>/docs/decisions/`
-  (e.g. deadvox 0002, saves).
+  (e.g. deadvox 0002, saves). An ADR's context is a dated snapshot. Its decision stays true,
+  through dated rulings or a superseding ADR (BR, 2026-10-04), and its specification is cued
+  in code, not copied.
 - **Mail and chat are transport, not the record.** A ruling that only exists in a thread isn't
-  recorded.
+  recorded. PRs, issues and commit messages are history: the final reason goes in a tracked
+  doc before the merge.
 
 ## Continuous consolidation
 
@@ -118,9 +147,11 @@ deletions and net lines. Separate source, tests, docs, content and generated
 snapshots; distinguish whole-delivery totals from refactor-only totals. If mixed
 changes cannot be isolated, say so rather than estimate.
 
-The slice retrospective reports findings opened, completed, partially completed,
-carried and dropped; per-item line/site figures; review-caught defects, escaped
-regressions and review/CI rework separately; and standalone/folded capacity counts
+The slice plan leaves the tree at its retrospective, after its live content moves;
+git and GitHub history keep it. The slice retrospective reports findings opened,
+completed, partially completed, carried and dropped; per-item line/site figures;
+review-caught defects, escaped regressions and review/CI rework separately; and
+standalone/folded capacity counts
 with their denominator. Distinguish a persistent finding from a reintroduced one.
 For milestones said to be unblocked, record ready/start/review-ready/merge dates
 and known waits; claim a speedup only with a defensible comparison. Unknown effort

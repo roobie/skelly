@@ -6,7 +6,6 @@
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { rm } from 'node:fs/promises';
-import { createServer } from 'node:net';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
@@ -14,21 +13,18 @@ import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
 } from '../test/browser/menu-pointer.mjs';
+import { browserStageLaunchArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
+import { reserveDistinctPorts } from './browser-ports.mjs';
 import { createBrowserProfile } from './browser-profile.mjs';
 
 const cwd = process.cwd();
 const profile = createBrowserProfile();
-const freePort = async () =>
-  new Promise((resolve, reject) => {
-    const server = createServer();
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      server.close((error) => (error ? reject(error) : resolve(address.port)));
-    });
-  });
-const port = Number(process.env.UI_TEST_PORT ?? (await freePort()));
-const cdpPort = Number(process.env.UI_TEST_CDP_PORT ?? (await freePort()));
+const ports = await reserveDistinctPorts({
+  port: Number(process.env.UI_TEST_PORT ?? 0),
+  cdpPort: Number(process.env.UI_TEST_CDP_PORT ?? 0),
+});
+const { port, cdpPort } = ports;
+await ports.release();
 const vite = spawn(
   process.execPath,
   ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', `${port}`, '--strictPort'],
@@ -37,24 +33,17 @@ const vite = spawn(
     stdio: ['ignore', 'pipe', 'pipe'],
   },
 );
+const stageUrl = browserStageUrl(
+  'ui-browser-contract',
+  `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
+);
 const chrome = spawn(
   process.env.CHROME_BIN ?? 'google-chrome',
-  [
-    '--headless=new',
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-extensions',
-    // This throwaway profile must not wait for a desktop OS keyring before its first HTTP request.
-    '--password-store=basic',
-    '--enable-webgl',
-    '--use-gl=swiftshader',
-    '--enable-unsafe-swiftshader',
+  browserStageLaunchArgs('ui-browser-contract', [
     `--remote-debugging-port=${cdpPort}`,
     `--user-data-dir=${profile}`,
-    '--window-size=1280,900',
-    // The contract tests UI, not the look: without a GPU the post chain and shadows make each frame several times slower.
-    `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
-  ],
+    stageUrl,
+  ]),
   { stdio: ['ignore', 'pipe', 'pipe'] },
 );
 const startupAbort = new AbortController();

@@ -4,13 +4,13 @@ import { blocks, placementOf } from './authoredPlacement.ts';
 import { buildingBounds, LOT_APRON_M, layoutHeight, lotOf, polylineDistance } from './authoredTerrain.mjs';
 import type { Chunk } from './chunk.ts';
 import type { Registry } from './content.ts';
-import { toChunk, type Vec3 } from './coords.ts';
+import { toChunk, type Vec3, yawFromBearing } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { furnitureOf, grow, type Rect, type Site, type ZombieSpawn } from './site.ts';
-import { footprint, type Placement, placedSpawns, stampPlacement } from './templates.ts';
+import { footprint, type Placement, placedFlights, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -25,6 +25,7 @@ export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
+  readonly stairFlights: NonNullable<Site['stairFlights']>;
   readonly skyBounds: NonNullable<Site['skyBounds']>;
   readonly trees: readonly TreePlacement[];
   private readonly spawns: readonly ZombieSpawn[];
@@ -46,6 +47,7 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building));
+    this.stairFlights = this.placements.flatMap(placedFlights);
     this.skyBounds = this.placements
       .filter((placement) => (placement.template.groundLayer ?? 0) > 0)
       .map((placement) => {
@@ -59,7 +61,7 @@ export class AuthoredSite implements Site {
           ] as Vec3,
         };
       });
-    this.spawn = { pos: [...layout.player.position], yaw: (layout.player.yaw * Math.PI) / 180 };
+    this.spawn = { pos: [...layout.player.position], yaw: yawFromBearing(layout.player.bearing) };
     const height = (x: number, z: number, natural: number): number =>
       Math.round(layoutHeight(layout, lots, [(x + 0.5) * s, (z + 0.5) * s], natural * s) / s);
     const trackAt = (x: number, z: number) =>

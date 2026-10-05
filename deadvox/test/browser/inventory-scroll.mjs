@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageArgs } from './stage-mode.mjs';
 
 const { chromium, firefox } = await import('playwright');
 // biome-ignore lint/style/noProcessEnv: the launcher accepts the installed Chromium path
@@ -62,11 +63,11 @@ screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));
 screen.update();
 const input = { locked: false, menuPointer: false, cursorX: 0, cursorY: 0,
   moveMenuCursor(x, y) { this.cursorX += x; this.cursorY += y; } };
-const canvas = document.querySelector('canvas');
-const menu = mountMenuPointer({ input, canvas, cursor: document.querySelector('#game-cursor') });
+const target = document.querySelector('#view');
+const menu = mountMenuPointer({ input, canvas: target, cursor: document.querySelector('#game-cursor') });
 let gameplayWheels = 0;
-canvas.addEventListener('wheel', () => gameplayWheels++);
-globalThis.scrollFixture = { input, screen, inventory, canvas, menu,
+target.addEventListener('wheel', () => gameplayWheels++);
+globalThis.scrollFixture = { input, screen, inventory, target, menu,
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
   redraw() {
@@ -89,7 +90,7 @@ const vite = await createServer({
           if (request.url === '/__scroll.html') {
             response.setHeader('Content-Type', 'text/html');
             response.end(
-              '<html><body><canvas></canvas><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor"></div><script type="module" src="/__scroll.js"></script></body></html>',
+              '<html><body><div id="view"></div><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor-root"><div id="game-cursor"></div></div><script type="module" src="/__scroll.js"></script></body></html>',
             );
           } else {
             next();
@@ -120,7 +121,7 @@ try {
       : await chromium.launch({
           executablePath: chromeBin,
           headless: true,
-          args: ['--no-sandbox', '--disable-dev-shm-usage'],
+          args: browserStageArgs('inventory-scroll'),
         });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
@@ -158,7 +159,7 @@ try {
       );
       if (locked) {
         await page.evaluate(() =>
-          globalThis.scrollFixture.canvas.dispatchEvent(
+          globalThis.scrollFixture.target.dispatchEvent(
             new WheelEvent('wheel', {
               deltaY: 3,
               deltaMode: 1,
@@ -190,7 +191,7 @@ try {
     }
   }
   assert.deepEqual(errors, []);
-  assert.deepEqual(failures, [], 'each pane scrolls without page/canvas wheel leakage and survives #67 redraw');
+  assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
   process.stdout.write(
     `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
   );

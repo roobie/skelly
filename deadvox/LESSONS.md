@@ -1,4 +1,19 @@
+---
+read_if:
+  - you're troubleshooting a deadvox problem and want to know whether the same area went wrong before
+  - you're about to change a deadvox area that has a lesson here (each heading names its area)
+  - you've just solved a hard deadvox problem and want to record what it taught
+---
+
 # deadvox — lessons
+
+## Gate actions when the input edge is captured (2026-10-04)
+
+**What happened.** `Input` latched a primary click on canvas `mousedown`, but build-mode exclusion was checked only when the later fixed-step player tick consumed it. If B toggled build mode off first, an editor click could start melee and spend stamina; the next click could then be rejected as busy. That mechanism is consistent with the positive-control failure on PR #223 (run 37234915439), but the CI trace did not capture the prior input/tick order, so attribution remains open in #224.
+
+**What to do.** Apply mode-specific suppression at the input edge, using the mode at `mousedown`; keep the tick-time guard as defense in depth. A rendering frame is not proof that the fixed-step simulation consumed a latched input.
+
+**Proof.** `test/input.test.ts`'s `does not queue primary clicks rejected at press time` failed before the gate (the build-mode click was latched) and passed after it. First-load and Firefox OPFS startup failures are separate unresolved evidence tracked in #224; do not attribute them to this input race.
 
 What we learned the hard way, and what to understand before troubleshooting the same
 area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the problems
@@ -14,9 +29,11 @@ until the key loaded. First navigation then took 28 seconds or crossed its uncha
 30-second bound (#190). A late response `Date` header did not mean Vite was slow:
 its first curl response took 8 ms, and its browser-request handler took 4–15 ms.
 
-**What to do.** Use `--password-store=basic` for the throwaway profiles in
-`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs`, matching
-Playwright's normal launch arguments. This is test-profile isolation, not a setting
+**What to do.** Use shared `browserStageLaunchArgs` from
+`test/browser/stage-mode.mjs` for the throwaway profiles in
+`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs`. It owns the common
+headless, isolation, graphics-mode and window-size flags; each caller supplies only its
+profile, remote-debugging port and URL. This is test-profile isolation, not a setting
 for players' browsers. Do not warm up a request, retry or raise the timeout.
 
 **Proof.** Three fresh-profile launches without the flag took 27.76–28.89 seconds;

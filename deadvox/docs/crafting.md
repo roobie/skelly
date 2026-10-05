@@ -1,8 +1,17 @@
+---
+read_if:
+  - you change crafting, workstation, disassembly, or salvage contracts
+  - you change work-item ownership, long actions, saves, or their tests
+  - you change crafting, skill progression, recipe knowledge or reading
+  - you change item ownership, resumable actions or saved work
+  - you change workstation admission or craft/reachability tests
+---
+
 # Crafting ownership and planning
 
-Slice 2.4 implementation starts at the shared item-tree boundary, then adds the
-pure planner, persisted character state and shared core long actions. Work-item
-options/command wiring and the BR-gated panel follow.
+Slice 2.4 established the shared item-tree boundary, pure planner, persisted
+character state and shared core long actions. Slice 2.5 adds progression, recipe
+learning and reading; work-item options and command wiring use those same contracts.
 
 ## Item tree (F3)
 
@@ -42,8 +51,12 @@ more than one matters when several reservations change greedy stack allocation.
 Equivalent reserved-UID sets are visited once per quality prefix, not once per
 provider tuple. No feasible plan is rejected by a search-budget cutoff.
 
-Gather time is in **game seconds** (`handlingTime * CLOCK_RATIO`); work time is
-recipe game minutes times 60. Skill speed bonuses arrive in 2.5, not here.
+Gather time is in **game seconds** (`handlingTime * CLOCK_RATIO`). Work time
+starts from recipe game minutes converted to seconds, is adjusted by the named
+in-reach station's content-defined bonus, then by the character's skill modifier
+before it is stored in the work item. Skill-gated crafting, source-agnostic
+practice awards and the modifier are owned by `src/core/character.ts`,
+`src/core/craftWork.ts` and `src/core/crafting.ts`.
 Preferences never fall back silently. Missing requirements include knowledge,
 skill gaps, best usable quality levels, station, and needed/raw-found counts per
 component group. Raw counts may compete across groups or with required tools;
@@ -57,11 +70,24 @@ reach snapshot and re-plan.
 
 ## Minimal character state
 
-`src/core/character.ts` owns skill levels and recipe knowledge. New characters
-start every declared skill at 0 and know the present base recipes: torch,
-candle and repair kit. The repair kit remains skill-gated at crafting level 1.
-The starting source is explicit and filtered to loaded recipe IDs; new arbitrary
-recipes are not automatically known. Books and practice belong to 2.5.
+`src/core/character.ts`, `Character`, owns skill levels, source-agnostic practice
+and recipe knowledge. Starting recipes are explicit and filtered to loaded IDs;
+workbench-dependent base recipes join that source, while new arbitrary recipes
+are not automatically known. Reachable books add recipe knowledge without
+changing item ownership. Books teach recipes only, as BR ruled for Slice 2.
+Practice may come from any activity; craft completion is its first source. In
+Slice 2, only finishing a craft awards practice; take-apart work does not.
+`src/core/bookReading.ts`, `bookReadingHooks`, owns reading admission and
+completion while `src/core/longAction.ts`, `LongActions`, keeps the book UID and
+progress.
+
+For a stopped reading job, progress remains with the job while its book exists in
+inventory, including when the book is in a pile. This preserves interrupted work
+without letting it progress or resume until the same book is held again. A held
+book's primary activation shares the item-use path, and activating the same
+stopped book resumes its progress. If the book is gone, the save copy omits the
+stopped job, and the next tick ends it; `src/core/longAction.ts`,
+`LongActions.restoreState`, checks ownership without requiring a hand.
 
 Snapshots and the canonical save payload persist `character.progression`.
 Restoration preserves the saved levels/knowledge instead of reseeding them and
@@ -69,8 +95,10 @@ validates skill definitions, recipe references, duplicate knowledge and levels.
 Older saves without this field are deliberately rejected: no migration or
 compatibility mode. Canonical numeric handling, including signed zero, is
 unchanged. The CLI now uses this same starting source as a hard knowledge check;
-unknown recipes cannot seed the component or tool closure. Skills stay pending
-until 2.5 and workstation behavior until 2.8.
+unknown recipes cannot seed the component or tool closure. Positive skill and
+workstation requirements are hard-checked against reachable practice sources and
+placed templates by `checkReachability()` in `src/core/reachability.ts`; no
+prerequisite classes remain pending.
 
 ## Shared core long actions (step 4)
 
@@ -87,12 +115,15 @@ stopped action. Continue preserves it. Interruption UI, safety checks, fatigue
 recovery/bed bonus and normal compression ramp-down remain unchanged in intent.
 Stopped actions do not recover fatigue or accumulate work while the world advances.
 
-A `work_in_progress` item's `work` field owns recipe, elapsed/duration (game
-seconds) and exact input item subtrees. F3's walker includes them; no job or second
-hand owns a copy. The native type reserves both hands through `twoHanded`, with
-one right-hand root. Inventory refuses a work item into the left hand with
-`Work stays in the right hand`. Inventory alone escrows/removes/releases inputs, prevents
-independent consumption/moves of escrow, and maintains weights/UID lookup.
+The `work` field on `work_in_progress` owns the tagged craft or disassembly
+payload, progress, duration (game seconds), and exact input item subtrees; a
+disassembly payload also owns its source, skill/tool snapshot, and calculated
+outputs. `CraftWork` in `src/core/items.ts` defines these saved forms, and F3's
+walker includes their inputs; no job or second hand owns a copy. The native type
+reserves both hands through `twoHanded`, with one right-hand root. Inventory
+refuses a work item into the left hand with `Work stays in the right hand`.
+Inventory alone escrows/removes/releases inputs, prevents independent
+consumption/moves of escrow, and maintains weights/UID lookup.
 Reach omits escrowed inputs. This core representation is required to prove F2;
 work-item options, native command wiring and the derived second-hand label now
 use the step-5 F7 projections. The first-person renderer already uses the generic
@@ -116,12 +147,13 @@ stopped descriptor, since progress still belongs to the work item. C and the
 status panel use the same native Continue UID: a live or interrupted rest/sleep
 job takes precedence over held work; a stopped rest/sleep job leaves Continue to
 the held work.
-Terminal state is cleared before effects; finish consumes escrow once and puts
-the result in the freed hand, while cancel returns exact input UIDs/counts without
-stack merging. The five ordinary `dropSpots` are shared with craft retirement;
-shadow occupancy reserves every output before transferring any of them. An
-unplaceable return is refused before structural transfer and keeps stopped work
-intact. The debug spawn menu excludes the payload-bearing native work type.
+Terminal state is cleared before effects; a completed craft consumes escrow once
+and puts its recipe result in the freed hand, while a completed disassembly drops
+its outputs at the player's feet. Cancel returns exact input UIDs/counts without
+stack merging. The same `dropSpots` policy in `src/core/inventory.ts` handles
+craft retirement and disassembly outputs; shadow occupancy reserves every output
+before transferring any of them. An unplaceable return is refused before
+structural transfer and keeps stopped work intact. The debug spawn menu excludes the payload-bearing native work type.
 
 Snapshots/codec now require `character.longAction`; recursive item `work` data
 is included. Loading validates tags/cursors, work ownership, recipe IDs, progress
@@ -131,14 +163,30 @@ jobs are still cancelled only in the saved copy. The runtime graph includes both
 new core owners; the one new native item definition changes the content identity.
 Work is a runtime escrow representation, excluded from acquired-content counts.
 
+## Disassembly and salvage (Slice 2.7)
+
+Every non-repair recipe result needs an authored disassembly yield; repair
+recipes are excluded because they improve an existing target instead of creating
+a new item result. A disassemblable item declares a yield or a salvage list, never
+both. `checkItems` in `src/core/content.ts` rejects mixed declarations, and
+`checkRecipes` in `src/core/content.ts` requires recipe-result yields.
+
+`planDisassembly` in `src/core/disassembly.ts` calculates yield from the skill and
+reachable tools at start, and the work item keeps that output snapshot. Stop and
+Continue therefore preserve the original yield rather than recalculating after a
+skill change. Salvage uses the fixed work duration in `SALVAGE_DURATION`; gathering
+adds its handling time. Finishing places disassembly outputs at the player's feet,
+while cancelling returns the exact source item. These rules keep taking apart an
+item a resumable action without changing its promised output or losing the source.
+
 ## Proofs
 
 `test/inventory.test.ts` rejects extraneous item pockets, a missing declared
 pocket, and an out-of-grid pile placement. Existing snapshot, UID, transfer,
 quickbar and furniture controls protect the unchanged ownership semantics.
-`test/crafting.test.ts` covers competing groups, preference, tool/component
-separation, stack ordering, filled-container exclusion, missing requirements,
-and records all base-recipe timings on one indexed 200-item reach snapshot.
+`test/crafting.test.ts` covers named-station reach, station-supplied qualities,
+content-derived work-time bonus, competing groups, preference, tool/component
+separation, stack ordering, filled-container exclusion, and missing requirements.
 One overlapping four-quality case has a deterministic operation-count control,
 varied conditions, shared tool UIDs and a cheapest-allocation guard against
 incorrectly collapsing a provider class to just one representative. A four-cost-
@@ -161,7 +209,7 @@ Refusals name missing tool qualities or the first understocked component group;
 allocation competition is reported only when each chosen group is stocked alone.
 Clicks submit recipe/UID
 intents and revalidate live state; readouts never mutate work or own another tree.
-Panel styling and in-game acceptance still stop at BR's first-look gate.
+The panel remains a projection: `src/ui/crafting.ts`, `renderCrafting`, forwards explicit actions while core admission and readout owners determine eligibility and outcomes.
 
 This is mixed feature/validation/consolidation work, **not an isolated or
 line-reducing refactor**. The staged report names source, test, doc and content

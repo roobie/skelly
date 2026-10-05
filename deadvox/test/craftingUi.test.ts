@@ -92,7 +92,7 @@ describe('crafting read-only presentation', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
     const recipeSeconds = registry.recipes.get('torch')!.time * 60;
-    item.work = { recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
+    item.work = { kind: 'craft', recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
     inventory.add(item, { kind: 'hand', side: 'right' });
     const status = craftStatus(
       inventory,
@@ -100,7 +100,7 @@ describe('crafting read-only presentation', () => {
       { jobType: 'craft', workUid: item.uid, stopped: true, last: 0 },
       undefined,
     )!;
-    expect(status.percent).toBe(Math.round((item.work.elapsed / item.work.duration) * 100));
+    expect(status.percent).toBe(Math.round((item.work!.elapsed / item.work!.duration) * 100));
     const root = document.createElement('section');
     const resume = vi.fn();
     const stop = vi.fn();
@@ -112,7 +112,7 @@ describe('crafting read-only presentation', () => {
     (buttons[1] as HTMLButtonElement).click();
     expect(stop).toHaveBeenCalledOnce();
     expect(root.querySelector('progress')?.value).toBe(status.percent);
-    expect(item.work.elapsed).toBe(recipeSeconds);
+    expect(item.work!.elapsed).toBe(recipeSeconds);
     renderCraftStatus(root, undefined, { continue: resume, stop });
     expect(root.hidden).toBe(true);
   });
@@ -120,7 +120,7 @@ describe('crafting read-only presentation', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
     const recipeSeconds = registry.recipes.get('torch')!.time * 60;
-    item.work = { recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
+    item.work = { kind: 'craft', recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
     inventory.add(item, { kind: 'hand', side: 'right' });
     const character = new Character(registry);
     const reach = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();

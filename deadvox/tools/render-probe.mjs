@@ -42,6 +42,8 @@ import process from 'node:process';
 
 const { chromium } = await import('playwright');
 
+import { browserStageArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
+
 const USAGE =
   'usage: node tools/render-probe.mjs <url> [--out shot.png] [--wait ms] [--scan cyan,magenta|none] [--window x,y,w,h]';
 const NOISE = /Lit is in dev mode|MobActorMeshes|\[vite\] (connecting|connected)/;
@@ -209,7 +211,7 @@ const out = opts.out ?? join(await mkdtemp(join(tmpdir(), 'render-probe-')), 'sh
 let browser;
 try {
   browser = await chromium.launch({
-    args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+    args: browserStageArgs('render-probe', ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist']),
   });
 } catch (error) {
   console.error(`could not launch Chromium: ${error.message.split('\n')[0]}`);
@@ -227,7 +229,7 @@ try {
   page.on('console', (m) => logs.push({ type: m.type(), text: m.text() }));
   page.on('pageerror', (e) => pageErrors.push(e.message));
   try {
-    await page.goto(opts.url, { timeout: NAV_TIMEOUT_MS });
+    await page.goto(browserStageUrl('render-probe', opts.url), { timeout: NAV_TIMEOUT_MS });
   } catch (error) {
     console.error(`navigation failed: ${error.message.split('\n')[0]}`);
     process.exit(1);

@@ -338,7 +338,8 @@ body {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 300px;
+  /* Packing changes must not put item click points beyond the pane's clipped hit-test area. */
+  grid-template-columns: minmax(0, 1.2fr) minmax(min-content, 1fr) minmax(180px, 1fr);
   gap: 12px;
 }
 .inv-pane,
@@ -1361,6 +1362,14 @@ body.inventory-open #inventory-stats {
 
 #f3-debug-overlay .debug-revealed-zombies {
   color: #ffcf7a;
+}
+
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="look"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="post"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="lighting"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="atmosphere"],
+#debug-ui-root[data-rendering="unavailable"] .debug-panel [data-group="diagnostics"] {
+  display: none;
 }
 
 #reading {

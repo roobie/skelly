@@ -11,7 +11,7 @@ import { CHUNK, type Vec3 } from './coords.ts';
 import type { DoorLockDef, TemplateAccess } from './schema.ts';
 import { constructFlight } from './stairFlight.ts';
 
-/** The way something's front faces: north is -z, east is +x. */
+/** Horizontal front facings follow WORLD_NORTH in coords.ts. */
 export type Facing = 'n' | 'e' | 's' | 'w';
 /** Quarter turns clockwise seen from above: a turn takes north to east. */
 export type Turn = 0 | 1 | 2 | 3;
@@ -281,8 +281,15 @@ export const placedPoint = ({ template, origin, turn }: Placement, [x, y, z]: Ve
   return [origin[0] + u + 0.5, origin[1] + y, origin[2] + v + 0.5];
 };
 
-/** Stable floor ids and world-block landing coordinates for future navigation; not an AI route. */
-export const placedFlights = (placement: Placement) =>
+export interface PlacedFlight {
+  readonly from: string;
+  readonly to: string;
+  readonly lower: Vec3;
+  readonly upper: Vec3;
+  readonly width: number;
+}
+
+export const placedFlights = (placement: Placement): PlacedFlight[] =>
   (placement.template.access?.stairs ?? []).map((stair) => ({
     from: stair.from,
     to: stair.to,

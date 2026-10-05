@@ -1,6 +1,10 @@
 ---
 id: deadvox::adr-0002-saves
 description: Decision for exact, versioned, crash-safe local saves of the Deadvox simulation
+read_if:
+  - you're changing persistent simulation state or restore guarantees
+  - you're evaluating the save-format decision
+  - you change save format, snapshot state or compatibility policy
 tags: [deadvox, adr, saves, persistence, determinism]
 created: 2026-09-28
 status: accepted
@@ -8,7 +12,6 @@ status: accepted
 
 # 2. Save the simulation, not the runtime
 
-[[THIS is_grounded_by: ../../SLICE-1.md]]
 [[THIS is_grounded_by: ../../DESIGN.md]]
 
 **Status:** accepted (2026-09-28). BR's rulings are recorded under [Rulings](#rulings-2026-09-28).
@@ -95,7 +98,7 @@ references:
 | --- | --- | --- |
 | Version and world identity | Exact `versionIdentity` plus its components: simulation-source fingerprint; save schema version; deterministic generator versions (worldgen and, once firearms are introduced, gungen); ordered pack IDs/versions/canonical content hashes; diagnostic Git build revision; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of the simulation fingerprint, schema, generator map and ordered pack identities. The Git build revision is stored alongside as diagnostic metadata, outside the digest and compatibility check. Require exact identity equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
 | Clock/simulation | Simulation time, clock settings, needs, death cause/time, compression `c`/active/interruption, and each scheduler system's stable ID, `done` time and tick count | Preserve time, exact scheduler ordering and active rest behavior; do not save or restore god mode/noclip/build toggles (force them off on load). Debug interventions already made to the world remain in its saved state. Reject unknown system IDs rather than silently resetting their phase. |
-| Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; needs; `Survival.lit` item UID (or absence); quickbar item UIDs | Position and velocity are saved even in mid-air. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. |
+| Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; needs; `Survival.lit` item UID (or absence); quickbar item UIDs and their held-item return targets | Position and velocity are saved even in mid-air. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. The return target persists because a quickbar tap must still put a drawn item back where it came from after Continue. |
 | Items | Recursive items including UID, type ID, count, condition, charges/on/made, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and lights. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
 | Furniture/block entities | Anchor, type ID, size/facing, open/searched state and container pocket trees; `BlockEntities.nextUid` | Address entities by world anchor/type, not load-order-dependent object identity. Restore saved overrides when deterministic worldgen creates an anchor. |
 | World edits | Only changed chunks, each with chunk coordinates, a palette of stable block content IDs, and RLE runs for changed cell offsets/IDs versus the versioned generated base | At the first write to a cell, journal its generated base ID; later writes update or remove the delta if the cell returns to base. Runtime block numbers are registry-order dependent. Store string IDs. Regenerate the base chunk, apply the diff, then rebuild meshes. Preserve explicit air edits. |
@@ -108,6 +111,10 @@ Runtime ownership follows the same boundary: inventory roots (hands, worn items,
 piles and furniture) and their pocket trees own Item instances. Quickbar bindings
 and the selected light store non-owning UIDs and resolve through the inventory's
 canonical live lookup; a removed live binding becomes empty before serialization.
+The quickbar's captured source is a target, not another item owner: see
+`src/core/inventory.ts`, `Inventory.quickbarOrigin` and `Inventory.snapshotState`,
+and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`. Its schema and source
+fingerprint change together because the return behavior must survive a restore.
 The synchronous snapshot barrier checks that every emitted quickbar/light UID is
 still owned. Restore refuses a dangling saved UID rather than silently repairing
 it. Full consumption, including a container subtree, and whole-stack merging end
@@ -350,6 +357,8 @@ systems now.
 | 7 — Cordon and labs | Tier 2/3 sites, underground labs, special zombies/evolution, hazard zones, lore | Revisit at Slice 7: generated sites remain version-bound world data; discovered lore belongs to the character and mutable hazards/evolution to world-region state. Exact fields wait for the systems. |
 | 8 — Version 1 | Migration and compatibility hardening | The version picker/migration decision is a hard fork. EPIC's “Old saves migrate” exit criterion remains a version 1 obligation, not a 1.9 feature; resolve the strict-version interim policy before the v1 exit. |
 
+**2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `deadvox/src/core/saveState.ts`, `SaveSnapshot`, and `deadvox/src/core/longAction.ts`, `LongActions`.
+
 ### Storage, browsers, and recovery
 
 Use an origin-private file system (OPFS) dedicated worker and
@@ -418,7 +427,8 @@ disk I/O are worker work. This estimate was not a result. Keep a hard
 instrumented target of at most 1 ms p95 snapshot time at 96 m (and no frame over
 16.7 ms); if measurement misses, reduce the snapshot surface or copy incrementally
 at barriers, never move serialization/disk work onto the frame. The snapshot p95
-is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-hour
+is measured in-game with the F4 snapshot controls in `src/debug/index.ts`,
+`measureSnapshot`. CI checks a ten-game-hour
 save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
 runner-bound save budgets, not general device targets. On 2026-10-02 BR measured
 the reference-laptop batch-mean throughput in Firefox: 50 batches of 128 captures
@@ -494,8 +504,8 @@ generation until the new world's first snapshot commits.
    save-size/load-time checks. Done when CI checks the 10-hour <5 MiB and <1 s
    decode/restore limits on `ubuntu-latest` and the current-build round trip
    passes. The ≤1 ms individual per-capture p95 target is assessed in-game via
-   the F4 individual-tail observation under SLICE-1 §1.11, not by batch-mean
-   throughput, the Node benchmark, or a CI gate.
+   the F4 individual-tail observation (`src/debug/index.ts`, `measureSnapshot`),
+   not by batch-mean throughput, the Node benchmark, or a CI gate.
 
 ## Consequences
 

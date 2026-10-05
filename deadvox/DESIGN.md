@@ -1,3 +1,13 @@
+---
+read_if:
+  - you're choosing world scale, view distance or performance targets
+  - you're changing the rules for time, survival, light or zombies
+  - you change shambler navigation or floor-transition behavior
+  - you change the game's design, especially held-item feedback or hand ownership
+  - you reconcile BR's rulings with player interaction and presentation
+  - you're changing the debug test-house scene or firearm-handling range
+---
+
 # deadvox — design
 
 The core design of the game: what it is, and the systems it's made of. Read it
@@ -5,7 +15,6 @@ together with:
 
 - [EPIC.md](EPIC.md): the road to version 1.
 - [CHALLENGES.md](CHALLENGES.md): the hard problems and how we plan to tackle them.
-- [SLICE-1.md](SLICE-1.md): the first playable deliverable.
 - [INTERACTIONS.md](INTERACTIONS.md): how moving, using, crafting and appliances
   work in the code, and the contract with the UI (draft).
 - [PROJECT.md](PROJECT.md): the current code, how to run it, and technical decisions.
@@ -63,7 +72,7 @@ so keep their number small.
 | | |
 | --- | --- |
 | World unit | **1 unit = 1 metre.** Physics, rendering and content all use metres, and speeds are in m/s |
-| Block size | **0.5 m** (decision; measured and play-tested in milestone 1.0, see SLICE-1.md Results). One constant, `BLOCK_SIZE`, converts between blocks and metres |
+| Block size | **0.5 m**, the measured and play-tested choice. `BLOCK_SIZE` converts between blocks and metres |
 | View distance | **96 m** by default. A setting (64, 96 or 128 m) adapts it to the hardware |
 | Chunk | 32³ blocks = a 16 m cube |
 | Player | 1.8 m tall, 0.6 m wide, eyes at 1.62 m. Steps up 0.5 m (one block) without jumping. A jump clears about 1 m |
@@ -71,9 +80,13 @@ so keep their number small.
 | World height | Start at −48 m to +80 m (256 blocks, 8 chunks). Labs need depth below ground; towers need height above it |
 | Mass, liquids, item size | Grams and millilitres, as whole numbers. In inventories, an item takes w × h cells |
 
-Half-metre blocks make interiors, furniture, vehicles and body-sized details
-readable without a separate prop system. The cost is 8× the blocks per volume;
-[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks) covers the budget.
+The 2026-09-25 feel test found 0.5 m blocks far better than 1 m: doorways,
+furniture and interiors read at a human scale, and stairs are walked instead of
+jumped. A 0.25 m look on 2026-10-01 did not feel better and would have cost
+about eight times as many chunks at the same view radius, plus a redraw of
+building templates. The frame budget and why the default is 96 m are in
+[CHALLENGES.md](CHALLENGES.md#1-half-metre-blocks). The choice is implemented by
+`src/core/scale.ts`, `BLOCK_SIZE`.
 
 ### Block shapes
 
@@ -234,6 +247,16 @@ reads) is added when buildings get big.
 Tiers rise with distance from the spawn area and around the lab sites. Labs are
 the source of the weirdness: mutation pressure and hazard zones spread from them.
 
+### Debug scenes
+
+The firing range belongs to `?site=testHouse&debug=1`, not to ordinary world sites:
+it lets firearm handling be exercised without turning the test stock into a playable-world
+loot source. `src/core/range.ts`, `HandlingRange`, owns the shared lane geometry, while
+`src/game/testHouseRange.ts`, `testHouseRangeStock`, derives the rack contents from registry
+firearm and ammunition compatibility. `HandlingRange.approachHeight` and
+`DebugTestHouseSite` keep the debug lane connected to the test-house pad at the same floor;
+`test/testHouseRange.test.ts` exercises the south-gate route with player collision.
+
 ### Loot
 
 Loot tables are data. A table has entries with weights, count ranges and
@@ -259,7 +282,7 @@ chunks can generate in any order.
   - `fuel`, `battery`, `light`, `book`
   - `vehiclePart` (after Slice 1)
 
-  Behaviour comes only from components; the game never checks an item's id.
+  Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled (BR, 2026-10-05), "yes, rule covers drawing too": first-person displays and ground-pile presentation follow declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`, and `src/render/piles.ts`, `PileMeshes.drawPile` and `PileMeshes.planSpentCases`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
   rotated. A container has one or more **pockets**, each its own grid: a jeans
   pocket is 1 × 2, a hoodie pocket 3 × 2, a school backpack 5 × 6, a kitchen
@@ -284,6 +307,21 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   aimed at its target if it has one: "using the key means wielding it, and
   activating it on the door". Ammo boxes are unpacked the same way, never from
   the inventory screen, and no modifier chord bypasses it.
+- **Rummage feedback (BR, 2026-10-04, d50):** "there is no anim for when
+  opening the box of shells / i think we should add a generic \"hands go
+  together and rummage with the held item\"". Handling needs visible feedback,
+  not a second action owner. See `src/render/rummagePose.ts`, `rummageFrame`
+  and `RUMMAGE_POSE`, and `src/render/hands.ts`, `HeldItems.poseRummage`.
+  BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
+  On stowing: "putting away the shotgun from being wielded also plays rummaging
+  anim - i think it kinda fits". The longer-term direction is "over time, we'll
+  maybe add more specific anims."; shell-loading feedback is d53, after d47.
+  Approval does not pin `RUMMAGE_POSE` tuning: see
+  `../docs/deferred-assertions.md`.
+  Following #213's merge (d50-3), compass handling must not introduce a second
+  rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
+  `HeldItems.poseRummage`. The needle's world-heading owner remains independent
+  of hand motion: see `src/render/compass.ts`, `createCompass`.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
@@ -338,15 +376,36 @@ HTML over the game view, and keyboard-first:
   shows its handling time. Weight, exact condition and times are in the item's
   details.
 - Filters and search, and item details on hover or focus.
-- A **quickbar** of shortcuts to items you carry. A slot's key puts the item in
-  your hands, which costs its pocket's handling time; pressing it again uses
-  it.
+- A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
+  "one thing that feels not quite right to me is that pressing the quickbar
+  number activates the item […] what if the number itself only wields or
+  unwields it, but T+number activates it?" BR settled at 00:08: "1. hold-number,
+  no doubt. This is the best UX / 2. agreed". The old number-use duplicated
+  left-click, `=` and R; a double press could rack a drawn gun, eject a live
+  shell, or eat food, and there was no way to put an item away. A tap now takes
+  an item into its capability-directed hand or puts it away; a hold uses an
+  available action from its current location. Weapons, keys and tool-only items
+  have no pocket use and give a short notice; firearm cycling stays on R. Weapons
+  and tools use the primary hand, lights the off hand, and two-handed items both
+  hands. When a held item
+  is put away, it returns to its captured source or the best pocket; this source
+  is saved because the tap's put-away behavior must survive a save/load. See
+  `src/game/quickbarInput.ts`, `QuickbarInput`, and `QUICKBAR_HOLD_ESTIMATE_MS`
+  for the presentation-only gesture estimate; `src/game/quickbarActions.ts`,
+  `QuickbarActions`, for tap/hold routing; `src/core/options.ts`, `quickbarTake`
+  and `quickbarPutAway`, for item-directed hand choice and return; and
+  `src/core/inventory.ts`, `Inventory.quickbarOrigin` and `Inventory.snapshotState`,
+  for the captured source saved in `InventoryState.quickbarOrigins`. Firearm cycling
+  remains on R only.
 
 ### Piles
 
 Items on the ground form **piles** at block positions, like CDDA. An item
 with a model lies at its place in the pile's grid; items without one make a
-generic bundle.
+generic bundle. For d59-2, spent cases read as loose debris rather than stacked
+material, so their content-owned pile-display component selects scattering; see
+`src/core/schema.ts`, `PILE_DISPLAY_KIND`, and `src/render/piles.ts`,
+`PileMeshes.planSpentCases`.
 
 ### Item models
 
@@ -387,7 +446,8 @@ plain box in your hands. Files are small, and follow
   containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
 - **Disassembly** is a recipe run in reverse. It returns part of the
-  components, depending on skill and the tools used.
+  components, depending on skill and the tools used. In Slice 2, that reverse is
+  an authored yield or salvage list (see [SLICE-2.md](SLICE-2.md), "2.7").
 - **Crafting runs compressed**, like other long actions, and can be interrupted
   and resumed. An interrupted craft leaves an "in progress" item that holds its
   components.
@@ -475,8 +535,19 @@ and the sounds for severing and destruction (the audio manifest).
 
 ## Light
 
-Nights are dark and interiors are pitch black, so you have to bring light. Light
-is the visual side of noise: it lets you see, and it lets them see you.
+Nights should be dark, and voxel-lit interiors pitch black, so you have to
+bring light. Light is the visual side of noise: it lets you see, and it lets
+them see you.
+
+Interiors need voxel light to become darker than the outdoors. Until that
+arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
+A carried beam remains a three.js light because it moves every frame, unlike
+block light. The zombie light check keeps sky visibility separate from carried
+light, so adding voxel sky light won't change the carried-light rule. Keep time
+of day in the sky/fog renderer, not baked into chunks; voxel sunlight can then
+join AO in vertex colour. See `src/render/flashlight.ts`, `Flashlight.update`,
+`src/core/zombies.ts`, `isLit`, `src/render/sky.ts`, `applySky`, and
+`src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
 
@@ -542,17 +613,79 @@ worse the world gets.
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
   rain washes out).
-- **Behaviour:** a small state machine: idle, wander, investigate, chase,
-  attack, lost track. Pathfinding runs on the block grid and allows one-block
-  steps, jumps and drops. It handles dynamic changes, so a door you close
-  changes the route.
-- **Level of detail:**
+- **Navigation rationale:** Collision-aware routing prevents false progress
+  through blockers, while bounded work protects the shared simulation tick.
+  Keeping route planning separate from physics preserves collision ownership.
+  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+  Explore landing connections only from the reached frontier, trying the goal
+  before optional detours. Exhausting effort on an unrelated closed approach must
+  not discard a complete route already found. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs`.
+  A grid-expansion limit alone hides flight validation, graph preparation and
+  compression work. Account for world probes and metadata/graph work against the
+  request allowance; the expansion cap also bounds local path structures.
+  Finish at most one request beyond the dispatch slice and rotate the remaining
+  queue deterministically. The allowance is logical work, not a wall-clock deadline; see
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`, and
+  `deadvox/src/core/zombies.ts`, `serviceRouteSearches`.
+  This is a bounded pilot, not a completeness guarantee: when no route is found,
+  the shambler waits for a retry instead of steering directly through blockers.
+  Crowd navigation and cheaper tiers belong to Slice 3
+  ([#244](https://github.com/roobie/skelly/issues/244)), not larger pilot caps.
+  Persist route progress, retry time and dispatch order so loading does not
+  silently restart pursuit or change which actor receives the next search.
+  See `deadvox/src/core/zombies.ts`, `snapshotState` and `restoreState`, and
+  `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
+  Request-local native maps avoid repeated world lookups without retaining stale
+  collision across requests. Continuous swept clearance prevents a short corner
+  overlap from creating an unsafe route and endless replanning; see
+  `deadvox/src/core/shamblerRoutes.ts`, `horizontalSweepClear`.
+  Live movement checks stay local even while gravity settles a descent; checking
+  the whole future leg during that transient hides unbounded per-actor work.
+  Descending endpoints are still checked for newly blocked landings. See
+  `deadvox/src/core/zombies.ts`, `liveRouteClearance` and `routeWaypoint`.
+  Preserve height changes when compressing a terrain detour: a raised sweep is
+  not proof that the body can hover over intervening obstacles. See
+  `deadvox/src/core/shamblerRoutes.ts`, `compressFlatPath`.
+  Distant goals use successive local horizons. A verified stair exit may be the
+  useful prefix when backtracking to its landing puts that horizon outside the
+  next leg's window; this is not straight steering through a failed route. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs` and `planRoute`.
+- **Storeys:** Matching horizontal projections could connect disconnected
+  floors and falsely complete an unreachable goal. Absolute feet height also
+  cannot identify a storey on graded terrain: world ground height distinguishes
+  that surface from an authored floor above it. Terrain legs follow that supplied
+  surface; constructed storey transitions still require authored flights. See
+  `deadvox/src/core/shamblerRoutes.ts`, `terrainForLeg` and `onTerrainFloor`.
+  Far-hearing direction must not manufacture source-storey knowledge. A grounded
+  listener projects the uncertain bearing onto known terrain, not the source's
+  height; a listener above ground retains its own level. See `deadvox/src/core/zombies.ts`,
+  `sameRouteFloor` and `farBearingTarget`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+- **Level of detail:** Only the active tier is implemented, using bounded routes;
+  see `deadvox/src/core/zombies.ts`, `ZombieSystem`. The tiers remain planned design:
 
-  | Level | Where | Simulation |
+  | Tier | Where | Simulation |
   | --- | --- | --- |
-  | Active | Within about 48 m | Full AI at 20 Hz, per-frame physics |
-  | Background | Loaded chunks further away | 2 Hz, steering along a shared flow field |
-  | Abstract | Unloaded chunks | Hordes moving as groups on the region map |
+  | Active | Nearby actors | Detailed AI, body physics and bounded routes (implemented) |
+  | Background | Distant actors in loaded chunks | Reduced-rate steering along a shared flow field (planned) |
+  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
+
+  Background and abstract tiers, the flow field and crowd navigation are
+  Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)), not built behavior.
+
+**Decided (BR, 2026-10-04):**
+
+- "At some point we will make everything destructible. Door, walls, appliances,
+  furniture et[c] and yes, normal doors should be possible to breach by an
+  ordinary shambler, given enough time. But the overarching idea is to keep it
+  pretty aligned with how CDDA works"
+- "to answer the question here and now: no, let's not make shamblers breach
+  doors"
+
+A destructive-door mechanic needs its own gameplay contract, so navigation
+must not add one implicitly. See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
 
 ### Models
 

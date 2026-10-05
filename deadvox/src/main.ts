@@ -10,6 +10,7 @@ import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game
 import { createEngine } from './game/engine.ts';
 import { KEY_BINDINGS } from './game/input.ts';
 import { startPlay } from './game/play.ts';
+import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { SaveController } from './ui/saveController.ts';
@@ -22,6 +23,7 @@ if (menuKeyLabel) {
   menuKeyLabel.dataset.code = KEY_BINDINGS.mainMenu.code;
 }
 const bench = params.get('bench');
+const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 
 if (bench === 'report') {
   document.body.classList.add('bench');
@@ -56,7 +58,7 @@ if (bench === 'report') {
     config = resumed;
   }
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
-  const engine = createEngine(config, view);
+  const engine = createEngine(config, view, undefined, { render: !renderFree });
   const restored = await saveController.validateContent(engine.registry);
   startPlay(engine, debugModule, {
     saveController,

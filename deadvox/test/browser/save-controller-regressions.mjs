@@ -10,22 +10,44 @@ import { resolve as resolvePath } from 'node:path';
 import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
-const { build, preview } = await import(pathToFileURL(`${root}/node_modules/vite/dist/node/index.js`));
+const { createServer } = await import(pathToFileURL(`${root}/node_modules/vite/dist/node/index.js`));
 const { chromium } = await import(pathToFileURL(`${root}/node_modules/playwright/index.mjs`));
 const { decodeSave } = await import(pathToFileURL(`${root}/src/core/saveFormat.ts`));
-await build({ root, configFile: `${root}/vite.config.ts`, logLevel: 'error' });
-const server = await preview({ root, configFile: `${root}/vite.config.ts`, preview: { host: '127.0.0.1', port: 0 } });
+const observation = {
+  name: 'save-controller-game-ready',
+  enforce: 'pre',
+  transform(code, id) {
+    if (!id.endsWith('/src/game/play.ts')) {
+      return;
+    }
+    const marker = '  startPlayFrames(frame);';
+    assert(code.includes(marker), 'game-ready observation point exists');
+    return code.replace(marker, `  Object.assign(globalThis, { saveControllerPlayStarted: true });\n${marker}`);
+  },
+};
+const server = await createServer({
+  root,
+  configFile: `${root}/vite.config.ts`,
+  logLevel: 'error',
+  server: { host: '127.0.0.1', port: 0 },
+  plugins: [observation],
+});
+await server.listen();
 const browser = await chromium.launch({
   executablePath:
     process.env.CHROME_BIN ?? `${process.env.HOME}/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome`,
   headless: true,
-  args: ['--no-sandbox', '--disable-dev-shm-usage', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
+  args: browserStageArgs('save-controller-regressions'),
 });
 const address = server.httpServer.address();
 assert(address && typeof address !== 'string');
-const url = `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`;
+const url = browserStageUrl(
+  'save-controller-regressions',
+  `http://127.0.0.1:${address.port}/?seed=73&radius=32&site=testHouse&actors=boxes&post=0&sunshadow=0&torchshadow=0&save-test=1&save-backend=indexeddb`,
+);
 const delay = (ms) => new Promise((done) => setTimeout(done, ms));
 const QUOTA_ERROR = /quota regression/i;
 const BEST_EFFORT = /best.effort/i;
@@ -150,7 +172,9 @@ try {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForSelector('#view canvas');
+    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true, undefined, {
+      timeout: 30_000,
+    });
 
     const before = await page.evaluate(() => ({
       time: deadvoxSaveTest.controller.snapshot().character.simulation.time,
@@ -256,7 +280,9 @@ try {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForSelector('#view canvas');
+    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true, undefined, {
+      timeout: 30_000,
+    });
     await page.click('#go');
 
     const race = await page.evaluate(async () => {
@@ -350,7 +376,9 @@ try {
     page.on('pageerror', (error) => pageErrors.push(error.message));
     await page.goto(url);
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
-    await page.waitForSelector('#view canvas');
+    await page.waitForFunction(() => globalThis.saveControllerPlayStarted === true, undefined, {
+      timeout: 30_000,
+    });
     await page.click('#go');
     await page.evaluate(async () => {
       const { controller, storage, namespace } = deadvoxSaveTest;
@@ -377,12 +405,37 @@ try {
     await page.reload();
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, { timeout: 30_000 });
     await page.waitForFunction(() => !document.querySelector('#continue').disabled, undefined, { timeout: 30_000 });
+    let refusalReload;
+    const nextReload = new Promise((resolve, reject) => {
+      let navigations = 0;
+      const onNavigation = (frame) => {
+        if (frame === page.mainFrame()) {
+          navigations += 1;
+          if (navigations === 2) {
+            clearTimeout(refusalReload);
+            page.off('framenavigated', onNavigation);
+            resolve();
+          }
+        }
+      };
+      page.on('framenavigated', onNavigation);
+      refusalReload = setTimeout(() => {
+        page.off('framenavigated', onNavigation);
+        reject(new Error('saved-world refusal did not reload to the recovery title'));
+      }, 30_000);
+    });
     await Promise.all([page.waitForNavigation(), page.click('#continue')]);
+    await nextReload;
     await page.waitForFunction(
-      () =>
-        (document.querySelector('#save-status').textContent ?? '').includes(
-          'Saved world unreadable and left untouched',
-        ),
+      () => {
+        const saveTest = globalThis.deadvoxSaveTest;
+        const status = document.querySelector('#save-status')?.textContent ?? '';
+        return (
+          saveTest?.controller.ready &&
+          status.includes('Saved world unreadable and left untouched') &&
+          sessionStorage.getItem(`deadvox.restore-refusal:${saveTest.namespace}`)
+        );
+      },
       undefined,
       { timeout: 30_000 },
     );

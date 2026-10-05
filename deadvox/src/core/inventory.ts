@@ -3,9 +3,15 @@
 // handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import type { Registry } from './content.ts';
+import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
-import type { CraftPlan } from './crafting.ts';
+import type { WorkPlan } from './crafting.ts';
+import {
+  disassemblyOutputs,
+  SALVAGE_DURATION,
+  sameDisassemblyOutputs,
+  validDisassemblyToolLevels,
+} from './disassembly.ts';
 import {
   cellCount,
   couldFit,
@@ -87,6 +93,7 @@ export interface InventoryState {
   worn: Partial<Record<WearSlot, ItemState>>;
   piles: { pos: Vec3; items: ReturnType<typeof snapshotPlaced>[] }[];
   looted: [string, number][];
+  quickbarOrigins: [number, TargetState][];
   entities: ReturnType<BlockEntities['snapshotState']>;
 }
 
@@ -106,6 +113,48 @@ const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const pileKey = (pos: Vec3) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
+const validSpot = (spot: unknown): boolean =>
+  spot !== null &&
+  typeof spot === 'object' &&
+  Number.isSafeInteger((spot as Spot).x) &&
+  (spot as Spot).x >= 0 &&
+  Number.isSafeInteger((spot as Spot).y) &&
+  (spot as Spot).y >= 0 &&
+  typeof (spot as Spot).rotated === 'boolean';
+const validQuickbarOrigin = (target: TargetState): boolean => {
+  const value = target as unknown as Record<string, unknown>;
+  switch (value.kind) {
+    case 'hand':
+      return value.side === 'right' || value.side === 'left';
+    case 'worn':
+      return true;
+    case 'pocket':
+      return (
+        Number.isSafeInteger(value.ownerUid) &&
+        (value.ownerUid as number) > 0 &&
+        Number.isSafeInteger(value.pocket) &&
+        (value.pocket as number) >= 0 &&
+        (value.at === undefined || validSpot(value.at))
+      );
+    case 'pile':
+      return (
+        Array.isArray(value.pos) &&
+        value.pos.length === 3 &&
+        value.pos.every((part) => typeof part === 'number' && Number.isFinite(part)) &&
+        (value.at === undefined || validSpot(value.at))
+      );
+    case 'furniture':
+      return (
+        Number.isSafeInteger(value.entityUid) &&
+        (value.entityUid as number) > 0 &&
+        Number.isSafeInteger(value.pocket) &&
+        (value.pocket as number) >= 0 &&
+        (value.at === undefined || validSpot(value.at))
+      );
+    default:
+      return false;
+  }
+};
 
 export class Inventory {
   readonly registry: Registry;
@@ -115,6 +164,7 @@ export class Inventory {
   readonly piles = new Map<string, Pile>();
   /** What's been taken out of furniture, by item type: the death screen's looting summary. */
   readonly looted = new Map<string, number>();
+  private readonly quickbarOrigins = new Map<number, TargetState>();
   readonly entities: BlockEntities;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -131,8 +181,21 @@ export class Inventory {
       worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!)])),
       piles: [...this.piles.values()].map((pile) => ({ pos: [...pile.pos], items: pile.items.map(snapshotPlaced) })),
       looted: [...this.looted.entries()].map(([type, count]) => [type, count]),
+      quickbarOrigins: [...this.quickbarOrigins.entries()].map(([uid, target]) => [uid, structuredClone(target)]),
       entities: this.entities.snapshotState(),
     });
+  }
+
+  private restoreQuickbarOrigins(origins: InventoryState['quickbarOrigins']): void {
+    for (const [uid, target] of origins) {
+      if (![this.hands.right, this.hands.left].some((item) => item?.uid === uid)) {
+        throw new Error(`Missing held item for quickbar origin ${uid}`);
+      }
+      if (this.quickbarOrigins.has(uid) || !validQuickbarOrigin(target)) {
+        throw new Error(`Invalid quickbar origin ${uid}`);
+      }
+      this.quickbarOrigins.set(uid, structuredClone(target));
+    }
   }
 
   static restoreState(registry: Registry, state: InventoryState, entities?: BlockEntities): Inventory {
@@ -164,6 +227,7 @@ export class Inventory {
     for (const [type, count] of state.looted) {
       inventory.looted.set(type, count);
     }
+    inventory.restoreQuickbarOrigins(state.quickbarOrigins);
     return inventory;
   }
 
@@ -216,6 +280,11 @@ export class Inventory {
     return undefined;
   }
 
+  quickbarOrigin(item: Item): TargetState | undefined {
+    const target = this.quickbarOrigins.get(item.uid);
+    return target === undefined ? undefined : structuredClone(target);
+  }
+
   targetState(target: Target): TargetState {
     switch (target.kind) {
       case 'hand':
@@ -240,6 +309,39 @@ export class Inventory {
         };
       default:
         throw new Error(`Unknown target kind ${String((target as { kind: string }).kind)}`);
+    }
+  }
+
+  targetForLocation(location: Location): Target {
+    switch (location.kind) {
+      case 'hand':
+        return { kind: 'hand', side: location.side };
+      case 'worn':
+        return { kind: 'worn' };
+      case 'pocket':
+        return {
+          kind: 'pocket',
+          owner: location.owner,
+          pocket: location.pocket,
+          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+        };
+      case 'pile':
+        return {
+          kind: 'pile',
+          pos: [...location.pile.pos],
+          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+        };
+      case 'furniture':
+        return {
+          kind: 'furniture',
+          entity: location.entity,
+          pocket: location.pocket,
+          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+        };
+      case 'work':
+        throw new Error('Work inputs have no independent target');
+      default:
+        throw new Error(`Unknown location kind ${String((location as { kind: string }).kind)}`);
     }
   }
 
@@ -270,6 +372,19 @@ export class Inventory {
 
   create(type: string, count = 1, condition = 1): Item {
     return this.factory.create(this.registry, type, count, condition);
+  }
+
+  changeCondition(uid: number, delta: number): boolean {
+    const item = this.itemByUid(uid);
+    if (!(item && Number.isFinite(delta))) {
+      return false;
+    }
+    const condition = Math.max(0, Math.min(1, item.condition + delta));
+    if (condition !== item.condition) {
+      item.condition = condition;
+      this.version += 1;
+    }
+    return true;
   }
 
   name(item: Item): string {
@@ -347,6 +462,8 @@ export class Inventory {
       return plan;
     }
     const from = this.locate(item)!;
+    const origin =
+      from.kind === 'hand' ? this.quickbarOrigins.get(item.uid) : this.targetState(this.targetForLocation(from));
     if (from.kind === 'furniture' && target.kind !== 'furniture') {
       this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
     }
@@ -359,26 +476,37 @@ export class Inventory {
     this.version += 1;
     if (plan.merge) {
       plan.merge.count += moving.count;
+      if (count === item.count) {
+        this.quickbarOrigins.delete(item.uid);
+      }
       return plan;
     }
     this.put(moving, target, plan.at);
+    if (target.kind === 'hand' && origin) {
+      this.quickbarOrigins.set(moving.uid, structuredClone(origin));
+    } else if (target.kind !== 'hand' && count === item.count) {
+      this.quickbarOrigins.delete(item.uid);
+    }
     return plan;
+  }
+
+  /** Read-only placement for a newly created, unlocated item (not a move admission). */
+  planAdd(item: Item, target: Target): Plan {
+    switch (target.kind) {
+      case 'hand':
+        return this.hands[target.side] ? refuse('full') : { ok: true, time: 0 };
+      case 'worn': {
+        const slot = defOf(this.registry, item.type).wearable?.slot;
+        return slot && !this.worn[slot] ? { ok: true, time: 0 } : refuse('full');
+      }
+      default:
+        return this.gridPlacement(item, item.count, this.gridOf(target), target);
+    }
   }
 
   /** Places a new item that isn't anywhere yet (spawning, loot). Returns false when it doesn't fit. */
   add(item: Item, target: Target): boolean {
-    const placement = (() => {
-      switch (target.kind) {
-        case 'hand':
-          return this.hands[target.side] ? refuse('full') : { ok: true as const, time: 0 };
-        case 'worn': {
-          const slot = defOf(this.registry, item.type).wearable?.slot;
-          return slot && !this.worn[slot] ? { ok: true as const, time: 0 } : refuse('full');
-        }
-        default:
-          return this.gridPlacement(item, item.count, this.gridOf(target), target);
-      }
-    })();
+    const placement = this.planAdd(item, target);
     if (!placement.ok) {
       return false;
     }
@@ -391,32 +519,85 @@ export class Inventory {
     return true;
   }
 
-  /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
-  beginWork(plan: CraftPlan): Item | undefined {
-    if (this.hands.left || this.hands.right || !this.registry.recipes.has(plan.recipe)) {
-      return undefined;
+  private validCraftPlan(
+    plan: Extract<WorkPlan, { kind: 'craft' }>,
+    repair?: { targetUid: number; amount: number },
+  ): boolean {
+    const recipe = this.registry.recipes.get(plan.recipe);
+    if (!recipe || (recipe.kind === 'repair') !== (repair !== undefined)) {
+      return false;
+    }
+    if (repair) {
+      const target = this.itemByUid(repair.targetUid);
+      if (
+        !target ||
+        plan.components.some(({ item }) => item.uid === target.uid) ||
+        target.type !== recipe.result.item ||
+        target.count !== 1 ||
+        !Number.isFinite(repair.amount) ||
+        repair.amount <= 0 ||
+        repair.amount > 1
+      ) {
+        return false;
+      }
     }
     const seen = new Set<number>();
     for (const { item, count } of plan.components) {
-      if (
-        seen.has(item.uid) ||
-        this.itemByUid(item.uid) !== item ||
-        !this.locate(item) ||
-        !isEmpty(item) ||
-        !Number.isSafeInteger(count) ||
-        count < 1 ||
-        count > item.count
-      ) {
-        return undefined;
+      if (!this.validCraftComponent(item, count) || seen.has(item.uid)) {
+        return false;
       }
       seen.add(item.uid);
     }
-    if (plan.tools.some((tool) => seen.has(tool.item.uid))) {
-      return undefined;
+    return !plan.tools.some((tool) => seen.has(tool.item.uid));
+  }
+
+  private validCraftComponent(item: Item, count: number): boolean {
+    return (
+      this.itemByUid(item.uid) === item &&
+      Boolean(this.locate(item)) &&
+      isEmpty(item) &&
+      Number.isSafeInteger(count) &&
+      count >= 1 &&
+      count <= item.count
+    );
+  }
+
+  private validDisassemblyPlan(plan: Extract<WorkPlan, { kind: 'disassembly' }>): boolean {
+    const sourceDef = this.registry.items.get(plan.source.type);
+    if (
+      this.itemByUid(plan.source.uid) !== plan.source ||
+      !this.locate(plan.source) ||
+      !sourceDef ||
+      !(sourceDef.disassembly || sourceDef.salvage) ||
+      !validDisassemblyToolLevels(sourceDef, plan.toolLevels) ||
+      plan.source.work ||
+      !isEmpty(plan.source) ||
+      !Number.isSafeInteger(plan.skillLevel) ||
+      plan.skillLevel < 0 ||
+      !Number.isFinite(plan.gather) ||
+      plan.gather < 0 ||
+      !Number.isFinite(plan.duration) ||
+      plan.duration <= 0 ||
+      plan.outputs.some(
+        ({ item, count }) => !(this.registry.items.has(item) && Number.isSafeInteger(count)) || count < 1,
+      )
+    ) {
+      return false;
     }
-    const work = this.create(WORK_IN_PROGRESS);
+    const expected = disassemblyOutputs(sourceDef, plan.skillLevel, (quality) => plan.toolLevels[quality] ?? 0);
+    return sameDisassemblyOutputs(expected, plan.outputs);
+  }
+
+  private escrowCraft(
+    plan: Extract<WorkPlan, { kind: 'craft' }>,
+    work: Item,
+    repair?: { targetUid: number; amount: number },
+  ): void {
     const components = plan.components.map(({ item, count }) => {
       const from = this.locate(item)!;
+      if (from.kind === 'hand') {
+        this.quickbarOrigins.delete(item.uid);
+      }
       if (from.kind === 'furniture') {
         this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
       }
@@ -426,7 +607,56 @@ export class Inventory {
       this.remove(from);
       return item;
     });
-    work.work = { recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
+    work.work = {
+      kind: 'craft',
+      recipe: plan.recipe,
+      elapsed: 0,
+      duration: plan.gather + plan.work,
+      components,
+      ...(repair ? { repairTargetUid: repair.targetUid, repairAmount: repair.amount } : {}),
+    };
+  }
+
+  private escrowDisassembly(plan: Extract<WorkPlan, { kind: 'disassembly' }>, work: Item): void {
+    const from = this.locate(plan.source)!;
+    if (from.kind === 'furniture') {
+      this.looted.set(plan.source.type, (this.looted.get(plan.source.type) ?? 0) + 1);
+    }
+    const input = plan.source.count > 1 ? this.factory.split(plan.source, 1) : plan.source;
+    if (input === plan.source) {
+      this.remove(from);
+    }
+    work.work = {
+      kind: 'disassembly',
+      source: plan.source.type,
+      skillLevel: plan.skillLevel,
+      toolLevels: { ...plan.toolLevels },
+      gather: plan.gather,
+      outputs: plan.outputs.map((output) => ({ ...output })),
+      elapsed: 0,
+      duration: plan.duration,
+      components: [input],
+    };
+  }
+
+  /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
+  beginWork(plan: WorkPlan, repair?: { targetUid: number; amount: number }): Item | undefined {
+    if (this.hands.left || this.hands.right) {
+      return undefined;
+    }
+    if (plan.kind === 'craft') {
+      if (!this.validCraftPlan(plan, repair)) {
+        return undefined;
+      }
+    } else if (repair || !this.validDisassemblyPlan(plan)) {
+      return undefined;
+    }
+    const work = this.create(WORK_IN_PROGRESS);
+    if (plan.kind === 'craft') {
+      this.escrowCraft(plan, work, repair);
+    } else {
+      this.escrowDisassembly(plan, work);
+    }
     this.hands.right = work;
     this.version += 1;
     return work;
@@ -458,6 +688,31 @@ export class Inventory {
     return drops;
   }
 
+  private workOutputs(payload: NonNullable<Item['work']>, finish: boolean): Item[] {
+    if (!finish) {
+      return payload.components;
+    }
+    if (payload.kind === 'disassembly') {
+      return payload.outputs.map(({ item, count }) => this.create(item, count));
+    }
+    if (payload.repairTargetUid !== undefined) {
+      return [];
+    }
+    const { result } = this.registry.recipes.get(payload.recipe)!;
+    return [this.create(result.item, result.count)];
+  }
+
+  private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {
+    if (payload.kind !== 'craft' || payload.repairTargetUid === undefined) {
+      return undefined;
+    }
+    const target = this.itemByUid(payload.repairTargetUid);
+    if (finish && (!target || payload.repairAmount === undefined)) {
+      throw new Error('The repair target is missing');
+    }
+    return target;
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, finish: boolean, feet: Vec3): void {
     const payload = work.work;
@@ -465,15 +720,19 @@ export class Inventory {
     if (!(payload && at)) {
       return;
     }
-    const recipe = this.registry.recipes.get(payload.recipe)!;
-    const outputs = finish ? [this.create(recipe.result.item, recipe.result.count)] : payload.components;
-    const resultInHand = finish && at.kind === 'hand';
+    const repairing = payload.kind === 'craft' && payload.repairTargetUid !== undefined;
+    const target = this.repairTargetForWork(payload, finish);
+    const outputs = this.workOutputs(payload, finish);
+    const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
     if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
       throw new Error('An input or result is too large to put down');
     }
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
     this.remove(at);
     work.work = undefined;
+    if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
+      target.condition = Math.min(1, target.condition + payload.repairAmount);
+    }
     this.version += 1;
     if (resultInHand && at.kind === 'hand') {
       this.put(outputs[0]!, { kind: 'hand', side: at.side });
@@ -684,6 +943,7 @@ export class Inventory {
       item.count -= count;
     } else {
       this.remove(at);
+      this.quickbarOrigins.delete(item.uid);
     }
     this.version += 1;
     return true;
@@ -743,8 +1003,35 @@ export class Inventory {
 }
 
 /** Reject registry-invalid topology before constructing or exposing a live inventory. */
+const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemState }[]): void => {
+  const byUid = new Map(tree.map(({ item }) => [item.uid, item]));
+  for (const { item } of tree) {
+    const { work } = item;
+    const targetUid = work?.repairTargetUid;
+    if (!work || targetUid === undefined) {
+      continue;
+    }
+    if (work.kind !== 'craft') {
+      throw new Error('Disassembly cannot reference a repair target');
+    }
+    const recipe = registry.recipes.get(work.recipe);
+    const target = byUid.get(targetUid);
+    if (
+      recipe?.kind !== 'repair' ||
+      !target ||
+      target.uid === item.uid ||
+      target.type !== recipe.result.item ||
+      target.count !== 1
+    ) {
+      throw new Error('Missing or invalid repair target');
+    }
+  }
+};
+
 const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
-  itemIds(savedItemTree(state), state.nextItemUid);
+  const tree = [...savedItemTree(state)];
+  itemIds(tree, state.nextItemUid);
+  validateRepairTargets(registry, tree);
   const grid = (placed: readonly PlacedState[], size: GridSize) => {
     const previous: Placed[] = [];
     for (const entry of placed) {
@@ -772,7 +1059,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
       grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
     }
   };
-  for (const { item } of savedItemTree(state)) {
+  for (const { item } of tree) {
     pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
     if (item.type === WORK_IN_PROGRESS && !item.work) {
       throw new Error('Missing craft work payload');
@@ -793,19 +1080,34 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
   }
 };
 
-export const validateWorkItem = (registry: Registry, item: ItemState): void => {
-  const work = item.work!;
+const validDisassemblyComponents = (work: Extract<NonNullable<ItemState['work']>, { kind: 'disassembly' }>): boolean =>
+  work.components.length === 1 && work.components[0]!.type === work.source && work.components[0]!.count === 1;
+
+const validDisassemblySnapshot = (
+  registry: Registry,
+  source: ItemDef,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'disassembly' }>,
+): boolean => {
+  const outputsAreValid = work.outputs.every(
+    ({ item, count }) => registry.items.has(item) && Number.isSafeInteger(count) && count >= 1,
+  );
+  const expected = disassemblyOutputs(source, work.skillLevel, (quality) => work.toolLevels[quality] ?? 0);
+  return outputsAreValid && sameDisassemblyOutputs(expected, work.outputs);
+};
+
+const validateCraftWorkItem = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'craft' }>,
+): void => {
   const recipe = registry.recipes.get(work.recipe);
   if (
-    item.type !== WORK_IN_PROGRESS ||
-    item.count !== 1 ||
     !recipe ||
-    !Number.isFinite(work.elapsed) ||
-    !Number.isFinite(work.duration) ||
-    work.elapsed < 0 ||
     work.duration < recipe.time * 60 ||
-    work.elapsed > work.duration ||
-    work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length))
+    (recipe.kind === 'repair') !== (work.repairTargetUid !== undefined && work.repairAmount !== undefined) ||
+    (work.repairTargetUid === undefined) !== (work.repairAmount === undefined) ||
+    (work.repairTargetUid !== undefined && (!Number.isSafeInteger(work.repairTargetUid) || work.repairTargetUid < 1)) ||
+    (work.repairAmount !== undefined &&
+      (!Number.isFinite(work.repairAmount) || work.repairAmount <= 0 || work.repairAmount > 1))
   ) {
     throw new Error('Invalid craft work payload');
   }
@@ -829,6 +1131,56 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
   };
   if (!matches(0, actual)) {
     throw new Error('Craft inputs do not match recipe');
+  }
+};
+
+const validateDisassemblyWorkItem = (
+  registry: Registry,
+  work: Extract<NonNullable<ItemState['work']>, { kind: 'disassembly' }>,
+): void => {
+  const source = registry.items.get(work.source);
+  if (!source) {
+    throw new Error('Invalid disassembly work payload');
+  }
+  const duration = source.disassembly ? source.disassembly.time * 60 : SALVAGE_DURATION;
+  const hasDisassembly = Boolean(source.disassembly || source.salvage);
+  if (!hasDisassembly) {
+    throw new Error('Invalid disassembly work payload');
+  }
+  if (!validDisassemblyToolLevels(source, work.toolLevels)) {
+    throw new Error('Invalid disassembly work payload');
+  }
+  if (
+    !Number.isFinite(work.gather) ||
+    work.gather < 0 ||
+    work.duration !== work.gather + duration ||
+    !Number.isSafeInteger(work.skillLevel) ||
+    work.skillLevel < 0 ||
+    !validDisassemblyComponents(work) ||
+    !validDisassemblySnapshot(registry, source, work)
+  ) {
+    throw new Error('Invalid disassembly work payload');
+  }
+};
+
+export const validateWorkItem = (registry: Registry, item: ItemState): void => {
+  const work = item.work!;
+  const commonInvalid =
+    item.type !== WORK_IN_PROGRESS ||
+    item.count !== 1 ||
+    !Number.isFinite(work.elapsed) ||
+    !Number.isFinite(work.duration) ||
+    work.elapsed < 0 ||
+    work.duration <= 0 ||
+    work.elapsed > work.duration ||
+    work.components.some((component) => component.work || (component.pockets ?? []).some((grid) => grid.length));
+  if (commonInvalid) {
+    throw new Error(work.kind === 'disassembly' ? 'Invalid disassembly work payload' : 'Invalid craft work payload');
+  }
+  if (work.kind === 'craft') {
+    validateCraftWorkItem(registry, work);
+  } else {
+    validateDisassemblyWorkItem(registry, work);
   }
 };
 

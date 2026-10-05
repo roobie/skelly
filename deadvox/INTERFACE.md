@@ -1,6 +1,9 @@
 ---
 id: skelly::deadvox-interface
 description: Design for what the game's interface may show and say to the player, how far it is diegetic, and how development builds are allowed to break that
+read_if:
+  - you're deciding what the interface may tell the player and in what voice
+  - you're changing player-facing prompts, feedback, or HUD language
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
 status: active
@@ -93,8 +96,8 @@ Cues per state (a starting set; BR's list is the sound column):
 | Illness (food poisoning) | a nauseous drift of the view | coughing, retching |
 
 The limp is also movement, not only a look: the pace really drops, so it belongs
-with the body model. Wounds per body part come in Slice 3 (SLICE-1.md's scope
-table); until then a limp can follow low health.
+with the body model. Wounds per body part come in Slice 3 ([EPIC.md](EPIC.md#3-flesh-and-noise));
+until then a limp can follow low health.
 
 **The game has no audio yet** (nothing in `src` creates a Web Audio context). The
 sound half needs a small player-sound system first: Web Audio started by the

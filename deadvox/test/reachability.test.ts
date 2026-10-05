@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { possibleHamletZombies } from '../src/core/hamlet.ts';
-import { checkReachability, PENDING_REACHABILITY } from '../src/core/reachability.ts';
+import { checkReachability } from '../src/core/reachability.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
 
 const BASE = 'src/content/base';
@@ -18,32 +18,58 @@ const fresh = () => buildRegistry(sources).registry;
 const marker = (zombie: string, chance = 1): SpawnMarker => ({ zombie, chance, pos: [0, 0, 0] });
 
 describe('static reachability', () => {
-  it('pins the pending classes and their owning milestones, without accepting them', () => {
-    expect(PENDING_REACHABILITY).toEqual({ skill: '2.5', workstation: '2.8' });
+  it('hard-checks workstation placement and lets its quality ground the recipe', () => {
     const registry = fresh();
     registry.recipes.clear();
-    registry.furniture.set('unplaced_bench', {
-      ...registry.furniture.get('crate')!,
-      id: 'unplaced_bench',
-      workstation: { id: 'unplaced' },
-    });
-    registry.recipes.set('torch', {
-      id: 'torch',
-      result: { item: 'rag', count: 1 },
+    registry.recipes.set('fixture_recipe', {
+      id: 'fixture_recipe',
+      result: { item: 'wooden_plank', count: 1 },
       time: 1,
-      components: [[{ item: 'rag', count: 1 }]],
+      components: [[{ item: 'stick', count: 1 }]],
+      qualities: Object.fromEntries([['fixture_sawing', 1]]),
+      skills: { crafting: 0 },
+      workstation: 'fixture_station',
+    });
+    const unplaced = checkReachability(registry, new Set(['fixture_recipe']));
+    expect(unplaced.issues).toContainEqual({
+      recipe: 'fixture_recipe',
+      path: '.qualities.fixture_sawing',
+      message: expect.any(String),
+    });
+    expect(unplaced.issues).toContainEqual({
+      recipe: 'fixture_recipe',
+      path: '.workstation',
+      message: 'workstation "fixture_station" is not placed in the hamlet',
+    });
+
+    registry.furniture.get('crate')!.workstation = {
+      id: 'fixture_station',
+      qualities: Object.fromEntries([['fixture_sawing', 1]]),
+      workTimeBonus: 0.2,
+    };
+    const placed = checkReachability(registry, new Set(['fixture_recipe']));
+    expect(placed.issues).toEqual([]);
+    expect(placed.workstations).toContain('fixture_station');
+    expect(placed.toolReachable.has('wooden_plank')).toBe(true);
+  });
+
+  it('hard-checks positive skill requirements against reachable practice sources', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    registry.recipes.set('fixture_practice', {
+      id: 'fixture_practice',
+      result: { item: 'wooden_plank', count: 1 },
+      time: 1,
+      components: [[{ item: 'stick', count: 1 }]],
       qualities: {},
       skills: { crafting: 1 },
-      workstation: 'unplaced',
     });
-    const result = checkReachability(registry);
-    expect(result.issues).toEqual([]);
-    expect(result.pending.map(({ kind, path, message }) => [kind, path, message])).toEqual([
-      ['skill', '.skills.crafting', 'pending: no source yet (2.5)'],
-      ['workstation', '.workstation', 'pending: no source yet (2.8)'],
-    ]);
-    registry.furniture.get('crate')!.workstation = { id: 'unplaced' };
-    expect(checkReachability(registry).pending.map(({ kind }) => kind)).toEqual(['skill']);
+    const result = checkReachability(registry, new Set(['fixture_practice']));
+    expect(result.issues).toContainEqual({
+      recipe: 'fixture_practice',
+      path: '.skills.crafting',
+      message: 'no reachable practice source can raise "crafting" to level 1',
+    });
   });
 
   it('hard-rejects unknown knowledge and prevents its result from grounding a starting-known recipe', () => {
@@ -77,7 +103,7 @@ describe('static reachability', () => {
     expect(unknown.issues).toContainEqual({
       recipe: 'unlearned',
       path: '.knowledge',
-      message: expect.stringContaining('starting knowledge'),
+      message: expect.stringContaining('knowledge source'),
     });
     expect(unknown.components.has('unlearned_tool')).toBe(false);
     expect(unknown.toolReachable.has('unlearned_tool')).toBe(false);
@@ -93,6 +119,35 @@ describe('static reachability', () => {
     expect(known.issues).toEqual([]);
     expect(known.components.has('unlearned_tool')).toBe(true);
     expect(known.toolReachable.has('torch')).toBe(true);
+  });
+
+  it('accepts book knowledge only when a teaching book is reachable in placed loot', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    registry.recipes.set('learned_from_book', {
+      id: 'learned_from_book',
+      result: { item: 'torch', count: 1 },
+      time: 1,
+      skills: {},
+      qualities: {},
+      components: [[{ item: 'rag', count: 1 }]],
+    });
+    registry.items.set('field_manual', {
+      ...registry.items.get('field_manual')!,
+      book: { title: 'Field Manual', recipes: ['learned_from_book'], readingTime: 5 },
+    });
+    const withBook = checkReachability(registry);
+    expect(withBook.found.has('field_manual')).toBe(true);
+    expect(withBook.issues).toEqual([]);
+
+    for (const [id, table] of registry.loot) {
+      registry.loot.set(id, { ...table, entries: table.entries.filter((entry) => entry.item !== 'field_manual') });
+    }
+    expect(checkReachability(registry).issues).toContainEqual({
+      recipe: 'learned_from_book',
+      path: '.knowledge',
+      message: expect.stringContaining('knowledge source'),
+    });
   });
 
   it('seeds only actual placed overrides, positive nested counts and spawnable zombie loot', () => {
@@ -146,7 +201,7 @@ describe('static reachability', () => {
       solid: false,
       loot: 'default',
       container: { pockets: [{ grid: [1, 1], handling: 1 }] },
-      workstation: { id: 'placed_bench' },
+      workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workTimeBonus: 0.2 },
     });
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
@@ -172,6 +227,72 @@ describe('static reachability', () => {
     const result = checkReachability(registry);
     expect([...result.found].sort()).toEqual(['nested', 'override', 'spawned', 'wanderer']);
     expect([...result.workstations]).toEqual(['placed_bench']);
+  });
+
+  it('closes found items over authored disassembly and salvage outputs in both reachability sets', () => {
+    const registry = fresh();
+    for (const id of [
+      'fixture_yield_source',
+      'fixture_salvage_source',
+      'fixture_yield_output',
+      'fixture_salvage_output',
+    ]) {
+      registry.items.set(id, { id, name: id, category: 'material', weight: 1, size: [1, 1] });
+    }
+    registry.items.set('fixture_yield_source', {
+      ...registry.items.get('fixture_yield_source')!,
+      disassembly: {
+        time: 1,
+        skill: 'crafting',
+        yields: [{ item: 'fixture_yield_output', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+      },
+    });
+    registry.items.set('fixture_salvage_source', {
+      ...registry.items.get('fixture_salvage_source')!,
+      salvage: [{ item: 'fixture_salvage_output', count: 1 }],
+    });
+    const junk = registry.loot.get('junk')!;
+    registry.loot.set('junk', {
+      ...junk,
+      entries: [
+        ...junk.entries,
+        { item: 'fixture_yield_source', weight: 1 },
+        { item: 'fixture_salvage_source', weight: 1 },
+      ],
+    });
+    const result = checkReachability(registry);
+    expect(result.found.has('fixture_yield_source')).toBe(true);
+    expect(result.found.has('fixture_salvage_source')).toBe(true);
+    for (const id of ['fixture_yield_output', 'fixture_salvage_output']) {
+      expect(result.components.has(id)).toBe(true);
+      expect(result.toolReachable.has(id)).toBe(true);
+    }
+  });
+
+  it('does not close over a yield that rounds to zero at top skill', () => {
+    const registry = fresh();
+    const source = 'fixture_zero_yield_source';
+    const output = 'fixture_zero_yield_output';
+    registry.items.set(source, {
+      id: source,
+      name: source,
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      disassembly: {
+        time: 1,
+        skill: 'crafting',
+        yields: [{ item: output, count: 1, fractions: [0.9], rounding: 'floor' }],
+      },
+    });
+    registry.items.set(output, { id: output, name: output, category: 'material', weight: 1, size: [1, 1] });
+    const junk = registry.loot.get('junk')!;
+    registry.loot.set('junk', { ...junk, entries: [...junk.entries, { item: source, weight: 1 }] });
+
+    const result = checkReachability(registry);
+    expect(result.found.has(source)).toBe(true);
+    expect(result.components.has(output)).toBe(false);
+    expect(result.toolReachable.has(output)).toBe(false);
   });
 
   it('excludes capped markers and wanderers, but allows shuffled north templates to be first', () => {

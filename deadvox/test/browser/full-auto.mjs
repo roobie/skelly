@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const anchors = new Map([
@@ -39,7 +40,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects } });\n  // Native audio/cadence probe, not a software-GPU frame-time benchmark.\n  renderer.render = () => {};\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -59,13 +60,7 @@ try {
   browser = await chromium.launch({
     executablePath: process.env.CHROME_BIN,
     headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--enable-webgl',
-      '--use-gl=swiftshader',
-      '--enable-unsafe-swiftshader',
-    ],
+    args: browserStageArgs('full-auto'),
   });
   const page = await browser.newPage();
   const errors = [];
@@ -128,7 +123,7 @@ try {
     let locked = false;
     Object.defineProperty(document, 'pointerLockElement', {
       configurable: true,
-      get: () => (locked ? document.querySelector('#view canvas') : null),
+      get: () => (locked ? document.querySelector('#view') : null),
     });
     Element.prototype.requestPointerLock = () => {
       locked = true;
@@ -141,9 +136,12 @@ try {
     };
   });
   await page.goto(
-    `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+    browserStageUrl(
+      'full-auto',
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+    ),
   );
-  await page.waitForFunction(() => document.querySelector('#debug-ui-root') && document.querySelector('#view canvas'));
+  await page.waitForFunction(() => document.querySelector('#debug-ui-root') && document.querySelector('#view'));
   // Observe the public admission result instead of an implementation-specific source snippet.
   await page.evaluate(async () => {
     const moduleUrl = '/src/game/firearmHandling.ts';
@@ -199,9 +197,16 @@ try {
 
   await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
-    Reflect.deleteProperty(inventory.hands, 'left');
-    inventory.hands.right = inventory.create('debug_rifle_assault');
-    inventory.version += 1;
+    for (const side of ['left', 'right']) {
+      const held = inventory.hands[side];
+      if (held && !inventory.consume(held, held.count)) {
+        throw new Error(`Could not clear ${side} fixture hand`);
+      }
+    }
+    const rifle = inventory.create('debug_rifle_assault');
+    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not place fixture rifle in hand');
+    }
     const probe = globalThis.fullAutoProbe;
     probe.casesBefore = [...inventory.piles.values()]
       .flatMap((pile) => pile.items)

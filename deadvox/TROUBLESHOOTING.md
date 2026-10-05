@@ -1,3 +1,12 @@
+---
+read_if:
+  - you're debugging deadvox and need its debug parameters or keys
+  - you're using the debug test-house range
+  - you need to see the game without a display
+  - a browser contract or stage fails on software GL
+  - you're choosing render-free or pixel mode for a browser stage
+---
+
 # deadvox — troubleshooting
 
 How to look at the game and narrow down a problem. Lessons from past problems are in
@@ -64,7 +73,7 @@ In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
-- `site=testHouse`: the small test scene (block sizes, materials, furniture).
+- `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
 - `hotcheck=1` (PageDown): world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.
@@ -102,6 +111,23 @@ Firefox start-up probe, page load took 6.1 s with the default look against 2.5 s
 `post=0&sunshadow=0&torchshadow=0`. `npm run test:ui-browser` therefore opens the game with
 those three parameters (commit `3299e50`; on the full look the contract took 8m09s against
 its 300 s cap). It tests the UI, not the look.
+
+## Render-free browser logic stages
+
+`?render=0` is a development-only, ordinary-play opt-in that skips WebGL presentation
+(Mood and shadow resources) while keeping world setup, simulation and input active. It is
+ignored by production builds and benchmark URLs. Chromium logic stages pair it with
+`--disable-gpu`; visual stages retain SwiftShader and pixel coverage.
+
+Stage assignments live in `test/browser/stage-mode.mjs`, `modes`. The Chromium OPFS Continue
+autosave scenario and the quarantined Firefox IndexedDB Continue scenario are intentional
+pixel-mode exceptions: each builds the production bundle and loads it through Vite preview.
+
+The pump-handling stage is render-free because it checks input, inventory, handling and audio, not
+pixels. `test/browser/pump-handling.mjs` observes canvas context requests and asserts that the
+stage creates no WebGL context while its simulation and input assertions pass. Add future stages
+to the shared mode helper and use its URL/launch helpers together so the render choice and browser
+flags stay aligned; put pixel-only checks in an existing visual stage.
 
 Install Firefox once with `npx playwright install --with-deps firefox`, then from
 `deadvox/` run `xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop).

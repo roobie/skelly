@@ -14,7 +14,7 @@ import type { Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, toHands, type UseOption, useOption } from '../core/options.ts';
+import { doorOptions, doorPlan, type UseOption, useOption } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -78,7 +78,12 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
+import { QuickbarActions } from './quickbarActions.ts';
+import { QuickbarInput } from './quickbarInput.ts';
+import type { ReloadBinding } from './reloadInput.ts';
 import { createSession } from './session.ts';
+import { populateTestHouseRepairCorner } from './testHouse.ts';
+import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -94,6 +99,7 @@ export interface StartPlayOptions {
 
 export const startPlay = (engine: Engine, debugModule?: DebugModule, options: StartPlayOptions = {}): void => {
   const { config, registry, streamer, renderer, camera, meshes } = engine;
+  const inputTarget = renderer?.domElement ?? $('view');
   if (options.saveController) {
     streamer.onGenerationError = (error) => {
       if (!options.saveController?.refuseRestore(error)) {
@@ -106,9 +112,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
-  const input = new Input(renderer.domElement);
-  input.yaw = playerStart.yaw;
   let debugTools: DebugRuntime | undefined;
+  const input = new Input(inputTarget, () => !debugTools?.buildOn);
+  input.yaw = playerStart.yaw;
   let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
   const audio = new GameAudio({
     registry,
@@ -137,6 +143,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
+    stairFlights: engine.site?.stairFlights ?? [],
+    terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     controls: {
@@ -147,14 +155,25 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       primaryAction: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
-        if (!(debugTools?.buildOn || (config.debug && action.kind === 'firearm'))) {
+        if (
+          !(
+            debugTools?.buildOn ||
+            (config.debug && action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
+          )
+        ) {
           performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
         }
       },
       heldPrimaryAction: (time, pressed, triggerHeld) => {
         const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
         const weapon =
-          config.debug && !debugTools?.buildOn && !queue.busy && action.kind === 'firearm' ? action.item : undefined;
+          config.debug &&
+          !debugTools?.buildOn &&
+          !queue.busy &&
+          action.kind === 'firearm' &&
+          !registry.items.get(action.item.type)?.firearm?.pump
+            ? action.item
+            : undefined;
         const deadlines = firearmTrigger.advance(time, triggerWeapon(weapon, pressed), pressed, triggerHeld);
         if (weapon) {
           for (const deadline of deadlines) {
@@ -170,7 +189,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
-      descending: () => input.held.has(CONTROL_CODES.rest),
+      descending: () => input.held.has(CONTROL_CODES.descend),
     },
     // The session works in blocks; playback is in metres.
     audio: {
@@ -220,8 +239,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     search,
   } = session;
   const useItem = (item: Item): string | undefined =>
-    registry.items.get(item.type)?.firearm ? firearms.cock(item.uid, sim.time) : survival.use(item);
+    firearms.supportsUse(item) ? firearms.use(item, sim.time) : survival.use(item);
   const { compression } = sim;
+  const unpacking = new Unpacking(inventory, queue, feet);
   if (session.restoredLook) {
     input.yaw = session.restoredLook.yaw;
     input.pitch = session.restoredLook.pitch;
@@ -243,9 +263,16 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   } else if (!options.restore) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
-  const { zombies: zombieSystem, zombieStore } = session;
+  const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     startingLoadout(inventory);
+    populateTestHouseRepairCorner({
+      inventory,
+      registry,
+      site: config.site,
+      spawn: engine.spawn.pos,
+      blockSize: s,
+    });
   }
   // Furniture, with the loot rolled for it, arrives with its column.
   streamer.onColumn = (cx, cz) => {
@@ -297,12 +324,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     noticeUntil = performance.now() + 3000;
   };
 
-  /**
-   * R/L: starts resting or sleeping, or stops it on a second press of the same key
-   * (SLICE-1.md, 1.8 follow-up). Does nothing during the Continue/Stop prompt, which
-   * owns C and X instead, or while busy with something else (e.g. the other kind, or
-   * the debug compression test).
-   */
   const toggleRest = (kind: RestKind): void => {
     if (compression.interruption !== undefined) {
       return;
@@ -372,20 +393,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     searching: session.searching,
     notice: showNotice,
     use: useItem,
-    useOption: (item, reachView): UseOption => {
-      if (!registry.items.get(item.type)?.firearm) {
-        return useOption(item, reachView);
-      }
-      const reason = firearms.cockReason(item.uid);
-      return {
-        kind: 'use',
-        label: `Cock ${inventory.name(item)}`,
-        plan: reason
-          ? { ok: false, reason }
-          : { ok: true, time: firearmHandlingFor(item, registry).action.hand.durationSeconds },
-      };
-    },
-    describe: (item) => survival.describe(item),
+    useOption: (item, reachView): UseOption =>
+      firearms.supportsUse(item) ? firearms.useOption(item) : useOption(item, reachView),
+    describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
     assign: (slot, item) => {
@@ -526,8 +536,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       resume();
     }
   });
-  const menuPointer = mountMenuPointer({ input, canvas: renderer.domElement, cursor: gameCursor });
-  renderer.domElement.addEventListener('click', () => {
+  const menuPointer = mountMenuPointer({ input, canvas: inputTarget, cursor: gameCursor });
+  inputTarget.addEventListener('click', () => {
     if (mainMenuOpen) {
       resume();
       return;
@@ -606,8 +616,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       if (reason) {
         showNotice(`Can't continue: ${reason}`);
       }
-    } else if (rest.action) {
-      const reason = rest.resume();
+    } else if (rest.action || sim.actions.job?.jobType === 'reading') {
+      const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showNotice(`Can't continue: ${reason}`);
       }
@@ -618,7 +628,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   /** Stop the current long action without discarding owned progress. */
   const stopAction = (): void => {
-    if (sim.actions.job?.jobType === 'craft') {
+    if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
       sim.actions.stop();
     } else if (rest.action) {
       rest.stop();
@@ -644,6 +654,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
 
   const toggleInventory = () => {
+    quickbarInput.cancel();
     if (screen.isOpen) {
       closeInventoryScreen();
     } else {
@@ -653,33 +664,28 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     syncMenuState();
   };
 
-  /** A quickbar key puts its item in your hands; pressing it again uses it. */
-  const quickKey = (slot: number) => {
+  const quickbarActions = new QuickbarActions({ inventory, queue, feet, survival, notice: showNotice });
+  const quickbarTap = (slot: number) => {
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
-      showNotice(`Quickbar ${slot + 1} is empty: open the inventory, pick an item, press ${slot + 1}`);
+      showNotice(`Quickbar ${slot + 1} is empty`);
       return;
     }
-    const at = inventory.locate(item);
-    if (!at) {
-      showNotice(`The ${inventory.name(item).toLowerCase()} isn't with you`);
-    } else if (at.kind === 'hand' || registry.items.get(item.type)?.battery) {
-      const reason = useItem(item);
-      if (reason) {
-        showNotice(reason);
-      }
-    } else {
-      const reason = toHands(inventory, queue, item, feet());
-      if (reason) {
-        showNotice(reason);
-      }
-    }
+    quickbarActions.tap(item);
   };
+  const quickbarHold = (slot: number) => {
+    const item = quickbar.resolve(slot, inventory);
+    if (!item) {
+      showNotice(`Quickbar ${slot + 1} is empty`);
+      return;
+    }
+    quickbarActions.hold(item);
+  };
+  const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
+  globalThis.addEventListener('blur', () => quickbarInput.cancel());
 
-  /** Long-action keys, each responsible for its own guard. */
+  /** Rest has no initiation key; C continues owned craft work and L still toggles sleep. */
   const longActionKeys = new Map<string, () => void>([
-    // R also descends in noclip (debug), but only while starting; stopping an active rest is fine.
-    [CONTROL_CODES.rest, () => (rest.action?.kind === 'rest' || !debugTools?.noclip) && toggleRest('rest')],
     [CONTROL_CODES.sleep, () => toggleRest('sleep')],
     [CONTROL_CODES.continue, () => session.crafting.currentUid !== undefined && continueAction()],
   ]);
@@ -690,17 +696,15 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       restAction();
       return;
     }
-    const quick = quickbarSlotForKey(code);
     const action = worldActionForKey(code);
     if (action === 'interact' && !compression.locksInput) {
       use();
     } else if (action === 'cancel') {
+      input.reload.cancel();
       queue.cancel();
       if (sim.actions.job) {
         stopAction();
       }
-    } else if (quick !== undefined && !compression.locksInput) {
-      quickKey(quick);
     }
   };
 
@@ -710,6 +714,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     e.preventDefault();
     if (!(e.repeat || sim.dead)) {
+      quickbarInput.cancel();
       mainMenuOpen = !mainMenuOpen;
       if (mainMenuOpen) {
         reading.close();
@@ -745,21 +750,63 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       syncMenuState,
     });
 
-  const handleGameplayKey = (e: KeyboardEvent): void => {
+  /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
+  const reloadBinding = (): ReloadBinding | undefined => {
+    if (!input.locked || input.menuPointer || compression.locksInput || sim.paused || sim.dead || debugTools?.buildOn) {
+      return;
+    }
+    const uid = firearms.reloadableUid();
+    if (uid === undefined) {
+      return;
+    }
+    return {
+      uid,
+      busy: () => queue.busy || firearms.busy,
+      load: () => {
+        const reason = firearms.loadNext(uid, sim.time);
+        if (reason) {
+          showNotice(reason);
+        }
+        return reason === undefined;
+      },
+      rack: () => {
+        const reason = firearms.cock(uid, sim.time);
+        if (reason) {
+          showNotice(reason);
+        }
+      },
+      cancelLoad: () => firearms.cancelLoad(uid),
+    };
+  };
+
+  const prepareGameplayKey = (e: KeyboardEvent): boolean => {
     if (handleMainMenuKey(e)) {
-      return;
+      return false;
     }
-    if (e.code === CONTROL_CODES.inventory) {
+    // Prevent an opening key from becoming text in the newly focused menu.
+    if (
+      e.code === CONTROL_CODES.inventory ||
+      (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false))
+    ) {
       e.preventDefault();
     }
-    // Prevent the opening key from becoming text in a field focused by the menu.
-    if (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false)) {
-      e.preventDefault();
-    }
-    if (e.repeat || sim.dead) {
+    return !(e.repeat || sim.dead);
+  };
+
+  const handleGameplayKey = (e: KeyboardEvent): void => {
+    if (!prepareGameplayKey(e) || handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
       return;
     }
-    if (handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
+    if (e.code === CONTROL_CODES.reload) {
+      e.preventDefault();
+      input.reload.keyDown(e.timeStamp, reloadBinding());
+      return;
+    }
+    if (quickbarSlotForKey(e.code) !== undefined) {
+      e.preventDefault();
+      if (!compression.locksInput) {
+        quickbarInput.keyDown(e.code, e.timeStamp);
+      }
       return;
     }
     playKeys(e.code);
@@ -786,6 +833,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     },
     { passive: false },
   );
+
+  globalThis.addEventListener('keyup', (event) => {
+    const e = event as KeyboardEvent;
+    quickbarInput.keyUp(e.code, e.timeStamp);
+  });
 
   const lookDir = (): Vec3 => aimDirection(input.pitch, input.yaw);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
@@ -857,7 +909,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   }
 
-  renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
+  inputTarget.addEventListener('contextmenu', (e) => e.preventDefault());
   const handUids = () => ({
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
@@ -896,7 +948,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   const swing = (preferredHand?: 'right' | 'left') => {
     const selected = meleeSelection(preferredHand);
-    const result = startPlayerMelee(zombieSystem, sim.needs, {
+    const result = startPlayerMelee(playerCombat, sim.needs, {
       origin: eye(),
       direction: lookDir(),
       weapon: selected.weapon,
@@ -927,6 +979,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!fired) {
       return false;
     }
+    if (registry.items.get(item.type)?.firearm?.pump) {
+      view.recoil(8);
+      return true;
+    }
     const shot = firearmShotSound(item.type);
     session.playPlayerSound(shot.event, time, shot);
     return true;
@@ -947,23 +1003,29 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     return rpm === undefined ? undefined : { uid: weapon.uid, rpm };
   };
 
+  const noticeReason = (reason: string | undefined): void => {
+    if (reason) {
+      showNotice(reason);
+    }
+  };
+
   performPrimaryAction = (hand: 'right' | 'left') => {
     const action = selectPrimaryAction(registry, inventory.hands, hand);
     switch (action.kind) {
+      case 'unpack':
+        noticeReason(unpacking.activate(action.item));
+        return;
       case 'melee':
         swing(action.hand);
         return;
-      case 'light': {
-        const reason = survival.use(action.item);
-        if (reason) {
-          showNotice(reason);
-        }
+      case 'light':
+      case 'read':
+        noticeReason(survival.use(action.item));
         return;
-      }
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
           showNotice(
-            config.debug
+            config.debug || registry.items.get(action.item.type)?.firearm?.pump
               ? (firearms.fireReason(action.item.uid) ?? 'Firearm is not ready')
               : 'Firearms can only be fired in debug mode',
           );
@@ -1007,7 +1069,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
       return;
     }
-    // Mouse 5 (side forward): the left hand's instant use (a light on/off), the same path as a quickbar second press.
+    // Mouse 5 (side forward): the left hand's instant use (a light on/off), matching the left-hand action path.
     const item = offHandUse(registry, inventory);
     const reason = item && survival.use(item);
     if (reason) {
@@ -1016,7 +1078,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   };
   document.addEventListener('pointerdown', onForwardPress, true);
   document.addEventListener('mousedown', onForwardPress, true);
-  renderer.domElement.addEventListener('mousedown', (e) => {
+  inputTarget.addEventListener('mousedown', (e) => {
     if (!input.locked || input.menuPointer || compression.locksInput || !debugTools?.buildOn) {
       return;
     }
@@ -1032,7 +1094,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const frameInterval = new FrameTimes();
   const frameWork = new FrameTimes();
   let simulationMs = 0;
-  let renderMs = 0;
+  let renderMs: number | null = engine.renderer ? 0 : null;
   let meshingQueueMs = 0;
 
   const displayCalendar = (): number => sim.calendar;
@@ -1157,12 +1219,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       debugBuild: debugTools?.buildOn ?? false,
       inputLocked: compression.locksInput,
     });
-    const action = zombieSystem.activeMeleeAction;
+    const action = playerCombat.activeMeleeAction;
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready);
-    view.updateHeld(dt, pose, survival.lit, firearms.frames());
+    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), job: queue.jobs[0] });
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
@@ -1176,7 +1238,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       yaw: input.yaw,
       pitch: input.pitch,
       intent: input.intent(),
-      descend: input.held.has('KeyR'),
+      descend: input.held.has(CONTROL_CODES.descend),
       dt,
     });
   };
@@ -1216,6 +1278,12 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
+    input.reload.advance(now, reloadBinding());
+    if (screen.isOpen || mainMenuOpen || compression.locksInput || sim.dead) {
+      quickbarInput.cancel();
+    } else {
+      quickbarInput.update(now);
+    }
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);

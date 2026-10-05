@@ -199,6 +199,17 @@
   ],
   "items": [
     {
+      "id": "pump_shotgun",
+      "name": "Pump shotgun",
+      "category": "weapon",
+      "weight": 3000,
+      "size": [2, 8],
+      "twoHanded": true,
+      "model": "shotgun_pump",
+      "firearm": { "pump": true },
+      "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Hold R to load loose shells; double-press R or Use the held gun to rack; a single tap does nothing. Wield and activate a sealed shell box to unpack it first. LMB fires once; rack before the next shot. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling."
+    },
+    {
       "id": "debug_shotgun_pump",
       "name": "Pump shotgun (debug)",
       "category": "weapon",

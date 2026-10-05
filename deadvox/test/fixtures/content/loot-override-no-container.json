@@ -1,5 +1,18 @@
 {
-  "items": [{ "id": "review_only_item", "name": "Only here", "category": "material", "weight": 1, "size": [1, 1] }],
+  "items": [
+    {
+      "id": "review_only_item",
+      "name": "Only here",
+      "category": "material",
+      "weight": 1,
+      "size": [1, 1],
+      "disassembly": {
+        "time": 1,
+        "skill": "crafting",
+        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    }
+  ],
   "furniture": [{ "id": "review_pedestal", "name": "Pedestal", "size": [1, 1, 1], "color": "#123456" }],
   "loot": [{ "id": "review_only_loot", "rolls": [1, 1], "entries": [{ "item": "review_only_item", "weight": 1 }] }],
   "templates": [
@@ -29,7 +42,7 @@
   "recipes": [
     {
       "id": "review_needs_item",
-      "result": { "item": "rag", "count": 1 },
+      "result": { "item": "review_only_item", "count": 1 },
       "time": 1,
       "components": [[{ "item": "review_only_item", "count": 1 }]],
       "qualities": {},

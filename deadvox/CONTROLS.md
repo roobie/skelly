@@ -4,6 +4,9 @@ description: Draft of deadvox's whole verb-to-input map for Slices 1-3, with the
 tags: [deadvox, design, controls, input, ui]
 created: 2026-09-28
 status: draft
+read_if:
+  - you plan or change player or debug input bindings
+  - you review BR's control rulings or unresolved input questions
 ---
 
 # deadvox — controls (draft)
@@ -68,6 +71,18 @@ acting").
   activate-what's-wielded vs activate-off-hand". d47 builds it. Until then, the
   map's right-hand and left-hand rows are the right-handed default.
 
+- **R reload only in the default view (BR, 2026-10-04):** with a pump held,
+  hold to load loose shells, double-press to rack, and a short single tap does
+  nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
+  `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
+  Inventory R still rotates. **Rest has no dedicated key** (BR, 2026-10-04 12:15);
+  d45 supplies restable furniture initiation. Until d44 removes its binding,
+  L toggles sleep.
+- **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
+  activate with the held-item primary action to unpack. No inventory Unpack/Load.
+  Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
+  X cancels without loss; overflow becomes an ordinary pile.
+
 ## Principles
 
 1. **One verb, one input, in every state where the verb exists.** A key may mean
@@ -115,9 +130,9 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Walk/jog toggle, sprint | now | stance |
 | Interact with the world (doors, furniture, piles) | now | instant |
 | Inventory screen | now | menu |
-| Quickbar slots 1–5 | now | select |
-| Use held item: light on/off | now (quickbar second press or primary action) | instant |
-| Use held item: eat, drink, bandage | now (same) | long |
+| Quickbar slots 1–5 | now | tap to take or put away; hold to use |
+| Use held item: light on/off | now (quickbar hold or primary action) | instant |
+| Use held item: eat, drink, bandage | now (U or quickbar hold) | long |
 | Cancel handling | now | instant |
 | Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
 | Melee strike | now (left click/right hand or `=`/left hand, unreadied) | instant, noise |
@@ -127,7 +142,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Reload, check magazine | Slice 3 | long |
 | Crouch | Slice 3 (sight and noise when crouching) | stance |
 | Throw (flare, glowstick, lure) | Slice 3 | instant, noise |
-| Put the held item away (stow) | implicit today | instant |
+| Put the held item away (stow) | now (tap its quickbar slot) | handling |
 | Use left-hand primary action | now (`=`, initial BR ruling #27) | instant |
 | Read a book, craft, repair | Slice 2 | long, menu |
 | Lean | reserved (Q, E) | stance |
@@ -152,10 +167,11 @@ below).
 | Z | walk / jog toggle | — | — | — | — |
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
 | F | interact with what's outlined | interact | — | — | — |
-| R | reload the held gun: hold to load, double-press to rack, a tap does nothing; nothing without a gun | same | rotate while dragging | — | — |
-| T, held | — | — | with a click on an item: its quick action (auto move) | — | — |
+| R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
+| L | sleep; again stops (current runtime, until d44/d45) | — | — | stop sleeping | — |
+| T, held | — | — | with a click on an item: its quick action (auto move; d44) | — | — |
 | X | cancel handling | cancel | cancel handling | stop | stop |
-| 1–5 | take the slot's item into your hands; pressing the held item's slot puts it away | same | assign the selected item to the slot | — | — |
+| 1–5 | tap takes the slot's item into its capability-directed hand or puts it away; hold uses an available action from its location | same | assign the selected item to the slot | — | — |
 | Tab | inventory | inventory | close inventory | — | — |
 | F9 | main menu | main menu | close | main menu | main menu |
 | Q, E | lean (reserved) | lean | — | — | — |
@@ -163,13 +179,18 @@ below).
 
 Notes on the proposal:
 
-- **Quickbar second press:** using an item already in your hands still calls
-  the shared `Survival.use` path. A light primary action on either hand calls
-  that same path; the other capabilities dispatch to their existing actions.
-- **R is no longer overloaded in play:** it only reloads (BR, 2026-10-04). It
-  still rotates while dragging in the inventory, where the drag is visible. In
-  the game today R still rests and L still sleeps. Both keys go with d45 (rest
-  and sleep on restable furniture), and R gains reload with the pump (d36, #209).
+- **Quickbar tap/hold:** a tap only takes an item into its capability-directed
+  hand or puts it away; a hold uses its available action without making a firearm
+  rack through the quickbar. The hold estimate belongs to
+  `src/game/quickbarInput.ts`, `QuickbarInput`; the gesture is presentation state,
+  not simulation time. A light primary action on either hand still calls
+  `Survival.use`.
+- **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
+  `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
+  Rest has no input binding until restable furniture (d45); inventory R rotation
+  is a different view. X still stops an existing rest, C continues after interruption.
+  Until d44 removes its binding, L toggles sleep; d45 supplies furniture initiation
+  for rest and sleep.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.
@@ -205,6 +226,11 @@ tested; a shipped verb on V would collide in every test session. BR ruled on
 which frees the letters for shipped verbs, including T for the quick-action gate.
 d44 makes that change.
 
+See `src/game/input.ts`, `CONTROL_CODES.descend`, for the debug noclip descend
+binding, separate from reload and the reserved lean inputs. `Input` owns its
+browser back-navigation refusal in the pointer-locked default view; menu text
+editing retains native key behaviour.
+
 ## Open questions for BR
 
 1. **The two hands:** BR's initial right-hand/left-hand key mapping is open to
@@ -216,19 +242,22 @@ d44 makes that change.
    nothing applied?
 4. ~~**Reload:** R when ready (overloaded with rest), or its own key?~~
    **Answered (BR, 2026-10-04):** R only reloads, and rest has no key.
+   Pump: hold loads, double-press racks, single tap does nothing. See
+   `src/game/reloadInput.ts`, `RELOAD_GESTURE_MS`, for gesture thresholds.
 5. **Continue after an interruption:** keep C (crouch elsewhere), or make the
    interruption card a two-button choice clicked with the drawn cursor, freeing
    C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.
 6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
    2026-10-04):** behind a held F1.
-7. **Stow on the held slot's key:** confirm pressing the held item's slot puts it
-   away?
+7. ~~**Stow on the held slot's key:** confirm pressing the held item's slot puts it
+   away?~~ **Answered (BR, 2026-10-05):** a tap takes the item into its hand or
+   puts it away; a hold uses an available action.
 
 ## Next steps
 
 1. BR rules on the open questions; this document becomes `active`.
 2. One implementation item: every input read from the binding table; left click
-   and hold as specified; the quickbar change; the debug-key move; a guard test
-   that no module outside the table names a `code` literal; the help list and
-   hints generated from the table.
+   and hold as specified; the debug-key move; a guard test that no module outside
+   the table names a `code` literal; the help list and hints generated from the
+   table.
 3. Slice 3 verbs are added to the table as they land, against this map.

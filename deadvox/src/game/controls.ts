@@ -1,7 +1,7 @@
 import { html, render } from 'lit-html';
 import { CONTROL_CODES, KEY_BINDINGS } from './input.ts';
 
-const labelForCode = (code: string): string => {
+export const labelForCode = (code: string): string => {
   if (code === 'mousemove') {
     return 'Mouse';
   }
@@ -54,12 +54,13 @@ export const PLAYER_CONTROL_BINDINGS = [
   { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
   {
     keys: 'R',
-    codes: [CONTROL_CODES.rest, CONTROL_CODES.rotate],
-    action: 'Rest in play; rotate while dragging in inventory',
+    codes: [CONTROL_CODES.reload, CONTROL_CODES.rotate],
+    action: 'Hold to load loose shells; double-press to rack; tap does nothing; rotate while dragging in inventory',
   },
+  { keys: 'Backspace', codes: [CONTROL_CODES.descend], action: 'Descend in debug noclip' },
   { keys: 'L', codes: [CONTROL_CODES.sleep], action: 'Sleep; better on a bed; press again to stop' },
   { keys: 'Tab', codes: [CONTROL_CODES.inventory], action: 'Open / close inventory' },
-  { keys: '1–5', codes: CONTROL_CODES.quickbar, action: 'Quickbar: take into hands; again to use' },
+  { keys: '1–5', codes: CONTROL_CODES.quickbar, action: 'Quickbar: tap to take or put away; hold to use' },
   { keys: 'C', codes: [CONTROL_CODES.continue], action: 'Continue after an interruption' },
   { keys: 'X', codes: [CONTROL_CODES.cancel], action: 'Cancel handling; stop after an interruption' },
   { keys: 'E', codes: [CONTROL_CODES.bestPocket], action: 'Move to your best pocket', context: 'inventory' },

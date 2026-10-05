@@ -1,14 +1,9 @@
-// The rest/sleep screen (SLICE-1.md, 1.8): shown while a long action runs, with a
-// spinning clock, a progress bar, and an edge effect. The interruption prompt joins
-// it once compression drops back to 1x and waits for Continue or Stop.
-
 import { html, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
-import type { RestAction, RestKind } from '../core/longAction.ts';
+import type { RestAction } from '../core/longAction.ts';
 import type { Simulation } from '../core/sim.ts';
-
-/** The key that toggles each kind off again (SLICE-1.md, 1.8 follow-up: a manual stop). */
-const STOP_KEY: Readonly<Record<RestKind, string>> = { rest: 'R', sleep: 'L' };
+import { labelForCode } from '../game/controls.ts';
+import { CONTROL_CODES } from '../game/input.ts';
 
 export interface RestViewModel {
   readonly visible: boolean;
@@ -32,7 +27,7 @@ export const restViewModel = (action: RestAction | undefined, sim: Simulation): 
     label: action.label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint: `${STOP_KEY[action.kind]} or X to stop`,
+    stopHint: `${action.kind === 'sleep' ? `${labelForCode(CONTROL_CODES.sleep)} or ` : ''}${labelForCode(CONTROL_CODES.cancel)} to stop`,
     prompt: sim.compression.interruption,
   };
 };
@@ -45,7 +40,7 @@ const restTemplate = (vm: RestViewModel): TemplateResult => html`
     <div class="hd-bar"><div class="hd-fill" style=${`width: ${vm.percent}%`}></div></div>
     <p class="rest-time">${vm.clock}</p>
     <p class="hd-muted">${vm.stopHint}</p>
-    ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   C: continue   X: stop</p>` : ''}
+    ${vm.prompt ? html`<p class="rest-prompt">${vm.prompt}.   ${labelForCode(CONTROL_CODES.continue)}: continue   ${labelForCode(CONTROL_CODES.cancel)}: stop</p>` : ''}
   </div>
 `;
 
