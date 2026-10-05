@@ -5,7 +5,7 @@ describe('refusal audio presentation', () => {
   it('debounces refusal sounds on simulation time', () => {
     let sounds = 0;
     const refuse = createRefusalPresenter(
-      () => {},
+      () => undefined,
       () => {
         sounds += 1;
         return true;
