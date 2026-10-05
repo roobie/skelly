@@ -182,6 +182,9 @@ const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): Use
 const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   const inv = view.player.inventory;
   if (!item.on && chargeOf(inv.registry, item) === 0) {
+    if (!defOf(inv.registry, item.type).light?.power) {
+      return refuseUse("It's out of fuel");
+    }
     const [battery] = view.entries
       .map((entry) => entry.item)
       .filter((candidate) => fitsLight(inv.registry, item, candidate) && (chargeOf(inv.registry, candidate) ?? 0) > 0)

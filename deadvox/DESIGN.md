@@ -340,7 +340,12 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   its handling time; using it is a separate action. A two-handed item takes both
   hands.
 - What you hold shows in first person, what you drop lies on the floor as a
-  pile, and furniture holds what its grid shows.
+  pile, and furniture holds what its grid shows. For #252, a burning carried
+  light needs its world point light and a self-lit held presentation: a visible
+  flame for firestarter lights and a self-lit body. `HeldItems.render` draws the
+  hands in a separate scene, so the world light cannot illuminate that model. See
+  `src/render/hands.ts`, `HeldItems.shape`,
+  and `src/render/lightPool.ts`, `LightPool.update`.
 - **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
   with the thing you're holding." Activation follows the character's dominant
   and off-hand roles, not a fixed physical side. A held item must never turn
@@ -581,24 +586,30 @@ them see you.
 Interiors need voxel light to become darker than the outdoors. Until that
 arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
-block light. The zombie light check keeps sky visibility separate from carried
-light, so adding voxel sky light won't change the carried-light rule. Keep time
-of day in the sky/fog renderer, not baked into chunks; voxel sunlight can then
-join AO in vertex colour. See `src/render/flashlight.ts`, `Flashlight.update`,
-`src/core/zombies.ts`, `isLit`, `src/render/sky.ts`, `applySky`, and
-`src/core/mesher.ts`, `buildMesh`.
+block light. All-around carried and dropped sources use a fixed pool of
+shadowless point lights; unused slots stay at zero intensity, and surplus
+emissive glowsticks remain visible without lighting the world. An emissive marker
+is not a substitute for the pool: tune item light content against the ground and
+walls under the shared near-field falloff. Source colour, intensity, radius and
+burn rules belong to item content. The zombie light check keeps sky visibility
+separate from carried light, so adding voxel sky light
+won't change the carried-light rule. Keep time of day in the sky/fog renderer,
+not baked into chunks; voxel sunlight can then join AO in vertex colour. See
+`src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
+`LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,
+`applySky`, and `src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
 
   | Source | Light | Seen from | The catch |
   | --- | --- | --- | --- |
-  | Matches, lighter | A small circle | 10 m | Matches last seconds; takes a hand |
-  | Candle | Small and steady | 15 m | Blows out if you move fast |
-  | Glowstick | Dim, green | 15 m | Used once; can be thrown |
+  | Matches, lighter | A small circle | 10 m | Their own fuel is finite; takes a hand |
+  | Candle | Small and steady | 15 m | Blows out if you sprint; can be doused and relit |
+  | Glowstick | Dim, green | 15 m | Used once; stays lit when stowed or dropped |
   | Headlamp | A weak beam | 30 m | Batteries; leaves both hands free |
   | Flashlight | A beam, instant on and off | 40 m along the beam | Batteries; takes a hand |
   | Lantern | Bright, all around | 50 m | Bulky; can be set down |
-  | Torch | Bright, all around | 60 m | Can't be switched off, only dropped or doused; burns out; sets things alight |
+  | Torch | Bright, all around | 60 m | Needs a firestarter; can be doused and relit while fuel remains |
   | Road flare | Very bright, red | 80 m | Used once; can be thrown |
 
 - **Being seen.** Zombies see a light in their view cone from much further than
