@@ -22,6 +22,7 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { FigureDef, ModelDef } from '../core/content.ts';
+import { HELD_DISPLAY_KIND } from '../core/schema.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
 import { HOLD, heldAnchorOffset, modelToView } from '../core/heldPose.ts';
@@ -493,7 +494,7 @@ export class HeldItems {
     const def = defOf(this.inventory.registry, item.type);
     // A permanently raised inspection pose keeps this small display legible without a new input route.
     const heldAt: Vec3 =
-      item.type === 'compass' ? [side === 'right' ? 0.14 : -0.14, -0.13, -0.3] : HOLD[def.twoHanded ? 'both' : side];
+      def.heldDisplay !== undefined ? [side === 'right' ? 0.14 : -0.14, -0.13, -0.3] : HOLD[def.twoHanded ? 'both' : side];
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
@@ -522,12 +523,12 @@ export class HeldItems {
   }
 
   private shape(item: Item): Object3D {
-    if (item.type === 'compass') {
+    const def = defOf(this.inventory.registry, item.type);
+    if (def.heldDisplay === HELD_DISPLAY_KIND.compass) {
       const compass = createCompass();
       this.compasses.set(item.uid, compass);
       return compass.group;
     }
-    const def = defOf(this.inventory.registry, item.type);
     const model = def.model === undefined ? undefined : this.models?.held(def.model);
     if (model) {
       const action = this.inventory.registry.models.get(def.model!)?.action;

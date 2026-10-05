@@ -168,18 +168,45 @@ it('a live firearm pose takes precedence over a generic held move', () => {
   expect(f.project().wrists).toEqual(dedicated.wrists);
 });
 
-it('compass rummage starts from its raised grip, keeps the device attached and follows camera north', () => {
+it('held-display capability selects the raised compass display and rummage grip independently of item id', () => {
   // A canvas protocol fixture observes Three transforms, not rendered pixels.
   const context = { fillRect: vi.fn(), fillText: vi.fn(), beginPath: vi.fn(), arc: vi.fn(), stroke: vi.fn() };
   vi.stubGlobal('document', { createElement: () => ({ getContext: () => context }) });
   const content = buildRegistry([
     {
       source: 'compass-rummage-fixture.json',
-      data: { items: [{ id: 'compass', name: 'Fixture compass', category: 'misc', weight: 17, size: [1, 1] }] },
+      data: {
+        items: [
+          {
+            id: 'fixture_display',
+            name: 'Fixture display',
+            category: 'misc',
+            weight: 17,
+            size: [1, 1],
+            heldDisplay: 'compass',
+          },
+          { id: 'fixture_plain', name: 'Fixture plain item', category: 'misc', weight: 17, size: [1, 1] },
+        ],
+      },
     },
   ]);
   expect(content.issues).toEqual([]);
-  const f = fixture('compass', (before, after) => expect(after).toEqual(before), content.registry);
+  const plain = fixture('fixture_plain', (before, after) => expect(after).toEqual(before), content.registry);
+  expect(plain.inventory.move(plain.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
+  const plainEmpty = plain.project();
+  expect(plain.inventory.move(plain.item, { kind: 'hand', side: 'right' }).ok).toBe(true);
+  const plainHeld = plain.project();
+  expect(plainHeld.wrists).toEqual(plainEmpty.wrists);
+  let plainDial: Mesh | undefined;
+  plain.held.warmUpTarget.scene.traverse((object) => {
+    if (object instanceof Mesh && object.geometry instanceof CircleGeometry) {
+      plainDial = object;
+    }
+  });
+  expect(plainDial).toBeUndefined();
+  plain.held.dispose();
+
+  const f = fixture('fixture_display', (before, after) => expect(after).toEqual(before), content.registry);
   expect(f.inventory.move(f.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);
   const empty = f.project();
   expect(f.inventory.move(f.item, { kind: 'hand', side: 'right' }).ok).toBe(true);

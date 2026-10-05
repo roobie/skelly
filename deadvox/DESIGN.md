@@ -270,7 +270,7 @@ chunks can generate in any order.
   - `fuel`, `battery`, `light`, `book`
   - `vehiclePart` (after Slice 1)
 
-  Behaviour comes only from components; the game never checks an item's id.
+  Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled, "yes, rule covers drawing too": presentation follows declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
   rotated. A container has one or more **pockets**, each its own grid: a jeans
   pocket is 1 × 2, a hoodie pocket 3 × 2, a school backpack 5 × 6, a kitchen
