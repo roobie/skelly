@@ -34,6 +34,9 @@ export class RestController {
   get action(): RestAction | undefined {
     return this.sim.actions.rest;
   }
+  get canStop(): boolean {
+    return this.action !== undefined && this.action.kind !== 'sleep';
+  }
   rateFor(kind: RestKind, quality: number): number {
     return kind === 'rest' ? REST.rest * quality : REST.sleep + REST.bedBonus * quality;
   }
@@ -64,7 +67,9 @@ export class RestController {
     return this.sim.actions.resume();
   }
   stop(): void {
-    this.sim.actions.stop();
+    if (this.canStop) {
+      this.sim.actions.stop();
+    }
   }
   toggle(kind: RestKind, furnitureUid: number): string | undefined {
     if (this.action?.kind === kind && this.action.furnitureUid === furnitureUid) {

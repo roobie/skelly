@@ -350,12 +350,16 @@ values), known recipes and skill levels. Two consequences for 1.9:
 2. **1.8, rest and sleep:** rest and sleep start by interacting with the furniture
    under the crosshair, giving recovery a physical anchor. Comfort scales the
    recovery rates; their authored values are placeholders, not balance claims.
-   `src/core/longAction.ts`,
-   `RestAction`, retains that furniture identity; `src/game/rest.ts`,
-   `RestController.resume`, refuses a resume if it is no longer reachable. BR (d73-2) ruled
-   that resting ignores movement and action input except cancellation, while sleep
-   ignores movement and F/X and wakes only for existing reasons. The legacy L
-   binding remains until d44 removes it; it can still stop sleep.
+   `src/core/longAction.ts`, `RestAction`, retains that furniture identity;
+   `src/game/rest.ts`, `RestController.resume`, refuses a resume if it is no
+   longer reachable. BR (2026-10-05 20:13) said "as for sleeping: that's not
+   something you actively stop - you wake up for reasons (whatever they may
+   be)" and "resting is the same as reading -> no actions are allowed (other
+   than cancelling resting)". `RestController.canStop` owns sleep
+   cancellability, which `src/ui/rest.ts`, `restViewModel`, uses for its hint.
+   An interrupt wakes the sleeper and clears its action. BR (2026-10-05 20:14)
+   added "as for crafting: same as reading". The legacy L binding remains until
+   d44 removes it; it can still stop sleep.
 3. **1.9, saves:** long actions and item state as plain data, as above.
 4. **Slice 2:** the inventory screen already moved to lit-html in Slice 1
    (#105), which completed ADR 0001. Slice 2 starts with the reach query and `options`, then recipes in the schema and the
@@ -366,25 +370,33 @@ values), known recipes and skill levels. Two consequences for 1.9:
 
 ## Long-action input and wake behavior
 
-BR's d73-2 ruling is: "long actions disable all actions". Movement and gameplay
-action input are ignored while reading, resting, sleeping or crafting. Each kind
-keeps its own close, cancel or wake behavior:
+BR (2026-10-05 20:09) ruled: "long actions disable all actions". Movement and
+gameplay action input are ignored while reading, resting, sleeping or crafting.
+Each kind keeps its own close, cancel or wake behavior:
 
 - Reading: the paper surface keeps its own close keys; the world continues to
   move. `src/game/play.ts`, `handleGameplayKey`, preserves the readable lock.
-- Rest: "resting is the same as reading -> no actions are allowed (other than
-  cancelling resting)". F on the anchor and X cancel it; movement does not.
-- Sleep: "as for sleeping: that's not something you actively stop - you wake up
-  for reasons (whatever they may be)". Movement and F/X do not stop it. Existing
-  wake triggers remain, and legacy L remains out of scope until d44.
-- Craft: "as for crafting: same as reading". Movement does not stop it; its
-  cancel key and interrupt events still do. C resumes after an interruption.
+- Rest: BR (2026-10-05 20:13): "resting is the same as reading -> no actions are
+  allowed (other than cancelling resting)". F on the anchor and X cancel it;
+  movement does not.
+- Sleep: BR (2026-10-05 20:13): "as for sleeping: that's not something you
+  actively stop - you wake up for reasons (whatever they may be)". Movement and
+  F/X do not stop it. An interrupt wakes the player, clears sleep and frees
+  input. Existing wake triggers remain, and legacy L remains out of scope until
+  d44.
+- Craft: BR (2026-10-05 20:14): "as for crafting: same as reading". Movement does
+  not stop it; its cancel key and interrupt events still do. C resumes after an
+  interruption.
 
-BR answered the d73-2 hostile-speed question: "fast forward". A nearby hostile
-alone neither refuses nor interrupts a long action; emitted interrupt events
-still stop it. `src/core/longAction.ts`, `LongActions`, starts at normal compressed
-speed, and `src/core/sim.ts`, `Simulation.checkInterruptions`, still stops on
-emitted interruptions.
+BR (2026-10-05 morning playtest) said "if the player wants to do a long running
+op with shamblers close, that's OK". BR (2026-10-05 20:09) answered "fast
+forward". BR (2026-10-05 22:28) ruled: "(B) - it's up to the player to make the
+area safe for them to do the long action. We're not holding hands". A hostile nearby or
+noticing the player neither refuses nor interrupts a long action; emitted
+interrupt events, such as a hit or critical need, still stop it.
+`src/core/longAction.ts`, `LongActions.syncInterruption`, wakes a sleeper and
+clears the interruption; `src/core/sim.ts`, `Simulation.checkInterruptions`,
+keeps emitted events live.
 
 ## Decisions
 
@@ -411,7 +423,7 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
    A held item must never become a fist or redirect to the other hand, and a
    restored physical fist sequence must not be reseeded from dominance.
-7. **Long-action start near a hostile (BR, d73):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". BR answered the d73-2 speed question with "fast forward". A nearby hostile alone does not refuse or interrupt an action; emitted interrupt events still stop it.
+7. **Long-action start and speed near a hostile (BR, 2026-10-05 morning playtest; 20:09):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". To the 20:09 question about speed, BR answered "fast forward". BR (2026-10-05 22:28) added: "(B) - it's up to the player to make the area safe for them to do the long action. We're not holding hands". A nearby or aware hostile neither refuses nor interrupts an action; emitted interrupt events still stop it.
 8. **Handling gates primary actions (`d77-1`, 2026-10-05):** BR reported,
    "bug: while in the process of wielding something, you can attack". While handling
    is busy, primary actions from either hand are refused. Whether a one-handed job

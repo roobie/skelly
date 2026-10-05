@@ -115,30 +115,47 @@ describe('RestController start/resume/stop', () => {
     expect(sim.compression.active).toBe(false);
   });
 
-  it('fast-forwards near a shambler and still interrupts when attacked', () => {
+  it('keeps fast-forwarding as an aware shambler closes in, then wakes on a hit', () => {
     const player: PlayerSense = {
       pos: [0, 1, 0],
       facing: [0, 0, -1],
       movement: 'still',
-      lit: false,
-      lightSeenFrom: 40,
+      lit: true,
+      lightSeenFrom: 50,
     };
-    const zombieSystem = new ZombieSystem(zombieHooks(player));
-    zombieSystem.add(SHAMBLER, [50, 1, 0], [1, 0, 0]);
+    const zombieSystem = new ZombieSystem(zombieHooks(player, 23));
+    const id = zombieSystem.add(SHAMBLER, [70, 1, 0], [-1, 0, 0]);
+    zombieSystem.tick(1 / 60, 1 / 60);
+    expect(zombieSystem.store.get(id)?.mode).toBe('chase');
     expect(zombieSystem.unsafeReason()).toBeTruthy();
-    const { sim, rest } = makeRest({ unsafe: () => zombieSystem.unsafeReason() });
+    const messages: string[] = [];
+    const { sim, rest } = makeRest(
+      { unsafe: () => zombieSystem.unsafeReason() },
+      { notice: (message) => messages.push(message) },
+    );
 
     expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
     const start = sim.time;
-    sim.frame(1 / 60);
+    const {
+      body: {
+        pos: [startX],
+      },
+    } = zombieSystem.store.get(id)!;
+    for (let i = 1; i <= 30; i++) {
+      zombieSystem.tick(0.1, i * 0.1);
+      sim.frame(1 / 60);
+      expect(sim.compression.active).toBe(true);
+      expect(sim.compression.interruption).toBeUndefined();
+    }
     expect(sim.time).toBeGreaterThan(start);
-    expect(sim.compression.active).toBe(true);
-    expect(sim.compression.interruption).toBeUndefined();
+    expect(zombieSystem.store.get(id)!.body.pos[0]).toBeLessThan(startX!);
 
     sim.hurt(1, 'a shambler');
     sim.frame(1 / 60);
-    expect(sim.compression.interruption).toBeDefined();
-    expect(sim.compression.c).toBe(1);
+    expect(rest.action).toBeUndefined();
+    expect(sim.compression.locksInput).toBe(false);
+    expect(sim.compression.interruption).toBeUndefined();
+    expect(messages).toContain("You wake up: You're hurt");
   });
 
   it('ends on its own once fully rested, back at 1x', () => {
@@ -158,9 +175,9 @@ describe('RestController start/resume/stop', () => {
     expect(messages).toContain('You feel rested');
   });
 
-  it('returns to 1x when the player stops after an interruption', () => {
+  it('returns to 1x when the player stops resting after an interruption', () => {
     const { sim, rest } = makeRest();
-    rest.start('sleep', REST_ANCHOR);
+    rest.start('rest', REST_ANCHOR);
     for (let i = 0; i < 120; i++) {
       rest.frame(1 / 60);
     }
@@ -201,7 +218,7 @@ describe('RestController start/resume/stop', () => {
         withinReach: (uid) => reachable.has(uid),
       },
     );
-    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     sim.hurt(5, 'a debug key');
     rest.frame(1 / 60);
     reachable.delete(REST_ANCHOR);
@@ -219,9 +236,10 @@ describe('RestController.toggle (manual stop)', () => {
     const { rest } = makeRest();
     expect(rest.toggle('rest', REST_ANCHOR)).toBeUndefined();
     expect(rest.action?.kind).toBe('rest');
+    expect(rest.canStop).toBe(true);
   });
 
-  it('stops the same kind on a second press, ramping compression down as a normal end does', () => {
+  it('does not let a second press stop sleep', () => {
     const { sim, rest } = makeRest();
     expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
@@ -230,14 +248,10 @@ describe('RestController.toggle (manual stop)', () => {
     expect(sim.compression.c).toBeGreaterThan(1);
     const fatigueAtStop = sim.needs.fatigue;
     expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
-    expect(rest.action).toBeUndefined();
-    expect(sim.compression.active).toBe(false);
-    expect(sim.compression.c).toBeGreaterThan(1); // not snapped; it ramps down like any normal end
-    expect(sim.needs.fatigue).toBe(fatigueAtStop); // kept whatever was recovered, right at the stop
-    for (let i = 0; i < 60; i++) {
-      rest.frame(1 / 60);
-    }
-    expect(sim.compression.c).toBe(1);
+    expect(rest.action?.kind).toBe('sleep');
+    expect(rest.canStop).toBe(false);
+    expect(sim.compression.active).toBe(true);
+    expect(sim.needs.fatigue).toBe(fatigueAtStop);
   });
 });
 
@@ -295,6 +309,55 @@ describe('Session long-action input lock', () => {
     expect([session.body.pos[0], session.body.pos[2]]).toEqual([position[0], position[2]]);
     expect(actions).toBe(0);
   });
+
+  it('wakes after damage with movement unlocked and no pending sleep action', () => {
+    const entities = new BlockEntities(registry);
+    const restable = [...registry.furniture.values()].find((def) => def.rest?.sleep);
+    if (!restable) {
+      throw new Error('Sleep input fixture has no matching furniture');
+    }
+    const anchor = entities.add({ type: restable.id, pos: [2, 1, 0], size: restable.size, facing: 'n' });
+    if (!anchor) {
+      throw new Error('Could not place the sleep input fixture');
+    }
+    const intent = { ...IDLE, forward: 1 };
+    const session = createSession({
+      registry,
+      world: new World(),
+      isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      entities,
+      scale: SCALE,
+      seed: 1,
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => true,
+        intent: () => intent,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in sleep wake fixture');
+      },
+    });
+
+    expect(session.rest.start('sleep', anchor.uid)).toBeUndefined();
+    session.sim.hurt(1, 'a shambler');
+    session.frame(1 / 60);
+    expect(session.rest.action).toBeUndefined();
+    expect(session.sim.compression.locksInput).toBe(false);
+    const position = [...session.body.pos];
+    for (let i = 0; i < 10; i++) {
+      session.frame(1 / 60);
+    }
+    expect([session.body.pos[0], session.body.pos[2]]).not.toEqual([position[0], position[2]]);
+  });
 });
 
 describe('long-action interruptions', () => {
@@ -311,16 +374,17 @@ describe('long-action interruptions', () => {
     expect(sim.compression.c).toBe(1);
   });
 
-  it('stops resting at most one grown needs step after a need turns critical', () => {
-    const { sim, rest } = makeRest();
-    sim.needs.hydration = 10.05; // just above "You're parched"
+  it('wakes when a need turns critical', () => {
+    const messages: string[] = [];
+    const { sim, rest } = makeRest({}, { notice: (message) => messages.push(message) });
+    sim.needs.hydration = 10.05;
     expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
-    const expectedAt = sim.time + HOUR * (0.05 / 5); // hydration falls 5%/h; 0.05% left to the threshold
-    for (let i = 0; i < 20_000 && sim.compression.interruption === undefined; i++) {
+    for (let i = 0; i < 20_000 && rest.action !== undefined; i++) {
       rest.frame(1 / 60);
     }
-    expect(sim.compression.interruption).toBe("You're parched");
-    expect(sim.compression.c).toBe(1);
-    expect(sim.time - expectedAt).toBeLessThanOrEqual(30 + 1e-6); // at most one grown needs step, 30 s
+    expect(rest.action).toBeUndefined();
+    expect(sim.compression.locksInput).toBe(false);
+    expect(sim.compression.interruption).toBeUndefined();
+    expect(messages).toContain("You wake up: You're parched");
   });
 });

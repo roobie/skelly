@@ -106,11 +106,11 @@ acting").
   nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
   `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
   Inventory R still rotates. **Rest and sleep have no dedicated key** (BR,
-  2026-10-04 12:15): F starts them on targeted furniture. BR (d73-2) ruled that
-  movement and action input do nothing during long actions; F on the anchor or X
-  cancels rest, but neither stops sleep. C resumes after an interruption only
-  while the same piece remains reachable. L remains a legacy sleep binding until
-  d44 removes it and can still stop sleep.
+  2026-10-04 12:15): F starts them on targeted furniture. BR (2026-10-05 20:09)
+  ruled: "long actions disable all actions". F on the anchor or X cancels rest,
+  but neither stops sleep; an interrupt wakes the sleeper and frees input. C
+  resumes an interrupted rest only while the same piece remains reachable. L
+  remains a legacy sleep binding until d44 removes it and can still stop sleep.
 - **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
   activate with the held-item primary action to unpack. No inventory Unpack/Load.
   Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
@@ -219,10 +219,12 @@ Notes on the proposal:
 - **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
   `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
   Inventory R rotation is a different view. F starts rest or sleep on its
-  target. Movement and action input are ignored during a long action; F on the
-  anchor or X cancels rest, neither stops sleep, and C resumes after an
-  interruption only while the same piece remains reachable. L remains a legacy
-  sleep binding until d44 removes it and can still stop sleep.
+  target. BR (2026-10-05 20:09) ruled that "long actions disable all actions";
+  movement and action input are ignored during a long action. F on the anchor or
+  X cancels rest, neither stops sleep, and an interrupt wakes the sleeper. C
+  resumes rest after an interruption only while the same piece remains
+  reachable. L remains a legacy sleep binding until d44 removes it and can still
+  stop sleep.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.

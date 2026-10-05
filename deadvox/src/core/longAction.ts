@@ -320,9 +320,18 @@ export class LongActions {
     this.sim.compression.interrupt(error instanceof Error ? error.message : 'Action effect refused');
   }
   syncInterruption(): void {
-    if (this.current && !this.sim.compression.active) {
-      this.current.stopped = true;
+    const job = this.current;
+    if (!job || this.sim.compression.active) {
+      return;
     }
+    const reason = this.sim.compression.interruption;
+    if (job.jobType === 'sleep' && reason !== undefined) {
+      this.current = undefined;
+      this.sim.compression.stop();
+      this.notice(`You wake up: ${reason}`);
+      return;
+    }
+    job.stopped = true;
   }
   private validateOwner(job: LongJob): string | undefined {
     if (job.jobType === 'craft') {

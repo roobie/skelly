@@ -89,8 +89,13 @@ an interruption (a runner covers 30 m between two checks).
 
 **Plan.**
 
-- **Danger and compression:** a nearby hostile must not refuse a long action.
-  Whether danger limits compression speed remains open pending BR's answer.
+- **Danger and compression:** unowned compression (such as the debug skip) is
+  admitted only while safe. Long actions fast-forward even when a hostile is
+  nearby or aware; a real interrupt event, such as a hit or critical need, still
+  ends the action. BR (2026-10-05 22:28): "(B) - it's up to the player to make
+  the area safe for them to do the long action. We're not holding hands". In
+  `src/core/sim.ts`, `Simulation.compress` retains the safety check for unowned
+  compression; `Simulation.compressLongAction` does not apply it to long actions.
 - **Bigger steps, not more ticks,** for slow systems (needs, fire, power), and
   closed-form updates where they exist.
 - **Background entities** move along flow fields with larger steps and

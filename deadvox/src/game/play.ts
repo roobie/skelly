@@ -664,7 +664,7 @@ export const startPlay = (
 
   /** Stop the current long action without discarding owned progress. */
   const stopAction = (): void => {
-    if (rest.action?.kind === 'sleep') {
+    if (rest.action && !rest.canStop) {
       return;
     }
     if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
@@ -949,7 +949,7 @@ export const startPlay = (
 
   function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
     const { action } = rest;
-    if (kind === 'sleep' && action?.kind === 'sleep' && action.furnitureUid === entity.uid) {
+    if (action?.kind === kind && action.furnitureUid === entity.uid && !rest.canStop) {
       return;
     }
     toggleRest(kind, entity);
@@ -1438,7 +1438,13 @@ export const startPlay = (
       },
     );
     document.body.classList.toggle('resting', rest.action !== undefined);
-    renderRest(restBox, rest.action, sim, visible.messages);
+    renderRest({
+      root: restBox,
+      action: rest.action,
+      canStop: rest.canStop,
+      sim,
+      messagesVisible: visible.messages,
+    });
     screen.update();
     craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());

@@ -17,6 +17,7 @@ export interface RestViewModel {
 
 export const restViewModel = (
   action: RestAction | undefined,
+  canStop: boolean,
   sim: Simulation,
   messagesVisible: boolean,
 ): RestViewModel => {
@@ -32,11 +33,8 @@ export const restViewModel = (
     label: action.label,
     clock: formatClock(sim.calendar),
     percent,
-    stopHint:
-      action.kind === 'sleep'
-        ? ''
-        : `${labelForCode(CONTROL_CODES.interact)} or ${labelForCode(CONTROL_CODES.cancel)} to stop`,
-    canStop: action.kind !== 'sleep',
+    stopHint: canStop ? `${labelForCode(CONTROL_CODES.interact)} or ${labelForCode(CONTROL_CODES.cancel)} to stop` : '',
+    canStop,
     prompt: messagesVisible ? sim.compression.interruption : undefined,
   };
 };
@@ -53,13 +51,20 @@ const restTemplate = (vm: RestViewModel): TemplateResult => html`
   </div>
 `;
 
-export const renderRest = (
-  root: HTMLElement,
-  action: RestAction | undefined,
-  sim: Simulation,
-  messagesVisible: boolean,
-): void => {
-  const vm = restViewModel(action, sim, messagesVisible);
+export const renderRest = ({
+  root,
+  action,
+  canStop,
+  sim,
+  messagesVisible,
+}: {
+  root: HTMLElement;
+  action: RestAction | undefined;
+  canStop: boolean;
+  sim: Simulation;
+  messagesVisible: boolean;
+}): void => {
+  const vm = restViewModel(action, canStop, sim, messagesVisible);
   root.hidden = !vm.visible;
   if (vm.visible) {
     render(restTemplate(vm), root);
