@@ -268,6 +268,13 @@ const checkDisassembly = (item: ItemDef, registry: Registry, qualities: Readonly
     disassembly.yields.forEach((yieldItem, index) => {
       if (!registry.items.has(yieldItem.item)) {
         report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
+      } else if (yieldItem.item === item.id) {
+        report(
+          'items',
+          item.id,
+          `.disassembly.yields[${index}].item`,
+          'disassembly cannot yield the input item itself',
+        );
       }
       const quality = yieldItem.toolModifier?.quality;
       if (quality !== undefined && !qualities.has(quality)) {
