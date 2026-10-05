@@ -111,6 +111,17 @@
       "loot": "shelf"
     },
     {
+      "id": "workbench",
+      "name": "Workbench",
+      "size": [3, 2, 2],
+      "color": "#98734f",
+      "workstation": {
+        "id": "workbench",
+        "qualities": { "hammering": 1, "sawing": 1 },
+        "workTimeBonus": 0.2
+      }
+    },
+    {
       "id": "crate",
       "name": "Crate",
       "size": [2, 2, 2],
