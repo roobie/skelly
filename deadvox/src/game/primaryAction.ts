@@ -6,10 +6,10 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { ItemDef } from '../core/schema.ts';
 
-export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read' | 'none';
+export type PrimaryItemAction = 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use' | 'none';
 
 export type PrimaryActionSelection =
-  | { kind: 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read'; hand: HandSide; item: Item }
+  | { kind: 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use'; hand: HandSide; item: Item }
   | { kind: 'fists'; hand?: HandSide }
   | { kind: 'none'; item: Item }
   | { kind: 'noop' };
@@ -22,15 +22,26 @@ interface CapabilityDispatch {
 /** Add a new action capability here when its item data enters the content schema. */
 const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'melee', supports: (definition) => definition.weapon?.melee !== undefined },
+  { kind: 'ignite', supports: (definition) => definition.igniter !== undefined },
   { kind: 'light', supports: (definition) => definition.light !== undefined },
   { kind: 'firearm', supports: (definition) => definition.firearm !== undefined },
   { kind: 'key', supports: (definition) => definition.key !== undefined },
   { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
   { kind: 'read', supports: (definition) => definition.book !== undefined },
+  { kind: 'use', supports: (definition) => definition.food !== undefined || definition.category === 'medical' },
 ];
 
 export const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>
   CAPABILITY_DISPATCH.find(({ supports }) => supports(definition))?.kind ?? 'none';
+
+export const ignitionTargetForHand = (inventory: Inventory, hand: HandSide): Item | undefined => {
+  const otherHand: HandSide = hand === 'right' ? 'left' : 'right';
+  const target = inventory.hands[otherHand];
+  if (!target || target.on) {
+    return undefined;
+  }
+  return defOf(inventory.registry, target.type).light?.burning?.ignition === 'firestarter' ? target : undefined;
+};
 
 /** Empty dominant fists alternate only with both hands free; a reserved support slot never punches. */
 export const selectPrimaryAction = (

@@ -85,6 +85,7 @@ const environmentLines = (record: BenchRecord): string[] => {
   const workload = [
     `Site: ${record.site ?? 'test house'}`,
     ...(record.forest ? [`Forest workload: ${JSON.stringify(record.forest)}`] : []),
+    ...(record.lightWorkload ? [`Light workload: ${JSON.stringify(record.lightWorkload)}`] : []),
   ];
   if (!env) {
     return ['Environment: not recorded', ...workload];

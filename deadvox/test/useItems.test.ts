@@ -82,6 +82,42 @@ describe('using what you hold', () => {
     expect([light.on, survival.lit]).toEqual([false, undefined]);
   });
 
+  it('does not spend or report battery fuel when matches are used alone', () => {
+    const { survival, sim, notices, hold } = setup();
+    const matches = hold('matches');
+    const emptyFlashlight = hold('flashlight', 'left');
+    emptyFlashlight.charges = 0;
+    const batteryReason = survival.use(emptyFlashlight);
+    expect(batteryReason).toEqual(expect.any(String));
+    const fuelBefore = matches.charges;
+
+    const result = survival.use(matches);
+    sim.scheduler.advance(2);
+    expect(matches.on).not.toBe(true);
+    expect(matches.charges).toBe(fuelBefore);
+    expect(notices).toEqual([]);
+    expect(result).toEqual(expect.any(String));
+
+    matches.charges = 0;
+    const emptyReason = survival.use(matches);
+    expect(emptyReason).toEqual(expect.any(String));
+    expect(emptyReason).not.toBe(batteryReason);
+  });
+
+  it('reports fuel rather than battery failure for an empty self-fuelled igniter', () => {
+    const t = setup();
+    const lighter = t.hold('lighter');
+    const emptyFlashlight = t.hold('flashlight', 'left');
+    emptyFlashlight.charges = 0;
+    const batteryReason = t.survival.use(emptyFlashlight);
+    expect(batteryReason).toEqual(expect.any(String));
+    lighter.charges = 0;
+
+    const reason = t.survival.use(lighter);
+    expect(reason).toEqual(expect.any(String));
+    expect(reason).not.toBe(batteryReason);
+  });
+
   it('drains while on, and a dead light takes a spare battery from your pockets', () => {
     const { inventory, queue, survival, sim, notices, hold } = setup();
     const light = hold('flashlight');

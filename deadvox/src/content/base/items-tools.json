@@ -205,10 +205,99 @@
       "light": {
         "radius": 20,
         "seenFrom": 40,
+        "color": "#fff1d8",
+        "intensity": 5,
         "beam": 30,
         "power": {
           "battery": "aa_battery",
           "perHour": 0.25
+        }
+      }
+    },
+    {
+      "id": "torch",
+      "name": "Torch",
+      "category": "light",
+      "weight": 350,
+      "size": [1, 4],
+      "description": "Rags and wax wrapped tightly around a stick.",
+      "disassembly": {
+        "time": 10,
+        "skill": "crafting",
+        "yields": [
+          { "item": "stick", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "rag", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "wax", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+        ]
+      },
+      "light": {
+        "radius": 6,
+        "seenFrom": 60,
+        "color": "#ffb36b",
+        "intensity": 5,
+        "burnTime": 4,
+        "burning": {
+          "ignition": "firestarter",
+          "douse": true,
+          "sprint": "stay",
+          "stow": "refuse",
+          "drop": "douse",
+          "relight": true
+        }
+      }
+    },
+    {
+      "id": "candle",
+      "name": "Candle",
+      "category": "light",
+      "weight": 150,
+      "size": [1, 1],
+      "description": "A wax candle with a rag wick.",
+      "disassembly": {
+        "time": 5,
+        "skill": "crafting",
+        "yields": [
+          { "item": "wax", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "rag", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+        ]
+      },
+      "light": {
+        "radius": 3,
+        "seenFrom": 15,
+        "color": "#ffd28a",
+        "intensity": 1,
+        "burnTime": 6,
+        "burning": {
+          "ignition": "firestarter",
+          "douse": true,
+          "sprint": "douse",
+          "stow": "douse",
+          "drop": "douse",
+          "relight": true
+        }
+      }
+    },
+    {
+      "id": "glowstick",
+      "name": "Glowstick",
+      "category": "light",
+      "weight": 30,
+      "size": [1, 2],
+      "description": "A sealed chemical light. Snap once to start it.",
+      "light": {
+        "radius": 2,
+        "seenFrom": 15,
+        "color": "#62ff81",
+        "intensity": 0.25,
+        "emissive": 0.12,
+        "burnTime": 8,
+        "burning": {
+          "ignition": "snap",
+          "douse": false,
+          "sprint": "stay",
+          "stow": "stay",
+          "drop": "stay",
+          "relight": false
         }
       }
     },
@@ -220,8 +309,12 @@
       "size": [1, 1],
       "light": {
         "radius": 2,
-        "seenFrom": 10
-      }
+        "seenFrom": 10,
+        "color": "#ffd28a",
+        "intensity": 0.7,
+        "fuelPerHour": 10
+      },
+      "igniter": { "capacity": 100, "perIgnition": 1 }
     },
     {
       "id": "matches",
@@ -229,10 +322,7 @@
       "category": "light",
       "weight": 20,
       "size": [1, 1],
-      "light": {
-        "radius": 2,
-        "seenFrom": 10
-      }
+      "igniter": { "capacity": 10, "perIgnition": 1 }
     }
   ]
 }

@@ -115,15 +115,16 @@ export class Flashlight {
   /** Points the beam of the light that's on, or turns it off. Call after `held.update`. */
   update(registry: Registry, lit: Item | undefined, held: HeldItems, camera: PerspectiveCamera): void {
     const def = lit && defOf(registry, lit.type).light;
-    if (!(lit?.on && def && held.lensOf(lit, camera, this.at))) {
+    if (!(lit?.on && def?.beam !== undefined && held.lensOf(lit, camera, this.at))) {
       this.light.intensity = 0;
       this.light.castShadow = false;
       return;
     }
-    this.light.intensity = FLASHLIGHT_INTENSITY * this.daylightScale * this.strength;
+    this.light.color.set(def.color);
+    this.light.intensity = def.intensity * this.daylightScale * this.strength;
     this.light.castShadow = flashlightCastsShadow(this.shadowsAllowed, this.light.intensity);
     this.light.distance = def.radius;
-    this.light.angle = MathUtils.degToRad((def.beam ?? 120) / 2);
+    this.light.angle = MathUtils.degToRad(def.beam / 2);
     this.light.position.copy(this.at);
     camera.getWorldDirection(this.ahead);
     this.light.target.position.copy(this.at).addScaledVector(this.ahead, 10);

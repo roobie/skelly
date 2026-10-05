@@ -130,6 +130,7 @@ describe('spawnMenuViewModel', () => {
       toggleFrozen: () => undefined,
       isGameFrozen: () => false,
       toggleGameFrozen: () => undefined,
+      impactLaser: { enabled: () => true, toggle: () => undefined },
     });
 
     expect(dispatchDebugAction(actions, 'KeyG')).toBe(true);

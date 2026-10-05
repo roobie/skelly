@@ -8,7 +8,6 @@ import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { useOption } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { CONTROL_CODES } from '../src/game/input.ts';
 import { handlePlayMenuKey } from '../src/game/menuKeys.ts';
@@ -82,6 +81,7 @@ function setup() {
     inv.entities.markSearched(entity);
   });
   const notices: string[] = [];
+  const refusals: string[] = [];
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
@@ -99,8 +99,7 @@ function setup() {
     },
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
-    use: (_item: typeof beans) => undefined,
-    useOption,
+    refusal: (text: string) => refusals.push(text),
     describe: (_item: typeof beans) => ['test description'],
     assign: (_slot: number, _item: typeof beans) => undefined,
     workOptions: (_uid: number): WorkOption[] => [],
@@ -109,14 +108,13 @@ function setup() {
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans, notices, hooks };
+  return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks };
 }
 
 describe('inventory screen Lit rendering', () => {
   it('keeps inventory commands owned without a selection, but lets gameplay and debug modals reach debug', () => {
     const codes = [
       CONTROL_CODES.hands,
-      CONTROL_CODES.use,
       CONTROL_CODES.wear,
       CONTROL_CODES.drop,
       CONTROL_CODES.takeAll,
@@ -312,8 +310,8 @@ describe('inventory screen Lit rendering', () => {
         node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true, pointerId: 1 }));
       }
       expect.soft(t.queue.jobs).toHaveLength(1);
-      expect(t.notices).toHaveLength(attempts - 1);
-      expect(t.notices.every((notice) => notice.length > 0)).toBe(true);
+      expect(t.refusals).toHaveLength(attempts - 1);
+      expect(t.refusals.every((refusal) => refusal.length > 0)).toBe(true);
     } finally {
       t.screen.close();
       vi.unstubAllGlobals();

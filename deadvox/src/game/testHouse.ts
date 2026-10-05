@@ -6,7 +6,7 @@
 // Colour variety for telling materials apart: painted siding on the north wall and a
 // small shed with a galvanized roof, a mossy cobblestone wall cap, dressed stone on the
 // chimney and doorstep, and a little hazard yellow on the gate posts. Furniture (a crate, a
-// kitchen cupboard, a fridge and a wardrobe) stands in and around it for comparing objects with structure.
+// chair, a kitchen cupboard, a fridge and a wardrobe) stands in and around it for comparing objects with structure.
 
 import type { EntitySpec } from '../core/blockEntities.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
@@ -139,7 +139,8 @@ const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing; loot?:
   // Kitchen: a fridge in the south-west corner, a cupboard against the south wall.
   { type: 'fridge', at: [1, 0, 5.5], facing: 'n' },
   { type: 'kitchen_cupboard', at: [3, 0, 6], facing: 'n' },
-  // Bedroom: a wardrobe against the east wall, clear of the window and the stairs.
+  // Bedroom: a chair in the open centre, and a wardrobe against the east wall clear of the window and stairs.
+  { type: 'chair', at: [6, 0, 3], facing: 'n' },
   { type: 'wardrobe', at: [9, 0, 1.5], facing: 'w' },
 ];
 

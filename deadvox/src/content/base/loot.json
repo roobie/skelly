@@ -272,6 +272,10 @@
           "weight": 2
         },
         {
+          "item": "glowstick",
+          "weight": 1
+        },
+        {
           "item": "nails",
           "weight": 3,
           "count": [10, 40]

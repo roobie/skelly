@@ -4,9 +4,11 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
-  - you change shambler navigation or floor-transition behavior
+  - you change shambler navigation, sight range over terrain or floor-transition
+    behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
+  - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
 ---
 
@@ -317,8 +319,9 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
   On stowing: "putting away the shotgun from being wielded also plays rummaging
   anim - i think it kinda fits". The longer-term direction is "over time, we'll
-  maybe add more specific anims."; shell-loading feedback is d53.
-  Approval does not pin `RUMMAGE_POSE` tuning: see
+  maybe add more specific anims." The shell-loading animation is in #248; BR
+  approved it on 2026-10-05: "approved". Approval does not pin `RUMMAGE_POSE`
+  tuning: see
   `../docs/deferred-assertions.md`.
   Following #213's merge (d50-3), compass handling must not introduce a second
   rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
@@ -336,7 +339,12 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   its handling time; using it is a separate action. A two-handed item takes both
   hands.
 - What you hold shows in first person, what you drop lies on the floor as a
-  pile, and furniture holds what its grid shows.
+  pile, and furniture holds what its grid shows. For #252, a burning carried
+  light needs its world point light and a self-lit held presentation: a visible
+  flame for firestarter lights and a self-lit body. `HeldItems.render` draws the
+  hands in a separate scene, so the world light cannot illuminate that model. See
+  `src/render/hands.ts`, `HeldItems.shape`,
+  and `src/render/lightPool.ts`, `LightPool.update`.
 - **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
   with the thing you're holding." Activation follows the character's dominant
   and off-hand roles, not a fixed physical side. A held item must never turn
@@ -490,7 +498,28 @@ plain box in your hands. Files are small, and follow
   blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
   items animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
-  capacity, handling and noise. Ammo and magazines are items with pockets.
+  capacity, handling and noise. Ammo and magazines are items with pockets. The
+  simulation's `AimController` publishes the same offset to shot resolution and
+  held-firearm presentation, so the weapon does not visibly aim somewhere other
+  than its shot ray. Aim state is saved because it can change hit outcomes. Each
+  committed shot applies the firearm's data-owned `recoilKickRadians`; full-auto
+  shots accumulate against simulation-time recovery, while
+  `firearmsSkillEffects` mitigates the resulting aim variance as skill rises.
+  BR's 2026-10-05 report that skill 12 still had "too much dispersion/sway at
+  full auto" led to d62-4 (#262). See `src/game/firearmHandling.ts`,
+  `FirearmMechanics.fire` and `firearmHandlingFor`, `src/core/aim.ts`,
+  `AimController.recordShot` and `AimController.advance`, and
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`. Until #267 lands, aim-sway
+  look comparisons use the current movement rules; afterward a firearm only
+  fires while ready and not sprinting, so moving-fire comparisons use the
+  skill-dependent duck-walk speed. The skill that controls duck-walk speed and
+  block success remains open in #267; BR leans toward a generic "warfare"
+  skill. d62 leaves practice unawarded until its source is ruled. The d62
+  reading of BR's "swing" is look-turn rate; BR's answer to the d62 questions
+  triggers reinterpretation. The d62 reading of BR's "reload time" is per-shell
+  insertion, not magazine reload; BR's answer to the d62 questions triggers
+  expansion.
+- **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. Whether rifle rounds damage shamblers or consume ammunition, and whether shamblers receive visible marks, remain open.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
@@ -546,24 +575,30 @@ them see you.
 Interiors need voxel light to become darker than the outdoors. Until that
 arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
-block light. The zombie light check keeps sky visibility separate from carried
-light, so adding voxel sky light won't change the carried-light rule. Keep time
-of day in the sky/fog renderer, not baked into chunks; voxel sunlight can then
-join AO in vertex colour. See `src/render/flashlight.ts`, `Flashlight.update`,
-`src/core/zombies.ts`, `isLit`, `src/render/sky.ts`, `applySky`, and
-`src/core/mesher.ts`, `buildMesh`.
+block light. All-around carried and dropped sources use a fixed pool of
+shadowless point lights; unused slots stay at zero intensity, and surplus
+emissive glowsticks remain visible without lighting the world. An emissive marker
+is not a substitute for the pool: tune item light content against the ground and
+walls under the shared near-field falloff. Source colour, intensity, radius and
+burn rules belong to item content. The zombie light check keeps sky visibility
+separate from carried light, so adding voxel sky light
+won't change the carried-light rule. Keep time of day in the sky/fog renderer,
+not baked into chunks; voxel sunlight can then join AO in vertex colour. See
+`src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
+`LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,
+`applySky`, and `src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
 
   | Source | Light | Seen from | The catch |
   | --- | --- | --- | --- |
-  | Matches, lighter | A small circle | 10 m | Matches last seconds; takes a hand |
-  | Candle | Small and steady | 15 m | Blows out if you move fast |
-  | Glowstick | Dim, green | 15 m | Used once; can be thrown |
+  | Matches, lighter | A small circle | 10 m | Their own fuel is finite; takes a hand |
+  | Candle | Small and steady | 15 m | Blows out if you sprint; can be doused and relit |
+  | Glowstick | Dim, green | 15 m | Used once; stays lit when stowed or dropped |
   | Headlamp | A weak beam | 30 m | Batteries; leaves both hands free |
   | Flashlight | A beam, instant on and off | 40 m along the beam | Batteries; takes a hand |
   | Lantern | Bright, all around | 50 m | Bulky; can be set down |
-  | Torch | Bright, all around | 60 m | Can't be switched off, only dropped or doused; burns out; sets things alight |
+  | Torch | Bright, all around | 60 m | Needs a firestarter; can be doused and relit while fuel remains |
   | Road flare | Very bright, red | 80 m | Used once; can be thrown |
 
 - **Being seen.** Zombies see a light in their view cone from much further than
@@ -616,12 +651,19 @@ worse the world gets.
 
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
-  rain washes out).
+  rain washes out). Terrain height alone should not end a clear pursuit; sight
+  over a rise is bounded by occlusion, not by spending range on vertical distance.
+  See `src/core/zombies.ts`, `seesPlayer`.
 - **Navigation rationale:** Collision-aware routing prevents false progress
   through blockers, while bounded work protects the shared simulation tick.
   Keeping route planning separate from physics preserves collision ownership.
-  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+  A changed target leaves the current verified waypoints in use while the bounded
+  search plans toward the latest block-cell goal. Before any waypoint exists, the
+  shambler waits: a straight segment check cannot establish authored floor
+  connectivity, and waiting preserves bounded route work. See
+  `deadvox/src/core/zombies.ts`, `ZombieSystem.routeWaypoint` and
+  `ZombieSystem.serviceRouteSearches`, and `deadvox/src/core/shamblerRoutes.ts`,
+  `planShamblerRoute`.
   Explore landing connections only from the reached frontier, trying the goal
   before optional detours. Exhausting effort on an unrelated closed approach must
   not discard a complete route already found. See
@@ -844,19 +886,28 @@ decoration.
   [Combat and noise](#combat-and-noise)) also play as positional sounds, with
   occlusion shared by the player's hearing and zombie hearing.
 - **A shambler's presence should be audible even when it stands still.** It
-  should sometimes moan or groan so the player can hear that one is there. Today
-  `shambler_idle` provides an occasional groan while idling or strolling (three
-  variants). A richer idle-presence set—more variants, breathing, shuffling in
-  place, and rate/loudness shaped by state—is future work, not part of the
-  current footsteps change.
+  should sometimes moan or groan so the player can hear that one is there.
+  `shambler_idle` provides an occasional groan while idling or strolling. Each
+  shambler's vocals and body-made sounds shift lower with its realized body
+  height, so larger figures sound heavier and the runner/brute templates inherit
+  the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, interpolates one
+  power curve between the pool's smallest and tallest realized bodies. The
+  smallest anchor is 1.2 times the prior square-root law at that body's height;
+  the tallest remains at the prior law. BR approved d52-4's `voicePitchLarge` on
+  2026-10-05 with “lgtm”. The clamp spans 0.5 to 1.3 times the prior law at the
+  smallest height. BR's tuning note was, “voicePitch 0.5 to 1.3 sounds good ,but
+  for different purposes / for the tiny shambler, 1.2 is good”. Debug URL
+  multipliers tune the two endpoints for the `voice_size` comparison site. This
+  changes playback only, never hearing or simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   three moving shamblers emit footsteps at once. The MVP reuses pitched-down
-  player footstep recordings as an explicit stand-in. Other shambler cues can
-  follow later; the current change adds footsteps only.
+  player footstep recordings as an explicit stand-in; body size also shifts
+  their playback pitch.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory
   (zips, cans), and heavy breathing when stamina is low. You hear how much
   noise you're making.
+- **Heartbeat (#193; d37-4; BR, 2026-10-05):** BR: "not hearing any hearbeats. / but the way it should work is a linear increase starting at around 85% stamina: / @85% -> start at 1Hz and 'normal intensity' (loudness) / @0%  -> 3Hz and very high intensity". It is silent above 85%, then rate and loudness rise linearly to zero stamina. The normal and very-high loudness anchors in `HEARTBEAT_TUNING` are provisional; BR tunes them by ear relative to other body sounds. This remains a presentation cue, not a noise event, so shamblers do not hear it and it does not alter simulation/save identity. Fear/danger and low-health responses remain open for BR's ruling on #193. See `src/game/audioPresentation.ts`, `HEARTBEAT_TUNING` and `heartbeatForStamina`, and `src/game/audio.ts`, `GameAudio.updateHeartbeat`.
 - **Ambience by time and place:** wind, rain, a building settling. The
   distant sounds (a gunshot, a scream, a helicopter over the cordon, a
   generator) come from things happening in the simulation, not from a random

@@ -44,7 +44,7 @@ const { registry } = buildRegistry([
           category: 'light',
           weight: 100,
           size: [1, 1],
-          light: { radius: 1, seenFrom: 1 },
+          light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1 },
         },
         {
           id: 'fixture_quickbar_bag',
@@ -148,6 +148,22 @@ describe('quickbar tap and hold actions', () => {
     actions.hold(gun);
     expect(gun.firearm).toEqual(firearmBefore);
     expect(notices).toHaveLength(1);
+  });
+
+  it('quickbar hold activates a firestarter light with an igniter in the other hand', () => {
+    const { inventory, actions } = runtime();
+    const candle = inventory.create('candle');
+    const matches = inventory.create('matches');
+    expect(inventory.add(candle, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.add(matches, { kind: 'hand', side: 'left' })).toBe(true);
+    const chargeBefore = matches.charges!;
+    const { igniter } = registry.items.get(matches.type)!;
+    const { perIgnition } = igniter!;
+
+    actions.hold(candle);
+
+    expect(candle.on).toBe(true);
+    expect(matches.charges).toBe(chargeBefore - perIgnition);
   });
 
   it('uses pocket food in one queued job while the held weapon stays in place', () => {

@@ -5,7 +5,13 @@ import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from
 import { Inventory } from '../src/core/inventory.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
 import { checkReachability } from '../src/core/reachability.ts';
-import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type ItemDef } from '../src/core/schema.ts';
+import {
+  BLOCK_PATTERNS,
+  CONTENT_SECTION_KEYS,
+  type ContentFile,
+  type ItemDef,
+  type TemplateDef,
+} from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 
@@ -15,6 +21,47 @@ const base = readdirSync(BASE)
   .sort()
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 
+interface WindowFrameRun {
+  y: number;
+  z: number;
+  start: number;
+  end: number;
+}
+
+const frameRunsInRow = (row: string, frame: string): { start: number; end: number }[] => {
+  const runs: { start: number; end: number }[] = [];
+  let start: number | undefined;
+  for (const [x, cell] of Array.from(row).entries()) {
+    if (cell === frame) {
+      if (start === undefined) {
+        start = x;
+      }
+    } else if (start !== undefined) {
+      runs.push({ start, end: x });
+      start = undefined;
+    }
+  }
+  if (start !== undefined) {
+    runs.push({ start, end: row.length });
+  }
+  return runs;
+};
+
+const windowFrameRuns = (definition: TemplateDef, frame: string): WindowFrameRun[] =>
+  definition.layers.flatMap((layer, y) =>
+    layer.flatMap((row, z) => frameRunsInRow(row, frame).map(({ start, end }) => ({ y, z, start, end }))),
+  );
+
+const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: string): boolean => {
+  for (const adjacentY of [run.y - 1, run.y + 1]) {
+    const row = definition.layers[adjacentY]?.[run.z];
+    if (row?.slice(run.start, run.end).includes(air)) {
+      return true;
+    }
+  }
+  return false;
+};
+
 describe('content', () => {
   it('base content has no issues', () => {
     const { registry, issues } = buildRegistry(base);
@@ -23,6 +70,26 @@ describe('content', () => {
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
     }
+  });
+
+  it('accepts restable furniture quality and rejects an out-of-range value', () => {
+    const source = 'restable-furniture-fixture.json';
+    const data: ContentFile = {
+      furniture: [
+        { id: 'fixture_chair', name: 'Chair', size: [1, 2, 1], color: '#123456', rest: { quality: 0.5 } },
+        { id: 'fixture_sofa', name: 'Sofa', size: [4, 2, 2], color: '#654321', rest: { quality: 0.5, sleep: true } },
+      ],
+    };
+    const accepted = buildRegistry([{ source, data }]);
+    expect(accepted.issues).toEqual([]);
+    expect(accepted.registry.furniture.has('fixture_chair')).toBe(true);
+    expect(accepted.registry.furniture.has('fixture_sofa')).toBe(true);
+
+    const invalid = structuredClone(data);
+    invalid.furniture![0]!.rest!.quality = 1.5;
+    const rejected = buildRegistry([{ source, data: invalid }]);
+    expect(rejected.registry.furniture.has('fixture_chair')).toBe(false);
+    expect(rejected.issues.length).toBeGreaterThan(0);
   });
 
   it('rejects a disassembly yield of its own input while accepting a distinct output', () => {
@@ -60,13 +127,13 @@ describe('content', () => {
 
   it('validates tool-quality references in disassembly yield modifiers', () => {
     const files = structuredClone(base);
-    const recipes = files.find(({ source }) => source === 'recipes.json')!.data as ContentFile;
-    const torchIndex = recipes.items!.findIndex(({ id }) => id === 'torch');
-    const torch = recipes.items![torchIndex] as ItemDef;
+    const tools = files.find(({ source }) => source === 'items-tools.json')!.data as ContentFile;
+    const torchIndex = tools.items!.findIndex(({ id }) => id === 'torch');
+    const torch = tools.items![torchIndex] as ItemDef;
     torch.disassembly!.yields[0]!.toolModifier = { quality: 'unknown_quality', bonusByLevel: [0.1] };
     const { issues } = buildRegistry(files);
     expect(issues).toContainEqual({
-      source: 'recipes.json',
+      source: 'items-tools.json',
       path: `items[${torchIndex}].disassembly.yields[0].toolModifier.quality`,
       message: 'no tool quality "unknown_quality"',
     });
@@ -154,9 +221,10 @@ describe('content', () => {
     }
   });
 
-  it('keeps footstep audio in the body mix without a second hearing-noise path', () => {
+  it('keeps player bodily cues out of zombie-hearing noise', () => {
     const { registry } = buildRegistry(base);
     for (const id of [
+      'player_nope',
       'footstep_grass',
       'footstep_mud',
       'footstep_sand',
@@ -549,7 +617,13 @@ describe('content references', () => {
             category: 'light',
             weight: 300,
             size: [1, 2],
-            light: { radius: 5, seenFrom: 30, power: { battery: 'bandage', perHour: 1 } },
+            light: {
+              radius: 5,
+              seenFrom: 30,
+              color: '#ffffff',
+              intensity: 1,
+              power: { battery: 'bandage', perHour: 1 },
+            },
           },
         ],
       },
@@ -570,6 +644,29 @@ describe('templates', () => {
   });
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...base, t]).issues.map((i) => `${i.path}: ${i.message}`);
+
+  it('leaves an open air cell beside every window-frame run', () => {
+    const { registry } = buildRegistry(base);
+    const frameRuns = [...registry.templates.values()].flatMap((definition) => {
+      const frame = Object.entries(definition.palette).find(([, value]) => value === 'window_frame')?.[0];
+      if (frame === undefined) {
+        return [];
+      }
+      const air = Object.entries(definition.palette).find(([, value]) => value === 'air')?.[0];
+      expect(air, `${definition.id} window palette`).toBeDefined();
+      if (air === undefined) {
+        return [];
+      }
+      return windowFrameRuns(definition, frame).map((run) => ({ definition, run, air }));
+    });
+    expect(frameRuns.length).toBeGreaterThan(0);
+    for (const { definition, run, air } of frameRuns) {
+      expect(
+        runHasAirOpening(definition, run, air),
+        `${definition.id} window-frame run at layer ${run.y}, row ${run.z}`,
+      ).toBe(true);
+    }
+  });
 
   it('accepts a well-formed template', () => {
     const t = template(

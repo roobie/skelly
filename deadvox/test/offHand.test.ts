@@ -15,7 +15,7 @@ const { registry, issues } = buildRegistry([
           category: 'tool',
           size: [1, 1],
           weight: 1,
-          light: { radius: 1, seenFrom: 1 },
+          light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1 },
         },
         { id: 'fixture_plain', name: 'Tool', category: 'tool', size: [1, 1], weight: 1 },
       ],

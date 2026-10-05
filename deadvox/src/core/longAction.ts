@@ -7,6 +7,7 @@ export type RestKind = 'rest' | 'sleep';
 export const REST_LABEL: Readonly<Record<RestKind, string>> = { rest: 'Resting', sleep: 'Sleeping' };
 export interface RestAction {
   kind: RestKind;
+  furnitureUid: number;
   label: string;
   rate: number;
   startFatigue: number;
@@ -50,6 +51,8 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
     !Number.isFinite(rest.startFatigue) ||
     rest.startFatigue < 0 ||
     rest.startFatigue > 100 ||
+    !Number.isSafeInteger(rest.furnitureUid) ||
+    rest.furnitureUid < 1 ||
     typeof rest.label !== 'string'
   ) {
     throw new Error('Invalid rest descriptor');
@@ -141,7 +144,7 @@ export class LongActions {
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
   }
-  startRest(kind: RestKind, rate: number): string | undefined {
+  startRest(kind: RestKind, rate: number, furnitureUid: number): string | undefined {
     if (this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
@@ -160,7 +163,7 @@ export class LongActions {
       stopped: false,
       last: this.sim.time,
       elapsed: 0,
-      rest: { kind, label: REST_LABEL[kind], rate, startFatigue: this.sim.needs.fatigue },
+      rest: { kind, furnitureUid, label: REST_LABEL[kind], rate, startFatigue: this.sim.needs.fatigue },
     };
     return undefined;
   }

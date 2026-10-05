@@ -113,6 +113,7 @@ export class DebugTestHouseSite implements Site {
   private readonly structures: BlockBox[];
   private readonly rack: EntitySpec;
   private readonly stock: ReturnType<typeof testHouseRangeStock>;
+  private readonly target: EntitySpec;
 
   constructor(config: GameConfig, registry: Registry, house: ReturnType<typeof testHouseScene>) {
     this.structures = house.structures;
@@ -138,6 +139,17 @@ export class DebugTestHouseSite implements Site {
       facing: 's',
     };
     this.stock = testHouseRangeStock(registry);
+    const targetType = 'range_target';
+    const targetSize = registry.furniture.get(targetType)?.size;
+    if (!targetSize) {
+      throw new Error(`content does not define furniture "${targetType}"`);
+    }
+    this.target = {
+      type: targetType,
+      pos: [this.range.targetXs[0]!, this.range.floor + 1, centreZ - Math.floor(targetSize[2] / 2)],
+      size: [...targetSize],
+      facing: 'w',
+    };
   }
 
   stamp(chunk: Parameters<Site['stamp']>[0]): void {
@@ -149,6 +161,9 @@ export class DebugTestHouseSite implements Site {
     const spawns = this.range.furnitureIn(cx, cz);
     if (toChunk(this.rack.pos[0]) === cx && toChunk(this.rack.pos[2]) === cz) {
       spawns.push({ spec: this.rack, loot: this.stock });
+    }
+    if (toChunk(this.target.pos[0]) === cx && toChunk(this.target.pos[2]) === cz) {
+      spawns.push({ spec: this.target, loot: [] });
     }
     return spawns;
   }

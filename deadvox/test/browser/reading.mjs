@@ -101,7 +101,6 @@ try {
         jobs: session.queue.jobs.map((job) => ({ label: job.label, elapsed: job.elapsed, duration: job.duration })),
         cursor: [input.cursorX, input.cursorY],
         readCalls,
-        clickTrace: globalThis.readingClickTrace ?? [],
       };
     });
     states.push({ label, ...state });
@@ -164,6 +163,68 @@ try {
       const hit = await page.evaluate(() => globalThis.readingWitness.lookedAt()?.type);
       assert.equal(hit, type, JSON.stringify({ target, hit }));
     };
+    const chairApproachX = await page.evaluate(() => {
+      const { engine } = globalThis.readingWitness;
+      const chair = [...engine.entities.all].find((entity) => entity.type === 'chair');
+      if (!chair) {
+        throw new Error('test house has no restable chair');
+      }
+      return chair.pos[0] - 2;
+    });
+    await walk('w', chairApproachX, true);
+    await aim('chair');
+    const chairUid = await page.evaluate(() => globalThis.readingWitness.lookedAt().uid);
+    const interruptRest = async (label) => {
+      const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+      await page.evaluate(() => globalThis.readingWitness.session.sim.hurt(1, 'rest continuation fixture'));
+      await waitForSimulation(
+        page,
+        () => {
+          const { session } = globalThis.readingWitness;
+          return {
+            time: session.sim.time,
+            paused: session.sim.paused,
+            reached: session.sim.compression.interruption !== undefined,
+          };
+        },
+        undefined,
+        { seconds: 5, from, label, record },
+      );
+    };
+    assert.ok(await page.evaluate(() => globalThis.readingWitness.session.sim.needs.fatigue > 0));
+    await page.keyboard.press('f');
+    await page.waitForFunction((uid) => {
+      const { session } = globalThis.readingWitness;
+      return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
+    }, chairUid);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), true);
+    await interruptRest('rest stop interruption');
+    await page.keyboard.press('f');
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.interruption), undefined);
+    await page.keyboard.press('f');
+    await page.waitForFunction((uid) => {
+      const { session } = globalThis.readingWitness;
+      return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
+    }, chairUid);
+    await interruptRest('rest continue interruption');
+    await page.keyboard.press('c');
+    await page.waitForFunction((uid) => {
+      const { session } = globalThis.readingWitness;
+      return (
+        session.sim.compression.active &&
+        session.sim.compression.interruption === undefined &&
+        session.rest.action?.furnitureUid === uid
+      );
+    }, chairUid);
+    await page.keyboard.press('f');
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
+    await page.evaluate(() => {
+      globalThis.readingWitness.input.yaw = -Math.PI / 2;
+      globalThis.readingWitness.input.pitch = 0;
+    });
+    await walk('s', startX + 10, false);
     await aim('crate');
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     await page.keyboard.press('f');
@@ -200,40 +261,13 @@ try {
       { seconds: 5, from: handStart, label: 'note to hand', record },
     );
     await page.keyboard.press('1');
-    const readButton = page.getByRole('button', { name: /^Read/ });
-    await readButton.waitFor();
-    // Observe the real pre-click focus, never manufacture a focus for the restore assertion.
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
+    // Observe the real pre-open focus, never manufacture a focus for the restore assertion.
     const previousFocus = await page.evaluateHandle(() => document.activeElement);
-    await page.evaluate(() => {
-      globalThis.readingClickTrace = [];
-      for (const type of ['pointerdown', 'pointerup', 'click']) {
-        document.addEventListener(
-          type,
-          (event) => {
-            const { input, reading } = globalThis.readingWitness;
-            const target = document.elementFromPoint(input.cursorX, input.cursorY);
-            globalThis.readingClickTrace.push({
-              type,
-              trusted: event.isTrusted,
-              target: target?.textContent?.trim().slice(0, 80),
-              cursor: [input.cursorX, input.cursorY],
-              readingOpen: reading.isOpen,
-            });
-          },
-          true,
-        );
-      }
-    });
-    await record('before Read click');
-    await uiClick(readButton);
-    await record('after Read click');
-    try {
-      await page.locator('#reading').waitFor({ state: 'visible' });
-    } catch (error) {
-      await record(`Read click failure: ${error}`);
-      await page.screenshot({ path: resolve(artifacts, 'read-click-failure.png') });
-      throw error;
-    }
+    await page.keyboard.down('1');
+    await page.locator('#reading').waitFor({ state: 'visible' });
+    await page.keyboard.up('1');
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a folded note');
     assert.ok((await page.locator('.reading-text').innerText()).includes('NOT PLAYTEST LORE'));
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'dialog');
@@ -253,7 +287,6 @@ try {
         };
       });
     const before = await itemState();
-    await page.keyboard.press('u');
     await page.keyboard.press('1');
     await page.keyboard.press('=');
     await uiClick(page.locator('.reading-text'));
@@ -284,10 +317,9 @@ try {
     await page.screenshot({ path: resolve(artifacts, 'note-reading.png') });
     await page.keyboard.press('Tab');
     assert.equal(await page.locator('#reading').isVisible(), false);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
     assert.equal(await previousFocus.evaluate((element) => element === document.activeElement), true);
     await previousFocus.dispose();
-    await page.keyboard.press('Tab');
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
@@ -320,7 +352,7 @@ try {
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { before, during, escaped, menu };
+    proof = { escaped, menu };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';

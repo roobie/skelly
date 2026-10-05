@@ -6,13 +6,16 @@ import type { Vec3 } from '../src/core/coords.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import { firearmShotSound } from '../src/game/audioPresentation.ts';
+import { firearmShotSound, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
+
+const audios: GameAudio[] = [];
 
 const makeNode = () => ({ connect: vi.fn(), disconnect: vi.fn() });
 const makeParam = () => ({ value: 1, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() });
+const makeGain = () => ({ ...makeNode(), gain: makeParam() });
 const makeSource = () => ({
   ...makeNode(),
-  buffer: null,
+  buffer: null as AudioBuffer | null,
   playbackRate: { value: 1 },
   onended: null as (() => void) | null,
   start: vi.fn(),
@@ -26,16 +29,28 @@ class FakeAudioContext {
   destination = makeNode();
   listener = { setPosition: vi.fn(), setOrientation: vi.fn() };
   sources: ReturnType<typeof makeSource>[] = [];
+  gainNodes: ReturnType<typeof makeGain>[] = [];
   panners: ReturnType<typeof makeNode>[] = [];
   peakConnectedSources = 0;
-  decodeAudioData = vi.fn(() => Promise.resolve({ duration: 2 } as AudioBuffer));
+  decodeAudioData = vi.fn((data: ArrayBuffer) => {
+    const { heartbeatFile } = data as ArrayBuffer & { heartbeatFile?: string };
+    let duration = 2;
+    if (heartbeatFile === HEARTBEAT_FILES.slow) {
+      duration = 0.6;
+    } else if (heartbeatFile === HEARTBEAT_FILES.fast) {
+      duration = 0.3;
+    }
+    return Promise.resolve({ duration, heartbeatFile } as unknown as AudioBuffer);
+  });
 
   constructor() {
     FakeAudioContext.lastCreated = this;
   }
 
   createGain() {
-    return { ...makeNode(), gain: makeParam() };
+    const node = makeGain();
+    this.gainNodes.push(node);
+    return node;
   }
 
   createBiquadFilter() {
@@ -67,9 +82,14 @@ class FakeAudioContext {
 
 const setup = () => {
   vi.stubGlobal('AudioContext', FakeAudioContext);
-  const fetchBuffer = vi.fn(() =>
-    Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) } as Response),
-  );
+  const fetchBuffer = vi.fn((url: string) => {
+    const data = new ArrayBuffer(8) as ArrayBuffer & { heartbeatFile?: string };
+    const heartbeatFile = Object.values(HEARTBEAT_FILES).find((file) => url.includes(file));
+    if (heartbeatFile) {
+      data.heartbeatFile = heartbeatFile;
+    }
+    return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(data) } as Response);
+  });
   vi.stubGlobal('fetch', fetchBuffer);
   const soundData = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown;
   const { registry, issues } = buildRegistry([{ source: '../content/base/sounds.json', data: soundData }]);
@@ -78,6 +98,7 @@ const setup = () => {
   }
   const isSolid = vi.fn(() => false);
   const audio = new GameAudio({ registry, blockSize: 1, isSolid, report: vi.fn() });
+  audios.push(audio);
   const picker = new SoundPicker(53, registry.sounds);
   const selected: SoundEmission[] = [];
   // Playback tests supply selected emissions; GameAudio has no gameplay admission/picker API.
@@ -102,9 +123,86 @@ const setup = () => {
 // Yield one event-loop turn to settle fetch/decode microtasks, without a timed sleep.
 const flush = () => setImmediate();
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  for (const audio of audios.splice(0)) {
+    audio.dispose();
+  }
+  vi.unstubAllGlobals();
+});
 
-describe('firearm sound playback', () => {
+describe('game audio playback', () => {
+  it('schedules player-only heartbeat beats at simulated tempo without admitting sound events', async () => {
+    const { audio, context, fetchBuffer } = setup();
+    const sourceGain = (source: ReturnType<typeof makeSource>) =>
+      (source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>).gain.value;
+
+    audio.updateHeartbeat(86);
+    await flush();
+    expect(context.sources).toHaveLength(0);
+    expect(fetchBuffer).not.toHaveBeenCalled();
+
+    audio.updateHeartbeat(85);
+    await flush();
+    expect(context.sources).toHaveLength(1);
+    expect(sourceGain(context.sources[0]!)).toBeCloseTo(heartbeatForStamina(85).gain);
+    expect((context.sources[0]!.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile).toBe(
+      HEARTBEAT_FILES.slow,
+    );
+    expect(context.sources[0]!.playbackRate.value).toBe(1);
+    expect(fetchBuffer).toHaveBeenCalled();
+    expect(audio.heardSounds).toHaveLength(0);
+    expect(context.panners).toHaveLength(0);
+
+    const firstBeatAt = context.sources[0]!.start.mock.calls[0]![0] as number;
+    context.currentTime = firstBeatAt + 60 / heartbeatForStamina(85).bpm - 0.01;
+    audio.updateHeartbeat(0);
+    await flush();
+    expect(context.sources).toHaveLength(1);
+    context.currentTime += 0.02;
+    audio.updateHeartbeat(0);
+    await flush();
+    expect(context.sources).toHaveLength(2);
+    expect(sourceGain(context.sources[1]!)).toBeCloseTo(heartbeatForStamina(0).gain);
+    expect((context.sources[1]!.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile).toBe(
+      HEARTBEAT_FILES.fast,
+    );
+
+    const secondBeatAt = context.sources[1]!.start.mock.calls[0]![0] as number;
+    context.currentTime = secondBeatAt + 60 / heartbeatForStamina(0).bpm - 0.01;
+    audio.updateHeartbeat(0);
+    await flush();
+    expect(context.sources).toHaveLength(2);
+    context.currentTime += 0.02;
+    audio.updateHeartbeat(0);
+    await flush();
+    expect(context.sources).toHaveLength(3);
+
+    context.currentTime += 1;
+    audio.updateHeartbeat(50);
+    await flush();
+    expect(context.sources).toHaveLength(4);
+    expect(sourceGain(context.sources[3]!)).toBeCloseTo(heartbeatForStamina(50).gain);
+    expect(context.sources.every(({ playbackRate }) => playbackRate.value === 1)).toBe(true);
+    expect(audio.heardSounds).toHaveLength(0);
+  });
+
+  it('previews a heartbeat recording at the requested gain through the body category', async () => {
+    const { audio, context, fetchBuffer } = setup();
+    expect(audio.previewHeartbeat(HEARTBEAT_FILES.slow, 0.37)).toBe(true);
+    await flush();
+
+    expect(fetchBuffer).toHaveBeenCalledTimes(1);
+    expect(fetchBuffer.mock.calls[0]![0]).toContain(HEARTBEAT_FILES.slow);
+    expect(context.sources).toHaveLength(1);
+    const source = context.sources[0]!;
+    const sourceGain = source.connect.mock.calls[0]![0] as ReturnType<typeof makeGain>;
+    const bodyCategory = context.gainNodes[2]!;
+    expect(sourceGain.gain.value).toBe(0.37);
+    expect(sourceGain.connect).toHaveBeenCalledWith(bodyCategory);
+    expect(source.playbackRate.value).toBe(1);
+    expect(audio.heardSounds).toHaveLength(0);
+  });
+
   it('starts every rapid shot, steals the oldest with a 10ms fade, and bounds even unended tails', async () => {
     const { audio, play, selected, context, fetchBuffer } = setup();
     for (let index = 0; index < 40; index++) {

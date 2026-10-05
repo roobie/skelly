@@ -1,5 +1,9 @@
 {
-  "skills": [{ "id": "crafting", "name": "Crafting" }, { "id": "mechanics", "name": "Mechanics" }],
+  "skills": [
+    { "id": "crafting", "name": "Crafting" },
+    { "id": "mechanics", "name": "Mechanics" },
+    { "id": "firearms", "name": "Firearms" }
+  ],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
@@ -13,39 +17,6 @@
         "time": 4,
         "skill": "crafting",
         "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
-      }
-    },
-    {
-      "id": "torch",
-      "name": "Torch",
-      "category": "light",
-      "weight": 350,
-      "size": [1, 4],
-      "description": "Rags and wax wrapped tightly around a stick.",
-      "disassembly": {
-        "time": 10,
-        "skill": "crafting",
-        "yields": [
-          { "item": "stick", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "rag", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "wax", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
-        ]
-      }
-    },
-    {
-      "id": "candle",
-      "name": "Candle",
-      "category": "light",
-      "weight": 150,
-      "size": [1, 1],
-      "description": "A wax candle with a rag wick.",
-      "disassembly": {
-        "time": 5,
-        "skill": "crafting",
-        "yields": [
-          { "item": "wax", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
-          { "item": "rag", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
-        ]
       }
     },
     {

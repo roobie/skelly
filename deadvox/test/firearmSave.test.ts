@@ -1,7 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
+import type { AimStep } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { pelletShot } from '../src/core/pellets.ts';
 import {
   decodeSave,
   encodeSave,
@@ -77,6 +79,39 @@ const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>)
     ...(restore ? { restore } : {}),
   });
 
+it('a codec save restores the immediate aim frame, recoil and next pellet rays', async () => {
+  const original = session([]);
+  const prior: AimStep = {
+    dt: 1 / 60,
+    velocity: [1.2, 0, -0.4],
+    blockSize: 0.5,
+    yaw: Math.PI - 0.02,
+    pitch: 0.1,
+    variance: 1,
+  };
+  original.aim.advance(prior);
+  original.aim.recordShot(129, 0.02);
+  const snapshot = original.snapshot({ worldId: 'world', characterId: 'character' });
+  const bytes = await encodeSave(snapshot, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup });
+  const resumed = session([], decoded.snapshot);
+  expect(resumed.aim.frame).toEqual(original.aim.frame);
+  const next: AimStep = { ...prior, yaw: -Math.PI + 0.03, pitch: 0.12 };
+  const originalFrame = original.aim.advance(next);
+  const resumedFrame = resumed.aim.advance(next);
+  expect(resumedFrame).toEqual(originalFrame);
+  const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+  expect(
+    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: resumedFrame, seed: 83, key: 'resume' }),
+  ).toEqual(
+    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: originalFrame, seed: 83, key: 'resume' }),
+  );
+});
+
 it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
   const originalEffects: FirearmShotEffect[] = [];
   const original = session(originalEffects);
@@ -99,6 +134,7 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
       eye: [0, PLAYER.eye / 0.5, 0],
       yaw: 0,
       pitch: 0,
+      aimFrame: { yaw: 0, pitch: 0 },
       blockSize: 0.5,
     }),
   ).toBe(true);
