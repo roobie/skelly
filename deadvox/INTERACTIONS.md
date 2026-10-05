@@ -352,7 +352,7 @@ values), known recipes and skill levels. Two consequences for 1.9:
    recovery rates; their authored values are placeholders, not balance claims.
    `src/core/longAction.ts`,
    `RestAction`, retains that furniture identity; `src/game/rest.ts`,
-   `RestController.resume`, refuses a resume if it is no longer reachable. BR ruled
+   `RestController.resume`, refuses a resume if it is no longer reachable. BR (d73-2) ruled
    that resting ignores movement and action input except cancellation, while sleep
    ignores movement and F/X and wakes only for existing reasons. The legacy L
    binding remains until d44 removes it; it can still stop sleep.
@@ -411,7 +411,7 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
    A held item must never become a fist or redirect to the other hand, and a
    restored physical fist sequence must not be reseeded from dominance.
-7. **Long-action start near a hostile (BR, d73):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". BR answered the speed question with "fast forward". A nearby hostile alone does not refuse or interrupt an action; emitted interrupt events still stop it.
+7. **Long-action start near a hostile (BR, d73):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". BR answered the d73-2 speed question with "fast forward". A nearby hostile alone does not refuse or interrupt an action; emitted interrupt events still stop it.
 8. **Handling gates primary actions (`d77-1`, 2026-10-05):** BR reported,
    "bug: while in the process of wielding something, you can attack". While handling
    is busy, primary actions from either hand are refused. Whether a one-handed job
