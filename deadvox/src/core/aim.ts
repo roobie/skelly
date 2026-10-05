@@ -6,6 +6,8 @@ export interface AimFrame {
   readonly pitch: number;
 }
 
+export const NEUTRAL_AIM: AimFrame = Object.freeze({ yaw: 0, pitch: 0 });
+
 export interface AimState {
   gaitPhase: number;
   lookYaw: number;
@@ -15,6 +17,7 @@ export interface AimState {
   lastYaw: number;
   lastPitch: number;
   hasLookSample: boolean;
+  frame: AimFrame;
 }
 
 /** One-step input is simulation data; velocity is in blocks per second. */
@@ -41,6 +44,22 @@ const MAX_OFFSET = 0.12;
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 const bounded = (value: number): number => Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, value));
 
+const boundedFrame = (yaw: number, pitch: number): AimFrame => {
+  const yawOffset = bounded(yaw);
+  const pitchOffset = bounded(pitch);
+  const magnitude = Math.hypot(yawOffset, pitchOffset);
+  const scale = magnitude > MAX_OFFSET ? MAX_OFFSET / magnitude : 1;
+  return Object.freeze({ yaw: yawOffset * scale, pitch: pitchOffset * scale });
+};
+
+const frameFromState = (state: AimState, speed: number, variance: number): AimFrame => {
+  const gait = Math.sin(state.gaitPhase);
+  const yawOffset = (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED + state.recoilYaw) * variance;
+  const pitchOffset =
+    (state.lookPitch + Math.cos(state.gaitPhase) * speed * MOVE_PITCH_PER_SPEED + state.recoilPitch) * variance;
+  return boundedFrame(yawOffset, pitchOffset);
+};
+
 export const initialAimState = (): AimState => ({
   gaitPhase: 0,
   lookYaw: 0,
@@ -50,6 +69,7 @@ export const initialAimState = (): AimState => ({
   lastYaw: 0,
   lastPitch: 0,
   hasLookSample: false,
+  frame: NEUTRAL_AIM,
 });
 
 export const assertAimState = (state: AimState): void => {
@@ -64,6 +84,8 @@ export const assertAimState = (state: AimState): void => {
         state.recoilPitch,
         state.lastYaw,
         state.lastPitch,
+        state.frame?.yaw,
+        state.frame?.pitch,
       ].every(Number.isFinite)
     ) ||
     typeof state.hasLookSample !== 'boolean' ||
@@ -71,7 +93,8 @@ export const assertAimState = (state: AimState): void => {
     Math.abs(state.lookYaw) > MAX_OFFSET * 8 ||
     Math.abs(state.lookPitch) > MAX_OFFSET * 8 ||
     Math.abs(state.recoilYaw) > MAX_OFFSET * 8 ||
-    Math.abs(state.recoilPitch) > MAX_OFFSET * 8
+    Math.abs(state.recoilPitch) > MAX_OFFSET * 8 ||
+    Math.hypot(state.frame.yaw, state.frame.pitch) > MAX_OFFSET + 1e-9
   ) {
     throw new Error('Invalid aim state');
   }
@@ -80,15 +103,20 @@ export const assertAimState = (state: AimState): void => {
 /** Mutable state owner; all time and input arrive on the fixed simulation step. */
 export class AimController {
   private readonly state: AimState;
-  private current: AimFrame = Object.freeze({ yaw: 0, pitch: 0 });
+  private variance: number;
 
-  constructor(state: AimState = initialAimState()) {
+  constructor(state: AimState = initialAimState(), variance = 1) {
     assertAimState(state);
+    if (!(Number.isFinite(variance) && variance > 0)) {
+      throw new Error('Invalid aim variance');
+    }
     this.state = structuredClone(state);
+    this.state.frame = Object.freeze({ ...this.state.frame });
+    this.variance = variance;
   }
 
   get frame(): AimFrame {
-    return this.current;
+    return this.state.frame;
   }
 
   snapshotState(): Readonly<AimState> {
@@ -112,6 +140,7 @@ export class AimController {
     }
     const { state } = this;
     const speed = Math.hypot(velocity[0], velocity[2]) * blockSize;
+    this.variance = variance;
     const phaseRate = TAU * (GAIT_BASE_HZ + speed * GAIT_SPEED_HZ);
     state.gaitPhase = (state.gaitPhase + dt * phaseRate) % TAU;
 
@@ -132,15 +161,8 @@ export class AimController {
     state.recoilYaw *= recoilDecay;
     state.recoilPitch *= recoilDecay;
 
-    const gait = Math.sin(state.gaitPhase);
-    const yawOffset = bounded((state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED + state.recoilYaw) * variance);
-    const pitchOffset = bounded(
-      (state.lookPitch + Math.cos(state.gaitPhase) * speed * MOVE_PITCH_PER_SPEED + state.recoilPitch) * variance,
-    );
-    const magnitude = Math.hypot(yawOffset, pitchOffset);
-    const scale = magnitude > MAX_OFFSET ? MAX_OFFSET / magnitude : 1;
-    this.current = Object.freeze({ yaw: yawOffset * scale, pitch: pitchOffset * scale });
-    return this.current;
+    state.frame = frameFromState(state, speed, variance);
+    return state.frame;
   }
 
   /** A committed shot kicks the next frame; its seed makes direction deterministic. */
@@ -149,17 +171,39 @@ export class AimController {
       throw new Error('Invalid aim recoil seed');
     }
     const sign = (seed & 1) === 0 ? -1 : 1;
-    this.state.recoilYaw = bounded(this.state.recoilYaw + sign * SHOT_KICK * (0.5 + ((seed >>> 1) & 0xff) / 510));
-    this.state.recoilPitch = bounded(this.state.recoilPitch + SHOT_KICK);
+    const previousYaw = this.state.recoilYaw;
+    const previousPitch = this.state.recoilPitch;
+    this.state.recoilYaw = bounded(previousYaw + sign * SHOT_KICK * (0.5 + ((seed >>> 1) & 0xff) / 510));
+    this.state.recoilPitch = bounded(previousPitch + SHOT_KICK);
+    this.state.frame = boundedFrame(
+      this.state.frame.yaw + (this.state.recoilYaw - previousYaw) * this.variance,
+      this.state.frame.pitch + (this.state.recoilPitch - previousPitch) * this.variance,
+    );
   }
 }
 
-export const aimDirection = (yaw: number, pitch: number, frame: AimFrame): Vec3 => {
-  const resolvedYaw = yaw + frame.yaw;
-  const resolvedPitch = pitch + frame.pitch;
-  return [
-    -Math.sin(resolvedYaw) * Math.cos(resolvedPitch),
-    Math.sin(resolvedPitch),
-    -Math.cos(resolvedYaw) * Math.cos(resolvedPitch),
-  ];
+export interface AimBasis {
+  readonly forward: Vec3;
+  readonly right: Vec3;
+  readonly up: Vec3;
+}
+
+const cameraLocalVector = (vector: Vec3, yaw: number, pitch: number, frame: AimFrame): Vec3 => {
+  const [x, y, z] = vector;
+  const aimY = Math.cos(frame.pitch) * y - Math.sin(frame.pitch) * z;
+  const aimZ = Math.sin(frame.pitch) * y + Math.cos(frame.pitch) * z;
+  const aimX = Math.cos(frame.yaw) * x + Math.sin(frame.yaw) * aimZ;
+  const rotatedAimZ = -Math.sin(frame.yaw) * x + Math.cos(frame.yaw) * aimZ;
+  const cameraY = Math.cos(pitch) * aimY - Math.sin(pitch) * rotatedAimZ;
+  const cameraZ = Math.sin(pitch) * aimY + Math.cos(pitch) * rotatedAimZ;
+  return [Math.cos(yaw) * aimX + Math.sin(yaw) * cameraZ, cameraY, -Math.sin(yaw) * aimX + Math.cos(yaw) * cameraZ];
 };
+
+export const aimDirection = (yaw: number, pitch: number, frame: AimFrame): Vec3 =>
+  cameraLocalVector([0, 0, -1], yaw, pitch, frame);
+
+export const aimBasis = (yaw: number, pitch: number, frame: AimFrame): AimBasis => ({
+  forward: aimDirection(yaw, pitch, frame),
+  right: cameraLocalVector([1, 0, 0], yaw, pitch, frame),
+  up: cameraLocalVector([0, 1, 0], yaw, pitch, frame),
+});

@@ -79,7 +79,7 @@ const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>)
     ...(restore ? { restore } : {}),
   });
 
-it('a codec save restores recoil and the next aim frame and pellet rays', async () => {
+it('a codec save restores the immediate aim frame, recoil and next pellet rays', async () => {
   const original = session([]);
   const prior: AimStep = {
     dt: 1 / 60,
@@ -99,6 +99,7 @@ it('a codec save restores recoil and the next aim frame and pellet rays', async 
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const resumed = session([], decoded.snapshot);
+  expect(resumed.aim.frame).toEqual(original.aim.frame);
   const next: AimStep = { ...prior, yaw: -Math.PI + 0.03, pitch: 0.12 };
   const originalFrame = original.aim.advance(next);
   const resumedFrame = resumed.aim.advance(next);

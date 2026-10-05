@@ -3,6 +3,7 @@
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
+import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
@@ -49,7 +50,6 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
-import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
 import { labelForCode } from './controls.ts';
@@ -849,7 +849,7 @@ export const startPlay = (
     quickbarInput.keyUp(e.code, e.timeStamp);
   });
 
-  const lookDir = (): Vec3 => aimDirection(input.pitch, input.yaw);
+  const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */

@@ -1,6 +1,6 @@
 import { Euler, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { AimController, aimDirection } from '../src/core/aim.ts';
+import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 
 const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) => ({
@@ -16,7 +16,7 @@ const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) 
 it('uses camera pitch and yaw without presentation roll at neutral sway', () => {
   const pitch = 0.35;
   const yaw = 1.1;
-  const aim = aimDirection(yaw, pitch, { yaw: 0, pitch: 0 });
+  const aim = aimDirection(yaw, pitch, NEUTRAL_AIM);
   const expected = new Vector3(0, 0, -1).applyEuler(new Euler(pitch, yaw, 0, 'YXZ'));
   expect(aim[0]).toBeCloseTo(expected.x, 12);
   expect(aim[1]).toBeCloseTo(expected.y, 12);
@@ -55,12 +55,38 @@ it('committed recoil recovers in simulation time and equal inputs stay determini
   expect(Math.hypot(recovered.yaw, recovered.pitch)).toBeLessThan(Math.hypot(initial.yaw, initial.pitch));
 });
 
-it('the shared aim frame resolves the same camera-local shot direction', () => {
+it('composes the camera-local aim basis like the held firearm at non-zero pitch', () => {
   const frame = { yaw: 0.08, pitch: -0.04 };
-  const aimed = aimDirection(0.3, 0.2, frame);
-  const neutral = aimDirection(0.3, 0.2, { yaw: 0, pitch: 0 });
-  expect(aimed).not.toEqual(neutral);
-  expect(Math.hypot(...aimed)).toBeCloseTo(1);
+  const yaw = 0.3;
+  const pitch = 0.6;
+  const basis = aimBasis(yaw, pitch, frame);
+  const camera = new Euler(pitch, yaw, 0, 'YXZ');
+  const aim = new Euler(frame.pitch, frame.yaw, 0, 'YXZ');
+  const compare = (actual: readonly number[], local: [number, number, number]) => {
+    const expected = new Vector3(...local).applyEuler(aim).applyEuler(camera);
+    expect(actual[0]).toBeCloseTo(expected.x, 6);
+    expect(actual[1]).toBeCloseTo(expected.y, 6);
+    expect(actual[2]).toBeCloseTo(expected.z, 6);
+  };
+  compare(aimDirection(yaw, pitch, frame), [0, 0, -1]);
+  compare(basis.right, [1, 0, 0]);
+  compare(basis.up, [0, 1, 0]);
+  expect(basis.right.reduce((sum, value, index) => sum + value * basis.up[index]!, 0)).toBeCloseTo(0, 6);
+  expect(basis.forward.reduce((sum, value, index) => sum + value * basis.up[index]!, 0)).toBeCloseTo(0, 6);
+});
+
+it('higher firearms skill reduces the same moving shot-recoil sway', () => {
+  const novice = new AimController();
+  const experienced = new AimController();
+  novice.recordShot(73);
+  experienced.recordShot(73);
+  const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(0).variance }));
+  const experiencedFrame = experienced.advance(
+    step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(12).variance }),
+  );
+  expect(Math.hypot(experiencedFrame.yaw, experiencedFrame.pitch)).toBeLessThan(
+    Math.hypot(noviceFrame.yaw, noviceFrame.pitch),
+  );
 });
 
 it('higher firearms skill reduces variance and committed handling durations', () => {

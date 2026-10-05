@@ -193,6 +193,8 @@ export interface RestoredLook {
   walk: boolean;
 }
 
+const firearmsSkillLevel = (character: Character): number => character.skills.firearms ?? 0;
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug, stairFlights = [] } = options;
   const s = scale.blockSize;
@@ -214,7 +216,7 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
-  const aim = new AimController(restored?.character.aim);
+  const aim = new AimController(restored?.character.aim, firearmsSkillEffects(firearmsSkillLevel(character)).variance);
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
@@ -339,7 +341,7 @@ export const createSession = (options: SessionOptions) => {
           }
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
-    firearmsSkillLevel: () => character.skills.firearms ?? 0,
+    firearmsSkillLevel: () => firearmsSkillLevel(character),
     onCommittedShot: (shotSeed) => aim.recordShot(shotSeed),
     onShot: (shot, time) => {
       zombieSystem.firePellets(shot);
@@ -391,7 +393,7 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
       yaw: controls.yaw(),
       pitch: controls.pitch(),
-      variance: firearmsSkillEffects(character.skills.firearms ?? 0).variance,
+      variance: firearmsSkillEffects(firearmsSkillLevel(character)).variance,
     });
   };
   const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {

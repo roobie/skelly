@@ -509,6 +509,7 @@ const aim = obj({
   lastYaw: finite,
   lastPitch: finite,
   hasLookSample: bool,
+  frame: obj({ yaw: finite, pitch: finite }),
 });
 const playerStateInventory = obj({
   ...inventoryCore.fields,
