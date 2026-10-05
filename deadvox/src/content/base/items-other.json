@@ -44,6 +44,18 @@
       "stack": 6
     },
     {
+      "id": "wooden_plank",
+      "name": "Wooden plank",
+      "category": "material",
+      "weight": 500,
+      "size": [2, 4],
+      "disassembly": {
+        "time": 4,
+        "skill": "crafting",
+        "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
+      }
+    },
+    {
       "id": "duct_tape",
       "name": "Duct tape",
       "category": "material",

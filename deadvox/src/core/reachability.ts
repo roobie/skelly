@@ -1,13 +1,13 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
 import { startingKnownRecipes } from './character.ts';
-import type { RecipeDef, Registry } from './content.ts';
+import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 
 /** Deferred source contracts. Their owning milestones must promote these to hard checks. */
-export const PENDING_REACHABILITY = { skill: '2.5', workstation: '2.8' } as const;
+export const PENDING_REACHABILITY = { skill: '2.5' } as const;
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
 export const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
@@ -59,8 +59,27 @@ const addLoot = (registry: Registry, roots: ReadonlySet<string>): Set<string> =>
 const inputsReady = (recipe: RecipeDef, items: ReadonlySet<string>): boolean =>
   recipe.components.every((group) => group.some((component) => items.has(component.item)));
 
-const qualityReady = (registry: Registry, items: ReadonlySet<string>, quality: string, level: number): boolean =>
+interface QualitySources {
+  registry: Registry;
+  items: ReadonlySet<string>;
+  workstationQualities: ReadonlyMap<string, number>;
+}
+
+const qualityReady = (
+  { registry, items, workstationQualities }: QualitySources,
+  quality: string,
+  level: number,
+): boolean =>
+  (workstationQualities.get(quality) ?? 0) >= level ||
   [...items].some((id) => (registry.items.get(id)?.tool?.qualities[quality] ?? 0) >= level);
+
+interface ClosureInput {
+  registry: Registry;
+  found: ReadonlySet<string>;
+  tools: boolean;
+  knowledge: ReadonlySet<string>;
+  workstationQualities: ReadonlyMap<string, number>;
+}
 
 const addDisassemblyOutputs = (registry: Registry, items: Set<string>) => {
   for (const id of items) {
@@ -79,12 +98,7 @@ const addDisassemblyOutputs = (registry: Registry, items: Set<string>) => {
 };
 
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
-const closure = (
-  registry: Registry,
-  found: ReadonlySet<string>,
-  tools: boolean,
-  knowledge: ReadonlySet<string>,
-): Set<string> => {
+const closure = ({ registry, found, tools, knowledge, workstationQualities }: ClosureInput): Set<string> => {
   const items = new Set(found);
   let previous: number;
   do {
@@ -96,7 +110,9 @@ const closure = (
         knowledge.has(recipe.id) &&
         inputsReady(recipe, items) &&
         (!tools ||
-          Object.entries(recipe.qualities).every(([quality, level]) => qualityReady(registry, items, quality, level)))
+          Object.entries(recipe.qualities).every(([quality, level]) =>
+            qualityReady({ registry, items, workstationQualities }, quality, level),
+          ))
       ) {
         items.add(recipe.result.item);
       }
@@ -105,9 +121,24 @@ const closure = (
   return items;
 };
 
+const addWorkstationSource = (
+  workstation: FurnitureDef['workstation'],
+  workstations: Set<string>,
+  workstationQualities: Map<string, number>,
+): void => {
+  if (!workstation) {
+    return;
+  }
+  workstations.add(workstation.id);
+  for (const [quality, level] of Object.entries(workstation.qualities)) {
+    workstationQualities.set(quality, Math.max(workstationQualities.get(quality) ?? 0, level));
+  }
+};
+
 const worldSources = (registry: Registry) => {
   const roots = new Set<string>();
   const workstations = new Set<string>();
+  const workstationQualities = new Map<string, number>();
   const markers = new Map<string, readonly SpawnMarker[]>();
   // Compiling uses the actual marked pieces/spawns, not unused palette declarations.
   for (const id of HAMLET_TEMPLATES) {
@@ -120,10 +151,7 @@ const worldSources = (registry: Registry) => {
       if (piece.loot !== undefined) {
         roots.add(piece.loot);
       }
-      const workstation = registry.furniture.get(piece.furniture)?.workstation;
-      if (workstation) {
-        workstations.add(workstation.id);
-      }
+      addWorkstationSource(registry.furniture.get(piece.furniture)?.workstation, workstations, workstationQualities);
     }
     markers.set(id, template.spawns);
   }
@@ -133,22 +161,21 @@ const worldSources = (registry: Registry) => {
       roots.add(loot);
     }
   }
-  return { found: addLoot(registry, roots), workstations };
+  return { found: addLoot(registry, roots), workstations, workstationQualities };
 };
 
 type Pending = RecipeDiagnostic & { kind: keyof typeof PENDING_REACHABILITY };
-const pendingFor = (recipe: RecipeDef, workstations: ReadonlySet<string>): Pending[] => {
+const pendingFor = (recipe: RecipeDef): Pending[] => {
   const pending: Pending[] = [];
-  const defer = (kind: keyof typeof PENDING_REACHABILITY, path: string) => {
-    pending.push({ recipe: recipe.id, path, kind, message: `pending: no source yet (${PENDING_REACHABILITY[kind]})` });
-  };
   for (const [skill, level] of Object.entries(recipe.skills)) {
     if (level > 0) {
-      defer('skill', `.skills.${skill}`);
+      pending.push({
+        recipe: recipe.id,
+        path: `.skills.${skill}`,
+        kind: 'skill',
+        message: `pending: no source yet (${PENDING_REACHABILITY.skill})`,
+      });
     }
-  }
-  if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
-    defer('workstation', '.workstation');
   }
   return pending;
 };
@@ -157,7 +184,15 @@ const recipeDiagnostics = (
   registry: Registry,
   components: ReadonlySet<string>,
   toolReachable: ReadonlySet<string>,
-  { workstations, knowledge }: { workstations: ReadonlySet<string>; knowledge: ReadonlySet<string> },
+  {
+    workstations,
+    workstationQualities,
+    knowledge,
+  }: {
+    workstations: ReadonlySet<string>;
+    workstationQualities: ReadonlyMap<string, number>;
+    knowledge: ReadonlySet<string>;
+  },
 ) => {
   const issues: RecipeDiagnostic[] = [];
   const pending: Pending[] = [];
@@ -181,15 +216,22 @@ const recipeDiagnostics = (
       });
     });
     for (const [quality, level] of Object.entries(recipe.qualities)) {
-      if (!qualityReady(registry, toolReachable, quality, level)) {
+      if (!qualityReady({ registry, items: toolReachable, workstationQualities }, quality, level)) {
         issues.push({
           recipe: recipe.id,
           path: `.qualities.${quality}`,
-          message: `no reachable tool provides "${quality}" level ${level} without bootstrapping its own requirements`,
+          message: `no reachable tool or placed workstation provides "${quality}" level ${level} without bootstrapping its own requirements`,
         });
       }
     }
-    pending.push(...pendingFor(recipe, workstations));
+    if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
+      issues.push({
+        recipe: recipe.id,
+        path: '.workstation',
+        message: `workstation "${recipe.workstation}" is not placed in the hamlet`,
+      });
+    }
+    pending.push(...pendingFor(recipe));
   }
   return { issues, pending };
 };
@@ -198,11 +240,12 @@ export const checkReachability = (
   registry: Registry,
   known: ReadonlySet<string> = new Set(startingKnownRecipes(registry)),
 ) => {
-  const { found, workstations } = worldSources(registry);
-  const components = closure(registry, found, false, known);
-  const toolReachable = closure(registry, found, true, known);
+  const { found, workstations, workstationQualities } = worldSources(registry);
+  const components = closure({ registry, found, tools: false, knowledge: known, workstationQualities });
+  const toolReachable = closure({ registry, found, tools: true, knowledge: known, workstationQualities });
   const { issues, pending } = recipeDiagnostics(registry, components, toolReachable, {
     workstations,
+    workstationQualities,
     knowledge: known,
   });
   const eligible = [...registry.items.keys()].filter((id) => !CONTENT_COUNT_EXCLUSIONS.has(id));

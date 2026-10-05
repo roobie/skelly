@@ -1,7 +1,7 @@
 ---
 read_if:
-  - you're changing content validation, schema, or registry merging
-  - you're changing reachability or disassembly-output contracts
+  - you change content schemas, validation, registry merging, or recipe/workstation data
+  - you change content references, static reachability, or disassembly-output contracts
 ---
 
 # Content sections and recipes
@@ -28,12 +28,14 @@ Skill requirements are nonnegative whole levels; quality requirements are levels
 uses exact integer multiplication and reports the count when refusing a file.
 
 - `skills` definitions contain only an id and name; character state is 2.5.
-- Quality IDs are keys declared by loaded items' `tool.qualities`, including mod
-  keys, not a new top-level section. A missing declaration is an error. Whether
-  a reachable item supplies it is the separate 2.3 acceptance check.
-- Workstation IDs are minimal `workstation: { id }` metadata on furniture. Plain
-  furniture IDs are not workstation IDs. Qualities/speed/reach behavior and the
-  placed workbench come in 2.8; there is no workstation registry or runtime here.
+- Quality IDs are keys declared by loaded items' `tool.qualities` (including
+  mod keys) or furniture `workstation.qualities`, not a new top-level section.
+  A missing declaration is an error. Whether a reachable item or placed
+  workstation supplies the quality is the separate 2.3 acceptance check.
+- Furniture workstation metadata owns its station ID, qualities, and work-time
+  bonus. Plain furniture IDs are not workstation IDs. `reach()` in
+  `src/core/reach.ts` exposes nearby stations, and `planCraft()` in
+  `src/core/crafting.ts` uses their qualities and bonus for a named station.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
@@ -76,16 +78,18 @@ Knowledge is now a hard source check: both closures use the same explicit
 starting recipes as a new character. An unknown recipe fails at `.knowledge`,
 and its result cannot ground another recipe's components or tool quality.
 Teaching books extend this source in 2.5; declaration alone is not knowledge.
-Positive skill requirements and named-but-unplaced workstations still emit
-`pending: no source yet` with their owning milestone and pending count. They
-**are not accepted**, but do not fail CI yet. Level 0 needs no progression source.
-Placed workstation declarations are discoverable; bench behavior stays 2.8.
-`PENDING_REACHABILITY` pins only the remaining 2.5/2.8 hand-offs.
+Positive skill requirements still emit `pending: no source yet` for their
+owning milestone; level zero needs no progression source. A recipe naming a
+workstation now requires that station to occur in a placed hamlet template, and
+placed station qualities can ground recipe tool-quality requirements. The
+workstation hand-off is owned by `checkReachability()` in
+`src/core/reachability.ts`; only the remaining skill hand-off stays pending.
 
-Run `npm run validate` for the current closure report and content issues; do not
-copy its counts or content lists into this document. `CONTENT_COUNT_EXCLUSIONS`
-in `src/core/reachability.ts` owns the policy for definitions excluded from
-acquired-content counts. Reachability issues use the winning recipe's existing
-merge origin, preserving source file and index through ordered overrides/removal.
-Reachability stores no closure/state; runtime progression and crafting are separate
-owners.
+`npm run validate` checks the effective pack and reports reachability and content
+issues; do not copy its counts or content lists into this document.
+`CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` owns which definitions
+count as acquired content. `work_in_progress` is runtime escrow, not acquired loot
+or a recipe result. Reachability issues use the winning recipe's merge origin,
+preserving source file and index through ordered overrides/removal. Reachability
+stores no closure or runtime state; progression, crafting, and disassembly remain
+separate owners.

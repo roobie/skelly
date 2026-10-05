@@ -42,6 +42,7 @@ const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
 const Positive = pipe(number(), minValue(Number.MIN_VALUE, 'must be more than 0'));
 const Count = pipe(number(), integer('must be a whole number'), minValue(0, 'must be 0 or more'));
 const Fraction = pipe(number(), minValue(0, 'must be 0 to 1'), maxValue(1, 'must be 0 to 1'));
+const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 
 /** An inclusive [min, max] range. */
 const range = <S extends typeof Count | typeof Fraction>(item: S) =>
@@ -149,7 +150,7 @@ const FoodSchema = strictObject({
 
 const ToolSchema = strictObject({
   /** Quality levels, such as { "prying": 2 }. */
-  qualities: record(Id, pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5))),
+  qualities: record(Id, QualityLevel),
 });
 
 const WeaponSchema = strictObject({
@@ -423,8 +424,14 @@ export const FurnitureSchema = strictObject({
   door: optional(strictObject({ handling: NonNegative })),
   /** You can sleep on it; 1 is a good bed. */
   bed: optional(strictObject({ quality: Fraction })),
-  /** Declared workstation id only; qualities, speed and runtime behavior come in Slice 2.8. */
-  workstation: optional(strictObject({ id: Id })),
+  /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
+  workstation: optional(
+    strictObject({
+      id: Id,
+      qualities: record(Id, QualityLevel),
+      workTimeBonus: Fraction,
+    }),
+  ),
 });
 
 // ---- loot tables ----

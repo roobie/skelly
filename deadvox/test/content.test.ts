@@ -305,7 +305,20 @@ describe('content references', () => {
     ],
     skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
     furniture: [
-      { id: 'fixture_bench', name: 'Bench', size: [1, 1, 1], color: '#ffffff', workstation: { id: 'fixture_station' } },
+      {
+        id: 'fixture_bench',
+        name: 'Bench',
+        size: [1, 1, 1],
+        color: '#ffffff',
+        workstation: {
+          id: 'fixture_station',
+          qualities: Object.fromEntries([
+            ['custom_shaping', 2],
+            ['fixture_sawing', 1],
+          ]),
+          workTimeBonus: 0.2,
+        },
+      },
       { id: 'fixture_plain_bench', name: 'Ordinary bench', size: [1, 1, 1], color: '#ffffff' },
     ],
     recipes: [
@@ -314,7 +327,10 @@ describe('content references', () => {
         result: { item: 'fixture_tool', count: 1 },
         time: 2,
         skills: Object.fromEntries([['fixture_skill', 0]]),
-        qualities: Object.fromEntries([['custom_shaping', 1]]),
+        qualities: Object.fromEntries([
+          ['custom_shaping', 1],
+          ['fixture_sawing', 1],
+        ]),
         workstation: 'fixture_station',
         components: Array.from({ length: 10 }, () => [
           { item: 'rag', count: 1 },

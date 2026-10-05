@@ -463,7 +463,10 @@ const checkRecipe = ({
 };
 
 const checkRecipes = (registry: Registry, report: Report) => {
-  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
+  const qualities = new Set([
+    ...[...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})),
+    ...[...registry.furniture.values()].flatMap((furniture) => Object.keys(furniture.workstation?.qualities ?? {})),
+  ]);
   const workstations = new Set(
     [...registry.furniture.values()].flatMap((furniture) => (furniture.workstation ? [furniture.workstation.id] : [])),
   );
