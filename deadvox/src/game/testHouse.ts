@@ -9,7 +9,7 @@
 // kitchen cupboard, a fridge and a wardrobe) stands in and around it for comparing objects with structure.
 
 import type { EntitySpec } from '../core/blockEntities.ts';
-import type { Registry, RecipeDef } from '../core/content.ts';
+import type { RecipeDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { MetreBox } from '../core/structure.ts';
@@ -161,25 +161,21 @@ export const testHouseFurniture = (
 /** #231 can provide book item IDs here once content records which recipes each book teaches. */
 export type RepairBookHook = (registry: Registry, recipes: readonly RecipeDef[]) => readonly string[];
 
-/** Populate only the debug test-house scenario with content-derived repair stock. */
-export const populateTestHouseRepairCorner = (
-  inventory: Inventory,
-  registry: Registry,
-  site: string,
-  spawn: Vec3,
-  blockSize: number,
-  repairBooks: RepairBookHook = () => [],
-): void => {
-  if (site !== 'testHouse') {
-    return;
-  }
-  const recipes = [...registry.recipes.values()]
-    .filter((recipe) => recipe.kind === 'repair')
-    .sort((a, b) => a.id.localeCompare(b.id));
-  if (recipes.length === 0) {
-    return;
-  }
+interface TestHouseRepairCornerOptions {
+  inventory: Inventory;
+  registry: Registry;
+  site: string;
+  spawn: Vec3;
+  blockSize: number;
+  repairBooks?: RepairBookHook;
+}
 
+interface RepairCornerStock {
+  components: Map<string, number>;
+  qualities: Map<string, number>;
+}
+
+const repairCornerStock = (registry: Registry, recipes: readonly RecipeDef[]): RepairCornerStock => {
   const components = new Map<string, number>();
   const qualities = new Map<string, number>();
   for (const recipe of recipes) {
@@ -194,7 +190,15 @@ export const populateTestHouseRepairCorner = (
       qualities.set(quality, Math.max(qualities.get(quality) ?? 0, level));
     }
   }
+  return { components, qualities };
+};
 
+const repairCornerToolTypes = (
+  registry: Registry,
+  recipes: readonly RecipeDef[],
+  qualities: ReadonlyMap<string, number>,
+  repairBooks: RepairBookHook,
+): Set<string> => {
   const itemsById = [...registry.items.values()].sort((a, b) => a.id.localeCompare(b.id));
   const tools = new Set<string>();
   for (const [quality, level] of [...qualities].sort(([a], [b]) => a.localeCompare(b))) {
@@ -210,13 +214,12 @@ export const populateTestHouseRepairCorner = (
     }
     tools.add(book);
   }
+  return tools;
+};
 
-  const houseOrigin: Vec3 = [
-    spawn[0] - SPAWN_OFFSET[0],
-    spawn[1] - SPAWN_OFFSET[1],
-    spawn[2] - SPAWN_OFFSET[2],
-  ];
-  const pilePositions: Vec3[] = [1, 1 + blockSize, 1 + 2 * blockSize].flatMap((x) =>
+const repairCornerPilePositions = (spawn: Vec3, blockSize: number): Vec3[] => {
+  const houseOrigin: Vec3 = [spawn[0] - SPAWN_OFFSET[0], spawn[1] - SPAWN_OFFSET[1], spawn[2] - SPAWN_OFFSET[2]];
+  return [1, 1 + blockSize, 1 + 2 * blockSize].flatMap((x) =>
     [3, 3 + blockSize, 3 + 2 * blockSize].map(
       (z): Vec3 => [
         Math.round((houseOrigin[0] + x) / blockSize),
@@ -225,27 +228,83 @@ export const populateTestHouseRepairCorner = (
       ],
     ),
   );
-  const place = (type: string, count: number, condition: number, pileIndexes: readonly number[]): void => {
-    const stackSize = registry.items.get(type)?.stack ?? 1;
-    let remaining = count;
-    while (remaining > 0) {
-      const item = inventory.create(type, Math.min(remaining, stackSize), condition);
-      const added = pileIndexes.some((index) => inventory.add(item, { kind: 'pile', pos: pilePositions[index]! }));
-      if (!added) {
-        throw new Error(`No room for ${type} in the test-house repair corner`);
-      }
-      remaining -= item.count;
-    }
-  };
+};
 
+const placeRepairCornerItem = ({
+  inventory,
+  registry,
+  pilePositions,
+  type,
+  count,
+  condition,
+  pileIndexes,
+}: {
+  inventory: Inventory;
+  registry: Registry;
+  pilePositions: readonly Vec3[];
+  type: string;
+  count: number;
+  condition: number;
+  pileIndexes: readonly number[];
+}): void => {
+  const stackSize = registry.items.get(type)?.stack ?? 1;
+  let remaining = count;
+  while (remaining > 0) {
+    const item = inventory.create(type, Math.min(remaining, stackSize), condition);
+    const added = pileIndexes.some((index) => inventory.add(item, { kind: 'pile', pos: pilePositions[index]! }));
+    if (!added) {
+      throw new Error(`No room for ${type} in the test-house repair corner`);
+    }
+    remaining -= item.count;
+  }
+};
+
+/** Populate only the debug test-house scenario with content-derived repair stock. */
+export const populateTestHouseRepairCorner = ({
+  inventory,
+  registry,
+  site,
+  spawn,
+  blockSize,
+  repairBooks = () => [],
+}: TestHouseRepairCornerOptions): void => {
+  if (site !== 'testHouse') {
+    return;
+  }
+  const recipes = [...registry.recipes.values()]
+    .filter((recipe) => recipe.kind === 'repair')
+    .sort((a, b) => a.id.localeCompare(b.id));
+  if (recipes.length === 0) {
+    return;
+  }
+
+  const stock = repairCornerStock(registry, recipes);
+  const tools = repairCornerToolTypes(registry, recipes, stock.qualities, repairBooks);
+  const pilePositions = repairCornerPilePositions(spawn, blockSize);
   recipes.forEach((recipe, index) => {
     const condition = 0.25 + (0.5 * (index + 1)) / (recipes.length + 1);
-    place(recipe.result.item, 1, condition, [0, 1]);
+    placeRepairCornerItem({
+      inventory,
+      registry,
+      pilePositions,
+      type: recipe.result.item,
+      count: 1,
+      condition,
+      pileIndexes: [0, 1],
+    });
   });
   for (const type of [...tools].sort()) {
-    place(type, 1, 1, [0, 1]);
+    placeRepairCornerItem({ inventory, registry, pilePositions, type, count: 1, condition: 1, pileIndexes: [0, 1] });
   }
-  for (const [type, count] of [...components].sort(([a], [b]) => a.localeCompare(b))) {
-    place(type, count, 1, [2, 3, 4, 5, 6, 7, 8]);
+  for (const [type, count] of [...stock.components].sort(([a], [b]) => a.localeCompare(b))) {
+    placeRepairCornerItem({
+      inventory,
+      registry,
+      pilePositions,
+      type,
+      count,
+      condition: 1,
+      pileIndexes: [2, 3, 4, 5, 6, 7, 8],
+    });
   }
 };

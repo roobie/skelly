@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry, type RecipeDef, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { Inventory } from '../src/core/inventory.ts';
 import { planCraft } from '../src/core/crafting.ts';
+import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { populateTestHouseRepairCorner } from '../src/game/testHouse.ts';
@@ -48,7 +48,103 @@ const scenarioRegistry: Registry = {
 const repairRecipes = [...scenarioRegistry.recipes.values()].filter((recipe) => recipe.kind === 'repair');
 
 const addRepairCorner = (inventory: Inventory, site: string): void => {
-  populateTestHouseRepairCorner(inventory, scenarioRegistry, site, [-4, 0, -0.5], 0.5);
+  populateTestHouseRepairCorner({
+    inventory,
+    registry: scenarioRegistry,
+    site,
+    spawn: [-4, 0, -0.5],
+    blockSize: 0.5,
+  });
+};
+
+interface PileItem {
+  item: { uid: number; type: string; count: number; condition: number };
+}
+
+interface RepairPlanCheck {
+  recipe: string;
+  targetCount: number;
+  expectedTargets: number;
+  components: { type: string; available: number; required: number }[];
+  qualities: { quality: string; provided: boolean }[];
+}
+
+const cornerPosition = (inventory: Inventory): Vec3 => {
+  const positions = [...inventory.piles.values()].map(({ pos }) => pos);
+  return [
+    positions.reduce((sum, pos) => sum + pos[0] + 0.5, 0) / positions.length,
+    positions[0]![1],
+    positions.reduce((sum, pos) => sum + pos[2] + 0.5, 0) / positions.length,
+  ];
+};
+
+const repairCharacter = (): Character => {
+  const character = new Character(scenarioRegistry);
+  for (const recipe of repairRecipes) {
+    character.knownRecipes.add(recipe.id);
+    for (const [skill, required] of Object.entries(recipe.skills)) {
+      character.skills[skill] = Math.max(character.skills[skill] ?? 0, required);
+    }
+  }
+  return character;
+};
+
+const targetUidsFor = (piles: readonly PileItem[]): Set<number> => {
+  const targetTypes = new Set(repairRecipes.map((recipe) => recipe.result.item));
+  return new Set(
+    piles.filter(({ item }) => targetTypes.has(item.type) && item.condition < 1).map(({ item }) => item.uid),
+  );
+};
+
+const repairPlanCheck = ({
+  recipe,
+  piles,
+  reach,
+  character,
+  targetUids,
+}: {
+  recipe: RecipeDef;
+  piles: readonly PileItem[];
+  reach: ReturnType<typeof bindReach>;
+  character: Character;
+  targetUids: ReadonlySet<number>;
+}): RepairPlanCheck => {
+  const targets = piles.filter(
+    ({ item }) => item.type === recipe.result.item && item.count === 1 && item.condition > 0 && item.condition < 1,
+  );
+  const result = planCraft(recipe, reach(), character);
+  if (!('plan' in result)) {
+    throw new Error(`${recipe.id}: ${result.missing.reason}`);
+  }
+  const required = new Map<string, number>();
+  for (const { item, count } of result.plan.components) {
+    required.set(item.type, (required.get(item.type) ?? 0) + count * 2);
+  }
+  const toolUids = new Set(result.plan.tools.map(({ item }) => item.uid));
+  const available = new Map<string, number>();
+  for (const { item } of piles) {
+    if (toolUids.has(item.uid) || targetUids.has(item.uid)) {
+      continue;
+    }
+    available.set(item.type, (available.get(item.type) ?? 0) + item.count);
+  }
+  return {
+    recipe: recipe.id,
+    targetCount: targets.length,
+    expectedTargets: repairRecipes.filter((candidate) => candidate.result.item === recipe.result.item).length,
+    components: [...required].map(([type, requiredCount]) => ({
+      type,
+      required: requiredCount,
+      available: available.get(type) ?? 0,
+    })),
+    qualities: Object.entries(recipe.qualities).map(([quality, level]) => ({
+      quality,
+      provided: result.plan.tools.some(
+        ({ item, quality: plannedQuality }) =>
+          plannedQuality === quality && (scenarioRegistry.items.get(item.type)?.tool?.qualities[quality] ?? 0) >= level,
+      ),
+    })),
+  };
 };
 
 describe('test-house repair corner', () => {
@@ -56,61 +152,20 @@ describe('test-house repair corner', () => {
     const inventory = new Inventory(scenarioRegistry);
     addRepairCorner(inventory, 'testHouse');
     const piles = [...inventory.items()].filter(({ location }) => location.kind === 'pile');
-    const positions = [...inventory.piles.values()].map(({ pos }) => pos);
-    const position: Vec3 = [
-      positions.reduce((sum, pos) => sum + pos[0] + 0.5, 0) / positions.length,
-      positions[0]![1],
-      positions.reduce((sum, pos) => sum + pos[2] + 0.5, 0) / positions.length,
-    ];
-    const reach = bindReach({ inventory, position, blockSize: 0.5 });
-    const character = new Character(scenarioRegistry);
-    for (const recipe of repairRecipes) {
-      character.knownRecipes.add(recipe.id);
-      for (const [skill, required] of Object.entries(recipe.skills)) {
-        character.skills[skill] = Math.max(character.skills[skill] ?? 0, required);
-      }
-    }
+    const targetUids = targetUidsFor(piles);
+    const reach = bindReach({ inventory, position: cornerPosition(inventory), blockSize: 0.5 });
+    const character = repairCharacter();
+    const checks = repairRecipes.map((recipe) => repairPlanCheck({ recipe, piles, reach, character, targetUids }));
 
-    for (const recipe of repairRecipes) {
-      const targets = piles.filter(
-        ({ item }) =>
-          item.type === recipe.result.item && item.count === 1 && item.condition > 0 && item.condition < 1,
-      );
-      expect(targets).toHaveLength(repairRecipes.filter((candidate) => candidate.result.item === recipe.result.item).length);
-
-      const planned = planCraft(recipe, reach(), character);
-      if (!('plan' in planned)) {
-        throw new Error(`${recipe.id}: ${planned.missing.reason}`);
+    for (const check of checks) {
+      expect(check.targetCount, `${check.recipe} targets`).toBe(check.expectedTargets);
+      for (const component of check.components) {
+        expect(component.available, `${check.recipe} component ${component.type}`).toBeGreaterThanOrEqual(
+          component.required,
+        );
       }
-      const requiredComponents = new Map<string, number>();
-      for (const { item, count } of planned.plan.components) {
-        requiredComponents.set(item.type, (requiredComponents.get(item.type) ?? 0) + count * 2);
-      }
-      const toolUids = new Set(planned.plan.tools.map(({ item }) => item.uid));
-      const targetTypes = new Set(repairRecipes.map((candidate) => candidate.result.item));
-      const targetUids = new Set(
-        piles
-          .filter(({ item }) => targetTypes.has(item.type) && item.condition < 1)
-          .map(({ item }) => item.uid),
-      );
-      const available = new Map<string, number>();
-      for (const { item } of piles) {
-        if (toolUids.has(item.uid) || targetUids.has(item.uid)) {
-          continue;
-        }
-        available.set(item.type, (available.get(item.type) ?? 0) + item.count);
-      }
-      for (const [type, count] of requiredComponents) {
-        expect(available.get(type) ?? 0, `${recipe.id} component ${type}`).toBeGreaterThanOrEqual(count);
-      }
-      for (const [quality, level] of Object.entries(recipe.qualities)) {
-        expect(
-          planned.plan.tools.some(
-            ({ item, quality: plannedQuality }) =>
-              plannedQuality === quality && (scenarioRegistry.items.get(item.type)?.tool?.qualities[quality] ?? 0) >= level,
-          ),
-          `${recipe.id} quality ${quality}`,
-        ).toBe(true);
+      for (const quality of check.qualities) {
+        expect(quality.provided, `${check.recipe} quality ${quality.quality}`).toBe(true);
       }
     }
   });
