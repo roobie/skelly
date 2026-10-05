@@ -124,9 +124,13 @@ Text on screen falls into four classes, and only three of them ship:
    elements / this cannot hold for exactly 100% of the time / but it does mean /
    if the checkbox for messages/hints is off ,then no messages or hints should
    come from a syntheitic UI element / but the 'nope' sound shall play regardless
-   of UI hints being on or off". Class-3 text appears only when the `messages`
-   HUD option is on. With it off, a refusal's cue will be the avatar's nope
-   sound; d74 adds that sound.
+   of UI hints being on or off". In the world prompt (see
+   `src/ui/playHud.ts`, `playPromptText`), class-3 text appears only when the
+   `messages` HUD option is on. The rest card (`src/ui/rest.ts`, `restViewModel`)
+   and the craft status box (`src/ui/crafting.ts`, `renderCraftStatus`) still show
+   an interruption's reason with it off, until d75 brings them under BR's ruling.
+   With it off, a refusal's cue will be the avatar's nope sound; d74 adds that
+   sound.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
    ("press R", "open the inventory", "C: continue"). **Development only.**
 
