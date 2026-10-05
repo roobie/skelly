@@ -1,14 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { firearmShotSound, HEARTBEAT_QUIET_FLOOR, heartbeatForStamina } from '../src/game/audioPresentation.ts';
+import { firearmShotSound, HEARTBEAT_TUNING, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 
 describe('heartbeat audio presentation', () => {
-  it('gets no slower or quieter as stamina falls and is quiet at full stamina', () => {
-    const samples = [0, 20, 40, 60, 80, 100].map(heartbeatForStamina);
+  it('is silent above the ruled start and meets the ruled rate endpoints', () => {
+    expect(heartbeatForStamina(100).gain).toBe(0);
+    expect(heartbeatForStamina(86).gain).toBe(0);
+    expect(heartbeatForStamina(85).bpm).toBe(60);
+    expect(heartbeatForStamina(0).bpm).toBe(180);
+    expect(heartbeatForStamina(85).gain).toBeGreaterThan(0);
+  });
+
+  it('raises rate and loudness monotonically from the start to exhaustion', () => {
+    const samples = [85, 60, 30, 0].map(heartbeatForStamina);
     for (let index = 1; index < samples.length; index++) {
-      expect(samples[index - 1]!.bpm).toBeGreaterThanOrEqual(samples[index]!.bpm);
-      expect(samples[index - 1]!.gain).toBeGreaterThanOrEqual(samples[index]!.gain);
+      expect(samples[index]!.bpm).toBeGreaterThanOrEqual(samples[index - 1]!.bpm);
+      expect(samples[index]!.gain).toBeGreaterThanOrEqual(samples[index - 1]!.gain);
     }
-    expect(heartbeatForStamina(100).gain).toBeLessThan(HEARTBEAT_QUIET_FLOOR);
+    expect(samples.at(-1)!.gain).toBeGreaterThan(samples[0]!.gain);
+    expect(HEARTBEAT_TUNING.startStamina).toBe(85);
   });
 });
 

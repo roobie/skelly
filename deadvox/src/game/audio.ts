@@ -6,7 +6,6 @@ import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import {
   HEARTBEAT_FILES,
-  HEARTBEAT_QUIET_FLOOR,
   type HeartbeatTarget,
   heartbeatForStamina,
 } from './audioPresentation.ts';
@@ -333,7 +332,7 @@ export class GameAudio {
     this.heartbeatTarget = heartbeatForStamina(stamina);
     const { context, nodes } = this;
     if (
-      this.heartbeatTarget.gain < HEARTBEAT_QUIET_FLOOR ||
+      this.heartbeatTarget.gain === 0 ||
       this.heartbeatUnavailable ||
       this.heartbeatLoading ||
       !context ||
@@ -363,30 +362,25 @@ export class GameAudio {
         return;
       }
       const target = this.heartbeatTarget;
-      if (target.gain < HEARTBEAT_QUIET_FLOOR) {
+      if (target.gain === 0) {
         return;
       }
+      const interval = 60 / target.bpm;
       const when = context.currentTime + 0.025;
       const body = nodes.categories.get('body')!;
-      this.startHeartbeatTimbre({
+      // Use the recording that fits one scheduled beat; the law controls tempo, not pitch.
+      this.startHeartbeat({
         context,
         body,
-        buffer: slow,
-        gainValue: target.gain * (1 - target.fastMix),
+        buffer: slow.duration <= interval ? slow : fast,
+        gainValue: target.gain,
         when,
       });
-      this.startHeartbeatTimbre({
-        context,
-        body,
-        buffer: fast,
-        gainValue: target.gain * target.fastMix,
-        when,
-      });
-      this.heartbeatNextAt = when + 60 / target.bpm;
+      this.heartbeatNextAt = when + interval;
     });
   }
 
-  private startHeartbeatTimbre({
+  private startHeartbeat({
     context,
     body,
     buffer,
@@ -399,7 +393,7 @@ export class GameAudio {
     gainValue: number;
     when: number;
   }): void {
-    if (gainValue < HEARTBEAT_QUIET_FLOOR) {
+    if (gainValue === 0) {
       return;
     }
     const source = context.createBufferSource();

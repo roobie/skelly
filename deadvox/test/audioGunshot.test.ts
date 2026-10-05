@@ -9,7 +9,6 @@ import { GameAudio } from '../src/game/audio.ts';
 import {
   firearmShotSound,
   HEARTBEAT_FILES,
-  HEARTBEAT_QUIET_FLOOR,
   heartbeatForStamina,
 } from '../src/game/audioPresentation.ts';
 
@@ -128,75 +127,51 @@ afterEach(() => {
 });
 
 describe('game audio playback', () => {
-  it('plays player-only heartbeat beats independently of the HUD and without admitting sound events', async () => {
+  it('schedules player-only heartbeat beats at simulated tempo without admitting sound events', async () => {
     const { audio, context, fetchBuffer } = setup();
-    const audibleTimbres = (stamina: number) => {
-      const { gain, fastMix } = heartbeatForStamina(stamina);
-      return [
-        { file: HEARTBEAT_FILES.slow, gain: gain * (1 - fastMix) },
-        { file: HEARTBEAT_FILES.fast, gain: gain * fastMix },
-      ].filter(({ gain: share }) => share >= HEARTBEAT_QUIET_FLOOR);
-    };
-    audio.updateHeartbeat(100);
+    const sourceGain = (source: ReturnType<typeof makeSource>) =>
+      (source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>).gain.value;
+
+    audio.updateHeartbeat(86);
     await flush();
     expect(context.sources).toHaveLength(0);
     expect(fetchBuffer).not.toHaveBeenCalled();
 
-    audio.updateHeartbeat(0);
+    audio.updateHeartbeat(85);
     await flush();
-    const atLowStamina = audibleTimbres(0);
-    expect(context.sources).toHaveLength(atLowStamina.length);
-    expect(context.sources.length).toBeGreaterThan(0);
+    expect(context.sources).toHaveLength(1);
+    expect(sourceGain(context.sources[0]!)).toBeCloseTo(heartbeatForStamina(85).gain);
     expect(context.sources[0]!.playbackRate.value).toBe(1);
+    expect(fetchBuffer).toHaveBeenCalled();
     expect(audio.heardSounds).toHaveLength(0);
     expect(context.panners).toHaveLength(0);
 
-    const fastTarget = heartbeatForStamina(0);
     const firstBeatAt = context.sources[0]!.start.mock.calls[0]![0] as number;
-    context.currentTime = firstBeatAt + 60 / fastTarget.bpm - 0.01;
+    context.currentTime = firstBeatAt + 60 / heartbeatForStamina(85).bpm - 0.01;
     audio.updateHeartbeat(0);
     await flush();
-    expect(context.sources).toHaveLength(atLowStamina.length);
+    expect(context.sources).toHaveLength(1);
     context.currentTime += 0.02;
     audio.updateHeartbeat(0);
     await flush();
-    expect(context.sources).toHaveLength(atLowStamina.length * 2);
+    expect(context.sources).toHaveLength(2);
+    expect(sourceGain(context.sources[1]!)).toBeCloseTo(heartbeatForStamina(0).gain);
 
-    const beforeMix = context.sources.length;
+    const secondBeatAt = context.sources[1]!.start.mock.calls[0]![0] as number;
+    context.currentTime = secondBeatAt + 60 / heartbeatForStamina(0).bpm - 0.01;
+    audio.updateHeartbeat(0);
+    await flush();
+    expect(context.sources).toHaveLength(2);
+    context.currentTime += 0.02;
+    audio.updateHeartbeat(0);
+    await flush();
+    expect(context.sources).toHaveLength(3);
+
     context.currentTime += 1;
     audio.updateHeartbeat(50);
     await flush();
-    const expectedGains = audibleTimbres(50);
-    expect(expectedGains.length).toBeGreaterThan(0);
-    expect(context.sources).toHaveLength(beforeMix + expectedGains.length);
-    const mixedGains = context.sources.slice(beforeMix).map((source) => {
-      const gain = source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>;
-      return gain.gain.value;
-    });
-    expect(mixedGains).toHaveLength(expectedGains.length);
-    mixedGains.forEach((gain, index) => {
-      expect(gain).toBeCloseTo(expectedGains[index]!.gain);
-    });
-
-    const unequalShareStamina = Array.from({ length: 9 }, (_, index) => (index + 1) * 10).find((stamina) => {
-      const shares = audibleTimbres(stamina);
-      return shares.length === 2 && shares[0]!.gain !== shares[1]!.gain;
-    });
-    expect(unequalShareStamina).toBeDefined();
-    const expectedShares = audibleTimbres(unequalShareStamina!).sort((a, b) => a.file.localeCompare(b.file));
-    const beforeUnequalShares = context.sources.length;
-    context.currentTime += 1;
-    audio.updateHeartbeat(unequalShareStamina!);
-    await flush();
-    const sourceShares = context.sources.slice(beforeUnequalShares).map((source) => ({
-      file: (source.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile,
-      gain: (source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>).gain.value,
-    }));
-    sourceShares.sort((a, b) => (a.file ?? '').localeCompare(b.file ?? ''));
-    expect(sourceShares.map(({ file }) => file)).toEqual(expectedShares.map(({ file }) => file));
-    sourceShares.forEach(({ gain }, index) => {
-      expect(gain).toBeCloseTo(expectedShares[index]!.gain);
-    });
+    expect(context.sources).toHaveLength(4);
+    expect(sourceGain(context.sources[3]!)).toBeCloseTo(heartbeatForStamina(50).gain);
     expect(context.sources.every(({ playbackRate }) => playbackRate.value === 1)).toBe(true);
     expect(audio.heardSounds).toHaveLength(0);
   });
