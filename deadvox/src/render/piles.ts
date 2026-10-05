@@ -5,12 +5,13 @@
 import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshLambertMaterial, Object3D } from 'three';
 import { type Inventory, PILE_GRID, type Pile } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
+import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { pileLayout } from '../core/pileLayout.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
 import type { GroundModelPart, ModelLibrary } from './models.ts';
 import { castsAndReceives } from './shadowFlags.ts';
-import { SPENT_CASE_ITEM_PREFIX, SPENT_CASE_SCATTER_CAP, spentCaseScatter } from './spentCaseScatter.ts';
+import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from './spentCaseScatter.ts';
 
 interface CasePose {
   readonly position: readonly [number, number, number];
@@ -85,7 +86,9 @@ export class PileMeshes {
   private drawPile(inventory: Inventory, pile: Pile, casePlans: Map<string, CasePlan>): void {
     const regularPile = {
       ...pile,
-      items: pile.items.filter(({ item }) => !item.type.startsWith(SPENT_CASE_ITEM_PREFIX)),
+      items: pile.items.filter(
+        ({ item }) => defOf(inventory.registry, item.type).pileDisplay !== PILE_DISPLAY_KIND.scatter,
+      ),
     };
     const layout = pileLayout(inventory.registry, regularPile, this.blockSize, (id) => this.models?.has(id) ?? false);
     this.drawModels(layout.models);
@@ -108,7 +111,7 @@ export class PileMeshes {
   private planSpentCases(inventory: Inventory, pile: Pile, plans: Map<string, CasePlan>): void {
     const caseCounts = new Map<string, number>();
     for (const { item } of pile.items) {
-      if (!item.type.startsWith(SPENT_CASE_ITEM_PREFIX)) {
+      if (defOf(inventory.registry, item.type).pileDisplay !== PILE_DISPLAY_KIND.scatter) {
         continue;
       }
       caseCounts.set(item.type, (caseCounts.get(item.type) ?? 0) + item.count);

@@ -192,8 +192,10 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
-export const HELD_DISPLAY_KIND = { compass: 'compass', watch: 'watch', map: 'map' } as const;
+export const HELD_DISPLAY_KIND = { compass: 'compass' } as const;
 const HELD_DISPLAY_KINDS = Object.values(HELD_DISPLAY_KIND);
+export const PILE_DISPLAY_KIND = { scatter: 'scatter' } as const;
+const PILE_DISPLAY_KINDS = Object.values(PILE_DISPLAY_KIND);
 
 const readableText = (limit: number) =>
   pipe(
@@ -232,6 +234,8 @@ export const ItemSchema = strictObject({
   readable: optional(ReadableSchema),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
+  /** How the item appears when it is in a ground pile. */
+  pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   battery: optional(BatterySchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
