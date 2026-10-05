@@ -359,6 +359,15 @@
       "changes": "BR's original synthetic csound shots. Trimmed trailing silence only, then converted from 48 kHz 24-bit stereo WAV to 48 kHz stereo Opus in Ogg without gain processing."
     },
     {
+      "title": "Heartbeat Sounds",
+      "url": "https://opengameart.org/content/heartbeat-sounds",
+      "author": "bart",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": ["assets/audio/heartbeat-slow-beat.ogg", "assets/audio/heartbeat-fast-beat.ogg"],
+      "changes": "Converted the dry slow and fast recordings to mono Opus in Ogg containers; excluded the reverb variants; peak-normalized the existing recordings with gain only (slow +10.9 dB, fast +11 dB) to about −1 dBFS"
+    },
+    {
       "title": "BR project-recorded nope voice",
       "url": "https://github.com/roobie/skelly",
       "author": "BR",

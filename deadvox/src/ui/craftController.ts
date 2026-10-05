@@ -31,7 +31,7 @@ export const mountCraftPanel = (
     },
   };
   return {
-    update: (open: boolean) => {
+    update: (open: boolean, messagesVisible: boolean) => {
       panel.hidden = !open;
       if (open) {
         renderCrafting(
@@ -51,12 +51,10 @@ export const mountCraftPanel = (
         statusRoot,
         open
           ? undefined
-          : craftStatus(
-              session.inventory,
-              session.crafting.currentUid,
-              session.sim.actions.job,
-              session.sim.compression.interruption,
-            ),
+          : craftStatus(session.inventory, session.crafting.currentUid, session.sim.actions.job, {
+              reason: session.sim.compression.interruption,
+              messagesVisible,
+            }),
         controls,
       );
     },

@@ -207,7 +207,7 @@
       "twoHanded": true,
       "model": "shotgun_pump",
       "firearm": { "pump": true },
-      "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Hold R to load loose shells; double-press R or Use the held gun to rack; a single tap does nothing. Wield and activate a sealed shell box to unpack it first. LMB fires once; rack before the next shot. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling."
+      "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Hold R to load loose shells; double-press R to rack; a single tap does nothing. Wield and activate a sealed shell box to unpack it first. LMB fires once; rack before the next shot. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling."
     },
     {
       "id": "debug_shotgun_pump",
@@ -226,7 +226,7 @@
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A curated gungen AR with exported carrier and charging-handle cycles. Debug fire uses virtual rounds, without hits or ammunition consumption; use a held rifle to cock it.",
+      "description": "A curated gungen AR with exported carrier and charging-handle cycles. Debug fire uses virtual rounds, without hits or ammunition consumption.",
       "firearm": {},
       "model": "rifle_assault"
     },

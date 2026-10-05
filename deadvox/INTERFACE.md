@@ -94,7 +94,7 @@ Cues per state (a starting set; BR's list is the sound column):
 | Injured leg (BR: "limping too!") | a limp: an uneven head bob, one step short and dipping, at a slower pace | uneven footsteps, a hiss on the bad step |
 | Low stamina | a pulse of narrowed view after a sprint | panting, heavy breathing |
 | Illness (food poisoning) | a nauseous drift of the view | coughing, retching |
-| Refusal | the world-prompt reason when messages are on; rest/craft still show interruption text with it off until d75 | the avatar's “nope” sound, regardless of messages/hints; not heard by shamblers |
+| Refusal or interruption | reason text on the world prompt, rest card and craft status box only when messages are on | the avatar's “nope” sound for refusals, regardless of messages/hints; not heard by shamblers |
 
 BR's 2026-10-05 11:31 direction: “i've added nope1_clean.wav / it's the diegetic sound (the avatar makes a nope sound) for when something doesn't work (when UI is off, and any hints are hidden)”. BR's 11:32 answer was “i recorded it myself 10 minutes ago / yes, CC0” and “no, this one is not heard by shamblers (but if it were a multiplayer game, it'd be heard by other players)”. The 11:46 ruling quoted under class 3 requires the sound regardless of whether messages/hints are on. See `src/game/play.ts`, `showRefusal`, and `src/game/audioPresentation.ts`, `createRefusalPresenter`: the cue is player-only presentation and does not emit a simulation noise event.
 
@@ -126,12 +126,12 @@ Text on screen falls into four classes, and only three of them ship:
    elements / this cannot hold for exactly 100% of the time / but it does mean /
    if the checkbox for messages/hints is off ,then no messages or hints should
    come from a syntheitic UI element / but the 'nope' sound shall play regardless
-   of UI hints being on or off". In the world prompt (see
-   `src/ui/playHud.ts`, `playPromptText`), class-3 text appears only when the
-   `messages` HUD option is on. The rest card (`src/ui/rest.ts`, `restViewModel`)
-   and the craft status box (`src/ui/crafting.ts`, `renderCraftStatus`) still show
-   an interruption's reason with it off, until d75 brings them under BR's ruling.
-   With it off, the avatar's nope sound is the refusal cue; see
+   of UI hints being on or off". Class-3 reason text on the world prompt, rest
+   card and craft status box follows the same `hudVisibility` projection from
+   `src/ui/hudOptions.ts`; it appears only when the `messages` option is on. See
+   `src/ui/playHud.ts`, `playPromptText`, `src/ui/rest.ts`, `restViewModel`, and
+   `src/ui/craftReadout.ts`, `craftStatus`. With it off, the avatar's nope sound
+   is the refusal cue; see
    `src/game/play.ts`, `showRefusal`.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
    ("press R", "open the inventory", "C: continue"). **Development only.**

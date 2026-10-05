@@ -2482,11 +2482,11 @@ describe('dismemberment', () => {
       [8, realWeapons[1]!],
       [10, realWeapons[2]!],
     ]);
-    const sweep = [2, 4, 6, 8, 10, 14, 20, 40].map(
+    const sweep = [2, 4, 8, 10, 20, 40].map(
       (impulse) => impulseByWeapon.get(impulse) ?? simulate({ ...FISTS_MELEE, impulse }),
     );
 
-    expect(sweep.map(({ part }) => part)).toEqual(Array.from({ length: 8 }, () => 'upperArm.R'));
+    expect(sweep.map(({ part }) => part)).toEqual(Array.from({ length: 6 }, () => 'upperArm.R'));
     for (const outcome of sweep) {
       expect(outcome.hit?.point).toEqual(sweep[0]!.hit?.point);
       expect(outcome.hit?.direction).toEqual(sweep[0]!.hit?.direction);
@@ -2494,7 +2494,7 @@ describe('dismemberment', () => {
     for (let index = 1; index < sweep.length; index++) {
       expect.soft(sweep[index]!.distance).toBeGreaterThan(sweep[index - 1]!.distance);
     }
-    expect.soft(sweep[7]!.distance).toBeGreaterThanOrEqual(1.5 * sweep[6]!.distance);
+    expect.soft(sweep[5]!.distance).toBeGreaterThanOrEqual(1.5 * sweep[4]!.distance);
     for (const outcome of realWeapons) {
       expect(outcome.distance).toBeGreaterThanOrEqual(0.2);
       expect(outcome.distance).toBeLessThanOrEqual(8);

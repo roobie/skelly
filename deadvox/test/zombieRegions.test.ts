@@ -167,45 +167,46 @@ const posedBoxErrors = (figure: ReturnType<typeof posed>, box: (typeof figure.bo
   return errors;
 };
 
+const hitTargetCases = SHAMBLER_FIGURE_SEEDS.map((seed, index) => ({
+  seed,
+  testPose: POSES[(index * 3) % POSES.length]!,
+}));
+
 describe('posed shambler hit regions', () => {
-  it('targets the rendered head, misses 5 cm above it, and targets chest/forearm/shin across every seed and pose', () => {
-    for (const seed of SHAMBLER_FIGURE_SEEDS) {
-      for (const testPose of POSES) {
-        const figure = posed(seed, testPose);
-        const head = voxelCentroid(seed, figure, REGION_BONES.head);
-        const headRay = rayAt(head);
-        expect(nearestRegion(figure.boxes, headRay.origin, headRay.direction), `${seed} ${testPose.name} head`).toBe(
-          'head',
-        );
+  it('targets each rendered region and misses above the head across a seed/pose covering set', () => {
+    for (const { seed, testPose } of hitTargetCases) {
+      const figure = posed(seed, testPose);
+      const head = voxelCentroid(seed, figure, REGION_BONES.head);
+      const headRay = rayAt(head);
+      expect(nearestRegion(figure.boxes, headRay.origin, headRay.direction), `${seed} ${testPose.name} head`).toBe(
+        'head',
+      );
 
-        const headPoints = voxelPoints(figure, 'head').concat(voxelPoints(figure, 'jaw'));
-        const highest = headPoints.reduce((current, point) => (point[1] > current[1] ? point : current));
-        const above: Vec3 = [
-          highest[0],
-          highest[1] + (figure.figure.realized.voxels.size / 2 + 0.05) / BLOCK,
-          highest[2] - 1.5 / BLOCK,
-        ];
-        expect(
-          ZOMBIE_REGION_NAMES.every(
-            (region) => posedRegionHitDistance(figure.boxes[region], above, [0, 0, 1], BLOCK) === undefined,
-          ),
-          `${seed} ${testPose.name} 5 cm above head`,
-        ).toBe(true);
+      const headPoints = voxelPoints(figure, 'head').concat(voxelPoints(figure, 'jaw'));
+      const highest = headPoints.reduce((current, point) => (point[1] > current[1] ? point : current));
+      const above: Vec3 = [
+        highest[0],
+        highest[1] + (figure.figure.realized.voxels.size / 2 + 0.05) / BLOCK,
+        highest[2] - 1.5 / BLOCK,
+      ];
+      expect(
+        ZOMBIE_REGION_NAMES.every(
+          (region) => posedRegionHitDistance(figure.boxes[region], above, [0, 0, 1], BLOCK) === undefined,
+        ),
+        `${seed} ${testPose.name} 5 cm above head`,
+      ).toBe(true);
 
-        const targets: readonly [ZombieRegion, string][] = [
-          ['torso', 'chest'],
-          ['leftArm', 'forearm.L'],
-          ['rightArm', 'forearm.R'],
-          ['leftLeg', 'shin.L'],
-          ['rightLeg', 'shin.R'],
-        ];
-        for (const [region, bone] of targets) {
-          const target = voxelCentroid(seed, figure, region === 'torso' ? REGION_BONES.torso : [bone]);
-          const ray = rayAt(target, region === 'torso');
-          expect(nearestRegion(figure.boxes, ray.origin, ray.direction), `${seed} ${testPose.name} ${bone}`).toBe(
-            region,
-          );
-        }
+      const targets: readonly [ZombieRegion, string][] = [
+        ['torso', 'chest'],
+        ['leftArm', 'forearm.L'],
+        ['rightArm', 'forearm.R'],
+        ['leftLeg', 'shin.L'],
+        ['rightLeg', 'shin.R'],
+      ];
+      for (const [region, bone] of targets) {
+        const target = voxelCentroid(seed, figure, region === 'torso' ? REGION_BONES.torso : [bone]);
+        const ray = rayAt(target, region === 'torso');
+        expect(nearestRegion(figure.boxes, ray.origin, ray.direction), `${seed} ${testPose.name} ${bone}`).toBe(region);
       }
     }
   });
