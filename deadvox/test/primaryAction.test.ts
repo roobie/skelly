@@ -22,7 +22,7 @@ const capabilities = [
     disassembly: {
       time: 1,
       skill: 'crafting',
-      yields: [{ item: 'held_plain', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+      yields: [{ item: 'held_blunt', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
     },
   },
 ] as const;

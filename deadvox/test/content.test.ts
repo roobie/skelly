@@ -25,6 +25,39 @@ describe('content', () => {
     }
   });
 
+  it('rejects a disassembly yield of its own input while accepting a distinct output', () => {
+    const source = 'self-yield-fixture.json';
+    const data: ContentFile = {
+      skills: [{ id: 'fixture_reclaiming', name: 'Fixture reclaiming' }],
+      items: [
+        {
+          id: 'fixture_input',
+          name: 'Fixture input',
+          category: 'tool',
+          weight: 1,
+          size: [1, 1],
+          disassembly: {
+            time: 1,
+            skill: 'fixture_reclaiming',
+            yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+          },
+        },
+        { id: 'fixture_output', name: 'Fixture output', category: 'tool', weight: 1, size: [1, 1] },
+      ],
+    };
+    const valid = structuredClone(data);
+    valid.items![0]!.disassembly!.yields[0]!.item = 'fixture_output';
+    const accepted = buildRegistry([{ source, data: valid }]);
+    expect(accepted.issues).toEqual([]);
+    expect(accepted.registry.items.has('fixture_input')).toBe(true);
+
+    const rejected = buildRegistry([{ source, data }]);
+    expect(rejected.issues).toContainEqual(
+      expect.objectContaining({ source, path: 'items[0].disassembly.yields[0].item' }),
+    );
+    expect(rejected.registry.items.has('fixture_input')).toBe(false);
+  });
+
   it('validates tool-quality references in disassembly yield modifiers', () => {
     const files = structuredClone(base);
     const recipes = files.find(({ source }) => source === 'recipes.json')!.data as ContentFile;
