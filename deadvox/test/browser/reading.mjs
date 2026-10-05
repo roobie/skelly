@@ -305,25 +305,29 @@ try {
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: session.sim.compression.interruption !== undefined,
+          reached:
+            session.rest.action === undefined &&
+            !session.sim.compression.active &&
+            session.sim.compression.interruption === undefined &&
+            !session.sim.compression.locksInput,
         };
       },
       undefined,
       { seconds: 5, from: wakeStart, label: 'an interruption wakes the player from sleep', record },
     );
-    await page.keyboard.press('x');
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action?.kind), 'sleep');
-    await page.evaluate(() => globalThis.readingWitness.session.rest.stop()); // fixture cleanup; the player cannot stop sleep.
-    const wakeCleanupFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-    await waitForSimulation(
-      page,
-      () => {
-        const { sim } = globalThis.readingWitness.session;
-        return { time: sim.time, paused: sim.paused, reached: !sim.compression.locksInput };
-      },
-      undefined,
-      { seconds: 5, from: wakeCleanupFrom, label: 'sleep fixture cleanup', record },
-    );
+    const awakened = await page.evaluate(() => {
+      const { session } = globalThis.readingWitness;
+      return {
+        action: session.rest.action,
+        active: session.sim.compression.active,
+        interruption: session.sim.compression.interruption,
+        locksInput: session.sim.compression.locksInput,
+      };
+    });
+    assert.equal(awakened.action, undefined);
+    assert.equal(awakened.active, false);
+    assert.equal(awakened.interruption, undefined);
+    assert.equal(awakened.locksInput, false);
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
