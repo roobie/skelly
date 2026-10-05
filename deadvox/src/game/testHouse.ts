@@ -49,6 +49,8 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     block,
   });
   const air = 0;
+  const gateWest = GARDEN_GATE.centreX - 0.5;
+  const gateEast = GARDEN_GATE.centreX + 0.5;
   const boxes: MetreBox[] = [
     // Level lot: solid ground below the floor, nothing above it.
     box([-10, -8, -3], [13, 0, 10], b.dirt),
@@ -83,13 +85,13 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     box([6, STOREY, 0.5], [9, STOREY + 0.5, 1.5], air),
     // Outside: a stone chimney against the east wall, and a dry-stone garden wall along the south side with a 1 m gate gap.
     box([10, 0, 5], [11, STOREY + 1.5, 6.5], b.stone),
-    box([-6, 0, 8.5], [2, 1, 9], b.stone),
-    box([3, 0, 8.5], [10, 1, 9], b.stone),
+    box([-6, 0, 8.5], [gateWest, 1, 9], b.stone),
+    box([gateEast, 0, 8.5], [10, 1, 9], b.stone),
     // The wall's top half metre is mossy cobblestone; the gate posts' tops are hazard yellow, and the chimney has a dressed-stone cap.
-    box([-6, 0.5, 8.5], [2, 1, 9], b.cobblestone),
-    box([3, 0.5, 8.5], [10, 1, 9], b.cobblestone),
-    box([1.5, 0.5, 8.5], [2, 1, 9], b.hazard),
-    box([3, 0.5, 8.5], [3.5, 1, 9], b.hazard),
+    box([-6, 0.5, 8.5], [gateWest, 1, 9], b.cobblestone),
+    box([gateEast, 0.5, 8.5], [10, 1, 9], b.cobblestone),
+    box([gateWest - 0.5, 0.5, 8.5], [gateWest, 1, 9], b.hazard),
+    box([gateEast, 0.5, 8.5], [gateEast + 0.5, 1, 9], b.hazard),
     box([9.5, STOREY + 1.5, 4.5], [11.5, STOREY + 2, 7], b.dressedStone),
     // A dressed-stone doorstep, flush with the path.
     box([-1, -0.5, 2.5], [0, 0, 4.5], b.dressedStone),

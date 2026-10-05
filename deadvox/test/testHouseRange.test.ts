@@ -196,7 +196,7 @@ describe('the debug test-house range', () => {
     expect(range.table.pos[0]).toBeGreaterThan(range.beside.x1);
     expect(range.firingLine.x0).toBeGreaterThan(range.beside.x1);
     expect(range.targetXs.every((x) => x > range.firingLine.x1)).toBe(true);
-    expect(builtSite.surface.height(range.table.pos[0], range.table.pos[2], padTop)).toBe(padTop);
+    expect(builtSite.surface.height(range.table.pos[0], range.table.pos[2], padTop + 5)).toBe(padTop);
     expect(spawnX).toBeLessThan(range.beside.x1);
     expect(spawnX).toBeLessThan(range.firingLine.x0);
 

@@ -169,12 +169,19 @@ try {
       );
       await page.keyboard.press('ArrowDown');
       // Serialize key input with the selection's next-frame DOM update.
-      await page.waitForFunction(
-        (selectedUid) =>
-          (document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null) !== selectedUid,
-        previous,
-        { timeout: 1000 },
-      );
+      try {
+        await page.waitForFunction(
+          (selectedUid) =>
+            (document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null) !== selectedUid,
+          previous,
+          { timeout: 1000 },
+        );
+      } catch (cause) {
+        throw new Error(
+          `ArrowDown did not move the selection from ${previous} towards ${uid}; visible rows: ${rows.join(',')}`,
+          { cause },
+        );
+      }
     }
     throw new Error(`Native arrows cannot select ${uid}; visible rows: ${rows.join(',')}`);
   };
