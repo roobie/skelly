@@ -752,9 +752,10 @@ The fixed pool has eight shadowless point-light slots. It represents the four
 carried sources and the nearest four dropped glowsticks; the other dropped
 sticks remain emissive. If more than four carried sources are lit, prioritize
 hands first and then pockets in stable inventory order; further carried lights
-remain lit but get no point-light slot. The pool never grows. The dropped-light
-selection and carried-source limit are part of the workload, not content-ID
-special cases.
+remain lit but get no point-light slot. The four dropped slots are not lent to
+a fifth dropped glowstick when a carried slot is idle. The pool never grows. The
+dropped-light selection and carried-source limit are part of the workload, not
+content-ID special cases.
 
 Run the full phases from `src/bench/run.ts`, `startBench`, with
 `?bench=1&plan=0.5:96&seed=73&time=23:30&post=1&shamblers=60`, then repeat with

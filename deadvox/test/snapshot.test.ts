@@ -16,7 +16,6 @@ import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
-import { drainBurnLight, toggleLight } from '../src/core/lights.ts';
 import {
   decodeSave,
   encodeSave,
@@ -1181,18 +1180,25 @@ it('a doused candle keeps its remaining burn through save and relighting', async
   const source = createRuntime();
   const candle = lightCandleInHand(source);
   const duration = registry.items.get('candle')!.light!.burnTime!;
-  const dousedAt = source.sim.calendar + duration * 1800;
-  expect(drainBurnLight(candle, dousedAt)).toBe(false);
-  expect(toggleLight(registry, candle, dousedAt)).toBeUndefined();
+  source.sim.setDebugCalendarTime(source.sim.calendar + duration * 1800);
+  source.sim.scheduler.advance(1);
+  expect(candle.on).toBe(true);
+  const remaining = candle.burnRemaining!;
+  expect(remaining).toBeGreaterThan(0);
+  expect(source.survival.use(candle)).toBeUndefined();
+  expect(candle.on).toBe(false);
+  expect(candle.litAt).toBeUndefined();
 
   const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
   const loaded = createRuntime(decoded.snapshot);
   const restored = loaded.inventory.itemByUid(candle.uid)!;
-  expect(restored).toMatchObject({ on: false, burnRemaining: duration / 2 });
+  expect(restored.on).toBe(false);
+  expect(restored.burnRemaining).toBeCloseTo(remaining, 9);
   expect(restored.litAt).toBeUndefined();
-  expect(toggleLight(registry, restored, dousedAt)).toBeUndefined();
-  expect(drainBurnLight(restored, dousedAt + duration * 1800)).toBe(true);
-  expect([restored.on, restored.burnRemaining]).toEqual([false, 0]);
+  expect(loaded.survival.use(restored)).toBeUndefined();
+  expect(restored.on).toBe(true);
+  expect(restored.litAt).toBe(loaded.sim.calendar);
+  expect(restored.burnRemaining).toBeCloseTo(remaining, 9);
 });
 
 it('a lit light saves its active ignition time and remaining burn', async () => {

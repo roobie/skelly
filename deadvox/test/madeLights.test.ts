@@ -49,12 +49,29 @@ describe('made light burn state', () => {
     expect(toggleLight(registry, live, 0)).toBeUndefined();
 
     expect(drainBurnLight(caught, duration)).toBe(true);
-    let expired = false;
     for (let second = 1; second <= duration; second++) {
-      expired = drainBurnLight(live, second) || expired;
+      const expired = drainBurnLight(live, second);
+      expect(expired).toBe(second === duration);
+      expect(live.on).toBe(second < duration);
     }
-    expect(expired).toBe(true);
     expect([caught.on, caught.burnRemaining, live.on, live.burnRemaining]).toEqual([false, 0, false, 0]);
+  });
+
+  it('keeps pile presentation stable while a glowstick burns, then invalidates it when it expires', () => {
+    const { sim, inventory, survival, hold } = setup();
+    const glowstick = hold('glowstick');
+    expect(survival.use(glowstick)).toBeUndefined();
+    expect(inventory.move(glowstick, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+    const { version } = inventory;
+
+    sim.scheduler.advance(3);
+    expect(glowstick.on).toBe(true);
+    expect(inventory.version).toBe(version);
+
+    sim.setDebugCalendarTime(glowstick.litAt! + registry.items.get('glowstick')!.light!.burnTime! * 3600 - 8);
+    sim.scheduler.advance(1);
+    expect(glowstick.on).toBe(false);
+    expect(inventory.version).toBe(version + 1);
   });
 
   it('preserves the remaining time when a candle is doused and relit', () => {
@@ -93,25 +110,56 @@ describe('made light burn state', () => {
     expect(candle.burnRemaining).toBeGreaterThan(0);
   });
 
-  it('applies each light source’s component-driven carry rules', () => {
-    const { sim, inventory, survival, hold } = setup();
-    const torch = hold('torch');
-    hold('lighter', 'left');
-    const jeans = inventory.create('jeans');
-    expect(inventory.add(jeans, { kind: 'worn' })).toBe(true);
-    expect(survival.use(torch)).toBeUndefined();
-    expect(inventory.move(torch, { kind: 'pocket', owner: jeans, pocket: 0 }).ok).toBe(false);
-    expect(inventory.move(torch, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+  it('applies each burn light’s declared stow and sprint rules', () => {
+    const burnLights = [...registry.items.values()].filter(({ light }) => light?.burnTime !== undefined);
+    expect(burnLights.length).toBeGreaterThan(0);
 
-    const candle = hold('candle');
-    expect(survival.use(candle)).toBeUndefined();
-    expect(inventory.move(candle, { kind: 'pocket', owner: jeans, pocket: 0 }).ok).toBe(true);
+    for (const definition of burnLights) {
+      const rules = definition.light!.burning!;
+      const sprintCase = setup();
+      const sprintLight = sprintCase.hold(definition.id);
+      if (rules.ignition === 'firestarter') {
+        sprintCase.hold('lighter', 'left');
+      }
+      expect(sprintCase.survival.use(sprintLight)).toBeUndefined();
+      sprintCase.survival.setSprinting(true);
+      expect(sprintLight.on).toBe(rules.sprint === 'stay');
 
-    const glowstick = hold('glowstick');
-    expect(survival.use(glowstick)).toBeUndefined();
-    expect(inventory.move(glowstick, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-    sim.frame(1);
-    expect([torch.on, candle.on, glowstick.on]).toEqual([false, false, true]);
+      const stowCase = setup();
+      const stowedLight = stowCase.hold(definition.id);
+      if (rules.ignition === 'firestarter') {
+        stowCase.hold('lighter', 'left');
+      }
+      expect(stowCase.survival.use(stowedLight)).toBeUndefined();
+      const backpack = stowCase.inventory.create('school_backpack');
+      expect(stowCase.inventory.add(backpack, { kind: 'worn' })).toBe(true);
+      const moved = stowCase.inventory.move(stowedLight, { kind: 'pocket', owner: backpack, pocket: 0 });
+      expect(moved.ok).toBe(rules.stow !== 'refuse');
+      if (moved.ok) {
+        stowCase.sim.scheduler.advance(1);
+        expect(stowedLight.on).toBe(rules.stow === 'stay');
+      } else {
+        expect(stowCase.inventory.locate(stowedLight)?.kind).toBe('hand');
+      }
+    }
+  });
+
+  it('applies BR’s drop ruling to torches, candles and glowsticks', () => {
+    for (const [type, staysLit] of [
+      ['torch', false],
+      ['candle', false],
+      ['glowstick', true],
+    ] as const) {
+      const { sim, inventory, survival, hold } = setup();
+      const light = hold(type);
+      if (registry.items.get(type)!.light!.burning!.ignition === 'firestarter') {
+        hold('lighter', 'left');
+      }
+      expect(survival.use(light)).toBeUndefined();
+      expect(inventory.move(light, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+      sim.scheduler.advance(1);
+      expect(light.on).toBe(staysLit);
+    }
   });
 
   it('does not let a used glowstick be doused or relit', () => {
