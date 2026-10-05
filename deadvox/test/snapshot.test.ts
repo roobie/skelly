@@ -1017,8 +1017,8 @@ describe('hamlet save/load continuation', () => {
 
     const schedulerSystems = ['needs', 'lights', 'long-action'] as const;
     const savedTicks = new Map(snapshot.character.simulation.scheduler.systems.map(({ id, ticks }) => [id, ticks]));
-    advance(source, 5);
-    advance(loaded, 5);
+    advance(source, 4);
+    advance(loaded, 4);
 
     for (const id of schedulerSystems) {
       const saved = savedTicks.get(id);
