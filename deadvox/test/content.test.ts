@@ -571,6 +571,42 @@ describe('templates', () => {
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...base, t]).issues.map((i) => `${i.path}: ${i.message}`);
 
+  it('leaves an open air cell beside every window-frame run', () => {
+    const { registry } = buildRegistry(base);
+    let runs = 0;
+    for (const template of registry.templates.values()) {
+      const frame = Object.entries(template.palette).find(([, value]) => value === 'window_frame')?.[0];
+      if (frame === undefined) continue;
+      const air = Object.entries(template.palette).find(([, value]) => value === 'air')?.[0];
+      expect(air, `${template.id} window palette`).toBeDefined();
+      for (let y = 0; y < template.layers.length; y++) {
+        for (let z = 0; z < template.layers[y]!.length; z++) {
+          const row = template.layers[y]![z]!;
+          for (let x = 0; x < row.length; ) {
+            if (row[x] !== frame) {
+              x++;
+              continue;
+            }
+            const start = x;
+            while (x < row.length && row[x] === frame) x++;
+            const end = x;
+            const hasOpening = [y - 1, y + 1].some(
+              (adjacentY) =>
+                adjacentY >= 0 &&
+                adjacentY < template.layers.length &&
+                Array.from({ length: end - start }, (_, offset) => start + offset).some(
+                  (windowX) => template.layers[adjacentY]![z]?.[windowX] === air,
+                ),
+            );
+            expect(hasOpening, `${template.id} window-frame run at layer ${y}, row ${z}`).toBe(true);
+            runs++;
+          }
+        }
+      }
+    }
+    expect(runs).toBeGreaterThan(0);
+  });
+
   it('accepts a well-formed template', () => {
     const t = template(
       [
