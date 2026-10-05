@@ -135,6 +135,7 @@ const WearableSchema = strictObject({
   /** 0–100: how much it slows and hampers you. */
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
+  wearPerHit: optional(Fraction),
 });
 
 const FoodSchema = strictObject({
@@ -161,6 +162,8 @@ const WeaponSchema = strictObject({
     stamina: NonNegative,
     /** Impulse delivered by a melee hit, in N·s. */
     impulse: optional(NonNegative),
+    /** Condition lost when this weapon lands a melee hit. */
+    wearPerHit: optional(Fraction),
     type: picklist(['blunt', 'cut', 'pierce']),
   }),
 });
@@ -705,6 +708,9 @@ const RecipeItemSchema = ItemCountSchema;
 export const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
+  /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
+  kind: optional(picklist(['craft', 'repair'])),
+  repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
   /** Game minutes, not simulation seconds. */
   time: Positive,
   skills: record(Id, Count),

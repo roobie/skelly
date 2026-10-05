@@ -78,7 +78,24 @@ export class CraftCommands {
     if ('missing' in result) {
       return result.missing.reason;
     }
-    return this.sim.actions.beginCraft(result.plan);
+    const recipe = this.inventory.registry.recipes.get(recipeId)!;
+    if (recipe.kind !== 'repair') {
+      return this.sim.actions.beginCraft(result.plan);
+    }
+    const target = this.repairTarget(recipe.result.item);
+    if (!target) {
+      return 'No damaged repair target in reach';
+    }
+    const repair = recipe.repair!;
+    const skill = this.character.skills[repair.skill] ?? 0;
+    const amount = Math.min(1, repair.amount + repair.perSkill * skill);
+    return this.sim.actions.beginCraft(result.plan, { targetUid: target.uid, amount });
+  }
+  private repairTarget(type: string): Item | undefined {
+    return this.reach()
+      .entries.map(({ item }) => item)
+      .filter((item) => item.type === type && item.count === 1 && item.condition < 1)
+      .sort((a, b) => a.condition - b.condition || a.uid - b.uid)[0];
   }
   private reachable(uid: number): string | undefined {
     const item = this.inventory.itemByUid(uid);

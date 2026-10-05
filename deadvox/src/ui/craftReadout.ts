@@ -1,6 +1,6 @@
 // Read-only crafting projection: one reach index, no item ownership or commands.
 import type { CraftCharacter } from '../core/character.ts';
-import type { Registry } from '../core/content.ts';
+import type { RecipeDef, Registry } from '../core/content.ts';
 import { type CraftPreference, planCraft, requirementStatus } from '../core/crafting.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -11,14 +11,15 @@ export const craftTime = (seconds: number): string =>
   seconds >= 60 ? `${(seconds / 60).toFixed(1)} min` : `${seconds.toFixed(1)} s`;
 export const workName = (registry: Registry, item: Item): string => {
   const { work } = item;
-  if (work?.kind === 'craft') {
-    const recipe = registry.recipes.get(work.recipe)!;
-    return `${registry.items.get(recipe.result.item)!.name} in progress`;
-  }
   if (work?.kind === 'disassembly') {
     return `${registry.items.get(work.source)!.name} disassembly`;
   }
-  return registry.items.get(item.type)!.name;
+  const recipe = work?.kind === 'craft' ? registry.recipes.get(work.recipe) : undefined;
+  if (!recipe) {
+    return registry.items.get(item.type)!.name;
+  }
+  const { name } = registry.items.get(recipe.result.item)!;
+  return recipe.kind === 'repair' ? `Repairing ${name}` : `${name} in progress`;
 };
 export interface CraftStatus {
   uid: number;
@@ -61,6 +62,7 @@ export const craftStatus = (
 export interface CraftRow {
   id: string;
   name: string;
+  kind: 'craft' | 'repair';
   time: string;
   reason: string | undefined;
   components: {
@@ -72,6 +74,29 @@ export interface CraftRow {
   skills: { name: string; required: number; available: number }[];
   workstation: string | null;
 }
+const recipeStartReason = (
+  recipe: RecipeDef,
+  result: ReturnType<typeof planCraft>,
+  reach: ReachSnapshot,
+  startReason: string | undefined,
+): string | undefined => {
+  if (startReason) {
+    return startReason;
+  }
+  if ('missing' in result) {
+    return result.missing.reason;
+  }
+  if (
+    recipe.kind === 'repair' &&
+    !reach.entries.some(
+      (entry) => entry.item.type === recipe.result.item && entry.item.count === 1 && entry.item.condition < 1,
+    )
+  ) {
+    return 'No damaged repair target in reach';
+  }
+  return undefined;
+};
+
 export const craftRows = ({
   registry,
   character,
@@ -92,9 +117,10 @@ export const craftRows = ({
     const status = requirementStatus(recipe, reach, character);
     return {
       id,
-      name: registry.items.get(recipe.result.item)!.name,
+      name: `${recipe.kind === 'repair' ? 'Repair: ' : ''}${registry.items.get(recipe.result.item)!.name}`,
+      kind: recipe.kind === 'repair' ? 'repair' : 'craft',
       time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.time * 60),
-      reason: startReason ?? ('missing' in result ? result.missing.reason : undefined),
+      reason: recipeStartReason(recipe, result, reach, startReason),
       components: status.components.map(({ alternatives, group }) => ({
         group,
         preferred: prefer?.[group] ?? '',

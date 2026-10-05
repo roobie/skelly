@@ -87,6 +87,7 @@ const closure = (
     addDisassemblyOutputs(registry, items);
     for (const recipe of registry.recipes.values()) {
       if (
+        recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
         inputsReady(recipe, items) &&
         (!tools ||

@@ -11,6 +11,8 @@ interface WorkProgress<Node> {
   elapsed: number;
   duration: number;
   components: Node[];
+  repairTargetUid?: number;
+  repairAmount?: number;
 }
 export type CraftWork<Node> =
   | (WorkProgress<Node> & { kind: 'craft'; recipe: string })

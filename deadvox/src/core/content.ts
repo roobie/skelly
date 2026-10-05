@@ -405,6 +405,23 @@ const checkZombies = (registry: Registry, report: Report) => {
   }
 };
 
+const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  if (recipe.kind === 'repair') {
+    if (!recipe.repair) {
+      report('recipes', recipe.id, '.repair', 'repair recipes need a repair effect');
+      return;
+    }
+    if (!registry.skills.has(recipe.repair.skill)) {
+      report('recipes', recipe.id, '.repair.skill', `no skill "${recipe.repair.skill}"`);
+    }
+    if (recipe.result.count !== 1) {
+      report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
+    }
+  } else if (recipe.repair) {
+    report('recipes', recipe.id, '.repair', 'only repair recipes may declare a repair effect');
+  }
+};
+
 const checkRecipe = ({
   registry,
   recipe,
@@ -424,6 +441,7 @@ const checkRecipe = ({
     }
   };
   checkItem(recipe.result.item, '.result.item');
+  checkRecipeRepair(registry, recipe, report);
   recipe.components.forEach((group, g) => {
     group.forEach((component, c) => {
       checkItem(component.item, `.components[${g}][${c}].item`);
@@ -452,7 +470,9 @@ const checkRecipes = (registry: Registry, report: Report) => {
   for (const recipe of registry.recipes.values()) {
     checkRecipe({ registry, recipe, qualities, workstations, report });
   }
-  for (const id of new Set([...registry.recipes.values()].map((recipe) => recipe.result.item))) {
+  for (const id of new Set(
+    [...registry.recipes.values()].filter((recipe) => recipe.kind !== 'repair').map((recipe) => recipe.result.item),
+  )) {
     const item = registry.items.get(id);
     if (!item) {
       continue;

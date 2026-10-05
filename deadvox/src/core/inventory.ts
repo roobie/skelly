@@ -278,6 +278,19 @@ export class Inventory {
     return this.factory.create(this.registry, type, count, condition);
   }
 
+  changeCondition(uid: number, delta: number): boolean {
+    const item = this.itemByUid(uid);
+    if (!(item && Number.isFinite(delta))) {
+      return false;
+    }
+    const condition = Math.max(0, Math.min(1, item.condition + delta));
+    if (condition !== item.condition) {
+      item.condition = condition;
+      this.version += 1;
+    }
+    return true;
+  }
+
   name(item: Item): string {
     return defOf(this.registry, item.type).name;
   }
@@ -400,9 +413,27 @@ export class Inventory {
     return true;
   }
 
-  private validCraftPlan(plan: Extract<WorkPlan, { kind: 'craft' }>): boolean {
-    if (!this.registry.recipes.has(plan.recipe)) {
+  private validCraftPlan(
+    plan: Extract<WorkPlan, { kind: 'craft' }>,
+    repair?: { targetUid: number; amount: number },
+  ): boolean {
+    const recipe = this.registry.recipes.get(plan.recipe);
+    if (!recipe || (recipe.kind === 'repair') !== (repair !== undefined)) {
       return false;
+    }
+    if (repair) {
+      const target = this.itemByUid(repair.targetUid);
+      if (
+        !target ||
+        plan.components.some(({ item }) => item.uid === target.uid) ||
+        target.type !== recipe.result.item ||
+        target.count !== 1 ||
+        !Number.isFinite(repair.amount) ||
+        repair.amount <= 0 ||
+        repair.amount > 1
+      ) {
+        return false;
+      }
     }
     const seen = new Set<number>();
     for (const { item, count } of plan.components) {
@@ -451,7 +482,11 @@ export class Inventory {
     return sameDisassemblyOutputs(expected, plan.outputs);
   }
 
-  private escrowCraft(plan: Extract<WorkPlan, { kind: 'craft' }>, work: Item): void {
+  private escrowCraft(
+    plan: Extract<WorkPlan, { kind: 'craft' }>,
+    work: Item,
+    repair?: { targetUid: number; amount: number },
+  ): void {
     const components = plan.components.map(({ item, count }) => {
       const from = this.locate(item)!;
       if (from.kind === 'furniture') {
@@ -463,7 +498,14 @@ export class Inventory {
       this.remove(from);
       return item;
     });
-    work.work = { kind: 'craft', recipe: plan.recipe, elapsed: 0, duration: plan.gather + plan.work, components };
+    work.work = {
+      kind: 'craft',
+      recipe: plan.recipe,
+      elapsed: 0,
+      duration: plan.gather + plan.work,
+      components,
+      ...(repair ? { repairTargetUid: repair.targetUid, repairAmount: repair.amount } : {}),
+    };
   }
 
   private escrowDisassembly(plan: Extract<WorkPlan, { kind: 'disassembly' }>, work: Item): void {
@@ -489,16 +531,20 @@ export class Inventory {
   }
 
   /** Escrow through the mutation owner; no duplicate trees in the other hand or job. */
-  beginWork(plan: WorkPlan): Item | undefined {
+  beginWork(plan: WorkPlan, repair?: { targetUid: number; amount: number }): Item | undefined {
     if (this.hands.left || this.hands.right) {
       return undefined;
     }
-    if (plan.kind === 'craft' ? !this.validCraftPlan(plan) : !this.validDisassemblyPlan(plan)) {
+    if (plan.kind === 'craft') {
+      if (!this.validCraftPlan(plan, repair)) {
+        return undefined;
+      }
+    } else if (repair || !this.validDisassemblyPlan(plan)) {
       return undefined;
     }
     const work = this.create(WORK_IN_PROGRESS);
     if (plan.kind === 'craft') {
-      this.escrowCraft(plan, work);
+      this.escrowCraft(plan, work, repair);
     } else {
       this.escrowDisassembly(plan, work);
     }
@@ -533,6 +579,31 @@ export class Inventory {
     return drops;
   }
 
+  private workOutputs(payload: NonNullable<Item['work']>, finish: boolean): Item[] {
+    if (!finish) {
+      return payload.components;
+    }
+    if (payload.kind === 'disassembly') {
+      return payload.outputs.map(({ item, count }) => this.create(item, count));
+    }
+    if (payload.repairTargetUid !== undefined) {
+      return [];
+    }
+    const { result } = this.registry.recipes.get(payload.recipe)!;
+    return [this.create(result.item, result.count)];
+  }
+
+  private repairTargetForWork(payload: NonNullable<Item['work']>, finish: boolean): Item | undefined {
+    if (payload.kind !== 'craft' || payload.repairTargetUid === undefined) {
+      return undefined;
+    }
+    const target = this.itemByUid(payload.repairTargetUid);
+    if (finish && (!target || payload.repairAmount === undefined)) {
+      throw new Error('The repair target is missing');
+    }
+    return target;
+  }
+
   /** Terminal ownership transfer. Exact input UIDs never merge on cancellation. */
   releaseWork(work: Item, finish: boolean, feet: Vec3): void {
     const payload = work.work;
@@ -540,24 +611,19 @@ export class Inventory {
     if (!(payload && at)) {
       return;
     }
-    let outputs: Item[];
-    if (!finish) {
-      outputs = payload.components;
-    } else if (payload.kind === 'craft') {
-      const { recipes } = this.registry;
-      const { recipe } = payload;
-      const { result } = recipes.get(recipe)!;
-      outputs = [this.create(result.item, result.count)];
-    } else {
-      outputs = payload.outputs.map(({ item, count }) => this.create(item, count));
-    }
-    const resultInHand = finish && payload.kind === 'craft' && at.kind === 'hand';
+    const repairing = payload.kind === 'craft' && payload.repairTargetUid !== undefined;
+    const target = this.repairTargetForWork(payload, finish);
+    const outputs = this.workOutputs(payload, finish);
+    const resultInHand = finish && !repairing && payload.kind === 'craft' && at.kind === 'hand';
     if (!resultInHand && outputs.some((item) => !couldFit(this.registry, PILE_GRID, item))) {
       throw new Error('An input or result is too large to put down');
     }
     const drops = resultInHand ? [] : this.workDrops(work, outputs, feet);
     this.remove(at);
     work.work = undefined;
+    if (finish && target && payload.kind === 'craft' && payload.repairAmount !== undefined) {
+      target.condition = Math.min(1, target.condition + payload.repairAmount);
+    }
     this.version += 1;
     if (resultInHand && at.kind === 'hand') {
       this.put(outputs[0]!, { kind: 'hand', side: at.side });
@@ -827,8 +893,35 @@ export class Inventory {
 }
 
 /** Reject registry-invalid topology before constructing or exposing a live inventory. */
+const validateRepairTargets = (registry: Registry, tree: readonly { item: ItemState }[]): void => {
+  const byUid = new Map(tree.map(({ item }) => [item.uid, item]));
+  for (const { item } of tree) {
+    const { work } = item;
+    const targetUid = work?.repairTargetUid;
+    if (!work || targetUid === undefined) {
+      continue;
+    }
+    if (work.kind !== 'craft') {
+      throw new Error('Disassembly cannot reference a repair target');
+    }
+    const recipe = registry.recipes.get(work.recipe);
+    const target = byUid.get(targetUid);
+    if (
+      recipe?.kind !== 'repair' ||
+      !target ||
+      target.uid === item.uid ||
+      target.type !== recipe.result.item ||
+      target.count !== 1
+    ) {
+      throw new Error('Missing or invalid repair target');
+    }
+  }
+};
+
 const validateInventoryTree = (registry: Registry, state: InventoryState): void => {
-  itemIds(savedItemTree(state), state.nextItemUid);
+  const tree = [...savedItemTree(state)];
+  itemIds(tree, state.nextItemUid);
+  validateRepairTargets(registry, tree);
   const grid = (placed: readonly PlacedState[], size: GridSize) => {
     const previous: Placed[] = [];
     for (const entry of placed) {
@@ -856,7 +949,7 @@ const validateInventoryTree = (registry: Registry, state: InventoryState): void 
       grid(saved[index]!, { w: spec.grid[0], h: spec.grid[1] });
     }
   };
-  for (const { item } of savedItemTree(state)) {
+  for (const { item } of tree) {
     pockets(item.type, item.pockets, defOf(registry, item.type).container?.pockets);
     if (item.type === WORK_IN_PROGRESS && !item.work) {
       throw new Error('Missing craft work payload');
@@ -897,7 +990,15 @@ const validateCraftWorkItem = (
   work: Extract<NonNullable<ItemState['work']>, { kind: 'craft' }>,
 ): void => {
   const recipe = registry.recipes.get(work.recipe);
-  if (!recipe || work.duration < recipe.time * 60) {
+  if (
+    !recipe ||
+    work.duration < recipe.time * 60 ||
+    (recipe.kind === 'repair') !== (work.repairTargetUid !== undefined && work.repairAmount !== undefined) ||
+    (work.repairTargetUid === undefined) !== (work.repairAmount === undefined) ||
+    (work.repairTargetUid !== undefined && (!Number.isSafeInteger(work.repairTargetUid) || work.repairTargetUid < 1)) ||
+    (work.repairAmount !== undefined &&
+      (!Number.isFinite(work.repairAmount) || work.repairAmount <= 0 || work.repairAmount > 1))
+  ) {
     throw new Error('Invalid craft work payload');
   }
   const actual = new Map<string, number>();

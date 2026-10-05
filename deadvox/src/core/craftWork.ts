@@ -17,6 +17,23 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
   }
 };
 
+const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnapshot): string | undefined => {
+  const targetUid = item.work?.repairTargetUid;
+  if (targetUid === undefined) {
+    return undefined;
+  }
+  const target = inventory.itemByUid(targetUid);
+  const { work } = item;
+  if (work?.kind !== 'craft') {
+    return 'The repair target is missing';
+  }
+  const recipe = inventory.registry.recipes.get(work.recipe);
+  if (!(recipe && target) || target.uid === item.uid || target.type !== recipe.result.item || target.count !== 1) {
+    return 'The repair target is missing';
+  }
+  return reach.entries.some((entry) => entry.item === target) ? undefined : 'The repair target is out of reach';
+};
+
 export const craftActionHooks = (
   inventory: Inventory,
   character: CraftCharacter,
@@ -44,7 +61,7 @@ export const craftActionHooks = (
       ? undefined
       : 'The item or its yield changed';
   },
-  begin: (plan) => inventory.beginWork(plan)?.uid,
+  begin: (plan, repair) => inventory.beginWork(plan, repair)?.uid,
   owns: (uid) => inventory.itemByUid(uid)?.work !== undefined,
   validate: (uid) => {
     const item = inventory.itemByUid(uid);
@@ -57,6 +74,10 @@ export const craftActionHooks = (
     }
     if (inventory.hands.right !== item || inventory.hands.left) {
       return 'The work needs both hands';
+    }
+    const repairRefusal = repairTargetRefusal(inventory, item, reach());
+    if (repairRefusal) {
+      return repairRefusal;
     }
     return work.kind === 'craft'
       ? admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character)
