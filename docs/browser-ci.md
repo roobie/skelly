@@ -25,14 +25,19 @@ can conceal the first failed attempt. A failed, cancelled or unobservable earlie
 attempt requires disposition, not an unchanged retry into green. Failure in the
 history query also fails the gate.
 
-For a pilot, the manual workflow's control and matrix call the same reusable
-workflow at the same checkout SHA. Compare repeated paired observations, actual
-job durations and per-step results; retain failed observations and first-attempt
-links. Time-to-green includes shared prerequisites and aggregation, while runner
-time sums the jobs each layout actually needs. The serial control deliberately
-serializes all enabled cases; it is not an assertion that the previous workflow's
-partially parallel topology had that same duration. Do not turn a successful
-synthetic merge check or a timing model into proof for an untested commit.
+For a pilot, paired manual runs call the same reusable workflow at one fixed
+checkout SHA, with each layout receiving its own aggregate. The control preserves
+main's independent check and browser-stage jobs, including the check's cheap-work
+ordering around browser cases. Serializing the complete suite instead would
+inflate the apparent benefit against the topology being replaced.
+
+Compare repeated paired observations, actual aggregate completion, job durations
+and per-step results; retain failed observations and first-attempt links.
+Time-to-green includes queue, setup and aggregation, while runner time sums the
+jobs each layout actually needs. Moving the inherited browser-stage cases out of
+the input shard avoids moving main's former parallel work onto one critical path.
+Do not turn a successful synthetic merge check or a timing model into proof for
+an untested commit.
 
 Diagnostic artifacts distinguish source, run, attempt and layout so sibling jobs
 or reruns cannot overwrite the evidence. Native inputs, render-free contracts,

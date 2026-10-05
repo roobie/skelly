@@ -28,7 +28,7 @@ on:
       layout:
         type: choice
         default: sharded
-        options: [sharded, serial, pilot]
+        options: [sharded, control]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
@@ -40,6 +40,7 @@ permissions:
 
 jobs:
   fast:
+    if: ${{ github.event.inputs.layout != 'control' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -76,25 +77,30 @@ jobs:
 
   browser:
     needs: fast
-    if: ${{ github.event.inputs.layout != 'serial' }}
+    if: ${{ github.event.inputs.layout != 'control' }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [input, save-other, opfs, indexeddb, firefox]
+        shard: [input, stages, save-other, opfs, indexeddb, firefox]
     uses: ./.github/workflows/deadvox-browser.yml
     with:
       shard: ${{ matrix.shard }}
 
-  # Both layouts in one manual run have the same checkout SHA and reusable case definitions.
-  serial:
-    needs: fast
-    if: ${{ github.event_name == 'workflow_dispatch' && (github.event.inputs.layout == 'serial' || github.event.inputs.layout == 'pilot') }}
+  # These start independently, matching main's check/browser-stages topology and step ordering.
+  control-check:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control' }}
     uses: ./.github/workflows/deadvox-browser.yml
     with:
-      shard: all
+      shard: control-check
+
+  control-stages:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control' }}
+    uses: ./.github/workflows/deadvox-browser.yml
+    with:
+      shard: control-stages
 
   check:
-    needs: [fast, browser, serial]
+    needs: [fast, browser, control-check, control-stages]
     if: always()
     runs-on: ubuntu-latest
     steps:

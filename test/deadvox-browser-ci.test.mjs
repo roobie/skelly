@@ -8,7 +8,6 @@ import { reserveDistinctPorts } from '../deadvox/tools/browser-ports.mjs';
 import {
   browserManifest,
   browserStagesOfScripts,
-  coveredStagesIn,
   describeStage,
   parseCommand,
   quarantinedScripts,
@@ -24,23 +23,27 @@ const uncovered = (name) => browserStages[name].map(describeStage).filter((stage
 
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
+const serialControl = /start independently/;
 const expression = (body) => `\${{ ${body} }}`;
 
 const partitionFixture = () => ({
   caller: {
     jobs: {
       browser: {
-        if: expression("github.event.inputs.layout != 'serial'"),
+        if: expression("github.event.inputs.layout != 'control'"),
         uses: './.github/workflows/deadvox-browser.yml',
         strategy: { 'fail-fast': false, matrix: { shard: ['alpha', 'beta'] } },
         with: { shard: expression('matrix.shard') },
       },
-      serial: {
-        if: expression(
-          "github.event_name == 'workflow_dispatch' && (github.event.inputs.layout == 'serial' || github.event.inputs.layout == 'pilot')",
-        ),
+      'control-check': {
+        if: expression("github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control'"),
         uses: './.github/workflows/deadvox-browser.yml',
-        with: { shard: 'all' },
+        with: { shard: 'control-check' },
+      },
+      'control-stages': {
+        if: expression("github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control'"),
+        uses: './.github/workflows/deadvox-browser.yml',
+        with: { shard: 'control-stages' },
       },
     },
   },
@@ -48,8 +51,14 @@ const partitionFixture = () => ({
     jobs: {
       run: {
         steps: [
-          { if: expression("inputs.shard == 'all' || inputs.shard == 'alpha'"), run: 'node test/browser/a.mjs' },
-          { if: expression("inputs.shard == 'all' || inputs.shard == 'beta'"), run: 'node test/browser/b.mjs' },
+          {
+            if: expression("inputs.shard == 'control-check' || inputs.shard == 'alpha'"),
+            run: 'node test/browser/a.mjs',
+          },
+          {
+            if: expression("inputs.shard == 'control-stages' || inputs.shard == 'beta'"),
+            run: 'node test/browser/b.mjs',
+          },
         ],
       },
     },
@@ -77,23 +86,6 @@ describe('browser port reservation', () => {
 });
 
 describe('deadvox browser CI coverage', () => {
-  it('excludes job- and step-disabled commands from direct coverage', () => {
-    const fixture = `jobs:
-  disabled-job:
-    steps:
-      - run: node test/browser/x.mjs
-    if: false
-  continue-step:
-    steps:
-      - continue-on-error: true
-        run: node test/browser/y.mjs
-  active-job:
-    steps:
-      - run: node test/browser/z.mjs
-`;
-    assert.deepEqual([...coveredStagesIn(fixture)], ['node test/browser/z.mjs']);
-  });
-
   it('normalizes a leading ./ and stage wrappers', () => {
     assert.deepEqual(parseCommand('SAVE_AUTOSAVE_ONLY=1 xvfb-run -a timeout 300 node ./test/browser/x.mjs'), {
       env: { SAVE_AUTOSAVE_ONLY: '1' },
@@ -121,6 +113,12 @@ describe('deadvox browser CI coverage', () => {
     const duplicate = partitionFixture();
     duplicate.caller.jobs.browser.strategy.matrix.shard.push('alpha');
     assert.throws(() => manifestOf(duplicate), duplicateCase);
+  });
+
+  it('rejects a dependency that serializes main control jobs', () => {
+    const fixture = partitionFixture();
+    fixture.caller.jobs['control-stages'].needs = 'control-check';
+    assert.throws(() => manifestOf(fixture), serialControl);
   });
 
   it('quarantines only scripts that exist and have no executed cases', () => {

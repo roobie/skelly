@@ -1,11 +1,12 @@
 export function assertBrowserResult({ layout, needs, priorAttempts }) {
-  if (!['sharded', 'serial', 'pilot'].includes(layout)) {
+  if (!['sharded', 'control'].includes(layout)) {
     throw new Error(`unknown layout: ${layout}`);
   }
   const expected = {
-    fast: 'success',
-    browser: layout === 'serial' ? 'skipped' : 'success',
-    serial: layout === 'sharded' ? 'skipped' : 'success',
+    fast: layout === 'control' ? 'skipped' : 'success',
+    browser: layout === 'control' ? 'skipped' : 'success',
+    'control-check': layout === 'sharded' ? 'skipped' : 'success',
+    'control-stages': layout === 'sharded' ? 'skipped' : 'success',
   };
   for (const [job, result] of Object.entries(expected)) {
     if (needs[job]?.result !== result) {

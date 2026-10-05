@@ -63,36 +63,28 @@ export const browserStagesOfScripts = (scripts) =>
       .filter(([, stages]) => stages.length),
   );
 
-export function coveredStagesIn(workflow) {
-  const jobs = parse(workflow).jobs ?? {};
-  return new Set(
-    Object.values(jobs)
-      .filter((job) => !('if' in job || 'continue-on-error' in job))
-      .flatMap((job) =>
-        (job.steps ?? [])
-          .filter((step) => !('if' in step || 'continue-on-error' in step))
-          .flatMap(stepStages)
-          .map(describeStage),
-      ),
-  );
-}
-
-const routePattern = /^\$\{\{ inputs\.shard == 'all' \|\| inputs\.shard == '([\w-]+)' \}\}$/;
+const routePattern = /^\$\{\{ inputs\.shard == '(control-[\w-]+)' \|\| inputs\.shard == '([\w-]+)' \}\}$/;
 const reusablePath = './.github/workflows/deadvox-browser.yml';
 
 const matrixShards = (jobs) => {
   requireEqual(jobs.browser.uses, reusablePath, 'matrix must execute the checked reusable workflow');
-  requireEqual(jobs.serial.uses, reusablePath, 'serial must execute the same reusable workflow');
   requireEqual(jobs.browser.with.shard, expression('matrix.shard'));
-  requireEqual(jobs.serial.with.shard, 'all');
-  requireEqual(jobs.browser.if, expression("github.event.inputs.layout != 'serial'"), 'matrix must not be draft-gated');
   requireEqual(
-    jobs.serial.if,
-    expression(
-      "github.event_name == 'workflow_dispatch' && (github.event.inputs.layout == 'serial' || github.event.inputs.layout == 'pilot')",
-    ),
-    'control layout selection drifted',
+    jobs.browser.if,
+    expression("github.event.inputs.layout != 'control'"),
+    'matrix must not be draft-gated',
   );
+  for (const name of ['control-check', 'control-stages']) {
+    const job = jobs[name];
+    requireEqual(job.uses, reusablePath, 'control must execute the same reusable workflow');
+    requireEqual(job.with.shard, name);
+    requireEqual(
+      job.if,
+      expression("github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control'"),
+      'control layout selection drifted',
+    );
+    requireValue(!('needs' in job), 'main control jobs must start independently');
+  }
   requireEqual(jobs.browser.strategy['fail-fast'], false, 'a failed shard must not cancel its siblings');
   const shards = jobs.browser.strategy.matrix.shard;
   requireValue(Array.isArray(shards) && shards.length > 0, 'empty shard matrix');
@@ -109,26 +101,31 @@ const partitionSteps = (reusable, shards) => {
   });
   const full = [];
   const partition = Object.fromEntries(shards.map((name) => [name, []]));
+  const control = { 'control-check': [], 'control-stages': [] };
   for (const step of steps) {
     const stages = stepStages(step);
     if (stages.length === 0) {
       continue;
     }
     requireValue(!('continue-on-error' in step), 'browser failures cannot be optional');
-    const route = step.if?.match(routePattern)?.[1];
-    requireValue(route && Object.hasOwn(partition, route), `unsupported browser route: ${step.if}`);
+    const [, group, route] = step.if?.match(routePattern) ?? [];
+    requireValue(
+      group && Object.hasOwn(control, group) && route && Object.hasOwn(partition, route),
+      `unsupported browser route: ${step.if}`,
+    );
     for (const stage of stages) {
       const key = describeStage(stage);
       full.push(key);
       partition[route].push(key);
+      control[group].push(key);
     }
   }
-  return { full, partition };
+  return { full, partition, control };
 };
 
 export function browserManifest({ caller, reusable, scripts }) {
   const shards = matrixShards(parse(caller).jobs);
-  const { full, partition } = partitionSteps(reusable, shards);
+  const { full, partition, control } = partitionSteps(reusable, shards);
   const declared = browserStagesOfScripts(scripts);
   const expected = new Set(
     Object.entries(declared)
@@ -141,14 +138,18 @@ export function browserManifest({ caller, reusable, scripts }) {
     [...expected].sort(),
     'full workflow differs from enabled package-script cases',
   );
-  requireEqual(full.length, new Set(full).size, 'serial workflow runs a case twice');
+  requireEqual(full.length, new Set(full).size, 'full workflow runs a case twice');
   const union = shards.flatMap((name) => partition[name]);
   requireEqual([...union].sort(), [...full].sort(), 'shard union must run every full-suite case exactly once');
   requireValue(
     shards.every((name) => partition[name].length > 0),
     'empty shard',
   );
-  return { full, partition };
+  requireValue(
+    Object.values(control).every((cases) => cases.length > 0),
+    'empty control job',
+  );
+  return { full, partition, control };
 }
 
 export function repositoryManifest(root = dirname(dirname(fileURLToPath(import.meta.url)))) {
