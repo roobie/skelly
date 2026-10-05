@@ -385,8 +385,21 @@
       "category": "book",
       "weight": 400,
       "size": [2, 2],
-      "book": { "title": "Field Manual: Making Do", "recipes": ["strip_wire", "field_patch", "make_electrical_repair_kit", "make_taped_flashlight_mount", "make_improvised_suppressor"], "readingTime": 20 },
-      "readable": { "title": "Field Manual: Making Do", "text": "A pocket guide to salvaging useful material from damaged equipment." }
+      "book": {
+        "title": "Field Manual: Making Do",
+        "recipes": [
+          "strip_wire",
+          "field_patch",
+          "make_electrical_repair_kit",
+          "make_taped_flashlight_mount",
+          "make_improvised_suppressor"
+        ],
+        "readingTime": 20
+      },
+      "readable": {
+        "title": "Field Manual: Making Do",
+        "text": "A pocket guide to salvaging useful material from damaged equipment."
+      }
     },
     {
       "id": "camp_craft_book",
@@ -394,8 +407,22 @@
       "category": "book",
       "weight": 350,
       "size": [2, 2],
-      "book": { "title": "Camp Craft", "recipes": ["torch", "candle", "rag_to_cloth_strip", "trim_wood_offcut", "assemble_fastener_pack", "make_scrap_foregrip"], "readingTime": 15 },
-      "readable": { "title": "Camp Craft", "text": "Notes on making simple light and shelter from things found nearby." }
+      "book": {
+        "title": "Camp Craft",
+        "recipes": [
+          "torch",
+          "candle",
+          "rag_to_cloth_strip",
+          "trim_wood_offcut",
+          "assemble_fastener_pack",
+          "make_scrap_foregrip"
+        ],
+        "readingTime": 15
+      },
+      "readable": {
+        "title": "Camp Craft",
+        "text": "Notes on making simple light and shelter from things found nearby."
+      }
     },
     {
       "id": "home_repair_book",
@@ -403,8 +430,33 @@
       "category": "book",
       "weight": 500,
       "size": [2, 2],
-      "book": { "title": "Home Repair Handbook", "recipes": ["repair_kit", "make_sewing_kit", "make_sewing_repair_kit", "repair_crowbar", "repair_hammer", "repair_machete", "repair_kabar", "repair_baseball_bat", "repair_steel_pipe", "repair_jeans", "repair_cargo_pants", "repair_hoodie", "repair_jacket", "repair_utility_vest", "repair_hiking_backpack", "repair_fanny_pack", "repair_flashlight"], "readingTime": 25 },
-      "readable": { "title": "Home Repair Handbook", "text": "A practical handbook for keeping tools and household goods working." }
+      "book": {
+        "title": "Home Repair Handbook",
+        "recipes": [
+          "repair_kit",
+          "make_sewing_kit",
+          "make_sewing_repair_kit",
+          "repair_crowbar",
+          "repair_hammer",
+          "repair_machete",
+          "repair_kabar",
+          "repair_baseball_bat",
+          "repair_steel_pipe",
+          "repair_jeans",
+          "repair_cargo_pants",
+          "repair_hoodie",
+          "repair_jacket",
+          "repair_utility_vest",
+          "repair_hiking_backpack",
+          "repair_fanny_pack",
+          "repair_flashlight"
+        ],
+        "readingTime": 25
+      },
+      "readable": {
+        "title": "Home Repair Handbook",
+        "text": "A practical handbook for keeping tools and household goods working."
+      }
     },
     {
       "id": "workshop_notes",
@@ -412,7 +464,19 @@
       "category": "book",
       "weight": 300,
       "size": [2, 2],
-      "book": { "title": "Workshop Notes", "recipes": ["field_patch", "make_wire_strippers", "make_electrical_repair_kit", "assemble_fastener_pack", "make_taped_flashlight_mount", "make_improvised_suppressor", "make_scrap_foregrip"], "readingTime": 30 },
+      "book": {
+        "title": "Workshop Notes",
+        "recipes": [
+          "field_patch",
+          "make_wire_strippers",
+          "make_electrical_repair_kit",
+          "assemble_fastener_pack",
+          "make_taped_flashlight_mount",
+          "make_improvised_suppressor",
+          "make_scrap_foregrip"
+        ],
+        "readingTime": 30
+      },
       "readable": { "title": "Workshop Notes", "text": "Handwritten notes on careful repairs and using salvaged wire." }
     }
   ],
