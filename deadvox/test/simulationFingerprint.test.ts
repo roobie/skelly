@@ -133,13 +133,16 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
     expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
+    const paths = [...graph.sources.keys()];
+    expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(graph.sources.size).toBeGreaterThan(0);
     expect(graph.excludedImports.length).toBeGreaterThan(0);
-    for (const { excluded } of graph.excludedImports) {
-      expect(graph.sources.has(excluded)).toBe(false);
+    for (const { importer, excluded } of graph.excludedImports) {
+      expect(paths).toContain(importer);
+      expect(paths).not.toContain(excluded);
     }
   });
 
