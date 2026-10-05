@@ -4,11 +4,7 @@ import type { SolidAt } from '../core/raycast.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
-import {
-  HEARTBEAT_FILES,
-  type HeartbeatTarget,
-  heartbeatForStamina,
-} from './audioPresentation.ts';
+import { HEARTBEAT_FILES, type HeartbeatTarget, heartbeatForStamina } from './audioPresentation.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
