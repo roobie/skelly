@@ -30,13 +30,14 @@ acting").
   sprinting. When #267 lands, ready movement is a separate duck-walk gait, not
   crouch, and mainly a speed factor. BR said its speed "can be a skill-dependent thing" and
   called it an "own gait, but mainly it's simply a speed factor"; which skill
-  applies remains open in #267, with a generic "warfare" skill only a lean. BR also said, "yeah, melee needs
-  'en-garde' on right-mouse-hold, which also enables blocking incoming melee
-  (based on skill)". Blocking requires en-garde plus S: "1a. yes S is required
-  to actually block from en-garde"; success depends on skill. An unreadied
-  firearm's left-click does "nothing": no shot and no nope sound. The held pose
-  shows ready state, not a HUD indicator; see #267. Middle click or Shift
-  toggles hip and sights while a firearm is ready.
+  applies remains open in #267, with a generic "warfare" skill only a lean. BR
+  also said, "yeah, melee needs 'en-garde' on right-mouse-hold, which also
+  enables blocking incoming melee (based on skill)". Blocking requires en-garde
+  plus S: "1a. yes S is required to actually block from en-garde"; success
+  depends on skill. When #267 lands, an unreadied firearm's left-click does
+  "nothing": no shot and no nope sound. When #267 lands, the held firearm pose
+  shows ready state, not a HUD indicator. Middle click or Shift toggles hip and
+  sights while a firearm is ready.
 - **F interacts; Q and E are reserved (BR, 2026-09-27).**
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the

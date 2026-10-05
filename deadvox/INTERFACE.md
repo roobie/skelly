@@ -179,11 +179,11 @@ ruling.
 - **Right mouse sets the combat stance:** holding it raises a melee weapon into
 en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
 also ready a firearm, bringing it up to fire from the hip; releasing it will
-lower the firearm. Readiness is a stance the body shows, not a HUD mode. BR
-described the pose direction on 2026-10-05: "the UI must show unreadied vs
-readied / unreadied does not have muzzle forward - rather downward". When #267
-lands, an unreadied firearm's muzzle points down; readying brings it up and
-forward. There is no HUD indicator.
+lower the firearm. When #267 lands, the held firearm pose will show readiness;
+there will be no HUD indicator. BR described the pose direction on 2026-10-05:
+"the UI must show unreadied vs readied / unreadied does not have muzzle forward
+- rather downward". When #267 lands, an unreadied firearm's muzzle points down;
+readying brings it up and forward.
 - **Aiming down the sights is a toggle within the ready stance,** for firearms
   only: while right-click is held, a middle click or Shift switches between hip
   and sights (the view narrows through the sights). Input interpretation belongs
@@ -196,8 +196,8 @@ forward. There is no HUD indicator.
   1a on 2026-10-05: "1a. yes S is required to actually block from en-garde".
   Whether a block succeeds depends on the skill that remains open in #267.
 - **Unready firearm left-click is an exception to refusal:** BR's answer for an
-  unreadied firearm was "nothing". It produces no shot and no nope sound; this
-  deliberate no-op does not use the ordinary refusal cue.
+  unreadied firearm was "nothing". When #267 lands, it produces no shot and no
+  nope sound; this deliberate no-op does not use the ordinary refusal cue.
 - **Hand activation follows actor roles (BR, 2026-10-04):** dominance is
   identity, not a remapping of physical inventory slots. A held item cannot
   become an unarmed attack, and a two-handed hold's support must not activate
@@ -207,8 +207,8 @@ forward. There is no HUD indicator.
   identity rather than consulting creation preferences. See
   `docs/character-handedness.md` for the accepted-launch and physical-pose
   boundaries.
-- Lowered, a held item may block part of the view (as held models do today);
-  readying is what brings it to where it's used.
+- Lowered, a held item may block part of the view (as held models do today).
+  When #267 lands, readying a firearm brings its held pose forward.
 
 ## Development and playtest
 
