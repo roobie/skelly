@@ -1,5 +1,5 @@
 // Content-owned yields for taking apart a finished item; work progress stays with Inventory.
-import type { CraftCharacter } from './character.ts';
+import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import type { ItemDef } from './content.ts';
 import { indexCraftReach } from './crafting.ts';
 import type { Item } from './items.ts';
@@ -64,8 +64,9 @@ export const disassemblyOutputs = (
   if (!disassembly) {
     return (definition.salvage ?? []).map(({ item, count }) => ({ item, count }));
   }
+  const effectLevel = skillEffectLevel(skillLevel);
   return disassembly.yields.flatMap((yieldItem) => {
-    const skillFraction = yieldItem.fractions[Math.min(skillLevel, yieldItem.fractions.length - 1)]!;
+    const skillFraction = yieldItem.fractions[Math.min(effectLevel, yieldItem.fractions.length - 1)]!;
     const level = yieldItem.toolModifier ? toolLevel(yieldItem.toolModifier.quality) : 0;
     const toolBonus =
       level > 0 && yieldItem.toolModifier
@@ -94,7 +95,7 @@ export const planDisassembly = (
     return undefined;
   }
   const skill = definition.disassembly?.skill;
-  const skillLevel = skill ? (character.skills[skill] ?? 0) : 0;
+  const skillLevel = skill ? (character.skills[skill] ?? SKILL_LEVEL_MIN) : SKILL_LEVEL_MIN;
   const reachIndex = indexCraftReach(reach);
   const qualityLevel = (quality: string) =>
     Math.max(0, ...(reachIndex.qualities.get(quality) ?? []).map(({ level }) => level));

@@ -82,6 +82,11 @@ In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every
   NaN / Inf-or->8 / negative. It runs after fog.
 - `crackcheck=1` (End): the background is cleared to magenta, so holes show.
 
+The fresh-game `firearmsSkill` debug parameter accepts the ordinary range and
+its legendary level defined by `src/core/character.ts`, `SKILL_LEVEL_MIN`,
+`SKILL_LEVEL_MAX` and `SKILL_LEVEL_LEGENDARY`; see
+`src/debug/debugFirearmsSkill.ts`, `setDebugFirearmsSkill`.
+
 Bisect a visual bug by flipping one toggle at a time before theorising.
 
 ## Seeing the game without a display

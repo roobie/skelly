@@ -442,8 +442,10 @@ teaching books in recipe knowledge; see `src/core/reachability.ts`,
 accepted only when an eligible activity is reachable.
 
 - Progression on 2.4's character state: finishing a craft gives practice in the
-  recipe's skills; levels never go down. A skill shortens work time and gates
-  recipes that need it.
+  recipe's skills; ordinary levels are bounded by `src/core/character.ts`,
+  `SKILL_LEVEL_MIN` and `SKILL_LEVEL_MAX`, with `SKILL_LEVEL_LEGENDARY` as the
+  single exceptional level. A skill shortens work time and gates recipes that
+  need it.
 - A `book` component (title, recipes taught, reading time). Reading is a long
   action with the book in your hands, under 2.4's contract; finishing it
   teaches its recipes. One reading teaches the recipes for Slice 2; deeper
