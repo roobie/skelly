@@ -66,6 +66,7 @@ import {
   worldActionForKey,
 } from './input.ts';
 import { startingLoadout } from './loadout.ts';
+import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { handlePlayMenuKey } from './menuKeys.ts';
 import { PLAYER } from './player.ts';
@@ -261,6 +262,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     startingLoadout(inventory);
+    populateTestHouseRepairCorner(inventory, registry, config.site, engine.spawn.pos, s);
   }
   // Furniture, with the loot rolled for it, arrives with its column.
   streamer.onColumn = (cx, cz) => {

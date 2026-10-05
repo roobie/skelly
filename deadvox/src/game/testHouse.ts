@@ -9,7 +9,9 @@
 // kitchen cupboard, a fridge and a wardrobe) stands in and around it for comparing objects with structure.
 
 import type { EntitySpec } from '../core/blockEntities.ts';
+import type { Registry, RecipeDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { Inventory } from '../core/inventory.ts';
 import type { MetreBox } from '../core/structure.ts';
 import { type Facing, pieceSize } from '../core/templates.ts';
 
@@ -155,3 +157,95 @@ export const testHouseFurniture = (
     facing,
     ...(loot ? { loot } : {}),
   }));
+
+/** #231 can provide book item IDs here once content records which recipes each book teaches. */
+export type RepairBookHook = (registry: Registry, recipes: readonly RecipeDef[]) => readonly string[];
+
+/** Populate only the debug test-house scenario with content-derived repair stock. */
+export const populateTestHouseRepairCorner = (
+  inventory: Inventory,
+  registry: Registry,
+  site: string,
+  spawn: Vec3,
+  blockSize: number,
+  repairBooks: RepairBookHook = () => [],
+): void => {
+  if (site !== 'testHouse') {
+    return;
+  }
+  const recipes = [...registry.recipes.values()]
+    .filter((recipe) => recipe.kind === 'repair')
+    .sort((a, b) => a.id.localeCompare(b.id));
+  if (recipes.length === 0) {
+    return;
+  }
+
+  const components = new Map<string, number>();
+  const qualities = new Map<string, number>();
+  for (const recipe of recipes) {
+    for (const group of recipe.components) {
+      const alternative = group.find(({ item }) => registry.items.has(item));
+      if (!alternative) {
+        throw new Error(`Repair recipe ${recipe.id} has no component item`);
+      }
+      components.set(alternative.item, (components.get(alternative.item) ?? 0) + 2 * alternative.count);
+    }
+    for (const [quality, level] of Object.entries(recipe.qualities)) {
+      qualities.set(quality, Math.max(qualities.get(quality) ?? 0, level));
+    }
+  }
+
+  const itemsById = [...registry.items.values()].sort((a, b) => a.id.localeCompare(b.id));
+  const tools = new Set<string>();
+  for (const [quality, level] of [...qualities].sort(([a], [b]) => a.localeCompare(b))) {
+    const provider = itemsById.find((item) => (item.tool?.qualities[quality] ?? 0) >= level);
+    if (!provider) {
+      throw new Error(`No item provides ${quality} quality for the test-house repair corner`);
+    }
+    tools.add(provider.id);
+  }
+  for (const book of repairBooks(registry, recipes)) {
+    if (!registry.items.has(book)) {
+      throw new Error(`Repair book hook returned unknown item ${book}`);
+    }
+    tools.add(book);
+  }
+
+  const houseOrigin: Vec3 = [
+    spawn[0] - SPAWN_OFFSET[0],
+    spawn[1] - SPAWN_OFFSET[1],
+    spawn[2] - SPAWN_OFFSET[2],
+  ];
+  const pilePositions: Vec3[] = [1, 1 + blockSize, 1 + 2 * blockSize].flatMap((x) =>
+    [3, 3 + blockSize, 3 + 2 * blockSize].map(
+      (z): Vec3 => [
+        Math.round((houseOrigin[0] + x) / blockSize),
+        Math.round(houseOrigin[1] / blockSize),
+        Math.round((houseOrigin[2] + z) / blockSize),
+      ],
+    ),
+  );
+  const place = (type: string, count: number, condition: number, pileIndexes: readonly number[]): void => {
+    const stackSize = registry.items.get(type)?.stack ?? 1;
+    let remaining = count;
+    while (remaining > 0) {
+      const item = inventory.create(type, Math.min(remaining, stackSize), condition);
+      const added = pileIndexes.some((index) => inventory.add(item, { kind: 'pile', pos: pilePositions[index]! }));
+      if (!added) {
+        throw new Error(`No room for ${type} in the test-house repair corner`);
+      }
+      remaining -= item.count;
+    }
+  };
+
+  recipes.forEach((recipe, index) => {
+    const condition = 0.25 + (0.5 * (index + 1)) / (recipes.length + 1);
+    place(recipe.result.item, 1, condition, [0, 1]);
+  });
+  for (const type of [...tools].sort()) {
+    place(type, 1, 1, [0, 1]);
+  }
+  for (const [type, count] of [...components].sort(([a], [b]) => a.localeCompare(b))) {
+    place(type, count, 1, [2, 3, 4, 5, 6, 7, 8]);
+  }
+};
