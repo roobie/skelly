@@ -37,7 +37,6 @@ import { bindReach, pileDistance as distanceToPile, furnitureDistance, INVENTORY
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
-import type { StairRouteLink, TerrainFloorAt } from '../core/shamblerRoutes.ts';
 import { Simulation } from '../core/sim.ts';
 import type { Site } from '../core/site.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
@@ -144,8 +143,7 @@ export interface SessionOptions {
   spawn: Vec3;
   /** The game's shared block entities; restore populates this same object in place. */
   entities?: Inventory['entities'];
-  stairFlights?: readonly StairRouteLink[];
-  terrainFloor?: TerrainFloorAt;
+  terrainFloor?: (x: number, z: number) => number;
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
   controls: SessionControls;
@@ -200,7 +198,7 @@ export interface RestoredLook {
 const firearmsSkillLevel = (character: Character): number => character.skills.firearms ?? 0;
 
 export const createSession = (options: SessionOptions) => {
-  const { registry, world, isSolid, scale, seed, controls, audio, debug, stairFlights = [] } = options;
+  const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
   const physics = physicsFor(scale);
   const restored = options.restore;
@@ -442,7 +440,6 @@ export const createSession = (options: SessionOptions) => {
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
-    stairFlights,
     terrainFloor: options.terrainFloor,
     isSolid,
     isOpaque: options.isOpaque,

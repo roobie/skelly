@@ -4,8 +4,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
-  - you change shambler navigation, sight range over terrain or floor-transition
-    behavior
+  - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
@@ -654,84 +653,11 @@ worse the world gets.
   rain washes out). Terrain height alone should not end a clear pursuit; sight
   over a rise is bounded by occlusion, not by spending range on vertical distance.
   See `src/core/zombies.ts`, `seesPlayer`.
-- **Navigation rationale:** Collision-aware routing prevents false progress
-  through blockers, while bounded work protects the shared simulation tick.
-  Keeping route planning separate from physics preserves collision ownership.
-  A changed target leaves the current verified waypoints in use while the bounded
-  search plans toward the latest block-cell goal. Before any waypoint exists, the
-  shambler waits: a straight segment check cannot establish authored floor
-  connectivity, and waiting preserves bounded route work. See
-  `deadvox/src/core/zombies.ts`, `ZombieSystem.routeWaypoint` and
-  `ZombieSystem.serviceRouteSearches`, and `deadvox/src/core/shamblerRoutes.ts`,
-  `planShamblerRoute`.
-  Explore landing connections only from the reached frontier, trying the goal
-  before optional detours. Exhausting effort on an unrelated closed approach must
-  not discard a complete route already found. See
-  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs`.
-  A grid-expansion limit alone hides flight validation, graph preparation and
-  compression work. Account for world probes and metadata/graph work against the
-  request allowance; the expansion cap also bounds local path structures.
-  Finish at most one request beyond the dispatch slice and rotate the remaining
-  queue deterministically. The allowance is logical work, not a wall-clock deadline; see
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`, and
-  `deadvox/src/core/zombies.ts`, `serviceRouteSearches`.
-  This is a bounded pilot, not a completeness guarantee: when no route is found,
-  the shambler waits for a retry instead of steering directly through blockers.
-  Crowd navigation and cheaper tiers belong to Slice 3
-  ([#244](https://github.com/roobie/skelly/issues/244)), not larger pilot caps.
-  Persist route progress, retry time and dispatch order so loading does not
-  silently restart pursuit or change which actor receives the next search.
-  See `deadvox/src/core/zombies.ts`, `snapshotState` and `restoreState`, and
-  `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
-  Request-local native maps avoid repeated world lookups without retaining stale
-  collision across requests. Continuous swept clearance prevents a short corner
-  overlap from creating an unsafe route and endless replanning; see
-  `deadvox/src/core/shamblerRoutes.ts`, `horizontalSweepClear`.
-  Live movement checks stay local even while gravity settles a descent; checking
-  the whole future leg during that transient hides unbounded per-actor work.
-  Descending endpoints are still checked for newly blocked landings. See
-  `deadvox/src/core/zombies.ts`, `liveRouteClearance` and `routeWaypoint`.
-  Preserve height changes when compressing a terrain detour: a raised sweep is
-  not proof that the body can hover over intervening obstacles. See
-  `deadvox/src/core/shamblerRoutes.ts`, `compressFlatPath`.
-  Distant goals use successive local horizons. A verified stair exit may be the
-  useful prefix when backtracking to its landing puts that horizon outside the
-  next leg's window; this is not straight steering through a failed route. See
-  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs` and `planRoute`.
-- **Storeys:** Matching horizontal projections could connect disconnected
-  floors and falsely complete an unreachable goal. Absolute feet height also
-  cannot identify a storey on graded terrain: world ground height distinguishes
-  that surface from an authored floor above it. Terrain legs follow that supplied
-  surface; constructed storey transitions still require authored flights. See
-  `deadvox/src/core/shamblerRoutes.ts`, `terrainForLeg` and `onTerrainFloor`.
-  Far-hearing direction must not manufacture source-storey knowledge. A grounded
-  listener projects the uncertain bearing onto known terrain, not the source's
-  height; a listener above ground retains its own level. See `deadvox/src/core/zombies.ts`,
-  `sameRouteFloor` and `farBearingTarget`, and
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
-- **Level of detail:** Only the active tier is implemented, using bounded routes;
-  see `deadvox/src/core/zombies.ts`, `ZombieSystem`. The tiers remain planned design:
+- **Movement:** BR: “they beeline towards whatever grabs their attention”; “they should be primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over”; and when they hit an obstacle “they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example).” A shambler moves directly toward its current attention target in the horizontal plane. `stepBody` and collision resolution own wall sliding; `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the named distance, then resumes toward its current target. BR also ruled to “defer the bashing” for #273: closed doors are obstacles like walls until mob and obstacle strength exist. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
+- **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
+- **Future movement tiers:** Background flow fields and abstract group movement remain Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)); no active-tier route planner or stair traversal is implemented.
 
-  | Tier | Where | Simulation |
-  | --- | --- | --- |
-  | Active | Nearby actors | Detailed AI, body physics and bounded routes (implemented) |
-  | Background | Distant actors in loaded chunks | Reduced-rate steering along a shared flow field (planned) |
-  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
-
-  Background and abstract tiers, the flow field and crowd navigation are
-  Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)), not built behavior.
-
-**Decided (BR, 2026-10-04):**
-
-- "At some point we will make everything destructible. Door, walls, appliances,
-  furniture et[c] and yes, normal doors should be possible to breach by an
-  ordinary shambler, given enough time. But the overarching idea is to keep it
-  pretty aligned with how CDDA works"
-- "to answer the question here and now: no, let's not make shamblers breach
-  doors"
-
-A destructive-door mechanic needs its own gameplay contract, so navigation
-must not add one implicitly. See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
+**Decision (BR, 2026-10-05; #273):** “Not in this round: bashing.” BR deferred bashable obstacles until mob strength and obstacle strength exist. Closed doors are obstacles like walls; do not implement bashing or a stub. Leave the decision point in `ZombieSystem.tick` for a future rule.
 
 ### Models
 
@@ -743,8 +669,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** Doors have strength; zombies bash them (brutes faster)
-  and you can barricade them. Locks can be picked or pried.
+- **Doors and locks.** Doors can be barricaded; locks can be picked or pried. Zombie bashing is deferred: BR said “defer the bashing” for #273 because strength is not modeled. Closed doors block a shambler like other solids; see `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`. Do not add a stub before mob and obstacle strength exist.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,

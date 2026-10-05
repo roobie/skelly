@@ -220,7 +220,6 @@ try {
         noclip,
         locked: input.locked,
         contentErrors: engine.contentErrors,
-        routes: session.zombies.snapshotState().routes,
         zombies: [...session.zombieStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
@@ -524,7 +523,7 @@ try {
       globalThis.stairsWitness.input.pitch = 0;
     });
     await walk('s', 112, false, 43);
-    const houseDownstairs = await state('house downstairs walked');
+    await state('house downstairs walked');
     const groundProjection = await page.evaluate((id) => {
       const { body, session } = globalThis.stairsWitness;
       const resident = session.zombieStore.get(id);
@@ -569,32 +568,38 @@ try {
       Math.round(residentBeforeDescent.position[1]),
       'native sprinting supplies an exact lower-floor stimulus, not the stale mid-flight target',
     );
-    const followed = await waitForSimulation(
+    const observed = await waitForSimulation(
       page,
-      (id) => {
+      ({ id, start, seconds }) => {
         const { session, body } = globalThis.stairsWitness;
         const resident = session.zombieStore.get(id);
+        const elapsed = session.sim.time - start;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: resident !== undefined && Math.round(resident.body.pos[1]) === Math.round(body.pos[1]),
+          reached: elapsed >= seconds,
           residentFloor: resident ? Math.round(resident.body.pos[1]) : null,
           targetFloor: Math.round(body.pos[1]),
         };
       },
-      residentId,
+      { id: residentId, start: residentBeforeDescent.simulationTime, seconds: 30 },
       {
         seconds: 30,
         from: residentBeforeDescent.simulationTime,
-        label: 'stairs_house resident follows the authored flight to the player floor',
+        label: 'shambler remains on its storey while beelining toward a lower-floor target',
         record: state,
       },
     );
+    assert.notEqual(
+      observed.residentFloor,
+      observed.targetFloor,
+      'authored stairs do not give a shambler floor-navigation behavior',
+    );
     residentProof = {
       residentId,
-      upperFloor: Math.round(residentAtUpper.pos[1]),
-      lowerFloor: Math.round(houseDownstairs.position[1]),
-      simulationSeconds: followed.seconds,
+      residentFloor: observed.residentFloor,
+      targetFloor: observed.targetFloor,
+      simulationSeconds: observed.seconds,
     };
 
     await stage([143, 43.0001, 115]);
