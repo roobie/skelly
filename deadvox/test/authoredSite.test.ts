@@ -7,6 +7,7 @@ import {
   buildingBounds,
   defaultFoundation,
   LOT_APRON_M,
+  LOT_BLEND_M,
   profileHeight,
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
@@ -92,9 +93,6 @@ describe('authored layout acceptance', () => {
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
-    const bounds = buildingBounds(layout.buildings[1]!, registry.templates.get('shed')!.size);
-    expect(bounds.x1).toBeGreaterThan(bounds.x0);
-    expect(bounds.z1).toBeGreaterThan(bounds.z0);
   });
   it('maps a clockwise east bearing to an east-facing authored spawn', () => {
     const east = new AuthoredSite(1, registry, scale, {
@@ -289,6 +287,27 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   const [spawnX, spawnZ] = toCell(playerX, playerZ);
   const natural = ridge.ground / scale.blockSize;
   expect(site.surface.height(ridgeX, ridgeZ, natural)).toBeGreaterThan(site.surface.height(spawnX, spawnZ, natural));
+
+  const blendBuilding = ridge.buildings[0]!;
+  const blendBounds = buildingBounds(blendBuilding, registry.templates.get(blendBuilding.template)!.size);
+  const blendFixture = { ...ridge, buildings: [blendBuilding] };
+  const blendSite = new AuthoredSite(73, registry, scale, blendFixture);
+  const blendTargetX = blendBounds.x1 + LOT_APRON_M + LOT_BLEND_M / 2;
+  const blendX = Math.floor((blendTargetX - scale.blockSize / 2) / scale.blockSize);
+  const blendZ = Math.floor((blendBounds.z0 + blendBounds.z1) / 2 / scale.blockSize);
+  const blendCentre: [number, number] = [(blendX + 0.5) * scale.blockSize, (blendZ + 0.5) * scale.blockSize];
+  const blendDistance = blendCentre[0] - (blendBounds.x1 + LOT_APRON_M - scale.blockSize / 2);
+  expect(Math.abs(blendDistance - LOT_BLEND_M / 2)).toBeLessThanOrEqual(scale.blockSize / 2);
+  const authoredProfile = profileHeight(blendFixture, ...blendCentre);
+  const [, floorHeight] = blendBuilding.position;
+  const blendLow = Math.min(floorHeight, authoredProfile);
+  const blendHigh = Math.max(floorHeight, authoredProfile);
+  const blendedHeight = blendSite.surface.height(blendX, blendZ, natural) * scale.blockSize;
+  expect(blendedHeight).toBeGreaterThanOrEqual(blendLow - scale.blockSize / 2);
+  expect(blendedHeight).toBeLessThanOrEqual(blendHigh + scale.blockSize / 2);
+  const naturalGap = ridge.ground < blendLow ? blendLow - ridge.ground : ridge.ground - blendHigh;
+  expect(naturalGap).toBeGreaterThan(scale.blockSize);
+
   for (const building of ridge.buildings) {
     const bounds = buildingBounds(building, registry.templates.get(building.template)!.size);
     const [x, z] = toCell((bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2);
@@ -442,11 +461,15 @@ it('stamps the rotated multi-storey house deterministically with supported spawn
   }
 
   const furniture = columns.flatMap(([cx, cz]) => site.furnitureIn(cx, cz));
-  const bed = furniture.find(({ spec }) => spec.type === 'bed');
   const multiStoreyIndex = layout.buildings.findIndex((building) => (building.storeys ?? 1) > 1);
   expect(multiStoreyIndex).toBeGreaterThanOrEqual(0);
-  expect(bed).toBeDefined();
-  expect(bed!.spec.pos[1]).toBeGreaterThan(site.placements[multiStoreyIndex]!.origin[1]);
+  const multiStoreyBuilding = layout.buildings[multiStoreyIndex]!;
+  const placement = site.placements[multiStoreyIndex]!;
+  const perStorey = registry.templates.get(multiStoreyBuilding.template)!.size[1] - 1;
+  const hasUpstairsBed = furniture.some(
+    ({ spec }) => spec.type === 'bed' && spec.pos[1] > placement.origin[1] + perStorey,
+  );
+  expect(hasUpstairsBed).toBe(true);
 
   const optionalLayout = {
     ...layout,

@@ -62,8 +62,18 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
 screen.open();
 screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));
 screen.update();
-const input = { locked: false, menuPointer: false, cursorX: 0, cursorY: 0,
-  moveMenuCursor(x, y) { this.cursorX += x; this.cursorY += y; } };
+const inputState = { locked: false, menuPointer: false };
+const input = {
+  get locked() { return inputState.locked; },
+  get menuPointer() { return inputState.menuPointer; },
+  setPointerModeForTest(locked) {
+    inputState.locked = locked;
+    inputState.menuPointer = locked;
+  },
+  cursorX: 0,
+  cursorY: 0,
+  moveMenuCursor(x, y) { this.cursorX += x; this.cursorY += y; },
+};
 const target = document.querySelector('#view');
 const menu = mountMenuPointer({ input, canvas: target, cursor: document.querySelector('#game-cursor') });
 let gameplayWheels = 0;
@@ -149,8 +159,7 @@ try {
         (trial) => {
           const { input } = globalThis.scrollFixture;
           globalThis.scrollFixture.resetWheels();
-          input.locked = trial.locked;
-          input.menuPointer = trial.locked;
+          input.setPointerModeForTest(trial.locked);
           document.querySelector(trial.selector).scrollTop = 0;
           globalThis.scrollFixture.menu.update();
         },

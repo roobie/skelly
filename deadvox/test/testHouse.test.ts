@@ -107,6 +107,7 @@ describe('test house', () => {
           box.max[1] - box.min[1] >= 2,
       );
       expect(doorway).toBeDefined();
+      expect(doorway!.min[1]).toBe(0);
       const doorwayX = (doorway!.min[0] + doorway!.max[0]) / 2;
       const doorwayZ = (doorway!.min[2] + doorway!.max[2]) / 2;
       const walkingY = doorway!.min[1] + blockSize / 2;
@@ -127,6 +128,8 @@ describe('test house', () => {
         )
         .sort((a, b) => a.min[0] - b.min[0]);
       expect(stairs.length).toBeGreaterThan(0);
+      expect(stairs[0]!.max[1]).toBe(blockSize);
+      expect(stairs.at(-1)!.max[1]).toBe(bounds.y1);
       for (const [index, step] of stairs.entries()) {
         const x = (step.min[0] + step.max[0]) / 2;
         const z = (step.min[2] + step.max[2]) / 2;
