@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
+import { Character, practiceForNextLevel } from '../src/core/character.ts';
 import { buildRegistry, type RecipeDef } from '../src/core/content.ts';
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -327,20 +327,32 @@ describe('pure craft planner', () => {
 
   it('reports knowledge, skill gaps and the best usable quality level', () => {
     const { snapshot } = stock([{ type: 'hammer', condition: 0 }]);
-    const definition = { ...recipe([[{ item: 'rag', count: 1 }]], { hammering: 1 }), skills: { crafting: 1 } };
-    expect(planCraft(definition, snapshot, { skills: { crafting: 0 }, knownRecipes: new Set() })).toMatchObject({
+    const definition = { ...recipe([[{ item: 'rag', count: 1 }]], { hammering: 1 }), skills: { mechanics: 2 } };
+    expect(planCraft(definition, snapshot, { skills: { mechanics: 1 }, knownRecipes: new Set() })).toMatchObject({
       missing: {
         knowledge: true,
-        skills: [{ skill: 'crafting', required: 1, available: 0 }],
+        skills: [{ skill: 'mechanics', required: 2, available: 1 }],
         qualities: [{ quality: 'hammering', required: 1, available: 0 }],
       },
     });
-    const actor = { skills: { crafting: 0 }, knownRecipes: new Set(['fixture']) };
+    const actor = { skills: { mechanics: 1 }, knownRecipes: new Set(['fixture']) };
     const result = planCraft(definition, snapshot, actor);
     expect('missing' in result).toBe(true);
     if ('missing' in result) {
       expect(result.missing.reason).toBe(admissionRefusal(definition, snapshot, actor));
     }
+  });
+
+  it('shortens recipe work when a required skill level rises', () => {
+    const { snapshot } = stock([{ type: 'rag' }]);
+    const definition = { ...recipe([[{ item: 'rag', count: 1 }]]), skills: { crafting: 0 } };
+    const novice = planCraft(definition, snapshot, { skills: { crafting: 0 }, knownRecipes: new Set(['fixture']) });
+    const trained = planCraft(definition, snapshot, { skills: { crafting: 1 }, knownRecipes: new Set(['fixture']) });
+    expect('plan' in novice && 'plan' in trained).toBe(true);
+    if (!('plan' in novice && 'plan' in trained)) {
+      throw new Error('Fixture craft was not plannable');
+    }
+    expect(trained.plan.work).toBeLessThan(novice.plan.work);
   });
 
   it('records planning every base recipe against one indexed 200-item reach snapshot', () => {
@@ -353,7 +365,18 @@ describe('pure craft planner', () => {
     const inventory = new Inventory(benchmarkRegistry);
     const bag = inventory.create('school_backpack');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
-    const types = ['stick', 'rag', 'wax', 'repair_kit', 'kitchen_knife', 'hammer', 'scrap_metal', 'duct_tape'];
+    const types = [
+      'stick',
+      'rag',
+      'wax',
+      'repair_kit',
+      'kitchen_knife',
+      'hammer',
+      'scrap_metal',
+      'duct_tape',
+      'copper_wire',
+      'field_patch',
+    ];
     for (let i = 0; i < 199; i += 1) {
       const type = types[i % types.length]!;
       const item = inventory.create(type, ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'].includes(type) ? 3 : 1);
@@ -365,7 +388,12 @@ describe('pure craft planner', () => {
     const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
-    actor.skills.crafting = 1; // Timings exercise a successful plan, including the gated repair kit.
+    actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.
+    actor.awardPractice('crafting', practiceForNextLevel(actor.skills.crafting!));
+    actor.awardPractice(
+      'mechanics',
+      practiceForNextLevel(actor.skills.mechanics!) + practiceForNextLevel(actor.skills.mechanics! + 1),
+    ); // Timings exercise successful plans, including skill-gated recipes.
     const started = performance.now();
     const index = indexCraftReach(snapshot);
     const indexMs = performance.now() - started;

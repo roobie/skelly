@@ -4,6 +4,7 @@ description: Decision for exact, versioned, crash-safe local saves of the Deadvo
 read_if:
   - you're changing persistent simulation state or restore guarantees
   - you're evaluating the save-format decision
+  - you change save format, snapshot state or compatibility policy
 tags: [deadvox, adr, saves, persistence, determinism]
 created: 2026-09-28
 status: accepted
@@ -355,6 +356,8 @@ systems now.
 | 6 — Wheels | Vehicle grids, installed parts, fuel, battery, driving, damage and repair | Revisit at Slice 6: vehicles are persistent world entities keyed by stable vehicle ID under their region, with their part/item state and dynamic physics state; exact component fields wait for the vehicle implementation. |
 | 7 — Cordon and labs | Tier 2/3 sites, underground labs, special zombies/evolution, hazard zones, lore | Revisit at Slice 7: generated sites remain version-bound world data; discovered lore belongs to the character and mutable hazards/evolution to world-region state. Exact fields wait for the systems. |
 | 8 — Version 1 | Migration and compatibility hardening | The version picker/migration decision is a hard fork. EPIC's “Old saves migrate” exit criterion remains a version 1 obligation, not a 1.9 feature; resolve the strict-version interim policy before the v1 exit. |
+
+**2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `deadvox/src/core/saveState.ts`, `SaveSnapshot`, and `deadvox/src/core/longAction.ts`, `LongActions`.
 
 ### Storage, browsers, and recovery
 
