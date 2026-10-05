@@ -3,10 +3,26 @@ import type { RestAction, RestKind } from '../core/longAction.ts';
 import { REST } from '../core/needs.ts';
 import type { Simulation } from '../core/sim.ts';
 
+export interface RestFurniture {
+  quality: number;
+  sleepable: boolean;
+}
+
 export interface RestHooks {
-  bedQuality: () => number | undefined;
+  furniture: (uid: number) => RestFurniture | undefined;
+  withinReach: (uid: number) => boolean;
   notice: (text: string) => void;
 }
+
+export const restKindForFurniture = (furniture: {
+  rest?: { quality: number; sleep?: true | undefined } | undefined;
+}): RestKind | undefined => {
+  if (furniture.rest === undefined) {
+    return undefined;
+  }
+  return furniture.rest.sleep ? 'sleep' : 'rest';
+};
+
 export class RestController {
   private readonly sim: Simulation;
   private readonly hooks: RestHooks;
@@ -18,28 +34,44 @@ export class RestController {
   get action(): RestAction | undefined {
     return this.sim.actions.rest;
   }
-  rateFor(kind: RestKind): number {
-    if (kind === 'rest') {
-      return REST.rest;
-    }
-    const quality = this.hooks.bedQuality();
-    return quality === undefined ? REST.sleep : REST.sleep + REST.bedBonus * quality;
+  rateFor(kind: RestKind, quality: number): number {
+    return kind === 'rest' ? REST.rest * quality : REST.sleep + REST.bedBonus * quality;
   }
-  start(kind: RestKind): string | undefined {
-    return this.sim.actions.startRest(kind, this.rateFor(kind));
+  start(kind: RestKind, furnitureUid: number): string | undefined {
+    const furniture = this.hooks.furniture(furnitureUid);
+    if (!furniture || (kind === 'sleep' && !furniture.sleepable)) {
+      return 'That furniture cannot be used for this action';
+    }
+    if (!this.hooks.withinReach(furnitureUid)) {
+      return 'Too far away';
+    }
+    return this.sim.actions.startRest(kind, this.rateFor(kind, furniture.quality), furnitureUid);
   }
   resume(): string | undefined {
+    const { action } = this;
+    if (action) {
+      const furniture = this.hooks.furniture(action.furnitureUid);
+      if (!furniture) {
+        return 'That furniture is no longer there';
+      }
+      if (!this.hooks.withinReach(action.furnitureUid)) {
+        return 'Too far away';
+      }
+      if (action.kind === 'sleep' && !furniture.sleepable) {
+        return 'That furniture cannot be used for this action';
+      }
+    }
     return this.sim.actions.resume();
   }
   stop(): void {
     this.sim.actions.stop();
   }
-  toggle(kind: RestKind): string | undefined {
-    if (this.action?.kind === kind) {
+  toggle(kind: RestKind, furnitureUid: number): string | undefined {
+    if (this.action?.kind === kind && this.action.furnitureUid === furnitureUid) {
       this.stop();
       return undefined;
     }
-    return this.start(kind);
+    return this.start(kind, furnitureUid);
   }
   frame(realDt: number, until?: number): void {
     this.sim.frame(realDt, until);

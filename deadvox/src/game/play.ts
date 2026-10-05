@@ -52,6 +52,7 @@ import type { SaveController } from '../ui/saveController.ts';
 import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import { firearmShotSound, handlingMoveCompleteCue, handlingMoveStartCue } from './audioPresentation.ts';
+import { labelForCode } from './controls.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
@@ -81,6 +82,7 @@ import { selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
+import { restKindForFurniture } from './rest.ts';
 import { createSession } from './session.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
@@ -323,11 +325,11 @@ export const startPlay = (
     noticeUntil = performance.now() + 3000;
   };
 
-  const toggleRest = (kind: RestKind): void => {
-    if (compression.interruption !== undefined) {
+  const toggleRest = (kind: RestKind, entity: BlockEntity): void => {
+    const already = rest.action?.kind === kind && rest.action.furnitureUid === entity.uid;
+    if (compression.interruption !== undefined && !already) {
       return;
     }
-    const already = rest.action?.kind === kind;
     if (!already) {
       if (compression.locksInput) {
         return;
@@ -337,7 +339,7 @@ export const startPlay = (
         options.saveController?.beforeSleep();
       }
     }
-    const reason = rest.toggle(kind);
+    const reason = rest.toggle(kind, entity.uid);
     if (reason) {
       showNotice(`Can't ${kind}: ${reason}`);
     }
@@ -684,9 +686,17 @@ export const startPlay = (
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
   globalThis.addEventListener('blur', () => quickbarInput.cancel());
 
-  /** Rest has no initiation key; C continues owned craft work and L still toggles sleep. */
+  /** L remains until d44 removes the legacy binding; F starts actions through furniture. */
   const longActionKeys = new Map<string, () => void>([
-    [CONTROL_CODES.sleep, () => toggleRest('sleep')],
+    [
+      CONTROL_CODES.sleep,
+      () => {
+        const entity = lookedAt();
+        if (entity && restKindForFurniture(entities.defOf(entity)) === 'sleep') {
+          toggleRest('sleep', entity);
+        }
+      },
+    ],
     [CONTROL_CODES.continue, () => session.crafting.currentUid !== undefined && continueAction()],
   ]);
 
@@ -697,7 +707,7 @@ export const startPlay = (
       return;
     }
     const action = worldActionForKey(code);
-    if (action === 'interact' && !compression.locksInput) {
+    if (action === 'interact' && (!compression.locksInput || rest.action !== undefined)) {
       use();
     } else if (action === 'cancel') {
       input.reload.cancel();
@@ -882,31 +892,48 @@ export const startPlay = (
       open: entity.open,
       container: Boolean(entity.pockets),
       readable: Boolean(entities.defOf(entity).readable),
+      restAction: restKindForFurniture(entities.defOf(entity)),
+      interactLabel: labelForCode(CONTROL_CODES.interact),
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
     });
   };
 
-  /** F: doors first, then readable furniture, then container search/inventory. */
+  /** F: doors first, then readable/restable furniture, then container search/inventory. */
   function use(): void {
     const entity = lookedAt();
-    if (!entity) {
+    if (!entity || (compression.locksInput && rest.action?.furnitureUid !== entity.uid)) {
       return;
     }
-    if (entities.defOf(entity).door) {
+    useTarget(entity);
+  }
+
+  function useTarget(entity: BlockEntity): void {
+    const def = entities.defOf(entity);
+    if (def.door) {
       toggleDoor(entity);
-    } else if (entities.defOf(entity).readable) {
+      return;
+    }
+    if (def.readable) {
       const reason = session.readFurniture(entity);
       if (reason) {
         showNotice(reason);
       }
-    } else if (entity.pockets) {
-      playtestObserver?.beginSearch(entity, nameOf(entity));
-      search(entity);
-      if (!screen.isOpen) {
-        toggleInventory();
-      }
+      return;
+    }
+    const kind = restKindForFurniture(def);
+    if (kind) {
+      toggleRest(kind, entity);
+      return;
+    }
+    if (!entity.pockets) {
+      return;
+    }
+    playtestObserver?.beginSearch(entity, nameOf(entity));
+    search(entity);
+    if (!screen.isOpen) {
+      toggleInventory();
     }
   }
 

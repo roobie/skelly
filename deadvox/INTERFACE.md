@@ -119,7 +119,18 @@ Text on screen falls into four classes, and only three of them ship:
    heft it. Ships, on the meta surfaces that need them (the inventory).
 3. **The character's voice, when something is refused or noticed:** "You're not
    tired", "Something's in the way", "You hear something outside". Short, first
-   person, about the world, never about keys or menus. Ships.
+   person, about the world, never about keys or menus. Ships. BR ruled on
+   2026-10-05: "our overarching goal is: diegesis / which means 0 synthetic UI
+   elements / this cannot hold for exactly 100% of the time / but it does mean /
+   if the checkbox for messages/hints is off ,then no messages or hints should
+   come from a syntheitic UI element / but the 'nope' sound shall play regardless
+   of UI hints being on or off". In the world prompt (see
+   `src/ui/playHud.ts`, `playPromptText`), class-3 text appears only when the
+   `messages` HUD option is on. The rest card (`src/ui/rest.ts`, `restViewModel`)
+   and the craft status box (`src/ui/crafting.ts`, `renderCraftStatus`) still show
+   an interruption's reason with it off, until d75 brings them under BR's ruling.
+   With it off, a refusal's cue will be the avatar's nope sound; d74 adds that
+   sound.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
    ("press R", "open the inventory", "C: continue"). **Development only.**
 
@@ -195,7 +206,7 @@ to use it:
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
 | Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
-| Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; "R or X to stop" becomes a hint |
+| Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt ("C: continue X: stop") | meta, instruction | meta, choice | a two-button choice drawn as such, with the key names from the hint channel |
 | Main menu (F9) | meta | meta | fine; settings and help live here |
 | Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |

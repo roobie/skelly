@@ -5,7 +5,7 @@ import { Chunk } from '../src/core/chunk.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { type MetreBox, rasterize, stampChunk } from '../src/core/structure.ts';
-import { cellsOf } from '../src/core/templates.ts';
+import { cellsOf, pieceSize } from '../src/core/templates.ts';
 import { testHouse, testHouseFurniture } from '../src/game/testHouse.ts';
 
 const blocks = {
@@ -144,43 +144,55 @@ describe('test house', () => {
     });
   }
 
-  it('keeps each furniture footprint clear, supported and disjoint from its neighbors', () => {
-    const blockSize = 0.5;
-    const { at } = build(blockSize);
-    const furniture = testHouseFurniture([0, 0, 0], blockSize, sizeOf);
-    const occupied = new Set<string>();
-    expect(
-      furniture.some(({ size }) => size.every((dimension) => dimension > 0)),
-      'fixture furniture must exercise the clearance contract',
-    ).toBe(true);
+  describe('furniture', () => {
+    const specs = testHouseFurniture([4, 10, -4], 0.5, sizeOf);
 
-    for (const spec of furniture) {
-      expect(
-        spec.size.every((dimension) => dimension > 0),
-        `furniture ${spec.type} has a footprint`,
-      ).toBe(true);
-      const footprint = [...cellsOf(spec.size)].filter(([, y]) => y === 0);
-      for (const [x, y, z] of cellsOf(spec.size)) {
-        const cell: [number, number, number] = [spec.pos[0] + x, spec.pos[1] + y, spec.pos[2] + z];
-        const key = cell.join(',');
-        expect(occupied.has(key), `furniture overlaps at ${key}`).toBe(false);
-        occupied.add(key);
-        expect(
-          at(...(cell.map((value) => (value + 0.5) * blockSize) as [number, number, number])),
-          `furniture intersects the house at ${key}`,
-        ).toBe(0);
+    it('anchors furniture on whole blocks and rotates its size to its facing', () => {
+      expect(specs.length).toBeGreaterThan(0);
+      for (const { type, pos, size, facing } of specs) {
+        expect(pos.every(Number.isInteger)).toBe(true);
+        expect(size).toEqual(pieceSize(sizeOf(type), facing));
       }
+    });
+
+    it('keeps each furniture footprint clear, supported and disjoint from its neighbors', () => {
+      const blockSize = 0.5;
+      const { at } = build(blockSize);
+      const furniture = testHouseFurniture([0, 0, 0], blockSize, sizeOf);
+      const occupied = new Set<string>();
       expect(
-        footprint.every(
-          ([x, , z]) =>
-            at(
-              (spec.pos[0] + x + 0.5) * blockSize,
-              (spec.pos[1] - 0.5) * blockSize,
-              (spec.pos[2] + z + 0.5) * blockSize,
-            ) !== 0,
-        ),
-        `furniture ${spec.type} stands on its floor`,
+        furniture.some(({ size }) => size.every((dimension) => dimension > 0)),
+        'fixture furniture must exercise the clearance contract',
       ).toBe(true);
-    }
+
+      for (const spec of furniture) {
+        expect(
+          spec.size.every((dimension) => dimension > 0),
+          `furniture ${spec.type} has a footprint`,
+        ).toBe(true);
+        const footprint = [...cellsOf(spec.size)].filter(([, y]) => y === 0);
+        for (const [x, y, z] of cellsOf(spec.size)) {
+          const cell: [number, number, number] = [spec.pos[0] + x, spec.pos[1] + y, spec.pos[2] + z];
+          const key = cell.join(',');
+          expect(occupied.has(key), `furniture overlaps at ${key}`).toBe(false);
+          occupied.add(key);
+          expect(
+            at(...(cell.map((value) => (value + 0.5) * blockSize) as [number, number, number])),
+            `furniture intersects the house at ${key}`,
+          ).toBe(0);
+        }
+        expect(
+          footprint.every(
+            ([x, , z]) =>
+              at(
+                (spec.pos[0] + x + 0.5) * blockSize,
+                (spec.pos[1] - 0.5) * blockSize,
+                (spec.pos[2] + z + 0.5) * blockSize,
+              ) !== 0,
+          ),
+          `furniture ${spec.type} stands on its floor`,
+        ).toBe(true);
+      }
+    });
   });
 });
