@@ -105,12 +105,14 @@ try {
       stageUrl,
     })}\n`,
   );
+  const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
+  debugChannels.add('pw:browser');
+  process.env.DEBUG = [...debugChannels].join(',');
   const { chromium } = await import('playwright');
   browser = await chromium.launch({
     executablePath: chromeExecutable,
     headless: true,
     args: launchArgs,
-    dumpio: true,
     timeout: 30_000,
   });
   browser.on('disconnected', () => {

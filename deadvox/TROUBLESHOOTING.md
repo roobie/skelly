@@ -153,15 +153,15 @@ Two single-case quarantines remain; a fresh pass does not establish a fix:
 Neither is in the default Firefox command. No retries or increased bounds; record a
 fixed trial plan and before/after/restored-before evidence before reinstating a case.
 
-Set `DEBUG=pw:browser` for browser launch and transport traces. The Chromium UI contract in
-`tools/ui-browser-contract.mjs`, `ui-browser-contract`, starts Vite and waits for its root
-response before navigating a Playwright-controlled Chrome; a page CDP session preserves raw
-input. `UI_BROWSER_LAUNCH` records Chrome version and graphics arguments, while
-`UI_BROWSER_GRAPHICS` records the active WebGL renderer. Playwright streams browser output to
-the job log so GPU-initialization diagnostics can be checked there. On failure,
-`UI_LAUNCH_FAILURE` includes requested browser arguments, browser connection state/version,
-Vite's last response, navigation phase, page URL and page errors; it no longer reports a
-manually managed TCP DevTools port or target list.
+Set `DEBUG=pw:browser` for Playwright browser launch and transport traces. The Chromium UI
+contract in `tools/ui-browser-contract.mjs`, `ui-browser-contract`, enables that channel before
+importing Playwright, so Chrome's GPU and launch messages appear in the job log as `pw:browser`
+lines. It starts Vite and waits for its root response before navigating a Playwright-controlled
+Chrome; a page CDP session preserves raw input. `UI_BROWSER_LAUNCH` records Chrome version and
+graphics arguments, while `UI_BROWSER_GRAPHICS` records the active WebGL renderer. When
+`chromium.launch` fails, `UI_LAUNCH_FAILURE.error` carries Playwright's browser log; the record
+also includes requested browser arguments, browser connection state/version, Vite's last
+response, navigation phase, page URL and page errors.
 
 Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
 separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,
