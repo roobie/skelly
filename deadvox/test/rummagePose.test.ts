@@ -155,6 +155,7 @@ it('a live firearm pose takes precedence over a generic held move', () => {
       feet: [0, 0, 0],
       yaw: 0,
       pitch: 0,
+      aimFrame: { yaw: 0, pitch: 0 },
       blockSize: 0.5,
     }),
   ).toBe(true);

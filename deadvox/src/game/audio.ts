@@ -4,6 +4,7 @@ import type { SolidAt } from '../core/raycast.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
+import { HEARTBEAT_FILES, type HeartbeatTarget, heartbeatForStamina } from './audioPresentation.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
@@ -115,12 +116,21 @@ export class GameAudio {
   private readonly voices = new Map<SoundEventId, Set<Voice>>();
   // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
   private readonly retiring = new Map<SoundEventId, Set<Voice>>();
+  private heartbeatTarget: HeartbeatTarget = heartbeatForStamina(100);
+  private heartbeatNextAt = Number.NEGATIVE_INFINITY;
+  private heartbeatLoading = false;
+  private heartbeatUnavailable = false;
+  private disposed = false;
 
   constructor({ registry, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
     this.blockSize = blockSize;
     this.isSolid = isSolid;
     this.report = report;
+  }
+
+  dispose(): void {
+    this.disposed = true;
   }
 
   get settings(): AudioVolumes {
@@ -269,6 +279,41 @@ export class GameAudio {
     return true;
   }
 
+  /** Plays one heartbeat recording through the same body-category and buffer path as live beats. */
+  previewHeartbeat(file: string, gainValue: number): boolean {
+    if (!Object.values(HEARTBEAT_FILES).includes(file as (typeof HEARTBEAT_FILES)[keyof typeof HEARTBEAT_FILES])) {
+      return false;
+    }
+    const url = PACK_FILES[`../content/base/${file}`];
+    const { context, nodes } = this;
+    if (!(url && context && nodes)) {
+      this.report(`heartbeat file "${file}" is not bundled`);
+      return false;
+    }
+    this.loadBuffer(context, file, url).then(async (buffer) => {
+      if (!buffer || this.context !== context) {
+        return;
+      }
+      if (context.state !== 'running') {
+        try {
+          await context.resume();
+        } catch (error) {
+          this.report(`audio context did not resume: ${String(error)}`);
+        }
+      }
+      if (context.state === 'running') {
+        this.startHeartbeat({
+          context,
+          body: nodes.categories.get('body')!,
+          buffer,
+          gainValue,
+          when: context.currentTime + 0.025,
+        });
+      }
+    });
+    return true;
+  }
+
   /** Playback voice allocation happens after decoding; pending loads consume no playback slots. */
   private stealOldestVoice(event: SoundEventId, context: AudioContext): void {
     const cap = VOICE_CAPS.get(event);
@@ -309,6 +354,91 @@ export class GameAudio {
     for (const category of CATEGORIES) {
       this.nodes.categories.get(category)!.gain.value = this.volumes[category];
     }
+  }
+
+  updateHeartbeat(stamina: number): void {
+    if (this.disposed) {
+      return;
+    }
+    this.heartbeatTarget = heartbeatForStamina(stamina);
+    const { context, nodes } = this;
+    if (
+      this.heartbeatTarget.gain === 0 ||
+      this.heartbeatUnavailable ||
+      this.heartbeatLoading ||
+      !context ||
+      !nodes ||
+      context.state !== 'running' ||
+      context.currentTime < this.heartbeatNextAt
+    ) {
+      return;
+    }
+    this.heartbeatLoading = true;
+    const files = Object.values(HEARTBEAT_FILES);
+    const buffers = files.map((file) => {
+      const url = PACK_FILES[`../content/base/${file}`];
+      if (!url) {
+        this.report(`heartbeat file "${file}" is not bundled`);
+        return Promise.resolve(null);
+      }
+      return this.loadBuffer(context, file, url);
+    });
+    Promise.all(buffers).then(([slow, fast]) => {
+      this.heartbeatLoading = false;
+      if (!(slow && fast)) {
+        this.heartbeatUnavailable = true;
+        return;
+      }
+      if (this.disposed || this.context !== context || context.state !== 'running') {
+        return;
+      }
+      const target = this.heartbeatTarget;
+      if (target.gain === 0) {
+        return;
+      }
+      const interval = 60 / target.bpm;
+      const when = context.currentTime + 0.025;
+      const body = nodes.categories.get('body')!;
+      // Use the recording that fits one scheduled beat; the law controls tempo, not pitch.
+      this.startHeartbeat({
+        context,
+        body,
+        buffer: slow.duration <= interval ? slow : fast,
+        gainValue: target.gain,
+        when,
+      });
+      this.heartbeatNextAt = when + interval;
+    });
+  }
+
+  private startHeartbeat({
+    context,
+    body,
+    buffer,
+    gainValue,
+    when,
+  }: {
+    context: AudioContext;
+    body: GainNode;
+    buffer: AudioBuffer;
+    gainValue: number;
+    when: number;
+  }): void {
+    if (gainValue === 0) {
+      return;
+    }
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    source.playbackRate.value = 1;
+    gain.gain.value = gainValue;
+    source.connect(gain);
+    gain.connect(body);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+    };
+    source.start(when);
   }
 
   private loadBuffer(context: AudioContext, file: string, url: string): Promise<AudioBuffer | null> {

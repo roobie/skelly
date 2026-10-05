@@ -23,7 +23,8 @@ import {
 } from './plan.ts';
 import { benchDraw, benchPostFromUrl, postUrlPart } from './post.ts';
 import { environment } from './run.ts';
-import { findShamblerBenchPlayer, placeShamblerRing } from './shamblerPlacement.ts';
+import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
+import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { frameStats, sampleStats } from './stats.ts';
 
 export interface ShamblerBenchRun {
@@ -130,19 +131,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       hour: () => hourOfDay(startTime),
       hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
     });
-    const type = engine.registry.zombies.get('shambler');
-    if (!type) {
-      throw new Error('Cannot run the shambler benchmark: shambler content is missing.');
-    }
-    for (const pos of placeShamblerRing({ count, seed: run.seed, player: playerBody, engine })) {
-      const direction: [number, number, number] = [playerBody.pos[0] - pos[0], 0, playerBody.pos[2] - pos[2]];
-      const id = zombies.add(type, pos, direction);
-      zombies.store.get(id)!.body.onGround = true;
-    }
-    zombies.tick(1 / 20);
-    if ([...zombies.store.entries()].some(([, zombie]) => zombie.mode !== 'chase')) {
-      throw new Error('Cannot start shambler benchmark: not every shambler can see the player from its ring position.');
-    }
+    spawnShamblerRing({ count, seed: run.seed, player: playerBody, engine, registry: engine.registry, zombies });
     zombieMeshes = run.actors === 'detailed' ? new MobActorMeshes(s, count) : new ZombieMeshes(s, count);
     scene.add(zombieMeshes.group);
   };

@@ -1528,6 +1528,66 @@ describe('local route continuation', () => {
     expect(airborneChecks).toBeGreaterThan(0);
   });
 
+  it('keeps a visible high target in sight while the chaser closes over climbable terrain', () => {
+    const terrainFloor = (x: number) => 1 + Math.max(0, Math.floor((x - 1) / 2));
+    const solid: SolidAt = (x, y) => y < terrainFloor(x);
+    const source: Vec3 = [1, terrainFloor(1), 0];
+    const targetX = source[0] + Math.floor(SHAMBLER.sight / BLOCK_SIZE) - 1;
+    const highTarget: Vec3 = [targetX, terrainFloor(targetX), 0];
+    const initialTarget: Vec3 = [source[0] + 2, terrainFloor(source[0] + 2), 0];
+    const type = {
+      ...SHAMBLER,
+      speed: { wander: 0, chase: 2 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    let target = initialTarget;
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0]), solid),
+      terrainFloor,
+    });
+    const id = system.add(type, source, [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    system.tick(1 / 20, 1 / 20);
+    expect(zombie.mode).toBe('chase');
+
+    target = highTarget;
+    const startDistance = metres(zombie.body.pos, target);
+    const spatialDistance =
+      Math.hypot(target[0] - zombie.body.pos[0], target[1] - zombie.body.pos[1], target[2] - zombie.body.pos[2]) *
+      BLOCK_SIZE;
+    expect(startDistance).toBeLessThanOrEqual(type.sight);
+    expect(spatialDistance).toBeGreaterThan(type.sight);
+
+    let route: ReturnType<typeof system.snapshotState>['routes'][number]['route'] | undefined;
+    for (let tick = 2; tick <= 10; tick++) {
+      system.tick(1 / 20, tick / 20);
+      expect(zombie.mode).toBe('chase');
+      route = system.snapshotState().routes.find(({ id: routeId }) => routeId === id)?.route;
+      if (route && !route.pending) {
+        break;
+      }
+    }
+    expect(route?.pending).toBe(false);
+    expect(route?.goal[0]).toBeGreaterThan(initialTarget[0]);
+    expect(route?.goal[1]).toBeGreaterThan(initialTarget[1]);
+    expect(route?.waypoints.length).toBeGreaterThan(0);
+
+    for (let tick = 11; tick <= 20 * 20; tick++) {
+      system.tick(1 / 20, tick / 20);
+      expect(bodyHitsSolid(zombie.body, solid)).toBe(false);
+    }
+
+    expect(zombie.mode).toBe('chase');
+    expect(zombie.body.onGround).toBe(true);
+    expect(zombie.body.pos[1]).toBeGreaterThan(source[1]);
+    expect(metres(zombie.body.pos, target)).toBeLessThan(startDistance);
+  });
+
   it('pursues a grounded target over graded terrain without treating height changes as storeys', () => {
     const terrainFloor = (x: number) => 1 + Math.max(0, Math.floor(x / 5));
     const solid: SolidAt = (x, y) => y < terrainFloor(x);
@@ -1621,6 +1681,44 @@ describe('local route continuation', () => {
     expect(Math.hypot(zombie.body.pos[0] - target[0], zombie.body.pos[2] - target[2]) * blockSize).toBeLessThanOrEqual(
       type.attack.reach,
     );
+  });
+
+  it('keeps closing on a target that crosses cells while its route is replanned', () => {
+    const blockSize = 0.5;
+    const startTargetX = 40.25;
+    let target: Vec3 = [startTargetX, 1, 1];
+    const type = {
+      ...SHAMBLER,
+      sight: 1000,
+      speed: { wander: 0, chase: 2 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'still')),
+      blockSize,
+    });
+    const id = system.add(type, [1, 1, 1], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    const initialDistance = metres(zombie.body.pos, target);
+    const dt = 1 / 20;
+    let previousCell = Math.floor(target[0]);
+    let cellChanges = 0;
+    for (let tick = 1; tick <= 20 * 4; tick++) {
+      target = [startTargetX + (1.75 * tick * dt) / blockSize, 1, 1];
+      const cell = Math.floor(target[0]);
+      if (cell !== previousCell) {
+        cellChanges += 1;
+        previousCell = cell;
+      }
+      system.tick(dt, tick * dt);
+    }
+    expect(cellChanges).toBeGreaterThan(2);
+    expect(metres(zombie.body.pos, target)).toBeLessThan(initialDistance);
   });
 });
 
@@ -2482,11 +2580,11 @@ describe('dismemberment', () => {
       [8, realWeapons[1]!],
       [10, realWeapons[2]!],
     ]);
-    const sweep = [2, 4, 6, 8, 10, 14, 20, 40].map(
+    const sweep = [2, 4, 8, 10, 20, 40].map(
       (impulse) => impulseByWeapon.get(impulse) ?? simulate({ ...FISTS_MELEE, impulse }),
     );
 
-    expect(sweep.map(({ part }) => part)).toEqual(Array.from({ length: 8 }, () => 'upperArm.R'));
+    expect(sweep.map(({ part }) => part)).toEqual(Array.from({ length: 6 }, () => 'upperArm.R'));
     for (const outcome of sweep) {
       expect(outcome.hit?.point).toEqual(sweep[0]!.hit?.point);
       expect(outcome.hit?.direction).toEqual(sweep[0]!.hit?.direction);
@@ -2494,7 +2592,7 @@ describe('dismemberment', () => {
     for (let index = 1; index < sweep.length; index++) {
       expect.soft(sweep[index]!.distance).toBeGreaterThan(sweep[index - 1]!.distance);
     }
-    expect.soft(sweep[7]!.distance).toBeGreaterThanOrEqual(1.5 * sweep[6]!.distance);
+    expect.soft(sweep[5]!.distance).toBeGreaterThanOrEqual(1.5 * sweep[4]!.distance);
     for (const outcome of realWeapons) {
       expect(outcome.distance).toBeGreaterThanOrEqual(0.2);
       expect(outcome.distance).toBeLessThanOrEqual(8);

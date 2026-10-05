@@ -6,6 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character } from '../core/character.ts';
@@ -16,6 +17,7 @@ import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
+import { firearmsSkillEffects } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
   advanceFootsteps,
@@ -55,7 +57,7 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
-import { FirearmMechanics, type FirearmShotEffect } from './firearmHandling.ts';
+import { FirearmMechanics, type FirearmShotEffect, type FirearmTrajectory } from './firearmHandling.ts';
 import {
   createPlayerBody,
   type MoveIntent,
@@ -158,6 +160,8 @@ export interface SessionOptions {
   onHandlingOutcomes?: (result: TickResult) => void;
   /** Output only, called after the simulation has committed the case transition. */
   onFirearmEjection?: (effect: FirearmShotEffect) => void;
+  /** Presentation-only trajectory for every committed round, including virtual automatic fire. */
+  onFirearmTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
   /** Presentation hooks for what the shamblers' rules decide; they only draw, and change no state. */
   zombieEffects?: {
     /** A part was cut off (the zombie's `severed` already lists it). Fires before onDeath on a killing blow. */
@@ -193,6 +197,8 @@ export interface RestoredLook {
   walk: boolean;
 }
 
+const firearmsSkillLevel = (character: Character): number => character.skills.firearms ?? 0;
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug, stairFlights = [] } = options;
   const s = scale.blockSize;
@@ -214,6 +220,7 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
+  const aim = new AimController(restored?.character.aim, firearmsSkillEffects(firearmsSkillLevel(character)).variance);
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
@@ -338,6 +345,9 @@ export const createSession = (options: SessionOptions) => {
           }
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
+    onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
+    firearmsSkillLevel: () => firearmsSkillLevel(character),
+    onCommittedShot: (shotSeed, recoilKickRadians) => aim.recordShot(shotSeed, recoilKickRadians),
     onShot: (shot, time) => {
       zombieSystem.firePellets(shot);
       playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });
@@ -380,6 +390,16 @@ export const createSession = (options: SessionOptions) => {
       return 'sprinting';
     }
     return moving.walk ? 'walking' : 'jogging';
+  };
+  const updateAim = (dt: number): void => {
+    aim.advance({
+      dt,
+      velocity: body.vel,
+      blockSize: s,
+      yaw: controls.yaw(),
+      pitch: controls.pitch(),
+      variance: firearmsSkillEffects(firearmsSkillLevel(character)).variance,
+    });
   };
   const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
     if (body.onGround) {
@@ -562,6 +582,7 @@ export const createSession = (options: SessionOptions) => {
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
+      updateAim(dt);
       playerCombat.tick(dt, heldItemUids());
       dispatchPlayerActions(moving, intent);
       if (!options.ready(body.pos[0], body.pos[2])) {
@@ -570,6 +591,7 @@ export const createSession = (options: SessionOptions) => {
       const handling = queue.busy || firearms.busy;
       const going = intent.forward !== 0 || intent.right !== 0;
       sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
+      survival.setSprinting(sprinting);
       stepStamina(sim.needs, dt, sprinting);
       const pacedIntent = {
         ...intent,
@@ -666,6 +688,7 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     firearms,
+    aim,
     quickbar,
     character,
     planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
@@ -760,6 +783,7 @@ export const createSession = (options: SessionOptions) => {
         character,
         simulation: sim,
         player: snapshotPlayer(body, controls.yaw(), controls.pitch(), controls.walking()),
+        aim,
         survival,
         quickbar: quickbar.snapshotState(inventory),
         zombies: zombieSystem,

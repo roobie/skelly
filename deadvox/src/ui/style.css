@@ -1338,6 +1338,21 @@ body.inventory-open #inventory-stats {
 #debug-axis-gizmo[hidden] {
   display: none;
 }
+#debug-target-range {
+  position: fixed;
+  right: 92px;
+  bottom: 36px;
+  padding: 3px 5px;
+  color: #eee;
+  background: rgb(0 0 0 / 65%);
+  font:
+    11px ui-monospace,
+    monospace;
+  pointer-events: none;
+}
+#debug-target-range[hidden] {
+  display: none;
+}
 
 #f3-debug-overlay {
   position: fixed;

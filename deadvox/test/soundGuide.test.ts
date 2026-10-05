@@ -1,11 +1,33 @@
+// @vitest-environment happy-dom
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { render } from 'lit-html';
+import { describe, expect, it, vi } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
-import { buildSoundGuide, SOUND_TRIGGER_GUIDE } from '../src/ui/soundGuide.ts';
+import { HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
+import {
+  buildHeartbeatSoundGuide,
+  buildSoundGuide,
+  HEARTBEAT_PREVIEW_LEVELS,
+  renderHeartbeatSoundGuide,
+  SOUND_TRIGGER_GUIDE,
+} from '../src/ui/soundGuide.ts';
 
 const sounds = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
+const heartbeatFixtureManifest = {
+  sources: [
+    {
+      title: 'Heartbeat fixture',
+      author: 'Fixture author',
+      licence: 'CC0-1.0',
+      url: 'https://example.test/heartbeat',
+      download: null,
+      files: Object.values(HEARTBEAT_FILES),
+      changes: 'Fixture provenance',
+    },
+  ],
+} as Manifest;
 
 const eventFilePairs = (entries: ReturnType<typeof buildSoundGuide>) =>
   entries.flatMap((entry) => entry.variants.map(({ file }) => `${entry.id}\0${file}`)).sort();
@@ -17,6 +39,47 @@ describe('audio listening guide', () => {
     expect(eventFilePairs(guide)).toEqual(
       sounds.flatMap((sound) => sound.variants.map((file) => `${sound.id}\0${file}`)).sort(),
     );
+  });
+
+  it('renders two preview controls per heartbeat recording and sends its file and tuned gain', () => {
+    const heartbeat = buildHeartbeatSoundGuide(heartbeatFixtureManifest);
+    const preview = vi.fn();
+    const root = document.createElement('div');
+    render(renderHeartbeatSoundGuide(heartbeat, preview), root);
+
+    const rows = [...root.querySelectorAll('.sound-variants li')];
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows).toHaveLength(heartbeat.variants.length);
+    expect(root.querySelectorAll('button')).toHaveLength(heartbeat.variants.length * HEARTBEAT_PREVIEW_LEVELS.length);
+    for (const [variantIndex, variant] of heartbeat.variants.entries()) {
+      const buttons = [...rows[variantIndex]!.querySelectorAll('button')];
+      for (const [levelIndex, { label, gain }] of HEARTBEAT_PREVIEW_LEVELS.entries()) {
+        expect(buttons[levelIndex]!.textContent).toContain(label);
+        buttons[levelIndex]!.click();
+        expect(preview).toHaveBeenNthCalledWith(
+          variantIndex * HEARTBEAT_PREVIEW_LEVELS.length + levelIndex + 1,
+          variant.file,
+          gain,
+        );
+      }
+    }
+  });
+
+  it('lists the player heartbeat recordings with manifest provenance', () => {
+    const heartbeat = buildHeartbeatSoundGuide(manifest);
+    expect(heartbeat.trigger.trim()).not.toBe('');
+    expect(heartbeat.status.trim()).not.toBe('');
+    expect(heartbeat.variants.map(({ file }) => file).sort()).toEqual(Object.values(HEARTBEAT_FILES).sort());
+    expect(
+      heartbeat.variants.every(
+        ({ author, licence, sourceUrl }) =>
+          author.trim() !== '' &&
+          author !== 'Uncredited' &&
+          licence.trim() !== '' &&
+          licence !== 'Unknown licence' &&
+          sourceUrl !== null,
+      ),
+    ).toBe(true);
   });
 
   it('shows a nonempty status note for every listed event', () => {

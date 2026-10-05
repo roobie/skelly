@@ -3,6 +3,7 @@
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
+import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
@@ -15,7 +16,7 @@ import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, type UseOption, useOption } from '../core/options.ts';
+import { doorOptions, doorPlan } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -55,7 +56,6 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
-import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
@@ -89,7 +89,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
-import { selectPrimaryAction } from './primaryAction.ts';
+import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
@@ -104,6 +104,19 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
+
+const createPlayRefusalPresenter = (
+  registry: Engine['registry'],
+  audio: GameAudio,
+  showNotice: (text: string) => void,
+) => {
+  const nope = registry.sounds.get('player_nope');
+  return createRefusalPresenter(
+    showNotice,
+    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
+    nope?.minIntervalSeconds ?? 0,
+  );
+};
 
 export interface StartPlayOptions {
   readonly handedness?: HandSide;
@@ -150,10 +163,11 @@ export const startPlay = (
   // ---- simulation ----
 
   let playtestObserver: PlaytestObserver | undefined;
+  let debugLaserEnabled = true;
   const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
-    handedness: options.handedness,
+    handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
@@ -231,6 +245,7 @@ export const startPlay = (
     onRead: (readable) => reading.open(readable),
     onHandlingOutcomes: (result) => playtestObserver?.handlingOutcomes(result),
     onFirearmEjection: (effect) => caseEffects.spawn(effect),
+    onFirearmTrajectory: (trajectory) => view.impactEffects.fire(trajectory, config.debug && debugLaserEnabled),
     debug: () => debugTools,
     // Presentation only: what the simulation decided (a part severed, a zombie dead) drawn as debris and a
     // corpse. Only MobActorMeshes implements these; ZombieMeshes leaves them undefined.
@@ -248,6 +263,7 @@ export const startPlay = (
     entities,
     queue,
     firearms,
+    aim,
     quickbar,
     survival,
     rest,
@@ -258,8 +274,6 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
-  const useItem = (item: Item): string | undefined =>
-    firearms.supportsUse(item) ? firearms.use(item, sim.time) : survival.use(item);
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet);
   if (session.restoredLook) {
@@ -298,7 +312,7 @@ export const startPlay = (
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
-  const { weather, caseEffects, flashlight, zombieMeshes } = view;
+  const { weather, caseEffects, impactEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -335,12 +349,7 @@ export const startPlay = (
     notice = text;
     noticeUntil = performance.now() + 3000;
   };
-  const nope = registry.sounds.get('player_nope');
-  const showRefusal = createRefusalPresenter(
-    showNotice,
-    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
-    nope?.minIntervalSeconds ?? 0,
-  );
+  const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
   const toggleRest = (kind: RestKind, entity: BlockEntity): void => {
     const already = rest.action?.kind === kind && rest.action.furnitureUid === entity.uid;
@@ -411,9 +420,6 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    use: useItem,
-    useOption: (item, reachView): UseOption =>
-      firearms.supportsUse(item) ? firearms.useOption(item) : useOption(item, reachView),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
@@ -480,9 +486,20 @@ export const startPlay = (
     flashlight,
     body,
     inventory,
+    character: session.character,
     newGame: options.restore === undefined,
     sim,
     input,
+    debugModifierHeld: () => input.held.has(KEY_BINDINGS.debugModifier.code),
+    impactLaser: {
+      enabled: () => debugLaserEnabled,
+      toggle: () => {
+        debugLaserEnabled = !debugLaserEnabled;
+        if (!debugLaserEnabled) {
+          impactEffects.update(0, false);
+        }
+      },
+    },
     roll: () => view.cameraRoll,
     zombies: () => zombieSystem,
     feet,
@@ -867,7 +884,7 @@ export const startPlay = (
     quickbarInput.keyUp(e.code, e.timeStamp);
   });
 
-  const lookDir = (): Vec3 => aimDirection(input.pitch, input.yaw);
+  const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
@@ -1014,6 +1031,7 @@ export const startPlay = (
 
   const fireDebugWeapon = (item: Item, time: number): boolean => {
     const fired = firearms.fire({
+      aimFrame: aim.frame,
       debugMode: config.debug,
       item,
       feet: feet(),
@@ -1028,7 +1046,6 @@ export const startPlay = (
       return false;
     }
     if (registry.items.get(item.type)?.firearm?.pump) {
-      view.recoil(8);
       return true;
     }
     const shot = firearmShotSound(item.type);
@@ -1064,6 +1081,15 @@ export const startPlay = (
     return true;
   };
 
+  const activateIgniter = (item: Item, hand: HandSide): void => {
+    const target = ignitionTargetForHand(inventory, hand);
+    const usable = target ?? (registry.items.get(item.type)?.light ? item : undefined);
+    if (usable) {
+      refusalReason(survival.use(usable));
+      return;
+    }
+    showRefusal(primaryActionHint(registry, item), sim.time);
+  };
   performHandUse = (hand: 'right' | 'left') => {
     if (refusePrimaryUseWhileHandling()) {
       return;
@@ -1076,8 +1102,12 @@ export const startPlay = (
       case 'melee':
         swing(action.hand);
         return;
+      case 'ignite':
+        activateIgniter(action.item, action.hand);
+        return;
       case 'light':
       case 'read':
+      case 'use':
         refusalReason(survival.use(action.item));
         return;
       case 'firearm': {
@@ -1285,7 +1315,7 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
-    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), job: queue.jobs[0] });
+    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), aim: aim.frame, job: queue.jobs[0] });
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
@@ -1322,8 +1352,8 @@ export const startPlay = (
     if (!debugTools) {
       return;
     }
-    const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
-    debugTools.updateAim(aim);
+    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
+    debugTools.updateAim(zombieAim);
     debugTools.updateLookedAt(eye(), lookDir(), input.locked);
   };
 
@@ -1350,6 +1380,7 @@ export const startPlay = (
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
     caseEffects.update(dt, engine.isSolid);
+    impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = performance.now() - mark;
     options.saveController?.afterFrame();
     playtestObserver?.afterFrame(
@@ -1383,6 +1414,7 @@ export const startPlay = (
     mark = performance.now();
 
     updateVisualFeedback(dt);
+    audio.updateHeartbeat(sim.needs.stamina);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();
 

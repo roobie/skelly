@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
+import { aimDirection } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -11,6 +12,7 @@ import {
   type DebugFirearmShotInput,
   FirearmMechanics,
   type FirearmShotEffect,
+  type FirearmTrajectory,
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
@@ -36,7 +38,14 @@ const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Invento
   return { inventory, rifle };
 };
 
-const pose = { feet: [0, 1, 0], eye: [0, 4, 0], yaw: 0, pitch: 0, blockSize: 0.5 } as const;
+const pose = {
+  feet: [0, 1, 0],
+  eye: [0, 4, 0],
+  yaw: 0,
+  pitch: 0,
+  aimFrame: { yaw: 0, pitch: 0 },
+  blockSize: 0.5,
+} as const;
 const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simTime = 1) => {
   const effects: FirearmShotEffect[] = [];
   const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
@@ -62,6 +71,36 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
 };
 
 describe('debug firearm handling', () => {
+  it('emits the committed automatic shot direction for the shared trajectory', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const aimFrame = { yaw: 0.04, pitch: -0.03 };
+    const yaw = 0.3;
+    const pitch = -0.2;
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+      onEjection: () => undefined,
+      onTrajectory: (published) => {
+        trajectory = published;
+      },
+    });
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        yaw,
+        pitch,
+        aimFrame,
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(trajectory?.directions[0]).toEqual(aimDirection(yaw, pitch, aimFrame));
+  });
   it.each([
     [800, 27],
     [600, 20],
@@ -117,6 +156,36 @@ describe('debug firearm handling', () => {
       expect(data.caseModelId?.startsWith('case_')).toBe(true);
       expect(registry.models.get(data.caseModelId!)?.calibre).toBe(model.calibre);
     }
+  });
+
+  it('passes the held firearm’s data-owned kick with each committed shot', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const kicks: number[] = [];
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ feet: [...pose.feet], eye: [...pose.eye], yaw: pose.yaw, pitch: pose.pitch, blockSize: 0.5 }),
+      onEjection: () => undefined,
+      onCommittedShot: (_seed, recoilKickRadians) => kicks.push(recoilKickRadians),
+    });
+    const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
+    const firearmDef = registry.items.get(rifle.type)!.firearm!;
+    expect(configuredKick).toBe(firearmDef.recoilKickRadians);
+    if (configuredKick === undefined) {
+      throw new Error('Firing fixture needs firearm kick data');
+    }
+
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(kicks).toEqual([configuredKick]);
   });
 
   it('aligns ejection and held stroke when rpm caps a longer exported automatic cycle', () => {
@@ -194,7 +263,7 @@ describe('debug firearm handling', () => {
               weight: 1000,
               size: [1, 1],
               model: 'pistol_full',
-              firearm: {},
+              firearm: { recoilKickRadians: 0.012 },
             },
           ],
         },
@@ -257,6 +326,7 @@ describe('debug firearm handling', () => {
       eye: [0, 4, 0],
       yaw: 0,
       pitch: 0,
+      aimFrame: { yaw: 0, pitch: 0 },
       seed: 71,
       simTime: 1,
       blockSize: 0.5,
@@ -312,12 +382,9 @@ describe('debug firearm handling', () => {
       onEjection: () => undefined,
     });
     const duration = firearmHandlingFor(rifle, registry).action.hand.durationSeconds;
-    expect(mechanics.useOption(rifle)).toMatchObject({
-      kind: 'use',
-      plan: { ok: true, time: duration },
-    });
+    expect(mechanics.cockReason(rifle.uid)).toBeUndefined();
     expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
-    expect(mechanics.useOption(rifle).plan.ok).toBe(false);
+    expect(mechanics.cockReason(rifle.uid)).toBeDefined();
     expect(queue.jobs[0]?.duration).toBe(duration);
     expect(
       mechanics.fire({
@@ -332,7 +399,7 @@ describe('debug firearm handling', () => {
     ).toBe(false);
     queue.tick(0.3);
     mechanics.advanceTo(10.3);
-    expect(mechanics.frames()).toEqual([{ uid: rifle.uid, mode: 'hand', elapsed: 0.3 }]);
+    expect(mechanics.frames()).toEqual([{ uid: rifle.uid, mode: 'hand', elapsed: 0.3, duration }]);
     queue.tick(duration - 0.3);
     expect(queue.busy).toBe(false);
     expect(mechanics.frames()).toEqual([]);

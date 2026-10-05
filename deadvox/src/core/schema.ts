@@ -170,7 +170,11 @@ const WeaponSchema = strictObject({
 });
 
 // Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
-const FirearmSchema = strictObject({ pump: optional(vBoolean()) });
+const FirearmSchema = strictObject({
+  pump: optional(vBoolean()),
+  /** Camera-local aim kick per committed shot, before skill variance, in radians. */
+  recoilKickRadians: Positive,
+});
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
@@ -182,11 +186,32 @@ const LightSchema = strictObject({
   radius: Positive,
   /** Metres from which others can see it (DESIGN.md, "Light"). */
   seenFrom: Positive,
+  /** Point-light colour and candela; both are presentation-owned content. */
+  color: Color,
+  intensity: Positive,
+  /** Material glow for sources that remain visible when outside the point-light pool. */
+  emissive: optional(NonNegative),
+  /** Total burn in game hours for a consumable flame/light. */
+  burnTime: optional(Positive),
+  /** Fuel units consumed per game hour, for self-fueled sources such as a lighter. */
+  fuelPerHour: optional(Positive),
   /** A cone of this many degrees; absent means light all around. */
   beam: optional(pipe(Positive, maxValue(180, 'must be at most 180'))),
+  burning: optional(
+    strictObject({
+      ignition: picklist(['manual', 'firestarter', 'snap']),
+      douse: vBoolean(),
+      sprint: picklist(['stay', 'douse']),
+      stow: picklist(['refuse', 'douse', 'stay']),
+      drop: picklist(['douse', 'stay']),
+      relight: vBoolean(),
+    }),
+  ),
   /** What powers it: an item with a battery component, and charge used per game hour. */
   power: optional(strictObject({ battery: Id, perHour: Positive })),
 });
+
+const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
@@ -277,6 +302,7 @@ export const ItemSchema = strictObject({
   /** Fixed outputs for found items with no recipe. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   light: optional(LightSchema),
+  igniter: optional(IgniterSchema),
   readable: optional(ReadableSchema),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
@@ -433,6 +459,8 @@ export const FurnitureSchema = strictObject({
   size: Size,
   color: Color,
   solid: optional(vBoolean()),
+  /** A debug practice surface; hits may receive a profile-specific presentation ping. */
+  shotTarget: optional(literal(true)),
   readable: optional(ReadableSchema),
   container: optional(ContainerSchema),
   /** The loot table rolled into its container when the chunk generates. */

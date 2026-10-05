@@ -96,6 +96,22 @@ describe('quickbar tap and hold actions', () => {
     expect(notices).toHaveLength(1);
   });
 
+  it('quickbar hold activates a firestarter light with an igniter in the other hand', () => {
+    const { inventory, actions } = runtime();
+    const candle = inventory.create('candle');
+    const matches = inventory.create('matches');
+    expect(inventory.add(candle, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(inventory.add(matches, { kind: 'hand', side: 'left' })).toBe(true);
+    const chargeBefore = matches.charges!;
+    const { igniter } = registry.items.get(matches.type)!;
+    const { perIgnition } = igniter!;
+
+    actions.hold(candle);
+
+    expect(candle.on).toBe(true);
+    expect(matches.charges).toBe(chargeBefore - perIgnition);
+  });
+
   it('uses pocket food in one queued job while the held weapon stays in place', () => {
     const { inventory, queue, actions } = runtime();
     const food = inventory.create(definition((def) => Boolean(def.food)).id);
