@@ -90,6 +90,15 @@
       "skills": { "crafting": 0 },
       "qualities": { "repairing": 1 },
       "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "sawn_plank",
+      "result": { "item": "wooden_plank", "count": 1 },
+      "time": 4,
+      "skills": { "crafting": 0 },
+      "qualities": { "sawing": 1 },
+      "components": [[{ "item": "stick", "count": 2 }]],
+      "workstation": "workbench"
     }
   ]
 }

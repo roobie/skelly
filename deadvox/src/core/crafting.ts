@@ -157,9 +157,13 @@ export const requirementStatus = (
     qualities: Object.entries(recipe.qualities).map(([quality, required]) => ({
       quality,
       required,
-      available: Math.max(0, ...(index.qualities.get(quality) ?? []).map((provider) => provider.level)),
+      available: Math.max(
+        0,
+        ...(index.qualities.get(quality) ?? []).map((provider) => provider.level),
+        ...snapshot.workstations.map((station) => station.qualities[quality] ?? 0),
+      ),
     })),
-    ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, snapshot, station))
+    ...(recipe.workstation && !snapshot.workstations.some((station) => stationMatches(recipe, station))
       ? { workstation: recipe.workstation }
       : {}),
     components: recipe.components.map((group, number) => ({
@@ -278,12 +282,18 @@ const craftPlan = (
 ): CraftPlan => {
   const workstation = recipe.workstation
     ? snapshot.workstations
-        .filter((station) => stationMatches(recipe, snapshot, station))
-        .sort((a, b) => a.entity.uid - b.entity.uid)[0]?.entity
+        .filter((station) => stationMatches(recipe, station))
+        .sort((a, b) => b.workTimeBonus - a.workTimeBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
   const skillLevel = Math.max(0, ...Object.keys(recipe.skills).map((skill) => character.skills[skill] ?? 0));
-  const work = (recipe.time * 60) / (1 + skillLevel * 0.1);
-  return { recipe: recipe.id, ...allocation, tools, ...(workstation ? { workstation } : {}), work };
+  const work = (recipe.time * 60 * (1 - (workstation?.workTimeBonus ?? 0))) / (1 + skillLevel * 0.1);
+  return {
+    recipe: recipe.id,
+    ...allocation,
+    tools,
+    ...(workstation ? { workstation: workstation.entity } : {}),
+    work,
+  };
 };
 
 const refusalReason = (recipe: RecipeDef, prefer: CraftPreference, missing: CraftRequirements): string | undefined => {
@@ -330,13 +340,8 @@ export const admissionRefusal = (
   character: CraftCharacter,
 ): string | undefined => refusalReason(recipe, {}, requirementStatus(recipe, snapshot, character));
 
-export const stationMatches = (
-  recipe: RecipeDef,
-  snapshot: ReachSnapshot,
-  station: ReachSnapshot['workstations'][number],
-): boolean =>
-  Boolean(recipe.workstation) &&
-  snapshot.player.inventory.entities.defOf(station.entity).workstation?.id === recipe.workstation;
+export const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
+  Boolean(recipe.workstation) && station.id === recipe.workstation;
 
 /** Native recipe validator caps alternative combinations at 1,024. */
 export const planCraft = (
@@ -370,7 +375,9 @@ export const planCraft = (
     return cached ? { plan: copyPlan(cached) } : refusal(componentReason);
   }
   let best: CraftPlan | undefined;
-  const toolNeeds = Object.entries(recipe.qualities).sort(([a], [b]) => a.localeCompare(b));
+  const toolNeeds = Object.entries(recipe.qualities)
+    .filter(([quality, level]) => !snapshot.workstations.some((station) => (station.qualities[quality] ?? 0) >= level))
+    .sort(([a], [b]) => a.localeCompare(b));
   for (const requirements of componentAlternatives(recipe, prefer)) {
     for (const tools of toolSelections(toolNeeds, index, requirements)) {
       const allocation = allocateCombination(requirements, index, tools);

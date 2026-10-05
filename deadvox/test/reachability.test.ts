@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { possibleHamletZombies } from '../src/core/hamlet.ts';
-import { checkReachability, PENDING_REACHABILITY } from '../src/core/reachability.ts';
+import { checkReachability } from '../src/core/reachability.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
 
 const BASE = 'src/content/base';
@@ -18,36 +18,58 @@ const fresh = () => buildRegistry(sources).registry;
 const marker = (zombie: string, chance = 1): SpawnMarker => ({ zombie, chance, pos: [0, 0, 0] });
 
 describe('static reachability', () => {
-  it('hard-checks practice sources while keeping only unplaced workstations pending', () => {
-    expect(PENDING_REACHABILITY).toEqual({ workstation: '2.8' });
+  it('hard-checks workstation placement and lets its quality ground the recipe', () => {
     const registry = fresh();
     registry.recipes.clear();
-    registry.furniture.set('unplaced_bench', {
-      ...registry.furniture.get('crate')!,
-      id: 'unplaced_bench',
-      workstation: { id: 'unplaced' },
-    });
-    registry.recipes.set('torch', {
-      id: 'torch',
-      result: { item: 'rag', count: 1 },
+    registry.recipes.set('fixture_recipe', {
+      id: 'fixture_recipe',
+      result: { item: 'wooden_plank', count: 1 },
       time: 1,
-      components: [[{ item: 'rag', count: 1 }]],
+      components: [[{ item: 'stick', count: 1 }]],
+      qualities: Object.fromEntries([['fixture_sawing', 1]]),
+      skills: { crafting: 0 },
+      workstation: 'fixture_station',
+    });
+    const unplaced = checkReachability(registry, new Set(['fixture_recipe']));
+    expect(unplaced.issues).toContainEqual({
+      recipe: 'fixture_recipe',
+      path: '.qualities.fixture_sawing',
+      message: expect.any(String),
+    });
+    expect(unplaced.issues).toContainEqual({
+      recipe: 'fixture_recipe',
+      path: '.workstation',
+      message: 'workstation "fixture_station" is not placed in the hamlet',
+    });
+
+    registry.furniture.get('crate')!.workstation = {
+      id: 'fixture_station',
+      qualities: Object.fromEntries([['fixture_sawing', 1]]),
+      workTimeBonus: 0.2,
+    };
+    const placed = checkReachability(registry, new Set(['fixture_recipe']));
+    expect(placed.issues).toEqual([]);
+    expect(placed.workstations).toContain('fixture_station');
+    expect(placed.toolReachable.has('wooden_plank')).toBe(true);
+  });
+
+  it('hard-checks positive skill requirements against reachable practice sources', () => {
+    const registry = fresh();
+    registry.recipes.clear();
+    registry.recipes.set('fixture_practice', {
+      id: 'fixture_practice',
+      result: { item: 'wooden_plank', count: 1 },
+      time: 1,
+      components: [[{ item: 'stick', count: 1 }]],
       qualities: {},
       skills: { crafting: 1 },
-      workstation: 'unplaced',
     });
-    const result = checkReachability(registry);
+    const result = checkReachability(registry, new Set(['fixture_practice']));
     expect(result.issues).toContainEqual({
-      recipe: 'torch',
+      recipe: 'fixture_practice',
       path: '.skills.crafting',
       message: 'no reachable practice source can raise "crafting" to level 1',
     });
-    expect(result.pending.map(({ kind, path, message }) => [kind, path, message])).toEqual([
-      ['workstation', '.workstation', 'pending: no source yet (2.8)'],
-    ]);
-    registry.furniture.get('crate')!.workstation = { id: 'unplaced' };
-    expect(checkReachability(registry).pending).toEqual([]);
-    expect(checkReachability(registry).issues.map(({ path }) => path)).toEqual(['.skills.crafting']);
   });
 
   it('hard-rejects unknown knowledge and prevents its result from grounding a starting-known recipe', () => {
@@ -179,7 +201,7 @@ describe('static reachability', () => {
       solid: false,
       loot: 'default',
       container: { pockets: [{ grid: [1, 1], handling: 1 }] },
-      workstation: { id: 'placed_bench' },
+      workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workTimeBonus: 0.2 },
     });
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });

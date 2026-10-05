@@ -1,7 +1,8 @@
 ---
 read_if:
-  - you add or change content schemas or content validation
-  - you change recipe, book or reachability content contracts
+  - you change content schemas or validation
+  - you change recipe, workstation or book reachability contracts
+  - you change static reachability checks
 ---
 
 # Content sections and recipes
@@ -28,12 +29,14 @@ Skill requirements are nonnegative whole levels; quality requirements are levels
 uses exact integer multiplication and reports the count when refusing a file.
 
 - `skills` definitions contain only an id and name; character state is 2.5.
-- Quality IDs are keys declared by loaded items' `tool.qualities`, including mod
-  keys, not a new top-level section. A missing declaration is an error. Whether
-  a reachable item supplies it is the separate 2.3 acceptance check.
-- Workstation IDs are minimal `workstation: { id }` metadata on furniture. Plain
-  furniture IDs are not workstation IDs. Qualities/speed/reach behavior and the
-  placed workbench come in 2.8; there is no workstation registry or runtime here.
+- Quality IDs are keys declared by loaded items' `tool.qualities` (including
+  mod keys) or furniture `workstation.qualities`, not a new top-level section.
+  A missing declaration is an error. Whether a reachable item or placed
+  workstation supplies the quality is the separate 2.3 acceptance check.
+- Furniture workstation metadata owns its station ID, qualities, and work-time
+  bonus. Plain furniture IDs are not workstation IDs. `reach()` in
+  `src/core/reach.ts` exposes nearby stations, and `planCraft()` in
+  `src/core/crafting.ts` uses their qualities and bonus for a named station.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
@@ -70,21 +73,22 @@ cannot bootstrap its own quality, directly or through another tool-dependent
 recipe. Independently found or grounded crafted providers are valid.
 
 Knowledge is a hard source check: the explicit starting recipes and recipes
-listed by found books are the only knowledge sources. An unknown recipe fails at
-`.knowledge`, and its result cannot ground another recipe's components or tool
-quality. `src/core/reachability.ts`, `checkReachability`, closes reachable
-practice sources before accepting positive skill requirements. A recipe that
-cannot be learned and completed from reachable sources cannot bootstrap its own
-skill. Level 0 needs no progression source. Named-but-unplaced workstations
-remain pending until Slice 2.8; `PENDING_REACHABILITY` pins only that hand-off.
+listed by reachable teaching books are the only knowledge sources. An unknown
+recipe fails at `.knowledge`, and its result cannot ground another recipe's
+components or tool quality. `src/core/reachability.ts`, `checkReachability`,
+closes reachable practice sources before accepting positive skill requirements
+and hard-checks workstation placement and quality. A recipe that cannot be
+learned and completed from reachable sources cannot bootstrap its own skill.
 `src/core/schema.ts`, `BookSchema`, owns book teaching data; the `paperback` has
 no book component and remains inert.
 
-`CONTENT_COUNT_EXCLUSIONS` keeps runtime escrow and the project's debug/case/body-part
-policy out of acquired-content totals; `npm run validate` reports the effective
-closure and any remaining unreachable content. Content growth beyond the
-crafting/books milestone remains with Slice 2.11. Reachability issues use the
-winning recipe's merge origin, preserving source file and index through ordered
-overrides/removal. `src/core/character.ts`, `Character`, owns live practice and
-knowledge; `src/core/reachability.ts`, `checkReachability`, independently proves
-that their sources are available from placed loot.
+`CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` keeps runtime escrow and
+the project's debug/case/body-part policy out of acquired-content totals.
+`npm run validate` reports the effective component and tool closures, content
+count, and any unreachable content. Content growth beyond the crafting/books
+milestone remains with Slice 2.11. Reachability issues use the winning recipe's
+merge origin, preserving source file and index through ordered overrides and
+removal. `src/core/character.ts`, `Character`, owns live practice and knowledge;
+`src/core/reachability.ts`, `checkReachability`, independently proves that their
+sources are available from placed loot. Reachability stores no closure/state;
+runtime progression and crafting remain separate owners.

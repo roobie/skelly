@@ -44,6 +44,13 @@
       "stack": 6
     },
     {
+      "id": "wooden_plank",
+      "name": "Wooden plank",
+      "category": "material",
+      "weight": 500,
+      "size": [2, 4]
+    },
+    {
       "id": "duct_tape",
       "name": "Duct tape",
       "category": "material",
