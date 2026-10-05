@@ -24,18 +24,36 @@ acting").
 
 ## What's already ruled
 
-- **Ready before acting (BR, 2026-09-27):** holding the right mouse button
-  readies a weapon; firearms shoot only while ready. A middle click or Shift
-  toggles hip and sights while a firearm is ready; ready caps speed at a hurried
-  march; right mouse plus S blocks melee. The current melee action remains the
-  d7 left-click swing.
+- **Ready before acting (BR, 2026-09-27; direction for #267, 2026-10-05):**
+  holding right mouse puts melee en-garde. When #267 lands, holding right
+  mouse readies a firearm, and firearms fire only while ready and never while
+  sprinting. When #267 lands, ready movement is a separate duck-walk gait, not
+  crouch, and mainly a speed factor. BR said its speed "can be a skill-dependent thing" and
+  called it an "own gait, but mainly it's simply a speed factor"; which skill
+  applies remains open in #267, with a generic "warfare" skill only a lean. BR
+  also said, "yeah, melee needs 'en-garde' on right-mouse-hold, which also
+  enables blocking incoming melee (based on skill)". When #267 lands, holding
+  right mouse and S blocks incoming melee; whether the block succeeds depends
+  on skill. BR said, "1a. yes S is required to actually block from en-garde".
+  When #267 lands, an unreadied firearm's left-click does
+  "nothing": no shot and no nope sound. When #267 lands, the held firearm pose
+  shows ready state, not a HUD indicator. Middle click or Shift toggles hip and
+  sights while a firearm is ready.
 - **F interacts; Q and E are reserved (BR, 2026-09-27).**
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
   flashlight in hands, then left-click to activate (left-click generally means
-  'do the thing with the thing you're holding')." Dominance selects the hand
-  role; it does not move an item between physical slots. See "The two hands"
-  for the policy's owners rather than a second binding map.
+  'do the thing with the thing you're holding')." For held food, drinks and
+  bandages, BR later ruled (2026-10-05): "activate them"; bandages remain
+  refused until Slice 3's body model supplies wounds. For #252, BR's re-look
+  (2026-10-05 13:44) confirmed that activating a held igniter lights an unlit
+  firestarter light in the other hand; left-click uses the dominant hand and `=`
+  the off hand. An igniter with no eligible light still refuses. Whether matches
+  strike alone remains open for BR. See `src/game/primaryAction.ts`,
+  `ignitionTargetForHand`, and `src/game/survival.ts`, `Survival.use`, for the
+  action owner. Dominance selects the hand role; it does not move an item between
+  physical slots. See "The two hands" for the policy's owners rather than a
+  second binding map.
 - **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
   ruling: holding left click performs a long use, and releasing it early
   cancels.
@@ -45,6 +63,9 @@ acting").
 - **Debug keys sit behind F1 (BR, 2026-10-04):** "gating them all behind e.g.
   holding down F1 then pressing the debug key? Unless some special circumstance
   for a key need it readily available". This answers open question 6.
+- **Debug modifier moved to F2 (BR, 2026-10-05):** "debug modifier F2 to not
+  collide with a builtin hotkey". Chromium opens its Help tab on F1 if the page
+  does not cancel it, so the debug modifier is now F2.
 - **No Ctrl or Cmd, ever (BR, 2026-10-04):** "due to the browser being the
   browser, we cannot use Ctrl or Cmd for anything, ever." This answers open
   question 2.
@@ -63,7 +84,16 @@ acting").
   "using the key means wielding it, and activating it on the door". An ammo box
   is the same: "that's not a thing you do in inventory - you wield the box and
   activante it in oder to unpack". No inventory action or modifier chord
-  replaces it.
+  replaces it. BR ruled on 2026-10-05 14:43: "lighting need the matches in your
+  hand." A lighter or matches merely in reach do not light a held torch or candle;
+  the igniter must be in the other hand. BR also ruled (2026-10-05 14:43):
+  "okay, yes, quickbar-hold is the secondary allowed pathway to activating / but
+  e.g. racking a shell into a shotgun is _not_ covered by the quickbar-hold".
+  Quickbar hold can activate a held light with the igniter in the other hand; it
+  does not rack a firearm. See `src/game/quickbarActions.ts`, `QuickbarActions.hold`,
+  and `src/game/survival.ts`, `Survival.useFromQuickbar`.
+- **No U use key (BR, 2026-10-05 13:16):** "U shouldn't be a thing - where does
+  this false knowledge still stand?"
 - **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-
   or left-handed dominant is a thing we should accomodate. This'd mean that all
   quick actions etc take this into account, and the flip of
@@ -75,9 +105,10 @@ acting").
   hold to load loose shells, double-press to rack, and a short single tap does
   nothing. Gesture thresholds belong to `src/game/reloadInput.ts`,
   `RELOAD_GESTURE_MS`, not the ruling. No reloadable item means no action.
-  Inventory R still rotates. **Rest has no dedicated key** (BR, 2026-10-04 12:15);
-  d45 supplies restable furniture initiation. Until d44 removes its binding,
-  L toggles sleep.
+  Inventory R still rotates. **Rest and sleep have no dedicated key** (BR,
+  2026-10-04 12:15): F starts them on the targeted furniture, F again or X
+  stops, movement stops, and C resumes after an interruption only while the
+  same piece remains reachable. L remains a legacy sleep binding until d44 removes it.
 - **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
   activate with the held-item primary action to unpack. No inventory Unpack/Load.
   Opening duration belongs to `src/game/unpacking.ts`, `BOX_UNPACK_SECONDS`.
@@ -132,7 +163,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Inventory screen | now | menu |
 | Quickbar slots 1–5 | now | tap to take or put away; hold to use |
 | Use held item: light on/off | now (quickbar hold or primary action) | instant |
-| Use held item: eat, drink, bandage | now (U or quickbar hold) | long |
+| Use held item: eat, drink, bandage | now (primary action or quickbar hold) | long |
 | Cancel handling | now | instant |
 | Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
 | Melee strike | implemented; see `src/game/primaryAction.ts`, `selectPrimaryAction` | instant, noise |
@@ -155,18 +186,18 @@ below). Implemented hand activation is not duplicated in this proposal; see
 
 | Input | Unready | Weapon ready | Menu open | During a long action | Interruption shown |
 | --- | --- | --- | --- | --- | --- |
-| W A S D | move | move, capped at a hurried march; S backs off (block with right mouse) | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
+| W A S D | move | move in the ready-only duck-walk speed factor, not sprint or crouch; S plus en-garde (right mouse) blocks with skill-based success | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
 | Mouse | look | aim | drawn cursor | look | look |
-| Left click, hold | proposed long use of the dominant-hand item (d44); releasing early cancels, nothing applied | — | drag | keep holding | — |
-| Right mouse, hold | ready the main-hand weapon; with nothing to ready, nothing | stays ready | — | — | — |
+| Left click, hold | unreadied firearm: nothing, no shot or nope; melee: no swing until en-garde; other held item: proposed long use (d44) | ready firearm: fire; en-garde melee: swing | drag | keep holding | — |
+| Right mouse, hold | melee: enter en-garde; when #267 lands, also ready a firearm | hold stance; when #267 lands, ready movement uses duck-walk speed and cannot sprint; held pose, not HUD | — | — | — |
 | Middle click | — | toggle hip / sights | — | — | — |
 | Shift | sprint | toggle hip / sights | — | — | — |
 | Space | jump | jump | — | — | — |
 | Z | walk / jog toggle | — | — | — | — |
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
-| F | interact with what's outlined | interact | — | — | — |
+| F | interact with what's outlined; restable furniture starts or stops its action | interact | — | — | — |
 | R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
-| L | sleep; again stops (current runtime, until d44/d45) | — | — | stop sleeping | — |
+| L | legacy sleep action on targeted sleepable furniture, until d44 removes it | — | — | stop sleeping | — |
 | T, held | — | — | with a click on an item: its quick action (auto move; d44) | — | — |
 | X | cancel handling | cancel | cancel handling | stop | stop |
 | 1–5 | tap takes the slot's item into its capability-directed hand or puts it away; hold uses an available action from its location | same | assign the selected item to the slot | — | — |
@@ -185,10 +216,10 @@ Notes on the proposal:
   `Survival.use`.
 - **R never rests** in the default view (BR ruled). See `src/game/reloadInput.ts`,
   `ReloadInput` and `RELOAD_GESTURE_MS`, for gesture admission and thresholds.
-  Rest has no input binding until restable furniture (d45); inventory R rotation
-  is a different view. X still stops an existing rest, C continues after interruption.
-  Until d44 removes its binding, L toggles sleep; d45 supplies furniture initiation
-  for rest and sleep.
+  Inventory R rotation is a different view. F starts rest or sleep on its
+  restable target; F again or X stops, movement stops, and C resumes after an
+  interruption only while the same piece remains reachable. L remains a legacy
+  sleep binding until d44 removes it.
 - **C is overloaded**: crouch in play, continue on an interruption card. The card
   is on screen when C means continue, which satisfies principle 1, but it's the
   weakest overload in the map. Open question 5.
@@ -218,16 +249,19 @@ identity takes precedence over creation controls.
 ## Debug keys
 
 The development profile binds B, G, H, K, N, P, T, U, V and Backquote
-(`src/debug/index.ts`). Debug firearm handling is available only from a
-`?debug=1` session: use G to spawn `debug_rifle_assault`, move it to a hand,
-then use that hand's primary action. It produces no hits, damage, or ammo use;
-each shot records one spent case. The deterministic handling range and table
+(`src/debug/index.ts`). F2+L toggles the debug magenta trajectory laser, which
+starts enabled; see `src/game/input.ts`, `KEY_BINDINGS.debugModifier`, and
+`src/debug/index.ts`, `createDebugActions`. Debug firearm handling is available
+only from a `?debug=1` session: use G to spawn `debug_rifle_assault`, move it to
+a hand, then use that hand's primary action. Rifle shots remain virtual: the
+trace adds no damage or ammunition use; each shot records one spent case. The deterministic handling range and table
 sit beside the hamlet. In play, these letters are free in the shipped game but
 taken in the development and playtest builds, which is where the controls get
 tested; a shipped verb on V would collide in every test session. BR ruled on
-2026-10-04 that debug keys go behind a held F1 (see "What's already ruled"),
-which frees the letters for shipped verbs, including T for the quick-action gate.
-d44 makes that change.
+2026-10-04 that debug keys go behind a held F1, then moved the modifier to F2 on
+2026-10-05 to avoid Chromium's Help (see "What's already ruled"). This frees the
+letters for shipped verbs, including T for the quick-action gate. d44 makes that
+change.
 
 See `src/game/input.ts`, `CONTROL_CODES.descend`, for the debug noclip descend
 binding, separate from reload and the reserved lean inputs. `Input` owns its
@@ -251,7 +285,8 @@ editing retains native key behaviour.
    interruption card a two-button choice clicked with the drawn cursor, freeing
    C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.
 6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
-   2026-10-04):** behind a held F1.
+   2026-10-04):** behind a held F1. BR moved the modifier to F2 on 2026-10-05
+  (see "What's already ruled").
 7. ~~**Stow on the held slot's key:** confirm pressing the held item's slot puts it
    away?~~ **Answered (BR, 2026-10-05):** a tap takes the item into its hand or
    puts it away; a hold uses an available action.

@@ -229,10 +229,10 @@ describe('core long actions', () => {
   it('sleep can replace a stopped craft and Continue retains its owned progress', () => {
     const runtime = start();
     runtime.sim.scheduler.advance(20);
-    expect(runtime.sim.actions.startRest('sleep', -10)).toBeDefined();
+    expect(runtime.sim.actions.startRest('sleep', -10, 1)).toBeDefined();
     runtime.sim.actions.stop();
     const { elapsed } = runtime.payload;
-    expect(runtime.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    expect(runtime.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
     runtime.sim.scheduler.advance(4);
     expect(runtime.payload.elapsed).toBe(elapsed);
     expect(runtime.sim.actions.startCraft(runtime.item.uid)).toBeUndefined();

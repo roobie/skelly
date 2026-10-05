@@ -18,7 +18,14 @@ import {
 import { Simulation } from '../src/core/sim.ts';
 
 const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds
-const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
+const base = (file: string): ContentSource => {
+  const source = `src/content/base/${file}`;
+  const data = JSON.parse(readFileSync(source, 'utf8'));
+  if (file === 'items-tools.json') {
+    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle'].includes(item.id));
+  }
+  return { source, data };
+};
 const { registry } = buildRegistry(
   [
     'items-food.json',
@@ -27,7 +34,7 @@ const { registry } = buildRegistry(
     'items-wearables.json',
     'models-melee.json',
     'models-firearms.json',
-  ].map((f) => read(`src/content/base/${f}`)),
+  ].map(base),
 );
 
 /** Steps needs every simulation second, as the needs system does at 1×. */

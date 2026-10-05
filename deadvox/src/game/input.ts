@@ -14,6 +14,7 @@ export const quickMoveModifier = (
 
 /** UI key bindings and browser-owned keys referenced by the help and browser contract. */
 export const KEY_BINDINGS = {
+  debugModifier: { code: 'F2', label: 'F2' },
   mainMenu: { code: 'F9', label: 'F9', virtualKeyCode: 120 },
   performanceOverlay: { code: 'F4', label: 'F4', virtualKeyCode: 115 },
   browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
@@ -43,7 +44,6 @@ export const CONTROL_CODES = {
   drop: 'KeyD',
   bestPocket: 'KeyE',
   takeAll: 'KeyA',
-  use: 'KeyU',
   menu: KEY_BINDINGS.mainMenu.code,
   previous: 'ArrowUp',
   next: 'ArrowDown',

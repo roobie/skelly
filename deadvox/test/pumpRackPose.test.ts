@@ -56,13 +56,16 @@ it('rack pose turns an away-facing port only during handling without changing ga
       version: inventory.version,
       model,
     });
-  const update = () => {
+  const update = (aim?: { yaw: number; pitch: number }) => {
     const before = state();
-    held.update(camera, undefined, 0, { firearms: mechanics.frames() });
+    held.update(camera, undefined, 0, { firearms: mechanics.frames(), ...(aim ? { aim } : {}) });
     expect(state()).toEqual(before);
     return held.warmUpTarget.scene.getObjectByName('rack-pose-probe')!.getWorldQuaternion(new Quaternion());
   };
   const rest = update();
+  const aimed = update({ yaw: 0.08, pitch: -0.04 });
+  expect(aimed.angleTo(rest)).toBeGreaterThan(0);
+  expect(update().angleTo(rest)).toBeCloseTo(0);
   expect(mechanics.cock(gun.uid, 0)).toBeUndefined();
   expect(update().angleTo(rest)).toBeCloseTo(0);
   const halfway = model.action!.hand.rearwardSeconds + model.action!.hand.dwellSeconds / 2;

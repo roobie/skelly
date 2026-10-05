@@ -1,6 +1,7 @@
 /** Sound events available to gameplay or exact-variant preview on the listening sheet. */
 export const SOUND_EVENT_IDS = [
   'player_hurt_light',
+  'player_nope',
   'player_hurt_heavy',
   'player_strain',
   'player_landing_hard',

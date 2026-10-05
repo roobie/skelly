@@ -11,10 +11,10 @@ The selected rifle starts in hand; the other is in the backpack. A restored game
 never replaces its saved hands with this loadout. These rifles still use virtual
 rounds, without hits or ammunition consumption; firearm sounds are unchanged.
 
-- LMB fires the held rifle; holding LMB uses the exported rpm.
-- To cock, select the held rifle in inventory and press U. Alternatively assign it
-  to a quickbar key while inventory is open; pressing its key while already held
-  cocks it. H moves a selected backpack rifle into the hands while inventory is open.
+- LMB fires the held rifle; holding LMB uses the exported rpm. These AR/AK debug
+  rifles have no player action to initiate manual cocking; the transition remains
+  in `src/game/firearmHandling.ts`, `FirearmMechanics.cock`.
+- H moves a selected backpack rifle into the hands while inventory is open.
   Inventory hint-line keys take priority over debug shortcuts unless a debug modal
   is open. Outside inventory, H remains the God-mode shortcut; there is no `god`
   URL parameter.

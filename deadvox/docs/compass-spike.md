@@ -15,7 +15,7 @@ removes it. Either hand works.
 
 `WORLD_NORTH` in `deadvox/src/core/coords.ts` is the single canonical declaration. It agrees
 with the existing authored-template facing convention (`deadvox/src/core/templates.ts`).
-`deadvox/src/game/aim.ts` and `deadvox/src/game/input.ts` use counterclockwise camera yaw; the compass
+`deadvox/src/core/aim.ts` and `deadvox/src/game/input.ts` use counterclockwise camera yaw; the compass
 converts it to clockwise bearings. The heading unit test covers the cardinal points
 and both sides of the wrap at north. The triangle points toward north; the numeric
 bearing and cardinal abbreviation describe the direction the player faces.

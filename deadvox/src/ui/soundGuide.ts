@@ -1,6 +1,8 @@
+import { html } from 'lit-html';
 import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
+import { HEARTBEAT_FILES, HEARTBEAT_TUNING, heartbeatForStamina } from '../game/audioPresentation.ts';
 
 export interface SoundTriggerGuide {
   readonly trigger: string;
@@ -132,6 +134,7 @@ const TRIGGER_ENTRIES = [
     },
   ],
   ['player_hurt_light', { trigger: 'Take 1–14 points of damage.' }],
+  ['player_nope', { trigger: 'Try an action the player cannot complete.' }],
   [
     'player_hurt_heavy',
     {
@@ -198,6 +201,10 @@ const ORDER = TRIGGER_ENTRIES.map(([id]) => id);
 /** BR's listening verdicts, joined into the existing guide note shown on /sounds.html. */
 const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ['player_hurt_light', 'Approved by BR (2026-10-02).'],
+  [
+    'player_nope',
+    `BR (2026-10-05 11:31): “i've added nope1_clean.wav / it's the diegetic sound (the avatar makes a nope sound) for when something doesn't work (when UI is off, and any hints are hidden)”. BR (2026-10-05 11:32): “i recorded it myself 10 minutes ago / yes, CC0” and “no, this one is not heard by shamblers (but if it were a multiplayer game, it'd be heard by other players)”. The 2026-10-05 11:46 ruling says “but the 'nope' sound shall play regardless of UI hints being on or off”.`,
+  ],
   ['player_hurt_heavy', 'Approved by BR (2026-10-02).'],
   ['player_strain', 'Approved by BR (2026-10-02).'],
   [
@@ -272,9 +279,82 @@ export interface SoundGuideEntry {
   readonly variants: readonly SoundVariantGuide[];
 }
 
+export interface HeartbeatSoundGuide {
+  readonly id: 'player-heartbeat';
+  readonly category: 'body';
+  readonly trigger: string;
+  readonly status: string;
+  readonly variants: readonly SoundVariantGuide[];
+}
+
 /** Joins the live sound definitions to their source/author/licence rows in the asset manifest. */
+const assetSourcesByFile = (manifest: Manifest) =>
+  new Map(manifest.sources.flatMap((source) => source.files.map((file) => [file, source] as const)));
+
+const soundVariant = (file: string, source: Manifest['sources'][number] | undefined): SoundVariantGuide => ({
+  file,
+  sourcePack: source?.title ?? 'Missing source in assets/manifest.json',
+  author: source?.author ?? 'Uncredited',
+  licence: source?.licence ?? 'Unknown licence',
+  sourceUrl: source?.url ?? null,
+});
+
+export const buildHeartbeatSoundGuide = (manifest: Manifest): HeartbeatSoundGuide => {
+  const byFile = assetSourcesByFile(manifest);
+  return {
+    id: 'player-heartbeat',
+    category: 'body',
+    trigger: 'Sprint to lower stamina, then stop and listen as it recovers.',
+    status: "placeholder, awaiting BR's verdict.",
+    variants: Object.values(HEARTBEAT_FILES).map((file) => soundVariant(file, byFile.get(file))),
+  };
+};
+
+export const HEARTBEAT_PREVIEW_LEVELS = [
+  {
+    label: `at ${HEARTBEAT_TUNING.startStamina}% stamina`,
+    gain: heartbeatForStamina(HEARTBEAT_TUNING.startStamina).gain,
+  },
+  { label: 'at exhaustion', gain: heartbeatForStamina(0).gain },
+] as const;
+
+export const renderHeartbeatSoundGuide = (
+  heartbeat: HeartbeatSoundGuide,
+  preview: (file: string, gain: number) => void,
+) => html`
+  <article class="sound-event" data-sound-event=${heartbeat.id}>
+    <header>
+      <h2><code>${heartbeat.id}</code><span class="category">${heartbeat.category}</span></h2>
+    </header>
+    <p class="sound-trigger"><strong>How to hear:</strong> ${heartbeat.trigger}</p>
+    <p class="sound-note"><strong>BR status:</strong> ${heartbeat.status}</p>
+    <ul class="sound-variants" aria-label="Player heartbeat recordings">
+      ${heartbeat.variants.map(
+        (variant) => html`
+          <li>
+            <code class="variant-file">${variant.file}</code>
+            <span class="variant-credit">
+              ${
+                variant.sourceUrl
+                  ? html`<a href=${variant.sourceUrl} target="_blank" rel="noreferrer">${variant.sourcePack}</a>`
+                  : variant.sourcePack
+              }
+              · ${variant.author} · ${variant.licence}
+            </span>
+            ${HEARTBEAT_PREVIEW_LEVELS.map(
+              ({ label, gain }) => html`
+                <button type="button" @click=${() => preview(variant.file, gain)}>Play ${label}</button>
+              `,
+            )}
+          </li>
+        `,
+      )}
+    </ul>
+  </article>
+`;
+
 export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest): SoundGuideEntry[] => {
-  const byFile = new Map(manifest.sources.flatMap((source) => source.files.map((file) => [file, source] as const)));
+  const byFile = assetSourcesByFile(manifest);
   const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
   return ORDER.flatMap((id) => {
     const sound = definitions.get(id);
@@ -294,16 +374,7 @@ export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest)
         minIntervalSeconds: sound.minIntervalSeconds,
         noiseRadiusMetres: sound.noise.enabled ? sound.noise.radiusMetres : null,
         note: [BR_STATUS_NOTES.get(id), trigger.note].filter((note) => note !== undefined).join(' '),
-        variants: sound.variants.map((file) => {
-          const source = byFile.get(file);
-          return {
-            file,
-            sourcePack: source?.title ?? 'Missing source in assets/manifest.json',
-            author: source?.author ?? 'Uncredited',
-            licence: source?.licence ?? 'Unknown licence',
-            sourceUrl: source?.url ?? null,
-          };
-        }),
+        variants: sound.variants.map((file) => soundVariant(file, byFile.get(file))),
       },
     ];
   });

@@ -7,6 +7,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { Simulation } from '../src/core/sim.ts';
 import type { Session } from '../src/game/session.ts';
 import { craftRows, craftStatus } from '../src/ui/craftReadout.ts';
 
@@ -32,6 +33,7 @@ for (const key of [
 ] as const) {
   Object.defineProperty(globalThis, key, { configurable: true, value: dom[key] });
 }
+const { DEFAULT_HUD_OPTIONS, hudVisibility } = await import('../src/ui/hudOptions.ts');
 const { renderCrafting, renderCraftStatus } = await import('../src/ui/crafting.ts');
 const { mountCraftPanel } = await import('../src/ui/craftController.ts');
 afterAll(() => dom.happyDOM.abort());
@@ -88,6 +90,37 @@ describe('crafting read-only presentation', () => {
     expect(button!.disabled).toBe(torch.reason !== undefined);
     expect(inventory.snapshotState()).toEqual(before);
   });
+  it('renders a live interruption reason only when messages are visible', () => {
+    const inventory = new Inventory(registry);
+    const item = inventory.create('work_in_progress');
+    item.work = { kind: 'craft', recipe: 'torch', elapsed: 0, duration: 120, components: [] };
+    inventory.add(item, { kind: 'hand', side: 'right' });
+    const sim = new Simulation({ seed: 1 });
+    const reason = 'fixture interruption reason';
+    expect(sim.compress().ok).toBe(true);
+    sim.frame(1);
+    sim.emit({ kind: 'interrupt', reason });
+    sim.frame(1 / 60);
+    expect(sim.compression.active).toBe(false);
+    expect(sim.compression.interruption).toBe(reason);
+
+    const job = { jobType: 'craft' as const, workUid: item.uid, stopped: true, last: sim.time };
+    const hidden = craftStatus(inventory, item.uid, job, {
+      reason: sim.compression.interruption,
+      messagesVisible: hudVisibility(DEFAULT_HUD_OPTIONS).messages,
+    })!;
+    const visible = craftStatus(inventory, item.uid, job, {
+      reason: sim.compression.interruption,
+      messagesVisible: hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }).messages,
+    })!;
+    const root = document.createElement('section');
+    const actions = { continue: vi.fn(), stop: vi.fn() };
+    renderCraftStatus(root, hidden, actions);
+    expect(root.textContent).not.toContain(reason);
+    renderCraftStatus(root, visible, actions);
+    expect(root.textContent).toContain(reason);
+  });
+
   it('renders command callbacks and stopped owned progress rather than advancing it', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
@@ -98,7 +131,7 @@ describe('crafting read-only presentation', () => {
       inventory,
       item.uid,
       { jobType: 'craft', workUid: item.uid, stopped: true, last: 0 },
-      undefined,
+      { reason: undefined, messagesVisible: true },
     )!;
     expect(status.percent).toBe(Math.round((item.work!.elapsed / item.work!.duration) * 100));
     const root = document.createElement('section');
@@ -143,9 +176,9 @@ describe('crafting read-only presentation', () => {
       stop: vi.fn(),
     });
 
-    controller.update(true);
+    controller.update(true, false);
     expect(status.hidden).toBe(true);
-    controller.update(false);
+    controller.update(false, false);
     expect(status.hidden).toBe(false);
   });
 });

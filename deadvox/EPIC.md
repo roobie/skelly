@@ -184,12 +184,22 @@ same world preserve piles left by the previous character?
 - Melee depth (weapon types, stamina, knockback) and blocking.
 - Firearms from gungen assemblies: ammo, magazines, reloading as handling,
   noise and recoil.
-- **Aim sway and the firearms skill (BR, 2026-10-05):** "we should add a aiming
-  variance based on movement, swing and recoil (this should show in game via a
-  sway on the weapon)". The firearms skill "will: 1) mitigate the aim variance
-  2) quicken reload time 3) quicken rack time (shotgun)". It starts as one
-  skill, "which we will expand to separate firearm archetypes later, like
-  skill:smgs, skill:shotguns etc".
+- **Aim sway and the firearms skill (BR, 2026-10-05; d62-4, #262):** "we
+  should add a aiming variance based on movement, swing and recoil (this should
+  show in game via a sway on the weapon)". The firearms skill "will: 1) mitigate
+  the aim variance 2) quicken reload time 3) quicken rack time (shotgun)". It
+  starts as one skill, "which we will expand to separate firearm archetypes
+  later, like skill:smgs, skill:shotguns etc". After trying skill 12 with the
+  assault rifle, BR reported, "as for gun skill / i tried it at =12 / and
+  equipped the assault rifle - too much dispersion/sway at full auto". Each
+  committed shot therefore takes its kick from firearm data, while skill
+  mitigates the accumulating full-auto aim offset; see
+  `deadvox/src/game/firearmHandling.ts`, `firearmHandlingFor`,
+  `deadvox/src/core/aim.ts`, `AimController.recordShot` and `AimController.advance`,
+  and `deadvox/src/core/firearmsSkill.ts`, `firearmsSkillEffects`. Once #267
+  lands, sway while firing on the move is judged at the ready duck-walk speed:
+  firearms cannot fire while sprinting, and the governing skill for that gait
+  remains open in #267 (BR leans toward a generic "warfare" skill).
 - Modular weapons: the player fits mods (optics first, then suppressors and
   other muzzle devices, foregrips, tactical flashlights and lasers, magazines,
   stocks and so on) found as loot or crafted, through the mount points a gun
@@ -312,6 +322,7 @@ later notes (2026-09-27):
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition affects how an item performs, not only whether it's ruined.
 - Books may also speed up skill practice, not only teach recipes.
+- **Learning from books, later (BR, 2026-10-05):** “at this point it's ok to just 'learn' the recipes, but we will transition to a more in-depth leaning system in future - i.e. you don't just learn the recipe by reading it once, but rather you det to know it, and then you can use the book as reference while performing it, until learned fully”.
 - Condition may lower salvage yield.
 
 **Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”

@@ -248,10 +248,10 @@ export interface ZombieSystemOptions {
   onIncapacitated?: (id: EntityId, zombie: Zombie) => void;
   /** A region other than the head ran out of health: the game leaves the severed part behind (an item). */
   onSevered?: (zombie: Zombie, region: Exclude<ZombieRegion, 'head'>) => void;
-  /** Sound-source position is in block coordinates. */
-  onSound?: (event: SoundEventId, position: Vec3) => void;
+  /** Sound-source position is in block coordinates; body is present when the shambler made the sound. */
+  onSound?: (event: SoundEventId, position: Vec3, body?: Zombie) => void;
   /** Called for actual ground-travel footfalls of the nearest three moving shamblers. */
-  onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode) => void;
+  onFootstep?: (position: Vec3, id: EntityId, mode: ZombieMode, body: Zombie) => void;
   /** Called once for every part severed (src/core/zombies.ts's swing — the melee hit path), *after*
    * `zombie.severed` already includes `part`, so a renderer reading zombie.severed at this point sees the
    * new cut too. Fires before onDeath on a killing blow that also severs the head. */
@@ -551,7 +551,7 @@ export const hearVocalNoise = ({
 
 const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: PerceptionInput): boolean => {
   const delta = sub(player.pos, from);
-  const metres = Math.hypot(...delta) * blockSize;
+  const metres = Math.hypot(delta[0], delta[2]) * blockSize;
   const dir = unit(delta);
   const look = unit(facing);
   const dot = Math.max(-1, Math.min(1, look[0] * dir[0] + look[2] * dir[2]));
@@ -1110,7 +1110,9 @@ export class ZombieSystem {
     const key = routeGoalKey(target);
     let route = this.routes.get(id);
     if (!route || route.goalKey !== key) {
-      route = { goalKey: key, goal: copy(target), waypoints: [], next: 0, pending: true, retryAt: 0 };
+      route = route
+        ? { ...route, goalKey: key, goal: copy(target), pending: true, retryAt: 0 }
+        : { goalKey: key, goal: copy(target), waypoints: [], next: 0, pending: true, retryAt: 0 };
       this.routes.set(id, route);
     }
     if (!route.pending && route.waypoints.length === 0 && time >= route.retryAt) {
@@ -1140,12 +1142,12 @@ export class ZombieSystem {
         zombie.body.pos[2] + (next[2] - zombie.body.pos[2]) * fraction,
       ];
     }
-    if (next && probe && !route.pending && !liveRouteClearance(zombie.body, next, probe, this.options.isSolid)) {
+    if (next && probe && !liveRouteClearance(zombie.body, next, probe, this.options.isSolid)) {
       route = { ...route, waypoints: [], next: 0, pending: true, retryAt: 0 };
       this.routes.set(id, route);
       return undefined;
     }
-    return route.pending ? undefined : next;
+    return next;
   }
 
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
@@ -1224,7 +1226,7 @@ export class ZombieSystem {
       const tier = sees ? undefined : (vocal?.tier ?? hearingTier(hearingInput));
       const wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
       if ((sees || tier) && !wasAware) {
-        this.options.onSound?.('shambler_alert', copy(pos));
+        this.options.onSound?.('shambler_alert', copy(pos), zombie);
       }
       if (sees) {
         zombie.mode = 'chase';
@@ -1283,7 +1285,7 @@ export class ZombieSystem {
       if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
         zombie.idleSoundTimer -= dt;
         if (zombie.idleSoundTimer <= 0) {
-          this.options.onSound?.('shambler_idle', copy(pos));
+          this.options.onSound?.('shambler_idle', copy(pos), zombie);
           zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
         }
       }
@@ -1525,7 +1527,7 @@ export class ZombieSystem {
       ) {
         // Telegraph: sound and the visible windup start together; the cooldown starts now too (from
         // windup start, not from the hit), so it also gates re-starting an attack during this one's windup.
-        this.options.onSound?.('shambler_attack', copy(pos));
+        this.options.onSound?.('shambler_attack', copy(pos), zombie);
         zombie.attackWindup = type.attack.windup;
         zombie.attackWait = type.attack.cooldown;
       }
@@ -1581,7 +1583,7 @@ export class ZombieSystem {
         continue;
       }
       for (let step = 0; step < steps; step++) {
-        this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode);
+        this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode, zombie);
       }
     }
   }
@@ -1766,9 +1768,9 @@ export class ZombieSystem {
     const healthBefore = zombie.regions[region];
     const severedBefore = new Set(zombie.severed);
     if (!projectile) {
-      this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos));
+      this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos), zombie);
     }
-    this.options.onSound?.('shambler_hurt', copy(zombie.body.pos));
+    this.options.onSound?.('shambler_hurt', copy(zombie.body.pos), zombie);
     const healthAfter = Math.max(0, healthBefore - weapon.damage);
     zombie.regions[region] = healthAfter;
     if (healthAfter < healthBefore) {

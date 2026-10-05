@@ -129,6 +129,12 @@
             <label class="check" id="deadvox-debug-field">
               <input name="debug" data-url-param="debug" type="checkbox" /> Enable development tools (?debug=1)
             </label>
+            <label id="deadvox-handedness-field" hidden>Debug dominant hand
+              <select name="handedness" data-url-param="handedness">
+                <option value="">Start-card choice</option>
+                <option value="left">Left</option>
+              </select>
+            </label>
           </div>
 
           <div id="deadvox-world-bench" hidden>
@@ -140,6 +146,9 @@
               </label>
               <label>Start at plan entry
                 <input id="deadvox-world-index" name="i" data-url-param="i" type="number" min="0" step="1" value="0" required />
+              </label>
+              <label>Detailed shamblers (0 disables them)
+                <input name="shamblers" data-url-param="shamblers" type="number" min="0" max="500" step="1" value="60" required />
               </label>
               <label class="check">
                 <input name="quick" data-url-param="quick" type="checkbox" /> Quick check (short, not a result)

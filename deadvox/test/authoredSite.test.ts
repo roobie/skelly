@@ -28,14 +28,61 @@ const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')
   .layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
-const baseLayoutIds = [...buildRegistry(base).registry.layouts.keys()];
+const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);
+const validationLayout = (id: string): SiteLayoutDef => ({
+  id,
+  bounds: { x0: 0, z0: 0, x1: 10, z1: 10 },
+  ground: 0,
+  terrain: [],
+  buildings: [],
+  player: { position: [5, 0.5, 5], bearing: 0 },
+  shamblers: [],
+  woodlands: [],
+  tracks: [],
+});
+const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
+const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
+const layoutValidationBase = [
+  {
+    source: 'layout-validation-support.json',
+    data: {
+      templates: [...layoutTemplateIds].map((id) => {
+        const [width, height, depth] = registry.templates.get(id)!.size;
+        return {
+          id,
+          size: [width, height, depth],
+          palette: { '.': 'air' },
+          layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => '.'.repeat(width))),
+        };
+      }),
+      zombies: [...layoutZombieIds].map((id) => {
+        const zombie = structuredClone(registry.zombies.get(id)!);
+        zombie.loot = undefined;
+        return zombie;
+      }),
+      layouts: baseLayoutIds.map(validationLayout),
+    },
+  },
+];
 const scale = makeScale(0.5);
+const minimalLayoutBaselineIssues = buildRegistry([
+  ...layoutValidationBase,
+  { source: 'layout-test.json', data: { layouts: [layout] } },
+]).issues.filter((issue) => issue.source === 'layout-test.json');
 const invalid = (data: unknown, message: string) => {
-  const result = load(data);
+  expect(minimalLayoutBaselineIssues.some((issue) => issue.message.includes(message))).toBe(false);
+  const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [data] } }]);
   expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
     true,
   );
   expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds); // No rejected fixture layouts; unrelated bundled sites survive.
+};
+const invalidWithFullPack = (data: unknown, message: string) => {
+  const result = load(data);
+  expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
+    true,
+  );
+  expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds);
 };
 
 const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
@@ -108,10 +155,21 @@ describe('authored layout acceptance', () => {
       'foundation cut or fill',
     );
   });
-  it('rejects floating terrain spawns and unsupported or buried building spawns', () => {
-    invalid({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] }, 'supported surface');
-    invalid({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+  it('rejects a player spawn floating above its terrain floor', () => {
+    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
+  });
+  it('rejects an elevated shambler spawn without support', () => {
+    invalidWithFullPack(
+      { ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] },
+      'supported surface',
+    );
+  });
+  it('rejects a player spawn on an unsupported building cell', () => {
+    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+  });
+  it('has no baseline layout issues for the fields covered by the minimal registry', () => {
+    const supportedIssues = minimalLayoutBaselineIssues.filter((issue) => !issue.message.includes('supported surface'));
+    expect(supportedIssues).toEqual([]);
   });
   it('rejects ridge primitives with zero width or no non-zero segment', () => {
     const ridge = {

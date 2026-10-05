@@ -5,7 +5,10 @@ tags: [deadvox, design, inventory, crafting, appliances, ui]
 created: 2026-09-26
 status: active
 read_if:
+  - you're implementing or changing furniture-based rest and sleep
+  - you're reviewing long-action continuation and save ownership
   - you change item activation, crafting or appliance ownership boundaries
+  - you change how handling gates primary actions
   - you reconcile BR's interaction rulings with actor handedness
 ---
 
@@ -342,8 +345,16 @@ values), known recipes and skill levels. Two consequences for 1.9:
 
 1. **ADR 0001 (done):** the spawn menu and the death screen moved to lit-html
    as small examples of the pattern, then the credits and the HUD.
-2. **1.8, rest and sleep:** build the long action as the general mechanism, with
-   rest and sleep as its first users.
+2. **1.8, rest and sleep:** the long-action mechanism is shared, but rest and
+   sleep start by interacting with the furniture under the crosshair. This
+   gives recovery a physical anchor instead of a location-free action. The
+   comfort property scales the shared fatigue rates; the authored values are
+   provisional design placeholders, not balance claims. `src/core/longAction.ts`,
+   `RestAction`, retains the exact furniture identity so Continue cannot transfer
+   progress to a substitute piece; `src/game/rest.ts`, `RestController.resume`,
+   refuses if that piece is no longer reachable. F on the anchor or X stops;
+   movement stops; C resumes only after an interruption. The L binding remains
+   only until d44 removes the legacy sleep key.
 3. **1.9, saves:** long actions and item state as plain data, as above.
 4. **Slice 2:** the inventory screen already moved to lit-html in Slice 1
    (#105), which completed ADR 0001. Slice 2 starts with the reach query and `options`, then recipes in the schema and the
@@ -377,3 +388,28 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
    A held item must never become a fist or redirect to the other hand, and a
    restored physical fist sequence must not be reseeded from dominance.
+7. **Handling gates primary actions (`d77-1`, 2026-10-05):** BR reported,
+   "bug: while in the process of wielding something, you can attack". While handling
+   is busy, primary actions from either hand are refused. Whether a one-handed job
+   should leave the free hand usable remains open for BR.
+8. **Held igniter activates the other hand's light (BR, #252 re-look,
+   2026-10-05 13:44).** BR's report:
+
+   > right hand: matches / left hand: candle / left-click->"nothing to do with box of matches"
+
+   This identified the missing primary action. Activating a held igniter lights
+   an unlit light in the other hand when that light requires a firestarter;
+   `src/game/primaryAction.ts`, `ignitionTargetForHand`, selects it, and
+   `src/game/survival.ts`, `Survival.use`, checks the other hand and spends one
+   ignition's charge. An igniter in reach but not held does not qualify. Without
+   an eligible igniter in the other hand, activation is refused and spends no
+   charge. Whether matches alone strike one match for a brief light remains open
+   for BR and is not implied by this rule.
+
+9. **Held consumables (BR, 2026-10-05):** answering “What should left-clicking
+   held food, drink or a bandage do?” BR ruled: “activate them”. The primary
+   action selects food and drink by their `food` component and medical items by
+   category, then calls `Survival.use`; quickbar actions remain owned by
+   `Survival.useFromQuickbar`. Until Slice 3's body model includes wounds, using
+   a bandage follows that owner and is refused; see `src/game/survival.ts`,
+   `Survival.use`.
