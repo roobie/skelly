@@ -766,24 +766,26 @@ BR may overrule the plan-default light settings at d64-1's first look; if so,
 update the workload before measuring the production preview. Tests read the
 light settings from content rather than pinning their tuning values.
 
-The production build was run once per workload in Chromium with SwiftShader, a
-software renderer (7 reported cores, 1280 × 720, DPR 1). Both runs used the
-content defaults and completed every full phase without interruption. The
-comparison is diagnostic only: it cannot establish the Firefox/reference-laptop
-gate, and its small frame samples are not tuning evidence.
+The final production build was run once per workload in Chromium with
+SwiftShader, a software renderer (7 reported cores, 1280 × 720, DPR 1). Both
+runs used content defaults and completed every full phase without interruption.
+This single comparison is diagnostic only: it cannot establish the
+Firefox/reference-laptop gate, and its small frame samples are not tuning
+evidence.
 
 | Phase | 60 detailed shamblers + lights | Lights only |
 | --- | --- | --- |
-| Load | 98.8 s | 99.0 s |
-| Look | 0.90 fps; frame p95 2683.2 ms; work p95 32.3 ms | 1.23 fps; frame p95 866.6 ms; work p95 3.9 ms |
-| Blocking render p95 | 1013.9 ms | 861.5 ms |
-| Jog | 1.17 fps; frame p95 1083.3 ms; work p95 26.4 ms; max holes 14 | 1.34 fps; frame p95 900 ms; work p95 21.3 ms; max holes 11 |
-| Sprint | 1.06 fps; frame p95 2500 ms; work p95 55 ms; max holes 59 | 1.40 fps; frame p95 833.4 ms; work p95 14.5 ms; max holes 50 |
+| Load | 105.3 s | 99.1 s |
+| Look | 1.08 fps; frame p95 1083.3 ms; work p95 31.7 ms | 1.05 fps; frame p95 1816.6 ms; work p95 16.8 ms |
+| Blocking render p95 | 1048.9 ms | 923.9 ms |
+| Jog | 0.97 fps; frame p95 2299.9 ms; work p95 65.4 ms; max holes 18 | 1.35 fps; frame p95 800 ms; work p95 15.4 ms; max holes 15 |
+| Sprint | 1.02 fps; frame p95 1366.6 ms; work p95 64 ms; max holes 64 | 1.44 fps; frame p95 783.3 ms; work p95 10.4 ms; max holes 50 |
 
 All phases exceeded 18 ms in every sampled frame, and neither run met the
-no-holes sprint condition. The software-renderer comparison shows higher
-render and movement costs with detailed shamblers; it does not justify changing
-content tuning. The reference-machine performance gate remains open.
+no-holes sprint condition. In this pair, the detailed shamblers coincide with
+higher blocking-render cost and jog/sprint movement cost; the look-frame tails
+vary and the sample is too small to tune from. These software-renderer results
+do not establish the reference-machine gate, which remains open.
 
 ### Trees: d24-2, 2026-10-03 — CPU lookup fixed
 
