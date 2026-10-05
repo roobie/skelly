@@ -515,6 +515,9 @@ describe('snapshot state components', () => {
     const elapsed = runtime.sim.actions.job?.jobType === 'reading' ? runtime.sim.actions.job.elapsed : 0;
     const feet = runtime.player.body.pos.map(Math.floor) as Vec3;
     expect(runtime.inventory.move(book, { kind: 'pile', pos: feet }).ok).toBe(true);
+    // The test player starts in freefall; keep the pile reachable after the tick.
+    runtime.world.setBlock(feet[0], feet[1] - 1, feet[2], blockId('grass'));
+    runtime.sim.scheduler.advance(1);
 
     const snapshot = capture(runtime);
     expect(snapshot.character.longAction.job).toMatchObject({
