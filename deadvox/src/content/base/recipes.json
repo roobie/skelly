@@ -1,5 +1,9 @@
 {
-  "skills": [{ "id": "crafting", "name": "Crafting" }, { "id": "mechanics", "name": "Mechanics" }, { "id": "firearms", "name": "Firearms" }],
+  "skills": [
+    { "id": "crafting", "name": "Crafting" },
+    { "id": "mechanics", "name": "Mechanics" },
+    { "id": "firearms", "name": "Firearms" }
+  ],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
