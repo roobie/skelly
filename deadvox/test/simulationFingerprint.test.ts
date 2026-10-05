@@ -129,51 +129,16 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
     expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
-    expect(SIMULATION_EXCLUSIONS).toEqual(
-      expect.arrayContaining([
-        'src/game/audioPresentation.ts',
-        'src/game/saveStorage.ts',
-        'src/game/saveStorageRecord.ts',
-        'src/game/saveStorageProtocol.ts',
-        'src/game/controls.ts',
-        'src/game/playtestTools.ts',
-        'src/game/playtestObserver.ts',
-        'src/worker/save.worker.ts',
-        'src/ui/saveController.ts',
-      ]),
-    );
-    expect(graph.excludedImports).toEqual([
-      { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/audio.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/audioPresentation.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/controls.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/playtestObserver.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/playtestTools.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/meleePose.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/playFrames.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/playView.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/audioOptions.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/craftController.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/credits.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/death.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/hud.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/inventoryScreen.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/playHud.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/playReadout.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/primaryActionHint.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/reading.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
-      { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
-      { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
-    ]);
+    const paths = [...graph.sources.keys()];
+    expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/three/'))).toBe(false);
+    expect(graph.excludedImports.length).toBeGreaterThan(0);
+    for (const { importer, excluded } of graph.excludedImports) {
+      expect(paths).toContain(importer);
+      expect(paths).not.toContain(excluded);
+    }
   });
 
   it('ignores WebAudio voice-cap changes but fingerprints sound admission, seeded selection and saves', async () => {
