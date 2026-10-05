@@ -28,7 +28,9 @@ describe('audio listening guide', () => {
     expect(
       heartbeat.variants.every(
         ({ author, licence, sourceUrl }) =>
-          author === 'bart' && licence === 'CC0-1.0' && sourceUrl === 'https://opengameart.org/content/heartbeat-sounds',
+          author === 'bart' &&
+          licence === 'CC0-1.0' &&
+          sourceUrl === 'https://opengameart.org/content/heartbeat-sounds',
       ),
     ).toBe(true);
   });

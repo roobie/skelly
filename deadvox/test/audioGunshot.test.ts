@@ -6,11 +6,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import {
-  firearmShotSound,
-  heartbeatForStamina,
-  publishHeartbeatStamina,
-} from '../src/game/audioPresentation.ts';
+import { firearmShotSound, heartbeatForStamina, publishHeartbeatStamina } from '../src/game/audioPresentation.ts';
 
 const audios: GameAudio[] = [];
 

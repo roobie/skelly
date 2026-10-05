@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  firearmShotSound,
-  HEARTBEAT_QUIET_FLOOR,
-  heartbeatForStamina,
-} from '../src/game/audioPresentation.ts';
+import { firearmShotSound, HEARTBEAT_QUIET_FLOOR, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 
 describe('heartbeat audio presentation', () => {
   it('gets no slower or quieter as stamina falls and is quiet at full stamina', () => {

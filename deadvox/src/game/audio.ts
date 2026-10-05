@@ -5,11 +5,11 @@ import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
 import {
+  type HeartbeatTarget,
   HEARTBEAT_FILES,
   HEARTBEAT_QUIET_FLOOR,
   heartbeatForStamina,
   subscribeHeartbeatStamina,
-  type HeartbeatTarget,
 } from './audioPresentation.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
@@ -357,9 +357,9 @@ export class GameAudio {
       }
       return this.loadBuffer(context, file, url);
     });
-    void Promise.all(buffers).then(([slow, fast]) => {
+    Promise.all(buffers).then(([slow, fast]) => {
       this.heartbeatLoading = false;
-      if (!slow || !fast) {
+      if (!(slow && fast)) {
         this.heartbeatUnavailable = true;
         return;
       }
@@ -372,19 +372,37 @@ export class GameAudio {
       }
       const when = context.currentTime + 0.025;
       const body = nodes.categories.get('body')!;
-      this.startHeartbeatTimbre(context, body, slow, target.gain * (1 - target.fastMix), when);
-      this.startHeartbeatTimbre(context, body, fast, target.gain * target.fastMix, when);
+      this.startHeartbeatTimbre({
+        context,
+        body,
+        buffer: slow,
+        gainValue: target.gain * (1 - target.fastMix),
+        when,
+      });
+      this.startHeartbeatTimbre({
+        context,
+        body,
+        buffer: fast,
+        gainValue: target.gain * target.fastMix,
+        when,
+      });
       this.heartbeatNextAt = when + 60 / target.bpm;
     });
   }
 
-  private startHeartbeatTimbre(
-    context: AudioContext,
-    body: GainNode,
-    buffer: AudioBuffer,
-    gainValue: number,
-    when: number,
-  ): void {
+  private startHeartbeatTimbre({
+    context,
+    body,
+    buffer,
+    gainValue,
+    when,
+  }: {
+    context: AudioContext;
+    body: GainNode;
+    buffer: AudioBuffer;
+    gainValue: number;
+    when: number;
+  }): void {
     if (gainValue < HEARTBEAT_QUIET_FLOOR) {
       return;
     }
