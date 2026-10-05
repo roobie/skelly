@@ -63,6 +63,9 @@ acting").
 - **Debug keys sit behind F1 (BR, 2026-10-04):** "gating them all behind e.g.
   holding down F1 then pressing the debug key? Unless some special circumstance
   for a key need it readily available". This answers open question 6.
+- **Debug modifier moved to F2 (BR, 2026-10-05):** "debug modifier F2 to not
+  collide with a builtin hotkey". Chromium opens its Help tab on F1 if the page
+  does not cancel it, so the debug modifier is now F2.
 - **No Ctrl or Cmd, ever (BR, 2026-10-04):** "due to the browser being the
   browser, we cannot use Ctrl or Cmd for anything, ever." This answers open
   question 2.
@@ -249,7 +252,7 @@ identity takes precedence over creation controls.
 ## Debug keys
 
 The development profile binds B, G, H, K, N, P, T, U, V and Backquote
-(`src/debug/index.ts`). F1+L toggles the debug magenta trajectory laser, which
+(`src/debug/index.ts`). F2+L toggles the debug magenta trajectory laser, which
 starts enabled; see `src/game/input.ts`, `KEY_BINDINGS.debugModifier`, and
 `src/debug/index.ts`, `createDebugActions`. Debug firearm handling is available
 only from a `?debug=1` session: use G to spawn `debug_rifle_assault`, move it to
@@ -258,9 +261,10 @@ trace adds no damage or ammunition use; each shot records one spent case. The de
 sit beside the hamlet. In play, these letters are free in the shipped game but
 taken in the development and playtest builds, which is where the controls get
 tested; a shipped verb on V would collide in every test session. BR ruled on
-2026-10-04 that debug keys go behind a held F1 (see "What's already ruled"),
-which frees the letters for shipped verbs, including T for the quick-action gate.
-d44 makes that change.
+2026-10-04 that debug keys go behind a held F1, then moved the modifier to F2 on
+2026-10-05 to avoid Chromium's Help (see "What's already ruled"). This frees the
+letters for shipped verbs, including T for the quick-action gate. d44 makes that
+change.
 
 See `src/game/input.ts`, `CONTROL_CODES.descend`, for the debug noclip descend
 binding, separate from reload and the reserved lean inputs. `Input` owns its
@@ -284,7 +288,8 @@ editing retains native key behaviour.
    interruption card a two-button choice clicked with the drawn cursor, freeing
    C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.
 6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
-   2026-10-04):** behind a held F1.
+   2026-10-04):** behind a held F1. BR moved the modifier to F2 on 2026-10-05
+  (see "What's already ruled").
 7. ~~**Stow on the held slot's key:** confirm pressing the held item's slot puts it
    away?~~ **Answered (BR, 2026-10-05):** a tap takes the item into its hand or
    puts it away; a hold uses an available action.

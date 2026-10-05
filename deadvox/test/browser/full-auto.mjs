@@ -146,6 +146,30 @@ try {
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.evaluate(() => {
+    globalThis.fullAutoProbe.titleF1DefaultPrevented = false;
+    globalThis.fullAutoProbe.titleF2DefaultPrevented = false;
+    globalThis.addEventListener('keydown', (event) => {
+      if (event.code === 'F1') {
+        globalThis.fullAutoProbe.titleF1DefaultPrevented = event.defaultPrevented;
+      }
+      if (event.code === 'F2') {
+        globalThis.fullAutoProbe.titleF2DefaultPrevented = event.defaultPrevented;
+      }
+    });
+  });
+  await page.keyboard.press('F1');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.titleF1DefaultPrevented),
+    false,
+    'F1 is not cancelled on the title screen',
+  );
+  await page.keyboard.press('F2');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.titleF2DefaultPrevented),
+    true,
+    'the debug modifier cancels F2 on the title screen',
+  );
   // Observe the public admission result instead of an implementation-specific source snippet.
   await page.evaluate(async () => {
     const moduleUrl = '/src/game/firearmHandling.ts';
@@ -167,17 +191,27 @@ try {
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   await page.evaluate(() => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
+    globalThis.fullAutoProbe.f2DefaultPrevented = false;
     globalThis.addEventListener('keydown', (event) => {
       if (event.code === 'F1') {
         globalThis.fullAutoProbe.f1DefaultPrevented = event.defaultPrevented;
+      }
+      if (event.code === 'F2') {
+        globalThis.fullAutoProbe.f2DefaultPrevented = event.defaultPrevented;
       }
     });
   });
   await page.keyboard.press('F1');
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.f1DefaultPrevented),
+    false,
+    'F1 is not cancelled in gameplay',
+  );
+  await page.keyboard.press('F2');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.f2DefaultPrevented),
     true,
-    'the attached debug handler prevents the browser default for F1',
+    'the debug modifier prevents the browser default for F2 in gameplay',
   );
   await page.evaluate(() => {
     const { impactEffects } = globalThis.fullAutoRuntime.view;

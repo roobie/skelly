@@ -32,6 +32,13 @@ if (bench === 'report') {
 } else if (bench === null) {
   mountControlsCard(document.getElementById('controls')!);
   let config = configFromUrl(params);
+  if (config.debug) {
+    globalThis.addEventListener('keydown', (event) => {
+      if (event.code === KEY_BINDINGS.debugModifier.code) {
+        event.preventDefault();
+      }
+    });
+  }
   const saveBackend = params.get('save-backend');
   const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
   const saveController = new SaveController(backend);
