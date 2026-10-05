@@ -87,8 +87,9 @@ try {
       `http://127.0.0.1:${address.port}/?debug=1&loadout=pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
     ),
   );
-  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   await page.keyboard.press('KeyH');
   assert.equal(

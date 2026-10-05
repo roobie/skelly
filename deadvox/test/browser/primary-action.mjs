@@ -94,10 +94,14 @@ try {
       renderOverride,
     ),
   );
-  await page.waitForFunction(() =>
-    Boolean(document.querySelector('#debug-ui-root') && document.querySelector('#view')),
-  );
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  assert.equal(await page.evaluate(() => Boolean(globalThis.primaryActionTest)), false, 'title has no actor');
   await page.locator('#go').click();
+  await page.waitForFunction(() =>
+    Boolean(
+      globalThis.primaryActionTest && document.querySelector('#debug-ui-root') && document.querySelector('#view'),
+    ),
+  );
   try {
     await page.waitForFunction(() => document.querySelector('#overlay')?.hidden && document.pointerLockElement);
   } catch (error) {

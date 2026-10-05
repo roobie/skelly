@@ -189,8 +189,8 @@ try {
 
   await send('Runtime.enable');
   await waitFor(
-    () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
-    'debug UI mount',
+    () => evaluate("document.querySelector('#go')?.getAttribute('aria-disabled') === 'false'"),
+    'accepted-launch readiness',
   );
   const keyBindings = await evaluate("import('/src/game/input.ts').then(({ KEY_BINDINGS }) => KEY_BINDINGS)");
   const pressBinding = async (binding) => press(binding.code, binding.label, binding.virtualKeyCode);
@@ -237,6 +237,65 @@ try {
       if (event.code === 'F4') window.__f4Prevented = event.defaultPrevented;
     });
   })()`);
+  await evaluate(`(() => {
+    const canvas = document.querySelector('canvas');
+    let locked = false;
+    window.__pointerCalls = { request: 0, exit: 0 };
+    window.__rejectNextPointerLock = false;
+    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked ? canvas : null });
+    canvas.requestPointerLock = () => {
+      window.__pointerCalls.request++;
+      if (window.__rejectNextPointerLock) {
+        window.__rejectNextPointerLock = false;
+        setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
+        return Promise.reject(new Error('pointer lock refused by contract stub'));
+      }
+      locked = true;
+      document.dispatchEvent(new Event('pointerlockchange'));
+      return Promise.resolve();
+    };
+    document.exitPointerLock = () => {
+      window.__pointerCalls.exit++;
+      locked = false;
+      document.dispatchEvent(new Event('pointerlockchange'));
+    };
+    window.__setPointerLocked = (value) => {
+      locked = value;
+      document.dispatchEvent(new Event('pointerlockchange'));
+    };
+    window.__keyEvents = [];
+    const hitTest = document.elementFromPoint.bind(document);
+    document.elementFromPoint = (x, y) => {
+      const target = hitTest(x, y);
+      window.__lastHitTest = {
+        x,
+        y,
+        insideGo: Boolean(target?.closest('#go')),
+        buttonText: target?.closest('button')?.textContent?.trim() ?? '',
+      };
+      return target;
+    };
+    document.addEventListener('click', (event) => {
+      if (event.target !== canvas) {
+        window.__lastForwardedClick = {
+          x: event.clientX,
+          y: event.clientY,
+          hitTest: window.__lastHitTest,
+        };
+      }
+    }, true);
+    window.addEventListener('keydown', (event) => {
+      const { code } = event;
+      setTimeout(() => window.__keyEvents.push({ code, defaultPrevented: event.defaultPrevented }), 0);
+    });
+    document.querySelector('#go').click();
+    window.__pointerCalls.request = 0;
+  })()`);
+  await waitFor(
+    () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
+    'post-acceptance debug UI mount',
+  );
+  await pressBinding(keyBindings.mainMenu);
   await press('F3', 'F3', 114);
   assert.equal(
     await evaluate("document.querySelector('#f3-debug-overlay').hidden"),
@@ -302,58 +361,9 @@ try {
   );
   await press('Backquote', '`', 192);
   await evaluate(`(() => {
-    const canvas = document.querySelector('canvas');
-    let locked = false;
-    window.__pointerCalls = { request: 0, exit: 0 };
-    window.__rejectNextPointerLock = false;
-    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked ? canvas : null });
-    canvas.requestPointerLock = () => {
-      window.__pointerCalls.request++;
-      if (window.__rejectNextPointerLock) {
-        window.__rejectNextPointerLock = false;
-        setTimeout(() => document.dispatchEvent(new Event('pointerlockerror')), 0);
-        return Promise.reject(new Error('pointer lock refused by contract stub'));
-      }
-      locked = true;
-      document.dispatchEvent(new Event('pointerlockchange'));
-      return Promise.resolve();
-    };
-    document.exitPointerLock = () => {
-      window.__pointerCalls.exit++;
-      locked = false;
-      document.dispatchEvent(new Event('pointerlockchange'));
-    };
-    window.__setPointerLocked = (value) => {
-      locked = value;
-      document.dispatchEvent(new Event('pointerlockchange'));
-    };
-    window.__keyEvents = [];
-    const hitTest = document.elementFromPoint.bind(document);
-    document.elementFromPoint = (x, y) => {
-      const target = hitTest(x, y);
-      window.__lastHitTest = {
-        x,
-        y,
-        insideGo: Boolean(target?.closest('#go')),
-        buttonText: target?.closest('button')?.textContent?.trim() ?? '',
-      };
-      return target;
-    };
-    document.addEventListener('click', (event) => {
-      if (event.target !== canvas) {
-        window.__lastForwardedClick = {
-          x: event.clientX,
-          y: event.clientY,
-          hitTest: window.__lastHitTest,
-        };
-      }
-    }, true);
-    window.addEventListener('keydown', (event) => {
-      const { code } = event;
-      setTimeout(() => window.__keyEvents.push({ code, defaultPrevented: event.defaultPrevented }), 0);
-    });
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
+    window.__pointerCalls.exit = 0;
   })()`);
   const emptyQuickbarReady = () =>
     evaluate(`(() => {

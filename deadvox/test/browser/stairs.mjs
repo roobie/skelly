@@ -96,8 +96,15 @@ try {
   await page.goto(
     browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
   );
-  await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
+  await page.waitForFunction(
+    () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+    undefined,
+    {
+      timeout: 60_000,
+    },
+  );
   await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   await page.waitForFunction(
     (lighting) =>
       [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
@@ -347,8 +354,13 @@ try {
     assert.equal(await doorValue('open', false), false, 'plain F closes the same door');
     await page.evaluate((uid) => {
       const { entities, session } = globalThis.stairsWitness;
-      const door = entities.byUid(uid);
+      const fixture = structuredClone(entities.snapshotState());
+      const door = fixture.entities.find((entity) => entity.uid === uid);
+      if (!door) {
+        throw new Error('Door fixture is missing');
+      }
       door.lock = { id: 'test_shed', locked: false };
+      entities.restoreState(fixture);
       const wrongDefinition = {
         ...session.inventory.registry.items.get('shed_key'),
         id: 'stairs_wrong_key',

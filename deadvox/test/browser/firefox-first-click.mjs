@@ -20,7 +20,10 @@ const observation = {
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(marker, `  Object.assign(globalThis, { firefoxNativeSim: sim });\n${marker}`);
+    return code.replace(
+      marker,
+      `  Object.assign(globalThis, { firefoxNativeSim: sim, firefoxNativeInitialTime: sim.time });\n${marker}`,
+    );
   },
 };
 const vite = await createServer({
@@ -58,7 +61,7 @@ try {
     globalThis.__startGesture = {
       pointerDownTarget: null,
       clickTarget: null,
-      pointerDownActive: false,
+      acceptedClickActive: false,
       audioResumeCalls: [],
       lockRequests: [],
       lockChanges: [],
@@ -68,14 +71,6 @@ try {
       'pointerdown',
       (event) => {
         globalThis.__startGesture.pointerDownTarget = describe(event.target);
-        globalThis.__startGesture.pointerDownActive = true;
-      },
-      true,
-    );
-    document.addEventListener(
-      'pointerup',
-      () => {
-        globalThis.__startGesture.pointerDownActive = false;
       },
       true,
     );
@@ -83,6 +78,10 @@ try {
       'click',
       (event) => {
         globalThis.__startGesture.clickTarget ??= describe(event.target);
+        globalThis.__startGesture.acceptedClickActive = Boolean(event.target?.closest('#go') && event.isTrusted);
+        queueMicrotask(() => {
+          globalThis.__startGesture.acceptedClickActive = false;
+        });
       },
       true,
     );
@@ -105,20 +104,23 @@ try {
     globalThis.AudioContext = class extends NativeAudioContext {
       resume() {
         globalThis.__startGesture.audioResumeCalls.push({
-          duringPointerDown: globalThis.__startGesture.pointerDownActive,
+          duringAcceptedClick: globalThis.__startGesture.acceptedClickActive,
+          userActivationActive: navigator.userActivation?.isActive,
         });
         return super.resume();
       }
     };
   });
   await page.goto(browserStageUrl('firefox-first-click', `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64`));
-  await page.waitForFunction(() => Boolean(globalThis.firefoxNativeSim && document.querySelector('#view')), null, {
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
   });
   await page.bringToFront();
   await page.evaluate(() => window.focus());
-  const before = await page.evaluate(() => globalThis.firefoxNativeSim.time);
+  assert.equal(await page.evaluate(() => Boolean(globalThis.firefoxNativeSim)), false, 'title has no simulation');
   await page.locator('#go').click();
+  await page.waitForFunction(() => Boolean(globalThis.firefoxNativeSim));
+  const before = await page.evaluate(() => globalThis.firefoxNativeInitialTime);
   await page.waitForFunction(
     () => document.pointerLockElement === document.querySelector('#view') && document.querySelector('#overlay').hidden,
     null,
@@ -132,7 +134,7 @@ try {
   assert.equal(gesture.lockRequests[0].target, 'div#view');
   assert.equal(gesture.lockRequests[0].userActivationActive, true);
   assert.ok(gesture.lockChanges.includes('div#view'));
-  assert.ok(gesture.audioResumeCalls.some((call) => call.duringPointerDown));
+  assert.ok(gesture.audioResumeCalls.some((call) => call.duringAcceptedClick && call.userActivationActive));
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
   process.stdout.write(
