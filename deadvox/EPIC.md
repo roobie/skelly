@@ -196,9 +196,11 @@ same world preserve piles left by the previous character?
   later 2026-10-05 ruling separated firearm quality's dispersion from skill:
   "dispersion is not a skill issue, but control is". Each firearm owns its
   per-round `dispersionRadians`; control skill changes movement/look sway, kick
-  per shot and recovery after release, not that cone. During held automatic
-  fire, recoil does not recover; at the ~7° on-screen limit, excess pitch scrolls
-  the view and the gun's on-screen offset recovers only after release. The pump
+  per shot and recovery after release, not that cone. Legendary progression is
+  vanity and adds no mechanical control beyond ordinary expert per BR's ruling.
+  During held automatic fire, recoil does not recover; at the ~7° on-screen
+  limit, excess pitch scrolls the view and the gun's on-screen offset recovers
+  only after release. The pump
   keeps its pellet spread without an additional firearm cone. The view share
   stays in player pitch after release so the player, not an automatic recenter,
   chooses whether to counter it. See `deadvox/src/game/firearmHandling.ts`,

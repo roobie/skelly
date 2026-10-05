@@ -510,9 +510,11 @@ plain box in your hands. Files are small, and follow
   after release while the on-screen weapon offset recovers, so mouse look can
   counter the climb. BR also clarified that "dispersion is not a skill issue,
   but control is": firearm-owned `dispersionRadians` is sampled per round, while
-  `firearmsSkillEffects` controls sway, kick per shot and recoil recovery. The
-  pump keeps its pellet spread and adds no firearm cone. This reuses the already
-  saved player pitch, so no aim-state field or save-schema change is needed. See
+  `firearmsSkillEffects` controls sway, kick per shot and recoil recovery,
+  with legendary progression granting no control beyond ordinary expert per
+  BR's ruling. The pump keeps its pellet spread and adds no firearm cone. This
+  reuses the already saved player pitch, so no aim-state field or save-schema
+  change is needed. See
   `src/game/firearmHandling.ts`, `FirearmMechanics.fire` and
   `firearmHandlingFor`, `src/core/pellets.ts`, `coneDirection`,
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and

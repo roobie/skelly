@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { aimDirection } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
@@ -129,7 +130,7 @@ describe('debug firearm handling', () => {
       return trajectory;
     };
     const novice = publish(0);
-    const experienced = publish(12);
+    const experienced = publish(SKILL_LEVEL_MAX);
     const direction = novice.directions[0]!;
     const baseDirection = aimDirection(yaw, pitch, aimFrame);
     const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');

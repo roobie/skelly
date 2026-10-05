@@ -1,6 +1,7 @@
 import { Euler, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 
 const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) => ({
@@ -171,28 +172,28 @@ it('composes the camera-local aim basis like the held firearm at non-zero pitch'
   expect(basis.forward.reduce((sum, value, index) => sum + value * basis.up[index]!, 0)).toBeCloseTo(0, 6);
 });
 
-it('higher firearms skill reduces the same moving shot-recoil sway', () => {
+it('expert firearms skill reduces the same moving shot-recoil sway', () => {
   const novice = new AimController();
   const experienced = new AimController();
   novice.recordShot(73, 0.02, firearmsSkillEffects(0).recoilKickScale);
-  experienced.recordShot(73, 0.02, firearmsSkillEffects(12).recoilKickScale);
+  experienced.recordShot(73, 0.02, firearmsSkillEffects(SKILL_LEVEL_MAX).recoilKickScale);
   const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(0).variance }));
   const experiencedFrame = experienced.advance(
-    step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(12).variance }),
+    step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(SKILL_LEVEL_MAX).variance }),
   );
   expect(Math.hypot(experiencedFrame.yaw, experiencedFrame.pitch)).toBeLessThan(
     Math.hypot(noviceFrame.yaw, noviceFrame.pitch),
   );
 });
 
-it('higher firearms skill recovers the same released recoil faster', () => {
+it('expert firearms skill recovers the same released recoil faster', () => {
   const novice = new AimController();
   const experienced = new AimController();
   novice.recordShot(73, 0.08);
   experienced.recordShot(73, 0.08);
   for (let tick = 0; tick < 20; tick++) {
     novice.advance(step({ recoilRecoveryRate: firearmsSkillEffects(0).recoilRecoveryRate }));
-    experienced.advance(step({ recoilRecoveryRate: firearmsSkillEffects(12).recoilRecoveryRate }));
+    experienced.advance(step({ recoilRecoveryRate: firearmsSkillEffects(SKILL_LEVEL_MAX).recoilRecoveryRate }));
   }
   expect(Math.hypot(experienced.frame.yaw, experienced.frame.pitch)).toBeLessThan(
     Math.hypot(novice.frame.yaw, novice.frame.pitch),
@@ -207,35 +208,37 @@ it('lighter firearm kick builds less aim displacement over the same full-auto bu
   expect(lightKick).toBeLessThan(heavyKick);
 });
 
-it("higher firearms skill scales a committed shot's immediate aim kick", () => {
+it('firearms skill never adds recoil climb across the same full-auto burst', () => {
+  const cadenceSeconds = 0.075;
+  const levels = [0, Math.floor(SKILL_LEVEL_MAX / 2), SKILL_LEVEL_MAX];
+  const peaks = levels.map((level) => {
+    const effects = firearmsSkillEffects(level);
+    return burstPeak(0.03 * effects.recoilKickScale, effects.variance, cadenceSeconds);
+  });
+  for (let index = 1; index < peaks.length; index++) {
+    expect(peaks[index]).toBeLessThanOrEqual(peaks[index - 1]!);
+  }
+  expect(peaks.at(-1)).toBeLessThan(peaks[0]!);
+});
+
+it("expert firearms skill scales a committed shot's immediate aim kick", () => {
   const novice = new AimController();
   const experienced = new AimController();
   novice.recordShot(73, 0.02, firearmsSkillEffects(0).recoilKickScale);
-  experienced.recordShot(73, 0.02, firearmsSkillEffects(12).recoilKickScale);
+  experienced.recordShot(73, 0.02, firearmsSkillEffects(SKILL_LEVEL_MAX).recoilKickScale);
   expect(Math.hypot(experienced.frame.yaw, experienced.frame.pitch)).toBeLessThan(
     Math.hypot(novice.frame.yaw, novice.frame.pitch),
   );
 });
 
-it('higher firearms skill reduces variance and committed handling durations', () => {
+it('firearms skill effects improve through expert level and legendary matches expert', () => {
   const novice = firearmsSkillEffects(0);
-  const experienced = firearmsSkillEffects(12);
+  const experienced = firearmsSkillEffects(SKILL_LEVEL_MAX);
+  const legendary = firearmsSkillEffects(SKILL_LEVEL_LEGENDARY);
   expect(experienced.variance).toBeLessThan(novice.variance);
   expect(experienced.recoilKickScale).toBeLessThan(novice.recoilKickScale);
   expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
   expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
   expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
-  const seasoned = firearmsSkillEffects(30);
-  const saturated = firearmsSkillEffects(100);
-  for (const key of ['variance', 'recoilKickScale', 'reloadDuration', 'rackDuration'] as const) {
-    expect(seasoned[key]).toBeLessThanOrEqual(experienced[key]);
-    expect(saturated[key]).toBeGreaterThan(0);
-    expect(saturated[key]).toBeLessThanOrEqual(seasoned[key]);
-    expect(seasoned[key] - saturated[key]).toBeLessThan(novice[key] - seasoned[key]);
-  }
-  expect(seasoned.recoilRecoveryRate).toBeGreaterThanOrEqual(experienced.recoilRecoveryRate);
-  expect(saturated.recoilRecoveryRate).toBeGreaterThan(seasoned.recoilRecoveryRate);
-  expect(saturated.recoilRecoveryRate - seasoned.recoilRecoveryRate).toBeLessThan(
-    seasoned.recoilRecoveryRate - novice.recoilRecoveryRate,
-  );
+  expect(legendary).toEqual(experienced);
 });
