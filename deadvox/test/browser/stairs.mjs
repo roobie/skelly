@@ -417,8 +417,16 @@ try {
     const dark = await shot('cellar-dark');
     await page.evaluate(() => {
       const { session } = globalThis.stairsWitness;
-      session.inventory.hands.left = session.inventory.create('flashlight');
-      session.inventory.version += 1;
+      for (const side of ['left', 'right']) {
+        const held = session.inventory.hands[side];
+        if (held && !session.inventory.consume(held, held.count)) {
+          throw new Error(`Could not clear ${side} fixture hand`);
+        }
+      }
+      const flashlight = session.inventory.create('flashlight');
+      if (!session.inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
+        throw new Error('Could not place fixture flashlight in hand');
+      }
     });
     const mouse5 = () =>
       page.evaluate(() =>
