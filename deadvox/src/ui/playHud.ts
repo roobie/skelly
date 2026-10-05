@@ -94,15 +94,14 @@ export interface PlayPromptState {
   readonly now: number;
   readonly notice: string;
   readonly noticeUntil: number;
-  readonly noticeRequired?: boolean | undefined;
   readonly interactionHint: string | undefined;
   readonly interruption: string | undefined;
   readonly resting: boolean;
 }
 
 export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOptionsState>): string => {
-  const { now, notice, noticeUntil, noticeRequired, interactionHint, interruption, resting } = state;
-  const lines = (visible.messages || noticeRequired) && now < noticeUntil ? [notice] : [];
+  const { now, notice, noticeUntil, interactionHint, interruption, resting } = state;
+  const lines = visible.messages && now < noticeUntil ? [notice] : [];
   if (visible.interaction && interactionHint !== undefined) {
     lines.push(interactionHint);
   }
