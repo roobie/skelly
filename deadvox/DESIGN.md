@@ -4,7 +4,8 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
-  - you change shambler navigation or floor-transition behavior
+  - you change shambler navigation, sight range over terrain or floor-transition
+    behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
@@ -638,7 +639,9 @@ worse the world gets.
 
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
-  rain washes out).
+  rain washes out). Terrain height alone should not end a clear pursuit; sight
+  over a rise is bounded by occlusion, not by spending range on vertical distance.
+  See `src/core/zombies.ts`, `seesPlayer`.
 - **Navigation rationale:** Collision-aware routing prevents false progress
   through blockers, while bounded work protects the shared simulation tick.
   Keeping route planning separate from physics preserves collision ownership.
