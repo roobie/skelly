@@ -1,12 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
+import { Character, dominantSide, offSide, practiceForNextLevel } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
+import { disassemblyOutputs } from '../src/core/disassembly.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
+import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
@@ -20,9 +21,9 @@ const { registry } = buildRegistry(
       data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
     })),
 );
-const make = (unsafe?: () => string | undefined) => {
-  const inventory = new Inventory(registry);
-  const character = new Character(registry);
+const make = (unsafe?: () => string | undefined, handedness?: HandSide) => {
+  const character = new Character(registry, handedness ? { handedness } : {});
+  const inventory = new Inventory(registry, undefined, undefined, character);
   const queue = new HandlingQueue(inventory);
   const sim = new Simulation({ seed: 1, ...(unsafe ? { unsafe } : {}) });
   const position: [number, number, number] = [0, 0, 0];
@@ -44,6 +45,28 @@ const make = (unsafe?: () => string | undefined) => {
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 
 describe('live craft commands', () => {
+  it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
+    const r = make();
+    r.character.awardPractice('crafting', practiceForNextLevel(0));
+    const target = r.inventory.create('crowbar', 1, 0.5);
+    for (const item of [
+      target,
+      r.inventory.create('scrap_metal'),
+      r.inventory.create('duct_tape'),
+      r.inventory.create('repair_kit'),
+    ]) {
+      if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
+        throw new Error('repair fixture item did not fit');
+      }
+    }
+    expect(r.commands.start('repair_crowbar')).toBeUndefined();
+    const work = workOf(r);
+    const effect = registry.recipes.get('repair_crowbar')!.repair!;
+    expect(work.repairTargetUid).toBe(target.uid);
+    expect(work.repairAmount).toBe(effect.amount + effect.perSkill * r.character.skills[effect.skill]!);
+    expect(r.sim.actions.job?.jobType).toBe('craft');
+  });
+
   it('sleep replacing a stopped craft owns Continue instead of the held work', () => {
     const r = make();
     expect(r.commands.start('torch')).toBeUndefined();
@@ -61,22 +84,28 @@ describe('live craft commands', () => {
     r.sim.actions.stop();
     expect(r.commands.currentUid).toBe(workUid);
   });
-  it('Inventory refuses a work item in the left hand without changing its owning tree', () => {
-    const r = make();
-    expect(r.commands.start('torch')).toBeUndefined();
-    r.sim.actions.stop();
-    const item = r.inventory.hands.right!;
-    const before = r.inventory.snapshotState();
-    const leftHand = options(item, r.reach()).find(
-      (option) => option.kind === 'move' && option.target.kind === 'hand' && option.target.side === 'left',
-    )!;
-    const refusal = r.inventory.plan(item, { kind: 'hand', side: 'left' });
-    expect(leftHand.plan).toEqual(refusal);
-    expect(refusal.ok).toBe(false);
-    expect(r.inventory.move(item, { kind: 'hand', side: 'left' })).toEqual(refusal);
-    expect(r.inventory.snapshotState()).toEqual(before);
-    expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
-  });
+  it.each(['right', 'left'] as const)(
+    '%s-dominant work refuses the other slot without changing its owning tree',
+    (handedness) => {
+      const r = make(undefined, handedness);
+      expect(r.commands.start('torch')).toBeUndefined();
+      r.sim.actions.stop();
+      const item = r.inventory.hands[dominantSide(r.character)]!;
+      const other = offSide(r.character);
+      expect(r.commands.currentUid).toBe(item.uid);
+      const before = r.inventory.snapshotState();
+      const otherHand = options(item, r.reach()).find(
+        (option) => option.kind === 'move' && option.target.kind === 'hand' && option.target.side === other,
+      )!;
+      const refusal = r.inventory.plan(item, { kind: 'hand', side: other });
+      expect(otherHand.plan).toEqual(refusal);
+      expect(refusal.ok).toBe(false);
+      expect(r.inventory.move(item, { kind: 'hand', side: other })).toEqual(refusal);
+      expect(r.inventory.snapshotState()).toEqual(before);
+      expect(r.commands.options(item.uid)[0]!.plan.ok).toBe(true);
+      expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
+    },
+  );
   it('native begin rechecks knowledge after planning before any escrow or compression', () => {
     const r = make();
     const result = r.commands.preview('torch')!;
@@ -194,6 +223,89 @@ describe('live craft commands', () => {
     expect(r.sim.actions.job?.stopped).toBe(true);
     expect(r.inventory.move(item, { kind: 'hand', side: 'right' }).ok).toBe(true);
     expect(r.commands.act(item.uid, 'continue')).toBeUndefined();
+  });
+  it('salvage consumes its source and returns only its authored outputs', () => {
+    const r = make();
+    const radio = r.inventory.create('portable_radio');
+    radio.condition = 0;
+    expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const sourceType = radio.type;
+    const before = new Set([...r.inventory.items()].map(({ item }) => item.uid));
+    const option = r.commands.options(radio.uid).find(({ operation }) => operation === 'disassemble')!;
+    expect(option.plan.ok, JSON.stringify(option.plan)).toBe(true);
+    expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    expect(work.work).toMatchObject({ kind: 'disassembly', source: sourceType });
+    r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
+    const items = [...r.inventory.items()].map(({ item }) => item);
+    const outputs = items
+      .filter((item) => !before.has(item.uid))
+      .map(({ type, count }) => ({ item: type, count }))
+      .sort((a, b) => a.item.localeCompare(b.item));
+    const expected = disassemblyOutputs(r.inventory.registry.items.get(sourceType)!, 0).sort((a, b) =>
+      a.item.localeCompare(b.item),
+    );
+    expect(r.inventory.itemByUid(radio.uid)).toBeUndefined();
+    expect(items.some(({ type }) => type === sourceType)).toBe(false);
+    expect(outputs).toEqual(expected);
+  });
+
+  it('disassembly keeps its start-skill yield after skill changes during a stopped action', () => {
+    const r = make();
+    const source = r.inventory.create('torch');
+    expect(r.inventory.add(source, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const definition = r.inventory.registry.items.get(source.type)!;
+    const before = new Set([...r.inventory.items()].map(({ item }) => item.uid));
+    const topSkill = Math.max(...definition.disassembly!.yields.map(({ fractions }) => fractions.length - 1));
+    const expected = disassemblyOutputs(definition, 0);
+    const topOutput = disassemblyOutputs(definition, topSkill);
+    expect(expected).not.toEqual(topOutput);
+
+    expect(r.commands.act(source.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.sim.actions.stop();
+    for (let level = 0; level < topSkill; level += 1) {
+      r.character.awardPractice(definition.disassembly!.skill, practiceForNextLevel(level));
+    }
+    expect(r.character.skills[definition.disassembly!.skill]).toBe(topSkill);
+    expect(r.commands.act(work.uid, 'continue')).toBeUndefined();
+    r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
+
+    const items = [...r.inventory.items()].map(({ item }) => item);
+    const outputs = items
+      .filter(({ uid }) => !before.has(uid))
+      .map(({ type, count }) => ({ item: type, count }))
+      .sort((a, b) => a.item.localeCompare(b.item));
+    expect(r.inventory.itemByUid(source.uid)).toBeUndefined();
+    expect(items.some(({ type }) => type === source.type)).toBe(false);
+    expect(outputs).toEqual(expected);
+  });
+  it('does not award craft practice when disassembly finishes', () => {
+    const r = make();
+    const radio = r.inventory.create('portable_radio');
+    expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const starting = r.character.snapshotState();
+    expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
+    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.inventory.itemByUid(radio.uid)).toBeUndefined();
+    expect(r.character.skills).toEqual(starting.skills);
+    expect(r.character.practice).toEqual(starting.practice);
+  });
+
+  it('cancelling disassembly returns the exact source item without producing salvage', () => {
+    const r = make();
+    const radio = r.inventory.create('portable_radio');
+    expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.sim.actions.stop();
+    expect(r.commands.act(work.uid, 'apart')).toBeUndefined();
+    expect(r.inventory.itemByUid(radio.uid)).toBe(radio);
+    expect(radio.work).toBeUndefined();
+    expect([...r.inventory.items()].map(({ item }) => item.type)).not.toContain('scrap_metal');
+    expect([...r.inventory.items()].map(({ item }) => item.type)).not.toContain('aa_battery');
   });
   it('Take apart refuses a work UID outside reach and retains its owned input tree', () => {
     const r = make();

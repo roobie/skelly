@@ -1,9 +1,8 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone native-input browser contract
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative end-to-end assertions
-// biome-ignore-all lint/style/noProcessEnv: executable and optional artifact directory are runner configuration
+// biome-ignore-all lint/style/noProcessEnv: browser executable path is runner configuration
 // biome-ignore-all lint/performance/noAwaitInLoops: native arrow navigation is sequential
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -63,6 +62,14 @@ try {
     globalThis.pumpDecoded = [];
     globalThis.pumpRDownAt = 0;
     globalThis.pumpRDowns = [];
+    globalThis.pumpWebGLRequests = [];
+    const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+        globalThis.pumpWebGLRequests.push(type);
+      }
+      return Reflect.apply(nativeGetContext, this, [type, ...args]);
+    };
     addEventListener('keydown', (event) => {
       if (event.code === 'KeyR' && !event.repeat) {
         globalThis.pumpRDownAt = event.timeStamp;
@@ -86,10 +93,17 @@ try {
       'pump-handling',
       `http://127.0.0.1:${address.port}/?debug=1&loadout=pump&site=testHouse&time=12%3A00&seed=7&radius=64`,
     ),
+    { waitUntil: 'domcontentloaded' },
   );
-  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  assert.deepEqual(
+    await page.evaluate(() => globalThis.pumpWebGLRequests),
+    [],
+    'render-free pump handling must not request a WebGL context',
+  );
   await page.keyboard.press('KeyH');
   assert.equal(
     await page.evaluate(() => globalThis.pumpHandlingTest.session.sim.godMode),
@@ -99,7 +113,11 @@ try {
   const ids = await page.evaluate(() => {
     const inv = globalThis.pumpHandlingTest.session.inventory;
     const gun = inv.hands.right;
-    const box = [...inv.items()].find(({ item }) => inv.registry.items.get(item.type)?.unpack)?.item;
+    const backpackUid = inv.worn.back?.uid;
+    const box = [...inv.items()].find(
+      ({ item, location }) =>
+        location.kind === 'pocket' && location.owner.uid === backpackUid && inv.registry.items.get(item.type)?.unpack,
+    )?.item;
     if (!box) {
       throw new Error('Native pump loadout has no sealed box');
     }
@@ -114,15 +132,59 @@ try {
       fov: globalThis.pumpHandlingTest.camera.fov,
     };
   });
+  await page.waitForFunction(() =>
+    [...globalThis.pumpHandlingTest.session.entities.all].some(
+      (entity) => entity.type === 'range_rack' && entity.pockets,
+    ),
+  );
+  const rangeStock = await page.evaluate((gunUid) => {
+    const { session } = globalThis.pumpHandlingTest;
+    const { registry } = session.inventory;
+    const gun = session.inventory.itemByUid(gunUid);
+    const model = registry.models.get(registry.items.get(gun.type)?.model);
+    const calibre = model?.calibre;
+    const rack = [...session.entities.all].find((entity) => entity.type === 'range_rack');
+    const stocked = new Set(rack.pockets.flat().map(({ item }) => item.type));
+    return {
+      firearm: stocked.has(gun.type),
+      compatibleRound: [...registry.items.values()].some(
+        (item) => item.ammo?.calibre === calibre && stocked.has(item.id),
+      ),
+      compatibleBox: [...registry.items.values()].some(
+        (item) =>
+          item.unpack && registry.items.get(item.unpack.item)?.ammo?.calibre === calibre && stocked.has(item.id),
+      ),
+    };
+  }, ids.gun);
+  assert.deepEqual(rangeStock, { firearm: true, compatibleRound: true, compatibleBox: true });
   const select = async (uid) => {
-    const count = await page.locator('#inventory [data-uid]').count();
-    for (let i = 0; i <= count; i++) {
+    const rows = await page
+      .locator('#inventory [data-uid]')
+      .evaluateAll((items) => items.map((item) => item.dataset.uid));
+    for (let i = 0; i <= rows.length; i++) {
       if (await page.locator(`#inventory [data-uid="${uid}"].selected`).count()) {
         return;
       }
+      const previous = await page.evaluate(
+        () => document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null,
+      );
       await page.keyboard.press('ArrowDown');
+      // Serialize key input with the selection's next-frame DOM update.
+      try {
+        await page.waitForFunction(
+          (selectedUid) =>
+            (document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null) !== selectedUid,
+          previous,
+          { timeout: 1000 },
+        );
+      } catch (cause) {
+        throw new Error(
+          `ArrowDown did not move the selection from ${previous} towards ${uid}; visible rows: ${rows.join(',')}`,
+          { cause },
+        );
+      }
     }
-    throw new Error(`Native arrows cannot select ${uid}`);
+    throw new Error(`Native arrows cannot select ${uid}; visible rows: ${rows.join(',')}`);
   };
   const handlingWaits = [];
   const waitForWork = async (predicate, argument, futureSeconds = 0) => {
@@ -166,7 +228,10 @@ try {
         hand: inv.hands.right?.uid ?? null,
         box: Boolean(inv.itemByUid(selectedIds.box)),
         loose: [...inv.items()]
-          .filter(({ item }) => item.type === selectedIds.payloadType)
+          .filter(
+            ({ item, location }) =>
+              item.type === selectedIds.payloadType && location.kind !== 'furniture' && location.kind !== 'pile',
+          )
           .reduce((sum, { item }) => sum + item.count, 0),
         gun: structuredClone(inv.itemByUid(selectedIds.gun)?.firearm),
         jobs: session.queue.jobs.length,
@@ -250,12 +315,7 @@ try {
   assert.equal(loaded.loose, ids.payload - loaded.gun.tube.length);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
-  if (process.env.PUMP_ARTIFACT_DIR) {
-    await mkdir(process.env.PUMP_ARTIFACT_DIR, { recursive: true });
-    await page.screenshot({ path: resolve(process.env.PUMP_ARTIFACT_DIR, 'loaded.png') });
-  }
-  // Submit the native key sequence in one protocol burst. Awaiting each key RPC
-  // separately lets slow software-rendered frames turn a double tap into two holds.
+  // Submit the native key sequence in one protocol burst so renderer pacing cannot split the double tap.
   // No timestamp is supplied or fabricated; verify Chrome's actual event timestamps.
   const keys = await page.context().newCDPSession(page);
   await Promise.all(

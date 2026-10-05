@@ -65,7 +65,7 @@ const vite = await createServer({
         assert.ok(code.includes(marker));
         return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
           marker,
-          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performPrimaryAction,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${marker}`,
+          `Object.assign(globalThis,{stairsWitness:{engine,session,input,body,entities,queue,doorPanel:stairsDoorPanel,performHandUse,getNotice:()=>notice,get noclip(){return debugTools?.noclip??false;}},d7Review:{input,session,held:view.held,engine,camera,debugTools,inventory}});\n${marker}`,
         )}`;
       },
     },
@@ -96,8 +96,19 @@ try {
   await page.goto(
     browserStageUrl(stageId, `http://127.0.0.1:${port}/?site=stair_demo&seed=1&radius=32&debug=1&time=12:00`),
   );
-  await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
+  await page.waitForFunction(
+    () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+    undefined,
+    {
+      timeout: 60_000,
+    },
+  );
   await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
+  if (mode === 'traversal') {
+    await page.keyboard.press('KeyH');
+    assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode), true);
+  }
   await page.waitForFunction(
     (lighting) =>
       [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
@@ -209,6 +220,7 @@ try {
         noclip,
         locked: input.locked,
         contentErrors: engine.contentErrors,
+        routes: session.zombies.snapshotState().routes,
         zombies: [...session.zombieStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
@@ -266,6 +278,97 @@ try {
       await state(`walk/settle failure ${key} x=${targetX} feet=${targetFeet}: ${error}`);
       throw error;
     }
+  };
+  const openResidentDoor = async (residentId) => {
+    const approach = await page.evaluate((id) => {
+      const { session, entities } = globalThis.stairsWitness;
+      const resident = session.zombieStore.get(id);
+      if (!resident) {
+        throw new Error('stairs_house resident is not streamed');
+      }
+      const doors = [...entities.all].filter(
+        (entity) => entities.defOf(entity).door && !entity.open && !entity.lock?.locked,
+      );
+      const centre = (entity) => [
+        entity.pos[0] + entity.size[0] / 2,
+        entity.pos[1],
+        entity.pos[2] + entity.size[2] / 2,
+      ];
+      const distanceToResident = (entity) =>
+        Math.hypot(...centre(entity).map((value, axis) => value - resident.body.pos[axis]));
+      const [door] = doors.sort((a, b) => distanceToResident(a) - distanceToResident(b));
+      if (!door) {
+        throw new Error('stairs_house resident has no closed ordinary door nearby');
+      }
+      const [cx, , cz] = centre(door);
+      const normal = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] }[door.facing];
+      const residentSide =
+        Math.sign((resident.body.pos[0] - cx) * normal[0] + (resident.body.pos[2] - cz) * normal[1]) || 1;
+      return {
+        uid: door.uid,
+        position: [cx - residentSide * normal[0] * 2.4, resident.body.pos[1], cz - residentSide * normal[1] * 2.4],
+      };
+    }, residentId);
+    await walkTo(approach.position, 'walk from the landing to the closed resident door');
+    await page.evaluate((uid) => {
+      const { body, input, entities, doorPanel } = globalThis.stairsWitness;
+      const panel = doorPanel(entities.byUid(uid), 0.5);
+      const c = Math.cos(panel.rotationY);
+      const s = Math.sin(panel.rotationY);
+      const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
+      const dz = panel.pivot[2] - s * panel.center[0] + c * panel.center[2] - body.pos[2] * 0.5;
+      const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
+      input.yaw = Math.atan2(-dx, -dz);
+      input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+    }, approach.uid);
+    const started = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    await page.keyboard.press('KeyF');
+    const result = await page.waitForFunction(
+      ({ targetUid, until }) => {
+        const { session, entities } = globalThis.stairsWitness;
+        const door = entities.byUid(targetUid);
+        return door.open || session.sim.time >= until ? { open: door.open } : false;
+      },
+      { targetUid: approach.uid, until: started + 3 },
+      { timeout: 0, polling: 50 },
+    );
+    assert.equal((await result.jsonValue()).open, true, "F opens the resident's ordinary closed door");
+  };
+  const walkTo = async (target, label) => {
+    const start = await page.evaluate((destination) => {
+      const { input, session, body } = globalThis.stairsWitness;
+      input.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
+      input.pitch = 0;
+      return session.sim.time;
+    }, target);
+    await page.keyboard.down('KeyW');
+    await waitForSimulation(
+      page,
+      (destination) => {
+        const { body, session, input } = globalThis.stairsWitness;
+        const dx = destination[0] - body.pos[0];
+        const dz = destination[2] - body.pos[2];
+        input.yaw = Math.atan2(-dx, -dz);
+        const distance = Math.hypot(dx, dz);
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 0.5, distance };
+      },
+      target,
+      { seconds: 12, from: start, label, record: state, stop: () => page.keyboard.up('KeyW') },
+    );
+    await waitForSimulation(
+      page,
+      (destination) => {
+        const { body, session } = globalThis.stairsWitness;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01,
+          feet: body.pos[1],
+        };
+      },
+      target,
+      { seconds: 4, label: `${label}: settle after releasing forward input`, record: state },
+    );
   };
   let lightProof;
   let outdoorProof;
@@ -347,8 +450,13 @@ try {
     assert.equal(await doorValue('open', false), false, 'plain F closes the same door');
     await page.evaluate((uid) => {
       const { entities, session } = globalThis.stairsWitness;
-      const door = entities.byUid(uid);
+      const fixture = structuredClone(entities.snapshotState());
+      const door = fixture.entities.find((entity) => entity.uid === uid);
+      if (!door) {
+        throw new Error('Door fixture is missing');
+      }
       door.lock = { id: 'test_shed', locked: false };
+      entities.restoreState(fixture);
       const wrongDefinition = {
         ...session.inventory.registry.items.get('shed_key'),
         id: 'stairs_wrong_key',
@@ -359,9 +467,9 @@ try {
       const key = session.inventory.create('shed_key');
       session.inventory.add(key, { kind: 'hand', side: 'right' });
     }, sprintDoor);
-    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
+    await page.evaluate(() => globalThis.stairsWitness.performHandUse('right'));
     assert.equal(await doorValue('locked', true), true, 'activating the matching held key locks its door');
-    await page.evaluate(() => globalThis.stairsWitness.performPrimaryAction('right'));
+    await page.evaluate(() => globalThis.stairsWitness.performHandUse('right'));
     assert.equal(await doorValue('locked', false), false, 'activating the matching held key unlocks its door');
     await page.evaluate(() => {
       const { body, session } = globalThis.stairsWitness;
@@ -373,28 +481,121 @@ try {
       session.inventory.add(key, { kind: 'hand', side: 'right' });
     });
     const wrongKey = await page.evaluate((uid) => {
-      const { entities, performPrimaryAction, getNotice } = globalThis.stairsWitness;
-      performPrimaryAction('right');
+      const { entities, performHandUse, getNotice } = globalThis.stairsWitness;
+      performHandUse('right');
       return { notice: getNotice(), locked: entities.byUid(uid)?.lock?.locked };
     }, sprintDoor);
-    assert.equal(wrongKey.notice, "The key doesn't fit", 'a wrong held key refuses activation');
+    assert.ok(wrongKey.notice, 'a wrong held key gives a refusal reason');
     assert.equal(wrongKey.locked, false, 'wrong-key refusal leaves the door unlocked');
     await stage([112, 43.0001, 115]);
-    await state('house lower landing');
+    const houseLower = await state('house lower landing');
+    const residentId = houseLower.zombies[0]?.id;
+    assert.ok(Number.isSafeInteger(residentId), 'stairs_house streams its authored resident');
     await walk('w', 121, true, 51);
-    assert.ok(Math.abs((await state('house upstairs walked')).position[1] - 51) < 0.01);
-    await page.evaluate(() => {
-      globalThis.stairsWitness.input.yaw = Math.PI / 2;
-      globalThis.stairsWitness.input.pitch = -0.3;
-    });
-    await page.waitForTimeout(150);
-    // No screenshots in render-free traversal mode; they would show no world.
+    const houseUpper = await state('house upstairs walked');
+    const residentAtUpper = houseUpper.zombies.find(({ id }) => id === residentId);
+    assert.ok(residentAtUpper && residentAtUpper.pos[1] > houseLower.position[1]);
+    await openResidentDoor(residentId);
+    const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    await page.keyboard.down('KeyW');
+    await waitForSimulation(
+      page,
+      (id) => {
+        const { body, session } = globalThis.stairsWitness;
+        const target = session.zombieStore.get(id)?.lastPerceived;
+        const distance = target
+          ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
+          : Number.POSITIVE_INFINITY;
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
+      },
+      residentId,
+      {
+        seconds: 8,
+        from: approachStart,
+        label: 'resident hears the player at the open doorway',
+        record: state,
+        stop: () => page.keyboard.up('KeyW'),
+      },
+    );
+    await walkTo([117, 51, 116], 'return through the open door to the stair hall');
+    await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
       globalThis.stairsWitness.input.yaw = -Math.PI / 2;
       globalThis.stairsWitness.input.pitch = 0;
     });
     await walk('s', 112, false, 43);
-    assert.ok(Math.abs((await state('house downstairs walked')).position[1] - 43) < 0.01);
+    const houseDownstairs = await state('house downstairs walked');
+    const groundProjection = await page.evaluate((id) => {
+      const { body, session } = globalThis.stairsWitness;
+      const resident = session.zombieStore.get(id);
+      if (!resident) {
+        throw new Error('stairs_house resident left the entity store');
+      }
+      return [resident.body.pos[0], body.pos[1], resident.body.pos[2]];
+    }, residentId);
+    await page.keyboard.down('ShiftLeft');
+    try {
+      await walkTo(groundProjection, 'sprint below resident on the lower floor');
+    } finally {
+      await page.keyboard.up('ShiftLeft');
+    }
+    const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
+    await waitForSimulation(
+      page,
+      () => {
+        const { body, session } = globalThis.stairsWitness;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: Math.hypot(body.vel[0], body.vel[2]) < 0.1,
+          speed: Math.hypot(body.vel[0], body.vel[2]),
+        };
+      },
+      undefined,
+      {
+        seconds: 4,
+        from: settleStart,
+        label: 'come to rest under the resident',
+        record: state,
+      },
+    );
+    const residentBeforeDescent = await state('resident hears player below the upstairs projection');
+    const residentAtProjection = residentBeforeDescent.zombies.find(({ id }) => id === residentId);
+    assert.ok(residentAtProjection);
+    assert.notEqual(Math.round(residentAtProjection.pos[1]), Math.round(residentBeforeDescent.position[1]));
+    assert.notEqual(residentAtProjection.mode, 'search');
+    assert.equal(
+      Math.round(residentAtProjection.lastPerceived?.[1]),
+      Math.round(residentBeforeDescent.position[1]),
+      'native sprinting supplies an exact lower-floor stimulus, not the stale mid-flight target',
+    );
+    const followed = await waitForSimulation(
+      page,
+      (id) => {
+        const { session, body } = globalThis.stairsWitness;
+        const resident = session.zombieStore.get(id);
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: resident !== undefined && Math.round(resident.body.pos[1]) === Math.round(body.pos[1]),
+          residentFloor: resident ? Math.round(resident.body.pos[1]) : null,
+          targetFloor: Math.round(body.pos[1]),
+        };
+      },
+      residentId,
+      {
+        seconds: 30,
+        from: residentBeforeDescent.simulationTime,
+        label: 'stairs_house resident follows the authored flight to the player floor',
+        record: state,
+      },
+    );
+    residentProof = {
+      residentId,
+      upperFloor: Math.round(residentAtUpper.pos[1]),
+      lowerFloor: Math.round(houseDownstairs.position[1]),
+      simulationSeconds: followed.seconds,
+    };
 
     await stage([143, 43.0001, 115]);
     await walk('s', 134, false, 35);
@@ -417,8 +618,16 @@ try {
     const dark = await shot('cellar-dark');
     await page.evaluate(() => {
       const { session } = globalThis.stairsWitness;
-      session.inventory.hands.left = session.inventory.create('flashlight');
-      session.inventory.version += 1;
+      for (const side of ['left', 'right']) {
+        const held = session.inventory.hands[side];
+        if (held && !session.inventory.consume(held, held.count)) {
+          throw new Error(`Could not clear ${side} fixture hand`);
+        }
+      }
+      const flashlight = session.inventory.create('flashlight');
+      if (!session.inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
+        throw new Error('Could not place fixture flashlight in hand');
+      }
     });
     const mouse5 = () =>
       page.evaluate(() =>

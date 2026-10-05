@@ -82,6 +82,20 @@
       "color": "#786b55"
     },
     {
+      "id": "range_rack",
+      "name": "Gun rack",
+      "size": [2, 4, 1],
+      "color": "#494b4e",
+      "container": {
+        "pockets": [
+          {
+            "grid": [24, 24],
+            "handling": 1.0
+          }
+        ]
+      }
+    },
+    {
       "id": "shelf",
       "name": "Shelf",
       "size": [2, 4, 1],
@@ -95,6 +109,17 @@
         ]
       },
       "loot": "shelf"
+    },
+    {
+      "id": "workbench",
+      "name": "Workbench",
+      "size": [3, 2, 2],
+      "color": "#98734f",
+      "workstation": {
+        "id": "workbench",
+        "qualities": { "hammering": 1, "sawing": 1 },
+        "workTimeBonus": 0.2
+      }
     },
     {
       "id": "crate",

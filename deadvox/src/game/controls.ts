@@ -17,7 +17,7 @@ export const labelForCode = (code: string): string => {
   if (code.startsWith('Shift')) {
     return 'Shift';
   }
-  if (code === KEY_BINDINGS.leftHandAction.code) {
+  if (code === KEY_BINDINGS.useOff.code) {
     return '=';
   }
   switch (code) {
@@ -45,11 +45,11 @@ export const PLAYER_CONTROL_BINDINGS = [
   { keys: 'Z', codes: [CONTROL_CODES.walkToggle], action: 'Walk / jog' },
   { keys: 'Space', codes: [CONTROL_CODES.jump], action: 'Jump' },
   { keys: 'Mouse', codes: ['mousemove'], action: 'Look' },
-  { keys: 'Left click', codes: [], action: 'Right-hand primary action; right jab if empty' },
+  { keys: 'Left click', codes: [], action: 'Dominant-hand use; dominant jab if empty' },
   {
     keys: '=',
-    codes: [KEY_BINDINGS.leftHandAction.code],
-    action: 'Left-hand primary action',
+    codes: [KEY_BINDINGS.useOff.code],
+    action: 'Off-hand use',
   },
   { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
   {
@@ -60,7 +60,7 @@ export const PLAYER_CONTROL_BINDINGS = [
   { keys: 'Backspace', codes: [CONTROL_CODES.descend], action: 'Descend in debug noclip' },
   { keys: 'L', codes: [CONTROL_CODES.sleep], action: 'Sleep; better on a bed; press again to stop' },
   { keys: 'Tab', codes: [CONTROL_CODES.inventory], action: 'Open / close inventory' },
-  { keys: '1–5', codes: CONTROL_CODES.quickbar, action: 'Quickbar: take into hands; again to use' },
+  { keys: '1–5', codes: CONTROL_CODES.quickbar, action: 'Quickbar: tap to take or put away; hold to use' },
   { keys: 'C', codes: [CONTROL_CODES.continue], action: 'Continue after an interruption' },
   { keys: 'X', codes: [CONTROL_CODES.cancel], action: 'Cancel handling; stop after an interruption' },
   { keys: 'E', codes: [CONTROL_CODES.bestPocket], action: 'Move to your best pocket', context: 'inventory' },

@@ -1,6 +1,7 @@
 ---
 read_if:
   - you review the held compass's readability, lighting or placement
+  - you change dominant and off-hand debug loadout preferences
 ---
 
 # Held compass readability spike (d34)
@@ -44,8 +45,10 @@ Run the normal dev server, then open:
 
 `/?debug=1&loadout=compass&site=testHouse&time=12%3A00&seed=7&radius=64&god=1`
 
-A fresh debug game gets the compass in the right hand and the existing flashlight
-in the left. The special loadout never alters restored hands. For night use
+A fresh debug game puts the compass in the dominant hand and the existing
+flashlight in the off hand. See `src/core/character.ts`, `dominantSide` and
+`offSide`, and `src/debug/index.ts`, `attachDebugTools`, for loadout role resolution.
+The special loadout never alters restored physical hands. For night use
 `time=00%3A00`. The default HUD remains off. Outside that debug loadout, spawn/find
 the item and put it in a hand normally.
 

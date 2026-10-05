@@ -42,6 +42,7 @@ const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
 const Positive = pipe(number(), minValue(Number.MIN_VALUE, 'must be more than 0'));
 const Count = pipe(number(), integer('must be a whole number'), minValue(0, 'must be 0 or more'));
 const Fraction = pipe(number(), minValue(0, 'must be 0 to 1'), maxValue(1, 'must be 0 to 1'));
+const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 
 /** An inclusive [min, max] range. */
 const range = <S extends typeof Count | typeof Fraction>(item: S) =>
@@ -135,6 +136,7 @@ const WearableSchema = strictObject({
   /** 0–100: how much it slows and hampers you. */
   encumbrance: pipe(NonNegative, maxValue(100, 'must be 0 to 100')),
   warmth: optional(pipe(NonNegative, maxValue(100, 'must be 0 to 100'))),
+  wearPerHit: optional(Fraction),
 });
 
 const FoodSchema = strictObject({
@@ -148,7 +150,7 @@ const FoodSchema = strictObject({
 
 const ToolSchema = strictObject({
   /** Quality levels, such as { "prying": 2 }. */
-  qualities: record(Id, pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5))),
+  qualities: record(Id, QualityLevel),
 });
 
 const WeaponSchema = strictObject({
@@ -161,6 +163,8 @@ const WeaponSchema = strictObject({
     stamina: NonNegative,
     /** Impulse delivered by a melee hit, in N·s. */
     impulse: optional(NonNegative),
+    /** Condition lost when this weapon lands a melee hit. */
+    wearPerHit: optional(Fraction),
     type: picklist(['blunt', 'cut', 'pierce']),
   }),
 });
@@ -189,6 +193,18 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
+export const HELD_DISPLAY_KIND = { compass: 'compass' } as const;
+const HELD_DISPLAY_KINDS = Object.values(HELD_DISPLAY_KIND);
+export const PILE_DISPLAY_KIND = { scatter: 'scatter' } as const;
+const PILE_DISPLAY_KINDS = Object.values(PILE_DISPLAY_KIND);
+
+const BookSchema = strictObject({
+  title: Name,
+  recipes: pipe(array(Id), nonEmpty('needs at least one recipe')),
+  /** Game minutes spent reading. */
+  readingTime: Positive,
+});
+
 const readableText = (limit: number) =>
   pipe(
     string(),
@@ -199,6 +215,40 @@ const readableText = (limit: number) =>
 export const ReadableSchema = strictObject({
   title: readableText(READABLE_TITLE_LIMIT),
   text: readableText(READABLE_TEXT_LIMIT),
+});
+
+const ItemCountSchema = strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) });
+const YieldRounding = picklist(['floor', 'round', 'ceil']);
+const SkillFractions = pipe(
+  array(Fraction),
+  minLength(2, 'needs a skill-0 and top-skill fraction'),
+  check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
+  check((fractions) => fractions.at(-1)! > fractions[0]!, 'must increase with skill'),
+);
+const ToolFractionBonus = pipe(
+  array(Fraction),
+  minLength(1, 'needs a bonus for at least one tool level'),
+  check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
+);
+const DisassemblyYieldSchema = strictObject({
+  ...ItemCountSchema.entries,
+  /** Multiplier by skill level: index 0 is skill 0; the last entry is this yield's top level. */
+  fractions: SkillFractions,
+  /** Applied independently to this yield's scaled count. */
+  rounding: YieldRounding,
+  toolModifier: optional(
+    strictObject({
+      quality: Id,
+      /** Additions by tool quality level: index 0 is level 1; higher levels saturate at the last entry. */
+      bonusByLevel: ToolFractionBonus,
+    }),
+  ),
+});
+const DisassemblySchema = strictObject({
+  /** Game minutes. */
+  time: Positive,
+  skill: Id,
+  yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
 
 export const ItemSchema = strictObject({
@@ -222,8 +272,17 @@ export const ItemSchema = strictObject({
   ammo: optional(AmmoSchema),
   /** Sealed, non-container payload: held primary activation opens one package. */
   unpack: optional(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
+  /** An authored yield for a finished item; never inferred from recipe alternatives. */
+  disassembly: optional(DisassemblySchema),
+  /** Fixed outputs for found items with no recipe. */
+  salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   light: optional(LightSchema),
   readable: optional(ReadableSchema),
+  /** Display capability shown in first person; later devices can share this rendering seam. */
+  heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
+  /** How the item appears when it is in a ground pile. */
+  pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
+  book: optional(BookSchema),
   battery: optional(BatterySchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
@@ -382,8 +441,14 @@ export const FurnitureSchema = strictObject({
   door: optional(strictObject({ handling: NonNegative })),
   /** You can sleep on it; 1 is a good bed. */
   bed: optional(strictObject({ quality: Fraction })),
-  /** Declared workstation id only; qualities, speed and runtime behavior come in Slice 2.8. */
-  workstation: optional(strictObject({ id: Id })),
+  /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
+  workstation: optional(
+    strictObject({
+      id: Id,
+      qualities: record(Id, QualityLevel),
+      workTimeBonus: Fraction,
+    }),
+  ),
 });
 
 // ---- loot tables ----
@@ -661,12 +726,15 @@ export const FigureSchema = strictObject({
 // ---- skills and recipes ----
 
 export const SkillSchema = strictObject({ id: Id, name: Name });
-const RecipeItemSchema = strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) });
+const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
 export const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
+  /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
+  kind: optional(picklist(['craft', 'repair'])),
+  repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
   /** Game minutes, not simulation seconds. */
   time: Positive,
   skills: record(Id, Count),
@@ -717,6 +785,7 @@ export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SkillDef = InferOutput<typeof SkillSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type BookDef = InferOutput<typeof BookSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

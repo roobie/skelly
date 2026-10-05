@@ -8,7 +8,7 @@ import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import { weightOf } from '../src/core/items.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
-import { decodeSave, encodeSave, type SaveVersionComponents } from '../src/core/saveFormat.ts';
+import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
@@ -397,7 +397,8 @@ describe('real pump ammunition', () => {
     f.finish(1e-6, 3 + at);
     const expected = heldEjectionPose({
       model,
-      hold: 'both',
+      side: 'right',
+      twoHanded: true,
       eye: pose.eye.map((v) => v * pose.blockSize) as Vec3,
       yaw: pose.yaw,
       pitch: pose.pitch,
@@ -425,7 +426,7 @@ describe('real pump ammunition', () => {
     const snapshot = s.snapshot({ worldId: 'pump-world', characterId: 'pump-character' });
     const saved = { ...snapshot, character: { ...snapshot.character, inventory: f.inventory.snapshotState() } };
     const version: SaveVersionComponents = {
-      schemaVersion: 10,
+      schemaVersion: SAVE_SCHEMA_VERSION,
       simulationHash: 'a'.repeat(64),
       generators: {},
       contentPacks: [],
@@ -579,6 +580,6 @@ describe('real pump ammunition', () => {
     expect(blocked.zombies.firePellets(shot)).toBe(0);
     expect(open.zombieStore.get(a)!.regions).not.toEqual(before);
     expect(blocked.zombieStore.get(b)!.regions).toEqual(before);
-    expect(open.zombies.activeMeleeAction).toBeUndefined();
+    expect(open.playerCombat.activeMeleeAction).toBeUndefined();
   });
 });

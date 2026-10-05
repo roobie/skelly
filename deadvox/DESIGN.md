@@ -1,10 +1,14 @@
 ---
 read_if:
+  - you decide how sunlight and shadows should read in play
+  - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
+  - you change shambler navigation or floor-transition behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
+  - you're changing the debug test-house scene or firearm-handling range
 ---
 
 # deadvox — design
@@ -246,6 +250,16 @@ reads) is added when buildings get big.
 Tiers rise with distance from the spawn area and around the lab sites. Labs are
 the source of the weirdness: mutation pressure and hazard zones spread from them.
 
+### Debug scenes
+
+The firing range belongs to `?site=testHouse&debug=1`, not to ordinary world sites:
+it lets firearm handling be exercised without turning the test stock into a playable-world
+loot source. `src/core/range.ts`, `HandlingRange`, owns the shared lane geometry, while
+`src/game/testHouseRange.ts`, `testHouseRangeStock`, derives the rack contents from registry
+firearm and ammunition compatibility. `HandlingRange.approachHeight` and
+`DebugTestHouseSite` keep the debug lane connected to the test-house pad at the same floor;
+`test/testHouseRange.test.ts` exercises the south-gate route with player collision.
+
 ### Loot
 
 Loot tables are data. A table has entries with weights, count ranges and
@@ -271,7 +285,7 @@ chunks can generate in any order.
   - `fuel`, `battery`, `light`, `book`
   - `vehiclePart` (after Slice 1)
 
-  Behaviour comes only from components; the game never checks an item's id.
+  Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled (BR, 2026-10-05), "yes, rule covers drawing too": first-person displays and ground-pile presentation follow declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`, and `src/render/piles.ts`, `PileMeshes.drawPile` and `PileMeshes.planSpentCases`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
   rotated. A container has one or more **pockets**, each its own grid: a jeans
   pocket is 1 × 2, a hoodie pocket 3 × 2, a school backpack 5 × 6, a kitchen
@@ -304,7 +318,7 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
   On stowing: "putting away the shotgun from being wielded also plays rummaging
   anim - i think it kinda fits". The longer-term direction is "over time, we'll
-  maybe add more specific anims."; shell-loading feedback is d53, after d47.
+  maybe add more specific anims."; shell-loading feedback is d53.
   Approval does not pin `RUMMAGE_POSE` tuning: see
   `../docs/deferred-assertions.md`.
   Following #213's merge (d50-3), compass handling must not introduce a second
@@ -314,7 +328,10 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
 - **Handedness (BR, 2026-10-04):** whether "one's avatar is right- or
   left-handed dominant is a thing we should accomodate". Quick actions, the
   dominant and off-hand activations, holds and drawing follow the character's
-  dominant hand. Until that's built (d47), two-handed holds are right-handed.
+  dominant hand. Dominance is immutable actor identity, not a reassignment of
+  anatomy or inventory slots. Creation chooses it before the accepted launch;
+  Continue uses the saved identity. See `docs/character-handedness.md` for why
+  preferences follow roles while placement and mechanical axes stay physical.
 - **You use things from your hands:** eating, drinking, bandaging, reading,
   striking a match, switching a light on. Getting the item into your hands costs
   its handling time; using it is a separate action. A two-handed item takes both
@@ -322,14 +339,13 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
 - What you hold shows in first person, what you drop lies on the floor as a
   pile, and furniture holds what its grid shows.
 - **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
-  with the thing you're holding." The initial hand mapping (BR, 2026-10-01; open
-  to revision) is left click = right hand and `=` = left hand. A right-hand item
-  uses its action; if that hand is empty, jab with the right fist. `=` uses the
-  left-hand item's action, or does nothing when empty. Fists alternate only when
-  both hands are empty; never punch with a hand holding an item. Unsupported
-  held items give a hint. Melee keeps its current swing, and a light uses the
-  existing instant-use path. The hand mapping is `ACTION_HAND_BINDINGS`; item
-  capabilities are selected from content data.
+  with the thing you're holding." Activation follows the character's dominant
+  and off-hand roles, not a fixed physical side. A held item must never turn
+  into an unarmed attack, and a reserved support hand must not redirect an
+  action. See `src/game/input.ts`, `KEY_BINDINGS`, for inputs;
+  `src/game/primaryAction.ts`, `selectPrimaryAction`, for capability admission;
+  and `src/core/playerCombat.ts`, `PlayerCombat`, for the saved physical fist
+  sequence. Continue preserves that sequence rather than reseeding it.
 - **Long actions gather what they need.** Crafting, repair, disassembly and
   reading take their items from within reach (your hands, what you wear, and
   piles and furniture within 2 m) at the start. The gathering time is part of
@@ -365,15 +381,36 @@ HTML over the game view, and keyboard-first:
   shows its handling time. Weight, exact condition and times are in the item's
   details.
 - Filters and search, and item details on hover or focus.
-- A **quickbar** of shortcuts to items you carry. A slot's key puts the item in
-  your hands, which costs its pocket's handling time; pressing it again uses
-  it.
+- A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
+  "one thing that feels not quite right to me is that pressing the quickbar
+  number activates the item […] what if the number itself only wields or
+  unwields it, but T+number activates it?" BR settled at 00:08: "1. hold-number,
+  no doubt. This is the best UX / 2. agreed". The old number-use duplicated
+  left-click, `=` and R; a double press could rack a drawn gun, eject a live
+  shell, or eat food, and there was no way to put an item away. A tap now takes
+  an item into its capability-directed hand or puts it away; a hold uses an
+  available action from its current location. Weapons, keys and tool-only items
+  have no pocket use and give a short notice; firearm cycling stays on R. Weapons
+  and tools use the primary hand, lights the off hand, and two-handed items both
+  hands. When a held item
+  is put away, it returns to its captured source or the best pocket; this source
+  is saved because the tap's put-away behavior must survive a save/load. See
+  `src/game/quickbarInput.ts`, `QuickbarInput`, and `QUICKBAR_HOLD_ESTIMATE_MS`
+  for the presentation-only gesture estimate; `src/game/quickbarActions.ts`,
+  `QuickbarActions`, for tap/hold routing; `src/core/options.ts`, `quickbarTake`
+  and `quickbarPutAway`, for item-directed hand choice and return; and
+  `src/core/inventory.ts`, `Inventory.quickbarOrigin` and `Inventory.snapshotState`,
+  for the captured source saved in `InventoryState.quickbarOrigins`. Firearm cycling
+  remains on R only.
 
 ### Piles
 
 Items on the ground form **piles** at block positions, like CDDA. An item
 with a model lies at its place in the pile's grid; items without one make a
-generic bundle.
+generic bundle. For d59-2, spent cases read as loose debris rather than stacked
+material, so their content-owned pile-display component selects scattering; see
+`src/core/schema.ts`, `PILE_DISPLAY_KIND`, and `src/render/piles.ts`,
+`PileMeshes.planSpentCases`.
 
 ### Item models
 
@@ -414,7 +451,8 @@ plain box in your hands. Files are small, and follow
   containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
 - **Disassembly** is a recipe run in reverse. It returns part of the
-  components, depending on skill and the tools used.
+  components, depending on skill and the tools used. In Slice 2, that reverse is
+  an authored yield or salvage list (see [SLICE-2.md](SLICE-2.md), "2.7").
 - **Crafting runs compressed**, like other long actions, and can be interrupted
   and resumed. An interrupted craft leaves an "in progress" item that holds its
   components.
@@ -580,17 +618,79 @@ worse the world gets.
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
   rain washes out).
-- **Behaviour:** a small state machine: idle, wander, investigate, chase,
-  attack, lost track. Pathfinding runs on the block grid and allows one-block
-  steps, jumps and drops. It handles dynamic changes, so a door you close
-  changes the route.
-- **Level of detail:**
+- **Navigation rationale:** Collision-aware routing prevents false progress
+  through blockers, while bounded work protects the shared simulation tick.
+  Keeping route planning separate from physics preserves collision ownership.
+  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+  Explore landing connections only from the reached frontier, trying the goal
+  before optional detours. Exhausting effort on an unrelated closed approach must
+  not discard a complete route already found. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs`.
+  A grid-expansion limit alone hides flight validation, graph preparation and
+  compression work. Account for world probes and metadata/graph work against the
+  request allowance; the expansion cap also bounds local path structures.
+  Finish at most one request beyond the dispatch slice and rotate the remaining
+  queue deterministically. The allowance is logical work, not a wall-clock deadline; see
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`, and
+  `deadvox/src/core/zombies.ts`, `serviceRouteSearches`.
+  This is a bounded pilot, not a completeness guarantee: when no route is found,
+  the shambler waits for a retry instead of steering directly through blockers.
+  Crowd navigation and cheaper tiers belong to Slice 3
+  ([#244](https://github.com/roobie/skelly/issues/244)), not larger pilot caps.
+  Persist route progress, retry time and dispatch order so loading does not
+  silently restart pursuit or change which actor receives the next search.
+  See `deadvox/src/core/zombies.ts`, `snapshotState` and `restoreState`, and
+  `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
+  Request-local native maps avoid repeated world lookups without retaining stale
+  collision across requests. Continuous swept clearance prevents a short corner
+  overlap from creating an unsafe route and endless replanning; see
+  `deadvox/src/core/shamblerRoutes.ts`, `horizontalSweepClear`.
+  Live movement checks stay local even while gravity settles a descent; checking
+  the whole future leg during that transient hides unbounded per-actor work.
+  Descending endpoints are still checked for newly blocked landings. See
+  `deadvox/src/core/zombies.ts`, `liveRouteClearance` and `routeWaypoint`.
+  Preserve height changes when compressing a terrain detour: a raised sweep is
+  not proof that the body can hover over intervening obstacles. See
+  `deadvox/src/core/shamblerRoutes.ts`, `compressFlatPath`.
+  Distant goals use successive local horizons. A verified stair exit may be the
+  useful prefix when backtracking to its landing puts that horizon outside the
+  next leg's window; this is not straight steering through a failed route. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs` and `planRoute`.
+- **Storeys:** Matching horizontal projections could connect disconnected
+  floors and falsely complete an unreachable goal. Absolute feet height also
+  cannot identify a storey on graded terrain: world ground height distinguishes
+  that surface from an authored floor above it. Terrain legs follow that supplied
+  surface; constructed storey transitions still require authored flights. See
+  `deadvox/src/core/shamblerRoutes.ts`, `terrainForLeg` and `onTerrainFloor`.
+  Far-hearing direction must not manufacture source-storey knowledge. A grounded
+  listener projects the uncertain bearing onto known terrain, not the source's
+  height; a listener above ground retains its own level. See `deadvox/src/core/zombies.ts`,
+  `sameRouteFloor` and `farBearingTarget`, and
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+- **Level of detail:** Only the active tier is implemented, using bounded routes;
+  see `deadvox/src/core/zombies.ts`, `ZombieSystem`. The tiers remain planned design:
 
-  | Level | Where | Simulation |
+  | Tier | Where | Simulation |
   | --- | --- | --- |
-  | Active | Within about 48 m | Full AI at 20 Hz, per-frame physics |
-  | Background | Loaded chunks further away | 2 Hz, steering along a shared flow field |
-  | Abstract | Unloaded chunks | Hordes moving as groups on the region map |
+  | Active | Nearby actors | Detailed AI, body physics and bounded routes (implemented) |
+  | Background | Distant actors in loaded chunks | Reduced-rate steering along a shared flow field (planned) |
+  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
+
+  Background and abstract tiers, the flow field and crowd navigation are
+  Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)), not built behavior.
+
+**Decided (BR, 2026-10-04):**
+
+- "At some point we will make everything destructible. Door, walls, appliances,
+  furniture et[c] and yes, normal doors should be possible to breach by an
+  ordinary shambler, given enough time. But the overarching idea is to keep it
+  pretty aligned with how CDDA works"
+- "to answer the question here and now: no, let's not make shamblers breach
+  doors"
+
+A destructive-door mechanic needs its own gameplay contract, so navigation
+must not add one implicitly. See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
 
 ### Models
 
@@ -728,6 +828,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Entities** are drawn with instanced meshes; zombie limbs are instanced
   boxes.
+- **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
+  is still a little jaggedness. But we won't pursue this more right now, so I'll
+  approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
+  Favor a stable edge near the player over sharp shadows far beyond them; see
+  `src/render/shadows.ts`, `sunShadowTexelSize` and `Shadows.update`.
 
 ## Audio
 
@@ -747,11 +852,11 @@ decoration.
   the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, interpolates one
   power curve between the pool's smallest and tallest realized bodies. The
   smallest anchor is 1.2 times the prior square-root law at that body's height;
-  the tallest stays at the prior law until BR picks a new value. The clamp spans
-  0.5 to 1.3 times the prior law at the smallest height. BR's tuning note was,
-  “voicePitch 0.5 to 1.3 sounds good ,but for different purposes / for the tiny
-  shambler, 1.2 is good”. Debug URL multipliers tune the two endpoints for the
-  `voice_size` comparison site. This changes playback only, never hearing or
+  the tallest remains at the prior law. BR approved d52-4's `voicePitchLarge` on
+  2026-10-05 with “lgtm”. The clamp spans 0.5 to 1.3 times the prior law at the
+  smallest height. BR's tuning note was, “voicePitch 0.5 to 1.3 sounds good ,but
+  for different purposes / for the tiny shambler, 1.2 is good”. Debug URL
+  multipliers tune the two endpoints for the `voice_size` comparison site. This changes playback only, never hearing or
   simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest

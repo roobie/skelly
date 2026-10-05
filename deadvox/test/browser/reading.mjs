@@ -66,8 +66,15 @@ try {
       `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
-  await page.waitForFunction(() => globalThis.readingWitness, undefined, { timeout: 60_000 });
+  await page.waitForFunction(
+    () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+    undefined,
+    {
+      timeout: 60_000,
+    },
+  );
   await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.readingWitness, undefined, { timeout: 60_000 });
   await page.waitForFunction(
     () =>
       globalThis.readingWitness.input.locked &&

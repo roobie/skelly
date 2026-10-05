@@ -4,6 +4,9 @@ description: Design for how the player acts on items, recipes and appliances, an
 tags: [deadvox, design, inventory, crafting, appliances, ui]
 created: 2026-09-26
 status: active
+read_if:
+  - you change item activation, crafting or appliance ownership boundaries
+  - you reconcile BR's interaction rulings with actor handedness
 ---
 
 # deadvox — interactions
@@ -234,8 +237,8 @@ Because the components live inside the work item, nothing else can take them
 mid-craft, there is no reservation table to keep in step with the world, and a
 save holds the whole craft as ordinary item data.
 
-Disassembly is the same long action with the recipe reversed: the result goes
-in, and part of the components come out, depending on skill and tools.
+Disassembly runs the item's authored yield or salvage list as the reverse
+operation in Slice 2.7 (see [SLICE-2.md](SLICE-2.md), "2.7").
 
 ## Appliances
 
@@ -367,10 +370,10 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    counter stays until profiling in Slice 5 shows it costs too much.
 6. **Held-item primary action (BR, 2026-09-26, issue #27):** "Left click does
    the thing with the thing you're holding." Dispatch by item capability, not
-   id. The initial hand mapping (BR, 2026-10-01; open to revision) is left click
-   for the right hand and `=` for the left. A right-hand item uses its action;
-   an empty right hand jabs with the right fist. The `=` action uses the
-   left-hand item and does nothing if that hand is empty. Fists alternate only
-   when both hands are empty; never punch with a hand holding an item. An
-   unsupported item gives a hint. Lights reuse `Survival.use` for the instant
-   toggle.
+   id. The initial hand mapping (BR, 2026-10-01; open to revision) was "left click
+   for the right hand and `=` for the left". BR's 2026-10-04 handedness ruling
+   maps right to the dominant role and left to the off-hand role, rather than
+   changing physical inventory slots. See `src/core/character.ts`, `dominantSide`
+   and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
+   A held item must never become a fist or redirect to the other hand, and a
+   restored physical fist sequence must not be reseeded from dominance.

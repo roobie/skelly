@@ -48,19 +48,20 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(browserStageUrl('melee-build-click', `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=16`));
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.d7Review));
   await page.evaluate(() => {
     const runtime = globalThis.d7Review;
     globalThis.d7Observed = { starts: [] };
-    const begin = runtime.session.zombies.beginMeleeSwing.bind(runtime.session.zombies);
-    runtime.session.zombies.beginMeleeSwing = (start) => {
+    const begin = runtime.session.playerCombat.beginMeleeSwing.bind(runtime.session.playerCombat);
+    runtime.session.playerCombat.beginMeleeSwing = (start) => {
       const result = begin(start);
       globalThis.d7Observed.starts.push({ result, build: runtime.debugTools.buildOn });
       return result;
     };
   });
 
-  await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.d7Review.input.locked && !globalThis.d7Review.input.menuPointer);
   await page.evaluate(() => {
     globalThis.d7Observed.starts = [];
@@ -111,7 +112,9 @@ try {
     assert.ok(combat.staminaAfter < combat.staminaBefore);
   });
 
-  await page.waitForFunction(() => !globalThis.d7Review.session.zombies.activeMeleeAction, null, { timeout: 10_000 });
+  await page.waitForFunction(() => !globalThis.d7Review.session.playerCombat.activeMeleeAction, null, {
+    timeout: 10_000,
+  });
   await page.evaluate(() => {
     globalThis.d7Observed.starts = [];
   });

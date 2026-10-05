@@ -3,19 +3,23 @@ import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
-import {
-  type MeleeActionPose,
-  type MeleeHand,
-  type MeleeProfile,
-  meleeContactTime,
-  meleePoseAndContact,
-} from './meleePose.ts';
-import { type Body, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
+import { type Body, CONTACT_SKIN, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
+import {
+  onTerrainFloor,
+  planShamblerRoute,
+  ROUTE_SEARCHES_PER_TICK,
+  ROUTE_WORK_PER_TICK,
+  type StairRouteLink,
+  shamblerRouteSegmentClear,
+  type TerrainFloorAt,
+  terrainStance,
+} from './shamblerRoutes.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import { updateStepOffset } from './stepOffset.ts';
+import type { PlayerHitArea } from './wear.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
 import {
   type PosedBoneBox,
@@ -36,12 +40,6 @@ import type { PelletShot } from './pellets.ts';
 
 export const FISTS_MELEE = { damage: 8, reach: 0.1, cooldown: 0.8, stamina: 4, impulse: 4 } as const;
 
-export interface MeleeActionState extends MeleeActionPose {
-  elapsed: number;
-  hands: { right: number | null; left: number | null };
-  weapon: MeleeWeapon;
-}
-
 const validHitFlinchTime = (time: number | undefined): boolean =>
   time === undefined || (Number.isFinite(time) && time >= 0);
 const validStanceWeight = (weight: number | undefined): boolean =>
@@ -56,18 +54,6 @@ export interface MeleeWeapon {
   readonly stamina?: number | undefined;
   readonly impulse?: number | undefined;
   readonly type?: 'blunt' | 'cut' | 'pierce' | undefined;
-}
-
-export interface BeginMeleeSwing {
-  origin: Vec3;
-  direction: Vec3;
-  weapon: MeleeWeapon;
-  profile: MeleeProfile;
-  hand?: MeleeHand;
-  twoHanded: boolean;
-  hands: { right: number | null; left: number | null };
-  aimYaw?: number;
-  aimPitch?: number;
 }
 
 export interface ZombieAim {
@@ -204,10 +190,19 @@ export type ZombieState = Omit<
   lastVocalNoiseId: number | null;
 };
 
+export interface ZombieRouteState {
+  readonly goalKey: string;
+  readonly goal: Vec3;
+  readonly waypoints: readonly Vec3[];
+  readonly next: number;
+  readonly pending: boolean;
+  readonly retryAt: number;
+}
+
 export interface ZombieSystemState {
-  playerAttackWait: number;
-  meleeAction: MeleeActionState | null;
-  nextFistHand: MeleeHand;
+  routeSearchCursor: number;
+  routeClock: number;
+  routes: { id: number; route: ZombieRouteState }[];
   nextEntityId: number;
   zombies: { id: number; zombie: ZombieState }[];
 }
@@ -233,6 +228,8 @@ export interface PlayerSense {
 
 export interface ZombieSystemOptions {
   store?: EntityStore<Zombie>;
+  stairFlights?: readonly StairRouteLink[];
+  terrainFloor?: TerrainFloorAt | undefined;
   seed?: number;
   /** Movement, attacks and hearing use the body's blockers. */
   isSolid: SolidAt;
@@ -244,7 +241,7 @@ export interface ZombieSystemOptions {
   jumpSpeed: number;
   player: () => PlayerSense;
   hour: () => number;
-  hurtPlayer: (amount: number) => void;
+  hurtPlayer: (amount: number, area: PlayerHitArea) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
@@ -266,6 +263,20 @@ export interface ZombieSystemOptions {
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
+const sameRouteFloor = (a: Vec3, b: Vec3, terrainFloor: TerrainFloorAt | undefined, halfWidth: number): boolean =>
+  Math.round(a[1]) === Math.round(b[1]) ||
+  (terrainFloor !== undefined &&
+    onTerrainFloor(a, terrainFloor, halfWidth) &&
+    onTerrainFloor(b, terrainFloor, halfWidth));
+const routeGoalKey = (target: Vec3): string =>
+  `${Math.floor(target[0])},${Math.round(target[1])},${Math.floor(target[2])}`;
+// A body straddling a descending tread still stands on the higher support until its trailing edge clears.
+const liveRouteClearance = (body: Body, next: Vec3, probe: Vec3, isSolid: SolidAt): boolean =>
+  shamblerRouteSegmentClear(body, body.pos, probe, isSolid) &&
+  (next[1] >= body.pos[1] - 2 * CONTACT_SKIN || shamblerRouteSegmentClear(body, next, next, isSolid));
+
+const routeWaypointReached = (from: Vec3, to: Vec3, stepHeight: number): boolean =>
+  horizontalDistance(from, to) <= 0.35 && Math.abs(from[1] - to[1]) <= stepHeight + 2 * CONTACT_SKIN;
 const unit = (v: Vec3): Vec3 => {
   const n = Math.hypot(...v);
   return n > 0 ? [v[0] / n, v[1] / n, v[2] / n] : [0, 0, 0];
@@ -568,10 +579,11 @@ export const perceivePlayer = (input: PerceptionInput): boolean =>
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
-  private playerAttackWait = 0;
-  private meleeAction: MeleeActionState | null = null;
-  private nextFistHand: MeleeHand = 'right';
   private frozen = false;
+  private routeSearchCursor = 0;
+  // Standalone callers may omit absolute sim time; persistence keeps their retry deadlines across loads.
+  private routeClock = 0;
+  private readonly routes = new Map<EntityId, ZombieRouteState>();
 
   constructor(options: ZombieSystemOptions) {
     this.options = options;
@@ -580,10 +592,6 @@ export class ZombieSystem {
 
   get isFrozen(): boolean {
     return this.frozen;
-  }
-
-  get activeMeleeAction(): Readonly<MeleeActionState> | undefined {
-    return this.meleeAction ?? undefined;
   }
 
   /** Debug-only caller-controlled pause for living shambler AI; this state is deliberately not saved. */
@@ -613,9 +621,18 @@ export class ZombieSystem {
 
   snapshotState(): Readonly<ZombieSystemState> {
     return freezeSnapshot({
-      playerAttackWait: this.playerAttackWait,
-      meleeAction: this.meleeAction === null ? null : structuredClone(this.meleeAction),
-      nextFistHand: this.nextFistHand,
+      routeSearchCursor: this.routeSearchCursor,
+      routeClock: this.routeClock,
+      routes: [...this.routes.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([id, route]) => ({
+          id,
+          route: {
+            ...route,
+            goal: [...route.goal] as Vec3,
+            waypoints: route.waypoints.map((point) => [...point] as Vec3),
+          },
+        })),
       nextEntityId: this.store.nextId,
       zombies: [...this.store.entries()].map(([id, zombie]) => {
         const {
@@ -733,81 +750,48 @@ export class ZombieSystem {
       };
       return [id, restored] as const;
     });
-    if (!Number.isFinite(state.playerAttackWait) || state.playerAttackWait < 0) {
-      throw new Error('Invalid player attack cooldown');
-    }
-    if (state.nextFistHand !== 'right' && state.nextFistHand !== 'left') {
-      throw new Error('Invalid next fist hand');
-    }
-    this.validateMeleeAction(state.meleeAction);
-    this.store.restore(entries, state.nextEntityId);
-    this.playerAttackWait = state.playerAttackWait;
-    this.meleeAction = state.meleeAction === null ? null : structuredClone(state.meleeAction);
-    this.nextFistHand = state.nextFistHand;
-  }
-
-  private validateMeleeAction(action: MeleeActionState | null): void {
-    if (action === null) {
-      return;
-    }
-    const vector3 = (value: unknown): value is Vec3 =>
-      Array.isArray(value) && value.length === 3 && value.every((component) => Number.isFinite(component));
-    const validUid = (uid: number | null): boolean => uid === null || (Number.isSafeInteger(uid) && uid > 0);
+    const zombieIds = new Set(entries.map(([id]) => id));
+    const routeIds = new Set<number>();
     if (
-      !['blunt', 'cut', 'pierce', 'fists'].includes(action.profile) ||
-      (action.hand !== 'right' && action.hand !== 'left') ||
-      typeof action.twoHanded !== 'boolean' ||
-      !Number.isFinite(action.cooldown) ||
-      action.cooldown <= 0 ||
-      !Number.isFinite(action.contactAt) ||
-      Math.abs(action.contactAt - meleeContactTime(action.cooldown)) > 1e-9 ||
-      !Number.isFinite(action.aimYaw) ||
-      !Number.isFinite(action.aimPitch) ||
-      !Number.isFinite(action.elapsed) ||
-      action.elapsed < 0 ||
-      action.elapsed >= action.cooldown ||
-      typeof action.hitResolved !== 'boolean' ||
-      (action.hitResolved && action.elapsed < action.contactAt) ||
-      !vector3(action.origin) ||
-      !vector3(action.direction) ||
-      !Number.isFinite(action.weapon.damage) ||
-      action.weapon.damage <= 0 ||
-      !Number.isFinite(action.weapon.reach) ||
-      action.weapon.reach <= 0 ||
-      action.weapon.cooldown !== action.cooldown ||
-      (action.weapon.stamina !== undefined && (!Number.isFinite(action.weapon.stamina) || action.weapon.stamina < 0)) ||
-      (action.weapon.impulse !== undefined && (!Number.isFinite(action.weapon.impulse) || action.weapon.impulse < 0)) ||
-      (action.weapon.type !== undefined && !['blunt', 'cut', 'pierce'].includes(action.weapon.type)) ||
-      !action.hands ||
-      !validUid(action.hands.right) ||
-      !validUid(action.hands.left)
+      !Number.isSafeInteger(state.routeSearchCursor) ||
+      state.routeSearchCursor < 0 ||
+      !Number.isFinite(state.routeClock) ||
+      state.routeClock < 0 ||
+      !Array.isArray(state.routes) ||
+      state.routes.some(({ id, route }) => {
+        const vector3 = (value: unknown): value is Vec3 =>
+          Array.isArray(value) && value.length === 3 && value.every((component) => Number.isFinite(component));
+        const invalid =
+          !Number.isSafeInteger(id) ||
+          id < 1 ||
+          !zombieIds.has(id) ||
+          routeIds.has(id) ||
+          typeof route.goalKey !== 'string' ||
+          !vector3(route.goal) ||
+          !Array.isArray(route.waypoints) ||
+          !route.waypoints.every(vector3) ||
+          !Number.isSafeInteger(route.next) ||
+          route.next < 0 ||
+          route.next > route.waypoints.length ||
+          typeof route.pending !== 'boolean' ||
+          !Number.isFinite(route.retryAt);
+        routeIds.add(id);
+        return invalid;
+      })
     ) {
-      throw new Error('Invalid player melee action');
+      throw new Error('Invalid zombie navigation state');
     }
-  }
-
-  private tickMeleeAction(dt: number, hands?: { right: number | null; left: number | null }): void {
-    const action = this.meleeAction;
-    if (!action) {
-      return;
+    this.store.restore(entries, state.nextEntityId);
+    this.routes.clear();
+    for (const { id, route } of state.routes) {
+      this.routes.set(id, {
+        ...route,
+        goal: [...route.goal] as Vec3,
+        waypoints: route.waypoints.map((point) => [...point] as Vec3),
+      });
     }
-    if (hands && (hands.right !== action.hands.right || hands.left !== action.hands.left)) {
-      this.meleeAction = null;
-      return;
-    }
-    const elapsed = Math.min(action.cooldown, action.elapsed + dt);
-    if (!action.hitResolved && elapsed + 1e-9 >= action.contactAt) {
-      const contact = meleePoseAndContact(action, action.contactAt, false).contactRay;
-      if (contact) {
-        this.resolveMeleeNow(contact.origin, contact.direction, action.weapon, action.profile === 'fists');
-      }
-      action.hitResolved = true;
-    }
-    if (elapsed >= action.cooldown) {
-      this.meleeAction = null;
-    } else {
-      action.elapsed = elapsed;
-    }
+    this.routeSearchCursor = state.routeSearchCursor;
+    this.routeClock = state.routeClock;
   }
 
   private tickLookAround(zombie: Zombie, dt: number): void {
@@ -1038,6 +1022,132 @@ export class ZombieSystem {
     return id;
   }
 
+  private pendingRouteIds(time: number): EntityId[] {
+    const liveIds = new Set([...this.store.entries()].map(([id]) => id));
+    for (const id of this.routes.keys()) {
+      if (!liveIds.has(id)) {
+        this.routes.delete(id);
+      }
+    }
+    for (const [id, route] of this.routes) {
+      const zombie = this.store.get(id);
+      if (!zombie || zombie.incapacitated || (zombie.mode !== 'chase' && zombie.mode !== 'investigate')) {
+        this.routes.delete(id);
+        continue;
+      }
+      if (!route.pending && route.waypoints.length === 0 && route.retryAt > 0 && time >= route.retryAt) {
+        this.routes.set(id, { ...route, pending: true, retryAt: 0 });
+      }
+    }
+    const queued = [...this.routes.entries()]
+      .filter(([id, route]) => route.pending && this.store.get(id) !== undefined)
+      .map(([id]) => id)
+      .sort((a, b) => a - b);
+    return [
+      ...queued.filter((id) => id > this.routeSearchCursor),
+      ...queued.filter((id) => id <= this.routeSearchCursor),
+    ];
+  }
+
+  private serviceRouteSearches(time: number): void {
+    let work = 0;
+    for (const id of this.pendingRouteIds(time).slice(0, ROUTE_SEARCHES_PER_TICK)) {
+      if (work >= ROUTE_WORK_PER_TICK) {
+        break;
+      }
+      const zombie = this.store.get(id);
+      const route = this.routes.get(id);
+      if (!(zombie && route) || zombie.incapacitated || (zombie.mode !== 'chase' && zombie.mode !== 'investigate')) {
+        this.routes.delete(id);
+        continue;
+      }
+      // Collision reads are stable during this synchronous search, but never cached across requests or ticks.
+      const solids = new Map<string, boolean>();
+      const countedSolid: SolidAt = (x, y, z) => {
+        const key = `${x},${y},${z}`;
+        let value = solids.get(key);
+        if (value === undefined) {
+          value = this.options.isSolid(x, y, z);
+          solids.set(key, value);
+        }
+        return value;
+      };
+      const floors = new Map<string, number>();
+      const countedTerrain = this.options.terrainFloor
+        ? (x: number, z: number) => {
+            const key = `${x},${z}`;
+            let value = floors.get(key);
+            if (value === undefined) {
+              value = this.options.terrainFloor!(x, z);
+              floors.set(key, value);
+            }
+            return value;
+          }
+        : undefined;
+      const waypoints = planShamblerRoute({
+        body: zombie.body,
+        target: route.goal,
+        flights: this.options.stairFlights ?? [],
+        isSolid: countedSolid,
+        terrainFloor: countedTerrain,
+        onWork: (units) => {
+          work += units;
+        },
+      });
+      this.routes.set(id, {
+        ...route,
+        waypoints: waypoints ?? [],
+        next: 0,
+        pending: false,
+        retryAt: waypoints ? 0 : time + 1,
+      });
+      this.routeSearchCursor = id;
+    }
+  }
+
+  private routeWaypoint(id: EntityId, zombie: Zombie, target: Vec3, dt: number): Vec3 | undefined {
+    const time = this.routeClock;
+    const key = routeGoalKey(target);
+    let route = this.routes.get(id);
+    if (!route || route.goalKey !== key) {
+      route = { goalKey: key, goal: copy(target), waypoints: [], next: 0, pending: true, retryAt: 0 };
+      this.routes.set(id, route);
+    }
+    if (!route.pending && route.waypoints.length === 0 && time >= route.retryAt) {
+      route = { ...route, pending: true, retryAt: 0 };
+      this.routes.set(id, route);
+    }
+    while (
+      route.next < route.waypoints.length &&
+      routeWaypointReached(zombie.body.pos, route.waypoints[route.next]!, this.options.physics.stepHeight)
+    ) {
+      route = { ...route, next: route.next + 1 };
+      this.routes.set(id, route);
+    }
+    if (route.next >= route.waypoints.length && !route.pending && route.waypoints.length > 0) {
+      route = { ...route, waypoints: [], next: 0, retryAt: time + 0.5 };
+      this.routes.set(id, route);
+    }
+    const next = route.waypoints[route.next];
+    let probe = next;
+    if (next) {
+      const distance = horizontalDistance(zombie.body.pos, next);
+      const lookAhead = zombie.body.halfWidth + (zombie.horizontalSpeed * dt) / this.options.blockSize;
+      const fraction = distance > 0 ? Math.min(1, lookAhead / distance) : 1;
+      probe = [
+        zombie.body.pos[0] + (next[0] - zombie.body.pos[0]) * fraction,
+        Math.max(zombie.body.pos[1], next[1]),
+        zombie.body.pos[2] + (next[2] - zombie.body.pos[2]) * fraction,
+      ];
+    }
+    if (next && probe && !route.pending && !liveRouteClearance(zombie.body, next, probe, this.options.isSolid)) {
+      route = { ...route, waypoints: [], next: 0, pending: true, retryAt: 0 };
+      this.routes.set(id, route);
+      return undefined;
+    }
+    return route.pending ? undefined : next;
+  }
+
   /** Advances every zombie at a fixed caller-supplied simulation dt. */
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-entity AI update is one cohesive ordered simulation pass.
   tick(dt: number, time = 0, _hands?: { right: number | null; left: number | null }): void {
@@ -1059,6 +1169,8 @@ export class ZombieSystem {
       }
       return;
     }
+    this.routeClock = Math.max(this.routeClock + dt, time);
+    this.serviceRouteSearches(this.routeClock);
     const player = this.options.player();
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
@@ -1136,22 +1248,36 @@ export class ZombieSystem {
         zombie.searchStrolling = false;
         zombie.lastPerceived =
           vocal?.tier === 'far' ? vocal.target : farBearingTarget({ ...hearingInput, source: player.pos, rng });
+        const { terrainFloor } = this.options;
+        if (terrainFloor && onTerrainFloor(pos, terrainFloor, zombie.body.halfWidth)) {
+          zombie.lastPerceived[1] = terrainStance(
+            zombie.lastPerceived[0],
+            zombie.lastPerceived[2],
+            zombie.body.halfWidth,
+            terrainFloor,
+          );
+        }
       } else if (zombie.mode === 'chase') {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'near';
       }
 
-      if (
-        zombie.mode === 'investigate' &&
-        horizontalDistance(zombie.lastPerceived ?? zombie.home, pos) * blockSize <= 1
-      ) {
-        this.beginSearch(zombie);
+      if (zombie.mode === 'investigate') {
+        const investigationTarget = zombie.lastPerceived ?? zombie.home;
+        if (
+          Math.hypot(...sub(investigationTarget, pos)) * blockSize <= 1 &&
+          sameRouteFloor(pos, investigationTarget, this.options.terrainFloor, zombie.body.halfWidth)
+        ) {
+          this.beginSearch(zombie);
+          this.routes.delete(id);
+        }
       }
 
       let target: Vec3 = zombie.home;
       let direction: Vec3 = [0, 0, 0];
       let aimDirection: Vec3 | undefined;
       let desiredSpeed = 0;
+      let waypointTravelLimit = Number.POSITIVE_INFINITY;
       let returnArrived = false;
       const stroll = zombie.mode === 'stroll';
       if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
@@ -1229,23 +1355,35 @@ export class ZombieSystem {
         }
         const metresToTarget = horizontalDistance(target, pos) * blockSize;
         returnArrived = zombie.mode === 'return' && metresToTarget < 0.4;
-        direction = unit([target[0] - pos[0], 0, target[2] - pos[2]]);
-        const moving = returnArrived || metresToTarget > (zombie.mode === 'chase' ? type.attack.reach * 0.9 : 0.25);
+        const seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
+        const waypoint = seeking ? this.routeWaypoint(id, zombie, target, dt) : undefined;
+        const inReach =
+          zombie.mode === 'chase' && withinAttackReach({ zombiePos: pos, playerPos: target, type, blockSize, isSolid });
+        if (seeking) {
+          direction = waypoint ? unit([waypoint[0] - pos[0], 0, waypoint[2] - pos[2]]) : [0, 0, 0];
+        } else {
+          direction = unit([target[0] - pos[0], 0, target[2] - pos[2]]);
+        }
+        const moving = seeking ? waypoint !== undefined && !inReach : returnArrived || metresToTarget > 0.25;
         if (moving) {
-          if (zombie.mode === 'chase' || zombie.mode === 'investigate') {
+          const route = this.routes.get(id);
+          const followingDetour = seeking && waypoint !== undefined && (route?.waypoints.length ?? 0) > 1;
+          if (seeking) {
             aimDirection = direction;
             const motion = this.stepChaseMotion(zombie, dt);
-            direction = headingAt(angleOf(direction) + motion.sway);
+            direction = followingDetour ? direction : headingAt(angleOf(direction) + motion.sway);
             desiredSpeed = type.speed.chase * motion.speedFactor;
           } else if (!returnArrived) {
             desiredSpeed = type.speed.wander;
           }
-          zombie.facing = turnToward(
-            zombie.facing,
-            direction,
-            (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
-          );
-          direction = zombie.facing;
+          const turnRadians = (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180;
+          zombie.facing = turnToward(zombie.facing, direction, turnRadians);
+          if (followingDetour) {
+            // Keep translation on the verified leg while the body turns; a facing-driven arc can miss a tread.
+            waypointTravelLimit = (horizontalDistance(pos, waypoint!) * blockSize) / dt;
+          } else {
+            direction = zombie.facing;
+          }
         } else {
           direction = [0, 0, 0];
         }
@@ -1264,7 +1402,10 @@ export class ZombieSystem {
         zombie.stumbleFactor < 1 && zombie.horizontalSpeed > desiredSpeed
           ? type.chaseMotion.stumbleDeceleration
           : type.wander.movementAcceleration;
-      zombie.horizontalSpeed = approach(zombie.horizontalSpeed, desiredSpeed, acceleration * dt);
+      zombie.horizontalSpeed = Math.min(
+        approach(zombie.horizontalSpeed, desiredSpeed, acceleration * dt),
+        waypointTravelLimit,
+      );
       if (zombie.mode === 'search' && zombie.searchStrolling && zombie.searchAnchor) {
         const radius = horizontalDistance(pos, zombie.searchAnchor) * blockSize;
         const away = unit([pos[0] - zombie.searchAnchor[0], 0, pos[2] - zombie.searchAnchor[2]]);
@@ -1292,7 +1433,11 @@ export class ZombieSystem {
       }
       const beforeStep = copy(pos);
       const obstacles = player.body ? [player.body] : [];
-      stepBody(zombie.body, dt, isSolid, { ...this.options.physics, obstacles });
+      stepBody(zombie.body, dt, isSolid, {
+        ...this.options.physics,
+        stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
+        obstacles,
+      });
       let travelled = horizontalDistance(beforeStep, zombie.body.pos) * blockSize;
       if (aimDirection && zombie.horizontalSpeed > 0.01) {
         const dx = zombie.body.pos[0] - beforeStep[0];
@@ -1370,7 +1515,7 @@ export class ZombieSystem {
         zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
         const reach = { zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid };
         if (zombie.attackWindup <= 0 && withinAttackReach(reach)) {
-          this.options.hurtPlayer(type.attack.damage);
+          this.options.hurtPlayer(type.attack.damage, 'torso');
         }
       } else if (
         zombie.mode === 'chase' &&
@@ -1439,15 +1584,6 @@ export class ZombieSystem {
         this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode, zombie);
       }
     }
-  }
-
-  /** Advances player attack timing once per player physics tick, independently of shambler AI cadence. */
-  tickPlayerAction(dt: number, hands: { right: number | null; left: number | null }): void {
-    if (dt <= 0) {
-      return;
-    }
-    this.playerAttackWait = Math.max(0, this.playerAttackWait - dt);
-    this.tickMeleeAction(dt, hands);
   }
 
   unsafeReason(playerPos = this.options.player().pos): string | undefined {
@@ -1564,35 +1700,12 @@ export class ZombieSystem {
     return hits;
   }
 
-  /** Starts an attack from the player's sampled tick aim; contact resolves after its bounded wind-up. */
-  beginMeleeSwing(start: BeginMeleeSwing): boolean {
-    const { weapon, profile } = start;
-    if (this.playerAttackWait > 0 || this.meleeAction !== null || weapon.cooldown <= 0) {
-      return false;
-    }
-    const hand = profile === 'fists' ? (start.hand ?? this.nextFistHand) : (start.hand ?? 'right');
-    const direction = unit(start.direction);
-    if (profile === 'fists' && start.hand === undefined) {
-      this.nextFistHand = hand === 'right' ? 'left' : 'right';
-    }
-    this.playerAttackWait = weapon.cooldown;
-    this.meleeAction = {
-      profile,
-      hand,
-      twoHanded: start.twoHanded,
-      cooldown: weapon.cooldown,
-      contactAt: meleeContactTime(weapon.cooldown),
-      aimYaw: start.aimYaw ?? Math.atan2(-direction[0], -direction[2]),
-      aimPitch: start.aimPitch ?? Math.asin(Math.max(-1, Math.min(1, direction[1]))),
-      elapsed: 0,
-      hitResolved: false,
-      origin: copy(start.origin),
-      direction,
-      hands: { ...start.hands },
-      weapon: { ...weapon },
-    };
-    this.options.onSound?.('melee_swing', copy(start.origin));
-    return true;
+  playPlayerMeleeSwing(origin: Vec3): void {
+    this.options.onSound?.('melee_swing', copy(origin));
+  }
+
+  resolvePlayerMelee(origin: Vec3, direction: Vec3, weapon: MeleeWeapon, isFist: boolean): boolean {
+    return this.resolveMeleeNow(origin, direction, weapon, isFist) !== undefined;
   }
 
   private resolveMeleeNow(
@@ -1623,17 +1736,10 @@ export class ZombieSystem {
     return aim.id;
   }
 
-  /** Immediate combat-query helper retained for deterministic geometry tests; live input uses beginMeleeSwing. */
+  /** Immediate combat-query helper retained for deterministic geometry tests; play uses PlayerCombat. */
   swing(origin: Vec3, direction: Vec3, weapon: MeleeWeapon): EntityId | undefined {
-    if (this.playerAttackWait > 0) {
-      return undefined;
-    }
     this.options.onSound?.('melee_swing', copy(origin));
-    const id = this.resolveMeleeNow(origin, direction, weapon);
-    if (id !== undefined) {
-      this.playerAttackWait = weapon.cooldown;
-    }
-    return id;
+    return this.resolveMeleeNow(origin, direction, weapon);
   }
 
   private applyMeleeHit({

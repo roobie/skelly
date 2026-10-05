@@ -38,7 +38,7 @@ describe('quickbarViewModel', () => {
   it('shows an item in a hand', () => {
     const inv = new Inventory(registry);
     const flashlight = inv.create('flashlight');
-    inv.hands.right = flashlight;
+    expect(inv.add(flashlight, { kind: 'hand', side: 'right' })).toBe(true);
     const bar = new Quickbar();
     bar.assign(0, flashlight);
     const vm = quickbarViewModel(bar, inv);
@@ -90,7 +90,7 @@ describe('quickbarViewModel', () => {
   it('shows the count when there is more than one', () => {
     const inv = new Inventory(registry);
     const beans = inv.create('canned_beans', 3);
-    inv.hands.right = beans;
+    expect(inv.add(beans, { kind: 'hand', side: 'right' })).toBe(true);
     const bar = new Quickbar();
     bar.assign(0, beans);
     const vm = quickbarViewModel(bar, inv);
@@ -102,7 +102,7 @@ describe('quickbarKey', () => {
   it('is unchanged when nothing about the inventory or the slots changed', () => {
     const inv = new Inventory(registry);
     const flashlight = inv.create('flashlight');
-    inv.hands.right = flashlight;
+    expect(inv.add(flashlight, { kind: 'hand', side: 'right' })).toBe(true);
     const bar = new Quickbar();
     bar.assign(0, flashlight);
     expect(quickbarKey(bar, inv)).toBe(quickbarKey(bar, inv));

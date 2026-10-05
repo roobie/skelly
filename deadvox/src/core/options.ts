@@ -1,6 +1,7 @@
 // Item action availability. Views display these plans; commands revalidate at completion.
 
 import type { BlockEntity, DoorOperation } from './blockEntities.ts';
+import { dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue } from './handling.ts';
 import { dropSpots, type HandSide, type Inventory, type Plan, type Target } from './inventory.ts';
@@ -73,6 +74,7 @@ export interface UseOption {
 
 export type Option = MoveOption | UseOption;
 const SIDES: readonly HandSide[] = ['right', 'left'];
+const otherHand = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const OBVIOUS = new Set(["It can't go inside itself", "It's already in that hand", "You're already wearing it"]);
 
 /** Every pocket of what the player holds and wears, retaining ordinary move ordering. */
@@ -132,12 +134,12 @@ const inventoryPocket = (inv: Inventory, item: Item): Target | undefined => {
   return undefined;
 };
 
-/** Right-hand (primary/wielded) items stow; other carried items drop exactly at the feet. */
+/** Dominant-hand items stow; other carried items drop exactly at the feet. */
 export const quickMove = (item: Item, view: ReachSnapshot): MoveOption => {
   const inv = view.player.inventory;
   const at = inv.locate(item);
   let target: Target = { kind: 'pile', pos: view.feet };
-  if (at && ((at.kind === 'hand' && at.side === 'right') || inv.placeOf(at) !== undefined)) {
+  if (at && ((at.kind === 'hand' && at.side === dominantSide(inv.character)) || inv.placeOf(at) !== undefined)) {
     const wear: Target = { kind: 'worn' };
     if (at.kind === 'pile' && item.pockets && inv.plan(item, wear).ok) {
       target = wear;
@@ -161,7 +163,10 @@ const refuseUse = (reason: string): UseOption => ({ kind: 'use', label: 'Use', p
 
 const batteryOption = (battery: Item, inv: Inventory, selectedLight?: Item): UseOption => {
   const light =
-    selectedLight ?? [inv.hands.right, inv.hands.left].find((held) => held && fitsLight(inv.registry, held, battery));
+    selectedLight ??
+    [inv.hands[dominantSide(inv.character)], inv.hands[offSide(inv.character)]].find(
+      (held) => held && fitsLight(inv.registry, held, battery),
+    );
   return light
     ? {
         kind: 'use',
@@ -218,8 +223,14 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (at.kind !== 'hand') {
     return refuseUse(`Take the ${name} in your hands first`);
   }
-  if (def.readable) {
-    return { kind: 'use', label: 'Read', operation: 'read', readable: def.readable, plan: { ok: true, time: 0 } };
+  if (def.book || def.readable) {
+    return {
+      kind: 'use',
+      label: 'Read',
+      operation: 'read',
+      ...(def.readable ? { readable: def.readable } : {}),
+      plan: { ok: true, time: 0 },
+    };
   }
   if (def.food) {
     return foodOption(name, def.category === 'drink');
@@ -249,17 +260,62 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
   return out.filter((o) => o.plan.ok || !OBVIOUS.has(o.plan.reason));
 };
 
+export const quickbarHand = (inv: Inventory, item: Item): HandSide => {
+  const def = defOf(inv.registry, item.type);
+  return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
+};
+
+/** Quickbar tap: clear only the hand(s) the item needs, then take it there. */
+export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
+  const def = defOf(inv.registry, item.type);
+  const side = quickbarHand(inv, item);
+  const needs: HandSide[] = def.twoHanded ? [...SIDES] : [side];
+  if (!def.twoHanded && inv.hands[otherHand(side)] && defOf(inv.registry, inv.hands[otherHand(side)]!.type).twoHanded) {
+    needs.push(otherHand(side));
+  }
+  const displaced = new Set<Item>();
+  for (const hand of needs) {
+    const held = inv.hands[hand];
+    if (held && held !== item) {
+      displaced.add(held);
+    }
+  }
+  for (const held of displaced) {
+    const away = bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
+    const stow = queue.enqueue(held, away);
+    if (!stow.ok) {
+      return stow.reason;
+    }
+  }
+  const take = queue.enqueue(item, { kind: 'hand', side }, item.count, displaced.size > 0);
+  return take.ok ? undefined : take.reason;
+};
+
+/** Put a held quickbar item back at its captured location, or in the best pocket if that no longer fits. */
+export const quickbarPutAway = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
+  const origin = inv.quickbarOrigin(item);
+  const remembered = origin && inv.resolveTarget(origin);
+  const target = remembered && inv.plan(item, remembered).ok ? remembered : bestPocket(inv, item)?.target;
+  if (!target) {
+    return 'Your pockets are full';
+  }
+  const result = queue.enqueue(item, target);
+  return result.ok ? undefined : result.reason;
+};
+
 /** Ordinary to-hands behavior, including moving an occupied hand away first. */
 export const toHands = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
-  for (const side of SIDES) {
+  const preferred = dominantSide(inv.character);
+  const secondary = offSide(inv.character);
+  for (const side of [preferred, secondary]) {
     const result = queue.enqueue(item, { kind: 'hand', side });
     if (result.ok) {
       return undefined;
     }
   }
-  const held = inv.hands.right ?? inv.hands.left;
+  const held = inv.hands[preferred] ?? inv.hands[secondary];
   if (!held || held === item) {
-    return inv.plan(item, { kind: 'hand', side: 'right' }).ok ? undefined : 'Your hands are full';
+    return inv.plan(item, { kind: 'hand', side: preferred }).ok ? undefined : 'Your hands are full';
   }
   const away = bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
   const stow = queue.enqueue(held, away);

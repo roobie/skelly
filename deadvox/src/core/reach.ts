@@ -2,6 +2,7 @@
 // Units are explicit: positions are blocks; the admission limit is metres.
 
 import type { BlockEntity } from './blockEntities.ts';
+import { dominantSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Location, Pile } from './inventory.ts';
 import type { Item } from './items.ts';
@@ -32,10 +33,12 @@ export interface ReachSnapshot {
   readonly piles: readonly Pile[];
   /** Includes unsearched furniture so callers can offer Search, never its contents. */
   readonly furniture: readonly BlockEntity[];
-  /** Defined here; populated only once the workstation component lands in 2.8. */
+  /** Furniture workstation components whose nearest box point is within INVENTORY_REACH. */
   readonly workstations: readonly {
     entity: BlockEntity;
+    id: string;
     qualities: Readonly<Record<string, number>>;
+    workTimeBonus: number;
   }[];
 }
 
@@ -115,9 +118,19 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entries.push({
       item,
       location,
-      handlingTime: inventory.handlingTime(item, location, { kind: 'hand', side: 'right' }),
+      handlingTime: inventory.handlingTime(item, location, { kind: 'hand', side: dominantSide(inventory.character) }),
     });
   }
+  const workstations = [...inventory.entities.all]
+    .filter((entity) => furnitureInReach(player, entity))
+    .flatMap((entity) => {
+      const station = inventory.entities.defOf(entity).workstation;
+      return station ? [{ entity, ...station }] : [];
+    })
+    .sort(
+      (a, b) =>
+        furnitureDistance(player, a.entity) - furnitureDistance(player, b.entity) || a.entity.uid - b.entity.uid,
+    );
   const snapshot: ReachSnapshot = {
     player,
     origin: [position[0], position[1], position[2]],
@@ -125,7 +138,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entries,
     piles,
     furniture,
-    workstations: [],
+    workstations,
   };
   snapshots.set(player, {
     inventoryVersion: inventory.version,

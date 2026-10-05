@@ -70,11 +70,12 @@ try {
       `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
-  await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')), null, {
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
   });
-  const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
   await page.locator('#go').click();
+  await page.waitForFunction(() => Boolean(globalThis.firefoxUiTest && document.querySelector('#view')));
+  const initialTime = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.time);
   await page.waitForFunction(
     () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
     null,
@@ -127,6 +128,7 @@ try {
   let cursor = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
   const moveCursorTo = async (position) => {
     const movement = { x: position.x - cursor.x, y: position.y - cursor.y };
+    const beforeFrames = await page.evaluate(() => globalThis.firefoxUiFrames);
     await page.evaluate(dispatchMenuPointerMove, {
       canvasSelector: '#view',
       movementX: movement.x,
@@ -134,8 +136,13 @@ try {
       centerClient: true,
       alsoDispatchMouseMove: true,
     });
-    cursor = position;
-    await page.waitForTimeout(100);
+    cursor = await page.evaluate(() => {
+      const { input } = globalThis.firefoxUiTest;
+      return { x: input.cursorX, y: input.cursorY };
+    });
+    await page.waitForFunction((before) => globalThis.firefoxUiFrames >= before + 2, beforeFrames, {
+      timeout: 5000,
+    });
   };
   const clickGameElement = async (selector) => {
     const rect = await page.locator(selector).boundingBox();

@@ -31,10 +31,17 @@ export interface FirearmHandlingData {
   readonly rpm: number | undefined;
 }
 
-const firearmModelFor = (item: Item, registry: Registry): ModelDef | undefined => {
-  const id = defOf(registry, item.type).model;
+export const firearmModelForType = (type: string, registry: Registry): ModelDef | undefined => {
+  const id = defOf(registry, type).model;
   return id === undefined ? undefined : registry.models.get(id);
 };
+
+const firearmModelFor = (item: Item, registry: Registry): ModelDef | undefined =>
+  firearmModelForType(item.type, registry);
+
+/** The same calibre comparison used by firearm loading, shared with debug range stock discovery. */
+export const ammoMatchesCalibre = (type: string, calibre: string, registry: Registry): boolean =>
+  registry.items.get(type)?.ammo?.calibre === calibre;
 
 const exportedActionReason = (item: Item, registry: Registry, mode: 'fire' | 'hand'): string | undefined => {
   const model = firearmModelFor(item, registry);
@@ -227,8 +234,9 @@ export class FirearmMechanics {
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
     if (pump) {
-      const ammo = item.firearm?.roundType && defOf(this.inventory.registry, item.firearm.roundType).ammo;
-      if (!ammo || ammo.calibre !== data.calibre) {
+      const roundType = item.firearm?.roundType;
+      const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
+      if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
         return false;
       }
       const state = item.firearm!;
@@ -327,7 +335,7 @@ export class FirearmMechanics {
     const { calibre } = firearmHandlingFor(gun, this.inventory.registry);
     const [shell] = [...this.inventory.items()]
       .map(({ item }) => item)
-      .filter((item) => this.carried(item) && defOf(this.inventory.registry, item.type).ammo?.calibre === calibre)
+      .filter((item) => this.carried(item) && ammoMatchesCalibre(item.type, calibre, this.inventory.registry))
       .sort((a, b) => a.uid - b.uid);
     return shell ? this.load(shell, time) : 'No loose compatible shells are carried';
   }
@@ -360,7 +368,7 @@ export class FirearmMechanics {
     if (!(data.model.tube && data.model.anchors?.loading_port)) {
       return 'No exported loading port/tube';
     }
-    if (defOf(this.inventory.registry, ammo.type).ammo?.calibre !== data.calibre) {
+    if (!ammoMatchesCalibre(ammo.type, data.calibre, this.inventory.registry)) {
       return 'Wrong ammunition';
     }
     return (gun.firearm?.tube?.length ?? 0) >= data.model.tube.capacity ? 'Tube is full' : undefined;
@@ -542,13 +550,11 @@ export class FirearmMechanics {
   }
 
   private emission(item: Item, data: FirearmHandlingData, pose: FirearmPoseInput): Omit<PendingCase, 'seed'> {
-    let hold: 'both' | 'right' | 'left' = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
-    if (defOf(this.inventory.registry, item.type).twoHanded) {
-      hold = 'both';
-    }
+    const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
+    const twoHanded = Boolean(defOf(this.inventory.registry, item.type).twoHanded);
     const eye: Vec3 = pose.eye.map((value) => value * pose.blockSize) as Vec3;
     return {
-      ...heldEjectionPose({ model: data.model, hold, eye, yaw: pose.yaw, pitch: pose.pitch }),
+      ...heldEjectionPose({ model: data.model, side, twoHanded, eye, yaw: pose.yaw, pitch: pose.pitch }),
       feet: [...pose.feet],
     };
   }

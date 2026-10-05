@@ -6,13 +6,24 @@ import type { ItemDef, Registry } from './content.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
-/** Craft inputs/progress have exactly one owner: this ordinary item subtree. */
-export interface CraftWork<Node> {
-  recipe: string;
+/** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
+interface WorkProgress<Node> {
   elapsed: number;
   duration: number;
   components: Node[];
+  repairTargetUid?: number;
+  repairAmount?: number;
 }
+export type CraftWork<Node> =
+  | (WorkProgress<Node> & { kind: 'craft'; recipe: string })
+  | (WorkProgress<Node> & {
+      kind: 'disassembly';
+      source: string;
+      skillLevel: number;
+      toolLevels: Record<string, number>;
+      gather: number;
+      outputs: { item: string; count: number }[];
+    });
 
 /** Scalar and pocket fields are shared by live items and their saved tree. */
 export interface ItemFields<Node> {
@@ -74,6 +85,12 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
       : {
           work: {
             ...item.work,
+            ...(item.work.kind === 'disassembly'
+              ? {
+                  outputs: item.work.outputs.map((output) => ({ ...output })),
+                  toolLevels: { ...item.work.toolLevels },
+                }
+              : {}),
             components: item.work.components.map((component) => snapshotItem(component) as ItemState),
           },
         }),
@@ -110,6 +127,12 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   if (state.work) {
     item.work = {
       ...state.work,
+      ...(state.work.kind === 'disassembly'
+        ? {
+            outputs: state.work.outputs.map((output) => ({ ...output })),
+            toolLevels: { ...state.work.toolLevels },
+          }
+        : {}),
       components: state.work.components.map((component) => restoreItem(registry, component)),
     };
   }

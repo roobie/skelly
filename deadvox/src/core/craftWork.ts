@@ -1,7 +1,8 @@
 // Native craft effects and live admission. Item progress/inputs stay Inventory-owned.
-import type { CraftCharacter } from './character.ts';
+import { type Character, dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import { admissionRefusal } from './crafting.ts';
+import { planDisassembly, sameDisassemblyOutputs } from './disassembly.ts';
 import { type Inventory, validateWorkItem } from './inventory.ts';
 import type { Item } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
@@ -16,17 +17,51 @@ const inputsValid = (inventory: Inventory, item: Item): boolean => {
   }
 };
 
+const repairTargetRefusal = (inventory: Inventory, item: Item, reach: ReachSnapshot): string | undefined => {
+  const targetUid = item.work?.repairTargetUid;
+  if (targetUid === undefined) {
+    return undefined;
+  }
+  const target = inventory.itemByUid(targetUid);
+  const { work } = item;
+  if (work?.kind !== 'craft') {
+    return 'The repair target is missing';
+  }
+  const recipe = inventory.registry.recipes.get(work.recipe);
+  if (!(recipe && target) || target.uid === item.uid || target.type !== recipe.result.item || target.count !== 1) {
+    return 'The repair target is missing';
+  }
+  return reach.entries.some((entry) => entry.item === target) ? undefined : 'The repair target is out of reach';
+};
+
 export const craftActionHooks = (
   inventory: Inventory,
-  character: CraftCharacter,
+  character: Character,
   reach: () => ReachSnapshot,
   feet: () => Vec3,
 ): CraftActionHooks => ({
   admit: (plan) => {
-    const recipe = inventory.registry.recipes.get(plan.recipe);
-    return recipe ? admissionRefusal(recipe, reach(), character) : 'Unknown recipe';
+    const snapshot = reach();
+    if (plan.kind === 'craft') {
+      const recipe = inventory.registry.recipes.get(plan.recipe);
+      return recipe ? admissionRefusal(recipe, snapshot, character) : 'Unknown recipe';
+    }
+    const current = planDisassembly(plan.source, snapshot, character);
+    const sameTools =
+      current &&
+      Object.keys(current.toolLevels).length === Object.keys(plan.toolLevels).length &&
+      Object.entries(current.toolLevels).every(([quality, level]) => plan.toolLevels[quality] === level);
+    return current &&
+      current.source === plan.source &&
+      current.skillLevel === plan.skillLevel &&
+      current.duration === plan.duration &&
+      current.gather === plan.gather &&
+      sameTools &&
+      sameDisassemblyOutputs(current.outputs, plan.outputs)
+      ? undefined
+      : 'The item or its yield changed';
   },
-  begin: (plan) => inventory.beginWork(plan)?.uid,
+  begin: (plan, repair) => inventory.beginWork(plan, repair)?.uid,
   owns: (uid) => inventory.itemByUid(uid)?.work !== undefined,
   validate: (uid) => {
     const item = inventory.itemByUid(uid);
@@ -37,10 +72,16 @@ export const craftActionHooks = (
     if (!inputsValid(inventory, item)) {
       return 'Craft inputs changed';
     }
-    if (inventory.hands.right !== item || inventory.hands.left) {
+    if (inventory.hands[dominantSide(inventory.character)] !== item || inventory.hands[offSide(inventory.character)]) {
       return 'The work needs both hands';
     }
-    return admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character);
+    const repairRefusal = repairTargetRefusal(inventory, item, reach());
+    if (repairRefusal) {
+      return repairRefusal;
+    }
+    return work.kind === 'craft'
+      ? admissionRefusal(inventory.registry.recipes.get(work.recipe)!, reach(), character)
+      : undefined;
   },
   advance: (uid, seconds) => {
     const work = inventory.itemByUid(uid)!.work!;
@@ -50,8 +91,15 @@ export const craftActionHooks = (
   },
   finish: (uid) => {
     const item = inventory.itemByUid(uid);
-    if (item) {
+    const work = item?.work;
+    if (item && work) {
+      const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
       inventory.releaseWork(item, true, feet());
+      if (recipe) {
+        for (const skill of Object.keys(recipe.skills)) {
+          character.awardPractice(skill, recipe.time);
+        }
+      }
     }
   },
   cancel: (uid) => {

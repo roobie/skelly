@@ -1,4 +1,5 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -30,6 +31,8 @@ import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
+
+const COMPASS_DEBUG_LOADOUT = 'compass';
 
 const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
   const observedTick = result.observedTimerTickMs === null ? 'unknown' : `${result.observedTimerTickMs.toFixed(3)} ms`;
@@ -741,7 +744,7 @@ export const equipDebugStartLight = ({
   if (!(debugMode && newGame) || inventory.hands.left || inventory.hands.right) {
     return;
   }
-  inventory.add(inventory.create(DEBUG_START_LIGHT), { kind: 'hand', side: 'left' });
+  inventory.add(inventory.create(DEBUG_START_LIGHT), { kind: 'hand', side: offSide(inventory.character) });
 };
 
 export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHooks): DebugRuntime => {
@@ -758,10 +761,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     });
     if (
       hooks.newGame &&
-      new URLSearchParams(location.search).get('loadout') === 'compass' &&
-      !hooks.inventory.hands.right
+      new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
+      !hooks.inventory.hands[dominantSide(hooks.inventory.character)]
     ) {
-      hooks.inventory.add(hooks.inventory.create('compass'), { kind: 'hand', side: 'right' });
+      hooks.inventory.add(hooks.inventory.create('compass'), {
+        kind: 'hand',
+        side: dominantSide(hooks.inventory.character),
+      });
     }
   }
   const host = document.body;
