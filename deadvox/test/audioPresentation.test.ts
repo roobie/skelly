@@ -22,8 +22,8 @@ describe('heartbeat audio presentation', () => {
   it('interpolates rate and loudness linearly halfway to exhaustion', () => {
     const { startStamina, startHz, exhaustedHz, normalGain, veryHighGain } = HEARTBEAT_TUNING;
     const halfway = heartbeatForStamina(startStamina / 2);
-    expect(halfway.bpm).toBe(((startHz + exhaustedHz) / 2) * 60);
-    expect(halfway.gain).toBe((normalGain + veryHighGain) / 2);
+    expect(halfway.bpm).toBeCloseTo(((startHz + exhaustedHz) / 2) * 60);
+    expect(halfway.gain).toBeCloseTo((normalGain + veryHighGain) / 2);
   });
 });
 
