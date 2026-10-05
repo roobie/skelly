@@ -317,8 +317,9 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
   On stowing: "putting away the shotgun from being wielded also plays rummaging
   anim - i think it kinda fits". The longer-term direction is "over time, we'll
-  maybe add more specific anims."; shell-loading feedback is d53.
-  Approval does not pin `RUMMAGE_POSE` tuning: see
+  maybe add more specific anims." The shell-loading animation is in #248; BR
+  approved it on 2026-10-05: "approved". Approval does not pin `RUMMAGE_POSE`
+  tuning: see
   `../docs/deferred-assertions.md`.
   Following #213's merge (d50-3), compass handling must not introduce a second
   rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for

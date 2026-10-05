@@ -35,6 +35,20 @@ exists to expose that action, not to change aim or ammunition state. See
 `deadvox/src/render/firearmModel.ts`, `rackCant`. BR's acceptance of the look is
 not a reason to assert a particular angle.
 
+The dedicated shell feed makes insertion readable without giving rendering a
+second ammunition owner or clock. The visible round is a model clone, not an
+inventory item; the load job still owns consumption and cancellation. See
+`deadvox/src/render/shellLoadPose.ts`, `shellLoadPose`, and
+`deadvox/src/render/hands.ts`, `HeldItems`. The support hand follows the gun's
+occupied physical slot, not actor preference, so moving the gun does not move
+its authored port or reverse its geometry. Reprojecting from rest each frame
+lets cancellation and late model availability converge without replaying work.
+The path and apparent thumb push are presentation estimates for BR's look,
+not a reason to freeze pose coordinates or change handling duration. A wrist
+merely leaving its rest grip does not establish that insertion reaches the port;
+`deadvox/test/shellLoadPose.test.ts` samples the visible round against the authored
+target through the owner clock, keeping that contract independent of pose tuning.
+
 Cartridge-derived gameplay estimates are not measured wound ballistics. See
 `deadvox/src/core/pellets.ts`, `pelletShot`. Preserve gameplay properties while
 leaving tuning adjustable under the deferred-assertion policy.
