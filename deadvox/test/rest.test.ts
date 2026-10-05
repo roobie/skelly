@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { defaultClock, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { NEED_RATES, REST, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
@@ -8,8 +9,10 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type SimOptions, Simulation } from '../src/core/sim.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
+import { World } from '../src/core/world.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
 const BASE = 'src/content/base';
@@ -215,6 +218,54 @@ describe('RestController.toggle (manual stop)', () => {
       rest.frame(1 / 60);
     }
     expect(sim.compression.c).toBe(1);
+  });
+});
+
+describe('Session rest movement', () => {
+  it('stops an active rest when the player requests movement', () => {
+    const entities = new BlockEntities(registry);
+    const restable = [...registry.furniture.values()].find((def) => def.rest);
+    if (!restable) {
+      throw new Error('Rest movement fixture has no restable furniture');
+    }
+    const anchor = entities.add({ type: restable.id, pos: [2, 1, 0], size: restable.size, facing: 'n' });
+    if (!anchor) {
+      throw new Error('Could not place the rest movement fixture');
+    }
+    const intent = { ...IDLE, forward: 1 };
+    const world = new World();
+    const session = createSession({
+      registry,
+      world,
+      isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      entities,
+      scale: SCALE,
+      seed: 1,
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => true,
+        intent: () => intent,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in rest movement fixture');
+      },
+    });
+
+    expect(session.rest.start('rest', anchor.uid)).toBeUndefined();
+    expect(session.rest.action?.furnitureUid).toBe(anchor.uid);
+    session.frame(1 / 60);
+    expect(session.rest.action).toBeUndefined();
+    expect(session.sim.compression.active).toBe(false);
+    expect(session.sim.compression.c).toBe(1);
   });
 });
 

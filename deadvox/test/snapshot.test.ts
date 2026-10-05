@@ -108,14 +108,21 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>, restFixtur
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const spawn: Vec3 = [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
-  if (restFixture && !snapshot) {
-    const bed = registry.furniture.get('bed');
-    if (!bed) {
-      throw new Error('Snapshot fixture has no bed definition');
+  if (restFixture) {
+    const sleepable = [...registry.furniture.values()].find((def) => def.rest?.sleep);
+    if (!sleepable) {
+      throw new Error('Snapshot fixture has no sleepable furniture definition');
     }
-    const placedBed = sharedEntities.add({ type: 'bed', pos: restFixturePos, size: bed.size, facing: 'n' });
-    if (!placedBed) {
-      throw new Error('Could not place the snapshot rest fixture');
+    if (!snapshot) {
+      const placed = sharedEntities.add({
+        type: sleepable.id,
+        pos: restFixturePos,
+        size: sleepable.size,
+        facing: 'n',
+      });
+      if (!placed) {
+        throw new Error('Could not place the snapshot rest fixture');
+      }
     }
   }
   const session = createSession({
@@ -198,11 +205,12 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>, restFixtur
   const restAnchor = restFixture
     ? [...entities.all].find(
         (entity) =>
-          entity.type === 'bed' && entity.pos.every((coordinate, axis) => coordinate === restFixturePos[axis]),
+          entity.pos.every((coordinate, axis) => coordinate === restFixturePos[axis]) &&
+          entities.defOf(entity).rest?.sleep,
       )
-    : [...entities.all].find((entity) => entities.defOf(entity).rest?.sleep);
+    : undefined;
   const restAnchorUid = restAnchor?.uid;
-  if (restAnchorUid === undefined) {
+  if (restFixture && restAnchorUid === undefined) {
     throw new Error('Snapshot fixture has no sleepable furniture');
   }
   return {
@@ -230,7 +238,12 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>, restFixtur
 
 const capture = (runtime: Runtime) =>
   runtime.session.snapshot({ worldId: `world-${seed}`, characterId: 'character-1' });
-const startRest = (runtime: Runtime, kind: 'rest' | 'sleep') => runtime.rest.start(kind, runtime.restAnchorUid);
+const startRest = (runtime: Runtime, kind: 'rest' | 'sleep') => {
+  if (runtime.restAnchorUid === undefined) {
+    throw new Error('Rest fixture is not enabled');
+  }
+  return runtime.rest.start(kind, runtime.restAnchorUid);
+};
 
 // Test-only inspection reads the live runtime directly; it deliberately does not call a save serializer.
 const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
