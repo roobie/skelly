@@ -15,7 +15,13 @@ import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
-import { decodeSave, encodeSave, type SaveContentKind, type SaveVersionComponents } from '../src/core/saveFormat.ts';
+import {
+  decodeSave,
+  encodeSave,
+  SAVE_SCHEMA_VERSION,
+  type SaveContentKind,
+  type SaveVersionComponents,
+} from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState, type SaveSnapshot, type snapshotSession } from '../src/core/saveState.ts';
 import { chunksFor, makeScale } from '../src/core/scale.ts';
 import { Simulation } from '../src/core/sim.ts';
@@ -525,7 +531,7 @@ describe('snapshot state components', () => {
     expect(loaded.sim.actions.resume()).toBeUndefined();
   });
 
-  it('ends stopped reading cleanly when its book no longer exists at save time', async () => {
+  it('omits a stale stopped reading from the save without ending the live job before its next tick', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as Vec3;
     const otherPile: Vec3 = [feet[0] + 1, feet[1], feet[2]];
@@ -541,8 +547,12 @@ describe('snapshot state components', () => {
     runtime.sim.actions.stop();
     expect(runtime.inventory.consume(book)).toBe(true);
 
+    expect(runtime.sim.actions.snapshotState().job).toBeNull();
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'reading', stopped: true, bookUid: book.uid });
     const snapshot = capture(runtime);
     expect(snapshot.character.longAction.job).toBeNull();
+    runtime.sim.scheduler.advance(1);
+    expect(runtime.sim.actions.job).toBeUndefined();
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     expect(createRuntime(decoded.snapshot).sim.actions.job).toBeUndefined();
   });
@@ -1042,7 +1052,7 @@ describe('hamlet save/load continuation', () => {
 
 const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion: 11,
+  schemaVersion: SAVE_SCHEMA_VERSION,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

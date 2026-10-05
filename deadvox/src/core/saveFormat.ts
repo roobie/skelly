@@ -130,7 +130,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-const SCHEMA_VERSION = 11;
+export const SAVE_SCHEMA_VERSION = 11;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -146,7 +146,7 @@ function defaultVersion(): SaveVersionComponents {
   try {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
-      schemaVersion: SCHEMA_VERSION,
+      schemaVersion: SAVE_SCHEMA_VERSION,
       generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
@@ -629,7 +629,7 @@ function validateVersion(version: SaveVersionComponents): void {
   if (!HASH.test(version.simulationHash)) {
     throw new Error('Invalid simulation source hash');
   }
-  if (version.schemaVersion !== SCHEMA_VERSION) {
+  if (version.schemaVersion !== SAVE_SCHEMA_VERSION) {
     throw new Error(`Unsupported save schema version ${version.schemaVersion}`);
   }
   const packIds = new Set<string>();
@@ -1252,7 +1252,7 @@ export async function encodeSave(snapshot: SaveSnapshot, options: EncodeSaveOpti
   };
   const envelope: Envelope = {
     magic: MAGIC,
-    schemaVersion: SCHEMA_VERSION,
+    schemaVersion: SAVE_SCHEMA_VERSION,
     versionIdentity: identity,
     generation,
     payloadByteLength: payloadBytes.byteLength,
@@ -1305,8 +1305,8 @@ export async function decodeSave(input: Uint8Array | ArrayBuffer, options: Decod
   });
   validateSchema(headerSchema, envelope, 'envelope', true);
   const parsed = envelope as unknown as Envelope;
-  if (parsed.schemaVersion !== SCHEMA_VERSION) {
-    throw new Error(`Save schema mismatch: saved ${parsed.schemaVersion}, running ${SCHEMA_VERSION}`);
+  if (parsed.schemaVersion !== SAVE_SCHEMA_VERSION) {
+    throw new Error(`Save schema mismatch: saved ${parsed.schemaVersion}, running ${SAVE_SCHEMA_VERSION}`);
   }
   validateVersion(parsed.versionIdentity.components);
   if (

@@ -121,13 +121,13 @@ export class LongActions {
     return this.current && !this.current.stopped && this.sim.compression.active ? this.rest?.rate : undefined;
   }
   snapshotState(): Readonly<LongActionState> {
-    if (
+    const staleStoppedReading =
       this.current?.jobType === 'reading' &&
       this.current.stopped &&
-      this.reading &&
-      !this.reading.owns(this.current.bookUid)
-    ) {
-      this.current = undefined;
+      this.reading !== undefined &&
+      !this.reading.owns(this.current.bookUid);
+    if (staleStoppedReading) {
+      return freezeSnapshot({ job: null });
     }
     return freezeSnapshot({ job: this.current ? structuredClone(this.current) : null });
   }
@@ -353,7 +353,15 @@ export class LongActions {
   }
   private advance(time: number): void {
     const job = this.current;
-    if (!job || job.stopped || !this.sim.compression.active) {
+    if (!job) {
+      return;
+    }
+    if (job.jobType === 'reading' && job.stopped && this.reading && !this.reading.owns(job.bookUid)) {
+      this.current = undefined;
+      this.sim.compression.stop();
+      return;
+    }
+    if (job.stopped || !this.sim.compression.active) {
       return;
     }
     const reason = this.validateOwner(job);

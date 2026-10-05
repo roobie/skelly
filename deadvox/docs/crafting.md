@@ -77,9 +77,9 @@ For a stopped reading job, progress remains with the job while its book exists i
 inventory, including when the book is in a pile. This preserves interrupted work
 without letting it progress or resume until the same book is held again. A held
 book's primary activation shares the item-use path, and activating the same
-stopped book resumes its progress. If the book is gone, `LongActions.snapshotState`
-drops the stopped job; `LongActions.restoreState` checks ownership without
-requiring a hand.
+stopped book resumes its progress. If the book is gone, the save copy omits the
+stopped job, and the next tick ends it; `LongActions.restoreState` checks ownership
+without requiring a hand.
 
 Snapshots and the canonical save payload persist `character.progression`.
 Restoration preserves the saved levels/knowledge instead of reseeding them and

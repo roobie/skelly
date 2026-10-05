@@ -529,10 +529,14 @@ try {
   const bookUid = await page.evaluate(() => {
     const { inventory, session } = globalThis.primaryActionTest;
     session.sim.ignoreUnsafe = true; // Match the debug time-skip admission for this hand-action probe.
-    Reflect.deleteProperty(inventory.hands, 'right');
+    const held = inventory.hands.right;
+    if (held && !inventory.consume(held, held.count)) {
+      throw new Error('Could not clear the right hand');
+    }
     const book = inventory.create('field_manual');
-    inventory.hands.right = book;
-    inventory.version += 1;
+    if (!inventory.add(book, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the book');
+    }
     return book.uid;
   });
   await page.mouse.click(640, 450);
