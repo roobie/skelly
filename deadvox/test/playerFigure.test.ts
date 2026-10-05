@@ -61,33 +61,35 @@ const hasVisibleFootCorner = (feet: InstancedMesh[], torso: InstancedMesh, eye: 
     });
   });
 
+const fallbackLightHands = [...registry.items.values()]
+  .filter((definition) => definition.light && !definition.model)
+  .flatMap((definition) => (['right', 'left'] as const).map((side) => ({ id: definition.id, definition, side })));
+
 describe('held light presentation', () => {
-  it.each(['right', 'left'] as const)('shows a burning fallback light in the %s hand', (side) => {
-    for (const type of ['candle', 'torch', 'glowstick']) {
-      const inventory = new Inventory(registry);
-      const light = inventory.create(type);
-      expect(toggleLight(registry, light, 0)).toBeUndefined();
-      expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
-      const held = new HeldItems(inventory, undefined, palette);
-      held.update(new PerspectiveCamera());
-      const { shown } = held as unknown as { shown: Map<number, Group> };
-      let visibleBody = false;
-      let flame = false;
-      shown.get(light.uid)?.traverse((object) => {
-        if (!(object instanceof Mesh)) {
-          return;
-        }
-        visibleBody ||=
-          object.name === 'held-light-body' &&
-          object.material instanceof MeshBasicMaterial &&
-          !object.material.toneMapped &&
-          !object.material.depthTest;
-        flame ||= object.name === 'held-light-flame' && object.material instanceof MeshBasicMaterial;
-      });
-      expect(visibleBody, `${type} in ${side} hand`).toBe(true);
-      expect(flame, `${type} in ${side} hand`).toBe(type !== 'glowstick');
-      held.dispose();
-    }
+  it.each(fallbackLightHands)('$id in the $side hand draws by its light definition', ({ id, definition, side }) => {
+    const inventory = new Inventory(registry);
+    const light = inventory.create(id);
+    expect(toggleLight(registry, light, 0)).toBeUndefined();
+    expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
+    const held = new HeldItems(inventory, undefined, palette);
+    held.update(new PerspectiveCamera());
+    const { shown } = held as unknown as { shown: Map<number, Group> };
+    let visibleBody = false;
+    let flame = false;
+    shown.get(light.uid)?.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      visibleBody ||=
+        object.name === 'held-light-body' &&
+        object.visible &&
+        object.material instanceof MeshBasicMaterial &&
+        !object.material.toneMapped;
+      flame ||= object.name === 'held-light-flame' && object.visible && object.material instanceof MeshBasicMaterial;
+    });
+    expect(visibleBody, `${id} in ${side} hand`).toBe(true);
+    expect(flame, `${id} in ${side} hand`).toBe(definition.light!.burning?.ignition === 'firestarter');
+    held.dispose();
   });
 });
 

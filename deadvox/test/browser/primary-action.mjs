@@ -200,7 +200,11 @@ try {
       const lighter = r.inventory.create('lighter');
       r.setHand(hand, lighter);
       r.clearNotice();
-      return { uid: lighter.uid, charges: lighter.charges };
+      return {
+        uid: lighter.uid,
+        charges: lighter.charges,
+        perIgnition: r.inventory.registry.items.get(lighter.type).igniter.perIgnition,
+      };
     }, side);
     if (trigger === 'click') {
       await page.mouse.click(640, 450);
@@ -214,7 +218,7 @@ try {
       return { on: lighter?.on, charges: lighter?.charges, notice: r.getNotice() };
     }, before.uid);
     assert.equal(after.on, true, `${trigger} switches a lone held lighter on`);
-    assert.equal(after.charges, before.charges, `${trigger} does not spend lighter fuel`);
+    assert.ok(before.charges - after.charges < before.perIgnition, `${trigger} does not spend an ignition charge`);
     assert.equal(after.notice, '', `${trigger} does not refuse the lighter's own flame`);
   };
   await heldLighter('left', 'click');

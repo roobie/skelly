@@ -146,7 +146,7 @@ describe('held-item hand action', () => {
   });
 
   it.each(['right', 'left'] as const)(
-    'activating a lone light-bearing igniter switches its own light ($hand)',
+    'Survival.use on a lone self-fuelled igniter switches its own light ($hand)',
     (hand) => {
       const inventory = hold(
         hand === 'right' ? 'held_igniter' : undefined,

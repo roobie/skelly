@@ -606,14 +606,13 @@ export class HeldItems {
     let material = def.light ? this.lightMaterials.get(materialKey) : undefined;
     if (def.light && !material) {
       material = item.on
-        ? new MeshBasicMaterial({ color: def.light.color, toneMapped: false, depthTest: false, depthWrite: false })
+        ? new MeshBasicMaterial({ color: def.light.color, toneMapped: false })
         : new MeshLambertMaterial({ color: def.light.color });
       this.lightMaterials.set(materialKey, material);
     }
     const box = new Mesh(this.geometry, material ?? this.material);
     if (item.on && def.light) {
       box.name = 'held-light-body';
-      box.renderOrder = 1;
     }
     box.scale.set(short, short * 0.6, long);
     box.position.z = -long / 2 + short / 2; // the hand holds its near end
@@ -627,13 +626,10 @@ export class HeldItems {
         new MeshBasicMaterial({
           color: def.light.color,
           toneMapped: false,
-          depthTest: false,
-          depthWrite: false,
         });
       this.flameMaterials.set(def.light.color, flameMaterial);
       const flame = new Mesh(this.flameGeometry, flameMaterial);
       flame.name = 'held-light-flame';
-      flame.renderOrder = 2;
       flame.scale.set(short * 0.5, short * 1.5, short * 0.5);
       flame.position.set(0, short * 1.05, lens.position.z);
       shape.add(flame);

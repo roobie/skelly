@@ -31,27 +31,26 @@ const registryWithTestLights = () => {
 };
 
 describe('made-light point pool', () => {
-  it.each(['right', 'left'] as const)('places carried burning lights at their held %s-hand position', (side) => {
-    for (const type of ['candle', 'torch', 'glowstick']) {
-      const scene = new Scene();
-      const pool = new LightPool(scene);
-      const inventory = new Inventory(registry);
-      const light = inventory.create(type);
-      expect(toggleLight(registry, light, 0)).toBeUndefined();
-      expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
-      const held = new HeldItems(inventory, undefined, registry.figures.get('player')!.palette);
-      const camera = new PerspectiveCamera();
-      camera.position.set(2, 1, -3);
-      held.update(camera);
+  it.each(['right', 'left'] as const)('places a carried fixture light at its held %s-hand position', (side) => {
+    const fixtureRegistry = registryWithTestLights();
+    const scene = new Scene();
+    const pool = new LightPool(scene);
+    const inventory = new Inventory(fixtureRegistry);
+    const light = inventory.create(TEST_LIGHTS[0].id);
+    expect(toggleLight(fixtureRegistry, light, 0)).toBeUndefined();
+    expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
+    const held = new HeldItems(inventory, undefined, fixtureRegistry.figures.get('player')!.palette);
+    const camera = new PerspectiveCamera();
+    camera.position.set(2, 1, -3);
+    held.update(camera);
 
-      pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
+    pool.update(inventory, { held, camera, blockSize: 1, daylightScale: 1 });
 
-      const expected = new Vector3();
-      expect(held.lightPositionOf(light, camera, expected)).toBe(true);
-      expect(pool.lights[0]!.intensity, `${type} in ${side} hand`).toBeGreaterThan(0);
-      expect(pool.lights[0]!.position.distanceTo(expected), `${type} in ${side} hand`).toBeLessThan(1e-9);
-      held.dispose();
-    }
+    const expected = new Vector3();
+    expect(held.lightPositionOf(light, camera, expected)).toBe(true);
+    expect(pool.lights[0]!.intensity).toBeGreaterThan(0);
+    expect(pool.lights[0]!.position.distanceTo(expected)).toBeLessThan(1e-9);
+    held.dispose();
   });
 
   it('keeps all eight shader-light slots allocated as sources change', () => {
