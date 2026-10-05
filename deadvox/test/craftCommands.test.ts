@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Character, dominantSide, offSide } from '../src/core/character.ts';
+import { Character, dominantSide, offSide, practiceForNextLevel } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
@@ -46,7 +46,7 @@ const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 describe('live craft commands', () => {
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
-    r.character.skills.crafting = 1;
+    r.character.awardPractice('crafting', practiceForNextLevel(0));
     const target = r.inventory.create('crowbar', 1, 0.5);
     for (const item of [
       target,

@@ -205,8 +205,10 @@ roles follow the actor. The physical slots and a restored fist sequence remain
 physical; otherwise Continue would silently move equipment or change the next
 attack. See `src/core/character.ts`, `dominantSide` and `offSide`;
 `src/game/input.ts`, `KEY_BINDINGS`; and `src/game/primaryAction.ts`,
-`selectPrimaryAction`. The selector refuses unsupported items and reserved
-support rather than substituting a fist or the other hand's action.
+`selectPrimaryAction`. Mouse 5 remains the explicit off-hand instant use;
+Mouse 4 stays unbound because both side buttons can navigate browser history.
+The selector refuses unsupported items and reserved support rather than
+substituting a fist or the other hand's action.
 
 Creation must precede gameplay construction, not mutate an already-running
 actor. See `src/ui/saveController.ts`, `SaveController.setNewWorldLauncher`,
