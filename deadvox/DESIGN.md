@@ -338,7 +338,12 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   its handling time; using it is a separate action. A two-handed item takes both
   hands.
 - What you hold shows in first person, what you drop lies on the floor as a
-  pile, and furniture holds what its grid shows.
+  pile, and furniture holds what its grid shows. For #252, a burning carried
+  light needs its world point light and a self-lit held presentation: a visible
+  flame for firestarter lights and a self-lit body. `HeldItems.render` draws the
+  hands in a separate scene, so the world light cannot illuminate that model. See
+  `src/render/hands.ts`, `HeldItems.shape`,
+  and `src/render/lightPool.ts`, `LightPool.update`.
 - **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
   with the thing you're holding." Activation follows the character's dominant
   and off-hand roles, not a fixed physical side. A held item must never turn

@@ -119,9 +119,11 @@ describe('made light burn state', () => {
     const candle = held.hold('candle');
     const matches = held.hold('matches', 'left');
     const heldCharge = matches.charges!;
+    const { igniter } = registry.items.get(matches.type)!;
+    const { perIgnition } = igniter!;
     expect(held.survival.use(candle)).toBeUndefined();
     expect(candle.on).toBe(true);
-    expect(matches.charges).toBe(heldCharge - 1);
+    expect(matches.charges).toBe(heldCharge - perIgnition);
 
     const pocketed = setup();
     const pocketCandle = pocketed.hold('candle');

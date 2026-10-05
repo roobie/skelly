@@ -30,6 +30,7 @@ const observationPlugin = {
       `
   const proof = {
     input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions,
+    selectPrimaryAction, ignitionTargetForHand,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
     clearNotice: () => showNotice(''),
@@ -46,6 +47,22 @@ const observationPlugin = {
       const from = inventory.locate(item);
       const result = from ? inventory.move(item, { kind: 'hand', side }) : inventory.add(item, { kind: 'hand', side });
       if (from ? !result.ok : !result) throw new Error('Could not place fixture hand');
+    },
+    placePocketed: (item) => {
+      const definitions = inventory.registry.items;
+      const { size } = definitions.get(item.type);
+      const fits = (grid) =>
+        (grid[0] >= size[0] && grid[1] >= size[1]) || (grid[0] >= size[1] && grid[1] >= size[0]);
+      for (const { item: container, location } of inventory.items()) {
+        if (location.kind !== 'worn' || !container.pockets) continue;
+        const definition = definitions.get(container.type);
+        for (let pocket = 0; pocket < definition.container.pockets.length; pocket += 1) {
+          if (fits(definition.container.pockets[pocket].grid)) {
+            if (inventory.add(item, { kind: 'pocket', owner: container, pocket })) return;
+          }
+        }
+      }
+      throw new Error('No worn pocket fits ' + item.type);
     },
   };
   Object.assign(globalThis, { primaryActionTest: proof });
@@ -175,6 +192,119 @@ try {
     gestures: [{ trusted: true, actorExists: false }],
     creationHidden: true,
   });
+  const heldLighter = async (side, trigger) => {
+    const before = await page.evaluate((hand) => {
+      const r = globalThis.primaryActionTest;
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const lighter = r.inventory.create('lighter');
+      r.setHand(hand, lighter);
+      r.clearNotice();
+      return { uid: lighter.uid, charges: lighter.charges };
+    }, side);
+    if (trigger === 'click') {
+      await page.mouse.click(640, 450);
+    } else {
+      await page.keyboard.press('Equal');
+    }
+    await page.waitForFunction((uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true, before.uid);
+    const after = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const lighter = r.inventory.itemByUid(uid);
+      return { on: lighter?.on, charges: lighter?.charges, notice: r.getNotice() };
+    }, before.uid);
+    assert.equal(after.on, true, `${trigger} switches a lone held lighter on`);
+    assert.equal(after.charges, before.charges, `${trigger} does not spend lighter fuel`);
+    assert.equal(after.notice, '', `${trigger} does not refuse the lighter's own flame`);
+  };
+  await heldLighter('left', 'click');
+  await heldLighter('right', 'Equal');
+
+  const ignition = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const matches = r.inventory.create('matches');
+    const candle = r.inventory.create('candle');
+    r.setHand(r.dominant, matches);
+    r.setHand(r.off, candle);
+    const action = r.selectPrimaryAction(r.inventory, r.dominant);
+    const target = action.kind === 'ignite' ? r.ignitionTargetForHand(r.inventory, action.hand) : undefined;
+    return {
+      matchesUid: matches.uid,
+      candleUid: candle.uid,
+      charges: matches.charges,
+      perIgnition: r.inventory.registry.items.get(matches.type).igniter.perIgnition,
+      selected: action.kind,
+      targetUid: target?.uid,
+    };
+  });
+  assert.equal(ignition.selected, 'ignite');
+  assert.equal(ignition.targetUid, ignition.candleUid);
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(
+    (uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true,
+    ignition.candleUid,
+  );
+  const lit = await page.evaluate(({ matchesUid, candleUid }) => {
+    const r = globalThis.primaryActionTest;
+    const matches = r.inventory.itemByUid(matchesUid);
+    const candle = r.inventory.itemByUid(candleUid);
+    return { on: candle?.on, litAt: candle?.litAt, charges: matches?.charges, notice: r.getNotice() };
+  }, ignition);
+  assert.equal(lit.on, true, 'primary action lights the candle held opposite matches');
+  assert.ok(lit.litAt > 0, 'the candle records its ignition time');
+  assert.equal(lit.charges, ignition.charges - ignition.perIgnition, 'one declared ignition charge is spent');
+  assert.equal(lit.notice, '', 'successful ignition does not refuse');
+
+  const heldChecks = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const candle = r.inventory.create('candle');
+    const matches = r.inventory.create('matches');
+    r.setHand(r.dominant, candle);
+    r.placePocketed(matches);
+    const pocketAction = r.selectPrimaryAction(r.inventory, r.dominant);
+    const pocketBefore = matches.charges;
+    r.clearNotice();
+    return { candleUid: candle.uid, matchesUid: matches.uid, pocketBefore, selected: pocketAction.kind };
+  });
+  assert.equal(heldChecks.selected, 'light');
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(() => Boolean(globalThis.primaryActionTest.getNotice()));
+  const pocketRefusal = await page.evaluate(({ candleUid, matchesUid }) => {
+    const r = globalThis.primaryActionTest;
+    return {
+      candleOn: r.inventory.itemByUid(candleUid)?.on,
+      charges: r.inventory.itemByUid(matchesUid)?.charges,
+      notice: r.getNotice(),
+    };
+  }, heldChecks);
+  assert.notEqual(pocketRefusal.candleOn, true, 'pocketed matches cannot ignite the held candle');
+  assert.equal(pocketRefusal.charges, heldChecks.pocketBefore, 'refusal spends no matches');
+  assert.notEqual(pocketRefusal.notice, '', 'the pocketed firestarter refusal is reported');
+
+  const pumpState = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const definition = [...r.inventory.registry.items.values()].find((candidate) => candidate.firearm?.pump);
+    if (!definition) {
+      throw new Error('No pump shotgun capability for quickbar check');
+    }
+    r.clearHand(r.dominant);
+    const gun = r.inventory.create(definition.id);
+    if (!r.inventory.add(gun, { kind: 'pile', pos: r.feet() })) {
+      throw new Error('Could not place pump shotgun fixture');
+    }
+    const before = structuredClone(gun.firearm);
+    r.clearNotice();
+    r.session.quickbar.assign(0, gun);
+    r.quickbarActions.hold(gun);
+    return { pump: definition.firearm.pump, before, after: structuredClone(gun.firearm), notice: r.getNotice() };
+  });
+  assert.equal(pumpState.pump, true);
+  assert.deepEqual(pumpState.after, pumpState.before, 'quickbar hold does not rack or otherwise mutate a pump shotgun');
+  assert.notEqual(pumpState.notice, '', 'quickbar firearm use is refused');
 
   const nextFrame = async () => {
     const frame = await page.evaluate(() => globalThis.primaryActionTest.frames);

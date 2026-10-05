@@ -26,6 +26,7 @@ const capabilities = [
     igniter: { capacity: 2, perIgnition: 1 },
     light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, fuelPerHour: 1 },
   },
+  { id: 'held_matches', kind: 'ignite', igniter: { capacity: 2, perIgnition: 1 } },
   {
     id: 'held_candle',
     kind: 'light',
@@ -124,7 +125,7 @@ describe('held-item hand action', () => {
   it.each([
     { hand: 'right' as const, other: 'left' as const },
     { hand: 'left' as const, other: 'right' as const },
-  ])('activating a held igniter lights the other hand once and refuses without a target ($hand)', ({ hand, other }) => {
+  ])('activating a held igniter lights the other hand once ($hand)', ({ hand, other }) => {
     const inventory = hold(
       hand === 'right' ? 'held_igniter' : 'held_candle',
       hand === 'left' ? 'held_igniter' : 'held_candle',
@@ -142,18 +143,41 @@ describe('held-item hand action', () => {
     expect(survival.use(target ?? action.item)).toBeUndefined();
     expect(candle.on).toBe(true);
     expect(igniter.charges).toBe(1);
+  });
 
-    const alone = hold(hand === 'right' ? 'held_igniter' : undefined, hand === 'left' ? 'held_igniter' : undefined);
-    const loneIgniter = alone.hands[hand]!;
-    const aloneAction = selectPrimaryAction(alone, hand);
-    expect(aloneAction.kind).toBe('ignite');
-    if (aloneAction.kind !== 'ignite') {
-      throw new Error('Fixture igniter did not select ignite');
+  it.each(['right', 'left'] as const)(
+    'activating a lone light-bearing igniter switches its own light ($hand)',
+    (hand) => {
+      const inventory = hold(
+        hand === 'right' ? 'held_igniter' : undefined,
+        hand === 'left' ? 'held_igniter' : undefined,
+      );
+      const loneIgniter = inventory.hands[hand]!;
+      const action = selectPrimaryAction(inventory, hand);
+      expect(action.kind).toBe('ignite');
+      if (action.kind !== 'ignite') {
+        throw new Error('Fixture igniter did not select ignite');
+      }
+      expect(ignitionTargetForHand(inventory, hand)).toBeUndefined();
+      expect(survivalFor(inventory).use(loneIgniter)).toBeUndefined();
+      expect(loneIgniter.on).toBe(true);
+    },
+  );
+
+  it.each(['right', 'left'] as const)('refuses a lone light-less igniter without spending charge ($hand)', (hand) => {
+    const inventory = hold(hand === 'right' ? 'held_matches' : undefined, hand === 'left' ? 'held_matches' : undefined);
+    const loneIgniter = inventory.hands[hand]!;
+    const action = selectPrimaryAction(inventory, hand);
+    expect(action.kind).toBe('ignite');
+    if (action.kind !== 'ignite') {
+      throw new Error('Fixture matches did not select ignite');
     }
-    expect(ignitionTargetForHand(alone, hand)).toBeUndefined();
+    expect(ignitionTargetForHand(inventory, hand)).toBeUndefined();
     expect(primaryActionHint(registry, loneIgniter).trim()).not.toBe('');
+    const before = loneIgniter.charges;
+    expect(survivalFor(inventory).use(loneIgniter)).toEqual(expect.any(String));
     expect(loneIgniter.on).not.toBe(true);
-    expect(loneIgniter.charges).toBe(2);
+    expect(loneIgniter.charges).toBe(before);
   });
 
   it('a two-handed item in the off slot reserves the empty dominant hand rather than punching or redirecting', () => {

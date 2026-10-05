@@ -103,11 +103,13 @@ describe('quickbar tap and hold actions', () => {
     expect(inventory.add(candle, { kind: 'hand', side: 'right' })).toBe(true);
     expect(inventory.add(matches, { kind: 'hand', side: 'left' })).toBe(true);
     const chargeBefore = matches.charges!;
+    const { igniter } = registry.items.get(matches.type)!;
+    const { perIgnition } = igniter!;
 
     actions.hold(candle);
 
     expect(candle.on).toBe(true);
-    expect(matches.charges).toBe(chargeBefore - 1);
+    expect(matches.charges).toBe(chargeBefore - perIgnition);
   });
 
   it('uses pocket food in one queued job while the held weapon stays in place', () => {
