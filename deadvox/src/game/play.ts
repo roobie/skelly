@@ -30,7 +30,13 @@ import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
 import { quickbarKey, renderQuickbar } from '../ui/hud.ts';
-import { hudVisibility, readHudOptions, renderHudOptions, writeHudOptions } from '../ui/hudOptions.ts';
+import {
+  type HudOptionsState,
+  hudVisibility,
+  readHudOptions,
+  renderHudOptions,
+  writeHudOptions,
+} from '../ui/hudOptions.ts';
 import { InventoryScreen } from '../ui/inventoryScreen.ts';
 import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
@@ -1168,7 +1174,7 @@ export const startPlay = (
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });
   const needsText = (): string => playNeedsText(statusView());
-  const hudText = (looking: string): string =>
+  const hudText = (looking: string, visible: Readonly<HudOptionsState>): string =>
     playHudText(
       {
         ...statusView(),
@@ -1182,10 +1188,9 @@ export const startPlay = (
         pending: streamer.pending,
         looking,
       },
-      hudVisibility(hudOptions),
+      visible,
     );
-  const promptText = (now: number): string => {
-    const visible = hudVisibility(hudOptions);
+  const promptText = (now: number, visible: Readonly<HudOptionsState>): string => {
     const entity = visible.interaction && input.locked && !debugTools?.buildOn ? lookedAt() : undefined;
     return playPromptText(
       {
@@ -1336,6 +1341,7 @@ export const startPlay = (
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
+    const visible = hudVisibility(hudOptions);
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
@@ -1388,19 +1394,19 @@ export const startPlay = (
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {
-        hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? ''),
-        crosshairVisible: hudVisibility(hudOptions).crosshair,
-        prompt: promptText(now),
+        hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
+        crosshairVisible: visible.crosshair,
+        prompt: promptText(now, visible),
       },
     );
     document.body.classList.toggle('resting', rest.action !== undefined);
-    renderRest(restBox, rest.action, sim);
+    renderRest(restBox, rest.action, sim, visible.messages);
     screen.update();
-    craftPanel.update(screen.isOpen && !sim.dead);
+    craftPanel.update(screen.isOpen && !sim.dead, visible.messages);
     renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
-    quickbarBox.hidden = (debugTools?.buildOn ?? false) || !hudVisibility(hudOptions).quickbar;
-    renderPlayHandling(handlingBox, queue, !screen.isOpen && hudVisibility(hudOptions).handling);
+    quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
+    renderPlayHandling(handlingBox, queue, !screen.isOpen && visible.handling);
     view.prepareLighting(sky);
     updateHeldItems(dt);
     view.updateShadows(hour, sky);
