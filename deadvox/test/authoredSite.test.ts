@@ -28,10 +28,45 @@ const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')
   .layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
-const baseLayoutIds = [...buildRegistry(base).registry.layouts.keys()];
+const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);
+const validationLayout = (id: string): SiteLayoutDef => ({
+  id,
+  bounds: { x0: 0, z0: 0, x1: 10, z1: 10 },
+  ground: 0,
+  terrain: [],
+  buildings: [],
+  player: { position: [5, 0.5, 5], bearing: 0 },
+  shamblers: [],
+  woodlands: [],
+  tracks: [],
+});
+const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
+const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
+const layoutValidationBase = [
+  {
+    source: 'layout-validation-support.json',
+    data: {
+      templates: [...layoutTemplateIds].map((id) => {
+        const [width, height, depth] = registry.templates.get(id)!.size;
+        return {
+          id,
+          size: [width, height, depth],
+          palette: { '.': 'air' },
+          layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => '.'.repeat(width))),
+        };
+      }),
+      zombies: [...layoutZombieIds].map((id) => {
+        const zombie = structuredClone(registry.zombies.get(id)!);
+        zombie.loot = undefined;
+        return zombie;
+      }),
+      layouts: baseLayoutIds.map(validationLayout),
+    },
+  },
+];
 const scale = makeScale(0.5);
 const invalid = (data: unknown, message: string) => {
-  const result = load(data);
+  const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [data] } }]);
   expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
     true,
   );
