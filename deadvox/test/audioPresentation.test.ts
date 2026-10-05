@@ -17,7 +17,13 @@ describe('heartbeat audio presentation', () => {
       expect(samples[index]!.gain).toBeGreaterThanOrEqual(samples[index - 1]!.gain);
     }
     expect(samples.at(-1)!.gain).toBeGreaterThan(samples[0]!.gain);
-    expect(HEARTBEAT_TUNING.startStamina).toBe(85);
+  });
+
+  it('interpolates rate and loudness linearly halfway to exhaustion', () => {
+    const { startStamina, startHz, exhaustedHz, normalGain, veryHighGain } = HEARTBEAT_TUNING;
+    const halfway = heartbeatForStamina(startStamina / 2);
+    expect(halfway.bpm).toBe(((startHz + exhaustedHz) / 2) * 60);
+    expect(halfway.gain).toBe((normalGain + veryHighGain) / 2);
   });
 });
 

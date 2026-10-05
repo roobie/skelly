@@ -30,12 +30,16 @@ class FakeAudioContext {
   sources: ReturnType<typeof makeSource>[] = [];
   panners: ReturnType<typeof makeNode>[] = [];
   peakConnectedSources = 0;
-  decodeAudioData = vi.fn((data: ArrayBuffer) =>
-    Promise.resolve({
-      duration: 2,
-      heartbeatFile: (data as ArrayBuffer & { heartbeatFile?: string }).heartbeatFile,
-    } as unknown as AudioBuffer),
-  );
+  decodeAudioData = vi.fn((data: ArrayBuffer) => {
+    const { heartbeatFile } = data as ArrayBuffer & { heartbeatFile?: string };
+    let duration = 2;
+    if (heartbeatFile === HEARTBEAT_FILES.slow) {
+      duration = 0.6;
+    } else if (heartbeatFile === HEARTBEAT_FILES.fast) {
+      duration = 0.3;
+    }
+    return Promise.resolve({ duration, heartbeatFile } as unknown as AudioBuffer);
+  });
 
   constructor() {
     FakeAudioContext.lastCreated = this;
@@ -137,6 +141,9 @@ describe('game audio playback', () => {
     await flush();
     expect(context.sources).toHaveLength(1);
     expect(sourceGain(context.sources[0]!)).toBeCloseTo(heartbeatForStamina(85).gain);
+    expect((context.sources[0]!.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile).toBe(
+      HEARTBEAT_FILES.slow,
+    );
     expect(context.sources[0]!.playbackRate.value).toBe(1);
     expect(fetchBuffer).toHaveBeenCalled();
     expect(audio.heardSounds).toHaveLength(0);
@@ -152,6 +159,9 @@ describe('game audio playback', () => {
     await flush();
     expect(context.sources).toHaveLength(2);
     expect(sourceGain(context.sources[1]!)).toBeCloseTo(heartbeatForStamina(0).gain);
+    expect((context.sources[1]!.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile).toBe(
+      HEARTBEAT_FILES.fast,
+    );
 
     const secondBeatAt = context.sources[1]!.start.mock.calls[0]![0] as number;
     context.currentTime = secondBeatAt + 60 / heartbeatForStamina(0).bpm - 0.01;
