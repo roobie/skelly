@@ -3,9 +3,9 @@ import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import {
-  currentSaveVersionIdentity,
   decodeSave,
   encodeSave,
+  SAVE_SCHEMA_VERSION,
   type SaveContentKind,
   type SaveVersionComponents,
 } from '../src/core/saveFormat.ts';
@@ -23,12 +23,9 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
 );
-const {
-  components: { schemaVersion },
-} = await currentSaveVersionIdentity();
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
-  schemaVersion,
+  schemaVersion: SAVE_SCHEMA_VERSION,
   generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };

@@ -8,12 +8,7 @@ import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import { weightOf } from '../src/core/items.ts';
 import type { PelletShot } from '../src/core/pellets.ts';
-import {
-  currentSaveVersionIdentity,
-  decodeSave,
-  encodeSave,
-  type SaveVersionComponents,
-} from '../src/core/saveFormat.ts';
+import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
@@ -431,7 +426,7 @@ describe('real pump ammunition', () => {
     const snapshot = s.snapshot({ worldId: 'pump-world', characterId: 'pump-character' });
     const saved = { ...snapshot, character: { ...snapshot.character, inventory: f.inventory.snapshotState() } };
     const version: SaveVersionComponents = {
-      schemaVersion: (await currentSaveVersionIdentity()).components.schemaVersion,
+      schemaVersion: SAVE_SCHEMA_VERSION,
       simulationHash: 'a'.repeat(64),
       generators: {},
       contentPacks: [],

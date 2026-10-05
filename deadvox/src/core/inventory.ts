@@ -88,6 +88,7 @@ export interface InventoryState {
   worn: Partial<Record<WearSlot, ItemState>>;
   piles: { pos: Vec3; items: ReturnType<typeof snapshotPlaced>[] }[];
   looted: [string, number][];
+  quickbarOrigins: [number, TargetState][];
   entities: ReturnType<BlockEntities['snapshotState']>;
 }
 
@@ -107,6 +108,48 @@ export const SIDES: readonly HandSide[] = ['right', 'left'];
 const other = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const pileKey = (pos: Vec3) => pos.join(',');
 const refuse = (reason: string): Plan => ({ ok: false, reason });
+const validSpot = (spot: unknown): boolean =>
+  spot !== null &&
+  typeof spot === 'object' &&
+  Number.isSafeInteger((spot as Spot).x) &&
+  (spot as Spot).x >= 0 &&
+  Number.isSafeInteger((spot as Spot).y) &&
+  (spot as Spot).y >= 0 &&
+  typeof (spot as Spot).rotated === 'boolean';
+const validQuickbarOrigin = (target: TargetState): boolean => {
+  const value = target as unknown as Record<string, unknown>;
+  switch (value.kind) {
+    case 'hand':
+      return value.side === 'right' || value.side === 'left';
+    case 'worn':
+      return true;
+    case 'pocket':
+      return (
+        Number.isSafeInteger(value.ownerUid) &&
+        (value.ownerUid as number) > 0 &&
+        Number.isSafeInteger(value.pocket) &&
+        (value.pocket as number) >= 0 &&
+        (value.at === undefined || validSpot(value.at))
+      );
+    case 'pile':
+      return (
+        Array.isArray(value.pos) &&
+        value.pos.length === 3 &&
+        value.pos.every((part) => typeof part === 'number' && Number.isFinite(part)) &&
+        (value.at === undefined || validSpot(value.at))
+      );
+    case 'furniture':
+      return (
+        Number.isSafeInteger(value.entityUid) &&
+        (value.entityUid as number) > 0 &&
+        Number.isSafeInteger(value.pocket) &&
+        (value.pocket as number) >= 0 &&
+        (value.at === undefined || validSpot(value.at))
+      );
+    default:
+      return false;
+  }
+};
 
 export class Inventory {
   readonly registry: Registry;
@@ -117,6 +160,7 @@ export class Inventory {
   readonly piles = new Map<string, Pile>();
   /** What's been taken out of furniture, by item type: the death screen's looting summary. */
   readonly looted = new Map<string, number>();
+  private readonly quickbarOrigins = new Map<number, TargetState>();
   readonly entities: BlockEntities;
   /** Goes up on every change, so views know when to redraw. */
   version = 0;
@@ -133,8 +177,21 @@ export class Inventory {
       worn: Object.fromEntries(Object.entries(this.worn).map(([slot, item]) => [slot, snapshotItem(item!)])),
       piles: [...this.piles.values()].map((pile) => ({ pos: [...pile.pos], items: pile.items.map(snapshotPlaced) })),
       looted: [...this.looted.entries()].map(([type, count]) => [type, count]),
+      quickbarOrigins: [...this.quickbarOrigins.entries()].map(([uid, target]) => [uid, structuredClone(target)]),
       entities: this.entities.snapshotState(),
     });
+  }
+
+  private restoreQuickbarOrigins(origins: InventoryState['quickbarOrigins']): void {
+    for (const [uid, target] of origins) {
+      if (![this.hands.right, this.hands.left].some((item) => item?.uid === uid)) {
+        throw new Error(`Missing held item for quickbar origin ${uid}`);
+      }
+      if (this.quickbarOrigins.has(uid) || !validQuickbarOrigin(target)) {
+        throw new Error(`Invalid quickbar origin ${uid}`);
+      }
+      this.quickbarOrigins.set(uid, structuredClone(target));
+    }
   }
 
   static restoreState(
@@ -171,6 +228,7 @@ export class Inventory {
     for (const [type, count] of state.looted) {
       inventory.looted.set(type, count);
     }
+    inventory.restoreQuickbarOrigins(state.quickbarOrigins);
     return inventory;
   }
 
@@ -229,6 +287,11 @@ export class Inventory {
     return undefined;
   }
 
+  quickbarOrigin(item: Item): TargetState | undefined {
+    const target = this.quickbarOrigins.get(item.uid);
+    return target === undefined ? undefined : structuredClone(target);
+  }
+
   targetState(target: Target): TargetState {
     switch (target.kind) {
       case 'hand':
@@ -253,6 +316,39 @@ export class Inventory {
         };
       default:
         throw new Error(`Unknown target kind ${String((target as { kind: string }).kind)}`);
+    }
+  }
+
+  targetForLocation(location: Location): Target {
+    switch (location.kind) {
+      case 'hand':
+        return { kind: 'hand', side: location.side };
+      case 'worn':
+        return { kind: 'worn' };
+      case 'pocket':
+        return {
+          kind: 'pocket',
+          owner: location.owner,
+          pocket: location.pocket,
+          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+        };
+      case 'pile':
+        return {
+          kind: 'pile',
+          pos: [...location.pile.pos],
+          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+        };
+      case 'furniture':
+        return {
+          kind: 'furniture',
+          entity: location.entity,
+          pocket: location.pocket,
+          at: { x: location.placed.x, y: location.placed.y, rotated: location.placed.rotated },
+        };
+      case 'work':
+        throw new Error('Work inputs have no independent target');
+      default:
+        throw new Error(`Unknown location kind ${String((location as { kind: string }).kind)}`);
     }
   }
 
@@ -373,6 +469,8 @@ export class Inventory {
       return plan;
     }
     const from = this.locate(item)!;
+    const origin =
+      from.kind === 'hand' ? this.quickbarOrigins.get(item.uid) : this.targetState(this.targetForLocation(from));
     if (from.kind === 'furniture' && target.kind !== 'furniture') {
       this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
     }
@@ -385,9 +483,17 @@ export class Inventory {
     this.version += 1;
     if (plan.merge) {
       plan.merge.count += moving.count;
+      if (count === item.count) {
+        this.quickbarOrigins.delete(item.uid);
+      }
       return plan;
     }
     this.put(moving, target, plan.at);
+    if (target.kind === 'hand' && origin) {
+      this.quickbarOrigins.set(moving.uid, structuredClone(origin));
+    } else if (target.kind !== 'hand' && count === item.count) {
+      this.quickbarOrigins.delete(item.uid);
+    }
     return plan;
   }
 
@@ -461,6 +567,9 @@ export class Inventory {
     const work = this.create(WORK_IN_PROGRESS);
     const components = plan.components.map(({ item, count }) => {
       const from = this.locate(item)!;
+      if (from.kind === 'hand') {
+        this.quickbarOrigins.delete(item.uid);
+      }
       if (from.kind === 'furniture') {
         this.looted.set(item.type, (this.looted.get(item.type) ?? 0) + count);
       }
@@ -753,6 +862,7 @@ export class Inventory {
       item.count -= count;
     } else {
       this.remove(at);
+      this.quickbarOrigins.delete(item.uid);
     }
     this.version += 1;
     return true;

@@ -15,7 +15,7 @@ import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, toHands, type UseOption, useOption } from '../core/options.ts';
+import { doorOptions, doorPlan, type UseOption, useOption } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -79,8 +79,11 @@ import {
   SessionMetrics,
 } from './playtestTools.ts';
 import { selectPrimaryAction } from './primaryAction.ts';
+import { QuickbarActions } from './quickbarActions.ts';
+import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
 import { createSession } from './session.ts';
+import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
@@ -261,6 +264,13 @@ export const startPlay = (
   const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     startingLoadout(inventory);
+    populateTestHouseRepairCorner({
+      inventory,
+      registry,
+      site: config.site,
+      spawn: engine.spawn.pos,
+      blockSize: s,
+    });
   }
   // Furniture, with the loot rolled for it, arrives with its column.
   streamer.onColumn = (cx, cz) => {
@@ -642,6 +652,7 @@ export const startPlay = (
   };
 
   const toggleInventory = () => {
+    quickbarInput.cancel();
     if (screen.isOpen) {
       closeInventoryScreen();
     } else {
@@ -651,28 +662,25 @@ export const startPlay = (
     syncMenuState();
   };
 
-  /** A quickbar key puts its item in your hands; pressing it again uses it. */
-  const quickKey = (slot: number) => {
+  const quickbarActions = new QuickbarActions({ inventory, queue, feet, survival, notice: showNotice });
+  const quickbarTap = (slot: number) => {
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
-      showNotice(`Quickbar ${slot + 1} is empty: open the inventory, pick an item, press ${slot + 1}`);
+      showNotice(`Quickbar ${slot + 1} is empty`);
       return;
     }
-    const at = inventory.locate(item);
-    if (!at) {
-      showNotice(`The ${inventory.name(item).toLowerCase()} isn't with you`);
-    } else if (at.kind === 'hand' || registry.items.get(item.type)?.battery) {
-      const reason = useItem(item);
-      if (reason) {
-        showNotice(reason);
-      }
-    } else {
-      const reason = toHands(inventory, queue, item, feet());
-      if (reason) {
-        showNotice(reason);
-      }
-    }
+    quickbarActions.tap(item);
   };
+  const quickbarHold = (slot: number) => {
+    const item = quickbar.resolve(slot, inventory);
+    if (!item) {
+      showNotice(`Quickbar ${slot + 1} is empty`);
+      return;
+    }
+    quickbarActions.hold(item);
+  };
+  const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
+  globalThis.addEventListener('blur', () => quickbarInput.cancel());
 
   /** Rest has no initiation key; C continues owned craft work and L still toggles sleep. */
   const longActionKeys = new Map<string, () => void>([
@@ -686,7 +694,6 @@ export const startPlay = (
       restAction();
       return;
     }
-    const quick = quickbarSlotForKey(code);
     const action = worldActionForKey(code);
     if (action === 'interact' && !compression.locksInput) {
       use();
@@ -696,8 +703,6 @@ export const startPlay = (
       if (sim.actions.job) {
         stopAction();
       }
-    } else if (quick !== undefined && !compression.locksInput) {
-      quickKey(quick);
     }
   };
 
@@ -707,6 +712,7 @@ export const startPlay = (
     }
     e.preventDefault();
     if (!(e.repeat || sim.dead)) {
+      quickbarInput.cancel();
       mainMenuOpen = !mainMenuOpen;
       if (mainMenuOpen) {
         reading.close();
@@ -794,6 +800,13 @@ export const startPlay = (
       input.reload.keyDown(e.timeStamp, reloadBinding());
       return;
     }
+    if (quickbarSlotForKey(e.code) !== undefined) {
+      e.preventDefault();
+      if (!compression.locksInput) {
+        quickbarInput.keyDown(e.code, e.timeStamp);
+      }
+      return;
+    }
     playKeys(e.code);
   };
 
@@ -818,6 +831,11 @@ export const startPlay = (
     },
     { passive: false },
   );
+
+  globalThis.addEventListener('keyup', (event) => {
+    const e = event as KeyboardEvent;
+    quickbarInput.keyUp(e.code, e.timeStamp);
+  });
 
   const lookDir = (): Vec3 => aimDirection(input.pitch, input.yaw);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
@@ -1261,6 +1279,11 @@ export const startPlay = (
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
     input.reload.advance(now, reloadBinding());
+    if (screen.isOpen || mainMenuOpen || compression.locksInput || sim.dead) {
+      quickbarInput.cancel();
+    } else {
+      quickbarInput.update(now);
+    }
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);

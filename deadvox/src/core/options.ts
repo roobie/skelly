@@ -74,6 +74,7 @@ export interface UseOption {
 
 export type Option = MoveOption | UseOption;
 const SIDES: readonly HandSide[] = ['right', 'left'];
+const otherHand = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'right');
 const OBVIOUS = new Set(["It can't go inside itself", "It's already in that hand", "You're already wearing it"]);
 
 /** Every pocket of what the player holds and wears, retaining ordinary move ordering. */
@@ -251,6 +252,49 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
     useOption(item, view),
   );
   return out.filter((o) => o.plan.ok || !OBVIOUS.has(o.plan.reason));
+};
+
+export const quickbarHand = (inv: Inventory, item: Item): HandSide => {
+  const def = defOf(inv.registry, item.type);
+  return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
+};
+
+/** Quickbar tap: clear only the hand(s) the item needs, then take it there. */
+export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
+  const def = defOf(inv.registry, item.type);
+  const side = quickbarHand(inv, item);
+  const needs: HandSide[] = def.twoHanded ? [...SIDES] : [side];
+  if (!def.twoHanded && inv.hands[otherHand(side)] && defOf(inv.registry, inv.hands[otherHand(side)]!.type).twoHanded) {
+    needs.push(otherHand(side));
+  }
+  const displaced = new Set<Item>();
+  for (const hand of needs) {
+    const held = inv.hands[hand];
+    if (held && held !== item) {
+      displaced.add(held);
+    }
+  }
+  for (const held of displaced) {
+    const away = bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
+    const stow = queue.enqueue(held, away);
+    if (!stow.ok) {
+      return stow.reason;
+    }
+  }
+  const take = queue.enqueue(item, { kind: 'hand', side }, item.count, displaced.size > 0);
+  return take.ok ? undefined : take.reason;
+};
+
+/** Put a held quickbar item back at its captured location, or in the best pocket if that no longer fits. */
+export const quickbarPutAway = (inv: Inventory, queue: HandlingQueue, item: Item): string | undefined => {
+  const origin = inv.quickbarOrigin(item);
+  const remembered = origin && inv.resolveTarget(origin);
+  const target = remembered && inv.plan(item, remembered).ok ? remembered : bestPocket(inv, item)?.target;
+  if (!target) {
+    return 'Your pockets are full';
+  }
+  const result = queue.enqueue(item, target);
+  return result.ok ? undefined : result.reason;
 };
 
 /** Ordinary to-hands behavior, including moving an occupied hand away first. */
