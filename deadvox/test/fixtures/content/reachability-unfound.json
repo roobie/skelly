@@ -1,7 +1,29 @@
 {
   "items": [
-    { "id": "fixture_unfound", "name": "Unfound", "category": "material", "weight": 1, "size": [1, 1] },
-    { "id": "fixture_result", "name": "Result", "category": "material", "weight": 1, "size": [1, 1] }
+    {
+      "id": "fixture_unfound",
+      "name": "Unfound",
+      "category": "material",
+      "weight": 1,
+      "size": [1, 1],
+      "disassembly": {
+        "time": 1,
+        "skill": "crafting",
+        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    },
+    {
+      "id": "fixture_result",
+      "name": "Result",
+      "category": "material",
+      "weight": 1,
+      "size": [1, 1],
+      "disassembly": {
+        "time": 1,
+        "skill": "crafting",
+        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    }
   ],
   "recipes": [
     {

@@ -16,12 +16,22 @@ const capabilities = [
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
   { id: 'held_book', kind: 'read', book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingTime: 1 } },
   { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
-  { id: 'held_plain', kind: 'none', stack: 2 },
+  {
+    id: 'held_plain',
+    kind: 'none',
+    stack: 2,
+    disassembly: {
+      time: 1,
+      skill: 'crafting',
+      yields: [{ item: 'held_plain', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+    },
+  },
 ] as const;
 const { registry, issues } = buildRegistry([
   {
     source: 'hand-action-fixture',
     data: {
+      skills: [{ id: 'crafting', name: 'Crafting' }],
       furniture: [
         { id: 'fixture_door', name: 'Fixture door', size: [1, 1, 1], color: '#666666', door: { handling: 0 } },
       ],

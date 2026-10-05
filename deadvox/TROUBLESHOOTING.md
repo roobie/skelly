@@ -1,6 +1,7 @@
 ---
 read_if:
   - you're debugging deadvox and need its debug parameters or keys
+  - you're using the debug test-house range
   - you need to see the game without a display
   - a browser contract or stage fails on software GL
   - you're choosing render-free or pixel mode for a browser stage
@@ -72,7 +73,7 @@ In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
-- `site=testHouse`: the small test scene (block sizes, materials, furniture).
+- `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
 - `hotcheck=1` (PageDown): world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.
@@ -118,17 +119,15 @@ its 300 s cap). It tests the UI, not the look.
 ignored by production builds and benchmark URLs. Chromium logic stages pair it with
 `--disable-gpu`; visual stages retain SwiftShader and pixel coverage.
 
-The stages assigned render-free mode in `test/browser/stage-mode.mjs` are `inventory-scroll`,
-`melee-build-click`, `primary-action`, `full-auto`, `save-controller-regressions`, the normal
-`save-storage` cases, `insecure-saves`, `stairs-traversal`, both `reading` contracts, `firefox-ui`,
-and quarantined `firefox-first-click`. The Chromium OPFS Continue autosave scenario and the
-quarantined Firefox IndexedDB Continue scenario are intentional pixel-mode exceptions: each builds
-the production bundle and loads it through Vite preview.
+Stage assignments live in `test/browser/stage-mode.mjs`, `modes`. The Chromium OPFS Continue
+autosave scenario and the quarantined Firefox IndexedDB Continue scenario are intentional
+pixel-mode exceptions: each builds the production bundle and loads it through Vite preview.
 
-The `melee-build-click` logic stage is newly render-free. Add future stages to the shared mode
-helper and use its URL/launch helpers together so the render choice and browser flags stay aligned.
-Verify that the stage creates no WebGL context while its simulation and input assertions still
-pass; put pixel-only checks in an existing visual stage.
+The pump-handling stage is render-free because it checks input, inventory, handling and audio, not
+pixels. `test/browser/pump-handling.mjs` observes canvas context requests and asserts that the
+stage creates no WebGL context while its simulation and input assertions pass. Add future stages
+to the shared mode helper and use its URL/launch helpers together so the render choice and browser
+flags stay aligned; put pixel-only checks in an existing visual stage.
 
 Install Firefox once with `npx playwright install --with-deps firefox`, then from
 `deadvox/` run `xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop).

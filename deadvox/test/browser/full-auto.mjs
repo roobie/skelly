@@ -198,9 +198,16 @@ try {
 
   await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
-    Reflect.deleteProperty(inventory.hands, 'left');
-    inventory.hands.right = inventory.create('debug_rifle_assault');
-    inventory.version += 1;
+    for (const side of ['left', 'right']) {
+      const held = inventory.hands[side];
+      if (held && !inventory.consume(held, held.count)) {
+        throw new Error(`Could not clear ${side} fixture hand`);
+      }
+    }
+    const rifle = inventory.create('debug_rifle_assault');
+    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not place fixture rifle in hand');
+    }
     const probe = globalThis.fullAutoProbe;
     probe.casesBefore = [...inventory.piles.values()]
       .flatMap((pile) => pile.items)

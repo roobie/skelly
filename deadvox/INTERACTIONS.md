@@ -237,8 +237,8 @@ Because the components live inside the work item, nothing else can take them
 mid-craft, there is no reservation table to keep in step with the world, and a
 save holds the whole craft as ordinary item data.
 
-Disassembly is the same long action with the recipe reversed: the result goes
-in, and part of the components come out, depending on skill and tools.
+Disassembly runs the item's authored yield or salvage list as the reverse
+operation in Slice 2.7 (see [SLICE-2.md](SLICE-2.md), "2.7").
 
 ## Appliances
 

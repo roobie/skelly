@@ -1,5 +1,7 @@
 ---
 read_if:
+  - you change crafting, workstation, disassembly, or salvage contracts
+  - you change work-item ownership, long actions, saves, or their tests
   - you change crafting, skill progression, recipe knowledge or reading
   - you change item ownership, resumable actions or saved work
   - you change workstation admission or craft/reachability tests
@@ -73,7 +75,8 @@ and recipe knowledge. Starting recipes are explicit and filtered to loaded IDs;
 workbench-dependent base recipes join that source, while new arbitrary recipes
 are not automatically known. Reachable books add recipe knowledge without
 changing item ownership. Books teach recipes only, as BR ruled for Slice 2.
-Practice may come from any activity; craft completion is its first source.
+Practice may come from any activity; craft completion is its first source. In
+Slice 2, only finishing a craft awards practice; take-apart work does not.
 `src/core/bookReading.ts`, `bookReadingHooks`, owns reading admission and
 completion while `src/core/longAction.ts`, `LongActions`, keeps the book UID and
 progress.
@@ -112,14 +115,17 @@ stopped action. Continue preserves it. Interruption UI, safety checks, fatigue
 recovery/bed bonus and normal compression ramp-down remain unchanged in intent.
 Stopped actions do not recover fatigue or accumulate work while the world advances.
 
-A `work_in_progress` item's `work` field owns recipe, elapsed/duration (game
-seconds) and exact input item subtrees. F3's walker includes them; no job or second
-hand owns a copy. The native type reserves both hands through `twoHanded`, with
-one dominant-hand root. The physical other hand is reserved, not a second
-owner or an alternate work slot. See `src/core/character.ts`, `dominantSide` and
-`offSide`, and `src/core/inventory.ts`, `Inventory.beginWork`, for role resolution
-and structural admission. Inventory alone escrows/removes/releases inputs, prevents
-independent consumption/moves of escrow, and maintains weights/UID lookup.
+The `work` field on `work_in_progress` owns the tagged craft or disassembly
+payload, progress, duration (game seconds), and exact input item subtrees; a
+disassembly payload also owns its source, skill/tool snapshot, and calculated
+outputs. `CraftWork` in `src/core/items.ts` defines these saved forms, and F3's
+walker includes their inputs; no job or second hand owns a copy. The native type
+reserves both hands through `twoHanded`, with one dominant-hand root. The physical
+other hand is reserved, not a second owner or an alternate work slot. See
+`src/core/character.ts`, `dominantSide` and `offSide`, and
+`src/core/inventory.ts`, `Inventory.beginWork`, for role resolution and structural
+admission. Inventory alone escrows/removes/releases inputs, prevents independent
+consumption/moves of escrow, and maintains weights/UID lookup.
 Reach omits escrowed inputs. This core representation is required to prove F2;
 work-item options, native command wiring and the derived second-hand label now
 use the step-5 F7 projections. The first-person renderer already uses the generic
@@ -143,12 +149,13 @@ stopped descriptor, since progress still belongs to the work item. C and the
 status panel use the same native Continue UID: a live or interrupted rest/sleep
 job takes precedence over held work; a stopped rest/sleep job leaves Continue to
 the held work.
-Terminal state is cleared before effects; finish consumes escrow once and puts
-the result in the freed hand, while cancel returns exact input UIDs/counts without
-stack merging. The five ordinary `dropSpots` are shared with craft retirement;
-shadow occupancy reserves every output before transferring any of them. An
-unplaceable return is refused before structural transfer and keeps stopped work
-intact. The debug spawn menu excludes the payload-bearing native work type.
+Terminal state is cleared before effects; a completed craft consumes escrow once
+and puts its recipe result in the freed hand, while a completed disassembly drops
+its outputs at the player's feet. Cancel returns exact input UIDs/counts without
+stack merging. The same `dropSpots` policy in `src/core/inventory.ts` handles
+craft retirement and disassembly outputs; shadow occupancy reserves every output
+before transferring any of them. An unplaceable return is refused before
+structural transfer and keeps stopped work intact. The debug spawn menu excludes the payload-bearing native work type.
 
 Snapshots/codec now require `character.longAction`; recursive item `work` data
 is included. Loading validates tags/cursors, work ownership, recipe IDs, progress
@@ -157,6 +164,22 @@ is deliberately no previous-rest-format compatibility path. Ordinary handling
 jobs are still cancelled only in the saved copy. The runtime graph includes both
 new core owners; the one new native item definition changes the content identity.
 Work is a runtime escrow representation, excluded from acquired-content counts.
+
+## Disassembly and salvage (Slice 2.7)
+
+Every non-repair recipe result needs an authored disassembly yield; repair
+recipes are excluded because they improve an existing target instead of creating
+a new item result. A disassemblable item declares a yield or a salvage list, never
+both. `checkItems` in `src/core/content.ts` rejects mixed declarations, and
+`checkRecipes` in `src/core/content.ts` requires recipe-result yields.
+
+`planDisassembly` in `src/core/disassembly.ts` calculates yield from the skill and
+reachable tools at start, and the work item keeps that output snapshot. Stop and
+Continue therefore preserve the original yield rather than recalculating after a
+skill change. Salvage uses the fixed work duration in `SALVAGE_DURATION`; gathering
+adds its handling time. Finishing places disassembly outputs at the player's feet,
+while cancelling returns the exact source item. These rules keep taking apart an
+item a resumable action without changing its promised output or losing the source.
 
 ## Proofs
 

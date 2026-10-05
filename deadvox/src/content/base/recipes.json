@@ -4,12 +4,33 @@
     { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
     {
+      "id": "wooden_plank",
+      "name": "Wooden plank",
+      "category": "material",
+      "weight": 500,
+      "size": [2, 4],
+      "disassembly": {
+        "time": 4,
+        "skill": "crafting",
+        "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
+      }
+    },
+    {
       "id": "torch",
       "name": "Torch",
       "category": "light",
       "weight": 350,
       "size": [1, 4],
-      "description": "Rags and wax wrapped tightly around a stick."
+      "description": "Rags and wax wrapped tightly around a stick.",
+      "disassembly": {
+        "time": 10,
+        "skill": "crafting",
+        "yields": [
+          { "item": "stick", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "rag", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "wax", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+        ]
+      }
     },
     {
       "id": "candle",
@@ -17,7 +38,15 @@
       "category": "light",
       "weight": 150,
       "size": [1, 1],
-      "description": "A wax candle with a rag wick."
+      "description": "A wax candle with a rag wick.",
+      "disassembly": {
+        "time": 5,
+        "skill": "crafting",
+        "yields": [
+          { "item": "wax", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "rag", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+        ]
+      }
     },
     {
       "id": "repair_kit",
@@ -26,10 +55,44 @@
       "weight": 1250,
       "size": [2, 2],
       "description": "Metal patches, tape and rags for a makeshift repair.",
+      "disassembly": {
+        "time": 15,
+        "skill": "crafting",
+        "yields": [
+          { "item": "scrap_metal", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "duct_tape", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
+          { "item": "rag", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }
+        ]
+      },
       "tool": { "qualities": { "repairing": 1 } }
     },
-    { "id": "copper_wire", "name": "Salvaged wire", "category": "material", "weight": 80, "size": [1, 2] },
-    { "id": "field_patch", "name": "Field repair patch", "category": "material", "weight": 120, "size": [1, 2] }
+    {
+      "id": "copper_wire",
+      "name": "Salvaged wire",
+      "category": "material",
+      "weight": 80,
+      "size": [1, 2],
+      "disassembly": {
+        "time": 8,
+        "skill": "mechanics",
+        "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    },
+    {
+      "id": "field_patch",
+      "name": "Field repair patch",
+      "category": "material",
+      "weight": 120,
+      "size": [1, 2],
+      "disassembly": {
+        "time": 12,
+        "skill": "mechanics",
+        "yields": [
+          { "item": "copper_wire", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "duct_tape", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    }
   ],
   "recipes": [
     {

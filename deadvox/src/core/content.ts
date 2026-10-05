@@ -259,23 +259,56 @@ const checkUnpacking = (item: ItemDef, registry: Registry, report: Report): void
   }
 };
 
+const checkDisassembly = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
+  const { disassembly } = item;
+  if (disassembly) {
+    if (!registry.skills.has(disassembly.skill)) {
+      report('items', item.id, '.disassembly.skill', `no skill "${disassembly.skill}"`);
+    }
+    disassembly.yields.forEach((yieldItem, index) => {
+      if (!registry.items.has(yieldItem.item)) {
+        report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
+      }
+      const quality = yieldItem.toolModifier?.quality;
+      if (quality !== undefined && !qualities.has(quality)) {
+        report('items', item.id, `.disassembly.yields[${index}].toolModifier.quality`, `no tool quality "${quality}"`);
+      }
+    });
+  }
+  item.salvage?.forEach((output, index) => {
+    if (!registry.items.has(output.item)) {
+      report('items', item.id, `.salvage[${index}].item`, `no item "${output.item}"`);
+    }
+  });
+  if (disassembly && item.salvage) {
+    report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
+  }
+};
+
+const checkBook = (item: ItemDef, registry: Registry, report: Report) => {
+  if (item.book && item.category !== 'book') {
+    report('items', item.id, '.book', 'book component requires the book category');
+  }
+  if (registry.recipes.size === 0) {
+    return;
+  }
+  item.book?.recipes.forEach((recipe, index) => {
+    if (!registry.recipes.has(recipe)) {
+      report('items', item.id, `.book.recipes[${index}]`, `no recipe "${recipe}"`);
+    }
+  });
+};
+
 const checkItems = (registry: Registry, report: Report) => {
+  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const item of registry.items.values()) {
     const battery = item.light?.power?.battery;
     if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
       report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
     }
     checkUnpacking(item, registry, report);
-    if (item.book && item.category !== 'book') {
-      report('items', item.id, '.book', 'book component requires the book category');
-    }
-    if (registry.recipes.size > 0) {
-      item.book?.recipes.forEach((recipe, index) => {
-        if (!registry.recipes.has(recipe)) {
-          report('items', item.id, `.book.recipes[${index}]`, `no recipe "${recipe}"`);
-        }
-      });
-    }
+    checkDisassembly(item, registry, qualities, report);
+    checkBook(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
     }
@@ -404,13 +437,19 @@ const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report
   }
 };
 
-const checkRecipeReferences = (
-  registry: Registry,
-  recipe: RecipeDef,
-  references: { qualities: ReadonlySet<string>; workstations: ReadonlySet<string> },
-  report: Report,
-): void => {
-  const { qualities, workstations } = references;
+const checkRecipe = ({
+  registry,
+  recipe,
+  qualities,
+  workstations,
+  report,
+}: {
+  registry: Registry;
+  recipe: RecipeDef;
+  qualities: ReadonlySet<string>;
+  workstations: ReadonlySet<string>;
+  report: Report;
+}) => {
   const checkItem = (id: string, path: string) => {
     if (!registry.items.has(id)) {
       report('recipes', recipe.id, path, `no item "${id}"`);
@@ -447,7 +486,21 @@ const checkRecipes = (registry: Registry, report: Report) => {
     [...registry.furniture.values()].flatMap((furniture) => (furniture.workstation ? [furniture.workstation.id] : [])),
   );
   for (const recipe of registry.recipes.values()) {
-    checkRecipeReferences(registry, recipe, { qualities, workstations }, report);
+    checkRecipe({ registry, recipe, qualities, workstations, report });
+  }
+  for (const id of new Set(
+    [...registry.recipes.values()].filter((recipe) => recipe.kind !== 'repair').map((recipe) => recipe.result.item),
+  )) {
+    const item = registry.items.get(id);
+    if (!item) {
+      continue;
+    }
+    if (!item.disassembly) {
+      report('items', id, '.disassembly', 'recipe result needs an explicit disassembly yield');
+    }
+    if (item.salvage) {
+      report('items', id, '.salvage', 'recipe results use a disassembly yield, not a salvage list');
+    }
   }
 };
 

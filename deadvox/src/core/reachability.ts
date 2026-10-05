@@ -1,6 +1,7 @@
 // Static type reachability, not an inventory/quantity/seed or whole-game solver.
 import { startingKnownRecipes } from './character.ts';
 import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
+import { disassemblyOutputs } from './disassembly.ts';
 import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
@@ -78,12 +79,29 @@ interface ClosureInput {
   workstationQualities: ReadonlyMap<string, number>;
 }
 
+const addDisassemblyOutputs = (registry: Registry, items: Set<string>) => {
+  for (const id of items) {
+    const definition = registry.items.get(id);
+    if (!definition) {
+      continue;
+    }
+    const topSkill = Math.max(
+      0,
+      ...(definition.disassembly?.yields.map(({ fractions }) => fractions.length - 1) ?? []),
+    );
+    for (const output of disassemblyOutputs(definition, topSkill)) {
+      items.add(output.item);
+    }
+  }
+};
+
 /** Both closures start at loot, never at declared recipe results. Tools gate only the second. */
 const closure = ({ registry, found, tools, knowledge, skills, workstationQualities }: ClosureInput): Set<string> => {
   const items = new Set(found);
   let previous: number;
   do {
     previous = items.size;
+    addDisassemblyOutputs(registry, items);
     for (const recipe of registry.recipes.values()) {
       if (
         recipe.kind !== 'repair' &&
