@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
+import { Character, practiceForNextLevel } from '../src/core/character.ts';
 import { buildRegistry, type RecipeDef, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { planCraft } from '../src/core/crafting.ts';
@@ -33,7 +33,7 @@ const fixtureRecipe = (): RecipeDef => {
     result: { item: target.id, count: 1 },
     repair: { skill, amount: 0.2, perSkill: 0 },
     time: 1,
-    skills: {},
+    skills: { [skill]: 1 },
     qualities: { [quality]: level },
     components: [[{ item: component.id, count: 1 }]],
   };
@@ -80,10 +80,12 @@ const cornerPosition = (inventory: Inventory): Vec3 => {
 
 const repairCharacter = (): Character => {
   const character = new Character(scenarioRegistry);
+  character.learnRecipes(repairRecipes.map(({ id }) => id));
   for (const recipe of repairRecipes) {
-    character.knownRecipes.add(recipe.id);
     for (const [skill, required] of Object.entries(recipe.skills)) {
-      character.skills[skill] = Math.max(character.skills[skill] ?? 0, required);
+      while ((character.skills[skill] ?? 0) < required) {
+        character.awardPractice(skill, practiceForNextLevel(character.skills[skill] ?? 0));
+      }
     }
   }
   return character;
