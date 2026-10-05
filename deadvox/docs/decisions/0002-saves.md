@@ -212,7 +212,7 @@ game and the snapshot tests share: simulation, shamblers, player, inventory, res
 survival, handling queue and `snapshot()`), and `src/game/play.ts` (gameplay
 wiring/actions).
 `play.ts` reaches `worldSetup.ts` at runtime for the spawn-to-body conversion,
-and reaches `src/game/aim.ts` for furniture and melee targeting independently
+and reaches `src/core/aim.ts` for furniture and melee targeting independently
 of camera feedback roll. Vite recomputes the fingerprint for source create,
 update, and delete events and reloads when it changes. Base content remains
 separately identified by its canonical content-pack hash.
@@ -244,7 +244,7 @@ excluded subtrees are justified here as well:
   Include daylight/weather and save their state when they become simulation inputs.
 - `src/game/damageFeedback.ts`, now used within `src/render/playView.ts`: vignette
   and camera-roll animation only. Gameplay targeting still uses fingerprinted
-  `src/game/aim.ts` with input pitch/yaw, never the feedback-rolled camera.
+  `src/core/aim.ts` with input pitch/yaw, never the feedback-rolled camera.
 - `src/game/engine.ts`: WebGL renderer, camera, lights, `ChunkMeshes`, and resize
   setup only. Its `Engine` interface extends `WorldSetup`, but gameplay imports
   that contract type-only; `engine.ts` is not a simulation entry, so Three.js and

@@ -13,6 +13,8 @@ export interface FirearmCycleState {
   readonly mode: 'fire' | 'hand';
   readonly startedAt: number;
   elapsed: number;
+  /** Effective scheduled duration, including skill effects; stable across animation and recovery. */
+  duration?: number;
   ejected: boolean;
   /** Debug AR/AKs feed a virtual round at the end; real ammunition is not invented. */
   readonly feedRound: boolean;
@@ -59,6 +61,22 @@ const assertPumpExtras = ({ tube, landing }: FirearmState): void => {
   }
 };
 
+const assertCycleState = (cycle: FirearmCycleState | undefined): void => {
+  if (
+    cycle &&
+    (!((cycle.mode === 'fire' || cycle.mode === 'hand') && Number.isFinite(cycle.startedAt)) ||
+      cycle.startedAt < 0 ||
+      !Number.isFinite(cycle.elapsed) ||
+      cycle.elapsed < 0 ||
+      (cycle.duration !== undefined && (!Number.isFinite(cycle.duration) || cycle.duration <= 0)) ||
+      typeof cycle.ejected !== 'boolean' ||
+      typeof cycle.feedRound !== 'boolean' ||
+      (cycle.forwardSounded !== undefined && typeof cycle.forwardSounded !== 'boolean'))
+  ) {
+    throw new Error('Invalid firearm cycle');
+  }
+};
+
 /** Coupled chamber/cycle constraints shared by direct inventory restore and save decoding. */
 export const assertFirearmState = (state: FirearmState): void => {
   if (!['empty', 'round', 'case'].includes(state.chamber)) {
@@ -72,18 +90,7 @@ export const assertFirearmState = (state: FirearmState): void => {
   }
   assertPumpExtras(state);
   const { cycle } = state;
-  if (
-    cycle &&
-    (!((cycle.mode === 'fire' || cycle.mode === 'hand') && Number.isFinite(cycle.startedAt)) ||
-      cycle.startedAt < 0 ||
-      !Number.isFinite(cycle.elapsed) ||
-      cycle.elapsed < 0 ||
-      typeof cycle.ejected !== 'boolean' ||
-      typeof cycle.feedRound !== 'boolean' ||
-      (cycle.forwardSounded !== undefined && typeof cycle.forwardSounded !== 'boolean'))
-  ) {
-    throw new Error('Invalid firearm cycle');
-  }
+  assertCycleState(cycle);
   if (cycle?.ejected && state.chamber === 'case') {
     throw new Error('Ejected case remains in the chamber');
   }

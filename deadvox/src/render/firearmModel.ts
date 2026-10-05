@@ -95,14 +95,20 @@ export const cloneHeldModel = (prepared: Object3D, paths: readonly ActionPartPat
 };
 
 /** Rendering alone samples the rear/dwell/return profile; admission/ejection remain gameplay. */
-export const sampleActionStroke = (action: FirearmAction, mode: FirearmMode, elapsed: number): number => {
+export const sampleActionStroke = (
+  action: FirearmAction,
+  mode: FirearmMode,
+  elapsed: number,
+  duration?: number,
+): number => {
   const cycle = action[mode];
   if (!cycle || (mode === 'fire' && action.rpm === undefined)) {
     return 0;
   }
-  const duration = actionCycleSeconds(action, mode);
-  const time = (elapsed * cycle.durationSeconds) / duration;
-  if (elapsed < 0 || elapsed >= duration) {
+  const baseDuration = actionCycleSeconds(action, mode);
+  const effectiveDuration = duration ?? baseDuration;
+  const time = (elapsed * cycle.durationSeconds) / effectiveDuration;
+  if (elapsed < 0 || elapsed >= effectiveDuration) {
     return 0;
   }
   if (time < cycle.rearwardSeconds) {
@@ -121,7 +127,7 @@ const MAX_RACK_CANT_RADIANS = Math.PI / 4;
 export const rackCant = (
   model: ModelDef | undefined,
   hand: HandSide,
-  frame: { readonly mode: FirearmMode | 'load'; readonly elapsed: number } | undefined,
+  frame: { readonly mode: FirearmMode | 'load'; readonly elapsed: number; readonly duration?: number } | undefined,
   grip: { readonly x: number; readonly y: number },
 ): number => {
   if (
@@ -146,7 +152,7 @@ export const rackCant = (
   const clearance = Math.atan2(away, -grip.y - port[1]);
   const reveal = Math.atan2(Math.abs(across), Math.abs(port[1] - loading[1]));
   const angle = Math.min(MAX_RACK_CANT_RADIANS, clearance + reveal);
-  const stroke = sampleActionStroke(model.action, 'hand', frame.elapsed);
+  const stroke = sampleActionStroke(model.action, 'hand', frame.elapsed, frame.duration);
   const eased = stroke * stroke * (3 - 2 * stroke);
   return portSide * angle * eased;
 };

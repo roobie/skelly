@@ -170,7 +170,11 @@ const WeaponSchema = strictObject({
 });
 
 // Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
-const FirearmSchema = strictObject({ pump: optional(vBoolean()) });
+const FirearmSchema = strictObject({
+  pump: optional(vBoolean()),
+  /** Camera-local aim kick per committed shot, before skill variance, in radians. */
+  recoilKickRadians: Positive,
+});
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),

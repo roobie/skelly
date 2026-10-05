@@ -24,6 +24,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
+import type { AimFrame } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -62,6 +63,7 @@ export interface HeldFirearmPose {
 
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
+  readonly aim?: AimFrame;
   readonly job?: Readonly<Job> | undefined;
 }
 
@@ -97,6 +99,7 @@ export class HeldItems {
   private readonly poseRotation = new Quaternion();
   private readonly recoilRotation = new Quaternion();
   private readonly rackRotation = new Quaternion();
+  private readonly aimRotation = new Quaternion();
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
@@ -151,6 +154,7 @@ export class HeldItems {
       const model = item && this.pumpModels.get(item.uid);
       const frame = item && firearmPoses.find((entry) => entry.uid === item.uid);
       const cant = rackCant(model, side, frame, { x: transform.offset[0], y: transform.offset[1] });
+      this.poseAim(item, handling.aim);
       this.rackRotation.setFromEuler(this.poseEuler.set(0, 0, cant, 'YXZ'));
       this.poseRotation.multiply(this.rackRotation);
       const strength = Math.max(0, Math.min(1, recoil));
@@ -221,11 +225,19 @@ export class HeldItems {
     }
   }
 
+  private poseAim(item: Item | undefined, aim: AimFrame | undefined): void {
+    if (!(item && aim && defOf(this.inventory.registry, item.type).firearm)) {
+      return;
+    }
+    this.aimRotation.setFromEuler(this.poseEuler.set(aim.pitch, aim.yaw, 0, 'YXZ'));
+    this.poseRotation.premultiply(this.aimRotation);
+  }
+
   private poseFirearms(frames: readonly HeldFirearmPose[]): void {
     for (const [uid, { action, parts }] of this.firearmParts) {
       const frame = frames.find((entry) => entry.uid === uid);
       const mode = frame?.mode === 'load' ? undefined : frame?.mode;
-      const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed) : 0;
+      const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed, frame.duration) : 0;
       poseActionParts(parts, mode, stroke);
       this.updatePump(uid, frame, stroke);
     }

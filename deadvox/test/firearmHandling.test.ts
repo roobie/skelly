@@ -36,7 +36,14 @@ const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Invento
   return { inventory, rifle };
 };
 
-const pose = { feet: [0, 1, 0], eye: [0, 4, 0], yaw: 0, pitch: 0, blockSize: 0.5 } as const;
+const pose = {
+  feet: [0, 1, 0],
+  eye: [0, 4, 0],
+  yaw: 0,
+  pitch: 0,
+  aimFrame: { yaw: 0, pitch: 0 },
+  blockSize: 0.5,
+} as const;
 const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simTime = 1) => {
   const effects: FirearmShotEffect[] = [];
   const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
@@ -119,6 +126,36 @@ describe('debug firearm handling', () => {
     }
   });
 
+  it('passes the held firearm’s data-owned kick with each committed shot', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const kicks: number[] = [];
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ feet: [...pose.feet], eye: [...pose.eye], yaw: pose.yaw, pitch: pose.pitch, blockSize: 0.5 }),
+      onEjection: () => undefined,
+      onCommittedShot: (_seed, recoilKickRadians) => kicks.push(recoilKickRadians),
+    });
+    const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
+    const firearmDef = registry.items.get(rifle.type)!.firearm!;
+    expect(configuredKick).toBe(firearmDef.recoilKickRadians);
+    if (configuredKick === undefined) {
+      throw new Error('Firing fixture needs firearm kick data');
+    }
+
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(kicks).toEqual([configuredKick]);
+  });
+
   it('aligns ejection and held stroke when rpm caps a longer exported automatic cycle', () => {
     const model = registry.models.get('rifle_assault')!;
     const action = structuredClone(model.action!);
@@ -194,7 +231,7 @@ describe('debug firearm handling', () => {
               weight: 1000,
               size: [1, 1],
               model: 'pistol_full',
-              firearm: {},
+              firearm: { recoilKickRadians: 0.012 },
             },
           ],
         },
@@ -257,6 +294,7 @@ describe('debug firearm handling', () => {
       eye: [0, 4, 0],
       yaw: 0,
       pitch: 0,
+      aimFrame: { yaw: 0, pitch: 0 },
       seed: 71,
       simTime: 1,
       blockSize: 0.5,
@@ -329,7 +367,7 @@ describe('debug firearm handling', () => {
     ).toBe(false);
     queue.tick(0.3);
     mechanics.advanceTo(10.3);
-    expect(mechanics.frames()).toEqual([{ uid: rifle.uid, mode: 'hand', elapsed: 0.3 }]);
+    expect(mechanics.frames()).toEqual([{ uid: rifle.uid, mode: 'hand', elapsed: 0.3, duration }]);
     queue.tick(duration - 0.3);
     expect(queue.busy).toBe(false);
     expect(mechanics.frames()).toEqual([]);

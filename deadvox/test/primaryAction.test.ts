@@ -19,7 +19,7 @@ const capabilities = [
   { id: 'held_food', kind: 'use', category: 'food', food: { calories: 1, water: 0 } },
   { id: 'held_drink', kind: 'use', category: 'drink', food: { calories: 0, water: 1 } },
   { id: 'held_bandage', kind: 'use', category: 'medical' },
-  { id: 'held_gun', kind: 'firearm', firearm: {}, twoHanded: true },
+  { id: 'held_gun', kind: 'firearm', firearm: { recoilKickRadians: 0.02 }, twoHanded: true },
   {
     id: 'held_igniter',
     kind: 'ignite',
