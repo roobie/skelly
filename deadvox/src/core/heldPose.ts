@@ -2,12 +2,19 @@
 // use the same metres/axes. Camera bob/recoil/roll remain cosmetic, not ballistic input.
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { HandSide } from './inventory.ts';
 
-export const HOLD: Readonly<Record<'right' | 'left' | 'both', Vec3>> = {
+export const HOLD: Readonly<Record<HandSide, Vec3>> = {
   right: [0.2, -0.2, -0.38],
   left: [-0.2, -0.2, -0.38],
-  both: [0.08, -0.22, -0.42],
 };
+
+const TWO_HAND_GRIP: Vec3 = [0.08, -0.22, -0.42];
+
+export const heldGripOffset = (side: HandSide, twoHanded: boolean): Vec3 =>
+  twoHanded
+    ? [side === 'right' ? TWO_HAND_GRIP[0] : -TWO_HAND_GRIP[0], TWO_HAND_GRIP[1], TWO_HAND_GRIP[2]]
+    : [...HOLD[side]];
 
 const rx = ([x, y, z]: Vec3, angle: number): Vec3 => [
   x,
@@ -43,13 +50,15 @@ export const heldAnchorOffset = (model: ModelDef, name: string): Vec3 => {
 
 export const heldEjectionPose = ({
   model,
-  hold,
+  side,
+  twoHanded,
   eye,
   yaw,
   pitch,
 }: {
   model: ModelDef;
-  hold: keyof typeof HOLD;
+  side: HandSide;
+  twoHanded: boolean;
   eye: Vec3;
   yaw: number;
   pitch: number;
@@ -59,7 +68,8 @@ export const heldEjectionPose = ({
   }
   const local: Vec3 = model.anchors.ejection.map((value, index) => value - model.grip!.at[index]!) as Vec3;
   const at = modelToView(model, local);
-  const offset: Vec3 = at.map((value, index) => value + HOLD[hold][index]!) as Vec3;
+  const grip = heldGripOffset(side, twoHanded);
+  const offset: Vec3 = at.map((value, index) => value + grip[index]!) as Vec3;
   const worldOffset = ry(rx(offset, pitch), yaw);
   const vector = ry(rx(modelToView(model, model.action.ejectDirection), pitch), yaw);
   const length = Math.hypot(...vector);

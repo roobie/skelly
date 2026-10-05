@@ -72,7 +72,7 @@ type Runtime = ReturnType<typeof createRuntime>;
 // supplies what the DOM would: controls, sound output, and the hamlet's world. Fresh and
 // restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.
-const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
+const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>, handedness?: 'right' | 'left') => {
   const hamlet = new Hamlet(seed, registry, scale);
   const { x0, z0, x1, z1 } = hamlet.bounds;
   const columns: [number, number][] = [];
@@ -135,6 +135,7 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
       throw new Error('Unexpected reading in snapshot fixture');
     },
     ...(snapshot ? { restore: snapshot } : {}),
+    ...(handedness ? { handedness } : {}),
   });
   const { sim, inventory, entities, zombies, spawner, rest, survival, quickbar, playerAudio } = session;
   if (session.restoredLook) {
@@ -161,17 +162,15 @@ const createRuntime = (snapshot?: ReturnType<typeof snapshotSession>) => {
     const backpack = inventory.create('school_backpack');
     const beans = inventory.create('canned_beans');
     if (!inventory.add(backpack, { kind: 'hand', side: 'right' })) {
-      throw new Error('Could not place snapshot backpack in hand');
+      throw new Error('Could not hold fixture backpack');
     }
     inventory.add(beans, { kind: 'pocket', owner: backpack, pocket: 0 });
     const rag = inventory.create('rag');
     inventory.add(rag, { kind: 'pile', pos: [editCx * CHUNK + 2, editChunk.cy * CHUNK + 1, editCz * CHUNK + 2] });
     const flashlight = inventory.create('flashlight');
-    flashlight.on = true;
-    if (!inventory.add(flashlight, { kind: 'hand', side: 'left' })) {
-      throw new Error('Could not place snapshot flashlight in hand');
+    if (!inventory.add(flashlight, { kind: 'hand', side: 'left' }) || survival.use(flashlight) !== undefined) {
+      throw new Error('Could not hold and light fixture flashlight');
     }
-    survival.lit = flashlight;
     quickbar.assign(0, beans);
     const container = [...entities.all].find((entity) => entity.pockets);
     if (container) {
@@ -1213,6 +1212,25 @@ it('a lit light saves its active ignition time and remaining burn', async () => 
     litAt: source.sim.calendar,
   });
 });
+
+it('restoring a left character ignores a fresh right choice and retains the physical inventory slots', async () => {
+  const source = createRuntime(undefined, 'left');
+  const saved = capture(source);
+  const decoded = await decodeSave(await encodeFixture(saved), { version: formatVersion, contentLookup });
+  const restored = createRuntime(decoded.snapshot, 'right');
+  expect(restored.session.character.handedness).toBe('left');
+  expect(restored.inventory.character).toBe(restored.session.character);
+  expect(restored.inventory.snapshotState()).toEqual(saved.character.inventory);
+});
+
+it.each([undefined, 'ambidextrous'])(
+  'the save encoder refuses handedness %s rather than inventing character identity',
+  async (handedness) => {
+    const saved = structuredClone(capture(createRuntime()));
+    Reflect.set(saved.character.progression, 'handedness', handedness);
+    await expect(encodeFixture(saved)).rejects.toThrow();
+  },
+);
 
 it('a door lock survives the save codec and fresh native entity owner, independently of the source object', async () => {
   const source = createRuntime();

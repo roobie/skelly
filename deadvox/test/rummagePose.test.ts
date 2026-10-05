@@ -135,7 +135,7 @@ it('a dedicated cock job is ineligible for rummage independently of live firearm
   f.queue.tick(f.queue.remaining / 2);
   f.mechanics.advanceTo(f.queue.jobs[0]!.elapsed);
   expect(f.mechanics.frames().some((frame) => frame.uid === f.item.uid && frame.mode === 'hand')).toBe(true);
-  expect(rummageFrame(f.inventory, f.queue.jobs[0], 'right')).toBeUndefined();
+  expect(rummageFrame(f.inventory, f.queue.jobs[0])).toBeUndefined();
   f.project();
 });
 
@@ -163,7 +163,7 @@ it('a live firearm pose takes precedence over a generic held move', () => {
   f.queue.tick(step);
   f.mechanics.advanceTo(step);
   expect(f.mechanics.frames().some((frame) => frame.uid === f.item.uid && frame.mode === 'fire')).toBe(true);
-  expect(rummageFrame(f.inventory, f.queue.jobs[0], 'right')?.weight).toBeGreaterThan(0);
+  expect(rummageFrame(f.inventory, f.queue.jobs[0])?.weight).toBeGreaterThan(0);
   const dedicated = f.project({ firearms: f.mechanics.frames() });
   expect(f.project().wrists).toEqual(dedicated.wrists);
 });
@@ -228,7 +228,7 @@ it('held-display capability selects the raised compass display and rummage grip 
   f.camera.rotation.y = -Math.PI / 3;
   const first = f.project();
   expect(first.separation).toBeLessThan(rest.separation);
-  const firstWeight = rummageFrame(f.inventory, f.queue.jobs[0], 'right')!.weight;
+  const firstWeight = rummageFrame(f.inventory, f.queue.jobs[0])!.weight;
   expect(firstWeight).toBeGreaterThan(0);
   expect(firstWeight).toBeLessThan(1);
   expect(attachment(first.wrists[0]!).distanceTo(restAttachment)).toBeLessThan(1e-12);
@@ -237,7 +237,7 @@ it('held-display capability selects the raised compass display and rummage grip 
   f.queue.tick(Math.min(f.queue.remaining / 4, RUMMAGE_POSE.transitionSeconds / 4));
   f.camera.rotation.y = Math.PI / 7;
   const second = f.project();
-  const secondWeight = rummageFrame(f.inventory, f.queue.jobs[0], 'right')!.weight;
+  const secondWeight = rummageFrame(f.inventory, f.queue.jobs[0])!.weight;
   expect(secondWeight).toBeGreaterThan(firstWeight);
   expect(attachment(second.wrists[0]!).distanceTo(restAttachment)).toBeLessThan(1e-12);
   expect(pointer!.rotation.z).toBeCloseTo(compassBearing(f.camera.rotation.y) * (Math.PI / 180), 12);

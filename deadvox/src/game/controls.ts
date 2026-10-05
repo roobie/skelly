@@ -17,7 +17,7 @@ export const labelForCode = (code: string): string => {
   if (code.startsWith('Shift')) {
     return 'Shift';
   }
-  if (code === KEY_BINDINGS.leftHandAction.code) {
+  if (code === KEY_BINDINGS.useOff.code) {
     return '=';
   }
   switch (code) {
@@ -45,11 +45,11 @@ export const PLAYER_CONTROL_BINDINGS = [
   { keys: 'Z', codes: [CONTROL_CODES.walkToggle], action: 'Walk / jog' },
   { keys: 'Space', codes: [CONTROL_CODES.jump], action: 'Jump' },
   { keys: 'Mouse', codes: ['mousemove'], action: 'Look' },
-  { keys: 'Left click', codes: [], action: 'Right-hand primary action; right jab if empty' },
+  { keys: 'Left click', codes: [], action: 'Dominant-hand use; dominant jab if empty' },
   {
     keys: '=',
-    codes: [KEY_BINDINGS.leftHandAction.code],
-    action: 'Left-hand primary action',
+    codes: [KEY_BINDINGS.useOff.code],
+    action: 'Off-hand use',
   },
   { keys: 'F', codes: [CONTROL_CODES.interact], action: 'Interact with a door or furniture' },
   {
