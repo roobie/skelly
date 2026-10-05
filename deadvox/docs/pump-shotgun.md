@@ -44,7 +44,10 @@ occupied physical slot, not actor preference, so moving the gun does not move
 its authored port or reverse its geometry. Reprojecting from rest each frame
 lets cancellation and late model availability converge without replaying work.
 The path and apparent thumb push are presentation estimates for BR's look,
-not a reason to freeze pose coordinates or change handling duration.
+not a reason to freeze pose coordinates or change handling duration. A wrist
+merely leaving its rest grip does not establish that insertion reaches the port;
+`deadvox/test/shellLoadPose.test.ts` samples the visible round against the authored
+target through the owner clock, keeping that contract independent of pose tuning.
 
 Cartridge-derived gameplay estimates are not measured wound ballistics. See
 `deadvox/src/core/pellets.ts`, `pelletShot`. Preserve gameplay properties while

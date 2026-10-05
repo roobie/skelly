@@ -103,12 +103,10 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       expect(update().wrist.distanceTo(rest.wrist)).toBeCloseTo(0);
       queue.tick(duration / 2);
       const feeding = update();
-      expect(feeding.wrist.distanceTo(feeding.port)).toBeLessThan(rest.wrist.distanceTo(rest.port));
       expect(feeding.gun.distanceTo(rest.gun)).toBeCloseTo(0);
       const shell = scene.getObjectByName('load-shell-probe');
       expect(shell?.visible).toBe(true);
       const shellPosition = shell!.getWorldPosition(new Vector3());
-      expect(shellPosition.distanceTo(feeding.wrist)).toBeLessThan(shellPosition.distanceTo(rest.wrist));
       // Reprojection cannot advance the insertion or perturb an attached support arm.
       expect(update().wrist.distanceTo(feeding.wrist)).toBeCloseTo(0);
       queue.cancel();
@@ -116,9 +114,23 @@ it('the physical support hand feeds a shell toward the port from the load job cl
       expect(scene.getObjectByName('load-shell-probe')).toBeUndefined();
       expect(shells.count).toBe(2);
       expect(mechanics.load(shells, duration)).toBeUndefined();
-      queue.tick(duration / 2);
-      expect(update().wrist.distanceTo(feeding.wrist)).toBeCloseTo(0);
-      queue.tick(duration / 2);
+      const samples = 50;
+      let closest = Number.POSITIVE_INFINITY;
+      for (let index = 1; index < samples; index++) {
+        queue.tick(duration / samples);
+        const pose = update();
+        const round = scene.getObjectByName('load-shell-probe');
+        if (round?.visible) {
+          closest = Math.min(closest, round.getWorldPosition(new Vector3()).distanceTo(pose.port));
+        }
+        if (index === samples / 2) {
+          expect(pose.wrist.distanceTo(feeding.wrist)).toBeCloseTo(0);
+        }
+      }
+      expect(closest).toBeLessThan(rest.wrist.distanceTo(rest.port) / 10);
+      expect(feeding.wrist.distanceTo(feeding.port)).toBeLessThan(rest.wrist.distanceTo(rest.port));
+      expect(shellPosition.distanceTo(feeding.wrist)).toBeLessThan(shellPosition.distanceTo(rest.wrist));
+      queue.tick(duration);
       expect(gun.firearm?.tube).toEqual([shells.type]);
       expect(shells.count).toBe(1);
       expect(update().wrist.distanceTo(rest.wrist)).toBeCloseTo(0);
