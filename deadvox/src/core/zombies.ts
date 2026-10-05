@@ -1078,6 +1078,10 @@ export class ZombieSystem {
         isSolid: this.options.isOpaque,
       };
       const sees = seesPlayer(perception);
+      if (sees && zombie.obstacleWanderRemaining > 0) {
+        zombie.obstacleWanderRemaining = 0;
+        zombie.obstacleWanderHeading = undefined;
+      }
       const hearingInput = { zombie: type, from: pos, player, blockSize, isSolid };
       let vocal: HeardNoise | undefined;
       if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
@@ -1334,7 +1338,7 @@ export class ZombieSystem {
         zombie.obstacleSlideSide = zombie.obstacleSlideSide === -1 ? 1 : -1;
       }
       if (
-        !wanderingAtTickStart &&
+        !(sees || wanderingAtTickStart) &&
         obstacleContact &&
         !wasObstacleContact &&
         aimDirection &&
