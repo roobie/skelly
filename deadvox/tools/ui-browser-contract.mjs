@@ -196,8 +196,8 @@ try {
     const key = cdpKey(binding.code);
     await press(key.code, key.key, key.windowsVirtualKeyCode);
   };
-  const action = async (id) => {
-    await pressCdpAction(evaluate, send, id);
+  const action = async (actionId) => {
+    await pressCdpAction(evaluate, send, actionId);
     await delay(80);
   };
   const saveNote = 'Saves are kept in this browser. When two tabs play the same world, the last one to save wins.';

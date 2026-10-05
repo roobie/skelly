@@ -1,6 +1,7 @@
 // biome-ignore-all lint/correctness/noNodejsModules: maintained standalone Vite/Chrome contract.
 // biome-ignore-all lint/style/noProcessEnv: runner supplies executable and artifact destination.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
+// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';

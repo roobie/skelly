@@ -438,6 +438,10 @@ export class InventoryScreen {
       this.hooks.assign(digit, item);
       return true;
     }
+    return this.selectedAction(action, item);
+  }
+
+  private selectedAction(action: string, item: Item): boolean {
     switch (action) {
       case 'inventory.hands':
         this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));

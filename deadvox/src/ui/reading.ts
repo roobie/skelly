@@ -23,6 +23,8 @@ const scrollText = (text: HTMLElement, action: string): void => {
     case 'reading.page-down':
       text.scrollTop += text.clientHeight * 0.8;
       break;
+    default:
+      break;
   }
 };
 export const mountReading = (host: HTMLElement, changed: () => void) => {

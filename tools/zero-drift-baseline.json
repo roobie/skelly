@@ -2,7 +2,6 @@
   "version": 1,
   "violations": [
     { "path": ".claude/CLAUDE.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
-    { "path": "deadvox/CONTROLS.md", "check": "path", "text": "debug/index.ts", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "line_number", "text": "src/core/saveState.ts:153", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "line_number", "text": "src/core/zombies.ts:57", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/", "count": 1 },

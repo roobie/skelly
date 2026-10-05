@@ -26,7 +26,7 @@ it('keeps native text codes and defaults intact without emitting gameplay intent
   const canvas = document.createElement('canvas');
   document.body.append(search, canvas);
   const observed: string[] = [];
-  search.addEventListener('keydown', (event) => observed.push((event as KeyboardEvent).code));
+  search.addEventListener('keydown', (domEvent) => observed.push((domEvent as KeyboardEvent).code));
   const event = (type: 'keydown' | 'keyup') =>
     new KeyboardEvent(type, { bubbles: true, cancelable: true, code: 'KeyZ' });
   try {

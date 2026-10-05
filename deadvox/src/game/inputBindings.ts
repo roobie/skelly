@@ -1,3 +1,6 @@
+// biome-ignore-all lint/style/useNamingConvention: DOM code names retain their exact platform spelling.
+// biome-ignore-all lint/style/noExcessiveClassesPerFile: preferences and their single DOM resolver share the enforced keyboard boundary.
+
 export type InputContext =
   | 'title'
   | 'menu'
@@ -39,6 +42,7 @@ const entered: readonly InputContext[] = [
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
+// biome-ignore lint/complexity/useMaxParams: compact declarations keep alternative keys and gesture metadata in one catalogue.
 const row = (
   id: string,
   description: string,
@@ -239,8 +243,8 @@ const otherCodes = new Set([
   ...Object.keys(modifierCodes),
   ...NATIVE_INPUTS.map(({ code }) => code),
 ]);
-const physicalCode = (code: string): boolean =>
-  /^(?:Key[A-Z]|Digit[0-9]|Numpad[0-9]|F(?:[1-9]|1[0-9]|2[0-4]))$/.test(code) || otherCodes.has(code);
+const physicalPattern = /^(?:Key[A-Z]|Digit[0-9]|Numpad[0-9]|F(?:[1-9]|1[0-9]|2[0-4]))$/;
+const physicalCode = (code: string): boolean => physicalPattern.test(code) || otherCodes.has(code);
 export const chordIssue = (chord: Chord): string | undefined => {
   if (!physicalCode(chord.code)) {
     return 'Unknown physical key';
@@ -264,37 +268,48 @@ export const chordIssue = (chord: Chord): string | undefined => {
   if (chord.modifier && modifierCodes[chord.code]) {
     return 'A modifier cannot modify itself';
   }
+  return undefined;
 };
 export type BindingMap = ReadonlyMap<string, readonly Chord[]>;
 const chordsFor = (binding: Binding, overrides: BindingMap): readonly Chord[] =>
   overrides.get(binding.id) ?? binding.defaults;
 const sameChord = (a: Chord, b: Chord): boolean => a.code === b.code && a.modifier === b.modifier;
 const isHeld = (binding: Binding): boolean => binding.commands.some(({ kind }) => kind !== 'press');
+const ownBindingIssue = (a: Binding, bindings: readonly Binding[], overrides: BindingMap): string | undefined => {
+  const ac = chordsFor(a, overrides);
+  if (a.plainKey && ac.some((chord) => chord.modifier || modifierCodes[chord.code])) {
+    return `${a.description}: requires an unmodified, non-modifier key`;
+  }
+  if (ac.some((c, n) => ac.slice(n + 1).some((other) => sameChord(c, other)))) {
+    return `${a.description}: duplicate alternative`;
+  }
+  if (a.gate) {
+    const gate = bindings.find(({ id }) => id === a.gate);
+    if (!gate) {
+      return `${a.description}: missing gate`;
+    }
+    if (ac.some((c) => chordsFor(gate, overrides).some((g) => g.code === c.code))) {
+      return `${a.description}: cannot share its gate key`;
+    }
+  }
+  return undefined;
+};
+const gateKeyOverlap = (a: Binding, b: Binding): boolean =>
+  a.id === b.gate || b.id === a.gate || a.id === 'debug.gate' || b.id === 'debug.gate';
 export const bindingConflict = (bindings: readonly Binding[], overrides: BindingMap): string | undefined => {
   for (let i = 0; i < bindings.length; i++) {
     const a = bindings[i]!;
+    const issue = ownBindingIssue(a, bindings, overrides);
+    if (issue) {
+      return issue;
+    }
     const ac = chordsFor(a, overrides);
-    if (a.plainKey && ac.some((chord) => chord.modifier || modifierCodes[chord.code])) {
-      return `${a.description}: requires an unmodified, non-modifier key`;
-    }
-    if (ac.some((c, n) => ac.slice(n + 1).some((other) => sameChord(c, other)))) {
-      return `${a.description}: duplicate alternative`;
-    }
-    if (a.gate) {
-      const gate = bindings.find(({ id }) => id === a.gate);
-      if (!gate) {
-        return `${a.description}: missing gate`;
-      }
-      if (ac.some((c) => chordsFor(gate, overrides).some((g) => g.code === c.code))) {
-        return `${a.description}: cannot share its gate key`;
-      }
-    }
     for (const b of bindings.slice(i + 1)) {
       const contexts = a.contexts.filter((context) => b.contexts.includes(context));
       if (contexts.length === 0) {
         continue;
       }
-      const gateKeyConflict = a.id === b.gate || b.id === a.gate || a.id === 'debug.gate' || b.id === 'debug.gate';
+      const gateKeyConflict = gateKeyOverlap(a, b);
       if (a.gate !== b.gate && !gateKeyConflict) {
         continue;
       }
@@ -312,6 +327,7 @@ export const bindingConflict = (bindings: readonly Binding[], overrides: Binding
       }
     }
   }
+  return undefined;
 };
 const STORAGE_KEY = 'deadvox.input-bindings';
 interface PreferenceStorage {
@@ -320,12 +336,15 @@ interface PreferenceStorage {
   removeItem: (key: string) => void;
 }
 const browserStorage = (): PreferenceStorage | undefined => {
-  if (typeof window === 'undefined') {
+  if (typeof globalThis.window === 'undefined') {
     return;
   }
   try {
-    return window.localStorage;
-  } catch {}
+    return globalThis.window.localStorage;
+  } catch {
+    // Browser preferences must not veto play when storage access is denied.
+    return undefined;
+  }
 };
 const parseChords = (value: unknown, count: number): readonly Chord[] | undefined => {
   if (!Array.isArray(value) || value.length !== count) {
@@ -370,18 +389,27 @@ const punctuation: Readonly<Record<string, string>> = {
   ArrowLeft: '←',
   ArrowRight: '→',
 };
-const codeLabel = (code: string, layout?: ReadonlyMap<string, string>): string =>
-  layout?.get(code) ||
-  punctuation[code] ||
-  (code.startsWith('Key')
-    ? code.slice(3)
-    : code.startsWith('Digit')
-      ? code.slice(5)
-      : code.startsWith('Shift')
-        ? 'Shift'
-        : code.startsWith('Alt')
-          ? 'Alt'
-          : code);
+const codeLabel = (code: string, layout?: ReadonlyMap<string, string>): string => {
+  const label = layout?.get(code) || punctuation[code];
+  if (label) {
+    return label;
+  }
+  if (code.startsWith('Key')) {
+    return code.slice(3);
+  }
+  if (code.startsWith('Digit')) {
+    return code.slice(5);
+  }
+  if (code.startsWith('Shift')) {
+    return 'Shift';
+  }
+  if (code.startsWith('Alt')) {
+    return 'Alt';
+  }
+  return code;
+};
+const preferenceObject = (value: unknown): value is Record<string, unknown> =>
+  Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 export class BindingRegistry {
   readonly bindings: readonly Binding[];
   readonly diagnostics: string[] = [];
@@ -399,12 +427,12 @@ export class BindingRegistry {
     } catch {
       this.diagnostics.push('Keyboard preferences could not be read');
     }
-    if (stored && typeof stored === 'object' && !Array.isArray(stored)) {
+    if (preferenceObject(stored)) {
       for (const binding of bindings) {
         if (!Object.hasOwn(stored, binding.id)) {
           continue;
         }
-        const chords = parseChords((stored as Record<string, unknown>)[binding.id], binding.defaults.length);
+        const chords = parseChords(stored[binding.id], binding.defaults.length);
         if (!chords) {
           this.diagnostics.push(`${binding.description}: invalid stored binding`);
           continue;
@@ -467,6 +495,7 @@ export class BindingRegistry {
     this.overrides = candidate;
     this.persist();
     this.changed(true);
+    return undefined;
   }
   reset(): void {
     this.overrides.clear();
@@ -494,7 +523,7 @@ export class BindingRegistry {
     }
   }
   private changed(bindingsChanged: boolean): void {
-    this.revision++;
+    this.revision += 1;
     for (const listener of this.listeners) {
       listener(bindingsChanged);
     }
@@ -610,6 +639,16 @@ export class KeyboardInput {
       this.cancel();
     }
   }
+  private capturePress(event: KeyEvent): boolean {
+    if (browserEscape(event)) {
+      this.capture?.(undefined);
+      return false;
+    }
+    if (!event.repeat) {
+      this.capture?.(capturedChord(event));
+    }
+    return !REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier);
+  }
   press(event: KeyEvent, text = false): boolean {
     this.sync();
     this.down.add(event.code);
@@ -617,14 +656,7 @@ export class KeyboardInput {
       return false;
     }
     if (this.capture) {
-      if (browserEscape(event)) {
-        this.capture(undefined);
-        return false;
-      }
-      if (!event.repeat) {
-        this.capture(capturedChord(event));
-      }
-      return !REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier);
+      return this.capturePress(event);
     }
     if (browserEscape(event)) {
       this.escape();
@@ -670,18 +702,18 @@ export class KeyboardInput {
             }),
         ),
     );
-    const binding = matches[0];
-    if (!binding) {
+    const [selectedBinding] = matches;
+    if (!selectedBinding) {
       return false;
     }
-    if (!event.repeat || binding.repeat) {
+    if (!event.repeat || selectedBinding.repeat) {
       if (!this.active.has(event.code)) {
-        this.active.set(event.code, binding.id);
-        if (binding.id === 'debug.gate') {
+        this.active.set(event.code, selectedBinding.id);
+        if (selectedBinding.id === 'debug.gate') {
           this.cancel(true);
         }
       }
-      this.command({ action: binding.id, phase: 'down', at: event.timeStamp });
+      this.command({ action: selectedBinding.id, phase: 'down', at: event.timeStamp });
       this.sync();
     }
     return true;

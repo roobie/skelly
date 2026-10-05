@@ -38,7 +38,7 @@ if (bench === 'report') {
   mountControlsCard(document.getElementById('controls')!);
   mountInputOptions(document.getElementById('input-options')!);
   keyboardInput.install();
-  void inputBindings.loadLayout();
+  inputBindings.loadLayout();
   let config = configFromUrl(params);
   const saveBackend = params.get('save-backend');
   const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';

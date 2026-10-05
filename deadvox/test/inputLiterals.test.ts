@@ -3,10 +3,14 @@ import { join, relative } from 'node:path';
 import { expect, it } from 'vitest';
 import { keyboardViolations } from '../tools/lit-check/inputGuard.ts';
 
+const sourceExtension = /\.[cm]?[jt]s$/;
 const files = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
-    return entry.isDirectory() ? files(path) : /\.[cm]?[jt]s$/.test(entry.name) ? [path] : [];
+    if (entry.isDirectory()) {
+      return files(path);
+    }
+    return sourceExtension.test(entry.name) ? [path] : [];
   });
 it('keeps physical literals and DOM keyboard interpretation in the single registry owner', () => {
   const root = join(import.meta.dirname, '../src');

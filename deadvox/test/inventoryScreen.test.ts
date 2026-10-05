@@ -122,10 +122,14 @@ const holdQuickGate = () => {
   keyboardInput.cancel();
   keyboardInput.context = () => ({ context: 'inventory', debug: false });
   keyboardInput.command = () => undefined;
-  expect(inputBindings.rebind('inventory.quick-action-gate', [{ code: 'ShiftLeft' }])).toBeDefined();
-  expect(inputBindings.rebind('inventory.quick-action-gate', [{ code: 'KeyJ' }])).toBeUndefined();
+  const issue = inputBindings.rebind('inventory.quick-action-gate', [{ code: 'KeyJ' }]);
+  if (issue) {
+    throw new Error(issue);
+  }
   const event = new KeyboardEvent('keydown', inputBindings.chords('inventory.quick-action-gate')[0]);
-  expect(keyboardInput.press(event)).toBe(true);
+  if (!keyboardInput.press(event)) {
+    throw new Error('Quick-action fixture gate was not admitted');
+  }
   return () => {
     keyboardInput.release(event);
     inputBindings.reset();

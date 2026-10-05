@@ -1,3 +1,5 @@
+// biome-ignore-all lint/performance/noAwaitInLoops: gate/modifier down edges precede the primary key; releases must reverse that order.
+// biome-ignore-all lint/style/useNamingConvention: native metadata retains exact DOM code spelling.
 // Native keyboard drivers resolve the running page's effective bindings, including its hold gate.
 export const actionSnapshotExpression = (id) => `import('/src/game/inputBindings.ts').then(({ inputBindings }) => {
   const binding = inputBindings.binding(${JSON.stringify(id)});
@@ -48,23 +50,20 @@ const navigation = {
   ShiftLeft: 16,
   AltLeft: 18,
 };
-export const cdpKey = (code) => ({
-  code,
-  key: code.startsWith('Key')
-    ? code.slice(3).toLowerCase()
-    : code.startsWith('Digit')
-      ? code.slice(5)
-      : code === 'Backquote'
-        ? '`'
-        : code,
-  windowsVirtualKeyCode: code.startsWith('Key')
-    ? code.charCodeAt(3)
-    : code.startsWith('Digit')
-      ? code.charCodeAt(5)
-      : /^F\d+$/.test(code)
-        ? 111 + Number(code.slice(1))
-        : navigation[code],
-});
+const functionKey = /^F\d+$/;
+export const cdpKey = (code) => {
+  if (code.startsWith('Key')) {
+    return { code, key: code.slice(3).toLowerCase(), windowsVirtualKeyCode: code.charCodeAt(3) };
+  }
+  if (code.startsWith('Digit')) {
+    return { code, key: code.slice(5), windowsVirtualKeyCode: code.charCodeAt(5) };
+  }
+  return {
+    code,
+    key: code === 'Backquote' ? '`' : code,
+    windowsVirtualKeyCode: functionKey.test(code) ? 111 + Number(code.slice(1)) : navigation[code],
+  };
+};
 export const pressCdpAction = async (evaluate, send, id) => {
   const { primary, gate } = await evaluate(actionSnapshotExpression(id));
   const held = [

@@ -57,7 +57,7 @@ import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import { Input } from './input.ts';
-import { type InputCommand, keyboardInput } from './inputBindings.ts';
+import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PLAYER } from './player.ts';
@@ -684,43 +684,111 @@ export const startPlay = (
     };
   };
 
-  keyboardInput.context = () => ({
-    debug: config.debug,
-    context:
-      options.saveController && !options.saveController.isEntered
-        ? 'title'
-        : debugTools?.spawnOpen
-          ? 'spawn'
-          : debugTools?.menuOpen
-            ? 'debug-panel'
-            : mainMenuOpen || sim.dead
-              ? 'menu'
-              : reading.isOpen
-                ? 'reading'
-                : screen.isOpen
-                  ? 'inventory'
-                  : compression.interruption === undefined
-                    ? debugTools?.buildOn
-                      ? 'build'
-                      : debugTools?.noclip
-                        ? 'noclip'
-                        : 'play'
-                    : 'interrupted',
-  });
+  const playContext = (): InputContext => {
+    if (mainMenuOpen || sim.dead) {
+      return 'menu';
+    }
+    if (reading.isOpen) {
+      return 'reading';
+    }
+    if (screen.isOpen) {
+      return 'inventory';
+    }
+    if (compression.interruption !== undefined) {
+      return 'interrupted';
+    }
+    if (debugTools?.buildOn) {
+      return 'build';
+    }
+    return debugTools?.noclip ? 'noclip' : 'play';
+  };
+  const inputContext = (): InputContext => {
+    if (options.saveController && !options.saveController.isEntered) {
+      return 'title';
+    }
+    if (debugTools?.spawnOpen) {
+      return 'spawn';
+    }
+    if (debugTools?.menuOpen) {
+      return 'debug-panel';
+    }
+    return playContext();
+  };
+  keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
   keyboardInput.cancelled = () => {
     input.cancel();
     quickbarInput.cancel();
   };
   keyboardInput.escape = () => reading.close();
+  const modalCommand = (action: string): boolean => {
+    if (action === 'ui.main-menu-toggle') {
+      mainMenuOpen = !mainMenuOpen;
+      if (mainMenuOpen) {
+        reading.close();
+        closeInventoryScreen();
+        debugTools?.closeMenus();
+      }
+      syncMenuState();
+      return true;
+    }
+    if (reading.isOpen) {
+      reading.onAction(action);
+      return true;
+    }
+    if (action === 'ui.inventory-toggle') {
+      if (!compression.locksInput) {
+        toggleInventory();
+      }
+      return true;
+    }
+    if (screen.isOpen) {
+      screen.onAction(action);
+      return true;
+    }
+    return mainMenuOpen || timeKeys(action);
+  };
+  const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
+    switch (action) {
+      case 'movement.walk-toggle':
+        input.walking = !input.walking;
+        break;
+      case 'hand.use-off':
+        input.useOff();
+        break;
+      case 'firearm.reload':
+        input.reload.keyDown(at, reloadBinding());
+        break;
+      case 'world.interact':
+        if (!compression.locksInput) {
+          use();
+        }
+        break;
+      case 'handling.stop':
+        input.reload.cancel();
+        queue.cancel();
+        if (sim.actions.job) {
+          stopAction();
+        }
+        break;
+      default:
+        break;
+    }
+    if (slot !== undefined && !compression.locksInput) {
+      quickbarInput.keyDown(slot, at);
+    }
+  };
+  const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'firearm.reload') {
+      input.reload.keyUp(at);
+    }
+    if (slot !== undefined) {
+      quickbarInput.keyUp(slot, at);
+    }
+  };
   keyboardInput.command = ({ action, phase, at }: InputCommand) => {
     const slot = action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
     if (phase === 'up') {
-      if (action === 'firearm.reload') {
-        input.reload.keyUp(at);
-      }
-      if (slot !== undefined) {
-        quickbarInput.keyUp(slot, at);
-      }
+      releaseCommand(action, at, slot);
       return;
     }
     if (action.startsWith('debug.') || action.startsWith('spawn.')) {
@@ -731,54 +799,8 @@ export const startPlay = (
     if (sim.dead) {
       return;
     }
-    if (action === 'ui.main-menu-toggle') {
-      mainMenuOpen = !mainMenuOpen;
-      if (mainMenuOpen) {
-        reading.close();
-        closeInventoryScreen();
-        debugTools?.closeMenus();
-      }
-      syncMenuState();
-      return;
-    }
-    if (reading.isOpen) {
-      reading.onAction(action);
-      return;
-    }
-    if (action === 'ui.inventory-toggle') {
-      if (!compression.locksInput) {
-        toggleInventory();
-      }
-      return;
-    }
-    if (screen.isOpen) {
-      screen.onAction(action);
-      return;
-    }
-    if (mainMenuOpen || timeKeys(action)) {
-      return;
-    }
-    if (action === 'movement.walk-toggle') {
-      input.walking = !input.walking;
-    }
-    if (action === 'hand.use-off') {
-      input.useOff();
-    }
-    if (action === 'firearm.reload') {
-      input.reload.keyDown(at, reloadBinding());
-    }
-    if (slot !== undefined && !compression.locksInput) {
-      quickbarInput.keyDown(slot, at);
-    }
-    if (action === 'world.interact' && !compression.locksInput) {
-      use();
-    }
-    if (action === 'handling.stop') {
-      input.reload.cancel();
-      queue.cancel();
-      if (sim.actions.job) {
-        stopAction();
-      }
+    if (!modalCommand(action)) {
+      gameplayCommand(action, at, slot);
     }
   };
   keyboardInput.install();
