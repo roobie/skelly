@@ -177,13 +177,13 @@ success is the remaining open point in #267; BR's warfare skill is a lean, not a
 ruling.
 
 - **Right mouse sets the combat stance:** holding it raises a melee weapon into
-en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
-also ready a firearm, bringing it up to fire from the hip; releasing it will
-lower the firearm. When #267 lands, the held firearm pose will show readiness;
-there will be no HUD indicator. BR described the pose direction on 2026-10-05:
-"the UI must show unreadied vs readied / unreadied does not have muzzle forward
-- rather downward". When #267 lands, an unreadied firearm's muzzle points down;
-readying brings it up and forward.
+  en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
+  also ready a firearm, bringing it up to fire from the hip; releasing it will
+  lower the firearm. When #267 lands, the held firearm pose will show readiness;
+  there will be no HUD indicator. BR described the pose direction on 2026-10-05:
+  "the UI must show unreadied vs readied / unreadied does not have muzzle
+  forward - rather downward". When #267 lands, an unreadied firearm's muzzle
+  points down; readying brings it up and forward.
 - **Aiming down the sights is a toggle within the ready stance,** for firearms
   only: while right-click is held, a middle click or Shift switches between hip
   and sights (the view narrows through the sights). Input interpretation belongs
@@ -191,10 +191,10 @@ readying brings it up and forward.
 - **Melee also requires readiness:** BR said, "yeah, melee needs 'en-garde' on
   right-mouse-hold, which also enables blocking incoming melee (based on skill)".
   When #267 lands, an unready left-click does not swing.
-- **Blocking requires en-garde and backing off:** holding right mouse and S
-  blocks incoming melee; en-garde alone does not. BR answered #267's question
-  1a on 2026-10-05: "1a. yes S is required to actually block from en-garde".
-  Whether a block succeeds depends on the skill that remains open in #267.
+- **Blocking:** When #267 lands, holding right mouse and S blocks incoming
+  melee; en-garde alone does not, and whether the block succeeds depends on
+  the skill still open in #267. BR answered #267's question 1a on 2026-10-05: "1a. yes S is required
+  to actually block from en-garde".
 - **Unready firearm left-click is an exception to refusal:** BR's answer for an
   unreadied firearm was "nothing". When #267 lands, it produces no shot and no
   nope sound; this deliberate no-op does not use the ordinary refusal cue.

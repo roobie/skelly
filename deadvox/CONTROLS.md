@@ -32,9 +32,10 @@ acting").
   called it an "own gait, but mainly it's simply a speed factor"; which skill
   applies remains open in #267, with a generic "warfare" skill only a lean. BR
   also said, "yeah, melee needs 'en-garde' on right-mouse-hold, which also
-  enables blocking incoming melee (based on skill)". Blocking requires en-garde
-  plus S: "1a. yes S is required to actually block from en-garde"; success
-  depends on skill. When #267 lands, an unreadied firearm's left-click does
+  enables blocking incoming melee (based on skill)". When #267 lands, holding
+  right mouse and S blocks incoming melee; whether the block succeeds depends
+  on skill. BR said, "1a. yes S is required to actually block from en-garde".
+  When #267 lands, an unreadied firearm's left-click does
   "nothing": no shot and no nope sound. When #267 lands, the held firearm pose
   shows ready state, not a HUD indicator. Middle click or Shift toggles hip and
   sights while a firearm is ready.
