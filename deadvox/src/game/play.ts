@@ -15,7 +15,7 @@ import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, type UseOption, useOption } from '../core/options.ts';
+import { doorOptions, doorPlan } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -258,8 +258,6 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
-  const useItem = (item: Item): string | undefined =>
-    firearms.supportsUse(item) ? firearms.use(item, sim.time) : survival.use(item);
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet);
   if (session.restoredLook) {
@@ -411,9 +409,6 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    use: useItem,
-    useOption: (item, reachView): UseOption =>
-      firearms.supportsUse(item) ? firearms.useOption(item) : useOption(item, reachView),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
@@ -1083,6 +1078,7 @@ export const startPlay = (
         return;
       case 'light':
       case 'read':
+      case 'use':
         refusalReason(survival.use(action.item));
         return;
       case 'firearm': {

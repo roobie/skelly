@@ -43,7 +43,6 @@ export const CONTROL_CODES = {
   drop: 'KeyD',
   bestPocket: 'KeyE',
   takeAll: 'KeyA',
-  use: 'KeyU',
   menu: KEY_BINDINGS.mainMenu.code,
   previous: 'ArrowUp',
   next: 'ArrowDown',

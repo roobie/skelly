@@ -446,7 +446,9 @@ accepted only when an eligible activity is reachable.
   recipes that need it.
 - A `book` component (title, recipes taught, reading time). Reading is a long
   action with the book in your hands, under 2.4's contract; finishing it
-  teaches its recipes. The `paperback` stays inert.
+  teaches its recipes. One reading teaches the recipes for Slice 2; deeper
+  learning is a later-slice direction (BR, 2026-10-05; see EPIC.md). The
+  `paperback` stays inert.
 - 4 books.
 
 **Saves:** skill practice, added to 2.4's state; a reading in progress as a long

@@ -392,3 +392,10 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    "bug: while in the process of wielding something, you can attack". While handling
    is busy, primary actions from either hand are refused. Whether a one-handed job
    should leave the free hand usable remains open for BR.
+8. **Held consumables (BR, 2026-10-05):** answering “What should left-clicking
+   held food, drink or a bandage do?” BR ruled: “activate them”. The primary
+   action selects food and drink by their `food` component and medical items by
+   category, then calls `Survival.use`; quickbar actions remain owned by
+   `Survival.useFromQuickbar`. Until Slice 3's body model includes wounds, using
+   a bandage follows that owner and is refused; see `src/game/survival.ts`,
+   `Survival.use`.
