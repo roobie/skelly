@@ -154,7 +154,7 @@ export class LongActions {
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return 'Stop reading first';
     }
-    const result = this.sim.compress();
+    const result = this.sim.compressLongAction();
     if (!result.ok) {
       return result.reason;
     }
@@ -185,7 +185,7 @@ export class LongActions {
     if (reason) {
       return reason;
     }
-    const result = this.sim.compress();
+    const result = this.sim.compressLongAction();
     if (!result.ok) {
       return result.reason;
     }
@@ -234,7 +234,7 @@ export class LongActions {
     if (duration === undefined || !Number.isFinite(duration) || duration <= 0) {
       return 'Invalid reading time';
     }
-    const result = this.sim.compress();
+    const result = this.sim.compressLongAction();
     if (!result.ok) {
       return result.reason;
     }
@@ -253,7 +253,7 @@ export class LongActions {
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
     }
-    const result = this.sim.compress();
+    const result = this.sim.compressLongAction();
     if (!result.ok) {
       return result.reason;
     }
@@ -285,7 +285,7 @@ export class LongActions {
         return reason ?? 'Missing reading action owner';
       }
     }
-    const result = this.sim.compress();
+    const result = this.sim.compressLongAction();
     if (!result.ok) {
       return result.reason;
     }

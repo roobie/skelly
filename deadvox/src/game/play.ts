@@ -666,6 +666,8 @@ export const startPlay = (
   const stopAction = (): void => {
     if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
       sim.actions.stop();
+    } else if (rest.action?.kind === 'sleep') {
+      return;
     } else if (rest.action) {
       rest.stop();
     } else {
@@ -673,7 +675,7 @@ export const startPlay = (
     }
   };
 
-  /** C continues and X stops after an interruption. Returns true if the key was used. */
+  /** C continues; X stops only actions whose owner permits cancellation. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
       return false;
@@ -959,6 +961,9 @@ export const startPlay = (
     }
     const kind = restKindForFurniture(def);
     if (kind) {
+      if (kind === 'sleep' && rest.action?.kind === 'sleep' && rest.action.furnitureUid === entity.uid) {
+        return;
+      }
       toggleRest(kind, entity);
       return;
     }

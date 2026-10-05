@@ -25,16 +25,19 @@ describe('restViewModel', () => {
     expect(vm.clock).toBe(formatClock(sim.calendar));
   });
 
-  it('shows how to stop it, by kind', () => {
+  it('offers cancellation for rest but not sleep', () => {
     const sim = new Simulation({ seed: 1 });
     const rest: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
-    const stopKey = labelForCode(CONTROL_CODES.cancel);
-    const sleepKey = labelForCode(CONTROL_CODES.sleep);
-    expect(restViewModel(rest, sim, false).stopHint).toContain(stopKey);
-    expect(restViewModel(rest, sim, false).stopHint).not.toContain(sleepKey);
+    const interactKey = labelForCode(CONTROL_CODES.interact);
+    const cancelKey = labelForCode(CONTROL_CODES.cancel);
+    const restVm = restViewModel(rest, sim, false);
+    expect(restVm.stopHint).toContain(interactKey);
+    expect(restVm.stopHint).toContain(cancelKey);
+    expect(restVm.canStop).toBe(true);
     const sleep: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 40 };
-    expect(restViewModel(sleep, sim, false).stopHint).toContain(stopKey);
-    expect(restViewModel(sleep, sim, false).stopHint).toContain(sleepKey);
+    const sleepVm = restViewModel(sleep, sim, false);
+    expect(sleepVm.stopHint).toBe('');
+    expect(sleepVm.canStop).toBe(false);
   });
 
   it('shows a live interruption reason only when messages are visible', () => {

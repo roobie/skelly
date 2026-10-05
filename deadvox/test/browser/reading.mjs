@@ -34,7 +34,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,playKeys,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
         );
       },
     },
@@ -220,6 +220,110 @@ try {
     await page.keyboard.press('f');
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
+    const rampFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    await waitForSimulation(
+      page,
+      () => {
+        const { sim } = globalThis.readingWitness.session;
+        return { time: sim.time, paused: sim.paused, reached: !sim.compression.locksInput };
+      },
+      undefined,
+      { seconds: 5, from: rampFrom, label: 'rest cancellation returns input at normal speed', record },
+    );
+    const bedUid = await page.evaluate(() => {
+      const { body, engine } = globalThis.readingWitness;
+      const furniture = [...engine.entities.registry.furniture.values()].find((value) => value.rest?.sleep);
+      if (!furniture) {
+        throw new Error('Sleep input fixture has no sleepable furniture');
+      }
+      const entity = engine.entities.add({
+        type: furniture.id,
+        pos: [Math.floor(body.pos[0]) + 2, Math.floor(body.pos[1]), Math.floor(body.pos[2]) + 1],
+        size: furniture.size,
+        facing: 'n',
+      });
+      if (!entity) {
+        throw new Error('Could not place the sleep input fixture');
+      }
+      return entity.uid;
+    });
+    const sleepRefusal = await page.evaluate((uid) => {
+      const { session } = globalThis.readingWitness;
+      return session.rest.start('sleep', uid);
+    }, bedUid);
+    assert.equal(sleepRefusal, undefined);
+    await page.waitForFunction((uid) => {
+      const { session } = globalThis.readingWitness;
+      return session.rest.action?.kind === 'sleep' && session.rest.action.furnitureUid === uid;
+    }, bedUid);
+    await page.evaluate((uid) => {
+      const { engine, useTarget, playKeys } = globalThis.readingWitness;
+      const furniture = engine.entities.byUid(uid);
+      if (!furniture) {
+        throw new Error('Sleep input fixture disappeared');
+      }
+      useTarget(furniture); // F on the anchor does not end sleep.
+      playKeys('KeyX'); // X does not end sleep.
+    }, bedUid);
+    const sleeping = await page.evaluate(() => {
+      const { body, session } = globalThis.readingWitness;
+      return { position: [...body.pos], time: session.sim.time };
+    });
+    await page.keyboard.press('f');
+    await page.keyboard.press('x');
+    await page.keyboard.down('w');
+    try {
+      await waitForSimulation(
+        page,
+        (until) => {
+          const { session } = globalThis.readingWitness;
+          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+        },
+        sleeping.time + 0.5,
+        { seconds: 2, from: sleeping.time, label: 'sleep ignores movement and stop keys', record },
+      );
+    } finally {
+      await page.keyboard.up('w');
+    }
+    const stillSleeping = await page.evaluate(() => {
+      const { body, session } = globalThis.readingWitness;
+      return {
+        position: [...body.pos],
+        active: session.sim.compression.active,
+        action: session.rest.action?.kind,
+      };
+    });
+    assert.deepEqual(stillSleeping.position, sleeping.position);
+    assert.equal(stillSleeping.active, true);
+    assert.equal(stillSleeping.action, 'sleep');
+    const wakeStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    await page.evaluate(() => globalThis.readingWitness.session.sim.hurt(1, 'sleep interruption fixture'));
+    await waitForSimulation(
+      page,
+      () => {
+        const { session } = globalThis.readingWitness;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: session.sim.compression.interruption !== undefined,
+        };
+      },
+      undefined,
+      { seconds: 5, from: wakeStart, label: 'an interruption wakes the player from sleep', record },
+    );
+    await page.keyboard.press('x');
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action?.kind), 'sleep');
+    await page.evaluate(() => globalThis.readingWitness.session.rest.stop()); // fixture cleanup; the player cannot stop sleep.
+    const wakeCleanupFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    await waitForSimulation(
+      page,
+      () => {
+        const { sim } = globalThis.readingWitness.session;
+        return { time: sim.time, paused: sim.paused, reached: !sim.compression.locksInput };
+      },
+      undefined,
+      { seconds: 5, from: wakeCleanupFrom, label: 'sleep fixture cleanup', record },
+    );
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;

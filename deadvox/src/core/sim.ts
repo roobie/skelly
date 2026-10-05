@@ -38,8 +38,8 @@ export interface SimOptions {
   seed: number;
   clock?: ClockSettings;
   /**
-   * Why compression isn't safe right now (a hostile is aware of the player, or
-   * one is near), or undefined when it is. Asked before and after every step.
+   * Why unowned compression isn't safe right now (a hostile is aware of the player,
+   * or one is near). Long actions ignore proximity; emitted interrupt events still stop them.
    */
   unsafe?: () => string | undefined;
   /**
@@ -209,9 +209,14 @@ export class Simulation {
     this.emit({ kind: 'death', cause });
   }
 
-  /** Starts compression for a long action. Refused, with the reason, when it isn't safe. */
+  /** Starts unowned compression, such as the debug skip, only while it is safe. */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
     return this.compression.start(this.unsafeReason(), limits);
+  }
+
+  /** Long actions use normal fast-forward near threats; emitted interruptions still stop them. */
+  compressLongAction(): { ok: true } | { ok: false; reason: string } {
+    return this.compression.start(undefined);
   }
 
   private unsafeReason(): string | undefined {
@@ -244,8 +249,8 @@ export class Simulation {
   }
 
   /**
-   * Drops compression to 1× when an interruption was emitted or it stopped being
-   * safe. Returns true when it did, so the scheduler stops before the next step.
+   * Drops compression to 1× on an emitted interrupt, or when unowned active
+   * compression stops being safe. Returns true so the scheduler stops before the next step.
    */
   private checkInterruptions(): boolean {
     const events = this.interrupts.read();
@@ -255,7 +260,9 @@ export class Simulation {
     if (!(compression.active || compression.c > 1)) {
       return false;
     }
-    const reason = emitted?.reason ?? this.unsafeReason();
+    const action = this.actions.job;
+    const reason = emitted?.reason ??
+      (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
     if (reason === undefined) {
       return false;
     }

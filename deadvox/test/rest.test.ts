@@ -115,10 +115,24 @@ describe('RestController start/resume/stop', () => {
     expect(sim.compression.active).toBe(false);
   });
 
-  it('refuses when it is not safe, like any long action', () => {
-    const { rest } = makeRest({ unsafe: () => 'A shambler is close' });
-    expect(rest.start('sleep', REST_ANCHOR)).toBe('A shambler is close');
-    expect(rest.action).toBeUndefined();
+  it('fast-forwards near a shambler and still interrupts when attacked', () => {
+    const player: PlayerSense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 };
+    const zombieSystem = new ZombieSystem(zombieHooks(player));
+    zombieSystem.add(SHAMBLER, [50, 1, 0], [1, 0, 0]);
+    expect(zombieSystem.unsafeReason()).toBeTruthy();
+    const { sim, rest } = makeRest({ unsafe: () => zombieSystem.unsafeReason() });
+
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    const start = sim.time;
+    sim.frame(1 / 60);
+    expect(sim.time).toBeGreaterThan(start);
+    expect(sim.compression.active).toBe(true);
+    expect(sim.compression.interruption).toBeUndefined();
+
+    sim.hurt(1, 'a shambler');
+    sim.frame(1 / 60);
+    expect(sim.compression.interruption).toBeDefined();
+    expect(sim.compression.c).toBe(1);
   });
 
   it('ends on its own once fully rested, back at 1x', () => {
@@ -221,18 +235,19 @@ describe('RestController.toggle (manual stop)', () => {
   });
 });
 
-describe('Session rest movement', () => {
-  it('stops an active rest when the player requests movement', () => {
+describe('Session long-action input lock', () => {
+  it.each(['rest', 'sleep'] as const)('ignores movement and action input during %s', (kind) => {
     const entities = new BlockEntities(registry);
-    const restable = [...registry.furniture.values()].find((def) => def.rest);
+    const restable = [...registry.furniture.values()].find((def) => def.rest && (kind === 'rest' || def.rest.sleep));
     if (!restable) {
-      throw new Error('Rest movement fixture has no restable furniture');
+      throw new Error(`${kind} input fixture has no matching furniture`);
     }
     const anchor = entities.add({ type: restable.id, pos: [2, 1, 0], size: restable.size, facing: 'n' });
     if (!anchor) {
-      throw new Error('Could not place the rest movement fixture');
+      throw new Error(`Could not place the ${kind} input fixture`);
     }
-    const intent = { ...IDLE, forward: 1 };
+    let actions = 0;
+    const intent = { ...IDLE, forward: 1, useDominant: true };
     const world = new World();
     const session = createSession({
       registry,
@@ -248,6 +263,7 @@ describe('Session rest movement', () => {
       controls: {
         active: () => true,
         intent: () => intent,
+        useDominant: () => actions++,
         yaw: () => 0,
         pitch: () => 0,
         walking: () => false,
@@ -256,66 +272,23 @@ describe('Session rest movement', () => {
       audio: { play: () => undefined },
       notice: () => undefined,
       onRead: () => {
-        throw new Error('Unexpected reading in rest movement fixture');
+        throw new Error(`Unexpected reading in ${kind} input fixture`);
       },
     });
 
-    expect(session.rest.start('rest', anchor.uid)).toBeUndefined();
-    expect(session.rest.action?.furnitureUid).toBe(anchor.uid);
+    expect(session.rest.start(kind, anchor.uid)).toBeUndefined();
+    const time = session.sim.time;
+    const position = [...session.body.pos];
     session.frame(1 / 60);
-    expect(session.rest.action).toBeUndefined();
-    expect(session.sim.compression.active).toBe(false);
-    expect(session.sim.compression.c).toBe(1);
+    expect(session.rest.action?.kind).toBe(kind);
+    expect(session.sim.compression.active).toBe(true);
+    expect(session.sim.time).toBeGreaterThan(time);
+    expect([session.body.pos[0], session.body.pos[2]]).toEqual([position[0], position[2]]);
+    expect(actions).toBe(0);
   });
 });
 
 describe('long-action interruptions', () => {
-  it('stops resting at most one step after a shambler becomes aware, even beyond 30 m', () => {
-    const player: PlayerSense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'still', lit: true, lightSeenFrom: 40 };
-    const zombieSystem = new ZombieSystem(zombieHooks(player));
-    // 35 m away: past the 30 m safe radius, inside the 40 m a lit flashlight is seen from.
-    const id = zombieSystem.add(SHAMBLER, [70, 1, 0], [1, 0, 0]);
-    const zombie = zombieSystem.store.get(id)!;
-    const { sim, rest } = makeRest({ unsafe: () => zombieSystem.unsafeReason() });
-    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
-    for (let i = 0; i < 100; i++) {
-      rest.frame(1 / 60);
-    }
-    expect(sim.compression.c).toBeGreaterThan(1);
-    // Unaware: 1.7b split the old 'wander' mode into idle and stroll.
-    expect(['idle', 'stroll']).toContain(zombie.mode);
-    zombie.facing = [-1, 0, 0]; // it turns to face you
-    zombieSystem.tick(1 / 60); // the tick that notices you
-    expect(zombie.mode).toBe('chase');
-    rest.frame(1 / 60); // at most one step (this frame) to react
-    expect(sim.compression.interruption).toBe('A shambler is close');
-    expect(sim.compression.c).toBe(1);
-  });
-
-  it('stops resting at most one step after a shambler comes within 30 m, even while unaware', () => {
-    const player: PlayerSense = {
-      pos: [0, 1, 0],
-      facing: [0, 0, -1],
-      movement: 'still',
-      lit: false,
-      lightSeenFrom: 40,
-    };
-    const zombieSystem = new ZombieSystem(zombieHooks(player));
-    const id = zombieSystem.add(SHAMBLER, [80, 1, 0], [1, 0, 0]); // 40 m, facing further away
-    const zombie = zombieSystem.store.get(id)!;
-    const { sim, rest } = makeRest({ unsafe: () => zombieSystem.unsafeReason() });
-    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
-    for (let i = 0; i < 100; i++) {
-      rest.frame(1 / 60);
-    }
-    expect(sim.compression.c).toBeGreaterThan(1);
-    zombie.body.pos = [50, 1, 0]; // 25 m: inside the safe radius, still never perceived
-    rest.frame(1 / 60);
-    expect(['idle', 'stroll']).toContain(zombie.mode);
-    expect(sim.compression.interruption).toBe('A shambler is close');
-    expect(sim.compression.c).toBe(1);
-  });
-
   it('stops resting at most one step after you take damage', () => {
     const { sim, rest } = makeRest();
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
