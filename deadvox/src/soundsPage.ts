@@ -5,11 +5,12 @@ import type { Manifest } from './core/assets.ts';
 import { buildRegistry } from './core/content.ts';
 import type { SoundEventId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
-import { buildSoundGuide } from './ui/soundGuide.ts';
+import { buildHeartbeatSoundGuide, buildSoundGuide } from './ui/soundGuide.ts';
 
 const source = '../content/base/sounds.json';
 const { registry, issues } = buildRegistry([{ source, data: soundFile }]);
 const guide = buildSoundGuide([...registry.sounds.values()], assetManifest as Manifest);
+const heartbeat = buildHeartbeatSoundGuide(assetManifest as Manifest);
 const errorRoot = document.createElement('p');
 errorRoot.className = 'sound-errors';
 errorRoot.setAttribute('role', 'status');
@@ -52,10 +53,10 @@ const sheet = html`
       </p>
       <nav><a href="./">Back to game</a> · <a href="./?debug=1">Open game with debug help</a></nav>
     </div>
-    <div class="sound-count">${guide.length} events · ${guide.reduce((sum, event) => sum + event.variants.length, 0)} variants</div>
+    <div class="sound-count">${guide.length} events · ${guide.reduce((sum, event) => sum + event.variants.length, heartbeat.variants.length)} variants</div>
   </header>
   ${issues.length > 0 ? html`<p class="sound-errors">Content validation: ${issues.map((issue) => issue.message).join('; ')}</p>` : ''}
-  <section class="sound-list" aria-label="Sound events in gameplay order">
+  <section class="sound-list" aria-label="Sound events and bodily cues in gameplay order">
     ${guide.map(
       (event) => html`
         <article class="sound-event" data-sound-event=${event.id}>
@@ -93,6 +94,30 @@ const sheet = html`
         </article>
       `,
     )}
+    <article class="sound-event" data-sound-event=${heartbeat.id}>
+      <header>
+        <h2><code>${heartbeat.id}</code><span class="category">${heartbeat.category}</span></h2>
+      </header>
+      <p class="sound-trigger"><strong>How to hear:</strong> ${heartbeat.trigger}</p>
+      <p class="sound-note"><strong>BR status:</strong> ${heartbeat.status}</p>
+      <ul class="sound-variants" aria-label="Player heartbeat recordings">
+        ${heartbeat.variants.map(
+          (variant) => html`
+            <li>
+              <code class="variant-file">${variant.file}</code>
+              <span class="variant-credit">
+                ${
+                  variant.sourceUrl
+                    ? html`<a href=${variant.sourceUrl} target="_blank" rel="noreferrer">${variant.sourcePack}</a>`
+                    : variant.sourcePack
+                }
+                · ${variant.author} · ${variant.licence}
+              </span>
+            </li>
+          `,
+        )}
+      </ul>
+    </article>
   </section>
 `;
 

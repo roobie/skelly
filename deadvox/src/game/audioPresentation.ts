@@ -35,12 +35,26 @@ export interface HeartbeatTarget {
 
 /** Presentation only: decreasing stamina raises tempo, loudness and the fast-timbre share. */
 export const heartbeatForStamina = (stamina: number): HeartbeatTarget => {
-  const strain = Math.max(0, Math.min(1, 1 - stamina));
+  const strain = 1 - Math.max(0, Math.min(100, stamina)) / 100;
   return {
     bpm: 60 + strain * 90,
     gain: 0.5 * strain ** 1.4,
     fastMix: strain,
   };
+};
+
+const heartbeatStaminaListeners = new Set<(stamina: number) => void>();
+
+/** Connects read-only player-state projections to bodily audio without adding simulation state. */
+export const subscribeHeartbeatStamina = (listener: (stamina: number) => void): (() => void) => {
+  heartbeatStaminaListeners.add(listener);
+  return () => heartbeatStaminaListeners.delete(listener);
+};
+
+export const publishHeartbeatStamina = (stamina: number): void => {
+  for (const listener of heartbeatStaminaListeners) {
+    listener(stamina);
+  }
 };
 
 /** Sound policy for a move beginning; presentation-only and deliberately outside the simulation fingerprint. */

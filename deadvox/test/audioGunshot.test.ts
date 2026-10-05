@@ -6,7 +6,13 @@ import type { Vec3 } from '../src/core/coords.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import { firearmShotSound } from '../src/game/audioPresentation.ts';
+import {
+  firearmShotSound,
+  heartbeatForStamina,
+  publishHeartbeatStamina,
+} from '../src/game/audioPresentation.ts';
+
+const audios: GameAudio[] = [];
 
 const makeNode = () => ({ connect: vi.fn(), disconnect: vi.fn() });
 const makeParam = () => ({ value: 1, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() });
@@ -78,6 +84,7 @@ const setup = () => {
   }
   const isSolid = vi.fn(() => false);
   const audio = new GameAudio({ registry, blockSize: 1, isSolid, report: vi.fn() });
+  audios.push(audio);
   const picker = new SoundPicker(53, registry.sounds);
   const selected: SoundEmission[] = [];
   // Playback tests supply selected emissions; GameAudio has no gameplay admission/picker API.
@@ -102,9 +109,54 @@ const setup = () => {
 // Yield one event-loop turn to settle fetch/decode microtasks, without a timed sleep.
 const flush = () => setImmediate();
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  for (const audio of audios.splice(0)) {
+    audio.dispose();
+  }
+  vi.unstubAllGlobals();
+});
 
-describe('firearm sound playback', () => {
+describe('game audio playback', () => {
+  it('plays player-only heartbeat beats at fixed pitch without admitting sound events', async () => {
+    const { audio, context, fetchBuffer } = setup();
+    publishHeartbeatStamina(100);
+    await flush();
+    expect(context.sources).toHaveLength(0);
+    expect(fetchBuffer).not.toHaveBeenCalled();
+
+    publishHeartbeatStamina(0);
+    await flush();
+    expect(context.sources).toHaveLength(1);
+    expect(context.sources[0]!.playbackRate.value).toBe(1);
+    expect(audio.heardSounds).toHaveLength(0);
+    expect(context.panners).toHaveLength(0);
+
+    const fastTarget = heartbeatForStamina(0);
+    const firstBeatAt = context.sources[0]!.start.mock.calls[0]![0] as number;
+    context.currentTime = firstBeatAt + 60 / fastTarget.bpm - 0.01;
+    publishHeartbeatStamina(0);
+    await flush();
+    expect(context.sources).toHaveLength(1);
+    context.currentTime += 0.02;
+    publishHeartbeatStamina(0);
+    await flush();
+    expect(context.sources).toHaveLength(2);
+
+    const target = heartbeatForStamina(50);
+    context.currentTime += 1;
+    publishHeartbeatStamina(50);
+    await flush();
+    expect(context.sources).toHaveLength(4);
+    const mixedGains = context.sources.slice(2).map((source) => {
+      const gain = source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>;
+      return gain.gain.value;
+    });
+    expect(mixedGains[0]).toBeCloseTo(target.gain * (1 - target.fastMix));
+    expect(mixedGains[1]).toBeCloseTo(target.gain * target.fastMix);
+    expect(context.sources.every(({ playbackRate }) => playbackRate.value === 1)).toBe(true);
+    expect(audio.heardSounds).toHaveLength(0);
+  });
+
   it('starts every rapid shot, steals the oldest with a 10ms fade, and bounds even unended tails', async () => {
     const { audio, play, selected, context, fetchBuffer } = setup();
     for (let index = 0; index < 40; index++) {

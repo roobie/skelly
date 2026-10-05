@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { Manifest } from '../src/core/assets.ts';
 import type { SoundDef } from '../src/core/content.ts';
-import { buildSoundGuide, SOUND_TRIGGER_GUIDE } from '../src/ui/soundGuide.ts';
+import { HEARTBEAT_FILES } from '../src/game/audioPresentation.ts';
+import { buildHeartbeatSoundGuide, buildSoundGuide, SOUND_TRIGGER_GUIDE } from '../src/ui/soundGuide.ts';
 
 const sounds = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')).sounds as SoundDef[];
 const manifest = JSON.parse(readFileSync('src/content/base/assets/manifest.json', 'utf8')) as Manifest;
@@ -17,6 +18,19 @@ describe('audio listening guide', () => {
     expect(eventFilePairs(guide)).toEqual(
       sounds.flatMap((sound) => sound.variants.map((file) => `${sound.id}\0${file}`)).sort(),
     );
+  });
+
+  it('lists the player heartbeat recordings with their source credit and pending verdict', () => {
+    const heartbeat = buildHeartbeatSoundGuide(manifest);
+    expect(heartbeat.trigger).toContain('stamina');
+    expect(heartbeat.status).toContain("placeholder, awaiting BR's verdict");
+    expect(heartbeat.variants.map(({ file }) => file).sort()).toEqual(Object.values(HEARTBEAT_FILES).sort());
+    expect(
+      heartbeat.variants.every(
+        ({ author, licence, sourceUrl }) =>
+          author === 'bart' && licence === 'CC0-1.0' && sourceUrl === 'https://opengameart.org/content/heartbeat-sounds',
+      ),
+    ).toBe(true);
   });
 
   it('shows a nonempty status note for every listed event', () => {

@@ -1,6 +1,7 @@
 import type { Manifest } from '../core/assets.ts';
 import type { SoundDef } from '../core/content.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
+import { HEARTBEAT_FILES } from '../game/audioPresentation.ts';
 
 export interface SoundTriggerGuide {
   readonly trigger: string;
@@ -272,9 +273,39 @@ export interface SoundGuideEntry {
   readonly variants: readonly SoundVariantGuide[];
 }
 
+export interface HeartbeatSoundGuide {
+  readonly id: 'player-heartbeat';
+  readonly category: 'body';
+  readonly trigger: string;
+  readonly status: string;
+  readonly variants: readonly SoundVariantGuide[];
+}
+
 /** Joins the live sound definitions to their source/author/licence rows in the asset manifest. */
+const assetSourcesByFile = (manifest: Manifest) =>
+  new Map(manifest.sources.flatMap((source) => source.files.map((file) => [file, source] as const)));
+
+const soundVariant = (file: string, source: Manifest['sources'][number] | undefined): SoundVariantGuide => ({
+  file,
+  sourcePack: source?.title ?? 'Missing source in assets/manifest.json',
+  author: source?.author ?? 'Uncredited',
+  licence: source?.licence ?? 'Unknown licence',
+  sourceUrl: source?.url ?? null,
+});
+
+export const buildHeartbeatSoundGuide = (manifest: Manifest): HeartbeatSoundGuide => {
+  const byFile = assetSourcesByFile(manifest);
+  return {
+    id: 'player-heartbeat',
+    category: 'body',
+    trigger: 'Sprint to lower stamina, then stop and listen as it recovers.',
+    status: "placeholder, awaiting BR's verdict.",
+    variants: Object.values(HEARTBEAT_FILES).map((file) => soundVariant(file, byFile.get(file))),
+  };
+};
+
 export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest): SoundGuideEntry[] => {
-  const byFile = new Map(manifest.sources.flatMap((source) => source.files.map((file) => [file, source] as const)));
+  const byFile = assetSourcesByFile(manifest);
   const definitions = new Map(sounds.map((sound) => [sound.id, sound]));
   return ORDER.flatMap((id) => {
     const sound = definitions.get(id);
@@ -294,16 +325,7 @@ export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest)
         minIntervalSeconds: sound.minIntervalSeconds,
         noiseRadiusMetres: sound.noise.enabled ? sound.noise.radiusMetres : null,
         note: [BR_STATUS_NOTES.get(id), trigger.note].filter((note) => note !== undefined).join(' '),
-        variants: sound.variants.map((file) => {
-          const source = byFile.get(file);
-          return {
-            file,
-            sourcePack: source?.title ?? 'Missing source in assets/manifest.json',
-            author: source?.author ?? 'Uncredited',
-            licence: source?.licence ?? 'Unknown licence',
-            sourceUrl: source?.url ?? null,
-          };
-        }),
+        variants: sound.variants.map((file) => soundVariant(file, byFile.get(file))),
       },
     ];
   });

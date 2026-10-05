@@ -848,6 +848,11 @@ decoration.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory
   (zips, cans), and heavy breathing when stamina is low. You hear how much
   noise you're making.
+- **Heartbeat (#193):** stamina becomes legible through the player's body, not
+  another HUD number. The heartbeat is a presentation cue rather than a noise
+  event, so shamblers do not hear it and it does not alter simulation/save
+  identity. Fear/danger and low-health responses remain open for BR's ruling on
+  #193.
 - **Ambience by time and place:** wind, rain, a building settling. The
   distant sounds (a gunshot, a scream, a helicopter over the cordon, a
   generator) come from things happening in the simulation, not from a random

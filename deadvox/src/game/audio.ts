@@ -4,6 +4,13 @@ import type { SolidAt } from '../core/raycast.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
+import {
+  HEARTBEAT_FILES,
+  HEARTBEAT_QUIET_FLOOR,
+  heartbeatForStamina,
+  subscribeHeartbeatStamina,
+  type HeartbeatTarget,
+} from './audioPresentation.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
 const CATEGORIES = ['world', 'body', 'ui'] as const;
@@ -115,12 +122,24 @@ export class GameAudio {
   private readonly voices = new Map<SoundEventId, Set<Voice>>();
   // Up to one cap's worth of 10ms tails: a 40-shot cold burst can fade every retiree.
   private readonly retiring = new Map<SoundEventId, Set<Voice>>();
+  private heartbeatTarget: HeartbeatTarget = heartbeatForStamina(100);
+  private heartbeatNextAt = Number.NEGATIVE_INFINITY;
+  private heartbeatLoading = false;
+  private heartbeatUnavailable = false;
+  private disposed = false;
+  private readonly unsubscribeHeartbeatStamina: () => void;
 
   constructor({ registry, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
     this.blockSize = blockSize;
     this.isSolid = isSolid;
     this.report = report;
+    this.unsubscribeHeartbeatStamina = subscribeHeartbeatStamina((stamina) => this.updateHeartbeat(stamina));
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    this.unsubscribeHeartbeatStamina();
   }
 
   get settings(): AudioVolumes {
@@ -309,6 +328,78 @@ export class GameAudio {
     for (const category of CATEGORIES) {
       this.nodes.categories.get(category)!.gain.value = this.volumes[category];
     }
+  }
+
+  private updateHeartbeat(stamina: number): void {
+    if (this.disposed) {
+      return;
+    }
+    this.heartbeatTarget = heartbeatForStamina(stamina);
+    const { context, nodes } = this;
+    if (
+      this.heartbeatTarget.gain < HEARTBEAT_QUIET_FLOOR ||
+      this.heartbeatUnavailable ||
+      this.heartbeatLoading ||
+      !context ||
+      !nodes ||
+      context.state !== 'running' ||
+      context.currentTime < this.heartbeatNextAt
+    ) {
+      return;
+    }
+    this.heartbeatLoading = true;
+    const files = Object.values(HEARTBEAT_FILES);
+    const buffers = files.map((file) => {
+      const url = PACK_FILES[`../content/base/${file}`];
+      if (!url) {
+        this.report(`heartbeat file "${file}" is not bundled`);
+        return Promise.resolve(null);
+      }
+      return this.loadBuffer(context, file, url);
+    });
+    void Promise.all(buffers).then(([slow, fast]) => {
+      this.heartbeatLoading = false;
+      if (!slow || !fast) {
+        this.heartbeatUnavailable = true;
+        return;
+      }
+      if (this.disposed || this.context !== context || context.state !== 'running') {
+        return;
+      }
+      const target = this.heartbeatTarget;
+      if (target.gain < HEARTBEAT_QUIET_FLOOR) {
+        return;
+      }
+      const when = context.currentTime + 0.025;
+      const body = nodes.categories.get('body')!;
+      this.startHeartbeatTimbre(context, body, slow, target.gain * (1 - target.fastMix), when);
+      this.startHeartbeatTimbre(context, body, fast, target.gain * target.fastMix, when);
+      this.heartbeatNextAt = when + 60 / target.bpm;
+    });
+  }
+
+  private startHeartbeatTimbre(
+    context: AudioContext,
+    body: GainNode,
+    buffer: AudioBuffer,
+    gainValue: number,
+    when: number,
+  ): void {
+    if (gainValue < HEARTBEAT_QUIET_FLOOR) {
+      return;
+    }
+    const source = context.createBufferSource();
+    const gain = context.createGain();
+    source.buffer = buffer;
+    source.playbackRate.value = 1;
+    gain.gain.value = gainValue;
+    source.connect(gain);
+    gain.connect(body);
+    source.onended = () => {
+      source.disconnect();
+      gain.disconnect();
+    };
+    source.start(when);
   }
 
   private loadBuffer(context: AudioContext, file: string, url: string): Promise<AudioBuffer | null> {
