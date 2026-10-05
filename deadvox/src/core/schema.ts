@@ -671,6 +671,8 @@ export const ZombieSchema = strictObject({
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** Idle/stroll timing, home leash and eased look controls. */
   wander: strictObject({
+    obstacleWanderChance: Fraction,
+    obstacleWanderDistanceMetres: Positive,
     idleSeconds: strictObject({ min: Positive, max: Positive }),
     strollSeconds: strictObject({ min: Positive, max: Positive }),
     leashMetres: Positive,

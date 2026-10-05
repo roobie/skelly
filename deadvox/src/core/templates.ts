@@ -281,23 +281,6 @@ export const placedPoint = ({ template, origin, turn }: Placement, [x, y, z]: Ve
   return [origin[0] + u + 0.5, origin[1] + y, origin[2] + v + 0.5];
 };
 
-export interface PlacedFlight {
-  readonly from: string;
-  readonly to: string;
-  readonly lower: Vec3;
-  readonly upper: Vec3;
-  readonly width: number;
-}
-
-export const placedFlights = (placement: Placement): PlacedFlight[] =>
-  (placement.template.access?.stairs ?? []).map((stair) => ({
-    from: stair.from,
-    to: stair.to,
-    lower: placedPoint(placement, stair.lower),
-    upper: placedPoint(placement, stair.upper),
-    width: stair.width,
-  }));
-
 export const placedSpawns = ({ template, origin, turn }: Placement): SpawnMarker[] =>
   template.spawns.map((spawn) => {
     const [x, z] = turned(template.size, turn, spawn.pos[0], spawn.pos[2]);

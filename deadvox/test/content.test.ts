@@ -523,6 +523,8 @@ describe('content references', () => {
             speed: { wander: 0.8, chase: 2.5 },
             stepLength: 0.6,
             wander: {
+              obstacleWanderChance: 0.25,
+              obstacleWanderDistanceMetres: 10,
               idleSeconds: { min: 3, max: 10 },
               strollSeconds: { min: 3, max: 12 },
               leashMetres: 12,

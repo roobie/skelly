@@ -220,7 +220,6 @@ try {
         noclip,
         locked: input.locked,
         contentErrors: engine.contentErrors,
-        routes: session.zombies.snapshotState().routes,
         zombies: [...session.zombieStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
@@ -524,7 +523,7 @@ try {
       globalThis.stairsWitness.input.pitch = 0;
     });
     await walk('s', 112, false, 43);
-    const houseDownstairs = await state('house downstairs walked');
+    await state('house downstairs walked');
     const groundProjection = await page.evaluate((id) => {
       const { body, session } = globalThis.stairsWitness;
       const resident = session.zombieStore.get(id);
@@ -559,43 +558,7 @@ try {
         record: state,
       },
     );
-    const residentBeforeDescent = await state('resident hears player below the upstairs projection');
-    const residentAtProjection = residentBeforeDescent.zombies.find(({ id }) => id === residentId);
-    assert.ok(residentAtProjection);
-    assert.notEqual(Math.round(residentAtProjection.pos[1]), Math.round(residentBeforeDescent.position[1]));
-    assert.notEqual(residentAtProjection.mode, 'search');
-    assert.equal(
-      Math.round(residentAtProjection.lastPerceived?.[1]),
-      Math.round(residentBeforeDescent.position[1]),
-      'native sprinting supplies an exact lower-floor stimulus, not the stale mid-flight target',
-    );
-    const followed = await waitForSimulation(
-      page,
-      (id) => {
-        const { session, body } = globalThis.stairsWitness;
-        const resident = session.zombieStore.get(id);
-        return {
-          time: session.sim.time,
-          paused: session.sim.paused,
-          reached: resident !== undefined && Math.round(resident.body.pos[1]) === Math.round(body.pos[1]),
-          residentFloor: resident ? Math.round(resident.body.pos[1]) : null,
-          targetFloor: Math.round(body.pos[1]),
-        };
-      },
-      residentId,
-      {
-        seconds: 30,
-        from: residentBeforeDescent.simulationTime,
-        label: 'stairs_house resident follows the authored flight to the player floor',
-        record: state,
-      },
-    );
-    residentProof = {
-      residentId,
-      upperFloor: Math.round(residentAtUpper.pos[1]),
-      lowerFloor: Math.round(houseDownstairs.position[1]),
-      simulationSeconds: followed.seconds,
-    };
+    await state('player rests under the upstairs resident');
 
     await stage([143, 43.0001, 115]);
     await walk('s', 134, false, 35);
