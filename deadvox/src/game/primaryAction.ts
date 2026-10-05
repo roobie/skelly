@@ -6,10 +6,10 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { ItemDef } from '../core/schema.ts';
 
-export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read' | 'none';
+export type PrimaryItemAction = 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read' | 'use' | 'none';
 
 export type PrimaryActionSelection =
-  | { kind: 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read'; hand: HandSide; item: Item }
+  | { kind: 'melee' | 'light' | 'firearm' | 'key' | 'unpack' | 'read' | 'use'; hand: HandSide; item: Item }
   | { kind: 'fists'; hand?: HandSide }
   | { kind: 'none'; item: Item }
   | { kind: 'noop' };
@@ -27,10 +27,17 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'key', supports: (definition) => definition.key !== undefined },
   { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
   { kind: 'read', supports: (definition) => definition.book !== undefined },
+  { kind: 'use', supports: (definition) => definition.food !== undefined || definition.category === 'medical' },
 ];
 
 export const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>
   CAPABILITY_DISPATCH.find(({ supports }) => supports(definition))?.kind ?? 'none';
+
+/** Runs an activatable held consumable through the same owner as other use inputs. */
+export const activatePrimaryUse = (
+  action: PrimaryActionSelection,
+  use: (item: Item) => string | undefined,
+): string | undefined => (action.kind === 'use' ? use(action.item) : undefined);
 
 /** Empty dominant fists alternate only with both hands free; a reserved support slot never punches. */
 export const selectPrimaryAction = (

@@ -77,7 +77,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
-import { selectPrimaryAction } from './primaryAction.ts';
+import { activatePrimaryUse, selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
@@ -1022,6 +1022,9 @@ export const startPlay = (
       case 'light':
       case 'read':
         noticeReason(survival.use(action.item));
+        return;
+      case 'use':
+        noticeReason(activatePrimaryUse(action, (item) => survival.use(item)));
         return;
       case 'firearm': {
         if (!fireDebugWeapon(action.item, sim.time)) {
