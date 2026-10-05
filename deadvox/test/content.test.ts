@@ -591,6 +591,19 @@ describe('content', () => {
     ]);
   });
 
+  it('rejects held-display capabilities without a renderer', () => {
+    const items = ['watch', 'map'].map((heldDisplay, index) => ({
+      id: `unrendered_display_${index}`,
+      name: 'Unrendered display',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      heldDisplay,
+    }));
+    const issues = validateContent({ source: 'held-display-fixture.json', data: { items } });
+    expect(issues.map(({ path }) => path)).toEqual(['items[0].heldDisplay', 'items[1].heldDisplay']);
+  });
+
   it('reports an unknown block pattern like any other content error', () => {
     const issues = validateContent({
       source: 'a.json',

@@ -193,6 +193,11 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
+export const HELD_DISPLAY_KIND = { compass: 'compass' } as const;
+const HELD_DISPLAY_KINDS = Object.values(HELD_DISPLAY_KIND);
+export const PILE_DISPLAY_KIND = { scatter: 'scatter' } as const;
+const PILE_DISPLAY_KINDS = Object.values(PILE_DISPLAY_KIND);
+
 const BookSchema = strictObject({
   title: Name,
   recipes: pipe(array(Id), nonEmpty('needs at least one recipe')),
@@ -235,6 +240,10 @@ export const ItemSchema = strictObject({
   unpack: optional(strictObject({ item: Id, count: pipe(Count, minValue(1, 'must be at least 1')) })),
   light: optional(LightSchema),
   readable: optional(ReadableSchema),
+  /** Display capability shown in first person; later devices can share this rendering seam. */
+  heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
+  /** How the item appears when it is in a ground pile. */
+  pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
   /** One authored/global lock id; no per-placement key payload. */
