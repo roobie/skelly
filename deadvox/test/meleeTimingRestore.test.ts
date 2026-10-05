@@ -71,7 +71,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
         primaryAction = false;
       },
       primaryAction: () => {
-        startPlayerMelee(session.zombies, session.sim.needs, {
+        startPlayerMelee(session.playerCombat, session.sim.needs, {
           origin: [0, 2, 0],
           direction: [0, 0, -1],
           weapon: FISTS_MELEE,
@@ -111,12 +111,12 @@ describe('tick-consumed primary melee input across save and restore', () => {
     const source = makeSession();
     source.click();
     source.session.frame(1 / 60);
-    expect(source.session.zombies.activeMeleeAction?.elapsed).toBe(0);
-    expect('startOffset' in (source.session.zombies.activeMeleeAction ?? {})).toBe(false);
+    expect(source.session.playerCombat.activeMeleeAction?.elapsed).toBe(0);
+    expect('startOffset' in (source.session.playerCombat.activeMeleeAction ?? {})).toBe(false);
     for (let i = 0; i < 7; i++) {
       source.session.frame(1 / 60);
     }
-    expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
+    expect(source.session.playerCombat.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
 
     const snapshot = source.session.snapshot({ worldId: 'tick-melee', characterId: 'character' });
     const bytes = await encodeSave(snapshot, {
@@ -126,22 +126,22 @@ describe('tick-consumed primary melee input across save and restore', () => {
     });
     const decoded = await decodeSave(bytes, { version: saveVersion, contentLookup });
     const restored = makeSession(decoded.snapshot);
-    expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
+    expect(restored.session.playerCombat.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
 
     for (let tick = 8; tick <= 14; tick++) {
       source.session.frame(1 / 60);
       restored.session.frame(1 / 60);
-      expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
-      expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
-      expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
-      expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
+      expect(source.session.playerCombat.activeMeleeAction?.hitResolved).toBe(false);
+      expect(restored.session.playerCombat.activeMeleeAction?.hitResolved).toBe(false);
+      expect(source.session.playerCombat.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
+      expect(restored.session.playerCombat.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
     }
     source.session.frame(1 / 60);
     restored.session.frame(1 / 60);
-    expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
-    expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
-    expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
-    expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
+    expect(source.session.playerCombat.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
+    expect(restored.session.playerCombat.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
+    expect(source.session.playerCombat.activeMeleeAction?.hitResolved).toBe(true);
+    expect(restored.session.playerCombat.activeMeleeAction?.hitResolved).toBe(true);
     const hash = (run: ReturnType<typeof makeSession>) =>
       createHash('sha256')
         .update(canonicalJson(run.session.snapshot({ worldId: 'tick-melee', characterId: 'character' })))

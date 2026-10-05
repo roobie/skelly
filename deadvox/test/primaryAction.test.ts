@@ -69,6 +69,15 @@ describe('held-item hand action', () => {
     });
   });
 
+  it('refuses a ruined held melee weapon instead of attacking with it', () => {
+    const inventory = hold('held_blunt');
+    inventory.hands.right!.condition = 0;
+    expect(selectPrimaryAction(registry, inventory.hands, 'right')).toEqual({
+      kind: 'none',
+      item: inventory.hands.right,
+    });
+  });
+
   it('routes the initial primary and off inputs to their own occupied physical hands', () => {
     const inventory = hold('held_blunt', 'held_light');
     expect(selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick)).toEqual({

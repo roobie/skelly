@@ -165,11 +165,11 @@ try {
       throw new Error(`cannot move the debug-loadout crowbar into the right hand: ${moved.reason}`);
     }
     const swings = [];
-    const originalBegin = runtime.session.zombies.beginMeleeSwing;
-    const begin = originalBegin.bind(runtime.session.zombies);
-    runtime.session.zombies.beginMeleeSwing = (start) => {
+    const originalBegin = runtime.session.playerCombat.beginMeleeSwing;
+    const begin = originalBegin.bind(runtime.session.playerCombat);
+    runtime.session.playerCombat.beginMeleeSwing = (start) => {
       const result = begin(start);
-      const hand = runtime.session.zombies.activeMeleeAction?.hand ?? start.hand;
+      const hand = runtime.session.playerCombat.activeMeleeAction?.hand ?? start.hand;
       swings.push({ result, profile: start.profile, hand });
       return result;
     };
@@ -187,13 +187,13 @@ try {
   }));
   await page.evaluate(() => {
     const runtime = globalThis.primaryActionTest;
-    runtime.session.zombies.beginMeleeSwing = globalThis.primaryActionObserved.originalBegin;
+    runtime.session.playerCombat.beginMeleeSwing = globalThis.primaryActionObserved.originalBegin;
   });
   assert.equal(loadoutAction.rightHandItem, 'crowbar');
   assert.equal(loadoutAction.rightHandUid, loadoutMeleeUid);
   assert.deepEqual(loadoutAction.swings[0], { result: true, profile: 'blunt', hand: 'right' });
   assert.ok(loadoutAction.stamina < loadoutBefore, 'the debug-loadout right-hand melee action spends stamina');
-  await page.waitForFunction(() => !globalThis.primaryActionTest.session.zombies.activeMeleeAction, null, {
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction, null, {
     timeout: 10_000,
   });
 
@@ -208,10 +208,10 @@ try {
       attachments: [],
       trackLeftAttachment: false,
     };
-    const begin = runtime.session.zombies.beginMeleeSwing.bind(runtime.session.zombies);
-    runtime.session.zombies.beginMeleeSwing = (start) => {
+    const begin = runtime.session.playerCombat.beginMeleeSwing.bind(runtime.session.playerCombat);
+    runtime.session.playerCombat.beginMeleeSwing = (start) => {
       const result = begin(start);
-      const hand = runtime.session.zombies.activeMeleeAction?.hand ?? start.hand;
+      const hand = runtime.session.playerCombat.activeMeleeAction?.hand ?? start.hand;
       globalThis.primaryActionObserved.swings.push({ result, profile: start.profile, hand });
       return result;
     };
@@ -237,7 +237,7 @@ try {
   await page.waitForFunction(
     () =>
       globalThis.primaryActionObserved.attachments.length >= 8 &&
-      !globalThis.primaryActionTest.session.zombies.activeMeleeAction,
+      !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction,
     null,
     { timeout: 10_000 },
   );
@@ -372,7 +372,7 @@ try {
   const firstFist = await observe(flashlightUid);
   assert.equal(firstFist.swings.length, 1);
   assert.deepEqual(firstFist.swings[0], { result: true, profile: 'fists', hand: 'right' });
-  await page.waitForFunction(() => !globalThis.primaryActionTest.session.zombies.activeMeleeAction, null, {
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction, null, {
     timeout: 10_000,
   });
   await page.mouse.click(640, 450);
@@ -380,7 +380,7 @@ try {
   const secondFist = await observe(flashlightUid);
   assert.equal(secondFist.swings.length, 2);
   assert.deepEqual(secondFist.swings[1], { result: true, profile: 'fists', hand: 'left' });
-  await page.waitForFunction(() => !globalThis.primaryActionTest.session.zombies.activeMeleeAction, null, {
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.playerCombat.activeMeleeAction, null, {
     timeout: 10_000,
   });
 

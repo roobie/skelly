@@ -8,6 +8,7 @@ import type { Character, CharacterState } from './character.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
 import type { LongActionState } from './longAction.ts';
+import type { PlayerCombat, PlayerCombatState } from './playerCombat.ts';
 import type { Simulation, SimulationState } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundPickerState } from './soundPicker.ts';
@@ -29,6 +30,7 @@ export interface SaveSnapshot {
     player: PlayerState;
     inventory: InventoryState;
     longAction: LongActionState;
+    playerCombat: PlayerCombatState;
     lightUid: number | null;
     quickbar: readonly (number | null)[];
     handling: HandlingQueueState;
@@ -55,6 +57,7 @@ export interface SnapshotSessionInput {
   survival: Survival;
   quickbar: readonly (number | null)[];
   zombies: ZombieSystem;
+  playerCombat: PlayerCombat;
   spawner: ZombieSpawner;
   handling: HandlingQueue;
   vocalNoiseId: number;
@@ -75,6 +78,7 @@ export const snapshotSession = ({
   survival,
   quickbar,
   zombies,
+  playerCombat,
   spawner,
   handling,
   vocalNoiseId,
@@ -102,6 +106,7 @@ export const snapshotSession = ({
       player: structuredClone(player),
       inventory: inventory.snapshotState() as InventoryState,
       longAction: simulation.actions.snapshotState(),
+      playerCombat: playerCombat.snapshotState(),
       lightUid,
       quickbar: [...quickbar],
       handling: handling.snapshotCancelled() as HandlingQueueState,
