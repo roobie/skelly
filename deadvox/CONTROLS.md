@@ -45,9 +45,15 @@ acting").
   flashlight in hands, then left-click to activate (left-click generally means
   'do the thing with the thing you're holding')." For held food, drinks and
   bandages, BR later ruled (2026-10-05): "activate them"; bandages remain
-  refused until Slice 3's body model supplies wounds. Dominance selects the hand
-  role; it does not move an item between physical slots. See "The two hands"
-  for the policy's owners rather than a second binding map.
+  refused until Slice 3's body model supplies wounds. For #252, BR's re-look
+  (2026-10-05 13:44) confirmed that activating a held igniter lights an unlit
+  firestarter light in the other hand; left-click uses the dominant hand and `=`
+  the off hand. An igniter with no eligible light still refuses. Whether matches
+  strike alone remains open for BR. See `src/game/primaryAction.ts`,
+  `ignitionTargetForHand`, and `src/game/survival.ts`, `Survival.use`, for the
+  action owner. Dominance selects the hand role; it does not move an item between
+  physical slots. See "The two hands" for the policy's owners rather than a
+  second binding map.
 - **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
   ruling: holding left click performs a long use, and releasing it early
   cancels.
@@ -75,7 +81,14 @@ acting").
   "using the key means wielding it, and activating it on the door". An ammo box
   is the same: "that's not a thing you do in inventory - you wield the box and
   activante it in oder to unpack". No inventory action or modifier chord
-  replaces it.
+  replaces it. BR ruled on 2026-10-05 14:43: "lighting need the matches in your
+  hand." A lighter or matches merely in reach do not light a held torch or candle;
+  the igniter must be in the other hand. BR also ruled (2026-10-05 14:43):
+  "okay, yes, quickbar-hold is the secondary allowed pathway to activating / but
+  e.g. racking a shell into a shotgun is _not_ covered by the quickbar-hold".
+  Quickbar hold can activate a held light with the igniter in the other hand; it
+  does not rack a firearm. See `src/game/quickbarActions.ts`, `QuickbarActions.hold`,
+  and `src/game/survival.ts`, `Survival.useFromQuickbar`.
 - **No U use key (BR, 2026-10-05 13:16):** "U shouldn't be a thing - where does
   this false knowledge still stand?"
 - **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-

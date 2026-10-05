@@ -6,7 +6,8 @@ import {
   Group,
   type InstancedMesh,
   Matrix4,
-  type Mesh,
+  Mesh,
+  MeshBasicMaterial,
   type MeshLambertMaterial,
   PerspectiveCamera,
   Quaternion,
@@ -17,6 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HOLD } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
@@ -58,6 +60,38 @@ const hasVisibleFootCorner = (feet: InstancedMesh[], torso: InstancedMesh, eye: 
       return ray.intersectObject(torso, false).length === 0;
     });
   });
+
+const fallbackLightHands = [...registry.items.values()]
+  .filter((definition) => definition.light && !definition.model)
+  .flatMap((definition) => (['right', 'left'] as const).map((side) => ({ id: definition.id, definition, side })));
+
+describe('held light presentation', () => {
+  it.each(fallbackLightHands)('$id in the $side hand draws by its light definition', ({ id, definition, side }) => {
+    const inventory = new Inventory(registry);
+    const light = inventory.create(id);
+    expect(toggleLight(registry, light, 0)).toBeUndefined();
+    expect(inventory.add(light, { kind: 'hand', side })).toBe(true);
+    const held = new HeldItems(inventory, undefined, palette);
+    held.update(new PerspectiveCamera());
+    const { shown } = held as unknown as { shown: Map<number, Group> };
+    let visibleBody = false;
+    let flame = false;
+    shown.get(light.uid)?.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      visibleBody ||=
+        object.name === 'held-light-body' &&
+        object.visible &&
+        object.material instanceof MeshBasicMaterial &&
+        !object.material.toneMapped;
+      flame ||= object.name === 'held-light-flame' && object.visible && object.material instanceof MeshBasicMaterial;
+    });
+    expect(visibleBody, `${id} in ${side} hand`).toBe(true);
+    expect(flame, `${id} in ${side} hand`).toBe(definition.light!.burning?.ignition === 'firestarter');
+    held.dispose();
+  });
+});
 
 describe('player figure', () => {
   it('keeps the world body outside a level/upward view, with torso 5–10 cm behind the eye', () => {

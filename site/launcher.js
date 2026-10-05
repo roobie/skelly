@@ -9,6 +9,7 @@ const deadvoxTime = deadvoxForm.elements.namedItem('time');
 const deadvoxSite = byId('deadvox-site');
 const worldPlan = deadvoxForm.elements.namedItem('plan');
 const worldIndex = byId('deadvox-world-index');
+const worldShamblers = deadvoxForm.elements.namedItem('shamblers');
 const shamblerCounts = deadvoxForm.elements.namedItem('n');
 const shamblerIndex = byId('deadvox-shambler-index');
 const deadvoxUrl = byId('deadvox-url');
@@ -137,6 +138,7 @@ const makeDeadvoxUrl = () => {
   }
 
   if (mode === '1') {
+    params.set('shamblers', worldShamblers.value);
     setUnlessDefault(params, 'plan', worldPlan.value, DEFAULT_DEADVOX_PLAN);
     setUnlessDefault(params, 'i', worldIndex.value, '0');
     if (deadvoxForm.elements.namedItem('quick').checked) {

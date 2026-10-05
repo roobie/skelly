@@ -12,6 +12,14 @@ const BASE = 'src/content/base';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
 const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
+const base = (file: string): ContentSource => {
+  const source = `${BASE}/${file}`;
+  const data = JSON.parse(readFileSync(source, 'utf8'));
+  if (file === 'items-tools.json') {
+    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle'].includes(item.id));
+  }
+  return { source, data };
+};
 const imageLoader = {
   isImageBitmapLoader: true,
   load(_url: string, onLoad: (image: ImageBitmap) => void) {
@@ -28,9 +36,7 @@ const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box
     return coordinate >= bounds.min[axis] - 0.02 && coordinate <= bounds.max[axis] + 0.02;
   });
 const { registry, issues } = buildRegistry([
-  ...['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json'].map((f) =>
-    read(`${BASE}/${f}`),
-  ),
+  ...['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json'].map(base),
   read(`${BASE}/models-melee.json`),
   read(`${BASE}/models-firearms.json`),
   read('test/fixtures/packs/lamp/lamp.json'),
@@ -385,8 +391,9 @@ describe('base pack shotshells', () => {
 });
 
 describe('base pack guns', () => {
-  const base = buildRegistry([read('src/content/base/models-firearms.json')]).registry;
-  const guns = [...base.models.values()].filter((m) => m.anchors?.muzzle);
+  const firearms = buildRegistry([read('src/content/base/models-firearms.json')]).registry;
+  const { models } = firearms;
+  const guns = [...models.values()].filter((m) => m.anchors?.muzzle);
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
     const bytes = readFileSync(`src/content/base/${def.file}`);
@@ -403,7 +410,7 @@ describe('base pack guns', () => {
   });
 
   it('uses the exported AR with zero turn and its muzzle at the forward end', async () => {
-    const def = base.models.get('rifle_assault')!;
+    const def = models.get('rifle_assault')!;
     const bytes = readFileSync(`src/content/base/${def.file}`);
     const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
     const bounds = new Box3().setFromObject(scene);
@@ -425,16 +432,16 @@ describe('base pack guns', () => {
   });
 
   it('lays the debug AR model in piles', () => {
-    const inventory = new Inventory(base);
-    const { models, bundle } = pileLayout(
-      base,
+    const inventory = new Inventory(firearms);
+    const { models: pileModels, bundle } = pileLayout(
+      firearms,
       {
         pos: [0, 0, 0],
         items: [{ item: inventory.create('debug_rifle_assault'), x: 0, y: 0, rotated: false }],
       },
       0.5,
     );
-    expect(models.map((model) => model.model)).toEqual(['rifle_assault']);
+    expect(pileModels.map((model) => model.model)).toEqual(['rifle_assault']);
     expect(bundle).toEqual([]);
   });
 });

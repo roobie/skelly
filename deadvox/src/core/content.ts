@@ -306,13 +306,38 @@ const checkBook = (item: ItemDef, registry: Registry, report: Report) => {
   });
 };
 
+const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {
+  const { light, igniter } = item;
+  const battery = light?.power?.battery;
+  if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
+    report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
+  }
+  if (igniter && igniter.perIgnition > igniter.capacity) {
+    report('items', item.id, '.igniter.perIgnition', 'must not exceed fuel capacity');
+  }
+  if (light?.power && light.burnTime !== undefined) {
+    report('items', item.id, '.light.burnTime', 'battery lights cannot also have a burn time');
+  }
+  if (light?.fuelPerHour !== undefined && !igniter) {
+    report('items', item.id, '.light.fuelPerHour', 'self-fuelled lights need an igniter fuel component');
+  }
+  if (light?.fuelPerHour !== undefined && light.burnTime !== undefined) {
+    report('items', item.id, '.light.fuelPerHour', 'self-fuelled lights cannot also have a burn time');
+  }
+  if (light?.burning && light.burnTime === undefined) {
+    report('items', item.id, '.light.burning', 'burning rules need a burn time');
+  }
+  if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
+    report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');
+  }
+};
+
 const checkItems = (registry: Registry, report: Report) => {
-  const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
-  for (const item of registry.items.values()) {
-    const battery = item.light?.power?.battery;
-    if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
-      report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
-    }
+  const items = [...registry.items.values()];
+  const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
+  const hasIgniter = items.some((item) => item.igniter !== undefined);
+  for (const item of items) {
+    checkItemLight(item, hasIgniter, registry, report);
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
