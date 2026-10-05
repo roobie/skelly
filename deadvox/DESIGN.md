@@ -614,6 +614,13 @@ worse the world gets.
   queue deterministically. The allowance is logical work, not a wall-clock deadline; see
   `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`, and
   `deadvox/src/core/zombies.ts`, `serviceRouteSearches`.
+  This is a bounded pilot, not a completeness guarantee: a failed search retries
+  without straight steering through its blocker. Dense or complex terrain still
+  needs a separate navigation cost/value decision rather than larger caps.
+  Persist route progress, retry time and dispatch order so loading does not
+  silently restart pursuit or change which actor receives the next search.
+  See `deadvox/src/core/zombies.ts`, `snapshotState` and `restoreState`, and
+  `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
   Request-local native maps avoid repeated world lookups without retaining stale
   collision across requests. Continuous swept clearance prevents a short corner
   overlap from creating an unsafe route and endless replanning; see
