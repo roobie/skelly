@@ -366,9 +366,27 @@ HTML over the game view, and keyboard-first:
   shows its handling time. Weight, exact condition and times are in the item's
   details.
 - Filters and search, and item details on hover or focus.
-- A **quickbar** of shortcuts to items you carry. A slot's key puts the item in
-  your hands, which costs its pocket's handling time; pressing it again uses
-  it.
+- A **quickbar** of shortcuts to items you carry. BR (2026-10-05, 00:02):
+  "one thing that feels not quite right to me is that pressing the quickbar
+  number activates the item […] what if the number itself only wields or
+  unwields it, but T+number activates it?" BR settled at 00:08: "1. hold-number,
+  no doubt. This is the best UX / 2. agreed". The old number-use duplicated
+  left-click, `=` and R; a double press could rack a drawn gun, eject a live
+  shell, or eat food, and there was no way to put an item away. A tap now takes
+  an item into its capability-directed hand or puts it away; a hold uses an
+  available action from its current location. Weapons, keys and tool-only items
+  have no pocket use and give a short notice; firearm cycling stays on R. Weapons
+  and tools use the primary hand, lights the off hand, and two-handed items both
+  hands. When a held item
+  is put away, it returns to its captured source or the best pocket; this source
+  is saved because the tap's put-away behavior must survive a save/load. See
+  `src/game/quickbarInput.ts`, `QuickbarInput`, and `QUICKBAR_HOLD_ESTIMATE_MS`
+  for the presentation-only gesture estimate; `src/game/quickbarActions.ts`,
+  `QuickbarActions`, for tap/hold routing; `src/core/options.ts`, `quickbarTake`
+  and `quickbarPutAway`, for item-directed hand choice and return; and
+  `src/core/inventory.ts`, `Inventory.quickbarOrigin` and `Inventory.snapshotState`,
+  for the captured source saved in `InventoryState.quickbarOrigins`. Firearm cycling
+  remains on R only.
 
 ### Piles
 

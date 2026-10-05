@@ -7,8 +7,6 @@
     { "path": "deadvox/DESIGN.md", "check": "line_number", "text": "src/core/zombies.ts:57", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/manifest.json", "count": 1 },
-    { "path": "deadvox/docs/content.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
-    { "path": "deadvox/docs/crafting.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     {
       "path": "deadvox/docs/decisions/0001-ui-rendering-with-lit-html.md",
       "check": "read_if",
@@ -43,7 +41,6 @@
     { "path": "deadvox/docs/reach-options.md", "check": "path", "text": "core/options.ts", "count": 1 },
     { "path": "deadvox/docs/reach-options.md", "check": "path", "text": "core/reach.ts", "count": 1 },
     { "path": "deadvox/docs/reach-options.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
-    { "path": "deadvox/docs/readables.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     {
       "path": "deadvox/docs/reviews/2026-09-29-maintainability.md",
       "check": "read_if",
@@ -109,7 +106,6 @@
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/templates.ts", "count": 2 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "game/engine.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "game/play.ts", "count": 1 },
-    { "path": "deadvox/PROJECT.md", "check": "path", "text": "game/survival.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/chunks.ts", "count": 2 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/flashlight.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/furniture.ts", "count": 1 },
