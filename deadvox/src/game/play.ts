@@ -320,9 +320,11 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   /** A message that isn't an interruption, such as why a move was refused. */
   let notice = '';
   let noticeUntil = 0;
-  const showNotice = (text: string) => {
+  let noticeRequired = false;
+  const showNotice = (text: string, required = false) => {
     notice = text;
     noticeUntil = performance.now() + 3000;
+    noticeRequired = required;
   };
 
   const toggleRest = (kind: RestKind, entity: BlockEntity): void => {
@@ -341,7 +343,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
     const reason = rest.toggle(kind, entity.uid);
     if (reason) {
-      showNotice(`Can't ${kind}: ${reason}`);
+      showNotice(`Can't ${kind}: ${reason}`, true);
     }
   };
 
@@ -1157,6 +1159,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         now,
         notice,
         noticeUntil,
+        noticeRequired,
         interactionHint: entity ? useText(entity) : undefined,
         interruption: compression.interruption,
         resting: rest.action !== undefined,

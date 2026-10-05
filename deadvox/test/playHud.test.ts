@@ -114,3 +114,18 @@ it('omits expired notices and the duplicated rest interruption but retains the s
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
 });
+
+it('shows a required refusal reason when optional HUD messages are disabled', () => {
+  const reason = 'A shambler is close';
+  const state = Object.freeze({
+    now: 1,
+    notice: `Can't sleep: ${reason}`,
+    noticeUntil: 2,
+    noticeRequired: true,
+    interactionHint: undefined,
+    interruption: undefined,
+    resting: false,
+  });
+  expect(playPromptText({ ...state, noticeRequired: false }, DEFAULT_HUD_OPTIONS)).toBe('');
+  expect(playPromptText(state, DEFAULT_HUD_OPTIONS)).toContain(reason);
+});

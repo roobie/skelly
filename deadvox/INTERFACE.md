@@ -119,7 +119,9 @@ Text on screen falls into four classes, and only three of them ship:
    heft it. Ships, on the meta surfaces that need them (the inventory).
 3. **The character's voice, when something is refused or noticed:** "You're not
    tired", "Something's in the way", "You hear something outside". Short, first
-   person, about the world, never about keys or menus. Ships.
+   person, about the world, never about keys or menus. Ships. A refusal is not an
+   optional HUD message: its reason stays visible even when other messages are
+   hidden, so an interaction that cannot proceed does not look like a no-op.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
    ("press R", "open the inventory", "C: continue"). **Development only.**
 
