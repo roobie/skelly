@@ -7,6 +7,15 @@
     { "path": "deadvox/DESIGN.md", "check": "line_number", "text": "src/core/zombies.ts:57", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/", "count": 1 },
     { "path": "deadvox/DESIGN.md", "check": "path", "text": "assets/manifest.json", "count": 1 },
+    { "path": "deadvox/DESIGN.md", "check": "path", "text": "src/render/impactEffects.ts", "count": 1 },
+    { "path": "deadvox/DESIGN.md", "check": "path", "text": "src/render/shotTrace.ts", "count": 1 },
+    {
+      "path": "deadvox/DESIGN.md",
+      "check": "symbol",
+      "text": "src/render/impactEffects.ts, ImpactEffects.fire",
+      "count": 1
+    },
+    { "path": "deadvox/DESIGN.md", "check": "symbol", "text": "src/render/shotTrace.ts, traceShot", "count": 1 },
     {
       "path": "deadvox/docs/decisions/0001-ui-rendering-with-lit-html.md",
       "check": "read_if",
@@ -60,6 +69,13 @@
     { "path": "deadvox/docs/trees-first-look.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "deadvox/GRAPHICS.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "deadvox/INTERACTIONS.md", "check": "path", "text": "core/food.ts", "count": 1 },
+    { "path": "deadvox/INTERFACE.md", "check": "path", "text": "src/render/impactEffects.ts", "count": 1 },
+    {
+      "path": "deadvox/INTERFACE.md",
+      "check": "symbol",
+      "text": "src/render/impactEffects.ts, ImpactEffects",
+      "count": 1
+    },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playFrames.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "render/playView.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/menuPointer.ts", "count": 1 },

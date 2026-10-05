@@ -60,6 +60,7 @@ const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
 
 export interface Action extends GroupedAction {
   readonly code: string;
+  readonly modifier?: string;
   readonly state?: () => boolean;
   /** Current value, appended to the label in the panel. */
   readonly detail?: () => string;
@@ -377,6 +378,7 @@ interface ActionContext {
   toggleFrozen: () => void;
   isGameFrozen: () => boolean;
   toggleGameFrozen: () => void;
+  impactLaser: DebugHooks['impactLaser'];
   look: LookControls;
 }
 
@@ -397,9 +399,19 @@ export const createDebugActions = ({
   toggleFrozen,
   isGameFrozen,
   toggleGameFrozen,
+  impactLaser,
   look,
 }: ActionContext): Action[] => [
   { code: 'KeyB', key: 'B', label: 'Build tools', group: 'tools', state: () => build.on, run: () => build.toggle() },
+  {
+    code: 'KeyL',
+    key: `${KEY_BINDINGS.debugModifier.label}+L`,
+    modifier: KEY_BINDINGS.debugModifier.code,
+    label: 'Impact laser',
+    group: 'tools',
+    state: impactLaser.enabled,
+    run: impactLaser.toggle,
+  },
   { code: 'KeyG', key: 'G', label: 'Spawn item menu', group: 'tools', state: () => spawnMenu.isOpen, run: toggleSpawn },
   {
     code: 'KeyH',
@@ -694,8 +706,15 @@ const keepFromBrowser = (e: KeyboardEvent): void => {
 export const SKIP_SHORT_HOURS = 1;
 export const SKIP_LONG_HOURS = 23;
 
-export const dispatchDebugAction = (actions: readonly Action[], code: string, repeat = false): boolean => {
-  const action = actions.find((candidate) => candidate.code === code);
+export const dispatchDebugAction = (
+  actions: readonly Action[],
+  code: string,
+  repeat = false,
+  debugModifierHeld = false,
+): boolean => {
+  const action = actions.find(
+    (candidate) => candidate.code === code && (candidate.modifier !== undefined) === debugModifierHeld,
+  );
   if (!action) {
     return false;
   }
@@ -916,6 +935,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
     },
+    impactLaser: hooks.impactLaser,
     spawnShambler: (count) => {
       const zombies = hooks.zombies();
       const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
@@ -1201,7 +1221,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       }
       return true;
     }
-    if (!dispatchDebugAction(actions, e.code, e.repeat)) {
+    if (!dispatchDebugAction(actions, e.code, e.repeat, hooks.debugModifierHeld())) {
       return panelOpen;
     }
     keepFromBrowser(e);

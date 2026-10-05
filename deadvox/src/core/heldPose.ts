@@ -1,5 +1,6 @@
 // A held grip is a shared spatial contract: gameplay ejection and the rendered model
 // use the same metres/axes. Camera bob/recoil/roll remain cosmetic, not ballistic input.
+import { type AimFrame, aimBasis } from './aim.ts';
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandSide } from './inventory.ts';
@@ -46,6 +47,36 @@ export const heldAnchorOffset = (model: ModelDef, name: string): Vec3 => {
     throw new Error(`Model ${model.id} needs ${name}/grip`);
   }
   return modelToView(model, anchor.map((value, index) => value - model.grip!.at[index]!) as Vec3);
+};
+
+export const heldAnchorWorldPosition = ({
+  model,
+  anchor,
+  side,
+  twoHanded,
+  eye,
+  yaw,
+  pitch,
+  aimFrame,
+}: {
+  model: ModelDef;
+  anchor: string;
+  side: HandSide;
+  twoHanded: boolean;
+  eye: Vec3;
+  yaw: number;
+  pitch: number;
+  aimFrame: AimFrame;
+}): Vec3 => {
+  const local = heldAnchorOffset(model, anchor);
+  const grip = heldGripOffset(side, twoHanded);
+  const offset = local.map((value, index) => value + grip[index]!) as Vec3;
+  const { right, up, forward } = aimBasis(yaw, pitch, aimFrame);
+  return [
+    eye[0] + right[0] * offset[0] + up[0] * offset[1] - forward[0] * offset[2],
+    eye[1] + right[1] * offset[0] + up[1] * offset[1] - forward[1] * offset[2],
+    eye[2] + right[2] * offset[0] + up[2] * offset[1] - forward[2] * offset[2],
+  ];
 };
 
 export const heldEjectionPose = ({

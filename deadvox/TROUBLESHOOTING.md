@@ -29,6 +29,7 @@ test fails when it drifts.
 | Group | Key | Control | URL parameter |
 | --- | --- | --- | --- |
 | Tools | `B` | Build tools | — |
+| Tools | `F1+L` | Impact laser | — |
 | Tools | `G` | Spawn item menu | — |
 | Tools | `P` | Noclip | — |
 | Survival | `H` | God mode | — |

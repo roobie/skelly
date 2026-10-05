@@ -41,7 +41,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -142,7 +142,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -165,6 +165,15 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  await page.evaluate(() => {
+    const { impactEffects } = globalThis.fullAutoRuntime.view;
+    const fire = impactEffects.fire.bind(impactEffects);
+    globalThis.fullAutoProbe.trajectories = 0;
+    impactEffects.fire = (trajectory, debugLaser) => {
+      globalThis.fullAutoProbe.trajectories += trajectory.directions.length;
+      fire(trajectory, debugLaser);
+    };
+  });
   // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.
   await page.evaluate(() => {
     const { session } = globalThis.fullAutoRuntime;
@@ -234,6 +243,12 @@ try {
   await page.mouse.down();
   await page.waitForFunction(() => globalThis.fullAutoProbe.released);
   await page.mouse.up();
+  const impactPresentation = await page.evaluate(() => ({
+    marks: globalThis.fullAutoRuntime.view.impactEffects.activeMarks,
+    laserSegments: globalThis.fullAutoRuntime.view.impactEffects.laser.geometry.drawRange.count,
+  }));
+  assert.ok(impactPresentation.marks > 0, 'committed rounds that meet world geometry create impact marks');
+  assert.ok(impactPresentation.laserSegments > 0, 'debug trajectory segments are submitted for rendering');
   const cadence = await page.evaluate(() => ({
     shots: globalThis.fullAutoProbe.shots,
     cases:
@@ -248,6 +263,11 @@ try {
     'holding AR primary fires 27 shots in the half-open two-second burst at 800 rpm',
   );
   assert.equal(cadence.cases, 27, 'every automatic shot records a persistent case');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.trajectories),
+    cadence.shots.length,
+    'each committed virtual rifle round reaches the shared world-impact presentation',
+  );
   cadence.shots.forEach((time, index) => {
     assert.ok(
       Math.abs(time - cadence.shots[0] - index * 0.075) < 1e-8,

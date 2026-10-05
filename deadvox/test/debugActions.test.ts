@@ -24,6 +24,7 @@ describe('debug action table', () => {
     const { actions } = makeActions();
     expect(actions.map(({ key, label }) => [key, label])).toEqual([
       ['B', 'Build tools'],
+      ['F1+L', 'Impact laser'],
       ['G', 'Spawn item menu'],
       ['H', 'God mode'],
       ['P', 'Noclip'],
@@ -197,7 +198,7 @@ describe('debug action table', () => {
 
   it('steps the weather fogginess by tenths, which clamps to 0..1', () => {
     const { actions, weather } = makeActions();
-    const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
+    const byCode = (code: string) => actions.find((candidate) => candidate.code === code && !candidate.modifier)!;
     expect(byCode('Slash').detail?.()).toBe('0.2');
     dispatchDebugAction(actions, 'Slash');
     expect(byCode('KeyL').detail?.()).toBe('0.3');
@@ -232,6 +233,16 @@ describe('debug action table', () => {
     expect(spawnCounts).toEqual([25]);
   });
 
+  it('requires the F1 modifier before toggling the debug impact laser', () => {
+    const { actions } = makeActions();
+    const laser = actions.find((action) => action.label === 'Impact laser')!;
+    expect(laser.state?.()).toBe(true);
+    expect(dispatchDebugAction(actions, laser.code)).toBe(true);
+    expect(laser.state?.()).toBe(true);
+    expect(dispatchDebugAction(actions, laser.code, false, true)).toBe(true);
+    expect(laser.state?.()).toBe(false);
+  });
+
   it('consumes repeated action keys without repeating their action', () => {
     const { actions } = makeActions();
     const godMode = actions.find((candidate) => candidate.code === 'KeyH')!;
@@ -246,7 +257,7 @@ describe('debug panel groups', () => {
   it('puts every action in one group, in the order of the panel', () => {
     const { actions } = makeActions();
     expect(actionsByGroup(actions).map(({ def, actions: inGroup }) => [def.id, inGroup.map((a) => a.key)])).toEqual([
-      ['tools', ['B', 'G', 'P']],
+      ['tools', ['B', 'F1+L', 'G', 'P']],
       ['survival', ['H', 'T', 'N', 'U', 'K']],
       ['shamblers', ['V', 'Y', 'O']],
       ['time', ['M', ',', '.']],
@@ -368,6 +379,7 @@ const makeActions = (
   let aimEnabled = false;
   let frozen = false;
   let gameFrozen = false;
+  const impactLaser = { enabled: true };
   const spawnCounts: number[] = [];
   const actions = createDebugActions({
     hooks,
@@ -400,6 +412,12 @@ const makeActions = (
     isGameFrozen: () => gameFrozen,
     toggleGameFrozen() {
       gameFrozen = !gameFrozen;
+    },
+    impactLaser: {
+      enabled: () => impactLaser.enabled,
+      toggle: () => {
+        impactLaser.enabled = !impactLaser.enabled;
+      },
     },
   });
   return { actions, spawnCounts, skips, renderer, clock, mood, weather, shadows, flashlight };

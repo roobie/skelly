@@ -4,6 +4,7 @@ description: Design for what the game's interface may show and say to the player
 read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing player-facing prompts, feedback, or HUD language
+  - you're changing debug-profile hit feedback or shot-trajectory tools
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
 status: active
@@ -213,7 +214,13 @@ ruling.
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
-  `src/debug` and load only there (ui.2's split). They can say anything.
+  `src/debug` and load only there (ui.2's split). They can say anything. BR said on
+  2026-10-05: "and the paper target with debug mode that 'pings' to make it real
+  obvious where it was hit / maybe if we can make a debug-laser pointer too - ie.
+  a magenta line from the muzzle that marks the trajectory exactly". The target
+  ping and F1+L laser are debug-profile tools; see `src/game/worldSetup.ts`,
+  `DebugTestHouseSite`, `src/debug/index.ts`, `createDebugActions`, and
+  `src/render/impactEffects.ts`, `ImpactEffects`.
 - **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
   a build) shows the hint channel and nothing from `src/debug`, so a tester sees
   the game close to how it ships, with the instructions it still needs.

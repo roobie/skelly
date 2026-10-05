@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
+import { aimDirection } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -11,6 +12,7 @@ import {
   type DebugFirearmShotInput,
   FirearmMechanics,
   type FirearmShotEffect,
+  type FirearmTrajectory,
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
@@ -69,6 +71,36 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
 };
 
 describe('debug firearm handling', () => {
+  it('emits the committed automatic shot direction for the shared trajectory', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const aimFrame = { yaw: 0.04, pitch: -0.03 };
+    const yaw = 0.3;
+    const pitch = -0.2;
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+      onEjection: () => undefined,
+      onTrajectory: (published) => {
+        trajectory = published;
+      },
+    });
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        yaw,
+        pitch,
+        aimFrame,
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(trajectory?.directions[0]).toEqual(aimDirection(yaw, pitch, aimFrame));
+  });
   it.each([
     [800, 27],
     [600, 20],
