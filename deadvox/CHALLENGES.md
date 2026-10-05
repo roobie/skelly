@@ -122,9 +122,10 @@ invalidates cached paths.
 - **Level-of-detail tiers** (see [DESIGN.md](DESIGN.md#zombies)). v1 targets:
   60 active zombies, 300 in the background tier, and thousands as abstract
   hordes.
-- **Beeline steering, not flow fields.** d84 makes active and background zombies use beeline
-  movement; the existing attention selection is unchanged. Background zombies
-  take larger, cheap steps, with the per-step cap above.
+- **Beeline steering, not flow fields.** d84 makes active zombies beeline; the
+  existing attention selection is unchanged. 3.9 gives the background tier the
+  same movement in larger, cheap steps, with the per-step cap above (BR,
+  2026-10-05 21:32).
 - **Structure-of-arrays storage in a worker** once the counts need it. The
   `EntityStore` abstraction in `src/core/entities.ts` keeps a storage change from
   altering system APIs.
