@@ -1059,7 +1059,7 @@ export const startPlay = (
     if (!(queue.busy || firearms.busy)) {
       return false;
     }
-    showNotice('Already handling something');
+    showRefusal('Already handling something', sim.time);
     return true;
   };
 
