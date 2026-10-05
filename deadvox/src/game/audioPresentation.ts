@@ -35,6 +35,36 @@ export const firearmShotSound = (
   listenerRelative: perspective === 'player',
 });
 
+export const HEARTBEAT_FILES = {
+  slow: 'assets/audio/heartbeat-slow-beat.ogg',
+  fast: 'assets/audio/heartbeat-fast-beat.ogg',
+} as const;
+/** BR's d37-4 (#193) anchors; gain values are provisional loudness tuning. */
+export const HEARTBEAT_TUNING = {
+  startStamina: 85,
+  startHz: 1,
+  exhaustedHz: 3,
+  normalGain: 0.12,
+  veryHighGain: 0.8,
+} as const;
+
+export interface HeartbeatTarget {
+  readonly bpm: number;
+  readonly gain: number;
+}
+
+/** Presentation only: silent above the ruled stamina start, then linear in rate and loudness. */
+export const heartbeatForStamina = (stamina: number): HeartbeatTarget => {
+  if (stamina > HEARTBEAT_TUNING.startStamina) {
+    return { bpm: HEARTBEAT_TUNING.startHz * 60, gain: 0 };
+  }
+  const fraction = Math.max(0, Math.min(1, (HEARTBEAT_TUNING.startStamina - stamina) / HEARTBEAT_TUNING.startStamina));
+  return {
+    bpm: (HEARTBEAT_TUNING.startHz + (HEARTBEAT_TUNING.exhaustedHz - HEARTBEAT_TUNING.startHz) * fraction) * 60,
+    gain: HEARTBEAT_TUNING.normalGain + (HEARTBEAT_TUNING.veryHighGain - HEARTBEAT_TUNING.normalGain) * fraction,
+  };
+};
+
 /** Sound policy for a move beginning; presentation-only and deliberately outside the simulation fingerprint. */
 export const handlingMoveStartCue = (
   move: MoveStart,

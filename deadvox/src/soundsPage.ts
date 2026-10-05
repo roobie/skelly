@@ -5,11 +5,12 @@ import type { Manifest } from './core/assets.ts';
 import { buildRegistry } from './core/content.ts';
 import type { SoundEventId } from './core/soundEvents.ts';
 import { GameAudio } from './game/audio.ts';
-import { buildSoundGuide } from './ui/soundGuide.ts';
+import { buildHeartbeatSoundGuide, buildSoundGuide, renderHeartbeatSoundGuide } from './ui/soundGuide.ts';
 
 const source = '../content/base/sounds.json';
 const { registry, issues } = buildRegistry([{ source, data: soundFile }]);
 const guide = buildSoundGuide([...registry.sounds.values()], assetManifest as Manifest);
+const heartbeat = buildHeartbeatSoundGuide(assetManifest as Manifest);
 const errorRoot = document.createElement('p');
 errorRoot.className = 'sound-errors';
 errorRoot.setAttribute('role', 'status');
@@ -36,14 +37,26 @@ const playExact = (event: SoundEventId, file: string) => {
   }
 };
 
+const playHeartbeat = (file: string, gain: number) => {
+  errorRoot.textContent = '';
+  try {
+    audio.unlock();
+    if (!audio.previewHeartbeat(file, gain)) {
+      errorRoot.textContent = `Could not preview heartbeat file ${file}.`;
+    }
+  } catch (error) {
+    errorRoot.textContent = `Audio preview failed: ${String(error)}`;
+  }
+};
+
 const sheet = html`
   <header class="sound-page-header">
     <div>
       <p class="eyebrow">DEADVOX · AUDIO REFERENCE</p>
       <h1>Listening sheet</h1>
       <p>
-        Generated from <code>sounds.json</code> and <code>assets/manifest.json</code>. Preview buttons play the exact
-        listed file at base event gain and pitch 1, through the game's saved master/category volume settings; variant
+        Generated from <code>sounds.json</code> and <code>assets/manifest.json</code>. Sound-event preview buttons play
+        the exact listed file at base event gain and pitch 1, through the game's saved master/category volume settings; variant
         selection jitter and cooldown are bypassed.
       </p>
       <p class="sound-debug-note">
@@ -52,10 +65,10 @@ const sheet = html`
       </p>
       <nav><a href="./">Back to game</a> · <a href="./?debug=1">Open game with debug help</a></nav>
     </div>
-    <div class="sound-count">${guide.length} events · ${guide.reduce((sum, event) => sum + event.variants.length, 0)} variants</div>
+    <div class="sound-count">${guide.length + 1} events · ${guide.reduce((sum, event) => sum + event.variants.length, heartbeat.variants.length)} variants</div>
   </header>
   ${issues.length > 0 ? html`<p class="sound-errors">Content validation: ${issues.map((issue) => issue.message).join('; ')}</p>` : ''}
-  <section class="sound-list" aria-label="Sound events in gameplay order">
+  <section class="sound-list" aria-label="Sound events and bodily cues in gameplay order">
     ${guide.map(
       (event) => html`
         <article class="sound-event" data-sound-event=${event.id}>
@@ -93,6 +106,7 @@ const sheet = html`
         </article>
       `,
     )}
+    ${renderHeartbeatSoundGuide(heartbeat, playHeartbeat)}
   </section>
 `;
 

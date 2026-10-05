@@ -1384,6 +1384,7 @@ export const startPlay = (
     mark = performance.now();
 
     updateVisualFeedback(dt);
+    audio.updateHeartbeat(sim.needs.stamina);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();
 
