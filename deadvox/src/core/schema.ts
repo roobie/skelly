@@ -439,8 +439,8 @@ export const FurnitureSchema = strictObject({
   loot: optional(Id),
   /** It opens and closes, taking this many seconds. */
   door: optional(strictObject({ handling: NonNegative })),
-  /** You can sleep on it; 1 is a good bed. */
-  bed: optional(strictObject({ quality: Fraction })),
+  /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
+  rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
   /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
   workstation: optional(
     strictObject({

@@ -2,7 +2,7 @@
 import { BufferAttribute, BufferGeometry, Mesh, Object3D } from 'three';
 import { expect, it } from 'vitest';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
-import { playPromptText, renderPlayHud, renderPlayInventoryStats } from '../src/ui/playHud.ts';
+import { playInteractionText, playPromptText, renderPlayHud, renderPlayInventoryStats } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
 
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
@@ -61,6 +61,25 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
+it('uses the supplied binding label for restable furniture interactions', () => {
+  const keyLabel = 'binding-label-fixture';
+  const hint = playInteractionText({
+    door: false,
+    open: false,
+    doorReason: undefined,
+    lock: undefined,
+    container: false,
+    readable: false,
+    restAction: 'rest',
+    interactLabel: keyLabel,
+    searched: false,
+    name: 'fixture',
+    fullName: 'Fixture',
+  });
+  expect(hint).toContain(keyLabel);
+  expect(hint.startsWith('F:')).toBe(false);
+});
+
 it('renders immutable HUD projections and resets text/visibility on the next frame', () => {
   const roots = { hud: root(), prompt: root(), crosshair: root() };
   renderPlayHud(roots, { hud: 'stale', prompt: 'stale', crosshairVisible: true });
@@ -94,4 +113,18 @@ it('omits expired notices and the duplicated rest interruption but retains the s
   const interruptedPrompt = playPromptText({ ...state, resting: false }, visible);
   expect(interruptedPrompt).toContain(state.interactionHint);
   expect(interruptedPrompt).toContain(state.interruption);
+});
+
+it('shows a refusal reason only when the messages option is on', () => {
+  const reason = 'fixture refusal reason';
+  const state = Object.freeze({
+    now: 1,
+    notice: `Can't sleep: ${reason}`,
+    noticeUntil: 2,
+    interactionHint: undefined,
+    interruption: undefined,
+    resting: false,
+  });
+  expect(playPromptText(state, DEFAULT_HUD_OPTIONS)).toBe('');
+  expect(playPromptText(state, hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }))).toContain(reason);
 });

@@ -25,6 +25,26 @@ describe('content', () => {
     }
   });
 
+  it('accepts restable furniture quality and rejects an out-of-range value', () => {
+    const source = 'restable-furniture-fixture.json';
+    const data: ContentFile = {
+      furniture: [
+        { id: 'fixture_chair', name: 'Chair', size: [1, 2, 1], color: '#123456', rest: { quality: 0.5 } },
+        { id: 'fixture_sofa', name: 'Sofa', size: [4, 2, 2], color: '#654321', rest: { quality: 0.5, sleep: true } },
+      ],
+    };
+    const accepted = buildRegistry([{ source, data }]);
+    expect(accepted.issues).toEqual([]);
+    expect(accepted.registry.furniture.has('fixture_chair')).toBe(true);
+    expect(accepted.registry.furniture.has('fixture_sofa')).toBe(true);
+
+    const invalid = structuredClone(data);
+    invalid.furniture![0]!.rest!.quality = 1.5;
+    const rejected = buildRegistry([{ source, data: invalid }]);
+    expect(rejected.registry.furniture.has('fixture_chair')).toBe(false);
+    expect(rejected.issues.length).toBeGreaterThan(0);
+  });
+
   it('rejects a disassembly yield of its own input while accepting a distinct output', () => {
     const source = 'self-yield-fixture.json';
     const data: ContentFile = {
