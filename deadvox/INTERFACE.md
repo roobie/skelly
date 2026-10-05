@@ -168,27 +168,29 @@ to use it. BR's 2026-10-05 direction for #267 was:
 >
 > "and by that, I mean that you never fire while sprinting, but instead when holding right mouse, you 'duck walk' (which also can be a skill-dependent thing in that you duck walk faster with higher skill)"
 
-When #267 lands, firearms fire only while ready and never while sprinting. The
-ready movement becomes a skill-dependent duck walk, a separate gait from C
-crouch and mainly a speed factor; this replaces the earlier "hurried march"
-limit. BR said the duck walk is an "own gait, but mainly it's simply a speed
-factor" and that its governing skill is "not defined yet - maybe a generic
-'warfare' skill". Which skill governs duck-walk speed and block success is the
-remaining open point in #267; BR's warfare skill is a lean, not a ruling.
+When #267 lands, firearms fire only while ready and never while sprinting;
+ready movement is a skill-dependent duck walk, a separate gait from C crouch
+and mainly a speed factor. BR described it as an "own gait, but mainly it's
+simply a speed factor" and said its governing skill is "not defined yet -
+maybe a generic 'warfare' skill". Which skill governs duck-walk speed and block
+success is the remaining open point in #267; BR's warfare skill is a lean, not a
+ruling.
 
-- **Holding the right mouse button readies:** it raises a melee weapon into
-en-garde or brings a firearm up to fire from the hip. Readying is a stance the
-body shows, not a HUD mode; releasing the button lowers it. BR described the
-pose direction on 2026-10-05: "the UI must show unreadied vs readied / unreadied
-does not have muzzle forward - rather downward". Unreadied, the muzzle points
-down; readying brings it up and forward. There is no HUD indicator.
+- **Right mouse sets the combat stance:** holding it raises a melee weapon into
+en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
+also ready a firearm, bringing it up to fire from the hip; releasing it will
+lower the firearm. Readiness is a stance the body shows, not a HUD mode. BR
+described the pose direction on 2026-10-05: "the UI must show unreadied vs
+readied / unreadied does not have muzzle forward - rather downward". When #267
+lands, an unreadied firearm's muzzle points down; readying brings it up and
+forward. There is no HUD indicator.
 - **Aiming down the sights is a toggle within the ready stance,** for firearms
   only: while right-click is held, a middle click or Shift switches between hip
   and sights (the view narrows through the sights). Input interpretation belongs
   to `src/game/input.ts`, `Input`, rather than a parallel interface map.
 - **Melee also requires readiness:** BR said, "yeah, melee needs 'en-garde' on
   right-mouse-hold, which also enables blocking incoming melee (based on skill)".
-  An unready left-click does not swing.
+  When #267 lands, an unready left-click does not swing.
 - **Blocking requires en-garde and backing off:** holding right mouse and S
   blocks incoming melee; en-garde alone does not. BR answered #267's question
   1a on 2026-10-05: "1a. yes S is required to actually block from en-garde".

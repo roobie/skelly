@@ -120,14 +120,14 @@ it('lighter firearm kick builds less aim displacement over the same full-auto bu
   expect(lightKick).toBeLessThan(heavyKick);
 });
 
-it('higher firearms skill reduces the peak of the same full-auto burst', () => {
-  const cadenceSeconds = 0.075;
-  const kick = 0.012;
-  const { variance: noviceVariance } = firearmsSkillEffects(0);
-  const { variance: experiencedVariance } = firearmsSkillEffects(12);
-  const novicePeak = burstPeak(kick, noviceVariance, cadenceSeconds);
-  const experiencedPeak = burstPeak(kick, experiencedVariance, cadenceSeconds);
-  expect(experiencedPeak).toBeLessThan(novicePeak);
+it("higher firearms skill scales a committed shot's immediate aim kick", () => {
+  const novice = new AimController(undefined, firearmsSkillEffects(0).variance);
+  const experienced = new AimController(undefined, firearmsSkillEffects(12).variance);
+  novice.recordShot(73, 0.02);
+  experienced.recordShot(73, 0.02);
+  expect(Math.hypot(experienced.frame.yaw, experienced.frame.pitch)).toBeLessThan(
+    Math.hypot(novice.frame.yaw, novice.frame.pitch),
+  );
 });
 
 it('higher firearms skill reduces variance and committed handling durations', () => {

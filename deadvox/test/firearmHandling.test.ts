@@ -136,6 +136,8 @@ describe('debug firearm handling', () => {
       onCommittedShot: (_seed, recoilKickRadians) => kicks.push(recoilKickRadians),
     });
     const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
+    const firearmDef = registry.items.get(rifle.type)!.firearm!;
+    expect(configuredKick).toBe(firearmDef.recoilKickRadians);
     if (configuredKick === undefined) {
       throw new Error('Firing fixture needs firearm kick data');
     }

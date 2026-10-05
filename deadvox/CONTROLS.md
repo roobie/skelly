@@ -25,12 +25,12 @@ acting").
 ## What's already ruled
 
 - **Ready before acting (BR, 2026-09-27; direction for #267, 2026-10-05):**
-  holding right mouse readies a firearm or puts melee en-garde. When #267 lands,
-  a firearm shoots only while ready and never while sprinting; ready movement is
-  a separate duck-walk gait, not crouch, and is mainly a speed factor. BR said its speed
-  "can be a skill-dependent thing" and called it an "own gait, but mainly it's
-  simply a speed factor"; which skill applies remains open in #267, with a
-  generic "warfare" skill only a lean. BR also said, "yeah, melee needs
+  holding right mouse puts melee en-garde. When #267 lands, holding right
+  mouse readies a firearm, and firearms fire only while ready and never while
+  sprinting. When #267 lands, ready movement is a separate duck-walk gait, not
+  crouch, and mainly a speed factor. BR said its speed "can be a skill-dependent thing" and
+  called it an "own gait, but mainly it's simply a speed factor"; which skill
+  applies remains open in #267, with a generic "warfare" skill only a lean. BR also said, "yeah, melee needs
   'en-garde' on right-mouse-hold, which also enables blocking incoming melee
   (based on skill)". Blocking requires en-garde plus S: "1a. yes S is required
   to actually block from en-garde"; success depends on skill. An unreadied
@@ -171,7 +171,7 @@ below). Implemented hand activation is not duplicated in this proposal; see
 | W A S D | move | move in the ready-only duck-walk speed factor, not sprint or crouch; S plus en-garde (right mouse) blocks with skill-based success | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
 | Mouse | look | aim | drawn cursor | look | look |
 | Left click, hold | unreadied firearm: nothing, no shot or nope; melee: no swing until en-garde; other held item: proposed long use (d44) | ready firearm: fire; en-garde melee: swing | drag | keep holding | — |
-| Right mouse, hold | enter firearm-ready or melee en-garde; the held pose shows it, not the HUD | stay ready; ready movement uses duck-walk speed and cannot sprint | — | — | — |
+| Right mouse, hold | melee: enter en-garde; when #267 lands, also ready a firearm | hold stance; when #267 lands, ready movement uses duck-walk speed and cannot sprint; held pose, not HUD | — | — | — |
 | Middle click | — | toggle hip / sights | — | — | — |
 | Shift | sprint | toggle hip / sights | — | — | — |
 | Space | jump | jump | — | — | — |
