@@ -65,12 +65,24 @@ const layoutValidationBase = [
   },
 ];
 const scale = makeScale(0.5);
+const minimalLayoutBaselineIssues = buildRegistry([
+  ...layoutValidationBase,
+  { source: 'layout-test.json', data: { layouts: [layout] } },
+]).issues.filter((issue) => issue.source === 'layout-test.json');
 const invalid = (data: unknown, message: string) => {
+  expect(minimalLayoutBaselineIssues.some((issue) => issue.message.includes(message))).toBe(false);
   const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [data] } }]);
   expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
     true,
   );
   expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds); // No rejected fixture layouts; unrelated bundled sites survive.
+};
+const invalidWithFullPack = (data: unknown, message: string) => {
+  const result = load(data);
+  expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
+    true,
+  );
+  expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds);
 };
 
 const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
@@ -143,10 +155,21 @@ describe('authored layout acceptance', () => {
       'foundation cut or fill',
     );
   });
-  it('rejects floating terrain spawns and unsupported or buried building spawns', () => {
-    invalid({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] }, 'supported surface');
-    invalid({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+  it('rejects a player spawn floating above its terrain floor', () => {
+    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
+  });
+  it('rejects an elevated shambler spawn without support', () => {
+    invalidWithFullPack(
+      { ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] },
+      'supported surface',
+    );
+  });
+  it('rejects a player spawn on an unsupported building cell', () => {
+    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+  });
+  it('has no baseline layout issues for the fields covered by the minimal registry', () => {
+    const supportedIssues = minimalLayoutBaselineIssues.filter((issue) => !issue.message.includes('supported surface'));
+    expect(supportedIssues).toEqual([]);
   });
   it('rejects ridge primitives with zero width or no non-zero segment', () => {
     const ridge = {

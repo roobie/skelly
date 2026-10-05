@@ -52,8 +52,8 @@ describe('npm run validate', () => {
     );
     expect(run.status).toBe(1);
     for (const diagnostic of [
-      'recipes[0].components[0][0].item: no item "golden_toilet"',
-      'recipes[0].components: 2048 component combinations exceeds maximum 1024',
+      'FAIL  test/fixtures/content/recipe-missing-item.json recipes[0].components[0][0].item: no item "golden_toilet"',
+      'FAIL  test/fixtures/content/recipe-too-many-combinations.json recipes[0].components: 2048 component combinations exceeds maximum 1024',
       'FAIL  test/fixtures/content/broken-reference.json loot[0].entries[1].item: no item "golden_toilet"',
       'FAIL  test/fixtures/content/missing-sound-file.json sounds[0].variants[0]: "assets/audio/missing.ogg" is not in the pack',
       'FAIL  test/fixtures/content/zombie-with-model.json zombies[0].model: unknown field "model"',
