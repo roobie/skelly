@@ -5,7 +5,7 @@ import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { NEGATIVE_ZERO_TAG } from '../src/core/canonicalJson.ts';
-import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -867,9 +867,9 @@ describe('craft job codec and ownership', () => {
       savedWork.work = {
         kind: 'disassembly',
         source: radio.id,
-        skillLevel: SKILL_LEVEL_MIN,
+        skillLevel: SKILL_LEVEL_LEGENDARY,
         toolLevels: {},
-        outputs: disassemblyOutputs(radio, SKILL_LEVEL_MIN),
+        outputs: disassemblyOutputs(radio, SKILL_LEVEL_LEGENDARY),
         gather: 0,
         elapsed: 37,
         duration: SALVAGE_DURATION,
@@ -887,7 +887,7 @@ describe('craft job codec and ownership', () => {
       if (invalidWork.kind !== 'disassembly') {
         throw new Error('Expected disassembly work');
       }
-      invalidWork.skillLevel = SKILL_LEVEL_MAX + 1;
+      invalidWork.skillLevel = SKILL_LEVEL_LEGENDARY + 1;
       await expect(encodeFixture(invalidDisassembly)).rejects.toThrow();
     },
   );
@@ -1685,17 +1685,27 @@ describe('canonical save format', () => {
     expect((mismatch as Error).message).toContain(formatVersion.simulationHash);
   });
 
-  it('rejects saved skill levels outside the character scale', async () => {
+  it('accepts saved legendary skills and rejects levels outside the character scale', async () => {
     const valid = await encodeFixture(capture(createRuntime()));
+    const legendary = parseEnvelope(valid);
+    const legendaryPayload = getObject(legendary.payload);
+    const legendaryCharacter = getObject(legendaryPayload.character);
+    const legendaryProgression = getObject(legendaryCharacter.progression);
+    const legendarySkills = getObject(legendaryProgression.skills);
+    const skill = Object.keys(legendarySkills)[0]!;
+    legendarySkills[skill] = SKILL_LEVEL_LEGENDARY;
+    const decoded = await decodeSave(await sealEnvelope(legendary), { version: formatVersion, contentLookup });
+    expect(decoded.snapshot.character.progression.skills[skill]).toBe(SKILL_LEVEL_LEGENDARY);
+
     await Promise.all(
-      [SKILL_LEVEL_MAX + 1, SKILL_LEVEL_MIN - 1].map(async (level) => {
+      [SKILL_LEVEL_LEGENDARY + 1, SKILL_LEVEL_MIN - 1].map(async (level) => {
         const envelope = parseEnvelope(valid);
-        const payload = getObject(envelope.payload);
-        const character = getObject(payload.character);
-        const progression = getObject(character.progression);
-        const skills = getObject(progression.skills);
-        const skill = Object.keys(skills)[0]!;
-        skills[skill] = level;
+        const invalidPayload = getObject(envelope.payload);
+        const invalidCharacter = getObject(invalidPayload.character);
+        const invalidProgression = getObject(invalidCharacter.progression);
+        const invalidSkills = getObject(invalidProgression.skills);
+        const invalidSkill = Object.keys(invalidSkills)[0]!;
+        invalidSkills[invalidSkill] = level;
         await expect(
           decodeSave(await sealEnvelope(envelope), { version: formatVersion, contentLookup }),
         ).rejects.toThrow();

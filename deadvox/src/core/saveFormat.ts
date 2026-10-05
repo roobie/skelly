@@ -5,7 +5,7 @@ import {
   canonicalJsonAt as canonicalStringify,
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
 import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
@@ -214,7 +214,7 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
-const skillLevel = num({ integer: true, safe: true, min: SKILL_LEVEL_MIN, max: SKILL_LEVEL_MAX });
+const skillLevel = num({ integer: true, safe: true, min: SKILL_LEVEL_MIN, max: SKILL_LEVEL_LEGENDARY });
 const nonNegative = num({ min: 0 });
 const progression = obj({
   handedness: enumeration(['right', 'left']),

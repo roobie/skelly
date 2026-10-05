@@ -71,11 +71,27 @@ reach snapshot and re-plan.
 ## Minimal character state
 
 `src/core/character.ts`, `Character`, owns skill levels, source-agnostic practice
-and recipe knowledge; `SKILL_LEVEL_MIN` and `SKILL_LEVEL_MAX` own the scale's
-bounds. BR ruled: “skill scale: let's go for a 0-10 scale, where 0 is completely
-without understanding even that it exists, 10 is true expert (world class, like
-olymplic podium level / nobel prize level)”. Practice past the top is discarded,
-not banked. Starting recipes are explicit and filtered to loaded IDs;
+and recipe knowledge; `SKILL_LEVEL_MIN` and `SKILL_LEVEL_MAX` own the ordinary
+scale's bounds, with `SKILL_LEVEL_LEGENDARY` as its single exceptional level.
+BR ruled: “skill scale: let's go for a 0-10 scale, where 0 is completely without
+understanding even that it exists, 10 is true expert (world class, like olymplic
+podium level / nobel prize level)” and “Practice past 10: it can count towards
+legendary level - but it's so time consuming that you'd likely not reach it”. The
+named `LEGENDARY_LEVEL_PRACTICE` threshold in `src/core/character.ts` governs
+that step; practice after reaching legendary is discarded. Legendary effects
+remain open for BR: `src/core/character.ts`, `skillEffectLevel`, maps them to
+ordinary-top effects until ruled otherwise.
+
+BR also ruled: “that which a skill affects is also trained by it” and “amend:
+skill training comes in tiers / simply duck walking can train FC up to N, where N
+is pretty low, maybe even just 1 / hitting enemies with firearm fire while duck
+walking can train it to P, where P is higher than 1 / the above is a specific
+example, but in a general application is that skills are trained by doing stuff
+that they affect, but some activites are harder than others, and thus allow for
+attaining higher skill levels than simpler activities”. `src/core/character.ts`,
+`Character.awardPractice`, does not yet accept an activity tier; issue #275 is
+the trigger for that change.
+Starting recipes are explicit and filtered to loaded IDs;
 workbench-dependent base recipes join that source, while new arbitrary recipes
 are not automatically known. Reachable books add recipe knowledge without
 changing item ownership. Books teach recipes only, as BR ruled for Slice 2.

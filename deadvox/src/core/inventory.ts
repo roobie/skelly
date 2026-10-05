@@ -7,7 +7,7 @@ import {
   DEFAULT_HANDED_CHARACTER,
   dominantSide,
   type HandedCharacter,
-  SKILL_LEVEL_MAX,
+  SKILL_LEVEL_LEGENDARY,
   SKILL_LEVEL_MIN,
 } from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
@@ -597,7 +597,7 @@ export class Inventory {
       !isEmpty(plan.source) ||
       !Number.isSafeInteger(plan.skillLevel) ||
       plan.skillLevel < SKILL_LEVEL_MIN ||
-      plan.skillLevel > SKILL_LEVEL_MAX ||
+      plan.skillLevel > SKILL_LEVEL_LEGENDARY ||
       !Number.isFinite(plan.gather) ||
       plan.gather < 0 ||
       !Number.isFinite(plan.duration) ||
@@ -1180,7 +1180,7 @@ const validateDisassemblyWorkItem = (
     work.duration !== work.gather + duration ||
     !Number.isSafeInteger(work.skillLevel) ||
     work.skillLevel < SKILL_LEVEL_MIN ||
-    work.skillLevel > SKILL_LEVEL_MAX ||
+    work.skillLevel > SKILL_LEVEL_LEGENDARY ||
     !validDisassemblyComponents(work) ||
     !validDisassemblySnapshot(registry, source, work)
   ) {

@@ -9,7 +9,7 @@ import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
-import { Character } from '../core/character.ts';
+import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -197,7 +197,8 @@ export interface RestoredLook {
   walk: boolean;
 }
 
-const firearmsSkillLevel = (character: Character): number => character.skills.firearms ?? 0;
+const firearmsSkillLevel = (character: Character): number =>
+  skillEffectLevel(character.skills.firearms ?? SKILL_LEVEL_MIN);
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug, stairFlights = [] } = options;
