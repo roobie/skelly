@@ -2,6 +2,7 @@
 read_if:
   - you're authoring multi-storey templates, stairs or root cellars
   - you're changing stair traversal, floor-opening validation or cellar lighting
+  - you're routing shamblers across authored flights or maintaining the following proof
 ---
 
 # Explicit storeys, stairs and root cellars
@@ -67,8 +68,10 @@ chunk seams and quarter turns. Surrounding soil, foundation, upper floor and roo
 stay solid. A placement cannot put its lowest layer below the world's -48 m floor.
 
 `placedFlights(placement)` exposes joined floor ids and rotated **world-block**
-landing coordinates. These are deliberately retained for later navigation work;
-there is no new shambler navigation or door-opening behaviour.
+landing coordinates. Navigation consumes the same placement transform so a rotated
+flight cannot disagree with its physical treads; see `deadvox/src/core/authoredSite.ts`,
+`AuthoredSite`, and `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+Door actions remain separate from connectivity.
 
 ## Spatial validation
 
@@ -145,42 +148,57 @@ GPU/performance acceptance is implied by the headless functional test.
 
 `templates-stairs.json` contains `stairs_house` (two different storeys, a closed
 upstairs bedroom door and resident) and `stairs_cabin` (ground floor, root cellar
-and a cupboard containing six existing shotshell items). `layouts-stairs.json`
+and a cupboard containing ammunition). `layouts-stairs.json`
 places them in `?site=stair_demo`. These are small fixtures, **not** the final beat-1
 house or Dad's beat-3 cabin/woodshed/terrain. The lead authors those later.
 
 Walk toward the lower landing in the house, up/down with ordinary movement. In the
 cabin, the ground landing leads down; take a flashlight. The maintained
 `test/browser/stairs.mjs traversal` uses actual keyboard movement and checks
-noclip stays off. Horizontal arrival has a ten-**simulation**-second bound;
-landing settlement has a three-simulation-second physical bound. Both waits end
+noclip stays off. Horizontal arrival and landing settlement have separate
+simulation-time bounds; see `deadvox/test/browser/stairs.mjs`, `walkTo`. Both waits end
 and fail if the simulation pauses, rather than waiting for the outer kill. Body
 position, velocity, onGround, simulation time and pause state are written to
 `states.json` before assertions and on walk/settle failure. Traversal uses a smaller
-640×400 viewport because its unasserted diagnostic rendering consumes frame time;
-lighting retains the 1280×800 viewport and its pixel oracles.
+viewport because its unasserted diagnostic rendering consumes frame time;
+lighting retains the pixel-oracle viewport.
 `test/browser/stairs.mjs lighting` independently compares HUD-free dark/beam
 screenshots and an outdoor view against sky visibility forced to one. A test-only
-second authored cabin, raised six metres so its padded top is in an all-air chunk
-at block 64, checks real Streamer-to-render cache recovery and both CPU interior
+second authored cabin, raised so its padded top is in an all-air chunk, checks real Streamer-to-render cache recovery and both CPU interior
 samples staying dark across the nearest-cellar switch. Its test-only terrain apron
 stays at the shared ground level, exposing the lower west wall. The same local cell
-must be dark in slot zero and lit in slot one (`at()` values `[0, 1]`); that exposed
+must contrast darkness and full visibility between slots; that exposed
 wall's GPU luminance must match the sky-one reference. The second-cellar dark
 screenshot proves its field is resident, not the visibility-1 fallback. The wall
 contrast proves it is read from its own slice. This contrast, not two identically dark interiors, detects
 wrong-slot sampling. The extra cabin and terrain
 override exist only in the lighting test's Vite plugin, not the demo or build. Both
-stages keep the existing 300 s outer cap; neither retries to green. Opposite-floor resident/player
-screenshots remain historical scratch evidence, not a test that pins today's AI limitation.
+stages keep the existing outer cap; neither retries to green. Traversal witnesses
+actual floor following; screenshots are secondary to its simulation observations.
 
-Shamblers currently steer directly in x/z; investigation arrival ignores floor
-height and far hearing keeps the listener's y. They cannot discover a remote stair
-route. The closed bedroom door blocks the resident until the player opens it on
-that floor. The cellar demonstration has no shambler. A future feature needs
-floor-aware arrival and connector/waypoint routing; door AI is separate again.
+Matching x/z projections does not establish arrival on another storey. Authored
+flights supply connectivity, but closed doors remain blockers until the player
+opens them. See `deadvox/src/core/zombies.ts`, `sameRouteFloor` and `routeWaypoint`,
+and `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+
+An exact stimulus during descent may refer to an intermediate tread, not the final
+floor. A following proof must establish its intended target before timing arrival;
+see `deadvox/test/browser/stairs.mjs`, `residentBeforeDescent`.
+A body also straddles adjacent treads: steering must release a passed waypoint
+without mistaking that temporary support height for storey arrival. See
+`deadvox/src/core/zombies.ts`, `routeWaypointReached`.
+Perception can change again while a shambler stands on a tread. Replanning must
+retain that authored flight rather than strand the body between landing floors;
+see `deadvox/src/core/shamblerRoutes.ts`, `flightRemainder`.
+Verified-leg translation is independent of gradual visual body turning: a
+facing-driven corner arc can miss a tread. Physics still owns movement and
+collision; see `deadvox/src/core/zombies.ts`, `ZombieSystem`.
+
+Horizontal arrival and landing are separate native-input observations. Release
+forward input before waiting for support, otherwise a walker can pass the target
+while still falling; see `deadvox/test/browser/stairs.mjs`, `walkTo`.
 
 Hatches would require horizontal hinge/panel geometry, collision/picking and a
-saveable interaction state instead of today's vertical-door facing contract.
+saveable interaction state instead of the vertical-door facing contract.
 Ladders require a climbable surface, grab/release and vertical movement/physics
 rules. Neither is implemented here.

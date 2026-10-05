@@ -553,9 +553,41 @@ worse the world gets.
   Keeping route planning separate from physics preserves collision ownership.
   See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
   `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+  Explore landing connections only from the reached frontier, trying the goal
+  before optional detours. Exhausting effort on an unrelated closed approach must
+  not discard a complete route already found. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs`.
+  A grid-expansion limit alone hides flight validation, graph preparation and
+  compression work. Account for world probes and metadata/graph work against the
+  request allowance; the expansion cap also bounds local path structures.
+  Finish at most one request beyond the dispatch slice and rotate the remaining
+  queue deterministically. The allowance is logical work, not a wall-clock deadline; see
+  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`, and
+  `deadvox/src/core/zombies.ts`, `serviceRouteSearches`.
+  Request-local native maps avoid repeated world lookups without retaining stale
+  collision across requests. Continuous swept clearance prevents a short corner
+  overlap from creating an unsafe route and endless replanning; see
+  `deadvox/src/core/shamblerRoutes.ts`, `horizontalSweepClear`.
+  Live movement checks stay local even while gravity settles a descent; checking
+  the whole future leg during that transient hides unbounded per-actor work.
+  Descending endpoints are still checked for newly blocked landings. See
+  `deadvox/src/core/zombies.ts`, `liveRouteClearance` and `routeWaypoint`.
+  Preserve height changes when compressing a terrain detour: a raised sweep is
+  not proof that the body can hover over intervening obstacles. See
+  `deadvox/src/core/shamblerRoutes.ts`, `compressFlatPath`.
+  Distant goals use successive local horizons. A verified stair exit may be the
+  useful prefix when backtracking to its landing puts that horizon outside the
+  next leg's window; this is not straight steering through a failed route. See
+  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs` and `planRoute`.
 - **Storeys:** Matching horizontal projections could connect disconnected
-  floors and falsely complete an unreachable goal. Far-hearing direction must
-  not manufacture a cross-floor target. See `deadvox/src/core/zombies.ts`,
+  floors and falsely complete an unreachable goal. Absolute feet height also
+  cannot identify a storey on graded terrain: world ground height distinguishes
+  that surface from an authored floor above it. Terrain legs follow that supplied
+  surface; constructed storey transitions still require authored flights. See
+  `deadvox/src/core/shamblerRoutes.ts`, `terrainForLeg` and `onTerrainFloor`.
+  Far-hearing direction must not manufacture source-storey knowledge. A grounded
+  listener projects the uncertain bearing onto known terrain, not the source's
+  height; a listener above ground retains its own level. See `deadvox/src/core/zombies.ts`,
   `sameRouteFloor` and `farBearingTarget`, and
   `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
 - **Level of detail:** No background flow-field or abstract-horde behavior is

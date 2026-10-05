@@ -98,6 +98,10 @@ try {
   );
   await page.waitForFunction(() => globalThis.stairsWitness, undefined, { timeout: 60_000 });
   await page.locator('#go').click();
+  if (mode === 'traversal') {
+    await page.keyboard.press('KeyH');
+    assert.equal(await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode), true);
+  }
   await page.waitForFunction(
     (lighting) =>
       [[96, 32, 96], [128, 32, 96], ...(lighting ? [[160, 32, 96]] : [])].every(([x, y, z]) =>
@@ -209,6 +213,7 @@ try {
         noclip,
         locked: input.locked,
         contentErrors: engine.contentErrors,
+        routes: session.zombies.snapshotState().routes,
         zombies: [...session.zombieStore.entries()].map(([id, z]) => ({
           id,
           pos: [...z.body.pos],
@@ -268,8 +273,8 @@ try {
     }
   };
   const openResidentDoor = async (residentId) => {
-    const uid = await page.evaluate((id) => {
-      const { body, input, session, entities, doorPanel } = globalThis.stairsWitness;
+    const approach = await page.evaluate((id) => {
+      const { session, entities } = globalThis.stairsWitness;
       const resident = session.zombieStore.get(id);
       if (!resident) {
         throw new Error('stairs_house resident is not streamed');
@@ -292,9 +297,15 @@ try {
       const normal = { n: [0, 1], s: [0, 1], e: [1, 0], w: [1, 0] }[door.facing];
       const residentSide =
         Math.sign((resident.body.pos[0] - cx) * normal[0] + (resident.body.pos[2] - cz) * normal[1]) || 1;
-      body.pos = [cx - residentSide * normal[0] * 2.4, resident.body.pos[1], cz - residentSide * normal[1] * 2.4];
-      body.vel = [0, 0, 0];
-      const panel = doorPanel(door, 0.5);
+      return {
+        uid: door.uid,
+        position: [cx - residentSide * normal[0] * 2.4, resident.body.pos[1], cz - residentSide * normal[1] * 2.4],
+      };
+    }, residentId);
+    await walkTo(approach.position, 'walk from the landing to the closed resident door');
+    await page.evaluate((uid) => {
+      const { body, input, entities, doorPanel } = globalThis.stairsWitness;
+      const panel = doorPanel(entities.byUid(uid), 0.5);
       const c = Math.cos(panel.rotationY);
       const s = Math.sin(panel.rotationY);
       const dx = panel.pivot[0] + c * panel.center[0] + s * panel.center[2] - body.pos[0] * 0.5;
@@ -302,8 +313,7 @@ try {
       const dy = panel.pivot[1] + panel.center[1] - (body.pos[1] * 0.5 + 1.62);
       input.yaw = Math.atan2(-dx, -dz);
       input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
-      return door.uid;
-    }, residentId);
+    }, approach.uid);
     const started = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await page.keyboard.press('KeyF');
     const result = await page.waitForFunction(
@@ -312,7 +322,7 @@ try {
         const door = entities.byUid(targetUid);
         return door.open || session.sim.time >= until ? { open: door.open } : false;
       },
-      { targetUid: uid, until: started + 3 },
+      { targetUid: approach.uid, until: started + 3 },
       { timeout: 0, polling: 50 },
     );
     assert.equal((await result.jsonValue()).open, true, "F opens the resident's ordinary closed door");
@@ -328,13 +338,29 @@ try {
     await waitForSimulation(
       page,
       (destination) => {
-        const { body, session } = globalThis.stairsWitness;
-        const distance = Math.hypot(body.pos[0] - destination[0], body.pos[2] - destination[2]);
-        const supported = body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01;
-        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 0.5 && supported, distance };
+        const { body, session, input } = globalThis.stairsWitness;
+        const dx = destination[0] - body.pos[0];
+        const dz = destination[2] - body.pos[2];
+        input.yaw = Math.atan2(-dx, -dz);
+        const distance = Math.hypot(dx, dz);
+        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 0.5, distance };
       },
       target,
       { seconds: 12, from: start, label, record: state, stop: () => page.keyboard.up('KeyW') },
+    );
+    await waitForSimulation(
+      page,
+      (destination) => {
+        const { body, session } = globalThis.stairsWitness;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached: body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01,
+          feet: body.pos[1],
+        };
+      },
+      target,
+      { seconds: 4, label: `${label}: settle after releasing forward input`, record: state },
     );
   };
   let lightProof;
@@ -495,7 +521,12 @@ try {
       }
       return [resident.body.pos[0], body.pos[1], resident.body.pos[2]];
     }, residentId);
-    await walkTo(groundProjection, 'move below resident on the lower floor');
+    await page.keyboard.down('ShiftLeft');
+    try {
+      await walkTo(groundProjection, 'sprint below resident on the lower floor');
+    } finally {
+      await page.keyboard.up('ShiftLeft');
+    }
     const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await waitForSimulation(
       page,
@@ -519,9 +550,13 @@ try {
     const residentBeforeDescent = await state('resident hears player below the upstairs projection');
     const residentAtProjection = residentBeforeDescent.zombies.find(({ id }) => id === residentId);
     assert.ok(residentAtProjection);
-    if (Math.round(residentAtProjection.pos[1]) !== Math.round(residentBeforeDescent.position[1])) {
-      assert.notEqual(residentAtProjection.mode, 'search');
-    }
+    assert.notEqual(Math.round(residentAtProjection.pos[1]), Math.round(residentBeforeDescent.position[1]));
+    assert.notEqual(residentAtProjection.mode, 'search');
+    assert.equal(
+      Math.round(residentAtProjection.lastPerceived?.[1]),
+      Math.round(residentBeforeDescent.position[1]),
+      'native sprinting supplies an exact lower-floor stimulus, not the stale mid-flight target',
+    );
     const followed = await waitForSimulation(
       page,
       (id) => {
@@ -538,7 +573,7 @@ try {
       residentId,
       {
         seconds: 30,
-        from: houseDownstairs.simulationTime,
+        from: residentBeforeDescent.simulationTime,
         label: 'stairs_house resident follows the authored flight to the player floor',
         record: state,
       },

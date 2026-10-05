@@ -264,7 +264,7 @@ describe('explicit storeys and ordinary-block flights', () => {
     const isSolid = (x: number, y: number, z: number) => world.getBlock(x, y, z) !== 0;
     const [flight] = site.stairFlights!;
     const body = { pos: flight!.lower, vel: [0, 0, 0] as Vec3, halfWidth: 0.3, height: 1.8, onGround: true };
-    const route = planShamblerRoute(body, flight!.upper, site.stairFlights!, isSolid);
+    const route = planShamblerRoute({ body, target: flight!.upper, flights: site.stairFlights!, isSolid });
     expect(route).toBeDefined();
     expect(route!.at(-1)).toEqual(flight!.upper);
     expect(route!.some((point) => point[1] > flight!.lower[1])).toBe(true);

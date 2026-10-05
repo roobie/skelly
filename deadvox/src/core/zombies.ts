@@ -14,10 +14,14 @@ import { type Body, CONTACT_SKIN, type PhysicsParams, separateBodies, separateBo
 import { Rng, type RngState } from './random.ts';
 import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
 import {
+  onTerrainFloor,
   planShamblerRoute,
   ROUTE_SEARCHES_PER_TICK,
+  ROUTE_WORK_PER_TICK,
   type StairRouteLink,
   shamblerRouteSegmentClear,
+  type TerrainFloorAt,
+  terrainStance,
 } from './shamblerRoutes.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
@@ -252,6 +256,7 @@ export interface PlayerSense {
 export interface ZombieSystemOptions {
   store?: EntityStore<Zombie>;
   stairFlights?: readonly StairRouteLink[];
+  terrainFloor?: TerrainFloorAt | undefined;
   seed?: number;
   /** Movement, attacks and hearing use the body's blockers. */
   isSolid: SolidAt;
@@ -285,11 +290,20 @@ export interface ZombieSystemOptions {
 }
 
 const horizontalDistance = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[2] - b[2]);
-const sameRouteFloor = (a: Vec3, b: Vec3): boolean => Math.round(a[1]) === Math.round(b[1]);
+const sameRouteFloor = (a: Vec3, b: Vec3, terrainFloor: TerrainFloorAt | undefined, halfWidth: number): boolean =>
+  Math.round(a[1]) === Math.round(b[1]) ||
+  (terrainFloor !== undefined &&
+    onTerrainFloor(a, terrainFloor, halfWidth) &&
+    onTerrainFloor(b, terrainFloor, halfWidth));
 const routeGoalKey = (target: Vec3): string =>
   `${Math.floor(target[0])},${Math.round(target[1])},${Math.floor(target[2])}`;
-const routeWaypointReached = (from: Vec3, to: Vec3): boolean =>
-  horizontalDistance(from, to) <= 0.35 && Math.abs(from[1] - to[1]) <= 0.8;
+// A body straddling a descending tread still stands on the higher support until its trailing edge clears.
+const liveRouteClearance = (body: Body, next: Vec3, probe: Vec3, isSolid: SolidAt): boolean =>
+  shamblerRouteSegmentClear(body, body.pos, probe, isSolid) &&
+  (next[1] >= body.pos[1] - 2 * CONTACT_SKIN || shamblerRouteSegmentClear(body, next, next, isSolid));
+
+const routeWaypointReached = (from: Vec3, to: Vec3, stepHeight: number): boolean =>
+  horizontalDistance(from, to) <= 0.35 && Math.abs(from[1] - to[1]) <= stepHeight + 2 * CONTACT_SKIN;
 const unit = (v: Vec3): Vec3 => {
   const n = Math.hypot(...v);
   return n > 0 ? [v[0] / n, v[1] / n, v[2] / n] : [0, 0, 0];
@@ -1145,19 +1159,50 @@ export class ZombieSystem {
   }
 
   private serviceRouteSearches(time: number): void {
+    let work = 0;
     for (const id of this.pendingRouteIds(time).slice(0, ROUTE_SEARCHES_PER_TICK)) {
+      if (work >= ROUTE_WORK_PER_TICK) {
+        break;
+      }
       const zombie = this.store.get(id);
       const route = this.routes.get(id);
       if (!(zombie && route) || zombie.incapacitated || (zombie.mode !== 'chase' && zombie.mode !== 'investigate')) {
         this.routes.delete(id);
         continue;
       }
-      const waypoints = planShamblerRoute(
-        zombie.body,
-        route.goal,
-        this.options.stairFlights ?? [],
-        this.options.isSolid,
-      );
+      // Collision reads are stable during this synchronous search, but never cached across requests or ticks.
+      const solids = new Map<string, boolean>();
+      const countedSolid: SolidAt = (x, y, z) => {
+        const key = `${x},${y},${z}`;
+        let value = solids.get(key);
+        if (value === undefined) {
+          value = this.options.isSolid(x, y, z);
+          solids.set(key, value);
+        }
+        return value;
+      };
+      const floors = new Map<string, number>();
+      const countedTerrain = this.options.terrainFloor
+        ? (x: number, z: number) => {
+            const key = `${x},${z}`;
+            let value = floors.get(key);
+            if (value === undefined) {
+              value = this.options.terrainFloor!(x, z);
+              floors.set(key, value);
+            }
+            return value;
+          }
+        : undefined;
+      const waypoints = planShamblerRoute({
+        body: zombie.body,
+        target: route.goal,
+        flights: this.options.stairFlights ?? [],
+        isSolid: countedSolid,
+        terrainFloor: countedTerrain,
+        onWork: (units) => {
+          work += units;
+        },
+      });
       this.routes.set(id, {
         ...route,
         waypoints: waypoints ?? [],
@@ -1169,7 +1214,8 @@ export class ZombieSystem {
     }
   }
 
-  private routeWaypoint(id: EntityId, zombie: Zombie, target: Vec3, time: number): Vec3 | undefined {
+  private routeWaypoint(id: EntityId, zombie: Zombie, target: Vec3, dt: number): Vec3 | undefined {
+    const time = this.routeClock;
     const key = routeGoalKey(target);
     let route = this.routes.get(id);
     if (!route || route.goalKey !== key) {
@@ -1180,7 +1226,10 @@ export class ZombieSystem {
       route = { ...route, pending: true, retryAt: 0 };
       this.routes.set(id, route);
     }
-    while (route.next < route.waypoints.length && routeWaypointReached(zombie.body.pos, route.waypoints[route.next]!)) {
+    while (
+      route.next < route.waypoints.length &&
+      routeWaypointReached(zombie.body.pos, route.waypoints[route.next]!, this.options.physics.stepHeight)
+    ) {
       route = { ...route, next: route.next + 1 };
       this.routes.set(id, route);
     }
@@ -1189,11 +1238,18 @@ export class ZombieSystem {
       this.routes.set(id, route);
     }
     const next = route.waypoints[route.next];
-    if (
-      next &&
-      !route.pending &&
-      !shamblerRouteSegmentClear(zombie.body, zombie.body.pos, next, this.options.isSolid)
-    ) {
+    let probe = next;
+    if (next) {
+      const distance = horizontalDistance(zombie.body.pos, next);
+      const lookAhead = zombie.body.halfWidth + (zombie.horizontalSpeed * dt) / this.options.blockSize;
+      const fraction = distance > 0 ? Math.min(1, lookAhead / distance) : 1;
+      probe = [
+        zombie.body.pos[0] + (next[0] - zombie.body.pos[0]) * fraction,
+        Math.max(zombie.body.pos[1], next[1]),
+        zombie.body.pos[2] + (next[2] - zombie.body.pos[2]) * fraction,
+      ];
+    }
+    if (next && probe && !route.pending && !liveRouteClearance(zombie.body, next, probe, this.options.isSolid)) {
       route = { ...route, waypoints: [], next: 0, pending: true, retryAt: 0 };
       this.routes.set(id, route);
       return undefined;
@@ -1301,6 +1357,15 @@ export class ZombieSystem {
         zombie.searchStrolling = false;
         zombie.lastPerceived =
           vocal?.tier === 'far' ? vocal.target : farBearingTarget({ ...hearingInput, source: player.pos, rng });
+        const { terrainFloor } = this.options;
+        if (terrainFloor && onTerrainFloor(pos, terrainFloor, zombie.body.halfWidth)) {
+          zombie.lastPerceived[1] = terrainStance(
+            zombie.lastPerceived[0],
+            zombie.lastPerceived[2],
+            zombie.body.halfWidth,
+            terrainFloor,
+          );
+        }
       } else if (zombie.mode === 'chase') {
         zombie.mode = 'investigate';
         zombie.investigationTier = 'near';
@@ -1308,7 +1373,10 @@ export class ZombieSystem {
 
       if (zombie.mode === 'investigate') {
         const investigationTarget = zombie.lastPerceived ?? zombie.home;
-        if (sameRouteFloor(pos, investigationTarget) && horizontalDistance(investigationTarget, pos) * blockSize <= 1) {
+        if (
+          Math.hypot(...sub(investigationTarget, pos)) * blockSize <= 1 &&
+          sameRouteFloor(pos, investigationTarget, this.options.terrainFloor, zombie.body.halfWidth)
+        ) {
           this.beginSearch(zombie);
           this.routes.delete(id);
         }
@@ -1318,6 +1386,7 @@ export class ZombieSystem {
       let direction: Vec3 = [0, 0, 0];
       let aimDirection: Vec3 | undefined;
       let desiredSpeed = 0;
+      let waypointTravelLimit = Number.POSITIVE_INFINITY;
       let returnArrived = false;
       const stroll = zombie.mode === 'stroll';
       if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
@@ -1396,11 +1465,9 @@ export class ZombieSystem {
         const metresToTarget = horizontalDistance(target, pos) * blockSize;
         returnArrived = zombie.mode === 'return' && metresToTarget < 0.4;
         const seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
-        const waypoint = seeking ? this.routeWaypoint(id, zombie, target, this.routeClock) : undefined;
+        const waypoint = seeking ? this.routeWaypoint(id, zombie, target, dt) : undefined;
         const inReach =
-          zombie.mode === 'chase' &&
-          sameRouteFloor(pos, target) &&
-          withinAttackReach({ zombiePos: pos, playerPos: target, type, blockSize, isSolid });
+          zombie.mode === 'chase' && withinAttackReach({ zombiePos: pos, playerPos: target, type, blockSize, isSolid });
         if (seeking) {
           direction = waypoint ? unit([waypoint[0] - pos[0], 0, waypoint[2] - pos[2]]) : [0, 0, 0];
         } else {
@@ -1408,22 +1475,24 @@ export class ZombieSystem {
         }
         const moving = seeking ? waypoint !== undefined && !inReach : returnArrived || metresToTarget > 0.25;
         if (moving) {
+          const route = this.routes.get(id);
+          const followingDetour = seeking && waypoint !== undefined && (route?.waypoints.length ?? 0) > 1;
           if (seeking) {
             aimDirection = direction;
             const motion = this.stepChaseMotion(zombie, dt);
-            const route = this.routes.get(id);
-            const followingDetour = waypoint !== undefined && (route?.waypoints.length ?? 0) > 1;
             direction = followingDetour ? direction : headingAt(angleOf(direction) + motion.sway);
             desiredSpeed = type.speed.chase * motion.speedFactor;
           } else if (!returnArrived) {
             desiredSpeed = type.speed.wander;
           }
-          zombie.facing = turnToward(
-            zombie.facing,
-            direction,
-            (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
-          );
-          direction = zombie.facing;
+          const turnRadians = (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180;
+          zombie.facing = turnToward(zombie.facing, direction, turnRadians);
+          if (followingDetour) {
+            // Keep translation on the verified leg while the body turns; a facing-driven arc can miss a tread.
+            waypointTravelLimit = (horizontalDistance(pos, waypoint!) * blockSize) / dt;
+          } else {
+            direction = zombie.facing;
+          }
         } else {
           direction = [0, 0, 0];
         }
@@ -1442,7 +1511,10 @@ export class ZombieSystem {
         zombie.stumbleFactor < 1 && zombie.horizontalSpeed > desiredSpeed
           ? type.chaseMotion.stumbleDeceleration
           : type.wander.movementAcceleration;
-      zombie.horizontalSpeed = approach(zombie.horizontalSpeed, desiredSpeed, acceleration * dt);
+      zombie.horizontalSpeed = Math.min(
+        approach(zombie.horizontalSpeed, desiredSpeed, acceleration * dt),
+        waypointTravelLimit,
+      );
       if (zombie.mode === 'search' && zombie.searchStrolling && zombie.searchAnchor) {
         const radius = horizontalDistance(pos, zombie.searchAnchor) * blockSize;
         const away = unit([pos[0] - zombie.searchAnchor[0], 0, pos[2] - zombie.searchAnchor[2]]);
