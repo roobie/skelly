@@ -58,12 +58,12 @@ const frameFromState = (
   const pitchLimit = Math.sqrt(Math.max(0, MAX_OFFSET ** 2 - yawOffset ** 2));
   const boundedPitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitchOffset));
   const excessPitch = pitchOffset - boundedPitch;
-  const viewPitchShift =
-    state.recoilPitch > 0
-      ? Math.min(state.recoilPitch, Math.max(0, excessPitch))
-      : state.recoilPitch < 0
-        ? Math.max(state.recoilPitch, Math.min(0, excessPitch))
-        : 0;
+  let viewPitchShift = 0;
+  if (state.recoilPitch > 0) {
+    viewPitchShift = Math.min(state.recoilPitch, Math.max(0, excessPitch));
+  } else if (state.recoilPitch < 0) {
+    viewPitchShift = Math.max(state.recoilPitch, Math.min(0, excessPitch));
+  }
   return {
     frame: Object.freeze({
       yaw: yawOffset,

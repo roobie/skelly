@@ -36,6 +36,11 @@ export interface FirearmHandlingData {
   readonly dispersionRadians?: number;
 }
 
+const hasTraceProperties = (
+  data: FirearmHandlingData,
+): data is FirearmHandlingData & { recoilKickRadians: number; dispersionRadians: number } =>
+  data.recoilKickRadians !== undefined && data.dispersionRadians !== undefined;
+
 export const firearmModelForType = (type: string, registry: Registry): ModelDef | undefined => {
   const id = defOf(registry, type).model;
   return id === undefined ? undefined : registry.models.get(id);
@@ -263,7 +268,7 @@ export class FirearmMechanics {
       return false;
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
-    if (data.recoilKickRadians === undefined || data.dispersionRadians === undefined) {
+    if (!hasTraceProperties(data)) {
       return false;
     }
     const emission = this.emission(item, data, input);

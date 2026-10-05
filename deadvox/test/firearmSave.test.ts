@@ -12,10 +12,10 @@ import {
   type SaveVersionComponents,
 } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
-import { adjustLookPitch } from '../src/game/input.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { adjustLookPitch } from '../src/game/input.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 

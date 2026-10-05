@@ -111,7 +111,15 @@ describe('debug firearm handling', () => {
     const direction = novice.directions[0]!;
     const base = aimDirection(yaw, pitch, aimFrame);
     const cone = firearmHandlingFor(inventoryWithRifle().rifle, registry).dispersionRadians!;
-    const angle = Math.acos(Math.max(-1, Math.min(1, base.reduce((sum, value, index) => sum + value * direction[index]!, 0))));
+    const angle = Math.acos(
+      Math.max(
+        -1,
+        Math.min(
+          1,
+          base.reduce((sum, value, index) => sum + value * direction[index]!, 0),
+        ),
+      ),
+    );
     expect(angle).toBeGreaterThan(0);
     expect(angle).toBeLessThanOrEqual(cone + 1e-10);
     expect(experienced.directions).toEqual(novice.directions);
