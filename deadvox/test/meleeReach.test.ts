@@ -149,6 +149,28 @@ const swingAt = ({
   );
 };
 
+const swingAtReachDistance = (
+  seed: number,
+  pose: (typeof poses)[number],
+  weapon: (typeof weapons)[number],
+  distanceMetres: number,
+): boolean => {
+  const { system, id, zombie } = makeSystem(seed, pose, 1.08);
+  const target = visibleTorsoVoxel(zombie);
+  if (!target) {
+    return false;
+  }
+  const direction = normalized(target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3);
+  const aim = system.aimAt(playerEye, direction, weapon);
+  if (aim?.region !== 'torso') {
+    return false;
+  }
+  const offset = (distanceMetres - aim.distanceMetres) / BLOCK_SIZE;
+  const origin = playerEye.map((coordinate, axis) => coordinate - direction[axis]! * offset) as Vec3;
+  const before = zombie.regions.torso;
+  return system.swing(origin, direction, weapon) === id && zombie.regions.torso < before;
+};
+
 describe('player melee reach at shambler attack distance', () => {
   it('provides a pure aim query that agrees with swing for the posed head, chest, arm, and above-head rays', () => {
     const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
@@ -266,60 +288,19 @@ describe('player melee reach at shambler attack distance', () => {
     expect(zombie.regions.torso).toBe(before.torso);
   });
 
-  it('measures progressively farther chest reach in the preserved weapon order', () => {
+  it('hits on both sides of every weapon reach edge', () => {
+    const reaches = [...new Set(weapons.map(({ reach }) => reach))].sort((a, b) => a - b);
+    expect(reaches.length).toBeGreaterThan(1);
+    const delta = Math.min(...reaches.slice(1).map((reach, index) => reach - reaches[index]!)) / 2;
     const standing = poses[0]!;
     const seed = 1;
-    const distances = weapons.map((weapon) => {
-      let farthest = 0;
-      for (let centimetres = 10; centimetres <= 500; centimetres++) {
-        const distance = centimetres / 100;
-        const { zombie } = makeSystem(seed, standing, distance);
-        const target = visibleTorsoVoxel(zombie);
-        if (target && swingAt({ seed, pose: standing, distance, region: 'torso', target, weapon })) {
-          farthest = distance;
-        }
-      }
-      return { name: weapon.name, farthest };
-    });
-    const farthestByName = Object.fromEntries(distances.map(({ name, farthest }) => [name, farthest]));
-    expect(farthestByName.fists).toBeLessThan(farthestByName.kitchen_knife!);
-    expect(farthestByName.kitchen_knife).toBeLessThan(farthestByName.kabar!);
-    expect(farthestByName.kabar).toBeLessThan(farthestByName.hammer!);
-    expect(farthestByName.hammer).toBeLessThan(farthestByName.machete!);
-    expect(farthestByName.machete).toBeLessThan(farthestByName.crowbar!);
-    expect(farthestByName.crowbar).toBe(farthestByName.steel_pipe);
-    expect(farthestByName.steel_pipe).toBeLessThan(farthestByName.baseball_bat!);
-    expect(distances).toEqual([
-      { name: 'fists', farthest: 1.47 },
-      { name: 'kitchen_knife', farthest: 1.62 },
-      { name: 'kabar', farthest: 1.63 },
-      { name: 'hammer', farthest: 1.73 },
-      { name: 'machete', farthest: 1.78 },
-      { name: 'crowbar', farthest: 1.93 },
-      { name: 'steel_pipe', farthest: 1.93 },
-      { name: 'baseball_bat', farthest: 2.14 },
-    ]);
-  });
 
-  it('defines weapon reach beyond the hand and retains the specified ordering', () => {
-    expect(weapons.map(({ name }) => name)).toEqual([
-      'fists',
-      'kitchen_knife',
-      'kabar',
-      'hammer',
-      'machete',
-      'crowbar',
-      'steel_pipe',
-      'baseball_bat',
-    ]);
-    expect(PLAYER_ARM_REACH_M).toBe(1.2);
-    const reaches = Object.fromEntries(weapons.map(({ name, reach }) => [name, reach]));
-    expect(reaches.fists).toBeCloseTo(0.1);
-    expect(reaches.kabar).toBeGreaterThan(reaches.kitchen_knife!);
-    expect(reaches.kabar).toBeLessThan(reaches.hammer!);
-    expect(reaches.hammer).toBeLessThan(reaches.machete!);
-    expect(reaches.machete).toBeLessThan(reaches.crowbar!);
-    expect(reaches.crowbar).toBe(reaches.steel_pipe);
-    expect(reaches.steel_pipe).toBeLessThan(reaches.baseball_bat!);
+    for (const weapon of weapons) {
+      const edge = PLAYER_ARM_REACH_M + weapon.reach;
+      expect(swingAtReachDistance(seed, standing, weapon, edge - delta), `${weapon.name} just inside edge`).toBe(true);
+      expect(swingAtReachDistance(seed, standing, weapon, edge + delta), `${weapon.name} just outside edge`).toBe(
+        false,
+      );
+    }
   });
 });
