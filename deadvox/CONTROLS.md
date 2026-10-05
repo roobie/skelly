@@ -143,7 +143,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Crouch | Slice 3 (sight and noise when crouching) | stance |
 | Throw (flare, glowstick, lure) | Slice 3 | instant, noise |
 | Put the held item away (stow) | now (tap its quickbar slot) | handling |
-| Use off-hand primary action | implemented; see `src/game/controls.ts`, `KEY_BINDINGS` | instant |
+| Use off-hand primary action | implemented; see `src/game/input.ts`, `KEY_BINDINGS` | instant |
 | Read a book, craft, repair | Slice 2 | long, menu |
 | Lean | reserved (Q, E) | stance |
 
@@ -151,7 +151,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 
 Shipped profile. The development profile adds the debug keys (see "Debug keys"
 below). Implemented hand activation is not duplicated in this proposal; see
-`src/game/controls.ts`, `KEY_BINDINGS`, and "The two hands".
+`src/game/input.ts`, `KEY_BINDINGS`, and "The two hands".
 
 | Input | Unready | Weapon ready | Menu open | During a long action | Interruption shown |
 | --- | --- | --- | --- | --- | --- |
@@ -204,7 +204,7 @@ Notes on the proposal:
 roles follow the actor. The physical slots and a restored fist sequence remain
 physical; otherwise Continue would silently move equipment or change the next
 attack. See `src/core/character.ts`, `dominantSide` and `offSide`;
-`src/game/controls.ts`, `KEY_BINDINGS`; and `src/game/primaryAction.ts`,
+`src/game/input.ts`, `KEY_BINDINGS`; and `src/game/primaryAction.ts`,
 `selectPrimaryAction`. The selector refuses unsupported items and reserved
 support rather than substituting a fist or the other hand's action.
 
