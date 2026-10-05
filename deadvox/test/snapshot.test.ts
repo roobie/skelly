@@ -16,6 +16,7 @@ import type { MapEntityStore } from '../src/core/entities.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory, PILE_GRID } from '../src/core/inventory.ts';
+import { drainBurnLight, toggleLight } from '../src/core/lights.ts';
 import {
   decodeSave,
   encodeSave,
@@ -1149,6 +1150,51 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
 };
 const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
+
+const lightCandleInHand = (runtime: Runtime) => {
+  const backpack = runtime.inventory.hands.right!;
+  expect(runtime.inventory.move(backpack, { kind: 'pile', pos: [...runtime.session.body.pos] }).ok).toBe(true);
+  const flashlight = runtime.inventory.hands.left!;
+  expect(runtime.survival.use(flashlight)).toBeUndefined();
+  expect(runtime.inventory.move(flashlight, { kind: 'pile', pos: [...runtime.session.body.pos] }).ok).toBe(true);
+  const candle = runtime.inventory.create('candle');
+  expect(runtime.inventory.add(candle, { kind: 'hand', side: 'right' })).toBe(true);
+  const matches = runtime.inventory.create('matches');
+  expect(runtime.inventory.add(matches, { kind: 'hand', side: 'left' })).toBe(true);
+  expect(runtime.survival.use(candle)).toBeUndefined();
+  return candle;
+};
+
+it('a doused candle keeps its remaining burn through save and relighting', async () => {
+  const source = createRuntime();
+  const candle = lightCandleInHand(source);
+  const duration = registry.items.get('candle')!.light!.burnTime!;
+  const dousedAt = source.sim.calendar + duration * 1800;
+  expect(drainBurnLight(candle, dousedAt)).toBe(false);
+  expect(toggleLight(registry, candle, dousedAt)).toBeUndefined();
+
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const loaded = createRuntime(decoded.snapshot);
+  const restored = loaded.inventory.itemByUid(candle.uid)!;
+  expect(restored).toMatchObject({ on: false, burnRemaining: duration / 2 });
+  expect(restored.litAt).toBeUndefined();
+  expect(toggleLight(registry, restored, dousedAt)).toBeUndefined();
+  expect(drainBurnLight(restored, dousedAt + duration * 1800)).toBe(true);
+  expect([restored.on, restored.burnRemaining]).toEqual([false, 0]);
+});
+
+it('a lit light saves its active ignition time and remaining burn', async () => {
+  const source = createRuntime();
+  const candle = lightCandleInHand(source);
+
+  const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+  const loaded = createRuntime(decoded.snapshot);
+  expect(loaded.inventory.itemByUid(candle.uid)).toMatchObject({
+    on: true,
+    burnRemaining: candle.burnRemaining,
+    litAt: source.sim.calendar,
+  });
+});
 
 it('a door lock survives the save codec and fresh native entity owner, independently of the source object', async () => {
   const source = createRuntime();

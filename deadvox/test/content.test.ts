@@ -27,13 +27,13 @@ describe('content', () => {
 
   it('validates tool-quality references in disassembly yield modifiers', () => {
     const files = structuredClone(base);
-    const recipes = files.find(({ source }) => source === 'recipes.json')!.data as ContentFile;
-    const torchIndex = recipes.items!.findIndex(({ id }) => id === 'torch');
-    const torch = recipes.items![torchIndex] as ItemDef;
+    const tools = files.find(({ source }) => source === 'items-tools.json')!.data as ContentFile;
+    const torchIndex = tools.items!.findIndex(({ id }) => id === 'torch');
+    const torch = tools.items![torchIndex] as ItemDef;
     torch.disassembly!.yields[0]!.toolModifier = { quality: 'unknown_quality', bonusByLevel: [0.1] };
     const { issues } = buildRegistry(files);
     expect(issues).toContainEqual({
-      source: 'recipes.json',
+      source: 'items-tools.json',
       path: `items[${torchIndex}].disassembly.yields[0].toolModifier.quality`,
       message: 'no tool quality "unknown_quality"',
     });
@@ -516,7 +516,7 @@ describe('content references', () => {
             category: 'light',
             weight: 300,
             size: [1, 2],
-            light: { radius: 5, seenFrom: 30, power: { battery: 'bandage', perHour: 1 } },
+            light: { radius: 5, seenFrom: 30, color: '#ffffff', intensity: 1, power: { battery: 'bandage', perHour: 1 } },
           },
         ],
       },

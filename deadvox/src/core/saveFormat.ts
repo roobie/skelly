@@ -130,7 +130,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 13;
+export const SAVE_SCHEMA_VERSION = 15;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -246,6 +246,8 @@ itemSchema = obj({
   condition: num({ min: 0, max: 1 }),
   charges: opt(nonNegative),
   on: opt(bool),
+  burnRemaining: opt(nonNegative),
+  litAt: opt(nonNegative),
   made: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   firearm: opt(

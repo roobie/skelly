@@ -15,8 +15,14 @@ export const BATTERY_SWAP = 2;
 const capacityOf = (registry: Registry, batteryType: string): number =>
   defOf(registry, batteryType).battery?.capacity ?? 0;
 
-/** The light's power, if it runs on batteries. */
-const powerOf = (registry: Registry, light: Item) => defOf(registry, light.type).light?.power;
+/** Battery power, if this source takes replaceable batteries. */
+const batteryPowerOf = (registry: Registry, light: Item) => defOf(registry, light.type).light?.power;
+
+/** Charge used per game hour by a battery- or self-fuelled light. */
+const drainRateOf = (registry: Registry, light: Item): number | undefined => {
+  const spec = defOf(registry, light.type).light;
+  return spec?.power?.perHour ?? spec?.fuelPerHour;
+};
 
 /** Charge left in the light's battery, or in a battery; undefined for anything else. */
 export const chargeOf = (registry: Registry, item: Item): number | undefined => {
@@ -25,31 +31,67 @@ export const chargeOf = (registry: Registry, item: Item): number | undefined => 
     return item.charges ?? def.battery.capacity;
   }
   const power = def.light?.power;
-  return power ? (item.charges ?? capacityOf(registry, power.battery)) : undefined;
+  if (power) {
+    return item.charges ?? capacityOf(registry, power.battery);
+  }
+  return def.igniter ? (item.charges ?? def.igniter.capacity) : undefined;
 };
 
 /** Charge as a share of a full battery, 0 to 1. */
 export const chargeShare = (registry: Registry, item: Item): number | undefined => {
   const def = defOf(registry, item.type);
-  const type = def.battery ? item.type : def.light?.power?.battery;
+  const capacity = def.battery?.capacity ?? def.igniter?.capacity ??
+    (def.light?.power ? capacityOf(registry, def.light.power.battery) : undefined);
   const charge = chargeOf(registry, item);
-  return type === undefined || charge === undefined ? undefined : charge / capacityOf(registry, type);
+  return capacity === undefined || charge === undefined ? undefined : charge / capacity;
 };
 
 /** Switches a light on or off. Returns why it can't come on, or undefined. */
-export const toggleLight = (registry: Registry, light: Item): string | undefined => {
-  if (defOf(registry, light.type).light === undefined) {
+export const toggleLight = (registry: Registry, light: Item, calendar = 0): string | undefined => {
+  const def = defOf(registry, light.type);
+  const spec = def.light;
+  if (spec === undefined) {
     return "It isn't a light";
   }
   if (light.on) {
+    if (spec.burning && !spec.burning.douse) {
+      return "It can't be doused";
+    }
     light.on = false;
+    delete light.litAt;
     return undefined;
   }
-  if (chargeOf(registry, light) === 0) {
-    return 'The battery is dead';
+  if (spec.burnTime !== undefined) {
+    if (light.burnRemaining !== undefined && !spec.burning?.relight) {
+      return "It can't be lit again";
+    }
+    const remaining = light.burnRemaining ?? spec.burnTime;
+    if (remaining <= 0) {
+      return 'It has burned out';
+    }
+    light.burnRemaining = remaining;
+    light.litAt = calendar;
+  } else if (chargeOf(registry, light) === 0) {
+    return def.igniter ? "It's out of fuel" : 'The battery is dead';
   }
   light.on = true;
   return undefined;
+};
+
+/** Burns a consumable light to the current calendar time; returns true when it went out. */
+export const drainBurnLight = (light: Item, calendar: number): boolean => {
+  if (!(light.on && light.litAt !== undefined && light.burnRemaining !== undefined)) {
+    return false;
+  }
+  const elapsed = Math.max(0, (calendar - light.litAt) / 3600);
+  light.litAt = calendar;
+  light.burnRemaining = Math.max(0, light.burnRemaining - elapsed);
+  if (light.burnRemaining > 0) {
+    return false;
+  }
+  light.on = false;
+  delete light.litAt;
+  return true;
 };
 
 /**
@@ -57,14 +99,14 @@ export const toggleLight = (registry: Registry, light: Item): string | undefined
  * the step when it ran out, or undefined if it's still going (or wasn't on).
  */
 export const drainLight = (registry: Registry, light: Item, hours: number): number | undefined => {
-  const power = powerOf(registry, light);
-  if (!(light.on && power)) {
+  const rate = drainRateOf(registry, light);
+  if (!(light.on && rate !== undefined)) {
     return undefined;
   }
   const charge = chargeOf(registry, light)!;
-  const lasts = charge / power.perHour;
+  const lasts = charge / rate;
   if (lasts > hours) {
-    light.charges = charge - power.perHour * hours;
+    light.charges = charge - rate * hours;
     return undefined;
   }
   light.charges = 0;
@@ -80,7 +122,7 @@ export const offHandUse = (registry: Registry, inventory: Inventory): Item | und
 
 /** Whether a battery fits a light. */
 export const fitsLight = (registry: Registry, light: Item, battery: Item): boolean =>
-  powerOf(registry, light)?.battery === battery.type;
+  batteryPowerOf(registry, light)?.battery === battery.type;
 
 /**
  * Puts one of `battery` into `light`, in place. The old battery comes out with its

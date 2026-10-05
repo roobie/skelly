@@ -498,6 +498,7 @@ export const createSession = (options: SessionOptions) => {
       const handling = queue.busy || firearms.busy;
       const going = intent.forward !== 0 || intent.right !== 0;
       sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
+      survival.setSprinting(sprinting);
       stepStamina(sim.needs, dt, sprinting);
       const pacedIntent = {
         ...intent,

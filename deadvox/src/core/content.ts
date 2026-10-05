@@ -306,6 +306,24 @@ const checkItems = (registry: Registry, report: Report) => {
     if (battery !== undefined && registry.items.get(battery)?.battery === undefined) {
       report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
     }
+    if (item.igniter && item.igniter.perIgnition > item.igniter.capacity) {
+      report('items', item.id, '.igniter.perIgnition', 'must not exceed fuel capacity');
+    }
+    if (item.light?.power && item.light.burnTime !== undefined) {
+      report('items', item.id, '.light.burnTime', 'battery lights cannot also have a burn time');
+    }
+    if (item.light?.fuelPerHour !== undefined && !item.igniter) {
+      report('items', item.id, '.light.fuelPerHour', 'self-fuelled lights need an igniter fuel component');
+    }
+    if (item.light?.fuelPerHour !== undefined && item.light.burnTime !== undefined) {
+      report('items', item.id, '.light.fuelPerHour', 'self-fuelled lights cannot also have a burn time');
+    }
+    if (item.light?.burning && item.light.burnTime === undefined) {
+      report('items', item.id, '.light.burning', 'burning rules need a burn time');
+    }
+    if (item.light?.burning?.ignition === 'firestarter' && ![...registry.items.values()].some((candidate) => candidate.igniter)) {
+      report('items', item.id, '.light.burning.ignition', 'needs at least one item with an igniter component');
+    }
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);

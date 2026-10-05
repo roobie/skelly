@@ -71,6 +71,7 @@ export class HeldItems {
   private readonly ambient = new HemisphereLight();
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
+  private readonly lightMaterials = new Map<string, MeshLambertMaterial>();
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
   private drawn = '';
@@ -334,6 +335,19 @@ export class HeldItems {
     return true;
   }
 
+  /** World position for a held light without a model-specific lens anchor. */
+  lightPositionOf(item: Item, main: PerspectiveCamera, out: Vector3): boolean {
+    const visual = this.shown.get(item.uid);
+    if (!visual) {
+      return false;
+    }
+    if (this.lensOf(item, main, out)) {
+      return true;
+    }
+    visual.getWorldPosition(out).add(main.position);
+    return true;
+  }
+
   /** Draws what's in your hands over the frame the main camera just rendered. */
   render(renderer: WebGLRenderer, main: PerspectiveCamera, sky: SkyTargets): void {
     if (this.view.children.length === 0) {
@@ -393,6 +407,10 @@ export class HeldItems {
   dispose(): void {
     this.disposeCompasses();
     this.clearArms();
+    for (const material of this.lightMaterials.values()) {
+      material.dispose();
+    }
+    this.lightMaterials.clear();
     this.view.clear();
     this.shown.clear();
     this.heldByHand.clear();
@@ -546,7 +564,18 @@ export class HeldItems {
     // Long side forward, short side across, and flatter than it is wide.
     const long = Math.max(...def.size) * CELL;
     const short = Math.min(...def.size) * CELL;
-    const box = new Mesh(this.geometry, this.material);
+    const emission = item.on ? (def.light?.emissive ?? 0) : 0;
+    const materialKey = `${item.type}:${emission}`;
+    let material = def.light ? this.lightMaterials.get(materialKey) : undefined;
+    if (def.light && !material) {
+      material = new MeshLambertMaterial({
+        color: def.light.color,
+        emissive: def.light.color,
+        emissiveIntensity: emission,
+      });
+      this.lightMaterials.set(materialKey, material);
+    }
+    const box = new Mesh(this.geometry, material ?? this.material);
     box.scale.set(short, short * 0.6, long);
     box.position.z = -long / 2 + short / 2; // the hand holds its near end
     const lens = new Object3D();

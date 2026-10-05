@@ -10,7 +10,7 @@ const capabilities = [
     kind: 'melee',
     weapon: { melee: { damage: 1, reach: 1, cooldown: 1, stamina: 0, type: 'blunt' } },
   },
-  { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1 } },
+  { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1 } },
   { id: 'held_gun', kind: 'firearm', firearm: {} },
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
   { id: 'held_book', kind: 'read', book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingTime: 1 } },

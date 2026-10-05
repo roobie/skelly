@@ -34,6 +34,10 @@ export interface ItemFields<Node> {
   charges?: number;
   /** A light that's switched on. */
   on?: boolean;
+  /** Remaining consumable-light burn, in game hours; absent until first ignition. */
+  burnRemaining?: number;
+  /** Calendar seconds at the last burn-state update; present only while lit. */
+  litAt?: number;
   /**
    * Calendar seconds when it was made; absent means before the world began (day 1,
    * 00:00). Food rots from then (core/food.ts).
@@ -77,6 +81,8 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     condition: item.condition,
     ...(item.charges === undefined ? {} : { charges: item.charges }),
     ...(item.on === undefined ? {} : { on: item.on }),
+    ...(item.burnRemaining === undefined ? {} : { burnRemaining: item.burnRemaining }),
+    ...(item.litAt === undefined ? {} : { litAt: item.litAt }),
     ...(item.made === undefined ? {} : { made: item.made }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
@@ -101,6 +107,15 @@ export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<Placed
 
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
+  const burnTime = def.light?.burnTime;
+  if (
+    (state.burnRemaining !== undefined &&
+      (burnTime === undefined || state.burnRemaining > burnTime || !Number.isFinite(state.burnRemaining))) ||
+    (state.litAt !== undefined && (burnTime === undefined || state.on !== true || state.burnRemaining === undefined)) ||
+    (burnTime !== undefined && state.on === true && (state.burnRemaining === undefined || state.litAt === undefined))
+  ) {
+    throw new Error('Invalid saved light burn state');
+  }
   if (state.firearm !== undefined) {
     if (!def.firearm || state.count !== 1) {
       throw new Error('Mechanical firearm state needs one firearm');
@@ -118,6 +133,8 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     condition: state.condition,
     ...(state.charges === undefined ? {} : { charges: state.charges }),
     ...(state.on === undefined ? {} : { on: state.on }),
+    ...(state.burnRemaining === undefined ? {} : { burnRemaining: state.burnRemaining }),
+    ...(state.litAt === undefined ? {} : { litAt: state.litAt }),
     ...(state.made === undefined ? {} : { made: state.made }),
     ...(state.firearm === undefined ? {} : { firearm: structuredClone(state.firearm) }),
     ...(state.pockets === undefined
@@ -188,6 +205,9 @@ export class ItemFactory {
     if (def.firearm?.pump) {
       item.firearm = { chamber: 'empty', tube: [] };
     }
+    if (def.igniter) {
+      item.charges = def.igniter.capacity;
+    }
     return item;
   }
 
@@ -204,6 +224,12 @@ export class ItemFactory {
     }
     if (item.made !== undefined) {
       part.made = item.made;
+    }
+    if (item.burnRemaining !== undefined) {
+      part.burnRemaining = item.burnRemaining;
+    }
+    if (item.litAt !== undefined) {
+      part.litAt = item.litAt;
     }
     return part;
   }

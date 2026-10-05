@@ -736,6 +736,36 @@ playable".
 
 ## Results
 
+### Made lights: d64-1 planned workload
+
+The approved workload supports four concurrently lit carried sources. The four
+are a torch in one hand, a candle in the other, and two lit glowsticks in
+pockets. Twelve more lit glowsticks are dropped, four on an inner 3 m ring and
+eight on an outer 6 m ring. The workload therefore starts with 16 active
+sources and has 15 after the candle goes out during sprint. Use the content's
+plan-default light settings: a warm all-around torch at 5 cd with a 6 m
+lighting radius and 60 m seen-from distance; a warm all-around candle at 1 cd,
+3 m and 15 m; and a green all-around glowstick at 0.25 cd, 2 m and 15 m. All
+made lights use decay 1 and cast no shadows.
+
+The fixed pool has eight shadowless point-light slots. It represents the four
+carried sources and the nearest four dropped glowsticks; the other dropped
+sticks remain emissive. If more than four carried sources are lit, prioritize
+hands first and then pockets in stable inventory order; further carried lights
+remain lit but get no point-light slot. The pool never grows. The dropped-light
+selection and carried-source limit are part of the workload, not content-ID
+special cases.
+
+Run the full phases from `src/bench/run.ts`, `startBench`, with
+`?bench=1&plan=0.5:96&seed=73&time=23:30&post=1&shamblers=60`, then repeat with
+`shamblers=0` to isolate lighting cost. No quick mode. On the reference laptop in
+Firefox, require 60 fps, at most 1% of frames over 18 ms in every phase, and no
+holes at sprint speed. The report records the workload shape, active source
+counts before and after sprint, pool size, and light settings read from content.
+BR may overrule the plan-default light settings at d64-1's first look; if so,
+update the workload before measuring the production preview. Tests read the
+light settings from content rather than pinning their tuning values.
+
 ### Trees: d24-2, 2026-10-03 — CPU lookup fixed
 
 BR approved shapes and hedges; the new movement/sight ruling and F4 player

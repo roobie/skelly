@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PLAN,
   DEFAULT_SHAMBLER_COUNTS,
+  type BenchRecord,
   formatPlan,
   parsePlan,
   parseShamblerCounts,
@@ -18,7 +19,7 @@ import {
   shamblerResultRow,
   shamblerSummary,
 } from '../src/bench/report.ts';
-import { benchRunFromUrl } from '../src/bench/run.ts';
+import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats, percentile } from '../src/bench/stats.ts';
 
@@ -74,10 +75,15 @@ describe('bench plan', () => {
     expect(shamblerRunFromUrl(new URLSearchParams('bench=shamblers&time=25:99'))).toBeUndefined();
   });
 
-  it('keeps a valid time of day from the URL, and drops anything else', () => {
-    expect(benchRunFromUrl(new URLSearchParams('bench=1&time=23:30')).time).toBe('23:30');
+  it('keeps a valid time and carries the detailed population through each full phase run', () => {
+    const run = benchRunFromUrl(new URLSearchParams('bench=1&time=23:30&shamblers=7&actors=detailed'));
+    expect(run).toMatchObject({ time: '23:30', shamblers: 7 });
     expect(benchRunFromUrl(new URLSearchParams('bench=1&time=25:00')).time).toBeUndefined();
-    expect(benchRunFromUrl(new URLSearchParams('bench=1')).time).toBeUndefined();
+    const lightsOnly = benchRunFromUrl(new URLSearchParams('bench=1'));
+    expect(lightsOnly.time).toBeUndefined();
+    expect(benchRunFromUrl(new URLSearchParams(nextUrl(lightsOnly, 73))).shamblers).toBe(0);
+    expect(new URLSearchParams(nextUrl(run, 73)).get('shamblers')).toBe('7');
+    expect(benchRunFromUrl(new URLSearchParams('bench=1&shamblers=7,8')).shamblers).toBeUndefined();
   });
 
   it('runs 0.5 m blocks at 64, 96 and 128 m by default', () => {
@@ -182,6 +188,26 @@ describe('bench report', () => {
     expect(row[5]).toBe('2.3 / 4.1');
     expect(row[7]).toBe('12 / 365');
     expect(shamblerSummary([shambler])).toContain('actors=detailed');
+  });
+
+  it('includes the light workload and content-owned values in a full-scene report', () => {
+    const record: BenchRecord = {
+      startedAt: 'fixture',
+      quick: false,
+      runs: [],
+      lightWorkload: {
+        active: 1,
+        carried: 1,
+        dropped: 0,
+        pointLightSlots: 1,
+        shamblers: 1,
+        actors: 'detailed',
+        settings: {
+          fixture: { color: '#ffffff', emissive: 1, intensity: 1, radius: 1, seenFrom: 1, burnTime: 1 },
+        },
+      },
+    };
+    expect(markdownReport(record)).toContain('Light workload:');
   });
 
   it('shows a dash for render time in runs from before it existed', () => {

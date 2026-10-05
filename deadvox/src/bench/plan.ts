@@ -2,6 +2,7 @@
 // page reloads that separate runs (each run starts from a fresh page and GPU state).
 
 import type { StorageStats } from '../core/storage.ts';
+import type { ItemDef } from '../core/content.ts';
 import type { ActorRenderer } from '../game/config.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
 
@@ -146,6 +147,20 @@ export interface BenchRecord {
   time?: string;
   /** Drawn through the mood pass with the default look (`&post=1`, bench/post.ts); records from before it existed, and runs without it, drew plain. */
   post?: boolean;
+  /** Made-light and detailed-shambler population that shared the full-phase scene. */
+  lightWorkload?: {
+    active: number;
+    activeAfterSprint?: number;
+    carried: number;
+    dropped: number;
+    pointLightSlots: number;
+    shamblers: number;
+    actors: ActorRenderer;
+    settings: Record<
+      string,
+      Pick<NonNullable<ItemDef['light']>, 'color' | 'emissive' | 'intensity' | 'radius' | 'seenFrom' | 'burnTime'>
+    >;
+  };
   env?: Environment;
   runs: RunResult[];
   shamblers?: ShamblerRunResult[];

@@ -1,9 +1,9 @@
 // A near-field-capped falloff for punctual lights. three.js lights a surface at distance d with 1 / d^decay,
 // which grows without bound up close: a beam tuned to reach 10 m blows out a wall at 1 m. Here the distance is
-// offset, 1 / (d + NEAR_FIELD_M)^decay, so close surfaces stop brightening while the far reach stays. The only
-// punctual light in the game is the flashlight (render/flashlight.ts; the sun is directional, the rest is
-// hemisphere light), so one global patch of three's shared chunk covers every material the beam can hit: chunk
-// meshes, mob actors, held items, glTF models and furniture all include `lights_pars_begin`.
+// offset, 1 / (d + NEAR_FIELD_M)^decay, so close surfaces stop brightening while the far reach stays. The
+// flashlight (render/flashlight.ts) and made lights both use punctual lights; the sun is directional and the rest
+// is hemisphere light. One global patch of three's shared chunk covers every material these sources can hit:
+// chunk meshes, mob actors, held items, glTF models and furniture all include `lights_pars_begin`.
 //
 // This relies on a three.js internal: the exact source line of `getDistanceAttenuation` (0.186). It is checked
 // when installed and throws if three changed it, so an upgrade fails loudly instead of silently lighting wrong.

@@ -17,6 +17,7 @@ import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
+import { LightPool } from './lightPool.ts';
 import { FurnitureMeshes } from './furniture.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { applyLook } from './look.ts';
@@ -101,6 +102,7 @@ export const createPlayView = (
   const furniture = new FurnitureMeshes(s);
   const playerMeshes = new PlayerMeshes(s, playerPalette);
   const flashlight = new Flashlight(scene);
+  const lightPool = new LightPool(scene);
   engine.shadows?.attachTorch(flashlight.light);
   scene.add(piles.group, furniture.group, playerMeshes.group);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
@@ -123,6 +125,7 @@ export const createPlayView = (
     playerMeshes,
     held,
     flashlight,
+    lightPool,
     zombieMeshes,
     weather,
     dispose,
@@ -187,6 +190,7 @@ export const createPlayView = (
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
       held.update(camera, pose, recoil, handling);
       flashlight.update(registry, light, held, camera);
+      lightPool.update(inventory, held, camera, s, flashlight.daylightScale);
     },
     render: (): number | null => {
       if (!renderer) {

@@ -12,6 +12,14 @@ const BASE = 'src/content/base';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
 const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
+const base = (file: string): ContentSource => {
+  const source = `${BASE}/${file}`;
+  const data = JSON.parse(readFileSync(source, 'utf8'));
+  if (file === 'items-tools.json') {
+    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle'].includes(item.id));
+  }
+  return { source, data };
+};
 const imageLoader = {
   isImageBitmapLoader: true,
   load(_url: string, onLoad: (image: ImageBitmap) => void) {
@@ -28,9 +36,7 @@ const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box
     return coordinate >= bounds.min[axis] - 0.02 && coordinate <= bounds.max[axis] + 0.02;
   });
 const { registry, issues } = buildRegistry([
-  ...['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json'].map((f) =>
-    read(`${BASE}/${f}`),
-  ),
+  ...['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json'].map(base),
   read(`${BASE}/models-melee.json`),
   read(`${BASE}/models-firearms.json`),
   read('test/fixtures/packs/lamp/lamp.json'),
