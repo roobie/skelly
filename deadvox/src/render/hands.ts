@@ -22,13 +22,13 @@ import {
   type WebGLRenderer,
 } from 'three';
 import type { FigureDef, ModelDef } from '../core/content.ts';
-import { HELD_DISPLAY_KIND } from '../core/schema.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
 import { HOLD, heldAnchorOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import { HELD_DISPLAY_KIND } from '../core/schema.ts';
 import { createCompass } from './compass.ts';
 import {
   type FirearmAction,
@@ -494,7 +494,9 @@ export class HeldItems {
     const def = defOf(this.inventory.registry, item.type);
     // A permanently raised inspection pose keeps this small display legible without a new input route.
     const heldAt: Vec3 =
-      def.heldDisplay !== undefined ? [side === 'right' ? 0.14 : -0.14, -0.13, -0.3] : HOLD[def.twoHanded ? 'both' : side];
+      def.heldDisplay === undefined
+        ? HOLD[def.twoHanded ? 'both' : side]
+        : [side === 'right' ? 0.14 : -0.14, -0.13, -0.3];
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
