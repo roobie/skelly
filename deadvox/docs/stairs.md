@@ -67,7 +67,7 @@ stamping and regeneration produce the same void, even across horizontal/vertical
 chunk seams and quarter turns. Surrounding soil, foundation, upper floor and roof
 stay solid. A placement cannot put its lowest layer below the world's -48 m floor.
 
-`placedFlights(placement)` exposes joined floor ids and rotated **world-block** landing coordinates to authored-site validation and physical construction; see `deadvox/src/core/authoredSite.ts`, `AuthoredSite`. These coordinates do not feed shambler navigation. Door actions remain separate from static floor-space connectivity.
+`compileTemplate`, in `deadvox/src/core/templates.ts`, constructs the authored treads in compiled block data; `AuthoredSite.stamp`, in `deadvox/src/core/authoredSite.ts`, writes those blocks through `stampPlacement`. d84-2 removes `placedFlights` and `Site.stairFlights`: shambler route planning was their only consumer, and the flight-rotation assertions are no longer part of `test/stairs.test.ts`. The cellar test still exercises quarter-turned placement and chunk stamping. Door actions remain separate from static floor-space connectivity.
 
 ## Spatial validation
 
@@ -174,9 +174,7 @@ actual floor following; screenshots are secondary to its simulation observations
 
 Shamblers do not traverse authored flights or otherwise navigate between storeys. BR's ruling is to “beeline towards whatever grabs their attention,” move horizontally toward it, let collision physics slide along obstacles, and prefer jumping low obstacles; some obstacle hits trigger an open-direction wander before pursuit resumes. A target on another floor does not give the shambler stair knowledge. Closed doors block it like walls; BR deferred bashing for #273 until mob and obstacle strength exist. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`, and `deadvox/DESIGN.md`, “Senses and AI.”
 
-An exact stimulus during descent may refer to an intermediate tread, not the final
-floor. A following proof must establish its intended target before timing arrival;
-see `deadvox/test/browser/stairs.mjs`, `residentBeforeDescent`. The browser stage checks player traversal, not shambler navigation.
+The browser stage checks player traversal, not shambler navigation.
 
 Horizontal arrival and landing are separate native-input observations. Release
 forward input before waiting for support, otherwise a walker can pass the target

@@ -558,49 +558,7 @@ try {
         record: state,
       },
     );
-    const residentBeforeDescent = await state('resident hears player below the upstairs projection');
-    const residentAtProjection = residentBeforeDescent.zombies.find(({ id }) => id === residentId);
-    assert.ok(residentAtProjection);
-    assert.notEqual(Math.round(residentAtProjection.pos[1]), Math.round(residentBeforeDescent.position[1]));
-    assert.notEqual(residentAtProjection.mode, 'search');
-    assert.equal(
-      Math.round(residentAtProjection.lastPerceived?.[1]),
-      Math.round(residentBeforeDescent.position[1]),
-      'native sprinting supplies an exact lower-floor stimulus, not the stale mid-flight target',
-    );
-    const observed = await waitForSimulation(
-      page,
-      ({ id, start, seconds }) => {
-        const { session, body } = globalThis.stairsWitness;
-        const resident = session.zombieStore.get(id);
-        const elapsed = session.sim.time - start;
-        return {
-          time: session.sim.time,
-          paused: session.sim.paused,
-          reached: elapsed >= seconds,
-          residentFloor: resident ? Math.round(resident.body.pos[1]) : null,
-          targetFloor: Math.round(body.pos[1]),
-        };
-      },
-      { id: residentId, start: residentBeforeDescent.simulationTime, seconds: 30 },
-      {
-        seconds: 30,
-        from: residentBeforeDescent.simulationTime,
-        label: 'shambler remains on its storey while beelining toward a lower-floor target',
-        record: state,
-      },
-    );
-    assert.notEqual(
-      observed.residentFloor,
-      observed.targetFloor,
-      'authored stairs do not give a shambler floor-navigation behavior',
-    );
-    residentProof = {
-      residentId,
-      residentFloor: observed.residentFloor,
-      targetFloor: observed.targetFloor,
-      simulationSeconds: observed.seconds,
-    };
+    await state('player rests under the upstairs resident');
 
     await stage([143, 43.0001, 115]);
     await walk('s', 134, false, 35);

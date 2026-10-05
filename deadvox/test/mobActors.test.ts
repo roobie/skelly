@@ -246,6 +246,7 @@ const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[]
   horizontalSpeed: 0,
   obstacleWanderRemaining: 0,
   obstacleContact: false,
+  obstacleSlideSide: 0,
   bodyLookTarget: 0,
   headYaw: 0,
   headYawTarget: 0,

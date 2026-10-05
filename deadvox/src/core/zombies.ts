@@ -124,6 +124,7 @@ export interface Zombie {
   obstacleWanderHeading?: Vec3 | undefined;
   obstacleWanderRemaining: number;
   obstacleContact: boolean;
+  obstacleSlideSide: -1 | 0 | 1;
   bodyLookTarget: number;
   headYaw: number;
   headYawTarget: number;
@@ -191,7 +192,8 @@ const validObstacleWanderState = (zombie: ZombieState): boolean =>
     (Array.isArray(zombie.obstacleWanderHeading) &&
       zombie.obstacleWanderHeading.length === 3 &&
       zombie.obstacleWanderHeading.every(Number.isFinite))) &&
-  typeof zombie.obstacleContact === 'boolean';
+  typeof zombie.obstacleContact === 'boolean' &&
+  (zombie.obstacleSlideSide === -1 || zombie.obstacleSlideSide === 0 || zombie.obstacleSlideSide === 1);
 const validZombieEventState = (zombie: ZombieState): boolean =>
   (zombie.lastVocalNoiseId === null ||
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
@@ -289,8 +291,6 @@ const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const copy = (v: Vec3): Vec3 => [v[0], v[1], v[2]];
 const angleOf = (v: Vec3): number => Math.atan2(v[0], v[2]);
 const headingAt = (angle: number): Vec3 => [Math.sin(angle), 0, Math.cos(angle)];
-const OBSTACLE_WANDER_CHANCE = 0.25;
-const OBSTACLE_WANDER_DISTANCE_METRES = 10;
 const OBSTACLE_PROBE_DISTANCE_METRES = 0.75;
 const OBSTACLE_PROBE_SPEED = 4;
 const OBSTACLE_WANDER_ANGLES = [
@@ -975,6 +975,7 @@ export class ZombieSystem {
       horizontalSpeed: 0,
       obstacleWanderRemaining: 0,
       obstacleContact: false,
+      obstacleSlideSide: 0,
       bodyLookTarget: angleOf(direction),
       headYaw: 0,
       headYawTarget: 0,
@@ -1273,6 +1274,9 @@ export class ZombieSystem {
           zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, remaining / (dt * outward));
         }
       }
+      if (!wanderingAtTickStart && zombie.obstacleContact && zombie.obstacleSlideSide !== 0 && aimDirection) {
+        direction = headingAt(angleOf(aimDirection) + (zombie.obstacleSlideSide * Math.PI) / 2);
+      }
       zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
       zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
       const jumpAttempted =
@@ -1310,13 +1314,32 @@ export class ZombieSystem {
       const forward = aimDirection ? (dx * aimDirection[0] + dz * aimDirection[2]) * blockSize : 0;
       const obstacleContact =
         wallAhead && !jumpAttempted && zombie.horizontalSpeed > 0.01 && forward < zombie.horizontalSpeed * dt * 0.1;
+      const wasObstacleContact = zombie.obstacleContact;
       if (wanderingAtTickStart) {
-        zombie.obstacleWanderRemaining = Math.max(0, zombie.obstacleWanderRemaining - travelled);
-        if (zombie.obstacleWanderRemaining === 0) {
+        if (obstacleContact) {
+          zombie.obstacleWanderRemaining = 0;
           zombie.obstacleWanderHeading = undefined;
+        } else {
+          zombie.obstacleWanderRemaining = Math.max(0, zombie.obstacleWanderRemaining - travelled);
+          if (zombie.obstacleWanderRemaining === 0) {
+            zombie.obstacleWanderHeading = undefined;
+          }
         }
       }
-      if (obstacleContact && !zombie.obstacleContact && aimDirection && rng.chance(OBSTACLE_WANDER_CHANCE)) {
+      if (!obstacleContact) {
+        zombie.obstacleSlideSide = 0;
+      } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
+        zombie.obstacleSlideSide = rng.int(0, 1) === 0 ? -1 : 1;
+      } else if (zombie.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
+        zombie.obstacleSlideSide = zombie.obstacleSlideSide === -1 ? 1 : -1;
+      }
+      if (
+        !wanderingAtTickStart &&
+        obstacleContact &&
+        !wasObstacleContact &&
+        aimDirection &&
+        rng.chance(type.wander.obstacleWanderChance)
+      ) {
         const physics = { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 };
         const headings = openWanderHeadings({
           body: zombie.body,
@@ -1327,7 +1350,7 @@ export class ZombieSystem {
         });
         if (headings.length > 0) {
           zombie.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
-          zombie.obstacleWanderRemaining = OBSTACLE_WANDER_DISTANCE_METRES;
+          zombie.obstacleWanderRemaining = type.wander.obstacleWanderDistanceMetres;
         }
       }
       zombie.obstacleContact = obstacleContact;

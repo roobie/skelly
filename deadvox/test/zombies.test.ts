@@ -237,12 +237,13 @@ const runChaserAtWall = (isSolid: SolidAt, seconds: number) => {
   const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
   const zombie = system.store.get(id)!;
   const states: { mode: string; verticalVelocity: number; onGround: boolean }[] = [];
+  let clearOfSolid = true;
   for (let frame = 0; frame < seconds * 60; frame++) {
     system.tick(1 / 60);
     states.push({ mode: zombie.mode, verticalVelocity: zombie.body.vel[1], onGround: zombie.body.onGround });
+    clearOfSolid &&= !bodyHitsSolid(zombie.body, isSolid);
   }
-  const wallGap = (6 - zombie.body.pos[0] - zombie.body.halfWidth) * BLOCK_SIZE;
-  return { states, wallGap };
+  return { states, clearOfSolid };
 };
 const standing = (position: Vec3, facing: Vec3 = [0, 0, -1]) => {
   const system = new ZombieSystem(senses(() => player([1000, 1, 1000])));
@@ -525,6 +526,21 @@ describe('shambler scenarios', () => {
     expect(metres(chaser.body.pos, chaser.home)).toBeLessThanOrEqual(12.5);
   });
 
+  it('does not start a search at the projection of a sound on another floor', () => {
+    const target = player([0, 3, 0], [0, 0, 1], 'sprinting');
+    const system = new ZombieSystem({
+      ...senses(() => target),
+      isOpaque: () => false,
+      terrainFloor: () => 1,
+    });
+    const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    system.tick(1 / 20);
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.lastPerceived).toEqual(target.pos);
+    expect(zombie.searchAnchor).toBeUndefined();
+  });
+
   it('beelines directly toward an attention target across open ground', () => {
     const type = {
       ...SHAMBLER,
@@ -566,12 +582,56 @@ describe('shambler scenarios', () => {
     expect(zombie.body.pos[0]).toBeLessThan(5);
   });
 
-  it('sometimes wanders in a seeded open direction after hitting an obstacle, then resumes pursuit', () => {
-    const obstacle: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5);
-    const target: Vec3 = [30, 1, 0];
+  it('keeps moving into a wall head-on with zero chase sway', () => {
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5);
     const type = {
       ...SHAMBLER,
       speed: { ...SHAMBLER.speed, chase: 2 },
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      wander: { ...SHAMBLER.wander, obstacleWanderChance: 0 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    for (const seed of [1, 2, 3, 7, 23]) {
+      const target = [30, 1, 0] as Vec3;
+      const system = new ZombieSystem({
+        ...senses(() => player(target, [-1, 0, 0], 'sprinting'), wall),
+        isOpaque: () => false,
+        seed,
+      });
+      const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+      const zombie = system.store.get(id)!;
+      let hitWall = false;
+      let checkedPostContactMovement = false;
+      for (let tick = 0; tick < 5 * 60; tick++) {
+        const wasAtWall = hitWall;
+        const before = [...zombie.body.pos] as Vec3;
+        system.tick(1 / 60);
+        if (wasAtWall && zombie.mode === 'chase' && metres(zombie.body.pos, target) > type.attack.reach) {
+          checkedPostContactMovement = true;
+          expect(metres(before, zombie.body.pos)).toBeGreaterThan(0.005);
+        }
+        hitWall ||= zombie.obstacleContact;
+        expect(bodyHitsSolid(zombie.body, wall)).toBe(false);
+      }
+      expect(hitWall).toBe(true);
+      expect(checkedPostContactMovement).toBe(true);
+    }
+  });
+
+  it('wanders a distance set by type in an open direction, then resumes pursuit', () => {
+    const obstacle: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5 && z >= -2 && z <= 2);
+    const target: Vec3 = [300, 1, 0];
+    const type = {
+      ...SHAMBLER,
+      speed: { ...SHAMBLER.speed, chase: 2 },
+      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
+      sight: 1,
+      nightSight: 1,
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
@@ -583,30 +643,68 @@ describe('shambler scenarios', () => {
     const system = new ZombieSystem({
       ...senses(() => player(target, [-1, 0, 0], 'sprinting'), obstacle),
       isOpaque: () => false,
-      seed: 1,
     });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
     const zombie = system.store.get(id)!;
-    let beganWandering = false;
-    let endedWandering = false;
+    let wanderStart: Vec3 | undefined;
     let wanderingHeading: Vec3 | undefined;
+    let furthestWanderDistance = 0;
     let xAtWanderEnd: number | undefined;
     for (let tick = 0; tick < 30 * 60; tick++) {
       system.tick(1 / 60);
+      expect(bodyHitsSolid(zombie.body, obstacle)).toBe(false);
       if (zombie.obstacleWanderRemaining > 0) {
-        beganWandering = true;
+        wanderStart ??= [...zombie.body.pos];
         wanderingHeading ??= zombie.obstacleWanderHeading;
-      } else if (beganWandering) {
-        endedWandering = true;
+        furthestWanderDistance = Math.max(furthestWanderDistance, metres(zombie.body.pos, wanderStart));
+      } else if (wanderStart) {
         xAtWanderEnd ??= zombie.body.pos[0];
       }
     }
-    expect(beganWandering).toBe(true);
+    expect(wanderStart).toBeDefined();
     expect(wanderingHeading).toBeDefined();
-    expect(Math.abs(wanderingHeading![2])).toBeGreaterThan(0.5);
-    expect(endedWandering).toBe(true);
+    expect(furthestWanderDistance).toBeGreaterThan(0);
+    expect(xAtWanderEnd).toBeDefined();
     expect(zombie.body.pos[0]).toBeGreaterThan(xAtWanderEnd!);
-    expect(zombie.mode).toBe('chase');
+    expect(zombie.obstacleWanderRemaining).toBe(0);
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.lastPerceived).toEqual(target);
+  });
+
+  it('ends a blocked obstacle wander and resumes its attention target', () => {
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5);
+    const type = {
+      ...SHAMBLER,
+      sight: 1,
+      nightSight: 1,
+      wander: { ...SHAMBLER.wander, obstacleWanderChance: 0 },
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player([300, 1, 0], [-1, 0, 0], 'sprinting'), wall),
+      isOpaque: () => false,
+    });
+    const id = system.add(type, [2.8, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.obstacleWanderHeading = [1, 0, 0];
+    zombie.obstacleWanderRemaining = 3;
+    zombie.horizontalSpeed = type.speed.chase;
+    let endedAtBlockedContact = false;
+    let resumedMotion = false;
+    for (let tick = 0; tick < 20; tick++) {
+      const wasWandering = zombie.obstacleWanderRemaining > 0;
+      const before = [...zombie.body.pos] as Vec3;
+      system.tick(1 / 60);
+      const travelled = metres(before, zombie.body.pos);
+      endedAtBlockedContact ||=
+        wasWandering && zombie.obstacleWanderRemaining === 0 && zombie.obstacleContact && travelled < 0.01;
+      resumedMotion ||= endedAtBlockedContact && zombie.obstacleWanderRemaining === 0 && travelled > 0.01;
+    }
+    expect(endedAtBlockedContact).toBe(true);
+    expect(resumedMotion).toBe(true);
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.lastPerceived).toEqual([300, 1, 0]);
+    expect(zombie.obstacleWanderRemaining).toBe(0);
   });
 
   it('jumps a low obstacle and keeps beelining past it', () => {
@@ -628,7 +726,7 @@ describe('shambler scenarios', () => {
     const result = runChaserAtWall(windowWall, 30);
     expect(result.states.every((state) => state.verticalVelocity <= 0)).toBe(true);
     expect(result.states.slice(1).every((state) => state.onGround)).toBe(true);
-    expect(result.wallGap).toBeGreaterThanOrEqual(0);
+    expect(result.clearOfSolid).toBe(true);
   });
 
   it('does not jump a 1 m wall when a low ceiling leaves too little headroom', () => {
@@ -636,7 +734,7 @@ describe('shambler scenarios', () => {
     const result = runChaserAtWall(lowCeiling, 5);
     expect(result.states.every((state) => state.verticalVelocity <= 0)).toBe(true);
     expect(result.states.slice(1).every((state) => state.onGround)).toBe(true);
-    expect(result.wallGap).toBeGreaterThan(1);
+    expect(result.clearOfSolid).toBe(true);
   });
 
   it('stops a walking player at a standing shambler without stepping onto its body', () => {
@@ -2324,13 +2422,14 @@ describe('attack windup', () => {
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
   });
 
-  it('round-trips obstacle-wander state without persisting route state', () => {
+  it('round-trips obstacle movement state without persisting route state', () => {
     const system = new ZombieSystem(senses(() => player([100, 2, 0]), FLOOR));
     const id = system.add(SHAMBLER, [0, 1, 0]);
     const zombie = system.store.get(id)!;
     zombie.obstacleWanderHeading = [0, 0, 1];
     zombie.obstacleWanderRemaining = 3;
     zombie.obstacleContact = true;
+    zombie.obstacleSlideSide = -1;
     const state = system.snapshotState();
     expect(state).not.toHaveProperty('routes');
     expect(state).not.toHaveProperty('routeClock');

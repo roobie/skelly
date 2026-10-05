@@ -653,11 +653,23 @@ worse the world gets.
   rain washes out). Terrain height alone should not end a clear pursuit; sight
   over a rise is bounded by occlusion, not by spending range on vertical distance.
   See `src/core/zombies.ts`, `seesPlayer`.
-- **Movement:** BR: “they beeline towards whatever grabs their attention”; “they should be primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over”; and when they hit an obstacle “they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example).” A shambler moves directly toward its current attention target in the horizontal plane. `stepBody` and collision resolution own wall sliding; `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the named distance, then resumes toward its current target. BR also ruled to “defer the bashing” for #273: closed doors are obstacles like walls until mob and obstacle strength exist. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
+- **Movement (BR, 2026-10-05 20:27–20:33):** “also, it's still the case that the shamblers are stalling when the player moves”; “i think we should greatly simplify how the shamblers brains work”; “they aren't smart creatures”; “they beeline towards whatever grabs their attention”; and at 20:33, “yes, I think we should make them primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over / but they should have some randomness in that even if they normally beeline, when they hit an obstacle they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example) / but if something bashable is in the way, they would tend to bash it (e.g. doors) / (what is bashable is depending on the strength of the mob - but we haven't modelled this, right? I mean a 2nd evolution brute might breach a brick wall, for example)”. A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.json`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
+- **Height (BR, 2026-10-05 20:29):** “but yeah, heightwise (Y axis) it may be a bit difficult. Maybe we should just let them wander at some point, rather than intelligently traverse Y-levels”. Shamblers do not gain stair knowledge from an attention target on another floor.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
-- **Future movement tiers:** Background flow fields and abstract group movement remain Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)); no active-tier route planner or stair traversal is implemented.
+- **Background movement (BR, 2026-10-05 21:32):** “yes”: background zombies beeline in big, cheap steps.
 
-**Decision (BR, 2026-10-05; #273):** “Not in this round: bashing.” BR deferred bashable obstacles until mob strength and obstacle strength exist. Closed doors are obstacles like walls; do not implement bashing or a stub. Leave the decision point in `ZombieSystem.tick` for a future rule.
+BR said “defer the bashing” (2026-10-05 20:36). For #273, bashing waits until mob and obstacle strength exist; closed doors remain obstacles like walls. If #273 supplies those strengths, the bash decision belongs at `obstacleContact` in `ZombieSystem.tick`. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
+
+**Decided (BR, 2026-10-04; background to #273):**
+
+- “At some point we will make everything destructible. Door, walls, appliances,
+  furniture et[c] and yes, normal doors should be possible to breach by an
+  ordinary shambler, given enough time. But the overarching idea is to keep it
+  pretty aligned with how CDDA works”
+- “to answer the question here and now: no, let's not make shamblers breach
+  doors”
+
+Destructive-door behavior awaits a gameplay contract and modeled mob/obstacle strength; it is not implied by movement. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
 
 ### Models
 
@@ -669,7 +681,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** Doors can be barricaded; locks can be picked or pried. Zombie bashing is deferred: BR said “defer the bashing” for #273 because strength is not modeled. Closed doors block a shambler like other solids; see `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`. Do not add a stub before mob and obstacle strength exist.
+- **Doors and locks.** Doors can be barricaded; locks can be picked or pried. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,
