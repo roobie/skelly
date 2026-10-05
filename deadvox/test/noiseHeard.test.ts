@@ -3,7 +3,12 @@ import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { footstepEventForBlock, type PlayerGait, STEP_DISTANCE_METRES } from '../src/core/footsteps.ts';
+import {
+  footstepEventForBlock,
+  type PlayerGait,
+  STEP_DISTANCE_METRES,
+  shamblerFootstepEventForBlock,
+} from '../src/core/footsteps.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SimEvent, Timed } from '../src/core/sim.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
@@ -28,6 +33,7 @@ const { registry } = buildRegistry(
 const contentNoiseEvents = new Set(
   [...registry.sounds].filter(([, sound]) => sound.noise.enabled).map(([event]) => event),
 );
+const shamblerFootstepEvents = new Set(registry.blocks.map(({ id }) => shamblerFootstepEventForBlock(id)));
 
 interface PlayedSound {
   sound: Readonly<SoundEmission>;
@@ -68,6 +74,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     sound: Readonly<SoundEmission>,
     session: ReturnType<typeof createSession>,
     state: ScenarioState,
+    rustlePositions: Map<string, Vec3[]>,
   ): Vec3 | undefined => {
     if (sound.event.startsWith('door_')) {
       return state.doorPosition!;
@@ -78,7 +85,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     if (sound.event.startsWith('shambler_') || sound.event === 'melee_hit_fist') {
       return state.actor!.body.pos;
     }
-    if (sound.sourceLabel === 'brushing foliage') {
+    if (rustlePositions.has(sound.event)) {
       return undefined;
     }
     return session.chest();
@@ -130,7 +137,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       },
       audio: {
         play: (sound) => {
-          const position = sourcePosition(sound, session, state);
+          const position = sourcePosition(sound, session, state, rustlePositions);
           played.push({ sound, ...(position ? { expectedPosition: [...position] } : {}) });
         },
       },
@@ -235,7 +242,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   };
 
   const exerciseRustle = (scenario: NoiseScenario) => {
-    const { session, world, state, events, played, rustlePositions, advance } = scenario;
+    const { session, world, state, events, rustlePositions, advance } = scenario;
     const rustleCases = new Map<string, { block: string; fast: boolean; pair: readonly [string, string] }>();
     for (const block of registry.blocks) {
       addRustleCase(rustleCases, block);
@@ -260,15 +267,10 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       state.intent = { ...IDLE };
       advance(1);
     }
-    observe(
-      scenario,
-      'foliage sound emitted',
-      played.some(({ sound }) => sound.sourceLabel === 'brushing foliage'),
-    );
   };
 
   const exerciseDoors = (scenario: NoiseScenario) => {
-    const { session, state, events, played, advance } = scenario;
+    const { session, state, played, advance } = scenario;
     const doorCell = session.feet();
     const doorOrigin: Vec3 = [Math.floor(doorCell[0]), Math.floor(doorCell[1]), Math.floor(doorCell[2])];
     const doorSize: Vec3 = [2, 4, 1];
@@ -300,11 +302,6 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
         played.some(({ sound }) => sound.event === event),
       );
     }
-    observe(
-      scenario,
-      'door sound emitted',
-      events.some((event) => event.kind === 'sound' && event.event.startsWith('door_')),
-    );
   };
 
   const exerciseShotgun = (scenario: NoiseScenario) => {
@@ -368,6 +365,15 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
         played.some(({ sound }) => sound.event === event),
       );
     }
+    const from = played.length;
+    state.intent = { ...IDLE, forward: -1 };
+    advance(120);
+    state.intent = { ...IDLE };
+    observe(
+      scenario,
+      'chasing shambler footsteps',
+      played.slice(from).some(({ sound }) => shamblerFootstepEvents.has(sound.event)),
+    );
   };
 
   const exercisePlayerPain = (scenario: NoiseScenario) => {
@@ -396,7 +402,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
           passed: sound.position.every((value, i) => value === expectedPosition[i]),
         });
       }
-      if (sound.sourceLabel === 'brushing foliage') {
+      if (rustlePositions.has(sound.event)) {
         checks.push({
           label: `foliage source position ${sound.event}`,
           passed: Boolean(
