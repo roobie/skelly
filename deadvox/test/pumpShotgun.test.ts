@@ -584,6 +584,6 @@ describe('real pump ammunition', () => {
     expect(blocked.zombies.firePellets(shot)).toBe(0);
     expect(open.zombieStore.get(a)!.regions).not.toEqual(before);
     expect(blocked.zombieStore.get(b)!.regions).toEqual(before);
-    expect(open.zombies.activeMeleeAction).toBeUndefined();
+    expect(open.playerCombat.activeMeleeAction).toBeUndefined();
   });
 });

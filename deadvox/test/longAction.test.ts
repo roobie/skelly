@@ -69,6 +69,35 @@ const snapshot = (runtime: ReturnType<typeof make>) => ({
 });
 const resultCount = (inv: Inventory) =>
   [...inv.items()].filter(({ item }) => item.type === 'torch').reduce((sum, { item }) => sum + item.count, 0);
+const startRepair = () => {
+  const runtime = make();
+  const target = runtime.inv.create('crowbar');
+  target.condition = 0.2;
+  for (const [type, pos] of [
+    ['crowbar', [0, 0, 0]],
+    ['repair_kit', [1, 0, 0]],
+    ['scrap_metal', [2, 0, 0]],
+    ['duct_tape', [3, 0, 0]],
+  ] as const) {
+    const item = type === 'crowbar' ? target : runtime.inv.create(type);
+    if (!runtime.inv.add(item, { kind: 'pile', pos: [...pos] })) {
+      throw new Error(`Cannot place repair fixture item ${type}`);
+    }
+  }
+  const plan = planCraft(registry.recipes.get('repair_crowbar')!, runtime.reach(), runtime.character);
+  if (!('plan' in plan)) {
+    throw new Error(plan.missing.reason);
+  }
+  const repairAmount = registry.recipes.get('repair_crowbar')!.repair!.amount;
+  const work = runtime.inv.beginWork(plan.plan, { targetUid: target.uid, amount: repairAmount });
+  if (!work) {
+    throw new Error('Cannot gather repair inputs');
+  }
+  if (runtime.sim.actions.startCraft(work.uid)) {
+    throw new Error('Cannot start repair');
+  }
+  return { ...runtime, target, work, materials: plan.plan.components.map(({ item }) => item.uid) };
+};
 
 describe('core long actions', () => {
   it('insufficient bounded drop room retains all cancel inputs and a stopped descriptor', () => {
@@ -162,6 +191,29 @@ describe('core long actions', () => {
     );
     expect(resultCount(restored.inv)).toBe(1);
     expect(restored.inv.itemByUid(runtime.item.uid)).toBeUndefined();
+  });
+
+  it('repairs the same target once after restoring a running repair action', () => {
+    const source = startRepair();
+    source.sim.scheduler.advance(1);
+    const before = snapshot(source);
+    const restored = make(before);
+    expect(snapshot(restored)).toEqual(before);
+    const savedWork = restored.inv.itemByUid(source.work.uid)!;
+    expect(savedWork.work?.repairTargetUid).toBe(source.target.uid);
+    expect(savedWork.work?.repairAmount).toBe(source.work.work?.repairAmount);
+    const amount = savedWork.work!.repairAmount!;
+    restored.sim.scheduler.advance(
+      Math.ceil((savedWork.work!.duration - savedWork.work!.elapsed) / restored.sim.clock.ratio) + 1,
+    );
+    const repairedCondition = Math.min(1, source.target.condition + amount);
+    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(repairedCondition);
+    expect(source.materials.length).toBeGreaterThan(0);
+    expect(source.materials.every((uid) => restored.inv.itemByUid(uid) === undefined)).toBe(true);
+    expect(restored.inv.itemByUid(source.work.uid)).toBeUndefined();
+    restored.sim.actions.resume();
+    restored.sim.scheduler.advance(1000);
+    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(repairedCondition);
   });
 
   it('rechecks tools on a tick and Continue, refusing without spending progress', () => {

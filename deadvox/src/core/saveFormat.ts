@@ -9,9 +9,10 @@ import { assertFirearmState } from './firearmState.ts';
 import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
 import { itemIds as collectItemIds, savedItemTree } from './itemTree.ts';
 import { validateLongJob } from './longAction.ts';
+import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { MeleeActionState, ZombieState } from './zombies.ts';
+import type { ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -98,12 +99,7 @@ interface WirePayload {
     id: string;
     options: SaveWorldIdentity;
     regions: Record<string, Region>;
-    zombieSystem: {
-      playerAttackWait: number;
-      meleeAction: MeleeActionState | null;
-      nextFistHand: 'right' | 'left';
-      nextEntityId: number;
-    };
+    zombieSystem: { nextEntityId: number };
     blockEntitiesNextUid: number;
     spawned: string[];
   };
@@ -114,6 +110,7 @@ interface WirePayload {
     inventory: Omit<InventoryState, 'piles' | 'entities'>;
     progression: SaveSnapshot['character']['progression'];
     longAction: SaveSnapshot['character']['longAction'];
+    playerCombat: PlayerCombatState;
     lightUid: number | null;
     quickbar: (number | null)[];
     handling: SaveSnapshot['character']['handling'];
@@ -279,6 +276,8 @@ itemSchema = obj({
       recipe: str({ id: true }),
       elapsed: nonNegative,
       duration: positive,
+      repairTargetUid: opt(positiveInt),
+      repairAmount: opt(num({ min: 0, max: 1 })),
       components: arr(
         lazy(() => itemSchema),
         1,
@@ -441,6 +440,11 @@ const meleeAction = nullable(
     }),
   }),
 );
+const playerCombat = obj({
+  playerAttackWait: nonNegative,
+  meleeAction,
+  nextFistHand: enumeration(['right', 'left']),
+});
 const playerStateInventory = obj({
   ...inventoryCore.fields,
 });
@@ -479,12 +483,7 @@ const wirePayloadSchema = obj({
         piles: arr(obj({ order: nonNegativeInt, pile: pileSchema })),
       }),
     ),
-    zombieSystem: obj({
-      playerAttackWait: nonNegative,
-      meleeAction,
-      nextFistHand: enumeration(['right', 'left']),
-      nextEntityId: positiveInt,
-    }),
+    zombieSystem: obj({ nextEntityId: positiveInt }),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
   }),
@@ -495,6 +494,7 @@ const wirePayloadSchema = obj({
     player,
     inventory: playerStateInventory,
     longAction,
+    playerCombat,
     lightUid: nullable(positiveInt),
     quickbar: arr(nullable(positiveInt)),
     handling,
@@ -779,12 +779,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         clock: snapshot.character.simulation.clock,
       },
       regions: Object.fromEntries(regions),
-      zombieSystem: {
-        playerAttackWait: snapshot.world.zombies.playerAttackWait,
-        meleeAction: snapshot.world.zombies.meleeAction,
-        nextFistHand: snapshot.world.zombies.nextFistHand,
-        nextEntityId: snapshot.world.zombies.nextEntityId,
-      },
+      zombieSystem: { nextEntityId: snapshot.world.zombies.nextEntityId },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
       spawned: [...snapshot.world.spawned],
     },
@@ -809,6 +804,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         looted: savedInventory.looted,
       },
       longAction: snapshot.character.longAction,
+      playerCombat: snapshot.character.playerCombat,
       lightUid: snapshot.character.lightUid,
       quickbar: [...snapshot.character.quickbar],
       handling: snapshot.character.handling,
@@ -1065,9 +1061,17 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
   let owns = job?.jobType !== 'craft';
-  for (const { item } of savedItemTree(snapshot.character.inventory)) {
+  const tree = [...savedItemTree(snapshot.character.inventory)];
+  const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
+  for (const { item } of tree) {
     if (item.work && (item.type !== WORK_IN_PROGRESS || item.work.elapsed > item.work.duration)) {
       throw new Error('Invalid craft work payload');
+    }
+    if (item.work?.repairTargetUid !== undefined) {
+      const target = itemsByUid.get(item.work.repairTargetUid);
+      if (!target || target.uid === item.uid || target.count !== 1) {
+        throw new Error('Missing repair target');
+      }
     }
     if (job?.jobType === 'craft' && item.uid === job.workUid && item.work) {
       owns = true;
@@ -1154,9 +1158,6 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
           ),
         }),
         zombies: obj({
-          playerAttackWait: nonNegative,
-          meleeAction,
-          nextFistHand: enumeration(['right', 'left']),
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
         }),
@@ -1169,6 +1170,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         player: playerState,
         inventory,
         longAction,
+        playerCombat,
         lightUid: nullable(positiveInt),
         quickbar: arr(nullable(positiveInt)),
         handling: obj({ jobs: arr(anyJson, 0) }),

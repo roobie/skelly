@@ -75,6 +75,13 @@ describe('held-item hand action', () => {
     });
   });
 
+  it('refuses a ruined held melee weapon instead of attacking with it', () => {
+    const inventory = new Inventory(registry);
+    const ruined = inventory.create('held_blunt', 1, 0);
+    expect(inventory.add(ruined, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(selectPrimaryAction(inventory, 'right')).toEqual({ kind: 'none', item: ruined });
+  });
+
   it("resolves a left character's default dominant use and explicit off use to their own physical slots", () => {
     const inventory = hold('held_light', 'held_blunt', 'left');
     const leading = dominantSide(inventory.character);

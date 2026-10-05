@@ -55,7 +55,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       useDominant: () => {
         swingOrigin = session.chest();
         expect(
-          startPlayerMelee(session.zombies, session.sim.needs, {
+          startPlayerMelee(session.playerCombat, session.sim.needs, {
             origin: swingOrigin,
             direction: [0, 0, -1],
             weapon: FISTS_MELEE,

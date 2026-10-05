@@ -34,6 +34,6 @@ empty slot reserved by a two-handed item is not a free fist. This follows the
 Items rule in `DESIGN.md`, not a special exception for a particular firearm.
 
 A fresh player's fist sequence starts with the dominant arm, then alternates
-physical arms. `src/core/zombies.ts`, `ZombieSystem.restoreState`, retains the
+physical arms. `src/core/playerCombat.ts`, `PlayerCombat.restoreState`, retains the
 saved next arm rather than reseeding it from character identity: otherwise a
 Continue could repeat the arm that just attacked. NPC anatomy is independent.

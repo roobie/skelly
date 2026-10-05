@@ -44,6 +44,28 @@ const make = (unsafe?: () => string | undefined, handedness?: HandSide) => {
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 
 describe('live craft commands', () => {
+  it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
+    const r = make();
+    r.character.skills.crafting = 1;
+    const target = r.inventory.create('crowbar', 1, 0.5);
+    for (const item of [
+      target,
+      r.inventory.create('scrap_metal'),
+      r.inventory.create('duct_tape'),
+      r.inventory.create('repair_kit'),
+    ]) {
+      if (!r.inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })) {
+        throw new Error('repair fixture item did not fit');
+      }
+    }
+    expect(r.commands.start('repair_crowbar')).toBeUndefined();
+    const work = workOf(r);
+    const effect = registry.recipes.get('repair_crowbar')!.repair!;
+    expect(work.repairTargetUid).toBe(target.uid);
+    expect(work.repairAmount).toBe(effect.amount + effect.perSkill * r.character.skills[effect.skill]!);
+    expect(r.sim.actions.job?.jobType).toBe('craft');
+  });
+
   it('sleep replacing a stopped craft owns Continue instead of the held work', () => {
     const r = make();
     expect(r.commands.start('torch')).toBeUndefined();

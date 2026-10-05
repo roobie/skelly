@@ -26,6 +26,7 @@ import { Inventory, type Location } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
+import { PlayerCombat } from '../core/playerCombat.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import {
   bindReach,
@@ -42,6 +43,7 @@ import type { Site } from '../core/site.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
+import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
@@ -399,7 +401,6 @@ export const createSession = (options: SessionOptions) => {
     left: inventory.hands.left?.uid ?? null,
   });
   const zombieSystem = new ZombieSystem({
-    character,
     store: zombieStore,
     seed: sim.seed,
     isSolid,
@@ -410,7 +411,10 @@ export const createSession = (options: SessionOptions) => {
     jumpSpeed: PLAYER.jump,
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
-    hurtPlayer: (amount) => sim.hurt(amount, 'a shambler'),
+    hurtPlayer: (amount, area) => {
+      wearOnPlayerHit(inventory, area);
+      sim.hurt(amount, 'a shambler');
+    },
     onSound: (event, position) => playWorldSound(event, position),
     onFootstep: (position, id, mode) => {
       const event = shamblerFootstepEventAt(position, (x, y, z) => {
@@ -446,6 +450,7 @@ export const createSession = (options: SessionOptions) => {
       options.zombieEffects?.onDeath?.(id, zombie);
     },
   });
+  const playerCombat = new PlayerCombat(zombieSystem, (uid) => wearMeleeWeaponOnHit(inventory, uid), character);
   let lastZombieStep = 0;
   let lastPlayerStep = 0;
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
@@ -485,7 +490,7 @@ export const createSession = (options: SessionOptions) => {
       const intent = moving ? controls.intent() : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
-      zombieSystem.tickPlayerAction(dt, heldItemUids());
+      playerCombat.tick(dt, heldItemUids());
       dispatchPlayerActions(moving, intent);
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
@@ -600,6 +605,7 @@ export const createSession = (options: SessionOptions) => {
       return found;
     });
     zombieSystem.restoreState(restored.world.zombies, (id) => registry.zombies.get(id));
+    playerCombat.restoreState(restored.character.playerCombat);
     spawner.restoreState(restored.world.spawned);
     sim.restoreState(restored.character.simulation);
     const schedulerState = sim.scheduler.snapshotState();
@@ -623,6 +629,7 @@ export const createSession = (options: SessionOptions) => {
     survival,
     rest,
     zombies: zombieSystem,
+    playerCombat,
     zombieStore,
     spawner,
     body,
@@ -712,6 +719,7 @@ export const createSession = (options: SessionOptions) => {
         survival,
         quickbar: quickbar.snapshotState(inventory),
         zombies: zombieSystem,
+        playerCombat,
         spawner,
         handling: queue,
         vocalNoiseId: playerAudio.vocalNoiseId,

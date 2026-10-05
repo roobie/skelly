@@ -9,6 +9,7 @@ import { foliageRustle, initialRustleClock } from '../src/core/foliageRustle.ts'
 import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/core/footsteps.ts';
 import { Forest } from '../src/core/forest.ts';
 import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
+import { PlayerCombat } from '../src/core/playerCombat.ts';
 import { countSolidRuns, raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
@@ -152,6 +153,7 @@ describe('passable but opaque vegetation', () => {
       hurtPlayer: () => undefined,
       onMeleeResult: (result) => hits.push(result.damage),
     });
+    const playerCombat = new PlayerCombat(system);
     const id = system.add(registry.zombies.get('shambler')!, [0.5, 1, 8.5], [0, 0, -1]);
     system.tick(1 / 20);
     const zombie = system.store.get(id)!;
@@ -165,7 +167,7 @@ describe('passable but opaque vegetation', () => {
     const weapon = { damage: 1, reach: 6, cooldown: 0.8 };
     expect(system.aimAt(origin, direction, weapon)).toBeUndefined();
     expect(
-      system.beginMeleeSwing({
+      playerCombat.beginMeleeSwing({
         origin,
         direction,
         weapon,
@@ -175,7 +177,7 @@ describe('passable but opaque vegetation', () => {
       }),
     ).toBe(true);
     for (let frame = 0; frame < 40; frame++) {
-      system.tickPlayerAction(1 / 60, { right: null, left: null });
+      playerCombat.tick(1 / 60, { right: null, left: null });
     }
     expect(hits).toEqual([1]);
   });

@@ -259,7 +259,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   } else if (!options.restore) {
     snapshotIds = { worldId: crypto.randomUUID(), characterId: crypto.randomUUID() };
   }
-  const { zombies: zombieSystem, zombieStore } = session;
+  const { zombies: zombieSystem, playerCombat, zombieStore } = session;
   if (!options.restore) {
     startingLoadout(inventory);
   }
@@ -313,12 +313,6 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     noticeUntil = performance.now() + 3000;
   };
 
-  /**
-   * L toggles sleep. Rest has no input binding until restable furniture (d45).
-   * (SLICE-1.md, 1.8 follow-up). Does nothing during the Continue/Stop prompt, which
-   * owns C and X instead, or while busy with something else (e.g. the other kind, or
-   * the debug compression test).
-   */
   const toggleRest = (kind: RestKind): void => {
     if (compression.interruption !== undefined) {
       return;
@@ -938,7 +932,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   const swing = (preferredHand?: 'right' | 'left') => {
     const selected = meleeSelection(preferredHand);
-    const result = startPlayerMelee(zombieSystem, sim.needs, {
+    const result = startPlayerMelee(playerCombat, sim.needs, {
       origin: eye(),
       direction: lookDir(),
       weapon: selected.weapon,
@@ -1208,7 +1202,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       debugBuild: debugTools?.buildOn ?? false,
       inputLocked: compression.locksInput,
     });
-    const action = zombieSystem.activeMeleeAction;
+    const action = playerCombat.activeMeleeAction;
     const elapsed = action
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;

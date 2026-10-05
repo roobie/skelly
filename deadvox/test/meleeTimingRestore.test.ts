@@ -73,7 +73,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
         useDominant = false;
       },
       useDominant: () => {
-        startPlayerMelee(session.zombies, session.sim.needs, {
+        startPlayerMelee(session.playerCombat, session.sim.needs, {
           origin: [0, 2, 0],
           direction: [0, 0, -1],
           weapon: FISTS_MELEE,
@@ -115,7 +115,7 @@ describe('tick-consumed dominant melee input across save and restore', () => {
     const step = 1 / 60;
     source.click();
     source.session.frame(step);
-    const initial = source.session.zombies.activeMeleeAction!;
+    const initial = source.session.playerCombat.activeMeleeAction!;
     expect(initial.elapsed).toBe(0);
     expect(initial.hand).toBe(dominantSide(source.session.character));
     expect('startOffset' in initial).toBe(false);
@@ -125,7 +125,7 @@ describe('tick-consumed dominant melee input across save and restore', () => {
     for (let i = 0; i < beforeSave; i++) {
       source.session.frame(step);
     }
-    expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
+    expect(source.session.playerCombat.activeMeleeAction?.hitResolved).toBe(false);
 
     const snapshot = source.session.snapshot({ worldId: 'tick-melee', characterId: 'character' });
     const bytes = await encodeSave(snapshot, {
@@ -134,20 +134,20 @@ describe('tick-consumed dominant melee input across save and restore', () => {
       worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: 0.5 },
     });
     const decoded = await decodeSave(bytes, { version: saveVersion, contentLookup });
-    expect(snapshot.world.zombies.nextFistHand).toBe(offSide(source.session.character));
+    expect(snapshot.character.playerCombat.nextFistHand).toBe(offSide(source.session.character));
     const restored = makeSession(decoded.snapshot, 'right');
-    expect(restored.session.zombies.activeMeleeAction).toEqual(source.session.zombies.activeMeleeAction);
+    expect(restored.session.playerCombat.activeMeleeAction).toEqual(source.session.playerCombat.activeMeleeAction);
 
     for (let tick = beforeSave; tick < beforeContact; tick++) {
       source.session.frame(step);
       restored.session.frame(step);
-      expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
-      expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
+      expect(source.session.playerCombat.activeMeleeAction?.hitResolved).toBe(false);
+      expect(restored.session.playerCombat.activeMeleeAction?.hitResolved).toBe(false);
     }
     source.session.frame(step);
     restored.session.frame(step);
-    expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
-    expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
+    expect(source.session.playerCombat.activeMeleeAction?.hitResolved).toBe(true);
+    expect(restored.session.playerCombat.activeMeleeAction?.hitResolved).toBe(true);
     expect(source.contacts).toHaveLength(1);
     expect(restored.contacts).toHaveLength(1);
     expect(restored.session.snapshot({ worldId: 'tick-melee', characterId: 'character' })).toEqual(
@@ -157,12 +157,14 @@ describe('tick-consumed dominant melee input across save and restore', () => {
       source.session.frame(step);
       restored.session.frame(step);
     }
-    expect(restored.session.zombies.activeMeleeAction).toBeUndefined();
+    expect(restored.session.playerCombat.activeMeleeAction).toBeUndefined();
     source.click();
     restored.click();
     source.session.frame(step);
     restored.session.frame(step);
-    expect(source.session.zombies.activeMeleeAction?.hand).toBe(offSide(source.session.character));
-    expect(restored.session.zombies.activeMeleeAction?.hand).toBe(source.session.zombies.activeMeleeAction?.hand);
+    expect(source.session.playerCombat.activeMeleeAction?.hand).toBe(offSide(source.session.character));
+    expect(restored.session.playerCombat.activeMeleeAction?.hand).toBe(
+      source.session.playerCombat.activeMeleeAction?.hand,
+    );
   });
 });
