@@ -144,7 +144,7 @@ describe('the hamlet', () => {
     const lineZ = Math.floor((line.z0 + line.z1) / 2);
     expect(world.getBlock(line.x0, hamlet.range.floor, lineZ)).toBe(id('asphalt'));
     expect(world.getBlock(hamlet.range.targetXs[0]!, hamlet.range.floor + 2, lineZ)).not.toBe(0);
-    expect(furniture.some((entry) => entry.includes(JSON.stringify(hamlet.range.table)))).toBe(true);
+    expect(furniture.filter((entry) => entry.includes(JSON.stringify(hamlet.range.table)))).toHaveLength(1);
     expect(
       hamlet.range.furnitureIn(toChunk(hamlet.range.table.pos[0]), toChunk(hamlet.range.table.pos[2]))[0]?.spec,
     ).toEqual(hamlet.range.table);
@@ -174,7 +174,7 @@ describe('the hamlet', () => {
   it('rolls loot into containers, the same for the same place', () => {
     const hamlet = new Hamlet(5, registry, scale);
     const pieces = columnsOf(hamlet).flatMap(([cx, cz]) => hamlet.furnitureIn(cx, cz));
-    expect(pieces.some((piece) => registry.furniture.get(piece.spec.type)?.container !== undefined)).toBe(true);
+    expect(pieces.some((piece) => piece.loot.length > 0)).toBe(true);
     const sameSeed = new Hamlet(5, registry, scale);
     const again = columnsOf(sameSeed).flatMap(([cx, cz]) => sameSeed.furnitureIn(cx, cz));
     expect(again).toEqual(pieces);
