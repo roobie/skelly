@@ -495,12 +495,24 @@ plain box in your hands. Files are small, and follow
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
   held-firearm presentation, so the weapon does not visibly aim somewhere other
-  than its shot ray. Aim state is saved because it can change hit outcomes.
-  `firearmsSkillEffects` separates accuracy, reload and rack benefits; d62 leaves
-  practice unawarded until its source is ruled. The d62 reading of BR's "swing"
-  is look-turn rate; BR's answer to the d62 questions triggers reinterpretation.
-  The d62 reading of BR's "reload time" is per-shell insertion, not magazine
-  reload; BR's answer to the d62 questions triggers expansion.
+  than its shot ray. Aim state is saved because it can change hit outcomes. Each
+  committed shot applies the firearm's data-owned `recoilKickRadians`; full-auto
+  shots accumulate against simulation-time recovery, while
+  `firearmsSkillEffects` mitigates the resulting aim variance as skill rises.
+  BR's 2026-10-05 report that skill 12 still had "too much dispersion/sway at
+  full auto" led to d62-4 (#262). See `src/game/firearmHandling.ts`,
+  `FirearmMechanics.fire` and `firearmHandlingFor`, `src/core/aim.ts`,
+  `AimController.recordShot` and `AimController.advance`, and
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`. Until #267 lands, aim-sway
+  look comparisons use the current movement rules; afterward a firearm only
+  fires while ready and not sprinting, so moving-fire comparisons use the
+  skill-dependent duck-walk speed. The skill that controls duck-walk speed and
+  block success remains open in #267; BR leans toward a generic "warfare"
+  skill. d62 leaves practice unawarded until its source is ruled. The d62
+  reading of BR's "swing" is look-turn rate; BR's answer to the d62 questions
+  triggers reinterpretation. The d62 reading of BR's "reload time" is per-shell
+  insertion, not magazine reload; BR's answer to the d62 questions triggers
+  expansion.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on

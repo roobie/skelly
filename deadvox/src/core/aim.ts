@@ -38,7 +38,6 @@ const MOVE_PITCH_PER_SPEED = 0.003;
 const LOOK_LAG_PER_RADIAN = 0.035;
 const LOOK_SETTLE_SECONDS = 0.22;
 const RECOIL_RECOVERY_SECONDS = 0.34;
-const SHOT_KICK = 0.035;
 const MAX_OFFSET = 0.12;
 
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
@@ -165,16 +164,23 @@ export class AimController {
     return state.frame;
   }
 
-  /** A committed shot kicks the next frame; its seed makes direction deterministic. */
-  recordShot(seed: number): void {
-    if (!Number.isSafeInteger(seed) || seed < 0 || seed > 0xff_ff_ff_ff) {
-      throw new Error('Invalid aim recoil seed');
+  /** A committed shot applies its firearm's kick; the seed makes direction deterministic. */
+  recordShot(seed: number, recoilKickRadians: number): void {
+    if (
+      !Number.isSafeInteger(seed) ||
+      seed < 0 ||
+      seed > 0xff_ff_ff_ff ||
+      !Number.isFinite(recoilKickRadians) ||
+      recoilKickRadians <= 0
+    ) {
+      throw new Error('Invalid aim recoil input');
     }
     const sign = (seed & 1) === 0 ? -1 : 1;
     const previousYaw = this.state.recoilYaw;
     const previousPitch = this.state.recoilPitch;
-    this.state.recoilYaw = bounded(previousYaw + sign * SHOT_KICK * (0.5 + ((seed >>> 1) & 0xff) / 510));
-    this.state.recoilPitch = bounded(previousPitch + SHOT_KICK);
+    const yawFactor = 0.5 + ((seed >>> 1) & 0xff) / 510;
+    this.state.recoilYaw = bounded(previousYaw + sign * recoilKickRadians * yawFactor);
+    this.state.recoilPitch = bounded(previousPitch + recoilKickRadians);
     this.state.frame = boundedFrame(
       this.state.frame.yaw + (this.state.recoilYaw - previousYaw) * this.variance,
       this.state.frame.pitch + (this.state.recoilPitch - previousPitch) * this.variance,

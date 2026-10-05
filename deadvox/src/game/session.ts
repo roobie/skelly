@@ -344,7 +344,7 @@ export const createSession = (options: SessionOptions) => {
         : undefined,
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
-    onCommittedShot: (shotSeed) => aim.recordShot(shotSeed),
+    onCommittedShot: (shotSeed, recoilKickRadians) => aim.recordShot(shotSeed, recoilKickRadians),
     onShot: (shot, time) => {
       zombieSystem.firePellets(shot);
       playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });

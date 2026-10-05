@@ -32,6 +32,7 @@ export interface FirearmHandlingData {
   readonly calibre: string;
   readonly caseModelId?: string;
   readonly rpm: number | undefined;
+  readonly recoilKickRadians?: number;
 }
 
 export const firearmModelForType = (type: string, registry: Registry): ModelDef | undefined => {
@@ -73,6 +74,9 @@ export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandl
     calibre: model.calibre!,
     rpm: action.rpm,
     ...(caseModelId ? { caseModelId } : {}),
+    ...(defOf(registry, item.type).firearm
+      ? { recoilKickRadians: defOf(registry, item.type).firearm!.recoilKickRadians }
+      : {}),
   };
 };
 
@@ -134,7 +138,7 @@ export class FirearmMechanics {
   private readonly onEjection: (effect: FirearmShotEffect) => void;
   private readonly onShot: (shot: PelletShot, time: number) => void;
   private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
-  private readonly onCommittedShot: (seed: number) => void;
+  private readonly onCommittedShot: (seed: number, recoilKickRadians: number) => void;
   private readonly firearmsSkillLevel: () => number;
 
   constructor(
@@ -154,7 +158,7 @@ export class FirearmMechanics {
       onEjection: (effect: FirearmShotEffect) => void;
       onShot?: (shot: PelletShot, time: number) => void;
       onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
-      onCommittedShot?: (seed: number) => void;
+      onCommittedShot?: (seed: number, recoilKickRadians: number) => void;
       firearmsSkillLevel?: () => number;
     },
   ) {
@@ -245,6 +249,9 @@ export class FirearmMechanics {
       return false;
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
+    if (data.recoilKickRadians === undefined) {
+      return false;
+    }
     const emission = this.emission(item, data, input);
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
@@ -270,7 +277,7 @@ export class FirearmMechanics {
         }),
         input.simTime,
       );
-      this.onCommittedShot(seed);
+      this.onCommittedShot(seed, data.recoilKickRadians);
     } else {
       item.firearm = {
         chamber: 'case',
@@ -285,7 +292,7 @@ export class FirearmMechanics {
         },
       };
       this.active.add(item.uid);
-      this.onCommittedShot(seed);
+      this.onCommittedShot(seed, data.recoilKickRadians);
     }
     return true;
   }

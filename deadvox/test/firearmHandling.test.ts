@@ -126,6 +126,34 @@ describe('debug firearm handling', () => {
     }
   });
 
+  it('passes the held firearm’s data-owned kick with each committed shot', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const kicks: number[] = [];
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ feet: [...pose.feet], eye: [...pose.eye], yaw: pose.yaw, pitch: pose.pitch, blockSize: 0.5 }),
+      onEjection: () => undefined,
+      onCommittedShot: (_seed, recoilKickRadians) => kicks.push(recoilKickRadians),
+    });
+    const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
+    if (configuredKick === undefined) {
+      throw new Error('Firing fixture needs firearm kick data');
+    }
+
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(kicks).toEqual([configuredKick]);
+  });
+
   it('aligns ejection and held stroke when rpm caps a longer exported automatic cycle', () => {
     const model = registry.models.get('rifle_assault')!;
     const action = structuredClone(model.action!);
@@ -201,7 +229,7 @@ describe('debug firearm handling', () => {
               weight: 1000,
               size: [1, 1],
               model: 'pistol_full',
-              firearm: {},
+              firearm: { recoilKickRadians: 0.012 },
             },
           ],
         },

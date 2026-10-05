@@ -90,7 +90,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     variance: 1,
   };
   original.aim.advance(prior);
-  original.aim.recordShot(129);
+  original.aim.recordShot(129, 0.02);
   const snapshot = original.snapshot({ worldId: 'world', characterId: 'character' });
   const bytes = await encodeSave(snapshot, {
     generation: 1,

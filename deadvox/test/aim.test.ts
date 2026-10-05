@@ -13,6 +13,29 @@ const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) 
   ...overrides,
 });
 
+const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: number): number => {
+  const aim = new AimController(undefined, variance);
+  const dt = 1 / 60;
+  const burstSeconds = 2;
+  let nextShotAt = 0;
+  let seed = 0;
+  let peak = 0;
+  for (let tick = 0; tick <= burstSeconds / dt; tick++) {
+    const time = tick * dt;
+    while (nextShotAt <= time + 1e-9) {
+      aim.recordShot(seed, recoilKickRadians);
+      seed += 1;
+      nextShotAt += cadenceSeconds;
+      peak = Math.max(peak, Math.hypot(aim.frame.yaw, aim.frame.pitch));
+    }
+    if (tick > 0) {
+      const frame = aim.advance(step({ dt, variance }));
+      peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));
+    }
+  }
+  return peak;
+};
+
 it('uses camera pitch and yaw without presentation roll at neutral sway', () => {
   const pitch = 0.35;
   const yaw = 1.1;
@@ -42,8 +65,8 @@ it('actual movement and quick look turns increase isolated aim deviation', () =>
 it('committed recoil recovers in simulation time and equal inputs stay deterministic', () => {
   const first = new AimController();
   const second = new AimController();
-  first.recordShot(73);
-  second.recordShot(73);
+  first.recordShot(73, 0.02);
+  second.recordShot(73, 0.02);
   const initial = first.advance(step());
   expect(second.advance(step())).toEqual(initial);
   let recovered = initial;
@@ -78,8 +101,8 @@ it('composes the camera-local aim basis like the held firearm at non-zero pitch'
 it('higher firearms skill reduces the same moving shot-recoil sway', () => {
   const novice = new AimController();
   const experienced = new AimController();
-  novice.recordShot(73);
-  experienced.recordShot(73);
+  novice.recordShot(73, 0.02);
+  experienced.recordShot(73, 0.02);
   const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(0).variance }));
   const experiencedFrame = experienced.advance(
     step({ velocity: [2, 0, 0], variance: firearmsSkillEffects(12).variance }),
@@ -87,6 +110,24 @@ it('higher firearms skill reduces the same moving shot-recoil sway', () => {
   expect(Math.hypot(experiencedFrame.yaw, experiencedFrame.pitch)).toBeLessThan(
     Math.hypot(noviceFrame.yaw, noviceFrame.pitch),
   );
+});
+
+it('lighter firearm kick builds less aim displacement over the same full-auto burst', () => {
+  const cadenceSeconds = 0.075;
+  const { variance } = firearmsSkillEffects(0);
+  const lightKick = burstPeak(0.004, variance, cadenceSeconds);
+  const heavyKick = burstPeak(0.03, variance, cadenceSeconds);
+  expect(lightKick).toBeLessThan(heavyKick);
+});
+
+it('higher firearms skill reduces the peak of the same full-auto burst', () => {
+  const cadenceSeconds = 0.075;
+  const kick = 0.012;
+  const { variance: noviceVariance } = firearmsSkillEffects(0);
+  const { variance: experiencedVariance } = firearmsSkillEffects(12);
+  const novicePeak = burstPeak(kick, noviceVariance, cadenceSeconds);
+  const experiencedPeak = burstPeak(kick, experiencedVariance, cadenceSeconds);
+  expect(experiencedPeak).toBeLessThan(novicePeak);
 });
 
 it('higher firearms skill reduces variance and committed handling durations', () => {
