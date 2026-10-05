@@ -53,7 +53,7 @@ it('stops accumulating practice at legendary', () => {
 
   expect(character.skills.fixture_skill).toBe(SKILL_LEVEL_LEGENDARY);
   expect(character.practice.fixture_skill).toBe(0);
-  expect(practiceForNextLevel(SKILL_LEVEL_LEGENDARY)).toBe(Infinity);
+  expect(practiceForNextLevel(SKILL_LEVEL_LEGENDARY)).toBe(Number.POSITIVE_INFINITY);
 });
 
 it('maps legendary skill to ordinary-top effect level', () => {
