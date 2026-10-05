@@ -17,18 +17,13 @@ The player should have to choose when to ready a weapon, spend ammunition, make 
 
 ## Playtest questions
 
-The first real playtest runs at the end of this slice, before Slice 4. Use the authored map in [#181](https://github.com/roobie/skelly/issues/181), the run in [EPIC.md](EPIC.md), and Slice 2's questions and observations. Ask players:
+Use the playtest questions in [EPIC.md](EPIC.md), together with Slice 2's questions and observations. Slice 3 adds only these questions:
 
-1. Is looting tense and fun when item handling takes real time? Do pocket choices and inventory grids feel meaningful or tedious?
-2. Does the 0.5 m scale read well for doors, stairs, interiors and furniture?
-3. Is compressed sleep understandable, and are interruptions fair?
-4. Are the shamblers enough threat to make looting and sleep meaningful? Does non-respawning make the second night too safe?
-5. Is the first night frightening because of darkness and sound rather than scripting?
-6. Is combat readable and visceral? Do noise and wounds change decisions? Do players listen before moving?
-7. Does the clock show enough of the world in a short session?
-8. Do players understand how ready stance, aiming, melee defense and ammunition work without being taught first?
+- Can testers read ready/unready, ADS and en-garde from the controls and held pose without a HUD mode indicator?
+- Do weapon attachments and firearm handling make ammunition choices clear before a shot is fired?
+- Can players tell which available treatment applies to a wound and its infection stage?
 
-Observe inventory time, pocket choices, reactions to unseen sounds and interruptions, where players stall, and the moments that annoy or delight them. The session uses EPIC's neutral prompt and run instructions; do not teach the systems first. Recruit at least three testers, including someone new to both CDDA and DayZ. BR has one tester; two more remain to be found.
+The first real playtest runs at the end of this slice, before Slice 4, on the authored map in [#181](https://github.com/roobie/skelly/issues/181). Observe inventory time, pocket choices, reactions to unseen sounds and interruptions, where players stall, and the moments that annoy or delight them. Follow EPIC's run instructions; confirm the proposed tester prompt with BR during 3.11, and do not teach the systems first. Recruit at least three testers, including someone new to both CDDA and DayZ. BR has one tester; two more remain to be found.
 
 ## Scope
 
@@ -62,7 +57,7 @@ The detailed beats for the workshop, medical site and military site are not fill
 
 ## How this slice runs
 
-- BR's rule is one milestone per turn. Work on a milestone only after its dependencies are met and its first-look gate, where required, has BR's direction.
+- The planning conversation with BR handles one milestone per turn; this does not serialize implementation. Work on milestones when their dependencies are met and their first-look gate, where required, has BR's direction.
 - Visual work gets a rough first look before the full engineering round. The gates below name the required look and approval.
 - A milestone that adds authoritative simulation state saves and fingerprints it. Save/load must preserve the behavior, not just the data shape. Schema changes follow the current save contract; no legacy path is required.
 - Tests protect behavior and costly-to-rediscover contracts: combat rules, state ownership, save round trips, determinism, reachability and assigned budgets. Do not pin content counts, drifting tuning, exact layouts or seeded outcomes.
@@ -90,11 +85,18 @@ Paperwork; no game code.
 **BR, 2026-10-05, earlier answers in #267:**
 
 > yeah, melee needs 'en-garde' on right-mouse-hold, which also enables blocking incoming melee (based on skill)
-> nothing
 > own gait, but mainly it's simply a speed factor
 > the UI must show unreadied vs readied
 > unreadied does not have muzzle forward - rather downward
 > 1a. yes S is required to actually block from en-garde
+
+**Lead's question in #267, 2026-10-05 13:12:**
+
+> 3. What does left click do with an unreadied firearm: nothing, or the nope?
+
+**BR's answer:**
+
+> nothing
 
 **BR, 2026-10-05 20:52:**
 
@@ -112,7 +114,7 @@ Paperwork; no game code.
 > 3.1, 1. for now, yes, firearms combat is simply firearms renamed - but longer term, firerams combat is different from how well you shoot with e.g. a shotgun or something else. Ie. we will have skills for each main type of firearm, e.g. shotguns, rifles, smgs, pistols etc
 > 3.1, 2. it works like this: press-and-hold right mouse -> readies the weapon (hip fire), while in this state a toggle button (default, mouse-3) toggles whether ADS or not
 
-**In:** Rename the current `firearms` skill to firearms combat for now and add melee combat. The former governs the ready gait and related handling; the latter governs blocking. Activities train the skills they affect, with tiers so simple activities cannot train indefinitely. Readying takes time that improves with skill. Holding right mouse readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, a rebindable toggle (default middle mouse) switches ADS; ADS works through iron sights and optics. Melee requires en-garde; blocking also requires backing off with S and succeeds according to skill, per #267. The ready gait is its own speed factor, not the C crouch.
+**In:** Rename the current `firearms` skill to firearms combat for now and add melee combat. The former governs the ready gait and related handling; the latter governs blocking. Activities train the skills they affect, with tiers so simple activities cannot train indefinitely. Readying takes time that improves with skill. Holding right mouse readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, a rebindable toggle (default mouse-3 (the middle button)) switches ADS; ADS works through iron sights and optics. Melee requires en-garde; blocking also requires backing off with S and succeeds according to skill, per #267. The ready gait is its own speed factor, not the C crouch.
 
 **Saves:** Character skill levels and practice use the existing character snapshot and fingerprint (`src/core/character.ts`, `Character.awardPractice`); renaming a skill changes that saved mapping, and melee combat adds its own progression. Held ready, ADS and en-garde inputs are transient. If raise progress can change a shot or block, its simulation-time progress belongs in the existing saved action/handling owner.
 **Tests:** an unreadied firearm cannot fire and makes no refusal sound; a ready firearm can fire but never while sprinting; raising takes simulation time and improves monotonically with skill; ADS toggles while ready and works with iron sights and optics; en-garde plus S can block according to skill, while en-garde alone cannot; activities stop training at their tier. Save/load preserves skill progression and any active simulation-time raise.
@@ -120,6 +122,13 @@ Paperwork; no game code.
 **First look / BR approval:** ready and ADS, including iron-sight ADS and the raised/unraised weapon poses.
 
 ### 3.2 Firearms for real
+
+**BR, 2026-10-05, d62-4 (#262), verbatim:**
+
+> we should add a aiming variance based on movement, swing and recoil (this should show in game via a sway on the weapon)
+> will: 1) mitigate the aim variance 2) quicken reload time 3) quicken rack time (shotgun)
+> which we will expand to separate firearm archetypes later, like skill:smgs, skill:shotguns etc
+> as for gun skill / i tried it at =12 / and equipped the assault rifle - too much dispersion/sway at full auto
 
 **BR, 2026-10-05 21:04:**
 
@@ -134,10 +143,14 @@ Paperwork; no game code.
 
 > the designed playtest map ends in a miltiary area - we just haven't gotten that far
 
-**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. A firearm shot's recoil is carried in from d80; d78's impact trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
-**Saves:** Magazine contents and any new chamber/action state that determines the next shot are saved with their owning items. Body damage is owned and saved by 3.4; casings and visual impacts are presentation, not saved simulation state.
-**Tests:** loading and firing conserve rounds across magazine, chamber and weapon; a round resolves against the body region it actually intersects and uses firearm/calibre data; save/load preserves the next shot and ammunition state; changing impact presentation does not change damage. The impact presentation builds on `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, and `src/render/shotTrace.ts`, `traceShot`. Test military loot reachability through the authored site rather than pinning a loot count.
-**Done when:** magazines can be loaded one round at a time, rifle ammunition and weapons come from the map's military source, shots damage the appropriate region and the save round trip preserves ammunition.
+**BR, 2026-10-05 22:17:**
+
+> they should be saved
+
+**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. The existing firearms skill's aim-variance, reload and rack effects carry into firearms combat; later, shooting proficiency splits by firearm archetype. A firearm shot's recoil is carried in from d80; d78's impact trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
+**Saves:** Magazine contents and any new chamber/action state that determines the next shot are saved with their owning items. Spent casings are world state: save where they fall and preserve them through save/load (BR, 2026-10-05 22:17: “they should be saved”). Body damage is owned and saved by 3.4. BR ruled that impact marks and dust are presentation, not simulation damage or save state (see [DESIGN.md](DESIGN.md), “Shot impacts”).
+**Tests:** loading and firing conserve rounds across magazine, chamber and weapon; a round resolves against the body region it actually intersects and uses firearm/calibre data; save/load preserves the next shot, ammunition and spent-casing positions; changing impact presentation does not change damage. The impact presentation builds on `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, and `src/render/shotTrace.ts`, `traceShot`. Test military loot reachability through the authored site rather than pinning a loot count.
+**Done when:** magazines can be loaded one round at a time, rifle ammunition and weapons come from the map's military source, shots damage the appropriate region, and save round trips preserve ammunition and spent casings.
 **First look / BR approval:** firearm impacts, hit feedback, spent casings and body-mark treatment.
 
 ### 3.3 Melee depth
@@ -197,7 +210,7 @@ Paperwork; no game code.
 
 **In:** Shamblers beeline to a light they can see through the existing zombie attention owner (`src/core/zombies.ts`, `ZombieSystem`). Light makes the player easier to spot only when it is dark enough for the light to matter. A thrown glowstick is a lure, tuned so it attracts but does not trivialize stealth. Add a headlamp; light sensing must not install a second pursuit system.
 **Saves:** Headlamp and glowstick state use their existing item/light owners. Any persistent zombie attention target belongs to the existing saved zombie state and fingerprint; light visibility is derived from active sources and surrounding conditions.
-**Tests:** a visible light can become the beeline target; a player light changes detection in darkness but not in conditions where light is implausible; a thrown glowstick attracts shamblers without making the player unreachable; headlamp state survives the existing item save round trip. Do not pin lure radius, content counts or seeded positions.
+**Tests:** a visible light can become the beeline target; a player light changes detection in darkness but not in conditions where light is implausible; in the first look, check whether a thrown glowstick reads as a lure and tune its effect with BR's “must not work too well” direction; headlamp state survives the existing item save round trip. Do not pin lure radius, content counts or seeded positions.
 **Done when:** light sources affect zombie attention, darkness gates the player's light signature, and the headlamp and thrown lure work.
 
 ### 3.7 Modular weapons
@@ -211,7 +224,7 @@ Paperwork; no game code.
 > 3. this calls for a specific UI, because we need to be able to manage adding and removing mods. In dayz they're slots on the weapon that you can operate on when the gun is wielded or on the ground. See Screenshot_2026-10-05_21-24-27.png - there's optic slots, tac light, supp, mag and then the battery slot for the tac light too
 > 4. improvised suppressor doesn't last as good as a real one, but far more than a couple of shots - maybe 40, wheras the real one would last maybe 400
 
-**In:** First set: optics, suppressor, flashlight mount and foregrip. Add a weapon UI with slots operable while the weapon is wielded or on the ground. A magnified optic zooms only its large lens circle; outside stays 1× and blurred. The suppressor life is a first tuning target from BR's approximate examples, not a test-pinned count. Dependencies include 3.2's real magazine and firearm state.
+**In:** First set: optics, suppressor, flashlight mount and foregrip. BR's 2026-10-01 modular-weapons ruling (the gungen side is gungen.2 in `gungen/PROJECT.md`): the player fits mods (optics first, then suppressors and other muzzle devices, foregrips, tactical flashlights and lasers, magazines, stocks and so on) found as loot or crafted, through the mount points a gun offers. Mods change the gun in play (a suppressor's noise, a flashlight's light as a sense, a grip's handling). Fitting and removing a mod is handling. A found gun comes with the generator's default mods. Add a weapon UI with slots operable while the weapon is wielded or on the ground. The referenced screenshot is a DayZ M1A SOCOM inspect view with optic, tactical-light, battery, suppressor and magazine slots. A magnified optic zooms only its large lens circle; outside stays 1× and blurred. The suppressor life is a first tuning target from BR's approximate examples, not a test-pinned count. Dependencies include 3.2's real magazine and firearm state.
 **Saves:** Installed mod ownership/slot assignment and any condition or battery state that changes behavior are saved with their owning weapon/items. Optic presentation and UI selection are transient; the active attachment arrangement that changes shots, handling or light is fingerprinted.
 **Tests:** fitting and removing a mod works from wielded and ground weapons, rejects incompatible slots, and survives save/load; a tactical light preserves its battery; only the optic lens zooms while the outside view remains unzoomed; improvised suppressors outlast a couple of shots but wear sooner than a real suppressor. Avoid exact shot-life assertions.
 **Done when:** the first attachment set can be fitted and removed through the slot UI, affects its owning weapon, and survives save/load.
@@ -219,7 +232,7 @@ Paperwork; no game code.
 
 ### 3.8 New zombie types
 
-**BR, 2026-10-05 21:29:**
+**BR, 2026-10-05 21:29, inline answers to the lead's questions:**
 
 > 1. Scope: all four in Slice 3, or a first set? For example, runner and crawler first, since screamer and bloater lean on hordes (3.9) and the body model (3.4).
 > first set only
@@ -230,9 +243,9 @@ Paperwork; no game code.
 > 4. Bloater's cloud: what does it do to you? Damage over time, wound infection (from 3.4), blurred vision, or something else?
 > defer
 
-**In:** Add the runner (sprinting beeline, rarer than shamblers) and crawler, building on the existing type-data model and d84's beeline. The crawler uses the approved type design; the first look settles its player-facing read. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
+**In:** Add the runner (sprinting beeline, rarer than shamblers) and crawler, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design; the first look settles its player-facing read. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
-**Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
+**Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
 **Done when:** runner and crawler are distinct playable threats and their persistent state round-trips.
 **First look / BR approval:** runner and crawler silhouettes, movement and hit response.
 
@@ -242,16 +255,16 @@ Paperwork; no game code.
 
 **BR, 2026-10-05 21:32, inline answers:**
 
-> 1. Flow fields: Do background zombies just beeline in big cheap steps, and flow fields drop from the plan?
+> 1. Flow fields: ... Do background zombies just beeline in big cheap steps, and flow fields drop from the plan?
 > yes
 > 2. Tier sizes: keep CHALLENGES.md's targets for Slice 3, about 60 active and 300 in the background?
 > let's keep it like that for now, but ideally we could make it so we can have many more at once
 > 3. First horde: what is it in Slice 3? For example, a group of 20–50 drifting together through the hamlet, drawn by loud noise such as gunshots, or roaming at night.
 > yeah, let's try that to start off with
-> 4. Gunshots: does a gunshot carry far enough to pull background zombies, and hordes, toward you?
+> 4. Gunshots: does a gunshot carry far enough to pull background zombies, and hordes, toward you? That would make firing a real decision.
 > yes, it's loud and brings in enemies from far
 
-**In:** Background zombies beeline in big, cheap steps; no shared flow fields. Keep the current challenge targets as an initial target while measuring whether substantially more are possible. Add the first group drifting through the hamlet, attracted by loud noise such as gunshots or roaming at night. Gunshots carry far and pull background zombies and hordes toward the source. Abstract region-map hordes remain Slice 4.
+**In:** Background zombies beeline in big, cheap steps; no shared flow fields. Keep the targets in [CHALLENGES.md](CHALLENGES.md), “Many zombies in a browser”, as an initial target while measuring whether substantially more are possible. Add the first group drifting through the hamlet, attracted by loud noise such as gunshots or roaming at night. Gunshots carry far and pull background zombies and hordes toward the source. Abstract region-map hordes remain Slice 4.
 **Saves:** Save the background actors/group state needed to continue movement, target and noise response after load. Keep active and background ownership explicit and fingerprinted; do not serialize a derived navigation field.
 **Tests:** repeated simulation steps move background actors toward the chosen target without traversing blocked geometry; gunshot attention reaches distant background actors; group behavior stays deterministic over save/load; measure the active/background workload and frame cost without asserting a drifting actor count in a unit test.
 **Done when:** the first horde responds to noise, background actors beeline with bounded cheap work, and the measured workload is recorded against the project performance gate.
@@ -287,6 +300,7 @@ Paperwork; no game code.
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. BR's 2026-10-05 answer confirms the 2026-10-03 ruling: the medical site's virus-sampling research is lore, not a player mission.
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books (BR, 2026-10-03; confirmed 2026-10-05).
 - **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
+- **Proposed tester prompt:** “find the military camp” (BR, 2026-10-05 22:17: “Instead it could be: "find the military camp", maybe?”); confirm with BR when detailing beats 4–6.
 
 The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. Beats 4–6 still need their own BR detail in #181; this milestone and the map come last.
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
@@ -305,7 +319,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 
 ## Carried in
 
-- **d84, shamblers beeline (#279):** the attention/pursuit brain every zombie milestone uses. It replaces the proposed flow-field dependency; #244's route follow-up is obsolete under this direction.
+- **d84, shamblers beeline (#279):** the beeline movement brain every zombie milestone uses; attention selection is unchanged. It replaces the proposed flow-field dependency; #244's route follow-up is obsolete under this direction.
 - **d83, skills and legendary:** the 0–10 skill scale and legendary level feed 3.1; #275 supplies activity tiers and the remaining training questions.
 - **d80 recoil and d78 impacts:** their firearm-owned recoil, aim control and shared shot-trace work feed 3.2.
 - **Authored sites:** the Tiled site / ASCII interior pipeline from #196 feeds 3.11.
@@ -317,6 +331,7 @@ Only questions BR left open; don't infer answers from implementation or old prop
 - **#275 — practice tiers:** what tiers apply to existing practice sources such as crafting and reading, and is practice above an activity's tier kept or dropped?
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
 - **#181 beats 4–6:** detail the larger workshop, medical site and military site one beat per turn. BR's earlier answers settle the order and purpose, but not these beats' contents and layouts.
+- **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
 
 ## Definition of done
 

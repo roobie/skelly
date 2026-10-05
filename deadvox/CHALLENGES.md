@@ -94,9 +94,11 @@ an interruption (a runner covers 30 m between two checks).
   compressed simulation.
 - **Bigger steps, not more ticks,** for slow systems (needs, fire, power), and
   closed-form updates where they exist.
-- **Background entities** move toward their attention target in larger,
-  cheaper beeline steps with approximate collision. That bounds how late an
-  interruption can be without requiring a shared navigation field.
+- **Background entities** use the beeline movement brain from d84, taking
+  larger, cheaper steps with approximate collision; attention selection is
+  unchanged. Each step is capped so the fastest entity moves at most about 2 m
+  per step. That bounds how late an interruption can be, independently of any
+  navigation-field approach.
 - **Interruption checks every step,** and they drop straight back to 1× before
   the next step runs.
 - **Readability:** a clock that spins visibly, a progress bar, and an edge
@@ -120,9 +122,9 @@ invalidates cached paths.
 - **Level-of-detail tiers** (see [DESIGN.md](DESIGN.md#zombies)). v1 targets:
   60 active zombies, 300 in the background tier, and thousands as abstract
   hordes.
-- **Beeline background steering.** Background zombies take large, cheap steps
-  toward the attention target carried in from d84. No shared flow field is
-  planned for Slice 3; active zombies retain their detailed navigation.
+- **Beeline steering, not flow fields.** d84 makes active and background zombies use beeline
+  movement; the existing attention selection is unchanged. Background zombies
+  take larger, cheap steps, with the per-step cap above.
 - **Structure-of-arrays storage in a worker** once the counts need it. The
   `EntityStore` abstraction in `src/core/entities.ts` keeps a storage change from
   altering system APIs.

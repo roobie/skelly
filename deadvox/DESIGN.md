@@ -509,10 +509,10 @@ plain box in your hands. Files are small, and follow
   full auto" led to d62-4 (#262). See `src/game/firearmHandling.ts`,
   `FirearmMechanics.fire` and `firearmHandlingFor`, `src/core/aim.ts`,
   `AimController.recordShot` and `AimController.advance`, and
-  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`. The #267 ruling, planned
-  in [SLICE-3.md](SLICE-3.md), makes ready stance gate firearm fire, prohibits
-  firing while sprinting, assigns duck-walk speed to firearms combat and block
-  success to melee combat. Current code has not yet implemented those rules.
+  `src/core/firearmsSkill.ts`, `firearmsSkillEffects`. The #267 ruling makes ready
+  stance gate firearm fire, prohibits firing while sprinting, assigns duck-walk
+  speed to firearms combat and block success to melee combat. 3.1
+  ([SLICE-3.md](SLICE-3.md)) implements those rules.
   d62 leaves practice unawarded until its source is ruled; #275 sets tiered
   training, while tiers for existing sources and above-tier practice remain
   open. The d62

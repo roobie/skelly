@@ -140,14 +140,16 @@ deal with one milestone per turn.
 Use the authored map specified in
 [#181](https://github.com/roobie/skelly/issues/181) and detailed in
 [SLICE-3.md](SLICE-3.md). Test at least three people, including someone new to
-both CDDA and DayZ, in a 45-minute session on Pages. Give only this prompt:
-“Survive until morning. Loot what you think you need.” Do not teach the systems
-first.
+both CDDA and DayZ, in a 45-minute session on Pages. BR's proposed prompt,
+pending confirmation during 3.11, is “find the military camp” (his hedged
+suggestion, 2026-10-05 22:17: “Instead it could be: "find the military camp", maybe?”). Do not teach the systems first.
 
-Run: open the Pages build, read the controls card and start at the lone house.
-Follow the authored progression through the first night near the hunting cabins
-and the second night at the medical site; do not script zombie behavior. Observe
-inventory choices, combat, noise, light and wound decisions without coaching.
+Run: open the Pages build, read the controls card and start at dusk at the lone
+house. Follow the authored progression through the first night near the hunting
+cabins and the second night at the medical site; do not script zombie behavior.
+Observe inventory choices, combat, noise, light and wound decisions without
+coaching. Close the tab and return with Continue; on a later death, review the
+death screen and start a new world.
 
 Ask each player:
 
@@ -165,7 +167,7 @@ Ask each player:
 7. Does the 1:8 clock ratio let a 45-minute session show enough of the world?
 8. Do non-respawning shamblers make the second night too safe?
 9. Is combat readable and visceral? Do noise and wounds change what the player
-does? Do they listen before moving?
+   does? Do they listen before moving?
 
 Watch how long people spend in the inventory screen, pocket choices, reactions
 to unseen sounds and interruptions, and any point where players stall or
