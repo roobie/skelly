@@ -44,13 +44,6 @@
       "stack": 6
     },
     {
-      "id": "wooden_plank",
-      "name": "Wooden plank",
-      "category": "material",
-      "weight": 500,
-      "size": [2, 4]
-    },
-    {
       "id": "duct_tape",
       "name": "Duct tape",
       "category": "material",
@@ -125,6 +118,15 @@
       "weight": 300,
       "size": [2, 2],
       "description": "Water-stained. Someone underlined things."
+    },
+    {
+      "id": "portable_radio",
+      "name": "Portable radio",
+      "category": "misc",
+      "weight": 600,
+      "size": [2, 2],
+      "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
+      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "aa_battery", "count": 1 }]
     },
     {
       "id": "spent_case_5_d_56x45",

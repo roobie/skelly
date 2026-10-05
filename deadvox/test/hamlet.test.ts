@@ -175,7 +175,8 @@ describe('the hamlet', () => {
     const hamlet = new Hamlet(5, registry, scale);
     const pieces = columnsOf(hamlet).flatMap(([cx, cz]) => hamlet.furnitureIn(cx, cz));
     expect(pieces.some((piece) => registry.furniture.get(piece.spec.type)?.container !== undefined)).toBe(true);
-    const again = columnsOf(hamlet).flatMap(([cx, cz]) => new Hamlet(5, registry, scale).furnitureIn(cx, cz));
+    const sameSeed = new Hamlet(5, registry, scale);
+    const again = columnsOf(sameSeed).flatMap(([cx, cz]) => sameSeed.furnitureIn(cx, cz));
     expect(again).toEqual(pieces);
   });
 

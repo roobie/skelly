@@ -4,6 +4,7 @@ read_if:
   - you're changing the rules for time, survival, light or zombies
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
+  - you're changing the debug test-house scene or firearm-handling range
 ---
 
 # deadvox — design
@@ -245,6 +246,16 @@ reads) is added when buildings get big.
 Tiers rise with distance from the spawn area and around the lab sites. Labs are
 the source of the weirdness: mutation pressure and hazard zones spread from them.
 
+### Debug scenes
+
+The firing range belongs to `?site=testHouse&debug=1`, not to ordinary world sites:
+it lets firearm handling be exercised without turning the test stock into a playable-world
+loot source. `src/core/range.ts`, `HandlingRange`, owns the shared lane geometry, while
+`src/game/testHouseRange.ts`, `testHouseRangeStock`, derives the rack contents from registry
+firearm and ammunition compatibility. `HandlingRange.approachHeight` and
+`DebugTestHouseSite` keep the debug lane connected to the test-house pad at the same floor;
+`test/testHouseRange.test.ts` exercises the south-gate route with player collision.
+
 ### Loot
 
 Loot tables are data. A table has entries with weights, count ranges and
@@ -434,7 +445,8 @@ plain box in your hands. Files are small, and follow
   containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
 - **Disassembly** is a recipe run in reverse. It returns part of the
-  components, depending on skill and the tools used.
+  components, depending on skill and the tools used. In Slice 2, that reverse is
+  an authored yield or salvage list (see [SLICE-2.md](SLICE-2.md), "2.7").
 - **Crafting runs compressed**, like other long actions, and can be interrupted
   and resumed. An interrupted craft leaves an "in progress" item that holds its
   components.
