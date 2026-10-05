@@ -9,7 +9,6 @@ import {
   HEARTBEAT_QUIET_FLOOR,
   type HeartbeatTarget,
   heartbeatForStamina,
-  subscribeHeartbeatStamina,
 } from './audioPresentation.ts';
 
 const SETTINGS_KEY = 'deadvox.audio.settings';
@@ -127,19 +126,16 @@ export class GameAudio {
   private heartbeatLoading = false;
   private heartbeatUnavailable = false;
   private disposed = false;
-  private readonly unsubscribeHeartbeatStamina: () => void;
 
   constructor({ registry, blockSize, isSolid, report }: GameAudioOptions) {
     this.registry = registry;
     this.blockSize = blockSize;
     this.isSolid = isSolid;
     this.report = report;
-    this.unsubscribeHeartbeatStamina = subscribeHeartbeatStamina((stamina) => this.updateHeartbeat(stamina));
   }
 
   dispose(): void {
     this.disposed = true;
-    this.unsubscribeHeartbeatStamina();
   }
 
   get settings(): AudioVolumes {
@@ -330,7 +326,7 @@ export class GameAudio {
     }
   }
 
-  private updateHeartbeat(stamina: number): void {
+  updateHeartbeat(stamina: number): void {
     if (this.disposed) {
       return;
     }

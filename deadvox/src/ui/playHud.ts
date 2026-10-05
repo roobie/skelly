@@ -2,7 +2,6 @@
 import { render } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { Needs } from '../core/needs.ts';
-import { publishHeartbeatStamina } from '../game/audioPresentation.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
 
@@ -74,8 +73,6 @@ export const playNeedsText = ({ needs, sprinting, lightCharge }: PlayStatus): st
 const optionalLine = (visible: boolean, text: string): string => (visible ? text : '');
 
 export const playHudText = (state: PlayHudState, visible: Readonly<HudOptionsState>): string => {
-  // This read-only projection also forwards stamina to the bodily audio cue, without simulation writes.
-  publishHeartbeatStamina(state.needs.stamina);
   const { calendar, speed, paused, carriedGrams, fps, seed, radiusMetres, walking, meshed, pending, looking } = state;
   const [x, y, z] = state.positionMetres.map((v) => v.toFixed(1));
   const acceleration = speed > 1.05 ? `   ×${speed.toFixed(0)}` : '';

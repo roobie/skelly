@@ -53,7 +53,7 @@ const sheet = html`
       </p>
       <nav><a href="./">Back to game</a> · <a href="./?debug=1">Open game with debug help</a></nav>
     </div>
-    <div class="sound-count">${guide.length} events · ${guide.reduce((sum, event) => sum + event.variants.length, heartbeat.variants.length)} variants</div>
+    <div class="sound-count">${guide.length + 1} events · ${guide.reduce((sum, event) => sum + event.variants.length, heartbeat.variants.length)} variants</div>
   </header>
   ${issues.length > 0 ? html`<p class="sound-errors">Content validation: ${issues.map((issue) => issue.message).join('; ')}</p>` : ''}
   <section class="sound-list" aria-label="Sound events and bodily cues in gameplay order">

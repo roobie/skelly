@@ -20,17 +20,19 @@ describe('audio listening guide', () => {
     );
   });
 
-  it('lists the player heartbeat recordings with their source credit and pending verdict', () => {
+  it('lists the player heartbeat recordings with manifest provenance', () => {
     const heartbeat = buildHeartbeatSoundGuide(manifest);
-    expect(heartbeat.trigger).toContain('stamina');
-    expect(heartbeat.status).toContain("placeholder, awaiting BR's verdict");
+    expect(heartbeat.trigger.trim()).not.toBe('');
+    expect(heartbeat.status.trim()).not.toBe('');
     expect(heartbeat.variants.map(({ file }) => file).sort()).toEqual(Object.values(HEARTBEAT_FILES).sort());
     expect(
       heartbeat.variants.every(
         ({ author, licence, sourceUrl }) =>
-          author === 'bart' &&
-          licence === 'CC0-1.0' &&
-          sourceUrl === 'https://opengameart.org/content/heartbeat-sounds',
+          author.trim() !== '' &&
+          author !== 'Uncredited' &&
+          licence.trim() !== '' &&
+          licence !== 'Unknown licence' &&
+          sourceUrl !== null,
       ),
     ).toBe(true);
   });

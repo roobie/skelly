@@ -12,11 +12,12 @@ import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const anchors = new Map([
   ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
-  ['src/game/audio.ts', '    const source = context.createBufferSource();'],
+  ['src/game/audio.ts', '    this.stealOldestVoice(event, context);\n    const source = context.createBufferSource();'],
 ]);
 const requireAnchor = (code, file, marker) => {
-  if (!code.includes(marker)) {
-    throw new Error(`Full-auto observation anchor missing in ${file}: ${JSON.stringify(marker)}`);
+  const matches = code.split(marker).length - 1;
+  if (matches !== 1) {
+    throw new Error(`Full-auto observation anchor in ${file} must match exactly once; found ${matches}`);
   }
 };
 // Vite reports transform failures asynchronously. Validate before starting it or a browser,
@@ -46,7 +47,10 @@ const vite = await createServer({
         if (id.endsWith('/src/game/audio.ts')) {
           const marker = anchors.get('src/game/audio.ts');
           requireAnchor(code, 'src/game/audio.ts', marker);
-          return code.replace(marker, `    globalThis.fullAutoProbe.event = event;\n${marker}`);
+          return code.replace(
+            marker,
+            '    this.stealOldestVoice(event, context);\n    globalThis.fullAutoProbe.event = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.event = undefined;',
+          );
         }
       },
     },

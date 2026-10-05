@@ -43,20 +43,6 @@ export const heartbeatForStamina = (stamina: number): HeartbeatTarget => {
   };
 };
 
-const heartbeatStaminaListeners = new Set<(stamina: number) => void>();
-
-/** Connects read-only player-state projections to bodily audio without adding simulation state. */
-export const subscribeHeartbeatStamina = (listener: (stamina: number) => void): (() => void) => {
-  heartbeatStaminaListeners.add(listener);
-  return () => heartbeatStaminaListeners.delete(listener);
-};
-
-export const publishHeartbeatStamina = (stamina: number): void => {
-  for (const listener of heartbeatStaminaListeners) {
-    listener(stamina);
-  }
-};
-
 /** Sound policy for a move beginning; presentation-only and deliberately outside the simulation fingerprint. */
 export const handlingMoveStartCue = (
   move: MoveStart,

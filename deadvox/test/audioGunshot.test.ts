@@ -6,7 +6,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import { firearmShotSound, heartbeatForStamina, publishHeartbeatStamina } from '../src/game/audioPresentation.ts';
+import { firearmShotSound, HEARTBEAT_QUIET_FLOOR, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 
 const audios: GameAudio[] = [];
 
@@ -113,16 +113,22 @@ afterEach(() => {
 });
 
 describe('game audio playback', () => {
-  it('plays player-only heartbeat beats at fixed pitch without admitting sound events', async () => {
+  it('plays player-only heartbeat beats independently of the HUD and without admitting sound events', async () => {
     const { audio, context, fetchBuffer } = setup();
-    publishHeartbeatStamina(100);
+    const audibleTimbres = (stamina: number) => {
+      const { gain, fastMix } = heartbeatForStamina(stamina);
+      return [gain * (1 - fastMix), gain * fastMix].filter((gainValue) => gainValue >= HEARTBEAT_QUIET_FLOOR);
+    };
+    audio.updateHeartbeat(100);
     await flush();
     expect(context.sources).toHaveLength(0);
     expect(fetchBuffer).not.toHaveBeenCalled();
 
-    publishHeartbeatStamina(0);
+    audio.updateHeartbeat(0);
     await flush();
-    expect(context.sources).toHaveLength(1);
+    const atLowStamina = audibleTimbres(0);
+    expect(context.sources).toHaveLength(atLowStamina.length);
+    expect(context.sources.length).toBeGreaterThan(0);
     expect(context.sources[0]!.playbackRate.value).toBe(1);
     expect(audio.heardSounds).toHaveLength(0);
     expect(context.panners).toHaveLength(0);
@@ -130,25 +136,28 @@ describe('game audio playback', () => {
     const fastTarget = heartbeatForStamina(0);
     const firstBeatAt = context.sources[0]!.start.mock.calls[0]![0] as number;
     context.currentTime = firstBeatAt + 60 / fastTarget.bpm - 0.01;
-    publishHeartbeatStamina(0);
+    audio.updateHeartbeat(0);
     await flush();
-    expect(context.sources).toHaveLength(1);
+    expect(context.sources).toHaveLength(atLowStamina.length);
     context.currentTime += 0.02;
-    publishHeartbeatStamina(0);
+    audio.updateHeartbeat(0);
     await flush();
-    expect(context.sources).toHaveLength(2);
+    expect(context.sources).toHaveLength(atLowStamina.length * 2);
 
-    const target = heartbeatForStamina(50);
+    const beforeMix = context.sources.length;
     context.currentTime += 1;
-    publishHeartbeatStamina(50);
+    audio.updateHeartbeat(50);
     await flush();
-    expect(context.sources).toHaveLength(4);
-    const mixedGains = context.sources.slice(2).map((source) => {
+    const expectedGains = audibleTimbres(50);
+    expect(context.sources).toHaveLength(beforeMix + expectedGains.length);
+    const mixedGains = context.sources.slice(beforeMix).map((source) => {
       const gain = source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>;
       return gain.gain.value;
     });
-    expect(mixedGains[0]).toBeCloseTo(target.gain * (1 - target.fastMix));
-    expect(mixedGains[1]).toBeCloseTo(target.gain * target.fastMix);
+    expect(mixedGains).toHaveLength(expectedGains.length);
+    mixedGains.forEach((gain, index) => {
+      expect(gain).toBeCloseTo(expectedGains[index]!);
+    });
     expect(context.sources.every(({ playbackRate }) => playbackRate.value === 1)).toBe(true);
     expect(audio.heardSounds).toHaveLength(0);
   });
