@@ -50,20 +50,22 @@ describe('audio listening guide', () => {
     const rows = [...root.querySelectorAll('.sound-variants li')];
     expect(rows).toHaveLength(heartbeat.variants.length);
     expect(root.querySelectorAll('button')).toHaveLength(heartbeat.variants.length * HEARTBEAT_PREVIEW_LEVELS.length);
-    heartbeat.variants.forEach((variant, variantIndex) => {
+    for (const [variantIndex, variant] of heartbeat.variants.entries()) {
       const buttons = [...rows[variantIndex]!.querySelectorAll('button')];
       expect(buttons.map((button) => button.textContent?.trim())).toEqual(
         HEARTBEAT_PREVIEW_LEVELS.map(({ label }) => `Play ${label}`),
       );
-      buttons.forEach((button) => button.click());
-      HEARTBEAT_PREVIEW_LEVELS.forEach(({ gain }, levelIndex) => {
+      for (const button of buttons) {
+        button.click();
+      }
+      for (const [levelIndex, { gain }] of HEARTBEAT_PREVIEW_LEVELS.entries()) {
         expect(preview).toHaveBeenNthCalledWith(
           variantIndex * HEARTBEAT_PREVIEW_LEVELS.length + levelIndex + 1,
           variant.file,
           gain,
         );
-      });
-    });
+      }
+    }
   });
 
   it('lists the player heartbeat recordings with manifest provenance', () => {
