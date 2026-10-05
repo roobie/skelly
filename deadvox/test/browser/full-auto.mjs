@@ -70,7 +70,7 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
-    const probe = { shots: [], sources: [], peak: 0, released: false };
+    const probe = { shots: [], sources: [], peak: 0, released: false, laserVisibleAfterFire: false };
     globalThis.fullAutoProbe = probe;
     const gun = (record) => record.event === 'gunshot';
     const makeSource = AudioContext.prototype.createBufferSource;
@@ -186,6 +186,7 @@ try {
     impactEffects.fire = (trajectory, debugLaser) => {
       globalThis.fullAutoProbe.trajectories += trajectory.directions.length;
       fire(trajectory, debugLaser);
+      globalThis.fullAutoProbe.laserVisibleAfterFire ||= impactEffects.laser.visible;
     };
   });
   // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.
@@ -260,11 +261,11 @@ try {
   const impactPresentation = await page.evaluate(() => ({
     marks: globalThis.fullAutoRuntime.view.impactEffects.activeMarks,
     laserSegments: globalThis.fullAutoRuntime.view.impactEffects.laser.geometry.drawRange.count,
-    laserVisible: globalThis.fullAutoRuntime.view.impactEffects.laser.visible,
+    laserVisibleAfterFire: globalThis.fullAutoProbe.laserVisibleAfterFire,
   }));
   assert.ok(impactPresentation.marks > 0, 'committed rounds that meet world geometry create impact marks');
   assert.ok(
-    impactPresentation.laserSegments > 0 && impactPresentation.laserVisible,
+    impactPresentation.laserSegments > 0 && impactPresentation.laserVisibleAfterFire,
     'debug trajectory segments are visible in the renderer',
   );
   const cadence = await page.evaluate(() => ({

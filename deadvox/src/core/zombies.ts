@@ -551,7 +551,7 @@ export const hearVocalNoise = ({
 
 const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: PerceptionInput): boolean => {
   const delta = sub(player.pos, from);
-  const metres = Math.hypot(...delta) * blockSize;
+  const metres = Math.hypot(delta[0], delta[2]) * blockSize;
   const dir = unit(delta);
   const look = unit(facing);
   const dot = Math.max(-1, Math.min(1, look[0] * dir[0] + look[2] * dir[2]));
