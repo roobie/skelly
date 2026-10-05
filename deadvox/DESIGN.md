@@ -643,8 +643,13 @@ worse the world gets.
 - **Navigation rationale:** Collision-aware routing prevents false progress
   through blockers, while bounded work protects the shared simulation tick.
   Keeping route planning separate from physics preserves collision ownership.
-  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+  A changed target leaves the current verified waypoints in use while the bounded
+  search plans toward the latest block-cell goal. Before any waypoint exists, the
+  shambler waits: a straight segment check cannot establish authored floor
+  connectivity, and waiting preserves bounded route work. See
+  `deadvox/src/core/zombies.ts`, `ZombieSystem.routeWaypoint` and
+  `ZombieSystem.serviceRouteSearches`, and `deadvox/src/core/shamblerRoutes.ts`,
+  `planShamblerRoute`.
   Explore landing connections only from the reached frontier, trying the goal
   before optional detours. Exhausting effort on an unrelated closed approach must
   not discard a complete route already found. See

@@ -1622,6 +1622,44 @@ describe('local route continuation', () => {
       type.attack.reach,
     );
   });
+
+  it('keeps closing on a target that crosses cells while its route is replanned', () => {
+    const blockSize = 0.5;
+    const startTargetX = 40.25;
+    let target: Vec3 = [startTargetX, 1, 1];
+    const type = {
+      ...SHAMBLER,
+      sight: 1000,
+      speed: { wander: 0, chase: 2 },
+      chaseMotion: {
+        ...SHAMBLER.chaseMotion,
+        swayDegrees: 0,
+        speedMultiplier: { min: 1, max: 1 },
+        stumbleChancePerSecond: 0,
+      },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player(target, [-1, 0, 0], 'still')),
+      blockSize,
+    });
+    const id = system.add(type, [1, 1, 1], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    const initialDistance = metres(zombie.body.pos, target);
+    const dt = 1 / 20;
+    let previousCell = Math.floor(target[0]);
+    let cellChanges = 0;
+    for (let tick = 1; tick <= 20 * 4; tick++) {
+      target = [startTargetX + (1.75 * tick * dt) / blockSize, 1, 1];
+      const cell = Math.floor(target[0]);
+      if (cell !== previousCell) {
+        cellChanges += 1;
+        previousCell = cell;
+      }
+      system.tick(dt, tick * dt);
+    }
+    expect(cellChanges).toBeGreaterThan(2);
+    expect(metres(zombie.body.pos, target)).toBeLessThan(initialDistance);
+  });
 });
 
 describe('lurching chase', () => {
