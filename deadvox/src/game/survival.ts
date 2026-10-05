@@ -3,14 +3,15 @@
 // the light you're holding. Only a light in your hands shines; one put away goes off.
 // The needs themselves are in the simulation (core/needs.ts).
 
+import { canonicalJson } from '../core/canonicalJson.ts';
 import { gameHours } from '../core/clock.ts';
 import { freshnessWord, isRotten } from '../core/food.ts';
-import type { HandlingQueue, JobParams } from '../core/handling.ts';
-import type { HandSide, Inventory, Target } from '../core/inventory.ts';
+import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
+import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { chargeShare, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
 import { consume, FOOD_POISONING } from '../core/needs.ts';
-import { useOption } from '../core/options.ts';
+import { DRINK_TIME, EAT_TIME, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
@@ -64,6 +65,31 @@ export class Survival {
       const item = this.inventory.itemByUid(numberParam(params, 'itemUid'));
       if (!item || this.handOf(item) === undefined) {
         return "It isn't in your hands";
+      }
+      return this.finishEating(item);
+    });
+    this.queue.registerAction('survival.quickbarEat', (params) => {
+      const { source } = params;
+      const item = this.inventory.itemByUid(numberParam(params, 'itemUid'));
+      if (!(item && source) || typeof source !== 'object' || Array.isArray(source)) {
+        return "The food isn't there any more";
+      }
+      const at = this.inventory.locate(item);
+      const targetState = source as unknown as TargetState;
+      const target = this.inventory.resolveTarget(targetState);
+      if (
+        at?.kind !== 'pocket' ||
+        !target ||
+        canonicalJson(this.inventory.targetState(this.inventory.targetForLocation(at))) !== canonicalJson(targetState)
+      ) {
+        return 'The food moved before you could use it';
+      }
+      const plan = this.inventory.plan(item, target);
+      if (!plan.ok) {
+        return plan.reason;
+      }
+      if (!this.hooks.reach().entries.some((entry) => entry.item === item)) {
+        return 'The food is no longer in reach';
       }
       return this.finishEating(item);
     });
@@ -131,6 +157,46 @@ export class Survival {
     }
   }
 
+  /** Quickbar hold uses pocket food as one action, without displacing either hand. */
+  useFromQuickbar(item: Item): string | undefined {
+    const def = defOf(this.inventory.registry, item.type);
+    const at = this.inventory.locate(item);
+    if (!at) {
+      return `The ${def.name.toLowerCase()} isn't there any more`;
+    }
+    if (def.firearm) {
+      return 'Use R to work the firearm';
+    }
+    if (def.weapon || def.key || (def.category === 'tool' && !def.light)) {
+      return `Nothing to do with the ${def.name.toLowerCase()} from here`;
+    }
+    if (at.kind === 'hand' || def.battery) {
+      return this.use(item);
+    }
+    if (def.food && at.kind === 'pocket') {
+      if (!this.hooks.reach().entries.some((entry) => entry.item === item)) {
+        return 'Too far away';
+      }
+      const target = this.inventory.targetForLocation(at);
+      const hand = { kind: 'hand', side: 'right' } as const;
+      const isDrink = def.category === 'drink';
+      const useTime = isDrink ? DRINK_TIME : EAT_TIME;
+      const duration =
+        this.inventory.handlingTime(item, at, hand) + useTime + this.inventory.handlingTime(item, hand, target);
+      this.queue.enqueueAction(
+        'survival.quickbarEat',
+        `${isDrink ? 'Drink' : 'Eat'} the ${def.name.toLowerCase()}`,
+        duration,
+        {
+          itemUid: item.uid,
+          source: JSON.parse(canonicalJson(this.inventory.targetState(target))) as JobValue,
+        },
+      );
+      return undefined;
+    }
+    return `Take the ${def.name.toLowerCase()} in your hands first`;
+  }
+
   /** Lines for the inventory's details panel: freshness, charge, whether it's on. */
   describe(item: Item): string[] {
     const { registry } = this.inventory;
@@ -145,8 +211,10 @@ export class Survival {
       const state = item.on ? 'on' : 'off';
       lines.push(`Battery ${Math.round(share * 100)}%${def.light ? ` · ${state}` : ''}`);
     }
-    if (def.food || def.light || def.battery || def.readable) {
-      lines.push('U or its quickbar key: use');
+    if (def.food || def.battery) {
+      lines.push('U: use in hand · hold its quickbar key: use from its current location');
+    } else if (def.light || def.readable) {
+      lines.push('U: use in hand · hold its quickbar key: use in hand');
     }
     return lines;
   }

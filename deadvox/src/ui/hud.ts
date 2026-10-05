@@ -1,6 +1,4 @@
-// The quickbar and the handling progress shown while playing (DESIGN.md, "Inventory
-// screen"). A quickbar key puts its item in your hands, which costs the handling
-// time of wherever it is; pressing it again uses it.
+// The quickbar and handling progress shown while playing (DESIGN.md, "Inventory screen").
 
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Inventory, Location } from '../core/inventory.ts';
