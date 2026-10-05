@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're authoring or changing readable item or furniture content
+  - you're changing how authored readings enter play
+---
+
 # Authored notes and signs
 
 Items and furniture share the optional, strict `readable` block:
@@ -42,9 +48,12 @@ ordinary inventory access. The shared block does not change door ownership.
 
 ## Player flow and time
 
-Select a note in inventory, take it into a hand, then choose **Read** (or U / an
-assigned quickbar key). `useOption` describes the capability; Survival revalidates
-hand ownership and owns the read effect. There is no consumption, inventory change
+Select a note in inventory and take it into a hand, then choose **Read** (or U /
+hold its assigned quickbar key). A quickbar tap only takes or puts away; holding
+its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
+`QuickbarActions.hold`). `src/core/options.ts`, `useOption`, describes the
+capability; `src/game/survival.ts`, `Survival.use`, revalidates hand ownership and
+owns the read effect. There is no consumption, inventory change
 or queued handling job. Reading has **zero command time**, rather than an arbitrary
 handling cost: opening paper is presentation, while time spent actually reading
 already passes in the live world.
