@@ -59,6 +59,9 @@ export interface MenuState {
 const saveState = (input: MenuStateInput): Pick<MenuState, 'saveMenu'> =>
   input.saveMenu ? { saveMenu: computeSaveMenuState(input.saveMenu) } : {};
 
+const mainMenuHasConflict = (input: MenuStateInput): boolean =>
+  !input.dead && input.mainMenuOpen && Boolean(input.inventoryOpen || input.readingOpen || input.debugMenuOpen);
+
 const titleMenuState = (input: MenuStateInput): MenuState => ({
   started: false,
   mainMenuOpen: true,
@@ -77,10 +80,7 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
   const pointerUnlocked = Boolean(input.pointerLockChanged && started && !input.pointerLocked && !input.dead);
   const resumed = Boolean(input.pointerLocked && input.resumeRequested && !input.dead);
   const { mainMenuOpen: requestedMainMenuOpen } = input;
-  const conflictingMenu = Boolean(
-    requestedMainMenuOpen && !input.dead && (input.inventoryOpen || input.readingOpen || input.debugMenuOpen),
-  );
-  const closeOtherMenus = pointerUnlocked || resumed || conflictingMenu;
+  const closeOtherMenus = pointerUnlocked || resumed || mainMenuHasConflict(input);
   let mainMenuOpen = requestedMainMenuOpen;
   if (pointerUnlocked) {
     mainMenuOpen = true;
