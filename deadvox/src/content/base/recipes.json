@@ -1,5 +1,5 @@
 {
-  "skills": [{ "id": "crafting", "name": "Crafting" }],
+  "skills": [{ "id": "crafting", "name": "Crafting" }, { "id": "mechanics", "name": "Mechanics" }],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },
     { "id": "wax", "name": "Wax lump", "category": "material", "weight": 50, "size": [1, 1], "stack": 10 },
@@ -65,6 +65,33 @@
         ]
       },
       "tool": { "qualities": { "repairing": 1 } }
+    },
+    {
+      "id": "copper_wire",
+      "name": "Salvaged wire",
+      "category": "material",
+      "weight": 80,
+      "size": [1, 2],
+      "disassembly": {
+        "time": 8,
+        "skill": "mechanics",
+        "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    },
+    {
+      "id": "field_patch",
+      "name": "Field repair patch",
+      "category": "material",
+      "weight": 120,
+      "size": [1, 2],
+      "disassembly": {
+        "time": 12,
+        "skill": "mechanics",
+        "yields": [
+          { "item": "copper_wire", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "duct_tape", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
     }
   ],
   "recipes": [
@@ -100,6 +127,22 @@
         [{ "item": "duct_tape", "count": 1 }],
         [{ "item": "rag", "count": 2 }]
       ]
+    },
+    {
+      "id": "strip_wire",
+      "result": { "item": "copper_wire", "count": 1 },
+      "time": 8,
+      "skills": { "mechanics": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }]]
+    },
+    {
+      "id": "field_patch",
+      "result": { "item": "field_patch", "count": 1 },
+      "time": 12,
+      "skills": { "mechanics": 2 },
+      "qualities": {},
+      "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
     },
     {
       "id": "repair_crowbar",

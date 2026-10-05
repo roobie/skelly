@@ -259,6 +259,46 @@ const checkUnpacking = (item: ItemDef, registry: Registry, report: Report): void
   }
 };
 
+const checkDisassembly = (item: ItemDef, registry: Registry, qualities: ReadonlySet<string>, report: Report) => {
+  const { disassembly } = item;
+  if (disassembly) {
+    if (!registry.skills.has(disassembly.skill)) {
+      report('items', item.id, '.disassembly.skill', `no skill "${disassembly.skill}"`);
+    }
+    disassembly.yields.forEach((yieldItem, index) => {
+      if (!registry.items.has(yieldItem.item)) {
+        report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
+      }
+      const quality = yieldItem.toolModifier?.quality;
+      if (quality !== undefined && !qualities.has(quality)) {
+        report('items', item.id, `.disassembly.yields[${index}].toolModifier.quality`, `no tool quality "${quality}"`);
+      }
+    });
+  }
+  item.salvage?.forEach((output, index) => {
+    if (!registry.items.has(output.item)) {
+      report('items', item.id, `.salvage[${index}].item`, `no item "${output.item}"`);
+    }
+  });
+  if (disassembly && item.salvage) {
+    report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
+  }
+};
+
+const checkBook = (item: ItemDef, registry: Registry, report: Report) => {
+  if (item.book && item.category !== 'book') {
+    report('items', item.id, '.book', 'book component requires the book category');
+  }
+  if (registry.recipes.size === 0) {
+    return;
+  }
+  item.book?.recipes.forEach((recipe, index) => {
+    if (!registry.recipes.has(recipe)) {
+      report('items', item.id, `.book.recipes[${index}]`, `no recipe "${recipe}"`);
+    }
+  });
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   for (const item of registry.items.values()) {
@@ -267,33 +307,8 @@ const checkItems = (registry: Registry, report: Report) => {
       report('items', item.id, '.light.power.battery', `"${battery}" is not an item with a battery component`);
     }
     checkUnpacking(item, registry, report);
-    if (item.disassembly) {
-      if (!registry.skills.has(item.disassembly.skill)) {
-        report('items', item.id, '.disassembly.skill', `no skill "${item.disassembly.skill}"`);
-      }
-      item.disassembly.yields.forEach((yieldItem, index) => {
-        if (!registry.items.has(yieldItem.item)) {
-          report('items', item.id, `.disassembly.yields[${index}].item`, `no item "${yieldItem.item}"`);
-        }
-        const quality = yieldItem.toolModifier?.quality;
-        if (quality !== undefined && !qualities.has(quality)) {
-          report(
-            'items',
-            item.id,
-            `.disassembly.yields[${index}].toolModifier.quality`,
-            `no tool quality "${quality}"`,
-          );
-        }
-      });
-    }
-    item.salvage?.forEach((output, index) => {
-      if (!registry.items.has(output.item)) {
-        report('items', item.id, `.salvage[${index}].item`, `no item "${output.item}"`);
-      }
-    });
-    if (item.disassembly && item.salvage) {
-      report('items', item.id, '.salvage', 'use either a disassembly yield or a salvage list, not both');
-    }
+    checkDisassembly(item, registry, qualities, report);
+    checkBook(item, registry, report);
     if (item.model !== undefined && !registry.models.has(item.model)) {
       report('items', item.id, '.model', `no model "${item.model}"`);
     }

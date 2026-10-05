@@ -2,6 +2,8 @@
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
   - you change content references, static reachability, or disassembly-output contracts
+  - you change recipe, workstation or book reachability contracts
+  - you change static reachability checks
 ---
 
 # Content sections and recipes
@@ -46,9 +48,9 @@ storage or save format**. No container is consumed by these recipes. Before any
 later recipe uses part of a liquid, its stored quantity-to-ml mapping, saved
 partial use and container retention must be approved. Torch/candle result
 metadata has no light or burning component yet; those mechanics belong to 2.9.
-Recipes are data only, not a crafting runtime or knowledge system. No save change. The simulation fingerprint changes with the schema/core
-source and base-content changes, intentionally accepted pre-alpha. Old saves with
-the earlier simulation/content identity are refused; no migration is provided.
+Slice 2.2 introduced recipes as data only. Slice 2.5 adds crafting, progression,
+and book knowledge; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, and the simulation
+fingerprint require old saves to be refused rather than migrated during pre-alpha.
 
 ## Static reachability (Slice 2.3)
 
@@ -74,22 +76,28 @@ components and sufficient tool-quality levels before adding a result. A recipe
 cannot bootstrap its own quality, directly or through another tool-dependent
 recipe. Independently found or grounded crafted providers are valid.
 
-Knowledge is now a hard source check: both closures use the same explicit
-starting recipes as a new character. An unknown recipe fails at `.knowledge`,
-and its result cannot ground another recipe's components or tool quality.
-Teaching books extend this source in 2.5; declaration alone is not knowledge.
-Positive skill requirements still emit `pending: no source yet` for their
-owning milestone; level zero needs no progression source. A recipe naming a
-workstation now requires that station to occur in a placed hamlet template, and
-placed station qualities can ground recipe tool-quality requirements. The
-workstation hand-off is owned by `checkReachability()` in
-`src/core/reachability.ts`; only the remaining skill hand-off stays pending.
+Knowledge is a hard source check: the explicit starting recipes and recipes
+listed by reachable teaching books are the only knowledge sources. An unknown
+recipe fails at `.knowledge`, and its result cannot ground another recipe's
+components or tool quality. `src/core/reachability.ts`, `checkReachability`,
+closes reachable practice sources before accepting positive skill requirements
+and hard-checks workstation placement and quality. A recipe that cannot be
+learned and completed from reachable sources cannot bootstrap its own skill.
+`src/core/schema.ts`, `BookSchema`, owns book teaching data; the `paperback` has
+no book component and remains inert.
 
-`npm run validate` checks the effective pack and reports reachability and content
-issues; do not copy its counts or content lists into this document.
-`CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` owns which definitions
-count as acquired content. `work_in_progress` is runtime escrow, not acquired loot
-or a recipe result. Reachability issues use the winning recipe's merge origin,
-preserving source file and index through ordered overrides/removal. Reachability
-stores no closure or runtime state; progression, crafting, and disassembly remain
+`CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` keeps runtime escrow and
+the project's debug/case/body-part policy out of acquired-content totals.
+`npm run validate` reports the effective component and tool closures, content
+count, and any unreachable content; do not copy its counts or content lists into
+this document. Content growth beyond the crafting/books milestone remains with
+Slice 2.11. Reachability issues use the winning recipe's merge origin, preserving
+source file and index through ordered overrides and removal.
+
+`src/core/character.ts`, `Character`, owns live practice and knowledge;
+`src/core/reachability.ts`, `checkReachability`, independently proves that their
+sources are available from placed loot. The component/tool closures include
+calculated disassembly yields at top skill; the separate skill-source check must
+prove that reachable practice sources can raise a required skill. Reachability
+stores no closure or runtime state; progression, crafting and disassembly remain
 separate owners.

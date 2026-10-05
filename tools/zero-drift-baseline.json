@@ -118,7 +118,6 @@
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/hud.ts", "count": 2 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "ui/inventoryScreen.ts", "count": 1 },
     { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/blockEntities.ts:292", "count": 1 },
-    { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/content.ts:261-373", "count": 1 },
     { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/hamlet.ts:54-57", "count": 2 },
     { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/inventory.ts:289", "count": 1 },
     { "path": "deadvox/SLICE-2.md", "check": "line_number", "text": "src/core/lights.ts:59", "count": 1 },

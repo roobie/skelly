@@ -219,8 +219,14 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (at.kind !== 'hand') {
     return refuseUse(`Take the ${name} in your hands first`);
   }
-  if (def.readable) {
-    return { kind: 'use', label: 'Read', operation: 'read', readable: def.readable, plan: { ok: true, time: 0 } };
+  if (def.book || def.readable) {
+    return {
+      kind: 'use',
+      label: 'Read',
+      operation: 'read',
+      ...(def.readable ? { readable: def.readable } : {}),
+      plan: { ok: true, time: 0 },
+    };
   }
   if (def.food) {
     return foodOption(name, def.category === 'drink');

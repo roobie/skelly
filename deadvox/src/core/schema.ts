@@ -193,6 +193,13 @@ const BatterySchema = strictObject({
   capacity: Positive,
 });
 
+const BookSchema = strictObject({
+  title: Name,
+  recipes: pipe(array(Id), nonEmpty('needs at least one recipe')),
+  /** Game minutes spent reading. */
+  readingTime: Positive,
+});
+
 const readableText = (limit: number) =>
   pipe(
     string(),
@@ -266,6 +273,7 @@ export const ItemSchema = strictObject({
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   light: optional(LightSchema),
   readable: optional(ReadableSchema),
+  book: optional(BookSchema),
   battery: optional(BatterySchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
@@ -768,6 +776,7 @@ export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type SkillDef = InferOutput<typeof SkillSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type BookDef = InferOutput<typeof BookSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

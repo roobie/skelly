@@ -67,6 +67,51 @@
       "stack": 5
     },
     {
+      "id": "field_manual",
+      "name": "Field Manual: Making Do",
+      "category": "book",
+      "weight": 400,
+      "size": [2, 2],
+      "book": { "title": "Field Manual: Making Do", "recipes": ["strip_wire", "field_patch"], "readingTime": 20 },
+      "readable": {
+        "title": "Field Manual: Making Do",
+        "text": "A pocket guide to salvaging useful material from damaged equipment."
+      }
+    },
+    {
+      "id": "camp_craft_book",
+      "name": "Camp Craft",
+      "category": "book",
+      "weight": 350,
+      "size": [2, 2],
+      "book": { "title": "Camp Craft", "recipes": ["torch", "candle"], "readingTime": 15 },
+      "readable": {
+        "title": "Camp Craft",
+        "text": "Notes on making simple light and shelter from things found nearby."
+      }
+    },
+    {
+      "id": "home_repair_book",
+      "name": "Home Repair Handbook",
+      "category": "book",
+      "weight": 500,
+      "size": [2, 2],
+      "book": { "title": "Home Repair Handbook", "recipes": ["repair_kit"], "readingTime": 25 },
+      "readable": {
+        "title": "Home Repair Handbook",
+        "text": "A practical handbook for keeping tools and household goods working."
+      }
+    },
+    {
+      "id": "workshop_notes",
+      "name": "Workshop Notes",
+      "category": "book",
+      "weight": 300,
+      "size": [2, 2],
+      "book": { "title": "Workshop Notes", "recipes": ["field_patch"], "readingTime": 30 },
+      "readable": { "title": "Workshop Notes", "text": "Handwritten notes on careful repairs and using salvaged wire." }
+    },
+    {
       "id": "paperback",
       "name": "Paperback novel",
       "category": "book",

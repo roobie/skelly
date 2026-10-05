@@ -41,6 +41,7 @@ describe('authored disassembly yields', () => {
         data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
       }));
     const { registry } = buildRegistry(base);
+    expect(registry.items.get('kitchen_knife')?.tool?.qualities.cutting).toBeGreaterThan(0);
     const radio = registry.items.get('portable_radio')!;
     registry.items.set('portable_radio', {
       ...radio,

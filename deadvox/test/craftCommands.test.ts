@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Character } from '../src/core/character.ts';
+import { Character, practiceForNextLevel } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
@@ -47,7 +47,7 @@ const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 describe('live craft commands', () => {
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
-    r.character.skills.crafting = 1;
+    r.character.awardPractice('crafting', practiceForNextLevel(0));
     const target = r.inventory.create('crowbar', 1, 0.5);
     for (const item of [
       target,
@@ -258,7 +258,10 @@ describe('live craft commands', () => {
     expect(r.commands.act(source.uid, 'disassemble')).toBeUndefined();
     const work = r.inventory.hands.right!;
     r.sim.actions.stop();
-    r.character.skills[definition.disassembly!.skill] = topSkill;
+    for (let level = 0; level < topSkill; level += 1) {
+      r.character.awardPractice(definition.disassembly!.skill, practiceForNextLevel(level));
+    }
+    expect(r.character.skills[definition.disassembly!.skill]).toBe(topSkill);
     expect(r.commands.act(work.uid, 'continue')).toBeUndefined();
     r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
 
@@ -271,6 +274,20 @@ describe('live craft commands', () => {
     expect(items.some(({ type }) => type === source.type)).toBe(false);
     expect(outputs).toEqual(expected);
   });
+  it('does not award craft practice when disassembly finishes', () => {
+    const r = make();
+    const radio = r.inventory.create('portable_radio');
+    expect(r.inventory.add(radio, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const starting = r.character.snapshotState();
+    expect(r.commands.act(radio.uid, 'disassemble')).toBeUndefined();
+    const work = r.inventory.hands.right!;
+    r.sim.scheduler.advance(Math.ceil(work.work!.duration / r.sim.clock.ratio) + 1);
+    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.inventory.itemByUid(radio.uid)).toBeUndefined();
+    expect(r.character.skills).toEqual(starting.skills);
+    expect(r.character.practice).toEqual(starting.practice);
+  });
+
   it('cancelling disassembly returns the exact source item without producing salvage', () => {
     const r = make();
     const radio = r.inventory.create('portable_radio');
