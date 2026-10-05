@@ -141,8 +141,28 @@
       "name": "Bed",
       "size": [2, 1, 4],
       "color": "#6f7f95",
-      "bed": {
+      "rest": {
+        "quality": 1,
+        "sleep": true
+      }
+    },
+    {
+      "id": "chair",
+      "name": "Chair",
+      "size": [1, 2, 1],
+      "color": "#8b7355",
+      "rest": {
         "quality": 1
+      }
+    },
+    {
+      "id": "sofa",
+      "name": "Sofa",
+      "size": [4, 2, 2],
+      "color": "#66776d",
+      "rest": {
+        "quality": 0.5,
+        "sleep": true
       }
     },
     {

@@ -1,16 +1,18 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { defaultClock, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { NEED_RATES, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
+import { NEED_RATES, REST, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { type SimOptions, Simulation } from '../src/core/sim.ts';
+import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
-import { RestController, type RestHooks } from '../src/game/rest.ts';
+import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
 const BASE = 'src/content/base';
@@ -28,13 +30,18 @@ const FLOOR: SolidAt = (_x, y) => y === 0;
 
 /** A Simulation wired to a RestController, the way play.ts wires them: the sim's fatigue rate
  * comes from whatever the controller's action asks for. */
+const REST_ANCHOR = 1;
 const makeRest = (
   simOptions: Partial<SimOptions> = {},
   hooks: Partial<RestHooks> = {},
 ): { sim: Simulation; rest: RestController } => {
   let rest: RestController | undefined;
   const sim = new Simulation({ seed: 1, ...simOptions, restRate: () => rest?.action?.rate });
-  rest = new RestController(sim, { bedQuality: () => undefined, notice: () => undefined, ...hooks });
+  rest = new RestController(sim, {
+    furniture: hooks.furniture ?? ((uid) => (uid === REST_ANCHOR ? { quality: 1, sleepable: true } : undefined)),
+    withinReach: hooks.withinReach ?? (() => true),
+    notice: hooks.notice ?? (() => undefined),
+  });
   return { sim, rest };
 };
 
@@ -50,13 +57,15 @@ const zombieHooks = (player: PlayerSense, hour = 23) => ({
   hurtPlayer: () => undefined,
 });
 
-describe('bedNear', () => {
-  it('finds the nearest bed within reach, with its quality', () => {
-    const inv = new Inventory(registry);
-    const bed = inv.furnish({ type: 'bed', pos: [0, 0, 4], size: [2, 1, 4], facing: 'n' })!;
-    expect(inv.entities.bedNear([1, 0, 5], 3)).toBe(bed);
-    expect(inv.entities.defOf(bed).bed?.quality).toBe(1);
-    expect(inv.entities.bedNear([100, 0, 100], 3)).toBeUndefined();
+describe('restKindForFurniture', () => {
+  it('maps restable furniture to rest or sleep and leaves ordinary furniture unchanged', () => {
+    const chair = { rest: { quality: 1 } };
+    const bed = { rest: { quality: 1, sleep: true as const } };
+    const sofa = { rest: { quality: 0.5, sleep: true as const } };
+    expect(restKindForFurniture(chair)).toBe('rest');
+    expect(restKindForFurniture(bed)).toBe('sleep');
+    expect(restKindForFurniture(sofa)).toBe('sleep');
+    expect(restKindForFurniture({})).toBeUndefined();
   });
 });
 
@@ -80,32 +89,35 @@ describe('Simulation restRate', () => {
 });
 
 describe('RestController.rateFor', () => {
-  it('recovers fatigue faster asleep than resting, and faster still on a good bed', () => {
-    const onGround = new RestController(new Simulation({ seed: 1 }), {
-      bedQuality: () => undefined,
-      notice: () => undefined,
-    });
-    const onBed = new RestController(new Simulation({ seed: 1 }), { bedQuality: () => 1, notice: () => undefined });
-    const rest = onGround.rateFor('rest');
-    const sleepOnGround = onGround.rateFor('sleep');
-    const sleepOnBed = onBed.rateFor('sleep');
-    expect(rest).toBeLessThan(0);
-    expect(sleepOnGround).toBeLessThan(rest);
-    expect(sleepOnBed).toBeLessThan(sleepOnGround);
+  it('scales rest and the sleep bonus by the furniture quality', () => {
+    const { rest } = makeRest();
+    expect(rest.rateFor('rest', 0.5)).toBeCloseTo(REST.rest * 0.5);
+    expect(rest.rateFor('sleep', 0.5)).toBeCloseTo(REST.sleep + REST.bedBonus * 0.5);
+    expect(rest.rateFor('sleep', 1)).toBeLessThan(rest.rateFor('sleep', 0.5));
   });
 });
 
 describe('RestController start/resume/stop', () => {
+  it('starts only while the selected furniture is in reach', () => {
+    let reachable = false;
+    const { rest } = makeRest({}, { withinReach: () => reachable });
+    expect(rest.start('rest', REST_ANCHOR)).toBeTruthy();
+    expect(rest.action).toBeUndefined();
+    reachable = true;
+    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
+    expect(rest.action?.furnitureUid).toBe(REST_ANCHOR);
+  });
+
   it('refuses when there is nothing to recover', () => {
     const { sim, rest } = makeRest();
     sim.needs.fatigue = 0;
-    expect(rest.start('rest')).toBe("You're not tired");
+    expect(rest.start('rest', REST_ANCHOR)).toBe("You're not tired");
     expect(sim.compression.active).toBe(false);
   });
 
   it('refuses when it is not safe, like any long action', () => {
     const { rest } = makeRest({ unsafe: () => 'A shambler is close' });
-    expect(rest.start('sleep')).toBe('A shambler is close');
+    expect(rest.start('sleep', REST_ANCHOR)).toBe('A shambler is close');
     expect(rest.action).toBeUndefined();
   });
 
@@ -113,7 +125,7 @@ describe('RestController start/resume/stop', () => {
     const messages: string[] = [];
     const { sim, rest } = makeRest({}, { notice: (m) => messages.push(m) });
     sim.needs.fatigue = 5;
-    expect(rest.start('rest')).toBeUndefined();
+    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 10_000 && rest.action !== undefined; i++) {
       rest.frame(1 / 60);
     }
@@ -128,7 +140,7 @@ describe('RestController start/resume/stop', () => {
 
   it('returns to 1x when the player stops after an interruption', () => {
     const { sim, rest } = makeRest();
-    rest.start('sleep');
+    rest.start('sleep', REST_ANCHOR);
     for (let i = 0; i < 120; i++) {
       rest.frame(1 / 60);
     }
@@ -143,7 +155,7 @@ describe('RestController start/resume/stop', () => {
 
   it('resumes on Continue and keeps the same action', () => {
     const { sim, rest } = makeRest();
-    rest.start('rest');
+    rest.start('rest', REST_ANCHOR);
     for (let i = 0; i < 120; i++) {
       rest.frame(1 / 60);
     }
@@ -155,24 +167,49 @@ describe('RestController start/resume/stop', () => {
     expect(sim.compression.c).toBeGreaterThan(1);
     expect(rest.action).toBe(before);
   });
+
+  it('Continue requires the same furniture anchor to remain in reach', () => {
+    const reachable = new Set([REST_ANCHOR]);
+    const furniture = new Map([
+      [REST_ANCHOR, { quality: 1, sleepable: true }],
+      [2, { quality: 1, sleepable: true }],
+    ]);
+    const { sim, rest } = makeRest(
+      {},
+      {
+        furniture: (uid) => furniture.get(uid),
+        withinReach: (uid) => reachable.has(uid),
+      },
+    );
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
+    sim.hurt(5, 'a debug key');
+    rest.frame(1 / 60);
+    reachable.delete(REST_ANCHOR);
+    reachable.add(2);
+    expect(rest.resume()).toBe('Too far away');
+    expect(rest.action?.furnitureUid).toBe(REST_ANCHOR);
+    reachable.add(REST_ANCHOR);
+    expect(rest.resume()).toBeUndefined();
+    expect(rest.action?.furnitureUid).toBe(REST_ANCHOR);
+  });
 });
 
 describe('RestController.toggle (manual stop)', () => {
   it('starts the action when nothing is running', () => {
     const { rest } = makeRest();
-    expect(rest.toggle('rest')).toBeUndefined();
+    expect(rest.toggle('rest', REST_ANCHOR)).toBeUndefined();
     expect(rest.action?.kind).toBe('rest');
   });
 
   it('stops the same kind on a second press, ramping compression down as a normal end does', () => {
     const { sim, rest } = makeRest();
-    expect(rest.toggle('sleep')).toBeUndefined();
+    expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
       rest.frame(1 / 60);
     }
     expect(sim.compression.c).toBeGreaterThan(1);
     const fatigueAtStop = sim.needs.fatigue;
-    expect(rest.toggle('sleep')).toBeUndefined();
+    expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
     expect(rest.action).toBeUndefined();
     expect(sim.compression.active).toBe(false);
     expect(sim.compression.c).toBeGreaterThan(1); // not snapped; it ramps down like any normal end
@@ -184,6 +221,54 @@ describe('RestController.toggle (manual stop)', () => {
   });
 });
 
+describe('Session rest movement', () => {
+  it('stops an active rest when the player requests movement', () => {
+    const entities = new BlockEntities(registry);
+    const restable = [...registry.furniture.values()].find((def) => def.rest);
+    if (!restable) {
+      throw new Error('Rest movement fixture has no restable furniture');
+    }
+    const anchor = entities.add({ type: restable.id, pos: [2, 1, 0], size: restable.size, facing: 'n' });
+    if (!anchor) {
+      throw new Error('Could not place the rest movement fixture');
+    }
+    const intent = { ...IDLE, forward: 1 };
+    const world = new World();
+    const session = createSession({
+      registry,
+      world,
+      isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      entities,
+      scale: SCALE,
+      seed: 1,
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => true,
+        intent: () => intent,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in rest movement fixture');
+      },
+    });
+
+    expect(session.rest.start('rest', anchor.uid)).toBeUndefined();
+    expect(session.rest.action?.furnitureUid).toBe(anchor.uid);
+    session.frame(1 / 60);
+    expect(session.rest.action).toBeUndefined();
+    expect(session.sim.compression.active).toBe(false);
+    expect(session.sim.compression.c).toBe(1);
+  });
+});
+
 describe('long-action interruptions', () => {
   it('stops resting at most one step after a shambler becomes aware, even beyond 30 m', () => {
     const player: PlayerSense = { pos: [0, 1, 0], facing: [0, 0, -1], movement: 'still', lit: true, lightSeenFrom: 40 };
@@ -192,7 +277,7 @@ describe('long-action interruptions', () => {
     const id = zombieSystem.add(SHAMBLER, [70, 1, 0], [1, 0, 0]);
     const zombie = zombieSystem.store.get(id)!;
     const { sim, rest } = makeRest({ unsafe: () => zombieSystem.unsafeReason() });
-    expect(rest.start('sleep')).toBeUndefined();
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 100; i++) {
       rest.frame(1 / 60);
     }
@@ -219,7 +304,7 @@ describe('long-action interruptions', () => {
     const id = zombieSystem.add(SHAMBLER, [80, 1, 0], [1, 0, 0]); // 40 m, facing further away
     const zombie = zombieSystem.store.get(id)!;
     const { sim, rest } = makeRest({ unsafe: () => zombieSystem.unsafeReason() });
-    expect(rest.start('rest')).toBeUndefined();
+    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 100; i++) {
       rest.frame(1 / 60);
     }
@@ -233,7 +318,7 @@ describe('long-action interruptions', () => {
 
   it('stops resting at most one step after you take damage', () => {
     const { sim, rest } = makeRest();
-    expect(rest.start('rest')).toBeUndefined();
+    expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
       rest.frame(1 / 60);
     }
@@ -247,7 +332,7 @@ describe('long-action interruptions', () => {
   it('stops resting at most one grown needs step after a need turns critical', () => {
     const { sim, rest } = makeRest();
     sim.needs.hydration = 10.05; // just above "You're parched"
-    expect(rest.start('sleep')).toBeUndefined();
+    expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
     const expectedAt = sim.time + HOUR * (0.05 / 5); // hydration falls 5%/h; 0.05% left to the threshold
     for (let i = 0; i < 20_000 && sim.compression.interruption === undefined; i++) {
       rest.frame(1 / 60);

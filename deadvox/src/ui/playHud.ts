@@ -119,6 +119,8 @@ export interface InteractionHint {
   readonly open: boolean;
   readonly container: boolean;
   readonly readable: boolean;
+  readonly restAction: 'rest' | 'sleep' | undefined;
+  readonly interactLabel: string;
   readonly searched: boolean;
   readonly name: string;
   readonly fullName: string;
@@ -132,18 +134,23 @@ export const playInteractionText = ({
   lock,
   container,
   readable,
+  restAction,
+  interactLabel,
   searched,
   name,
   fullName,
 }: InteractionHint): string => {
   if (door) {
-    return `F: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+    return `${interactLabel}: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
   }
   if (readable) {
-    return `F: read the ${name}`;
+    return `${interactLabel}: read the ${name}`;
+  }
+  if (restAction) {
+    return `${interactLabel}: ${restAction === 'sleep' ? 'Sleep' : 'Rest'} on the ${name}`;
   }
   if (container) {
-    return `F: ${searched ? 'look in' : 'search'} the ${name}`;
+    return `${interactLabel}: ${searched ? 'look in' : 'search'} the ${name}`;
   }
   return fullName;
 };

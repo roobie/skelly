@@ -353,10 +353,4 @@ export class BlockEntities {
     });
     return Math.hypot(...d);
   }
-
-  bedNear(point: Vec3, radius: number): BlockEntity | undefined {
-    return [...this.byAnchor.values()]
-      .filter((e) => this.defOf(e).bed !== undefined && this.distance(e, point) <= radius)
-      .sort((a, b) => this.distance(a, point) - this.distance(b, point))[0];
-  }
 }
