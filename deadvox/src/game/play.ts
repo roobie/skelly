@@ -1050,8 +1050,18 @@ export const startPlay = (
       showRefusal(reason, sim.time);
     }
   };
+  const refusePrimaryUseWhileHandling = (): boolean => {
+    if (!(queue.busy || firearms.busy)) {
+      return false;
+    }
+    showRefusal('Already handling something', sim.time);
+    return true;
+  };
 
   performHandUse = (hand: 'right' | 'left') => {
+    if (refusePrimaryUseWhileHandling()) {
+      return;
+    }
     const action = selectPrimaryAction(inventory, hand);
     switch (action.kind) {
       case 'unpack':
@@ -1111,6 +1121,9 @@ export const startPlay = (
       return;
     }
     if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
+      return;
+    }
+    if (refusePrimaryUseWhileHandling()) {
       return;
     }
     // Instant off-hand use shares Survival's owner with a quickbar second press.
