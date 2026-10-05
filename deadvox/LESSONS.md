@@ -9,7 +9,7 @@ read_if:
 
 ## Gate actions when the input edge is captured (2026-10-04)
 
-**What happened.** `Input` latched a primary click on canvas `mousedown`, but build-mode exclusion was checked only when the later fixed-step player tick consumed it. If B toggled build mode off first, an editor click could start melee and spend stamina; the next click could then be rejected as busy. That mechanism is consistent with the positive-control failure on PR #223 (run 37234915439), but the CI trace did not capture the prior input/tick order, so attribution remains open in #224.
+**What happened.** `Input` latched a primary click on canvas `mousedown`, but build-mode exclusion was checked only when the later fixed-step player tick consumed it. If B toggled build mode off first, an editor click could start melee and spend stamina; the next click could then be rejected as busy. That mechanism is consistent with the positive-control failure on PR #223 (run 37234915439), though the CI trace did not capture the prior input/tick order. The separate first-load and Firefox OPFS failures remain under investigation in #224.
 
 **What to do.** Apply mode-specific suppression at the input edge, using the mode at `mousedown`; keep the tick-time guard as defense in depth. A rendering frame is not proof that the fixed-step simulation consumed a latched input.
 
@@ -19,6 +19,14 @@ What we learned the hard way, and what to understand before troubleshooting the 
 area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the problems
 ahead; lessons are what past problems taught us. Newest first. Each entry says what
 happened, why, and what to do differently.
+
+## Browser stages assert app readiness, not full-resource load (#224)
+
+**What happened.** `melee-build-click` waited for Playwright's default `load` event before checking the app's `#go` readiness. `deadvox/index.html` also loads optional analytics from an external origin, so that unrelated request can delay the event. The #224 failure had no request trace, so the exact stalled resource is unknown.
+
+**What to do.** Use `DOMContentLoaded` and the app-specific readiness check in `test/browser/melee-build-click.mjs`; don't make the input contract wait for optional third-party resources. Keep the stage quarantined if its app readiness or input assertions fail.
+
+**Proof.** The stage passed locally after changing `page.goto` to wait for `DOMContentLoaded` while retaining the explicit `#go` readiness check. #224's historical trace still does not identify which resource delayed `load`.
 
 ## Isolate browser-test profiles from the desktop keyring (2026-10-03)
 

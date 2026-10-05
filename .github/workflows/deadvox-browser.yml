@@ -36,7 +36,10 @@ jobs:
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
         timeout-minutes: 9
         run: node tools/ui-browser-contract.mjs
-      # Melee/build-click stays quarantined under #224; no shard silently reinstates it.
+      - name: Melee/build-click browser contract
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
+        timeout-minutes: 2
+        run: node test/browser/melee-build-click.mjs
       - name: Primary-action browser contract
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'input' }}
         timeout-minutes: 2
@@ -96,7 +99,7 @@ jobs:
       - name: Install headed Firefox and system dependencies
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         run: npx playwright install --with-deps firefox
-      # Native first-click #168, OPFS #224 and Continue #170 remain quarantined.
+      # Native first-click #168, Firefox OPFS #224 and Continue #170 remain quarantined.
       - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 2
