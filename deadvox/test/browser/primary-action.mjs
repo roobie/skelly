@@ -545,17 +545,25 @@ try {
   });
   // The test-house fixture admits reading through ordinary safety, not an unsafe override.
   await page.mouse.click(640, 450);
-  await page.waitForFunction((uid) => {
-    const { job } = globalThis.primaryActionTest.session.sim.actions;
-    return job?.jobType === 'reading' && !job.stopped && job.bookUid === uid;
-  }, bookUid);
+  await page.waitForFunction(
+    (uid) => {
+      const { job } = globalThis.primaryActionTest.session.sim.actions;
+      return job?.jobType === 'reading' && !job.stopped && job.bookUid === uid;
+    },
+    bookUid,
+    { timeout: 10_000 },
+  );
   // The reading card owns keyboard input until it is closed.
   await page.keyboard.press('Escape');
   await page.keyboard.press('KeyX');
-  await page.waitForFunction(() => {
-    const { sim } = globalThis.primaryActionTest.session;
-    return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped && !sim.ignoreUnsafe;
-  });
+  await page.waitForFunction(
+    () => {
+      const { sim } = globalThis.primaryActionTest.session;
+      return sim.actions.job?.jobType === 'reading' && sim.actions.job.stopped && !sim.ignoreUnsafe;
+    },
+    undefined,
+    { timeout: 10_000 },
+  );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
     'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, inventory cock, quickbar hold and held-book reading.\n',
