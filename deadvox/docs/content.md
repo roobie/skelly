@@ -1,3 +1,9 @@
+---
+read_if:
+  - you change content schemas, recipe or workstation data
+  - you change content reference or static reachability validation
+---
+
 # Content sections and recipes
 
 The single section descriptor in `src/core/schema.ts` owns native Valibot schemas,
@@ -22,12 +28,14 @@ Skill requirements are nonnegative whole levels; quality requirements are levels
 uses exact integer multiplication and reports the count when refusing a file.
 
 - `skills` definitions contain only an id and name; character state is 2.5.
-- Quality IDs are keys declared by loaded items' `tool.qualities`, including mod
-  keys, not a new top-level section. A missing declaration is an error. Whether
-  a reachable item supplies it is the separate 2.3 acceptance check.
-- Workstation IDs are minimal `workstation: { id }` metadata on furniture. Plain
-  furniture IDs are not workstation IDs. Qualities/speed/reach behavior and the
-  placed workbench come in 2.8; there is no workstation registry or runtime here.
+- Quality IDs are keys declared by loaded items' `tool.qualities` (including
+  mod keys) or furniture `workstation.qualities`, not a new top-level section.
+  A missing declaration is an error. Whether a reachable item or placed
+  workstation supplies the quality is the separate 2.3 acceptance check.
+- Furniture workstation metadata owns its station ID, qualities, and work-time
+  bonus. Plain furniture IDs are not workstation IDs. `reach()` in
+  `src/core/reach.ts` exposes nearby stations, and `planCraft()` in
+  `src/core/crafting.ts` uses their qualities and bonus for a named station.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
@@ -67,21 +75,17 @@ Knowledge is now a hard source check: both closures use the same explicit
 starting recipes as a new character. An unknown recipe fails at `.knowledge`,
 and its result cannot ground another recipe's components or tool quality.
 Teaching books extend this source in 2.5; declaration alone is not knowledge.
-Positive skill requirements and named-but-unplaced workstations still emit
-`pending: no source yet` with their owning milestone and pending count. They
-**are not accepted**, but do not fail CI yet. Level 0 needs no progression source.
-Placed workstation declarations are discoverable; bench behavior stays 2.8.
-`PENDING_REACHABILITY` pins only the remaining 2.5/2.8 hand-offs.
+Positive skill requirements still emit `pending: no source yet` for their
+owning milestone; level zero needs no progression source. A recipe naming a
+workstation now requires that station to occur in a placed hamlet template, and
+placed station qualities can ground recipe tool-quality requirements. The
+workstation hand-off is owned by `checkReachability()` in
+`src/core/reachability.ts`; only the remaining skill hand-off stays pending.
 
-Current base: 33 found types, 36 in the component closure; 36 reachable / 40
-defined eligible content types. The explicit `CONTENT_COUNT_EXCLUSIONS` policy
-leaves out the current debug-only items, spent case, and severed body-part items;
-extend this set when new excluded definitions land. `work_in_progress` is also
-excluded: it is runtime escrow, not acquired loot or a recipe result. Defined eligible but
-unreachable: baseball_bat, fanny_pack, hiking_backpack, utility_vest (2.11 owns
-these gaps). Stick and wax each have one weight-1 entry in `junk`, used by placed
-crates and nested `shed_tools`; no other material/loot growth is included.
-The count does not imply full acceptance of the remaining positive-skill prerequisite.
-Reachability issues use the winning recipe's existing merge origin, preserving
-source file and index through ordered overrides/removal. Reachability stores no
-closure/state; runtime progression and crafting are separate 2.4 owners.
+`npm run validate` reports the current component and tool closures and content
+count. `CONTENT_COUNT_EXCLUSIONS` in `src/core/reachability.ts` owns the count
+policy; keep changing base-content counts and ids out of this document.
+`work_in_progress` is excluded because it is runtime escrow, not acquired loot or
+a recipe result. Reachability issues use the winning recipe's merge origin,
+preserving source file and index through ordered overrides/removal. Reachability
+stores no closure/state; runtime progression and crafting remain separate owners.
