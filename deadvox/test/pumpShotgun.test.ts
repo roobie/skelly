@@ -402,7 +402,8 @@ describe('real pump ammunition', () => {
     f.finish(1e-6, 3 + at);
     const expected = heldEjectionPose({
       model,
-      hold: 'both',
+      side: 'right',
+      twoHanded: true,
       eye: pose.eye.map((v) => v * pose.blockSize) as Vec3,
       yaw: pose.yaw,
       pitch: pose.pitch,

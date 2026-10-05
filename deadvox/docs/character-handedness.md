@@ -2,6 +2,7 @@
 read_if:
   - changing character creation, restoration or dominant-hand policies
   - changing inventory work admission or physical hand slots
+  - changing held-item placement or gameplay ejection
 ---
 
 # Character handedness
@@ -37,3 +38,12 @@ A fresh player's fist sequence starts with the dominant arm, then alternates
 physical arms. `src/core/playerCombat.ts`, `PlayerCombat.restoreState`, retains the
 saved next arm rather than reseeding it from character identity: otherwise a
 Continue could repeat the arm that just attacked. NPC anatomy is independent.
+
+Spatial placement follows the occupied physical slot, not actor preference. See
+`src/core/heldPose.ts`, `heldGripOffset`, and `src/game/firearmHandling.ts`,
+`FirearmMechanics`. A two-handed grip still needs its leading slot: erasing that
+slot would place every such item on the same side. Rendering shares the grip
+contract through `src/render/hands.ts`, `HeldItems`; support placement preserves
+the authored firearm frame. Only placement is mirrored. Keeping model transforms,
+anchors and authored ejection directions unchanged preserves the firearm's actual
+mechanical side rather than manufacturing a mirrored weapon.

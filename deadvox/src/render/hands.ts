@@ -24,7 +24,7 @@ import {
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
-import { HOLD, heldAnchorOffset, modelToView } from '../core/heldPose.ts';
+import { HOLD, heldAnchorOffset, heldGripOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -493,7 +493,9 @@ export class HeldItems {
     const def = defOf(this.inventory.registry, item.type);
     // A permanently raised inspection pose keeps this small display legible without a new input route.
     const heldAt: Vec3 =
-      item.type === 'compass' ? [side === 'right' ? 0.14 : -0.14, -0.13, -0.3] : HOLD[def.twoHanded ? 'both' : side];
+      item.type === 'compass'
+        ? [side === 'right' ? 0.14 : -0.14, -0.13, -0.3]
+        : heldGripOffset(side, Boolean(def.twoHanded));
     const held = new Group();
     held.position.set(...heldAt);
     held.add(this.shape(item));
