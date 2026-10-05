@@ -29,7 +29,11 @@ export const skillEffectLevel = (level: number): number => Math.min(level, SKILL
 
 /** Practice required for the next level grows with the level already reached. */
 export const practiceForNextLevel = (level: number): number =>
-  level === SKILL_LEVEL_MAX ? LEGENDARY_LEVEL_PRACTICE : 10 * (level + 1);
+  level === SKILL_LEVEL_LEGENDARY
+    ? Number.POSITIVE_INFINITY
+    : level === SKILL_LEVEL_MAX
+      ? LEGENDARY_LEVEL_PRACTICE
+      : 10 * (level + 1);
 
 const validSkillPractice = (level: number, practice: number | undefined): practice is number =>
   practice !== undefined &&

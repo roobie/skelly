@@ -49,10 +49,11 @@ it('reaches legendary when its practice threshold is met', () => {
 it('stops accumulating practice at legendary', () => {
   const character = makeCharacter();
   trainToLegendary(character);
-  character.awardPractice('fixture_skill', 1);
+  character.awardPractice('fixture_skill', practiceForNextLevel(SKILL_LEVEL_MAX));
 
   expect(character.skills.fixture_skill).toBe(SKILL_LEVEL_LEGENDARY);
   expect(character.practice.fixture_skill).toBe(0);
+  expect(practiceForNextLevel(SKILL_LEVEL_LEGENDARY)).toBe(Infinity);
 });
 
 it('maps legendary skill to ordinary-top effect level', () => {
