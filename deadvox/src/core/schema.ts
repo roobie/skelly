@@ -28,6 +28,7 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
@@ -41,6 +42,12 @@ const Color = pipe(string(), regex(/^#[0-9a-fA-F]{6}$/, 'expected "#rrggbb"'));
 const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
 const Positive = pipe(number(), minValue(Number.MIN_VALUE, 'must be more than 0'));
 const Count = pipe(number(), integer('must be a whole number'), minValue(0, 'must be 0 or more'));
+const SkillLevel = pipe(
+  number(),
+  integer('must be a whole number'),
+  minValue(SKILL_LEVEL_MIN, `must be at least ${SKILL_LEVEL_MIN}`),
+  maxValue(SKILL_LEVEL_MAX, `must be at most ${SKILL_LEVEL_MAX}`),
+);
 const Fraction = pipe(number(), minValue(0, 'must be 0 to 1'), maxValue(1, 'must be 0 to 1'));
 const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 
@@ -248,7 +255,8 @@ const ItemCountSchema = strictObject({ item: Id, count: pipe(Count, minValue(1, 
 const YieldRounding = picklist(['floor', 'round', 'ceil']);
 const SkillFractions = pipe(
   array(Fraction),
-  minLength(2, 'needs a skill-0 and top-skill fraction'),
+  minLength(2, `needs a skill-${SKILL_LEVEL_MIN} and top-skill fraction`),
+  maxLength(SKILL_LEVEL_MAX - SKILL_LEVEL_MIN + 1, 'extends beyond the maximum skill level'),
   check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
   check((fractions) => fractions.at(-1)! > fractions[0]!, 'must increase with skill'),
 );
@@ -767,7 +775,7 @@ export const RecipeSchema = strictObject({
   repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
   /** Game minutes, not simulation seconds. */
   time: Positive,
-  skills: record(Id, Count),
+  skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
   workstation: optional(nullable(Id)),

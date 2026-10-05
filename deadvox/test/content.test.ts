@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
@@ -61,6 +62,59 @@ describe('content', () => {
         data: { items: [{ ...item, firearm: { ...item.firearm, dispersionRadians: 0 } }] },
       }),
     ).toEqual([]);
+  });
+
+  it.each([SKILL_LEVEL_MIN - 1, SKILL_LEVEL_MAX + 1])(
+    'rejects recipe skill level %s outside the character scale',
+    (level) => {
+      const issues = validateContent({
+        source: 'skill-level.json',
+        data: {
+          skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
+          recipes: [
+            {
+              id: 'fixture_recipe',
+              result: { item: 'rag', count: 1 },
+              time: 1,
+              skills: Object.fromEntries([['fixture_skill', level]]),
+              qualities: {},
+              components: [],
+            },
+          ],
+        },
+      });
+      expect(issues.map(({ path }) => path)).toContain('recipes[0].skills.fixture_skill');
+    },
+  );
+
+  it('rejects disassembly fractions that extend beyond the character scale', () => {
+    const issues = validateContent({
+      source: 'skill-fractions.json',
+      data: {
+        items: [
+          {
+            id: 'fixture_tool',
+            name: 'Fixture tool',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            disassembly: {
+              time: 1,
+              skill: 'fixture_skill',
+              yields: [
+                {
+                  item: 'rag',
+                  count: 1,
+                  fractions: Array.from({ length: SKILL_LEVEL_MAX + 2 }, (_, index) => index / (SKILL_LEVEL_MAX + 1)),
+                  rounding: 'floor',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(issues.map(({ path }) => path)).toContain('items[0].disassembly.yields[0].fractions');
   });
 
   it('accepts restable furniture quality and rejects an out-of-range value', () => {
