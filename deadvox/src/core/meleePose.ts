@@ -1,3 +1,4 @@
+import { DEFAULT_HANDED_CHARACTER } from './character.ts';
 import type { Vec3 } from './coords.ts';
 
 export type MeleeProfile = 'blunt' | 'cut' | 'pierce' | 'fists';
@@ -78,10 +79,7 @@ const swingPath = (
 export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, ready: boolean): MeleePoseFrame => {
   const neutral = { right: handPose(), left: handPose() };
   if (ready && elapsed <= 0) {
-    return {
-      right: handPose([0.025, 0.085, 0.015], [0.12, -0.08, -0.04]),
-      left: handPose([-0.025, 0.075, 0.01], [0.1, 0.08, 0.04]),
-    };
+    return readyMeleePose(true, action.hand);
   }
   if (elapsed < 0) {
     return { ...neutral, viewOrientation: { yaw: action.aimYaw, pitch: action.aimPitch } };
@@ -141,13 +139,22 @@ export const meleePoseAndContact = (action: MeleeActionPose, elapsed: number, re
   };
 };
 
-export const readyMeleePose = (ready: boolean): MeleePoseFrame =>
-  ready
-    ? {
-        right: handPose([0.025, 0.085, 0.015], [0.12, -0.08, -0.04]),
-        left: handPose([-0.025, 0.075, 0.01], [0.1, 0.08, 0.04]),
-      }
-    : { right: handPose(), left: handPose() };
+export const readyMeleePose = (
+  ready: boolean,
+  leading: MeleeHand = DEFAULT_HANDED_CHARACTER.handedness,
+): MeleePoseFrame => {
+  if (!ready) {
+    return { right: handPose(), left: handPose() };
+  }
+  const primary = handPose([0.025, 0.085, 0.015], [0.12, -0.08, -0.04]);
+  const support = handPose([-0.025, 0.075, 0.01], [0.1, 0.08, 0.04]);
+  const reflect = (pose: HandPose): HandPose =>
+    handPose(
+      [-pose.offset[0], pose.offset[1], pose.offset[2]],
+      [pose.rotation[0], -pose.rotation[1], -pose.rotation[2]],
+    );
+  return leading === 'right' ? { right: primary, left: support } : { left: reflect(primary), right: reflect(support) };
+};
 
 export const interpolateHandPose = (base: Vec3, pose: HandPose): { offset: Vec3; rotation: Vec3 } => ({
   offset: [base[0] + pose.offset[0], base[1] + pose.offset[1], base[2] + pose.offset[2]],

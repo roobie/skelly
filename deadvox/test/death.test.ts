@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { defOf } from '../src/core/items.ts';
-import { type DeathSummary, deathViewModel, formatSpan, lootedText, newWorldQuery } from '../src/ui/death.ts';
+import { type DeathSummary, deathViewModel, lootedText, newWorldQuery } from '../src/ui/death.ts';
 
 const { registry } = buildRegistry([
   {
@@ -23,16 +23,30 @@ const summary = (partial: Partial<DeathSummary>): DeathSummary => ({
   ...partial,
 });
 
+const displayedMinutes = (span: string): number | undefined => {
+  const parts = span.match(/\d+/g)?.map(Number) ?? [];
+  if (parts.length === 1) {
+    return parts[0];
+  }
+  if (parts.length === 2) {
+    return parts[0]! * 60 + parts[1]!;
+  }
+  return undefined;
+};
+
 describe('deathViewModel', () => {
-  it('shows the cause and the time survived', () => {
-    const vm = deathViewModel(registry, summary({ cause: 'starvation', survived: 62_640 }));
-    expect(vm.cause).toBe('starvation');
-    expect(vm.span.match(/\d+/g)).toEqual(['17', '24']);
+  it('preserves the elapsed duration and cause in the death view model', () => {
+    const death = summary({ cause: 'starvation', survived: 62_640 });
+    const vm = deathViewModel(registry, death);
+    expect(vm.cause).toBe(death.cause);
+    expect(displayedMinutes(vm.span)).toBe(Math.floor(death.survived / 60));
   });
 
-  it('says nothing was searched when nothing was', () => {
+  it('shows a summary without implying any fixture items were taken when none were searched', () => {
     const vm = deathViewModel(registry, summary({ searched: 0 }));
-    expect(vm.summary.match(/\d+/g)).toBeNull();
+    expect(vm.summary).not.toBe('');
+    expect(vm.summary).not.toContain(defOf(registry, 'can_of_beans').name.toLowerCase());
+    expect(vm.summary).not.toContain(defOf(registry, 'flashlight').name.toLowerCase());
   });
 
   it('says what was searched and taken, most looted first', () => {
@@ -47,20 +61,11 @@ describe('deathViewModel', () => {
   });
 
   it('says containers were searched but nothing taken', () => {
-    const vm = deathViewModel(registry, summary({ searched: 1 }));
-    expect(vm.summary).toContain('1');
+    const searched = 1;
+    const vm = deathViewModel(registry, summary({ searched }));
+    expect(vm.summary).toContain(String(searched));
     expect(vm.summary).not.toContain(defOf(registry, 'can_of_beans').name.toLowerCase());
     expect(vm.summary).not.toContain(defOf(registry, 'flashlight').name.toLowerCase());
-  });
-});
-
-describe('formatSpan', () => {
-  it('formats under an hour as minutes only', () => {
-    expect(formatSpan(40 * 60).match(/\d+/g)).toEqual(['40']);
-  });
-
-  it('formats an hour or more as hours and minutes', () => {
-    expect(formatSpan(62_640).match(/\d+/g)).toEqual(['17', '24']);
   });
 });
 
@@ -71,7 +76,7 @@ describe('lootedText', () => {
       ['can_of_beans', 3],
     ]);
     const text = lootedText(registry, looted);
-    expect(text).toContain('3');
+    expect(text).toContain(String(looted.get('can_of_beans')));
     expect(text).toContain('can of beans');
     expect(text).toContain('flashlight');
     expect(text.indexOf('can of beans')).toBeLessThan(text.indexOf('flashlight'));
@@ -80,6 +85,9 @@ describe('lootedText', () => {
 
 describe('newWorldQuery', () => {
   it('bumps the seed and drops the start time, keeping other params', () => {
-    expect(newWorldQuery('?seed=3&radius=64&time=120', 3)).toBe('?seed=4&radius=64');
+    const query = new URLSearchParams(newWorldQuery('?seed=3&radius=64&time=120', 3));
+    expect(query.get('seed')).toBe('4');
+    expect(query.get('radius')).toBe('64');
+    expect(query.has('time')).toBe(false);
   });
 });

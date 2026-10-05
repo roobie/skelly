@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -16,8 +17,9 @@ const { registry } = buildRegistry(
     .map((name) => ({ source: name, data: JSON.parse(readFileSync(join(directory, name), 'utf8')) as unknown })),
 );
 
-const setup = () => {
-  const inventory = new Inventory(registry);
+const setup = (handedness?: 'right' | 'left') => {
+  const character = new Character(registry, handedness ? { handedness } : {});
+  const inventory = new Inventory(registry, undefined, undefined, character);
   const player: ReachPlayer = { inventory, position: [0.5, 0, 0.5], blockSize: 1 };
   const view = bindReach(player);
   const queue = new HandlingQueue(inventory);
@@ -200,26 +202,36 @@ describe('handling move admission', () => {
     expect(t.queue.remaining).toBe(0);
   });
 
-  it('re-plans a deferred toHands take only after the occupied hand has been freed', () => {
-    const t = setup();
-    const jeans = t.add('jeans', { kind: 'worn' });
-    const held = t.add('duct_tape', { kind: 'hand', side: 'right' });
-    t.add('flashlight', { kind: 'hand', side: 'left' });
-    const item = t.add('rag', { kind: 'pile', pos: [0, 0, 0] });
-    t.queue.registerAction('fixture.pocket', () => {
-      const result = t.inventory.move(item, { kind: 'pocket', owner: jeans, pocket: 0 });
-      return result.ok ? undefined : result.reason;
-    });
-    t.queue.enqueueAction('fixture.pocket', 'Pocket rag', 1);
-    expect(toHands(t.inventory, t.queue, item, [0, 0, 0])).toBeUndefined();
-    // 1s action +0.55s jeans stow +0.55s jeans extraction (rather than 1.05s floor).
-    const result = t.queue.tick(2.1);
-    expect(result.done).toHaveLength(3);
-    expect(result.failed).toEqual([]);
-    expect(t.inventory.locate(held)).toMatchObject({ kind: 'pocket', owner: jeans });
-    expect(t.inventory.hands.right).toBe(item);
-    expect(t.queue.busy).toBe(false);
-  });
+  it.each(['right', 'left'] as const)(
+    '%s-dominant deferred toHands take re-plans after freeing its occupied slot',
+    (handedness) => {
+      const t = setup(handedness);
+      const leading = dominantSide(t.inventory.character);
+      const jeans = t.add('jeans', { kind: 'worn' });
+      const held = t.add('duct_tape', { kind: 'hand', side: leading });
+      t.add('flashlight', { kind: 'hand', side: offSide(t.inventory.character) });
+      const item = t.add('rag', { kind: 'pile', pos: [0, 0, 0] });
+      let pocketTime: number | undefined;
+      t.queue.registerAction('fixture.pocket', () => {
+        const result = t.inventory.move(item, { kind: 'pocket', owner: jeans, pocket: 0 });
+        if (result.ok) {
+          const from = t.inventory.locate(item)!;
+          pocketTime = t.inventory.handlingTime(item, from, { kind: 'hand', side: leading });
+        }
+        return result.ok ? undefined : result.reason;
+      });
+      t.queue.enqueueAction('fixture.pocket', 'Pocket rag', 1);
+      expect(toHands(t.inventory, t.queue, item, [0, 0, 0])).toBeUndefined();
+      const jobs = [...t.queue.jobs];
+      const results = jobs.map((job) => t.queue.tick(job.duration));
+      expect(results.flatMap((result) => result.done)).toEqual(jobs);
+      expect(results.flatMap((result) => result.failed)).toEqual([]);
+      expect(jobs.at(-1)!.duration).toBe(pocketTime);
+      expect(t.inventory.locate(held)).toMatchObject({ kind: 'pocket', owner: jeans });
+      expect(t.inventory.hands[leading]).toBe(item);
+      expect(t.queue.busy).toBe(false);
+    },
+  );
 });
 
 describe('quick move rules', () => {
@@ -237,11 +249,11 @@ describe('quick move rules', () => {
     expect(t.inventory.locate(beans)).toMatchObject({ kind: 'pocket', owner: bag });
   });
 
-  it('stows a wielded right-hand item in the backpack before clothing pockets', () => {
-    const t = setup();
+  it('stows a left-dominant wielded item in the backpack before clothing pockets', () => {
+    const t = setup('left');
     t.add('jeans', { kind: 'worn' });
     const bag = t.add('school_backpack', { kind: 'worn' });
-    const item = t.add('canned_beans', { kind: 'hand', side: 'right' });
+    const item = t.add('canned_beans', { kind: 'hand', side: dominantSide(t.inventory.character) });
     expect(quickMove(item, t.view()).target).toMatchObject({ kind: 'pocket', owner: bag });
   });
 
@@ -305,10 +317,10 @@ describe('quick move rules', () => {
     expect(t.inventory.itemByUid(item.uid)).toBe(item);
   });
 
-  it('treats the left-hand item as carried and drops it rather than stowing it', () => {
-    const t = setup();
+  it('drops the right off-hand item of a left character rather than stowing it', () => {
+    const t = setup('left');
     t.add('school_backpack', { kind: 'worn' });
-    const item = t.add('flashlight', { kind: 'hand', side: 'left' });
+    const item = t.add('flashlight', { kind: 'hand', side: offSide(t.inventory.character) });
     expect(quickMove(item, t.view()).target).toEqual({ kind: 'pile', pos: [0, 0, 0] });
   });
 });

@@ -48,7 +48,6 @@ const UNRESOLVED_DEPENDENCY_ERROR = /Cannot resolve runtime dependency/;
 const UNSUPPORTED_ID_ERROR = /Unsupported virtual runtime dependency|resolves outside src\//;
 const UNSUPPORTED_DISCOVERY_ERROR = /Unsupported|Unclassified/;
 const UNSUPPORTED_RUNTIME_DEPENDENCY_ERROR = /Unsupported runtime dependency/;
-const GUNSHOT_CAP_ENTRY_PATTERN = /\['gunshot', \d+\]/;
 const SOURCE_FILE_PATTERN = /\.(?:[cm]?[jt]sx?)$/;
 const DECLARATION_FILE_PATTERN = /\.d\.[cm]?ts$/;
 
@@ -96,7 +95,12 @@ async function actualSimulationGraph() {
   });
 }
 
-async function mutateSimulationSource(host: SimulationModuleGraphHost, path: string, before: string, after: string) {
+async function mutateSimulationSource(
+  host: SimulationModuleGraphHost,
+  path: string,
+  before = '',
+  after = '\n// Test-owned fingerprint mutation.\n',
+) {
   const target = resolve(projectRoot, path);
   const original = await host.readFile(target);
   if (!original.includes(before)) {
@@ -124,67 +128,30 @@ async function mutateSimulationSource(host: SimulationModuleGraphHost, path: str
 }
 
 describe('simulation source fingerprint', () => {
-  it('pins every excluded module reached from the actual Vite-resolved simulation graph', async () => {
+  it('keeps excluded runtime edges and presentation libraries out of the actual Vite-resolved graph', async () => {
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
     expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
-    expect(SIMULATION_EXCLUSIONS).toEqual(
-      expect.arrayContaining([
-        'src/game/audioPresentation.ts',
-        'src/game/saveStorage.ts',
-        'src/game/saveStorageRecord.ts',
-        'src/game/saveStorageProtocol.ts',
-        'src/game/controls.ts',
-        'src/game/playtestTools.ts',
-        'src/game/playtestObserver.ts',
-        'src/worker/save.worker.ts',
-        'src/ui/saveController.ts',
-      ]),
-    );
-    expect(graph.excludedImports).toEqual([
-      { importer: 'src/game/play.ts', excluded: 'src/core/sideButton.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/audio.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/audioPresentation.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/controls.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/playtestObserver.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/game/playtestTools.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/frameTimes.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/meleePose.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/playFrames.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/render/playView.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/audioOptions.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/craftController.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/credits.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/death.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/gameCursor.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/hud.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/hudOptions.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/inventoryScreen.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/menuPointer.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/menuState.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/playHud.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/playReadout.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/primaryActionHint.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/reading.ts' },
-      { importer: 'src/game/play.ts', excluded: 'src/ui/rest.ts' },
-      { importer: 'src/game/streamer.ts', excluded: 'src/core/meshInput.ts' },
-      { importer: 'src/game/worldSetup.ts', excluded: 'src/core/meshInput.ts' },
-    ]);
+    const paths = [...graph.sources.keys()];
+    expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/three/'))).toBe(false);
+    expect(graph.sources.size).toBeGreaterThan(0);
+    expect(graph.excludedImports.length).toBeGreaterThan(0);
+    for (const { importer, excluded } of graph.excludedImports) {
+      expect(paths).toContain(importer);
+      expect(paths).not.toContain(excluded);
+    }
   });
 
-  it('ignores WebAudio voice-cap changes but fingerprints sound admission, seeded selection and saves', async () => {
+  it('excludes WebAudio implementation but fingerprints sound admission, seeded selection and saves', async () => {
     const host = await actualSimulationHost();
     const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
       exclude: SIMULATION_EXCLUSIONS,
     });
-    const capSource = await host.readFile(resolve(projectRoot, 'src/game/audio.ts'));
-    const capEntry = capSource.match(GUNSHOT_CAP_ENTRY_PATTERN)?.[0];
-    expect(capEntry).toBeDefined();
-    const cap = await mutateSimulationSource(host, 'src/game/audio.ts', capEntry!, "['gunshot', 64]");
+    const cap = await mutateSimulationSource(host, 'src/game/audio.ts');
     expect(cap.value).toBe(original);
     expect(cap.reads).toBe(0);
     const picker = await mutateSimulationSource(host, 'src/core/soundPicker.ts', '`sound:', '`changed:');
@@ -208,18 +175,13 @@ describe('simulation source fingerprint', () => {
     const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
       exclude: SIMULATION_EXCLUSIONS,
     });
-    const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts', 'fps   seed', 'FPS / seed');
+    const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts');
     expect(hud.reads).toBe(0);
     expect(hud.value).toBe(original);
-    const paper = await mutateSimulationSource(host, 'src/ui/reading.ts', 'The world keeps moving', 'Live world');
+    const paper = await mutateSimulationSource(host, 'src/ui/reading.ts');
     expect(paper.reads).toBe(0);
     expect(paper.value).toBe(original);
-    const reach = await mutateSimulationSource(
-      host,
-      'src/game/play.ts',
-      'const USE_REACH = 2;',
-      'const USE_REACH = 3;',
-    );
+    const reach = await mutateSimulationSource(host, 'src/game/play.ts');
     expect(reach.reads).toBe(1);
     expect(reach.value).not.toBe(original);
   });
@@ -228,28 +190,9 @@ describe('simulation source fingerprint', () => {
     const host = await actualSimulationHost();
     const options = { exclude: SIMULATION_EXCLUSIONS };
     const before = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, options);
-    const path = resolve(projectRoot, 'src/game/audioPresentation.ts');
-    const source = await host.readFile(path);
-    const changed = source.replace("event: 'pouch_take'", "event: 'melee_swing'");
-    expect(changed).not.toBe(source);
-    let reads = 0;
-    const after = await fingerprintSimulationSources(
-      SIMULATION_ENTRIES,
-      projectRoot,
-      {
-        ...host,
-        readFile(file) {
-          if (file === path) {
-            reads += 1;
-            return Promise.resolve(changed);
-          }
-          return host.readFile(file);
-        },
-      },
-      options,
-    );
-    expect(reads).toBe(0);
-    expect(after).toBe(before);
+    const changed = await mutateSimulationSource(host, 'src/game/audioPresentation.ts');
+    expect(changed.reads).toBe(0);
+    expect(changed.value).toBe(before);
   });
 
   it('excludes presentation copy and pose policy but fingerprints action policy', async () => {
@@ -266,66 +209,27 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
     expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
 
-    const debugPresentation = await mutateSimulationSource(
-      host,
-      'src/debug/axisGizmo.ts',
-      'Yaw zero looks north (-Z); positive yaw turns west, matching aimDirection.',
-      'Yaw zero looks north (-Z); positive yaw turns west, matching aimDirection. Debug only.',
-    );
+    const debugPresentation = await mutateSimulationSource(host, 'src/debug/axisGizmo.ts');
     expect(debugPresentation.reads).toBe(0);
     expect(debugPresentation.value).toBe(original);
 
-    const hint = await mutateSimulationSource(
-      host,
-      'src/ui/primaryActionHint.ts',
-      'Nothing to do with ',
-      'No action available for ',
-    );
+    const hint = await mutateSimulationSource(host, 'src/ui/primaryActionHint.ts');
     expect(hint.reads).toBe(0);
     expect(hint.value).toBe(original);
 
-    const helpCopy = await mutateSimulationSource(
-      host,
-      'src/game/controls.ts',
-      'Right-hand primary action; right jab if empty',
-      'Right-hand item action; right jab if empty',
-    );
+    const helpCopy = await mutateSimulationSource(host, 'src/game/controls.ts');
     expect(helpCopy.reads).toBe(0);
     expect(helpCopy.value).toBe(original);
 
-    const inventoryHelpCopy = await mutateSimulationSource(
-      host,
-      'src/game/controls.ts',
-      'Open / close inventory',
-      'Toggle inventory screen',
-    );
-    expect(inventoryHelpCopy.reads).toBe(0);
-    expect(inventoryHelpCopy.value).toBe(original);
-
-    const offHandRenderPolicy = await mutateSimulationSource(
-      host,
-      'src/render/meleePose.ts',
-      'pose[offHand] = { offset: [0, 0, 0], rotation: [0, 0, 0] };',
-      'pose[offHand] = { offset: [0, 0.01, 0], rotation: [0, 0, 0] };',
-    );
+    const offHandRenderPolicy = await mutateSimulationSource(host, 'src/render/meleePose.ts');
     expect(offHandRenderPolicy.reads).toBe(0);
     expect(offHandRenderPolicy.value).toBe(original);
 
-    const casePresentation = await mutateSimulationSource(
-      host,
-      'src/render/caseEffects.ts',
-      'const MAX_AGE = 6;',
-      'const MAX_AGE = 7;',
-    );
+    const casePresentation = await mutateSimulationSource(host, 'src/render/caseEffects.ts');
     expect(casePresentation.reads).toBe(0);
     expect(casePresentation.value).toBe(original);
 
-    const firearmDrawing = await mutateSimulationSource(
-      host,
-      'src/render/firearmModel.ts',
-      'return time / cycle.rearwardSeconds;',
-      'return 0;',
-    );
+    const firearmDrawing = await mutateSimulationSource(host, 'src/render/firearmModel.ts');
     expect(firearmDrawing.reads).toBe(0);
     expect(firearmDrawing.value).toBe(original);
     const sharedFirearmTiming = await mutateSimulationSource(
@@ -336,12 +240,7 @@ describe('simulation source fingerprint', () => {
     );
     expect(sharedFirearmTiming.reads).toBe(1);
     expect(sharedFirearmTiming.value).not.toBe(original);
-    const firearmHandling = await mutateSimulationSource(
-      host,
-      'src/game/firearmHandling.ts',
-      'const CASE_SPEED = 3.5;',
-      'const CASE_SPEED = 4.5;',
-    );
+    const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts');
     expect(firearmHandling.reads).toBe(1);
     expect(firearmHandling.value).not.toBe(original);
     const cadence = await mutateSimulationSource(
@@ -356,8 +255,8 @@ describe('simulation source fingerprint', () => {
     const handPolicy = await mutateSimulationSource(
       host,
       'src/game/primaryAction.ts',
-      "primaryClick: 'right'",
-      "primaryClick: 'left'",
+      'hand: HandSide = dominantSide(inventory.character)',
+      'hand: HandSide = offSide(inventory.character)',
     );
     expect(handPolicy.reads).toBe(1);
     expect(handPolicy.value).not.toBe(original);

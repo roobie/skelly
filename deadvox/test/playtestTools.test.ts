@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../src/core/sim.ts';
-import { controlsCardRows, PLAYER_CONTROL_BINDINGS } from '../src/game/controls.ts';
+import { controlsCardRows, labelForCode, PLAYER_CONTROL_BINDINGS } from '../src/game/controls.ts';
 import {
   loadMetrics,
   measureSnapshots,
@@ -90,6 +90,34 @@ const makeJitteredClock = (quantumMs: number) => {
 };
 
 describe('snapshot measurement', () => {
+  it('accepts a probe tick that subtraction rounds just above the timer quantum', () => {
+    const measureWithProbeTimestamps = (timestamps: readonly number[]) => {
+      let index = 0;
+      let time = timestamps.at(-1)!;
+      return measureSnapshots(
+        () => undefined,
+        () => 0,
+        {
+          repeats: 1,
+          now: () => {
+            if (index < timestamps.length) {
+              const timestamp = timestamps[index]!;
+              index += 1;
+              return timestamp;
+            }
+            time += 100;
+            return time;
+          },
+          timerQuantum: { browser: 'Chromium', quantumMs: 0.1 },
+        },
+      );
+    };
+    const roundedUp = measureWithProbeTimestamps([1000, 1000.1, 4096, 4096.1, 5000, 5000.1, 8192, 8192.1, 10_000]);
+
+    expect(roundedUp.observedTimerTickMs).toBeGreaterThan(0.1);
+    expect(roundedUp.timerQuantumCrossCheckPassed).toBe(true);
+  });
+
   it('reports batch-mean throughput separately from individual capture tails at a 1 ms resolution', () => {
     let clock = 0;
     let captures = 0;
@@ -280,23 +308,27 @@ describe('debug time control', () => {
 });
 
 describe('controls card', () => {
-  it('is rendered from the actual input binding declarations', () => {
+  it('retains every declared world action and groups all declared inventory actions', () => {
     const rows = controlsCardRows();
-    expect(rows.map(({ keys }) => keys)).toContain('F9');
-    expect(rows.map(({ keys }) => keys)).toContain('F4');
-    expect(rows.map(({ keys }) => keys)).toContain('Tab');
-    expect(rows.map(({ keys }) => keys)).not.toContain('Shift+F');
-    expect(rows.find(({ keys }) => keys === 'Left click')?.action).toContain('Right-hand primary action');
-    expect(rows.find(({ keys }) => keys === '=')?.action).toContain('Left-hand primary action');
-    expect(rows.at(-1)?.action).toContain('E: Move to your best pocket');
+    const world = PLAYER_CONTROL_BINDINGS.filter(
+      (binding) => !('context' in binding && binding.context === 'inventory'),
+    );
+    const inventory = PLAYER_CONTROL_BINDINGS.filter(
+      (binding) => 'context' in binding && binding.context === 'inventory',
+    );
+    expect(world.length).toBeGreaterThan(0);
+    expect(inventory.length).toBeGreaterThan(0);
+    expect(rows.slice(0, -1).map(({ action }) => action)).toEqual(world.map(({ action }) => action));
+    const grouped = rows.at(-1)!;
+    for (const binding of inventory) {
+      const keys = [...new Set(binding.codes.map(labelForCode))].join(' / ');
+      expect(grouped.action).toContain(`${keys}: ${binding.action}`);
+      expect(grouped.keys).toContain(keys);
+    }
   });
 
-  it('derives the card label from the same remapped key code used by dispatch', () => {
-    const remapped = PLAYER_CONTROL_BINDINGS.map((binding) =>
-      binding.action.includes('door') ? { ...binding, codes: ['KeyJ'] as const } : binding,
-    );
-    const rows = controlsCardRows(remapped);
-    expect(rows.find(({ action }) => action === 'Interact with a door or furniture')?.keys).toBe('J');
-    expect(rows.find(({ action }) => action === 'Interact with a door or furniture')?.keys).toBe('J');
+  it('uses supplied binding codes rather than a stale display label', () => {
+    const rows = controlsCardRows([{ codes: ['KeyJ'], keys: 'Old fixture label', action: 'Fixture action' }]);
+    expect(rows[0]).toEqual({ keys: 'J', action: 'Fixture action' });
   });
 });

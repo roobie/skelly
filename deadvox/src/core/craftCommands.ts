@@ -1,5 +1,5 @@
 // Craft intents revalidate live ownership; views never execute a previously displayed plan.
-import type { CraftCharacter } from './character.ts';
+import { type CraftCharacter, dominantSide } from './character.ts';
 import { type CraftPreference, type CraftResult, planCraft } from './crafting.ts';
 import { planDisassembly } from './disassembly.ts';
 import type { HandlingQueue } from './handling.ts';
@@ -50,8 +50,8 @@ export class CraftCommands {
     if (this.sim.actions.rest) {
       return undefined;
     }
-    const { right } = this.inventory.hands;
-    return right?.work ? right.uid : undefined;
+    const held = this.inventory.hands[dominantSide(this.inventory.character)];
+    return held?.work ? held.uid : undefined;
   }
   startReason(): string | undefined {
     if (this.inventory.hands.right || this.inventory.hands.left) {

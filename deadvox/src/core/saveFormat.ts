@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 16;
+export const SAVE_SCHEMA_VERSION = 17;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -213,6 +213,7 @@ const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
 const nonNegative = num({ min: 0 });
 const progression = obj({
+  handedness: enumeration(['right', 'left']),
   skills: record(nonNegativeInt),
   practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),

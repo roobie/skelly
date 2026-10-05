@@ -17,7 +17,7 @@ export const KEY_BINDINGS = {
   mainMenu: { code: 'F9', label: 'F9', virtualKeyCode: 120 },
   performanceOverlay: { code: 'F4', label: 'F4', virtualKeyCode: 115 },
   browserMenuBar: { code: 'F10', label: 'F10', virtualKeyCode: 121 },
-  leftHandAction: { code: 'Equal' },
+  useOff: { code: 'Equal' },
 } as const;
 
 export const CONTROL_CODES = {
@@ -91,18 +91,18 @@ export class Input {
   walking = false;
   menuPointer = false;
   rightMouseHeld = false;
-  private primaryActionPressed = false;
-  private primaryActionDown = false;
-  private leftHandActionPressed = false;
-  private leftHandActionDown = false;
+  private dominantUsePressed = false;
+  private dominantUseDown = false;
+  private offUsePressed = false;
+  private offUseDown = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
-  private readonly primaryActionAllowed: () => boolean;
+  private readonly dominantUseAllowed: () => boolean;
 
-  constructor(target: HTMLElement, primaryActionAllowed: () => boolean = () => true) {
+  constructor(target: HTMLElement, dominantUseAllowed: () => boolean = () => true) {
     this.target = target;
-    this.primaryActionAllowed = primaryActionAllowed;
+    this.dominantUseAllowed = dominantUseAllowed;
     target.addEventListener('mousedown', (event) => {
       const mouse = event as MouseEvent;
       if (mouse.button === 2) {
@@ -110,13 +110,13 @@ export class Input {
       }
       if (
         mouse.button === 0 &&
-        !this.primaryActionDown &&
+        !this.dominantUseDown &&
         this.locked &&
         !this.menuPointer &&
-        this.primaryActionAllowed()
+        this.dominantUseAllowed()
       ) {
-        this.primaryActionPressed = true;
-        this.primaryActionDown = true;
+        this.dominantUsePressed = true;
+        this.dominantUseDown = true;
       }
     });
     globalThis.addEventListener('mouseup', (event) => {
@@ -125,7 +125,7 @@ export class Input {
         this.rightMouseHeld = false;
       }
       if (button === 0) {
-        this.primaryActionDown = false;
+        this.dominantUseDown = false;
       }
     });
     globalThis.addEventListener('keydown', (e) => {
@@ -138,10 +138,10 @@ export class Input {
       if (e.code === CONTROL_CODES.walkToggle && !e.repeat && !this.menuPointer) {
         this.walking = !this.walking;
       }
-      if (e.code === KEY_BINDINGS.leftHandAction.code && !this.leftHandActionDown) {
-        this.leftHandActionDown = true;
+      if (e.code === KEY_BINDINGS.useOff.code && !this.offUseDown) {
+        this.offUseDown = true;
         if (this.locked && !this.menuPointer) {
-          this.leftHandActionPressed = true;
+          this.offUsePressed = true;
         }
       }
       this.held.add(e.code);
@@ -151,18 +151,18 @@ export class Input {
         this.reload.keyUp(e.timeStamp);
       }
       this.held.delete(e.code);
-      if (e.code === KEY_BINDINGS.leftHandAction.code) {
-        this.leftHandActionDown = false;
+      if (e.code === KEY_BINDINGS.useOff.code) {
+        this.offUseDown = false;
       }
     });
     globalThis.addEventListener('blur', () => {
       this.reload.cancel();
       this.held.clear();
       this.rightMouseHeld = false;
-      this.primaryActionDown = false;
-      this.primaryActionPressed = false;
-      this.leftHandActionDown = false;
-      this.leftHandActionPressed = false;
+      this.dominantUseDown = false;
+      this.dominantUsePressed = false;
+      this.offUseDown = false;
+      this.offUsePressed = false;
     });
     document.addEventListener('mousemove', (e) => {
       if (!(this.locked && !this.menuPointer)) {
@@ -213,19 +213,19 @@ export class Input {
       jump: this.held.has(CONTROL_CODES.jump),
       sprint: this.held.has(CONTROL_CODES.sprintLeft) || this.held.has(CONTROL_CODES.sprintRight),
       walk: this.walking,
-      primaryAction: this.primaryActionPressed,
-      primaryActionHeld: this.primaryActionDown,
-      leftHandAction: this.leftHandActionPressed,
+      useDominant: this.dominantUsePressed,
+      useDominantHeld: this.dominantUseDown,
+      useOff: this.offUsePressed,
     };
   }
 
   /** Called once after the player tick samples its intent. */
-  consumePrimaryAction(): void {
-    this.primaryActionPressed = false;
+  consumeDominantUse(): void {
+    this.dominantUsePressed = false;
   }
 
-  /** Called once after the player tick samples the left-hand action. */
-  consumeLeftHandAction(): void {
-    this.leftHandActionPressed = false;
+  /** Called once after the player tick samples the off-hand action. */
+  consumeOffUse(): void {
+    this.offUsePressed = false;
   }
 }
