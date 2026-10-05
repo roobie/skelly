@@ -44,13 +44,6 @@
       "stack": 6
     },
     {
-      "id": "wooden_plank",
-      "name": "Wooden plank",
-      "category": "material",
-      "weight": 500,
-      "size": [2, 4]
-    },
-    {
       "id": "duct_tape",
       "name": "Duct tape",
       "category": "material",
@@ -74,12 +67,66 @@
       "stack": 5
     },
     {
+      "id": "field_manual",
+      "name": "Field Manual: Making Do",
+      "category": "book",
+      "weight": 400,
+      "size": [2, 2],
+      "book": { "title": "Field Manual: Making Do", "recipes": ["strip_wire", "field_patch"], "readingTime": 20 },
+      "readable": {
+        "title": "Field Manual: Making Do",
+        "text": "A pocket guide to salvaging useful material from damaged equipment."
+      }
+    },
+    {
+      "id": "camp_craft_book",
+      "name": "Camp Craft",
+      "category": "book",
+      "weight": 350,
+      "size": [2, 2],
+      "book": { "title": "Camp Craft", "recipes": ["torch", "candle"], "readingTime": 15 },
+      "readable": {
+        "title": "Camp Craft",
+        "text": "Notes on making simple light and shelter from things found nearby."
+      }
+    },
+    {
+      "id": "home_repair_book",
+      "name": "Home Repair Handbook",
+      "category": "book",
+      "weight": 500,
+      "size": [2, 2],
+      "book": { "title": "Home Repair Handbook", "recipes": ["repair_kit"], "readingTime": 25 },
+      "readable": {
+        "title": "Home Repair Handbook",
+        "text": "A practical handbook for keeping tools and household goods working."
+      }
+    },
+    {
+      "id": "workshop_notes",
+      "name": "Workshop Notes",
+      "category": "book",
+      "weight": 300,
+      "size": [2, 2],
+      "book": { "title": "Workshop Notes", "recipes": ["field_patch"], "readingTime": 30 },
+      "readable": { "title": "Workshop Notes", "text": "Handwritten notes on careful repairs and using salvaged wire." }
+    },
+    {
       "id": "paperback",
       "name": "Paperback novel",
       "category": "book",
       "weight": 300,
       "size": [2, 2],
       "description": "Water-stained. Someone underlined things."
+    },
+    {
+      "id": "portable_radio",
+      "name": "Portable radio",
+      "category": "misc",
+      "weight": 600,
+      "size": [2, 2],
+      "description": "A battered handheld radio. Its battery and metal casing can be salvaged.",
+      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "aa_battery", "count": 1 }]
     },
     {
       "id": "spent_case_5_d_56x45",
@@ -89,6 +136,7 @@
       "size": [1, 1],
       "stack": 10000,
       "description": "A spent case from debug firearm handling.",
+      "pileDisplay": "scatter",
       "model": "case_5_d_56x45"
     },
     {
@@ -99,6 +147,7 @@
       "size": [1, 1],
       "stack": 10000,
       "description": "A spent case from debug firearm handling. Gameplay mass estimate: 6 g, not a sourced case mass.",
+      "pileDisplay": "scatter",
       "model": "case_7_d_62x39"
     },
     {
@@ -129,6 +178,7 @@
       "size": [1, 1],
       "stack": 10000,
       "description": "An opened shotshell hull. Fired-hull gameplay mass estimate: 5 g, not a manufacturer specification.",
+      "pileDisplay": "scatter",
       "model": "case_12_h_gauge_h_00_h_buck"
     },
     {

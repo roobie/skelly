@@ -614,8 +614,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
       if (reason) {
         showNotice(`Can't continue: ${reason}`);
       }
-    } else if (rest.action) {
-      const reason = rest.resume();
+    } else if (rest.action || sim.actions.job?.jobType === 'reading') {
+      const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showNotice(`Can't continue: ${reason}`);
       }
@@ -626,7 +626,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
 
   /** Stop the current long action without discarding owned progress. */
   const stopAction = (): void => {
-    if (sim.actions.job?.jobType === 'craft') {
+    if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
       sim.actions.stop();
     } else if (rest.action) {
       rest.stop();
@@ -1017,6 +1017,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
         swing(action.hand);
         return;
       case 'light':
+      case 'read':
         noticeReason(survival.use(action.item));
         return;
       case 'firearm': {

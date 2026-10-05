@@ -5,7 +5,7 @@ import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from
 import { Inventory } from '../src/core/inventory.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
 import { checkReachability } from '../src/core/reachability.ts';
-import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile } from '../src/core/schema.ts';
+import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type ItemDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 
@@ -23,6 +23,43 @@ describe('content', () => {
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
     }
+  });
+
+  it('validates tool-quality references in disassembly yield modifiers', () => {
+    const files = structuredClone(base);
+    const recipes = files.find(({ source }) => source === 'recipes.json')!.data as ContentFile;
+    const torchIndex = recipes.items!.findIndex(({ id }) => id === 'torch');
+    const torch = recipes.items![torchIndex] as ItemDef;
+    torch.disassembly!.yields[0]!.toolModifier = { quality: 'unknown_quality', bonusByLevel: [0.1] };
+    const { issues } = buildRegistry(files);
+    expect(issues).toContainEqual({
+      source: 'recipes.json',
+      path: `items[${torchIndex}].disassembly.yields[0].toolModifier.quality`,
+      message: 'no tool quality "unknown_quality"',
+    });
+  });
+
+  it('rejects books that teach a recipe absent from the merged registry', () => {
+    const source = 'book-reference-fixture.json';
+    const data: ContentFile = {
+      items: [
+        {
+          id: 'book_reference_fixture',
+          name: 'Fixture manual',
+          category: 'book',
+          weight: 1,
+          size: [1, 1],
+          book: { title: 'Fixture manual', recipes: ['missing_recipe'], readingTime: 1 },
+        },
+      ],
+    };
+    const result = buildRegistry([...base, { source, data }]);
+    expect(result.issues).toContainEqual({
+      source,
+      path: 'items[0].book.recipes[0]',
+      message: 'no recipe "missing_recipe"',
+    });
+    expect(result.registry.items.has('book_reference_fixture')).toBe(false);
   });
 
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
@@ -282,6 +319,11 @@ describe('content references', () => {
         weight: 1,
         size: [1, 1],
         tool: { qualities: Object.fromEntries([['custom_shaping', 1]]) },
+        disassembly: {
+          time: 1,
+          skill: 'fixture_skill',
+          yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+        },
       },
     ],
     skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
@@ -305,7 +347,7 @@ describe('content references', () => {
     recipes: [
       {
         id: 'fixture_recipe',
-        result: { item: 'rag', count: 1 },
+        result: { item: 'fixture_tool', count: 1 },
         time: 2,
         skills: Object.fromEntries([['fixture_skill', 0]]),
         qualities: Object.fromEntries([
@@ -364,6 +406,20 @@ describe('content references', () => {
   };
   const withBase = (...extra: { source: string; data: unknown }[]) => buildRegistry([...base, ...extra]);
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
+
+  it('requires an explicit disassembly yield for a recipe result', () => {
+    const missingYield = {
+      ...structuredClone(recipePack),
+      items: [Object.fromEntries(Object.entries(recipePack.items[0]!).filter(([key]) => key !== 'disassembly'))],
+    };
+    const source = 'missing-disassembly.json';
+    const { issues } = withBase({ source, data: missingYield });
+    expect(issues).toContainEqual({
+      source,
+      path: 'items[0].disassembly',
+      message: 'recipe result needs an explicit disassembly yield',
+    });
+  });
 
   it('reports a loot entry for a missing item, and drops the whole file', () => {
     const { registry, issues } = withBase(fixture);
@@ -566,6 +622,19 @@ describe('content', () => {
       0,
       BLOCK_PATTERNS.indexOf('noise'),
     ]);
+  });
+
+  it('rejects held-display capabilities without a renderer', () => {
+    const items = ['watch', 'map'].map((heldDisplay, index) => ({
+      id: `unrendered_display_${index}`,
+      name: 'Unrendered display',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      heldDisplay,
+    }));
+    const issues = validateContent({ source: 'held-display-fixture.json', data: { items } });
+    expect(issues.map(({ path }) => path)).toEqual(['items[0].heldDisplay', 'items[1].heldDisplay']);
   });
 
   it('reports an unknown block pattern like any other content error', () => {

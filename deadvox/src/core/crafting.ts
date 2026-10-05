@@ -3,6 +3,7 @@ import type { BlockEntity } from './blockEntities.ts';
 import type { CraftCharacter } from './character.ts';
 import { CLOCK_RATIO } from './clock.ts';
 import type { RecipeDef } from './content.ts';
+import type { DisassemblyPlan } from './disassembly.ts';
 import type { Location } from './inventory.ts';
 import { type Item, isEmpty } from './items.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
@@ -13,6 +14,7 @@ export interface CraftComponent {
   from: Location;
 }
 export interface CraftPlan {
+  kind: 'craft';
   recipe: string;
   components: CraftComponent[];
   tools: { item: Item; quality: string }[];
@@ -21,6 +23,7 @@ export interface CraftPlan {
   gather: number;
   work: number;
 }
+export type WorkPlan = CraftPlan | DisassemblyPlan;
 export interface CraftMissing {
   reason: string;
   knowledge: boolean;
@@ -278,16 +281,17 @@ const allocateCombination = (
 const craftPlan = (
   recipe: RecipeDef,
   snapshot: ReachSnapshot,
-  allocation: Allocation,
-  tools: CraftPlan['tools'],
+  { allocation, tools, character }: { allocation: Allocation; tools: CraftPlan['tools']; character: CraftCharacter },
 ): CraftPlan => {
   const workstation = recipe.workstation
     ? snapshot.workstations
         .filter((station) => stationMatches(recipe, station))
         .sort((a, b) => b.workTimeBonus - a.workTimeBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
-  const work = recipe.time * 60 * (1 - (workstation?.workTimeBonus ?? 0));
+  const skillLevel = Math.max(0, ...Object.keys(recipe.skills).map((skill) => character.skills[skill] ?? 0));
+  const work = (recipe.time * 60 * (1 - (workstation?.workTimeBonus ?? 0))) / (1 + skillLevel * 0.1);
   return {
+    kind: 'craft',
     recipe: recipe.id,
     ...allocation,
     tools,
@@ -365,7 +369,10 @@ export const planCraft = (
   }
 
   const cache = cachedPlans(snapshot, recipe);
-  const key = JSON.stringify(Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)));
+  const skillKey = Object.keys(recipe.skills)
+    .sort()
+    .map((skill) => [skill, character.skills[skill] ?? 0]);
+  const key = JSON.stringify([Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)), skillKey]);
   const componentReason = componentRefusal(snapshot, status, prefer);
   const cached = cache.get(key);
   if (cached !== undefined) {
@@ -379,7 +386,7 @@ export const planCraft = (
     for (const tools of toolSelections(toolNeeds, index, requirements)) {
       const allocation = allocateCombination(requirements, index, tools);
       if (allocation && (!best || compareAllocation(allocation, best) < 0)) {
-        best = craftPlan(recipe, snapshot, allocation, tools);
+        best = craftPlan(recipe, snapshot, { allocation, tools, character });
       }
     }
   }
