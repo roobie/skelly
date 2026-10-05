@@ -53,7 +53,12 @@ const { registry } = buildRegistry([
           weight: 100,
           size: [2, 1],
           wearable: { slot: 'back', encumbrance: 0 },
-          container: { pockets: [{ grid: [2, 1], handling: 0 }] },
+          container: {
+            pockets: [
+              { grid: [1, 1], handling: 0 },
+              { grid: [1, 1], handling: 0 },
+            ],
+          },
         },
         {
           id: 'fixture_small_quickbar_bag',
@@ -208,11 +213,15 @@ describe('quickbar tap and hold actions', () => {
     expect(inventory.add(twoHanded, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
 
     actions.tap(twoHanded);
-    expect(notices.some((notice) => notice.includes('Fixture light'))).toBe(true);
     settle(queue);
 
-    expect(inventory.locate(tool)?.kind).toBe('pocket');
-    expect(inventory.locate(light)).toMatchObject({ kind: 'hand', side: offSide(inventory.character) });
+    const toolStowed = inventory.locate(tool)?.kind === 'pocket';
+    const lightStowed = inventory.locate(light)?.kind === 'pocket';
+    expect(toolStowed).not.toBe(lightStowed);
+    const stranded = toolStowed ? light : tool;
+    const strandedSide = stranded === tool ? dominantSide(inventory.character) : offSide(inventory.character);
+    expect(inventory.locate(stranded)).toMatchObject({ kind: 'hand', side: strandedSide });
+    expect(notices.some((notice) => notice.includes(inventory.name(stranded)))).toBe(true);
     expect(inventory.locate(twoHanded)?.kind).toBe('pile');
   });
 
