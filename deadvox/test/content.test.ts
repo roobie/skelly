@@ -14,6 +14,7 @@ const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
+const baseRegistry = buildRegistry(base).registry;
 
 describe('content', () => {
   it('base content has no issues', () => {
@@ -144,7 +145,7 @@ describe('content', () => {
   });
 
   it('registers the machete and Kabar as cutting melee tools and makes both findable', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     const machete = registry.items.get('machete')!;
     const kabar = registry.items.get('kabar')!;
     expect(machete).toMatchObject({
@@ -175,7 +176,7 @@ describe('content', () => {
   });
 
   it('keeps player bodily cues out of zombie-hearing noise', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     for (const id of [
       'player_nope',
       'footstep_grass',
@@ -246,7 +247,7 @@ describe('content', () => {
       source: 'mod.json',
       data: { blocks: [{ id: 'grass', name: 'Dead grass', color: '#8a7a40', solid: true }] },
     };
-    const before = buildRegistry(base).registry;
+    const before = baseRegistry;
     const after = buildRegistry([...base, mod]).registry;
     expect(after.blockIds.get('grass')).toBe(before.blockIds.get('grass'));
     expect(after.blocks[after.blockIds.get('grass')!]!.name).toBe('Dead grass');
@@ -337,7 +338,7 @@ describe('content', () => {
   });
 
   it('exposes the debug AR for manual spawning, not loot tables', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     expect(registry.items.get('debug_rifle_assault')).toMatchObject({
       model: 'rifle_assault',
       category: 'weapon',
@@ -351,7 +352,7 @@ describe('content', () => {
   });
 
   it('merges every descriptor section in the base pack, including recipes and skills', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     expect(registry.items.size).toBeGreaterThan(30);
     for (const section of CONTENT_SECTION_KEYS) {
       const count = section === 'blocks' ? registry.blocks.length - 1 : registry[section].size;
@@ -706,7 +707,7 @@ describe('content', () => {
   });
 
   it('gives every base block a known pattern and patterns the stone work', () => {
-    const { registry } = buildRegistry(base);
+    const registry = baseRegistry;
     const patternOf = (id: string) => BLOCK_PATTERNS[blockPatterns(registry)[registry.blockIds.get(id)!]!];
     expect(patternOf('brick')).toBe('brick');
     expect(patternOf('stone')).toBe('rough');
