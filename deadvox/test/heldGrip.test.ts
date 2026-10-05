@@ -27,7 +27,14 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
     throw new Error('Could not place the fixture rifle in its physical slot');
   }
   const effects: FirearmShotEffect[] = [];
-  const pose = { feet: [0, 1, 0], eye: [0, 4, 0], yaw: 0, pitch: 0, blockSize: 0.5 } as const;
+  const pose = {
+    feet: [0, 1, 0],
+    eye: [0, 4, 0],
+    yaw: 0,
+    pitch: 0,
+    aimFrame: { yaw: 0, pitch: 0 },
+    blockSize: 0.5,
+  } as const;
   const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
     blockSize: pose.blockSize,
     pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),

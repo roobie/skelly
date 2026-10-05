@@ -159,23 +159,45 @@ so class 4 is made mechanical:
 - **Review asks one question:** could the player learn this from the world or
   their hands? If yes, the text goes.
 
-## Readying before acting (BR, 2026-09-27)
+## Readying before acting (BR, 2026-09-27; refined by #267)
 
 **Combat is modal, as in DayZ.** Holding a weapon is not the same as being ready
-to use it:
+to use it. BR's 2026-10-05 direction for #267 was:
 
-- **Holding the right mouse button readies:** it raises a melee weapon, or brings
-  a firearm up to fire from the hip. Readying is a stance the body shows (the
-  weapon comes up), not a HUD mode; releasing the button lowers it.
+> "well, at some point, we should make it like dayz in that you don't run around ready to fire by default. Instead it's modal such that gun ready is e.g. press-and-hold rightbutton, and only then can you fire/attack"
+>
+> "and by that, I mean that you never fire while sprinting, but instead when holding right mouse, you 'duck walk' (which also can be a skill-dependent thing in that you duck walk faster with higher skill)"
+
+When #267 lands, firearms fire only while ready and never while sprinting;
+ready movement is a skill-dependent duck walk, a separate gait from C crouch
+and mainly a speed factor. BR described it as an "own gait, but mainly it's
+simply a speed factor" and said its governing skill is "not defined yet -
+maybe a generic 'warfare' skill". Which skill governs duck-walk speed and block
+success is the remaining open point in #267; BR's warfare skill is a lean, not a
+ruling.
+
+- **Right mouse sets the combat stance:** holding it raises a melee weapon into
+  en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
+  also ready a firearm, bringing it up to fire from the hip; releasing it will
+  lower the firearm. When #267 lands, the held firearm pose will show readiness;
+  there will be no HUD indicator. BR described the pose direction on 2026-10-05:
+  "the UI must show unreadied vs readied / unreadied does not have muzzle
+  forward - rather downward". When #267 lands, an unreadied firearm's muzzle
+  points down; readying brings it up and forward.
 - **Aiming down the sights is a toggle within the ready stance,** for firearms
   only: while right-click is held, a middle click or Shift switches between hip
   and sights (the view narrows through the sights). Input interpretation belongs
   to `src/game/input.ts`, `Input`, rather than a parallel interface map.
-- **Ready is slow.** While ready you don't jog or sprint; the top speed is a
-  hurried march, faster than a walk and slower than a jog. That is deliberate:
-  readiness trades mobility for being able to fight.
-- **Blocking is a ready-only move:** holding right-click and backing off (S)
-  blocks incoming melee. Unreadied, S is only a step back.
+- **Melee also requires readiness:** BR said, "yeah, melee needs 'en-garde' on
+  right-mouse-hold, which also enables blocking incoming melee (based on skill)".
+  When #267 lands, an unready left-click does not swing.
+- **Blocking:** When #267 lands, holding right mouse and S blocks incoming
+  melee; en-garde alone does not, and whether the block succeeds depends on
+  the skill still open in #267. BR answered #267's question 1a on 2026-10-05: "1a. yes S is required
+  to actually block from en-garde".
+- **Unready firearm left-click is an exception to refusal:** BR's answer for an
+  unreadied firearm was "nothing". When #267 lands, it produces no shot and no
+  nope sound; this deliberate no-op does not use the ordinary refusal cue.
 - **Hand activation follows actor roles (BR, 2026-10-04):** dominance is
   identity, not a remapping of physical inventory slots. A held item cannot
   become an unarmed attack, and a two-handed hold's support must not activate
@@ -185,8 +207,8 @@ to use it:
   identity rather than consulting creation preferences. See
   `docs/character-handedness.md` for the accepted-launch and physical-pose
   boundaries.
-- Lowered, a held item may block part of the view (as held models do today);
-  readying is what brings it to where it's used.
+- Lowered, a held item may block part of the view (as held models do today).
+  When #267 lands, readying a firearm brings its held pose forward.
 
 ## Development and playtest
 

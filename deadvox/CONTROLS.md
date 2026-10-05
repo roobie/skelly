@@ -24,11 +24,21 @@ acting").
 
 ## What's already ruled
 
-- **Ready before acting (BR, 2026-09-27):** holding the right mouse button
-  readies a weapon; firearms shoot only while ready. A middle click or Shift
-  toggles hip and sights while a firearm is ready; ready caps speed at a hurried
-  march; right mouse plus S blocks melee. The current melee action remains the
-  d7 left-click swing.
+- **Ready before acting (BR, 2026-09-27; direction for #267, 2026-10-05):**
+  holding right mouse puts melee en-garde. When #267 lands, holding right
+  mouse readies a firearm, and firearms fire only while ready and never while
+  sprinting. When #267 lands, ready movement is a separate duck-walk gait, not
+  crouch, and mainly a speed factor. BR said its speed "can be a skill-dependent thing" and
+  called it an "own gait, but mainly it's simply a speed factor"; which skill
+  applies remains open in #267, with a generic "warfare" skill only a lean. BR
+  also said, "yeah, melee needs 'en-garde' on right-mouse-hold, which also
+  enables blocking incoming melee (based on skill)". When #267 lands, holding
+  right mouse and S blocks incoming melee; whether the block succeeds depends
+  on skill. BR said, "1a. yes S is required to actually block from en-garde".
+  When #267 lands, an unreadied firearm's left-click does
+  "nothing": no shot and no nope sound. When #267 lands, the held firearm pose
+  shows ready state, not a HUD indicator. Middle click or Shift toggles hip and
+  sights while a firearm is ready.
 - **F interacts; Q and E are reserved (BR, 2026-09-27).**
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
@@ -160,10 +170,10 @@ below). Implemented hand activation is not duplicated in this proposal; see
 
 | Input | Unready | Weapon ready | Menu open | During a long action | Interruption shown |
 | --- | --- | --- | --- | --- | --- |
-| W A S D | move | move, capped at a hurried march; S backs off (block with right mouse) | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
+| W A S D | move | move in the ready-only duck-walk speed factor, not sprint or crouch; S plus en-garde (right mouse) blocks with skill-based success | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
 | Mouse | look | aim | drawn cursor | look | look |
-| Left click, hold | proposed long use of the dominant-hand item (d44); releasing early cancels, nothing applied | — | drag | keep holding | — |
-| Right mouse, hold | ready the main-hand weapon; with nothing to ready, nothing | stays ready | — | — | — |
+| Left click, hold | unreadied firearm: nothing, no shot or nope; melee: no swing until en-garde; other held item: proposed long use (d44) | ready firearm: fire; en-garde melee: swing | drag | keep holding | — |
+| Right mouse, hold | melee: enter en-garde; when #267 lands, also ready a firearm | hold stance; when #267 lands, ready movement uses duck-walk speed and cannot sprint; held pose, not HUD | — | — | — |
 | Middle click | — | toggle hip / sights | — | — | — |
 | Shift | sprint | toggle hip / sights | — | — | — |
 | Space | jump | jump | — | — | — |

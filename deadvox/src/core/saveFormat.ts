@@ -1,3 +1,4 @@
+import { type AimState, assertAimState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
@@ -113,6 +114,7 @@ interface WirePayload {
     id: string;
     simulation: Omit<SaveSnapshot['character']['simulation'], 'seed' | 'clock'>;
     player: SaveSnapshot['character']['player'];
+    aim: AimState;
     inventory: Omit<InventoryState, 'piles' | 'entities'>;
     progression: SaveSnapshot['character']['progression'];
     longAction: SaveSnapshot['character']['longAction'];
@@ -135,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 19;
+export const SAVE_SCHEMA_VERSION = 20;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -286,6 +288,7 @@ itemSchema = obj({
           mode: enumeration(['fire', 'hand']),
           startedAt: nonNegative,
           elapsed: nonNegative,
+          duration: opt(positive),
           ejected: bool,
           feedRound: bool,
           forwardSounded: opt(bool),
@@ -497,6 +500,17 @@ const playerCombat = obj({
   meleeAction,
   nextFistHand: enumeration(['right', 'left']),
 });
+const aim = obj({
+  gaitPhase: finite,
+  lookYaw: finite,
+  lookPitch: finite,
+  recoilYaw: finite,
+  recoilPitch: finite,
+  lastYaw: finite,
+  lastPitch: finite,
+  hasLookSample: bool,
+  frame: obj({ yaw: finite, pitch: finite }),
+});
 const playerStateInventory = obj({
   ...inventoryCore.fields,
 });
@@ -549,6 +563,7 @@ const wirePayloadSchema = obj({
     progression,
     simulation: simulationWithoutWorldIdentity,
     player,
+    aim,
     inventory: playerStateInventory,
     longAction,
     playerCombat,
@@ -877,6 +892,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         ...(snapshot.character.simulation.dead === undefined ? {} : { dead: snapshot.character.simulation.dead }),
       },
       player: snapshot.character.player,
+      aim: snapshot.character.aim,
       inventory: {
         nextItemUid: savedInventory.nextItemUid,
         hands: savedInventory.hands,
@@ -1273,6 +1289,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         progression,
         simulation,
         player: playerState,
+        aim,
         inventory,
         longAction,
         playerCombat,
@@ -1285,6 +1302,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     snapshot,
     'snapshot',
   );
+  assertAimState(snapshot.character.aim);
   validateActionReferences(snapshot);
   const blockEntities = snapshot.character.inventory.entities;
   if (blockEntities.nextUid <= Math.max(0, ...blockEntities.entities.map(({ uid }) => uid))) {

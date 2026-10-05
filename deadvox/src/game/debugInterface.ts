@@ -1,3 +1,4 @@
+import type { Character } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
@@ -19,6 +20,7 @@ export interface DebugHooks {
   readonly flashlight: { strength: number };
   readonly body: Body;
   readonly inventory: Inventory;
+  readonly character: Character;
   readonly newGame: boolean;
   readonly sim: Simulation;
   /** Debug tools may set the look direction (`?cam=` restore, debug/camUrl.ts). */

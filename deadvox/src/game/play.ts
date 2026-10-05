@@ -3,6 +3,7 @@
 // queue; Esc pauses it. When health runs out, the death screen offers a new world.
 
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
+import { aimDirection, NEUTRAL_AIM } from '../core/aim.ts';
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
@@ -55,7 +56,6 @@ import { primaryActionHint } from '../ui/primaryActionHint.ts';
 import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
-import { aimDirection } from './aim.ts';
 import { GameAudio } from './audio.ts';
 import {
   createRefusalPresenter,
@@ -105,6 +105,19 @@ const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
 
+const createPlayRefusalPresenter = (
+  registry: Engine['registry'],
+  audio: GameAudio,
+  showNotice: (text: string) => void,
+) => {
+  const nope = registry.sounds.get('player_nope');
+  return createRefusalPresenter(
+    showNotice,
+    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
+    nope?.minIntervalSeconds ?? 0,
+  );
+};
+
 export interface StartPlayOptions {
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
@@ -153,7 +166,7 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   const session = createSession({
     registry,
-    handedness: options.handedness,
+    handedness: config.debugHandedness ?? options.handedness,
     world: engine.world,
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
@@ -248,6 +261,7 @@ export const startPlay = (
     entities,
     queue,
     firearms,
+    aim,
     quickbar,
     survival,
     rest,
@@ -333,12 +347,7 @@ export const startPlay = (
     notice = text;
     noticeUntil = performance.now() + 3000;
   };
-  const nope = registry.sounds.get('player_nope');
-  const showRefusal = createRefusalPresenter(
-    showNotice,
-    () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
-    nope?.minIntervalSeconds ?? 0,
-  );
+  const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
   const toggleRest = (kind: RestKind, entity: BlockEntity): void => {
     const already = rest.action?.kind === kind && rest.action.furnitureUid === entity.uid;
@@ -475,6 +484,7 @@ export const startPlay = (
     flashlight,
     body,
     inventory,
+    character: session.character,
     newGame: options.restore === undefined,
     sim,
     input,
@@ -867,7 +877,7 @@ export const startPlay = (
     quickbarInput.keyUp(e.code, e.timeStamp);
   });
 
-  const lookDir = (): Vec3 => aimDirection(input.pitch, input.yaw);
+  const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
@@ -1014,6 +1024,7 @@ export const startPlay = (
 
   const fireDebugWeapon = (item: Item, time: number): boolean => {
     const fired = firearms.fire({
+      aimFrame: aim.frame,
       debugMode: config.debug,
       item,
       feet: feet(),
@@ -1028,7 +1039,6 @@ export const startPlay = (
       return false;
     }
     if (registry.items.get(item.type)?.firearm?.pump) {
-      view.recoil(8);
       return true;
     }
     const shot = firearmShotSound(item.type);
@@ -1286,7 +1296,7 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
-    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), job: queue.jobs[0] });
+    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), aim: aim.frame, job: queue.jobs[0] });
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
@@ -1323,8 +1333,8 @@ export const startPlay = (
     if (!debugTools) {
       return;
     }
-    const aim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
-    debugTools.updateAim(aim);
+    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
+    debugTools.updateAim(zombieAim);
     debugTools.updateLookedAt(eye(), lookDir(), input.locked);
   };
 
