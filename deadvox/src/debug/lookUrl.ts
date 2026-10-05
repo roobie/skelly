@@ -20,7 +20,8 @@
 //   fog=<0..1>                   fogginess in tenths (L /); omitted for 0.2; 0 is clear, 1 thick fog
 //   sunshadow=0                  sun shadows off (0); omitted when on, which is the default
 //   torchshadow=0                flashlight shadows off (Home); omitted when on, which is the default
-//   shadowdist=<16..96>          the sun's shadow distance in metres (PageUp steps 24, 40, 64); omitted for 40
+//   shadowdist=<metres>           sun shadow distance in metres (PageUp steps through `SHADOW_DISTANCES`);
+//                                omitted for the default (`DEFAULT_SHADOWS`)
 //   crackcheck=1                 background drawn magenta, fog on geometry unchanged (End); omitted when off
 //   hotcheck=1                   NaN / negative / over-bright lit fragments painted per material (legend in the panel; PageDown); omitted when off
 //

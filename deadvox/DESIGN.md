@@ -1,5 +1,7 @@
 ---
 read_if:
+  - you decide how sunlight and shadows should read in play
+  - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
   - you change shambler navigation or floor-transition behavior
@@ -823,6 +825,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Entities** are drawn with instanced meshes; zombie limbs are instanced
   boxes.
+- **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
+  is still a little jaggedness. But we won't pursue this more right now, so I'll
+  approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
+  Favor a stable edge near the player over sharp shadows far beyond them; see
+  `src/render/shadows.ts`, `sunShadowTexelSize` and `Shadows.update`.
 
 ## Audio
 
