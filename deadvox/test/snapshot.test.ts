@@ -820,7 +820,7 @@ const prepareAudioContinuation = (runtime: Runtime): void => {
   idle.body.onGround = true;
   idle.mode = 'idle';
   idle.modeTimer = 100;
-  idle.idleSoundTimer = 0.6;
+  idle.idleSoundTimer = 0.02;
   idle.lastVocalNoiseId = runtime.playerAudio.vocalNoiseId;
   runtime.heardSounds.length = 0;
 };
@@ -1018,8 +1018,8 @@ describe('hamlet save/load continuation', () => {
         uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
         split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
       }
-      advance(uninterrupted, 40);
-      advance(split, 40);
+      advance(uninterrupted, 4);
+      advance(split, 4);
       expect(split.player.body.onGround).toBe(false);
       prepareAudioContinuation(uninterrupted);
       prepareAudioContinuation(split);
@@ -1035,10 +1035,10 @@ describe('hamlet save/load continuation', () => {
       expect(snapshot.character.handling.jobs).toEqual([]);
       expect(plainDataTree(snapshot)).toBe(true);
       expect(frozenTree(snapshot)).toBe(true);
-      advance(uninterrupted, 80, interruption ? -1 : 20);
+      advance(uninterrupted, 4, interruption ? -1 : 1);
       const continuedSounds = [...uninterrupted.heardSounds];
       const loaded = createRuntime(snapshot);
-      advance(loaded, 80, interruption ? -1 : 20);
+      advance(loaded, 4, interruption ? -1 : 1);
       expect(loaded.heardSounds).toEqual(continuedSounds);
       expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
       expect(inspect(loaded)).toEqual(inspect(uninterrupted));
@@ -1050,8 +1050,8 @@ describe('hamlet save/load continuation', () => {
     const split = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
     expect(startRest(split, 'sleep')).toBeUndefined();
-    advance(uninterrupted, 40);
-    advance(split, 40);
+    advance(uninterrupted, 2);
+    advance(split, 2);
 
     uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
     split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
@@ -1060,9 +1060,9 @@ describe('hamlet save/load continuation', () => {
     expect(split.sim.compression.active).toBe(true);
     expect(split.sim.compression.interruption).toBeUndefined();
 
-    advance(uninterrupted, 80);
+    advance(uninterrupted, 1);
     const loaded = createRuntime(snapshot);
-    advance(loaded, 80);
+    advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   }, 15_000);
 
@@ -1071,8 +1071,8 @@ describe('hamlet save/load continuation', () => {
     const split = createRuntime(undefined, true);
     expect(startRest(uninterrupted, 'sleep')).toBeUndefined();
     expect(startRest(split, 'sleep')).toBeUndefined();
-    advance(uninterrupted, 40);
-    advance(split, 40);
+    advance(uninterrupted, 2);
+    advance(split, 2);
 
     uninterrupted.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
     split.sim.emit({ kind: 'interrupt', reason: 'test interruption' });
@@ -1081,25 +1081,25 @@ describe('hamlet save/load continuation', () => {
     const snapshot = capture(split);
     expect(snapshot.character.simulation.pendingInterrupt).toBe('test interruption');
 
-    advance(uninterrupted, 80);
+    advance(uninterrupted, 1);
     const loaded = createRuntime(snapshot);
-    advance(loaded, 80);
+    advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
   }, 15_000);
 
   it('detects omission of simulation, world, scheduler, inventory, and audio state', () => {
     const original = createRuntime(undefined, true);
     expect(startRest(original, 'rest')).toBeUndefined();
-    advance(original, 12);
+    advance(original, 2);
     prepareAudioContinuation(original);
     const saved = capture(original);
     const baseline = createRuntime(saved);
-    advance(baseline, 20);
+    advance(baseline, 1);
 
     const noDelta = structuredClone(saved);
     noDelta.world.diffs.chunks[0]!.cells.pop();
     const withoutDelta = createRuntime(noDelta);
-    advance(withoutDelta, 20);
+    advance(withoutDelta, 1);
     expect(inspect(withoutDelta)).not.toEqual(inspect(baseline));
 
     const noAllocator = structuredClone(saved) as import('../src/core/saveState.ts').SaveSnapshot;
@@ -1494,7 +1494,7 @@ describe('canonical save format', () => {
   it('round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes', async () => {
     const source = createRuntime(undefined, true);
     expect(startRest(source, 'rest')).toBeUndefined();
-    advance(source, 17);
+    advance(source, 2);
     prepareAudioContinuation(source);
     const snapshot = capture(source);
     const sourceHash = stateHash(snapshot);
@@ -1516,21 +1516,21 @@ describe('canonical save format', () => {
     expect(decoded.snapshot).toEqual(snapshot);
     const loaded = createRuntime(decoded.snapshot);
     expect(stateHash(decoded.snapshot)).toBe(sourceHash);
-    advance(source, 90);
-    advance(loaded, 90);
+    advance(source, 1);
+    advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(source));
 
     const interrupted = createRuntime(undefined, true);
     expect(startRest(interrupted, 'sleep')).toBeUndefined();
-    advance(interrupted, 40);
+    advance(interrupted, 2);
     interrupted.sim.emit({ kind: 'interrupt', reason: 'format round-trip' });
     const interruptedSnapshot = capture(interrupted);
     expect(interruptedSnapshot.character.simulation.pendingInterrupt).toBe('format round-trip');
     const interruptedBytes = await encodeFixture(interruptedSnapshot);
     const interruptedDecoded = await decodeSave(interruptedBytes, { version: formatVersion, contentLookup });
     const interruptedLoaded = createRuntime(interruptedDecoded.snapshot);
-    advance(interrupted, 80);
-    advance(interruptedLoaded, 80);
+    advance(interrupted, 1);
+    advance(interruptedLoaded, 1);
     expect(inspect(interruptedLoaded)).toEqual(inspect(interrupted));
 
     const reversed = reverseObjectKeys(snapshot) as SaveSnapshot;
