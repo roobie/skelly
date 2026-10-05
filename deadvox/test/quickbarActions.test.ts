@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -31,8 +32,9 @@ const settle = (queue: HandlingQueue) => {
     queue.tick(queue.remaining);
   }
 };
-const runtime = () => {
-  const inventory = new Inventory(registry);
+const runtime = (handedness?: Character['handedness']) => {
+  const character = new Character(registry, { handedness });
+  const inventory = new Inventory(registry, undefined, undefined, character);
   const queue = new HandlingQueue(inventory);
   const notices: string[] = [];
   const simulation = new Simulation({ seed: 1 });
@@ -112,28 +114,30 @@ describe('quickbar tap and hold actions', () => {
     expect(inventory.hands.right).toBe(weapon);
   });
 
-  it('sends tools to the primary hand, lights off hand, and two-handed items to both', () => {
-    const { inventory, queue, actions } = runtime();
+  it.each(['right', 'left'] as const)('routes quickbar capabilities through a %s-dominant actor', (handedness) => {
+    const { inventory, queue, actions } = runtime(handedness);
+    const dominant = dominantSide(inventory.character);
+    const off = offSide(inventory.character);
     const light = inventory.create(definition((def) => Boolean(def.light)).id);
     const { bag, pocket } = carryInBag(inventory, light);
     expect(inventory.add(light, { kind: 'pocket', owner: bag, pocket })).toBe(true);
     actions.tap(light);
     settle(queue);
-    expect(inventory.hands.left).toBe(light);
+    expect(inventory.hands[off]).toBe(light);
 
     const tool = inventory.create(definition((def) => Boolean(def.tool)).id);
     expect(inventory.add(tool, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     actions.tap(tool);
     settle(queue);
-    expect(inventory.hands.right).toBe(tool);
-    expect(inventory.hands.left).toBe(light);
+    expect(inventory.hands[dominant]).toBe(tool);
+    expect(inventory.hands[off]).toBe(light);
 
     const twoHanded = inventory.create(definition((def) => Boolean(def.twoHanded)).id);
     expect(inventory.add(twoHanded, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
     actions.tap(twoHanded);
     settle(queue);
-    expect(inventory.hands.right).toBe(twoHanded);
-    expect(inventory.hands.left).toBeUndefined();
+    expect(inventory.hands[dominant]).toBe(twoHanded);
+    expect(inventory.hands[off]).toBeUndefined();
   });
 
   it('uses the best pocket when the captured spot is occupied', () => {

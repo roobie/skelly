@@ -33,10 +33,9 @@ acting").
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
   flashlight in hands, then left-click to activate (left-click generally means
-  'do the thing with the thing you're holding')." Initial hand mapping (BR,
-  2026-10-01; open to revision): left click selects the right hand, `=` the
-  left. Never punch with a hand holding an item; an empty right hand jabs, and
-  fists alternate only when both hands are empty.
+  'do the thing with the thing you're holding')." Dominance selects the hand
+  role; it does not move an item between physical slots. See "The two hands"
+  for the policy's owners rather than a second binding map.
 - **Long uses could be press-and-hold (BR, 2026-09-28)**, direction rather than a
   ruling: holding left click performs a long use, and releasing it early
   cancels.
@@ -68,8 +67,9 @@ acting").
 - **Hands follow handedness (BR, 2026-10-04):** whether "one's avatar is right-
   or left-handed dominant is a thing we should accomodate. This'd mean that all
   quick actions etc take this into account, and the flip of
-  activate-what's-wielded vs activate-off-hand". d47 builds it. Until then, the
-  map's right-hand and left-hand rows are the right-handed default.
+  activate-what's-wielded vs activate-off-hand". The creation choice belongs to
+  actor identity and Continue restores it; see `docs/character-handedness.md`.
+  Planned controls must use semantic roles rather than physical hand names.
 
 - **R reload only in the default view (BR, 2026-10-04):** with a pump held,
   hold to load loose shells, double-press to rack, and a short single tap does
@@ -135,7 +135,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Use held item: eat, drink, bandage | now (U or quickbar hold) | long |
 | Cancel handling | now | instant |
 | Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
-| Melee strike | now (left click/right hand or `=`/left hand, unreadied) | instant, noise |
+| Melee strike | implemented; see `src/game/primaryAction.ts`, `selectPrimaryAction` | instant, noise |
 | Main menu | now | menu |
 | Ready a weapon, block | Slice 3 (ruled) | stance |
 | Hip / sights toggle, shoot | Slice 3 (ruled) | stance, noise |
@@ -143,23 +143,21 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Crouch | Slice 3 (sight and noise when crouching) | stance |
 | Throw (flare, glowstick, lure) | Slice 3 | instant, noise |
 | Put the held item away (stow) | now (tap its quickbar slot) | handling |
-| Use left-hand primary action | now (`=`, initial BR ruling #27) | instant |
+| Use off-hand primary action | implemented; see `src/game/input.ts`, `KEY_BINDINGS` | instant |
 | Read a book, craft, repair | Slice 2 | long, menu |
 | Lean | reserved (Q, E) | stance |
 
 ## Proposed map
 
 Shipped profile. The development profile adds the debug keys (see "Debug keys"
-below).
+below). Implemented hand activation is not duplicated in this proposal; see
+`src/game/input.ts`, `KEY_BINDINGS`, and "The two hands".
 
 | Input | Unready | Weapon ready | Menu open | During a long action | Interruption shown |
 | --- | --- | --- | --- | --- | --- |
 | W A S D | move | move, capped at a hurried march; S backs off (block with right mouse) | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
 | Mouse | look | aim | drawn cursor | look | look |
-| Left click, tap | right-hand item's primary action; if the right hand is empty, a right jab (fists alternate only when both hands are empty); unsupported held items show a hint | melee swing; firearms shoot only while ready | click under the drawn cursor | nothing | nothing |
-| Left click, hold | long use of the main-hand item (eat, drink, bandage, read); releasing early cancels, nothing applied | — | drag | keep holding | — |
-| `=` | left-hand item's primary action; nothing if empty, a hint if unsupported; never fists | same left-hand action | — | — | — |
-| Mouse 5 (side forward button) | use the left-hand item's instant use (light on/off); nothing if the left hand is empty or has none | same | — | — | — |
+| Left click, hold | proposed long use of the dominant-hand item (d44); releasing early cancels, nothing applied | — | drag | keep holding | — |
 | Right mouse, hold | ready the main-hand weapon; with nothing to ready, nothing | stays ready | — | — | — |
 | Middle click | — | toggle hip / sights | — | — | — |
 | Shift | sprint | toggle hip / sights | — | — | — |
@@ -196,21 +194,26 @@ Notes on the proposal:
   weakest overload in the map. Open question 5.
 - **Crouch on C, not Ctrl**, whatever the Ctrl verification finds, because of
   the Ctrl + W risk.
-- **Melee stays immediate:** d7's left-click swing is not gated by the firearm
-  ready stance. D10 adds light and empty-hand actions to left click, and routes
-  `=` to the left-hand item. A firearm's future shot remains ready-only.
+- **Activation must not invent a second action owner:** capability admission
+  belongs to `src/game/primaryAction.ts`, `selectPrimaryAction`; mechanics and
+  handling retain their own costs and refusal rules.
 
 ## The two hands (issue #27)
 
-**Initial BR ruling (2026-10-01; open to revision):** left click selects the
-right-hand item's primary action; `=` selects the left-hand item's action. An
-empty right hand jabs with the right fist, but an empty left hand does nothing.
-Fists alternate only when both hands are empty. Never punch with a hand holding
-an item; unsupported held items show a hint. Key codes live in
-`src/game/input.ts`; the hand mapping lives in `ACTION_HAND_BINDINGS` and the
-capability table in `src/game/primaryAction.ts`, so revising the policy is a
-small edit. Mouse 5 remains the explicit off-hand instant use; Mouse 4 is left
-unbound because both side buttons can navigate browser history.
+**BR's handedness ruling (2026-10-04)** makes dominant and off-hand activation
+roles follow the actor. The physical slots and a restored fist sequence remain
+physical; otherwise Continue would silently move equipment or change the next
+attack. See `src/core/character.ts`, `dominantSide` and `offSide`;
+`src/game/input.ts`, `KEY_BINDINGS`; and `src/game/primaryAction.ts`,
+`selectPrimaryAction`. Mouse 5 remains the explicit off-hand instant use;
+Mouse 4 stays unbound because both side buttons can navigate browser history.
+The selector refuses unsupported items and reserved support rather than
+substituting a fist or the other hand's action.
+
+Creation must precede gameplay construction, not mutate an already-running
+actor. See `src/ui/saveController.ts`, `SaveController.setNewWorldLauncher`,
+and `src/game/play.ts`, `startPlay`, for the accepted-launch boundary. Continue's saved
+identity takes precedence over creation controls.
 
 ## Debug keys
 
@@ -233,8 +236,8 @@ editing retains native key behaviour.
 
 ## Open questions for BR
 
-1. **The two hands:** BR's initial right-hand/left-hand key mapping is open to
-   revision after play.
+1. **The two hands:** bindings for dominant/off-hand activation remain open to
+   revision after play; physical anatomy is not a binding policy.
 2. ~~**Ctrl:** verify Ctrl + W under pointer lock before any Ctrl binding.~~
    **Answered (BR, 2026-10-04):** no Ctrl or Cmd, ever.
 3. **Press-and-hold for long uses:** confirm as the rule for every long use (eat,

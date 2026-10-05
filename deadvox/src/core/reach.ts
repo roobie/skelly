@@ -2,6 +2,7 @@
 // Units are explicit: positions are blocks; the admission limit is metres.
 
 import type { BlockEntity } from './blockEntities.ts';
+import { dominantSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Location, Pile } from './inventory.ts';
 import type { Item } from './items.ts';
@@ -117,7 +118,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entries.push({
       item,
       location,
-      handlingTime: inventory.handlingTime(item, location, { kind: 'hand', side: 'right' }),
+      handlingTime: inventory.handlingTime(item, location, { kind: 'hand', side: dominantSide(inventory.character) }),
     });
   }
   const workstations = [...inventory.entities.all]
