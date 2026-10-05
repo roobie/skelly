@@ -1,3 +1,4 @@
+import { dominantSide } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ItemDef } from '../core/schema.ts';
@@ -27,7 +28,7 @@ export const equipDebugFirearms = (
     const box = inventory.create('shotshell_box');
     if (
       !(
-        inventory.add(inventory.create('pump_shotgun'), { kind: 'hand', side: 'right' }) &&
+        inventory.add(inventory.create('pump_shotgun'), { kind: 'hand', side: dominantSide(inventory.character) }) &&
         inventory.add(box, { kind: 'pocket', owner: backpack, pocket: 0 })
       )
     ) {
@@ -39,7 +40,7 @@ export const equipDebugFirearms = (
   const other = choice === 'ar' ? 'debug_rifle_ak' : 'debug_rifle_assault';
   if (
     !(
-      inventory.add(inventory.create(held), { kind: 'hand', side: 'right' }) &&
+      inventory.add(inventory.create(held), { kind: 'hand', side: dominantSide(inventory.character) }) &&
       inventory.add(inventory.create(other), { kind: 'pocket', owner: backpack, pocket: 0 })
     )
   ) {

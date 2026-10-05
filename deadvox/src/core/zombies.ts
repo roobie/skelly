@@ -1,4 +1,5 @@
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
+import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
@@ -232,6 +233,7 @@ export interface PlayerSense {
 }
 
 export interface ZombieSystemOptions {
+  character?: HandedCharacter;
   store?: EntityStore<Zombie>;
   seed?: number;
   /** Movement, attacks and hearing use the body's blockers. */
@@ -570,11 +572,14 @@ export class ZombieSystem {
   private readonly options: ZombieSystemOptions;
   private playerAttackWait = 0;
   private meleeAction: MeleeActionState | null = null;
-  private nextFistHand: MeleeHand = 'right';
+  private readonly character: HandedCharacter;
+  private nextFistHand: MeleeHand;
   private frozen = false;
 
   constructor(options: ZombieSystemOptions) {
     this.options = options;
+    this.character = options.character ?? DEFAULT_HANDED_CHARACTER;
+    this.nextFistHand = dominantSide(this.character);
     this.store = options.store ?? new MapEntityStore<Zombie>();
   }
 
@@ -1570,7 +1575,7 @@ export class ZombieSystem {
     if (this.playerAttackWait > 0 || this.meleeAction !== null || weapon.cooldown <= 0) {
       return false;
     }
-    const hand = profile === 'fists' ? (start.hand ?? this.nextFistHand) : (start.hand ?? 'right');
+    const hand = profile === 'fists' ? (start.hand ?? this.nextFistHand) : (start.hand ?? dominantSide(this.character));
     const direction = unit(start.direction);
     if (profile === 'fists' && start.hand === undefined) {
       this.nextFistHand = hand === 'right' ? 'left' : 'right';

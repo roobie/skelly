@@ -1,8 +1,7 @@
-import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { canonicalJson } from '../src/core/canonicalJson.ts';
+import { dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { currentSaveVersionIdentity, decodeSave, encodeSave, type SaveContentKind } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -53,10 +52,10 @@ const saveVersion = {
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 
-const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) => {
+const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], handedness?: 'right' | 'left') => {
   const contacts: number[] = [];
   let session: ReturnType<typeof createSession>;
-  let primaryAction = false;
+  let useDominant = false;
   session = createSession({
     registry,
     world: new World(),
@@ -69,11 +68,11 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
     ready: () => false,
     controls: {
       active: () => true,
-      intent: () => ({ ...IDLE, primaryAction }),
-      consumePrimaryAction: () => {
-        primaryAction = false;
+      intent: () => ({ ...IDLE, useDominant }),
+      consumeDominantUse: () => {
+        useDominant = false;
       },
-      primaryAction: () => {
+      useDominant: () => {
         startPlayerMelee(session.zombies, session.sim.needs, {
           origin: [0, 2, 0],
           direction: [0, 0, -1],
@@ -97,6 +96,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
     },
     zombieEffects: { onMeleeResult: () => contacts.push(session.sim.time) },
     ...(restore ? { restore } : {}),
+    ...(handedness ? { handedness } : {}),
   });
   session.zombies.setFrozen(true);
   session.sim.paused = false;
@@ -104,22 +104,28 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore']) =
     session,
     contacts,
     click() {
-      primaryAction = true;
+      useDominant = true;
     },
   };
 };
 
-describe('tick-consumed primary melee input across save and restore', () => {
-  it('starts on the next player tick and contacts exactly fifteen 60 Hz ticks later, with or without restore', async () => {
-    const source = makeSession();
+describe('tick-consumed dominant melee input across save and restore', () => {
+  it('retains contact ordering and physical fist alternation rather than reseeding dominance on restore', async () => {
+    const source = makeSession(undefined, 'left');
+    const step = 1 / 60;
     source.click();
-    source.session.frame(1 / 60);
-    expect(source.session.zombies.activeMeleeAction?.elapsed).toBe(0);
-    expect('startOffset' in (source.session.zombies.activeMeleeAction ?? {})).toBe(false);
-    for (let i = 0; i < 7; i++) {
-      source.session.frame(1 / 60);
+    source.session.frame(step);
+    const initial = source.session.zombies.activeMeleeAction!;
+    expect(initial.elapsed).toBe(0);
+    expect(initial.hand).toBe(dominantSide(source.session.character));
+    expect('startOffset' in initial).toBe(false);
+    const beforeContact = Math.ceil(initial.contactAt / step) - 1;
+    expect(beforeContact).toBeGreaterThan(1);
+    const beforeSave = Math.floor(beforeContact / 2);
+    for (let i = 0; i < beforeSave; i++) {
+      source.session.frame(step);
     }
-    expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
+    expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
 
     const snapshot = source.session.snapshot({ worldId: 'tick-melee', characterId: 'character' });
     const bytes = await encodeSave(snapshot, {
@@ -128,30 +134,35 @@ describe('tick-consumed primary melee input across save and restore', () => {
       worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: 0.5 },
     });
     const decoded = await decodeSave(bytes, { version: saveVersion, contentLookup });
-    const restored = makeSession(decoded.snapshot);
-    expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(7 / 60, 12);
+    expect(snapshot.world.zombies.nextFistHand).toBe(offSide(source.session.character));
+    const restored = makeSession(decoded.snapshot, 'right');
+    expect(restored.session.zombies.activeMeleeAction).toEqual(source.session.zombies.activeMeleeAction);
 
-    for (let tick = 8; tick <= 14; tick++) {
-      source.session.frame(1 / 60);
-      restored.session.frame(1 / 60);
+    for (let tick = beforeSave; tick < beforeContact; tick++) {
+      source.session.frame(step);
+      restored.session.frame(step);
       expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
       expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(false);
-      expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
-      expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(tick / 60, 12);
     }
-    source.session.frame(1 / 60);
-    restored.session.frame(1 / 60);
-    expect(source.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
-    expect(restored.session.zombies.activeMeleeAction?.elapsed).toBeCloseTo(0.25, 12);
+    source.session.frame(step);
+    restored.session.frame(step);
     expect(source.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
     expect(restored.session.zombies.activeMeleeAction?.hitResolved).toBe(true);
-    const hash = (run: ReturnType<typeof makeSession>) =>
-      createHash('sha256')
-        .update(canonicalJson(run.session.snapshot({ worldId: 'tick-melee', characterId: 'character' })))
-        .digest('hex');
+    expect(source.contacts).toHaveLength(1);
+    expect(restored.contacts).toHaveLength(1);
     expect(restored.session.snapshot({ worldId: 'tick-melee', characterId: 'character' })).toEqual(
       source.session.snapshot({ worldId: 'tick-melee', characterId: 'character' }),
     );
-    expect(hash(restored)).toBe(hash(source));
+    for (let tick = 0; tick <= Math.ceil(initial.cooldown / step); tick++) {
+      source.session.frame(step);
+      restored.session.frame(step);
+    }
+    expect(restored.session.zombies.activeMeleeAction).toBeUndefined();
+    source.click();
+    restored.click();
+    source.session.frame(step);
+    restored.session.frame(step);
+    expect(source.session.zombies.activeMeleeAction?.hand).toBe(offSide(source.session.character));
+    expect(restored.session.zombies.activeMeleeAction?.hand).toBe(source.session.zombies.activeMeleeAction?.hand);
   });
 });

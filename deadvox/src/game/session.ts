@@ -75,7 +75,7 @@ const ZOMBIE_RATE = 20;
 const HANDLING_RATE = 20;
 /** Seconds a player's noise stays audible to shamblers. */
 const VOCAL_NOISE_LIFETIME = 0.5;
-export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, primaryAction: false };
+export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
 /** The item a severed shambler region leaves behind. */
 export const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
@@ -92,14 +92,14 @@ export interface SessionControls {
   active: () => boolean;
   intent: () => MoveIntent;
   /** Clears edge-triggered intents after the player tick samples them. */
-  consumePrimaryAction?: () => void;
-  consumeLeftHandAction?: () => void;
-  /** Runs the right-hand action on the player-tick boundary, with that tick's aim/state. */
-  primaryAction?: () => void;
+  consumeDominantUse?: () => void;
+  consumeOffUse?: () => void;
+  /** Runs dominant use on the player-tick boundary, with that tick's aim/state. */
+  useDominant?: () => void;
   /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
-  heldPrimaryAction?: (time: number, pressed: boolean, held: boolean) => void;
-  /** Runs the left-hand action on the player-tick boundary, with that tick's aim/state. */
-  leftHandAction?: () => void;
+  heldDominantUse?: (time: number, pressed: boolean, held: boolean) => void;
+  /** Runs off-hand use on the player-tick boundary, with that tick's aim/state. */
+  useOff?: () => void;
   /** Radians; 0 looks down -z. */
   yaw: () => number;
   pitch: () => number;
@@ -399,6 +399,7 @@ export const createSession = (options: SessionOptions) => {
     left: inventory.hands.left?.uid ?? null,
   });
   const zombieSystem = new ZombieSystem({
+    character,
     store: zombieStore,
     seed: sim.seed,
     isSolid,
@@ -448,19 +449,19 @@ export const createSession = (options: SessionOptions) => {
   let lastZombieStep = 0;
   let lastPlayerStep = 0;
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
-    controls.heldPrimaryAction?.(
+    controls.heldDominantUse?.(
       sim.time,
-      moving && Boolean(intent.primaryAction),
-      moving && Boolean(intent.primaryActionHeld),
+      moving && Boolean(intent.useDominant),
+      moving && Boolean(intent.useDominantHeld),
     );
     if (!moving) {
       return;
     }
-    if (intent.primaryAction) {
-      controls.primaryAction?.();
+    if (intent.useDominant) {
+      controls.useDominant?.();
     }
-    if (intent.leftHandAction) {
-      controls.leftHandAction?.();
+    if (intent.useOff) {
+      controls.useOff?.();
     }
   };
   sim.scheduler.register({
@@ -482,8 +483,8 @@ export const createSession = (options: SessionOptions) => {
       lastPlayerStep = time;
       const moving = controls.active() && !compression.locksInput;
       const intent = moving ? controls.intent() : IDLE;
-      controls.consumePrimaryAction?.();
-      controls.consumeLeftHandAction?.();
+      controls.consumeDominantUse?.();
+      controls.consumeOffUse?.();
       zombieSystem.tickPlayerAction(dt, heldItemUids());
       dispatchPlayerActions(moving, intent);
       if (!options.ready(body.pos[0], body.pos[2])) {

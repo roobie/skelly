@@ -5,6 +5,7 @@
 import assetManifest from '../content/base/assets/manifest.json' with { type: 'json' };
 import { validateManifest } from '../core/assets.ts';
 import type { BlockEntity } from '../core/blockEntities.ts';
+import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -77,7 +78,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
-import { ACTION_HAND_BINDINGS, selectPrimaryAction } from './primaryAction.ts';
+import { selectPrimaryAction } from './primaryAction.ts';
 import type { ReloadBinding } from './reloadInput.ts';
 import { createSession } from './session.ts';
 import { Unpacking } from './unpacking.ts';
@@ -112,7 +113,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
-  let performPrimaryAction: (hand: 'right' | 'left') => void = () => undefined;
+  let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -145,22 +146,22 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     controls: {
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
-      consumePrimaryAction: () => input.consumePrimaryAction(),
-      consumeLeftHandAction: () => input.consumeLeftHandAction(),
-      primaryAction: () => {
+      consumeDominantUse: () => input.consumeDominantUse(),
+      consumeOffUse: () => input.consumeOffUse(),
+      useDominant: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
-        const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
+        const action = selectPrimaryAction(inventory);
         if (
           !(
             debugTools?.buildOn ||
             (config.debug && action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
           )
         ) {
-          performPrimaryAction(ACTION_HAND_BINDINGS.primaryClick);
+          performHandUse(dominantSide(inventory.character));
         }
       },
-      heldPrimaryAction: (time, pressed, triggerHeld) => {
-        const action = selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick);
+      heldDominantUse: (time, pressed, triggerHeld) => {
+        const action = selectPrimaryAction(inventory);
         const weapon =
           config.debug &&
           !debugTools?.buildOn &&
@@ -176,9 +177,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
           }
         }
       },
-      leftHandAction: () => {
+      useOff: () => {
         if (!debugTools?.buildOn) {
-          performPrimaryAction(ACTION_HAND_BINDINGS.leftHandKey);
+          performHandUse(offSide(inventory.character));
         }
       },
       yaw: () => input.yaw,
@@ -843,9 +844,10 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!entities.defOf(entity).door) {
       return undefined;
     }
-    const heldKeys = [inventory.hands.right, inventory.hands.left].filter(
-      (item): item is Item => item !== undefined && registry.items.get(item.type)?.key !== undefined,
-    );
+    const heldKeys = [
+      inventory.hands[dominantSide(inventory.character)],
+      inventory.hands[offSide(inventory.character)],
+    ].filter((item): item is Item => item !== undefined && registry.items.get(item.type)?.key !== undefined);
     const heldKey =
       heldKeys.find((item) => registry.items.get(item.type)?.key?.lock === entity.lock?.id) ?? heldKeys[0];
     const keyLock = heldKey && registry.items.get(heldKey.type)?.key?.lock;
@@ -909,7 +911,9 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     twoHanded: boolean;
     item?: (typeof inventory.hands)['right'];
   } => {
-    const handOrder: readonly ('right' | 'left')[] = preferredHand ? [preferredHand] : ['right', 'left'];
+    const handOrder: readonly ('right' | 'left')[] = preferredHand
+      ? [preferredHand]
+      : [dominantSide(inventory.character), offSide(inventory.character)];
     for (const hand of handOrder) {
       const item = inventory.hands[hand];
       const weapon = item && registry.items.get(item.type)?.weapon?.melee;
@@ -995,8 +999,8 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     }
   };
 
-  performPrimaryAction = (hand: 'right' | 'left') => {
-    const action = selectPrimaryAction(registry, inventory.hands, hand);
+  performHandUse = (hand: 'right' | 'left') => {
+    const action = selectPrimaryAction(inventory, hand);
     switch (action.kind) {
       case 'unpack':
         noticeReason(unpacking.activate(action.item));
@@ -1054,7 +1058,7 @@ export const startPlay = (engine: Engine, debugModule?: DebugModule, options: St
     if (!input.locked || input.menuPointer || compression.locksInput || debugTools?.buildOn) {
       return;
     }
-    // Mouse 5 (side forward): the left hand's instant use (a light on/off), the same path as a quickbar second press.
+    // Instant off-hand use shares Survival's owner with a quickbar second press.
     const item = offHandUse(registry, inventory);
     const reason = item && survival.use(item);
     if (reason) {

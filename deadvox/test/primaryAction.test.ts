@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { ACTION_HAND_BINDINGS, selectPrimaryAction } from '../src/game/primaryAction.ts';
+import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { primaryActionHint } from '../src/ui/primaryActionHint.ts';
 
 const capabilities = [
@@ -11,7 +12,7 @@ const capabilities = [
     weapon: { melee: { damage: 1, reach: 1, cooldown: 1, stamina: 0, type: 'blunt' } },
   },
   { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1 } },
-  { id: 'held_gun', kind: 'firearm', firearm: {} },
+  { id: 'held_gun', kind: 'firearm', firearm: {}, twoHanded: true },
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
   { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
   { id: 'held_plain', kind: 'none', stack: 2 },
@@ -45,8 +46,9 @@ if (issues.length > 0) {
   throw new Error(`Invalid hand-action fixture: ${JSON.stringify(issues)}`);
 }
 
-const hold = (right?: string, left?: string) => {
-  const inventory = new Inventory(registry);
+const hold = (right?: string, left?: string, handedness?: 'right' | 'left') => {
+  const character = new Character(registry, { handedness });
+  const inventory = new Inventory(registry, undefined, undefined, character);
   for (const [side, type] of [
     ['right', right],
     ['left', left],
@@ -59,9 +61,13 @@ const hold = (right?: string, left?: string) => {
 };
 
 describe('held-item hand action', () => {
+  it('a two-handed item in the off slot reserves the empty dominant hand rather than punching or redirecting', () => {
+    const inventory = hold('held_gun', undefined, 'left');
+    expect(selectPrimaryAction(inventory)).toEqual({ kind: 'noop' });
+  });
   it.each(capabilities)('routes the owned $kind capability through the selected hand', ({ id, kind }) => {
     const inventory = hold(id);
-    const selected = selectPrimaryAction(registry, inventory.hands, 'right');
+    const selected = selectPrimaryAction(inventory, 'right');
     expect(selected).toEqual({
       kind,
       ...(kind === 'none' ? {} : { hand: 'right' }),
@@ -69,42 +75,45 @@ describe('held-item hand action', () => {
     });
   });
 
-  it('routes the initial primary and off inputs to their own occupied physical hands', () => {
-    const inventory = hold('held_blunt', 'held_light');
-    expect(selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.primaryClick)).toEqual({
+  it("resolves a left character's default dominant use and explicit off use to their own physical slots", () => {
+    const inventory = hold('held_light', 'held_blunt', 'left');
+    const leading = dominantSide(inventory.character);
+    const secondary = offSide(inventory.character);
+    expect(selectPrimaryAction(inventory)).toEqual({
       kind: 'melee',
-      hand: 'right',
-      item: inventory.hands.right,
+      hand: leading,
+      item: inventory.hands[leading],
     });
-    expect(selectPrimaryAction(registry, inventory.hands, ACTION_HAND_BINDINGS.leftHandKey)).toEqual({
+    expect(selectPrimaryAction(inventory, secondary)).toEqual({
       kind: 'light',
-      hand: 'left',
-      item: inventory.hands.left,
+      hand: secondary,
+      item: inventory.hands[secondary],
     });
   });
 
   it('uses a right-hand jab rather than punching with a held left-hand item', () => {
     const inventory = hold(undefined, 'held_light');
-    expect(selectPrimaryAction(registry, inventory.hands, 'right')).toEqual({ kind: 'fists', hand: 'right' });
-    expect(selectPrimaryAction(registry, inventory.hands, 'left')).toMatchObject({ kind: 'light', hand: 'left' });
+    expect(selectPrimaryAction(inventory, 'right')).toEqual({ kind: 'fists', hand: 'right' });
+    expect(selectPrimaryAction(inventory, 'left')).toMatchObject({ kind: 'light', hand: 'left' });
   });
 
-  it('alternates fists only when both hands are empty and does nothing for an empty left hand', () => {
-    expect(selectPrimaryAction(registry, {}, 'right')).toEqual({ kind: 'fists' });
-    expect(selectPrimaryAction(registry, {}, 'left')).toEqual({ kind: 'noop' });
+  it('alternates fists only when both hands are empty and does nothing for an empty off hand', () => {
+    const inventory = hold();
+    expect(selectPrimaryAction(inventory)).toEqual({ kind: 'fists' });
+    expect(selectPrimaryAction(inventory, offSide(inventory.character))).toEqual({ kind: 'noop' });
   });
 
   it('hints for the selected unsupported hand without falling back to the other hand', () => {
     const inventory = hold('held_plain', 'held_light');
-    expect(selectPrimaryAction(registry, inventory.hands, 'right')).toEqual({
+    expect(selectPrimaryAction(inventory, 'right')).toEqual({
       kind: 'none',
       item: inventory.hands.right,
     });
     expect(primaryActionHint(registry, inventory.hands.right!).trim()).not.toBe('');
-    expect(selectPrimaryAction(registry, inventory.hands, 'left')).toMatchObject({ kind: 'light', hand: 'left' });
+    expect(selectPrimaryAction(inventory, 'left')).toMatchObject({ kind: 'light', hand: 'left' });
 
     const leftOnly = hold(undefined, 'held_plain');
-    expect(selectPrimaryAction(registry, leftOnly.hands, 'left')).toEqual({ kind: 'none', item: leftOnly.hands.left });
+    expect(selectPrimaryAction(leftOnly, 'left')).toEqual({ kind: 'none', item: leftOnly.hands.left });
     expect(primaryActionHint(registry, leftOnly.hands.left!).trim()).not.toBe('');
   });
 });

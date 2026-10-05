@@ -25,3 +25,15 @@ snapshots keep their meaning. Core preferences resolve through `dominantSide` an
 escrow and continuation use the dominant slot and require the other hand free
 (see `src/core/craftWork.ts`, `craftActionHooks`). This enforces the two-handed work
 constraint at its owner, rather than relying on a menu to choose a valid target.
+
+Input intents describe dominant and off use, not anatomy; see
+`src/game/player.ts`, `MoveIntent`, and `src/game/session.ts`, `SessionControls`.
+`src/game/primaryAction.ts`, `selectPrimaryAction`, resolves the actor's default
+slot but never redirects an explicit physical selection to another item. An
+empty slot reserved by a two-handed item is not a free fist. This follows the
+Items rule in `DESIGN.md`, not a special exception for a particular firearm.
+
+A fresh player's fist sequence starts with the dominant arm, then alternates
+physical arms. `src/core/zombies.ts`, `ZombieSystem.restoreState`, retains the
+saved next arm rather than reseeding it from character identity: otherwise a
+Continue could repeat the arm that just attacked. NPC anatomy is independent.

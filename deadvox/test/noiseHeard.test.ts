@@ -49,10 +49,10 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       pitch: () => 0,
       walking: () => intent.walk,
       descending: () => false,
-      consumePrimaryAction: () => {
-        intent = { ...intent, primaryAction: false };
+      consumeDominantUse: () => {
+        intent = { ...intent, useDominant: false };
       },
-      primaryAction: () => {
+      useDominant: () => {
         swingOrigin = session.chest();
         expect(
           startPlayerMelee(session.zombies, session.sim.needs, {
@@ -153,7 +153,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   actor.body.vel = [0, 0, 0];
   resetPlayer();
   const health = Object.values(actor.regions).reduce((sum, value) => sum + value, 0);
-  intent = { ...IDLE, primaryAction: true };
+  intent = { ...IDLE, useDominant: true };
   advance(30);
   expect(Object.values(actor.regions).reduce((sum, value) => sum + value, 0)).toBeLessThan(health);
   for (const event of ['melee_swing', 'melee_hit_fist', 'shambler_hurt']) {
