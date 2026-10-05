@@ -5,6 +5,8 @@ tags: [deadvox, design, inventory, crafting, appliances, ui]
 created: 2026-09-26
 status: active
 read_if:
+  - you're implementing or changing furniture-based rest and sleep
+  - you're reviewing long-action continuation and save ownership
   - you change item activation, crafting or appliance ownership boundaries
   - you reconcile BR's interaction rulings with actor handedness
 ---
@@ -342,8 +344,16 @@ values), known recipes and skill levels. Two consequences for 1.9:
 
 1. **ADR 0001 (done):** the spawn menu and the death screen moved to lit-html
    as small examples of the pattern, then the credits and the HUD.
-2. **1.8, rest and sleep:** build the long action as the general mechanism, with
-   rest and sleep as its first users.
+2. **1.8, rest and sleep:** the long-action mechanism is shared, but rest and
+   sleep start by interacting with the furniture under the crosshair. This
+   gives recovery a physical anchor instead of a location-free action. The
+   comfort property scales the shared fatigue rates; the authored values are
+   provisional design placeholders, not balance claims. `src/core/longAction.ts`,
+   `RestAction`, retains the exact furniture identity so Continue cannot transfer
+   progress to a substitute piece; `src/game/rest.ts`, `RestController.resume`,
+   refuses if that piece is no longer reachable. F on the anchor or X stops;
+   movement stops; C resumes only after an interruption. The L binding remains
+   only until d44 removes the legacy sleep key.
 3. **1.9, saves:** long actions and item state as plain data, as above.
 4. **Slice 2:** the inventory screen already moved to lit-html in Slice 1
    (#105), which completed ADR 0001. Slice 2 starts with the reach query and `options`, then recipes in the schema and the

@@ -42,6 +42,7 @@ import {
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
+import { shellLoadPose } from './shellLoadPose.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Metres per grid cell for the stand-in box. */
@@ -235,18 +236,37 @@ export class HeldItems {
     const arm = this.arms.get(side);
     const base = this.handBases.get(side);
     const part = model.action?.parts.forend;
-    if (arm && base && part) {
-      const travel = modelToView(model, part.axis.map((value) => value * part.strokeMetres) as Vec3);
-      arm.position.set(...base).addScaledVector(new Vector3(...travel), stroke);
+    if (arm && base) {
+      arm.position.set(...base);
+      if (part) {
+        const travel = modelToView(model, part.axis.map((value) => value * part.strokeMetres) as Vec3);
+        arm.position.addScaledVector(new Vector3(...travel), stroke);
+      }
     }
-    if (frame?.mode !== 'load') {
+    const feed =
+      frame?.mode === 'load' && arm && base
+        ? shellLoadPose(base, heldAnchorOffset(model, 'loading_port'), side, frame)
+        : undefined;
+    if (feed) {
+      arm?.position.set(...feed.wrist);
+    }
+    this.poseLoadingShell(uid, held, frame?.roundType, feed);
+  }
+
+  private poseLoadingShell(
+    uid: number,
+    held: Object3D,
+    roundType: string | undefined,
+    feed: ReturnType<typeof shellLoadPose>,
+  ): void {
+    if (!feed) {
       this.loadingShells.get(uid)?.removeFromParent();
       this.loadingShells.delete(uid);
       return;
     }
     let shell = this.loadingShells.get(uid);
-    if (!shell && frame.roundType) {
-      const id = defOf(this.inventory.registry, frame.roundType).model;
+    if (!shell && roundType) {
+      const id = defOf(this.inventory.registry, roundType).model;
       shell = id ? this.models?.held(id)?.root : undefined;
       if (shell) {
         held.add(shell);
@@ -254,11 +274,9 @@ export class HeldItems {
       }
     }
     if (shell) {
-      const progress = Math.min(1, frame.elapsed / frame.duration!);
-      const port = heldAnchorOffset(model, 'loading_port');
-      shell.position.set(port[0], port[1] - 0.12 * (1 - progress), port[2]);
-      // Shell approaches the actual underside port; the short path is a presentation estimate.
-      shell.visible = progress < 0.98;
+      // The round follows the feeding wrist until seated, without becoming a second inventory item.
+      shell.position.set(...feed.shell);
+      shell.visible = feed.visible;
     }
   }
 

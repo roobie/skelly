@@ -69,6 +69,16 @@
       "noise": { "enabled": true, "radiusMetres": 6 }
     },
     {
+      "id": "player_nope",
+      "variants": ["assets/audio/player-nope-01.ogg"],
+      "gain": 0.5,
+      "pitchJitter": [1, 1],
+      "gainJitter": [1, 1],
+      "minIntervalSeconds": 0.75,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "player_hurt_heavy",
       "variants": [
         "assets/audio/player-hurt-heavy-02.ogg",

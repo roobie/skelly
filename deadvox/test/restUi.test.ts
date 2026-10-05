@@ -14,7 +14,7 @@ describe('restViewModel', () => {
 
   it('shows the label, clock and progress, with no prompt while not interrupted', () => {
     const sim = new Simulation({ seed: 1 });
-    const action: RestAction = { kind: 'sleep', label: 'Sleeping', rate: -30, startFatigue: 50 };
+    const action: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 50 };
     sim.needs.fatigue = 25;
     const vm = restViewModel(action, sim);
     expect(vm.visible).toBe(true);
@@ -26,12 +26,12 @@ describe('restViewModel', () => {
 
   it('shows how to stop it, by kind', () => {
     const sim = new Simulation({ seed: 1 });
-    const rest: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
+    const rest: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
     const stopKey = labelForCode(CONTROL_CODES.cancel);
     const sleepKey = labelForCode(CONTROL_CODES.sleep);
     expect(restViewModel(rest, sim).stopHint).toContain(stopKey);
     expect(restViewModel(rest, sim).stopHint).not.toContain(sleepKey);
-    const sleep: RestAction = { kind: 'sleep', label: 'Sleeping', rate: -30, startFatigue: 40 };
+    const sleep: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 40 };
     expect(restViewModel(sleep, sim).stopHint).toContain(stopKey);
     expect(restViewModel(sleep, sim).stopHint).toContain(sleepKey);
   });
@@ -43,7 +43,7 @@ describe('restViewModel', () => {
     sim.frame(1);
     danger = 'A shambler is close';
     sim.frame(1 / 60);
-    const action: RestAction = { kind: 'rest', label: 'Resting', rate: -15, startFatigue: 40 };
+    const action: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
     expect(restViewModel(action, sim).prompt).toBe(danger);
   });
 });

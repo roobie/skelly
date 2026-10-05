@@ -75,8 +75,8 @@ The rules for a cue:
   living with it.
 - **It's short and it fades.** Like the vignette: a moment, then gone. A cue that
   stays on screen is a HUD element.
-- **Sound cues are the character's own sounds,** positioned at the player, and
-  follow DESIGN.md's "Audio": part of the simulation, not decoration.
+- **Sound cues are the character's own sounds,** positioned at the player.
+  Whether one also emits a simulation noise event is a separate hearing policy.
 - **It never spams.** Each cue has a minimum interval that shrinks with severity,
   and two cues don't start in the same second.
 - **It's tunable data** (thresholds, intervals, strengths) in the content pack,
@@ -94,15 +94,17 @@ Cues per state (a starting set; BR's list is the sound column):
 | Injured leg (BR: "limping too!") | a limp: an uneven head bob, one step short and dipping, at a slower pace | uneven footsteps, a hiss on the bad step |
 | Low stamina | a pulse of narrowed view after a sprint | panting, heavy breathing |
 | Illness (food poisoning) | a nauseous drift of the view | coughing, retching |
+| Refusal | the world-prompt reason when messages are on; rest/craft still show interruption text with it off until d75 | the avatar's “nope” sound, regardless of messages/hints; not heard by shamblers |
+
+BR's 2026-10-05 11:31 direction: “i've added nope1_clean.wav / it's the diegetic sound (the avatar makes a nope sound) for when something doesn't work (when UI is off, and any hints are hidden)”. BR's 11:32 answer was “i recorded it myself 10 minutes ago / yes, CC0” and “no, this one is not heard by shamblers (but if it were a multiplayer game, it'd be heard by other players)”. The 11:46 ruling quoted under class 3 requires the sound regardless of whether messages/hints are on. See `src/game/play.ts`, `showRefusal`, and `src/game/audioPresentation.ts`, `createRefusalPresenter`: the cue is player-only presentation and does not emit a simulation noise event.
 
 The limp is also movement, not only a look: the pace really drops, so it belongs
 with the body model. Wounds per body part come in Slice 3 ([EPIC.md](EPIC.md#3-flesh-and-noise));
 until then a limp can follow low health.
 
-**The game has no audio yet** (nothing in `src` creates a Web Audio context). The
-sound half needs a small player-sound system first: Web Audio started by the
-first click, as DESIGN.md says, sounds as content ids in the pack, and CC0 sources
-recorded in the asset manifest like the models.
+Web Audio starts on the first click, as DESIGN.md says. Sounds are content ids
+in the pack, validated and credited in the asset manifest. The refusal cue is a
+player-only exception to simulation noise: it does not alert shamblers.
 
 ## Afford, don't instruct
 
@@ -119,7 +121,18 @@ Text on screen falls into four classes, and only three of them ship:
    heft it. Ships, on the meta surfaces that need them (the inventory).
 3. **The character's voice, when something is refused or noticed:** "You're not
    tired", "Something's in the way", "You hear something outside". Short, first
-   person, about the world, never about keys or menus. Ships.
+   person, about the world, never about keys or menus. Ships. BR ruled on
+   2026-10-05: "our overarching goal is: diegesis / which means 0 synthetic UI
+   elements / this cannot hold for exactly 100% of the time / but it does mean /
+   if the checkbox for messages/hints is off ,then no messages or hints should
+   come from a syntheitic UI element / but the 'nope' sound shall play regardless
+   of UI hints being on or off". In the world prompt (see
+   `src/ui/playHud.ts`, `playPromptText`), class-3 text appears only when the
+   `messages` HUD option is on. The rest card (`src/ui/rest.ts`, `restViewModel`)
+   and the craft status box (`src/ui/crafting.ts`, `renderCraftStatus`) still show
+   an interruption's reason with it off, until d75 brings them under BR's ruling.
+   With it off, the avatar's nope sound is the refusal cue; see
+   `src/game/play.ts`, `showRefusal`.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
    ("press R", "open the inventory", "C: continue"). **Development only.**
 
@@ -195,7 +208,7 @@ to use it:
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
 | Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
-| Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; "R or X to stop" becomes a hint |
+| Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt ("C: continue X: stop") | meta, instruction | meta, choice | a two-button choice drawn as such, with the key names from the hint channel |
 | Main menu (F9) | meta | meta | fine; settings and help live here |
 | Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |

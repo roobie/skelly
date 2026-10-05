@@ -4,6 +4,8 @@
 // captures is what the game runs. Sounds, notices and debug tools reach in through
 // callbacks; nothing here draws or listens.
 
+import type { Body as MobBody } from '@mobgen/core/body.ts';
+import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character } from '../core/character.ts';
@@ -29,13 +31,7 @@ import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import type { SolidAt } from '../core/raycast.ts';
-import {
-  bindReach,
-  pileDistance as distanceToPile,
-  furnitureDistance,
-  INVENTORY_CHEST,
-  INVENTORY_REACH,
-} from '../core/reach.ts';
+import { bindReach, pileDistance as distanceToPile, furnitureDistance, INVENTORY_CHEST } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
@@ -72,6 +68,7 @@ import {
 } from './player.ts';
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
+import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { Survival } from './survival.ts';
 
 const PHYSICS_RATE = 60;
@@ -151,8 +148,10 @@ export interface SessionOptions {
   ready: (x: number, z: number) => boolean;
   controls: SessionControls;
   audio: SessionAudio;
-  /** A message that isn't an interruption, such as why a move was refused. */
+  /** A message that isn't an interruption, such as a completion notice. */
   notice: (text: string) => void;
+  /** Presentation cue for an action the handling queue refused. */
+  refusal?: ((text: string) => void) | undefined;
   /** Authored text selected by a live domain command; presentation owns its view. */
   onRead: (readable: Readonly<Readable>) => void;
   /** Observational hook for actual handling completion/failure outcomes. */
@@ -261,13 +260,23 @@ export const createSession = (options: SessionOptions) => {
     event: SoundEventId,
     position: Vec3,
     time: number,
-    { player, sourceLabel = null, listenerRelative = false }: SoundEmissionMeta & { player: boolean },
+    {
+      player,
+      sourceLabel = null,
+      listenerRelative = false,
+      body: mobBody,
+    }: SoundEmissionMeta & {
+      player: boolean;
+      body?: MobBody;
+    },
   ): boolean => {
-    const pick = soundPicker.pick(event, time);
-    if (!pick) {
+    const selected = soundPicker.pick(event, time);
+    if (!selected) {
       return false;
     }
     const definition = registry.sounds.get(event)!;
+    const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
+    const pick = { ...selected, pitch };
     const emittedAsNoise = player && definition.noise.enabled;
     const sound = freezeSnapshot({
       event,
@@ -300,7 +309,7 @@ export const createSession = (options: SessionOptions) => {
     event: SoundEventId,
     position: Vec3,
     time = sim.time,
-    meta: SoundEmissionMeta = {},
+    meta: SoundEmissionMeta & { body?: MobBody } = {},
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, player: true });
@@ -346,9 +355,14 @@ export const createSession = (options: SessionOptions) => {
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   sim.actions.reading = bookReadingHooks(inventory, character);
   const rest = new RestController(sim, {
-    bedQuality: () => {
-      const bed = entities.bedNear(chest(), INVENTORY_REACH / s);
-      return bed ? entities.defOf(bed).bed!.quality : undefined;
+    furniture: (uid) => {
+      const entity = entities.byUid(uid);
+      const restDef = entity && entities.defOf(entity).rest;
+      return restDef ? { quality: restDef.quality, sleepable: restDef.sleep === true } : undefined;
+    },
+    withinReach: (uid) => {
+      const entity = entities.byUid(uid);
+      return entity !== undefined && inventory.canReachEntity(entity);
     },
     notice: options.notice,
   });
@@ -422,13 +436,22 @@ export const createSession = (options: SessionOptions) => {
       wearOnPlayerHit(inventory, area);
       sim.hurt(amount, 'a shambler');
     },
-    onSound: (event, position) => playWorldSound(event, position),
-    onFootstep: (position, id, mode) => {
+    onSound: (event, position, zombie) =>
+      playWorldSound(
+        event,
+        position,
+        sim.time,
+        zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {},
+      ),
+    onFootstep: (position, id, mode, zombie) => {
       const event = shamblerFootstepEventAt(position, (x, y, z) => {
         const block = world.getBlock(x, y, z);
         return registry.blocks[block]?.id ?? 'unknown';
       });
-      playWorldSound(event, position, sim.time, { sourceLabel: `shambler #${id} · ${mode}` });
+      playWorldSound(event, position, sim.time, {
+        sourceLabel: `shambler #${id} · ${mode}`,
+        body: shamblerFigure(zombie.figureSeed).realized.body,
+      });
     },
     onSevered: (zombie, region) => {
       const pos: Vec3 = [
@@ -485,6 +508,46 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
+  const stopRestOnMovement = (intent: MoveIntent): void => {
+    if (!rest.action || (intent.forward === 0 && intent.right === 0 && !intent.jump)) {
+      return;
+    }
+    rest.stop();
+    compression.snap();
+  };
+
+  const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
+    const wasGrounded = body.onGround;
+    const previousPosition: Vec3 = [...body.pos];
+    const jumpStarted = pacedIntent.jump && wasGrounded;
+    steer(body, scale, controls.yaw(), pacedIntent);
+    if (jumpStarted) {
+      playPlayerSound('player_strain', time);
+    }
+    const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
+    stepBody(body, dt, isSolid, { ...physics, obstacles: zombieBodies });
+    updatePlayerSounds(wasGrounded, previousPosition, time);
+    const rustle = foliageRustle(rustleClock, {
+      body,
+      world,
+      registry,
+      gait: playerMovement(),
+      // Ignore contact-skin correction (even one skin on all three axes), not real brushing.
+      moving:
+        Math.hypot(
+          body.pos[0] - previousPosition[0],
+          body.pos[1] - previousPosition[1],
+          body.pos[2] - previousPosition[2],
+        ) >
+        2 * CONTACT_SKIN,
+      time,
+    });
+    rustleClock = rustle.clock;
+    if (rustle.sound) {
+      admitSound(rustle.sound.event, rustle.sound.position, time, { player: true, sourceLabel: 'brushing foliage' });
+    }
+  };
+
   // The player is held still until there is ground under them. Inputs are locked
   // while time is compressed. Handling and a heavy load slow you down, and sprinting
   // spends stamina: once winded, you jog until you've got your breath back.
@@ -493,8 +556,10 @@ export const createSession = (options: SessionOptions) => {
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
       lastPlayerStep = time;
+      const requested = controls.active() ? controls.intent() : IDLE;
+      stopRestOnMovement(requested);
       const moving = controls.active() && !compression.locksInput;
-      const intent = moving ? controls.intent() : IDLE;
+      const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
       playerCombat.tick(dt, heldItemUids());
@@ -527,35 +592,7 @@ export const createSession = (options: SessionOptions) => {
         });
         return;
       }
-      const wasGrounded = body.onGround;
-      const previousPosition: Vec3 = [...body.pos];
-      const jumpStarted = pacedIntent.jump && wasGrounded;
-      steer(body, scale, controls.yaw(), pacedIntent);
-      if (jumpStarted) {
-        playPlayerSound('player_strain', time);
-      }
-      const zombieBodies = [...zombieStore.entries()].map(([, zombie]) => zombie.body);
-      stepBody(body, dt, isSolid, { ...physics, obstacles: zombieBodies });
-      updatePlayerSounds(wasGrounded, previousPosition, time);
-      const rustle = foliageRustle(rustleClock, {
-        body,
-        world,
-        registry,
-        gait: playerMovement(),
-        // Ignore contact-skin correction (even one skin on all three axes), not real brushing.
-        moving:
-          Math.hypot(
-            body.pos[0] - previousPosition[0],
-            body.pos[1] - previousPosition[1],
-            body.pos[2] - previousPosition[2],
-          ) >
-          2 * CONTACT_SKIN,
-        time,
-      });
-      rustleClock = rustle.clock;
-      if (rustle.sound) {
-        admitSound(rustle.sound.event, rustle.sound.position, time, { player: true, sourceLabel: 'brushing foliage' });
-      }
+      advancePlayerBody(dt, time, pacedIntent);
     },
   });
 
@@ -570,7 +607,7 @@ export const createSession = (options: SessionOptions) => {
       const result = queue.tick(dt);
       options.onHandlingOutcomes?.(result);
       for (const { job, reason } of result.failed) {
-        options.notice(`${job.label}: ${reason.toLowerCase()}`);
+        (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);
       }
     },
   });
