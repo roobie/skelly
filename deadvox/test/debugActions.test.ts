@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { AgXToneMapping, NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
+import { SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, debugKeyTable, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
@@ -169,7 +170,7 @@ describe('debug action table', () => {
     expect(flashlight.strength).toBe(1);
   });
 
-  it('toggles the sun and flashlight shadows and steps the sun shadow distance through 24, 40, 64', () => {
+  it('toggles sun and flashlight shadows and cycles the sun shadow distance', () => {
     const { actions, shadows } = makeActions();
     const byCode = (code: string) => actions.find((candidate) => candidate.code === code)!;
     expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([true, true]);
@@ -177,16 +178,20 @@ describe('debug action table', () => {
     expect([shadows.settings.sun, shadows.settings.torch]).toEqual([false, true]);
     dispatchDebugAction(actions, 'Home');
     expect([byCode('Digit0').state?.(), byCode('Home').state?.()]).toEqual([false, false]);
-    dispatchDebugAction(actions, 'PageUp');
     expect(byCode('PageUp').detail?.()).toBe(`${shadows.settings.distance} m`);
+    const start = SHADOW_DISTANCES.indexOf(shadows.settings.distance);
+    const expected = Array.from(
+      { length: 4 },
+      (_, i) => SHADOW_DISTANCES[(start + 1 + i) % SHADOW_DISTANCES.length]!,
+    );
     const seen: number[] = [];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < expected.length; i++) {
       dispatchDebugAction(actions, 'PageUp');
       seen.push(shadows.settings.distance);
     }
-    expect(seen).toEqual([64, 24, 40, 64]);
+    expect(seen).toEqual(expected);
     dispatchDebugAction(actions, 'PageUp', true);
-    expect(shadows.settings.distance).toBe(64);
+    expect(shadows.settings.distance).toBe(seen.at(-1));
   });
 
   it('steps the weather fogginess by tenths, which clamps to 0..1', () => {

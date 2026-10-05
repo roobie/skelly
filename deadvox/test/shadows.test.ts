@@ -106,16 +106,11 @@ describe('shadow settings', () => {
   });
 });
 
-describe('sun shadow texel footprint', () => {
-  it('scales linearly with the shadow box and inversely with map resolution', () => {
-    const base = sunShadowTexelSize(36, 1024);
-    expect(sunShadowTexelSize(72, 1024)).toBeCloseTo(base * 2, 12);
-    expect(sunShadowTexelSize(36, 2048)).toBeCloseTo(base / 2, 12);
-  });
-});
-
 describe('sun shadow biases', () => {
-  it('is one texel of depth and a texel and a half along the normal, scaled to the distance', () => {
+  it('derives bias from the texel footprint and scales it with distance and map resolution', () => {
+    const footprint = sunShadowTexelSize(36, 1024);
+    expect(sunShadowTexelSize(72, 1024)).toBeCloseTo(footprint * 2, 12);
+    expect(sunShadowTexelSize(36, 2048)).toBeCloseTo(footprint / 2, 12);
     const near = sunShadowBias(40);
     expect(near.bias).toBeLessThan(0);
     // Texel 2 × 40 m / 2048 = 3.9 cm; the box's depth span is 3.5 × 40 m.
