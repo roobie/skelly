@@ -28,7 +28,7 @@ describe('npm run validate', () => {
     [
       'self-tool',
       [
-        'recipes[0].qualities.fixture_quality: no reachable tool provides "fixture_quality" level 2 without bootstrapping its own requirements',
+        'recipes[0].qualities.fixture_quality: no reachable tool or placed workstation provides "fixture_quality" level 2 without bootstrapping its own requirements',
       ],
     ],
   ])('rejects %s reachability with its semantic diagnostic', (fixture, diagnostics) => {

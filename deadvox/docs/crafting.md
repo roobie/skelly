@@ -1,3 +1,9 @@
+---
+read_if:
+  - you change craft planning, workstation admission, or long-action ownership
+  - you change tests for crafting, reachability, or saved work
+---
+
 # Crafting ownership and planning
 
 Slice 2.4 implementation starts at the shared item-tree boundary, then adds the
@@ -42,8 +48,9 @@ more than one matters when several reservations change greedy stack allocation.
 Equivalent reserved-UID sets are visited once per quality prefix, not once per
 provider tuple. No feasible plan is rejected by a search-budget cutoff.
 
-Gather time is in **game seconds** (`handlingTime * CLOCK_RATIO`); work time is
-recipe game minutes times 60. Skill speed bonuses arrive in 2.5, not here.
+Gather time is in **game seconds** (`handlingTime * CLOCK_RATIO`). Work time is
+adjusted by the named in-reach station's content-defined bonus before it is
+stored in the work item; skill speed remains a separate progression rule.
 Preferences never fall back silently. Missing requirements include knowledge,
 skill gaps, best usable quality levels, station, and needed/raw-found counts per
 component group. Raw counts may compete across groups or with required tools;
@@ -57,11 +64,11 @@ reach snapshot and re-plan.
 
 ## Minimal character state
 
-`src/core/character.ts` owns skill levels and recipe knowledge. New characters
-start every declared skill at 0 and know the present base recipes: torch,
-candle and repair kit. The repair kit remains skill-gated at crafting level 1.
-The starting source is explicit and filtered to loaded recipe IDs; new arbitrary
-recipes are not automatically known. Books and practice belong to 2.5.
+`src/core/character.ts` owns skill levels and recipe knowledge. The starting
+source is explicit and filtered to loaded recipe IDs; new arbitrary recipes are
+not automatically known. Workbench-dependent base recipes join that explicit
+source so the placed station can be exercised in the game. Books and practice
+belong to 2.5.
 
 Snapshots and the canonical save payload persist `character.progression`.
 Restoration preserves the saved levels/knowledge instead of reseeding them and
@@ -69,8 +76,9 @@ validates skill definitions, recipe references, duplicate knowledge and levels.
 Older saves without this field are deliberately rejected: no migration or
 compatibility mode. Canonical numeric handling, including signed zero, is
 unchanged. The CLI now uses this same starting source as a hard knowledge check;
-unknown recipes cannot seed the component or tool closure. Skills stay pending
-until 2.5 and workstation behavior until 2.8.
+unknown recipes cannot seed the component or tool closure. Positive skill-source
+checks remain pending until 2.5. Workstation sources are hard-checked against
+placed templates by `checkReachability()` in `src/core/reachability.ts`.
 
 ## Shared core long actions (step 4)
 
@@ -136,9 +144,9 @@ Work is a runtime escrow representation, excluded from acquired-content counts.
 `test/inventory.test.ts` rejects extraneous item pockets, a missing declared
 pocket, and an out-of-grid pile placement. Existing snapshot, UID, transfer,
 quickbar and furniture controls protect the unchanged ownership semantics.
-`test/crafting.test.ts` covers competing groups, preference, tool/component
-separation, stack ordering, filled-container exclusion, missing requirements,
-and records all base-recipe timings on one indexed 200-item reach snapshot.
+`test/crafting.test.ts` covers named-station reach, station-supplied qualities,
+content-derived work-time bonus, competing groups, preference, tool/component
+separation, stack ordering, filled-container exclusion, and missing requirements.
 One overlapping four-quality case has a deterministic operation-count control,
 varied conditions, shared tool UIDs and a cheapest-allocation guard against
 incorrectly collapsing a provider class to just one representative. A four-cost-

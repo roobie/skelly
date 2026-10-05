@@ -32,10 +32,12 @@ export interface ReachSnapshot {
   readonly piles: readonly Pile[];
   /** Includes unsearched furniture so callers can offer Search, never its contents. */
   readonly furniture: readonly BlockEntity[];
-  /** Defined here; populated only once the workstation component lands in 2.8. */
+  /** Furniture workstation components whose nearest box point is within 2 m. */
   readonly workstations: readonly {
     entity: BlockEntity;
+    id: string;
     qualities: Readonly<Record<string, number>>;
+    workTimeBonus: number;
   }[];
 }
 
@@ -118,6 +120,16 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
       handlingTime: inventory.handlingTime(item, location, { kind: 'hand', side: 'right' }),
     });
   }
+  const workstations = [...inventory.entities.all]
+    .filter((entity) => furnitureInReach(player, entity))
+    .flatMap((entity) => {
+      const station = inventory.entities.defOf(entity).workstation;
+      return station ? [{ entity, ...station }] : [];
+    })
+    .sort(
+      (a, b) =>
+        furnitureDistance(player, a.entity) - furnitureDistance(player, b.entity) || a.entity.uid - b.entity.uid,
+    );
   const snapshot: ReachSnapshot = {
     player,
     origin: [position[0], position[1], position[2]],
@@ -125,7 +137,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entries,
     piles,
     furniture,
-    workstations: [],
+    workstations,
   };
   snapshots.set(player, {
     inventoryVersion: inventory.version,
