@@ -6,7 +6,12 @@ import type { Vec3 } from '../src/core/coords.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { GameAudio } from '../src/game/audio.ts';
-import { firearmShotSound, HEARTBEAT_QUIET_FLOOR, heartbeatForStamina } from '../src/game/audioPresentation.ts';
+import {
+  firearmShotSound,
+  HEARTBEAT_FILES,
+  HEARTBEAT_QUIET_FLOOR,
+  heartbeatForStamina,
+} from '../src/game/audioPresentation.ts';
 
 const audios: GameAudio[] = [];
 
@@ -14,7 +19,7 @@ const makeNode = () => ({ connect: vi.fn(), disconnect: vi.fn() });
 const makeParam = () => ({ value: 1, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() });
 const makeSource = () => ({
   ...makeNode(),
-  buffer: null,
+  buffer: null as AudioBuffer | null,
   playbackRate: { value: 1 },
   onended: null as (() => void) | null,
   start: vi.fn(),
@@ -30,7 +35,12 @@ class FakeAudioContext {
   sources: ReturnType<typeof makeSource>[] = [];
   panners: ReturnType<typeof makeNode>[] = [];
   peakConnectedSources = 0;
-  decodeAudioData = vi.fn(() => Promise.resolve({ duration: 2 } as AudioBuffer));
+  decodeAudioData = vi.fn((data: ArrayBuffer) =>
+    Promise.resolve({
+      duration: 2,
+      heartbeatFile: (data as ArrayBuffer & { heartbeatFile?: string }).heartbeatFile,
+    } as unknown as AudioBuffer),
+  );
 
   constructor() {
     FakeAudioContext.lastCreated = this;
@@ -69,9 +79,14 @@ class FakeAudioContext {
 
 const setup = () => {
   vi.stubGlobal('AudioContext', FakeAudioContext);
-  const fetchBuffer = vi.fn(() =>
-    Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(new ArrayBuffer(8)) } as Response),
-  );
+  const fetchBuffer = vi.fn((url: string) => {
+    const data = new ArrayBuffer(8) as ArrayBuffer & { heartbeatFile?: string };
+    const heartbeatFile = Object.values(HEARTBEAT_FILES).find((file) => url.includes(file));
+    if (heartbeatFile) {
+      data.heartbeatFile = heartbeatFile;
+    }
+    return Promise.resolve({ ok: true, arrayBuffer: () => Promise.resolve(data) } as Response);
+  });
   vi.stubGlobal('fetch', fetchBuffer);
   const soundData = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown;
   const { registry, issues } = buildRegistry([{ source: '../content/base/sounds.json', data: soundData }]);
@@ -117,7 +132,10 @@ describe('game audio playback', () => {
     const { audio, context, fetchBuffer } = setup();
     const audibleTimbres = (stamina: number) => {
       const { gain, fastMix } = heartbeatForStamina(stamina);
-      return [gain * (1 - fastMix), gain * fastMix].filter((gainValue) => gainValue >= HEARTBEAT_QUIET_FLOOR);
+      return [
+        { file: HEARTBEAT_FILES.slow, gain: gain * (1 - fastMix) },
+        { file: HEARTBEAT_FILES.fast, gain: gain * fastMix },
+      ].filter(({ gain: share }) => share >= HEARTBEAT_QUIET_FLOOR);
     };
     audio.updateHeartbeat(100);
     await flush();
@@ -149,6 +167,7 @@ describe('game audio playback', () => {
     audio.updateHeartbeat(50);
     await flush();
     const expectedGains = audibleTimbres(50);
+    expect(expectedGains.length).toBeGreaterThan(0);
     expect(context.sources).toHaveLength(beforeMix + expectedGains.length);
     const mixedGains = context.sources.slice(beforeMix).map((source) => {
       const gain = source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>;
@@ -156,7 +175,27 @@ describe('game audio playback', () => {
     });
     expect(mixedGains).toHaveLength(expectedGains.length);
     mixedGains.forEach((gain, index) => {
-      expect(gain).toBeCloseTo(expectedGains[index]!);
+      expect(gain).toBeCloseTo(expectedGains[index]!.gain);
+    });
+
+    const unequalShareStamina = Array.from({ length: 9 }, (_, index) => (index + 1) * 10).find((stamina) => {
+      const shares = audibleTimbres(stamina);
+      return shares.length === 2 && shares[0]!.gain !== shares[1]!.gain;
+    });
+    expect(unequalShareStamina).toBeDefined();
+    const expectedShares = audibleTimbres(unequalShareStamina!).sort((a, b) => a.file.localeCompare(b.file));
+    const beforeUnequalShares = context.sources.length;
+    context.currentTime += 1;
+    audio.updateHeartbeat(unequalShareStamina!);
+    await flush();
+    const sourceShares = context.sources.slice(beforeUnequalShares).map((source) => ({
+      file: (source.buffer as (AudioBuffer & { heartbeatFile?: string }) | null)?.heartbeatFile,
+      gain: (source.connect.mock.calls[0]![0] as ReturnType<FakeAudioContext['createGain']>).gain.value,
+    }));
+    sourceShares.sort((a, b) => (a.file ?? '').localeCompare(b.file ?? ''));
+    expect(sourceShares.map(({ file }) => file)).toEqual(expectedShares.map(({ file }) => file));
+    sourceShares.forEach(({ gain }, index) => {
+      expect(gain).toBeCloseTo(expectedShares[index]!.gain);
     });
     expect(context.sources.every(({ playbackRate }) => playbackRate.value === 1)).toBe(true);
     expect(audio.heardSounds).toHaveLength(0);
