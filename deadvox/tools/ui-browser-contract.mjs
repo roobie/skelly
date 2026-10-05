@@ -122,11 +122,11 @@ try {
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   page = await context.newPage();
   await page.addInitScript(() => {
-    window.__webglContextRequests = [];
+    globalThis.__webglContextRequests = [];
     const nativeGetContext = HTMLCanvasElement.prototype.getContext;
     HTMLCanvasElement.prototype.getContext = function (type, ...args) {
       if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) {
-        window.__webglContextRequests.push(type);
+        globalThis.__webglContextRequests.push(type);
         return null;
       }
       return nativeGetContext.call(this, type, ...args);
@@ -292,10 +292,7 @@ try {
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
   })()`);
-  await waitFor(
-    () => evaluate("Boolean(document.querySelector('#debug-ui-root'))"),
-    'post-acceptance debug UI mount',
-  );
+  await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
   graphics = await evaluate(`({
     renderMode: ${JSON.stringify(renderMode)},
     webglContextRequests: window.__webglContextRequests.slice(),
@@ -920,9 +917,7 @@ try {
     'unlock event does not call lock APIs',
   );
 
-  await evaluate(
-    `window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
     await clickAt('#go');
@@ -937,9 +932,7 @@ try {
   await evaluate('window.__setPointerLocked(false)');
   await delay(100);
   assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'unlock closes an open inventory');
-  await evaluate(
-    `window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
@@ -955,9 +948,7 @@ try {
     true,
     'unlock closes an open debug panel',
   );
-  await evaluate(
-    `window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
