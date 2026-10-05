@@ -98,6 +98,7 @@ const calibreSlug = (calibre: string): string =>
 export const spentCaseItemId = (calibre: string): string => `spent_case_${calibreSlug(calibre)}`;
 
 export interface FirearmTrajectory {
+  readonly eye: Vec3;
   readonly muzzle: Vec3;
   readonly directions: readonly Vec3[];
 }
@@ -295,7 +296,7 @@ export class FirearmMechanics {
         key: shotKey,
       });
       this.onShot(pellets, input.simTime);
-      this.onTrajectory({ muzzle, directions: pellets.directions }, input.simTime);
+      this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
       this.onCommittedShot(seed, data.recoilKickRadians);
     } else {
       item.firearm = {
@@ -311,7 +312,10 @@ export class FirearmMechanics {
         },
       };
       this.active.add(item.uid);
-      this.onTrajectory({ muzzle, directions: [aimDirection(input.yaw, input.pitch, input.aimFrame)] }, input.simTime);
+      this.onTrajectory(
+        { eye: input.eye, muzzle, directions: [aimDirection(input.yaw, input.pitch, input.aimFrame)] },
+        input.simTime,
+      );
       this.onCommittedShot(seed, data.recoilKickRadians);
     }
     return true;

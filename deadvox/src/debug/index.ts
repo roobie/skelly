@@ -31,6 +31,7 @@ import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
+import { rangeToNearestShotTargetMetres, type ShotTargetBox } from './shotTargetRange.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
@@ -123,8 +124,9 @@ const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number,
   </aside>
 `;
 
-const axisGizmoTemplate = (visible: boolean): TemplateResult => html`
+const axisGizmoTemplate = (visible: boolean, targetRange: string): TemplateResult => html`
   <canvas id="debug-axis-gizmo" width="144" height="144" ?hidden=${!visible} role="img" aria-label="World axes: positive X red, Y green, Z blue"></canvas>
+  <span id="debug-target-range" ?hidden=${targetRange === ''} aria-label="Range to shot target">${targetRange}</span>
 `;
 
 function paintAxisGizmo(canvas: HTMLCanvasElement, quaternion: readonly [number, number, number, number]): void {
@@ -809,6 +811,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let panelOpen = false;
   let f3Open = false;
   let axesVisible = true;
+  let targetRangeText = '';
   let copyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
   let axisAnimation: number | undefined;
@@ -1003,7 +1006,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   function drawAxisGizmo(): void {
     const root = host.querySelector<HTMLElement>('#debug-axis-gizmo-root');
     if (root) {
-      render(axisGizmoTemplate(axesVisible), root);
+      render(axisGizmoTemplate(axesVisible, targetRangeText), root);
       const canvas = root.querySelector<HTMLCanvasElement>('#debug-axis-gizmo');
       if (canvas && axesVisible) {
         paintAxisGizmo(canvas, cameraQuaternion);
@@ -1015,6 +1018,28 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       cancelAnimationFrame(axisAnimation);
       axisAnimation = undefined;
     }
+  }
+  let nextShotTargetRangeUpdate = Number.NEGATIVE_INFINITY;
+  function updateShotTargetRange(now: number): void {
+    if (now < nextShotTargetRangeUpdate) {
+      return;
+    }
+    nextShotTargetRangeUpdate = now + 400;
+    function* shotTargets(): IterableIterator<ShotTargetBox> {
+      for (const entity of hooks.engine.entities.all) {
+        const shotTarget = hooks.engine.registry.furniture.get(entity.type)?.shotTarget === true;
+        if (shotTarget) {
+          yield { pos: entity.pos, size: entity.size, shotTarget };
+        }
+      }
+    }
+    const range = rangeToNearestShotTargetMetres(
+      hooks.body.pos,
+      hooks.body.height,
+      hooks.engine.config.scale.blockSize,
+      shotTargets(),
+    );
+    targetRangeText = range === undefined ? '' : `Target range: ${range.toFixed(1)} m`;
   }
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell rendering keeps UI wiring and readout refresh together.
   function drawShell(): void {
@@ -1213,6 +1238,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     if (toggleOnShortcut(e, 'Backquote', togglePanel)) {
       return true;
     }
+    if (e.code === KEY_BINDINGS.debugModifier.code) {
+      e.preventDefault();
+      return true;
+    }
     if (spawnMenu.isOpen) {
       if (e.code === 'KeyG' && !(e.target instanceof HTMLInputElement) && !e.repeat) {
         toggleSpawn();
@@ -1313,6 +1342,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     update(next: DebugReadout) {
       readout = next;
       syncCamUrl();
+      updateShotTargetRange(performance.now());
       drawShell();
     },
   };

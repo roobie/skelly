@@ -166,6 +166,20 @@ try {
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   await page.evaluate(() => {
+    globalThis.fullAutoProbe.f1DefaultPrevented = false;
+    window.addEventListener('keydown', (event) => {
+      if (event.code === 'F1') {
+        globalThis.fullAutoProbe.f1DefaultPrevented = event.defaultPrevented;
+      }
+    });
+  });
+  await page.keyboard.press('F1');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.f1DefaultPrevented),
+    true,
+    'the attached debug handler prevents the browser default for F1',
+  );
+  await page.evaluate(() => {
     const { impactEffects } = globalThis.fullAutoRuntime.view;
     const fire = impactEffects.fire.bind(impactEffects);
     globalThis.fullAutoProbe.trajectories = 0;
@@ -246,9 +260,13 @@ try {
   const impactPresentation = await page.evaluate(() => ({
     marks: globalThis.fullAutoRuntime.view.impactEffects.activeMarks,
     laserSegments: globalThis.fullAutoRuntime.view.impactEffects.laser.geometry.drawRange.count,
+    laserVisible: globalThis.fullAutoRuntime.view.impactEffects.laser.visible,
   }));
   assert.ok(impactPresentation.marks > 0, 'committed rounds that meet world geometry create impact marks');
-  assert.ok(impactPresentation.laserSegments > 0, 'debug trajectory segments are submitted for rendering');
+  assert.ok(
+    impactPresentation.laserSegments > 0 && impactPresentation.laserVisible,
+    'debug trajectory segments are visible in the renderer',
+  );
   const cadence = await page.evaluate(() => ({
     shots: globalThis.fullAutoProbe.shots,
     cases:

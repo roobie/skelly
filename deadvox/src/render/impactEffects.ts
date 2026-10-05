@@ -15,14 +15,14 @@ import {
   Vector3,
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import type { SolidAt } from '../core/raycast.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { FirearmTrajectory } from '../game/firearmHandling.ts';
 import { type ShotTrace, traceShot } from './shotTrace.ts';
 
 export const IMPACT_MARK_CAP = 96;
 const TRACE_RANGE_BLOCKS = 240;
 const DUST_SECONDS = 0.55;
-const PING_SECONDS = 1.4;
+export const PING_SECONDS = 1.4;
 const LASER_SECONDS = 0.35;
 const FACE_NORMAL = new Vector3(0, 0, 1);
 const ZERO_POINT = new Vector3();
@@ -107,6 +107,8 @@ export class ImpactEffects {
     const laserGeometry = new BufferGeometry();
     laserGeometry.setAttribute('position', new BufferAttribute(new Float32Array(64 * 6), 3));
     this.laser = new LineSegments(laserGeometry, new LineBasicMaterial({ color: 0xff_00_ff }));
+    // Rewritten endpoints make a cached bounding sphere stale; this bounded debug line needs no frustum culling.
+    this.laser.frustumCulled = false;
     this.laser.visible = false;
     this.group.add(this.laser);
   }
@@ -117,7 +119,18 @@ export class ImpactEffects {
 
   /** Tracing, holes, pings and the laser share one resolved segment per pellet/round. */
   fire(trajectory: FirearmTrajectory, debugLaser: boolean): void {
-    const traces = traceShot(trajectory.muzzle, trajectory.directions, TRACE_RANGE_BLOCKS, this.solidAt);
+    const eyeToMuzzle = trajectory.muzzle.map((value, axis) => value - trajectory.eye[axis]!) as Vec3;
+    const eyeMuzzleDistance = Math.hypot(...eyeToMuzzle);
+    const muzzleBlocked =
+      eyeMuzzleDistance > 0 &&
+      raycast(
+        trajectory.eye,
+        eyeToMuzzle.map((value) => value / eyeMuzzleDistance) as Vec3,
+        eyeMuzzleDistance,
+        this.solidAt,
+      ) !== undefined;
+    const origin = muzzleBlocked ? trajectory.eye : trajectory.muzzle;
+    const traces = traceShot(origin, trajectory.directions, TRACE_RANGE_BLOCKS, this.solidAt);
     for (const trace of traces) {
       if (!trace.hit) {
         continue;
