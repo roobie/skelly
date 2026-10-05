@@ -10,6 +10,7 @@ export const bookReadingHooks = (inventory: Inventory, character: Character): Re
     return item && defOf(inventory.registry, item.type).book ? item : undefined;
   };
   return {
+    owns: (uid) => book(uid) !== undefined,
     validate: (uid) => {
       const item = book(uid);
       if (!item) {

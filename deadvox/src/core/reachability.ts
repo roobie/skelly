@@ -82,6 +82,7 @@ const closure = (
     previous = items.size;
     for (const recipe of registry.recipes.values()) {
       if (
+        recipe.kind !== 'repair' &&
         knowledge.has(recipe.id) &&
         Object.entries(recipe.skills).every(([skill, level]) => level === 0 || skills.has(skill)) &&
         inputsReady(recipe, items) &&

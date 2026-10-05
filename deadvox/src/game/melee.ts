@@ -1,4 +1,4 @@
-import type { BeginMeleeSwing, ZombieSystem } from '../core/zombies.ts';
+import type { BeginMeleeSwing, PlayerCombat } from '../core/playerCombat.ts';
 
 export type MeleeStartResult = 'started' | 'too-tired' | 'busy';
 
@@ -13,7 +13,7 @@ export const shouldEnterMeleeReady = (input: {
 
 /** Refuses without cost when tired/busy; every accepted swing spends stamina, including a miss. */
 export const startPlayerMelee = (
-  zombies: ZombieSystem,
+  combat: PlayerCombat,
   needs: { stamina: number },
   swing: BeginMeleeSwing,
 ): MeleeStartResult => {
@@ -21,7 +21,7 @@ export const startPlayerMelee = (
   if (needs.stamina < cost) {
     return 'too-tired';
   }
-  if (!zombies.beginMeleeSwing(swing)) {
+  if (!combat.beginMeleeSwing(swing)) {
     return 'busy';
   }
   needs.stamina = Math.max(0, needs.stamina - cost);

@@ -13,6 +13,7 @@ import {
   ContentFileSchema,
   type ContentSection,
   type ItemDef,
+  type RecipeDef,
   type TemplateDef,
 } from './schema.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
@@ -386,36 +387,64 @@ const checkZombies = (registry: Registry, report: Report) => {
   }
 };
 
+const checkRecipeRepair = (registry: Registry, recipe: RecipeDef, report: Report): void => {
+  if (recipe.kind === 'repair') {
+    if (!recipe.repair) {
+      report('recipes', recipe.id, '.repair', 'repair recipes need a repair effect');
+      return;
+    }
+    if (!registry.skills.has(recipe.repair.skill)) {
+      report('recipes', recipe.id, '.repair.skill', `no skill "${recipe.repair.skill}"`);
+    }
+    if (recipe.result.count !== 1) {
+      report('recipes', recipe.id, '.result.count', 'repair recipes target one item');
+    }
+  } else if (recipe.repair) {
+    report('recipes', recipe.id, '.repair', 'only repair recipes may declare a repair effect');
+  }
+};
+
+const checkRecipeReferences = (
+  registry: Registry,
+  recipe: RecipeDef,
+  references: { qualities: ReadonlySet<string>; workstations: ReadonlySet<string> },
+  report: Report,
+): void => {
+  const { qualities, workstations } = references;
+  const checkItem = (id: string, path: string) => {
+    if (!registry.items.has(id)) {
+      report('recipes', recipe.id, path, `no item "${id}"`);
+    }
+  };
+  checkItem(recipe.result.item, '.result.item');
+  checkRecipeRepair(registry, recipe, report);
+  recipe.components.forEach((group, g) => {
+    group.forEach((component, c) => {
+      checkItem(component.item, `.components[${g}][${c}].item`);
+    });
+  });
+  for (const id of Object.keys(recipe.skills)) {
+    if (!registry.skills.has(id)) {
+      report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
+    }
+  }
+  for (const id of Object.keys(recipe.qualities)) {
+    if (!qualities.has(id)) {
+      report('recipes', recipe.id, `.qualities.${id}`, `no tool quality "${id}"`);
+    }
+  }
+  if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
+    report('recipes', recipe.id, '.workstation', `no workstation "${recipe.workstation}"`);
+  }
+};
+
 const checkRecipes = (registry: Registry, report: Report) => {
   const qualities = new Set([...registry.items.values()].flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const workstations = new Set(
     [...registry.furniture.values()].flatMap((furniture) => (furniture.workstation ? [furniture.workstation.id] : [])),
   );
   for (const recipe of registry.recipes.values()) {
-    const checkItem = (id: string, path: string) => {
-      if (!registry.items.has(id)) {
-        report('recipes', recipe.id, path, `no item "${id}"`);
-      }
-    };
-    checkItem(recipe.result.item, '.result.item');
-    recipe.components.forEach((group, g) => {
-      group.forEach((component, c) => {
-        checkItem(component.item, `.components[${g}][${c}].item`);
-      });
-    });
-    for (const id of Object.keys(recipe.skills)) {
-      if (!registry.skills.has(id)) {
-        report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
-      }
-    }
-    for (const id of Object.keys(recipe.qualities)) {
-      if (!qualities.has(id)) {
-        report('recipes', recipe.id, `.qualities.${id}`, `no tool quality "${id}"`);
-      }
-    }
-    if (typeof recipe.workstation === 'string' && !workstations.has(recipe.workstation)) {
-      report('recipes', recipe.id, '.workstation', `no workstation "${recipe.workstation}"`);
-    }
+    checkRecipeReferences(registry, recipe, { qualities, workstations }, report);
   }
 };
 

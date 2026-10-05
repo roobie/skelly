@@ -25,7 +25,8 @@
       "category": "tool",
       "weight": 1250,
       "size": [2, 2],
-      "description": "Metal patches, tape and rags for a makeshift repair."
+      "description": "Metal patches, tape and rags for a makeshift repair.",
+      "tool": { "qualities": { "repairing": 1 } }
     },
     { "id": "copper_wire", "name": "Salvaged wire", "category": "material", "weight": 80, "size": [1, 2] },
     { "id": "field_patch", "name": "Field repair patch", "category": "material", "weight": 120, "size": [1, 2] }
@@ -79,6 +80,16 @@
       "skills": { "mechanics": 2 },
       "qualities": {},
       "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "repair_crowbar",
+      "kind": "repair",
+      "result": { "item": "crowbar", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "repairing": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
     }
   ]
 }

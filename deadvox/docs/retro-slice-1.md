@@ -1,6 +1,8 @@
 ---
 id: deadvox::retro-slice-1
 description: Retrospective for deadvox Slice 1 (the loot run), what was planned against what shipped, what worked, what hurt, and proposed changes for Slice 2
+read_if:
+  - you're reviewing the Slice 1 retrospective and its process measurements
 tags: [deadvox, retrospective, slice-1, process]
 created: 2026-10-02
 status: final
@@ -9,6 +11,8 @@ status: final
 # Slice 1 retrospective
 
 [[THIS is_grounded_by: ../SLICE-1.md]]
+SLICE-1.md left the tree in r33. Read it with `git show 669e7df53e5b1a3dde27e0ef8f11d13e94539cdc:deadvox/SLICE-1.md`.
+
 [[THIS is_grounded_by: ../EPIC.md]]
 [[THIS is_grounded_by: ../../../docs/PROCESS.md]]
 

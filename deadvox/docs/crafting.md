@@ -73,6 +73,14 @@ book UID and progress. Books teach recipes only, as BR ruled for Slice 2. The
 starting source stays explicit and filtered to loaded recipe IDs; reading adds
 knowledge without changing the book's item ownership.
 
+For a stopped reading job, progress remains with the job while its book exists in
+inventory, including when the book is in a pile. This preserves interrupted work
+without letting it progress or resume until the same book is held again. A held
+book's primary activation shares the item-use path, and activating the same
+stopped book resumes its progress. If the book is gone, `LongActions.snapshotState`
+drops the stopped job; `LongActions.restoreState` checks ownership without
+requiring a hand.
+
 Snapshots and the canonical save payload persist `character.progression`.
 Restoration preserves the saved levels/knowledge instead of reseeding them and
 validates skill definitions, recipe references, duplicate knowledge and levels.

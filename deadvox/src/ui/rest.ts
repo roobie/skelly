@@ -1,7 +1,3 @@
-// The rest/sleep screen (SLICE-1.md, 1.8): shown while a long action runs, with a
-// spinning clock, a progress bar, and an edge effect. The interruption prompt joins
-// it once compression drops back to 1x and waits for Continue or Stop.
-
 import { html, render, type TemplateResult } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { RestAction } from '../core/longAction.ts';

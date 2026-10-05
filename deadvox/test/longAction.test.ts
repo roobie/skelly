@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bookReadingHooks } from '../src/core/bookReading.ts';
 import { Character } from '../src/core/character.ts';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
@@ -12,23 +12,25 @@ import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
 
-const { registry } = buildRegistry(
-  readdirSync('src/content/base')
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({
-      source: file,
-      data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
-    })),
-);
-const make = (saved?: {
-  inventory: ReturnType<Inventory['snapshotState']>;
-  simulation: ReturnType<Simulation['snapshotState']>;
-  action: ReturnType<Simulation['actions']['snapshotState']>;
-}) => {
-  const inv = saved ? Inventory.restoreState(registry, saved.inventory) : new Inventory(registry);
+const baseContent = readdirSync('src/content/base')
+  .filter((file) => file.endsWith('.json'))
+  .sort()
+  .map((file) => ({
+    source: file,
+    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
+  }));
+const { registry } = buildRegistry(baseContent);
+const make = (
+  saved?: {
+    inventory: ReturnType<Inventory['snapshotState']>;
+    simulation: ReturnType<Simulation['snapshotState']>;
+    action: ReturnType<Simulation['actions']['snapshotState']>;
+  },
+  contentRegistry: Registry = registry,
+) => {
+  const inv = saved ? Inventory.restoreState(contentRegistry, saved.inventory) : new Inventory(contentRegistry);
   const sim = new Simulation({ seed: 1, restRate: () => sim.actions.restRate });
-  const character = new Character(registry);
+  const character = new Character(contentRegistry);
   const reach = bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 0.5 });
   sim.actions.craft = craftActionHooks(inv, character, reach, () => [0, 0, 0]);
   sim.actions.reading = bookReadingHooks(inv, character);
@@ -72,35 +74,107 @@ const snapshot = (runtime: ReturnType<typeof make>) => ({
 });
 const resultCount = (inv: Inventory) =>
   [...inv.items()].filter(({ item }) => item.type === 'torch').reduce((sum, { item }) => sum + item.count, 0);
+const startRepair = () => {
+  const runtime = make();
+  const target = runtime.inv.create('crowbar');
+  target.condition = 0.2;
+  for (const [type, pos] of [
+    ['crowbar', [0, 0, 0]],
+    ['repair_kit', [1, 0, 0]],
+    ['scrap_metal', [2, 0, 0]],
+    ['duct_tape', [3, 0, 0]],
+  ] as const) {
+    const item = type === 'crowbar' ? target : runtime.inv.create(type);
+    if (!runtime.inv.add(item, { kind: 'pile', pos: [...pos] })) {
+      throw new Error(`Cannot place repair fixture item ${type}`);
+    }
+  }
+  const plan = planCraft(registry.recipes.get('repair_crowbar')!, runtime.reach(), runtime.character);
+  if (!('plan' in plan)) {
+    throw new Error(plan.missing.reason);
+  }
+  const repairAmount = registry.recipes.get('repair_crowbar')!.repair!.amount;
+  const work = runtime.inv.beginWork(plan.plan, { targetUid: target.uid, amount: repairAmount });
+  if (!work) {
+    throw new Error('Cannot gather repair inputs');
+  }
+  if (runtime.sim.actions.startCraft(work.uid)) {
+    throw new Error('Cannot start repair');
+  }
+  return { ...runtime, target, work, materials: plan.plan.components.map(({ item }) => item.uid) };
+};
 
 describe('core long actions', () => {
   it('awards recipe-skill practice only when the craft finishes', () => {
+    const starting = new Character(registry);
+    const expected = new Character(registry);
+    expected.awardPractice('crafting', registry.recipes.get('torch')!.time);
     const runtime = start();
-    expect(runtime.character.skills.crafting).toBe(0);
+    expect(runtime.character.skills).toEqual(starting.skills);
+    expect(runtime.character.practice).toEqual(starting.practice);
     runtime.sim.actions.stop();
-    expect(runtime.character.skills.crafting).toBe(0);
+    expect(runtime.character.skills).toEqual(starting.skills);
+    expect(runtime.character.practice).toEqual(starting.practice);
     expect(runtime.sim.actions.resume()).toBeUndefined();
     const { duration } = runtime.payload;
     runtime.sim.scheduler.advance(duration / runtime.sim.clock.ratio + 2);
-    expect(runtime.character.skills.crafting).toBe(1);
+    expect(runtime.character.skills).toEqual(expected.skills);
+    expect(runtime.character.practice).toEqual(expected.practice);
     expect(runtime.inv.hands.right?.type).toBe('torch');
     expect(runtime.sim.actions.job).toBeUndefined();
   });
-  it('resumes reading the held book and teaches its recipes only once on completion', () => {
-    registry.recipes.set('reading_fixture', {
-      id: 'reading_fixture',
-      result: { item: 'torch', count: 1 },
-      time: 1,
-      skills: {},
-      qualities: {},
-      components: [[{ item: 'rag', count: 1 }]],
-    });
-    registry.items.set('sample_note', {
-      ...registry.items.get('sample_note')!,
-      book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingTime: 1 },
-    });
+  it('Read resumes the same interrupted book from its saved progress', () => {
     const runtime = make();
-    const item = runtime.inv.create('sample_note');
+    const book = runtime.inv.create('field_manual');
+    expect(runtime.inv.add(book, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    runtime.sim.scheduler.advance(10 / runtime.sim.clock.ratio);
+    runtime.sim.actions.stop();
+    expect(runtime.sim.actions.job).toMatchObject({
+      jobType: 'reading',
+      stopped: true,
+      bookUid: book.uid,
+      elapsed: 10,
+    });
+
+    expect(runtime.sim.actions.beginReading(book.uid)).toBeUndefined();
+    expect(runtime.sim.actions.job).toMatchObject({
+      jobType: 'reading',
+      stopped: false,
+      bookUid: book.uid,
+      elapsed: 10,
+    });
+  });
+
+  it('resumes reading the held book and teaches its recipes only once on completion', () => {
+    const fixtureContent = {
+      items: [
+        {
+          id: 'reading_fixture_book',
+          name: 'Fixture manual',
+          category: 'book',
+          weight: 1,
+          size: [1, 1],
+          book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingTime: 1 },
+        },
+      ],
+      recipes: [
+        {
+          id: 'reading_fixture',
+          result: { item: 'torch', count: 1 },
+          time: 1,
+          skills: {},
+          qualities: {},
+          components: [[{ item: 'rag', count: 1 }]],
+        },
+      ],
+    };
+    const fixtureRegistry = buildRegistry([
+      ...baseContent,
+      { source: 'reading-fixture.json', data: fixtureContent },
+    ]).registry;
+    const runtime = make(undefined, fixtureRegistry);
+    const item = runtime.inv.create('reading_fixture_book');
     expect(runtime.inv.add(item, { kind: 'hand', side: 'right' })).toBe(true);
     expect(runtime.character.knownRecipes.has('reading_fixture')).toBe(false);
     expect(runtime.sim.actions.beginReading(item.uid)).toBeUndefined();
@@ -108,7 +182,7 @@ describe('core long actions', () => {
     runtime.sim.actions.stop();
     expect(runtime.sim.actions.job).toMatchObject({ jobType: 'reading', stopped: true, elapsed: 10 });
     expect(runtime.character.knownRecipes.has('reading_fixture')).toBe(false);
-    const restored = make(snapshot(runtime));
+    const restored = make(snapshot(runtime), fixtureRegistry);
     expect(restored.sim.actions.resume()).toBeUndefined();
     const reading = restored.sim.actions.job;
     if (reading?.jobType !== 'reading') {
@@ -118,7 +192,7 @@ describe('core long actions', () => {
     expect(restored.character.knownRecipes.has('reading_fixture')).toBe(true);
     expect(
       craftRows({
-        registry,
+        registry: fixtureRegistry,
         character: restored.character,
         reach: restored.reach(),
         preferences: {},
@@ -126,8 +200,8 @@ describe('core long actions', () => {
       }).some((row) => row.id === 'reading_fixture'),
     ).toBe(true);
     expect(restored.sim.actions.job).toBeUndefined();
-    expect(restored.inv.itemByUid(item.uid)?.type).toBe('sample_note');
-    expect(restored.character.knownRecipes.size).toBe(new Character(registry).knownRecipes.size + 1);
+    expect(restored.inv.itemByUid(item.uid)?.type).toBe('reading_fixture_book');
+    expect(restored.character.knownRecipes.size).toBe(new Character(fixtureRegistry).knownRecipes.size + 1);
   });
   it('insufficient bounded drop room retains all cancel inputs and a stopped descriptor', () => {
     const runtime = start();
@@ -220,6 +294,29 @@ describe('core long actions', () => {
     );
     expect(resultCount(restored.inv)).toBe(1);
     expect(restored.inv.itemByUid(runtime.item.uid)).toBeUndefined();
+  });
+
+  it('repairs the same target once after restoring a running repair action', () => {
+    const source = startRepair();
+    source.sim.scheduler.advance(1);
+    const before = snapshot(source);
+    const restored = make(before);
+    expect(snapshot(restored)).toEqual(before);
+    const savedWork = restored.inv.itemByUid(source.work.uid)!;
+    expect(savedWork.work?.repairTargetUid).toBe(source.target.uid);
+    expect(savedWork.work?.repairAmount).toBe(source.work.work?.repairAmount);
+    const amount = savedWork.work!.repairAmount!;
+    restored.sim.scheduler.advance(
+      Math.ceil((savedWork.work!.duration - savedWork.work!.elapsed) / restored.sim.clock.ratio) + 1,
+    );
+    const repairedCondition = Math.min(1, source.target.condition + amount);
+    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(repairedCondition);
+    expect(source.materials.length).toBeGreaterThan(0);
+    expect(source.materials.every((uid) => restored.inv.itemByUid(uid) === undefined)).toBe(true);
+    expect(restored.inv.itemByUid(source.work.uid)).toBeUndefined();
+    restored.sim.actions.resume();
+    restored.sim.scheduler.advance(1000);
+    expect(restored.inv.itemByUid(source.target.uid)?.condition).toBeCloseTo(repairedCondition);
   });
 
   it('rechecks tools on a tick and Continue, refusing without spending progress', () => {

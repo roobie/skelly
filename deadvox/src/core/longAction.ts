@@ -16,6 +16,7 @@ export type LongJob =
   | { jobType: 'craft'; stopped: boolean; last: number; workUid: number }
   | { jobType: 'reading'; stopped: boolean; last: number; bookUid: number; elapsed: number; duration: number };
 export interface ReadingActionHooks {
+  owns: (bookUid: number) => boolean;
   validate: (bookUid: number) => string | undefined;
   duration: (bookUid: number) => number | undefined;
   finish: (bookUid: number) => void;
@@ -24,9 +25,13 @@ export interface LongActionState {
   job: LongJob | null;
 }
 /** Per-kind effects stay in the native craft owner, never in saved closures. */
+export interface CraftRepair {
+  targetUid: number;
+  amount: number;
+}
 export interface CraftActionHooks {
   admit: (plan: CraftPlan) => string | undefined;
-  begin: (plan: CraftPlan) => number | undefined;
+  begin: (plan: CraftPlan, repair?: CraftRepair) => number | undefined;
   owns: (uid: number) => boolean;
   validate: (uid: number) => string | undefined;
   advance: (uid: number, gameSeconds: number) => boolean;
@@ -116,6 +121,14 @@ export class LongActions {
     return this.current && !this.current.stopped && this.sim.compression.active ? this.rest?.rate : undefined;
   }
   snapshotState(): Readonly<LongActionState> {
+    if (
+      this.current?.jobType === 'reading' &&
+      this.current.stopped &&
+      this.reading &&
+      !this.reading.owns(this.current.bookUid)
+    ) {
+      this.current = undefined;
+    }
     return freezeSnapshot({ job: this.current ? structuredClone(this.current) : null });
   }
   restoreState(state: LongActionState): void {
@@ -123,8 +136,8 @@ export class LongActions {
     if (state.job?.jobType === 'craft' && !this.craft?.owns(state.job.workUid)) {
       throw new Error('Missing craft work item');
     }
-    if (state.job?.jobType === 'reading' && (!this.reading || this.reading.validate(state.job.bookUid))) {
-      throw new Error('Missing or unavailable reading book');
+    if (state.job?.jobType === 'reading' && !this.reading?.owns(state.job.bookUid)) {
+      throw new Error('Missing reading book');
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
   }
@@ -152,7 +165,7 @@ export class LongActions {
     return undefined;
   }
   /** Admit and secure compression before any structural escrow effect. */
-  beginCraft(plan: CraftPlan): string | undefined {
+  beginCraft(plan: CraftPlan, repair?: CraftRepair): string | undefined {
     if (!this.craft) {
       return 'Missing craft action owner';
     }
@@ -172,7 +185,7 @@ export class LongActions {
     }
     let uid: number | undefined;
     try {
-      uid = this.craft.begin(plan);
+      uid = this.craft.begin(plan, repair);
     } catch (error) {
       this.stop();
       throw error;
@@ -219,7 +232,8 @@ export class LongActions {
     if (!result.ok) {
       return result.reason;
     }
-    this.current = { jobType: 'reading', stopped: false, last: this.sim.time, bookUid, elapsed: 0, duration };
+    const elapsed = this.current?.jobType === 'reading' && this.current.bookUid === bookUid ? this.current.elapsed : 0;
+    this.current = { jobType: 'reading', stopped: false, last: this.sim.time, bookUid, elapsed, duration };
     return undefined;
   }
   startCraft(workUid: number): string | undefined {
@@ -242,6 +256,16 @@ export class LongActions {
   }
   resume(): string | undefined {
     if (!this.current) {
+      return undefined;
+    }
+    if (
+      this.current.jobType === 'reading' &&
+      this.current.stopped &&
+      this.reading &&
+      !this.reading.owns(this.current.bookUid)
+    ) {
+      this.current = undefined;
+      this.sim.compression.stop();
       return undefined;
     }
     if (this.current.jobType === 'craft') {

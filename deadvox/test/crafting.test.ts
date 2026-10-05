@@ -301,7 +301,18 @@ describe('pure craft planner', () => {
     const inventory = new Inventory(benchmarkRegistry);
     const bag = inventory.create('school_backpack');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
-    const types = ['stick', 'rag', 'wax', 'kitchen_knife', 'hammer', 'scrap_metal', 'duct_tape', 'copper_wire'];
+    const types = [
+      'stick',
+      'rag',
+      'wax',
+      'repair_kit',
+      'kitchen_knife',
+      'hammer',
+      'scrap_metal',
+      'duct_tape',
+      'copper_wire',
+      'field_patch',
+    ];
     for (let i = 0; i < 199; i += 1) {
       const type = types[i % types.length]!;
       const item = inventory.create(type, ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'].includes(type) ? 3 : 1);

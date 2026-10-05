@@ -1,16 +1,17 @@
 ---
 id: deadvox::adr-0002-saves
 description: Decision for exact, versioned, crash-safe local saves of the Deadvox simulation
+read_if:
+  - you're changing persistent simulation state or restore guarantees
+  - you're evaluating the save-format decision
+  - you change save format, snapshot state or compatibility policy
 tags: [deadvox, adr, saves, persistence, determinism]
 created: 2026-09-28
 status: accepted
-read_if:
-  - you change save format, snapshot state or compatibility policy
 ---
 
 # 2. Save the simulation, not the runtime
 
-[[THIS is_grounded_by: ../../SLICE-1.md]]
 [[THIS is_grounded_by: ../../DESIGN.md]]
 
 **Status:** accepted (2026-09-28). BR's rulings are recorded under [Rulings](#rulings-2026-09-28).
@@ -344,13 +345,15 @@ systems now.
 | Slice | Upcoming state | Save representation / revisit |
 | --- | --- | --- |
 | 1 — Loot run | Current clock, needs, character body/inventory, edited chunks, furniture, piles, shamblers, spawn ledger, audio hearing state | Covered by the state table above. Step 1 converts queued handling jobs from closures to tagged descriptors (`jobType` + serializable parameters and progress); 1.9 omits them from the snapshot copy, so current jobs are still canceled on load. |
-| 2 — Craft and mend | Crafting, repair, disassembly and reading as long actions; skills/practice; recipe discovery; in-progress craft holding components | Exact-version refusal lets these systems extend character and tagged-action state in place, without preserving an earlier decoder or migrating its saves; see `deadvox/src/core/saveState.ts`, `SaveSnapshot`. |
+| 2 — Craft and mend | Crafting, repair, disassembly and reading as long actions; skills/XP; recipe discovery; in-progress craft holding components | Revisit the exact job parameters, component escrow, skill IDs/XP and discovered-recipe IDs at Slice 2. Put progression under the character record and use the tagged job descriptor so later jobs can resume; no Slice 2 state is guessed into the 1.9 schema. |
 | 3 — Flesh and noise | Body parts/wounds; firearms, ammo, magazines/reloading; wall-attenuated noise; smell trail; zombie LOD tiers/hordes; light as a sense | Revisit schemas at Slice 3. Wounds and bodily conditions (including limp, illness and pain from `INTERFACE.md`) belong to the character. Persist a gun assembly generated from its gungen template and seed as item state, and include the gungen generator version in `versionIdentity`; ammo/magazines use the item tree. Active noise/smell stimuli and hordes are simulation state under the world/region; wall occlusion and light fields are derived from saved geometry and sources. Ready/block stance is held-input state and resets to unready on load; transient bodily cue animation/cooldowns reset, while their wound/condition causes persist. |
 | 4 — The region | Region map, towns/sites, weather/temperature, voxel light, abstract hordes and catch-up | The world is already keyed by 512 m region, with chunk/area records nested within it. Revisit the exact region metadata, catch-up cursors and persistent horde representation at Slice 4; deterministic unmodified terrain regenerates under the matching version. |
 | 5 — Holding ground | Construction, locks, barricades, generators, batteries, electricity, fire/smoke | Constructed blocks remain chunk diffs; doors/machines remain block entities in their region. Revisit power-network state, fuel/charge, fire/smoke timers and away-catch-up state at Slice 5; derived graphs/light are rebuilt. |
 | 6 — Wheels | Vehicle grids, installed parts, fuel, battery, driving, damage and repair | Revisit at Slice 6: vehicles are persistent world entities keyed by stable vehicle ID under their region, with their part/item state and dynamic physics state; exact component fields wait for the vehicle implementation. |
 | 7 — Cordon and labs | Tier 2/3 sites, underground labs, special zombies/evolution, hazard zones, lore | Revisit at Slice 7: generated sites remain version-bound world data; discovered lore belongs to the character and mutable hazards/evolution to world-region state. Exact fields wait for the systems. |
 | 8 — Version 1 | Migration and compatibility hardening | The version picker/migration decision is a hard fork. EPIC's “Old saves migrate” exit criterion remains a version 1 obligation, not a 1.9 feature; resolve the strict-version interim policy before the v1 exit. |
+
+**2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `deadvox/src/core/saveState.ts`, `SaveSnapshot`, and `deadvox/src/core/longAction.ts`, `LongActions`.
 
 ### Storage, browsers, and recovery
 
@@ -420,7 +423,8 @@ disk I/O are worker work. This estimate was not a result. Keep a hard
 instrumented target of at most 1 ms p95 snapshot time at 96 m (and no frame over
 16.7 ms); if measurement misses, reduce the snapshot surface or copy incrementally
 at barriers, never move serialization/disk work onto the frame. The snapshot p95
-is measured in-game via F4 as described in SLICE-1 §1.11. CI checks a ten-game-hour
+is measured in-game with the F4 snapshot controls in `src/debug/index.ts`,
+`measureSnapshot`. CI checks a ten-game-hour
 save below 5 MiB and decode/restore under 1 s on `ubuntu-latest`; these are
 runner-bound save budgets, not general device targets. On 2026-10-02 BR measured
 the reference-laptop batch-mean throughput in Firefox: 50 batches of 128 captures
@@ -496,8 +500,8 @@ generation until the new world's first snapshot commits.
    save-size/load-time checks. Done when CI checks the 10-hour <5 MiB and <1 s
    decode/restore limits on `ubuntu-latest` and the current-build round trip
    passes. The ≤1 ms individual per-capture p95 target is assessed in-game via
-   the F4 individual-tail observation under SLICE-1 §1.11, not by batch-mean
-   throughput, the Node benchmark, or a CI gate.
+   the F4 individual-tail observation (`src/debug/index.ts`, `measureSnapshot`),
+   not by batch-mean throughput, the Node benchmark, or a CI gate.
 
 ## Consequences
 
