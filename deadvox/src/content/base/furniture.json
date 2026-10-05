@@ -97,6 +97,12 @@
       "loot": "shelf"
     },
     {
+      "id": "workbench",
+      "name": "Workbench",
+      "size": [3, 2, 2],
+      "color": "#98734f"
+    },
+    {
       "id": "crate",
       "name": "Crate",
       "size": [2, 2, 2],
