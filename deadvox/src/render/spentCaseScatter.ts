@@ -3,7 +3,6 @@
 import type { Vec3 } from '../core/coords.ts';
 import { Rng } from '../core/random.ts';
 
-export const SPENT_CASE_ITEM_PREFIX = 'spent_case_';
 export const SPENT_CASE_SCATTER_CAP = 48;
 
 export interface SpentCaseInstance {

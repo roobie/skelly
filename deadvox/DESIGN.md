@@ -270,7 +270,7 @@ chunks can generate in any order.
   - `fuel`, `battery`, `light`, `book`
   - `vehiclePart` (after Slice 1)
 
-  Behaviour comes only from components; the game never checks an item's id.
+  Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled (BR, 2026-10-05), "yes, rule covers drawing too": first-person displays and ground-pile presentation follow declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`, and `src/render/piles.ts`, `PileMeshes.drawPile` and `PileMeshes.planSpentCases`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
   rotated. A container has one or more **pockets**, each its own grid: a jeans
   pocket is 1 × 2, a hoodie pocket 3 × 2, a school backpack 5 × 6, a kitchen
@@ -390,7 +390,10 @@ HTML over the game view, and keyboard-first:
 
 Items on the ground form **piles** at block positions, like CDDA. An item
 with a model lies at its place in the pile's grid; items without one make a
-generic bundle.
+generic bundle. For d59-2, spent cases read as loose debris rather than stacked
+material, so their content-owned pile-display component selects scattering; see
+`src/core/schema.ts`, `PILE_DISPLAY_KIND`, and `src/render/piles.ts`,
+`PileMeshes.planSpentCases`.
 
 ### Item models
 

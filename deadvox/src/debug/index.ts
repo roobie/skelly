@@ -31,6 +31,8 @@ import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
+const COMPASS_DEBUG_LOADOUT = 'compass';
+
 const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
   const observedTick = result.observedTimerTickMs === null ? 'unknown' : `${result.observedTimerTickMs.toFixed(3)} ms`;
   let quantization: string;
@@ -758,7 +760,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     });
     if (
       hooks.newGame &&
-      new URLSearchParams(location.search).get('loadout') === 'compass' &&
+      new URLSearchParams(location.search).get('loadout') === COMPASS_DEBUG_LOADOUT &&
       !hooks.inventory.hands.right
     ) {
       hooks.inventory.add(hooks.inventory.create('compass'), { kind: 'hand', side: 'right' });
