@@ -44,6 +44,8 @@ move its row to the bottom section with the PR that pinned it.
 | Known-seed mobgen genomes and voxel-grid fingerprints | `mobgen/test/generate.test.ts` and its generated snapshot | Run generation/validation tests; start `npm run dev` in `mobgen` and inspect representative gallery bodies for shape, proportions and buildability | at generator-change time |
 | Exact gait-clock, walk/attack pose and bone-transform outputs across seed/speed samples | `mobgen/test/poseEquivalence.test.ts` and its generated snapshot | Run the gait, attack and pose property suites; start `npm run dev` in `mobgen` and inspect representative walk and Lunge Grab cycles | at gait/attack generator-change time |
 
+| Representative ten-hour save workload measurements | `deadvox/test/snapshot.test.ts`, `applyBudgetWorldEdits`, `applyBudgetPiles`, and `touchBudgetFurnitureAndZombies` | Run the save-budget test, inspect its metrics, and verify round-trip capture parity and the `TEN_HOUR_SAVE_BUDGET_BYTES` / `TEN_HOUR_LOAD_BUDGET_MS` constraints | content freeze, v1.0 beta |
+
 ## Pinned since
 
 None yet.
