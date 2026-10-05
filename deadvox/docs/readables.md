@@ -48,9 +48,9 @@ ordinary inventory access. The shared block does not change door ownership.
 
 ## Player flow and time
 
-Take a readable-only note into a hand and hold its assigned quickbar slot. Books
-also support their held primary action; see `src/game/primaryAction.ts`,
-`primaryActionForDefinition`. The inventory Read command was removed under BR's
+Take a readable-only note into a hand and hold its assigned quickbar slot. An
+item with a book component also supports its held primary action; see
+`src/game/primaryAction.ts`, `primaryActionForDefinition`. The inventory Read command was removed under BR's
 interaction ruling in `CONTROLS.md`. A quickbar tap only takes or puts away;
 holding its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
 `QuickbarActions.hold`).
