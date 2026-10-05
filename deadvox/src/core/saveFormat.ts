@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 13;
+export const SAVE_SCHEMA_VERSION = 16;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -220,6 +220,19 @@ const progression = obj({
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
+const zombieRoutes = arr(
+  obj({
+    id: positiveInt,
+    route: obj({
+      goalKey: str(),
+      goal: vec3,
+      waypoints: arr(vec3),
+      next: nonNegativeInt,
+      pending: bool,
+      retryAt: nonNegative,
+    }),
+  }),
+);
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),
@@ -523,19 +536,7 @@ const wirePayloadSchema = obj({
     zombieSystem: obj({
       routeSearchCursor: nonNegativeInt,
       routeClock: nonNegative,
-      routes: arr(
-        obj({
-          id: positiveInt,
-          route: obj({
-            goalKey: str(),
-            goal: vec3,
-            waypoints: arr(vec3),
-            next: nonNegativeInt,
-            pending: bool,
-            retryAt: nonNegative,
-          }),
-        }),
-      ),
+      routes: zombieRoutes,
       nextEntityId: positiveInt,
     }),
     blockEntitiesNextUid: positiveInt,
@@ -1259,19 +1260,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         zombies: obj({
           routeSearchCursor: nonNegativeInt,
           routeClock: nonNegative,
-          routes: arr(
-            obj({
-              id: positiveInt,
-              route: obj({
-                goalKey: str(),
-                goal: vec3,
-                waypoints: arr(vec3),
-                next: nonNegativeInt,
-                pending: bool,
-                retryAt: nonNegative,
-              }),
-            }),
-          ),
+          routes: zombieRoutes,
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
         }),

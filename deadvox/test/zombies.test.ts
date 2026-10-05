@@ -2326,6 +2326,79 @@ describe('attack windup', () => {
   });
 });
 
+describe('route scheduling', () => {
+  const expensiveFixture = () => {
+    const solid: SolidAt = (x, y) => y === 0 || (x === 3 && y >= 1 && y <= 5);
+    const type = { ...SHAMBLER, hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 } };
+    const options = {
+      ...senses(() => player([5, 1, 0], [-1, 0, 0], 'sprinting'), solid),
+      isOpaque: () => true,
+    };
+    const system = new ZombieSystem(options);
+    for (let index = 0; index < ROUTE_SEARCHES_PER_TICK; index++) {
+      system.add(type, [1, 1, (index - ROUTE_SEARCHES_PER_TICK / 2) * 1.3]);
+    }
+    return { system, type, options };
+  };
+
+  it('shares total route-work allowance across expensive requests in one tick', () => {
+    const { system } = expensiveFixture();
+    system.tick(1 / 20, 1 / 20);
+    expect([...system.store.entries()].every(([, zombie]) => zombie.mode === 'investigate')).toBe(true);
+    system.tick(1 / 20, 2 / 20);
+    const serviced = system.snapshotState().routes.filter(({ route }) => !route.pending);
+    expect(serviced.length).toBeGreaterThan(0);
+    expect(serviced.length).toBeLessThanOrEqual(Math.ceil(ROUTE_WORK_PER_TICK / ROUTE_MAX_WORK));
+  });
+
+  it('restores dispatch priority when failed routes re-pend below the cursor', () => {
+    const { system, type, options } = expensiveFixture();
+    let step = 0;
+    let state = system.snapshotState();
+    const straddlesCursor = () => {
+      const pending = state.routes.filter(({ route }) => route.pending);
+      return (
+        pending.some(({ id }) => id < state.routeSearchCursor) && pending.some(({ id }) => id > state.routeSearchCursor)
+      );
+    };
+    while (step < 2 * 20 && !straddlesCursor()) {
+      step += 1;
+      system.tick(1 / 20, step / 20);
+      state = system.snapshotState();
+    }
+    expect(straddlesCursor()).toBe(true);
+    const restored = new ZombieSystem(options);
+    restored.restoreState(state, (id) => (id === type.id ? type : undefined));
+    system.tick(1 / 20, (step + 1) / 20);
+    restored.tick(1 / 20, (step + 1) / 20);
+    expect(restored.snapshotState()).toEqual(system.snapshotState());
+  });
+
+  it('caps route searches per tick and keeps same-seed route queues identical', () => {
+    const type = { ...SHAMBLER, hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 } };
+    const create = () => {
+      const system = new ZombieSystem({ ...senses(() => player([25, 1, 5], [-1, 0, 0], 'sprinting')), seed: 47 });
+      for (let index = 0; index < ROUTE_SEARCHES_PER_TICK + 8; index++) {
+        system.add(type, [1 + (index % 8) * 0.8, 1, 1 + Math.floor(index / 8) * 0.8]);
+      }
+      return system;
+    };
+    const first = create();
+    const second = create();
+    first.tick(1 / 20, 1 / 20);
+    second.tick(1 / 20, 1 / 20);
+    expect([...first.store.entries()].every(([, zombie]) => zombie.mode === 'investigate')).toBe(true);
+    first.tick(1 / 20, 2 / 20);
+    second.tick(1 / 20, 2 / 20);
+    const state = first.snapshotState();
+    const serviced = state.routes.filter(({ route }) => !route.pending);
+    expect(serviced.length).toBeGreaterThan(0);
+    expect(serviced.length).toBeLessThanOrEqual(ROUTE_SEARCHES_PER_TICK);
+    expect(state.routes.some(({ route }) => route.pending)).toBe(true);
+    expect(state).toEqual(second.snapshotState());
+  });
+});
+
 describe('dismemberment', () => {
   const stationary = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
   const armParts = ['hand.L', 'hand.R', 'forearm.L', 'forearm.R', 'upperArm.L', 'upperArm.R'];
@@ -2633,53 +2706,6 @@ describe('dismemberment', () => {
     const restored = new ZombieSystem(senses(() => player([100, 2, 0])));
     restored.restoreState(state, (typeId) => (typeId === type.id ? type : undefined));
     expect(restored.store.get(id)!.severed).toEqual(before);
-  });
-
-  it('shares total route-work allowance across expensive requests in one tick', () => {
-    const solid: SolidAt = (x, y) => y === 0 || (x === 3 && y >= 1 && y <= 5);
-    const type = { ...SHAMBLER, hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 } };
-    const system = new ZombieSystem({
-      ...senses(() => player([5, 1, 0], [-1, 0, 0], 'sprinting'), solid),
-      isOpaque: () => true,
-    });
-    for (let index = 0; index < ROUTE_SEARCHES_PER_TICK; index++) {
-      system.add(type, [1, 1, (index - ROUTE_SEARCHES_PER_TICK / 2) * 1.3]);
-    }
-    system.tick(1 / 20, 1 / 20);
-    expect([...system.store.entries()].every(([, zombie]) => zombie.mode === 'investigate')).toBe(true);
-    system.tick(1 / 20, 2 / 20);
-    const serviced = system.snapshotState().routes.filter(({ route }) => !route.pending);
-    expect(serviced.length).toBeGreaterThan(0);
-    expect(serviced.length).toBeLessThanOrEqual(Math.ceil(ROUTE_WORK_PER_TICK / ROUTE_MAX_WORK));
-  });
-
-  it('caps route searches per tick and keeps same-seed route queues identical', () => {
-    const type = { ...SHAMBLER, hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 } };
-    const create = () => {
-      const system = new ZombieSystem({ ...senses(() => player([25, 1, 5], [-1, 0, 0], 'sprinting')), seed: 47 });
-      for (let index = 0; index < ROUTE_SEARCHES_PER_TICK + 8; index++) {
-        system.add(type, [1 + (index % 8) * 0.8, 1, 1 + Math.floor(index / 8) * 0.8]);
-      }
-      return system;
-    };
-    const first = create();
-    const second = create();
-    first.tick(1 / 20, 1 / 20);
-    second.tick(1 / 20, 1 / 20);
-    expect([...first.store.entries()].every(([, zombie]) => zombie.mode === 'investigate')).toBe(true);
-    first.tick(1 / 20, 2 / 20);
-    second.tick(1 / 20, 2 / 20);
-    const state = first.snapshotState();
-    const serviced = state.routes.filter(({ route }) => !route.pending);
-    expect(serviced.length).toBeGreaterThan(0);
-    expect(serviced.length).toBeLessThanOrEqual(ROUTE_SEARCHES_PER_TICK);
-    expect(state.routes.some(({ route }) => route.pending)).toBe(true);
-    expect(state).toEqual(second.snapshotState());
-    const restored = new ZombieSystem({ ...senses(() => player([1000, 1, 1000])), seed: 47 });
-    restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
-    first.tick(1 / 20, 3 / 20);
-    restored.tick(1 / 20, 3 / 20);
-    expect(restored.snapshotState()).toEqual(first.snapshotState());
   });
 
   it('is deterministic: two identical systems given the same swings sever the same parts', () => {

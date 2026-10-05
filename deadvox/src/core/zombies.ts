@@ -581,6 +581,7 @@ export class ZombieSystem {
   private readonly options: ZombieSystemOptions;
   private frozen = false;
   private routeSearchCursor = 0;
+  // Standalone callers may omit absolute sim time; persistence keeps their retry deadlines across loads.
   private routeClock = 0;
   private readonly routes = new Map<EntityId, ZombieRouteState>();
 

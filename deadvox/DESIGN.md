@@ -663,9 +663,17 @@ worse the world gets.
   height; a listener above ground retains its own level. See `deadvox/src/core/zombies.ts`,
   `sameRouteFloor` and `farBearingTarget`, and
   `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
-- **Level of detail:** No background flow-field or abstract-horde behavior is
-  part of this design; off-screen simulation needs a separate cost/value case.
-  See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
+- **Level of detail:** Only the active tier is implemented, using bounded routes;
+  see `deadvox/src/core/zombies.ts`, `ZombieSystem`. The tiers remain planned design:
+
+  | Tier | Where | Simulation |
+  | --- | --- | --- |
+  | Active | Nearby actors | Detailed AI, body physics and bounded routes (implemented) |
+  | Background | Distant actors in loaded chunks | Reduced-rate steering along a shared flow field (planned) |
+  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
+
+  Background and abstract tiers, the flow field and crowd navigation are
+  Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)), not built behavior.
 
 **Decided (BR, 2026-10-04):**
 
