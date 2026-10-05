@@ -61,6 +61,12 @@ loot. Nested tables contribute only with positive possible rolls/item counts
 positive-chance markers that can fit the population cap, accounting for shuffled
 north templates, and roadside wanderers only when a slot can remain.
 
+For 2.10, store and garage stock stays in template palette loot overrides rather
+than position-specific runtime code. `worldSources()` in
+`src/core/reachability.ts` follows compiled pieces from `HAMLET_TEMPLATES` in
+`src/core/hamlet.ts`, so moving furniture keeps its loot source with the placed
+lot.
+
 The least component fixed point starts at found types. A result enters only when
 at least one alternative per component group is reachable; unseeded recipe cycles
 add nothing. Content acceptance reports **every declared alternative** that is

@@ -862,7 +862,7 @@
         "^": "roof",
         "w": "window_frame",
         "D": { "furniture": "wood_door" },
-        "S": { "furniture": "shelf" },
+        "S": { "furniture": "shelf", "loot": "hardware_store_stock" },
         "W": { "furniture": "workbench" }
       },
       "layers": [
@@ -976,7 +976,7 @@
         "^": "roof",
         "w": "window_frame",
         "D": { "furniture": "wood_door" },
-        "C": { "furniture": "crate" },
+        "C": { "furniture": "crate", "loot": "garage_stock" },
         "W": { "furniture": "workbench" }
       },
       "layers": [
