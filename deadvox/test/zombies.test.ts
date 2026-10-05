@@ -2396,6 +2396,12 @@ describe('route scheduling', () => {
     expect(serviced.length).toBeLessThanOrEqual(ROUTE_SEARCHES_PER_TICK);
     expect(state.routes.some(({ route }) => route.pending)).toBe(true);
     expect(state).toEqual(second.snapshotState());
+    expect(serviced.some(({ route }) => route.waypoints.length > 0)).toBe(true);
+    const restored = new ZombieSystem({ ...senses(() => player([1000, 1, 1000])), seed: 47 });
+    restored.restoreState(state, (typeId) => registry.zombies.get(typeId));
+    first.tick(1 / 20, 3 / 20);
+    restored.tick(1 / 20, 3 / 20);
+    expect(restored.snapshotState()).toEqual(first.snapshotState());
   });
 });
 
