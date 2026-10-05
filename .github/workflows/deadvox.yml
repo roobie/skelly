@@ -86,7 +86,7 @@ jobs:
     with:
       shard: ${{ matrix.shard }}
 
-  # These start independently, matching main's check/browser-stages topology and step ordering.
+  # These start independently, reproducing the check/browser-stages jobs #255 replaced (main badb55e), with their step order.
   control-check:
     if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control' }}
     uses: ./.github/workflows/deadvox-browser.yml
@@ -120,4 +120,32 @@ jobs:
                 });
                 return { conclusion: data.conclusion, url: data.html_url };
               }
+            });
+      - name: Report earlier same-SHA runs
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { reportEarlierRuns } = await import(`${process.env.GITHUB_WORKSPACE}/tools/browser-ci-result.mjs`);
+            const headSha = context.payload.pull_request?.head?.sha ?? context.sha;
+            await reportEarlierRuns({
+              currentRunId: context.runId,
+              listRuns: async () => {
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                  ...context.repo, workflow_id: 'deadvox.yml', head_sha: headSha, per_page: 100
+                });
+                return runs.map(({ id, status, run_attempt }) => ({ id, status, attemptCount: run_attempt }));
+              },
+              lookupAttempt: async (runId, attempt) => {
+                const { data } = await github.rest.actions.getWorkflowRunAttempt({
+                  ...context.repo, run_id: runId, attempt_number: attempt
+                });
+                return { conclusion: data.conclusion ?? 'unknown', url: data.html_url };
+              },
+              warn: (message) => core.warning(message),
+              writeNote: (message) => core.summary
+                .addHeading('Earlier runs at this head SHA')
+                .addRaw(message, true)
+                .write(),
             });

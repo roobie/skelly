@@ -33,3 +33,60 @@ export async function checkBrowserWorkflow({ lookupAttempt, env }) {
   );
   assertBrowserResult({ layout: env.LAYOUT, needs: JSON.parse(env.NEEDS_JSON), priorAttempts });
 }
+
+export function runsToInspect(runs, currentRunId) {
+  return runs.filter((run) => String(run.id) !== String(currentRunId) && run.status === 'completed');
+}
+
+export function earlierRunReport({ runs, currentRunId, attempts }) {
+  const eligibleRunIds = new Set(runsToInspect(runs, currentRunId).map((run) => String(run.id)));
+  const failures = attempts
+    .filter((attempt) => eligibleRunIds.has(String(attempt.runId)) && attempt.conclusion !== 'success')
+    .map((attempt) => ({ ...attempt, conclusion: attempt.conclusion ?? 'unknown' }));
+  const summary =
+    failures.length > 0
+      ? `Earlier same-SHA attempts were unsuccessful:\n${failures
+          .map((failure) => `- ${formatEarlierRunWarning(failure)}`)
+          .join('\n')}`
+      : 'No earlier failures at this head SHA.';
+  return { failures, summary };
+}
+
+export function formatEarlierRunWarning({ conclusion, runId, attempt, url }) {
+  return `Run ${runId}, attempt ${attempt} concluded ${conclusion}: ${url}`;
+}
+
+export async function reportEarlierRuns({ currentRunId, listRuns, lookupAttempt, warn, writeNote }) {
+  let report;
+  try {
+    const runs = await listRuns();
+    const candidates = runsToInspect(runs, currentRunId);
+    const attempts = await Promise.all(
+      candidates.flatMap((run) => {
+        const count = Number(run.attemptCount);
+        if (!Number.isInteger(count) || count < 1) {
+          throw new Error(`Cannot observe attempts for run ${run.id}`);
+        }
+        return Array.from({ length: count }, (_, index) => {
+          const attempt = index + 1;
+          return Promise.resolve(lookupAttempt(run.id, attempt)).then((result) => ({
+            ...result,
+            runId: run.id,
+            attempt,
+          }));
+        });
+      }),
+    );
+    report = earlierRunReport({ runs, currentRunId, attempts });
+  } catch {
+    report = {
+      failures: [],
+      summary: "Couldn't check earlier runs for this head SHA; the required aggregate result is unchanged.",
+    };
+  }
+  for (const failure of report.failures) {
+    warn(formatEarlierRunWarning(failure));
+  }
+  await writeNote(report.summary);
+  return report;
+}
