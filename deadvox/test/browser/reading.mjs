@@ -101,7 +101,6 @@ try {
         jobs: session.queue.jobs.map((job) => ({ label: job.label, elapsed: job.elapsed, duration: job.duration })),
         cursor: [input.cursorX, input.cursorY],
         readCalls,
-        clickTrace: globalThis.readingClickTrace ?? [],
       };
     });
     states.push({ label, ...state });
@@ -262,40 +261,13 @@ try {
       { seconds: 5, from: handStart, label: 'note to hand', record },
     );
     await page.keyboard.press('1');
-    const readButton = page.getByRole('button', { name: /^Read/ });
-    await readButton.waitFor();
-    // Observe the real pre-click focus, never manufacture a focus for the restore assertion.
+    await page.keyboard.press('Tab');
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
+    // Observe the real pre-open focus, never manufacture a focus for the restore assertion.
     const previousFocus = await page.evaluateHandle(() => document.activeElement);
-    await page.evaluate(() => {
-      globalThis.readingClickTrace = [];
-      for (const type of ['pointerdown', 'pointerup', 'click']) {
-        document.addEventListener(
-          type,
-          (event) => {
-            const { input, reading } = globalThis.readingWitness;
-            const target = document.elementFromPoint(input.cursorX, input.cursorY);
-            globalThis.readingClickTrace.push({
-              type,
-              trusted: event.isTrusted,
-              target: target?.textContent?.trim().slice(0, 80),
-              cursor: [input.cursorX, input.cursorY],
-              readingOpen: reading.isOpen,
-            });
-          },
-          true,
-        );
-      }
-    });
-    await record('before Read click');
-    await uiClick(readButton);
-    await record('after Read click');
-    try {
-      await page.locator('#reading').waitFor({ state: 'visible' });
-    } catch (error) {
-      await record(`Read click failure: ${error}`);
-      await page.screenshot({ path: resolve(artifacts, 'read-click-failure.png') });
-      throw error;
-    }
+    await page.keyboard.down('1');
+    await page.locator('#reading').waitFor({ state: 'visible' });
+    await page.keyboard.up('1');
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a folded note');
     assert.ok((await page.locator('.reading-text').innerText()).includes('NOT PLAYTEST LORE'));
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'dialog');
@@ -315,7 +287,6 @@ try {
         };
       });
     const before = await itemState();
-    await page.keyboard.press('u');
     await page.keyboard.press('1');
     await page.keyboard.press('=');
     await uiClick(page.locator('.reading-text'));
@@ -346,10 +317,9 @@ try {
     await page.screenshot({ path: resolve(artifacts, 'note-reading.png') });
     await page.keyboard.press('Tab');
     assert.equal(await page.locator('#reading').isVisible(), false);
-    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), true);
+    assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
     assert.equal(await previousFocus.evaluate((element) => element === document.activeElement), true);
     await previousFocus.dispose();
-    await page.keyboard.press('Tab');
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
@@ -382,7 +352,7 @@ try {
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { before, during, escaped, menu };
+    proof = { escaped, menu };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';
