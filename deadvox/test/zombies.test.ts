@@ -2061,6 +2061,33 @@ describe('two-tier shambler hearing', () => {
     expect(distantSystem.store.get(distantId)!.mode).toBe('idle');
   });
 
+  it('does not leak a heard vocal noise into the next zombie pass', function vocalNoiseDoesNotLeakBetweenZombiePasses() {
+    const noise = { id: 46, pos: [12, 1, 0] as Vec3, radiusMetres: 6, expiresAt: 1 };
+    const target = { ...player([1000, 1, 0]), vocalNoise: noise };
+    const system = new ZombieSystem(senses(() => target));
+    const secondId = system.add(SHAMBLER, [80, 1, 0]);
+    const second = system.store.get(secondId)!;
+    system.tick(1 / 20, 0.05);
+    expect(second.lastVocalNoiseId).toBe(noise.id);
+    expect(second.mode).toBe('idle');
+
+    const firstId = system.add(SHAMBLER, [0, 1, 0]);
+    const first = system.store.get(firstId)!;
+    system.store.restore(
+      [
+        [firstId, first],
+        [secondId, second],
+      ],
+      system.store.nextId,
+    );
+    system.tick(1 / 20, 0.1);
+
+    expect(first.mode).toBe('investigate');
+    expect(first.lastPerceived).toEqual(noise.pos);
+    expect(second.mode).toBe('idle');
+    expect(second.lastPerceived).toBeUndefined();
+  });
+
   it('counts each solid run once and lets a wall demote a near noise to far', () => {
     const from: Vec3 = [0, 1, 0];
     const source = player([28, 1, 0], [-1, 0, 0], 'sprinting');
