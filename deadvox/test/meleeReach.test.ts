@@ -13,6 +13,7 @@ import {
 } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, PLAYER_ARM_REACH_M, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -50,6 +51,7 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
     jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });
   const id = system.add(registry.zombies.get('shambler')!, [distanceMetres / BLOCK_SIZE, 1, 0], [-1, 0, 0]);

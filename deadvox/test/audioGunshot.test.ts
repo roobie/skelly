@@ -7,13 +7,17 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
-import { WALL_HEARING_RANGE_FACTOR } from '../src/core/soundOcclusion.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { firearmShotSound, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 
 const audios: GameAudio[] = [];
+const senseTuning = {
+  id: 'fixture_player',
+  crouch: { speedMetresPerSecond: 0.8, hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
+  wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
+} as const;
 
 const makeNode = () => ({ connect: vi.fn(), disconnect: vi.fn() });
 const makeParam = () => ({ value: 1, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn() });
@@ -102,7 +106,7 @@ const setup = (solidAt: SolidAt = () => false) => {
     throw new Error(`Invalid sound fixture: ${JSON.stringify(issues)}`);
   }
   const isSolid = vi.fn(solidAt);
-  const audio = new GameAudio({ registry, blockSize: 1, isSolid, report: vi.fn() });
+  const audio = new GameAudio({ registry, blockSize: 1, isSolid, tuning: senseTuning, report: vi.fn() });
   audios.push(audio);
   const picker = new SoundPicker(53, registry.sounds);
   const selected: SoundEmission[] = [];
@@ -310,7 +314,7 @@ describe('game audio playback', () => {
     const zombie: Vec3 = [0.5, 1.5, 0.5];
     const listener: Vec3 = [zombie[0], zombie[1] + 1.3, zombie[2]];
     const radiusMetres = 12;
-    const distanceMetres = (radiusMetres * shambler.hearing * (1 + WALL_HEARING_RANGE_FACTOR)) / 2;
+    const distanceMetres = (radiusMetres * shambler.hearing * (1 + senseTuning.wall.hearingRangeScale)) / 2;
     const source: Vec3 = [listener[0] + distanceMetres, listener[1], listener[2]];
     const noise = { id: 1, pos: [source[0], zombie[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
     const hear = (seed: number) =>
@@ -322,6 +326,7 @@ describe('game audio playback', () => {
         blockSize: 1,
         isSolid: isSolid as SolidAt,
         rng: Rng.stream(seed, 'shared-wall-test'),
+        tuning: senseTuning,
       });
 
     audio.updateListener(listener, [0, 0, -1]);

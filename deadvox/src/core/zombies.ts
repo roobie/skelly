@@ -6,10 +6,10 @@ import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFo
 import { type Body, CONTACT_SKIN, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
+import type { SenseDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
-import { soundOcclusion, WALL_HEARING_RANGE_FACTOR } from './soundOcclusion.ts';
-import { CROUCH_TUNING } from './stealth.ts';
+import { soundOcclusion } from './soundOcclusion.ts';
 import { updateStepOffset } from './stepOffset.ts';
 import type { PlayerHitArea } from './wear.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
@@ -224,6 +224,8 @@ export interface PlayerSense {
   crouching?: boolean | undefined;
   lit: boolean;
   lightSeenFrom: number;
+  eyeHeightMetres?: number | undefined;
+  lightHeightMetres?: number | undefined;
   vocalNoise?: VocalNoise | undefined;
 }
 
@@ -239,6 +241,7 @@ export interface ZombieSystemOptions {
   physics: PhysicsParams;
   /** Take-off speed in metres per second, like `PLAYER.jump`; the system divides by `blockSize` itself. */
   jumpSpeed: number;
+  tuning: SenseDef;
   player: () => PlayerSense;
   hour: () => number;
   hurtPlayer: (amount: number, area: PlayerHitArea) => void;
@@ -471,6 +474,7 @@ export interface PerceptionInput {
   hour: number;
   blockSize: number;
   isSolid: SolidAt;
+  tuning: SenseDef;
 }
 
 export type HearingTier = 'near' | 'far';
@@ -481,6 +485,7 @@ export interface HearingInput {
   blockSize: number;
   isSolid: SolidAt;
   rng: Rng;
+  tuning: SenseDef;
 }
 // Phases share this scratch to avoid per-zombie allocation, so write each per-zombie field before its first read.
 // `test/zombies.test.ts`, `vocalNoiseDoesNotLeakBetweenZombiePasses`, guards the cross-pass case.
@@ -594,8 +599,9 @@ const hearingTier = ({
   player,
   blockSize,
   isSolid,
+  tuning,
 }: Omit<HearingInput, 'rng'>): HearingTier | undefined => {
-  const range = hearingRange(zombie, player.movement) * (player.crouching ? CROUCH_TUNING.hearingRangeScale : 1);
+  const range = hearingRange(zombie, player.movement) * (player.crouching ? tuning.crouch.hearingRangeScale : 1);
   if (range <= 0) {
     return undefined;
   }
@@ -603,7 +609,9 @@ const hearingTier = ({
   const earOffset = 1.3 / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
-  const wallScale = soundOcclusion(origin, source, isSolid).occluded ? WALL_HEARING_RANGE_FACTOR : 1;
+  const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
+    ? tuning.wall.hearingRangeScale
+    : 1;
   const effectiveRange = range * wallScale;
   if (distance <= effectiveRange) {
     return 'near';
@@ -654,6 +662,7 @@ export interface VocalNoiseInput {
   blockSize: number;
   isSolid: SolidAt;
   rng: Rng;
+  tuning: SenseDef;
 }
 
 /** Applies the shared coarse wall step and two-tier bearing model to a player sound. */
@@ -665,6 +674,7 @@ export const hearVocalNoise = ({
   blockSize,
   isSolid,
   rng,
+  tuning,
 }: VocalNoiseInput): HeardNoise | undefined => {
   if (time > noise.expiresAt) {
     return undefined;
@@ -673,7 +683,9 @@ export const hearVocalNoise = ({
   const earOffset = 1.3 / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
-  const wallScale = soundOcclusion(origin, source, isSolid).occluded ? WALL_HEARING_RANGE_FACTOR : 1;
+  const wallScale = soundOcclusion({ listener: origin, source, isSolid, globalWall: tuning.wall }).occluded
+    ? tuning.wall.hearingRangeScale
+    : 1;
   const hearingRadius = noise.radiusMetres * zombie.hearing * wallScale;
   if (distance <= hearingRadius) {
     return { tier: 'near', target: copy(noise.pos) };
@@ -687,7 +699,7 @@ export const hearVocalNoise = ({
   return undefined;
 };
 
-const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: PerceptionInput): boolean => {
+const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid, tuning }: PerceptionInput): boolean => {
   const delta = sub(player.pos, from);
   const metres = Math.hypot(delta[0], delta[2]) * blockSize;
   const dir = unit(delta);
@@ -698,17 +710,22 @@ const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: 
     return false;
   }
   const rayOrigin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
-  const rayTarget: Vec3 = [player.pos[0], player.pos[1] + 1.3 / blockSize, player.pos[2]];
-  const toTarget = sub(rayTarget, rayOrigin);
-  const rayDistance = Math.hypot(...toTarget);
-  const clear = raycast(rayOrigin, unit(toTarget), rayDistance, isSolid) === undefined;
+  const eyeHeight = player.eyeHeightMetres ?? 1.3;
+  const lightHeight = player.lightHeightMetres ?? eyeHeight;
+  const clearAtHeight = (heightMetres: number): boolean => {
+    const rayTarget: Vec3 = [player.pos[0], player.pos[1] + heightMetres / blockSize, player.pos[2]];
+    const toTarget = sub(rayTarget, rayOrigin);
+    return raycast(rayOrigin, unit(toTarget), Math.hypot(...toTarget), isSolid) === undefined;
+  };
+  const clear = clearAtHeight(eyeHeight);
+  const lightClear = !player.lit || clearAtHeight(lightHeight);
   const lit = isLit(isSolid, player.pos, hour, player.lit);
+  const lightVisible = lit && player.lit && lightClear;
   let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
-  if (lit && player.lit) {
+  if (lightVisible) {
     sightRange = player.lightSeenFrom;
-  }
-  if (player.crouching) {
-    sightRange *= CROUCH_TUNING.sightRangeScale;
+  } else if (player.crouching) {
+    sightRange *= tuning.crouch.sightRangeScale;
   }
   return clear && metres <= sightRange;
 };
@@ -795,10 +812,10 @@ export class ZombieSystem {
             ...(searchAnchor === undefined ? {} : { searchAnchor: [...searchAnchor] }),
             searchHeading: [...zombie.searchHeading],
             strollHeading: [...zombie.strollHeading],
+            ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
             ...(obstacleWanderHeading === undefined
               ? {}
               : { obstacleWanderHeading: [...obstacleWanderHeading] as Vec3 }),
-            ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
             severed: [...zombie.severed],
           },
         };
@@ -1153,6 +1170,7 @@ export class ZombieSystem {
     perception.hour = hour;
     perception.blockSize = blockSize;
     perception.isSolid = isOpaque;
+    perception.tuning = this.options.tuning;
     scratch.sees = seesPlayer(perception);
     if (scratch.sees && zombie.obstacleWanderRemaining > 0) {
       zombie.obstacleWanderRemaining = 0;
@@ -1165,6 +1183,7 @@ export class ZombieSystem {
     hearing.blockSize = blockSize;
     hearing.isSolid = isSolid;
     hearing.rng = rng;
+    hearing.tuning = this.options.tuning;
     scratch.vocal = undefined;
     if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
       zombie.lastVocalNoiseId = player.vocalNoise.id;
@@ -1176,6 +1195,7 @@ export class ZombieSystem {
         blockSize,
         isSolid,
         rng,
+        tuning: this.options.tuning,
       });
     }
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));

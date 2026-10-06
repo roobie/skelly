@@ -179,14 +179,15 @@ describe('steer', () => {
     expect(speed({ sprint: true, walk: true })).toBeCloseTo(PLAYER.sprint);
   });
 
-  it('keeps a crouching sprint slower than walking', () => {
-    const body = createPlayerBody(half, 0, 0, 0);
-    steer(body, half, 0, { forward: 1, right: 0, jump: false, sprint: true, walk: false, crouch: true });
-    const crouchSpeed = Math.hypot(body.vel[0], body.vel[2]) * half.blockSize;
-    const walking = createPlayerBody(half, 0, 0, 0);
-    steer(walking, half, 0, { forward: 1, right: 0, jump: false, sprint: false, walk: true });
-    const walkingSpeed = Math.hypot(walking.vel[0], walking.vel[2]) * half.blockSize;
-    expect(crouchSpeed).toBeLessThan(walkingSpeed);
+  it('slows the same sprint intent while crouching', () => {
+    const intent = { forward: 1, right: 0, jump: false, sprint: true, walk: false };
+    const crouched = createPlayerBody(half, 0, 0, 0);
+    steer(crouched, half, 0, { ...intent, crouch: true, crouchSpeed: 0.8 });
+    const crouchSpeed = Math.hypot(crouched.vel[0], crouched.vel[2]) * half.blockSize;
+    const standing = createPlayerBody(half, 0, 0, 0);
+    steer(standing, half, 0, intent);
+    const standingSpeed = Math.hypot(standing.vel[0], standing.vel[2]) * half.blockSize;
+    expect(crouchSpeed).toBeLessThan(standingSpeed);
   });
 });
 

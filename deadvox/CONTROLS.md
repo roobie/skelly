@@ -175,7 +175,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Ready a weapon, block | Slice 3 (ruled) | stance |
 | Hip / sights toggle, shoot | Slice 3 (ruled) | stance, noise |
 | Reload, check magazine | Slice 3 | long |
-| Crouch | Slice 3.5 (held stance; quieter, harder to see) | stance |
+| Crouch | Slice 3.5 (toggle stance; quieter, harder to see) | stance |
 | Throw (flare, glowstick, lure) | Slice 3 | instant, noise |
 | Put the held item away (stow) | now (tap its quickbar slot) | handling |
 | Use off-hand primary action | implemented; see `src/game/input.ts`, `KEY_BINDINGS` | instant |
@@ -198,7 +198,7 @@ below). Implemented hand activation is not duplicated in this proposal; see
 | Shift | sprint | toggle hip / sights | — | — | — |
 | Space | jump | jump | — | — | — |
 | Z | walk / jog toggle | — | — | — | — |
-| C (hold) | crouch | crouch | — | — | — |
+| C (toggle) | crouch | crouch | — | — | — |
 | Enter | — | — | — | — | continue after interruption |
 | F | interact with what's outlined; start rest/sleep; F on the anchor cancels rest, not sleep | interact | — | ignored during long actions except rest cancellation | — |
 | R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
@@ -224,12 +224,14 @@ Notes on the proposal:
   Inventory R rotation is a different view. F starts rest or sleep on its
   target. BR (2026-10-05 20:09) ruled that "long actions disable all actions";
   movement and action input are ignored during a long action. F on the anchor or
-  X cancels rest, neither stops sleep, and an interrupt wakes the sleeper. C
+  X cancels rest, neither stops sleep, and an interrupt wakes the sleeper.
   Enter resumes rest after an interruption only while the same piece remains
   reachable. L remains a legacy way to start sleep until d44 removes it; it
   cannot stop sleep.
-- **C is crouch; Enter continues** an interrupted action. d98 assigns separate
-  inputs so holding the stealth stance cannot also resume work.
+- **C toggles crouch.** For d98, Enter is the interim continuation key after an
+  interruption or for a stopped craft: C already continued a stopped craft in
+  play, so d98 moved continuation to keep crouch from also resuming work. This
+  assignment awaits BR's answer to open question 5.
 - **Crouch on C, not Ctrl**, whatever the Ctrl verification finds, because of
   the Ctrl + W risk.
 - **Activation must not invent a second action owner:** capability admission
@@ -288,9 +290,10 @@ editing retains native key behaviour.
    **Answered (BR, 2026-10-04):** R only reloads, and rest has no key.
    Pump: hold loads, double-press racks, single tap does nothing. See
    `src/game/reloadInput.ts`, `RELOAD_GESTURE_MS`, for gesture thresholds.
-5. ~~**Continue after an interruption:** keep C (crouch elsewhere), or make the
-   interruption card a two-button choice clicked with the drawn cursor, freeing
-   C?~~ **Answered (d98):** Enter continues, leaving C available as held crouch.
+5. **Continue after an interruption:** should the interruption card keep a
+   keyboard continuation key, use a two-button choice clicked with the drawn
+   cursor, or use another control? Enter is d98's interim assignment; it also
+   continues a stopped craft while BR's answer is pending.
 6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
    2026-10-04):** behind a held F1. BR moved the modifier to F2 on 2026-10-05
   (see "What's already ruled").

@@ -193,15 +193,15 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 2. keep it real simple
 > 3. defer
 
-**In:** C crouch is slower, quieter and harder to see. Sight worsens at night and while the player crouches. Noise and positional sound are muffled by walls under the approved rule below. Smell remains deferred (#278).
+**In:** C toggles crouch, which is slower, quieter and harder to see. Sight worsens at night and while the player crouches. A crouched player's lowered eye and held-light height let a half-wall block sight and light, while crouching alone does not shorten light reach in the open. Noise and positional sound are muffled by walls under the approved rule below. Smell remains deferred (#278).
 
-**Decision (d98, BR, 2026-10-06 10:12):** "wall muffling: Approve it as written." Use the direct ray test shared with zombie sight (`src/core/zombies.ts`, `seesPlayer`): a closed door counts, while a doorway or window gap does not. Any solid on the ray applies one coarse hearing attenuation, not a penalty per intervening block. Keep positional sound at its source and muffle it with gain and a low-pass filter rather than making it seem farther away. Starting values belong to `src/core/stealth.ts`, `CROUCH_TUNING`, and `src/core/soundOcclusion.ts`, `soundOcclusion`.
+**Decision (d98, BR, 2026-10-06 10:12):** “wall muffling: Approve it as written”. Use the direct ray test shared with zombie sight (`src/core/zombies.ts`, `seesPlayer`): a closed door counts, while a doorway or window gap does not. Any solid on the ray applies one coarse hearing attenuation, not a penalty per intervening block. Keep positional sound at its source and muffle it with gain and a low-pass filter rather than making it seem farther away. Starting values belong to the base content pack's `senses` entry and `deadvox/src/core/schema.ts`, `SenseSchema`.
 
 **Per-sound tuning (d98-2; BR, 2026-10-06 11:10–11:11):** BR asked, “3.5 sounds pretty  good but some sounds are harder to judge than others. How much effort is it to tune each event?” and chose option A: “ok. Let's go for option A for now”. An optional `wall` setting on `src/core/schema.ts`, `SoundSchema.wall`, lets each sound tune positional-audio gain and cutoff when occluded; otherwise the global wall step applies. Zombie hearing keeps its global attenuation. Shipped sounds have no overrides until BR chooses which events need them.
 
-**Saves:** Crouch is held input and is not saved as a separate state. Noise pulses are transient. Any persistent zombie attention/investigation state remains in the zombie snapshot and fingerprint; do not add a second owner.
-**Tests:** crouching changes movement, hearing and sight in the ruled directions; a wall muffles hearing and positional audio consistently under the approved rule, with sound still attached to its source; saving does not replay transient noise, while persistent zombie attention resumes deterministically. Extend the existing noise and sight owners (`src/core/zombies.ts`, `hearingTier`, `hearVocalNoise`, `seesPlayer`) rather than creating parallel sensory state.
-**Done when:** crouch and night visibility affect detection, and walls apply the approved simple muffling rule to noise and positional sound.
+**Saves:** BR ruled “let's make crouch a toggle” (2026-10-06), so crouch belongs in the player snapshot and simulation fingerprint; it persists through menus and long actions. Noise pulses remain transient. Persistent zombie attention/investigation stays in the zombie snapshot; do not add a second owner.
+**Tests:** crouching changes movement, hearing and sight in the ruled directions; its toggle survives an inactive long action and save/restore, and replay with the toggle is deterministic. A wall muffles hearing and positional audio consistently under the approved rule, with sound still attached to its source. `deadvox/test/zombies.test.ts`, the investigation snapshot/restore case, checks that an expired pulse is not replayed and that attention resumes through search exactly as an uninterrupted run. Crouching behind a half-wall blocks lit-player sight, but crouching in the open does not shorten light reach. Extend the existing noise and sight owners (`src/core/zombies.ts`, `hearingTier`, `hearVocalNoise`, `seesPlayer`) rather than creating parallel sensory state. Tuning belongs in `deadvox/src/content/base/senses.json`, validated by `deadvox/src/core/schema.ts`, `SenseSchema`.
+**Done when:** crouch and night visibility affect detection, the crouch toggle survives save/restore, walls apply the approved simple muffling rule to noise and positional sound, and cover blocks light at crouched height.
 
 ### 3.6 Light as a sense
 
@@ -333,7 +333,6 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 Only questions BR left open; don't infer answers from implementation or old proposals.
 
 - **#275 — practice tiers:** what tiers apply to existing practice sources such as crafting and reading, and is practice above an activity's tier kept or dropped?
-- **3.5 wall muffling — approved in d98:** one coarse attenuation step applies when a solid lies on the direct source-listener ray.
 - **#181 beats 4–6:** detail the larger workshop, medical site and military site one beat per turn. BR's earlier answers settle the order and purpose, but not these beats' contents and layouts.
 - **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
 

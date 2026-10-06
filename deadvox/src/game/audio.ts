@@ -1,6 +1,7 @@
-import type { Registry, SoundDef } from '../core/content.ts';
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
+import type { SenseDef, SoundDef } from '../core/schema.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -70,6 +71,7 @@ export interface GameAudioOptions {
   registry: Registry;
   blockSize: number;
   isSolid: SolidAt;
+  tuning: SenseDef;
   report: (message: string) => void;
 }
 
@@ -111,6 +113,7 @@ export class GameAudio {
   private readonly registry: Registry;
   private readonly blockSize: number;
   private readonly isSolid: SolidAt;
+  private readonly tuning: SenseDef;
   private readonly report: (message: string) => void;
   private readonly recentSounds: HeardSound[] = [];
   private readonly voices = new Map<SoundEventId, Set<Voice>>();
@@ -122,10 +125,11 @@ export class GameAudio {
   private heartbeatUnavailable = false;
   private disposed = false;
 
-  constructor({ registry, blockSize, isSolid, report }: GameAudioOptions) {
+  constructor({ registry, blockSize, isSolid, tuning, report }: GameAudioOptions) {
     this.registry = registry;
     this.blockSize = blockSize;
     this.isSolid = isSolid;
+    this.tuning = tuning;
     this.report = report;
   }
 
@@ -498,7 +502,13 @@ export class GameAudio {
     const headLocked = listenerRelative || sound.category === 'ui';
     const occlusion = headLocked
       ? { occluded: false, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
-      : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid, sound.wall);
+      : soundOcclusion({
+          listener: listenerBlocks,
+          source: sourceBlocks,
+          isSolid: this.isSolid,
+          globalWall: this.tuning.wall,
+          soundWall: sound.wall,
+        });
     const distanceMetres = headLocked
       ? 0
       : Math.hypot(

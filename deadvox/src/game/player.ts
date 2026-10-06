@@ -3,7 +3,6 @@
 import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
-import { CROUCH_TUNING } from '../core/stealth.ts';
 
 /** Player constants in metres and metres per second (DESIGN.md, "Scale and units"). */
 export const PLAYER = {
@@ -13,7 +12,6 @@ export const PLAYER = {
   walk: 1.8,
   jog: 4.3,
   sprint: 6.5,
-  crouch: CROUCH_TUNING.speedMetresPerSecond,
   /** Take-off speed; with GRAVITY it clears about 1.1 m. */
   jump: 7.9,
   reach: 4,
@@ -42,9 +40,10 @@ export interface PlayerState {
   yaw: number;
   pitch: number;
   walk: boolean;
+  crouching: boolean;
 }
 
-export const snapshotPlayer = (body: Body, yaw: number, pitch: number, walk: boolean): Readonly<PlayerState> =>
+export const snapshotPlayer = (body: Body, state: Omit<PlayerState, 'body'>): Readonly<PlayerState> =>
   freezeSnapshot({
     body: {
       pos: [...body.pos],
@@ -53,9 +52,7 @@ export const snapshotPlayer = (body: Body, yaw: number, pitch: number, walk: boo
       height: body.height,
       onGround: body.onGround,
     },
-    yaw,
-    pitch,
-    walk,
+    ...state,
   });
 
 export const restorePlayer = (state: PlayerState): PlayerState => ({
@@ -69,6 +66,7 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
   yaw: state.yaw,
   pitch: state.pitch,
   walk: state.walk,
+  crouching: state.crouching,
 });
 
 export interface MoveIntent {
@@ -78,8 +76,10 @@ export interface MoveIntent {
   sprint: boolean;
   /** Walk instead of jog. Sprinting wins over walking. */
   walk: boolean;
-  /** Held crouch overrides walking and sprinting pace. */
+  /** Persistent crouch stance overrides walking and sprinting pace. */
   crouch?: boolean | undefined;
+  /** Crouch pace from the loaded base/mod content. */
+  crouchSpeed?: number | undefined;
   /** Edge-triggered dominant-hand use; the player tick consumes this once. */
   useDominant?: boolean;
   /** Held dominant trigger; only debug firearms repeat, not other item actions. */
@@ -113,7 +113,7 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
     pace = PLAYER.walk;
   }
   if (intent.crouch) {
-    pace = PLAYER.crouch;
+    pace = intent.crouchSpeed ?? PLAYER.walk;
   }
   const speed = ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1)) / scale.blockSize;
   const sin = Math.sin(yaw);

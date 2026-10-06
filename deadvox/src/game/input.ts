@@ -105,6 +105,7 @@ export class Input {
   private dominantUseDown = false;
   private offUsePressed = false;
   private offUseDown = false;
+  private crouchTogglePressed = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
@@ -138,24 +139,7 @@ export class Input {
         this.dominantUseDown = false;
       }
     });
-    globalThis.addEventListener('keydown', (e) => {
-      if (
-        e.code === CONTROL_CODES.inventory ||
-        ((e.code === CONTROL_CODES.descend || e.code === CONTROL_CODES.continue) && this.locked && !this.menuPointer)
-      ) {
-        e.preventDefault(); // Backspace must not navigate back; menus retain text editing.
-      }
-      if (e.code === CONTROL_CODES.walkToggle && !e.repeat && !this.menuPointer) {
-        this.walking = !this.walking;
-      }
-      if (e.code === KEY_BINDINGS.useOff.code && !this.offUseDown) {
-        this.offUseDown = true;
-        if (this.locked && !this.menuPointer) {
-          this.offUsePressed = true;
-        }
-      }
-      this.held.add(e.code);
-    });
+    globalThis.addEventListener('keydown', (event) => this.handleKeyDown(event));
     globalThis.addEventListener('keyup', (e) => {
       if (e.code === CONTROL_CODES.reload) {
         this.reload.keyUp(e.timeStamp);
@@ -173,6 +157,7 @@ export class Input {
       this.dominantUsePressed = false;
       this.offUseDown = false;
       this.offUsePressed = false;
+      this.crouchTogglePressed = false;
     });
     document.addEventListener('mousemove', (e) => {
       if (!(this.locked && !this.menuPointer)) {
@@ -181,6 +166,28 @@ export class Input {
       this.yaw -= e.movementX * SENSITIVITY;
       this.pitch = adjustLookPitch(this.pitch, -e.movementY * SENSITIVITY).pitch;
     });
+  }
+
+  private handleKeyDown(e: KeyboardEvent): void {
+    if (
+      e.code === CONTROL_CODES.inventory ||
+      ((e.code === CONTROL_CODES.descend || e.code === CONTROL_CODES.continue) && this.locked && !this.menuPointer)
+    ) {
+      e.preventDefault(); // Backspace must not navigate back; menus retain text editing.
+    }
+    if (e.code === CONTROL_CODES.walkToggle && !e.repeat && !this.menuPointer) {
+      this.walking = !this.walking;
+    }
+    if (e.code === CONTROL_CODES.crouch && !e.repeat) {
+      this.crouchTogglePressed = true;
+    }
+    if (e.code === KEY_BINDINGS.useOff.code && !this.offUseDown) {
+      this.offUseDown = true;
+      if (this.locked && !this.menuPointer) {
+        this.offUsePressed = true;
+      }
+    }
+    this.held.add(e.code);
   }
 
   get locked(): boolean {
@@ -236,7 +243,6 @@ export class Input {
       jump: this.held.has(CONTROL_CODES.jump),
       sprint: this.held.has(CONTROL_CODES.sprintLeft) || this.held.has(CONTROL_CODES.sprintRight),
       walk: this.walking,
-      crouch: this.held.has(CONTROL_CODES.crouch),
       useDominant: this.dominantUsePressed,
       useDominantHeld: this.dominantUseDown,
       useOff: this.offUsePressed,
@@ -246,6 +252,13 @@ export class Input {
   /** Called once after the player tick samples its intent. */
   consumeDominantUse(): void {
     this.dominantUsePressed = false;
+  }
+
+  /** Called once after the session consumes a C toggle, including while a menu or long action is active. */
+  consumeCrouchToggle(): boolean {
+    const pressed = this.crouchTogglePressed;
+    this.crouchTogglePressed = false;
+    return pressed;
   }
 
   /** Called once after the player tick samples the off-hand action. */

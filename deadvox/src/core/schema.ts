@@ -769,6 +769,22 @@ const FigureSchema = strictObject({
 // ---- skills and recipes ----
 
 const SkillSchema = strictObject({ id: Id, name: Name });
+const SenseSchema = strictObject({
+  id: Id,
+  crouch: strictObject({
+    speedMetresPerSecond: Positive,
+    hearingRangeScale: Fraction,
+    sightRangeScale: Fraction,
+    eyeDropMetres: Positive,
+  }),
+  wall: strictObject({
+    hearingRangeScale: Fraction,
+    gain: Fraction,
+    cutoffHz: Positive,
+    clearGain: Fraction,
+    clearCutoffHz: Positive,
+  }),
+});
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
@@ -802,6 +818,7 @@ const SECTION_DESCRIPTOR = {
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
+  senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 12 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -827,6 +844,7 @@ export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type SenseDef = InferOutput<typeof SenseSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

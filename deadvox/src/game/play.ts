@@ -80,7 +80,6 @@ import {
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { handlePlayMenuKey } from './menuKeys.ts';
-import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -140,17 +139,21 @@ export const startPlay = (
   }
   const { scale } = config;
   const s = scale.blockSize;
-  const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
+  const playerSenseTuning = registry.senses.get('player');
+  if (!playerSenseTuning) {
+    throw new Error('Missing player sense tuning');
+  }
   const audio = new GameAudio({
     registry,
     blockSize: s,
     isSolid: engine.isSolid,
+    tuning: playerSenseTuning,
     report: (message) => {
       const errors = $('errors');
       errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
@@ -184,6 +187,7 @@ export const startPlay = (
       intent: () => input.intent(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
+      consumeCrouchToggle: () => input.consumeCrouchToggle(),
       useDominant: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(inventory);
@@ -899,7 +903,7 @@ export const startPlay = (
   });
 
   const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
-  const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
+  const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
   const lookedAt = (): BlockEntity | undefined =>

@@ -16,7 +16,7 @@ describe('menu input', () => {
     expect(restKindForControl('KeyL')).toBe('sleep');
   });
 
-  it('holds crouch on C and reserves Enter for continuing an interrupted action', () => {
+  it('toggles crouch on C and suppresses the bound continuation key default', () => {
     const descriptors = ['document', 'addEventListener'].map(
       (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
     );
@@ -33,11 +33,10 @@ describe('menu input', () => {
     try {
       const input = new Input(target);
       expect(CONTROL_CODES.crouch).toBe('KeyC');
-      expect(CONTROL_CODES.continue).toBe('Enter');
       listeners.get('keydown')!({ code: CONTROL_CODES.crouch, repeat: false } as KeyboardEvent);
-      expect(input.intent().crouch).toBe(true);
+      expect(input.consumeCrouchToggle()).toBe(true);
+      expect(input.consumeCrouchToggle()).toBe(false);
       listeners.get('keyup')!({ code: CONTROL_CODES.crouch } as KeyboardEvent);
-      expect(input.intent().crouch).toBe(false);
       const preventDefault = vi.fn();
       listeners.get('keydown')!({
         code: CONTROL_CODES.continue,
