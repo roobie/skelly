@@ -1,19 +1,25 @@
 ---
 read_if:
-  - you're reviewing why a slow Deadvox unit test samples less work while retaining its property
-  - you're considering further changes to the default Deadvox unit suite
+  - you're reviewing why the default Deadvox unit suite was reduced
+  - you're revisiting a suite reduction after a budget overrun or related defect
 ---
 
-# Default Deadvox test work
+# Default Deadvox unit-suite reductions
 
-The host-specific suite budget and measurement method belong in the host notes. This document records the tradeoffs made when the default suite exceeded that budget: reduce repeated work without changing worker policy or assertions that define the protected property, and keep any timeout proportional to its work.
+The default Deadvox unit suite exceeded its budget. BR chose named cuts without changing the budget (d92, 2026-10-06, option B). The budget value and measurement method remain in the lead's host notes.
 
-`test/mesher.test.ts` keeps the complete face-set comparison against its independent culling oracle while sampling fewer incidental layouts. Its focused cases continue to exercise isolated blocks, merging, borders, winding, and ambient occlusion. `test/occlusion.test.ts` likewise keeps the brute-force comparison for every merged-quad corner while sampling fewer random terrains; focused empty-floor, corner, overhang, border, and downward-face cases remain.
+Each cut keeps the assertion defining its protected property and removes only repeated or incidental work. Worker policy is unchanged; timeouts remain proportional to their work. Follow `AGENTS.md`, “Tests,” when recording the coverage given up and its remaining guard.
 
-`test/hamlet.test.ts` retains shuffled-order generation comparison and the cross-chunk tree check, alongside the stress-city order check. It no longer repeats reverse-order generation or another hamlet seed, so it does not claim broad order or seed coverage. `test/zombies.test.ts` shortens the idle/stroll horizon but still checks replay, independent random streams, leash limits, and both movement modes. Its dismemberment sweep keeps real fist, crowbar, and bat cases plus the synthetic 20 and 40 N·s samples for the top-end ratio check; it drops 2 N·s and synthetic cases stop at first touchdown. Keeping 20 adds one short touchdown simulation, while real weapons still settle and retain launch/rest bounds. `test/severedEnergy.test.ts` continues to cover real-bat impact energy and dissipation.
+## Decision record
 
-`test/content.test.ts` shares immutable base-registry results where inputs are identical. File-local schema-error cases no longer rebuild the full base pack; the base-content check and merged-reference cases still validate against it.
+- Narrowed sampled mesher layouts; remaining guard: see `test/mesher.test.ts`, “draws the same faces as plain face culling (random chunks)”.
+- Narrowed sampled occlusion terrains; remaining guard: see `test/occlusion.test.ts`, “gives every merged-quad corner the per-vertex value (random terrain)”.
+- Gave up repeated Hamlet order and seed cases; remaining guard: see `test/hamlet.test.ts`, “generates the same in any chunk order”.
+- Shortened the idle/stroll horizon; remaining guard: see `test/zombies.test.ts`, “uses seeded idle and straight stroll intervals during a sustained sample”.
+- Gave up low-impulse and post-touchdown synthetic dismemberment coverage; remaining guards: see `test/zombies.test.ts`, “scales launch distance monotonically through 40 N·s and keeps weapon distances bounded”, and `test/severedEnergy.test.ts`, “caps real bat launches and dissipates each bounce across five zombie seeds”.
+- No content behavior was given up; remaining guard: see `test/content.test.ts`, “base content has no issues”.
+- Ordinary save and scheduler cases gave up incidental full-world fixture coverage; remaining guard: see `test/snapshot-continuation.test.ts`, “detects omission of simulation, world, scheduler, inventory, and audio state”.
+- Gave up the duplicate deep non-rest continuation comparison; remaining guards: see `test/snapshot-continuation.test.ts`, “deeply matches N steps with K/save/load/N−K (active rest)”, “preserves an active-sleep interruption emitted between frames across save/load”, and “preserves a pending sleep interruption across a paused snapshot and load”.
+- No save-format behavior was given up; remaining guard: see `test/snapshot-format.test.ts`, “round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes”.
 
-`test/snapshotTestSupport.ts` generates fixture columns lazily. Ordinary codec and focused scheduler/interruption tests use a smaller hamlet slice rather than copying the full world into every runtime. The deep active-rest state/audio comparison, state-omission check, edited-hamlet round-trip, and representative long-save workload retain the full fixture. In `test/snapshot-continuation.test.ts`, dedicated interruption cases still verify persistence, while the deep whole-state continuation comparison is limited to active rest. In `test/snapshot-format.test.ts`, the edited-hamlet save still exercises encoding, decoding, restored continuation, key-order canonicalization, and interruption restoration; it avoids a second source fixture and redundant encoding passes. `encodeSave` calls `validateVersion`, which rejects a non-HASH `simulationHash` or `canonicalHash`, and `decodeSave` requires a non-empty `buildRevision`; the ten-hour test exercises these guards through its default encode and decode.
-
-These reductions narrow sampled layouts, repeated setup, and duplicate scenario coverage; they do not change simulation, handling, or save-format behavior. Further reductions should name the coverage relinquished and identify the remaining check that catches the relevant defect before they are made.
+Revisit these cuts when an issue reports another default-suite budget overrun or a defect that a given-up case would have caught. Restore the affected case when responding to such a defect, and link the issue.
