@@ -27,11 +27,19 @@ body {
 #view canvas {
   display: block;
 }
+body.unconscious::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #000;
+  pointer-events: none;
+}
 
 #game-cursor-root {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2003;
   pointer-events: none;
   mix-blend-mode: difference;
 }
@@ -160,7 +168,7 @@ body {
 
 #save-recovery {
   position: fixed;
-  z-index: 20;
+  z-index: 2002;
   left: 12px;
   bottom: 12px;
   max-width: min(680px, calc(100vw - 24px));
@@ -183,6 +191,7 @@ body {
 
 #overlay {
   position: fixed;
+  z-index: 2001;
   inset: 0;
   display: grid;
   /* The card is docked to the right edge, vertically centred, and the layer has no tint or blur so
@@ -339,7 +348,7 @@ body {
   min-height: 0;
   display: grid;
   /* Packing changes must not put item click points beyond the pane's clipped hit-test area. */
-  grid-template-columns: minmax(0, 1.2fr) minmax(min-content, 1fr) minmax(180px, 1fr);
+  grid-template-columns: minmax(140px, 0.7fr) minmax(0, 1.2fr) minmax(min-content, 1fr) minmax(180px, 1fr);
   gap: 12px;
 }
 .inv-pane,
@@ -357,6 +366,27 @@ body {
 .inv-details {
   gap: 6px;
   background: #1b1e23;
+}
+.inv-body-panel {
+  gap: 8px;
+}
+.inv-body-vitals,
+.inv-body-region {
+  font-size: 12px;
+}
+.inv-body-region {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 6px 0;
+  border-top: 1px solid #2a3038;
+}
+.inv-body-region-name {
+  color: var(--accent);
+  text-transform: capitalize;
+}
+.inv-body-warning {
+  color: #e8a36d;
 }
 .inv-pane h3,
 .inv-details h3 {
@@ -1051,6 +1081,13 @@ body.inventory-open #inventory-stats {
   }
   body.inventory-open #crafting {
     display: none;
+  }
+  .inv-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: auto;
+  }
+  .inv-details {
+    grid-column: 1 / -1;
   }
 }
 

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -8,9 +8,9 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bestPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry([
@@ -107,7 +107,7 @@ const runtime = (handedness?: Character['handedness']) => {
     survival,
     notice: (text) => notices.push(text),
   });
-  return { inventory, queue, survival, actions, notices };
+  return { inventory, queue, simulation, survival, actions, notices };
 };
 const fitsCopies = (size: ItemDef['size'], grid: ItemDef['size'], copies: number): boolean => {
   const orientations: ItemDef['size'][] = [size, [size[1], size[0]]];
@@ -164,6 +164,21 @@ describe('quickbar tap and hold actions', () => {
 
     expect(candle.on).toBe(true);
     expect(matches.charges).toBe(chargeBefore - perIgnition);
+  });
+
+  it('quickbar-holds a treatment item on its selected wound without wielding it', () => {
+    const { inventory, simulation, survival, actions } = runtime();
+    simulation.body.impact(1, 'leftArm', { bleeding: true });
+    const rag = inventory.create('rag');
+    const { bag, pocket } = carryInBag(inventory, rag);
+    expect(inventory.add(rag, { kind: 'pocket', owner: bag, pocket })).toBe(true);
+    const selected = survival.selectedItemAction(rag);
+    const beginTreatment = vi.spyOn(simulation.actions, 'beginTreatment').mockReturnValue(undefined);
+
+    actions.hold(rag);
+
+    expect(beginTreatment).toHaveBeenCalledWith(selected?.treatment?.region, rag.uid, 'rag', expect.any(Number));
+    expect(inventory.hands.right).toBeUndefined();
   });
 
   it('uses pocket food in one queued job while the held weapon stays in place', () => {

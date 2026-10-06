@@ -486,6 +486,16 @@ export class FirearmMechanics {
     return undefined;
   }
 
+  pauseTo(time: number): void {
+    for (const uid of this.active) {
+      const item = this.inventory.itemByUid(uid);
+      const cycle = item?.firearm?.cycle;
+      if (cycle && cycle.mode !== 'hand') {
+        item!.firearm!.cycle = { ...cycle, startedAt: time - cycle.elapsed };
+      }
+    }
+  }
+
   advanceTo(time: number): void {
     for (const uid of this.active) {
       this.advanceItem(uid, time);

@@ -45,7 +45,7 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
     case 'sound':
       return registry.sounds.has(id);
     case 'scheduler':
-      return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+      return ['needs', 'body', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
     case 'skill':
       return registry.skills.has(id);
     case 'recipe':
@@ -155,6 +155,128 @@ it('a codec save preserves the session-shifted view pitch after over-limit recoi
   const resumed = session([], decoded.snapshot);
   expect(decoded.snapshot.character.player.pitch).toBeCloseTo(look.pitch, 8);
   expect(resumed.restoredLook?.pitch).toBeCloseTo(look.pitch, 8);
+});
+
+it('holds an active automatic firearm cycle through unconsciousness', () => {
+  const runtime = session([]);
+  const rifle = runtime.inventory.create('debug_rifle_assault');
+  expect(runtime.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
+  const { action, calibre } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR knockout fixture needs exported automatic action data');
+  }
+  const cycleSeconds = action.fire.durationSeconds;
+  const frameSeconds = 1 / 60;
+  expect(
+    runtime.firearms.fire({
+      debugMode: true,
+      item: rifle,
+      seed: 71,
+      simTime: 0,
+      feet: [0, 0, 0],
+      eye: [0, PLAYER.eye / 0.5, 0],
+      yaw: 0,
+      pitch: 0,
+      aimFrame: { yaw: 0, pitch: 0 },
+      blockSize: 0.5,
+    }),
+  ).toBe(true);
+  const framesBeforeKnockout = Math.max(1, Math.floor(cycleSeconds / 2 / frameSeconds));
+  for (let frame = 0; frame < framesBeforeKnockout; frame += 1) {
+    runtime.frame(frameSeconds);
+  }
+  runtime.sim.body.impact(0, 'torso', { shockDamage: runtime.sim.body.shock });
+  for (let frame = 0; frame < Math.ceil((cycleSeconds + frameSeconds) / frameSeconds); frame += 1) {
+    runtime.frame(frameSeconds);
+  }
+
+  const spentCases = () => [...runtime.inventory.items()].filter(({ item }) => item.type === spentCaseItemId(calibre));
+  const pausedCycle = runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle;
+  expect(runtime.sim.body.unconscious).toBe(true);
+  expect(pausedCycle).toBeDefined();
+  expect(pausedCycle!.elapsed).toBeGreaterThan(0);
+  expect(pausedCycle!.elapsed).toBeLessThan(cycleSeconds);
+
+  runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSeconds);
+  expect(runtime.sim.body.unconscious).toBe(false);
+  const remainingSeconds = cycleSeconds - pausedCycle!.elapsed;
+  const remainingFrames = Math.ceil((remainingSeconds + frameSeconds) / frameSeconds);
+  for (let frame = 0; frame < remainingFrames && runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle; frame += 1) {
+    runtime.frame(frameSeconds);
+  }
+
+  expect(spentCases()).toHaveLength(1);
+  expect(runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle).toBeUndefined();
+});
+
+it('a knockout codec save preserves an automatic cycle’s remaining frames', async () => {
+  const frameSeconds = 1 / 60;
+  const prepare = (effects: FirearmShotEffect[]) => {
+    const runtime = session(effects);
+    const rifle = runtime.inventory.create('debug_rifle_assault');
+    expect(runtime.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
+    const { action } = firearmHandlingFor(rifle, registry);
+    if (!action.fire) {
+      throw new Error('AR knockout save fixture needs exported automatic action data');
+    }
+    expect(
+      runtime.firearms.fire({
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 0,
+        feet: [0, 0, 0],
+        eye: [0, PLAYER.eye / 0.5, 0],
+        yaw: 0,
+        pitch: 0,
+        aimFrame: { yaw: 0, pitch: 0 },
+        blockSize: 0.5,
+      }),
+    ).toBe(true);
+    const framesBeforeKnockout = Math.max(1, Math.floor(action.fire.durationSeconds / 2 / frameSeconds));
+    for (let frame = 0; frame < framesBeforeKnockout; frame += 1) {
+      runtime.frame(frameSeconds);
+    }
+    runtime.sim.body.impact(0, 'torso', { shockDamage: runtime.sim.body.shock });
+    const framesIntoKnockout = Math.min(
+      30,
+      Math.max(1, Math.floor((runtime.sim.body.tuning.knockoutSeconds * 60) / 2)),
+    );
+    for (let frame = 0; frame < framesIntoKnockout; frame += 1) {
+      runtime.frame(frameSeconds);
+    }
+    expect(runtime.sim.body.unconscious).toBe(true);
+    return { runtime, rifle, cycleSeconds: action.fire.durationSeconds };
+  };
+  const continuous = prepare([]);
+  const saved = prepare([]);
+  const savedBytes = await encodeSave(saved.runtime.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const decoded = await decodeSave(savedBytes, { version, contentLookup });
+  const resumed = session([], decoded.snapshot);
+  const continuousCycle = continuous.runtime.inventory.itemByUid(continuous.rifle.uid)?.firearm?.cycle;
+  const resumedCycle = resumed.inventory.itemByUid(continuous.rifle.uid)?.firearm?.cycle;
+  expect(continuousCycle).toBeDefined();
+  expect(resumedCycle).toBeDefined();
+  expect(continuousCycle!.elapsed).toBe(resumedCycle!.elapsed);
+
+  const framesUntilCycleEnds = (runtime: ReturnType<typeof session>): number => {
+    runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSeconds);
+    runtime.sim.paused = false;
+    expect(runtime.sim.body.unconscious).toBe(false);
+    let frames = 0;
+    while (runtime.inventory.itemByUid(continuous.rifle.uid)?.firearm?.cycle && frames < 20) {
+      runtime.frame(frameSeconds);
+      frames += 1;
+    }
+    expect(runtime.inventory.itemByUid(continuous.rifle.uid)?.firearm?.cycle).toBeUndefined();
+    return frames;
+  };
+  expect(continuousCycle!.duration).toBe(continuous.cycleSeconds);
+  expect(framesUntilCycleEnds(resumed)).toBe(framesUntilCycleEnds(continuous.runtime));
 });
 
 it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
