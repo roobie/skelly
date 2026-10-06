@@ -340,6 +340,16 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       'shotgun noise emitted',
       events.slice(from).some((event) => event.kind === 'noise'),
     );
+    for (const event of ['gunshot', 'gunshot_pbs1_reference'] as const) {
+      const before = events.length;
+      session.playPlayerSound(event, session.sim.time);
+      drainEvents();
+      observe(
+        scenario,
+        `${event} noise emitted`,
+        events.slice(before).some((entry) => entry.kind === 'noise'),
+      );
+    }
     observe(scenario, 'shotgun dropped', session.inventory.add(gun, { kind: 'pile', pos: session.feet() }));
   };
 

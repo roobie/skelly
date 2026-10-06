@@ -6,8 +6,9 @@ import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry } from '../core/content.ts';
 import { ZombieSystem } from '../core/zombies.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
-import { parseShamblerSeed } from './plan.ts';
-import { findShamblerBenchPlayer, placeShamblerRing } from './shamblerPlacement.ts';
+import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
+import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
+import { spawnShamblerRing } from './shamblerSpawn.ts';
 import { createHeadlessShamblerWorld } from './shamblerWorld.ts';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -54,7 +55,7 @@ if (seed === undefined) {
   console.error('--seed must be a signed 32-bit integer.');
   process.exit(2);
 }
-const counts = requestedCounts.length > 0 ? requestedCounts : [10, 50, 100];
+const counts = requestedCounts.length > 0 ? requestedCounts : [60, 360];
 if (counts.some((n) => !Number.isSafeInteger(n) || n <= 0 || n > 500) || new Set(counts).size !== counts.length) {
   console.error('N values must be unique positive integers no greater than 500.');
   process.exit(2);
@@ -74,6 +75,8 @@ const startTime = parseTimeOfDay('23:30');
 const hour = hourOfDay(startTime);
 
 for (const count of counts) {
+  const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
+  const backgroundCount = count - activeCount;
   const system = new ZombieSystem({
     isSolid: engine.isSolid,
     isOpaque: engine.isOpaque,
@@ -84,32 +87,58 @@ for (const count of counts) {
     hour: () => hour,
     hurtPlayer: () => undefined,
   });
-  for (const position of placeShamblerRing({ count, seed, player: playerBody, engine })) {
-    const facing = [playerBody.pos[0] - position[0], 0, playerBody.pos[2] - position[2]];
-    const id = system.add(shambler, position, facing);
-    system.store.get(id).body.onGround = true;
+  spawnShamblerRing({
+    count: activeCount,
+    seed,
+    player: playerBody,
+    engine,
+    registry,
+    zombies: system,
+    tier: 'active',
+  });
+  if (backgroundCount > 0) {
+    spawnShamblerRing({
+      count: backgroundCount,
+      seed,
+      player: playerBody,
+      engine,
+      registry,
+      zombies: system,
+      tier: 'background',
+    });
   }
 
-  // Match the browser harness's checked first perception tick; never time a setup
-  // where a placed shambler failed to acquire the lit player in the seeded hamlet.
-  system.tick(1 / 20);
-  const notChasing = [...system.store.entries()].filter(([, zombie]) => zombie.mode !== 'chase').length;
-  if (notChasing > 0) {
-    console.error(`N=${count}: ${notChasing} of ${count} shamblers were not in chase mode after the first tick.`);
-    process.exit(1);
-  }
-
-  for (let tick = 0; tick < 60; tick++) {
-    system.tick(1 / 20);
-  }
-  const samples = [];
-  for (let tick = 0; tick < 300; tick++) {
-    const start = process.hrtime.bigint();
-    system.tick(1 / 20);
-    samples.push(Number(process.hrtime.bigint() - start) / 1e6);
-  }
-  const mean = samples.reduce((sum, ms) => sum + ms, 0) / samples.length;
+  const runSteps = (ticks, collect) => {
+    let simTime = 0;
+    const activeSamples = [];
+    const backgroundSamples = [];
+    for (let tick = 0; tick < ticks; tick++) {
+      simTime += 1 / 20;
+      let start = process.hrtime.bigint();
+      system.tickActive(1 / 20, simTime);
+      if (collect) {
+        activeSamples.push(Number(process.hrtime.bigint() - start) / 1e6);
+      }
+      if ((tick + 1) % 10 === 0) {
+        start = process.hrtime.bigint();
+        system.tickBackground(0.5, simTime);
+        if (collect) {
+          backgroundSamples.push(Number(process.hrtime.bigint() - start) / 1e6);
+        }
+      }
+    }
+    return { activeSamples, backgroundSamples };
+  };
+  runSteps(60, false);
+  const { activeSamples, backgroundSamples } = runSteps(300, true);
+  const summarize = (samples) => {
+    const mean = samples.reduce((sum, ms) => sum + ms, 0) / samples.length;
+    return `mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)}`;
+  };
+  const activeMean = activeSamples.reduce((sum, ms) => sum + ms, 0) / activeSamples.length;
+  const backgroundMean = backgroundSamples.reduce((sum, ms) => sum + ms, 0) / backgroundSamples.length;
+  const simulationMsPerFrame = (activeMean * 20 + backgroundMean * 2) / 60;
   console.log(
-    `N=${count}: ZombieSystem CPU ms/tick mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)} (${samples.length} measured ticks; seed=${seed}, hour=23.5, ${engine.loadedChunks} chunks/${engine.loadedColumns} columns loaded)`,
+    `N=${count} (${activeCount} active, ${backgroundCount} background): active tick ms ${summarize(activeSamples)}; background tick ms ${summarize(backgroundSamples)}; simulation mean=${simulationMsPerFrame.toFixed(3)} ms/frame at 60 fps (${activeSamples.length}/${backgroundSamples.length} samples; seed=${seed}, hour=23.5, ${engine.loadedChunks} chunks/${engine.loadedColumns} columns loaded)`,
   );
 }

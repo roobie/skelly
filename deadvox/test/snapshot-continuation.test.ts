@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import { Inventory } from '../src/core/inventory.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import {
   advance,
   capture,
+  contentLookup,
   createRuntime,
+  encodeFixture,
+  fixtureHamlet,
   fixtureZombieColumn,
+  formatVersion,
   frozenTree,
   inspect,
   plainDataTree,
@@ -18,6 +23,33 @@ import {
 
 describe('hamlet save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
+  it('continues horde noise response and night drift deterministically through a save', async () => {
+    const [cx, cz] = fixtureZombieColumn;
+    const center = fixtureHamlet.zombiesIn(cx, cz)[0]?.pos;
+    if (!center) {
+      throw new Error('Horde save fixture has no nearby terrain spawn');
+    }
+    const playerSpawn: [number, number, number] = [center[0] - 180, center[1], center[2]];
+    const start = 23 * 3600;
+    const source = createRuntime(undefined, false, oneColumn, { start, spawn: playerSpawn });
+    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, 3);
+    expect(source.zombies.snapshotState().hordes.length).toBeGreaterThan(0);
+    advance(source, 60);
+    expect(source.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
+    source.emitPlayerSound('shotgun_blast', source.sim.time);
+    advance(source, 90);
+    const state = source.zombies.snapshotState();
+    expect(state.hordes[0]?.mode).toBe('noise');
+    expect(state.hordes[0]?.lastNoiseId).toBeGreaterThan(0);
+
+    const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot, false, oneColumn, { start, spawn: playerSpawn });
+    advance(source, 240);
+    advance(loaded, 240);
+    expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
+    expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
+  });
+
   it('continues active compressed rest through the first 1 Hz tick after load', () => {
     const source = createRuntime(undefined, true, oneColumn);
     expect(startRest(source, 'sleep')).toBeUndefined();
@@ -58,7 +90,6 @@ describe('hamlet save/load continuation', () => {
     const split = createRuntime(undefined, true);
     expect(uninterrupted.columns.length).toBeGreaterThan(0);
     expect([...uninterrupted.zombies.store.entries()].length).toBeGreaterThan(0);
-    expect(uninterrupted.spawner.snapshotState().length).toBeGreaterThan(uninterrupted.zombies.store.size);
     expect(uninterrupted.inventory.entities.all).toSatisfy((entities) =>
       [...entities].some((entity) => entity.searched),
     );

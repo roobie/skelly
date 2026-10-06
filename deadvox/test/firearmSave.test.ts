@@ -45,7 +45,16 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
     case 'sound':
       return registry.sounds.has(id);
     case 'scheduler':
-      return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+      return [
+        'needs',
+        'long-action',
+        'player',
+        'zombies',
+        'zombie-background',
+        'handling',
+        'lights',
+        'firearms',
+      ].includes(id);
     case 'skill':
       return registry.skills.has(id);
     case 'recipe':

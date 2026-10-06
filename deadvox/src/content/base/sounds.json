@@ -339,7 +339,7 @@
       "gainJitter": [1, 1],
       "minIntervalSeconds": 0,
       "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": { "enabled": true, "radiusMetres": 100 }
     },
     {
       "id": "gunshot_pbs1_reference",
@@ -349,7 +349,7 @@
       "gainJitter": [1, 1],
       "minIntervalSeconds": 0,
       "category": "world",
-      "noise": { "enabled": false, "radiusMetres": 1 }
+      "noise": { "enabled": true, "radiusMetres": 50 }
     },
     {
       "id": "item_drop_wood",

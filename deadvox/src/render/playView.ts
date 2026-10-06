@@ -11,7 +11,7 @@ import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
 import type { Body } from '../core/physics.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
-import type { Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { cameraRotation, DamageFeedback } from '../game/damageFeedback.ts';
 import type { Engine } from '../game/engine.ts';
 import { PLAYER } from '../game/player.ts';
@@ -44,6 +44,7 @@ export interface PlayWorldFrame {
   readonly calendar: number;
   readonly time: number;
   readonly lastZombieStep: number;
+  readonly lastBackgroundStep: number;
   readonly dt: number;
   readonly entities: BlockEntities;
   readonly zombies: EntityStore<Zombie>;
@@ -148,7 +149,16 @@ export const createPlayView = (
       meleeRecoilStrength = Math.max(0, Math.min(1, impulse / 12));
       meleeRecoilTime = 0.08;
     },
-    syncWorld: ({ calendar, time, lastZombieStep, dt, entities, zombies, frozen }: PlayWorldFrame) => {
+    syncWorld: ({
+      calendar,
+      time,
+      lastZombieStep,
+      lastBackgroundStep,
+      dt,
+      entities,
+      zombies,
+      frozen,
+    }: PlayWorldFrame) => {
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour), weather);
       applySky(engine.sky, sky);
@@ -156,8 +166,9 @@ export const createPlayView = (
       piles.sync(inventory);
       furniture.sync(entities);
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
+      const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
       zombieMeshes.setCamera?.(camera);
-      zombieMeshes.sync(zombies, dt, alpha, frozen);
+      zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha);
       return { hour, sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {

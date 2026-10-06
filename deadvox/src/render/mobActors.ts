@@ -129,7 +129,13 @@ import { castsAndReceives } from './shadowFlags.ts';
  * corpse" apart from "vanished without dying" (despawn/unload) — see MobActorMeshes' own doc comment. */
 export interface ZombieRenderer {
   readonly group: Group;
-  sync: (store: EntityStore<Zombie>, realDt?: number, alpha?: number, freezeLiving?: boolean) => void;
+  sync: (
+    store: EntityStore<Zombie>,
+    realDt?: number,
+    alpha?: number,
+    freezeLiving?: boolean,
+    backgroundAlpha?: number,
+  ) => void;
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
@@ -373,6 +379,8 @@ export class MobActorMeshes implements ZombieRenderer {
   private nextDeadOrder = 0;
   private frameCounter = 0;
   private renderBlend = 1;
+  private activeBlend = 1;
+  private backgroundBlend = 1;
   private camera: Camera | undefined;
   private readonly frustum = new Frustum();
   private readonly frustumMatrix = new Matrix4();
@@ -1333,18 +1341,22 @@ export class MobActorMeshes implements ZombieRenderer {
     return true;
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, _freezeLiving = false): void {
+  // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with its base implementation.
+  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, _freezeLiving = false, backgroundAlpha = alpha): void {
     this.frameCounter += 1;
     if (this.camera) {
       this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
       this.frustum.setFromProjectionMatrix(this.frustumMatrix);
     }
     const blend = Math.max(0, Math.min(1, alpha));
+    this.activeBlend = blend;
+    this.backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
     this.renderBlend = blend;
     let anyDirty = false;
     const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
       present.add(id);
+      this.renderBlend = zombie.tier === 'background' ? this.backgroundBlend : this.activeBlend;
       anyDirty = this.syncZombie({ id, zombie }) || anyDirty;
     }
     for (const [id, state] of this.states) {

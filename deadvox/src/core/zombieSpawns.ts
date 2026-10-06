@@ -41,5 +41,13 @@ export class ZombieSpawner {
         zombies.add(type, spawn.pos, [1, 0, 0]);
       }
     }
+    for (const horde of site.hordesIn?.(cx, cz) ?? []) {
+      const type = registry.zombies.get(horde.type);
+      const key = `horde:${horde.id}`;
+      if (type && !this.spawned.has(key)) {
+        zombies.addHorde(key, type, horde.pos, horde.members);
+        this.spawned.add(key);
+      }
+    }
   }
 }

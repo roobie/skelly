@@ -119,10 +119,12 @@ export class ZombieMeshes {
     mesh.boundingSphere = null;
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, freezeLiving = false): void {
+  // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with existing direct callers.
+  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, freezeLiving = false, backgroundAlpha = alpha): void {
     const blend = Math.max(0, Math.min(1, alpha));
+    const backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
     const zombies = [...store.entries()].map(([id, zombie]) =>
-      this.renderPose(id, zombie, blend, freezeLiving ? 0 : realDt),
+      this.renderPose(id, zombie, zombie.tier === 'background' ? backgroundBlend : blend, freezeLiving ? 0 : realDt),
     );
     this.discardMissingOffsets(new Set(zombies.map(({ id }) => id)));
     for (const part of PARTS) {

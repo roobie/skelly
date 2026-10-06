@@ -47,6 +47,7 @@ import type { World } from '../core/world.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
+  BACKGROUND_ZOMBIE_RATE,
   type HitImpulse,
   type MeleeResult,
   type PlayerMovement,
@@ -221,6 +222,7 @@ const playerSenseTuning = (registry: Registry) => {
   return tuning;
 };
 
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep session ownership and dependency wiring centralized at the construction boundary.
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
@@ -483,6 +485,7 @@ export const createSession = (options: SessionOptions) => {
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
+    isLoaded: options.ready,
     terrainFloor: options.terrainFloor,
     isSolid,
     isOpaque: options.isOpaque,
@@ -543,6 +546,7 @@ export const createSession = (options: SessionOptions) => {
   });
   const playerCombat = new PlayerCombat(zombieSystem, (uid) => wearMeleeWeaponOnHit(inventory, uid), character);
   let lastZombieStep = 0;
+  let lastBackgroundStep = 0;
   let lastPlayerStep = 0;
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
     controls.heldDominantUse?.(
@@ -564,8 +568,16 @@ export const createSession = (options: SessionOptions) => {
     id: 'zombies',
     rate: ZOMBIE_RATE,
     tick: (dt, time) => {
-      zombieSystem.tick(dt, time, heldItemUids());
+      zombieSystem.tickActive(dt, time, heldItemUids());
       lastZombieStep = time;
+    },
+  });
+  sim.scheduler.register({
+    id: 'zombie-background',
+    rate: BACKGROUND_ZOMBIE_RATE,
+    tick: (dt, time) => {
+      zombieSystem.tickBackground(dt, time);
+      lastBackgroundStep = time;
     },
   });
 
@@ -711,6 +723,7 @@ export const createSession = (options: SessionOptions) => {
     sim.restoreState(restored.character.simulation);
     const schedulerState = sim.scheduler.snapshotState();
     lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
+    lastBackgroundStep = schedulerState.systems.find(({ id }) => id === 'zombie-background')?.done ?? sim.time;
     lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
     sim.actions.restoreState(restored.character.longAction);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
@@ -751,6 +764,9 @@ export const createSession = (options: SessionOptions) => {
     /** Time of the last shambler step, for render interpolation. */
     get lastZombieStep() {
       return lastZombieStep;
+    },
+    get lastBackgroundStep() {
+      return lastBackgroundStep;
     },
     get lastPlayerStep() {
       return lastPlayerStep;

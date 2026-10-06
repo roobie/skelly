@@ -50,7 +50,10 @@ export const fixtureHamlet = new Hamlet(seed, registry, scale);
 export const fixtureColumns: [number, number][] = [];
 for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.bounds.z1 - 1); cz++) {
   for (let cx = toChunk(fixtureHamlet.bounds.x0); cx <= toChunk(fixtureHamlet.bounds.x1 - 1); cx++) {
-    if (fixtureHamlet.furnitureIn(cx, cz).length > 0 || fixtureHamlet.zombiesIn(cx, cz).length > 0) {
+    if (
+      fixtureHamlet.hordesIn(cx, cz).length === 0 &&
+      (fixtureHamlet.furnitureIn(cx, cz).length > 0 || fixtureHamlet.zombiesIn(cx, cz).length > 0)
+    ) {
       fixtureColumns.push([cx, cz]);
     }
   }
@@ -108,7 +111,9 @@ export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
+  runtimeOptions: { start?: number; spawn?: Vec3 } = {},
 ) {
+  const { start = defaultClock.start, spawn: spawnOverride } = runtimeOptions;
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
   const hamlet = fixtureHamlet;
@@ -128,7 +133,7 @@ export function createRuntime(
   // Where the player is looking: the game reads this from its input, here it is plain state.
   const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
-  const spawn: Vec3 = [sx! + awayFromShamblers, sy! + 400, sz!];
+  const spawn: Vec3 = spawnOverride ?? [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
   if (restFixture) {
     const sleepable = [...registry.furniture.values()].find((def) => def.rest?.sleep);
@@ -155,7 +160,7 @@ export function createRuntime(
     entities: sharedEntities,
     scale,
     seed,
-    start: defaultClock.start,
+    start,
     spawn,
     ready: () => true,
     controls: {
@@ -347,6 +352,7 @@ export const inspect = (runtime: Runtime): unknown => {
     },
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
+      hordes: runtime.zombies.snapshotState().hordes,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
         const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
         return [
@@ -411,7 +417,7 @@ export const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
   }
 };
 
-const IDLE_GROANER_DISTANCE = 120;
+const IDLE_GROANER_DISTANCE = 20;
 export const prepareAudioContinuation = (runtime: Runtime): void => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
   const firstZombie = runtime.zombies.store.entries().next().value as
@@ -479,7 +485,9 @@ export const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'recipe') {
     return registry.recipes.has(id);
   }
-  return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+  return ['needs', 'long-action', 'player', 'zombies', 'zombie-background', 'handling', 'lights', 'firearms'].includes(
+    id,
+  );
 };
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

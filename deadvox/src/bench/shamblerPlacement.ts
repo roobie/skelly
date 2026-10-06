@@ -66,6 +66,9 @@ export const placeShamblerRing = ({
   engine,
   occupied: existing = [],
   allowPartial = false,
+  minRadiusMetres = 8,
+  maxRadiusMetres = 20,
+  requireSight = true,
 }: {
   count: number;
   seed: number;
@@ -73,6 +76,9 @@ export const placeShamblerRing = ({
   engine: ShamblerPlacementWorld;
   occupied?: readonly Body[];
   allowPartial?: boolean;
+  minRadiusMetres?: number;
+  maxRadiusMetres?: number;
+  requireSight?: boolean;
 }): Vec3[] => {
   const s = engine.config.scale.blockSize;
   const occupied: Body[] = [player, ...existing];
@@ -82,7 +88,9 @@ export const placeShamblerRing = ({
     let body: Body | undefined;
     for (let attempt = 0; attempt < 256; attempt++) {
       const key = seed * 12.9898 + index * 78.233 + attempt * 37.719;
-      const radius = Math.sqrt(64 + fract(Math.sin(key) * 43_758.5453) * 336);
+      const radius = Math.sqrt(
+        minRadiusMetres ** 2 + fract(Math.sin(key) * 43_758.5453) * (maxRadiusMetres ** 2 - minRadiusMetres ** 2),
+      );
       const angle = fract(Math.sin(key + 19.19) * 19_349.123) * Math.PI * 2;
       const x = player.pos[0] * s + radius * Math.cos(angle);
       const z = player.pos[2] * s + radius * Math.sin(angle);
@@ -95,7 +103,11 @@ export const placeShamblerRing = ({
           Math.abs(candidate.pos[0] - other.pos[0]) < candidate.halfWidth + other.halfWidth &&
           Math.abs(candidate.pos[2] - other.pos[2]) < candidate.halfWidth + other.halfWidth,
       );
-      if (overlaps || !bodyIsClear(candidate, engine.isSolid) || !rayIsClear(candidate, player, engine.isOpaque, s)) {
+      if (
+        overlaps ||
+        !bodyIsClear(candidate, engine.isSolid) ||
+        (requireSight && !rayIsClear(candidate, player, engine.isOpaque, s))
+      ) {
         continue;
       }
       body = candidate;
@@ -105,7 +117,7 @@ export const placeShamblerRing = ({
       if (allowPartial) {
         break;
       }
-      throw new Error(`Could not place shambler ${index + 1} in the clear-sight 8–20 m ring.`);
+      throw new Error(`Could not place shambler ${index + 1} in the ${minRadiusMetres}–${maxRadiusMetres} m ring.`);
     }
     positions.push([...body.pos]);
     occupied.push(body);

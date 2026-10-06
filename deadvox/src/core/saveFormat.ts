@@ -15,7 +15,7 @@ import { validateLongJob } from './longAction.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { ZombieState } from './zombies.ts';
+import type { HordeState, ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -104,6 +104,7 @@ interface WirePayload {
     regions: Record<string, Region>;
     zombieSystem: {
       nextEntityId: number;
+      hordes: HordeState[];
     };
     blockEntitiesNextUid: number;
     spawned: string[];
@@ -135,7 +136,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 24;
+export const SAVE_SCHEMA_VERSION = 25;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -394,8 +395,20 @@ const soundPicker = obj({
 });
 const playerAudio = obj({ vocalNoiseId: nonNegativeInt, vocalNoise: nullable(vocalNoise), soundPicker });
 const handling = obj({ jobs: arr(anyJson) });
+const horde = obj({
+  id: str({ nonEmpty: true }),
+  type: str({ id: true }),
+  home: vec3,
+  target: vec3,
+  mode: enumeration(['home', 'roam', 'noise']),
+  roamTimer: nonNegative,
+  lastNoiseId: nonNegativeInt,
+  rng: tuple(safeInt, safeInt, safeInt, safeInt),
+});
 const zombie = obj({
   type: str({ id: true }),
+  hordeId: opt(str({ nonEmpty: true })),
+  hordeOffset: opt(vec3),
   figureSeed: safeInt,
   incapacitated: bool,
   body,
@@ -543,6 +556,7 @@ const wirePayloadSchema = obj({
     ),
     zombieSystem: obj({
       nextEntityId: positiveInt,
+      hordes: arr(horde),
     }),
     blockEntitiesNextUid: positiveInt,
     spawned: arr(str({ nonEmpty: true })),
@@ -853,6 +867,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       regions: Object.fromEntries(regions),
       zombieSystem: {
         nextEntityId: snapshot.world.zombies.nextEntityId,
+        hordes: [...snapshot.world.zombies.hordes],
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
       spawned: [...snapshot.world.spawned],
@@ -1257,6 +1272,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         zombies: obj({
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
+          hordes: arr(horde),
         }),
         spawned: arr(str({ nonEmpty: true })),
       }),
@@ -1280,6 +1296,24 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
   );
   assertAimState(snapshot.character.aim);
   validateActionReferences(snapshot);
+  const hordes = new Map<string, HordeState>();
+  for (const hordeState of snapshot.world.zombies.hordes) {
+    if (hordes.has(hordeState.id)) {
+      throw new Error(`Duplicate horde ${hordeState.id}`);
+    }
+    hordes.set(hordeState.id, hordeState);
+  }
+  for (const { zombie: zombieState } of snapshot.world.zombies.zombies) {
+    if ((zombieState.hordeId === undefined) !== (zombieState.hordeOffset === undefined)) {
+      throw new Error('Incomplete zombie horde membership');
+    }
+    if (zombieState.hordeId !== undefined) {
+      const hordeState = hordes.get(zombieState.hordeId);
+      if (!hordeState || hordeState.type !== zombieState.type) {
+        throw new Error(`Invalid horde membership ${zombieState.hordeId}`);
+      }
+    }
+  }
   const blockEntities = snapshot.character.inventory.entities;
   if (blockEntities.nextUid <= Math.max(0, ...blockEntities.entities.map(({ uid }) => uid))) {
     throw new Error('Invalid next block entity id');
