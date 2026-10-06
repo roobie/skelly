@@ -33,7 +33,7 @@ interface EventState {
   lastPlayedAt: number;
 }
 
-export interface SoundPickerEventState {
+interface SoundPickerEventState {
   event: SoundEventId;
   rng: RngState;
   lastVariant: number;

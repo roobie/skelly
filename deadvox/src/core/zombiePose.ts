@@ -144,7 +144,7 @@ const attackTimeFor = ({
     : undefined;
 };
 
-export const STANCE_CROSSFADE_SECONDS = 0.5;
+const STANCE_CROSSFADE_SECONDS = 0.5;
 
 export const targetStanceWeight = (input: ShamblerPoseInput): number => {
   const attackTime = attackTimeFor(input);

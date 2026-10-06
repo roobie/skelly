@@ -18,7 +18,7 @@ import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/in
 import { craftTime, workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
-export const CELL = 32;
+const CELL = 32;
 
 // These item commands remain inventory intents even with no selected item.
 const ITEM_COMMAND_CODES = new Set<string>([

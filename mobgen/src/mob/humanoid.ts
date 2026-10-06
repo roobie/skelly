@@ -28,7 +28,7 @@ import { pick, type Rng, range } from '../core/random.ts';
 import type { Genome, Template, Wound } from '../core/template.ts';
 
 const SIDES = ['L', 'R'] as const;
-export type Side = (typeof SIDES)[number];
+type Side = (typeof SIDES)[number];
 const sideSign = (s: Side): number => (s === 'L' ? -1 : 1);
 
 const toRad = (deg: number): number => (deg * Math.PI) / 180;
@@ -74,7 +74,7 @@ export const HUMANOID_PARAM_ORDER = [
 
 export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>>;
 
-export const WOUNDABLE_BONES = [
+const WOUNDABLE_BONES = [
   'spine',
   'chest',
   'upperArm.L',
@@ -112,7 +112,7 @@ const SHIN_FRAC = REF.kneeY - REF.ankleY; // 0.217
 /** A vector of length `len`, pointing up but tilted forward by `tiltDeg` (positive = toward -Z). */
 const leanUp = (len: number, tiltDeg: number): Vec3 => scale(applyDir(rotation(rotX(-tiltDeg)), UP), len);
 
-export interface JointLayout {
+interface JointLayout {
   readonly height: number;
   readonly pelvis: { readonly bottom: Vec3; readonly top: Vec3 };
   readonly spine: { readonly head: Vec3; readonly tail: Vec3 };
@@ -134,7 +134,7 @@ export interface JointLayout {
 
 /** Pure geometry: every joint position in the rest pose, from height and proportion params.
  * Shared by the builder (flesh placement) and the gait (leg IK targets, bone lengths). */
-export const jointLayout = (p: HumanoidParams): JointLayout => {
+const jointLayout = (p: HumanoidParams): JointLayout => {
   const h = p.height;
   const hunchSpine = p.hunch * 0.3;
   const hunchChest = p.hunch * 0.65;
@@ -233,7 +233,7 @@ const makeLeg = (h: number, p: HumanoidParams, side: Side, geo: LegGeometry): Jo
 
 // ---- Bones ----
 
-export const buildBones = (layout: JointLayout): Body['bones'] => {
+const buildBones = (layout: JointLayout): Body['bones'] => {
   const bones: Body['bones'][number][] = [
     { id: 'pelvis', parent: null, head: layout.pelvis.bottom, tail: layout.pelvis.top },
     { id: 'spine', parent: 'pelvis', head: layout.spine.head, tail: layout.spine.tail },
@@ -792,7 +792,7 @@ const buildPalette = (p: HumanoidParams): Record<Material, Vec3> => ({
 
 // ---- Build & sample ----
 
-export const buildHumanoid = (genome: Genome): Body => {
+const buildHumanoid = (genome: Genome): Body => {
   const p = genome.params as HumanoidParams;
   const layout = jointLayout(p);
   const bones = buildBones(layout);
@@ -819,7 +819,7 @@ const sampleWounds = (rng: Rng, count: number): Wound[] => {
   return wounds;
 };
 
-export const sampleHumanoid: BodyPlanDef['sample'] = (rng: Rng, template: Template) => {
+const sampleHumanoid: BodyPlanDef['sample'] = (rng: Rng, template: Template) => {
   const params = sampleParams(rng, template.params, HUMANOID_PARAM_ORDER);
   const wounds = sampleWounds(rng, params.woundCount!);
   return { params, wounds };

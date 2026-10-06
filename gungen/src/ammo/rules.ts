@@ -25,7 +25,7 @@ export interface CartridgeRule {
  * A rimless case's rim is cut from the head diameter, so the two differ by hundredths of a
  * millimetre in real standards. Anything further apart is a swapped or mistyped field.
  */
-export const RIMLESS_RIM_HEAD_TOLERANCE_MM = 0.5;
+const RIMLESS_RIM_HEAD_TOLERANCE_MM = 0.5;
 
 // ---------------------------------------------------------------- comparison helpers
 

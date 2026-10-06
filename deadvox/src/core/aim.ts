@@ -73,7 +73,7 @@ const frameFromState = (
   };
 };
 
-export const initialAimState = (): AimState => ({
+const initialAimState = (): AimState => ({
   gaitPhase: 0,
   lookYaw: 0,
   lookPitch: 0,

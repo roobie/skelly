@@ -24,7 +24,7 @@ const label = (r: Resolved, part: string): string => {
 };
 
 /** Mount type, gender and size agree; each port (or slot) is used at most once. */
-export const portCompat: Rule = {
+const portCompat: Rule = {
   id: 'port-compat',
   title: 'Ports are compatible',
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
@@ -80,7 +80,7 @@ export const portCompat: Rule = {
 };
 
 /** Axes the domain cares about line up with the main axis. */
-export const axisAlignment: Rule = {
+const axisAlignment: Rule = {
   id: 'axis-alignment',
   title: 'Axes line up with the main axis',
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
@@ -155,7 +155,7 @@ const worstPenetration = (a: readonly WorldSolid[], b: readonly WorldSolid[], cu
 };
 
 /** No two parts interpenetrate. Directly connected parts may nest a little. */
-export const solidOverlap: Rule = {
+const solidOverlap: Rule = {
   id: 'solid-overlap',
   title: 'Solids do not overlap',
   check(r) {
@@ -282,7 +282,7 @@ export const keepOut: Rule = {
 };
 
 /** Every required port has something attached. */
-export const requiredPorts: Rule = {
+const requiredPorts: Rule = {
   id: 'required-ports',
   title: 'Required ports are filled',
   check(r) {
@@ -310,7 +310,7 @@ export const requiredPorts: Rule = {
 };
 
 /** Connections that close a loop actually meet. */
-export const loopClosure: Rule = {
+const loopClosure: Rule = {
   id: 'loop-closure',
   title: 'Loops close',
   check(r) {

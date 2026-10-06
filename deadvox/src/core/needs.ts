@@ -29,7 +29,7 @@ export const REST = {
   bedBonus: -20,
 } as const;
 
-export const HEALTH = {
+const HEALTH = {
   /** Coming back while calories and hydration are at least `metAbove` and fatigue is at most `restedBelow`. */
   regen: 2,
   metAbove: 25,
@@ -52,7 +52,7 @@ export const STAMINA = {
 export const SPAWN_NEEDS: Readonly<Needs> = { calories: 40, hydration: 35, fatigue: 70, health: 100, stamina: 100 };
 
 /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */
-export const FULL = { kcal: 2500, ml: 2500 } as const;
+const FULL = { kcal: 2500, ml: 2500 } as const;
 
 /** Crossing one of these interrupts a long action. */
 const CRITICAL: readonly { need: keyof Needs; below?: number; above?: number; message: string }[] = [
@@ -69,7 +69,7 @@ const isCritical = (needs: Needs, rule: (typeof CRITICAL)[number]): boolean =>
   (rule.above !== undefined && needs[rule.need] > rule.above);
 
 /** Health's rate per game hour for the needs as they are now. */
-export const healthRate = (needs: Needs): number => {
+const healthRate = (needs: Needs): number => {
   let rate = 0;
   if (needs.calories <= 0) {
     rate += HEALTH.starving;
@@ -182,7 +182,7 @@ export const canSprint = (needs: Needs, sprinting: boolean): boolean =>
   sprinting ? needs.stamina > 0 : needs.stamina >= STAMINA.winded;
 
 /** What eating or drinking something gives, in percent. */
-export const nourishment = (food: { calories: number; water: number }): { calories: number; hydration: number } => ({
+const nourishment = (food: { calories: number; water: number }): { calories: number; hydration: number } => ({
   calories: (food.calories / FULL.kcal) * 100,
   hydration: (food.water / FULL.ml) * 100,
 });

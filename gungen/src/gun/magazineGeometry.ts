@@ -8,7 +8,7 @@ import { magazineCenterline } from './magazineCenterline.ts';
 
 export const MAGAZINE_WALL_U = 0.125;
 /** Assumed portion of the top round that stands proud of the magazine feed face. */
-export const MAGAZINE_TOP_PROUD_DIAMETERS = 0.35;
+const MAGAZINE_TOP_PROUD_DIAMETERS = 0.35;
 export const UNITS_PER_MM = 1 / (METRES_PER_UNIT * 1000);
 const BODY_CLEARANCE_EPSILON_U = 1e-9;
 type MagazineCenterlineData = NonNullable<ReturnType<typeof magazineCenterline>>;

@@ -18,7 +18,7 @@ import type { RevolvedSolid, Vec2 } from '../core/schema.ts';
 import { UNITS_PER_MM } from '../gun/magazineGeometry.ts';
 import { shotshellGeometry, shotshellHullColor } from '../gun/shotshellGeometry.ts';
 
-export const DEFAULT_ROUND_FACETS = 24;
+const DEFAULT_ROUND_FACETS = 24;
 const ROUND_CREASE_DEGREES = 12;
 export type CaseFinish = 'steel' | 'brass';
 export const caseFinishFromQuery = (value: string | null): CaseFinish => (value === 'steel' ? 'steel' : 'brass');

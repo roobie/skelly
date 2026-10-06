@@ -11,8 +11,6 @@ export const CORE_RULE_IDS = [
   'loop-closure',
 ] as const;
 
-export type CoreRuleId = (typeof CORE_RULE_IDS)[number];
-
 export interface Issue {
   /** A core rule id, or one a domain added. */
   readonly rule: string;

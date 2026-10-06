@@ -6,7 +6,7 @@ import type { PartDef } from '../core/schema.ts';
 import { type CycleMode, type CycleMotion, cycleMotion, pumpCycleMotion } from './cycle.ts';
 import { localEjectionPoint } from './ejection.ts';
 
-export interface ActionPart {
+interface ActionPart {
   readonly id: string;
   readonly node: string;
   readonly def: PartDef;

@@ -9,7 +9,7 @@ import { installSearchInputKeyboardBoundary } from './searchInputKeyboard.ts';
 
 const WHITESPACE = /\s+/;
 
-export interface SpawnMenuItem {
+interface SpawnMenuItem {
   readonly id: string;
   readonly name: string;
   /** "category" or "category, model". */

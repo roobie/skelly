@@ -86,7 +86,7 @@
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/mesher.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/needs.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/pileLayout.ts", "count": 1 },
-    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/scale.ts", "count": 2 },
+    { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/scale.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/scheduler.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/schema.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/sim.ts", "count": 1 },

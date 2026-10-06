@@ -15,7 +15,7 @@ export interface PelletShot {
 
 /** Gameplay estimates, not measured choke patterns or physical wound/energy models. */
 export const BUCK_HALF_ANGLE = (2 * Math.PI) / 180;
-export const BUCK_RANGE_METRES = 50;
+const BUCK_RANGE_METRES = 50;
 
 /** Uniform area sample in a forward cone's tangent-plane disk. */
 export const coneDirection = (basis: ReturnType<typeof aimBasis>, halfAngleRadians: number, rng: Rng): Vec3 => {

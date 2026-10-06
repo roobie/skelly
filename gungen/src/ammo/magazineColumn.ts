@@ -13,7 +13,7 @@ export interface ColumnInput {
   readonly topProud: number;
 }
 
-export interface ColumnRound {
+interface ColumnRound {
   /** Round centre in the magazine plane. */
   readonly position: Vec2;
   /** Nose-up tilt in radians from +x, turning with the curve. */

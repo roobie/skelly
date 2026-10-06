@@ -14,9 +14,9 @@ import {
 import { type HotCategory, patchHotCheck } from './hotCheck.ts';
 
 /** Mist is at full density at and below this height (metres); terrain spans about 8 to 56 m. */
-export const HEIGHT_FOG_BASE_M = 16;
+const HEIGHT_FOG_BASE_M = 16;
 /** Metres of climb over which the mist thins by a factor e. */
-export const HEIGHT_FOG_SCALE_M = 14;
+const HEIGHT_FOG_SCALE_M = 14;
 
 /** `uHeightFog` = (density per metre at the base, 1 / scale, base height); density 0 turns it off. */
 export const heightFogUniforms: { uHeightFog: IUniform<Vector3>; uHeightFogColor: IUniform<Color> } = {

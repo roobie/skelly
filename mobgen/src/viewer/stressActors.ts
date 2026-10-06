@@ -117,12 +117,12 @@ export const generatePoolEntry = (poolIndex: number, fromSeed: number): PoolGenR
 
 // ---- render resources: shared across every actor referencing one pool entry ----
 
-export interface BonesPoolRender {
+interface BonesPoolRender {
   readonly kind: 'bones';
   readonly geometries: ReadonlyMap<number, BufferGeometry>;
 }
 
-export interface SkinnedPoolRender {
+interface SkinnedPoolRender {
   readonly kind: 'skinned';
   readonly geometry: BufferGeometry;
 }
@@ -435,7 +435,7 @@ export const createActor = (entry: PoolEntry, render: PoolRender): StressActor =
 // exactly the geometry + a slot lookup.
 
 /** One actor's handle into the shared crowd texture: writing its own row, nothing else. */
-export interface CrowdActorHandle {
+interface CrowdActorHandle {
   readonly place: (x: number, z: number, yawRad: number, pose: Pose) => void;
 }
 

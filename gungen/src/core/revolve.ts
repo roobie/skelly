@@ -15,7 +15,7 @@ import { add, extrusionPoint, type Vec3 } from './math.ts';
 import type { TriangleMesh } from './mesh.ts';
 import type { RevolvedSolid, Vec2 } from './schema.ts';
 
-export const DEFAULT_CREASE_DEGREES = 40;
+const DEFAULT_CREASE_DEGREES = 40;
 /**
  * Facets of the collision hull, whatever the mesh's level of detail, so validation never depends on how a
  * solid is drawn. Divisible by four, so the hull reaches the full radius on both transverse axes and its
@@ -25,7 +25,7 @@ export const DEFAULT_CREASE_DEGREES = 40;
  * against its bullet: 16 facets took 73 ms per penetration check and 67 ms per distance check; 8 facets took
  * 5.1 ms and 5.2 ms. Case against a box: 1.9 ms and 10.8 ms at 16, 0.2 ms and 2.2 ms at 8.
  */
-export const REVOLVE_COLLISION_FACETS = 8;
+const REVOLVE_COLLISION_FACETS = 8;
 /** Facets of a mesh when the caller does not choose: enough to read as round beyond arm's length. */
 export const DEFAULT_REVOLVE_FACETS = 6;
 export const MIN_REVOLVE_FACETS = 3;

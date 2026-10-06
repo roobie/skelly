@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["site/launcher.js!", "test/**/*.mjs", "testPool.ts", "tools/**/*.mjs"],
+      "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
+    },
+    "deadvox": {
+      "ignoreBinaries": [
+        // OS dependency installed for Firefox's native-window probe; not a project package.
+        "xwininfo",
+        // OS dependency installed for Firefox's native-window probe; not a project package.
+        "xprop"
+      ],
+      "ignoreUnresolved": [
+        // Vite resolves this browser URL from the Deadvox root at runtime.
+        "/src/game/saveStorage.ts",
+        // Vite resolves this browser URL from the Deadvox root at runtime.
+        "/src/core/saveFormat.ts"
+      ],
+      "entry": [
+        "index.html!",
+        "sounds.html!",
+        "src/soundsPage.ts!",
+        "tools/bench-rigid-body.mjs",
+        "tools/bench-zombie-swings.mjs",
+        "tools/ui-browser-contract.mjs"
+      ],
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"],
+      "paths": {
+        "@mobgen/*": ["../mobgen/src/*"]
+      }
+    },
+    "gungen": {
+      "entry": ["index.html!"],
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
+    },
+    "mobgen": {
+      "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],
+      "paths": {
+        "@mobgen/*": ["src/*"]
+      },
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
+    }
+  }
+}

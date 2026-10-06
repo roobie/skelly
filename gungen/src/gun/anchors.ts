@@ -17,13 +17,13 @@ export type AnchorSelectionError =
 export type GunPartAnchors = NamedAnchors<GunAnchorName>;
 
 /** Domain-specific family declaration; returned frames are local to that part. */
-export type GunPartAnchorDeclaration = PartAnchorDeclaration<GunAnchorName>;
+type GunPartAnchorDeclaration = PartAnchorDeclaration<GunAnchorName>;
 
 /** `grip` includes a standalone grip or an integrated firing grip; stock wrists are fallback. */
-export type GunHoldAnchorRank = 'grip' | 'firing-grip-stock';
-export type GunHoldAnchorPrecedence = readonly ['grip', 'firing-grip-stock'];
+type GunHoldAnchorRank = 'grip' | 'firing-grip-stock';
+type GunHoldAnchorPrecedence = readonly ['grip', 'firing-grip-stock'];
 
-export interface GunAnchorDeclaration {
+interface GunAnchorDeclaration {
   readonly anchors: GunPartAnchorDeclaration;
   /** Required for a declaration that supplies `hold`; equal-rank candidates are ambiguous. */
   readonly holdRank?: GunHoldAnchorRank;
@@ -108,5 +108,3 @@ const selectOthers = (
   }
   return { hold, others };
 };
-
-export type { AnchorFrame } from '../core/design.ts';

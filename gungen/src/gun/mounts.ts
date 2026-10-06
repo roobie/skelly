@@ -30,7 +30,7 @@ export interface MountRequirement {
   readonly clearanceU: { readonly forward: number; readonly rearward: number; readonly lateral: number };
 }
 
-export const railSpanU = (port: PortDef): number =>
+const railSpanU = (port: PortDef): number =>
   port.slots && port.slots.count > 1 ? (port.slots.count - 1) * port.slots.pitch : 0;
 
 export const mountCanAccept = (port: PortDef, requirement: MountRequirement, slot = 0): boolean => {

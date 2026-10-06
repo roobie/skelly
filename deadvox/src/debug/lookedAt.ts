@@ -9,7 +9,7 @@ import { raycast, type SolidAt } from '../core/raycast.ts';
 import type { World } from '../core/world.ts';
 
 /** Metres: how far the readout looks. */
-export const LOOK_REACH = 16;
+const LOOK_REACH = 16;
 
 export interface LookedAtWorld {
   world: Pick<World, 'getBlock'>;

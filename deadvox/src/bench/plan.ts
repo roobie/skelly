@@ -15,7 +15,7 @@ export interface BenchConfig {
 export const DEFAULT_PLAN: readonly BenchConfig[] = [64, 96, 128].map((radiusM) => ({ blockSize: 0.5, radiusM }));
 
 export const DEFAULT_SHAMBLER_COUNTS = [10, 25, 50, 100] as const;
-export const MAX_SHAMBLER_COUNT = 500;
+const MAX_SHAMBLER_COUNT = 500;
 const SHAMBLER_COUNTS_PATTERN = /^\d+(,\d+)*$/;
 
 export const parseShamblerCounts = (text: string): number[] | undefined => {
@@ -54,7 +54,7 @@ export const formatPlan = (plan: readonly BenchConfig[]): string =>
   plan.map(({ blockSize, radiusM }) => `${blockSize}:${radiusM}`).join(',');
 
 /** CPU milliseconds per frame spent streaming, simulating and submitting the render (not GPU time). */
-export interface WorkStats {
+interface WorkStats {
   work: SampleStats;
 }
 

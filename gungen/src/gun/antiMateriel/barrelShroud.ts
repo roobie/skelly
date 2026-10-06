@@ -24,7 +24,7 @@ const CAVITY_HALF_WIDTH = SHROUD_HALF_WIDTH - WALL;
 const BULKHEAD_LENGTH = 1;
 const BULKHEAD_OPENING = 1.5;
 /** Where the bipod hangs, measured back from the shroud's front end. */
-export const BIPOD_SETBACK = 3;
+const BIPOD_SETBACK = 3;
 /** Where the carry handle's trunnion block bolts to the left wall, measured forward from the shroud's rear end. */
 export const TRUNNION_SETBACK = 2.5;
 

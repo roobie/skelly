@@ -15,7 +15,7 @@ import { type BodyPlan, type Genome, type ParamSpec, type Template, templateByNa
 import { type Report, validate } from './validate.ts';
 import { type Voxels, voxelize } from './voxelize.ts';
 
-export const sampleParam = (rng: Rng, spec: ParamSpec): number => {
+const sampleParam = (rng: Rng, spec: ParamSpec): number => {
   if (typeof spec === 'number') {
     return spec;
   }
@@ -79,7 +79,7 @@ export const generate = (template: Template, seed: number, overrides?: { readonl
 /** Throws unless the genome is complete for its template's body plan: every param present and finite,
  * wound numbers finite, wound bones allowed. A genome parsed from JSON can be anything, and a missing
  * param would otherwise surface as NaN geometry far from the cause. */
-export const checkGenome = (template: Template, genome: Genome): void => {
+const checkGenome = (template: Template, genome: Genome): void => {
   const plan = planOf(template.bodyPlan);
   const where = `genome "${genome.template}" seed ${genome.seed}`;
   if (!Number.isFinite(genome.voxelSize) || genome.voxelSize <= 0) {
@@ -232,7 +232,7 @@ export interface ValidGeneration {
 }
 
 /** Recommend skeleton-aware rules only while a limb is at least 1.5 cells thick. */
-export const FULL_PROFILE_MIN_LIMB_CELLS = 1.5;
+const FULL_PROFILE_MIN_LIMB_CELLS = 1.5;
 const LIMB_SEGMENT = /^(upperArm|forearm|thigh|shin)\./;
 
 /** Actor-specific recommendation; callers still pass the chosen profile explicitly to realize(). */

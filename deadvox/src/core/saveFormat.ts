@@ -45,7 +45,7 @@ export interface SaveWorldIdentity extends SaveWorldOptions {
 }
 
 export type SaveContentKind = 'block' | 'item' | 'furniture' | 'zombie' | 'sound' | 'scheduler' | 'skill' | 'recipe';
-export type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
+type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
 
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */

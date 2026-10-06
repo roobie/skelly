@@ -14,7 +14,7 @@ export const mean = (samples: readonly number[]): number =>
   samples.length === 0 ? Number.NaN : samples.reduce((a, b) => a + b, 0) / samples.length;
 
 /** A frame slower than this missed 60 fps (16.7 ms plus scheduling slack). */
-export const SLOW_FRAME_MS = 18;
+const SLOW_FRAME_MS = 18;
 
 export interface FrameStats {
   frames: number;

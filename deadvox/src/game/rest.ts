@@ -3,7 +3,7 @@ import type { RestAction, RestKind } from '../core/longAction.ts';
 import { REST } from '../core/needs.ts';
 import type { Simulation } from '../core/sim.ts';
 
-export interface RestFurniture {
+interface RestFurniture {
   quality: number;
   sleepable: boolean;
 }

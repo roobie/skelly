@@ -37,7 +37,7 @@ const FLOORPLATE_THICKNESS = 0.25;
  * 7.67 degrees, not 8).
  */
 export const HEAVY_MAGAZINE_SLANT_DEGREES = 8;
-export const HEAVY_MAGAZINE_SLANT_RISE =
+const HEAVY_MAGAZINE_SLANT_RISE =
   Math.round((HEAVY_MAGAZINE_DEPTH * Math.tan((HEAVY_MAGAZINE_SLANT_DEGREES * Math.PI) / 180)) / 0.25) * 0.25;
 
 export const heavyMagazine: PartFamily = {

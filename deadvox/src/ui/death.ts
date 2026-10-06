@@ -13,7 +13,7 @@ export interface DeathSummary {
 }
 
 /** "17 h 26 min", "40 min". */
-export const formatSpan = (seconds: number): string => {
+const formatSpan = (seconds: number): string => {
   const minutes = Math.floor(seconds / 60);
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;

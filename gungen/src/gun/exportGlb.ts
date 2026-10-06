@@ -16,7 +16,7 @@ import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
 export type DeadvoxModelFile = `assets/models/${string}.glb`;
 
-export interface ActionPartMetadata {
+interface ActionPartMetadata {
   /** Exact glTF node name; the existing part node carries its geometry as a separate mesh. */
   readonly node: string;
   /** Unit travel direction in model coordinates. */
@@ -27,14 +27,14 @@ export interface ActionPartMetadata {
   readonly modes: readonly CycleMode[];
 }
 
-export interface CycleMetadata {
+interface CycleMetadata {
   readonly durationSeconds: number;
   readonly rearwardSeconds: number;
   readonly dwellSeconds: number;
   readonly forwardSeconds: number;
 }
 
-export interface GunActionMetadata {
+interface GunActionMetadata {
   readonly parts: Readonly<Record<string, ActionPartMetadata>>;
   readonly fire?: CycleMetadata;
   readonly hand: CycleMetadata;

@@ -129,7 +129,7 @@ export interface KeepOut {
 }
 
 /** A named axis on a part, such as a bore or a sight line. */
-export interface Axis {
+interface Axis {
   readonly kind: string;
   readonly origin: Vec3;
   readonly dir: Vec3;
@@ -164,7 +164,7 @@ export interface PartDef {
 }
 
 /** Where a param can read its value from: the part on one of our ports. */
-export interface ParamSource {
+interface ParamSource {
   /** Our port; the part connected there is the neighbour. */
   readonly port: string;
   /** The neighbour's param to copy. */
@@ -190,7 +190,7 @@ export interface PartFamily {
   readonly build: (params: Readonly<Record<string, string>>) => PartDef;
 }
 
-export interface AxisRule {
+interface AxisRule {
   readonly kind: string;
   /** collinear: on the main axis. parallel: same direction as the main axis. */
   readonly mode: 'collinear' | 'parallel';

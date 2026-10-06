@@ -1,4 +1,4 @@
-export type SaveMenuAction = 'title' | 'continue' | 'new-world' | 'error';
+type SaveMenuAction = 'title' | 'continue' | 'new-world' | 'error';
 
 export interface SaveMenuInput {
   action: SaveMenuAction;

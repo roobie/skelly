@@ -7,7 +7,7 @@ import type { Vec3 } from './coords.ts';
 import { PILE_GRID, type Pile } from './inventory.ts';
 import { defOf, footprint, type Placed } from './items.ts';
 
-export interface PiledModel {
+interface PiledModel {
   placed: Placed;
   model: string;
   /** The middle of the item's cells on the floor, in metres. */

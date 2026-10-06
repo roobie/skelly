@@ -61,8 +61,6 @@ export interface Pose {
   readonly armWalkWeight?: number;
 }
 
-export const IDENTITY_POSE: Pose = { root: [0, 0, 0], rotations: {} };
-
 /**
  * Blends two poses, `a` at t=0 and `b` at t=1: root by plain lerp, each bone's rotation by quaternion
  * slerp (mob/gait.ts's walkPose uses this to cross-fade into an idle stance at low speed; mob/idle.ts's
@@ -205,7 +203,7 @@ export interface MutableTransform {
 const IDENTITY_MUTABLE_R: MutableTransform['r'] = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 
 /** One scratch transform, initialized to the identity (overwritten before first use either way). */
-export const makeTransformScratch = (): MutableTransform => ({ r: [...IDENTITY_MUTABLE_R], t: [0, 0, 0] });
+const makeTransformScratch = (): MutableTransform => ({ r: [...IDENTITY_MUTABLE_R], t: [0, 0, 0] });
 
 /** A reusable scratch buffer for boneTransformsInto, one entry per bone — allocate once per actor
  * (alongside its bones array) and reuse forever, instead of once per frame. */

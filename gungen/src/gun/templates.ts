@@ -228,7 +228,7 @@ export const pistol: Template = {
   ],
 };
 
-export const revolver: Template = {
+const revolver: Template = {
   name: 'revolver',
   description: 'Photo-led K/L-frame revolver with an aligned six-chamber cylinder and raked grip.',
   root: 'frame',
@@ -506,7 +506,7 @@ export const pumpShotgun: Template = {
   ],
 };
 
-export const bullpup: Template = {
+const bullpup: Template = {
   name: 'bullpup',
   description: 'Bullpup: grip ahead of the magazine, butt built into the lower.',
   root: 'receiver',
