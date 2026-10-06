@@ -816,11 +816,6 @@ export const startPlay = (
   const modalCommand = (action: string): boolean => {
     if (action === 'ui.main-menu-toggle') {
       mainMenuOpen = !mainMenuOpen;
-      if (mainMenuOpen) {
-        reading.close();
-        closeInventoryScreen();
-        debugTools?.closeMenus();
-      }
       syncMenuState();
       return true;
     }
