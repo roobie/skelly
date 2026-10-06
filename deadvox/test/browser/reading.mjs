@@ -91,8 +91,7 @@ try {
     // KeyJ is the new chord being captured; world.interact still resolves to the old key until capture commits.
     await page.keyboard.press('KeyJ');
     await page.waitForFunction(
-      async () =>
-        (await import('/src/game/inputBindings.ts')).inputBindings.chords('world.interact')[0].code === 'KeyJ',
+      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
     );
     await page.reload();
     await page.waitForFunction(
@@ -102,7 +101,7 @@ try {
     );
     assert.equal(
       await page.evaluate(
-        async () => (await import('/src/game/inputBindings.ts')).inputBindings.chords('world.interact')[0].code,
+        "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
       ),
       'KeyJ',
       'settings rebind persists across reload',
@@ -169,8 +168,8 @@ try {
   let proof;
   if (mode === 'consumer') {
     await pressAction(page, 'ui.main-menu-toggle');
-    const interactionOption = await page.evaluate(async () =>
-      (await import('/src/ui/hudOptions.ts')).HUD_OPTION_KEYS.indexOf('interaction'),
+    const interactionOption = await page.evaluate(
+      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('interaction'))",
     );
     assert.ok(interactionOption >= 0);
     const interactionCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(interactionOption);
@@ -384,8 +383,8 @@ try {
     await walk('movement.back', startX + 10, false);
     await aim('crate');
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-    const interactLabel = await page.evaluate(async () =>
-      (await import('/src/game/inputBindings.ts')).inputBindings.label('world.interact'),
+    const interactLabel = await page.evaluate(
+      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
     );
     await page.waitForFunction((label) => document.querySelector('#prompt').textContent.includes(label), interactLabel);
     await pressAction(page, 'world.interact');

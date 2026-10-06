@@ -16,10 +16,7 @@
         // Vite resolves this browser URL from the Deadvox root at runtime.
         "/src/game/saveStorage.ts",
         // Vite resolves this browser URL from the Deadvox root at runtime.
-        "/src/core/saveFormat.ts",
-        // Page-evaluated imports in the maintained reading browser contract resolve through Vite.
-        "/src/game/inputBindings.ts",
-        "/src/ui/hudOptions.ts"
+        "/src/core/saveFormat.ts"
       ],
       "entry": [
         "index.html!",

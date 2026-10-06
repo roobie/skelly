@@ -25,6 +25,13 @@ controls remain proposals until their issue is implemented.
   list. The controls card and settings are generated from that same catalogue;
   see `src/game/controls.ts`, `controlsCardRows`, and `src/ui/inputOptions.ts`,
   `mountInputOptions`.
+- **Rebindability and the debug exception (2026-10-04 12:12):** “we must make it so
+  the player can rebind any keyboard input - this means we need a 100% centralised
+  registry and as for the debug keybinds, how about gating them all behind e.g.
+  holding down F1 then pressing the debug key? Unless some special circumstance for
+  a key need it readily available”. The noclip flight keys are that special
+  circumstance; see `noclip.ascend` and `noclip.descend` in
+  `src/game/inputBindings.ts`.
 - **No Ctrl, Cmd or Meta, ever (2026-10-04):** “due to the browser being the
   browser, we cannot use Ctrl or Cmd for anything, ever.” Game bindings refuse
   these modifiers; native text editing and browser shortcuts remain native.
