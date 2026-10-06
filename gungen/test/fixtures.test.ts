@@ -32,6 +32,7 @@ describe('fixtures', () => {
     const archetypes = fixtures.filter((f) => f.name.startsWith('archetype-'));
     expect(archetypes.map((f) => f.name).sort()).toEqual([
       'archetype-ak',
+      'archetype-ak-akm',
       'archetype-anti-materiel',
       'archetype-ar',
       'archetype-ar-free-float',

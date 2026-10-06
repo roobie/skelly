@@ -221,7 +221,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   pistol: { S: 6, M: 10, L: 16 },
   'ak-curved': {
     ak74: { S: 6, M: 10, L: 16.5 },
-    akm: { S: 6, M: 10, L: 19.25 },
+    akm: { S: 6, M: 10, L: 16.75 },
   },
   'stanag-curved': { S: 6, M: 10, L: 15.75 },
 };
@@ -268,12 +268,13 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 5,
   },
+  // Fitted to the golden AKM photo's magazine (gungen/PROJECT.md, "Version 2: mapped from the golden photo").
   akm: {
     seat: 'face',
-    straightTop: 3.5,
-    arc: { radius: 20.12, sweepDegrees: 45, collisionFacets: 8, displayFacets: 24 },
+    straightTop: 1,
+    arc: { radius: 16, sweepDegrees: 56.5, collisionFacets: 8, displayFacets: 24 },
     straightBottom: 0,
-    topSlopeDegrees: 5,
+    topSlopeDegrees: 6,
   },
   stanag30: {
     seat: 'well',

@@ -345,10 +345,11 @@ The lengths below remain abstract units on the existing grid. Optic reference so
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
 - Magazine S/M/L body lengths by profile are: standard, SMG, and pistol
-  `6/10/16u`; AK-74 curved `6/10/16.5u`; AKM curved `6/10/19.25u`; STANAG
+  `6/10/16u`; AK-74 curved `6/10/16.5u`; AKM curved `6/10/16.75u`; STANAG
   curved `6/10/15.75u`. The curved L values follow the traced reference
-  lengths: AK-74/AKM ratios and STANAG 30-round, with STANAG 20-round anchoring
-  M near `10u`. Ordinary S begins at the plausible 10-round length (`6u`).
+  lengths: the AK-74 ratio and STANAG 30-round, with STANAG 20-round anchoring
+  M near `10u`. The AKM's is fitted to the AK's golden photo (g41-4).
+  Ordinary S begins at the plausible 10-round length (`6u`).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
@@ -386,7 +387,7 @@ The lengths below remain abstract units on the existing grid. Optic reference so
 | Grip | 7.5 / 86 | 8.5 / 98 | 9.5 / 109 | Hand-sized bands, along grip axis; pistol-integrated grip uses the same bands |
 | Standard, SMG, pistol magazine | 6 / 69 | 10 / 115 | 16 / 184 | Abstract length bands; STANAG top depth anchors 1u ≈ 11.5mm |
 | AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
-| AKM curved magazine | 6 / 69 | 10 / 115 | 19.25 / 221 | Pixel-traced body centreline ratio, `br-ref-akm-mag.jpg` |
+| AKM curved magazine | 6 / 69 | 10 / 115 | 16.75 / 193 | Fitted to the golden AKM photo's magazine (g41-4) |
 | STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
 | Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
 | Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |
@@ -683,12 +684,13 @@ explicitly named `battle-rifle`.
   face seat and no magazine-well walls. The curved AK magazine has seat kind
   `face` and zero insertion depth; its conservative rock-in keep-out starts at
   the front hook point. This swept box is not an arc-aware motion simulation.
-- The `ak-curved` magazine is three convex prisms: a slanted-bottom upper
-  section, a trapezoidal middle section and a forward-turned lower section.
-  Their joint faces match exactly. The middle prism has parallel grip-facing
-  and barrel-facing sides of different lengths; its top interface is slanted
-  5° and its size-derived lower bend is 10°/12°/15°. The lower prism meets its
-  angled end face without arbitrary X-axis compensation.
+- The `ak-curved` magazine is a straight upper section with a slanted bottom,
+  then a ring of convex arc sectors whose joint faces match exactly, with a
+  finer tessellation for display. Each variant's straight top, top slope, arc
+  radius and sweep are in `src/gun/parts.ts`, `CURVED_MAGAZINE_PROFILES`. The
+  AKM's are fitted to the golden photo's magazine (g41-4). Its top slope stays
+  small because the round column's same-side rounds close up across that
+  corner. The AK-74's follow its traced reference.
 - The stock is `ak-buttstock`, the AKM's wooden buttstock: a wedge with no
   wrist or grip. Its front is as tall as the receiver's rear face and centred on
   it, but narrower than the receiver. Behind the receiver, its top dips into a
@@ -749,15 +751,24 @@ dust cover's minimum wall sets the carrier's height, and the piston sits on the
 gas cylinder's axis.
 The photo and its overlays stay out of the repository; cite the URL above.
 
-The properties BR ruled on are tested in `test/akGeometry.test.ts` and
-`test/akStockAlignment.test.ts`.
+BR's answers to v2's two open questions, verbatim:
+
+- Gas cylinder, BR 22:53: "yes, gas cylinder stays where it is - it's
+  perfect". It stays at the photo's height rather than the 2u rise of the 20:39
+  ruling: that rise answered the receiver lift, and once v2 removed the lift,
+  the photo's height lines up.
+- Magazine, BR 22:47: "as for the mag question: we should make it so both
+  types of mags work with the v2 AK pattern rifle". Both the AK-74 and the AKM
+  magazine seat in v2's magwell. `designs/archetype-ak.json` keeps the AK-74
+  one, and `designs/archetype-ak-akm.json` shows the AKM one.
+
+The properties BR ruled on are tested in `test/akGeometry.test.ts`,
+`test/akStockAlignment.test.ts` and, for the magazines, `test/ak.test.ts`.
 
 **Known risks and open questions:** the current `auto` charging-handle
 keep-out sits on the left; the `bolt` handle keep-out is on the right. The
 existing `rifle` name has been renamed to `battle-rifle`; there is no
-compatibility alias. Open with BR on g41-1: the gas cylinder's height, the
-photo's against the 2u rise of BR's 20:39 ruling, and whether the AK design
-carries the AKM magazine the photo shows instead of the AK-74 one.
+compatibility alias.
 
 Each new archetype requires a passing fixture, a broken fixture for every new
 rule with readable failure text, and before/after generator stats. Review
