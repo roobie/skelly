@@ -181,7 +181,7 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
       blockSize: 0.5,
     }),
   ).toBe(true);
-  const framesBeforeKnockout = Math.max(1, Math.floor((cycleSeconds / 2) / frameSeconds));
+  const framesBeforeKnockout = Math.max(1, Math.floor(cycleSeconds / 2 / frameSeconds));
   for (let frame = 0; frame < framesBeforeKnockout; frame += 1) {
     runtime.frame(frameSeconds);
   }
