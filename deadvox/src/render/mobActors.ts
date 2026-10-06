@@ -14,13 +14,11 @@
 // stressActors.ts patches MeshStandardMaterial (checked against three r186's meshlambert.glsl.js: same
 // <begin_vertex>/<beginnormal_vertex> chunks, same relative order, so the same patch applies unchanged).
 //
-// Known simplification: each of the `poolSize` body variants gets its own fixed `capacity` of texture
-// slots (so total texture rows = poolSize * capacity, not `capacity` shared across all variants). If one
-// variant's zombies exceed its own capacity, the excess simply aren't drawn by this renderer (their sim
-// state is unaffected) — a hard per-variant cap for that zombie's whole life, not a rotating "nearest
-// capacity" set. Documented here rather than implemented: picking the nearest N would need a per-frame
-// distance sort of every zombie sharing an overflowing variant, and at the default capacity (64, matching
-// ZombieMeshes') and pool size (12) this essentially never triggers in practice.
+// Known simplification: each model/seed variant owns a block of `capacity` bone-texture rows. The models
+// come from `modelIds`, and the seeds from `SHAMBLER_FIGURE_SEEDS`; `DEFAULT_POOL_SIZE` and
+// `DEFAULT_CAPACITY` provide their default inputs. A variant's overflow is not drawn, though its sim state
+// is unaffected — a hard per-variant cap for that zombie's whole life, not a rotating "nearest capacity"
+// set. Picking the nearest actors would require per-frame distance sorting within every overflowing variant.
 //
 // Living pose (gait, idle clock, attack cooldown phase, head look and hit flinch) is simulation-owned and
 // comes from core/zombiePose.ts, the same pure function used by hit-region FK. This renderer adds only the

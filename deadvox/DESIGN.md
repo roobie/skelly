@@ -937,9 +937,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.
-- **Zombie bodies:** every mobgen body variant needs its own pose row; without
-  one, the shared bone texture cannot place that variant's mesh in the world.
-  See `src/render/mobActors.ts`, `MobActorMeshes`.
+- **Zombie bodies:** each mobgen model/seed variant owns a block of pose rows,
+  one per drawn actor. Missing per-actor rows leave the shared bone texture
+  unable to place that actor's mesh in the world. See `src/render/mobActors.ts`,
+  `MobActorMeshes`.
 - **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
   is still a little jaggedness. But we won't pursue this more right now, so I'll
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
