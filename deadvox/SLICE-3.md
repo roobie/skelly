@@ -126,14 +126,6 @@ Paperwork; no game code.
 >
 > the sides of the notch won't work - they must be much smaller - like a real AK notch - maybe 2 mm or so?
 
-**BR, 2026-10-06 15:16, AK sight picture:**
-
-> The AK rear-sight leaf is a flat, horizontal plate: wider than it's tall (roughly 2–3 cm wide, and only a few mm of it shows above the base), across the top of the receiver, ahead of the eye. The U-notch is cut into the middle of its top edge: about 2 mm wide and about as deep.
->
-> The sight picture: the front post sits centred in the notch, and the post's tip is level with the leaf's top edge (the AK's centre hold).
->
-> At the ADS eye (the rear leaf sits roughly a forearm's length ahead of the eye), the whole leaf is a short horizontal bar spanning only a small fraction of the screen width, with a tiny notch.
-
 `gungen/src/gun/parts.ts`, `akRearSight`, uses a finer sight-only grain because the shared gun grid cannot represent a 2 mm notch; its authored leaf remains a physical part. The exported eye datum keeps the receiver cover below the sight line, while the model-derived aim line keeps the front-post tip at screen centre.
 
 **BR, 2026-10-06 13:32, AR scope:**
@@ -145,8 +137,6 @@ Paperwork; no game code.
 > you should _mainly_ see through the optic
 >
 > but it is shown as if looking through a pipe
->
-> the ocular lens is a window that shows the scene
 
 The optic window shows the 1× scene through a large ocular aperture; the pipe interior is hidden while ADS, with the ring framing the view. Its fill is derived from exported ocular geometry and a content tuning so later 3.7 magnification can use the same window. Keep the eye at the sight position BR accepted as “somewhat okay”; do not move the AR eye far from its 4dbc6e37 ADS placement. Iron sights follow a separate rule: the AK rear notch and front post must frame each other above the receiver cover, with the eye behind the leaf and the post tip at the screen-centre aim ray. Holding F2 for debug controls must preserve ready and ADS so F2+M can freeze that pose.
 
