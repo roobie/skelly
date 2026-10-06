@@ -36,11 +36,11 @@ describe('barrel-fitted handguards', () => {
   it('closes the AK upper handguard around the gas cylinder on top of the lower handguard', () => {
     const handguard = FAMILIES.handguard!.build({ length: 'M', layout: 'ak' });
     const bounds = (id: string) => localSolidBounds(handguard.solids.find((solid) => solid.id === id)!);
-    const top = bounds('handguard-upper-top');
+    const top = bounds('upper-top');
     for (const side of ['left', 'right']) {
-      const upper = bounds(`handguard-upper-${side}`);
+      const upper = bounds(`upper-${side}`);
       expect(upper[1][1], side).toBe(top[0][1]);
-      expect(upper[0][1], side).toBe(bounds(`handguard-${side}`)[1][1]);
+      expect(upper[0][1], side).toBe(bounds(side)[1][1]);
     }
   });
 

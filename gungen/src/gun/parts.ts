@@ -2859,31 +2859,25 @@ const akHandguardSolids = (len: number): Solid[] => {
     AK_PROPORTIONS.handguard;
   const cylinderTop = AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH;
   const upperHalfWidth = AK_GAS_CYLINDER_HALF_WIDTH + wallU;
-  const walls = (id: string, x: readonly [number, number], upper: boolean): Solid[] => [
-    solid(`${id}-bottom`, [x[0], lowerBottomU, -lowerHalfWidthU], [x[1], lowerBottomU + wallU, lowerHalfWidthU]),
-    solid(`${id}-left`, [x[0], lowerBottomU + wallU, -lowerHalfWidthU], [x[1], lowerTopU, -lowerHalfWidthU + wallU]),
-    solid(`${id}-right`, [x[0], lowerBottomU + wallU, lowerHalfWidthU - wallU], [x[1], lowerTopU, lowerHalfWidthU]),
-    ...(upper
-      ? [
-          solid(`${id}-upper-top`, [x[0], cylinderTop, -upperHalfWidth], [x[1], upperTopU, upperHalfWidth]),
-          solid(
-            `${id}-upper-left`,
-            [x[0], lowerTopU, -upperHalfWidth],
-            [x[1], cylinderTop, -AK_GAS_CYLINDER_HALF_WIDTH],
-          ),
-          solid(
-            `${id}-upper-right`,
-            [x[0], lowerTopU, AK_GAS_CYLINDER_HALF_WIDTH],
-            [x[1], cylinderTop, upperHalfWidth],
-          ),
-        ]
-      : []),
+  // The lower handguard's bottom keeps the plain id `bottom`: the support-hand anchor cups it.
+  const lowerWalls = (prefix: string, x: readonly [number, number]): Solid[] => [
+    solid(`${prefix}bottom`, [x[0], lowerBottomU, -lowerHalfWidthU], [x[1], lowerBottomU + wallU, lowerHalfWidthU]),
+    solid(`${prefix}left`, [x[0], lowerBottomU + wallU, -lowerHalfWidthU], [x[1], lowerTopU, -lowerHalfWidthU + wallU]),
+    solid(`${prefix}right`, [x[0], lowerBottomU + wallU, lowerHalfWidthU - wallU], [x[1], lowerTopU, lowerHalfWidthU]),
+  ];
+  const upperWalls = (prefix: string, x: readonly [number, number]): Solid[] => [
+    solid(`${prefix}upper-top`, [x[0], cylinderTop, -upperHalfWidth], [x[1], upperTopU, upperHalfWidth]),
+    solid(`${prefix}upper-left`, [x[0], lowerTopU, -upperHalfWidth], [x[1], cylinderTop, -AK_GAS_CYLINDER_HALF_WIDTH]),
+    solid(`${prefix}upper-right`, [x[0], lowerTopU, AK_GAS_CYLINDER_HALF_WIDTH], [x[1], cylinderTop, upperHalfWidth]),
   ];
   const ringX = len - ringLengthU;
   return [
-    ...walls('lower', [0, upperStartX], false),
-    ...walls('handguard', [upperStartX, ringX], true),
-    ...walls('ring', [ringX, len], true).map((wall) => ({ ...wall, slot: 'metal' as const })),
+    ...lowerWalls('', [0, ringX]),
+    ...upperWalls('', [upperStartX, ringX]),
+    ...[...lowerWalls('ring-', [ringX, len]), ...upperWalls('ring-', [ringX, len])].map((wall) => ({
+      ...wall,
+      slot: 'metal' as const,
+    })),
   ];
 };
 
