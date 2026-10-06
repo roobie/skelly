@@ -4,6 +4,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
+  - you're changing the rendering of zombie actor models
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're restructuring the per-tick zombie simulation
   - you change the game's design, especially held-item feedback, body damage or treatment, or hand ownership
@@ -935,8 +936,9 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.
-- **Entities** are drawn with instanced meshes; zombie limbs are instanced
-  boxes.
+- **Zombie bodies:** every mobgen body variant needs its own pose row; without
+  one, the shared bone texture cannot place that variant's mesh in the world.
+  See `src/render/mobActors.ts`, `MobActorMeshes`.
 - **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
   is still a little jaggedness. But we won't pursue this more right now, so I'll
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.

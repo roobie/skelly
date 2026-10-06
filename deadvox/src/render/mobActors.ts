@@ -420,7 +420,8 @@ export class MobActorMeshes implements ZombieRenderer {
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
 
     const bonesPerSlot = Math.max(1, ...built.map((v) => v.realized.body.bones.length));
-    this.layout = crowdTextureLayout(bonesPerSlot, poolSize * capacity);
+    // Each model/seed variant owns its own capacity rows in the shared bone texture.
+    this.layout = crowdTextureLayout(bonesPerSlot, built.length * capacity);
     this.textureData = new Float32Array(this.layout.width * this.layout.height * 4);
     for (let slot = 0; slot < this.layout.height; slot++) {
       for (let bone = 0; bone < this.layout.bonesPerSlot; bone++) {

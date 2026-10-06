@@ -13,7 +13,7 @@ import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/g
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
-import { PerspectiveCamera } from 'three';
+import { type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -415,6 +415,43 @@ describe('MobActorMeshes', () => {
       const variant = internals.variants[internals.states.get(runnerId)!.variantIndex]!;
       expect(variant.model).toBe(RUNNER.model);
       expect(variant.figureSeed).toBe(1);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('renders visible actor meshes with bone transforms for every registered zombie type', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const entries = [...registry.zombies.values()].map((type, index) => ({
+        type,
+        id: store.add(makeZombie([index * 3, 0, 0], [0, 0, -1], [], { type })),
+      }));
+      expect(entries.length).toBeGreaterThan(0);
+      renderer.sync(store, 0, 1);
+      const internals = renderer as unknown as {
+        group: { visible: boolean };
+        states: Map<number, { variantIndex: number }>;
+        variants: readonly { mesh: InstancedMesh }[];
+      };
+
+      expect(internals.group.visible).toBe(true);
+      for (const { id, type } of entries) {
+        const state = internals.states.get(id);
+        expect(state).toBeDefined();
+        if (!state) {
+          continue;
+        }
+        const { mesh } = internals.variants[state.variantIndex]!;
+        expect(mesh.visible).toBe(true);
+        expect(mesh.count).toBeGreaterThan(0);
+        expect(mesh.geometry.getAttribute('position').count).toBeGreaterThan(0);
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        expect(materials.length).toBeGreaterThan(0);
+        expect(materials.every((material) => material.visible)).toBe(true);
+        expect(renderer.boneMatrix(id, 'pelvis'), type.id).toHaveLength(12);
+      }
     } finally {
       renderer.dispose();
     }
