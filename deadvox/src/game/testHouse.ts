@@ -164,7 +164,7 @@ export const testHouseFurniture = (
   }));
 
 /** #231 can provide book item IDs here once content records which recipes each book teaches. */
-export type RepairBookHook = (registry: Registry, recipes: readonly RecipeDef[]) => readonly string[];
+type RepairBookHook = (registry: Registry, recipes: readonly RecipeDef[]) => readonly string[];
 
 interface TestHouseRepairCornerOptions {
   inventory: Inventory;

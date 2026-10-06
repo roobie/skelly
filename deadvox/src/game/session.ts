@@ -81,7 +81,7 @@ const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
 
 /** The item a severed shambler region leaves behind. */
-export const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
+const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
   torso: 'shambler_torso',
   leftArm: 'shambler_left_arm',
   rightArm: 'shambler_right_arm',
@@ -90,7 +90,7 @@ export const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string
 };
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
-export interface SessionControls {
+interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
@@ -126,7 +126,7 @@ export interface SessionAudio {
 }
 
 /** The part of the debug tools that changes what the simulation does. */
-export interface SessionDebug {
+interface SessionDebug {
   readonly noclip: boolean;
   dangerReason: () => string | undefined;
   stepNoclip: (step: DebugNoclipStep) => void;
@@ -194,7 +194,7 @@ export interface SessionSnapshotIds {
 }
 
 /** Where the player was looking when a save was taken; the caller applies it to its input. */
-export interface RestoredLook {
+interface RestoredLook {
   yaw: number;
   pitch: number;
   walk: boolean;

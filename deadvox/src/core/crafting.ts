@@ -8,12 +8,12 @@ import type { Location } from './inventory.ts';
 import { type Item, isEmpty } from './items.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 
-export interface CraftComponent {
+interface CraftComponent {
   item: Item;
   count: number;
   from: Location;
 }
-export interface CraftPlan {
+interface CraftPlan {
   kind: 'craft';
   recipe: string;
   components: CraftComponent[];
@@ -24,7 +24,7 @@ export interface CraftPlan {
   work: number;
 }
 export type WorkPlan = CraftPlan | DisassemblyPlan;
-export interface CraftMissing {
+interface CraftMissing {
   reason: string;
   knowledge: boolean;
   skills: { skill: string; required: number; available: number }[];
@@ -347,7 +347,7 @@ export const admissionRefusal = (
   character: CraftCharacter,
 ): string | undefined => refusalReason(recipe, {}, requirementStatus(recipe, snapshot, character));
 
-export const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
+const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
   Boolean(recipe.workstation) && station.id === recipe.workstation;
 
 /** Native recipe validator caps alternative combinations at 1,024. */

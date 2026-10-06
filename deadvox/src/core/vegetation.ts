@@ -55,7 +55,7 @@ const crown = (leaf: number, centreY: number, [rx, ry, rz]: Vec3): MetreBox[] =>
 };
 
 /** Metre-authored shapes reuse structure rasterization and chunk clipping, not another stamping engine. */
-export const treeShapes = (registry: Registry, scale: Scale): Readonly<Record<TreeShape, readonly BlockBox[]>> => {
+const treeShapes = (registry: Registry, scale: Scale): Readonly<Record<TreeShape, readonly BlockBox[]>> => {
   const trunk = registry.blockIds.get('tree_trunk')!;
   const branch = registry.blockIds.get('tree_branch')!;
   const leaf = registry.blockIds.get('leaves')!;

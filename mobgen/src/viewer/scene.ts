@@ -26,7 +26,7 @@ import { materialOf, shadeOf } from '../core/voxelize.ts';
 
 /** Exported for stress.ts: same rest-world -> posed-world matrix every applyPose call here uses,
  * needed there too (per-actor bone/mesh matrices, built without going through buildActor's groups). */
-export const matrixOf = (t: Transform): Matrix4 => {
+const matrixOf = (t: Transform): Matrix4 => {
   const { r, t: p } = t;
   // three.js Matrix4.set takes elements row-major.
   return new Matrix4().set(r[0], r[1], r[2], p[0], r[3], r[4], r[5], p[1], r[6], r[7], r[8], p[2], 0, 0, 0, 1);

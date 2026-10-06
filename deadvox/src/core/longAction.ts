@@ -5,7 +5,7 @@ import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export type RestKind = 'rest' | 'sleep';
-export const REST_LABEL: Readonly<Record<RestKind, string>> = { rest: 'Resting', sleep: 'Sleeping' };
+const REST_LABEL: Readonly<Record<RestKind, string>> = { rest: 'Resting', sleep: 'Sleeping' };
 export interface RestAction {
   kind: RestKind;
   furnitureUid: number;

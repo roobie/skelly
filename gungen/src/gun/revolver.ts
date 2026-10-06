@@ -433,7 +433,7 @@ const rearFrameBridgeSolid = (jointY: number, frameHeight: number, gripLength: s
   return polySolid('rear-frame-bridge', ccw(profile), [-1.25, 1.25], 'z', 'revolver-frame');
 };
 
-export const revolverFrame: PartFamily = {
+const revolverFrame: PartFamily = {
   name: 'revolver-frame',
   params: {
     bore: chamberSize,
@@ -693,7 +693,7 @@ const chamberPhase = (params: Readonly<Record<string, string>>): number => {
   return (2 * Math.PI * index) / chamberCount;
 };
 
-export const revolverCylinder: PartFamily = {
+const revolverCylinder: PartFamily = {
   name: 'revolver-cylinder',
   params: {
     chamberCount: { values: ['6'], default: '6' },
@@ -797,7 +797,7 @@ const underlugClip: readonly ClipPlane[] = [
   { normal: [0, -1 / Math.SQRT2, -1 / Math.SQRT2], offset: 2.75 / Math.SQRT2 },
 ];
 
-export const revolverBarrel: PartFamily = {
+const revolverBarrel: PartFamily = {
   name: 'revolver-barrel',
   params: {
     bore: { ...chamberSize, from: [{ port: 'frame', param: 'bore' }] },
@@ -1044,7 +1044,7 @@ const gripSidePanels = (id: string, profile: Profile): Solid[] => [
   polySolid(`${id}-near`, profile, [gripCoreHalfDepth, profileHalfDepth], 'z', 'revolver-grip', undefined, 'furniture'),
 ];
 
-export const revolverGrip: PartFamily = {
+const revolverGrip: PartFamily = {
   name: 'revolver-grip',
   params: {
     length: size,
@@ -1718,11 +1718,3 @@ export const revolverFamilySet: Readonly<Record<string, PartFamily>> = {
   'revolver-barrel': revolverBarrel,
   'revolver-grip': revolverGrip,
 };
-
-export const revolverStyle = {
-  chamberCount,
-  cylinderRadius,
-  cylinderLength,
-  barrelLengths,
-  gripEnvelopeLengths,
-} as const;

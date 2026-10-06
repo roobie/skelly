@@ -66,20 +66,20 @@ jobs:
         run: |
           npm run typecheck
           npm test
-          npx vite build
+          PAGES_ANALYTICS=1 npx vite build
       - name: Check and build deadvox
         working-directory: deadvox
         run: |
           npm run typecheck
           npm test
           npm run validate
-          npx vite build
+          PAGES_ANALYTICS=1 npx vite build
       - name: Check and build mobgen
         working-directory: mobgen
         run: |
           npm run typecheck
           npm test
-          npx vite build
+          PAGES_ANALYTICS=1 npx vite build
       - name: Assemble the site
         run: |
           mkdir -p _site

@@ -17,8 +17,6 @@ export const SEVERABLE_PARTS = [
   'head',
 ] as const;
 
-export type SeverablePart = (typeof SEVERABLE_PARTS)[number];
-
 /**
  * The full set of bone ids hidden by cutting at each bone id in `cuts` — the cut bone itself plus every
  * descendant (a cut at upperArm.L takes forearm.L and hand.L with it; a cut at head takes jaw with it).

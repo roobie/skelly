@@ -5,7 +5,7 @@ import type { WearSlot } from './schema.ts';
 export type PlayerHitArea = Extract<WearSlot, 'head' | 'torso' | 'legs'>;
 
 /** Maps the supplied hit area to its outermost worn item; later body models own area selection. */
-export const outermostWornOver = (inventory: Inventory, area: PlayerHitArea): Item | undefined => inventory.worn[area];
+const outermostWornOver = (inventory: Inventory, area: PlayerHitArea): Item | undefined => inventory.worn[area];
 
 /** Maps the supplied hit area to its outermost worn item. */
 export const wearOnPlayerHit = (inventory: Inventory, area: PlayerHitArea): void => {

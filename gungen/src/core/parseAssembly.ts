@@ -38,7 +38,7 @@ const parseString = (value: unknown, path: string): Parsed<string> =>
   typeof value === 'string' ? pass(value) : fail(path, `expected a string, got ${describeValue(value)}`);
 
 /** Applies `parse` to each entry, stopping at the first failure. */
-export const parseEach = <T>(
+const parseEach = <T>(
   entries: readonly (readonly [path: string, value: unknown])[],
   parse: (value: unknown, path: string) => Parsed<T>,
 ): Parsed<T[]> => {
@@ -97,7 +97,7 @@ const parseFiniteNumber = (value: unknown, path: string): Parsed<number> =>
     ? pass(value)
     : fail(path, `expected a finite number, got ${describeValue(value)}`);
 
-export const parsePrefabReference = (value: unknown, path: string): Parsed<PrefabReference> => {
+const parsePrefabReference = (value: unknown, path: string): Parsed<PrefabReference> => {
   if (!isRecord(value)) {
     return fail(path, `expected an object, got ${describeValue(value)}`);
   }

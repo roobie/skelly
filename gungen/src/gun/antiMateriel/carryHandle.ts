@@ -19,16 +19,16 @@ import { choice, NEG_X, NEG_Y, octagonPrism, X, Y, Z } from './common.ts';
  */
 export const STRUT_LENGTH = 7.5;
 /** Octagon flat-to-flat half-width: a 1.5u (17 mm) strut. */
-export const STRUT_FLAT_RADIUS = 0.75;
+const STRUT_FLAT_RADIUS = 0.75;
 /** Direction cosines of the strut's axis against vertical (up) and sideways (left): a 4-3-5 triangle. */
 export const STRUT_UP = 0.8;
 export const STRUT_LEFT = 0.6;
 export const STRUT_TILT_DEGREES = (Math.atan2(STRUT_LEFT, STRUT_UP) * 180) / Math.PI;
 /** How far the strut's solid reaches past each port along its axis: into the trunnion, and into the bar. */
-export const STRUT_SINK_BASE = 0.5;
-export const STRUT_SINK_TOP = 0.625;
+const STRUT_SINK_BASE = 0.5;
+const STRUT_SINK_TOP = 0.625;
 
-export const TRUNNION_HALF_LENGTH = 2;
+const TRUNNION_HALF_LENGTH = 2;
 
 /**
  * The trunnion's section across the bore (profile axes Y, Z): the shroud wall at z = 0, the block reaching 2u out to
@@ -52,12 +52,12 @@ const inheritedPose: ParamSpec = { values: POSES, default: 'carry', from: [{ por
 export const BAR_FLAT_RADIUS = 1.25;
 export const BAR_HALF_LENGTH = 6;
 /** The strut meets the bar this far ahead of the bar's middle, leaving the stretch behind it free for the hand. */
-export const BAR_STRUT_X = 4;
+const BAR_STRUT_X = 4;
 /**
  * The strut's axis meets the bar's underside this far to the bar's inboard side of its centre line, so the strut's
  * sunk end lies wholly inside the bar's section instead of poking out of its outer face.
  */
-export const BAR_STRUT_Z = 0.5;
+const BAR_STRUT_Z = 0.5;
 /** The hand's room: from the bar's rear end to just behind the strut, and this far beyond the bar's surface all round. */
 const HAND_FRONT_X = 3;
 const HAND_CLEARANCE = 2;

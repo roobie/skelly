@@ -14,7 +14,7 @@ interface WorkProgress<Node> {
   repairTargetUid?: number;
   repairAmount?: number;
 }
-export type CraftWork<Node> =
+type CraftWork<Node> =
   | (WorkProgress<Node> & { kind: 'craft'; recipe: string })
   | (WorkProgress<Node> & {
       kind: 'disassembly';
@@ -256,7 +256,7 @@ export const defOf = (registry: Registry, type: string): ItemDef => {
 };
 
 /** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
-export const assertPumpAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
+const assertPumpAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
   const def = defOf(registry, type);
   if (!def.firearm?.pump) {
     if (state.tube !== undefined || state.landing !== undefined) {

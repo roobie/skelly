@@ -21,15 +21,12 @@ import { templateSpatialIssues } from './templateSpatial.ts';
 import { compileTemplate, findPieces, pieceSize, templateLockIds, templateResolves } from './templates.ts';
 
 export type {
-  BlockDef,
   FigureDef,
   FurnitureDef,
   ItemDef,
   LootEntry,
-  LootTable,
   ModelDef,
   RecipeDef,
-  SkillDef,
   SoundDef,
   TemplateDef,
   ZombieDef,
@@ -61,7 +58,7 @@ export interface Registry extends RegistryMaps {
   soundOrigins: Map<string, { source: string; path: string }>;
 }
 
-export const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
+const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
 
 const SECTIONS = CONTENT_SECTION_KEYS;
 const RECIPE_COMBINATION_CAP = 1024n;

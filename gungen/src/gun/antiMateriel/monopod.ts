@@ -5,7 +5,7 @@ import { box, choice, X, Y } from './common.ts';
  * A rear monopod under the butt. Local origin is the mounting face (y = 0 touches the stock's underside).
  * `pose` is folded (a short stub tucked under the stock) or deployed (a post that reaches below the pad).
  */
-export const MONOPOD_REACH = { folded: 2.5, deployed: 8 } as const;
+const MONOPOD_REACH = { folded: 2.5, deployed: 8 } as const;
 
 const COLLAR_HALF = 1;
 const COLLAR_HEIGHT = 1;

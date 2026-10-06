@@ -4,7 +4,7 @@ import type { BoneMesh } from './mesh.ts';
 import { FULL_RULES, type RuleContext, SILHOUETTE_RULES } from './rules.ts';
 import type { Voxels } from './voxelize.ts';
 
-export interface Stats {
+interface Stats {
   readonly voxels: number;
   readonly triangles: number;
   readonly perBoneVoxels: Readonly<Record<string, number>>;

@@ -4,7 +4,7 @@
 export type Vec3 = [number, number, number];
 
 /** Canonical map compass convention: north is −z; with +y up, east is +x. */
-export const WORLD_NORTH: Readonly<Vec3> = [0, 0, -1];
+const WORLD_NORTH: Readonly<Vec3> = [0, 0, -1];
 
 const FULL_TURN = Math.PI * 2;
 const NORTH_YAW = Math.atan2(-WORLD_NORTH[0], -WORLD_NORTH[2]);
@@ -27,7 +27,7 @@ export const headingLabel = (bearing: number): { degrees: number; cardinal: (typ
   return { degrees, cardinal: DIRECTIONS[Math.round(degrees / 45) % DIRECTIONS.length]! };
 };
 
-export const CHUNK_BITS = 5;
+const CHUNK_BITS = 5;
 export const CHUNK = 1 << CHUNK_BITS;
 export const CHUNK_VOLUME = CHUNK * CHUNK * CHUNK;
 

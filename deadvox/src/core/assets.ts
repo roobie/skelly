@@ -25,7 +25,7 @@ export const LICENCES = {
   NONE: { name: 'No licence required', url: null, credit: false },
 } as const;
 
-export type LicenceId = keyof typeof LICENCES;
+type LicenceId = keyof typeof LICENCES;
 
 const LICENCE_IDS = Object.keys(LICENCES) as LicenceId[];
 const Text = pipe(string(), nonEmpty('must not be empty'));
@@ -47,7 +47,7 @@ const SourceSchema = strictObject({
   changes: nullable(Text),
 });
 
-export const ManifestSchema = strictObject({ sources: array(SourceSchema) });
+const ManifestSchema = strictObject({ sources: array(SourceSchema) });
 
 export type AssetSource = InferOutput<typeof SourceSchema>;
 export type Manifest = InferOutput<typeof ManifestSchema>;

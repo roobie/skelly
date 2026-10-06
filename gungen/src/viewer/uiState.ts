@@ -1,9 +1,9 @@
 export const UI_STATE_KEY = 'gungen.ui-state';
 
-export type AssemblySelection = { kind: 'fixture'; name: string } | { kind: 'generated' } | { kind: 'upload' };
+type AssemblySelection = { kind: 'fixture'; name: string } | { kind: 'generated' } | { kind: 'upload' };
 
 /** Param-panel overrides on top of the current baseline (fixture, upload, or seed). */
-export interface StoredOverrides {
+interface StoredOverrides {
   readonly params: Readonly<Record<string, Readonly<Record<string, string>>>>;
   readonly presence: Readonly<Record<string, boolean>>;
 }

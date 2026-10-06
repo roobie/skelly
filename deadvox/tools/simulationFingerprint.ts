@@ -15,7 +15,7 @@ export interface SimulationFingerprintOptions {
   exclude?: readonly string[];
 }
 
-export interface ExcludedSimulationImport {
+interface ExcludedSimulationImport {
   importer: string;
   excluded: string;
 }

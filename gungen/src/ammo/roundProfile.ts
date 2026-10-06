@@ -3,28 +3,28 @@
 
 import type { Measure, MetallicCartridge } from './cartridge.ts';
 
-export type ProfilePoint = readonly [axialMm: number, radiusMm: number];
+type ProfilePoint = readonly [axialMm: number, radiusMm: number];
 
 /** C.I.P. 7.62x39 base-edge chamfer f; the data file records it in its notes, not as a field. */
-export const CASE_BASE_CHAMFER_MM = 0.25;
+const CASE_BASE_CHAMFER_MM = 0.25;
 /** Modelling assumption: a large-rifle primer is about 5.4 mm across; cartridge data has no diameter. */
-export const PRIMER_DIAMETER_MM = 5.4;
+const PRIMER_DIAMETER_MM = 5.4;
 /** Modelling assumption: primer-pocket depth and the rear of the pocket floor. */
-export const PRIMER_POCKET_DEPTH_MM = 0.4;
+const PRIMER_POCKET_DEPTH_MM = 0.4;
 /** Modelling assumption: primer face sits below the case head. */
-export const PRIMER_RECESS_MM = 0.1;
+const PRIMER_RECESS_MM = 0.1;
 /** Modelling assumption: radial clearance between primer and pocket wall. */
-export const PRIMER_CLEARANCE_MM = 0.05;
+const PRIMER_CLEARANCE_MM = 0.05;
 /** Modelling assumption: uniform fired-case wall thickness; the source data gives no wall thickness. */
 export const CASE_WALL_MM = 0.4;
 /** Modelling assumption: inside floor depth of the open fired case. */
-export const FIRED_FLOOR_MM = 3;
+const FIRED_FLOOR_MM = 3;
 /** Modelling assumption: tangent-ogive length in calibres; source data gives no projectile profile. */
-export const OGIVE_LENGTH_CALIBRES = 1.2;
+const OGIVE_LENGTH_CALIBRES = 1.2;
 /** Modelling assumption used only when source bullet length is null: seated depth in calibres. */
 export const ASSUMED_BULLET_SEATING_DEPTH_CALIBRES = 1.5;
 /** Number of linear segments used to represent the ogive. */
-export const OGIVE_SEGMENTS = 8;
+const OGIVE_SEGMENTS = 8;
 
 export interface RoundProfiles {
   /** Case closed around its seated projectile. */
@@ -159,12 +159,6 @@ const primerProfile = (): ProfilePoint[] => {
     [PRIMER_POCKET_DEPTH_MM, 0],
   ];
 };
-
-/** Axial extent of the case body held by magazine feed lips. */
-export const lipCoverMm = (cartridge: MetallicCartridge): number =>
-  cartridge.case.body.type === 'bottleneck'
-    ? required(cartridge.case.body.shoulder.startPosition, 'shoulder start')
-    : required(cartridge.case.length, 'case length');
 
 /** Build sourced outer profiles plus clearly named internal/projectile assumptions, all in millimetres. */
 export const roundProfiles = (cartridge: MetallicCartridge): RoundProfiles => {

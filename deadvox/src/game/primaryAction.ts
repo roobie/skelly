@@ -6,7 +6,7 @@ import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import type { ItemDef } from '../core/schema.ts';
 
-export type PrimaryItemAction = 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use' | 'none';
+type PrimaryItemAction = 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use' | 'none';
 
 export type PrimaryActionSelection =
   | { kind: 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use'; hand: HandSide; item: Item }
@@ -31,7 +31,7 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'use', supports: (definition) => definition.food !== undefined || definition.category === 'medical' || definition.treatment !== undefined },
 ];
 
-export const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>
+const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>
   CAPABILITY_DISPATCH.find(({ supports }) => supports(definition))?.kind ?? 'none';
 
 export const ignitionTargetForHand = (inventory: Inventory, hand: HandSide): Item | undefined => {

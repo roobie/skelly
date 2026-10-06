@@ -22,7 +22,7 @@ const WING_REACH = 2.5;
 const WING_NOSE_REACH = 0.5;
 
 /** Half across flats of the barrel's octagon (`barrel` family): the bore radius, 1.5× for a heavy profile, on the grid. */
-export const barrelFlatRadius = (bore: SizeClass, profile: string | undefined): number =>
+const barrelFlatRadius = (bore: SizeClass, profile: string | undefined): number =>
   Math.ceil((BORE_RADIUS[bore] * (profile === 'heavy' ? 1.5 : 1)) / GRID) * GRID;
 
 /** One chamber of a wing: a convex trapezoid in plan (profile axes Z, X), extruded through the brake's height. */

@@ -18,10 +18,6 @@ export const METRES_PER_UNIT = 0.0115;
  */
 export const FILE_FROM_GUNGEN: Mat3 = IDENTITY_M;
 
-/** Held-model axes: +X forward along the bore, +Y up, +Z right (the right-handed completion). */
-export const GUN_EXPORT_FORWARD: Vec3 = [1, 0, 0];
-export const GUN_EXPORT_UP: Vec3 = [0, 1, 0];
-
 /** Applies `FILE_FROM_GUNGEN` to a point or direction. */
 export const toFileAxes = (v: Vec3, mapping: Mat3 = FILE_FROM_GUNGEN): Vec3 => mulMV(mapping, v);
 

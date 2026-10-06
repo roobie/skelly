@@ -29,7 +29,7 @@ const NEIGHBOR_OFFSETS: readonly (readonly [number, number, number])[] = [
 
 export interface Voxels {
   readonly size: number;
-  /** Grid-index of local (0, 0, 0): world x = (origin[0] + i) * size, etc. (see conventions.ts). */
+  /** Grid-index of local (0, 0, 0); voxel centres follow mobgen/PROJECT.md, "Conventions". */
   readonly origin: readonly [number, number, number];
   readonly dims: readonly [number, number, number];
   /** Bone index + 1 (index into Body.bones); 0 = empty. */
@@ -38,7 +38,7 @@ export interface Voxels {
   readonly color: Uint8Array;
 }
 
-export const SHADES = 4;
+const SHADES = 4;
 export const materialOf = (colorByte: number): Material => MATERIALS[Math.floor(colorByte / SHADES)]!;
 export const shadeOf = (colorByte: number): number => colorByte % SHADES;
 

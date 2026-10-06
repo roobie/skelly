@@ -257,7 +257,7 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ],
 ]);
 
-export interface SoundVariantGuide {
+interface SoundVariantGuide {
   readonly file: string;
   readonly sourcePack: string;
   readonly author: string;

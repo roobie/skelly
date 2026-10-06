@@ -31,14 +31,6 @@ export const ZOMBIE_REGION_NAMES: readonly ZombieRegion[] = [
   'leftLeg',
   'rightLeg',
 ];
-export const ZOMBIE_REGION_PART: Readonly<Record<ZombieRegion, FigurePart>> = {
-  head: 'head',
-  torso: 'body',
-  leftArm: 'leftArm',
-  rightArm: 'rightArm',
-  leftLeg: 'leftLeg',
-  rightLeg: 'rightLeg',
-};
 export const FIGURE_PARTS: readonly FigurePart[] = ['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 
 const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: readonly number[]): number | undefined => {
@@ -70,10 +62,6 @@ const applyR = (r: readonly number[], p: readonly number[]): Vec3 => [
   r[3]! * p[0]! + r[4]! * p[1]! + r[5]! * p[2]!,
   r[6]! * p[0]! + r[7]! * p[1]! + r[8]! * p[2]!,
 ];
-
-export interface ZombieHitPoseInput extends ShamblerPoseInput {
-  readonly region: ZombieRegion;
-}
 
 export interface PosedBoneBox {
   readonly bone: string;

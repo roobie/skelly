@@ -75,7 +75,7 @@ export const shambler: Template = {
   },
 };
 
-export const runner: Template = {
+const runner: Template = {
   name: 'runner',
   description: 'Lean, taller, upright, faster stride.',
   bodyPlan: 'humanoid',
@@ -102,7 +102,7 @@ export const runner: Template = {
   },
 };
 
-export const brute: Template = {
+const brute: Template = {
   name: 'brute',
   description: 'Tall, very broad, heavy, big hands. Coarser voxels (1/10 of a block).',
   bodyPlan: 'humanoid',
