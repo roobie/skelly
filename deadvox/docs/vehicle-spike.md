@@ -59,8 +59,9 @@ See `src/debug/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` an
   DESIGN.md namespaces ids by pack only where they would clash, and these are all one
   pack's.
 - **Colours that aren't paint are one table, and paint belongs to the vehicle,** so a part
-  looks the same on any vehicle and a loose part draws from its type alone: `materials.ts`,
-  `MATERIALS`; `model.ts`, `Paint`; `vehicleSpike.ts`, `looseObject`.
+  looks the same on any vehicle and a loose part draws from its type and a paint, with no
+  vehicle (the part keeping its own paint is deferred below, under the `vehiclePart` item):
+  `materials.ts`, `MATERIALS`; `model.ts`, `Paint`; `vehicleSpike.ts`, `looseObject`.
 - **A mirrored fitting stores its own position, and `mirror` only reflects its shape,** so
   a far-side part is authored once, its position needs no vehicle width, and a rotation can
   join `mirror` later without changing what `at` means: `authoring.ts`, `pairAcross`.

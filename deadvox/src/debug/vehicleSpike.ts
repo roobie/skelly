@@ -280,7 +280,8 @@ interface PartMeshes {
 }
 const meshCache = new Map<string, PartMeshes>();
 const meshCost = { types: 0, ms: 0 };
-const cachedMeshes = (paint: Paint, key: string, gridOf: () => VoxelGrid): PartMeshes => {
+const cachedMeshes = (paint: Paint, part: string, gridOf: () => VoxelGrid): PartMeshes => {
+  const key = `${part}:${paint.body}:${paint.seam}`;
   let meshes = meshCache.get(key);
   if (!meshes) {
     const started = performance.now();
@@ -295,7 +296,7 @@ const cachedMeshes = (paint: Paint, key: string, gridOf: () => VoxelGrid): PartM
 
 /** One geometry per part type, side and paint while its paint is unworn. */
 const partMeshes = (typeId: string, mirror: boolean, paint: Paint): PartMeshes =>
-  cachedMeshes(paint, `${typeId}:${mirror}:${paint.body}`, () => library.grid(typeId, mirror));
+  cachedMeshes(paint, `${typeId}:${mirror}`, () => library.grid(typeId, mirror));
 
 const paintedTypes = new Map<string, boolean>();
 const isPainted = (typeId: string): boolean => {
@@ -333,7 +334,7 @@ const fittingMeshes = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fitti
   if (amount <= 0 || !isPainted(fitting.type)) {
     return partMeshes(fitting.type, mirror, vehicle.paint);
   }
-  return cachedMeshes(vehicle.paint, `${key}:${fitting.type}:${mirror}:${vehicle.paint.body}:wear ${amount}`, () =>
+  return cachedMeshes(vehicle.paint, `${key}:${fitting.type}:${mirror}:wear ${amount}`, () =>
     wearGrid(library.grid(fitting.type, mirror), key, amount, {
       origin: fitting.at,
       wheels: wheelsOf(spec.blueprint),

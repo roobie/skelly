@@ -146,7 +146,7 @@ export const partTypeOf = (catalogue: PartCatalogue, fitting: Fitting): PartType
 
 export const isClearMaterial = (mat: string): boolean => mat === GLASS;
 
-/** Rasterizes a part type once per vehicle, with its seams. */
+/** Rasterizes a part type, with its seams; `PartLibrary` keeps one per type and side. */
 const partGrid = (type: PartType): VoxelGrid => {
   const grid = rasterize(type.shape);
   if (type.panel) {
