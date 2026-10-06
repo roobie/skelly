@@ -181,6 +181,7 @@ export const ak: Template = {
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ak' } },
     { id: 'lower', family: 'lower', params: { layout: 'ak' } },
     { id: 'barrel', family: 'barrel', params: { length: ['M', 'L'] } },
+    { id: 'muzzle-device', family: 'ak-muzzle-device', params: { style: ['slant', 'ak74'] } },
     { id: 'handguard', family: 'handguard', params: { layout: ['ak', 'standard'], clearance: ['M', 'L'] } },
     { id: 'gas-cylinder', family: 'gas-cylinder' },
     { id: 'gas-block', family: 'gas-block' },
@@ -193,6 +194,7 @@ export const ak: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'barrel.muzzle', to: 'muzzle-device.base' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.handguard', to: 'handguard.rear' },
     { from: 'handguard.front', to: 'barrel.clamp', when: { part: 'handguard', param: 'mount', equals: 'clamped' } },

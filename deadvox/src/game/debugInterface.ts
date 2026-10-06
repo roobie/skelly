@@ -1,5 +1,6 @@
 import type { Character } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
@@ -48,6 +49,8 @@ export interface DebugHooks {
     readonly export: () => Promise<Uint8Array>;
     readonly import: (bytes: Uint8Array) => void;
   };
+  readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
+  readonly setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling) => void;
 }
 
 export interface DebugNoclipStep {

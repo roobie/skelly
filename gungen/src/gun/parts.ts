@@ -24,7 +24,7 @@
 import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
-import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
+import type { ClipPlane, KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
 import { akButtstockSolids, akStockTop } from './akButtstock.ts';
 import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
@@ -2514,20 +2514,60 @@ const standardHandguardLength = (length: SizeClass, section: string | undefined)
   return section === 'ak' ? Math.min(reach, akGasStationX(length) + AK_PROPORTIONS.gasBlock.rearX) : reach;
 };
 
+/** An unbevelled octagonal prism on the bore, optionally clipped. */
+const devicePrism = (id: string, flatRadius: number, along: readonly [number, number], clip?: ClipPlane): Solid => ({
+  id,
+  kind: 'extruded-polygon',
+  profile: octagonalProfile(flatRadius),
+  axis: 'x',
+  z: along,
+  ...(clip ? { clip: [clip] } : {}),
+  display: { bevel: false },
+});
+
 /** The AKM's slant brake: the top lip ends first, and the cut falls forward at 45° to the lower lip. */
-const akSlantBrake = (barrelEnd: number): Solid => {
-  const { lengthU, flatRadiusU, topLipU } = AK_PROPORTIONS.barrel.brake;
-  return {
-    id: 'slant-brake',
-    kind: 'extruded-polygon',
-    profile: octagonalProfile(flatRadiusU),
-    axis: 'x',
-    z: [barrelEnd, barrelEnd + lengthU],
-    clip: [{ normal: [1, 1, 0], offset: barrelEnd + topLipU + flatRadiusU }],
-    display: { bevel: false },
-    slot: 'metal',
-  };
+const akSlantBrake = (): Solid[] => {
+  const { lengthU, flatRadiusU, topLipU } = AK_PROPORTIONS.muzzleDevice.slant;
+  return [devicePrism('slant-brake', flatRadiusU, [0, lengthU], { normal: [1, 1, 0], offset: topLipU + flatRadiusU })];
 };
+
+/** The AK-74's brake: a body with a window through it near the front, then a narrower nose. */
+const ak74Brake = (): Solid[] => {
+  const { flatRadiusU, bodyLengthU, window, nose } = AK_PROPORTIONS.muzzleDevice.ak74;
+  const [windowRear, windowFront] = window.x;
+  return [
+    devicePrism('body', flatRadiusU, [0, windowRear]),
+    devicePrism('window-top', flatRadiusU, window.x, { normal: [0, -1, 0], offset: -window.topU }),
+    devicePrism('window-bottom', flatRadiusU, window.x, { normal: [0, 1, 0], offset: window.bottomU }),
+    devicePrism('body-front', flatRadiusU, [windowFront, bodyLengthU]),
+    devicePrism('nose', nose.flatRadiusU, [bodyLengthU, bodyLengthU + nose.lengthU]),
+  ];
+};
+
+/**
+ * A muzzle device threaded on an AK barrel's end. It carries the muzzle port on to its own front, so the
+ * gun's muzzle anchor and muzzle mount move to the front of whichever device it has.
+ */
+const akMuzzleDevice: PartFamily = {
+  name: 'ak-muzzle-device',
+  params: { style: choice('slant', 'ak74') },
+  build(params): PartDef {
+    const ak74 = params.style === 'ak74';
+    const { slant, ak74: brake74 } = AK_PROPORTIONS.muzzleDevice;
+    const frontX = ak74 ? brake74.bodyLengthU + brake74.nose.lengthU : slant.lengthU;
+    return {
+      family: 'ak-muzzle-device',
+      solids: ak74 ? ak74Brake() : akSlantBrake(),
+      ports: [
+        { id: 'base', mount: 'muzzle', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
+        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [frontX, 0, 0], normal: X, up: Y },
+      ],
+      keepOuts: [],
+      axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
+    };
+  },
+};
+
 const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
@@ -2575,12 +2615,10 @@ const barrel: PartFamily = {
     const tube = octagonalPrism('tube', r, [0, len]);
     const breechX = params.section === 'ar' ? -AR_ACTION_LAYOUT.barrelExtensionLengthU : 0;
     const extension = breechX < 0 ? [octagonalPrism('barrel-extension', BARREL_RADIUS[bore], [breechX, 0])] : [];
-    const brake = params.section === 'ak' ? [akSlantBrake(len)] : [];
-    const muzzleX = len + (brake.length > 0 ? AK_PROPORTIONS.barrel.brake.lengthU : 0);
     const gasPortX = params.section === 'ak' ? akGasStationX(lengthClass) : gasStationX(lengthClass);
     return {
       family: 'barrel',
-      solids: [...extension, tube, ...brake],
+      solids: [...extension, tube],
       ports: [
         {
           id: 'rear',
@@ -2631,9 +2669,9 @@ const barrel: PartFamily = {
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [tubeEnd, -tubeDrop, 0], normal: NEG_X, up: Y },
         ...supportLug,
-        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [muzzleX, 0, 0], normal: X, up: Y },
+        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
-      keepOuts: [keepOut('muzzle', [muzzleX, -1.5, -1.5], [muzzleX + 30, 1.5, 1.5], 'muzzle')],
+      keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
     };
   },
@@ -4019,6 +4057,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   frame: pistolFrame,
   slide: pistolSlide,
   barrel,
+  'ak-muzzle-device': akMuzzleDevice,
   'front-sight': frontSight,
   'rail-front-sight': railFrontSight,
   'gas-cylinder': gasCylinder,

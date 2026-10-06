@@ -7,6 +7,7 @@ import { bindReach } from '../src/core/reach.ts';
 import { READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT, type Readable } from '../src/core/readable.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
@@ -23,6 +24,7 @@ const admit = (value: Readable) =>
         furniture: [{ id: 'sign', name: 'Sign', size: [2, 2, 1], color: '#99794c', readable: value }],
         body: [{ ...BODY_TUNING_FIXTURE, id: 'player' }],
         senses: [TEST_SENSE_TUNING],
+        skills: [structuredClone(BUNDLED_CONTENT.registry.skills.get('firearms_combat')!)],
       },
     },
   ]);

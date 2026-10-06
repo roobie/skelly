@@ -244,6 +244,7 @@ describe('anchor data', () => {
       expect(Object.keys(gunDomain.families)).toContain(key);
     }
     expect(Object.keys(GUN_ANCHORS).sort()).toEqual([
+      'ak-muzzle-device',
       'ak-receiver',
       'barrel',
       'forend',
@@ -251,6 +252,7 @@ describe('anchor data', () => {
       'grip',
       'handguard',
       'lower',
+      'muzzle-brake',
       'receiver',
       'revolver-barrel',
       'revolver-grip',

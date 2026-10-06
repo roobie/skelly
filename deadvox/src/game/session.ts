@@ -18,7 +18,13 @@ import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
-import { firearmStanceEffects, firearmsSkillEffects } from '../core/firearmsSkill.ts';
+import {
+  type FirearmsCombatTuning,
+  type FirearmsSkillShotKind,
+  type FirearmsSkillZeroHandling,
+  firearmStanceEffects,
+  firearmsSkillEffects,
+} from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
   advanceFootsteps,
@@ -360,11 +366,22 @@ export const createSession = (options: SessionOptions) => {
 
   const character = createSessionCharacter(registry, options.handedness, restored);
   const firearmsCombatTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+  if (!firearmsCombatTuning) {
+    throw new Error('Missing firearms-combat skill tuning');
+  }
+  let firearmsSkillZeroHandling = firearmsCombatTuning.skillZeroHandling;
+  const currentFirearmsCombatTuning = (): FirearmsCombatTuning => ({
+    ...firearmsCombatTuning,
+    skillZeroHandling: firearmsSkillZeroHandling,
+  });
   const meleeCombatTuning = registry.skills.get('melee_combat')?.combat?.melee;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
-  const aim = new AimController(restored?.character.aim, firearmsSkillEffects(firearmsSkillLevel(character)).variance);
+  const aim = new AimController(
+    restored?.character.aim,
+    firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).variance,
+  );
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
@@ -488,10 +505,15 @@ export const createSession = (options: SessionOptions) => {
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
-    onCommittedShot: (shotSeed, recoilKickRadians) => {
+    firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
+    onCommittedShot: (shotSeed, recoilKickRadians, shotKind) => {
       const training = skillActivityPractice(registry, 'firearms_combat', 'shot');
       character.awardPractice('firearms_combat', training.practice, training.tier);
-      aim.recordShot(shotSeed, recoilKickRadians, firearmsSkillEffects(firearmsSkillLevel(character)).recoilKickScale);
+      aim.recordShot(
+        shotSeed,
+        recoilKickRadians,
+        firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning(), shotKind).recoilKickScale,
+      );
     },
     onShot: (shot, time) => {
       const hits = zombieSystem.firePellets(shot);
@@ -552,7 +574,11 @@ export const createSession = (options: SessionOptions) => {
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
   const updateAim = (dt: number, firing: boolean): void => {
-    const skill = firearmsSkillEffects(firearmsSkillLevel(character));
+    const held = inventory.hands.right ?? inventory.hands.left;
+    const shotKind: FirearmsSkillShotKind = held?.firearm
+      ? firearms.handlingShotKind(held.uid, sim.time)
+      : 'singleShot';
+    const skill = firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning(), shotKind);
     aim.advance({
       dt,
       velocity: body.vel,
@@ -821,7 +847,7 @@ export const createSession = (options: SessionOptions) => {
 
   const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
     const heldFirearm = firearmInHands();
-    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
+    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.());
     const readyUid = readyGait ? heldFirearm?.uid : undefined;
     firearms.advanceReadiness(dt, readyUid, readyGait);
     const going = intent.forward !== 0 || intent.right !== 0;
@@ -873,10 +899,9 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting);
     survival.setSprinting(sprinting);
     stepStamina(sim.needs, dt, sprinting);
-    const readyMovementFactor =
-      readyGait && firearmsCombatTuning
-        ? firearmStanceEffects(firearmsSkillLevel(character), firearmsCombatTuning).readyMovementFactor
-        : 1;
+    const readyMovementFactor = readyGait
+      ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
+      : 1;
     const pacedIntent = movementPace(
       { ...intent, sprint: sprinting, crouch: crouching },
       {
@@ -1035,6 +1060,12 @@ export const createSession = (options: SessionOptions) => {
     queue,
     firearms,
     aim,
+    get firearmsSkillZeroHandling() {
+      return currentFirearmsCombatTuning().skillZeroHandling;
+    },
+    setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling): void => {
+      firearmsSkillZeroHandling = structuredClone(value);
+    },
     quickbar,
     character,
     planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),

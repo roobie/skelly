@@ -2,6 +2,11 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type {
+  FirearmsSkillShotKind,
+  FirearmsSkillZeroEffect,
+  FirearmsSkillZeroHandling,
+} from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
@@ -225,6 +230,32 @@ const groupTemplate = (group: GroupView, extra: TemplateResult | typeof nothing)
   </section>
 `;
 
+const firearmsSkillEffectSlider = (
+  shotKind: FirearmsSkillShotKind,
+  field: keyof FirearmsSkillZeroEffect,
+  handling: FirearmsSkillZeroHandling,
+  change: (shotKind: FirearmsSkillShotKind, field: keyof FirearmsSkillZeroEffect, value: number) => void,
+): TemplateResult => {
+  const shotLabel = shotKind === 'singleShot' ? 'Single / first shot' : 'Automatic follow-up';
+  const effectLabel = {
+    variance: 'variance',
+    recoilKickScale: 'kick',
+    recoilRecoveryScale: 'recovery',
+  }[field];
+  const label = `${shotLabel} ${effectLabel}`;
+  const id = `firearms-skill-${shotKind}-${field}`;
+  const value = handling[shotKind][field];
+  const min = field === 'recoilRecoveryScale' ? 0.01 : 0.1;
+  const max = field === 'recoilRecoveryScale' ? 10 : 100;
+  const step = field === 'recoilRecoveryScale' ? 0.01 : 0.1;
+  return html`
+    <label for=${id}>${label}</label>
+    <input id=${id} type="range" min=${min} max=${max} step=${step} .value=${String(value)}
+      @input=${(event: Event) => change(shotKind, field, Number((event.currentTarget as HTMLInputElement).value))} />
+    <output for=${id}>${value.toFixed(2)}</output>
+  `;
+};
+
 const panelTemplate = ({
   open,
   groups,
@@ -254,6 +285,10 @@ const panelTemplate = ({
   chooseInputReplay,
   importInputReplay,
   replayDownload,
+  firearmsSkillZeroHandling,
+  changeFirearmsSkillZeroEffect,
+  copyFirearmsSkillZeroHandling,
+  firearmsSkillCopyStatus,
 }: {
   open: boolean;
   groups: readonly GroupView[];
@@ -284,9 +319,30 @@ const panelTemplate = ({
   chooseInputReplay: () => void;
   importInputReplay: (file: File) => void;
   replayDownload: { url: string; name: string } | undefined;
+  firearmsSkillZeroHandling: FirearmsSkillZeroHandling;
+  changeFirearmsSkillZeroEffect: (
+    shotKind: FirearmsSkillShotKind,
+    field: keyof FirearmsSkillZeroEffect,
+    value: number,
+  ) => void;
+  copyFirearmsSkillZeroHandling: () => void;
+  firearmsSkillCopyStatus: string;
 }): TemplateResult => {
-  // What a group shows besides its action buttons; only these three have anything.
+  // What each group shows besides its action buttons.
   const extras: Partial<Record<GroupId, TemplateResult>> = {
+    tools: html`
+      <fieldset class="debug-firearms-skill-tuning">
+        <legend>Skill-0 firearm handling · runtime only</legend>
+        ${firearmsSkillEffectSlider('singleShot', 'variance', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        ${firearmsSkillEffectSlider('singleShot', 'recoilKickScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        ${firearmsSkillEffectSlider('singleShot', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        ${firearmsSkillEffectSlider('automaticFollowup', 'variance', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        ${firearmsSkillEffectSlider('automaticFollowup', 'recoilKickScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        ${firearmsSkillEffectSlider('automaticFollowup', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        <button id="copy-firearms-skill-tuning" type="button" @click=${copyFirearmsSkillZeroHandling}>Copy firearm skill values</button>
+        <output aria-live="polite">${firearmsSkillCopyStatus}</output>
+      </fieldset>
+    `,
     shamblers: html`
       <div class="debug-shambler-count" role="group" aria-label="Shambler spawn count">
         <span>Shambler count</span>
@@ -855,6 +911,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let axesVisible = true;
   let targetRangeText = '';
   let copyStatus = '';
+  let firearmsSkillCopyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
   let axisAnimation: number | undefined;
   let revealZombies = false;
@@ -1205,6 +1262,28 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           chooseInputReplay,
           importInputReplay,
           replayDownload,
+          firearmsSkillZeroHandling: hooks.firearmsSkillZeroHandling(),
+          changeFirearmsSkillZeroEffect: (shotKind, field, value) => {
+            const current = hooks.firearmsSkillZeroHandling();
+            hooks.setFirearmsSkillZeroHandling({
+              ...current,
+              [shotKind]: { ...current[shotKind], [field]: value },
+            });
+            shellKey = '';
+            drawShell();
+          },
+          copyFirearmsSkillZeroHandling: async () => {
+            const values = JSON.stringify(hooks.firearmsSkillZeroHandling(), null, 2);
+            try {
+              await navigator.clipboard.writeText(values);
+              firearmsSkillCopyStatus = 'Values copied';
+            } catch {
+              firearmsSkillCopyStatus = values;
+            }
+            shellKey = '';
+            drawShell();
+          },
+          firearmsSkillCopyStatus,
         }),
         host,
       );

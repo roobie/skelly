@@ -807,6 +807,8 @@ export const startPlay = (
     measureSnapshot,
     exportMetrics,
     inputReplay: inputReplayHooks,
+    firearmsSkillZeroHandling: () => session.firearmsSkillZeroHandling,
+    setFirearmsSkillZeroHandling: (value) => session.setFirearmsSkillZeroHandling(value),
   });
 
   let started = options.restore !== undefined;
