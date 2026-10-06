@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
+import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { STAMINA } from '../src/core/needs.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
+import { terrainHeight } from '../src/core/worldgen.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
+import { IDLE } from '../src/game/session.ts';
 import {
   advance,
   capture,
@@ -20,6 +24,7 @@ import {
   plainDataTree,
   prepareAudioContinuation,
   registry,
+  scale,
   seed,
   startRest,
 } from './snapshotTestSupport.ts';
@@ -92,6 +97,121 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.spawner.snapshotState()).toContain(key);
   });
 
+  it('preserves the whole sound-event stream across save and load', async () => {
+    const uninterrupted = createRuntime(undefined, true);
+    const split = createRuntime(undefined, true);
+    const framesBeforeSave = 290;
+    const framesAfterSave = 900;
+    advance(uninterrupted, framesBeforeSave);
+    advance(split, framesBeforeSave);
+    const soundCountAtSave = uninterrupted.heardSounds.length;
+    const bytes = await encodeFixture(capture(split));
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot, true);
+
+    advance(uninterrupted, framesAfterSave);
+    advance(loaded, framesAfterSave);
+
+    const continuedSounds = uninterrupted.heardSounds.slice(soundCountAtSave);
+    expect(continuedSounds.length).toBeGreaterThan(0);
+    expect(loaded.heardSounds).toEqual(continuedSounds);
+  });
+
+  it('continues moving player audio and sprint hysteresis through save/load', async () => {
+    const hedge = fixtureHamlet.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
+    if (!hedge) {
+      throw new Error('Snapshot fixture has no hedge crossing route');
+    }
+    const [x, , z] = hedge.min;
+    const startZ = z + 3.5;
+    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, scale, x, startZ));
+    const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
+    const cx = toChunk(x);
+    const cz = toChunk(z);
+    const columns: [number, number][] = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        columns.push([cx + dx, cz + dz]);
+      }
+    }
+    let intent = { ...IDLE, forward: 1, walk: true };
+    const runtimeFor = (snapshot?: ReturnType<typeof capture>) =>
+      createRuntime(snapshot, 'left', columns, {
+        spawn,
+        yaw: 0,
+        active: true,
+        intent: () => intent,
+      });
+    const load = async (snapshot: ReturnType<typeof capture>) => {
+      const bytes = await encodeFixture(snapshot);
+      const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+      return runtimeFor(decoded.snapshot);
+    };
+
+    const uninterrupted = runtimeFor();
+    advance(uninterrupted, 45);
+    expect(uninterrupted.player.body.onGround).toBe(true);
+    expect(uninterrupted.player.body.pos[2]).toBeLessThan(spawn[2]);
+    const snapshotAtHedge = capture(uninterrupted);
+    expect(snapshotAtHedge.character.playerAudio.footstepClock.gait).toBe('walking');
+    expect(snapshotAtHedge.character.playerAudio.rustleClock.cells.length).toBeGreaterThan(0);
+    expect(snapshotAtHedge.character.playerAudio.footstepClock.distanceUntilStep).toBeGreaterThan(0);
+
+    const soundCountAtHedge = uninterrupted.heardSounds.length;
+    const loadedWalking = await load(snapshotAtHedge);
+    advance(uninterrupted, 60);
+    advance(loadedWalking, 60);
+    const continuedWalkingSounds = uninterrupted.heardSounds.slice(soundCountAtHedge);
+    expect(continuedWalkingSounds.length).toBeGreaterThan(0);
+    expect(loadedWalking.heardSounds).toEqual(continuedWalkingSounds);
+    expect(loadedWalking.player.body).toEqual(uninterrupted.player.body);
+
+    intent = { ...IDLE, forward: 1, walk: true, jump: true };
+    advance(uninterrupted, 1);
+    advance(loadedWalking, 1);
+    const jumpSnapshot = capture(uninterrupted);
+    expect(jumpSnapshot.character.playerAudio.airbornePeakY).not.toBeNull();
+    const loadedJumping = await load(jumpSnapshot);
+    expect(capture(loadedJumping).character.playerAudio.airbornePeakY).toBe(
+      jumpSnapshot.character.playerAudio.airbornePeakY,
+    );
+    intent = { ...IDLE, forward: 1, walk: true };
+    const soundCountAtJump = uninterrupted.heardSounds.length;
+    advance(uninterrupted, 45);
+    advance(loadedJumping, 45);
+    expect(loadedJumping.heardSounds).toEqual(uninterrupted.heardSounds.slice(soundCountAtJump));
+    expect(loadedJumping.player.body).toEqual(uninterrupted.player.body);
+
+    intent = { ...IDLE, right: 1, sprint: true };
+    const framesUntilWinded =
+      Math.ceil(((uninterrupted.sim.needs.stamina - STAMINA.winded) / -STAMINA.sprint) * 60) + 2;
+    for (let frame = 0; frame < framesUntilWinded; frame++) {
+      intent = { ...intent, right: frame % 60 < 30 ? 1 : -1 };
+      advance(uninterrupted, 1);
+      advance(loadedJumping, 1);
+      if (uninterrupted.sim.needs.stamina < STAMINA.winded) {
+        break;
+      }
+    }
+    expect(uninterrupted.session.sprinting).toBe(true);
+    expect(uninterrupted.sim.needs.stamina).toBeGreaterThan(0);
+    expect(uninterrupted.sim.needs.stamina).toBeLessThan(STAMINA.winded);
+    expect(loadedJumping.session.sprinting).toBe(true);
+    const sprintSnapshot = capture(uninterrupted);
+    expect(sprintSnapshot.character.player.sprinting).toBe(true);
+
+    const soundCountAtSprint = uninterrupted.heardSounds.length;
+    const loadedSprinting = await load(sprintSnapshot);
+    advance(uninterrupted, 30);
+    advance(loadedSprinting, 30);
+    const continuedSprintSounds = uninterrupted.heardSounds.slice(soundCountAtSprint);
+    expect(continuedSprintSounds.length).toBeGreaterThan(0);
+    expect(loadedSprinting.heardSounds).toEqual(continuedSprintSounds);
+    expect(loadedSprinting.player.body).toEqual(uninterrupted.player.body);
+    expect(loadedSprinting.sim.needs).toEqual(uninterrupted.sim.needs);
+    expect(loadedSprinting.session.sprinting).toBe(uninterrupted.session.sprinting);
+  });
+
   it('continues active compressed rest through the first 1 Hz tick after load', () => {
     const source = createRuntime(undefined, true, oneColumn);
     expect(startRest(source, 'sleep')).toBeUndefined();
@@ -145,10 +265,17 @@ describe('hamlet save/load continuation', () => {
     prepareAudioContinuation(uninterrupted);
     prepareAudioContinuation(split);
     const snapshot = capture(split);
-    expect(Object.keys(snapshot.character.playerAudio).sort()).toEqual(['soundPicker', 'vocalNoise', 'vocalNoiseId']);
+    expect(Object.keys(snapshot.character.playerAudio).sort()).toEqual([
+      'airbornePeakY',
+      'footstepClock',
+      'rustleClock',
+      'soundPicker',
+      'vocalNoise',
+      'vocalNoiseId',
+    ]);
     expect(snapshot.character.playerAudio.vocalNoise).not.toBeNull();
     expect(snapshot.character.playerAudio.vocalNoise!.expiresAt - split.sim.time).toBeCloseTo(0.25);
-    expect(snapshot.world.zombies.zombies[0]!.zombie).not.toHaveProperty('footstepClock');
+    expect(snapshot.world.zombies.zombies[0]!.zombie).toHaveProperty('footstepClock');
     expect(snapshot.character.playerAudio.soundPicker.events).toContainEqual(
       expect.objectContaining({ event: 'player_strain', lastPlayedAt: split.sim.time }),
     );
