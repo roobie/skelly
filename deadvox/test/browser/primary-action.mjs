@@ -351,6 +351,29 @@ try {
     unconsciousPresentation.proneHeight,
     'unconscious eye height is prone',
   );
+  await page.keyboard.press('F9');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !document.querySelector('#overlay')?.hidden && r.session.sim.paused;
+  });
+  const pausedKnockout = await page.evaluate(() => ({
+    black: document.body.classList.contains('unconscious'),
+    overlayAboveBlackout:
+      Number.parseInt(getComputedStyle(document.querySelector('#overlay')).zIndex, 10) >
+      Number.parseInt(getComputedStyle(document.body, '::after').zIndex, 10),
+  }));
+  assert.equal(pausedKnockout.black, true, 'opening the pause menu leaves the knockout blackout active');
+  assert.equal(pausedKnockout.overlayAboveBlackout, true, 'the pause menu is layered above the blackout');
+  await page.keyboard.press('F9');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return document.querySelector('#overlay')?.hidden && !r.session.sim.paused;
+  });
+  assert.equal(
+    await page.evaluate(() => document.body.classList.contains('unconscious')),
+    true,
+    'resuming returns to the blackout while the knockout continues',
+  );
   await page.evaluate(() => {
     const { sim } = globalThis.primaryActionTest.session;
     sim.body.advance(sim.body.tuning.knockoutSeconds);

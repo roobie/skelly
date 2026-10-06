@@ -191,6 +191,7 @@ body.unconscious::after {
 
 #overlay {
   position: fixed;
+  z-index: 2001;
   inset: 0;
   display: grid;
   /* The card is docked to the right edge, vertically centred, and the layer has no tint or blur so

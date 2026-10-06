@@ -13,7 +13,7 @@ import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -375,7 +375,7 @@ describe('Session long-action input lock', () => {
     session.queue.registerAction('test.knockout-handling', () => {
       completed = true;
     });
-    session.queue.enqueueAction('test.knockout-handling', 'Fixture action', 0.01);
+    const job = session.queue.enqueueAction('test.knockout-handling', 'Fixture action', 0.01);
     session.sim.body.impact(0, 'torso', { shockDamage: session.sim.body.shock });
 
     const maxFrames = Math.ceil(session.sim.body.tuning.knockoutSeconds * 60) + 2;
@@ -384,7 +384,11 @@ describe('Session long-action input lock', () => {
     }
 
     expect(session.sim.body.unconscious).toBe(false);
-    expect(completed).toBe(false);
+    const handlingFrames = Math.ceil((job.duration + 2 / HANDLING_RATE) * 60);
+    for (let frame = 0; frame < handlingFrames && !completed; frame += 1) {
+      session.frame(1 / 60);
+    }
+    expect(completed).toBe(true);
   });
 
   it('wakes after damage with movement unlocked and no pending sleep action', () => {

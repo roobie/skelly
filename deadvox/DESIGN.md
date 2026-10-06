@@ -482,12 +482,9 @@ plain box in your hands. Files are small, and follow
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Temperature comes after Slice 1.
 - **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
-  defaults”. The model keeps health, blood and shock separate, assigns injury
-  to anatomical regions, supports bleeding dressings and stage-appropriate
-  infection treatment, and makes body condition visible in the inventory.
-  `src/core/body.ts`, `Body`, owns injury state; `src/core/needs.ts`,
-  `stepNeeds`, shares health recovery with existing needs;
-  `src/ui/inventoryScreen.ts`, `InventoryScreen`, presents the condition.
+  defaults”. The model makes injury decisions consequential beyond a single
+  health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
+  and `src/ui/inventoryScreen.ts`, `InventoryScreen`.
 
   BR's 08:33 treatment rule is “the \"treat with rag\" is not the way to go.
   You wield the rag and left-click apply it (or quickbar-hold)”;
@@ -506,8 +503,7 @@ plain box in your hands. Files are small, and follow
   is a starting tuning value, not a number BR chose. BR clarified at 11:32:
   “and, just to be clear, the aim is to define all content and tunables via
   mods - even the _core game_”, and at 11:34: “yeah, let's do it now”.
-  BR's 14:41 answer on knockout presentation was “knockout = totally black and no sound and prone”. While unconscious, the view is black, player audio is muted and the eye-height owner makes the player prone; all three return on waking. These presentation states derive from `Body.unconscious` and saved knockout state. `src/game/session.ts`, `playerEyeHeightMetres`, owns prone eye height; `src/game/audio.ts`, `GameAudio.setOutputMuted`, mutes player output; `src/game/play.ts`, `frame`, and `src/ui/style.css`, `body.unconscious`, own blackout presentation.
-  `src/content/base/body.json`, `body.player`, is the base-pack tuning source, including body damage, treatment duration and prone height; `src/core/schema.ts`, `BodyTuningSchema`, validates it. `src/core/sim.ts`, `Simulation`, injects the loaded tuning into `Body`.
+  BR's 14:41 ruling was “knockout = totally black and no sound and prone”. BR approved the look at 16:35: “looks good - black screen and then death 👍”. See `src/game/session.ts`, `playerEyeHeightMetres`; `src/game/audio.ts`, `GameAudio.setOutputMuted`; `src/game/play.ts`, `frame`; `src/ui/style.css`, `body.unconscious`; and `src/core/schema.ts`, `BodyTuningSchema`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 

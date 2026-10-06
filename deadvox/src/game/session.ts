@@ -75,7 +75,7 @@ import { Survival } from './survival.ts';
 
 const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
-const HANDLING_RATE = 20;
+export const HANDLING_RATE = 20;
 /** Seconds a player's noise stays audible to shamblers. */
 const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };

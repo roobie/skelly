@@ -945,6 +945,15 @@ export const startPlay = (
       }
       return;
     }
+    if (action === 'ui.main-menu-toggle') {
+      modalCommand(action);
+      return;
+    }
+    if (action.startsWith('debug.') || action.startsWith('spawn.')) {
+      debugTools?.handleAction(action);
+      syncMenuState();
+      return;
+    }
     const refusal = sim.body.actionRefusal;
     if (refusal) {
       input.reload.cancel();
@@ -954,11 +963,6 @@ export const startPlay = (
     }
     if (action === 'hud.toggle-interaction-hints') {
       hintToggleInput.keyDown(action, at);
-      return;
-    }
-    if (action.startsWith('debug.') || action.startsWith('spawn.')) {
-      debugTools?.handleAction(action);
-      syncMenuState();
       return;
     }
     if (sim.dead) {

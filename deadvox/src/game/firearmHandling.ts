@@ -146,6 +146,7 @@ export interface FirearmCycleFrame {
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
+  private readonly paused = new Set<number>();
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly blockSize: number;
@@ -490,18 +491,23 @@ export class FirearmMechanics {
     for (const uid of this.active) {
       const item = this.inventory.itemByUid(uid);
       const cycle = item?.firearm?.cycle;
-      if (cycle && cycle.mode !== 'hand') {
-        item!.firearm!.cycle = {
-          ...cycle,
-          elapsed: Math.max(cycle.elapsed, time - cycle.startedAt),
-          startedAt: time,
-        };
+      if (cycle && cycle.mode !== 'hand' && !this.paused.has(uid)) {
+        const elapsed = Math.max(cycle.elapsed, time - cycle.startedAt);
+        item!.firearm!.cycle = { ...cycle, elapsed, startedAt: time - elapsed };
+        this.paused.add(uid);
       }
     }
   }
 
   advanceTo(time: number): void {
     for (const uid of this.active) {
+      if (this.paused.delete(uid)) {
+        const item = this.inventory.itemByUid(uid);
+        const cycle = item?.firearm?.cycle;
+        if (cycle && cycle.mode !== 'hand') {
+          item!.firearm!.cycle = { ...cycle, startedAt: time - cycle.elapsed };
+        }
+      }
       this.advanceItem(uid, time);
     }
   }

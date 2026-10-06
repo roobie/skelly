@@ -165,7 +165,8 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
   if (!action.fire) {
     throw new Error('AR knockout fixture needs exported automatic action data');
   }
-  const ejectAt = action.fire.rearwardSeconds * action.ejectAt;
+  const cycleSeconds = action.fire.durationSeconds;
+  const frameSeconds = 1 / 60;
   expect(
     runtime.firearms.fire({
       debugMode: true,
@@ -180,16 +181,32 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
       blockSize: 0.5,
     }),
   ).toBe(true);
+  const framesBeforeKnockout = Math.max(1, Math.floor((cycleSeconds / 2) / frameSeconds));
+  for (let frame = 0; frame < framesBeforeKnockout; frame += 1) {
+    runtime.frame(frameSeconds);
+  }
   runtime.sim.body.impact(0, 'torso', { shockDamage: runtime.sim.body.shock });
-  const frames = Math.ceil((ejectAt + 0.1) * 60);
-  for (let frame = 0; frame < frames; frame += 1) {
-    runtime.frame(1 / 60);
+  for (let frame = 0; frame < Math.ceil((cycleSeconds + frameSeconds) / frameSeconds); frame += 1) {
+    runtime.frame(frameSeconds);
   }
 
-  const spentCases = [...runtime.inventory.items()].filter(({ item }) => item.type === spentCaseItemId(calibre));
+  const spentCases = () => [...runtime.inventory.items()].filter(({ item }) => item.type === spentCaseItemId(calibre));
+  const pausedCycle = runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle;
   expect(runtime.sim.body.unconscious).toBe(true);
-  expect(spentCases).toHaveLength(0);
-  expect(runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle).toBeDefined();
+  expect(pausedCycle).toBeDefined();
+  expect(pausedCycle!.elapsed).toBeGreaterThan(0);
+  expect(pausedCycle!.elapsed).toBeLessThan(cycleSeconds);
+
+  runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSeconds);
+  expect(runtime.sim.body.unconscious).toBe(false);
+  const remainingSeconds = cycleSeconds - pausedCycle!.elapsed;
+  const remainingFrames = Math.ceil((remainingSeconds + frameSeconds) / frameSeconds);
+  for (let frame = 0; frame < remainingFrames && runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle; frame += 1) {
+    runtime.frame(frameSeconds);
+  }
+
+  expect(spentCases()).toHaveLength(1);
+  expect(runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle).toBeUndefined();
 });
 
 it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
