@@ -294,6 +294,35 @@ const playerTreatmentHooks = (
   },
 });
 
+const restoreSessionAudio = (restored: Readonly<SaveSnapshot> | undefined, soundPicker: SoundPicker) => {
+  if (!restored) {
+    return {
+      playerAudio: { vocalNoiseId: 0, vocalNoise: undefined as VocalNoise | undefined },
+      footstepClock: initialFootstepClock(),
+      rustleClock: initialRustleClock(),
+      airbornePeakY: undefined as number | undefined,
+    };
+  }
+  const saved = restorePlayerAudioState(restored.character.playerAudio);
+  soundPicker.restoreState(structuredClone(saved.soundPicker));
+  return {
+    playerAudio: {
+      vocalNoiseId: saved.vocalNoiseId,
+      vocalNoise:
+        saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] as Vec3 },
+    },
+    footstepClock: saved.footstepClock,
+    rustleClock: { cells: new Set(saved.rustleClock.cells), nextTime: saved.rustleClock.nextTime },
+    airbornePeakY: saved.airbornePeakY ?? undefined,
+  };
+};
+
+const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | undefined) => ({
+  sprinting: player?.sprinting ?? false,
+  firearmReadyWalking: player?.firearmReadyWalking ?? false,
+  handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
+});
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
@@ -352,17 +381,12 @@ export const createSession = (options: SessionOptions) => {
   const soundPicker = new SoundPicker(seed, registry.sounds);
 
   // The player's own noise, which shamblers can hear. Saved with the character.
-  const playerAudio: { vocalNoiseId: number; vocalNoise: VocalNoise | undefined } = {
-    vocalNoiseId: 0,
-    vocalNoise: undefined,
-  };
-  if (restored) {
-    const saved = restorePlayerAudioState(restored.character.playerAudio);
-    playerAudio.vocalNoiseId = saved.vocalNoiseId;
-    playerAudio.vocalNoise =
-      saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] };
-    soundPicker.restoreState(structuredClone(saved.soundPicker));
-  }
+  const {
+    playerAudio,
+    footstepClock: savedFootstepClock,
+    rustleClock: restoredRustleClock,
+    airbornePeakY: restoredAirbornePeakY,
+  } = restoreSessionAudio(restored, soundPicker);
 
   const admitSound = (
     event: SoundEventId,
@@ -487,8 +511,13 @@ export const createSession = (options: SessionOptions) => {
     notice: options.notice,
   });
 
-  let sprinting = false;
-  let firearmReadyWalking = false;
+  const {
+    sprinting: restoredSprinting,
+    firearmReadyWalking: restoredFirearmReadyWalking,
+    handlingPausedForKnockout: restoredHandlingPause,
+  } = restorePlayerSessionLatches(restoredPlayer);
+  let sprinting = restoredSprinting;
+  let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
       sim.body.unconscious,
@@ -496,9 +525,9 @@ export const createSession = (options: SessionOptions) => {
       crouching,
       senseTuning.crouch.eyeDropMetres,
     );
-  let footstepClock = initialFootstepClock();
-  let rustleClock = initialRustleClock();
-  let airbornePeakY: number | undefined;
+  let footstepClock = savedFootstepClock;
+  let rustleClock = restoredRustleClock;
+  let airbornePeakY = restoredAirbornePeakY;
   const currentIntent = (): MoveIntent => (controls.active() && !compression.locksInput ? controls.intent() : IDLE);
   const playerCrouching = (): boolean => crouching;
   const playerMovement = (): PlayerMovement =>
@@ -822,7 +851,7 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
-  let handlingPausedForKnockout = false;
+  let handlingPausedForKnockout = restoredHandlingPause;
   const tickHandling = (dt: number) => {
     // Handling happens in real time; compressed time belongs to long actions.
     if (sim.body.actionRefusal) {
@@ -1042,6 +1071,9 @@ export const createSession = (options: SessionOptions) => {
           pitch: controls.pitch(),
           walk: controls.walking(),
           crouching,
+          sprinting,
+          firearmReadyWalking,
+          handlingPausedForKnockout,
         }),
         aim,
         survival,
@@ -1052,6 +1084,9 @@ export const createSession = (options: SessionOptions) => {
         handling: queue,
         vocalNoiseId: playerAudio.vocalNoiseId,
         vocalNoise: playerAudio.vocalNoise,
+        footstepClock,
+        airbornePeakY,
+        rustleClock,
         audio: soundPicker,
       }),
   };

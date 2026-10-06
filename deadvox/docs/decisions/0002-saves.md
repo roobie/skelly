@@ -57,13 +57,12 @@ The existing code provides useful foundations but no save API yet:
   a generated column is visited again.
 - `src/game/player.ts`, `rest.ts`, and `survival.ts` hold the player's body,
   needs, active rest/sleep action, light state, and real-time queue behavior.
-  On `origin/deadvox/audio`, `play.ts` also holds `vocalNoiseId` and the current
-  `vocalNoise`; these feed player sounds into zombie hearing. Its footstep clock
-  and airborne peak only schedule footsteps/landing cues. Their content has
-  `noise.enabled: false`, so they do not affect hearing. The session's
-  `SoundPicker` state also matters: a cooldown-suppressed event makes `playPlayerSound`
-  return before it creates a vocal noise. Meshes, workers, interpolation,
-  cursor, and Web Audio nodes are reconstructed, not persisted.
+  `src/game/session.ts` owns player sound cadence and foliage overlap state;
+  those cursors schedule the observable sound stream, while vocal noise and
+  rustle admission feed zombie hearing. Its sprint, firearm-readiness, and
+  knockout-handling latches affect movement, practice, or queue timing after
+  restore. Meshes, workers, render interpolation, cursor, and Web Audio nodes
+  are reconstructed, not persisted.
 
 The save schema must include the live audio-branch state now, not defer it as a
 future possibility: `vocalNoiseId` and active `vocalNoise` (id, position,
@@ -72,10 +71,10 @@ reprocessing a heard event. Preserve those exactly. Save each zombie's
 `soundRng` and `idleSoundTimer`, and the `SoundPicker` per-event RNG,
 `lastVariant`, and `lastPlayedAt`, to preserve event selection/cooldowns; the
 picker's cooldown also gates whether a vocal-noise stimulus is created. Player
-footstep cadence (`footstepClock`) and `airbornePeakY` are presentation-only and
-may be reset on load: footstep and hard-landing sounds have hearing disabled. Zombie
-footstep cadence is saved separately because it schedules the world sound stream; see
-`ZombieSystem.emitFootsteps`.
+`footstepClock`, `airbornePeakY`, and foliage rustle clock affect sound
+continuation; rustle admission also creates hearing stimuli. Preserve them on
+load. Zombie footstep cadence is saved separately because it schedules the
+world sound stream; see `ZombieSystem.emitFootsteps`.
 Worldgen noise and position-keyed site/loot randomness are stateless functions
 of the recorded seed, worldgen version, content, and coordinates; one-shot loot
 RNG is consumed at generation/death and its result is the saved item tree. There
@@ -100,14 +99,14 @@ references:
 | --- | --- | --- |
 | Version and world identity | Exact `versionIdentity` plus its components: simulation-source fingerprint; save schema version; deterministic generator versions (worldgen and, once firearms are introduced, gungen); ordered pack IDs/versions/canonical content hashes; diagnostic Git build revision; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of the simulation fingerprint, schema, generator map and ordered pack identities. The Git build revision is stored alongside as diagnostic metadata, outside the digest and compatibility check. Require exact identity equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
 | Clock/simulation | Simulation time, clock settings, needs, death cause/time, compression `c`/active/interruption, and each scheduler system's stable ID, `done` time and tick count | Preserve time, exact scheduler ordering and active rest behavior; do not save or restore god mode/noclip/build toggles (force them off on load). Debug interventions already made to the world remain in its saved state. Reject unknown system IDs rather than silently resetting their phase. |
-| Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; needs; `Survival.lit` item UID (or absence); quickbar item UIDs and their held-item return targets | Position and velocity are saved even in mid-air. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. The return target persists because a quickbar tap must still put a drawn item back where it came from after Continue. |
+| Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; sprint, firearm-readiness and knockout-handling latches; needs; `Survival.lit` item UID (or absence); quickbar item UIDs and their held-item return targets | Position and velocity are saved even in mid-air. The latches preserve movement/stamina, practice, and handling tick behavior. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. The return target persists because a quickbar tap must still put a drawn item back where it came from after Continue. |
 | Items | Recursive items including UID, type ID, count, condition, charges/on/made, consumable-light burn state, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and remaining light fuel. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
 | Furniture/block entities | Anchor, type ID, size/facing, open/searched state and container pocket trees; `BlockEntities.nextUid` | Address entities by world anchor/type, not load-order-dependent object identity. Restore saved overrides when deterministic worldgen creates an anchor. |
 | World edits | Only changed chunks, each with chunk coordinates, a palette of stable block content IDs, and RLE runs for changed cell offsets/IDs versus the versioned generated base | At the first write to a cell, journal its generated base ID; later writes update or remove the delta if the cell returns to base. Runtime block numbers are registry-order dependent. Store string IDs. Regenerate the base chunk, apply the diff, then rebuild meshes. Preserve explicit air edits. |
 | Shamblers and spawn ledger | Every live entity ID and all future-affecting zombie fields (body, mode/timers/targets, health/cooldowns, motion and behavior RNG words), including each zombie's `dismemberRng` words (the severing rolls' own stream), `attackWindup` (seconds left in an in-flight attack's telegraph, 0 when not attacking) and `severed` (part names dismembered so far, e.g. `["upperArm.L"]` — cumulative, never shrinks); `ZombieSystem.playerAttackWait`; entity-store next ID; generated spawn keys already attempted, including killed shamblers; each zombie's `soundRng`, `idleSoundTimer`, `lastVocalNoiseId`, and `footstepClock` | Recreate current threats and prevent dead or previously considered site spawns from coming back. Sound RNG/timer preserve the ambient audio sequence; `lastVocalNoiseId` is required for exact hearing behavior. For d109-2, preserve `footstepClock`: `ZombieSystem.emitFootsteps` consumes its remaining stride distance to schedule sounds, so restoring from the initial cadence changes the sound stream. `attackWindup` must resume exactly so a save/load mid-windup neither skips nor replays the hit resolution. `severed` is the renderer's only source of truth for which limbs to hide (mobgen's `severedBoneSet` expands it) — a corpse's or debris's own render-only lifecycle state is never saved, only which parts were severed while the zombie was still alive. Reinitialize `renderPrevious` from current pose; it is interpolation only. |
-| Player audio state | `vocalNoiseId`, active `vocalNoise` (id, position, radius, expiry), and per-event `SoundPicker` RNG/`lastVariant`/`lastPlayedAt`; omit `footstepClock` and `airbornePeakY` | Noise and the picker cooldown gate zombie hearing and must continue exactly. Player footstep cadence and landing peak only schedule sounds whose content disables hearing, so reset them on load. |
+| Player audio state | `vocalNoiseId`, active `vocalNoise` (id, position, radius, expiry), per-event `SoundPicker` RNG/`lastVariant`/`lastPlayedAt`, `footstepClock`, `airbornePeakY`, and foliage rustle `cells`/`nextTime` | Preserve player footstep and landing cadence so the sound stream continues; the rustle clock also gates player hearing stimuli. The picker state preserves event selection/cooldowns. |
 | In-flight jobs | The live queue uses tagged data descriptors (`jobType` plus serializable parameters, elapsed time and duration), not closures. Step 1 converts the current handling jobs to this representation. The 1.9 snapshot omits pending descriptors and clears its transient `searching` set in the saved copy only; it must not cancel or mutate the live queue/set. | Descriptors leave room for later resumable long actions. In 1.9, jobs still apply only on completion; the saved target is untouched and the player can retry. The live session keeps its original job progress and timing. |
-| Regenerated/runtime state | Drop unedited chunks, generated-column/dirty/in-flight mesh queues, worker state, event/audio playback queues after readers drain, render interpolation/feedback, player footstep cadence and airborne peak, UI panels, held input, and pointer lock | These are derivable, frame-local, or external presentation state. Start paused, regenerate the visible ring, overlay saved diffs/entities, and drain events before taking a snapshot. |
+| Regenerated/runtime state | Drop unedited chunks, generated-column/dirty/in-flight mesh queues, worker state, event/audio playback queues after readers drain, render interpolation/feedback, UI panels, held input, and pointer lock | These are derivable, frame-local, or external presentation state. In particular, `lastPlayerStep` and `lastZombieStep` only seed render interpolation; the transient `searching` set is empty because pending handling jobs are omitted. Start paused, regenerate the visible ring, overlay saved diffs/entities, and drain events before taking a snapshot. |
 
 Runtime ownership follows the same boundary: inventory roots (hands, worn items,
 piles and furniture) and their pocket trees own Item instances. Quickbar bindings

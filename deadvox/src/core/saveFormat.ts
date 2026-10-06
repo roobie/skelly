@@ -434,7 +434,17 @@ const soundPicker = obj({
     }),
   ),
 });
-const playerAudio = obj({ vocalNoiseId: nonNegativeInt, vocalNoise: nullable(vocalNoise), soundPicker });
+const playerAudio = obj({
+  vocalNoiseId: nonNegativeInt,
+  vocalNoise: nullable(vocalNoise),
+  footstepClock: obj({
+    gait: enumeration(['still', 'walking', 'jogging', 'sprinting']),
+    distanceUntilStep: nonNegative,
+  }),
+  airbornePeakY: nullable(finite),
+  rustleClock: obj({ cells: arr(str()), nextTime: finite }),
+  soundPicker,
+});
 const handling = obj({ jobs: arr(anyJson) });
 const zombie = obj({
   type: str({ id: true }),
@@ -505,6 +515,9 @@ const playerState = obj({
   pitch: finite,
   walk: bool,
   crouching: bool,
+  sprinting: bool,
+  firearmReadyWalking: bool,
+  handlingPausedForKnockout: bool,
 });
 const meleeAction = nullable(
   obj({

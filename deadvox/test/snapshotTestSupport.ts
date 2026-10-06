@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
+import { worldSolid } from '../src/core/collision.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
@@ -18,6 +19,7 @@ import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -108,7 +110,7 @@ export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
-  options: { spawn?: Vec3; start?: number } = {},
+  options: { spawn?: Vec3; start?: number; yaw?: number; active?: boolean; intent?: () => MoveIntent } = {},
 ) {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
@@ -127,7 +129,7 @@ export function createRuntime(
   // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
-  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false };
+  const view = { yaw: options.yaw ?? hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const spawn: Vec3 = options.spawn ?? [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
@@ -151,7 +153,7 @@ export function createRuntime(
   const session = createSession({
     registry,
     world,
-    isSolid: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
+    isSolid: worldSolid(world, registry, sharedEntities),
     isOpaque: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
     entities: sharedEntities,
     scale,
@@ -160,8 +162,8 @@ export function createRuntime(
     spawn,
     ready: () => true,
     controls: {
-      active: () => false,
-      intent: () => IDLE,
+      active: () => options.active ?? false,
+      intent: options.intent ?? (() => IDLE),
       consumeCrouchToggle: () => {
         const pressed = view.crouchToggle;
         view.crouchToggle = false;
@@ -169,7 +171,7 @@ export function createRuntime(
       },
       yaw: () => view.yaw,
       pitch: () => view.pitch,
-      walking: () => view.walk,
+      walking: () => options.intent?.().walk ?? view.walk,
       descending: () => false,
     },
     audio: {
