@@ -3,37 +3,23 @@
  * car: 4.45 m long, 1.78 m wide and tall, 2.54 m wheelbase, 1.49 m track, 205R16 tyres, with the
  * glasshouse, pillar and overhang proportions of a period side elevation.
  */
-import { type Fitting, type PartLayer, type PartType, type Vehicle, VOXELS_PER_CELL } from './model.ts';
-import { type Axis, opsMinimum, type ShapeOp, translateOp, type Vec3i } from './voxels.ts';
-
-type Point = readonly [number, number];
-type Circle = readonly [u: number, v: number, radius: number, inner?: number];
-interface Look {
-  readonly mat: string;
-  readonly paint?: true;
-  readonly sectors?: { readonly count: number; readonly duty: number };
-}
-
-const box = (from: Vec3i, to: Vec3i, mat: string): ShapeOp => ({ op: 'box', from, to, mat });
-const paintBox = (from: Vec3i, to: Vec3i, mat: string): ShapeOp => ({ op: 'box', from, to, mat, paint: true });
-const prism = (axis: Axis, profile: readonly Point[], [from, to]: Point, mat: string): ShapeOp => ({
-  op: 'prism',
-  axis,
-  profile,
-  from,
-  to,
-  mat,
-});
-const disc = (axis: Axis, [u, v, radius, inner]: Circle, [from, to]: Point, look: string | Look): ShapeOp => ({
-  op: 'cylinder',
-  axis,
-  center: [u, v],
-  radius,
-  from,
-  to,
-  ...(inner === undefined ? {} : { inner }),
-  ...(typeof look === 'string' ? { mat: look } : look),
-});
+import {
+  type Authored,
+  authored,
+  box,
+  type Circle,
+  disc,
+  local,
+  meta,
+  type PartMeta,
+  type Point,
+  paintBox,
+  pair,
+  partsOf,
+  place,
+  prism,
+} from './authoring.ts';
+import type { Fitting, Vehicle } from './model.ts';
 
 // Vehicle-local voxels (3.125 cm): x forward from behind the rear bumper, y up from the ground, z
 // across, with the near (driver's, right-hand) side at high z and the centre plane at 32.
@@ -53,60 +39,9 @@ const aLine = (x0: number, y: number): number => x0 - (y - WAIST) * A_RAKE;
 /** The tailgate glass and D-pillars lean forward about 33°; the lower tailgate is vertical. */
 const T_RAKE = 11.5 / 18;
 const tLine = (y: number): number => 3 + (y - WAIST) * T_RAKE;
-const NEAR_SUFFIX = /-near$/;
 
-interface PartMeta {
-  readonly id: string;
-  readonly label: string;
-  readonly layer: PartLayer;
-  readonly massKg: number;
-  readonly panel?: Axis;
-  /** In vehicle voxels, like the shape. */
-  readonly pivot?: Vec3i;
-}
-const meta = (id: string, label: string, layer: PartLayer, massKg: number): PartMeta => ({ id, label, layer, massKg });
-
-interface Authored {
-  readonly type: PartType;
-  readonly at: Vec3i;
-}
-
-/** A part drawn in vehicle voxels; its type holds the shape relative to the lattice cell it starts in. */
-const authored = ({ pivot, ...rest }: PartMeta, shape: readonly ShapeOp[]): Authored => {
-  const [x, y, z] = opsMinimum(shape).map((v) => Math.floor(v / VOXELS_PER_CELL) * VOXELS_PER_CELL) as [
-    number,
-    number,
-    number,
-  ];
-  const at: Vec3i = [x, y, z];
-  const type: PartType = {
-    ...rest,
-    shape: shape.map((op) => translateOp(op, at)),
-    ...(pivot ? { pivot: [pivot[0] - x, pivot[1] - y, pivot[2] - z] as const } : {}),
-  };
-  return { type, at };
-};
-
-/** A part drawn in its own frame, placed by each fitting. */
-const local = (type: PartType): Authored => ({ type, at: [0, 0, 0] });
-
-type PlaceExtra = Pick<Fitting, 'motion' | 'optional'> & { readonly at?: Vec3i };
-
-const place = (id: string, part: Authored, supportedBy: readonly string[], extra: PlaceExtra = {}): Fitting => {
-  const { at, ...rest } = extra;
-  return { id, type: part.type.id, at: at ?? part.at, supportedBy, ...rest };
-};
-
-/** A near-side fitting and its mirrored far-side twin; `-near` in support ids becomes `-far` for the twin. */
-const pair = (id: string, part: Authored, supportedBy: readonly string[], extra: PlaceExtra = {}): Fitting[] => {
-  const near = place(`${id}-near`, part, supportedBy, extra);
-  return [
-    near,
-    { ...near, id: `${id}-far`, mirror: true, supportedBy: supportedBy.map((s) => s.replace(NEAR_SUFFIX, '-far')) },
-  ];
-};
-
-const wheel = local({
+/** 205R16 on a 16-inch rim: the Hilux 4WD runs the same size, so it shares this type. */
+export const wheel = local({
   ...meta('wheel', 'Wheel (205R16 on a five-spoke alloy)', 'under', 30),
   pivot: [12, 12, 3.5],
   shape: [
@@ -118,7 +53,7 @@ const wheel = local({
   ],
 });
 
-const crossmember = local({
+export const crossmember = local({
   ...meta('crossmember', 'Chassis crossmember', 'frame', 15),
   shape: [box([0, 0, 0], [4, 3, 28], 'chassis')],
 });
@@ -139,7 +74,7 @@ const axle = (part: PartMeta, x: number, diffZ: number): Authored =>
 const axleFront = axle(meta('axle-front', 'Front axle', 'under', 110), AXLE_FRONT, 26);
 const axleRear = axle(meta('axle-rear', 'Rear axle', 'under', 100), AXLE_REAR, 28);
 
-const engine = authored(meta('engine', 'V8 engine', 'under', 170), [
+const engine = authored({ ...meta('engine', 'V8 engine', 'under', 170), noise: { radiusMetres: 80 } }, [
   box([108, 16, 22], [130, 28, 42], 'engine'),
   box([108, 26, 19], [130, 31, 25], 'engine'),
   box([108, 26, 39], [130, 31, 45], 'engine'),
@@ -157,26 +92,29 @@ const gearbox = authored(meta('gearbox', 'Gearbox and transfer box', 'under', 75
   box([80, 10, 28], [92, 16, 36], 'engine'),
 ]);
 const fuelTank = authored(meta('fuel-tank', 'Fuel tank', 'under', 60), [box([8, 10, 18], [30, 16, 46], 'tank')]);
-const exhaust = authored(meta('exhaust', 'Exhaust tailpipe', 'under', 15), [
+const exhaust = authored({ ...meta('exhaust', 'Exhaust and silencer', 'under', 15), noise: { rangeScale: 0.45 } }, [
   disc('x', [14, 11, 1.6], [2, 12], 'chassis'),
 ]);
 const radiator = authored(meta('radiator', 'Radiator', 'under', 15), [box([134, 16, 12], [138, 33, 52], 'radiator')]);
-const battery = authored(meta('battery', 'Battery', 'under', 20), [
+export const battery = authored(meta('battery', 'Battery', 'under', 20), [
   box([122, 26, 46], [130, 33, 52], 'trim'),
   box([123, 33, 47], [125, 34, 49], 'tail'),
 ]);
 
-const floorPan = authored(meta('floor-pan', 'Floor pan and transmission tunnel', 'frame', 90), [
-  box([6, 16, 6], [100, 18, 58], 'chassis'),
-  box([26, 16, 52], [52, 18, 58], 'air'),
-  box([26, 16, 6], [52, 18, 12], 'air'),
-  box([70, 16, 26], [100, 18, 38], 'air'),
-  box([70, 16, 24], [100, 24, 26], 'carpet'),
-  box([70, 16, 38], [100, 24, 40], 'carpet'),
-  box([70, 24, 24], [100, 26, 40], 'carpet'),
-  paintBox([42, 17, 6], [100, 18, 58], 'carpet'),
-  paintBox([6, 17, 6], [42, 18, 58], 'loadFloor'),
-]);
+const floorPan = authored(
+  { ...meta('floor-pan', 'Floor pan and transmission tunnel', 'frame', 90), noise: { rangeScale: 0.9 } },
+  [
+    box([6, 16, 6], [100, 18, 58], 'chassis'),
+    box([26, 16, 52], [52, 18, 58], 'air'),
+    box([26, 16, 6], [52, 18, 12], 'air'),
+    box([70, 16, 26], [100, 18, 38], 'air'),
+    box([70, 16, 24], [100, 24, 26], 'carpet'),
+    box([70, 16, 38], [100, 24, 40], 'carpet'),
+    box([70, 24, 24], [100, 26, 40], 'carpet'),
+    paintBox([42, 17, 6], [100, 18, 58], 'carpet'),
+    paintBox([6, 17, 6], [42, 18, 58], 'loadFloor'),
+  ],
+);
 const sill = authored(meta('sill', 'Sill', 'frame', 12), [box([52, SILL_Y, 56], [107, DOOR_Y, SIDE], 'trim')]);
 const bulkhead = authored(meta('bulkhead', 'Bulkhead and scuttle', 'frame', 40), [
   box([100, 16, 7], [104, WAIST, 57], 'paint'),
@@ -341,7 +279,7 @@ const frontBumper = authored(meta('front-bumper', 'Front bumper', 'body', 25), [
   box([138, 14, 4], [143, 21, SIDE], 'trim'),
   paintBox([142, 15, 24], [143, 19, 40], 'plateFront'),
 ]);
-const bonnet = authored({ ...meta('bonnet', 'Clamshell bonnet', 'body', 22), panel: 'y' }, [
+const bonnet = authored({ ...meta('bonnet', 'Clamshell bonnet', 'body', 22), panel: 'y', noise: { rangeScale: 0.8 } }, [
   box([104, 34, 4], [141, 36, SIDE], 'paint'),
   paintBox([104, 34, SIDE - 1], [141, 35, SIDE], 'seam'),
   paintBox([104, 34, 4], [141, 35, 5], 'seam'),
@@ -392,7 +330,7 @@ const dashboard = authored(meta('dashboard', 'Dashboard', 'interior', 20), [
   paintBox([94, 38, 44], [95, 40, 53], 'dial'),
   paintBox([90, 33, 26], [91, 35, 38], 'trim'),
 ]);
-const steering = authored(meta('steering', 'Steering wheel and column', 'interior', 6), [
+export const steering = authored(meta('steering', 'Steering wheel and column', 'interior', 6), [
   box([91, WAIST, 48], [94, 39, 50], 'trim'),
   box([89, 39, 48], [92, 42, 50], 'trim'),
   disc('x', [49, 43.5, 6.5, 5.4], [87, 88], 'trim'),
@@ -400,7 +338,7 @@ const steering = authored(meta('steering', 'Steering wheel and column', 'interio
   box([87, WAIST, 48], [88, 44, 50], 'trim'),
   disc('x', [49, 43.5, 1.8], [87, 89], 'trim'),
 ]);
-const gearLever = authored(meta('gear-lever', 'Gear and transfer levers', 'interior', 2), [
+export const gearLever = authored(meta('gear-lever', 'Gear and transfer levers', 'interior', 2), [
   box([84, 26, 31], [89, 27, 36], 'trim'),
   box([86, 27, 33], [87, 33, 34], 'trim'),
   box([85, 33, 32], [88, 35, 35], 'trim'),
@@ -566,7 +504,7 @@ export const RANGE_ROVER: Vehicle = {
     tank: '#3d4b40',
     radiator: '#3c403e',
   },
-  parts: Object.fromEntries(PARTS.map(({ type }) => [type.id, type])),
+  parts: partsOf(PARTS),
   fittings: FITTINGS,
 };
 

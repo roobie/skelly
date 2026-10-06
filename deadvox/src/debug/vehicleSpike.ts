@@ -42,6 +42,7 @@ import {
   type MassReport,
   measure,
   missingSupports,
+  noiseRadius,
   PART_CELL,
   PART_LAYERS,
   type PartLayer,
@@ -396,7 +397,8 @@ const renderVehicle = (): void => {
   massReport = measure(libraryFor(vehicle), installed);
   const { massKg, centre } = massReport;
   const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
-  statsText = `${installed.size} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed(centre[0])} m forward, ${centre[1].toFixed(2)} m up, ${signed(centre[2])} m toward the near side`;
+  const noise = noiseRadius(vehicle, installed);
+  statsText = `${installed.size} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed(centre[0])} m forward, ${centre[1].toFixed(2)} m up, ${signed(centre[2])} m toward the near side · engine noise heard to ${Math.round(noise)} m at idle`;
   renderPanel();
   drawSchematic();
   renderScene();

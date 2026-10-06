@@ -38,6 +38,18 @@ export interface PartType {
   readonly panel?: Axis;
   /** The point a fitting turns about, in the part's frame: a wheel's axle, a door's hinge line. */
   readonly pivot?: readonly [x: number, y: number, z: number];
+  readonly noise?: PartNoise;
+}
+
+/**
+ * How a part sounds to a listener outside, in Deadvox's noise units: a source's hearing radius, like a
+ * sound's `noise.radiusMetres`, or a damper's scale on that radius, like the senses' `hearingRangeScale`.
+ */
+export interface PartNoise {
+  /** A source, heard this far away at idle: the engine. */
+  readonly radiusMetres?: number;
+  /** A damper, at most 1: multiplies the radius of every source while it's fitted (a silencer, the bonnet). */
+  readonly rangeScale?: number;
 }
 
 export interface Fitting {
@@ -230,4 +242,23 @@ export const measure = (library: PartLibrary, installed: ReadonlySet<string>): M
   }
   const divisor = massKg || 1;
   return { massKg, centre: [moment[0]! / divisor, moment[1]! / divisor, moment[2]! / divisor] };
+};
+
+/**
+ * The hearing radius of the installed fittings at idle, in metres. Sources add as sound intensity does,
+ * which falls with the square of distance, so their radii add in quadrature. Each fitted damper then
+ * scales the total, so taking one off never makes the vehicle quieter.
+ */
+export const noiseRadius = (vehicle: Vehicle, installed: ReadonlySet<string>): number => {
+  let power = 0;
+  let scale = 1;
+  for (const fitting of vehicle.fittings) {
+    if (!installed.has(fitting.id)) {
+      continue;
+    }
+    const { noise } = partTypeOf(vehicle, fitting);
+    power += (noise?.radiusMetres ?? 0) ** 2;
+    scale *= noise?.rangeScale ?? 1;
+  }
+  return Math.sqrt(power) * scale;
 };

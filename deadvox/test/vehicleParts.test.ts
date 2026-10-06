@@ -4,7 +4,9 @@ import {
   type Fitting,
   initialFittings,
   missingSupports,
+  noiseRadius,
   PartLibrary,
+  partTypeOf,
   supportProblems,
   type Vehicle,
 } from '../src/debug/vehicles/model.ts';
@@ -75,6 +77,42 @@ describe('the 4×4 built from parts', () => {
       }
     }
     expect(Object.fromEntries(clashes)).toEqual({});
+  });
+});
+
+describe('engine noise from installed fittings', () => {
+  const vehicles = [RANGE_ROVER];
+  const isSource = (vehicle: Vehicle, fitting: Fitting): boolean =>
+    (partTypeOf(vehicle, fitting).noise?.radiusMetres ?? 0) > 0;
+  const allOf = (vehicle: Vehicle): Set<string> => new Set(vehicle.fittings.map(({ id }) => id));
+
+  it('never gets quieter when a part that makes no noise comes off, and some part damps it', () => {
+    for (const vehicle of vehicles) {
+      const installed = allOf(vehicle);
+      const complete = noiseRadius(vehicle, installed);
+      const withoutEach = vehicle.fittings
+        .filter((fitting) => !isSource(vehicle, fitting))
+        .map((fitting) => ({
+          id: fitting.id,
+          radius: noiseRadius(vehicle, new Set([...installed].filter((id) => id !== fitting.id))),
+        }));
+      expect(
+        withoutEach.filter(({ radius }) => radius < complete).map(({ id }) => id),
+        vehicle.id,
+      ).toEqual([]);
+      expect(
+        withoutEach.some(({ radius }) => radius > complete),
+        vehicle.id,
+      ).toBe(true);
+    }
+  });
+
+  it('makes engine noise only while a source is fitted', () => {
+    for (const vehicle of vehicles) {
+      expect(noiseRadius(vehicle, allOf(vehicle)), vehicle.id).toBeGreaterThan(0);
+      const silent = new Set(vehicle.fittings.filter((fitting) => !isSource(vehicle, fitting)).map(({ id }) => id));
+      expect(noiseRadius(vehicle, silent), vehicle.id).toBe(0);
+    }
   });
 });
 
