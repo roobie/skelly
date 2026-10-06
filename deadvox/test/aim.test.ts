@@ -3,6 +3,11 @@ import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { coneDirection } from '../src/core/pellets.ts';
+import { Rng } from '../src/core/random.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { firearmHandlingFor } from '../src/game/firearmHandling.ts';
 
 const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) => ({
   dt: 1 / 60,
@@ -44,6 +49,66 @@ const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: 
     }
   }
   return peak;
+};
+
+const akBurstMetrics = (effects: ReturnType<typeof firearmsSkillEffects>) => {
+  const inventory = new Inventory(BUNDLED_CONTENT.registry);
+  const rifle = inventory.create('debug_rifle_ak');
+  const data = firearmHandlingFor(rifle, BUNDLED_CONTENT.registry);
+  if (!(data.rpm && data.recoilKickRadians && data.dispersionRadians)) {
+    throw new Error('AK content must provide full-auto recoil and dispersion');
+  }
+  const aim = new AimController(undefined, effects.variance);
+  const recoilSeeds = Rng.stream(73, 'ak-burst-recoil');
+  const directions: [number, number, number][] = [];
+  const shotCount = 24;
+  const dt = 1 / 60;
+  const cadenceSeconds = 60 / data.rpm;
+  let viewPitch = 0;
+  let nextShotAt = 0;
+  let maxAimClimb = 0;
+  const applyViewShift = () => {
+    const shift = aim.pendingViewPitchShift;
+    aim.applyViewPitchShift(shift, shift);
+    viewPitch += shift;
+  };
+  for (let tick = 0; directions.length < shotCount; tick++) {
+    const time = tick * dt;
+    if (tick > 0) {
+      aim.advance(
+        step({
+          dt,
+          pitch: viewPitch,
+          variance: effects.variance,
+          firing: true,
+          recoilRecoveryRate: effects.recoilRecoveryRate,
+        }),
+      );
+      applyViewShift();
+    }
+    while (directions.length < shotCount && nextShotAt <= time + 1e-9) {
+      const basis = aimBasis(0, viewPitch, aim.frame);
+      directions.push(
+        coneDirection(basis, data.dispersionRadians, Rng.stream(73, `ak-burst-dispersion:${directions.length}`)),
+      );
+      aim.recordShot(recoilSeeds.int(0, 0xffff_ffff), data.recoilKickRadians, effects.recoilKickScale);
+      applyViewShift();
+      maxAimClimb = Math.max(maxAimClimb, Math.abs(viewPitch + aim.frame.pitch));
+      nextShotAt += cadenceSeconds;
+    }
+  }
+  const center = directions.reduce<[number, number, number]>(
+    (sum, direction) => [sum[0] + direction[0], sum[1] + direction[1], sum[2] + direction[2]],
+    [0, 0, 0],
+  );
+  const centerLength = Math.hypot(...center);
+  const spreadRms = Math.sqrt(
+    directions.reduce((sum, direction) => {
+      const cosine = (direction[0] * center[0] + direction[1] * center[1] + direction[2] * center[2]) / centerLength;
+      return sum + Math.acos(Math.max(-1, Math.min(1, cosine))) ** 2;
+    }, 0) / directions.length,
+  );
+  return { climb: maxAimClimb, spread: spreadRms };
 };
 
 it('uses camera pitch and yaw without presentation roll at neutral sway', () => {
@@ -231,12 +296,26 @@ it("expert firearms skill scales a committed shot's immediate aim kick", () => {
   );
 });
 
+it('skill-0 AK full-auto climb and spread are about three times the main baseline', () => {
+  const baseline = akBurstMetrics({ ...firearmsSkillEffects(0), recoilKickScale: 1 });
+  const novice = akBurstMetrics(firearmsSkillEffects(0));
+  const expert = akBurstMetrics(firearmsSkillEffects(SKILL_LEVEL_MAX));
+  for (const metric of ['climb', 'spread'] as const) {
+    const ratio = novice[metric] / baseline[metric];
+    expect(ratio).toBeGreaterThanOrEqual(2.75);
+    expect(ratio).toBeLessThanOrEqual(3.25);
+    expect(novice[metric]).toBeGreaterThan(expert[metric]);
+  }
+});
+
 it('firearms skill effects improve through expert level and legendary matches expert', () => {
   const novice = firearmsSkillEffects(0);
   const experienced = firearmsSkillEffects(SKILL_LEVEL_MAX);
   const legendary = firearmsSkillEffects(SKILL_LEVEL_LEGENDARY);
   expect(experienced.variance).toBeLessThan(novice.variance);
   expect(experienced.recoilKickScale).toBeLessThan(novice.recoilKickScale);
+  expect(experienced.recoilKickScale).toBe(experienced.variance);
+  expect(experienced.recoilRecoveryRate).toBe(2 - experienced.variance);
   expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
   expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
   expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
