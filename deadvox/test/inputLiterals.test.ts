@@ -4,6 +4,8 @@ import { expect, it } from 'vitest';
 import { keyboardViolations } from '../tools/lit-check/inputGuard.ts';
 
 const sourceExtension = /\.[cm]?[jt]s$/;
+// This visual-only page pans a Three.js preview; its camera keys are not gameplay bindings.
+const DEBUG_CAMERA_KEY_OWNERS = new Set(['debug/vehicleSpike.ts']);
 const files = (directory: string): string[] =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
@@ -14,7 +16,10 @@ const files = (directory: string): string[] =>
   });
 it('keeps physical literals and DOM keyboard interpretation in the single registry owner', () => {
   const root = join(import.meta.dirname, '../src');
-  const scanned = files(root).filter((path) => relative(root, path) !== 'game/inputBindings.ts');
+  const scanned = files(root).filter((path) => {
+    const source = relative(root, path);
+    return source !== 'game/inputBindings.ts' && !DEBUG_CAMERA_KEY_OWNERS.has(source);
+  });
   expect(scanned.length).toBeGreaterThan(0);
   const issues = scanned.flatMap((path) =>
     keyboardViolations(readFileSync(path, 'utf8')).map((issue) => `${relative(root, path)}: ${issue}`),

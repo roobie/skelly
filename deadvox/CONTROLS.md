@@ -88,6 +88,7 @@ controls remain proposals until their issue is implemented.
   hand or puts it away; a hold uses an available action. See
   `src/game/quickbarInput.ts`, `QuickbarInput`, and
   `src/game/quickbarActions.ts`, `QuickbarActions`.
+- **Wound treatment (2026-10-06 08:33):** BR said “the \"treat with rag\" is not the way to go. You wield the rag and left-click apply it (or quickbar-hold)”. Wielded-item action selection is stepped by the wheel and shown in the interaction hint; see `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/survival.ts`, `wieldedItemActionHint`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
 - **Interaction hints (2026-10-06 08:35):** BR said “we should make
@@ -168,8 +169,12 @@ Replay capture is sampled at the fixed player-tick boundary so timing follows si
 steps rather than browser event timestamps. The downloadable artifact embeds its starting
 save and compatibility identity; it is explicit and does not change world-save state.
 The debug actions make import and export available without adding another input-binding
-surface. See `debug.input-replay-export` and `debug.input-replay-import` in
-`src/game/inputBindings.ts`, and `src/game/play.ts`, `startPlay`.
+surface. Retaining an earlier segment preserves recent history across bounded storage
+rollover while its start snapshot keeps the exported input replayable. An end-state
+fingerprint surfaces simulation drift from uncovered input rather than silently implying
+reproduction. See `debug.input-replay-export` and `debug.input-replay-import` in
+`src/game/inputBindings.ts`, `InputReplayRecorder` and `replayStateFingerprint` in
+`src/game/inputReplay.ts`, and `src/game/play.ts`, `startPlay`.
 
 ## Readiness and melee (2026-10-05, #267)
 

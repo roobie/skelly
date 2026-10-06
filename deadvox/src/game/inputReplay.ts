@@ -2,8 +2,8 @@ import { canonicalJsonBytes } from '../core/canonicalJson.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { INPUT_BINDINGS, type InputContext, POINTER_ACTIONS } from './inputBindings.ts';
-import { QUICKBAR_SLOTS } from './quickbar.ts';
 import type { MoveIntent } from './player.ts';
+import { QUICKBAR_SLOTS } from './quickbar.ts';
 
 const INPUT_REPLAY_SCHEMA_VERSION = 2;
 const INPUT_REPLAY_TICKS_PER_WINDOW = 60 * 60 * 2;
@@ -13,12 +13,15 @@ const INPUT_REPLAY_MAX_ACTIONS = INPUT_REPLAY_ACTIONS_PER_WINDOW * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 
 const MAGIC = 'DEADVOX_REPLAY';
-const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;/
+const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;
 const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
 const REPLAY_SEMANTIC_ACTIONS = [
   'glowstick.throw',
   'glowstick.cancel',
-  ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [`quickbar.tap.${index + 1}`, `quickbar.hold.${index + 1}`]).flat(),
+  ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [
+    `quickbar.tap.${index + 1}`,
+    `quickbar.hold.${index + 1}`,
+  ]).flat(),
 ] as const;
 const ACTION_IDS = [
   ...new Set([
@@ -271,9 +274,7 @@ export class InputReplayRecorder {
       action: ACTION_IDS[this.actionIds[index]!]!,
       phase: this.actionPhases[index] === 0 ? 'down' : 'up',
       context: CONTEXTS[this.actionContexts[index]!]!,
-      ...(ACTION_IDS[this.actionIds[index]!] === 'glowstick.throw'
-        ? { value: this.actionValues[index]! }
-        : {}),
+      ...(ACTION_IDS[this.actionIds[index]!] === 'glowstick.throw' ? { value: this.actionValues[index]! } : {}),
     }));
     return { frames, actions };
   }

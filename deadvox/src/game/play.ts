@@ -64,7 +64,7 @@ import {
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
-import type { DebugHooks, DebugModule, DebugRuntime } from './debugInterface.ts';
+import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
@@ -161,7 +161,12 @@ const encodeRecentInputReplay = (
     throw new Error('Input recording has not started');
   }
   const inputs = joinInputReplayWindows(previousRecorder?.copyInputs(), recorder.copyInputs());
-  return encodeInputReplay(previousRecorder?.startSnapshot ?? recorder.startSnapshot, inputs, worldOptions, endSnapshot);
+  return encodeInputReplay(
+    previousRecorder?.startSnapshot ?? recorder.startSnapshot,
+    inputs,
+    worldOptions,
+    endSnapshot,
+  );
 };
 
 const createInputReplayPlayer = (
@@ -183,7 +188,6 @@ const createInputReplayRecorder = (
   }
   return new InputReplayRecorder(snapshot());
 };
-
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -322,6 +326,13 @@ export const startPlay = (
         }
       },
       heldDominantUse: (time, pressed, triggerHeld) => {
+        if (sim.body.actionRefusal) {
+          firearmTrigger.advance(time, undefined, pressed, triggerHeld);
+          if (pressed) {
+            showRefusal(sim.body.actionRefusal, sim.time);
+          }
+          return;
+        }
         const action = selectPrimaryAction(inventory);
         const weapon =
           config.debug &&
@@ -342,6 +353,7 @@ export const startPlay = (
         const action = selectPrimaryAction(inventory);
         return (
           (replaySample?.intent.useDominantHeld ?? input.dominantUseHeld) &&
+          !sim.body.actionRefusal &&
           config.debug &&
           !debugTools?.buildOn &&
           !queue.busy &&
@@ -567,6 +579,8 @@ export const startPlay = (
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
+    body: () => sim.body.snapshotState(),
+    actionRefusal: () => sim.body.actionRefusal,
     assign: (slot, item) => {
       quickbar.assign(slot, item);
       showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
@@ -631,6 +645,20 @@ export const startPlay = (
     location.assign(url);
   };
   const inputReplayHooks: DebugHooks['inputReplay'] = {
+    state: (): InputReplayStatusState => {
+      if (!replayPlayer) {
+        return inputRecorder ? 'recording' : 'idle';
+      }
+      switch (replayVerification) {
+        case 'matched':
+          return 'verified';
+        case 'diverged':
+        case 'unavailable':
+          return replayVerification;
+        default:
+          return 'playing';
+      }
+    },
     status: () =>
       inputReplayStatus({
         replayPlayer,
@@ -820,15 +848,29 @@ export const startPlay = (
     return reason;
   };
 
+  const continueWork = (): boolean => {
+    const workUid = session.crafting.currentUid;
+    if (workUid === undefined) {
+      return false;
+    }
+    const reason = actOnWork(workUid, 'continue');
+    if (reason) {
+      showRefusal(`Can't continue: ${reason}`, sim.time);
+    }
+    return true;
+  };
+
   /** Continue a craft, rest/sleep, or the debug compression test. */
   const continueAction = (): void => {
-    const workUid = session.crafting.currentUid;
-    if (workUid !== undefined) {
-      const reason = actOnWork(workUid, 'continue');
-      if (reason) {
-        showRefusal(`Can't continue: ${reason}`, sim.time);
-      }
-    } else if (rest.action || sim.actions.job?.jobType === 'reading') {
+    const refusal = sim.body.actionRefusal;
+    if (refusal) {
+      showRefusal(refusal, sim.time);
+      return;
+    }
+    if (continueWork()) {
+      return;
+    }
+    if (rest.action || sim.actions.job?.jobType === 'reading') {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);
@@ -886,6 +928,10 @@ export const startPlay = (
     notice: (text) => showRefusal(text, sim.time),
   });
   const quickbarTap = (slot: number) => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     if (!replayPlayer) {
       inputRecorder?.queueAction(`quickbar.tap.${slot + 1}`, 'down', inputContext());
     }
@@ -897,6 +943,10 @@ export const startPlay = (
     quickbarActions.tap(item);
   };
   const quickbarHold = (slot: number) => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     if (!replayPlayer) {
       inputRecorder?.queueAction(`quickbar.hold.${slot + 1}`, 'down', inputContext());
     }
@@ -912,7 +962,7 @@ export const startPlay = (
     holdDuration: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
     tap: () => undefined,
     hold: (action) => {
-      if (action === 'hud.toggle-interaction-hints') {
+      if (action === 'hud.toggle-interaction-hints' && !sim.body.actionRefusal) {
         hudOptions.interaction = !hudOptions.interaction;
         writeHudOptions(hudOptions);
         drawHudOptions();
@@ -932,6 +982,7 @@ export const startPlay = (
       compression.locksInput ||
       sim.paused ||
       sim.dead ||
+      sim.body.actionRefusal ||
       debugTools?.buildOn
     ) {
       return;
@@ -1089,6 +1140,14 @@ export const startPlay = (
   };
   const quickbarSlotFor = (action: string): number | undefined =>
     action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
+  const handleDebugCommand = (action: string): boolean => {
+    if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
+      return false;
+    }
+    debugTools?.handleAction(action);
+    syncMenuState();
+    return true;
+  };
   const handleHintCommand = (action: string, phase: InputCommand['phase'], at: number): boolean => {
     if (action !== 'hud.toggle-interaction-hints') {
       return false;
@@ -1100,68 +1159,98 @@ export const startPlay = (
     }
     return true;
   };
-  const handleDebugCommand = (action: string): boolean => {
-    if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
+  const cancelHeldInput = (): void => {
+    input.reload.cancel();
+    quickbarInput.cancel();
+  };
+  const rejectRefusedInput = (): boolean => {
+    const refusal = sim.body.actionRefusal;
+    if (!refusal) {
       return false;
     }
-    debugTools?.handleAction(action);
-    syncMenuState();
+    cancelHeldInput();
+    showRefusal(refusal, sim.time);
     return true;
   };
-  const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
-    if (replayPlayer && !fromReplay) {
+  const releaseInputCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (handleHintCommand(action, 'up', at)) {
       return;
     }
-    if (!fromReplay && !isGestureAction(action)) {
-      inputRecorder?.queueAction(action, phase, inputContext());
-    }
-    const inputTime = at;
-    const slot = quickbarSlotFor(action);
-    if (handleHintCommand(action, phase, inputTime)) {
+    if (sim.body.actionRefusal) {
+      cancelHeldInput();
       return;
     }
-    if (phase === 'up') {
-      releaseCommand(action, inputTime, slot);
+    releaseCommand(action, at, slot);
+  };
+  const dispatchPressCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'ui.main-menu-toggle') {
+      modalCommand(action);
       return;
     }
     if (handleDebugCommand(action)) {
+      return;
+    }
+    if (rejectRefusedInput()) {
+      return;
+    }
+    if (handleHintCommand(action, 'down', at)) {
       return;
     }
     if (sim.dead) {
       return;
     }
     if (!modalCommand(action)) {
-      gameplayCommand(action, inputTime, slot);
+      gameplayCommand(action, at, slot);
     }
   };
+  const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
+    if (replayPlayer && !fromReplay) {
+      return;
+    }
+    if (!(fromReplay || isGestureAction(action))) {
+      inputRecorder?.queueAction(action, phase, inputContext());
+    }
+    const slot = quickbarSlotFor(action);
+    if (phase === 'up') {
+      releaseInputCommand(action, at, slot);
+      return;
+    }
+    dispatchPressCommand(action, at, slot);
+  };
   keyboardInput.command = (command) => dispatchInputCommand(command);
+  const dispatchReplayQuickbar = (action: ReplayAction): boolean => {
+    const match = QUICKBAR_ACTION.exec(action.action);
+    if (!match) {
+      return false;
+    }
+    const index = Number(match[2]);
+    if (index < 1 || index > QUICKBAR_SLOTS) {
+      return false;
+    }
+    (match[1] === 'tap' ? quickbarTap : quickbarHold)(index - 1);
+    return true;
+  };
   const dispatchReplayGesture = (action: ReplayAction): boolean => {
-    if (action.action === 'firearm.load') {
-      reloadBinding()?.load();
-      return true;
-    }
-    if (action.action === 'firearm.rack') {
-      reloadBinding()?.rack();
-      return true;
-    }
-    const quickbarGesture = QUICKBAR_ACTION.exec(action.action);
-    if (quickbarGesture && Number(quickbarGesture[2]) >= 1 && Number(quickbarGesture[2]) <= QUICKBAR_SLOTS) {
-      const slot = Number(quickbarGesture[2]) - 1;
-      (quickbarGesture[1] === 'tap' ? quickbarTap : quickbarHold)(slot);
-      return true;
-    }
-    if (action.action === 'glowstick.throw') {
-      const glowstick = [inventory.hands.right, inventory.hands.left].find((item) => item?.type === 'glowstick');
-      if (glowstick && action.value !== undefined) {
-        throwHeldGlowstick(glowstick, action.value);
+    switch (action.action) {
+      case 'firearm.load':
+        reloadBinding()?.load();
+        return true;
+      case 'firearm.rack':
+        reloadBinding()?.rack();
+        return true;
+      case 'glowstick.throw': {
+        const glowstick = [inventory.hands.right, inventory.hands.left].find((item) => item?.type === 'glowstick');
+        if (glowstick && action.value !== undefined) {
+          throwHeldGlowstick(glowstick, action.value);
+        }
+        return true;
       }
-      return true;
+      case 'glowstick.cancel':
+        cancelGlowstickCharge();
+        return true;
+      default:
+        return dispatchReplayQuickbar(action);
     }
-    if (action.action === 'glowstick.cancel') {
-      cancelGlowstickCharge();
-      return true;
-    }
-    return false;
   };
   dispatchReplayAction = (action, sample) => {
     replaySample = sample;
@@ -1172,6 +1261,10 @@ export const startPlay = (
   };
   keyboardInput.install();
   keyboardInput.sync();
+  const cycleWieldedAction = (deltaY: number): boolean => {
+    const item = inventory.hands[dominantSide(inventory.character)];
+    return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
+  };
   globalThis.addEventListener(
     'wheel',
     (e) => {
@@ -1179,7 +1272,11 @@ export const startPlay = (
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer) {
-        debugTools?.wheel(e.deltaY);
+        if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
+          debugTools?.wheel(e.deltaY);
+        } else {
+          e.preventDefault();
+        }
       }
     },
     { passive: false },
@@ -1246,6 +1343,11 @@ export const startPlay = (
   }
 
   function beginGlowstickCharge(at: number): void {
+    const refusal = sim.body.actionRefusal;
+    if (refusal) {
+      showRefusal(refusal, sim.time);
+      return;
+    }
     if (glowstickChargeStartedAt !== undefined || refusePrimaryUseWhileHandling()) {
       return;
     }
@@ -1413,11 +1515,18 @@ export const startPlay = (
   const meleeWeapon = () => meleeSelection().weapon;
 
   const swing = (preferredHand?: 'right' | 'left') => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     const selected = meleeSelection(preferredHand);
     const result = startPlayerMelee(playerCombat, sim.needs, {
       origin: eye(),
       direction: lookDir(),
-      weapon: selected.weapon,
+      weapon: {
+        ...selected.weapon,
+        cooldown: selected.weapon.cooldown * session.sim.body.consequences.swingSlowdown,
+      },
       profile: selected.profile,
       ...(selected.hand === undefined ? {} : { hand: selected.hand }),
       twoHanded: selected.twoHanded,
@@ -1492,6 +1601,10 @@ export const startPlay = (
     showRefusal(primaryActionHint(registry, item), sim.time);
   };
   performHandUse = (hand: 'right' | 'left') => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     if (refusePrimaryUseWhileHandling()) {
       return;
     }
@@ -1596,6 +1709,7 @@ export const startPlay = (
     speed: compression.c,
     paused: sim.paused,
     needs: sim.needs,
+    health: sim.body.health,
     sprinting: session.sprinting,
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });
@@ -1633,6 +1747,8 @@ export const startPlay = (
         notice,
         noticeUntil,
         interactionHint: entity ? useText(entity) : undefined,
+        itemActionHint:
+          visible.interaction && input.locked && !debugTools?.buildOn ? survival.wieldedItemActionHint() : undefined,
         interruption: compression.interruption,
         resting: rest.action !== undefined,
       },
@@ -1665,6 +1781,7 @@ export const startPlay = (
         yaw: input.yaw,
         pitch: input.pitch,
         eye: eye(),
+        sightImpaired: sim.body.consequences.sightImpaired,
       },
       $('damage'),
     );
@@ -1763,6 +1880,10 @@ export const startPlay = (
   };
 
   const cancelGlowstickChargeOnRightClick = (): void => {
+    if (sim.body.actionRefusal && glowstickChargeStartedAt !== undefined) {
+      cancelGlowstickCharge();
+      return;
+    }
     if (!replayPlayer && input.consumeRightMousePressed() && glowstickChargeStartedAt !== undefined) {
       inputRecorder?.queueAction('glowstick.cancel', 'down', inputContext());
       cancelGlowstickCharge();
@@ -1798,17 +1919,6 @@ export const startPlay = (
     return gameFrozen;
   };
 
-  const updateInputGestures = (now: number): void => {
-    const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
-    input.reload.advance(now, reloadBinding());
-    if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead) {
-      quickbarInput.cancel();
-    } else {
-      quickbarInput.update(now);
-    }
-    hintToggleInput.update(now);
-  };
-
   const updateDebugTargets = () => {
     if (!debugTools) {
       return;
@@ -1816,6 +1926,23 @@ export const startPlay = (
     const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
     debugTools.updateLookedAt(eye(), lookDir(), input.locked);
+  };
+
+  const updateActionInputs = (now: number): void => {
+    const actionRefusal = Boolean(sim.body.actionRefusal);
+    if (actionRefusal) {
+      input.reload.cancel();
+      quickbarInput.cancel();
+    } else {
+      input.reload.advance(now, reloadBinding());
+    }
+    const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
+    if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal) {
+      quickbarInput.cancel();
+    } else {
+      quickbarInput.update(now);
+    }
+    hintToggleInput.update(now);
   };
 
   const frame = (now: number) => {
@@ -1831,7 +1958,7 @@ export const startPlay = (
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
-    updateInputGestures(now);
+    updateActionInputs(now);
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
@@ -1870,6 +1997,9 @@ export const startPlay = (
     mark = performance.now();
 
     updateVisualFeedback(dt);
+    const unconsciousPresentation = sim.body.unconscious && !sim.dead;
+    document.body.classList.toggle('unconscious', unconsciousPresentation);
+    audio.setOutputMuted(unconsciousPresentation);
     audio.updateHeartbeat(sim.needs.stamina);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();

@@ -5,7 +5,14 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
-import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
+import type {
+  DebugHooks,
+  DebugModule,
+  DebugNoclipStep,
+  DebugReadout,
+  DebugRuntime,
+  InputReplayStatusState,
+} from '../game/debugInterface.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
@@ -242,6 +249,7 @@ const panelTemplate = ({
   copyViewLink,
   copyStatus,
   inputReplayStatus,
+  inputReplayState,
   exportInputReplay,
   chooseInputReplay,
   importInputReplay,
@@ -271,6 +279,7 @@ const panelTemplate = ({
   copyViewLink: () => void;
   copyStatus: string;
   inputReplayStatus: string;
+  inputReplayState: InputReplayStatusState;
   exportInputReplay: () => void;
   chooseInputReplay: () => void;
   importInputReplay: (file: File) => void;
@@ -349,7 +358,7 @@ const panelTemplate = ({
           importInputReplay(file);
         }
       }} />
-      <span id="input-replay-status" aria-live="polite">${inputReplayStatus}</span>
+      <span id="input-replay-status" data-state=${inputReplayState} aria-live="polite">${inputReplayStatus}</span>
     </div>
     <div id="debug-sound-log-root"></div>
     <p>Keys are listed in each group's header. Noclip: ${labelForAction('noclip.ascend')} rises, ${labelForAction('noclip.descend')} descends. While building (${labelForAction('debug.build-toggle')}): ${Array.from({ length: 9 }, (_, i) => labelForAction(`debug.build-slot.${i + 1}`)).join(' / ')} select blocks; the wheel cycles them. Panel: ${labelForAction('debug.panel-toggle')}. The wheel scrolls this panel.</p>
@@ -1124,6 +1133,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell rendering keeps UI wiring and readout refresh together.
   function drawShell(): void {
     const groups = groupViews();
+    const inputReplayState = hooks.inputReplay.state();
     const key = JSON.stringify([
       panelOpen,
       f3Open,
@@ -1135,6 +1145,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       axesVisible,
       copyStatus,
       replayStatus,
+      inputReplayState,
       groups.map((group) => [group.id, group.open, group.actions.map((view) => [view.label, view.state])]),
     ]);
     if (key !== shellKey) {
@@ -1189,6 +1200,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           copyViewLink,
           copyStatus,
           inputReplayStatus: replayStatus || hooks.inputReplay.status(),
+          inputReplayState,
           exportInputReplay,
           chooseInputReplay,
           importInputReplay,

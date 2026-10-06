@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,
   defaultClock,
@@ -11,7 +12,7 @@ import {
 } from '../src/core/clock.ts';
 import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
-import { Simulation } from '../src/core/sim.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
 const HOUR = simSecondsPerHour(defaultClock);
@@ -94,6 +95,80 @@ describe('Simulation', () => {
     sim.hurt(10, 'a shambler');
 
     expect(events.read()).toContainEqual({ kind: 'damage', amount: 10, cause: 'a shambler', time: 0 });
+  });
+
+  it('defaults unresolved hits to the torso region', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.hit(1, 'a bite', undefined, { bleeding: true });
+
+    expect(sim.body.regionDamage.torso).toBeGreaterThan(0);
+    expect(sim.body.wounds.torso?.bleeding).toBe(true);
+  });
+
+  it('replays at-risk wound decisions from the seeded simulation RNG and saves the result', () => {
+    const first = new Simulation({ seed: 31 });
+    const replay = new Simulation({ seed: 31 });
+    for (const region of BODY_REGIONS) {
+      first.hit(1, 'a bite', region, { bleeding: true });
+      replay.hit(1, 'a bite', region, { bleeding: true });
+    }
+
+    const firstRisks = Object.fromEntries(
+      BODY_REGIONS.map((region) => [region, first.body.wounds[region]?.infectionAtRisk]),
+    );
+    const replayRisks = Object.fromEntries(
+      BODY_REGIONS.map((region) => [region, replay.body.wounds[region]?.infectionAtRisk]),
+    );
+    expect(firstRisks).toEqual(replayRisks);
+    const restored = new Simulation({ seed: 31 });
+    restored.restoreState(first.snapshotState());
+    expect(
+      Object.fromEntries(BODY_REGIONS.map((region) => [region, restored.body.wounds[region]?.infectionAtRisk])),
+    ).toEqual(firstRisks);
+  });
+
+  it('uses the body tuning chance to decide which bleeding wounds are infection risks', () => {
+    const noRisk = new Simulation({
+      seed: 31,
+      bodyTuning: { ...BODY_TUNING_FIXTURE, infectionChance: 0 },
+    });
+    const certainRisk = new Simulation({
+      seed: 31,
+      bodyTuning: { ...BODY_TUNING_FIXTURE, infectionChance: 1 },
+    });
+    noRisk.hit(1, 'a bite', 'torso', { bleeding: true });
+    certainRisk.hit(1, 'a bite', 'torso', { bleeding: true });
+
+    expect(noRisk.body.wounds.torso?.infectionAtRisk).toBe(false);
+    expect(certainRisk.body.wounds.torso?.infectionAtRisk).toBe(true);
+  });
+
+  it('resolves prompt antiseptic through the scheduler but requires antibiotics after its window', () => {
+    const onsetSimulation = new Simulation({ seed: 1 });
+    onsetSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
+    const onsetSimSeconds = (BODY_TUNING_FIXTURE.infectionOnsetGameHours * 3600) / onsetSimulation.clock.ratio;
+    onsetSimulation.scheduler.advance(onsetSimSeconds + 1);
+    expect(onsetSimulation.body.canTreat('head', 'antiseptic')).toBe(true);
+    onsetSimulation.actions.treatment = {
+      validate: (region, _itemUid, treatment) =>
+        onsetSimulation.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
+      finish: (region, _itemUid, treatment) =>
+        onsetSimulation.body.treat(region, treatment) ? true : 'Treatment no longer applies',
+    };
+    expect(
+      onsetSimulation.actions.beginTreatment('head', 1, 'antiseptic', onsetSimulation.clock.ratio),
+    ).toBeUndefined();
+    onsetSimulation.scheduler.advance(onsetSimulation.clock.ratio);
+    expect(onsetSimulation.body.wounds.head?.infection).toBe('resolved');
+    expect(onsetSimulation.actions.job).toBeUndefined();
+
+    const lateSimulation = new Simulation({ seed: 1 });
+    lateSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
+    const infectionCutoffGameSeconds =
+      (BODY_TUNING_FIXTURE.infectionOnsetGameHours + BODY_TUNING_FIXTURE.antisepticWindowGameHours) * 3600;
+    lateSimulation.scheduler.advance(infectionCutoffGameSeconds / lateSimulation.clock.ratio + 1);
+    expect(lateSimulation.body.canTreat('head', 'antiseptic')).toBe(false);
+    expect(lateSimulation.body.canTreat('head', 'antibiotics')).toBe(true);
   });
 
   it('gives the same clock and needs for a compressed and an uncompressed hour', () => {
@@ -215,14 +290,14 @@ describe('Simulation', () => {
     sim.needs.calories = 0;
     sim.needs.hydration = 0;
     sim.frame(HOUR);
-    expect(sim.needs.health).toBe(100);
+    expect(sim.body.health).toBe(100);
     expect(sim.needs.calories).toBe(0);
     expect(sim.needs.hydration).toBe(0);
     expect(sim.dead).toBeUndefined();
 
     sim.godMode = false;
     sim.frame(HOUR);
-    expect(sim.needs.health).toBeLessThan(100);
+    expect(sim.body.health).toBeLessThan(100);
   });
 
   describe('debug time skip', () => {

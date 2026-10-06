@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
+import { Body } from '../src/core/body.ts';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
@@ -17,6 +18,7 @@ import {
   keyboardInput,
 } from '../src/game/inputBindings.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -81,6 +83,7 @@ function setup() {
     throw new Error('expected the shipped container to be added');
   }
   const searching = new Set<typeof entity>();
+  const body = new Body(BODY_TUNING_FIXTURE);
   queue.registerAction('furniture.search', () => {
     searching.delete(entity);
     inv.entities.markSearched(entity);
@@ -109,11 +112,13 @@ function setup() {
     assign: (_slot: number, _item: typeof beans) => undefined,
     workOptions: (_uid: number): WorkOption[] => [],
     work: (_uid: number, _operation: WorkOperation): string | undefined => undefined,
+    body: () => body.snapshotState(),
+    actionRefusal: () => body.actionRefusal,
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks };
+  return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks, body };
 }
 
 const holdQuickGate = () => {
@@ -138,6 +143,20 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
+  it('refuses inventory actions while unconscious and permits them after waking', () => {
+    const { screen, queue, body, beans, refusals } = setup();
+    screen.selected = beans;
+    body.impact(1, 'torso', { shockDamage: 100 });
+
+    expect(screen.onAction('inventory.drop')).toBe(true);
+    expect(screen.onAction('inventory.search')).toBe(true);
+    expect(queue.jobs).toHaveLength(0);
+    expect(refusals).toHaveLength(2);
+
+    body.advance(body.tuning.knockoutSeconds);
+    expect(screen.onAction('inventory.drop')).toBe(true);
+    expect(queue.jobs.length).toBeGreaterThan(0);
+  });
   it('keeps unselected-item commands owned by inventory rather than debug', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
     const keyboard = new KeyboardInput(bindings);

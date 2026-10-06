@@ -26,7 +26,28 @@
       "weight": 20,
       "size": [1, 1],
       "stack": 4,
+      "treatment": "bandage",
       "description": "Stops bleeding on one body part."
+    },
+    {
+      "id": "antiseptic",
+      "name": "Antiseptic",
+      "category": "medical",
+      "weight": 100,
+      "size": [1, 1],
+      "stack": 4,
+      "treatment": "antiseptic",
+      "description": "Treats an early wound infection."
+    },
+    {
+      "id": "antibiotics",
+      "name": "Antibiotics",
+      "category": "medical",
+      "weight": 50,
+      "size": [1, 1],
+      "stack": 4,
+      "treatment": "antibiotics",
+      "description": "Treats a progressed wound infection."
     },
     {
       "id": "painkillers",
@@ -41,7 +62,8 @@
       "category": "material",
       "weight": 50,
       "size": [1, 1],
-      "stack": 6
+      "stack": 6,
+      "treatment": "rag"
     },
     {
       "id": "duct_tape",

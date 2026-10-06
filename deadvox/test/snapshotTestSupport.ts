@@ -109,12 +109,7 @@ export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
-  sampleAtPlayerTick?: (
-    tick: number,
-    live: PlayerInputSample,
-    time: number,
-    compression: number,
-  ) => PlayerInputSample,
+  sampleAtPlayerTick?: (tick: number, live: PlayerInputSample, time: number, compression: number) => PlayerInputSample,
   start = defaultClock.start,
 ) {
   const restFixture = fixture === true;
@@ -489,7 +484,17 @@ export const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'recipe') {
     return registry.recipes.has(id);
   }
-  return ['needs', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+  return [
+    'needs',
+    'body',
+    'long-action',
+    'player',
+    'zombies',
+    'zombie-background',
+    'handling',
+    'lights',
+    'firearms',
+  ].includes(id);
 };
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });

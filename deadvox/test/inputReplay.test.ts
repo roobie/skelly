@@ -6,10 +6,10 @@ import {
   decodeInputReplay,
   encodeInputReplay,
   INPUT_REPLAY_MAX_BYTES,
-  joinInputReplayWindows,
   InputReplayRecorder,
-  replayStateFingerprint,
+  joinInputReplayWindows,
   type ReplayInputData,
+  replayStateFingerprint,
 } from '../src/game/inputReplay.ts';
 import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import { capture, contentLookup, createRuntime, formatVersion, formatWorldOptions } from './snapshotTestSupport.ts';
@@ -103,7 +103,12 @@ const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData) => 
 describe('input replay', () => {
   it('joins adjacent recording windows and offsets semantic actions from the earlier start save', () => {
     const frame = (yaw: number) => [yaw, 0, 0, 0, 1, 1] as const;
-    const action = (tick: number) => ({ tick, action: 'movement.walk-toggle', phase: 'down' as const, context: 'play' as const });
+    const action = (tick: number) => ({
+      tick,
+      action: 'movement.walk-toggle',
+      phase: 'down' as const,
+      context: 'play' as const,
+    });
     const joined = joinInputReplayWindows(
       { frames: [frame(0.1)], actions: [action(0)] },
       { frames: [frame(0.2)], actions: [action(0)] },
