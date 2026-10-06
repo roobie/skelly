@@ -130,6 +130,8 @@ Paperwork; no game code.
 > which we will expand to separate firearm archetypes later, like skill:smgs, skill:shotguns etc
 > as for gun skill / i tried it at =12 / and equipped the assault rifle - too much dispersion/sway at full auto
 
+The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersion is not a skill issue, but control is", is in [DESIGN.md](DESIGN.md), "Firearms".
+
 **BR, 2026-10-05 21:04:**
 
 > 1. magazines are real, you load them one by one, like in dayz
