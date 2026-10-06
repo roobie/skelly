@@ -470,10 +470,22 @@ export const createSession = (options: SessionOptions) => {
     const hour = hourOfDay(sim.calendar);
     const lightSources = [...inventory.items()]
       .map(({ item, location, path }) =>
-        lightSenseSourceFor({ registry, item, location, path, playerPosition: body.pos, eyeHeightMetres }),
+        lightSenseSourceFor({
+          registry,
+          item,
+          location,
+          path,
+          playerPosition: body.pos,
+          eyeHeightMetres,
+          blockSize: s,
+        }),
       )
       .filter((source): source is ZombieLightSource => source !== undefined)
-      .map((source) => ({ ...source, sunlit: isSunExposedAt(source.pos, hour) }));
+      .map((source) => ({
+        ...source,
+        sunlit: isSunExposedAt([source.pos[0], source.pos[1] + (source.heightMetres ?? 0.15) / s, source.pos[2]], hour),
+      }));
+    const playerLightHeight: Vec3 = [body.pos[0], body.pos[1] + eyeHeightMetres / s, body.pos[2]];
     const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);
     return {
       pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
@@ -487,7 +499,7 @@ export const createSession = (options: SessionOptions) => {
       lightSeenFrom: carriedLight?.seenFrom ?? 40,
       eyeHeightMetres,
       lightHeightMetres: eyeHeightMetres,
-      sunlit: isSunExposedAt(body.pos, hour),
+      sunlit: isSunExposedAt(playerLightHeight, hour),
       lightSources,
     };
   };

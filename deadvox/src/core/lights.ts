@@ -15,6 +15,8 @@ import { sunDirection } from './sky.ts';
 
 /** Seconds to swap the battery in a light. */
 export const BATTERY_SWAP = 2;
+/** Lift ground-light emitters so the near-field falloff reaches nearby surfaces, rather than only grazing the floor. */
+export const WORLD_LIGHT_HEIGHT_METRES = 0.4;
 
 export type LightExposure = 'carried' | 'world';
 
@@ -55,6 +57,7 @@ export const lightSenseSourceFor = ({
   path,
   playerPosition,
   eyeHeightMetres,
+  blockSize,
 }: {
   registry: Registry;
   item: Item;
@@ -62,6 +65,7 @@ export const lightSenseSourceFor = ({
   path: string;
   playerPosition: Vec3;
   eyeHeightMetres: number;
+  blockSize: number;
 }): LightSenseSource | undefined => {
   const light = registry.items.get(item.type)?.light;
   const exposure = lightExposureFor(registry, item, location, path);
@@ -73,28 +77,32 @@ export const lightSenseSourceFor = ({
   }
   if (location.kind === 'pile') {
     const [x, y, z] = location.pile.pos;
-    return { pos: [x + 0.5, y + 0.15, z + 0.5], seenFrom: light.seenFrom, carried: false };
+    return {
+      pos: [x + 0.5, y + WORLD_LIGHT_HEIGHT_METRES / blockSize, z + 0.5],
+      seenFrom: light.seenFrom,
+      heightMetres: 0,
+      carried: false,
+    };
   }
   return undefined;
 };
 
-/** A direct-sun test for simulation senses; authored renderer skylight is not authoritative here. */
+/** A daylight sky-exposure test for simulation senses; authored renderer skylight is not authoritative here. */
 export const sunExposedAt = (
   position: readonly [number, number, number],
   hour: number,
   skyTop: number,
   isOpaque: SolidAt,
 ): boolean => {
-  const sun = sunDirection(hour);
-  if (sun[1] <= 0) {
+  if (sunDirection(hour)[1] <= 0) {
     return false;
   }
-  const distance = (skyTop - position[1]) / sun[1];
+  const distance = skyTop - position[1];
   if (distance <= 0) {
     return false;
   }
   const origin: [number, number, number] = [position[0], position[1] + 1e-4, position[2]];
-  return raycast(origin, sun, distance, isOpaque) === undefined;
+  return raycast(origin, [0, 1, 0], distance, isOpaque) === undefined;
 };
 
 /** Shared gate for carried player signatures and independent light lures. */

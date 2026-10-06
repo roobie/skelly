@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -75,6 +76,7 @@ describe('made-light point pool', () => {
       path: entry.path,
       playerPosition: [50, 1, 50],
       eyeHeightMetres: 1.3,
+      blockSize: SCALE.blockSize,
     });
     expect(source?.carried).toBe(false);
 
@@ -87,6 +89,15 @@ describe('made-light point pool', () => {
       daylightScale: 1,
     });
     expect(pool.lights[4]!.intensity).toBeGreaterThan(0);
+    expect(
+      pool.lights[4]!.position.distanceTo(
+        new Vector3(
+          source!.pos[0] * SCALE.blockSize,
+          source!.pos[1] * SCALE.blockSize,
+          source!.pos[2] * SCALE.blockSize,
+        ),
+      ),
+    ).toBeLessThan(1e-9);
 
     const floor = (_x: number, y: number) => y === 0;
     const zombies = new ZombieSystem({
@@ -128,6 +139,7 @@ describe('made-light point pool', () => {
       path: pocketEntry.path,
       playerPosition: [4, 1, 0],
       eyeHeightMetres: 1.3,
+      blockSize: SCALE.blockSize,
     });
     expect(pocketSource?.carried).toBe(true);
 
@@ -144,6 +156,7 @@ describe('made-light point pool', () => {
         path: storedEntry.path,
         playerPosition: [4, 1, 0],
         eyeHeightMetres: 1.3,
+        blockSize: SCALE.blockSize,
       }),
     ).toBeUndefined();
 
@@ -158,13 +171,16 @@ describe('made-light point pool', () => {
     expect(pool.lights.filter((light) => light.intensity > 0)).toHaveLength(1);
   });
 
-  it('uses local direct sun rather than the clock alone for light gating', () => {
-    const open = sunExposedAt([0, 1, 0], 12, 20, () => false);
-    const roofed = sunExposedAt([0, 1, 0], 12, 20, (_x, y) => y === 2);
-    const night = sunExposedAt([0, 1, 0], 0, 20, () => false);
+  it('uses daytime sky exposure for light gating, not direct sun angle', () => {
+    const wallShadow: SolidAt = (_x, y, z) => y >= 2 && z === -1;
+    const open = sunExposedAt([0.5, 1, 0.5], 12, 20, () => false);
+    const roofed = sunExposedAt([0.5, 1, 0.5], 12, 20, (_x, y) => y === 2);
+    const shadow = sunExposedAt([0.5, 1, 0.5], 12, 20, wallShadow);
+    const night = sunExposedAt([0.5, 1, 0.5], 0, 20, () => false);
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);
+    expect(shadow).toBe(true);
     expect(night).toBe(false);
   });
 

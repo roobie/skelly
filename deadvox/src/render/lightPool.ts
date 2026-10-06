@@ -1,6 +1,6 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
 import type { Inventory, Location } from '../core/inventory.ts';
-import { lightExposureFor } from '../core/lights.ts';
+import { lightExposureFor, WORLD_LIGHT_HEIGHT_METRES } from '../core/lights.ts';
 import type { HeldItems } from './hands.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
@@ -83,7 +83,7 @@ export class LightPool {
         }
       } else if (entry.location.kind === 'pile') {
         const [x, y, z] = entry.location.pile.pos;
-        position.set((x + 0.5) * blockSize, (y + 0.15) * blockSize, (z + 0.5) * blockSize);
+        position.set((x + 0.5) * blockSize, y * blockSize + WORLD_LIGHT_HEIGHT_METRES, (z + 0.5) * blockSize);
       } else {
         position.copy(camera.position);
       }

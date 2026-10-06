@@ -1315,7 +1315,7 @@ export class ZombieSystem {
       });
     }
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
-    scratch.wasAware = zombie.mode !== 'idle' && zombie.mode !== 'stroll';
+    scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
     if ((scratch.sees || scratch.tier || scratch.lightTarget) && !scratch.wasAware) {
       this.options.onSound?.('shambler_alert', copy(pos), zombie);
     }

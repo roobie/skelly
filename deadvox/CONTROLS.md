@@ -174,7 +174,7 @@ bindings, not these mouse actions.
 
 ## Charged glowstick throw (d100-2)
 
-**BR, 2026-10-06:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. Holding the rebindable action makes throw distance a deliberate choice; right-click cancels rather than starting another held action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginGlowstickCharge`.
+**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. Holding the rebindable action makes throw distance a deliberate choice; right-click cancels rather than starting another held action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginGlowstickCharge`.
 
 ## Remaining questions
 
