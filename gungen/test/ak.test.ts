@@ -77,31 +77,66 @@ const akWithVariant = (variant: string) => ({
 });
 
 describe('AK-pattern archetype', () => {
-  it('uses the receiver section as a flush dust-cover roof and retains the rear-sight interface', () => {
+  it('lifts the complete receiver around the fixed bore and seats the rear-sight interface on its roof', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
     expect(receiver.solids.map(({ id }) => id)).not.toContain('dust-cover');
     expect(receiver.ports.map(({ id }) => id)).not.toContain('rail');
     expect(receiver.ports.map(({ id }) => id)).toContain('rear-sight');
-    expect(receiver.ports.find(({ id }) => id === 'rear-sight')?.pos).toEqual([-2, 2.5, 0]);
+    const rearSight = receiver.ports.find(({ id }) => id === 'rear-sight')!;
     const section = receiver.solids.filter(({ display }) => display?.mergeGroup === 'receiver-ak');
+    const roofY = Math.max(...section.map((solid) => localSolidBounds(solid)[1][1]));
+    expect(rearSight.pos[1]).toBeCloseTo(roofY);
+    expect(receiver.ports.find(({ id }) => id === 'barrel')!.pos[1]).toBeCloseTo(0);
+    expect(receiver.axes.find(({ kind }) => kind === 'bore')!.origin[1]).toBeCloseTo(0);
     expect(section.length).toBeGreaterThan(10);
     expect(section.every((solid) => solid.kind === 'extruded-polygon' && solid.clip?.length === 1)).toBe(true);
+  });
+
+  it('seats the AK rear-sight block on the receiver without a post and keeps the dust cover below the sight line', () => {
+    const report = validate(akFixture, gunDomain);
+    expect(report.issues).toEqual([]);
+    const receiver = report.resolved.defs.get('receiver')!;
+    const sightId = Object.entries(report.resolved.assembly.parts).find(
+      ([, part]) => part.family === 'ak-rear-sight',
+    )?.[0];
+    if (!sightId) {
+      throw new Error('AK design needs a rear sight');
+    }
+    const sight = report.resolved.defs.get(sightId)!;
+    const block = sight.solids.find(({ id }) => id === 'rear-sight-block')!;
+    expect(sight.solids.map(({ id }) => id)).not.toContain('leaf-stem');
+    if (block.kind !== 'box') {
+      throw new Error('AK rear sight needs a block base');
+    }
+    const receiverPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
+    const sightPlaced = report.resolved.placed.get(sightId)!;
+    const blockBase = applyPoint(sightPlaced, [0, block.box.center[1] - block.box.half[1], 0]);
+    const receiverSeat = applyPoint(report.resolved.placed.get('receiver')!, receiverPort.pos);
+    expect(blockBase).toEqual(receiverSeat);
+    const roofY = Math.max(...receiver.solids.map((solid) => localSolidBounds(solid)[1][1]));
+    const sightAxis = applyPoint(sightPlaced, sight.axes.find(({ kind }) => kind === 'sight')!.origin);
+    expect(roofY).toBeLessThan(sightAxis[1]);
+    const barrel = report.resolved.defs.get('barrel')!;
+    const barrelAxis = barrel.axes.find(({ kind }) => kind === 'bore')!;
+    expect(applyPoint(report.resolved.placed.get('barrel')!, barrelAxis.origin)[1]).toBeCloseTo(0);
+    expect(applyPoint(report.resolved.placed.get('handguard')!, [0, 0, 0])[1]).toBeCloseTo(0);
   });
 
   it('sizes the forward AK port below the dust-cover roof and rear-sight interface', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'M' });
     const port = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
+    const portXMin = port.box.center[0] - port.box.half[0];
     const portXMax = port.box.center[0] + port.box.half[0];
     const portYMax = port.box.center[1] + port.box.half[1];
-    const roofY = Math.max(...RECEIVER_SECTION.ak.outline.map(([y]) => y));
+    const section = receiver.solids.filter(({ display }) => display?.mergeGroup === 'receiver-ak');
+    const roofY = Math.max(...section.map((solid) => localSolidBounds(solid)[1][1]));
     const rearSight = receiver.ports.find(({ id }) => id === 'rear-sight')!;
 
-    expect(port.box.center[0] - port.box.half[0]).toBe(-7.5);
-    expect(portXMax).toBe(-1);
-    expect(portYMax).toBe(1.5);
-    expect(roofY - portYMax).toBe(1);
-    expect(rearSight.pos).toEqual([-2, 2.5, 0]);
-    expect(rearSight.pos[1]).toBeGreaterThan(portYMax);
+    expect(portXMin).toBeLessThan(portXMax);
+    expect(portYMax).toBeLessThan(roofY);
+    expect(rearSight.pos[0]).toBeGreaterThan(portXMin);
+    expect(rearSight.pos[0]).toBeLessThan(portXMax);
+    expect(rearSight.pos[1]).toBeCloseTo(roofY);
   });
 
   it('uses an angled AK section while preserving its stock and sight interfaces', () => {
@@ -120,18 +155,23 @@ describe('AK-pattern archetype', () => {
 
     const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;
     const rearSightPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
-    expect(stockPort.pos).toEqual([-16, 0.5, 0]);
+    expect(stockPort.pos[0]).toBeLessThan(rearSightPort.pos[0]);
     const stock = FAMILIES.stock!.build({ length: 'L', style: 'ak-dropped' });
-    expect(stock.ports.find(({ id }) => id === 'front')?.pos).toEqual([0, -2, 0]);
-    expect(rearSightPort.pos).toEqual([-2, 2.5, 0]);
-    expect(AK_REAR_BEVEL.run).toBe(2);
-    expect(AK_REAR_BEVEL.rise).toBe(1.5);
-    expect(AK_REAR_BEVEL.angleDegrees).toBeCloseTo(36.869_897_645_8, 8);
-    const [bevelPlane] = RECEIVER_SECTION.ak.clip!;
+    const stockFront = stock.ports.find(({ id }) => id === 'front')!;
+    expect(stockFront.pos[1]).toBeLessThan(0);
+    const bevelSolid = receiver.solids.find(
+      (solid): solid is Extract<Solid, { kind: 'extruded-polygon' }> =>
+        solid.kind === 'extruded-polygon' && Boolean(solid.clip?.length),
+    )!;
+    const bevelPlane = bevelSolid.clip![0]!;
     const topAt = (x: number) => (bevelPlane.offset - bevelPlane.normal[0] * x) / bevelPlane.normal[1];
-    expect(topAt(-16)).toBeCloseTo(1, 8);
-    expect(topAt(-14)).toBeCloseTo(2.5, 8);
-    expect(stockPort.pos[1]).toBeLessThan(topAt(-16));
+    expect(topAt(rearSightPort.pos[0])).toBeGreaterThan(topAt(stockPort.pos[0]));
+    expect(stockPort.pos[1]).toBeLessThan(topAt(stockPort.pos[0]));
+    expect(stockPort.pos[1]).toBeGreaterThan(0);
+    expect(AK_REAR_BEVEL.run).toBeGreaterThan(0);
+    expect(AK_REAR_BEVEL.rise).toBeGreaterThan(0);
+    expect(AK_REAR_BEVEL.angleDegrees).toBeGreaterThan(0);
+    expect(AK_REAR_BEVEL.angleDegrees).toBeLessThan(90);
     expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 

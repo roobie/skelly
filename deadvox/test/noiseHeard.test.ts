@@ -343,6 +343,8 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
       aimFrame: { yaw: 0, pitch: 0 },
       blockSize,
       debugMode: false,
+      ready: true,
+      sprinting: false,
       item: gun,
       seed: 73,
       simTime: session.sim.time,

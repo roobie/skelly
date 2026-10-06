@@ -42,10 +42,10 @@ export const mountInputOptions = (root: HTMLElement): void => {
   const draw = () => {
     render(
       html`
-      <details class="input-options"><summary>Keyboard bindings</summary>
+      <details class="input-options"><summary>Input bindings</summary>
         <p>${NATIVE_EDITING}</p>
         <p>Bindings are preferences for this browser, not part of a saved character.</p>
-        ${capture ? html`<p>Press a key for ${inputBindings.binding(capture.id)!.description}. <button type="button" @click=${stop}>Cancel</button></p>` : ''}
+        ${capture ? html`<p>Press a key or mouse button for ${inputBindings.binding(capture.id)!.description}. <button type="button" @click=${stop}>Cancel</button></p>` : ''}
         <p class="input-binding-status" role="status">${status || inputBindings.diagnostics.at(-1) || ''}</p>
         ${contexts.map(
           (context) => html`<section><h3>${context}</h3>

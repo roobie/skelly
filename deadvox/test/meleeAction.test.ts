@@ -10,7 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
-import { shouldEnterMeleeReady, startPlayerMelee } from '../src/game/melee.ts';
+import { shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
@@ -166,6 +166,12 @@ describe('melee pose and contact contract', () => {
     expect(shouldEnterMeleeReady({ ...input, meleeWeaponHeld: false, handsEmpty: true })).toBe(true);
     expect(shouldEnterMeleeReady({ ...input, debugBuild: true })).toBe(false);
     expect(shouldEnterMeleeReady({ ...input, inputLocked: true })).toBe(false);
+  });
+
+  it('requires S as well as en-garde to attempt a block', () => {
+    expect(shouldBlockFromEnGarde(true, false)).toBe(false);
+    expect(shouldBlockFromEnGarde(false, true)).toBe(false);
+    expect(shouldBlockFromEnGarde(true, true)).toBe(true);
   });
 
   it('shows a ready pose only when the right-mouse state is active and keeps it within its rest bounds', () => {

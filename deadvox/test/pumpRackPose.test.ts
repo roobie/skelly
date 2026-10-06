@@ -57,8 +57,12 @@ it('rack pose turns an away-facing port only during handling without changing ga
       model,
     });
   const update = (aim?: { yaw: number; pitch: number }) => {
+    camera.quaternion.identity();
     const before = state();
-    held.update(camera, undefined, 0, { firearms: mechanics.frames(), ...(aim ? { aim } : {}) });
+    held.update(camera, undefined, 0, {
+      firearms: mechanics.frames(),
+      ...(aim ? { aim, readiness: { uid: gun.uid, progress: 1, aimingDownSights: false } } : {}),
+    });
     expect(state()).toEqual(before);
     return held.warmUpTarget.scene.getObjectByName('rack-pose-probe')!.getWorldQuaternion(new Quaternion());
   };
@@ -76,8 +80,19 @@ it('rack pose turns an away-facing port only during handling without changing ga
   const position = held.warmUpTarget.scene.getObjectByName('rack-pose-probe')!.getWorldPosition(new Vector3());
   const port = new Vector3(...heldAnchorOffset(model, 'ejection')).applyQuaternion(rotated).add(position);
   const face = new Vector3(1, 0, 0).applyQuaternion(rotated);
-  expect(face.dot(camera.getWorldPosition(new Vector3()).sub(port))).toBeGreaterThan(0);
+  const toCamera = camera.getWorldPosition(new Vector3()).sub(port);
   const frame = mechanics.frames()[0]!;
+  held.update(camera, undefined, 0, {
+    firearms: [{ ...frame, mode: 'load' }],
+    aim: { yaw: 0.08, pitch: -0.04 },
+    readiness: { uid: gun.uid, progress: 1, aimingDownSights: false },
+  });
+  const unracked = held.warmUpTarget.scene.getObjectByName('rack-pose-probe')!.getWorldQuaternion(new Quaternion());
+  const unrackedPort = new Vector3(...heldAnchorOffset(model, 'ejection')).applyQuaternion(unracked).add(position);
+  const unrackedFace = new Vector3(1, 0, 0).applyQuaternion(unracked);
+  expect(face.dot(toCamera)).toBeGreaterThan(
+    unrackedFace.dot(camera.getWorldPosition(new Vector3()).sub(unrackedPort)),
+  );
   expect(rackCant(model, 'left', frame, position)).toBe(0); // same port already faces this hand's view
   const oppositePort = {
     ...model,

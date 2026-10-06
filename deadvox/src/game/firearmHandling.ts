@@ -1,18 +1,20 @@
 // Item-owned chamber/cycle facts. Existing simulation/handling schedulers advance them;
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 
-import { type AimFrame, aimBasis } from '../core/aim.ts';
+import { type AimBasis, type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
+import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
-import { firearmsSkillEffects } from '../core/firearmsSkill.ts';
-import type { HandlingQueue } from '../core/handling.ts';
-import { heldAnchorWorldPosition, heldEjectionPose } from '../core/heldPose.ts';
+import { type FirearmsCombatTuning, firearmStanceEffects, firearmsSkillEffects } from '../core/firearmsSkill.ts';
+import type { HandlingQueue, Job } from '../core/handling.ts';
+import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { dropTarget } from '../core/options.ts';
-import { coneDirection, type PelletShot, pelletShot } from '../core/pellets.ts';
+import { coneDirection, type PelletShot, pelletShotFromBasis } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
@@ -22,8 +24,41 @@ const CASE_SPEED = 3.5;
 const CASE_FLIGHT_SECONDS = 0.48;
 const COCK_ACTION = 'firearm.cock';
 const LOAD_ACTION = 'firearm.load';
+export const isFirearmTrainingAction = (job: Job): boolean =>
+  job.kind === 'action' && (job.jobType === COCK_ACTION || job.jobType === LOAD_ACTION);
 /** Single-shell handling estimate, not an exported mechanical phase. */
 export const SHELL_LOAD_SECONDS = 0.9;
+
+const unit = (vector: Vec3): Vec3 => {
+  const length = Math.hypot(...vector);
+  if (!(length > 0 && Number.isFinite(length))) {
+    throw new Error('Invalid firearm pose direction');
+  }
+  return vector.map((value) => value / length) as Vec3;
+};
+
+const cameraVectorInWorld = (vector: Vec3, yaw: number, pitch: number): Vec3 => {
+  const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
+  return [
+    right[0] * vector[0] + up[0] * vector[1] - forward[0] * vector[2],
+    right[1] * vector[0] + up[1] * vector[1] - forward[1] * vector[2],
+    right[2] * vector[0] + up[2] * vector[1] - forward[2] * vector[2],
+  ];
+};
+
+const basisAlong = (forward: Vec3, up: Vec3): AimBasis => {
+  const right = unit([
+    forward[1] * up[2] - forward[2] * up[1],
+    forward[2] * up[0] - forward[0] * up[2],
+    forward[0] * up[1] - forward[1] * up[0],
+  ]);
+  const correctedUp = unit([
+    right[1] * forward[2] - right[2] * forward[1],
+    right[2] * forward[0] - right[0] * forward[2],
+    right[0] * forward[1] - right[1] * forward[0],
+  ]);
+  return { forward, right, up: correctedUp };
+};
 
 type Action = NonNullable<ModelDef['action']>;
 export interface FirearmHandlingData {
@@ -130,10 +165,23 @@ export interface FirearmPoseInput {
 }
 export interface DebugFirearmShotInput extends FirearmPoseInput {
   readonly aimFrame: AimFrame;
+  readonly aimingDownSights?: boolean;
   readonly debugMode: boolean;
+  readonly ready: boolean;
+  readonly sprinting: boolean;
   readonly item: Item;
   readonly seed: number;
   readonly simTime: number;
+}
+interface ShotCommit {
+  readonly input: DebugFirearmShotInput;
+  readonly item: Item;
+  readonly data: ReturnType<typeof firearmHandlingFor> & { recoilKickRadians: number; dispersionRadians: number };
+  readonly emission: Omit<PendingCase, 'seed'>;
+  readonly muzzle: Vec3;
+  readonly shotBasis: AimBasis;
+  readonly shotKey: string;
+  readonly seed: number;
 }
 export interface FirearmCycleFrame {
   readonly uid: number;
@@ -146,6 +194,7 @@ export interface FirearmCycleFrame {
 export class FirearmMechanics {
   /** Numeric ownership references only. Chamber/cycle data lives on the inventory item. */
   private readonly active = new Set<number>();
+  private readonly raising = new Set<number>();
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly blockSize: number;
@@ -156,6 +205,7 @@ export class FirearmMechanics {
   private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
   private readonly onCommittedShot: (seed: number, recoilKickRadians: number) => void;
   private readonly firearmsSkillLevel: () => number;
+  private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
 
   constructor(
     inventory: Inventory,
@@ -190,9 +240,13 @@ export class FirearmMechanics {
     this.onSound = onSound;
     this.onCommittedShot = onCommittedShot;
     this.firearmsSkillLevel = firearmsSkillLevel;
+    this.firearmsCombatTuning = inventory.registry.skills.get('firearms_combat')?.combat?.firearms;
     for (const { item } of inventory.items()) {
       if (item.firearm?.cycle || item.firearm?.landing) {
         this.active.add(item.uid);
+      }
+      if (item.firearm?.readying) {
+        this.raising.add(item.uid);
       }
     }
     queue.registerAction(COCK_ACTION, (params): string | undefined => {
@@ -253,9 +307,70 @@ export class FirearmMechanics {
     return item.firearm.chamber === 'empty' ? 'Chamber is empty' : 'Chamber contains a spent case';
   }
 
+  advanceReadiness(dt: number, uid: number | undefined, held: boolean): void {
+    if (!Number.isFinite(dt) || dt < 0) {
+      throw new Error('Invalid firearm ready step');
+    }
+    for (const raisingUid of this.raising) {
+      if (raisingUid === uid && held && this.held(raisingUid)) {
+        continue;
+      }
+      const item = this.inventory.itemByUid(raisingUid);
+      if (item?.firearm) {
+        item.firearm.readying = undefined;
+      }
+      this.raising.delete(raisingUid);
+    }
+    if (!(held && uid !== undefined && this.held(uid))) {
+      return;
+    }
+    const item = this.inventory.itemByUid(uid);
+    if (!(item && defOf(this.inventory.registry, item.type).firearm)) {
+      return;
+    }
+    let state = item.firearm;
+    if (!state) {
+      state = { chamber: 'round' };
+      item.firearm = state;
+    }
+    let progress = state.readying;
+    if (!progress) {
+      progress = {
+        elapsed: 0,
+        duration: firearmStanceEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).raiseDuration,
+      };
+      state.readying = progress;
+      this.raising.add(uid);
+    }
+    progress.elapsed = Math.min(progress.duration, progress.elapsed + dt);
+  }
+
+  private requiredFirearmsCombatTuning(): FirearmsCombatTuning {
+    const tuning = this.firearmsCombatTuning;
+    if (!tuning) {
+      throw new Error('Missing firearms-combat stance tuning');
+    }
+    return tuning;
+  }
+
+  isReady(uid: number): boolean {
+    const readying = this.inventory.itemByUid(uid)?.firearm?.readying;
+    return readying !== undefined && readying.elapsed >= readying.duration;
+  }
+
+  readyProgress(uid: number): number {
+    const readying = this.inventory.itemByUid(uid)?.firearm?.readying;
+    return readying ? Math.max(0, Math.min(1, readying.elapsed / readying.duration)) : 0;
+  }
+
   fire(input: DebugFirearmShotInput): boolean {
     const pump = this.isPump(input.item);
-    if (!((input.debugMode || pump) && this.held(input.item.uid)) || this.queue.busy) {
+    if (
+      !input.ready ||
+      input.sprinting ||
+      !((input.debugMode || pump) && this.held(input.item.uid)) ||
+      this.queue.busy
+    ) {
       return false;
     }
     // Advancing to the exact deadline also handles a coarse input sample containing several shots.
@@ -273,63 +388,74 @@ export class FirearmMechanics {
     }
     const emission = this.emission(item, data, input);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
-    const muzzle = heldAnchorWorldPosition({
+    const heldPose = heldFirearmTransform({
       model: data.model,
-      anchor: 'muzzle',
       side,
+      leadingSide: dominantSide(this.inventory.character),
       twoHanded: Boolean(defOf(this.inventory.registry, item.type).twoHanded),
-      eye: input.eye.map((value) => value * this.blockSize) as Vec3,
-      yaw: input.yaw,
-      pitch: input.pitch,
+      progress: 1,
+      aimingDownSights: input.aimingDownSights ?? false,
       aimFrame: input.aimFrame,
-    }).map((value) => value / this.blockSize) as Vec3;
+      loweredPitchRadians: this.requiredFirearmsCombatTuning().loweredPitchRadians,
+      adsApertureFill: this.requiredFirearmsCombatTuning().adsApertureFill,
+      verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
+    });
+    const eyeMetres = input.eye.map((value) => value * this.blockSize) as Vec3;
+    const rootMetres = eyeMetres.map(
+      (value, index) => value + cameraVectorInWorld(heldPose.rootOffset, input.yaw, input.pitch)[index]!,
+    ) as Vec3;
+    const muzzleMetres = rootMetres.map(
+      (value, index) => value + cameraVectorInWorld(heldPose.muzzleOffset, input.yaw, input.pitch)[index]!,
+    ) as Vec3;
+    const muzzle = muzzleMetres.map((value) => value / this.blockSize) as Vec3;
+    const muzzleDirection = unit(cameraVectorInWorld(heldPose.muzzleDirection, input.yaw, input.pitch));
+    const muzzleUp = unit(cameraVectorInWorld(heldPose.muzzleUp, input.yaw, input.pitch));
+    const shotBasis = basisAlong(muzzleDirection, muzzleUp);
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
-    if (pump) {
-      const roundType = item.firearm?.roundType;
-      const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
-      if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
-        return false;
-      }
-      const state = item.firearm!;
-      state.chamber = 'case';
-      state.roundType = undefined;
-      state.pendingCase = { ...emission, seed };
-      const pellets = pelletShot({
-        ammo,
-        origin: input.eye,
-        yaw: input.yaw,
-        pitch: input.pitch,
-        aimFrame: input.aimFrame,
-        seed: input.seed,
-        key: shotKey,
-      });
-      this.onShot(pellets, input.simTime);
-      this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
-      this.onCommittedShot(seed, data.recoilKickRadians);
-    } else {
-      item.firearm = {
-        chamber: 'case',
-        pendingCase: { ...emission, seed },
-        cycle: {
-          mode: 'fire',
-          startedAt: input.simTime,
-          elapsed: 0,
-          duration: actionCycleSeconds(data.action, 'fire'),
-          ejected: false,
-          feedRound: true,
-        },
-      };
-      this.active.add(item.uid);
-      const basis = aimBasis(input.yaw, input.pitch, input.aimFrame);
-      const direction = coneDirection(
-        basis,
-        data.dispersionRadians,
-        Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
-      );
-      this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
-      this.onCommittedShot(seed, data.recoilKickRadians);
+    const commit = { input, item, data, emission, muzzle, shotBasis, shotKey, seed };
+    return pump ? this.commitPumpShot(commit) : this.commitBallisticShot(commit);
+  }
+
+  private commitPumpShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+    const roundType = item.firearm?.roundType;
+    const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
+    if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
+      return false;
     }
+    const state = item.firearm!;
+    state.chamber = 'case';
+    state.roundType = undefined;
+    state.pendingCase = { ...emission, seed };
+    const pellets = pelletShotFromBasis({ ammo, origin: muzzle, basis: shotBasis, seed: input.seed, key: shotKey });
+    this.onShot(pellets, input.simTime);
+    this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
+    this.onCommittedShot(seed, data.recoilKickRadians);
+    return true;
+  }
+
+  private commitBallisticShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+    item.firearm = {
+      chamber: 'case',
+      ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
+      pendingCase: { ...emission, seed },
+      cycle: {
+        mode: 'fire',
+        startedAt: input.simTime,
+        elapsed: 0,
+        duration: actionCycleSeconds(data.action, 'fire'),
+        ejected: false,
+        feedRound: true,
+      },
+    };
+    this.active.add(item.uid);
+    const direction = coneDirection(
+      shotBasis,
+      data.dispersionRadians,
+      Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
+    );
+    this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
+    this.onCommittedShot(seed, data.recoilKickRadians);
     return true;
   }
 

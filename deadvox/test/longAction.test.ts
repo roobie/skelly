@@ -9,6 +9,7 @@ import { craftActionHooks } from '../src/core/craftWork.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { craftingActivityTier } from '../src/core/skillTraining.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -138,7 +139,12 @@ describe('core long actions', () => {
   it('awards recipe-skill practice only when the craft finishes', () => {
     const starting = new Character(registry);
     const expected = new Character(registry);
-    expected.awardPractice('crafting', registry.recipes.get('torch')!.time);
+    const torch = registry.recipes.get('torch')!;
+    expected.awardPractice(
+      'crafting',
+      torch.time,
+      craftingActivityTier(torch.skills.crafting!, registry.skills.get('crafting')!.training!.craftingTierOffset!),
+    );
     const runtime = start();
     expect(runtime.character.skills).toEqual(starting.skills);
     expect(runtime.character.practice).toEqual(starting.practice);
@@ -266,6 +272,8 @@ describe('core long actions', () => {
     ]).registry;
     const runtime = make(undefined, fixtureRegistry);
     const item = runtime.inv.create('reading_fixture_book');
+    const startingSkills = { ...runtime.character.skills };
+    const startingPractice = { ...runtime.character.practice };
     expect(runtime.inv.add(item, { kind: 'hand', side: 'right' })).toBe(true);
     expect(runtime.character.knownRecipes.has('reading_fixture')).toBe(false);
     expect(runtime.sim.actions.beginReading(item.uid)).toBeUndefined();
@@ -281,6 +289,8 @@ describe('core long actions', () => {
     }
     restored.sim.scheduler.advance((reading.duration - reading.elapsed) / restored.sim.clock.ratio + 2);
     expect(restored.character.knownRecipes.has('reading_fixture')).toBe(true);
+    expect(restored.character.skills).toEqual(startingSkills);
+    expect(restored.character.practice).toEqual(startingPractice);
     expect(
       craftRows({
         registry: fixtureRegistry,
