@@ -40,6 +40,11 @@ export interface DebugHooks {
   readonly measureSnapshot: () => SnapshotMeasurement;
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly exportMetrics: () => void;
+  readonly inputReplay: {
+    readonly status: () => string;
+    readonly export: () => Promise<Uint8Array>;
+    readonly import: (bytes: Uint8Array) => void;
+  };
 }
 
 export interface DebugNoclipStep {

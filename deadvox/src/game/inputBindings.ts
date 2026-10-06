@@ -66,6 +66,10 @@ const debugRow = (
   code: string,
   contexts: readonly InputContext[] = entered,
 ): Binding => row(id, description, contexts, [code], 'press', { debug: true, gate: 'debug.gate' });
+const debugModifiedRow = (id: string, description: string, code: string, modifier: Modifier): Binding => ({
+  ...debugRow(id, description, code),
+  defaults: [{ code, modifier }],
+});
 
 export const INPUT_BINDINGS: readonly Binding[] = [
   row('movement.forward', 'Move forward', moving, ['KeyW'], 'held-state'),
@@ -140,6 +144,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   }),
   row('debug.gate', 'Hold for debug commands', all, ['F2'], 'held-state', { debug: true, text: true }),
   debugRow('debug.panel-toggle', 'Debug panel', 'Backquote', all),
+  debugModifiedRow('debug.input-replay-export', 'Export input replay', 'Backquote', 'shift'),
+  debugModifiedRow('debug.input-replay-import', 'Import input replay', 'Backquote', 'alt'),
   debugRow('debug.performance-toggle', 'Performance overlay', 'F4', all),
   debugRow('debug.build-toggle', 'Build tools', 'KeyB'),
   debugRow('debug.impact-laser', 'Impact laser', 'KeyC'),

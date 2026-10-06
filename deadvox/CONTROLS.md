@@ -9,6 +9,7 @@ read_if:
   - you review BR's control rulings or unresolved input questions
   - you change input ownership, binding preferences or their labels
   - you add a pointer, click or wheel action
+  - you implement or inspect input recording and replay
 ---
 
 # Controls and input ownership
@@ -160,6 +161,17 @@ coordination layer.
 
 Stored preferences are untrusted, so invalid rows are dropped instead of
 becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
+
+## Input recording and replay (d101)
+
+Replay capture is sampled at the fixed player-tick boundary so timing follows simulation
+steps rather than browser event timestamps. The downloadable artifact embeds its starting
+save and compatibility identity; it is explicit and does not change world-save state.
+Import and export live in the existing debug panel, reached with `?debug=1` and its F2
+gate; Shift+Backquote exports and Alt+Backquote imports when F2 is held. These gated
+registry actions make the controls available without adding another input-binding surface.
+See `src/game/inputBindings.ts`, `debug.input-replay-export` and
+`debug.input-replay-import`, and `src/game/play.ts`, `startPlay`.
 
 ## Readiness and melee (2026-10-05, #267)
 

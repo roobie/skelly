@@ -89,10 +89,22 @@ const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
 };
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
+export interface PlayerInputSample {
+  readonly active: boolean;
+  readonly inputLocked: boolean;
+  readonly intent: MoveIntent;
+  readonly yaw: number;
+  readonly pitch: number;
+  readonly walking: boolean;
+  readonly descending: boolean;
+}
+
 interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
+  /** Recording and replay meet at the fixed player-tick boundary, never at a DOM timestamp. */
+  sampleAtPlayerTick?: (tick: number, live: PlayerInputSample, time: number, compression: number) => PlayerInputSample;
   /** Clears edge-triggered intents after the player tick samples them. */
   consumeDominantUse?: () => void;
   consumeOffUse?: () => void;
@@ -361,8 +373,8 @@ export const createSession = (options: SessionOptions) => {
         ? {
             feet: feet(),
             eye: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
-            yaw: controls.yaw(),
-            pitch: controls.pitch(),
+            yaw: sampledInput().yaw,
+            pitch: sampledInput().pitch,
             blockSize: s,
           }
         : undefined,
@@ -405,7 +417,10 @@ export const createSession = (options: SessionOptions) => {
   let footstepClock = initialFootstepClock();
   let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
-  const currentIntent = (): MoveIntent => (controls.active() && !compression.locksInput ? controls.intent() : IDLE);
+  const currentIntent = (): MoveIntent => {
+    const input = sampledInput();
+    return input.active && !input.inputLocked ? input.intent : IDLE;
+  };
   const playerCrouching = (): boolean => crouching;
   const playerMovement = (): PlayerMovement => {
     const moving = currentIntent();
@@ -426,8 +441,8 @@ export const createSession = (options: SessionOptions) => {
       dt,
       velocity: body.vel,
       blockSize: s,
-      yaw: controls.yaw(),
-      pitch: controls.pitch(),
+      yaw: sampledInput().yaw,
+      pitch: sampledInput().pitch,
       variance: skill.variance,
       firing,
       recoilRecoveryRate: skill.recoilRecoveryRate,
@@ -461,7 +476,7 @@ export const createSession = (options: SessionOptions) => {
     }
   };
   const playerSense = () => {
-    const yaw = controls.yaw();
+    const { yaw } = sampledInput();
     return {
       pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
       body: debug?.()?.noclip ? undefined : body,
@@ -544,6 +559,18 @@ export const createSession = (options: SessionOptions) => {
   const playerCombat = new PlayerCombat(zombieSystem, (uid) => wearMeleeWeaponOnHit(inventory, uid), character);
   let lastZombieStep = 0;
   let lastPlayerStep = 0;
+  let playerTick = 0;
+  let playerInput: PlayerInputSample | undefined;
+  const sampledInput = (): PlayerInputSample =>
+    playerInput ?? {
+      active: controls.active(),
+      inputLocked: compression.locksInput,
+      intent: controls.intent(),
+      yaw: controls.yaw(),
+      pitch: controls.pitch(),
+      walking: controls.walking(),
+      descending: controls.descending(),
+    };
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
     controls.heldDominantUse?.(
       sim.time,
@@ -573,7 +600,7 @@ export const createSession = (options: SessionOptions) => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
     const jumpStarted = pacedIntent.jump && wasGrounded;
-    steer(body, scale, controls.yaw(), pacedIntent);
+    steer(body, scale, sampledInput().yaw, pacedIntent);
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
@@ -609,8 +636,20 @@ export const createSession = (options: SessionOptions) => {
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
       lastPlayerStep = time;
-      const requested = controls.active() ? controls.intent() : IDLE;
-      const moving = controls.active() && !compression.locksInput;
+      const live: PlayerInputSample = {
+        active: controls.active(),
+        inputLocked: compression.locksInput,
+        intent: controls.intent(),
+        yaw: controls.yaw(),
+        pitch: controls.pitch(),
+        walking: controls.walking(),
+        descending: controls.descending(),
+      };
+      const tick = playerTick;
+      playerTick += 1;
+      playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
+      const requested = playerInput.active ? playerInput.intent : IDLE;
+      const moving = playerInput.active && !playerInput.inputLocked;
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
@@ -640,10 +679,10 @@ export const createSession = (options: SessionOptions) => {
         tools.stepNoclip({
           body,
           scale,
-          yaw: controls.yaw(),
-          pitch: controls.pitch(),
+          yaw: sampledInput().yaw,
+          pitch: sampledInput().pitch,
           intent: pacedIntent,
-          descend: controls.descending(),
+          descend: sampledInput().descending,
           dt,
         });
         return;
@@ -808,6 +847,15 @@ export const createSession = (options: SessionOptions) => {
     frame: (dt: number, until?: number): void => {
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frame(dt, until);
+      for (const event of audioEvents.read()) {
+        if (event.kind === 'damage') {
+          playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+        }
+      }
+    },
+    frameReplay: (simDt: number): void => {
+      crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
+      rest.frameReplay(simDt);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
           playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);

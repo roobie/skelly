@@ -120,6 +120,8 @@ describe('spawnMenuViewModel', () => {
       isGameFrozen: () => false,
       toggleGameFrozen: () => undefined,
       impactLaser: { enabled: () => true, toggle: () => undefined },
+      exportInputReplay: () => undefined,
+      chooseInputReplay: () => undefined,
     });
 
     expect(dispatchDebugAction(actions, 'debug.spawn-menu-toggle')).toBe(true);

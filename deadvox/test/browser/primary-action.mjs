@@ -13,6 +13,7 @@ import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mod
 
 const { chromium } = await import('playwright');
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
+const inputBindingsModule = '/src/game/inputBindings.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -739,6 +740,43 @@ try {
     undefined,
     { timeout: 10_000 },
   );
+  const command = async (action) =>
+    page.evaluate(
+      async ({ id, moduleUrl }) => {
+        const { keyboardInput } = await import(moduleUrl);
+        if (!keyboardInput.command) {
+          throw new Error('Player command dispatcher is unavailable');
+        }
+        keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+      },
+      { id: action, moduleUrl: inputBindingsModule },
+    );
+  await command('debug.panel-toggle');
+  await command('debug.input-replay-export');
+  await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+  const replayText = await page.evaluate(() => {
+    const link = document.querySelector('#replay-download');
+    if (!link?.href.startsWith('blob:')) {
+      throw new Error('Replay export did not create a downloadable artifact');
+    }
+    return fetch(link.href).then((response) => response.text());
+  });
+  const replayArtifact = JSON.parse(replayText);
+  assert.equal(replayArtifact.magic, 'DEADVOX_REPLAY');
+  assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
+  const replayNavigation = page.waitForNavigation();
+  await command('debug.input-replay-import');
+  await page.locator('#input-replay-file').setInputFiles({
+    name: 'input-replay.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(replayText),
+  });
+  await replayNavigation;
+  await page.waitForFunction(() => document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => {
+    const status = document.querySelector('#input-replay-status')?.textContent ?? '';
+    return status.startsWith('Replay ') && status.includes(' / ') && status.endsWith(' ticks');
+  });
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
     'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold and held-book reading.\n',

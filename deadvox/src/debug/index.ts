@@ -7,6 +7,7 @@ import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
+import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
@@ -240,6 +241,11 @@ const panelTemplate = ({
   toggleAxes,
   copyViewLink,
   copyStatus,
+  inputReplayStatus,
+  exportInputReplay,
+  chooseInputReplay,
+  importInputReplay,
+  replayDownload,
 }: {
   open: boolean;
   groups: readonly GroupView[];
@@ -264,6 +270,11 @@ const panelTemplate = ({
   toggleAxes: () => void;
   copyViewLink: () => void;
   copyStatus: string;
+  inputReplayStatus: string;
+  exportInputReplay: () => void;
+  chooseInputReplay: () => void;
+  importInputReplay: (file: File) => void;
+  replayDownload: { url: string; name: string } | undefined;
 }): TemplateResult => {
   // What a group shows besides its action buttons; only these three have anything.
   const extras: Partial<Record<GroupId, TemplateResult>> = {
@@ -326,6 +337,20 @@ const panelTemplate = ({
     <p class="debug-last-hit" aria-live="polite" ?hidden=${lastHitText === ''}>${lastHitText}</p>
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
     <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
+    <a id="replay-download" ?hidden=${!replayDownload} href=${replayDownload?.url ?? ''} download=${replayDownload?.name ?? ''}>Download replay</a>
+    <div class="debug-actions" aria-label="Input replay">
+      <button type="button" @click=${exportInputReplay}>Export recent replay</button>
+      <button type="button" @click=${chooseInputReplay}>Import and replay</button>
+      <input id="input-replay-file" type="file" accept="application/json,.json" hidden @change=${(event: Event) => {
+        const field = event.currentTarget as HTMLInputElement;
+        const file = field.files?.[0];
+        field.value = '';
+        if (file) {
+          importInputReplay(file);
+        }
+      }} />
+      <span id="input-replay-status" aria-live="polite">${inputReplayStatus}</span>
+    </div>
     <div id="debug-sound-log-root"></div>
     <p>Keys are listed in each group's header. Noclip: ${labelForAction('noclip.ascend')} rises, ${labelForAction('noclip.descend')} descends. While building (${labelForAction('debug.build-toggle')}): ${Array.from({ length: 9 }, (_, i) => labelForAction(`debug.build-slot.${i + 1}`)).join(' / ')} select blocks; the wheel cycles them. Panel: ${labelForAction('debug.panel-toggle')}. The wheel scrolls this panel.</p>
     </section>
@@ -381,6 +406,8 @@ interface ActionContext {
   isGameFrozen: () => boolean;
   toggleGameFrozen: () => void;
   impactLaser: DebugHooks['impactLaser'];
+  exportInputReplay: () => void;
+  chooseInputReplay: () => void;
   look: LookControls;
 }
 
@@ -402,6 +429,8 @@ export const createDebugActions = ({
   isGameFrozen,
   toggleGameFrozen,
   impactLaser,
+  exportInputReplay,
+  chooseInputReplay,
   look,
 }: ActionContext): Action[] =>
   (
@@ -412,6 +441,18 @@ export const createDebugActions = ({
         group: 'tools',
         state: () => build.on,
         run: () => build.toggle(),
+      },
+      {
+        id: 'debug.input-replay-export',
+        label: 'Export input replay',
+        group: 'tools',
+        run: exportInputReplay,
+      },
+      {
+        id: 'debug.input-replay-import',
+        label: 'Import input replay',
+        group: 'tools',
+        run: chooseInputReplay,
       },
       {
         id: 'debug.impact-laser',
@@ -796,6 +837,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let aimReadout: HTMLElement | null = null;
   let lookReadout: HTMLElement | null = null;
   let download: { url: string; name: string } | undefined;
+  let replayDownload: { url: string; name: string } | undefined;
+  let replayStatus = '';
   /** The aim readout is showing a shambler, which the looked-at readout then yields to. */
   let zombieAimShown = false;
   let panelOpen = false;
@@ -897,6 +940,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   const actions = createDebugActions({
     hooks,
     impactLaser: hooks.impactLaser,
+    exportInputReplay,
+    chooseInputReplay,
     look,
     build,
     spawnMenu,
@@ -1032,6 +1077,50 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     );
     targetRangeText = range === undefined ? '' : `Target range: ${range.toFixed(1)} m`;
   }
+  async function exportInputReplay(): Promise<void> {
+    replayStatus = 'Preparing replay export';
+    shellKey = '';
+    drawShell();
+    try {
+      const bytes = await hooks.inputReplay.export();
+      if (replayDownload) {
+        URL.revokeObjectURL(replayDownload.url);
+      }
+      replayDownload = {
+        url: URL.createObjectURL(new Blob([bytes.slice().buffer], { type: 'application/json' })),
+        name: `deadvox-replay-${new Date().toISOString().replaceAll(':', '-')}.json`,
+      };
+      replayStatus = `Replay ready to download · ${bytes.byteLength} bytes`;
+      shellKey = '';
+      drawShell();
+    } catch (error) {
+      replayStatus = error instanceof Error ? error.message : String(error);
+      shellKey = '';
+      drawShell();
+    }
+  }
+
+  function chooseInputReplay(): void {
+    host.querySelector<HTMLInputElement>('#input-replay-file')?.click();
+  }
+
+  async function importInputReplay(file: File): Promise<void> {
+    if (file.size > INPUT_REPLAY_MAX_BYTES) {
+      replayStatus = 'Replay file exceeds the supported size';
+      shellKey = '';
+      drawShell();
+      return;
+    }
+    try {
+      hooks.inputReplay.import(new Uint8Array(await file.arrayBuffer()));
+      replayStatus = 'Replay staged · restarting into playback';
+    } catch (error) {
+      replayStatus = error instanceof Error ? error.message : String(error);
+      shellKey = '';
+      drawShell();
+    }
+  }
+
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell rendering keeps UI wiring and readout refresh together.
   function drawShell(): void {
     const groups = groupViews();
@@ -1045,6 +1134,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       spawnStatus,
       axesVisible,
       copyStatus,
+      replayStatus,
       groups.map((group) => [group.id, group.open, group.actions.map((view) => [view.label, view.state])]),
     ]);
     if (key !== shellKey) {
@@ -1098,6 +1188,11 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           },
           copyViewLink,
           copyStatus,
+          inputReplayStatus: replayStatus || hooks.inputReplay.status(),
+          exportInputReplay,
+          chooseInputReplay,
+          importInputReplay,
+          replayDownload,
         }),
         host,
       );

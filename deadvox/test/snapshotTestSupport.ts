@@ -18,7 +18,7 @@ import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -108,6 +108,7 @@ export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
+  sampleAtPlayerTick?: (tick: number, live: PlayerInputSample) => PlayerInputSample,
 ) {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
@@ -159,8 +160,9 @@ export function createRuntime(
     spawn,
     ready: () => true,
     controls: {
-      active: () => false,
+      active: () => Boolean(sampleAtPlayerTick),
       intent: () => IDLE,
+      ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
       consumeCrouchToggle: () => {
         const pressed = view.crouchToggle;
         view.crouchToggle = false;

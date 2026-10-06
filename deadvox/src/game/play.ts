@@ -63,13 +63,22 @@ import {
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
-import type { DebugModule, DebugRuntime } from './debugInterface.ts';
+import type { DebugHooks, DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
-import { Input } from './input.ts';
+import { adjustLookPitch, Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
+import {
+  encodeInputReplay,
+  InputReplayRecorder,
+  type ReplayAction,
+  type ReplayControlSample,
+  type ReplayInputData,
+  stashInputReplay,
+} from './inputReplay.ts';
+import { InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
@@ -86,7 +95,7 @@ import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
 import { restKindForFurniture } from './rest.ts';
-import { createSession } from './session.ts';
+import { createSession, type PlayerInputSample } from './session.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
 import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
@@ -96,6 +105,64 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
+
+const inputReplayStatus = (
+  replayPlayer: InputReplayPlayer | undefined,
+  inputRecorder: InputReplayRecorder | undefined,
+  total: number,
+): string => {
+  if (replayPlayer) {
+    return `Replay ${Math.min(replayPlayer.tickCount, total)} / ${total} ticks`;
+  }
+  if (inputRecorder) {
+    return `Recording ${inputRecorder.tickCount} ticks · ${inputRecorder.retainedBufferBytes} buffer bytes`;
+  }
+  return 'Recording starts when play begins';
+};
+
+const encodeRecentInputReplay = (
+  recorder: InputReplayRecorder | undefined,
+  worldOptions: { blockSize: number; site: string; storeys: number; density: number | null },
+): Promise<Uint8Array> => {
+  if (!recorder) {
+    throw new Error('Input recording has not started');
+  }
+  return encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), worldOptions);
+};
+
+const createInputReplayPlayer = (
+  inputs: ReplayInputData | undefined,
+  dispatch: (action: ReplayAction, sample: ReplayControlSample) => void,
+): InputReplayPlayer | undefined => {
+  if (!inputs) {
+    return undefined;
+  }
+  return new InputReplayPlayer(inputs, dispatch);
+};
+
+const createInputReplayRecorder = (
+  replaying: boolean,
+  snapshot: () => Readonly<SaveSnapshot>,
+): InputReplayRecorder | undefined => {
+  if (replaying) {
+    return undefined;
+  }
+  return new InputReplayRecorder(snapshot());
+};
+
+const commandInputTime = (
+  at: number,
+  replayPlayer: InputReplayPlayer | undefined,
+  recorder: InputReplayRecorder | undefined,
+): number => {
+  if (replayPlayer) {
+    return (replayPlayer.tickCount * 1000) / 60;
+  }
+  if (recorder) {
+    return (recorder.tickCount * 1000) / 60;
+  }
+  return at;
+};
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -114,6 +181,7 @@ export interface StartPlayOptions {
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
+  readonly replay?: ReplayInputData;
 }
 
 export const startPlay = (
@@ -161,6 +229,37 @@ export const startPlay = (
   let playtestObserver: PlaytestObserver | undefined;
   let debugLaserEnabled = true;
   const firearmTrigger = new DebugFirearmTrigger();
+  let inputRecorder: InputReplayRecorder | undefined;
+  let replaySample: ReplayControlSample | undefined;
+  let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
+  const replayPlayer = createInputReplayPlayer(options.replay, (action, sample) =>
+    dispatchReplayAction(action, sample),
+  );
+  const samplePlayerInput = (
+    _tick: number,
+    live: PlayerInputSample,
+    _time: number,
+    compressionAtTick: number,
+  ): PlayerInputSample => {
+    if (!replayPlayer) {
+      inputRecorder?.recordTick(live, compressionAtTick);
+      return live;
+    }
+    replaySample = replayPlayer.next();
+    if (replaySample) {
+      sim.compression.c = replaySample.compression;
+      return replaySample;
+    }
+    return {
+      active: false,
+      inputLocked: true,
+      intent: { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false },
+      yaw: input.yaw,
+      pitch: input.pitch,
+      walking: false,
+      descending: false,
+    };
+  };
   const session = createSession({
     registry,
     handedness: config.debugHandedness ?? options.handedness,
@@ -176,8 +275,9 @@ export const startPlay = (
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
     controls: {
-      active: () => input.locked && !input.menuPointer,
+      active: () => Boolean(options.replay) || (input.locked && !input.menuPointer),
       intent: () => input.intent(),
+      sampleAtPlayerTick: samplePlayerInput,
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
       consumeCrouchToggle: () => input.consumeCrouchToggle(),
@@ -213,7 +313,7 @@ export const startPlay = (
       automaticFireHeld: () => {
         const action = selectPrimaryAction(inventory);
         return (
-          input.dominantUseHeld &&
+          (replaySample?.intent.useDominantHeld ?? input.dominantUseHeld) &&
           config.debug &&
           !debugTools?.buildOn &&
           !queue.busy &&
@@ -221,7 +321,14 @@ export const startPlay = (
           !registry.items.get(action.item.type)?.firearm?.pump
         );
       },
-      adjustPitch: (delta) => input.adjustPitch(delta),
+      adjustPitch: (delta) => {
+        if (!replaySample) {
+          return input.adjustPitch(delta);
+        }
+        const adjusted = adjustLookPitch(replaySample.pitch, delta);
+        replaySample = { ...replaySample, pitch: adjusted.pitch };
+        return adjusted.applied;
+      },
       useOff: () => {
         if (!debugTools?.buildOn) {
           performHandUse(offSide(inventory.character));
@@ -488,6 +595,23 @@ export const startPlay = (
       ? `${inventory.name(item)} is at your feet`
       : `No room for the ${inventory.name(item).toLowerCase()} in the pile at your feet`;
   };
+  const importReplay = (bytes: Uint8Array): void => {
+    stashInputReplay(bytes);
+    const url = new URL(location.href);
+    url.searchParams.set('debug', '1');
+    location.assign(url);
+  };
+  const inputReplayHooks: DebugHooks['inputReplay'] = {
+    status: () => inputReplayStatus(replayPlayer, inputRecorder, options.replay?.frames.length ?? 0),
+    export: () =>
+      encodeRecentInputReplay(inputRecorder, {
+        blockSize: s,
+        site: config.site,
+        storeys: config.storeys,
+        density: config.density,
+      }),
+    import: importReplay,
+  };
   debugTools = debugModule?.attachDebugTools({
     engine,
     weather,
@@ -525,10 +649,11 @@ export const startPlay = (
     },
     measureSnapshot,
     exportMetrics,
+    inputReplay: inputReplayHooks,
   });
 
   let started = options.restore !== undefined;
-  let mainMenuOpen = true;
+  let mainMenuOpen = !options.replay;
   let resumeRequested = false;
   const syncMenuState = (pointerLockChanged = false) => {
     const state = computeMenuState({
@@ -537,7 +662,7 @@ export const startPlay = (
       inventoryOpen: screen.isOpen,
       readingOpen: reading.isOpen,
       debugMenuOpen: debugTools?.menuOpen ?? false,
-      pointerLocked: input.locked,
+      pointerLocked: input.locked || Boolean(options.replay),
       dead: sim.dead !== undefined,
       pointerLockChanged,
       resumeRequested,
@@ -753,7 +878,14 @@ export const startPlay = (
 
   /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
   const reloadBinding = (): ReloadBinding | undefined => {
-    if (!input.locked || input.menuPointer || compression.locksInput || sim.paused || sim.dead || debugTools?.buildOn) {
+    if (
+      !(input.locked || replayPlayer) ||
+      (input.menuPointer && !replayPlayer) ||
+      compression.locksInput ||
+      sim.paused ||
+      sim.dead ||
+      debugTools?.buildOn
+    ) {
       return;
     }
     const uid = firearms.reloadableUid();
@@ -840,7 +972,7 @@ export const startPlay = (
     return mainMenuOpen || timeKeys(action);
   };
   const withUnlockedInput = (action: () => void): void => {
-    if (!compression.locksInput) {
+    if (!(replaySample?.inputLocked ?? compression.locksInput)) {
       action();
     }
   };
@@ -865,7 +997,9 @@ export const startPlay = (
         withUnlockedInput(() => input.requestCrouchToggle());
         break;
       case 'hand.use-off':
-        input.useOff();
+        if (!replayPlayer) {
+          input.useOff();
+        }
         break;
       case 'firearm.reload':
         input.reload.keyDown(at, reloadBinding());
@@ -894,31 +1028,60 @@ export const startPlay = (
       quickbarInput.keyUp(slot, at);
     }
   };
-  keyboardInput.command = ({ action, phase, at }: InputCommand) => {
-    const slot = action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
-    if (action === 'hud.toggle-interaction-hints') {
-      if (phase === 'up') {
-        hintToggleInput.keyUp(action, at);
-      } else {
-        hintToggleInput.keyDown(action, at);
-      }
+  const quickbarSlotFor = (action: string): number | undefined =>
+    action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
+  const handleHintCommand = (action: string, phase: InputCommand['phase'], at: number): boolean => {
+    if (action !== 'hud.toggle-interaction-hints') {
+      return false;
+    }
+    if (phase === 'up') {
+      hintToggleInput.keyUp(action, at);
+    } else {
+      hintToggleInput.keyDown(action, at);
+    }
+    return true;
+  };
+  const handleDebugCommand = (action: string): boolean => {
+    if (!(action.startsWith('debug.') || action.startsWith('spawn.'))) {
+      return false;
+    }
+    debugTools?.handleAction(action);
+    syncMenuState();
+    return true;
+  };
+  const dispatchInputCommand = ({ action, phase, at }: InputCommand, fromReplay = false): void => {
+    if (replayPlayer && !fromReplay) {
+      return;
+    }
+    if (!fromReplay) {
+      inputRecorder?.queueAction(action, phase, inputContext());
+    }
+    const inputTime = commandInputTime(at, replayPlayer, inputRecorder);
+    const slot = quickbarSlotFor(action);
+    if (handleHintCommand(action, phase, inputTime)) {
       return;
     }
     if (phase === 'up') {
-      releaseCommand(action, at, slot);
+      releaseCommand(action, inputTime, slot);
       return;
     }
-    if (action.startsWith('debug.') || action.startsWith('spawn.')) {
-      debugTools?.handleAction(action);
-      syncMenuState();
+    if (handleDebugCommand(action)) {
       return;
     }
     if (sim.dead) {
       return;
     }
     if (!modalCommand(action)) {
-      gameplayCommand(action, at, slot);
+      gameplayCommand(action, inputTime, slot);
     }
+  };
+  keyboardInput.command = (command) => dispatchInputCommand(command);
+  dispatchReplayAction = (action, sample) => {
+    replaySample = sample;
+    dispatchInputCommand(
+      { action: action.action, phase: action.phase, at: ((replayPlayer?.tickCount ?? 0) * 1000) / 60 },
+      true,
+    );
   };
   keyboardInput.install();
   keyboardInput.sync();
@@ -935,7 +1098,8 @@ export const startPlay = (
     { passive: false },
   );
 
-  const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
+  const lookDir = (): Vec3 =>
+    aimDirection(replaySample?.yaw ?? input.yaw, replaySample?.pitch ?? input.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
@@ -1378,7 +1542,7 @@ export const startPlay = (
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
   const stepFrozenNoclip = (dt: number, frozenAndPlaying: boolean): void => {
-    if (!(frozenAndPlaying && debugTools?.noclip && input.locked && !input.menuPointer)) {
+    if (!(frozenAndPlaying && !replayPlayer && debugTools?.noclip && input.locked && !input.menuPointer)) {
       return;
     }
     debugTools.stepNoclip({
@@ -1396,14 +1560,42 @@ export const startPlay = (
   const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
-    sim.paused = menuPaused || gameFrozen;
-    session.frame(dt, skipUntil);
+    if (replayPlayer) {
+      sim.paused = menuPaused || gameFrozen || replayPlayer.finished;
+      if (!sim.paused) {
+        sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
+        session.frameReplay(1 / 60);
+      }
+    } else {
+      sim.paused = menuPaused || gameFrozen;
+      session.frame(dt, skipUntil);
+    }
     // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
     if (skipUntil !== undefined) {
       updateSkip(skipUntil);
     }
+    if (!replayPlayer && inputRecorder?.full) {
+      inputRecorder = new InputReplayRecorder(captureSnapshot());
+    }
     stepFrozenNoclip(dt, gameFrozen && !menuPaused);
     return gameFrozen;
+  };
+
+  const updateInputGestures = (now: number): void => {
+    let inputNow = now;
+    if (replayPlayer) {
+      inputNow = (replayPlayer.tickCount * 1000) / 60;
+    } else if (inputRecorder) {
+      inputNow = (inputRecorder.tickCount * 1000) / 60;
+    }
+    const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
+    input.reload.advance(inputNow, reloadBinding());
+    if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead) {
+      quickbarInput.cancel();
+    } else {
+      quickbarInput.update(inputNow);
+    }
+    hintToggleInput.update(inputNow);
   };
 
   const updateDebugTargets = () => {
@@ -1428,13 +1620,7 @@ export const startPlay = (
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
-    input.reload.advance(now, reloadBinding());
-    if (screen.isOpen || mainMenuOpen || compression.locksInput || sim.dead) {
-      quickbarInput.cancel();
-    } else {
-      quickbarInput.update(now);
-    }
-    hintToggleInput.update(now);
+    updateInputGestures(now);
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
@@ -1537,6 +1723,7 @@ export const startPlay = (
       { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   }
+  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot);
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
