@@ -1,6 +1,6 @@
 {
-  "name": "broken-connection-contact",
-  "description": "AK with a large-bore front sight on a smaller-bore barrel: the sight base floats 0.5u off the barrel front-sight seat.",
+  "name": "archetype-ak-akm",
+  "description": "The archetype-ak rifle carrying the AKM magazine instead of the AK-74 one.",
   "root": "receiver",
   "parts": {
     "receiver": {
@@ -9,6 +9,7 @@
         "bore": "S"
       }
     },
+    "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "ak" } },
     "lower": {
       "family": "lower",
       "params": {
@@ -43,7 +44,8 @@
       "family": "magazine",
       "params": {
         "length": "L",
-        "profile": "ak-curved"
+        "profile": "ak-curved",
+        "variant": "akm"
       }
     },
     "stock": {
@@ -59,7 +61,6 @@
     "front-sight": {
       "family": "front-sight",
       "params": {
-        "bore": "L",
         "style": "ak"
       }
     }
@@ -73,6 +74,7 @@
       "from": "receiver.barrel",
       "to": "barrel.rear"
     },
+    { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
     {
       "from": "receiver.handguard",
       "to": "handguard.rear"
@@ -118,5 +120,5 @@
       "to": "front-sight.base"
     }
   ],
-  "expect": ["connection-contact"]
+  "expect": []
 }
