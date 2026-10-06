@@ -417,9 +417,7 @@ export class MobActorMeshes implements ZombieRenderer {
     }
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
-    console.info(
-      `MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`,
-    );
+    console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
 
     const bonesPerSlot = Math.max(1, ...built.map((v) => v.realized.body.bones.length));
     this.layout = crowdTextureLayout(bonesPerSlot, poolSize * capacity);

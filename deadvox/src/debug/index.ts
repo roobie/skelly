@@ -953,11 +953,13 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     spawnZombie: (typeId, count) => {
       const zombies = hooks.zombies();
-      const placed = zombies ? spawnZombieType(hooks.engine, hooks.body, zombies, typeId, count) : 0;
+      const placed = zombies ? spawnZombieType(hooks.engine, hooks.body, zombies, { typeId, count }) : 0;
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         const name = hooks.engine.registry.zombies.get(typeId)?.name ?? typeId;
-        hooks.showNotice(placed === 1 ? `A ${name.toLowerCase()} is approaching` : `${placed} ${name.toLowerCase()}s are approaching`);
+        hooks.showNotice(
+          placed === 1 ? `A ${name.toLowerCase()} is approaching` : `${placed} ${name.toLowerCase()}s are approaching`,
+        );
       }
     },
   });

@@ -111,10 +111,14 @@ export const hamletZombieSpawns = (
   seed: number,
   road: Rect,
   markers: readonly SpawnMarker[],
-  roadHeightAt: (x: number) => number,
-  spawnWeights: ReadonlyMap<string, number> = new Map([[HAMLET_WANDERER, 1]]),
+  options: {
+    readonly roadHeightAt: (x: number) => number;
+    readonly spawnWeights?: ReadonlyMap<string, number>;
+  },
 ): ZombieSpawn[] => {
+  const { roadHeightAt } = options;
   const rng = Rng.stream(seed, 'hamlet-zombies');
+  const spawnWeights = options.spawnWeights ?? new Map([[HAMLET_WANDERER, 1]]);
   const weight = (type: string) => spawnWeights.get(type) ?? 1;
   const selected = markers.filter((spawn) => rng.chance(spawn.chance * weight(spawn.zombie)));
   const weightedTypes = [...spawnWeights].filter(([, typeWeight]) => typeWeight > 0);
@@ -315,13 +319,10 @@ export class Hamlet implements Site {
   private makeZombieSpawns(): void {
     const markers = this.lots.flatMap(({ placement }) => placedSpawns(placement));
     this.zombieSpawns.push(
-      ...hamletZombieSpawns(
-        this.seed,
-        this.road,
-        markers,
-        (x) => this.roadHeightAt(x),
-        new Map([...this.registry.zombies].map(([type, zombie]) => [type, zombie.spawnWeight])),
-      ),
+      ...hamletZombieSpawns(this.seed, this.road, markers, {
+        roadHeightAt: (x) => this.roadHeightAt(x),
+        spawnWeights: new Map([...this.registry.zombies].map(([type, zombie]) => [type, zombie.spawnWeight])),
+      }),
     );
   }
 

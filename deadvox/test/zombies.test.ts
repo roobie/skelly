@@ -1641,13 +1641,16 @@ describe('shambler scenarios', () => {
     expect(snapshot.zombies).toHaveLength(2);
     expect(snapshot.zombies.map(({ zombie }) => zombie.type).sort()).toEqual(['crawler', 'runner']);
     const expected = new Map(
-      snapshot.zombies.map(({ id, zombie }) => [id, {
-        type: zombie.type,
-        figureSeed: zombie.figureSeed,
-        mode: zombie.mode,
-        body: zombie.body,
-        gaitPhase: zombie.gaitPhase,
-      }]),
+      snapshot.zombies.map(({ id, zombie }) => [
+        id,
+        {
+          type: zombie.type,
+          figureSeed: zombie.figureSeed,
+          mode: zombie.mode,
+          body: zombie.body,
+          gaitPhase: zombie.gaitPhase,
+        },
+      ]),
     );
     const restored = new ZombieSystem(senses(() => player([20, 1, 0])));
     restored.restoreState(snapshot, (id) => registry.zombies.get(id));

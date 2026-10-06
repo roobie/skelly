@@ -209,13 +209,18 @@ try {
   await pressAction(page, 'debug.spawn-menu-toggle');
   await pressAction(page, 'debug.spawn-runner');
   await page.waitForFunction(
-    () => [...globalThis.firefoxUiTest.session.zombies.store.entries()].some(([, zombie]) => zombie.type.id === 'runner'),
+    () =>
+      [...globalThis.firefoxUiTest.session.zombies.store.entries()].some(([, zombie]) => zombie.type.id === 'runner'),
     null,
     { timeout: 5000 },
   );
   await page.evaluate(() => {
-    const runner = [...globalThis.firefoxUiTest.session.zombies.store.entries()].find(([, zombie]) => zombie.type.id === 'runner')?.[1];
-    if (runner?.type.model !== 'runner') throw new Error('debug runner spawn did not select its mobgen model');
+    const runner = [...globalThis.firefoxUiTest.session.zombies.store.entries()].find(
+      ([, zombie]) => zombie.type.id === 'runner',
+    )?.[1];
+    if (runner?.type.model !== 'runner') {
+      throw new Error('debug runner spawn did not select its mobgen model');
+    }
   });
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);

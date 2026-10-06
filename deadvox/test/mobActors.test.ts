@@ -229,57 +229,60 @@ const makeZombie = (
   position: Vec3,
   facing: Vec3 = [0, 0, -1],
   severed: string[] = [],
-  figureSeed = 1,
-  type = SHAMBLER,
-): Zombie => ({
-  type,
-  figureSeed,
-  incapacitated: false,
-  body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
-  facing: [...facing],
-  home: [...position],
-  mode: 'idle' as ZombieMode,
-  investigationTier: undefined,
-  behaviorRng: Rng.stream(0, 'test-zombie'),
-  soundRng: Rng.stream(0, 'test-zombie-sound'),
-  dismemberRng: Rng.stream(0, 'test-zombie-dismember'),
-  idleSoundTimer: 8,
-  modeTimer: 0,
-  searchAnchor: undefined,
-  searchTimer: 0,
-  searchStrolling: false,
-  searchHeading: [...facing],
-  strollHeading: [...facing],
-  horizontalSpeed: 0,
-  obstacleWanderRemaining: 0,
-  obstacleContact: false,
-  obstacleSlideSide: 0,
-  bodyLookTarget: 0,
-  headYaw: 0,
-  headYawTarget: 0,
-  lookTimer: 0,
-  swayValue: 0,
-  swayStart: 0,
-  swayTarget: 0,
-  swayElapsed: 0,
-  swayDuration: 0,
-  lurchValue: 1,
-  lurchStart: 1,
-  lurchTarget: 1,
-  lurchElapsed: 0,
-  lurchDuration: 0,
-  stumbleFactor: 1,
-  stumbleElapsed: 0,
-  stumbleDuration: 0,
-  renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
-  regions: { ...type.regions },
-  attackWait: 0,
-  attackWindup: 0,
-  gaitPhase: 0,
-  footstepClock: initialShamblerFootstepClock(type.stepLength),
-  wanderClock: 0,
-  severed,
-});
+  options: { readonly figureSeed?: number; readonly type?: typeof SHAMBLER } = {},
+): Zombie => {
+  const figureSeed = options.figureSeed ?? 1;
+  const type = options.type ?? SHAMBLER;
+  return {
+    type,
+    figureSeed,
+    incapacitated: false,
+    body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
+    facing: [...facing],
+    home: [...position],
+    mode: 'idle' as ZombieMode,
+    investigationTier: undefined,
+    behaviorRng: Rng.stream(0, 'test-zombie'),
+    soundRng: Rng.stream(0, 'test-zombie-sound'),
+    dismemberRng: Rng.stream(0, 'test-zombie-dismember'),
+    idleSoundTimer: 8,
+    modeTimer: 0,
+    searchAnchor: undefined,
+    searchTimer: 0,
+    searchStrolling: false,
+    searchHeading: [...facing],
+    strollHeading: [...facing],
+    horizontalSpeed: 0,
+    obstacleWanderRemaining: 0,
+    obstacleContact: false,
+    obstacleSlideSide: 0,
+    bodyLookTarget: 0,
+    headYaw: 0,
+    headYawTarget: 0,
+    lookTimer: 0,
+    swayValue: 0,
+    swayStart: 0,
+    swayTarget: 0,
+    swayElapsed: 0,
+    swayDuration: 0,
+    lurchValue: 1,
+    lurchStart: 1,
+    lurchTarget: 1,
+    lurchElapsed: 0,
+    lurchDuration: 0,
+    stumbleFactor: 1,
+    stumbleElapsed: 0,
+    stumbleDuration: 0,
+    renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
+    regions: { ...type.regions },
+    attackWait: 0,
+    attackWindup: 0,
+    gaitPhase: 0,
+    footstepClock: initialShamblerFootstepClock(type.stepLength),
+    wanderClock: 0,
+    severed,
+  };
+};
 
 describe('facing convention', () => {
   it('a zombie facing +X has its figure forward (local -Z) along +X in world, matching ZombieMeshes', () => {
@@ -336,7 +339,7 @@ describe('MobActorMeshes', () => {
     try {
       const store = new MapEntityStore<Zombie>();
       const entries = SHAMBLER_FIGURE_SEEDS.map((seed, index) => {
-        const zombie = makeZombie([index * 4, 0, 0], [0, 0, -1], [], seed);
+        const zombie = makeZombie([index * 4, 0, 0], [0, 0, -1], [], { figureSeed: seed });
         return { seed, zombie, id: store.add(zombie) };
       });
       renderer.sync(store, 0, 1);
@@ -383,7 +386,7 @@ describe('MobActorMeshes', () => {
     try {
       const store = new MapEntityStore<Zombie>();
       const ids = SHAMBLER_FIGURE_SEEDS.map((seed, index) =>
-        store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], seed)),
+        store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], { figureSeed: seed })),
       );
       renderer.sync(store, 0, 1);
       const internals = renderer as unknown as {
@@ -403,7 +406,7 @@ describe('MobActorMeshes', () => {
     const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
     try {
       const store = new MapEntityStore<Zombie>();
-      const runnerId = store.add(makeZombie([0, 0, 0], [0, 0, -1], [], 1, RUNNER));
+      const runnerId = store.add(makeZombie([0, 0, 0], [0, 0, -1], [], { type: RUNNER }));
       renderer.sync(store, 0, 1);
       const internals = renderer as unknown as {
         states: Map<number, { variantIndex: number }>;
@@ -627,7 +630,7 @@ describe('MobActorMeshes dismemberment', () => {
     const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
     try {
       const store = new MapEntityStore<Zombie>();
-      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], 1);
+      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { figureSeed: 1 });
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
       renderer.zombieDied(id, zombie);

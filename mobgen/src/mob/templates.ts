@@ -58,7 +58,7 @@ const shamblerParams: Template['params'] = {
   footLift: { min: 0.02, max: 0.06 },
 };
 
-export const shambler: Template = {
+const shambler: Template = {
   name: 'shambler',
   description: 'Average build, hunched, shuffling walk with an occasional forward reach.',
   bodyPlan: 'humanoid',

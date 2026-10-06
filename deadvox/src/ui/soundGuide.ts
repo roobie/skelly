@@ -133,15 +133,24 @@ const TRIGGER_ENTRIES = [
       debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
     },
   ],
-  ...(['runner', 'crawler'] as const).flatMap((type) =>
-    (['idle', 'alert', 'attack', 'hurt'] as const).map((action) => [
-      `${type}_${action}`,
-      {
-        trigger: `${type === 'runner' ? 'A runner' : 'A crawler'} ${action === 'idle' ? 'idles nearby' : action === 'alert' ? 'notices you' : action === 'attack' ? 'reaches you and attacks' : 'is hit by a melee attack'}.`,
-        debugHint: `?debug=1: Use the debug panel's ${type} action to spawn ${type}s nearby.`,
-      },
-    ] as const),
-  ),
+  ...(['runner', 'crawler'] as const).flatMap((type) => {
+    const subject = type === 'runner' ? 'A runner' : 'A crawler';
+    return (['idle', 'alert', 'attack', 'hurt'] as const).map((action) => {
+      const event = {
+        idle: 'idles nearby',
+        alert: 'notices you',
+        attack: 'reaches you and attacks',
+        hurt: 'is hit by a melee attack',
+      }[action];
+      return [
+        `${type}_${action}`,
+        {
+          trigger: `${subject} ${event}.`,
+          debugHint: `?debug=1: Use the debug panel's ${type} action to spawn ${type}s nearby.`,
+        },
+      ] as const;
+    });
+  }),
   ['player_hurt_light', { trigger: 'Take 1–14 points of damage.' }],
   ['player_nope', { trigger: 'Try an action the player cannot complete.' }],
   [

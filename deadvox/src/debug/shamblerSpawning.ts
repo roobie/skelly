@@ -8,9 +8,9 @@ export const spawnZombieType = (
   engine: Engine,
   player: Body,
   zombies: ZombieSystem,
-  typeId: string,
-  count: number,
+  options: { readonly typeId: string; readonly count: number },
 ): number => {
+  const { typeId, count } = options;
   const type = engine.registry.zombies.get(typeId);
   if (!type) {
     return 0;
@@ -30,4 +30,4 @@ export const spawnZombieType = (
 };
 
 export const spawnShamblers = (engine: Engine, player: Body, zombies: ZombieSystem, count: number): number =>
-  spawnZombieType(engine, player, zombies, 'shambler', count);
+  spawnZombieType(engine, player, zombies, { typeId: 'shambler', count });
