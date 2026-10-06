@@ -701,7 +701,7 @@ try {
   );
   await press('Tab', 'Tab', 9);
   const nearbyAfterEnter = await evaluate(
-    "[...document.querySelectorAll('#inventory .inv-pane:nth-child(2) .inv-item-name')].map((item) => item.textContent)",
+    '[...document.querySelectorAll(\'#inventory [data-pane="around"] .inv-item-name\')].map((item) => item.textContent)',
   );
   assert.ok(nearbyAfterEnter.includes(selectedSpawnName), 'Enter spawned the selected item');
   await press('Tab', 'Tab', 9);
@@ -714,7 +714,7 @@ try {
   await press('Tab', 'Tab', 9);
   assert.deepEqual(
     await evaluate(
-      "[...document.querySelectorAll('#inventory .inv-pane:nth-child(2) .inv-item-name')].map((item) => item.textContent)",
+      '[...document.querySelectorAll(\'#inventory [data-pane="around"] .inv-item-name\')].map((item) => item.textContent)',
     ),
     nearbyAfterEnter,
     'Tab dismissed without spawning',
@@ -761,7 +761,7 @@ try {
     true,
   );
   const inventoryScroll = await evaluate(`(() => {
-    const pane = document.querySelectorAll('#inventory .inv-pane')[1];
+    const pane = document.querySelector('#inventory [data-pane="around"]');
     pane.scrollTop = Math.min(40, pane.scrollHeight - pane.clientHeight);
     const view = pane.getBoundingClientRect();
     const visible = [...pane.querySelectorAll('.inv-item')].find((node) => {
@@ -782,7 +782,7 @@ try {
     await evaluate("document.querySelector('#inventory .inv-details h3')?.textContent"),
     inventoryScroll.name,
   );
-  let paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  let paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(
     Math.abs(paneTop - inventoryScroll.top) <= 1,
     `scroll survives selecting an item (${inventoryScroll.top} -> ${paneTop})`,
@@ -794,14 +794,14 @@ try {
     true,
     'selected item queues a move',
   );
-  paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives queueing a move');
   await waitFor(
     () => evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
     'inventory handling job completes',
     15_000,
   );
-  paneTop = await evaluate("document.querySelectorAll('#inventory .inv-pane')[1].scrollTop");
+  paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives handling completion');
 
   const transfer = await evaluate(`(() => {

@@ -203,6 +203,11 @@ interface RestoredLook {
 const firearmsSkillLevel = (character: Character): number =>
   skillEffectLevel(character.skills.firearms ?? SKILL_LEVEL_MIN);
 
+const createCharacter = (options: SessionOptions): Character =>
+  options.restore
+    ? Character.restoreState(options.registry, options.restore.character.progression)
+    : new Character(options.registry, { handedness: options.handedness });
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
@@ -218,9 +223,7 @@ export const createSession = (options: SessionOptions) => {
     walk: restoredPlayer.walk,
   };
 
-  const character = restored
-    ? Character.restoreState(registry, restored.character.progression)
-    : new Character(registry, { handedness: options.handedness });
+  const character = createCharacter(options);
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
@@ -244,8 +247,13 @@ export const createSession = (options: SessionOptions) => {
   const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
   const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
+  const bodyTuning = registry.body.get('player');
+  if (!bodyTuning) {
+    throw new Error('Missing player body tuning');
+  }
   const sim = new Simulation({
     seed,
+    bodyTuning,
     clock: { ratio: CLOCK_RATIO, start: options.start },
     unsafe: () => debug?.()?.dangerReason() ?? zombieSystem.unsafeReason(),
     restRate: () => sim.actions.restRate,
@@ -412,7 +420,7 @@ export const createSession = (options: SessionOptions) => {
   let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
   const playerMovement = (): PlayerMovement => {
-    const moving = controls.active() && !compression.locksInput && !sim.body.unconscious ? controls.intent() : IDLE;
+    const moving = controls.active() && !compression.locksInput && !sim.body.actionRefusal ? controls.intent() : IDLE;
     if (moving.forward === 0 && moving.right === 0) {
       return 'still';
     }
@@ -492,7 +500,12 @@ export const createSession = (options: SessionOptions) => {
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount, area) => {
       wearOnPlayerHit(inventory, area);
-      sim.hit(amount, 'a shambler', bodyRegionForHitArea(area), { bleeding: true, blunt: true });
+      const legSide = sim.rng(`player-leg-hit:${sim.time}`).int(0, 1) === 0 ? 'leftLeg' : 'rightLeg';
+      const region =
+        area === 'legs'
+          ? bodyRegionForHitArea('legs', legSide)
+          : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
+      sim.hit(amount, 'a shambler', region, { bleeding: true, blunt: true });
     },
     onSound: (event, position, zombie) =>
       playWorldSound(
@@ -607,7 +620,7 @@ export const createSession = (options: SessionOptions) => {
     tick: (dt, time) => {
       lastPlayerStep = time;
       const requested = controls.active() ? controls.intent() : IDLE;
-      const moving = controls.active() && !compression.locksInput && !sim.body.unconscious;
+      const moving = controls.active() && !compression.locksInput && !sim.body.actionRefusal;
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();

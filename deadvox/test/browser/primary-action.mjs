@@ -29,7 +29,7 @@ const observationPlugin = {
       marker,
       `
   const proof = {
-    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions, hudOptions,
+    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, playKeys, quickbarActions, hudOptions,
     selectPrimaryAction, ignitionTargetForHand,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
@@ -309,6 +309,28 @@ try {
   assert.equal(pumpState.pump, true);
   assert.deepEqual(pumpState.after, pumpState.before, 'quickbar hold does not rack or otherwise mutate a pump shotgun');
   assert.notEqual(pumpState.notice, '', 'quickbar firearm use is refused');
+
+  const knockout = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearNotice();
+    r.session.sim.body.impact(0, 'torso', { shockDamage: r.session.sim.body.shock });
+    const swings = r.swings.length;
+    r.performHandUse('left');
+    r.performHandUse('right');
+    const handBlocked = { before: swings, after: r.swings.length, notice: r.getNotice() };
+    r.clearNotice();
+    r.playKeys('KeyF');
+    const interactNotice = r.getNotice();
+    r.clearNotice();
+    r.playKeys('KeyL');
+    const sleepNotice = r.getNotice();
+    r.session.sim.body.advance(r.session.sim.body.tuning.knockoutSeconds);
+    return { ...handBlocked, interactNotice, sleepNotice };
+  });
+  assert.equal(knockout.after, knockout.before, 'both hand actions are refused while unconscious');
+  assert.notEqual(knockout.notice, '', 'the unconscious hand-action refusal is surfaced');
+  assert.notEqual(knockout.interactNotice, '', 'world interaction is refused while unconscious');
+  assert.notEqual(knockout.sleepNotice, '', 'sleep is refused while unconscious');
 
   const nextFrame = async () => {
     const frame = await page.evaluate(() => globalThis.primaryActionTest.frames);

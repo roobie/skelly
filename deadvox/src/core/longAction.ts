@@ -1,6 +1,6 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
 
-import type { BodyRegion, BodyTreatment } from './body.ts';
+import { BODY_REGIONS, BODY_TREATMENTS, type BodyRegion, type BodyTreatment } from './body.ts';
 import type { WorkPlan } from './crafting.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -77,12 +77,9 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
 
 const validateTreatment = (job: Extract<LongJob, { jobType: 'treatment' }>): void => {
   if (
-    !(
-      ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'].includes(job.region) &&
-      Number.isSafeInteger(job.itemUid)
-    ) ||
+    !(BODY_REGIONS.includes(job.region) && Number.isSafeInteger(job.itemUid)) ||
     job.itemUid < 1 ||
-    !['bandage', 'rag', 'antiseptic', 'antibiotics'].includes(job.treatment) ||
+    !BODY_TREATMENTS.includes(job.treatment) ||
     !Number.isFinite(job.elapsed) ||
     job.elapsed < 0 ||
     !Number.isFinite(job.duration) ||
@@ -147,6 +144,9 @@ export class LongActions {
     this.sim = sim;
     sim.scheduler.register({ id: 'long-action', rate: 1, maxStep: 30, tick: (_dt, time) => this.advance(time) });
   }
+  private bodyActionRefusal(): string | undefined {
+    return this.sim.body.actionRefusal;
+  }
   get job(): Readonly<LongJob> | undefined {
     return this.current;
   }
@@ -189,6 +189,10 @@ export class LongActions {
     this.current = state.job === null ? undefined : structuredClone(state.job);
   }
   startRest(kind: RestKind, rate: number, furnitureUid: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
@@ -213,6 +217,10 @@ export class LongActions {
   }
   /** Admit and secure compression before any structural escrow effect. */
   beginCraft(plan: WorkPlan, repair?: CraftRepair): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (!this.craft) {
       return 'Missing craft action owner';
     }
@@ -264,6 +272,10 @@ export class LongActions {
     return undefined;
   }
   beginTreatment(region: BodyRegion, itemUid: number, treatment: BodyTreatment, duration: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (!this.treatment) {
       return 'Missing treatment owner';
     }
@@ -301,6 +313,10 @@ export class LongActions {
     return undefined;
   }
   beginReading(bookUid: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (!this.reading) {
       return 'Missing reading action owner';
     }
@@ -324,6 +340,10 @@ export class LongActions {
     return undefined;
   }
   startCraft(workUid: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     const reason = this.craft?.validate(workUid);
     if (!this.craft || reason) {
       return reason ?? 'Missing craft action owner';
@@ -347,6 +367,10 @@ export class LongActions {
   resume(): string | undefined {
     if (!this.current) {
       return undefined;
+    }
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
     }
     if (this.discardMissingStoppedReading()) {
       return undefined;
@@ -483,6 +507,12 @@ export class LongActions {
       return;
     }
     if (job.stopped || !this.sim.compression.active) {
+      return;
+    }
+    const { actionRefusal } = this.sim.body;
+    if (actionRefusal) {
+      job.stopped = true;
+      this.sim.compression.interrupt(actionRefusal);
       return;
     }
     const reason = this.validateOwner(job);

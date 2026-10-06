@@ -1,0 +1,20 @@
+{
+  "body": [
+    {
+      "id": "player",
+      "infectionOnsetGameHours": 2,
+      "antisepticWindowGameHours": 12,
+      "infectionChance": 0.5,
+      "knockoutSeconds": 20,
+      "wakeShock": 10,
+      "bloodLossPerSecond": 0.004,
+      "bloodRecoveryPerSecond": 0.002,
+      "shockRecoveryPerSecond": 0.1,
+      "advancedInfectionHealthLossPerSecond": 0.0005,
+      "aimSwayPerDamage": 0.01,
+      "swingSlowdownPerDamage": 0.01,
+      "movementSlowdownPerDamage": 0.005,
+      "minimumMovementSpeed": 0.5
+    }
+  ]
+}

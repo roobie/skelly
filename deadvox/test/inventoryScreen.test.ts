@@ -13,6 +13,7 @@ import { bindReach } from '../src/core/reach.ts';
 import { CONTROL_CODES } from '../src/game/input.ts';
 import { handlePlayMenuKey } from '../src/game/menuKeys.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -81,7 +82,7 @@ function setup() {
     searching.delete(entity);
     inv.entities.markSearched(entity);
   });
-  const body = new Body();
+  const body = new Body(BODY_TUNING_FIXTURE);
   const notices: string[] = [];
   const refusals: string[] = [];
   const hooks = {
@@ -107,6 +108,7 @@ function setup() {
     workOptions: (_uid: number): WorkOption[] => [],
     work: (_uid: number, _operation: WorkOperation): string | undefined => undefined,
     body: () => body.snapshotState(),
+    actionRefusal: () => body.actionRefusal,
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
@@ -115,6 +117,21 @@ function setup() {
 }
 
 describe('inventory screen Lit rendering', () => {
+  it('refuses inventory actions while unconscious and permits them after wake', () => {
+    const { screen, queue, body, beans, refusals } = setup();
+    screen.selected = beans;
+    body.impact(1, 'torso', { shockDamage: 100 });
+
+    expect(screen.onKey({ code: CONTROL_CODES.drop } as KeyboardEvent)).toBe(true);
+    expect(screen.onKey({ code: CONTROL_CODES.search } as KeyboardEvent)).toBe(true);
+    expect(queue.jobs).toHaveLength(0);
+    expect(refusals.length).toBeGreaterThan(0);
+
+    body.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+    expect(screen.onKey({ code: CONTROL_CODES.drop } as KeyboardEvent)).toBe(true);
+    expect(queue.jobs.length).toBeGreaterThan(0);
+  });
+
   it('shows wound state without adding treatment controls to the body panel', () => {
     const { root, screen, inv, body } = setup();
     const rag = inv.create('rag');
@@ -218,7 +235,7 @@ describe('inventory screen Lit rendering', () => {
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];
-    const search = [...test.root.querySelectorAll<HTMLButtonElement>('.inv-pane button')].find((button) =>
+    const search = [...test.root.querySelectorAll<HTMLButtonElement>('[data-pane="around"] button')].find((button) =>
       button.textContent?.includes('Search it'),
     );
     expect(search).toBeDefined();
@@ -229,7 +246,7 @@ describe('inventory screen Lit rendering', () => {
     expect([test.inv.version, test.inv.entities.version]).toEqual(versions);
     expect(test.queue.jobs).toHaveLength(1);
     expect(test.searching.has(test.entity)).toBe(true);
-    expect(test.root.querySelectorAll('.inv-pane')[1]?.querySelector('button.inv-option')).toBeNull();
+    expect(test.root.querySelector('[data-pane="around"] button.inv-option')).toBeNull();
   });
 
   it('forwards an ordinary locked-menu click without queueing a quick move', () => {

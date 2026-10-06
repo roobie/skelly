@@ -6,9 +6,9 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { BATTERY_SWAP } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import { Survival } from '../src/game/survival.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(

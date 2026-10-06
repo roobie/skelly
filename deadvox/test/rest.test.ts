@@ -8,12 +8,13 @@ import { buildRegistry } from '../src/core/content.ts';
 import { NEED_RATES, REST, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { type SimOptions, Simulation } from '../src/core/sim.ts';
+import type { SimOptions } from '../src/core/sim.ts';
 import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
 const BASE = 'src/content/base';
@@ -74,7 +75,7 @@ describe('stepNeeds with a custom fatigue rate', () => {
   it('recovers fatigue at the given rate, leaving the other needs alone', () => {
     const needs = { ...SPAWN_NEEDS, fatigue: 50 };
     const rates = { ...NEED_RATES, fatigue: -20 };
-    stepNeeds(needs, new Body(), 1, { rates });
+    stepNeeds(needs, new Body(BODY_TUNING_FIXTURE), 1, { rates });
     expect(needs.fatigue).toBeCloseTo(30, 9);
     expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + NEED_RATES.calories, 9);
   });

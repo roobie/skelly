@@ -185,6 +185,9 @@ export class Survival {
 
   /** Executes the live core option; this owner retains effects and serializable queue actions. */
   use(item: Item): string | undefined {
+    if (this.sim.body.actionRefusal) {
+      return this.sim.body.actionRefusal;
+    }
     const definition = defOf(this.inventory.registry, item.type);
     if (definition.treatment) {
       if (this.handOf(item) === undefined) {
@@ -263,6 +266,9 @@ export class Survival {
 
   /** Quickbar hold uses pocket food as one action, without displacing either hand. */
   useFromQuickbar(item: Item): string | undefined {
+    if (this.sim.body.actionRefusal) {
+      return this.sim.body.actionRefusal;
+    }
     const def = defOf(this.inventory.registry, item.type);
     const at = this.inventory.locate(item);
     if (!at) {

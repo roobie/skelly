@@ -10,6 +10,7 @@ import { LongActions } from './longAction.ts';
 import { causeOf, NEED_RATES, type Needs, SPAWN_NEEDS, stepNeeds } from './needs.ts';
 import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
+import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import type { SoundEmission } from './soundPicker.ts';
@@ -38,6 +39,7 @@ export interface SimulationState {
 
 export interface SimOptions {
   seed: number;
+  bodyTuning: BodyTuningDef;
   clock?: ClockSettings;
   /**
    * Why unowned compression isn't safe right now (a hostile is aware of the player,
@@ -63,7 +65,7 @@ export class Simulation {
   readonly compression = new Compression();
   readonly actions: LongActions;
   readonly needs: Needs = { ...SPAWN_NEEDS };
-  readonly body = new Body();
+  readonly body: Body;
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
   /** Set when health reaches 0; from then on nothing advances. */
@@ -80,6 +82,7 @@ export class Simulation {
   constructor(options: SimOptions) {
     this.seed = options.seed;
     this.clock = options.clock ?? defaultClock;
+    this.body = new Body(options.bodyTuning);
     this.unsafe = options.unsafe ?? (() => undefined);
     this.restRate = options.restRate ?? (() => undefined);
     this.interrupts = this.events.reader();
@@ -108,7 +111,7 @@ export class Simulation {
       rate: NEEDS_RATE,
       maxStep: NEEDS_MAX_STEP,
       tick: (dt) => {
-        const cause = this.body.advance(dt, this.godMode);
+        const cause = this.body.advance(dt, this.godMode, dt * this.clock.ratio);
         if (cause) {
           this.die(cause);
         }
@@ -204,7 +207,13 @@ export class Simulation {
   }
 
   hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: BodyImpact = {}): void {
-    this.takeDamage(cause, () => this.body.impact(amount, region, effects));
+    const woundAlreadyExists = this.body.wounds[region] !== null;
+    const infectionAtRisk =
+      effects.infectionAtRisk ??
+      (Boolean(effects.bleeding) &&
+        (woundAlreadyExists ||
+          this.rng(`body-infection:${region}:${this.time}:${amount}`).next() < this.body.tuning.infectionChance));
+    this.takeDamage(cause, () => this.body.impact(amount, region, { ...effects, infectionAtRisk }));
   }
 
   private takeDamage(cause: string, apply: () => number): void {

@@ -1,13 +1,17 @@
+import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 export const BODY_REGIONS = ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
 export type BodyRegion = (typeof BODY_REGIONS)[number];
 type InfectionStage = 'none' | 'early' | 'advanced' | 'resolved';
-export type BodyTreatment = 'bandage' | 'rag' | 'antiseptic' | 'antibiotics';
+export const BODY_TREATMENTS = ['bandage', 'rag', 'antiseptic', 'antibiotics'] as const;
+export type BodyTreatment = (typeof BODY_TREATMENTS)[number];
 
 interface BodyWound {
   bleeding: boolean;
   infection: InfectionStage;
+  infectionGameSeconds: number;
+  infectionAtRisk: boolean;
 }
 
 export type BodyWounds = Record<BodyRegion, BodyWound | null>;
@@ -17,6 +21,7 @@ export interface BodyState {
   health: number;
   blood: number;
   shock: number;
+  knockoutElapsed: number;
   regionDamage: BodyRegionDamage;
   wounds: BodyWounds;
 }
@@ -32,20 +37,17 @@ export interface BodyImpact {
   bleeding?: boolean;
   blunt?: boolean;
   shockDamage?: number;
+  infectionAtRisk?: boolean;
 }
 
 const BODY_START: Readonly<BodyState> = Object.freeze({
   health: 100,
   blood: 100,
   shock: 100,
+  knockoutElapsed: 0,
   regionDamage: Object.freeze({ head: 0, torso: 0, leftArm: 0, rightArm: 0, leftLeg: 0, rightLeg: 0 }),
   wounds: Object.freeze({ head: null, torso: null, leftArm: null, rightArm: null, leftLeg: null, rightLeg: null }),
 });
-
-const BLOOD_LOSS_PER_SECOND = 0.004;
-const BLOOD_RECOVERY_PER_SECOND = 0.002;
-const SHOCK_RECOVERY_PER_SECOND = 0.1;
-const ADVANCED_INFECTION_HEALTH_LOSS_PER_SECOND = 0.0005;
 
 const clamp = (value: number): number => Math.max(0, Math.min(100, value));
 const validVitals = (value: number): boolean => Number.isFinite(value) && value >= 0 && value <= 100;
@@ -54,12 +56,17 @@ const validWound = (value: unknown): value is BodyWound | null =>
   (typeof value === 'object' &&
     value !== null &&
     typeof (value as BodyWound).bleeding === 'boolean' &&
-    ['none', 'early', 'advanced', 'resolved'].includes((value as BodyWound).infection));
+    ['none', 'early', 'advanced', 'resolved'].includes((value as BodyWound).infection) &&
+    Number.isFinite((value as BodyWound).infectionGameSeconds) &&
+    (value as BodyWound).infectionGameSeconds >= 0 &&
+    typeof (value as BodyWound).infectionAtRisk === 'boolean');
 
 export class Body {
   private readonly state: BodyState;
+  readonly tuning: BodyTuningDef;
 
-  constructor(state: BodyState = BODY_START as BodyState) {
+  constructor(tuning: BodyTuningDef, state: BodyState = BODY_START as BodyState) {
+    this.tuning = tuning;
     this.state = structuredClone(state);
     this.validate();
   }
@@ -77,7 +84,11 @@ export class Body {
   }
 
   get unconscious(): boolean {
-    return this.state.shock <= 0;
+    return this.state.shock <= 0 && this.state.knockoutElapsed < this.tuning.knockoutSeconds;
+  }
+
+  get actionRefusal(): string | undefined {
+    return this.unconscious ? 'You are unconscious' : undefined;
   }
 
   get regionDamage(): Readonly<BodyRegionDamage> {
@@ -92,9 +103,12 @@ export class Body {
     const { regionDamage } = this.state;
     return {
       sightImpaired: regionDamage.head > 0,
-      aimSway: 1 + regionDamage.torso / 100,
-      swingSlowdown: 1 + Math.max(regionDamage.leftArm, regionDamage.rightArm) / 100,
-      movementSpeed: Math.max(0.5, 1 - Math.max(regionDamage.leftLeg, regionDamage.rightLeg) / 200),
+      aimSway: 1 + regionDamage.torso * this.tuning.aimSwayPerDamage,
+      swingSlowdown: 1 + Math.max(regionDamage.leftArm, regionDamage.rightArm) * this.tuning.swingSlowdownPerDamage,
+      movementSpeed: Math.max(
+        this.tuning.minimumMovementSpeed,
+        1 - Math.max(regionDamage.leftLeg, regionDamage.rightLeg) * this.tuning.movementSlowdownPerDamage,
+      ),
     };
   }
 
@@ -109,7 +123,16 @@ export class Body {
   }
 
   private validate(state: BodyState = this.state): void {
-    if (!(validVitals(state.health) && validVitals(state.blood) && validVitals(state.shock))) {
+    if (
+      !(
+        validVitals(state.health) &&
+        validVitals(state.blood) &&
+        validVitals(state.shock) &&
+        Number.isFinite(state.knockoutElapsed)
+      ) ||
+      state.knockoutElapsed < 0 ||
+      state.knockoutElapsed > this.tuning.knockoutSeconds
+    ) {
       throw new Error('Invalid body vitals');
     }
     for (const region of BODY_REGIONS) {
@@ -147,37 +170,59 @@ export class Body {
     }
     const applied = this.damageHealth(amount);
     this.state.regionDamage[region] = clamp(this.state.regionDamage[region] + amount);
+    const previousShock = this.state.shock;
     this.state.shock = Math.max(0, this.state.shock - shockDamage);
+    if (this.state.shock === 0 && (previousShock > 0 || shockDamage > 0)) {
+      this.state.knockoutElapsed = 0;
+    }
     if (effects.bleeding) {
       const wound = this.state.wounds[region];
-      this.state.wounds[region] = wound ? { ...wound, bleeding: true } : { bleeding: true, infection: 'none' };
+      this.state.wounds[region] = wound
+        ? { ...wound, bleeding: true }
+        : {
+            bleeding: true,
+            infection: 'none',
+            infectionGameSeconds: 0,
+            infectionAtRisk: effects.infectionAtRisk ?? true,
+          };
     }
     return applied;
   }
 
   /** Advances body consequences by simulation seconds and returns a terminal cause, if any. */
-  advance(seconds: number, damageImmune = false): string | undefined {
-    if (!Number.isFinite(seconds) || seconds < 0) {
+  advance(seconds: number, damageImmune = false, gameSeconds = seconds): string | undefined {
+    if (!Number.isFinite(seconds) || seconds < 0 || !Number.isFinite(gameSeconds) || gameSeconds < 0) {
       throw new Error('Invalid body step');
     }
-    this.state.shock = clamp(this.state.shock + SHOCK_RECOVERY_PER_SECOND * seconds);
+    let shockRecoverySeconds = seconds;
+    if (this.unconscious) {
+      const remaining = this.tuning.knockoutSeconds - this.state.knockoutElapsed;
+      const unconsciousStep = Math.min(seconds, remaining);
+      this.state.knockoutElapsed += unconsciousStep;
+      shockRecoverySeconds -= unconsciousStep;
+      if (this.state.knockoutElapsed >= this.tuning.knockoutSeconds) {
+        this.state.shock = this.tuning.wakeShock;
+      }
+    }
+    this.state.shock = clamp(this.state.shock + this.tuning.shockRecoveryPerSecond * shockRecoverySeconds);
     let bleedingRegions = 0;
     for (const region of BODY_REGIONS) {
       const wound = this.state.wounds[region];
       if (!wound) {
         continue;
       }
-      const infection = advanceInfection(wound.infection, seconds);
-      this.state.wounds[region] = { ...wound, infection };
+      const updatedWound = advanceInfection(wound, gameSeconds, this.tuning);
+      const { infection } = updatedWound;
+      this.state.wounds[region] = updatedWound;
       if (wound.bleeding) {
         bleedingRegions += 1;
       }
       if (!damageImmune && infection === 'advanced') {
-        this.state.health = Math.max(0, this.state.health - ADVANCED_INFECTION_HEALTH_LOSS_PER_SECOND * seconds);
+        this.state.health = Math.max(0, this.state.health - this.tuning.advancedInfectionHealthLossPerSecond * seconds);
       }
     }
     if (!damageImmune) {
-      this.state.blood = advanceBlood(this.state.blood, bleedingRegions, seconds);
+      this.state.blood = advanceBlood(this.state.blood, bleedingRegions, seconds, this.tuning);
     }
     return this.terminalCause();
   }
@@ -230,25 +275,38 @@ export class Body {
   }
 }
 
-const advanceInfection = (infection: InfectionStage, seconds: number): InfectionStage => {
-  if (seconds <= 0 || infection === 'resolved' || infection === 'advanced') {
-    return infection;
+const advanceInfection = (wound: BodyWound, gameSeconds: number, tuning: BodyTuningDef): BodyWound => {
+  if (gameSeconds <= 0 || !wound.infectionAtRisk || wound.infection === 'resolved' || wound.infection === 'advanced') {
+    return wound;
   }
-  return infection === 'none' ? 'early' : 'advanced';
+  const infectionGameSeconds = wound.infectionGameSeconds + gameSeconds;
+  const onset = tuning.infectionOnsetGameHours * 3600;
+  let infection: BodyWound['infection'] = 'none';
+  if (infectionGameSeconds >= onset) {
+    infection = infectionGameSeconds >= onset + tuning.antisepticWindowGameHours * 3600 ? 'advanced' : 'early';
+  }
+  return { ...wound, infection, infectionGameSeconds };
 };
 
-const advanceBlood = (blood: number, bleedingRegions: number, seconds: number): number => {
+const advanceBlood = (blood: number, bleedingRegions: number, seconds: number, tuning: BodyTuningDef): number => {
   const change =
-    bleedingRegions > 0 ? -BLOOD_LOSS_PER_SECOND * bleedingRegions * seconds : BLOOD_RECOVERY_PER_SECOND * seconds;
+    bleedingRegions > 0
+      ? -tuning.bloodLossPerSecond * bleedingRegions * seconds
+      : tuning.bloodRecoveryPerSecond * seconds;
   return clamp(blood + change);
 };
 
-export const bodyRegionForHitArea = (area: 'head' | 'torso' | 'legs'): BodyRegion => {
-  if (area === 'head') {
-    return 'head';
-  }
+export function bodyRegionForHitArea(area: 'head' | 'torso' | 'leftLeg' | 'rightLeg'): BodyRegion;
+export function bodyRegionForHitArea(area: 'legs', legSide: 'leftLeg' | 'rightLeg'): BodyRegion;
+export function bodyRegionForHitArea(
+  area: 'head' | 'torso' | 'legs' | 'leftLeg' | 'rightLeg',
+  legSide?: 'leftLeg' | 'rightLeg',
+): BodyRegion {
   if (area === 'legs') {
-    return 'leftLeg';
+    if (!legSide) {
+      throw new Error('A leg hit requires a selected side');
+    }
+    return legSide;
   }
-  return 'torso';
-};
+  return area;
+}

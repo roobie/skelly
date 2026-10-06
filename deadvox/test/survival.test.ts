@@ -7,7 +7,7 @@ import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, SPAWN_NEEDS, STAMINA, stepNeeds, stepStamina } from '../src/core/needs.ts';
-import { Simulation } from '../src/core/sim.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds
 const base = (file: string): ContentSource => {
@@ -31,7 +31,7 @@ const { registry } = buildRegistry(
 
 /** Steps needs every simulation second, as the needs system does at 1×. */
 const bodyAtHealth = (health: number): Body => {
-  const body = new Body();
+  const body = new Body(BODY_TUNING_FIXTURE);
   body.damageHealth(100 - health);
   return body;
 };
@@ -76,8 +76,8 @@ describe('catch-up', () => {
   it('lands where ticking every second does, across every threshold', () => {
     const caught = { ...SPAWN_NEEDS };
     const live = { ...SPAWN_NEEDS };
-    const caughtBody = new Body();
-    const liveBody = new Body();
+    const caughtBody = new Body(BODY_TUNING_FIXTURE);
+    const liveBody = new Body(BODY_TUNING_FIXTURE);
     stepNeeds(caught, caughtBody, 16);
     tickLive(live, liveBody, 16);
     for (const need of ['calories', 'hydration', 'fatigue'] as const) {

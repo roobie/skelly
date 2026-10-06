@@ -8,8 +8,8 @@ import { chargeOf } from '../src/core/lights.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { EAT_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { Survival } from '../src/game/survival.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(
@@ -43,6 +43,25 @@ const setup = () => {
 };
 
 describe('using what you hold', () => {
+  it('refuses held and quickbar actions while unconscious and permits them after wake', () => {
+    const t = setup();
+    t.sim.body.impact(1, 'torso', { bleeding: true, shockDamage: 100 });
+    const rag = t.hold('rag', 'left');
+    t.sim.actions.treatment = {
+      validate: (region, _itemUid, treatment) =>
+        t.sim.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
+      finish: (region, _itemUid, treatment) =>
+        t.sim.body.treat(region, treatment) ? true : 'Treatment no longer applies',
+    };
+    expect(t.survival.use(rag)).toBeDefined();
+    expect(t.survival.useFromQuickbar(rag)).toBeDefined();
+
+    t.sim.body.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+
+    expect(t.sim.body.unconscious).toBe(false);
+    expect(t.survival.use(rag)).toBeUndefined();
+  });
+
   it('uses the selected wound for held treatment and lets the wheel change that target', () => {
     const t = setup();
     t.sim.body.impact(1, 'leftArm', { bleeding: true });

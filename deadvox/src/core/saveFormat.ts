@@ -1,5 +1,6 @@
 import { type AimState, assertAimState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
+import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
   canonicalJsonAt as canonicalStringify,
@@ -221,7 +222,7 @@ const progression = obj({
 });
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
-const bodyRegionValues = ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
+const bodyRegionValues = BODY_REGIONS;
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
@@ -241,6 +242,8 @@ const bodyWound = nullable(
   obj({
     bleeding: bool,
     infection: enumeration(['none', 'early', 'advanced', 'resolved']),
+    infectionGameSeconds: nonNegative,
+    infectionAtRisk: bool,
   }),
 );
 const bodyWounds = obj({
@@ -255,6 +258,7 @@ const bodyState = obj({
   health: num({ min: 0, max: 100 }),
   blood: num({ min: 0, max: 100 }),
   shock: num({ min: 0, max: 100 }),
+  knockoutElapsed: nonNegative,
   regionDamage: bodyRegionDamage,
   wounds: bodyWounds,
 });
@@ -400,7 +404,7 @@ const longAction = obj({
       bookUid: opt(positiveInt),
       region: opt(enumeration(bodyRegionValues)),
       itemUid: opt(positiveInt),
-      treatment: opt(enumeration(['bandage', 'rag', 'antiseptic', 'antibiotics'])),
+      treatment: opt(enumeration(BODY_TREATMENTS)),
       duration: opt(positive),
       rest: opt(
         obj({

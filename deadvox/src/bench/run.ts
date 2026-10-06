@@ -268,7 +268,11 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
       playerBody = findShamblerBenchPlayer(engine);
       x = playerBody.pos[0] * s;
       z = playerBody.pos[2] * s;
-      const simulation = new Simulation({ seed: config.seed, clock: { ratio: CLOCK_RATIO, start: startTime } });
+      const simulation = new Simulation({
+        seed: config.seed,
+        bodyTuning: engine.registry.body.get('player')!,
+        clock: { ratio: CLOCK_RATIO, start: startTime },
+      });
       simulation.godMode = true;
       const lightSeenFrom = engine.registry.items.get('torch')!.light!.seenFrom;
       zombies = new ZombieSystem({

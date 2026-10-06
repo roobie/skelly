@@ -12,7 +12,6 @@ import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DoorLockDef } from '../src/core/schema.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
   FIGURE_BOXES,
@@ -35,6 +34,7 @@ import {
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(

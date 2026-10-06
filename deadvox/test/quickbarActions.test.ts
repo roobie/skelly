@@ -8,9 +8,9 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bestPocket } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
 import { Survival } from '../src/game/survival.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry([

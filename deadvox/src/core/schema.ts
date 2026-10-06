@@ -769,6 +769,41 @@ const SkillSchema = strictObject({ id: Id, name: Name });
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
+const BodyTuningSchema = strictObject({
+  id: Id,
+  /** Game hours after a bleeding wound before an at-risk infection becomes early. */
+  infectionOnsetGameHours: Positive,
+  /** Game hours the early infection stage remains treatable with antiseptic. */
+  antisepticWindowGameHours: Positive,
+  infectionChance: Fraction,
+  /** Simulation seconds that the player remains unconscious. */
+  knockoutSeconds: Positive,
+  /** Shock restored when the player wakes, on a 0–100 scale. */
+  wakeShock: pipe(
+    Positive,
+    check((value) => value < 100, 'must be below 100'),
+  ),
+  /** Blood lost per simulation second while a wound bleeds. */
+  bloodLossPerSecond: Positive,
+  /** Blood recovered per simulation second when no wound bleeds. */
+  bloodRecoveryPerSecond: Positive,
+  /** Shock recovered per simulation second outside a knockout. */
+  shockRecoveryPerSecond: Positive,
+  /** Health lost per simulation second while infection is advanced. */
+  advancedInfectionHealthLossPerSecond: Positive,
+  /** Aim sway added per point of torso damage. */
+  aimSwayPerDamage: Positive,
+  /** Swing slowdown added per point of arm damage. */
+  swingSlowdownPerDamage: Positive,
+  /** Movement slowdown added per point of leg damage. */
+  movementSlowdownPerDamage: Positive,
+  /** Lowest movement-speed multiplier caused by leg damage. */
+  minimumMovementSpeed: pipe(
+    Positive,
+    check((value) => value <= 1, 'must not exceed 1'),
+  ),
+});
+
 const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
@@ -799,6 +834,7 @@ const SECTION_DESCRIPTOR = {
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
+  body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -824,6 +860,7 @@ export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { formatClock } from '../src/core/clock.ts';
 import type { RestAction } from '../src/core/longAction.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { labelForCode } from '../src/game/controls.ts';
 import { CONTROL_CODES } from '../src/game/input.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';
+import { Simulation } from './simulationFixture.ts';
 
 describe('restViewModel', () => {
   it('is invisible with no action running', () => {

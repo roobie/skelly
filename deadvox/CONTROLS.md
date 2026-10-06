@@ -7,6 +7,7 @@ status: draft
 read_if:
   - you plan or change player or debug input bindings
   - you review BR's control rulings or unresolved input questions
+  - you implement or review held-item use and wound-treatment controls
 ---
 
 # deadvox — controls (draft)
@@ -46,7 +47,7 @@ acting").
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
   flashlight in hands, then left-click to activate (left-click generally means
   'do the thing with the thing you're holding')." For held food, drinks and
-  bandages, BR later ruled (2026-10-05): "activate them"; BR's 2026-10-06 08:33 ruling makes wound treatment a held-item action, with quickbar hold as the secondary path. For #252, BR's re-look
+  bandages, BR later ruled (2026-10-05): "activate them"; BR (2026-10-06 08:33) said, "the \"treat with rag\" is not the way to go. You wield the rag and left-click apply it (or quickbar-hold)". `src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`, own those actions. The wheel steps the wielded item's selected action through `src/game/play.ts`, `cycleWieldedAction`, and `src/game/itemActions.ts`, `ItemActionSelection`; the hint is shown by `src/game/survival.ts`, `wieldedItemActionHint`, through `src/ui/playHud.ts`, `playHudText`, only when interaction hints are visible. For #252, BR's re-look
   (2026-10-05 13:44) confirmed that activating a held igniter lights an unlit
   firestarter light in the other hand; left-click uses the dominant hand and `=`
   the off hand. An igniter with no eligible light still refuses. Whether matches

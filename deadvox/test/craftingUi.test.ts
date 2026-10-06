@@ -7,9 +7,9 @@ import { buildRegistry } from '../src/core/content.ts';
 import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
 import type { Session } from '../src/game/session.ts';
 import { craftRows, craftStatus } from '../src/ui/craftReadout.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const { registry } = buildRegistry(
   readdirSync('src/content/base')

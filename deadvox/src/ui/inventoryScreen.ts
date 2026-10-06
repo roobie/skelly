@@ -71,6 +71,7 @@ export interface ScreenHooks {
   workOptions: (uid: number) => readonly WorkOption[];
   work: (uid: number, operation: WorkOperation) => string | undefined;
   body: () => Readonly<BodyState>;
+  actionRefusal?: () => string | undefined;
 }
 
 interface Drag {
@@ -280,7 +281,7 @@ const inventoryTemplate = (
     <span class="inv-help">Drag items · H hands · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
   </header>
   <div class="inv-body">
-    <section class="inv-pane inv-body-panel">
+    <section class="inv-pane inv-body-panel" data-pane="body">
       <h3>Body</h3>
       <div class="inv-body-vitals">Health ${vm.body.health} · Blood ${vm.body.blood} · Shock ${vm.body.shock}</div>
       ${vm.body.regions.map(
@@ -294,7 +295,7 @@ const inventoryTemplate = (
       `,
       )}
     </section>
-    <section class="inv-pane">
+    <section class="inv-pane" data-pane="you">
       <h3>You</h3>
       <div class="inv-hands">
         ${vm.hands.map(
@@ -316,7 +317,7 @@ const inventoryTemplate = (
         `,
       )}
     </section>
-    <section class="inv-pane">
+    <section class="inv-pane" data-pane="around">
       <h3>Around you</h3>
       ${vm.piles.map(
         (pile) => html`
@@ -447,10 +448,7 @@ export class InventoryScreen {
 
   /** Handles a key while the screen is open. Returns true if it was used. */
   onKey(e: KeyboardEvent): boolean {
-    if (this.drag?.moved && e.code === CONTROL_CODES.rotate) {
-      this.drag.rotated = !this.drag.rotated;
-      this.drag.grab = [CELL / 2, CELL / 2];
-      this.renderDrag();
+    if (this.handleRefusedKey(e) || this.rotateMovedDrag(e)) {
       return true;
     }
     const digit = quickbarSlotForKey(e.code);
@@ -502,9 +500,37 @@ export class InventoryScreen {
     }
   }
 
+  private handleRefusedKey(e: KeyboardEvent): boolean {
+    const refusal = this.hooks.actionRefusal?.();
+    if (
+      !(
+        refusal &&
+        (ITEM_COMMAND_CODES.has(e.code) || e.code === CONTROL_CODES.search || e.code === CONTROL_CODES.cancel)
+      )
+    ) {
+      return false;
+    }
+    this.refuse(refusal);
+    return true;
+  }
+
+  private rotateMovedDrag(e: KeyboardEvent): boolean {
+    if (!this.drag?.moved || e.code !== CONTROL_CODES.rotate) {
+      return false;
+    }
+    this.drag.rotated = !this.drag.rotated;
+    this.drag.grab = [CELL / 2, CELL / 2];
+    this.renderDrag();
+    return true;
+  }
+
   // ---- actions ----
 
   private tryQueue(item: Item, target: Target, count = item.count): string | undefined {
+    const refusal = this.hooks.actionRefusal?.();
+    if (refusal) {
+      return refusal;
+    }
     const result = this.queue.enqueue(item, target, count);
     return result.ok ? undefined : result.reason;
   }
@@ -588,15 +614,21 @@ export class InventoryScreen {
       inventoryTemplate(
         vm,
         (item, target, operation) => {
-          if (operation) {
+          const refusal = this.hooks.actionRefusal?.();
+          if (refusal) {
+            this.refuse(refusal);
+          } else if (operation) {
             this.report(this.hooks.work(item.uid, operation));
           } else if (target) {
             this.report(this.tryQueue(item, target));
           }
         },
         (uid) => {
+          const refusal = this.hooks.actionRefusal?.();
           const entity = this.entityByUid.get(uid);
-          if (entity) {
+          if (refusal) {
+            this.refuse(refusal);
+          } else if (entity) {
             this.report(this.hooks.search(entity));
           }
         },
@@ -824,6 +856,11 @@ export class InventoryScreen {
   // ---- drag and drop ----
 
   private pointerDown(e: PointerEvent): void {
+    const refusal = this.hooks.actionRefusal?.();
+    if (refusal) {
+      this.refuse(refusal);
+      return;
+    }
     const node = (e.target as HTMLElement).closest<HTMLElement>('[data-uid]');
     const item = node ? this.byUid.get(Number(node.dataset.uid)) : undefined;
     if (!(node && item) || e.button !== 0) {

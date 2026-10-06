@@ -197,6 +197,13 @@ export const startPlay = (
         }
       },
       heldDominantUse: (time, pressed, triggerHeld) => {
+        if (sim.body.actionRefusal) {
+          firearmTrigger.advance(time, undefined, pressed, triggerHeld);
+          if (pressed) {
+            showRefusal(sim.body.actionRefusal, sim.time);
+          }
+          return;
+        }
         const action = selectPrimaryAction(inventory);
         const weapon =
           config.debug &&
@@ -217,6 +224,7 @@ export const startPlay = (
         const action = selectPrimaryAction(inventory);
         return (
           input.dominantUseHeld &&
+          !sim.body.actionRefusal &&
           config.debug &&
           !debugTools?.buildOn &&
           !queue.busy &&
@@ -435,6 +443,7 @@ export const startPlay = (
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
     body: () => sim.body.snapshotState(),
+    actionRefusal: () => sim.body.actionRefusal,
     assign: (slot, item) => {
       quickbar.assign(slot, item);
       showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
@@ -656,15 +665,29 @@ export const startPlay = (
     return reason;
   };
 
+  const continueWork = (): boolean => {
+    const workUid = session.crafting.currentUid;
+    if (workUid === undefined) {
+      return false;
+    }
+    const reason = actOnWork(workUid, 'continue');
+    if (reason) {
+      showRefusal(`Can't continue: ${reason}`, sim.time);
+    }
+    return true;
+  };
+
   /** Continue a craft, rest/sleep, or the debug compression test. */
   const continueAction = (): void => {
-    const workUid = session.crafting.currentUid;
-    if (workUid !== undefined) {
-      const reason = actOnWork(workUid, 'continue');
-      if (reason) {
-        showRefusal(`Can't continue: ${reason}`, sim.time);
-      }
-    } else if (rest.action || sim.actions.job?.jobType === 'reading') {
+    const refusal = sim.body.actionRefusal;
+    if (refusal) {
+      showRefusal(refusal, sim.time);
+      return;
+    }
+    if (continueWork()) {
+      return;
+    }
+    if (rest.action || sim.actions.job?.jobType === 'reading') {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);
@@ -723,6 +746,10 @@ export const startPlay = (
     notice: (text) => showRefusal(text, sim.time),
   });
   const quickbarTap = (slot: number) => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
       showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
@@ -731,6 +758,10 @@ export const startPlay = (
     quickbarActions.tap(item);
   };
   const quickbarHold = (slot: number) => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
       showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
@@ -758,11 +789,17 @@ export const startPlay = (
   const playKeys = (code: string) => {
     const restAction = longActionKeys.get(code);
     if (restAction) {
-      restAction();
+      if (code === CONTROL_CODES.sleep && sim.body.actionRefusal) {
+        showRefusal(sim.body.actionRefusal, sim.time);
+      } else {
+        restAction();
+      }
       return;
     }
     const action = worldActionForKey(code);
-    if (action === 'interact' && (!compression.locksInput || rest.action !== undefined)) {
+    if (action === 'interact' && sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+    } else if (action === 'interact' && (!compression.locksInput || rest.action !== undefined)) {
       use();
     } else if (action === 'cancel') {
       input.reload.cancel();
@@ -812,7 +849,15 @@ export const startPlay = (
 
   /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
   const reloadBinding = (): ReloadBinding | undefined => {
-    if (!input.locked || input.menuPointer || compression.locksInput || sim.paused || sim.dead || debugTools?.buildOn) {
+    if (
+      !input.locked ||
+      input.menuPointer ||
+      compression.locksInput ||
+      sim.paused ||
+      sim.dead ||
+      sim.body.actionRefusal ||
+      debugTools?.buildOn
+    ) {
       return;
     }
     const uid = firearms.reloadableUid();
@@ -859,7 +904,11 @@ export const startPlay = (
     }
     if (e.code === CONTROL_CODES.reload) {
       e.preventDefault();
-      input.reload.keyDown(e.timeStamp, reloadBinding());
+      if (sim.body.actionRefusal) {
+        showRefusal(sim.body.actionRefusal, sim.time);
+      } else {
+        input.reload.keyDown(e.timeStamp, reloadBinding());
+      }
       return;
     }
     if (quickbarSlotForKey(e.code) !== undefined) {
@@ -1044,6 +1093,10 @@ export const startPlay = (
   const meleeWeapon = () => meleeSelection().weapon;
 
   const swing = (preferredHand?: 'right' | 'left') => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     const selected = meleeSelection(preferredHand);
     const result = startPlayerMelee(playerCombat, sim.needs, {
       origin: eye(),
@@ -1126,6 +1179,10 @@ export const startPlay = (
     showRefusal(primaryActionHint(registry, item), sim.time);
   };
   performHandUse = (hand: 'right' | 'left') => {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
     if (refusePrimaryUseWhileHandling()) {
       return;
     }

@@ -6,10 +6,10 @@ import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
-import { Simulation } from '../src/core/sim.ts';
 import type { Site } from '../src/core/site.ts';
 import { World } from '../src/core/world.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
+import { Simulation } from './simulationFixture.ts';
 import {
   blockId,
   blockName,
@@ -100,7 +100,15 @@ describe('snapshot state components', () => {
       elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
     });
     expect(loaded.sim.actions.resume()).toBeUndefined();
-    loaded.sim.actions.stop();
+    const resumedJob = loaded.sim.actions.job;
+    if (resumedJob?.jobType !== 'treatment') {
+      throw new Error('Treatment action did not resume');
+    }
+    const remainingGameSeconds = resumedJob.duration - resumedJob.elapsed;
+    loaded.sim.scheduler.advance(remainingGameSeconds / loaded.sim.clock.ratio);
+    expect(loaded.sim.actions.job).toBeUndefined();
+    expect(loaded.inventory.itemByUid(rag.uid)).toBeUndefined();
+    expect(loaded.sim.body.wounds.leftArm?.bleeding).toBe(false);
   });
 
   it('round-trips a stopped reading action with its held book uid and progress', async () => {

@@ -11,7 +11,7 @@ import {
 } from '../src/core/clock.ts';
 import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
-import { Simulation } from '../src/core/sim.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
 const HOUR = simSecondsPerHour(defaultClock);
@@ -88,23 +88,60 @@ describe('Simulation', () => {
     expect(sim.body.wounds.torso?.bleeding).toBe(true);
   });
 
-  it('finishes early-stage antiseptic treatment before the next infection advance', () => {
-    const sim = new Simulation({ seed: 1 });
-    sim.body.impact(1, 'head', { bleeding: true });
-    sim.body.advance(1, true);
-    expect(sim.body.canTreat('head', 'antiseptic')).toBe(true);
-    sim.actions.treatment = {
+  it('replays at-risk wound decisions from the seeded simulation RNG and saves the result', () => {
+    const first = new Simulation({ seed: 31 });
+    const replay = new Simulation({ seed: 31 });
+    first.hit(1, 'a bite', 'torso', { bleeding: true });
+    replay.hit(1, 'a bite', 'torso', { bleeding: true });
+
+    expect(first.body.wounds.torso?.infectionAtRisk).toBe(replay.body.wounds.torso?.infectionAtRisk);
+    const restored = new Simulation({ seed: 31 });
+    restored.restoreState(first.snapshotState());
+    expect(restored.body.wounds.torso?.infectionAtRisk).toBe(first.body.wounds.torso?.infectionAtRisk);
+  });
+
+  it('uses the body tuning chance to decide which bleeding wounds are infection risks', () => {
+    const noRisk = new Simulation({
+      seed: 31,
+      bodyTuning: { ...BODY_TUNING_FIXTURE, infectionChance: 0 },
+    });
+    const certainRisk = new Simulation({
+      seed: 31,
+      bodyTuning: { ...BODY_TUNING_FIXTURE, infectionChance: 1 },
+    });
+    noRisk.hit(1, 'a bite', 'torso', { bleeding: true });
+    certainRisk.hit(1, 'a bite', 'torso', { bleeding: true });
+
+    expect(noRisk.body.wounds.torso?.infectionAtRisk).toBe(false);
+    expect(certainRisk.body.wounds.torso?.infectionAtRisk).toBe(true);
+  });
+
+  it('resolves prompt antiseptic through the scheduler but requires antibiotics after its window', () => {
+    const onsetSimulation = new Simulation({ seed: 1 });
+    onsetSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
+    const onsetSimSeconds = (BODY_TUNING_FIXTURE.infectionOnsetGameHours * 3600) / onsetSimulation.clock.ratio;
+    onsetSimulation.scheduler.advance(onsetSimSeconds + 1);
+    expect(onsetSimulation.body.canTreat('head', 'antiseptic')).toBe(true);
+    onsetSimulation.actions.treatment = {
       validate: (region, _itemUid, treatment) =>
-        sim.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
+        onsetSimulation.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
       finish: (region, _itemUid, treatment) =>
-        sim.body.treat(region, treatment) ? true : 'Treatment no longer applies',
+        onsetSimulation.body.treat(region, treatment) ? true : 'Treatment no longer applies',
     };
-    expect(sim.actions.beginTreatment('head', 1, 'antiseptic', sim.clock.ratio)).toBeUndefined();
+    expect(
+      onsetSimulation.actions.beginTreatment('head', 1, 'antiseptic', onsetSimulation.clock.ratio),
+    ).toBeUndefined();
+    onsetSimulation.scheduler.advance(onsetSimulation.clock.ratio);
+    expect(onsetSimulation.body.wounds.head?.infection).toBe('resolved');
+    expect(onsetSimulation.actions.job).toBeUndefined();
 
-    sim.scheduler.advance(1);
-
-    expect(sim.body.wounds.head?.infection).toBe('resolved');
-    expect(sim.actions.job).toBeUndefined();
+    const lateSimulation = new Simulation({ seed: 1 });
+    lateSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
+    const infectionCutoffGameSeconds =
+      (BODY_TUNING_FIXTURE.infectionOnsetGameHours + BODY_TUNING_FIXTURE.antisepticWindowGameHours) * 3600;
+    lateSimulation.scheduler.advance(infectionCutoffGameSeconds / lateSimulation.clock.ratio + 1);
+    expect(lateSimulation.body.canTreat('head', 'antiseptic')).toBe(false);
+    expect(lateSimulation.body.canTreat('head', 'antibiotics')).toBe(true);
   });
 
   it('gives the same clock and needs for a compressed and an uncompressed hour', () => {
