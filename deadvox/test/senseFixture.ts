@@ -18,6 +18,7 @@ export const TEST_SENSE_TUNING: SenseDef = {
   light: {
     playerDaySightScale: 0,
     lureRangeScale: 0.5,
-    throwDistanceMetres: 8,
+    throwMaxDistanceMetres: 8,
+    throwChargeSeconds: 1.25,
   },
 };

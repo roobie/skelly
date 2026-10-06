@@ -2,10 +2,14 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
+import { makeScale } from '../src/core/scale.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { toggleLight } from '../src/core/lights.ts';
+import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import { ZombieSystem } from '../src/core/zombies.ts';
+import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(
@@ -14,6 +18,8 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => read(`src/content/base/${file}`)),
 );
+const SHAMBLER = registry.zombies.get('shambler')!;
+const SCALE = makeScale(0.5);
 const TEST_LIGHTS = [
   { id: 'test_light_1', intensity: 11 },
   { id: 'test_light_2', intensity: 22 },
@@ -51,6 +57,101 @@ describe('made-light point pool', () => {
     expect(pool.lights[0]!.intensity).toBeGreaterThan(0);
     expect(pool.lights[0]!.position.distanceTo(expected)).toBeLessThan(1e-9);
     held.dispose();
+  });
+
+  it('keeps a dropped lit glowstick in both the renderer set and zombie sense', () => {
+    const scene = new Scene();
+    const pool = new LightPool(scene);
+    const inventory = new Inventory(registry);
+    const glowstick = inventory.create('glowstick');
+    expect(inventory.add(glowstick, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    expect(inventory.move(glowstick, { kind: 'pile', pos: [3, 1, 0] }).ok).toBe(true);
+    const entry = [...inventory.items()].find(({ item }) => item === glowstick)!;
+    const source = lightSenseSourceFor(registry, glowstick, entry.location, entry.path, [50, 1, 50], 1.3);
+    expect(source?.carried).toBe(false);
+
+    const camera = new PerspectiveCamera();
+    camera.position.set(0, 1, 0);
+    pool.update(inventory, {
+      held: { lightPositionOf: () => false },
+      camera,
+      blockSize: SCALE.blockSize,
+      daylightScale: 1,
+    });
+    expect(pool.lights[4]!.intensity).toBeGreaterThan(0);
+
+    const floor = (_x: number, y: number) => y === 0;
+    const zombies = new ZombieSystem({
+      player: () => ({
+        pos: [50, 1, 50],
+        facing: [-1, 0, 0],
+        movement: 'still',
+        lit: false,
+        lightSeenFrom: 40,
+        lightSources: source ? [source] : [],
+      }),
+      isSolid: floor,
+      isOpaque: floor,
+      hour: () => 0,
+      blockSize: SCALE.blockSize,
+      physics: physicsFor(SCALE),
+      jumpSpeed: PLAYER.jump,
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+    });
+    const id = zombies.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    zombies.tick(1 / 60);
+    expect(zombies.store.get(id)!.mode).toBe('investigate');
+    expect(zombies.store.get(id)!.lastPerceived).toEqual(source?.pos);
+  });
+
+  it('shares exposure for carried pockets but excludes lights stored in furniture', () => {
+    const inventory = new Inventory(registry);
+    const backpack = inventory.create('school_backpack');
+    expect(inventory.add(backpack, { kind: 'worn' })).toBe(true);
+    const pocketLight = inventory.create('glowstick');
+    expect(toggleLight(registry, pocketLight, 0)).toBeUndefined();
+    expect(inventory.add(pocketLight, { kind: 'pocket', owner: backpack, pocket: 0 })).toBe(true);
+    const pocketEntry = [...inventory.items()].find(({ item }) => item === pocketLight)!;
+    const pocketSource = lightSenseSourceFor(
+      registry,
+      pocketLight,
+      pocketEntry.location,
+      pocketEntry.path,
+      [4, 1, 0],
+      1.3,
+    );
+    expect(pocketSource?.carried).toBe(true);
+
+    const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' }, [])!;
+    const storedLight = inventory.create('glowstick');
+    expect(toggleLight(registry, storedLight, 0)).toBeUndefined();
+    expect(inventory.add(storedLight, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
+    const storedEntry = [...inventory.items()].find(({ item }) => item === storedLight)!;
+    expect(
+      lightSenseSourceFor(registry, storedLight, storedEntry.location, storedEntry.path, [4, 1, 0], 1.3),
+    ).toBeUndefined();
+
+    const pool = new LightPool(new Scene());
+    pool.update(inventory, {
+      held: { lightPositionOf: () => false },
+      camera: new PerspectiveCamera(),
+      blockSize: SCALE.blockSize,
+      daylightScale: 1,
+    });
+    expect(pool.lights[0]!.intensity).toBeGreaterThan(0);
+    expect(pool.lights.filter((light) => light.intensity > 0)).toHaveLength(1);
+  });
+
+  it('uses local direct sun rather than the clock alone for light gating', () => {
+    const open = sunExposedAt([0, 1, 0], 12, 20, () => false);
+    const roofed = sunExposedAt([0, 1, 0], 12, 20, (_x, y) => y === 2);
+    const night = sunExposedAt([0, 1, 0], 0, 20, () => false);
+
+    expect(open).toBe(true);
+    expect(roofed).toBe(false);
+    expect(night).toBe(false);
   });
 
   it('keeps all eight shader-light slots allocated as sources change', () => {

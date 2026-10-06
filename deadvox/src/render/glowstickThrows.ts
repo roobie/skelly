@@ -1,10 +1,9 @@
 import type { ColorRepresentation } from 'three';
-import { CapsuleGeometry, Group, Mesh, MeshBasicMaterial, PointLight, Vector3 } from 'three';
+import { CapsuleGeometry, Group, Mesh, MeshBasicMaterial, Vector3 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
+import { GLOWSTICK_ARC_HEIGHT_METRES, GLOWSTICK_FLIGHT_SECONDS, glowstickFlightPoint } from '../core/glowstickThrow.ts';
 
 const MAX_ACTIVE = 4;
-const DURATION = 0.75;
-const ARC_HEIGHT = 1.1;
 const UP = new Vector3(0, 1, 0);
 
 interface Flight {
@@ -15,7 +14,6 @@ interface Flight {
   readonly direction: Vector3;
   readonly mesh: Mesh;
   readonly material: MeshBasicMaterial;
-  readonly light: PointLight;
 }
 
 /** Render-only arc for a glowstick already placed at its landing pile by the inventory owner. */
@@ -31,9 +29,7 @@ export class GlowstickThrows {
     flight.start.set(...from);
     flight.end.set(...to);
     flight.material.color.set(color);
-    flight.light.color.set(color);
     flight.mesh.visible = true;
-    flight.light.visible = true;
     this.drawFlight(flight, 0);
   }
 
@@ -43,13 +39,12 @@ export class GlowstickThrows {
         continue;
       }
       flight.age += dt;
-      if (flight.age >= DURATION) {
+      if (flight.age >= GLOWSTICK_FLIGHT_SECONDS) {
         flight.active = false;
         flight.mesh.visible = false;
-        flight.light.visible = false;
         continue;
       }
-      this.drawFlight(flight, flight.age / DURATION);
+      this.drawFlight(flight, flight.age / GLOWSTICK_FLIGHT_SECONDS);
     }
   }
 
@@ -60,7 +55,6 @@ export class GlowstickThrows {
   dispose(): void {
     for (const flight of this.flights) {
       flight.material.dispose();
-      flight.light.dispose();
     }
     this.geometry.dispose();
     this.group.clear();
@@ -75,13 +69,11 @@ export class GlowstickThrows {
       }
       current.active = false;
       current.mesh.visible = false;
-      current.light.visible = false;
       return current;
     }
     const material = new MeshBasicMaterial({ color: '#b8ff64', toneMapped: false });
     const mesh = new Mesh(this.geometry, material);
-    const light = new PointLight('#b8ff64', 1.5, 1.5);
-    this.group.add(mesh, light);
+    this.group.add(mesh);
     const flight: Flight = {
       active: false,
       age: 0,
@@ -90,19 +82,17 @@ export class GlowstickThrows {
       direction: new Vector3(),
       mesh,
       material,
-      light,
     };
     this.flights.push(flight);
     return flight;
   }
 
   private drawFlight(flight: Flight, progress: number): void {
-    const arc = Math.sin(Math.PI * progress) * ARC_HEIGHT;
-    flight.mesh.position.lerpVectors(flight.start, flight.end, progress);
-    flight.mesh.position.y += arc;
+    const point = glowstickFlightPoint(flight.start.toArray() as Vec3, flight.end.toArray() as Vec3, progress);
+    flight.mesh.position.set(...point);
     flight.direction.subVectors(flight.end, flight.start);
-    flight.direction.y += (Math.cos(Math.PI * progress) * ARC_HEIGHT * Math.PI) / DURATION;
+    flight.direction.y +=
+      (Math.cos(Math.PI * progress) * GLOWSTICK_ARC_HEIGHT_METRES * Math.PI) / GLOWSTICK_FLIGHT_SECONDS;
     flight.mesh.quaternion.setFromUnitVectors(UP, flight.direction.normalize());
-    flight.light.position.copy(flight.mesh.position);
   }
 }

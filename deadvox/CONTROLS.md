@@ -172,12 +172,9 @@ affects stuff like duck walking, whereas MC affects blocking”. See
 `src/game/melee.ts`, `shouldEnterMeleeReady`; the registry owns keyboard
 bindings, not these mouse actions.
 
-## Play-only thrown light (d100)
+## Charged glowstick throw (d100-2)
 
-Throwing a lit glowstick is a play-only semantic action, so menus, rebinding
-capture and text entry cannot dispatch it. The registry remains the single
-owner of the binding and its context; see `src/game/inputBindings.ts`,
-`INPUT_BINDINGS`, and `src/game/play.ts`, `throwGlowstick`.
+**BR, 2026-10-06:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. Holding the rebindable action makes throw distance a deliberate choice; right-click cancels rather than starting another held action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginGlowstickCharge`.
 
 ## Remaining questions
 

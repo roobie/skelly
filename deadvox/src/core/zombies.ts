@@ -3,6 +3,7 @@ import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
+import { lightSenseRangeScale } from './lights.ts';
 import { type Body, CONTACT_SKIN, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
@@ -226,6 +227,8 @@ export interface PlayerSense {
   lightSeenFrom: number;
   eyeHeightMetres?: number | undefined;
   lightHeightMetres?: number | undefined;
+  /** Direct sunlight at the player's position; omitted by isolated perception fixtures. */
+  sunlit?: boolean | undefined;
   lightSources?: readonly ZombieLightSource[] | undefined;
   vocalNoise?: VocalNoise | undefined;
 }
@@ -234,6 +237,8 @@ export interface ZombieLightSource {
   pos: Vec3;
   seenFrom: number;
   heightMetres?: number | undefined;
+  /** Direct sunlight at the source; omitted by isolated perception fixtures. */
+  sunlit?: boolean | undefined;
   /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
   carried: boolean;
 }
@@ -253,6 +258,7 @@ export interface ZombieSystemOptions {
   tuning: SenseDef;
   player: () => PlayerSense;
   hour: () => number;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
   hurtPlayer: (amount: number, area: PlayerHitArea) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
@@ -479,6 +485,7 @@ export interface PerceptionInput {
   hour: number;
   blockSize: number;
   isSolid: SolidAt;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
   tuning: SenseDef;
 }
 
@@ -706,7 +713,17 @@ export const hearVocalNoise = ({
   return undefined;
 };
 
-const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid, tuning }: PerceptionInput): boolean => {
+const seesPlayer = ({
+  zombie,
+  from,
+  facing,
+  player,
+  hour,
+  blockSize,
+  isSolid,
+  isSunExposedAt,
+  tuning,
+}: PerceptionInput): boolean => {
   const delta = sub(player.pos, from);
   const metres = Math.hypot(delta[0], delta[2]) * blockSize;
   const dir = unit(delta);
@@ -727,20 +744,14 @@ const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid, tu
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
   let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
-  const playerLightScale = isDaylight(hour) ? tuning.light.playerDaySightScale : 1;
+  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos, hour) ?? isDaylight(hour);
+  const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
   if (player.lit && lightClear && playerLightScale > 0) {
     sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
   } else if (player.crouching) {
     sightRange *= tuning.crouch.sightRangeScale;
   }
   return clear && metres <= sightRange;
-};
-
-const lightRangeScale = (source: ZombieLightSource, hour: number, tuning: SenseDef): number => {
-  if (!source.carried) {
-    return tuning.light.lureRangeScale;
-  }
-  return isDaylight(hour) ? tuning.light.playerDaySightScale : 1;
 };
 
 const canSeeLight = ({
@@ -751,6 +762,7 @@ const canSeeLight = ({
   hour,
   blockSize,
   isOpaque,
+  isSunExposedAt,
   tuning,
 }: {
   zombie: ZombieDef;
@@ -760,11 +772,14 @@ const canSeeLight = ({
   hour: number;
   blockSize: number;
   isOpaque: SolidAt;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
   tuning: SenseDef;
 }): number | undefined => {
   const delta = sub(source.pos, from);
   const distance = Math.hypot(delta[0], delta[2]) * blockSize;
-  if (distance <= 0 || distance > source.seenFrom * lightRangeScale(source, hour, tuning)) {
+  const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos, hour) ?? isDaylight(hour);
+  const exposure = source.carried ? 'carried' : 'world';
+  if (distance <= 0 || distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light)) {
     return undefined;
   }
   const direction = unit(delta);
@@ -787,6 +802,7 @@ const visibleLightTarget = ({
   hour,
   blockSize,
   isOpaque,
+  isSunExposedAt,
   tuning,
 }: {
   zombie: ZombieDef;
@@ -796,13 +812,14 @@ const visibleLightTarget = ({
   hour: number;
   blockSize: number;
   isOpaque: SolidAt;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
   tuning: SenseDef;
 }): Vec3 | undefined => {
   const look = unit(facing);
   let nearest: ZombieLightSource | undefined;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (const source of player.lightSources ?? []) {
-    const distance = canSeeLight({ zombie, from, look, source, hour, blockSize, isOpaque, tuning });
+    const distance = canSeeLight({ zombie, from, look, source, hour, blockSize, isOpaque, isSunExposedAt, tuning });
     if (distance !== undefined && distance < nearestDistance) {
       nearest = source;
       nearestDistance = distance;
@@ -1251,6 +1268,7 @@ export class ZombieSystem {
     perception.hour = hour;
     perception.blockSize = blockSize;
     perception.isSolid = isOpaque;
+    perception.isSunExposedAt = this.options.isSunExposedAt;
     perception.tuning = this.options.tuning;
     scratch.sees = seesPlayer(perception);
     scratch.lightTarget = visibleLightTarget({
@@ -1261,8 +1279,15 @@ export class ZombieSystem {
       hour,
       blockSize,
       isOpaque,
+      isSunExposedAt: this.options.isSunExposedAt,
       tuning: this.options.tuning,
     });
+    if (
+      scratch.lightTarget &&
+      zombie.lastPerceived?.every((coordinate, axis) => coordinate === scratch.lightTarget![axis])
+    ) {
+      scratch.lightTarget = undefined;
+    }
     if (scratch.sees && zombie.obstacleWanderRemaining > 0) {
       zombie.obstacleWanderRemaining = 0;
       zombie.obstacleWanderHeading = undefined;
@@ -1290,7 +1315,7 @@ export class ZombieSystem {
       });
     }
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
-    scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
+    scratch.wasAware = zombie.mode !== 'idle' && zombie.mode !== 'stroll';
     if ((scratch.sees || scratch.tier || scratch.lightTarget) && !scratch.wasAware) {
       this.options.onSound?.('shambler_alert', copy(pos), zombie);
     }
@@ -1306,13 +1331,6 @@ export class ZombieSystem {
       zombie.searchTimer = 0;
       zombie.searchStrolling = false;
       zombie.lastPerceived = copy(player.pos);
-    } else if (lightTarget) {
-      zombie.mode = 'investigate';
-      zombie.investigationTier = 'near';
-      zombie.searchAnchor = undefined;
-      zombie.searchTimer = 0;
-      zombie.searchStrolling = false;
-      zombie.lastPerceived = copy(lightTarget);
     } else if (tier === 'near') {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'near';
@@ -1320,6 +1338,13 @@ export class ZombieSystem {
       zombie.searchTimer = 0;
       zombie.searchStrolling = false;
       zombie.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
+    } else if (lightTarget) {
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'near';
+      zombie.searchAnchor = undefined;
+      zombie.searchTimer = 0;
+      zombie.searchStrolling = false;
+      zombie.lastPerceived = copy(lightTarget);
     } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'far';
@@ -1710,7 +1735,6 @@ export class ZombieSystem {
     const { zombie, returnArrived, blockSize, dt, id } = scratch;
     if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
       this.beginIdle(zombie);
-      zombie.lastPerceived = undefined;
     }
     const poseInput = zombiePoseInputFor(zombie, id, blockSize);
     const stanceTarget = targetStanceWeight(poseInput);

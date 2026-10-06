@@ -12,7 +12,7 @@ import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
@@ -28,7 +28,7 @@ import {
 } from '../core/footsteps.ts';
 import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import { lightSenseSourceFor, sunExposedAt } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
@@ -223,44 +223,11 @@ const playerSenseTuning = (registry: Registry) => {
   return tuning;
 };
 
-const lightSenseFor = ({
-  registry,
-  item,
-  location,
-  playerPosition,
-  eyeHeightMetres,
-}: {
-  registry: Registry;
-  item: Item;
-  location: Location;
-  playerPosition: Vec3;
-  eyeHeightMetres: number;
-}): ZombieLightSource | undefined => {
-  const light = item.on ? registry.items.get(item.type)?.light : undefined;
-  if (!light) {
-    return undefined;
-  }
-  if (location.kind === 'hand' || location.kind === 'worn') {
-    return { pos: [...playerPosition], seenFrom: light.seenFrom, heightMetres: eyeHeightMetres, carried: true };
-  }
-  if (location.kind === 'pile') {
-    const [x, y, z] = location.pile.pos;
-    return { pos: [x + 0.5, y + 0.15, z + 0.5], seenFrom: light.seenFrom, carried: false };
-  }
-  if (location.kind === 'furniture') {
-    const { entity } = location;
-    return {
-      pos: [entity.pos[0] + entity.size[0] / 2, entity.pos[1] + entity.size[1] / 2, entity.pos[2] + entity.size[2] / 2],
-      seenFrom: light.seenFrom,
-      carried: false,
-    };
-  }
-  return undefined;
-};
-
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
+  const skyTop = (scale.maxCy + 1) * CHUNK - 1;
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean => sunExposedAt(pos, hour, skyTop, options.isOpaque);
   const physics = physicsFor(scale);
   const restored = options.restore;
 
@@ -500,11 +467,11 @@ export const createSession = (options: SessionOptions) => {
   const playerSense = () => {
     const yaw = controls.yaw();
     const eyeHeightMetres = playerEyeHeightMetres();
+    const hour = hourOfDay(sim.calendar);
     const lightSources = [...inventory.items()]
-      .map(({ item, location }) =>
-        lightSenseFor({ registry, item, location, playerPosition: body.pos, eyeHeightMetres }),
-      )
-      .filter((source): source is ZombieLightSource => source !== undefined);
+      .map(({ item, location, path }) => lightSenseSourceFor(registry, item, location, path, body.pos, eyeHeightMetres))
+      .filter((source): source is ZombieLightSource => source !== undefined)
+      .map((source) => ({ ...source, sunlit: isSunExposedAt(source.pos, hour) }));
     const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);
     return {
       pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
@@ -518,6 +485,7 @@ export const createSession = (options: SessionOptions) => {
       lightSeenFrom: carriedLight?.seenFrom ?? 40,
       eyeHeightMetres,
       lightHeightMetres: eyeHeightMetres,
+      sunlit: isSunExposedAt(body.pos, hour),
       lightSources,
     };
   };
@@ -538,6 +506,7 @@ export const createSession = (options: SessionOptions) => {
     tuning: senseTuning,
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
+    isSunExposedAt,
     hurtPlayer: (amount, area) => {
       wearOnPlayerHit(inventory, area);
       sim.hurt(amount, 'a shambler');

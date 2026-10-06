@@ -9,11 +9,12 @@ import type { BlockEntity } from '../core/blockEntities.ts';
 import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
+import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan } from '../core/options.ts';
@@ -69,7 +70,7 @@ import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import { Input } from './input.ts';
-import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
+import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
@@ -142,7 +143,9 @@ export const startPlay = (
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
   }
-  const { throwDistanceMetres } = playerSenseTuning.light;
+  const { throwMaxDistanceMetres, throwChargeSeconds } = playerSenseTuning.light;
+  let glowstickChargeStartedAt: number | undefined;
+  let glowstickChargeItemUid: number | undefined;
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -814,6 +817,7 @@ export const startPlay = (
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
   keyboardInput.cancelled = () => {
     input.cancel();
+    cancelGlowstickCharge();
     quickbarInput.cancel();
     hintToggleInput.cancel();
   };
@@ -866,7 +870,7 @@ export const startPlay = (
         withUnlockedInput(() => input.requestCrouchToggle());
         break;
       case 'player.throw-glowstick':
-        withUnlockedInput(throwGlowstick);
+        withUnlockedInput(beginGlowstickCharge);
         break;
       case 'hand.use-off':
         input.useOff();
@@ -893,6 +897,9 @@ export const startPlay = (
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
     if (action === 'firearm.reload') {
       input.reload.keyUp(at);
+    }
+    if (action === 'player.throw-glowstick') {
+      finishGlowstickCharge();
     }
     if (slot !== undefined) {
       quickbarInput.keyUp(slot, at);
@@ -998,8 +1005,8 @@ export const startPlay = (
     useTarget(entity);
   }
 
-  function throwGlowstick(): void {
-    if (refusePrimaryUseWhileHandling()) {
+  function beginGlowstickCharge(): void {
+    if (glowstickChargeStartedAt !== undefined || refusePrimaryUseWhileHandling()) {
       return;
     }
     const item = [
@@ -1010,17 +1017,45 @@ export const startPlay = (
       showRefusal('Hold a glowstick to throw it', sim.time);
       return;
     }
-    throwHeldGlowstick(item);
-  }
-
-  function throwHeldGlowstick(item: Item): void {
     if (!item.on) {
       showRefusal('Light the glowstick first', sim.time);
       return;
     }
-    const target = glowstickLandingTarget();
+    glowstickChargeStartedAt = sim.time;
+    glowstickChargeItemUid = item.uid;
+  }
+
+  function finishGlowstickCharge(): void {
+    if (glowstickChargeStartedAt === undefined || glowstickChargeItemUid === undefined) {
+      return;
+    }
+    const heldSeconds = Math.max(0, sim.time - glowstickChargeStartedAt);
+    const uid = glowstickChargeItemUid;
+    cancelGlowstickCharge();
+    if (input.consumeRightMousePressed() || input.rightMouseHeld) {
+      input.suppressRightMouseUntilRelease();
+      return;
+    }
+    const item = inventory.itemByUid(uid);
+    if (!item || ![inventory.hands.right, inventory.hands.left].includes(item)) {
+      return;
+    }
+    throwHeldGlowstick(item, chargedThrowDistance(throwMaxDistanceMetres, throwChargeSeconds, heldSeconds));
+  }
+
+  function cancelGlowstickCharge(): void {
+    glowstickChargeStartedAt = undefined;
+    glowstickChargeItemUid = undefined;
+  }
+
+  function throwHeldGlowstick(item: Item, distanceMetres: number): void {
+    if (!item.on) {
+      showRefusal('Light the glowstick first', sim.time);
+      return;
+    }
+    const target = glowstickLandingTarget(distanceMetres);
     if (!target) {
-      showRefusal('Aim away from straight up to throw', sim.time);
+      showRefusal("Can't find ground for the glowstick to land on", sim.time);
       return;
     }
     const placement = inventory.planAdd(item, target);
@@ -1042,17 +1077,10 @@ export const startPlay = (
     glowstickThrows.spawn(origin, landing, registry.items.get(item.type)?.light?.color ?? '#b8ff64');
   }
 
-  function glowstickLandingTarget(): Extract<Target, { kind: 'pile' }> | undefined {
-    const direction = lookDir();
-    const horizontal = Math.hypot(direction[0], direction[2]);
-    if (horizontal === 0) {
-      return undefined;
-    }
-    const distance = throwDistanceMetres / s / horizontal;
-    const x = body.pos[0] + direction[0] * distance;
-    const z = body.pos[2] + direction[2] * distance;
-    const pos: Vec3 = [Math.floor(x), Math.floor(engine.groundAt(x * s, z * s) / s), Math.floor(z)];
-    return { kind: 'pile', pos };
+  function glowstickLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
+    const from: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
+    const pos = traceGlowstickLanding(from, lookDir(), distanceMetres, s, scale.minCy * CHUNK, engine.isSolid);
+    return pos ? { kind: 'pile', pos } : undefined;
   }
 
   function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {
@@ -1330,7 +1358,16 @@ export const startPlay = (
         positionMetres: body.pos.map((v) => v * s),
         meshed: meshes.count,
         pending: streamer.pending,
-        looking,
+        looking: [
+          looking,
+          ...(visible.interaction && glowstickChargeStartedAt !== undefined
+            ? [
+                `${labelForAction('player.throw-glowstick')} ${Math.round(Math.min(1, (sim.time - glowstickChargeStartedAt) / throwChargeSeconds) * 100)}% · right-click cancels`,
+              ]
+            : []),
+        ]
+          .filter(Boolean)
+          .join(' · '),
       },
       visible,
     );
@@ -1423,7 +1460,7 @@ export const startPlay = (
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
     const ready = shouldEnterMeleeReady({
-      rightMouseHeld: input.rightMouseHeld && input.locked && !input.menuPointer,
+      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
       meleeWeaponHeld: selectedMelee.item !== undefined,
       handsEmpty: !(inventory.hands.right || inventory.hands.left),
       debugBuild: debugTools?.buildOn ?? false,
@@ -1455,6 +1492,10 @@ export const startPlay = (
 
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
+    if (input.consumeRightMousePressed() && glowstickChargeStartedAt !== undefined) {
+      cancelGlowstickCharge();
+      input.suppressRightMouseUntilRelease();
+    }
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     sim.paused = menuPaused || gameFrozen;

@@ -17,6 +17,10 @@ const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
 };
+const glowstickChargeSample = ({ start, seconds }) => {
+  const { session } = globalThis.primaryActionTest;
+  return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
+};
 const observationPlugin = {
   name: 'primary-action-test-observation',
   enforce: 'pre',
@@ -579,16 +583,37 @@ try {
       uid: glowstick.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
-      distance: r.inventory.registry.senses.get('player').light.throwDistanceMetres,
+      distance: r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres,
+      chargeSeconds: r.inventory.registry.senses.get('player').light.throwChargeSeconds,
     };
   });
-  await pressAction(page, 'player.throw-glowstick');
+  const cancelThrow = await holdAction(page, 'player.throw-glowstick');
+  await page.mouse.down({ button: 'right' });
+  await cancelThrow();
+  await page.mouse.up({ button: 'right' });
   await page.waitForFunction(
     (uid) =>
       globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
-      'pile',
+      'hand',
     throwFixture.uid,
   );
+  const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  const releaseThrow = await holdAction(page, 'player.throw-glowstick');
+  await waitForSimulation(
+    page,
+    glowstickChargeSample,
+    { start: chargeStartedAt, seconds: throwFixture.chargeSeconds },
+    {
+      seconds: throwFixture.chargeSeconds + 1,
+      label: 'glowstick charge reaches its maximum throw range',
+      record: (line) => process.stderr.write(`${line}\n`),
+      stop: releaseThrow,
+    },
+  );
+  await page.waitForFunction((uid) => {
+    const r = globalThis.primaryActionTest;
+    return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.glowstickThrows.activeCount > 0;
+  }, throwFixture.uid);
   const thrown = await page.evaluate(({ uid, start, blockSize }) => {
     const r = globalThis.primaryActionTest;
     const location = r.inventory.locate(r.inventory.itemByUid(uid));
