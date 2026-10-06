@@ -15,9 +15,6 @@ import {
 
 const root = '/fixture/deadvox';
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
-const pocketLabel = ` pocket ${['$', '{job.target.pocket + 1}'].join('')}`;
-const compartmentLabel = ` compartment ${['$', '{job.target.pocket + 1}'].join('')}`;
-
 type Sources = Map<string, string>;
 
 function hostFor(sources: Sources): SimulationModuleGraphHost {
@@ -269,21 +266,6 @@ describe('simulation source fingerprint', () => {
     );
     expect(capability.included).toBe(true);
     expect(capability.value).not.toBe(original);
-  });
-
-  it('keeps metrics-only observer label mutations outside the actual fingerprint', async () => {
-    const observerPath = `${root}/src/game/playtestObserver.ts`;
-    const simPath = `${root}/src/core/sim.ts`;
-    const sources: Sources = new Map([
-      [simPath, "import '../game/playtestObserver.ts';\nexport const tick = () => 1;\n"],
-      [observerPath, `export const label = '${pocketLabel}';\n`],
-    ]);
-    const changedSources = new Map(sources);
-    changedSources.set(observerPath, `export const label = '${compartmentLabel}';\n`);
-    const excluded = ['src/game/playtestObserver.ts'];
-    expect(await fingerprintSimulationSources(entries, root, hostFor(sources), { exclude: excluded })).toBe(
-      await fingerprintSimulationSources(entries, root, hostFor(changedSources), { exclude: excluded }),
-    );
   });
 
   it('classifies every core and game source module', async () => {

@@ -25,7 +25,7 @@ Each cut keeps the assertion defining its protected property and removes only re
 
 Revisit these cuts when an issue reports another default-suite budget overrun or a defect that a given-up case would have caught. Restore the affected case when responding to such a defect, and link the issue.
 
-For #318, `test/inputLiterals.test.ts` keeps scanning and parsing every source file but gives each file its own assertion, so unrelated parsing work cannot accumulate under one test timeout. `test/simulationFingerprint.test.ts` reuses its actual Vite-resolved graph for source mutations and calls `fingerprintSimulationSourceMap`; synthetic cases still exercise full graph collection through `fingerprintSimulationSources`. This removes repeated graph transforms without weakening the identity checks.
+For #318, neither whole-tree scan guard carries the whole tree under one test timeout. Parsing is spread across per-file cases, and the mutation checks reuse the collected graph instead of re-collecting it. See `test/inputLiterals.test.ts` and `test/simulationFingerprint.test.ts`, `mutateSimulationSource`.
 
 ## Milestone growth check
 
