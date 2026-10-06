@@ -159,7 +159,10 @@ inspection/export APIs rather than letting the save serializer define what the
 test considers “full state.” Use `assert.deepStrictEqual` (with explicit
 number handling), not only a checksum. Save at a scheduler/frame barrier; record
 all per-system cursors because recreating them from global time changes tick
-ordering.
+ordering. For d105-5, a scheduler tick admitted within its floating-point slack
+may leave a long-action cursor slightly ahead of frame time. `Scheduler.advance`
+and `validateLongJob` share that tolerance so a save preserves the tick that
+actually ran instead of rejecting or rewriting its cursor.
 
 The exact version identity binds simulation code, worldgen, gungen and content
 rules to the save. Worldgen determinism is required under that source fingerprint
@@ -361,7 +364,18 @@ systems now.
 | 7 — Cordon and labs | Tier 2/3 sites, underground labs, special zombies/evolution, hazard zones, lore | Revisit at Slice 7: generated sites remain version-bound world data; discovered lore belongs to the character and mutable hazards/evolution to world-region state. Exact fields wait for the systems. |
 | 8 — Version 1 | Migration and compatibility hardening | The version picker/migration decision is a hard fork. EPIC's “Old saves migrate” exit criterion remains a version 1 obligation, not a 1.9 feature; resolve the strict-version interim policy before the v1 exit. |
 
-**2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `deadvox/src/core/saveState.ts`, `SaveSnapshot`, and `deadvox/src/core/longAction.ts`, `LongActions`.
+**2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `src/core/saveState.ts`, `SaveSnapshot`, and `src/core/longAction.ts`, `LongActions`.
+
+**d105-1 amendment:** Interrupted prying must resume against the same door and
+tool, and a completed pry must preserve the resulting lock outcome on that
+door; both affect future play, not presentation. Keep action progress in
+`LongActions` and the lock outcome in `BlockEntities`. BR answered #309 at
+19:31, “it's destroyed”: a completed pry destroys the padlock and leaves the
+door unlocked, so the save preserves a destroyed-lock outcome. Because the
+descriptor changes saved shape, advance the exact-version schema beyond
+concurrent save changes rather than migrate old saves. See
+`src/core/longAction.ts`, `LongActions`, and `src/core/blockEntities.ts`,
+`BlockEntities.breakLock`.
 
 ### Storage, browsers, and recovery
 

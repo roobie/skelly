@@ -388,6 +388,9 @@ const checkLoot = (registry: Registry, report: Report) => {
 
 const checkFurniture = (registry: Registry, report: Report) => {
   for (const furniture of registry.furniture.values()) {
+    if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
+      report('furniture', furniture.id, '.door.prying.skill', `no skill "${furniture.door.prying.skill}"`);
+    }
     if (furniture.loot !== undefined && !registry.loot.has(furniture.loot)) {
       report('furniture', furniture.id, '.loot', `no loot table "${furniture.loot}"`);
     }
