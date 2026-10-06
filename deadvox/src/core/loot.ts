@@ -5,6 +5,7 @@
 
 import type { LootEntry, Registry } from './content.ts';
 import type { Rng } from './random.ts';
+import type { FixedLootItemDef } from './schema.ts';
 
 export interface Rolled {
   type: string;
@@ -37,6 +38,10 @@ const itemsOf = (registry: Registry, type: string, count: number, condition: num
   }
   return out;
 };
+
+/** Turns authored fixed items into worldgen records while respecting each item's stack limit. */
+export const fixedItems = (registry: Registry, items: readonly FixedLootItemDef[]): Rolled[] =>
+  items.flatMap(({ item, count = 1, condition = 1 }) => itemsOf(registry, item, count, condition));
 
 /** Rolls a table. The validator has already ruled out missing ids and loops. */
 export const rollLoot = (registry: Registry, tableId: string, rng: Rng): Rolled[] => {

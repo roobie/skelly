@@ -7,12 +7,15 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { sunDirection } from '../src/core/sky.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
   FIGURE_BOXES,
@@ -75,6 +78,11 @@ const senses = (
   tuning: SENSE_TUNING,
   hurtPlayer,
 });
+const sensesWithLocalSun = (
+  playerFn: () => PlayerSense,
+  hour: number,
+  isSunExposedAt: (position: Vec3, hour: number) => boolean,
+) => ({ ...senses(playerFn, FLOOR, () => hour), isSunExposedAt });
 const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   const frames = Math.ceil(seconds * 60);
   for (let frame = 0; frame < frames; frame++) {
@@ -444,6 +452,89 @@ describe('shambler perception', () => {
     ).toBe(false);
   });
 
+  it('uses local daylight exposure for carried-light and lure gates', () => {
+    const source = player([0, 0, 0], [-1, 0, 0], 'still', true);
+    const baseline = Math.max(SHAMBLER.sight, SHAMBLER.nightSight);
+    const distanceMetres = (baseline + source.lightSeenFrom) / 2;
+    const playerVisible = (hour: number, sunlit: boolean) =>
+      perceivePlayer({
+        zombie: SHAMBLER,
+        from: [0, 0, 0],
+        facing: [1, 0, 0],
+        player: { ...source, pos: [distanceMetres / BLOCK_SIZE, 0, 0] },
+        hour,
+        blockSize: BLOCK_SIZE,
+        isSolid: FLOOR,
+        isSunExposedAt: () => sunlit,
+        tuning: SENSE_TUNING,
+      });
+    expect(playerVisible(12, true)).toBe(false);
+    expect(playerVisible(12, false)).toBe(true);
+    expect(playerVisible(0, false)).toBe(true);
+
+    const target: Vec3 = [5 / BLOCK_SIZE, 1, 0];
+    const lureAt = (hour: number, sunlit: boolean) => {
+      const sensed = (): PlayerSense => ({
+        ...player([100, 1, 100]),
+        lightSources: [{ pos: target, seenFrom: 20, carried: false }],
+      });
+      const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
+      const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+      system.tick(1 / 60);
+      return system.store.get(id)!.mode;
+    };
+    const carriedAt = (hour: number, sunlit: boolean) => {
+      const sensed = (): PlayerSense => ({
+        ...player([100, 1, 100]),
+        lightSources: [{ pos: target, seenFrom: 20, carried: true }],
+      });
+      const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
+      const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+      system.tick(1 / 60);
+      return system.store.get(id)!.mode;
+    };
+    expect(lureAt(12, true)).toBe('idle');
+    expect(lureAt(12, false)).toBe('investigate');
+    expect(lureAt(0, false)).toBe('investigate');
+    expect(carriedAt(12, true)).toBe('idle');
+    expect(carriedAt(12, false)).toBe('investigate');
+    expect(carriedAt(0, false)).toBe('investigate');
+
+    const wallShadow: SolidAt = (_x, y, z) => y >= 2 && z === -1;
+    const daylightSky = (position: Vec3, hour: number) => sunExposedAt(position, hour, 20, wallShadow);
+    const sunlitSample: Vec3 = [0.5, 1.15, 0.5];
+    expect(
+      raycast([sunlitSample[0], sunlitSample[1] + 1e-4, sunlitSample[2]], sunDirection(12), 20, wallShadow),
+    ).toBeDefined();
+    expect(daylightSky(sunlitSample, 12)).toBe(true);
+
+    const shadowPlayer = perceivePlayer({
+      zombie: SHAMBLER,
+      from: [0, 0, 0],
+      facing: [1, 0, 0],
+      player: {
+        ...source,
+        pos: [distanceMetres / BLOCK_SIZE, 0, 0],
+        sunlit: daylightSky([distanceMetres / BLOCK_SIZE, 1.3 / BLOCK_SIZE, 0], 12),
+      },
+      hour: 12,
+      blockSize: BLOCK_SIZE,
+      isSolid: FLOOR,
+      isSunExposedAt: daylightSky,
+      tuning: SENSE_TUNING,
+    });
+    expect(shadowPlayer).toBe(false);
+
+    const shadowLurePlayer = (): PlayerSense => ({
+      ...player([100, 1, 100]),
+      lightSources: [{ pos: target, seenFrom: 20, carried: false }],
+    });
+    const shadowLure = new ZombieSystem(sensesWithLocalSun(shadowLurePlayer, 12, daylightSky));
+    const shadowLureId = shadowLure.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    shadowLure.tick(1 / 60);
+    expect(shadowLure.store.get(shadowLureId)!.mode).toBe('idle');
+  });
+
   it('keeps crouched light reach in the open but lets a half-wall block the lowered light', () => {
     const { lightSeenFrom } = player([0, 0, 0], [-1, 0, 0], 'still', true);
     const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
@@ -464,7 +555,7 @@ describe('shambler perception', () => {
           eyeHeightMetres,
           lightHeightMetres: eyeHeightMetres,
         },
-        hour: 12,
+        hour: 0,
         blockSize: BLOCK_SIZE,
         isSolid: blocked ? isSolid : () => false,
         tuning: SENSE_TUNING,
@@ -481,6 +572,161 @@ describe('shambler perception', () => {
 });
 
 describe('shambler scenarios', () => {
+  it('beelines to visible lights using the existing investigation target and respects occlusion', () => {
+    const sourceRange = 20;
+    const targetDistanceMetres = (sourceRange * SENSE_TUNING.light.lureRangeScale) / 2;
+    const target: Vec3 = [targetDistanceMetres / BLOCK_SIZE, 1, 0];
+    const sensedPlayer = (): PlayerSense => ({
+      ...player([100, 1, 100]),
+      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false }],
+    });
+    const open = new ZombieSystem(senses(sensedPlayer, FLOOR, () => 0));
+    const id = open.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    open.tick(1 / 60);
+    const zombie = open.store.get(id)!;
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.lastPerceived).toEqual(target);
+    const startingDistance = metres(zombie.body.pos, target);
+    run(open, 1);
+    expect(metres(zombie.body.pos, target)).toBeLessThan(startingDistance);
+
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === Math.floor(target[0] / 2) && y > 0 && y < 4);
+    const blocked = new ZombieSystem(senses(sensedPlayer, wall, () => 0));
+    const blockedId = blocked.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    blocked.tick(1 / 60);
+    expect(blocked.store.get(blockedId)!.mode).toBe('idle');
+  });
+
+  it('keeps a dropped light hidden behind a one-block wall while the same light in the open lures', () => {
+    const lureMode = (behindWall: boolean): string => {
+      const inventory = new Inventory(registry);
+      const glowstick = inventory.create('glowstick');
+      expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+      expect(inventory.add(glowstick, { kind: 'pile', pos: [7, 1, 0] })).toBe(true);
+      const entry = [...inventory.items()].find(({ item }) => item === glowstick)!;
+      const source = lightSenseSourceFor({
+        registry,
+        item: glowstick,
+        location: entry.location,
+        path: entry.path,
+        playerPosition: [100, 1, 100],
+        eyeHeightMetres: 1.3,
+      });
+      if (!source) {
+        throw new Error('Dropped glowstick did not create a sense source');
+      }
+      const sensedPlayer = (): PlayerSense => ({ ...player([100, 1, 100]), lightSources: [source] });
+      const isOpaque: SolidAt = (x, y, z) => FLOOR(x, y, z) || (behindWall && x === 6 && y === 1 && z === 0);
+      const system = new ZombieSystem({ ...senses(sensedPlayer, isOpaque, () => 0), isOpaque });
+      const id = system.add(SHAMBLER, [3.05, 1, 0.5], [1, 0, 0]);
+      system.tick(1 / 60);
+      return system.store.get(id)!.mode;
+    };
+
+    expect(lureMode(false)).toBe('investigate');
+    expect(lureMode(true)).toBe('idle');
+  });
+
+  it('lets a visible lure complete one search and return without repeating its alert', () => {
+    const sourceRange = 20;
+    const distanceMetres = (sourceRange * SENSE_TUNING.light.lureRangeScale) / 2;
+    const target: Vec3 = [distanceMetres / BLOCK_SIZE, 1, 0];
+    const sensed = (): PlayerSense => ({
+      ...player([100, 1, 100]),
+      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false }],
+    });
+    const alerts: string[] = [];
+    const system = new ZombieSystem({
+      ...senses(sensed, FLOOR, () => 0),
+      onSound: (event) => {
+        if (event === 'shambler_alert') {
+          alerts.push(event);
+        }
+      },
+    });
+    const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    system.tick(1 / 60);
+    let investigating = zombie.mode === 'investigate';
+    let investigationEntries = Number(investigating);
+    const observed = new Set([zombie.mode]);
+    const maxSearch = SHAMBLER.hearingModel.searchSeconds.max;
+    const roundTripSeconds = (distanceMetres / SHAMBLER.speed.wander) * 2;
+    const frames = Math.ceil((maxSearch + roundTripSeconds + 10) * 60);
+    for (let frame = 1; frame <= frames; frame++) {
+      system.tick(1 / 60, frame / 60);
+      observed.add(zombie.mode);
+      if (zombie.mode === 'investigate' && !investigating) {
+        investigationEntries += 1;
+      }
+      investigating = zombie.mode === 'investigate';
+    }
+
+    expect(observed).toContain('search');
+    expect(observed).toContain('return');
+    expect(investigationEntries).toBe(1);
+    expect(alerts).toHaveLength(1);
+    expect(zombie.mode).not.toBe('investigate');
+  });
+
+  it('alerts when a searching shambler spots the player', () => {
+    let sensed: PlayerSense = {
+      ...player([100, 1, 100]),
+      vocalNoise: { id: 1, pos: [20, 1, 0], radiusMetres: 30, expiresAt: 1 },
+    };
+    const alerts: string[] = [];
+    const type = { ...SHAMBLER, sight: 8, nightSight: 0.01 };
+    const system = new ZombieSystem({
+      ...senses(
+        () => sensed,
+        FLOOR,
+        () => 12,
+      ),
+      seed: 113,
+      onSound: (event) => {
+        if (event === 'shambler_alert') {
+          alerts.push(event);
+        }
+      },
+    });
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    system.tick(1 / 20, 0.05);
+    expect(zombie.mode).toBe('investigate');
+
+    sensed = player([100, 1, 100]);
+    for (let tick = 0; tick < 500 && zombie.mode !== 'search'; tick++) {
+      system.tick(1 / 20, 0.1 + tick / 20);
+    }
+    expect(zombie.mode).toBe('search');
+    alerts.length = 0;
+    const { facing } = zombie;
+    sensed = player(
+      [zombie.body.pos[0] + facing[0] * 5, zombie.body.pos[1], zombie.body.pos[2] + facing[2] * 5],
+      [-facing[0], 0, -facing[2]],
+    );
+    system.tick(1 / 20, 30);
+
+    expect(zombie.mode).toBe('chase');
+    expect(alerts).toEqual(['shambler_alert']);
+  });
+
+  it('chooses a near heard player over a visible light lure', () => {
+    const noiseTarget: Vec3 = [4, 1, 0];
+    const lightTarget: Vec3 = [8, 1, 0];
+    const sensed = (): PlayerSense => ({
+      ...player([100, 1, 100]),
+      vocalNoise: { id: 1, pos: noiseTarget, radiusMetres: 10, expiresAt: 1 },
+      lightSources: [{ pos: lightTarget, seenFrom: 20, carried: false }],
+    });
+    const system = new ZombieSystem(senses(sensed, FLOOR, () => 0));
+    const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+
+    system.tick(1 / 60);
+
+    expect(system.store.get(id)!.lastPerceived).toEqual(noiseTarget);
+  });
+
   it('refuses to close a real door on the player or a shambler, then closes with a 1 m clearance', () => {
     const { entities, door } = makeDoorWorld();
     const body = (pos: Vec3) => ({ pos, vel: [0, 0, 0] as Vec3, halfWidth: 0.56, height: 3.4, onGround: true });
@@ -2398,6 +2644,21 @@ describe('background zombie tier', () => {
     expect(system.store.get(id)?.tier).toBe('background');
     expect(system.store.get(id)?.lastVocalNoiseId).toBe(noise.id);
     expect(system.store.get(id)?.lastPerceived).toBeDefined();
+  });
+
+  it('uses the active visible-light sense for distant background actors', () => {
+    const lightTarget: Vec3 = [75, 1, 0];
+    const target: PlayerSense = {
+      ...player([0, 1, 0]),
+      lightSources: [{ pos: lightTarget, seenFrom: 100, carried: false }],
+    };
+    const system = new ZombieSystem({ ...senses(() => target, FLOOR, () => 23), isLoaded: () => true });
+    const id = system.add(SHAMBLER, [100, 1, 0], [-1, 0, 0]);
+    system.tickBackground(0.5, 0.5);
+    const zombie = system.store.get(id)!;
+    expect(zombie.tier).toBe('background');
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.lastPerceived).toEqual(lightTarget);
   });
 });
 

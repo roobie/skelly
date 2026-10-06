@@ -3,6 +3,7 @@ import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
+import { lightSenseRangeScale } from './lights.ts';
 import {
   type Body,
   CONTACT_SKIN,
@@ -268,7 +269,20 @@ export interface PlayerSense {
   lightSeenFrom: number;
   eyeHeightMetres?: number | undefined;
   lightHeightMetres?: number | undefined;
+  /** Direct sunlight at the player's position; omitted by isolated perception fixtures. */
+  sunlit?: boolean | undefined;
+  lightSources?: readonly ZombieLightSource[] | undefined;
   vocalNoise?: VocalNoise | undefined;
+}
+
+interface ZombieLightSource {
+  pos: Vec3;
+  seenFrom: number;
+  heightMetres?: number | undefined;
+  /** Direct sunlight at the source; omitted by isolated perception fixtures. */
+  sunlit?: boolean | undefined;
+  /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
+  carried: boolean;
 }
 
 export interface ZombieSystemOptions {
@@ -288,6 +302,7 @@ export interface ZombieSystemOptions {
   tuning: SenseDef;
   player: () => PlayerSense;
   hour: () => number;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
   hurtPlayer: (amount: number, area: PlayerHitArea) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
@@ -506,10 +521,6 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
 /** Daylight follows the sky's 06:30 dawn and 19:30 dusk keys. */
 const isDaylight = (hour: number): boolean => hour >= 6.5 && hour < 19.5;
 
-/** The seam for later voxel light: currently daylight or the player's own lit flashlight. */
-const isLit = (_isSolid: SolidAt, _position: Vec3, hour: number, flashlightLit: boolean): boolean =>
-  isDaylight(hour) || flashlightLit;
-
 export interface PerceptionInput {
   zombie: ZombieDef;
   from: Vec3;
@@ -518,6 +529,7 @@ export interface PerceptionInput {
   hour: number;
   blockSize: number;
   isSolid: SolidAt;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
   tuning: SenseDef;
 }
 
@@ -550,6 +562,7 @@ interface ZombieTickScratch {
   perception: PerceptionInput;
   hearingInput: HearingInput;
   sees: boolean;
+  lightTarget?: Vec3 | undefined;
   vocal?: HeardNoise | undefined;
   tier?: HearingTier | undefined;
   wasAware: boolean;
@@ -593,6 +606,7 @@ const createZombieTickScratch = (): ZombieTickScratch => ({
   perception: {} as PerceptionInput,
   hearingInput: {} as HearingInput,
   sees: false,
+  lightTarget: undefined,
   vocal: undefined,
   tier: undefined,
   wasAware: false,
@@ -743,7 +757,17 @@ export const hearVocalNoise = ({
   return undefined;
 };
 
-const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid, tuning }: PerceptionInput): boolean => {
+const seesPlayer = ({
+  zombie,
+  from,
+  facing,
+  player,
+  hour,
+  blockSize,
+  isSolid,
+  isSunExposedAt,
+  tuning,
+}: PerceptionInput): boolean => {
   const delta = sub(player.pos, from);
   const metres = Math.hypot(delta[0], delta[2]) * blockSize;
   const dir = unit(delta);
@@ -763,15 +787,89 @@ const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid, tu
   };
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
-  const lit = isLit(isSolid, player.pos, hour, player.lit);
-  const lightVisible = lit && player.lit && lightClear;
   let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
-  if (lightVisible) {
-    sightRange = player.lightSeenFrom;
+  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos, hour) ?? isDaylight(hour);
+  const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
+  if (player.lit && lightClear && playerLightScale > 0) {
+    sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
   } else if (player.crouching) {
     sightRange *= tuning.crouch.sightRangeScale;
   }
   return clear && metres <= sightRange;
+};
+
+const canSeeLight = ({
+  zombie,
+  from,
+  look,
+  source,
+  hour,
+  blockSize,
+  isOpaque,
+  isSunExposedAt,
+  tuning,
+}: {
+  zombie: ZombieDef;
+  from: Vec3;
+  look: Vec3;
+  source: ZombieLightSource;
+  hour: number;
+  blockSize: number;
+  isOpaque: SolidAt;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  tuning: SenseDef;
+}): number | undefined => {
+  const delta = sub(source.pos, from);
+  const distance = Math.hypot(delta[0], delta[2]) * blockSize;
+  const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos, hour) ?? isDaylight(hour);
+  const exposure = source.carried ? 'carried' : 'world';
+  if (distance <= 0 || distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light)) {
+    return undefined;
+  }
+  const direction = unit(delta);
+  const dot = Math.max(-1, Math.min(1, look[0] * direction[0] + look[2] * direction[2]));
+  if (dot < Math.cos((zombie.sightCone * Math.PI) / 180)) {
+    return undefined;
+  }
+  const origin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
+  const height = source.heightMetres ?? 0.15;
+  const target: Vec3 = [source.pos[0], source.pos[1] + height / blockSize, source.pos[2]];
+  const ray = sub(target, origin);
+  return raycast(origin, unit(ray), Math.hypot(...ray), isOpaque) === undefined ? distance : undefined;
+};
+
+const visibleLightTarget = ({
+  zombie,
+  from,
+  facing,
+  player,
+  hour,
+  blockSize,
+  isOpaque,
+  isSunExposedAt,
+  tuning,
+}: {
+  zombie: ZombieDef;
+  from: Vec3;
+  facing: Vec3;
+  player: PlayerSense;
+  hour: number;
+  blockSize: number;
+  isOpaque: SolidAt;
+  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  tuning: SenseDef;
+}): Vec3 | undefined => {
+  const look = unit(facing);
+  let nearest: ZombieLightSource | undefined;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (const source of player.lightSources ?? []) {
+    const distance = canSeeLight({ zombie, from, look, source, hour, blockSize, isOpaque, isSunExposedAt, tuning });
+    if (distance !== undefined && distance < nearestDistance) {
+      nearest = source;
+      nearestDistance = distance;
+    }
+  }
+  return nearest ? copy(nearest.pos) : undefined;
 };
 
 /** Returns true for sight or either audible tier, using metres for distances and angles. */
@@ -1385,32 +1483,33 @@ export class ZombieSystem {
     const entries = this.classifyTiers(player).filter(([, zombie]) => zombie.tier === 'background');
     this.updateHordes(dt, time, player);
     const { blockSize, isSolid } = this.options;
-    for (const [, zombie] of entries) {
+    const scratch = this.tickScratch;
+    scratch.dt = dt;
+    scratch.time = time;
+    scratch.player = player;
+    scratch.hour = this.options.hour();
+    scratch.blockSize = blockSize;
+    scratch.isSolid = isSolid;
+    scratch.isOpaque = this.options.isOpaque;
+    for (const [id, zombie] of entries) {
       this.captureRenderPrevious(zombie);
       if (zombie.incapacitated) {
         this.tickIncapacitated(zombie, dt);
         continue;
       }
-      if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
-        zombie.lastVocalNoiseId = player.vocalNoise.id;
-        if (zombie.hordeId === undefined) {
-          const heard = hearVocalNoise({
-            zombie: zombie.type,
-            from: zombie.body.pos,
-            noise: player.vocalNoise,
-            time,
-            blockSize,
-            isSolid,
-            rng: zombie.behaviorRng,
-            tuning: this.options.tuning,
-          });
-          if (heard) {
-            zombie.lastPerceived = copy(heard.target);
-            zombie.mode = 'investigate';
-          }
-        }
+      scratch.id = id;
+      scratch.zombie = zombie;
+      scratch.pos = zombie.body.pos;
+      scratch.type = zombie.type;
+      scratch.rng = zombie.behaviorRng;
+      this.updatePerception();
+      this.updateAttention();
+      let target = this.hordeTarget(zombie) ?? zombie.lastPerceived ?? player.pos;
+      if (scratch.sees) {
+        target = player.pos;
+      } else if (scratch.tier) {
+        target = zombie.lastPerceived ?? target;
       }
-      const target = this.hordeTarget(zombie) ?? zombie.lastPerceived ?? player.pos;
       const offset = sub(target, zombie.body.pos);
       const distance = Math.hypot(offset[0], offset[2]) * blockSize;
       const direction: Vec3 = distance > 0 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
@@ -1465,8 +1564,26 @@ export class ZombieSystem {
     perception.hour = hour;
     perception.blockSize = blockSize;
     perception.isSolid = isOpaque;
+    perception.isSunExposedAt = this.options.isSunExposedAt;
     perception.tuning = this.options.tuning;
     scratch.sees = seesPlayer(perception);
+    scratch.lightTarget = visibleLightTarget({
+      zombie: type,
+      from: pos,
+      facing: zombie.facing,
+      player,
+      hour,
+      blockSize,
+      isOpaque,
+      isSunExposedAt: this.options.isSunExposedAt,
+      tuning: this.options.tuning,
+    });
+    if (
+      scratch.lightTarget &&
+      zombie.lastPerceived?.every((coordinate, axis) => coordinate === scratch.lightTarget![axis])
+    ) {
+      scratch.lightTarget = undefined;
+    }
     if (scratch.sees && zombie.obstacleWanderRemaining > 0) {
       zombie.obstacleWanderRemaining = 0;
       zombie.obstacleWanderHeading = undefined;
@@ -1495,7 +1612,7 @@ export class ZombieSystem {
     }
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
     scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
-    if ((scratch.sees || scratch.tier) && !scratch.wasAware) {
+    if ((scratch.sees || scratch.tier || scratch.lightTarget) && !scratch.wasAware) {
       this.options.onSound?.('shambler_alert', copy(pos), zombie);
     }
   }
@@ -1503,7 +1620,7 @@ export class ZombieSystem {
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Preserve precedence between sight, near/far noise, prior chase, and horde attention.
   private updateAttention(): void {
     const scratch = this.tickScratch;
-    const { zombie, player, pos, tier, sees, vocal, blockSize } = scratch;
+    const { zombie, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
     if (sees) {
       zombie.mode = 'chase';
       zombie.investigationTier = undefined;
@@ -1518,6 +1635,13 @@ export class ZombieSystem {
       zombie.searchTimer = 0;
       zombie.searchStrolling = false;
       zombie.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
+    } else if (lightTarget) {
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'near';
+      zombie.searchAnchor = undefined;
+      zombie.searchTimer = 0;
+      zombie.searchStrolling = false;
+      zombie.lastPerceived = copy(lightTarget);
     } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'far';
@@ -1917,7 +2041,6 @@ export class ZombieSystem {
     const { zombie, returnArrived, blockSize, dt, id } = scratch;
     if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
       this.beginIdle(zombie);
-      zombie.lastPerceived = undefined;
     }
     const poseInput = zombiePoseInputFor(zombie, id, blockSize);
     const stanceTarget = targetStanceWeight(poseInput);

@@ -29,6 +29,8 @@ export class Input {
   walking = false;
   menuPointer = false;
   rightMouseHeld = false;
+  private rightMousePressed = false;
+  private rightMouseSuppressed = false;
   private dominantUsePressed = false;
   private dominantUseDown = false;
   private offUsePressed = false;
@@ -44,6 +46,7 @@ export class Input {
       const mouse = event as MouseEvent;
       if (mouse.button === 2) {
         this.rightMouseHeld = true;
+        this.rightMousePressed = true;
       }
       if (
         mouse.button === 0 &&
@@ -60,6 +63,7 @@ export class Input {
       const { button } = event as MouseEvent;
       if (button === 2) {
         this.rightMouseHeld = false;
+        this.rightMouseSuppressed = false;
       }
       if (button === 0) {
         this.dominantUseDown = false;
@@ -77,6 +81,8 @@ export class Input {
   cancel(): void {
     this.reload.cancel();
     this.rightMouseHeld = false;
+    this.rightMousePressed = false;
+    this.rightMouseSuppressed = false;
     this.dominantUseDown = false;
     this.dominantUsePressed = false;
     this.offUsePressed = false;
@@ -93,6 +99,20 @@ export class Input {
 
   get dominantUseHeld(): boolean {
     return this.dominantUseDown;
+  }
+
+  get rightMouseActionHeld(): boolean {
+    return this.rightMouseHeld && !this.rightMouseSuppressed;
+  }
+
+  consumeRightMousePressed(): boolean {
+    const pressed = this.rightMousePressed;
+    this.rightMousePressed = false;
+    return pressed;
+  }
+
+  suppressRightMouseUntilRelease(): void {
+    this.rightMouseSuppressed = this.rightMouseHeld;
   }
 
   adjustPitch(delta: number): number {
