@@ -187,6 +187,16 @@ describe('the hamlet', () => {
     }
   });
 
+  it('applies type rarity weights to authored markers without pinning generated counts', () => {
+    const road = { x0: 0, z0: 0, x1: 64, z1: 12 };
+    const runnerMarker = { zombie: 'runner', chance: 1, pos: [8, 1, 8] as [number, number, number] };
+    const common = hamletZombieSpawns(1, road, [runnerMarker], () => 10, new Map([['shambler', 1], ['runner', 1]]));
+    const excluded = hamletZombieSpawns(1, road, [runnerMarker], () => 10, new Map([['shambler', 1], ['runner', 0]]));
+    expect(common.some(({ type }) => type === 'runner')).toBe(true);
+    expect(excluded.length).toBeGreaterThan(0);
+    expect(excluded.some(({ type }) => type === 'runner')).toBe(false);
+  });
+
   it('keeps lots and the road far enough apart to stay flat', () => {
     // Flattening reaches `blend` blocks out; lots and the road are `gap` apart.
     expect(HAMLET.blend).toBeLessThanOrEqual(HAMLET.gap);

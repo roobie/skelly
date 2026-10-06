@@ -85,7 +85,7 @@ import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { bodyRestExtents, createGaitCache, type Extent, footRestExtents, type WalkActor } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { DEATH_FALL_DURATION, type DeathActor, deathPose } from '@mobgen/mob/reactions.ts';
-import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { SHAMBLER_FIGURE_SEEDS, zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   BufferAttribute,
@@ -243,6 +243,7 @@ const buildVariantGeometry = (realized: Realized): BufferGeometry => {
 type SlotKey = EntityId | string;
 
 interface Variant {
+  readonly model: string;
   readonly figureSeed: number;
   readonly realized: Realized;
   /** Shared bones/extents/params/seed; each zombie using this variant clones it with its own GaitCache
@@ -360,7 +361,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly blockSize: number;
   private readonly capacity: number;
   private readonly variants: readonly Variant[];
-  private readonly variantIndexBySeed: ReadonlyMap<number, number>;
+  private readonly variantIndexBySeed: ReadonlyMap<string, number>;
   private readonly layout: CrowdTextureLayout;
   private readonly textureData: Float32Array;
   private readonly texture: DataTexture;
@@ -383,35 +384,41 @@ export class MobActorMeshes implements ZombieRenderer {
     this.blockSize = blockSize;
     this.capacity = capacity;
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
-    const shamblerTemplate = TEMPLATES.find((t) => t.name === 'shambler');
-    if (!shamblerTemplate) {
-      throw new Error("MobActorMeshes: mobgen has no 'shambler' template");
+    const modelIds = ['shambler', 'runner'] as const;
+    const templatesByModel = new Map(TEMPLATES.map((template) => [template.name, template]));
+    for (const model of modelIds) {
+      if (!templatesByModel.has(model)) {
+        throw new Error(`MobActorMeshes: mobgen has no '${model}' template`);
+      }
     }
 
     const t0 = performance.now();
     const built: {
+      model: string;
       figureSeed: number;
       realized: Realized;
       walkActorTemplate: WalkActor;
       bodyExtents: ReadonlyMap<string, Extent>;
     }[] = [];
     const figureSeeds = SHAMBLER_FIGURE_SEEDS.slice(0, poolSize);
-    for (const seed of figureSeeds) {
-      const { genome, realized } = shamblerFigure(seed);
-      const extents = footRestExtents(realized.body.bones, realized.voxels);
-      const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-      const walkActorTemplate: WalkActor = {
-        bones: realized.body.bones,
-        extents,
-        params: genome.params as HumanoidParams,
-        seed: genome.seed,
-      };
-      built.push({ figureSeed: seed, realized, walkActorTemplate, bodyExtents });
+    for (const model of modelIds) {
+      for (const seed of figureSeeds) {
+        const { genome, realized } = zombieFigure(model, seed);
+        const extents = footRestExtents(realized.body.bones, realized.voxels);
+        const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
+        const walkActorTemplate: WalkActor = {
+          bones: realized.body.bones,
+          extents,
+          params: genome.params as HumanoidParams,
+          seed: genome.seed,
+        };
+        built.push({ model, figureSeed: seed, realized, walkActorTemplate, bodyExtents });
+      }
     }
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(
-      `MobActorMeshes: generated ${poolSize} shambler variant${poolSize === 1 ? '' : 's'} in ${generationMs.toFixed(1)} ms`,
+      `MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`,
     );
 
     const bonesPerSlot = Math.max(1, ...built.map((v) => v.realized.body.bones.length));
@@ -505,7 +512,7 @@ export class MobActorMeshes implements ZombieRenderer {
           partBoneIndices: boneIndices,
           bodyBoneIndices: v.realized.body.bones.map((_, index) => index),
           voxelSize: v.realized.voxels.size,
-          template: shamblerTemplate,
+          template: templatesByModel.get(v.model)!,
           part,
         });
         const bounds = voxelBounds(v.realized.voxels, boneIndices, properties.center);
@@ -521,6 +528,7 @@ export class MobActorMeshes implements ZombieRenderer {
         });
       }
       return {
+        model: v.model,
         figureSeed: v.figureSeed,
         realized: v.realized,
         walkActorTemplate: v.walkActorTemplate,
@@ -538,7 +546,9 @@ export class MobActorMeshes implements ZombieRenderer {
         variantIndex,
       } satisfies Variant & { variantIndex: number };
     });
-    this.variantIndexBySeed = new Map(this.variants.map((variant, index) => [variant.figureSeed, index]));
+    this.variantIndexBySeed = new Map(
+      this.variants.map((variant, index) => [`${variant.model}:${variant.figureSeed}`, index]),
+    );
   }
 
   setCamera(camera: Camera): void {
@@ -712,7 +722,7 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   private addZombie(id: EntityId, zombie: Zombie): ZombieRenderState | undefined {
-    const variantIndex = this.variantIndexBySeed.get(zombie.figureSeed);
+    const variantIndex = this.variantIndexBySeed.get(`${zombie.type.model}:${zombie.figureSeed}`);
     if (variantIndex === undefined) {
       return undefined;
     }

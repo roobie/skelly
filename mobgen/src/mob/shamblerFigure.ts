@@ -1,6 +1,6 @@
 import { generateValid } from '../core/generate.ts';
 import { worldPosition } from '../core/voxelize.ts';
-import { shambler } from './templates.ts';
+import { TEMPLATES } from './templates.ts';
 
 /** Explicit, known-valid seeds shared by the simulation and detailed renderer. */
 export const SHAMBLER_FIGURE_SEEDS = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8] as const);
@@ -34,7 +34,7 @@ interface Bounds {
   min: [number, number, number];
   max: [number, number, number];
 }
-const cache = new Map<number, ShamblerFigure>();
+const cache = new Map<string, ShamblerFigure>();
 
 const includeOwnedVoxel = (
   bone: string,
@@ -95,18 +95,23 @@ const buildRegionBoxes = (limits: ReadonlyMap<string, Bounds>, margin: number) =
     ]),
   ) as unknown as Record<ShamblerHitRegion, readonly BoneVoxelBox[]>;
 
-/** Realizes an exact member of SHAMBLER_FIGURE_SEEDS once; unknown or invalid seeds fail loudly. */
-export const shamblerFigure = (seed: number): ShamblerFigure => {
-  const cached = cache.get(seed);
+/** Realizes a seeded mobgen template once; model and input seed are the persistent selection key. */
+export const zombieFigure = (model: string, seed: number): ShamblerFigure => {
+  const key = `${model}:${seed}`;
+  const cached = cache.get(key);
   if (cached) {
     return cached;
   }
   if (!(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(seed)) {
-    throw new Error(`Unknown shambler figure seed ${seed}`);
+    throw new Error(`Unknown zombie figure seed ${seed}`);
   }
-  const generated = generateValid(shambler, seed);
-  if (!generated || generated.seed !== seed) {
-    throw new Error(`Shambler figure seed ${seed} is not valid`);
+  const template = TEMPLATES.find((candidate) => candidate.name === model);
+  if (!template) {
+    throw new Error(`Unknown zombie mobgen model "${model}"`);
+  }
+  const generated = generateValid(template, seed);
+  if (!generated || (model === 'shambler' && generated.seed !== seed)) {
+    throw new Error(`Zombie figure ${model} seed ${seed} is not valid`);
   }
   const { limits, voxelCentersByBone } = findBoneVoxelData(generated.realized);
   const boxes = buildRegionBoxes(limits, generated.realized.voxels.size / 2 + 0.001);
@@ -117,6 +122,9 @@ export const shamblerFigure = (seed: number): ShamblerFigure => {
     boxes,
     voxelCentersByBone,
   };
-  cache.set(seed, figure);
+  cache.set(key, figure);
   return figure;
 };
+
+/** Exact shambler seeds remain the known-valid baseline used by its fixtures and renderer. */
+export const shamblerFigure = (seed: number): ShamblerFigure => zombieFigure('shambler', seed);

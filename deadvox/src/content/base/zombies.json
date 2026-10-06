@@ -3,6 +3,7 @@
     {
       "id": "shambler",
       "name": "Shambler",
+      "model": "shambler",
       "spawnWeight": 1,
       "sounds": {
         "idle": "shambler_idle",
@@ -77,6 +78,7 @@
     {
       "id": "runner",
       "name": "Runner",
+      "model": "runner",
       "spawnWeight": 0.12,
       "sounds": {
         "idle": "runner_idle",
@@ -139,6 +141,7 @@
     {
       "id": "crawler",
       "name": "Crawler",
+      "model": "shambler",
       "spawnWeight": 0.08,
       "sounds": {
         "idle": "crawler_idle",

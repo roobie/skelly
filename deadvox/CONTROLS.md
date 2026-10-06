@@ -142,7 +142,8 @@ remains gated. BR's earlier exception clause was “Unless some special circumst
 for a key need it readily available”. Spawn selection and dismissal are ordinary
 modal navigation, not authoring. Actual keyboard spawning and native activation
 of debug buttons still require the gate. Mouse authoring remains available
-without it.
+without it. The debug menu's type-spawn actions support the 3.8 first look without
+adding player bindings; see `src/debug/index.ts`, `createDebugActions`.
 
 Alt is not refused pending BR's ruling. `REFUSED_MODIFIERS` in
 `src/game/inputBindings.ts` is the one place to extend refusal; it also drives

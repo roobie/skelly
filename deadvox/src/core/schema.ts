@@ -681,6 +681,8 @@ const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
+const ZOMBIE_MODEL = picklist(['shambler', 'runner']);
+
 const ZOMBIE_ABILITIES = [
   'grab',
   'leap',
@@ -697,6 +699,8 @@ const ZOMBIE_ABILITIES = [
 const ZombieSchema = strictObject({
   id: Id,
   name: Name,
+  /** Mobgen template selected for this type's silhouette and posed hit regions. */
+  model: ZOMBIE_MODEL,
   regions: strictObject({
     head: Positive,
     torso: Positive,

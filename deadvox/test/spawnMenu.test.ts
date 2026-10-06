@@ -113,6 +113,7 @@ describe('spawnMenuViewModel', () => {
       toggleDanger: () => undefined,
       shamblerCount: () => 1,
       spawnShambler: () => undefined,
+      spawnZombie: () => undefined,
       isAimEnabled: () => true,
       toggleAim: () => undefined,
       isFrozen: () => false,

@@ -221,11 +221,18 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
 const SHAMBLER = registry.zombies.get('shambler')!;
+const RUNNER = registry.zombies.get('runner')!;
 
 /** A minimal, valid Zombie — same shape ZombieSystem.add() builds (src/core/zombies.ts), constructed
  * directly so these tests don't need a full ZombieSystem (physics/senses/etc, irrelevant here). */
-const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[] = [], figureSeed = 1): Zombie => ({
-  type: SHAMBLER,
+const makeZombie = (
+  position: Vec3,
+  facing: Vec3 = [0, 0, -1],
+  severed: string[] = [],
+  figureSeed = 1,
+  type = SHAMBLER,
+): Zombie => ({
+  type,
   figureSeed,
   incapacitated: false,
   body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
@@ -265,11 +272,11 @@ const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[]
   stumbleElapsed: 0,
   stumbleDuration: 0,
   renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
-  regions: { ...SHAMBLER.regions },
+  regions: { ...type.regions },
   attackWait: 0,
   attackWindup: 0,
   gaitPhase: 0,
-  footstepClock: initialShamblerFootstepClock(SHAMBLER.stepLength),
+  footstepClock: initialShamblerFootstepClock(type.stepLength),
   wanderClock: 0,
   severed,
 });
@@ -387,6 +394,24 @@ describe('MobActorMeshes', () => {
         const state = internals.states.get(ids[i]!)!;
         expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(SHAMBLER_FIGURE_SEEDS[i]);
       }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects the mobgen model from the zombie type data', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const runnerId = store.add(makeZombie([0, 0, 0], [0, 0, -1], [], 1, RUNNER));
+      renderer.sync(store, 0, 1);
+      const internals = renderer as unknown as {
+        states: Map<number, { variantIndex: number }>;
+        variants: readonly { model: string; figureSeed: number }[];
+      };
+      const variant = internals.variants[internals.states.get(runnerId)!.variantIndex]!;
+      expect(variant.model).toBe(RUNNER.model);
+      expect(variant.figureSeed).toBe(1);
     } finally {
       renderer.dispose();
     }

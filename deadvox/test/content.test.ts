@@ -687,6 +687,14 @@ describe('content references', () => {
           {
             id: 'clerk',
             name: 'Clerk',
+            model: 'shambler',
+            spawnWeight: 1,
+            sounds: {
+              idle: 'shambler_idle',
+              alert: 'shambler_alert',
+              attack: 'shambler_attack',
+              hurt: 'shambler_hurt',
+            },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wander: 0.8, chase: 2.5 },
             stepLength: 0.6,

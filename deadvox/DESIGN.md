@@ -673,6 +673,15 @@ BR ruled (2026-10-06 15:42, d102):
 
 A marker's optional clock window delays its one-time spawn; `src/core/zombieSpawns.ts`, `ZombieSpawner`, checks it when its column loads and on ticks while the column stays loaded. Windowless markers keep chunk-load behavior. Bounded windows recur daily, so a marker that missed one remains eligible at the next opening instead of expiring: a playtest threat should not be lost because the player was elsewhere when its window passed, and may arrive the next evening. An open-ended `from` is eligible from day 1's occurrence of its boundary onward, so a run started after that occurrence is already eligible. Once spawned, its saved ledger entry prevents it returning when the window closes or after it is killed. This timing serves authored beats without scripting a player action. Scriptable dynamic events, such as a computer opening a door, remain future work in #313.
 
+Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
+sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
+leg region as its attack target. Keep their selection, attack target and sound
+mapping authored with the type; see `src/content/base/zombies.json` and the spawn
+markers in `src/content/base/templates.json`. Type weights scale authored marker
+chances and choose hamlet wanderers, keeping rarity a content property rather than
+an inference from generated counts. Keep the crawler's model as one content value
+until d106-1's first look settles its silhouette with BR.
+
 ### Evolution
 
 A zombie can change into a tougher type after enough game days. Where it lives

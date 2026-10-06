@@ -3,6 +3,13 @@
     {
       "id": "modelled_zombie",
       "name": "Modelled zombie",
+      "spawnWeight": 1,
+      "sounds": {
+        "idle": "shambler_idle",
+        "alert": "shambler_alert",
+        "attack": "missing_attack",
+        "hurt": "shambler_hurt"
+      },
       "regions": {
         "head": 60,
         "torso": 60,
@@ -17,6 +24,8 @@
         "idleSeconds": { "min": 3, "max": 10 },
         "strollSeconds": { "min": 3, "max": 12 },
         "leashMetres": 12,
+        "obstacleWanderChance": 0.25,
+        "obstacleWanderDistanceMetres": 10,
         "lookIntervalSeconds": { "min": 0.8, "max": 1.8 },
         "bodyLookArcDegrees": 150,
         "headLookArcDegrees": 100,
@@ -48,10 +57,11 @@
         "stumbleSpeedFraction": 0.04,
         "stumbleDeceleration": 14
       },
-      "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5 },
+      "attack": { "damage": 8, "reach": 1.2, "cooldown": 1.5, "windup": 0.3 },
+      "dismember": { "chance": 0.15, "headOnKillChance": 0.25 },
       "abilities": [],
       "loot": "shambler_pockets",
-      "model": "figure_basic"
+      "model": "shambler"
     }
   ]
 }

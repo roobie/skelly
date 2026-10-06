@@ -3,9 +3,15 @@ import type { Body } from '../core/physics.ts';
 import type { ZombieSystem } from '../core/zombies.ts';
 import type { Engine } from '../game/engine.ts';
 
-/** Places as many requested shamblers as fit, clear of the player, each other, and solid world. */
-export const spawnShamblers = (engine: Engine, player: Body, zombies: ZombieSystem, count: number): number => {
-  const type = engine.registry.zombies.get('shambler');
+/** Places as many requested zombies as fit, clear of the player, each other, and solid world. */
+export const spawnZombieType = (
+  engine: Engine,
+  player: Body,
+  zombies: ZombieSystem,
+  typeId: string,
+  count: number,
+): number => {
+  const type = engine.registry.zombies.get(typeId);
   if (!type) {
     return 0;
   }
@@ -22,3 +28,6 @@ export const spawnShamblers = (engine: Engine, player: Body, zombies: ZombieSyst
   }
   return positions.length;
 };
+
+export const spawnShamblers = (engine: Engine, player: Body, zombies: ZombieSystem, count: number): number =>
+  spawnZombieType(engine, player, zombies, 'shambler', count);

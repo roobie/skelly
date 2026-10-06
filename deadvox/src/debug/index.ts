@@ -30,7 +30,7 @@ import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
-import { spawnShamblers } from './shamblerSpawning.ts';
+import { spawnShamblers, spawnZombieType } from './shamblerSpawning.ts';
 import { rangeToNearestShotTargetMetres, type ShotTargetBox } from './shotTargetRange.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
@@ -374,6 +374,7 @@ interface ActionContext {
   toggleDanger: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
+  spawnZombie: (typeId: string, count: number) => void;
   isAimEnabled: () => boolean;
   toggleAim: () => void;
   isFrozen: () => boolean;
@@ -395,6 +396,7 @@ export const createDebugActions = ({
   toggleDanger,
   shamblerCount,
   spawnShambler,
+  spawnZombie,
   isAimEnabled,
   toggleAim,
   isFrozen,
@@ -468,6 +470,18 @@ export const createDebugActions = ({
         label: 'Spawn shamblers',
         group: 'shamblers',
         run: () => spawnShambler(shamblerCount()),
+      },
+      {
+        id: 'debug.spawn-runner',
+        label: 'Spawn runner',
+        group: 'shamblers',
+        run: () => spawnZombie('runner', 1),
+      },
+      {
+        id: 'debug.spawn-crawler',
+        label: 'Spawn crawler',
+        group: 'shamblers',
+        run: () => spawnZombie('crawler', 1),
       },
       {
         id: 'debug.melee-aim-toggle',
@@ -935,6 +949,15 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         hooks.showNotice(placed === 1 ? 'A shambler is approaching' : `${placed} shamblers are approaching`);
+      }
+    },
+    spawnZombie: (typeId, count) => {
+      const zombies = hooks.zombies();
+      const placed = zombies ? spawnZombieType(hooks.engine, hooks.body, zombies, typeId, count) : 0;
+      spawnStatus = `Placed ${placed} of ${count}`;
+      if (placed > 0) {
+        const name = hooks.engine.registry.zombies.get(typeId)?.name ?? typeId;
+        hooks.showNotice(placed === 1 ? `A ${name.toLowerCase()} is approaching` : `${placed} ${name.toLowerCase()}s are approaching`);
       }
     },
   });

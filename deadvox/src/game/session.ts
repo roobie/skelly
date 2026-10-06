@@ -5,7 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -528,7 +528,7 @@ export const createSession = (options: SessionOptions) => {
         event,
         position,
         sim.time,
-        zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {},
+        zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {},
       ),
     onFootstep: (position, id, mode, zombie) => {
       const event = shamblerFootstepEventAt(position, (x, y, z) => {
@@ -537,7 +537,7 @@ export const createSession = (options: SessionOptions) => {
       });
       playWorldSound(event, position, sim.time, {
         sourceLabel: `shambler #${id} · ${mode}`,
-        body: shamblerFigure(zombie.figureSeed).realized.body,
+        body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body,
       });
     },
     onSevered: (zombie, region) => {
