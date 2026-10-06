@@ -1,6 +1,8 @@
 /** Round 3's hatchback (r43-3), kept as it was; its fittings carry no support relation. */
-import type { Fitting, PartLayer, PartType, Vehicle } from './model.ts';
+import type { Blueprint, Fitting, PartLayer, PartType } from './model.ts';
 import type { ShapeOp, Vec3i } from './voxels.ts';
+
+const MODEL = 'hatchback';
 
 type Box = readonly [x: number, y: number, z: number, width: number, height: number, depth: number, color: string];
 
@@ -14,9 +16,9 @@ const boxes = (...list: readonly Box[]): ShapeOp[] =>
 
 const type =
   (id: string, label: string, layer: PartLayer, massKg: number) =>
-  (shape: readonly ShapeOp[]): PartType => ({ id, label, layer, massKg, shape });
+  (shape: readonly ShapeOp[]): PartType => ({ id: `${MODEL}-${id}`, label, layer, massKg, shape });
 
-const PARTS: readonly PartType[] = [
+export const HATCHBACK_PARTS: readonly PartType[] = [
   type('frame-rail', 'Frame rail', 'frame', 10)(boxes([0, 0, 0, 16, 3, 4, '#596263'], [2, 3, 0, 12, 2, 4, '#747d78'])),
   type(
     'crossmember',
@@ -108,14 +110,9 @@ const PARTS: readonly PartType[] = [
 ];
 
 const at = (cellX: number, elevation: number, cellZ: number): Vec3i => [cellX * 4, elevation, cellZ * 4];
-const place = (
-  id: string,
-  partType: string,
-  position: Vec3i,
-  extra: Pick<Fitting, 'motion' | 'optional'> = {},
-): Fitting => ({
+const place = (id: string, partType: string, position: Vec3i, extra: Pick<Fitting, 'motion'> = {}): Fitting => ({
   id,
-  type: partType,
+  type: `${MODEL}-${partType}`,
   at: position,
   supportedBy: [],
   ...extra,
@@ -151,20 +148,23 @@ const FITTINGS: readonly Fitting[] = [
   place('hatch-hood', 'hood', at(28, 22, 2)),
   place('hatch-windshield', 'windshield', at(27, 24, 2)),
   place('hatch-tailgate', 'tailgate', at(1, 6, 2)),
-  place('hatch-door-near', 'door', at(13, 17, 15), { optional: true }),
+  place('hatch-door-near', 'door', at(13, 17, 15)),
   place('hatch-door-far', 'door', at(13, 17, 0)),
   place('hatch-roof', 'roof-panel', at(11, 43, 2)),
-  place('hatch-roof-rack', 'roof-rack', at(15, 48, 4), { optional: true }),
-  place('hatch-armour', 'armour-plate', at(17, 16, 0), { optional: true }),
   place('hatch-front-bumper', 'bumper', at(34, 3, 1)),
   place('hatch-rear-bumper', 'bumper', at(0, 3, 1)),
 ];
 
-export const HATCHBACK: Vehicle = {
-  id: 'hatchback',
+/** Parts that aren't in the factory build, at the places the page offers to fit them. */
+export const HATCHBACK_ADD_ONS: readonly Fitting[] = [
+  place('hatch-roof-rack', 'roof-rack', at(15, 48, 4)),
+  place('hatch-armour', 'armour-plate', at(17, 16, 0)),
+];
+
+export const HATCHBACK: Blueprint = {
+  id: MODEL,
   label: 'Hatchback · cutaway',
   lattice: [36, 15, 16],
-  palette: {},
-  parts: Object.fromEntries(PARTS.map((part) => [part.id, part])),
+  paint: { body: '#68726f', seam: '#555d5a' },
   fittings: FITTINGS,
 };

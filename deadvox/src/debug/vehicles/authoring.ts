@@ -76,6 +76,11 @@ export const meta = (id: string, label: string, layer: PartLayer, massKg: number
   layer,
   massKg,
 });
+/** `meta` for types drawn to fit one model's body, which take its name so ids stay unique across the catalogue. */
+export const metaFor =
+  (model: string) =>
+  (name: string, label: string, layer: PartLayer, massKg: number): PartMeta =>
+    meta(`${model}-${name}`, label, layer, massKg);
 
 export interface Authored {
   readonly type: PartType;
@@ -103,7 +108,7 @@ export const authored = ({ pivot, rider, ...rest }: PartMeta, shape: readonly Sh
 /** A part drawn in its own frame, placed by each fitting. */
 export const local = (type: PartType): Authored => ({ type, at: [0, 0, 0] });
 
-type PlaceExtra = Pick<Fitting, 'motion' | 'optional'> & { readonly at?: Vec3i };
+type PlaceExtra = Pick<Fitting, 'motion'> & { readonly at?: Vec3i };
 
 export const place = (id: string, part: Authored, supportedBy: readonly string[], extra: PlaceExtra = {}): Fitting => {
   const { at, ...rest } = extra;
@@ -111,16 +116,28 @@ export const place = (id: string, part: Authored, supportedBy: readonly string[]
 };
 
 const NEAR_SUFFIX = /-near$/;
+type Pair = (id: string, part: Authored, supportedBy: readonly string[], extra?: PlaceExtra) => Fitting[];
 
-/** A near-side fitting and its mirrored far-side twin; `-near` in support ids becomes `-far` for the twin. */
-export const pair = (id: string, part: Authored, supportedBy: readonly string[], extra: PlaceExtra = {}): Fitting[] => {
-  const near = place(`${id}-near`, part, supportedBy, extra);
-  return [
-    near,
-    { ...near, id: `${id}-far`, mirror: true, supportedBy: supportedBy.map((s) => s.replace(NEAR_SUFFIX, '-far')) },
-  ];
-};
+/**
+ * Pairs for a vehicle `width` voxels across: a near-side fitting and its far-side twin, reflected
+ * across the centre plane and stored at its own position. `-near` in support ids becomes `-far`.
+ */
+export const pairAcross =
+  (width: number): Pair =>
+  (id, part, supportedBy, extra = {}) => {
+    const near = place(`${id}-near`, part, supportedBy, extra);
+    const [x, y, z] = near.at;
+    return [
+      near,
+      {
+        ...near,
+        id: `${id}-far`,
+        at: [x, y, width - z],
+        mirror: true,
+        supportedBy: supportedBy.map((s) => s.replace(NEAR_SUFFIX, '-far')),
+      },
+    ];
+  };
 
-/** The part types a vehicle's fittings use, keyed by id. */
-export const partsOf = (parts: readonly Authored[]): Readonly<Record<string, PartType>> =>
-  Object.fromEntries(parts.map(({ type }) => [type.id, type]));
+/** The part types a vehicle file authored, for the catalogue. */
+export const partsOf = (parts: readonly Authored[]): readonly PartType[] => parts.map(({ type }) => type);

@@ -31,32 +31,36 @@ import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
 import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
-import { HATCHBACK } from './vehicles/hatchback.ts';
+import { CATALOGUE } from './vehicles/catalogue.ts';
+import { HATCHBACK, HATCHBACK_ADD_ONS } from './vehicles/hatchback.ts';
+import { MATERIALS } from './vehicles/materials.ts';
 import {
-  dependentsOf,
+  addFitting,
+  type Blueprint,
   type Fitting,
   fittingById,
-  initialFittings,
   isClearMaterial,
   latticeVoxels,
   type MassReport,
   measure,
-  missingSupports,
+  newInstance,
   noiseRadius,
   PART_CELL,
   PART_LAYERS,
+  type Paint,
   type PartLayer,
   PartLibrary,
   partTypeOf,
-  type Vehicle,
+  removeFitting,
+  type VehicleInstance,
   VOXEL,
   VOXELS_PER_CELL,
 } from './vehicles/model.ts';
 import { MOTORBIKE } from './vehicles/motorbike.ts';
 import { PICKUP } from './vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED } from './vehicles/rangeRover.ts';
+import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from './vehicles/rangeRover.ts';
 import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from './vehicles/voxels.ts';
-import { fittingWear, type WearSite, wearGrid, wearPalette } from './vehicles/wear.ts';
+import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from './vehicles/wear.ts';
 
 const required = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -73,21 +77,26 @@ const viewLabel = required<HTMLElement>('#vehicle-label');
 /** Rendered by the panel template, so it exists once the panel has rendered. */
 const schematicCanvas = (): HTMLCanvasElement => required<HTMLCanvasElement>('#schematic');
 
-/** A removed fitting shown as an item on the workshop floor, in world metres and radians. */
+/** A part on the workshop floor: drawn from its type alone, at a place in world metres and radians. */
 interface LooseItem {
-  readonly fitting: string;
+  readonly type: string;
   readonly position: Vec3;
   readonly rotation: Vec3;
 }
+type FloorPlace = Pick<LooseItem, 'position' | 'rotation'>;
 interface BuildSpec {
   /** On the stage. */
   readonly label: string;
   /** On the build switcher. */
   readonly button: string;
-  readonly vehicle: Vehicle;
+  readonly blueprint: Blueprint;
+  /** Blueprint fittings the vehicle is made without. */
   readonly removed: readonly string[];
+  /** Parts outside the factory build, where the page offers to fit them. */
+  readonly addOns?: readonly Fitting[];
   readonly lift?: true;
-  readonly loose?: readonly LooseItem[];
+  /** Removed parts of one type lie on the floor, the k-th of them at `place(k)`. */
+  readonly floor?: { readonly type: string; readonly place: (k: number) => FloorPlace };
   /** Scales the camera presets about the vehicle's centre (not the 20 m view's distance), for its size. */
   readonly viewScale?: number;
   /** A preset this vehicle frames differently, such as its own way into the cabin. */
@@ -100,42 +109,40 @@ const RIDER_EYE = [0.05, 0.8, 0] as const;
 const RIDER_LOOK = [2.05, 0, 0] as const;
 
 /** The view from the saddle, above the seat's rider anchor: a vehicle with no cabin to look into. */
-const riderView = (vehicle: Vehicle): ViewOverride => {
-  const [hips] = vehicle.fittings.flatMap((fitting) => {
-    const { rider } = partTypeOf(vehicle, fitting);
+const riderView = (blueprint: Blueprint): ViewOverride => {
+  const [hips] = blueprint.fittings.flatMap((fitting) => {
+    const { rider } = partTypeOf(CATALOGUE, fitting);
     return rider ? [[fitting.at[0] + rider[0], fitting.at[1] + rider[1], fitting.at[2] + rider[2]] as const] : [];
   });
   if (!hips) {
-    throw new Error(`${vehicle.id} has no rider position`);
+    throw new Error(`${blueprint.id} has no rider position`);
   }
-  const [lx, , lz] = latticeVoxels(vehicle);
+  const [lx, , lz] = latticeVoxels(blueprint);
   const [x, y, z] = [(hips[0] - lx / 2) * VOXEL, hips[1] * VOXEL, (hips[2] - lz / 2) * VOXEL];
   const from = ([dx, dy, dz]: readonly [number, number, number]): Vec3 => [x + dx, y + dy, z + dz];
   return { label: 'Rider', position: from(RIDER_EYE), target: from(RIDER_LOOK) };
 };
 
 const WHEEL_THICKNESS = 7 * VOXEL;
-const wheelStack = (ids: readonly string[]): LooseItem[] =>
-  ids.map((fitting, k) => ({
-    fitting,
-    position: [1.2 + 0.02 * k, (k + 0.5) * WHEEL_THICKNESS, -2.3],
-    rotation: [-Math.PI / 2, 0, 0],
-  }));
+const wheelStack = (k: number): FloorPlace => ({
+  position: [1.2 + 0.02 * k, (k + 0.5) * WHEEL_THICKNESS, -2.3],
+  rotation: [-Math.PI / 2, 0, 0],
+});
 
 const BUILDS = {
-  rover: { label: 'Range Rover-type 4×4', button: '4×4', vehicle: RANGE_ROVER, removed: [] },
+  rover: { label: 'Range Rover-type 4×4', button: '4×4', blueprint: RANGE_ROVER, removed: [] },
   stripped: {
     label: 'Same 4×4 · stripped on the lift',
     button: 'Same 4×4 · stripped on the lift',
-    vehicle: RANGE_ROVER,
+    blueprint: RANGE_ROVER,
     removed: STRIPPED_REMOVED,
     lift: true,
-    loose: wheelStack(['wheel-front-near', 'wheel-front-far', 'wheel-rear-near', 'wheel-rear-far']),
+    floor: { type: wheel.type.id, place: wheelStack },
   },
   pickup: {
     label: 'Hilux-type pickup',
     button: 'Pickup',
-    vehicle: PICKUP,
+    blueprint: PICKUP,
     removed: [],
     viewScale: 1.06,
     views: { interior: { position: [0.45, 1.7, 1.9], target: [0.85, 0.95, -0.35] } },
@@ -143,7 +150,7 @@ const BUILDS = {
   motorbike: {
     label: 'CG125-type motorbike',
     button: 'Motorbike',
-    vehicle: MOTORBIKE,
+    blueprint: MOTORBIKE,
     removed: [],
     viewScale: 0.5,
     views: { interior: riderView(MOTORBIKE) },
@@ -151,8 +158,9 @@ const BUILDS = {
   hatchback: {
     label: 'Hatchback · cutaway (round 3)',
     button: 'Hatchback (round 3)',
-    vehicle: HATCHBACK,
-    removed: [],
+    blueprint: HATCHBACK,
+    removed: ['hatch-door-near'],
+    addOns: HATCHBACK_ADD_ONS,
   },
 } as const satisfies Record<string, BuildSpec>;
 type BuildId = keyof typeof BUILDS;
@@ -209,41 +217,40 @@ let perfText = '';
 let errorText = '';
 let massReport: MassReport = { massKg: 0, centre: [0, 0, 0] };
 
-const libraries = new Map<Vehicle, PartLibrary>();
-const libraryFor = (vehicle: Vehicle): PartLibrary => {
-  let library = libraries.get(vehicle);
-  if (!library) {
-    library = new PartLibrary(vehicle);
-    libraries.set(vehicle, library);
-  }
-  return library;
-};
+const library = new PartLibrary(CATALOGUE);
 
-const buildStates = new Map<BuildId, Set<string>>();
-const installedFor = (id: BuildId): Set<string> => {
-  let state = buildStates.get(id);
-  if (!state) {
+/** Each build is its own vehicle, made from its blueprint the first time it's shown. */
+const vehicles = new Map<BuildId, VehicleInstance>();
+const vehicleFor = (id: BuildId): VehicleInstance => {
+  let vehicle = vehicles.get(id);
+  if (!vehicle) {
     const spec: BuildSpec = BUILDS[id];
-    state = initialFittings(spec.vehicle, spec.removed);
-    buildStates.set(id, state);
+    vehicle = newInstance(spec.blueprint, id, spec.removed);
+    vehicles.set(id, vehicle);
   }
-  return state;
+  return vehicle;
 };
 
-const wearColours = new Map<Vehicle, Readonly<Record<string, string>>>();
-/** A material's colour: the vehicle's palette, then wear shades derived from its paint, else the name is a colour. */
-const hexOf = (vehicle: Vehicle, mat: string): string => {
-  let wear = wearColours.get(vehicle);
-  if (!wear) {
-    wear = wearPalette(vehicle.palette.paint ?? '#888888');
-    wearColours.set(vehicle, wear);
+const wearColours = new Map<string, Readonly<Record<string, string>>>();
+/** A material's colour: the vehicle's paint and the wear shades derived from it, the shared table, else the name is a colour. */
+const hexOf = (paint: Paint, mat: string): string => {
+  if (mat === 'paint') {
+    return paint.body;
   }
-  return vehicle.palette[mat] ?? wear[mat] ?? mat;
+  if (mat === 'seam') {
+    return paint.seam;
+  }
+  let wear = wearColours.get(paint.body);
+  if (!wear) {
+    wear = wearPalette(paint.body);
+    wearColours.set(paint.body, wear);
+  }
+  return wear[mat] ?? MATERIALS[mat] ?? mat;
 };
 
 const rgbCache = new Map<string, Rgb>();
-const rgbOf = (vehicle: Vehicle, mat: string): Rgb => {
-  const hex = hexOf(vehicle, mat);
+const rgbOf = (paint: Paint, mat: string): Rgb => {
+  const hex = hexOf(paint, mat);
   let rgb = rgbCache.get(hex);
   if (!rgb) {
     const color = new Color(hex);
@@ -273,11 +280,11 @@ interface PartMeshes {
 }
 const meshCache = new Map<string, PartMeshes>();
 const meshCost = { types: 0, ms: 0 };
-const cachedMeshes = (vehicle: Vehicle, key: string, gridOf: () => VoxelGrid): PartMeshes => {
+const cachedMeshes = (paint: Paint, key: string, gridOf: () => VoxelGrid): PartMeshes => {
   let meshes = meshCache.get(key);
   if (!meshes) {
     const started = performance.now();
-    const { solid, clear } = meshGrid(gridOf(), (mat) => rgbOf(vehicle, mat), isClearMaterial);
+    const { solid, clear } = meshGrid(gridOf(), (mat) => rgbOf(paint, mat), isClearMaterial);
     meshes = { solid: toGeometry(solid), clear: toGeometry(clear) };
     meshCache.set(key, meshes);
     meshCost.types += 1;
@@ -286,54 +293,50 @@ const cachedMeshes = (vehicle: Vehicle, key: string, gridOf: () => VoxelGrid): P
   return meshes;
 };
 
-/** One geometry per part type and side while its paint is unworn. */
-const partMeshes = (vehicle: Vehicle, typeId: string, mirror: boolean): PartMeshes =>
-  cachedMeshes(vehicle, `${vehicle.id}:${typeId}:${mirror}`, () => libraryFor(vehicle).grid(typeId, mirror));
+/** One geometry per part type, side and paint while its paint is unworn. */
+const partMeshes = (typeId: string, mirror: boolean, paint: Paint): PartMeshes =>
+  cachedMeshes(paint, `${typeId}:${mirror}:${paint.body}`, () => library.grid(typeId, mirror));
 
 const paintedTypes = new Map<string, boolean>();
-const isPainted = (vehicle: Vehicle, fitting: Fitting): boolean => {
-  const key = `${vehicle.id}:${fitting.type}`;
-  let painted = paintedTypes.get(key);
+const isPainted = (typeId: string): boolean => {
+  let painted = paintedTypes.get(typeId);
   if (painted === undefined) {
-    painted = [...libraryFor(vehicle).grid(fitting.type, false).values()].some(
-      (mat) => mat === 'paint' || mat === 'seam',
-    );
-    paintedTypes.set(key, painted);
+    painted = [...library.grid(typeId, false).values()].some((mat) => mat === 'paint' || mat === 'seam');
+    paintedTypes.set(typeId, painted);
   }
   return painted;
 };
 
-const wheelCentres = new Map<Vehicle, WearSite['wheels']>();
-/** Where the vehicle's wheels turn, in vehicle voxels: dirt gathers around them whether they're fitted or not. */
-const wheelsOf = (vehicle: Vehicle): WearSite['wheels'] => {
-  let wheels = wheelCentres.get(vehicle);
+const wheelCentres = new Map<Blueprint, WearSite['wheels']>();
+/** Where the blueprint's wheels turn, in vehicle voxels: dirt gathers around them whether they're fitted or not. */
+const wheelsOf = (blueprint: Blueprint): WearSite['wheels'] => {
+  let wheels = wheelCentres.get(blueprint);
   if (!wheels) {
-    const library = libraryFor(vehicle);
-    wheels = vehicle.fittings.flatMap((fitting) => {
-      const { pivot } = partTypeOf(vehicle, fitting);
+    wheels = blueprint.fittings.flatMap((fitting) => {
+      const { pivot } = partTypeOf(CATALOGUE, fitting);
       if (fitting.motion !== 'spin' || !pivot) {
         return [];
       }
-      const [x, y] = library.origin(fitting);
+      const [x, y] = fitting.at;
       return [[x + pivot[0], y + pivot[1], pivot[1]] as const];
     });
-    wheelCentres.set(vehicle, wheels);
+    wheelCentres.set(blueprint, wheels);
   }
   return wheels;
 };
 
 /** A painted fitting's own geometry once its paint wears; anything else shares its type's. */
-const fittingMeshes = (vehicle: Vehicle, fitting: Fitting): PartMeshes => {
+const fittingMeshes = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fitting): PartMeshes => {
   const mirror = fitting.mirror === true;
-  const amount = fittingWear(fitting.id, wearLevel);
-  if (amount <= 0 || !isPainted(vehicle, fitting)) {
-    return partMeshes(vehicle, fitting.type, mirror);
+  const key = wearKey(vehicle.id, fitting.id);
+  const amount = fittingWear(key, wearLevel);
+  if (amount <= 0 || !isPainted(fitting.type)) {
+    return partMeshes(fitting.type, mirror, vehicle.paint);
   }
-  const library = libraryFor(vehicle);
-  return cachedMeshes(vehicle, `${vehicle.id}:${fitting.id}:wear ${amount}`, () =>
-    wearGrid(library.grid(fitting.type, mirror), fitting.id, amount, {
-      origin: library.origin(fitting),
-      wheels: wheelsOf(vehicle),
+  return cachedMeshes(vehicle.paint, `${key}:${fitting.type}:${mirror}:${vehicle.paint.body}:wear ${amount}`, () =>
+    wearGrid(library.grid(fitting.type, mirror), key, amount, {
+      origin: fitting.at,
+      wheels: wheelsOf(spec.blueprint),
     }),
   );
 };
@@ -348,8 +351,7 @@ const glassMaterial = new MeshPhongMaterial({
   depthWrite: false,
 });
 
-const partObject = (vehicle: Vehicle, fitting: Fitting): Group => {
-  const { solid, clear } = fittingMeshes(vehicle, fitting);
+const partObject = ({ solid, clear }: PartMeshes): Group => {
   const holder = new Group();
   if (solid) {
     const mesh = new Mesh(solid, solidMaterial);
@@ -366,8 +368,9 @@ const partObject = (vehicle: Vehicle, fitting: Fitting): Group => {
   return holder;
 };
 
-const voxelToWorld = (vehicle: Vehicle, [x, y, z]: readonly number[]): Vector3 => {
-  const [lx, , lz] = latticeVoxels(vehicle);
+/** World metres from vehicle voxels: the blueprint's envelope is centred on the origin, on the ground. */
+const voxelToWorld = (blueprint: Blueprint, [x, y, z]: readonly number[]): Vector3 => {
+  const [lx, , lz] = latticeVoxels(blueprint);
   return new Vector3((x! - lx / 2) * VOXEL, y! * VOXEL, (z! - lz / 2) * VOXEL);
 };
 
@@ -378,11 +381,10 @@ let wheelPivots: Group[] = [];
 let doorPivots: { readonly pivot: Group; readonly sign: number }[] = [];
 
 /** A fitting in vehicle space: wheels spin about their axle and doors swing about their hinge line. */
-const placeFitting = (vehicle: Vehicle, fitting: Fitting): Object3D => {
-  const library = libraryFor(vehicle);
-  const holder = partObject(vehicle, fitting);
-  const origin = voxelToWorld(vehicle, library.origin(fitting));
-  const type = partTypeOf(vehicle, fitting);
+const placeFitting = (spec: BuildSpec, vehicle: VehicleInstance, fitting: Fitting): Object3D => {
+  const holder = partObject(fittingMeshes(spec, vehicle, fitting));
+  const origin = voxelToWorld(spec.blueprint, fitting.at);
+  const type = partTypeOf(CATALOGUE, fitting);
   if (!(fitting.motion && type.pivot)) {
     holder.position.copy(origin);
     return holder;
@@ -403,15 +405,11 @@ const placeFitting = (vehicle: Vehicle, fitting: Fitting): Object3D => {
   return pivot;
 };
 
-/** A removed part on the floor, its voxels centred on the item's position: a far-side part's grid is mirrored. */
-const looseObject = (vehicle: Vehicle, item: LooseItem): Object3D | undefined => {
-  const fitting = fittingById(vehicle).get(item.fitting);
-  if (!fitting) {
-    return undefined;
-  }
-  const { min, max } = gridBounds(libraryFor(vehicle).grid(fitting.type, fitting.mirror === true));
+/** A part on the floor, drawn from its type in the given paint, its voxels centred on the item's position. */
+const looseObject = (item: LooseItem, paint: Paint): Object3D => {
+  const { min, max } = gridBounds(library.grid(item.type, false));
   const centre = new Vector3(min[0] + max[0] + 1, min[1] + max[1] + 1, min[2] + max[2] + 1).multiplyScalar(VOXEL / 2);
-  const part = partObject(vehicle, fitting);
+  const part = partObject(partMeshes(item.type, false, paint));
   part.position.copy(centre).negate();
   const holder = new Group();
   holder.add(part);
@@ -434,7 +432,7 @@ const LIFT_PADS_X = [-0.55, 0.78] as const;
 const SILL_UNDERSIDE = 12 * VOXEL;
 
 /** A two-post lift: columns beside the car, arms under the sills, a beam across the top. */
-const buildLift = (vehicle: Vehicle): Group => {
+const buildLift = (blueprint: Blueprint): Group => {
   const group = new Group();
   const add = (size: Vec3, at: Vec3, material: MeshLambertMaterial, yaw = 0): void => {
     const mesh = new Mesh(new BoxGeometry(...size), material);
@@ -444,7 +442,7 @@ const buildLift = (vehicle: Vehicle): Group => {
     mesh.receiveShadow = true;
     group.add(mesh);
   };
-  const [, , lz] = latticeVoxels(vehicle);
+  const [, , lz] = latticeVoxels(blueprint);
   const halfWidth = (lz / 2 - 4) * VOXEL;
   const columnZ = halfWidth + 0.38;
   const columnX = LIFT_COLUMN_X;
@@ -471,11 +469,22 @@ const buildLift = (vehicle: Vehicle): Group => {
 const renderer = new WebGLRenderer({ antialias: true, canvas: sceneCanvas });
 const camera = new PerspectiveCamera(38, 1, 0.05, 96);
 
+/** The blueprint's parts of the floor's type that aren't on the vehicle, one item each. */
+const floorItems = (spec: BuildSpec, vehicle: VehicleInstance): LooseItem[] => {
+  const { floor } = spec;
+  if (!floor) {
+    return [];
+  }
+  const fitted = fittingById(vehicle.fittings);
+  return spec.blueprint.fittings
+    .filter((fitting) => fitting.type === floor.type && !fitted.has(fitting.id))
+    .map((fitting, k) => ({ type: fitting.type, ...floor.place(k) }));
+};
+
 const renderVehicle = (): void => {
   const started = performance.now();
   const spec: BuildSpec = BUILDS[activeBuild];
-  const { vehicle } = spec;
-  const installed = installedFor(activeBuild);
+  const vehicle = vehicleFor(activeBuild);
   if (liftGroup) {
     scene.remove(liftGroup);
     liftGroup = undefined;
@@ -485,17 +494,12 @@ const renderVehicle = (): void => {
   wheelPivots = [];
   doorPivots = [];
   for (const fitting of vehicle.fittings) {
-    if (installed.has(fitting.id)) {
-      vehicleGroup.add(placeFitting(vehicle, fitting));
-    }
+    vehicleGroup.add(placeFitting(spec, vehicle, fitting));
   }
   if (spec.lift) {
-    liftGroup = buildLift(vehicle);
-    for (const item of spec.loose ?? []) {
-      const loose = looseObject(vehicle, item);
-      if (loose && !installed.has(item.fitting)) {
-        liftGroup.add(loose);
-      }
+    liftGroup = buildLift(spec.blueprint);
+    for (const item of floorItems(spec, vehicle)) {
+      liftGroup.add(looseObject(item, vehicle.paint));
     }
     scene.add(liftGroup);
     vehicleGroup.position.y = LIFT_HEIGHT;
@@ -504,11 +508,12 @@ const renderVehicle = (): void => {
   const shift = (spec.viewScale ?? 1) - 1;
   playerGroup.position.set(PLAYER_AT[0] * shift, 0, PLAYER_AT[2] * shift);
   const assemblyMs = performance.now() - started;
-  massReport = measure(libraryFor(vehicle), installed);
+  massReport = measure(library, vehicle.fittings);
   const { massKg, centre } = massReport;
+  const [lx, , lz] = latticeVoxels(spec.blueprint);
   const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
-  const noise = noiseRadius(vehicle, installed);
-  statsText = `${installed.size} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed(centre[0])} m forward, ${centre[1].toFixed(2)} m up, ${signed(centre[2])} m toward the near side · engine noise heard to ${Math.round(noise)} m at idle`;
+  const noise = noiseRadius(CATALOGUE, vehicle.fittings);
+  statsText = `${vehicle.fittings.length} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed((centre[0] - lx / 2) * VOXEL)} m forward, ${(centre[1] * VOXEL).toFixed(2)} m up, ${signed((centre[2] - lz / 2) * VOXEL)} m toward the near side · engine noise heard to ${Math.round(noise)} m at idle`;
   renderPanel();
   drawSchematic();
   renderScene();
@@ -522,8 +527,8 @@ interface CellRect {
   readonly x1: number;
   readonly z1: number;
 }
-const fittingCells = (vehicle: Vehicle, fitting: Fitting): CellRect => {
-  const { min, max } = libraryFor(vehicle).placed(fitting).bounds;
+const fittingCells = (fitting: Fitting): CellRect => {
+  const { min, max } = library.placed(fitting).bounds;
   return {
     x0: Math.floor(min[0] / VOXELS_PER_CELL),
     z0: Math.floor(min[2] / VOXELS_PER_CELL),
@@ -532,9 +537,11 @@ const fittingCells = (vehicle: Vehicle, fitting: Fitting): CellRect => {
   };
 };
 
-const schematicLayout = (vehicle: Vehicle): { readonly cell: number; readonly left: number; readonly top: number } => {
+const schematicLayout = (
+  blueprint: Blueprint,
+): { readonly cell: number; readonly left: number; readonly top: number } => {
   const schematic = schematicCanvas();
-  const [cx, , cz] = vehicle.lattice;
+  const [cx, , cz] = blueprint.lattice;
   const cell = Math.min((schematic.width - 100) / cx, (schematic.height - 40) / cz);
   return {
     cell,
@@ -543,15 +550,22 @@ const schematicLayout = (vehicle: Vehicle): { readonly cell: number; readonly le
   };
 };
 
-const layerFittings = (vehicle: Vehicle): readonly Fitting[] =>
-  vehicle.fittings.filter((fitting) => partTypeOf(vehicle, fitting).layer === activeLayer);
+/** The vehicle's fittings, then the blueprint's and the add-ons' that aren't on it, which the page offers to fit. */
+const offeredFittings = (spec: BuildSpec, vehicle: VehicleInstance): readonly Fitting[] => {
+  const fitted = fittingById(vehicle.fittings);
+  const absent = [...spec.blueprint.fittings, ...(spec.addOns ?? [])].filter((fitting) => !fitted.has(fitting.id));
+  return [...vehicle.fittings, ...absent];
+};
+
+const layerFittings = (spec: BuildSpec, vehicle: VehicleInstance): readonly Fitting[] =>
+  offeredFittings(spec, vehicle).filter((fitting) => partTypeOf(CATALOGUE, fitting).layer === activeLayer);
 
 const drawGrid = (
   ctx: CanvasRenderingContext2D,
-  vehicle: Vehicle,
+  blueprint: Blueprint,
   layout: ReturnType<typeof schematicLayout>,
 ): void => {
-  const [cx, , cz] = vehicle.lattice;
+  const [cx, , cz] = blueprint.lattice;
   const { cell, left, top } = layout;
   ctx.fillStyle = '#d9cda8';
   ctx.fillText('REAR', left - 28, top + (cell * cz) / 2);
@@ -572,9 +586,9 @@ const drawGrid = (
   }
 };
 
-const fittingColor = (vehicle: Vehicle, fitting: Fitting): string => {
-  const [first] = partTypeOf(vehicle, fitting).shape;
-  return first ? (vehicle.palette[first.mat] ?? first.mat) : '#777777';
+const fittingColor = (paint: Paint, fitting: Fitting): string => {
+  const [first] = partTypeOf(CATALOGUE, fitting).shape;
+  return first ? hexOf(paint, first.mat) : '#777777';
 };
 
 /** Top-down lattice: each fitting of the selected layer as the cells its voxels cover; z grows downward. */
@@ -584,26 +598,27 @@ const drawSchematic = (): void => {
   if (!ctx) {
     throw new Error('Vehicle schematic canvas is unavailable');
   }
-  const { vehicle } = BUILDS[activeBuild];
-  const [, , cz] = vehicle.lattice;
-  const layout = schematicLayout(vehicle);
+  const spec: BuildSpec = BUILDS[activeBuild];
+  const vehicle = vehicleFor(activeBuild);
+  const [, , cz] = spec.blueprint.lattice;
+  const layout = schematicLayout(spec.blueprint);
   const { cell, left, top } = layout;
   ctx.fillStyle = '#171b20';
   ctx.fillRect(0, 0, schematic.width, schematic.height);
   ctx.font = `${Math.max(10, cell * 0.75)}px system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  drawGrid(ctx, vehicle, layout);
-  const installed = installedFor(activeBuild);
-  for (const fitting of layerFittings(vehicle)) {
-    const rect = fittingCells(vehicle, fitting);
+  drawGrid(ctx, spec.blueprint, layout);
+  const fitted = fittingById(vehicle.fittings);
+  for (const fitting of layerFittings(spec, vehicle)) {
+    const rect = fittingCells(fitting);
     const x = left + rect.x0 * cell;
     const y = top + (cz - rect.z1) * cell;
     const width = (rect.x1 - rect.x0) * cell;
     const height = (rect.z1 - rect.z0) * cell;
-    const present = installed.has(fitting.id);
+    const present = fitted.has(fitting.id);
     ctx.globalAlpha = present ? 0.75 : 0.3;
-    ctx.fillStyle = present ? fittingColor(vehicle, fitting) : '#252a2d';
+    ctx.fillStyle = present ? fittingColor(vehicle.paint, fitting) : '#252a2d';
     ctx.fillRect(x + 1, y + 1, width - 2, height - 2);
     ctx.globalAlpha = 1;
     ctx.strokeStyle = present ? '#d9ddcf' : '#8a8f88';
@@ -613,9 +628,8 @@ const drawSchematic = (): void => {
   }
   const { massKg, centre } = massReport;
   if (massKg > 0) {
-    const [lx, , lz] = latticeVoxels(vehicle);
-    const comX = left + (centre[0] / PART_CELL + lx / VOXELS_PER_CELL / 2) * cell;
-    const comY = top + (cz - (centre[2] / PART_CELL + lz / VOXELS_PER_CELL / 2)) * cell;
+    const comX = left + (centre[0] / VOXELS_PER_CELL) * cell;
+    const comY = top + (cz - centre[2] / VOXELS_PER_CELL) * cell;
     ctx.strokeStyle = '#ffcf67';
     ctx.lineWidth = 2;
     ctx.beginPath();
@@ -629,31 +643,33 @@ const drawSchematic = (): void => {
   }
 };
 
-const labelOf = (vehicle: Vehicle, id: string): string => {
-  const fitting = fittingById(vehicle).get(id);
-  return fitting ? `${partTypeOf(vehicle, fitting).label.toLowerCase()} (${id})` : id;
-};
-
 /** Fits or removes a fitting, refusing a removal something still rests on and a fit whose supports are off. */
 const togglePart = (id: string): void => {
-  const { vehicle } = BUILDS[activeBuild];
-  const installed = installedFor(activeBuild);
-  if (installed.has(id)) {
-    const blockers = dependentsOf(vehicle, installed, id);
+  const spec: BuildSpec = BUILDS[activeBuild];
+  const vehicle = vehicleFor(activeBuild);
+  const offered = fittingById(offeredFittings(spec, vehicle));
+  const labelOf = (fittingId: string): string => {
+    const fitting = offered.get(fittingId);
+    return fitting ? `${partTypeOf(CATALOGUE, fitting).label.toLowerCase()} (${fittingId})` : fittingId;
+  };
+  const fitting = offered.get(id);
+  if (!fitting) {
+    return;
+  }
+  if (vehicle.fittings.includes(fitting)) {
+    const blockers = removeFitting(vehicle, id);
     if (blockers.length > 0) {
-      notice = `Can't take off ${labelOf(vehicle, id)}: ${blockers.map((f) => labelOf(vehicle, f.id)).join(', ')} rest on it.`;
+      notice = `Can't take off ${labelOf(id)}: ${blockers.map((f) => labelOf(f.id)).join(', ')} rest on it.`;
       renderPanel();
       return;
     }
-    installed.delete(id);
   } else {
-    const missing = missingSupports(vehicle, installed, id);
+    const missing = addFitting(vehicle, fitting);
     if (missing.length > 0) {
-      notice = `Can't fit ${labelOf(vehicle, id)}: it rests on ${missing.map((m) => labelOf(vehicle, m)).join(', ')}.`;
+      notice = `Can't fit ${labelOf(id)}: it rests on ${missing.map(labelOf).join(', ')}.`;
       renderPanel();
       return;
     }
-    installed.add(id);
   }
   notice = '';
   renderVehicle();
@@ -680,17 +696,17 @@ const selectLayer = (id: string): void => {
 /** Toggles the smallest fitting of the selected layer under the clicked cell. */
 const pickSchematic = (event: PointerEvent): void => {
   const schematic = schematicCanvas();
-  const { vehicle } = BUILDS[activeBuild];
-  const [cx, , cz] = vehicle.lattice;
+  const spec: BuildSpec = BUILDS[activeBuild];
+  const [cx, , cz] = spec.blueprint.lattice;
   const bounds = schematic.getBoundingClientRect();
-  const { cell, left, top } = schematicLayout(vehicle);
+  const { cell, left, top } = schematicLayout(spec.blueprint);
   const x = Math.floor(((event.clientX - bounds.left) * (schematic.width / bounds.width) - left) / cell);
   const z = cz - 1 - Math.floor(((event.clientY - bounds.top) * (schematic.height / bounds.height) - top) / cell);
   if (x < 0 || z < 0 || x >= cx || z >= cz) {
     return;
   }
-  const hits = layerFittings(vehicle)
-    .map((fitting) => ({ fitting, rect: fittingCells(vehicle, fitting) }))
+  const hits = layerFittings(spec, vehicleFor(activeBuild))
+    .map((fitting) => ({ fitting, rect: fittingCells(fitting) }))
     .filter(({ rect }) => x >= rect.x0 && x < rect.x1 && z >= rect.z0 && z < rect.z1)
     .sort(
       (a, b) => (a.rect.x1 - a.rect.x0) * (a.rect.z1 - a.rect.z0) - (b.rect.x1 - b.rect.x0) * (b.rect.z1 - b.rect.z0),
@@ -926,7 +942,7 @@ const addTitleSprite = (): void => {
   playerGroup.add(sprite);
 };
 
-const GRAIN_NOTE = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel ${(VOXEL * 100).toFixed(3)} cm (${VOXELS_PER_CELL} per cell, ${VOXELS_PER_CELL * (BLOCK_SIZE / PART_CELL)} per block). Each part type is greedy-meshed once and every fitting of it reuses that geometry.`;
+const GRAIN_NOTE = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel ${(VOXEL * 100).toFixed(3)} cm (${VOXELS_PER_CELL} per cell, ${VOXELS_PER_CELL * (BLOCK_SIZE / PART_CELL)} per block). Each part type is greedy-meshed once per side and paint, and every unworn fitting of it reuses that geometry.`;
 const LAYER_LABELS: Readonly<Record<PartLayer, string>> = {
   frame: 'Frame',
   under: 'Under',
@@ -937,8 +953,8 @@ const LAYER_LABELS: Readonly<Record<PartLayer, string>> = {
 
 const panelModel = (): PanelModel => {
   const active: BuildSpec = BUILDS[activeBuild];
-  const { vehicle } = active;
-  const installed = installedFor(activeBuild);
+  const vehicle = vehicleFor(activeBuild);
+  const fitted = fittingById(vehicle.fittings);
   return {
     builds: (Object.entries(BUILDS) as [BuildId, BuildSpec][]).map(([id, spec]) => ({ id, label: spec.button })),
     build: activeBuild,
@@ -955,10 +971,10 @@ const panelModel = (): PanelModel => {
     spin: wheelsSpinning,
     doors: doorsOpen,
     wear: Math.round(wearLevel * 100),
-    fittings: layerFittings(vehicle).map((fitting) => ({
+    fittings: layerFittings(active, vehicle).map((fitting) => ({
       id: fitting.id,
-      label: partTypeOf(vehicle, fitting).label,
-      fitted: installed.has(fitting.id),
+      label: partTypeOf(CATALOGUE, fitting).label,
+      fitted: fitted.has(fitting.id),
     })),
     grain: GRAIN_NOTE,
     perf: perfText,

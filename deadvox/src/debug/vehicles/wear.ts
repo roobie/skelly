@@ -1,11 +1,12 @@
 /**
  * Paint wear: a fitting's paint and seam voxels recoloured into a few worn shades, seeded by the
- * fitting's id so the same vehicle always looks the same. The shades are whole materials rather than
- * per-voxel tints, so the greedy mesher still merges runs of one shade.
+ * vehicle and the fitting, so the same vehicle always looks the same and two of one blueprint don't.
+ * The shades are whole materials rather than per-voxel tints, so the greedy mesher still merges runs
+ * of one shade.
  */
 import { keyVoxel, type Vec3i, type VoxelGrid, voxelKey } from './voxels.ts';
 
-/** Materials wear writes; a palette may name them, or `wearPalette` derives them from its paint. */
+/** Materials wear writes; `wearPalette` gives their colours for a vehicle's paint. */
 export const WEAR_MATERIALS = ['paint-worn', 'scratch', 'dirt', 'rust'] as const;
 
 const WORN_MATERIALS: ReadonlySet<string> = new Set(['paint', 'seam']);
@@ -23,10 +24,13 @@ export interface WearSite {
   readonly wheels: readonly (readonly [x: number, y: number, radius: number])[];
 }
 
-const seedOf = (id: string): number => {
+/** Names one fitting on one vehicle, so wear differs between vehicles of one blueprint. */
+export const wearKey = (vehicleId: string, fittingId: string): string => `${vehicleId}/${fittingId}`;
+
+const seedOf = (key: string): number => {
   let h = 2_166_136_261;
-  for (let i = 0; i < id.length; i += 1) {
-    h = Math.imul(h ^ id.charCodeAt(i), 16_777_619);
+  for (let i = 0; i < key.length; i += 1) {
+    h = Math.imul(h ^ key.charCodeAt(i), 16_777_619);
   }
   return h >>> 0;
 };
@@ -41,9 +45,9 @@ const hash = (seed: number, x: number, y: number, z: number): number => {
 
 const clamp01 = (value: number): number => Math.min(Math.max(value, 0), 1);
 
-/** How worn one fitting is at a vehicle's wear level: parts differ, the same part always the same. */
-export const fittingWear = (fittingId: string, level: number): number =>
-  clamp01(level * (0.55 + 0.9 * hash(seedOf(fittingId), 0, 0, 0)));
+/** How worn one fitting (`wearKey`) is at its vehicle's wear level: parts differ, the same part always the same. */
+export const fittingWear = (key: string, level: number): number =>
+  clamp01(level * (0.55 + 0.9 * hash(seedOf(key), 0, 0, 0)));
 
 const OFFSETS = [
   [1, 0, 0],
@@ -119,13 +123,14 @@ const dirtChance = (site: WearSite, x: number, y: number): number => {
 
 /**
  * A fitting's local grid with wear applied at `amount` (0 leaves it as it is). Only paint and seam
- * voxels change, and only into `WEAR_MATERIALS`, so wear never changes a part's shape.
+ * voxels change, and only into `WEAR_MATERIALS`, so wear never changes a part's shape. `fitting` is
+ * the fitting's `wearKey`.
  */
-export const wearGrid = (grid: VoxelGrid, fittingId: string, amount: number, site: WearSite): VoxelGrid => {
+export const wearGrid = (grid: VoxelGrid, fitting: string, amount: number, site: WearSite): VoxelGrid => {
   if (amount <= 0) {
     return grid;
   }
-  const seed = seedOf(fittingId);
+  const seed = seedOf(fitting);
   const streaks = scratchStreaks(grid, seed, amount);
   const worn: VoxelGrid = new Map();
   for (const [key, mat] of grid) {

@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
+import { pairAcross } from '../src/debug/vehicles/authoring.ts';
+import { CATALOGUE } from '../src/debug/vehicles/catalogue.ts';
 import {
-  dependentsOf,
+  addFitting,
+  type Blueprint,
+  catalogueOf,
   type Fitting,
-  initialFittings,
-  missingSupports,
+  newInstance,
   noiseRadius,
   PartLibrary,
+  type PartType,
   partTypeOf,
+  removeFitting,
   supportProblems,
-  type Vehicle,
 } from '../src/debug/vehicles/model.ts';
 import { MOTORBIKE } from '../src/debug/vehicles/motorbike.ts';
 import { PICKUP } from '../src/debug/vehicles/pickup.ts';
@@ -22,7 +26,7 @@ import {
   type VoxelGrid,
   voxelKey,
 } from '../src/debug/vehicles/voxels.ts';
-import { WEAR_MATERIALS, wearGrid } from '../src/debug/vehicles/wear.ts';
+import { WEAR_MATERIALS, wearGrid, wearKey } from '../src/debug/vehicles/wear.ts';
 
 const FACES = [
   [1, 0, 0],
@@ -39,31 +43,33 @@ const touches = (part: VoxelGrid, support: VoxelGrid): boolean =>
     return FACES.some(([dx, dy, dz]) => support.has(voxelKey(x + dx, y + dy, z + dz)));
   });
 
-/** Every vehicle built from parts, with the fittings each of its builds leaves off. */
-const VEHICLES: readonly { readonly vehicle: Vehicle; readonly builds: readonly (readonly string[])[] }[] = [
-  { vehicle: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
-  { vehicle: PICKUP, builds: [[]] },
-  { vehicle: MOTORBIKE, builds: [[]] },
+const library = new PartLibrary(CATALOGUE);
+
+/** Every blueprint built from parts, with the fittings each of its builds is made without. */
+const BLUEPRINTS: readonly { readonly blueprint: Blueprint; readonly builds: readonly (readonly string[])[] }[] = [
+  { blueprint: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
+  { blueprint: PICKUP, builds: [[]] },
+  { blueprint: MOTORBIKE, builds: [[]] },
 ];
 
-describe.each(VEHICLES)('$vehicle.id built from parts', ({ vehicle, builds }) => {
-  const library = new PartLibrary(vehicle);
-  const byId = new Map(vehicle.fittings.map((fitting) => [fitting.id, fitting]));
+describe.each(BLUEPRINTS)('$blueprint.id built from parts', ({ blueprint, builds }) => {
+  const { fittings } = newInstance(blueprint, 'complete');
+  const byId = new Map(fittings.map((fitting) => [fitting.id, fitting]));
 
   it('starts every build with each fitted part resting only on fitted parts, and no support cycles', () => {
-    for (const removed of builds) {
-      expect(supportProblems(vehicle, initialFittings(vehicle, removed))).toEqual([]);
+    for (const without of builds) {
+      expect(supportProblems(newInstance(blueprint, 'build', without).fittings)).toEqual([]);
     }
   });
 
   it('rests every fitting, through its supports, on a frame part that stands on nothing', () => {
-    const roots = vehicle.fittings.filter((fitting) => fitting.supportedBy.length === 0);
+    const roots = fittings.filter((fitting) => fitting.supportedBy.length === 0);
     expect(roots.length).toBeGreaterThan(0);
-    expect(roots.filter((fitting) => partTypeOf(vehicle, fitting).layer !== 'frame').map(({ id }) => id)).toEqual([]);
+    expect(roots.filter((fitting) => partTypeOf(CATALOGUE, fitting).layer !== 'frame').map(({ id }) => id)).toEqual([]);
   });
 
   it('has every fitting touch each fitting it rests on, so no panel floats', () => {
-    const floating = vehicle.fittings.flatMap((fitting) =>
+    const floating = fittings.flatMap((fitting) =>
       fitting.supportedBy
         .filter((id) => {
           const support = byId.get(id);
@@ -75,14 +81,14 @@ describe.each(VEHICLES)('$vehicle.id built from parts', ({ vehicle, builds }) =>
   });
 
   it('keeps every fitting above the ground it stands on', () => {
-    const below = vehicle.fittings.filter((fitting) => library.placed(fitting).bounds.min[1] < 0).map(({ id }) => id);
+    const below = fittings.filter((fitting) => library.placed(fitting).bounds.min[1] < 0).map(({ id }) => id);
     expect(below).toEqual([]);
   });
 
   it('places no two fittings in the same voxel', () => {
     const owner = new Map<number, string>();
     const clashes = new Map<string, string>();
-    for (const fitting of vehicle.fittings) {
+    for (const fitting of fittings) {
       for (const key of library.placed(fitting).grid.keys()) {
         const other = owner.get(key);
         if (other && !clashes.has(`${other} / ${fitting.id}`)) {
@@ -96,107 +102,160 @@ describe.each(VEHICLES)('$vehicle.id built from parts', ({ vehicle, builds }) =>
 });
 
 describe('paint wear', () => {
-  const library = new PartLibrary(RANGE_ROVER);
   const site = { origin: [0, 0, 0] as const, wheels: [[39, 12, 12] as const] };
+  const gridOf = (fitting: Fitting): VoxelGrid => library.grid(fitting.type, fitting.mirror === true);
 
   it('only recolours paint and seams into wear shades, never changing a part’s shape', () => {
     let changed = 0;
     for (const fitting of RANGE_ROVER.fittings) {
-      const grid = library.grid(fitting.type, fitting.mirror === true);
-      const worn = wearGrid(grid, fitting.id, 1, site);
+      const grid = gridOf(fitting);
+      const key = wearKey('rover', fitting.id);
+      const worn = wearGrid(grid, key, 1, site);
       expect([...worn.keys()].sort(), fitting.id).toEqual([...grid.keys()].sort());
-      for (const [key, mat] of worn) {
-        const before = grid.get(key)!;
+      for (const [voxel, mat] of worn) {
+        const before = grid.get(voxel)!;
         if (mat !== before) {
           changed += 1;
           expect(['paint', 'seam'], fitting.id).toContain(before);
           expect(WEAR_MATERIALS, fitting.id).toContain(mat);
         }
       }
-      expect(wearGrid(grid, fitting.id, 0, site), fitting.id).toEqual(grid);
+      expect(wearGrid(grid, key, 0, site), fitting.id).toEqual(grid);
     }
     expect(changed).toBeGreaterThan(0);
   });
+
+  it('wears two vehicles of one blueprint differently', () => {
+    const differs = RANGE_ROVER.fittings.some((fitting) => {
+      const grid = gridOf(fitting);
+      const first = wearGrid(grid, wearKey('first', fitting.id), 1, site);
+      const second = wearGrid(grid, wearKey('second', fitting.id), 1, site);
+      return [...first].some(([voxel, mat]) => second.get(voxel) !== mat);
+    });
+    expect(differs).toBe(true);
+  });
 });
 
-describe('engine noise from installed fittings', () => {
-  const vehicles = VEHICLES.map(({ vehicle }) => vehicle);
-  const isSource = (vehicle: Vehicle, fitting: Fitting): boolean =>
-    (partTypeOf(vehicle, fitting).noise?.radiusMetres ?? 0) > 0;
-  const allOf = (vehicle: Vehicle): Set<string> => new Set(vehicle.fittings.map(({ id }) => id));
+describe('engine noise from fitted parts', () => {
+  const vehicles = BLUEPRINTS.map(({ blueprint }) => newInstance(blueprint, 'complete'));
+  const isSource = (fitting: Fitting): boolean => (partTypeOf(CATALOGUE, fitting).noise?.radiusMetres ?? 0) > 0;
 
   it('never gets quieter when a part that makes no noise comes off, and some part damps it', () => {
-    for (const vehicle of vehicles) {
-      const installed = allOf(vehicle);
-      const complete = noiseRadius(vehicle, installed);
-      const withoutEach = vehicle.fittings
-        .filter((fitting) => !isSource(vehicle, fitting))
+    for (const { blueprint, fittings } of vehicles) {
+      const complete = noiseRadius(CATALOGUE, fittings);
+      const withoutEach = fittings
+        .filter((fitting) => !isSource(fitting))
         .map((fitting) => ({
           id: fitting.id,
-          radius: noiseRadius(vehicle, new Set([...installed].filter((id) => id !== fitting.id))),
+          radius: noiseRadius(
+            CATALOGUE,
+            fittings.filter((other) => other !== fitting),
+          ),
         }));
       expect(
         withoutEach.filter(({ radius }) => radius < complete).map(({ id }) => id),
-        vehicle.id,
+        blueprint,
       ).toEqual([]);
       expect(
         withoutEach.some(({ radius }) => radius > complete),
-        vehicle.id,
+        blueprint,
       ).toBe(true);
     }
   });
 
   it('makes engine noise only while a source is fitted', () => {
-    for (const vehicle of vehicles) {
-      expect(noiseRadius(vehicle, allOf(vehicle)), vehicle.id).toBeGreaterThan(0);
-      const silent = new Set(vehicle.fittings.filter((fitting) => !isSource(vehicle, fitting)).map(({ id }) => id));
-      expect(noiseRadius(vehicle, silent), vehicle.id).toBe(0);
+    for (const { blueprint, fittings } of vehicles) {
+      expect(noiseRadius(CATALOGUE, fittings), blueprint).toBeGreaterThan(0);
+      expect(
+        noiseRadius(
+          CATALOGUE,
+          fittings.filter((fitting) => !isSource(fitting)),
+        ),
+        blueprint,
+      ).toBe(0);
     }
   });
 });
 
 describe('fitting and removing parts', () => {
-  const part = { label: 'block', layer: 'body', massKg: 1, shape: [] } as const;
   const fitting = (id: string, supportedBy: readonly string[]): Fitting => ({
     id,
     type: 'block',
     at: [0, 0, 0],
     supportedBy,
   });
-  const vehicle: Vehicle = {
+  const blueprint: Blueprint = {
     id: 'fixture',
     label: 'fixture',
     lattice: [1, 1, 1],
-    palette: {},
-    parts: { block: { id: 'block', ...part } },
+    paint: { body: '#000000', seam: '#000000' },
     fittings: [fitting('post-a', []), fitting('post-b', []), fitting('roof', ['post-a', 'post-b'])],
   };
+  const ids = (fittings: readonly Fitting[]): readonly string[] => fittings.map(({ id }) => id);
 
   it('refuses to take off a part another rests on, or to fit one before all its supports', () => {
-    expect(dependentsOf(vehicle, new Set(['post-a', 'post-b', 'roof']), 'post-a').map(({ id }) => id)).toEqual([
-      'roof',
-    ]);
-    expect(dependentsOf(vehicle, new Set(['post-a', 'post-b']), 'post-a')).toEqual([]);
-    expect(missingSupports(vehicle, new Set(['post-a']), 'roof')).toEqual(['post-b']);
+    const vehicle = newInstance(blueprint, 'vehicle');
+    expect(ids(removeFitting(vehicle, 'post-a'))).toEqual(['roof']);
+    expect(ids(vehicle.fittings)).toContain('post-a');
+    expect(removeFitting(vehicle, 'roof')).toEqual([]);
+    expect(removeFitting(vehicle, 'post-a')).toEqual([]);
+    expect(addFitting(vehicle, fitting('roof', ['post-a', 'post-b']))).toEqual(['post-a']);
+    expect(ids(vehicle.fittings)).toEqual(['post-b']);
   });
 
-  it('reports a part fitted without its support, an unknown support and a support cycle', () => {
-    const broken: Vehicle = {
-      ...vehicle,
-      fittings: [
-        ...vehicle.fittings,
-        fitting('beam', ['ghost']),
-        fitting('left', ['right']),
-        fitting('right', ['left']),
+  it('keeps two vehicles of one blueprint, and the blueprint, independent', () => {
+    const first = newInstance(blueprint, 'first');
+    const second = newInstance(blueprint, 'second');
+    removeFitting(first, 'roof');
+    addFitting(second, fitting('beacon', ['roof']));
+    expect(ids(first.fittings)).toEqual(['post-a', 'post-b']);
+    expect(ids(second.fittings)).toEqual(['post-a', 'post-b', 'roof', 'beacon']);
+    expect(ids(blueprint.fittings)).toEqual(['post-a', 'post-b', 'roof']);
+  });
+
+  it('reports a part resting on an absent support, and a support cycle', () => {
+    const problems = supportProblems([
+      ...blueprint.fittings.filter(({ id }) => id !== 'post-b'),
+      fitting('left', ['right']),
+      fitting('right', ['left']),
+    ]);
+    const naming = (...names: string[]): readonly string[] =>
+      problems.filter((problem) => names.every((name) => problem.includes(name)));
+    expect(naming('roof', 'post-b')).toHaveLength(1);
+    expect(naming('left', 'right')).toHaveLength(1);
+    expect(problems).toHaveLength(2);
+  });
+});
+
+describe('the part catalogue', () => {
+  const wheel: PartType = { id: 'wheel', label: 'Wheel', layer: 'under', massKg: 1, shape: [] };
+
+  it('keeps one type per id: the same type listed twice is one entry, two types under one id are refused', () => {
+    expect(Object.keys(catalogueOf([wheel, wheel]))).toEqual(['wheel']);
+    expect(() => catalogueOf([wheel, { ...wheel, label: 'Another wheel' }])).toThrow('wheel');
+  });
+});
+
+describe('mirrored fittings', () => {
+  it('places a far-side twin from its own stored position, without the vehicle’s width', () => {
+    const bracket: PartType = {
+      id: 'bracket',
+      label: 'Bracket',
+      layer: 'body',
+      massKg: 1,
+      shape: [
+        { op: 'box', from: [0, 0, 0], to: [3, 2, 1], mat: 'red' },
+        { op: 'box', from: [0, 0, 1], to: [1, 1, 3], mat: 'red' },
       ],
     };
-    const problems = supportProblems(broken, new Set(['post-a', 'roof']));
-    const naming = (...ids: string[]): readonly string[] =>
-      problems.filter((problem) => ids.every((id) => problem.includes(id)));
-    expect(naming('roof', 'post-b')).toHaveLength(1);
-    expect(naming('beam', 'ghost')).toHaveLength(1);
-    expect(naming('left', 'right')).toHaveLength(1);
-    expect(problems).toHaveLength(3);
+    const width = 20;
+    const [near, far] = pairAcross(width)('bracket', { type: bracket, at: [2, 0, 14] }, []);
+    const fixture = new PartLibrary(catalogueOf([bracket]));
+    const reflected = [...fixture.placed(near!).grid.keys()].map((key) => {
+      const [x, y, z] = keyVoxel(key);
+      return voxelKey(x, y, width - 1 - z);
+    });
+    expect([...fixture.placed(far!).grid.keys()].sort()).toEqual(reflected.sort());
   });
 });
 

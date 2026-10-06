@@ -2,7 +2,7 @@
  * A Honda CG125-type motorbike, built from parts: 1.91 m long, 0.75 m across the bars, 1.03 m to the
  * bars, 1.22 m wheelbase on 18-inch spoked wheels. The frame is the structure everything rests on;
  * there is no body shell, and the seat carries the rider. Proportions follow a scaled side view (see
- * the r43-6 report).
+ * docs/vehicle-spike.md, "Proportions").
  */
 import {
   type Authored,
@@ -10,15 +10,19 @@ import {
   box,
   disc,
   local,
-  meta,
+  metaFor,
   paintBox,
-  pair,
+  pairAcross,
   partsOf,
   place,
   prism,
   tube,
 } from './authoring.ts';
-import type { Fitting, Vehicle } from './model.ts';
+import { type Blueprint, type Fitting, type PartType, VOXELS_PER_CELL } from './model.ts';
+
+const LATTICE = [16, 9, 6] as const;
+const own = metaFor('motorbike');
+const pair = pairAcross(LATTICE[2] * VOXELS_PER_CELL);
 
 // Vehicle-local voxels (3.125 cm): x forward from the tail, y up, z across with the near side at high
 // z and the centre plane between 11 and 12. The wheels, frame and fork sit on the centre plane.
@@ -51,7 +55,7 @@ const spokes = Array.from({ length: 10 }, (_, k) => {
   );
 });
 const wheel = local({
-  ...meta('bike-wheel', 'Wheel (18 in, spoked)', 'under', 9),
+  ...own('wheel', 'Wheel (18 in, spoked)', 'under', 9),
   pivot: [WHEEL_C, WHEEL_C, 2],
   shape: [
     disc('z', [WHEEL_C, WHEEL_C, 9.5, 7.3], [1, 3], 'tyre'),
@@ -62,7 +66,7 @@ const wheel = local({
   ],
 });
 
-const frame = authored(meta('frame', 'Frame', 'frame', 14), [
+const frame = authored(own('frame', 'Frame', 'frame', 14), [
   prism(
     'z',
     [
@@ -102,7 +106,7 @@ const frame = authored(meta('frame', 'Frame', 'frame', 14), [
   box([3, 20, 10], [5, 22, 14], 'frame'),
 ]);
 
-const fork = authored(meta('fork', 'Front fork and yokes', 'frame', 7), [
+const fork = authored(own('fork', 'Front fork and yokes', 'frame', 7), [
   ...[9, 14].flatMap((z) => [
     tube(
       [
@@ -128,7 +132,7 @@ const fork = authored(meta('fork', 'Front fork and yokes', 'frame', 7), [
   box([40, 24, 9], [42, 25, 15], 'alloy'),
 ]);
 
-const swingarm = authored(meta('swingarm', 'Swingarm and chain guard', 'frame', 4), [
+const swingarm = authored(own('swingarm', 'Swingarm and chain guard', 'frame', 4), [
   ...[9, 14].map((z) =>
     tube(
       [
@@ -143,7 +147,7 @@ const swingarm = authored(meta('swingarm', 'Swingarm and chain guard', 'frame', 
   box([20, 10, 10], [22, 12, 14], 'frame'),
   box([14, 9, 8], [18, 12, 9], 'trim'),
 ]);
-const shock = authored(meta('shock', 'Rear shock absorber', 'under', 1.5), [
+const shock = authored(own('shock', 'Rear shock absorber', 'under', 1.5), [
   tube(
     [
       [12.3, 10],
@@ -164,7 +168,7 @@ const shock = authored(meta('shock', 'Rear shock absorber', 'under', 1.5), [
   ),
 ]);
 
-const engine = authored({ ...meta('engine', 'Single-cylinder engine', 'under', 30), noise: { radiusMetres: 50 } }, [
+const engine = authored({ ...own('engine', 'Single-cylinder engine', 'under', 30), noise: { radiusMetres: 50 } }, [
   box([22, 6, 8], [34, 15, 16], 'engine'),
   disc('z', [25.5, 10.5, 3.5], [7, 8], 'alloy'),
   box([24, 7, 16], [32, 14, 17], 'alloy'),
@@ -184,7 +188,7 @@ const engine = authored({ ...meta('engine', 'Single-cylinder engine', 'under', 3
   box([24, 15, 10], [27, 17, 14], 'alloy'),
   box([34, 9, 10], [36, 12, 12], 'engine'),
 ]);
-const exhaust = authored({ ...meta('exhaust', 'Exhaust and silencer', 'under', 5), noise: { rangeScale: 0.5 } }, [
+const exhaust = authored({ ...own('exhaust', 'Exhaust and silencer', 'under', 5), noise: { rangeScale: 0.5 } }, [
   box([35, 6, 13], [37, 18, 15], 'chrome'),
   box([34, 6, 15], [37, 8, 19], 'chrome'),
   box([20, 6, 17], [34, 9, 19], 'chrome'),
@@ -193,11 +197,11 @@ const exhaust = authored({ ...meta('exhaust', 'Exhaust and silencer', 'under', 5
   box([5, 11, 16], [7, 13, 18], 'chrome'),
   box([5, 12, 15], [7, 22, 16], 'chrome'),
 ]);
-const footpeg = authored(meta('footpeg', 'Footrest', 'under', 0.5), [
+const footpeg = authored(own('footpeg', 'Footrest', 'under', 0.5), [
   box([27, 9, 17], [30, 10, 22], 'frame'),
   paintBox([27, 9, 18], [30, 10, 22], 'rubber'),
 ]);
-const stand = authored(meta('centre-stand', 'Centre stand', 'under', 2.5), [
+const stand = authored(own('centre-stand', 'Centre stand', 'under', 2.5), [
   box([19, 1, 8], [21, 8, 9], 'frame'),
   box([19, 1, 15], [21, 8, 16], 'frame'),
   box([19, 1, 9], [21, 2, 15], 'frame'),
@@ -205,17 +209,17 @@ const stand = authored(meta('centre-stand', 'Centre stand', 'under', 2.5), [
   box([17, 0, 14], [22, 1, 17], 'frame'),
 ]);
 
-const mudguardFront = authored(meta('mudguard-front', 'Front mudguard', 'body', 1), [
+const mudguardFront = authored(own('mudguard-front', 'Front mudguard', 'body', 1), [
   disc('z', [AXLE_FRONT, AXLE_Y, 11, 10], [10, 14], { mat: 'chrome', sectors: { count: 1, duty: 0.42 } }),
 ]);
-const headlight = authored(meta('headlight', 'Headlight and speedometer', 'body', 1.5), [
+const headlight = authored(own('headlight', 'Headlight and speedometer', 'body', 1.5), [
   disc('x', [12, 27.5, 3], [42, 45], 'chrome'),
   disc('x', [12, 27.5, 2.6], [45, 46], 'lamp'),
   disc('x', [12, 27.5, 1.6], [45, 46], { mat: 'lampHot', paint: true }),
   box([41, 30, 10], [44, 32, 14], 'dash'),
   paintBox([41, 31, 11], [43, 32, 13], 'dial'),
 ]);
-const handlebar = authored(meta('handlebar', 'Handlebar, grips and mirrors', 'interior', 2), [
+const handlebar = authored(own('handlebar', 'Handlebar, grips and mirrors', 'interior', 2), [
   box([38, 31, 10], [40, 32, 14], 'alloy'),
   box([38, 32, 4], [40, 33, 20], 'chrome'),
   box([36, 32, 0], [38, 33, 5], 'rubber'),
@@ -225,7 +229,7 @@ const handlebar = authored(meta('handlebar', 'Handlebar, grips and mirrors', 'in
   box([37, 34, 4], [38, 36, 7], 'chrome'),
   box([37, 34, 17], [38, 36, 20], 'chrome'),
 ]);
-const tank = authored(meta('tank', 'Fuel tank', 'body', 4), [
+const tank = authored(own('tank', 'Fuel tank', 'body', 4), [
   prism(
     'z',
     [
@@ -249,7 +253,7 @@ const tank = authored(meta('tank', 'Fuel tank', 'body', 4), [
     paintBox([26, 21, z], [29, 24, z + 1], 'rubber'),
   ]),
 ]);
-const seat = authored({ ...meta('seat', 'Seat', 'interior', 3), rider: [19, 25, 12] }, [
+const seat = authored({ ...own('seat', 'Seat', 'interior', 3), rider: [19, 25, 12] }, [
   prism(
     'z',
     [
@@ -261,19 +265,19 @@ const seat = authored({ ...meta('seat', 'Seat', 'interior', 3), rider: [19, 25, 
       [24, 22],
     ],
     [8, 16],
-    'seat',
+    'saddle',
   ),
   box([5, 22, 8], [24, 23, 16], 'trim'),
 ]);
-const sideCover = authored({ ...meta('side-cover', 'Side cover', 'body', 0.5), panel: 'z' }, [
+const sideCover = authored({ ...own('side-cover', 'Side cover', 'body', 0.5), panel: 'z' }, [
   box([18, 15, 15], [24, 21, 17], 'paint'),
   paintBox([19, 17, 16], [23, 19, 17], 'badge'),
 ]);
-const mudguardRear = authored(meta('mudguard-rear', 'Rear mudguard', 'body', 1.5), [
+const mudguardRear = authored(own('mudguard-rear', 'Rear mudguard', 'body', 1.5), [
   disc('z', [AXLE_REAR, AXLE_Y, 11, 10], [9, 15], { mat: 'chrome', sectors: { count: 1, duty: 0.55 } }),
   box([16, 0, 9], [24, 22, 15], 'air'),
 ]);
-const tailLight = authored(meta('tail-light', 'Tail lamp', 'body', 0.5), [
+const tailLight = authored(own('tail-light', 'Tail lamp', 'body', 0.5), [
   box([0, 17, 10], [3, 20, 14], 'trim'),
   paintBox([0, 17, 10], [1, 20, 14], 'tail'),
 ]);
@@ -319,33 +323,12 @@ const FITTINGS: readonly Fitting[] = [
   place('tail-light', tailLight, ['mudguard-rear']),
 ];
 
-export const MOTORBIKE: Vehicle = {
+export const MOTORBIKE_PARTS: readonly PartType[] = partsOf(PARTS);
+
+export const MOTORBIKE: Blueprint = {
   id: 'motorbike',
   label: 'CG125-type motorbike',
-  lattice: [16, 9, 6],
-  palette: {
-    paint: '#a8242a',
-    seam: '#6d1619',
-    frame: '#25292b',
-    chrome: '#c6c9c3',
-    alloy: '#b4b7b0',
-    engine: '#8f938d',
-    tyre: '#26292b',
-    tread: '#33383b',
-    rim: '#cfd2cc',
-    spoke: '#a9ada6',
-    hub: '#9da19a',
-    spring: '#8b8f89',
-    rubber: '#2b2f31',
-    seat: '#202325',
-    trim: '#2c3032',
-    lamp: '#dfe3d8',
-    lampHot: '#fbfbf1',
-    tail: '#a5292d',
-    dash: '#303435',
-    dial: '#596057',
-    badge: '#e6e2d6',
-  },
-  parts: partsOf(PARTS),
+  lattice: LATTICE,
+  paint: { body: '#a8242a', seam: '#6d1619' },
   fittings: FITTINGS,
 };
