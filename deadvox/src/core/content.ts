@@ -508,9 +508,16 @@ const checkRecipe = ({
     });
   });
   for (const id of Object.keys(recipe.skills)) {
-    if (!registry.skills.has(id)) {
+    const skill = registry.skills.get(id);
+    if (!skill) {
       report('recipes', recipe.id, `.skills.${id}`, `no skill "${id}"`);
     }
+  }
+  if (
+    Object.keys(recipe.skills).length > 0 &&
+    registry.skills.get('crafting')?.training?.craftingTierOffset === undefined
+  ) {
+    report('recipes', recipe.id, '.skills', 'crafting skill has no crafting tier offset');
   }
   for (const id of Object.keys(recipe.qualities)) {
     if (!qualities.has(id)) {

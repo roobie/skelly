@@ -29,8 +29,10 @@ export class Input {
   walking = false;
   menuPointer = false;
   rightMouseHeld = false;
+  aimingDownSights = false;
   private rightMousePressed = false;
   private rightMouseSuppressed = false;
+  private aimingDownSightsAllowed: () => boolean = () => true;
   private dominantUsePressed = false;
   private dominantUseDown = false;
   private offUsePressed = false;
@@ -45,8 +47,10 @@ export class Input {
     target.addEventListener('mousedown', (event) => {
       const mouse = event as MouseEvent;
       if (mouse.button === 2) {
-        this.rightMouseHeld = true;
         this.rightMousePressed = true;
+      }
+      if (this.locked && !this.menuPointer) {
+        keyboardInput.pressPointer(mouse.button, mouse);
       }
       if (
         mouse.button === 0 &&
@@ -60,9 +64,10 @@ export class Input {
       }
     });
     globalThis.addEventListener('mouseup', (event) => {
-      const { button } = event as MouseEvent;
+      const mouse = event as MouseEvent;
+      const { button } = mouse;
+      keyboardInput.releasePointer(button, mouse.timeStamp);
       if (button === 2) {
-        this.rightMouseHeld = false;
         this.rightMouseSuppressed = false;
       }
       if (button === 0) {
@@ -78,29 +83,32 @@ export class Input {
       this.pitch = adjustLookPitch(this.pitch, -event.movementY * SENSITIVITY).pitch;
     });
   }
-  cancel(): void {
+  cancel(preservePointer = false): void {
     this.reload.cancel();
-    this.rightMouseHeld = false;
     this.rightMousePressed = false;
     this.rightMouseSuppressed = false;
+    if (!preservePointer) {
+      this.rightMouseHeld = false;
+      this.aimingDownSights = false;
+    }
     this.dominantUseDown = false;
     this.dominantUsePressed = false;
     this.offUsePressed = false;
     this.crouchTogglePressed = false;
+  }
+  setAimingDownSightsAllowed(allowed: () => boolean): void {
+    this.aimingDownSightsAllowed = allowed;
+  }
+  toggleAimingDownSights(): void {
+    if (this.rightMouseActionHeld && this.locked && !this.menuPointer && this.aimingDownSightsAllowed()) {
+      this.aimingDownSights = !this.aimingDownSights;
+    }
   }
   useOff(): void {
     if (this.locked && !this.menuPointer) {
       this.offUsePressed = true;
     }
   }
-  get locked(): boolean {
-    return document.pointerLockElement === this.target;
-  }
-
-  get dominantUseHeld(): boolean {
-    return this.dominantUseDown;
-  }
-
   get rightMouseActionHeld(): boolean {
     return this.rightMouseHeld && !this.rightMouseSuppressed;
   }
@@ -113,6 +121,14 @@ export class Input {
 
   suppressRightMouseUntilRelease(): void {
     this.rightMouseSuppressed = this.rightMouseHeld;
+  }
+
+  get locked(): boolean {
+    return document.pointerLockElement === this.target;
+  }
+
+  get dominantUseHeld(): boolean {
+    return this.dominantUseDown;
   }
 
   adjustPitch(delta: number): number {

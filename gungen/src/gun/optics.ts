@@ -24,6 +24,8 @@ export interface OpticCatalogEntry {
   readonly mount: MountRequirement & { readonly description: string };
   readonly opticalAxisY: number;
   readonly ocularX: number;
+  /** Diameter of the clear ocular opening, measured at its exported plane. */
+  readonly ocularOpeningDiameterU: number;
   readonly eyeReliefU?: number;
   readonly eyeDatumToleranceU?: number;
   readonly solids: readonly Solid[];
@@ -82,7 +84,7 @@ const cylinder = (
   ]);
 
 /** One hollow turned body: ocular flare, main tube and objective flare share their axis. */
-const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall = 0.25): Solid =>
+const scopeBody = (id: string, centerY: number, outside: readonly Vec2[], wall = 0.125): Solid =>
   turned(
     id,
     'x',
@@ -171,6 +173,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 1.5,
     ocularX: -2.25,
+    ocularOpeningDiameterU: 2.5,
+    eyeReliefU: 2.5,
     ironCoWitness: true,
     sightlineStartX: 2.25,
     solids: [
@@ -240,6 +244,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 2,
     ocularX: -3,
+    ocularOpeningDiameterU: 2.5,
+    eyeReliefU: 3,
     ironCoWitness: true,
     sightlineStartX: 3,
     solids: [
@@ -266,6 +272,8 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 3,
     ocularX: -3.75,
+    ocularOpeningDiameterU: 2.75,
+    eyeReliefU: 3.5,
     ironCoWitness: true,
     sightlineStartX: 4,
     solids: [
@@ -305,6 +313,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 2.25,
     ocularX: -6.5,
+    ocularOpeningDiameterU: 1.5,
     eyeReliefU: 3.5,
     eyeDatumToleranceU: 8,
     ironCoWitness: true,
@@ -373,6 +382,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 2,
     ocularX: -10,
+    ocularOpeningDiameterU: 2.75,
     eyeReliefU: 7.5,
     eyeDatumToleranceU: 8,
     ironCoWitness: false,
@@ -410,6 +420,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 3,
     ocularX: -15.75,
+    ocularOpeningDiameterU: 3.25,
     eyeReliefU: 8,
     eyeDatumToleranceU: 9,
     ironCoWitness: false,
@@ -447,6 +458,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
     }),
     opticalAxisY: 4.25,
     ocularX: -15,
+    ocularOpeningDiameterU: 3.75,
     eyeReliefU: 6.5,
     eyeDatumToleranceU: 9,
     ironCoWitness: false,

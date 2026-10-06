@@ -586,6 +586,25 @@ describe('content references', () => {
     ],
   };
 
+  it('rejects craftable content when the single crafting tier offset is missing', () => {
+    const withoutOffset = base.map(({ source, data }) => {
+      if (source !== 'recipes.json') {
+        return { source, data };
+      }
+      const recipes = structuredClone(data) as { skills: { id: string; name: string; training?: unknown }[] };
+      recipes.skills = recipes.skills.map(({ training, ...skill }) =>
+        skill.id === 'crafting' ? skill : { ...skill, ...(training === undefined ? {} : { training }) },
+      );
+      return { source, data: recipes };
+    });
+    const { issues } = buildRegistry(withoutOffset);
+    expect(
+      issues.some(
+        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+      ),
+    ).toBe(true);
+  });
+
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
     const { registry, issues } = buildRegistry([...base, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);
