@@ -1,8 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry, type ZombieDef } from '../src/core/content.ts';
 import { Body } from '../src/core/body.ts';
+import { buildRegistry, type ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { SPAWN_NEEDS, STAMINA, stepStamina } from '../src/core/needs.ts';
@@ -626,9 +626,7 @@ describe('player melee action', () => {
       return zombie.dismemberRng.state();
     };
 
-    expect(hitWithVariance(0)).toEqual(
-      hitWithVariance(registry.meleeClasses.get('blunt')!.damageVariance),
-    );
+    expect(hitWithVariance(0)).toEqual(hitWithVariance(registry.meleeClasses.get('blunt')!.damageVariance));
   });
 
   it('pierce contact has the widest seeded damage spread', () => {

@@ -73,12 +73,7 @@ import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import { Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
-import {
-  resolvePlayerMeleeWeapon,
-  shouldBlockFromEnGarde,
-  shouldEnterMeleeReady,
-  startPlayerMelee,
-} from './melee.ts';
+import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
