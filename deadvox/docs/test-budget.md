@@ -2,6 +2,7 @@
 read_if:
   - you're reviewing why the default Deadvox unit suite was reduced
   - you're revisiting a suite reduction after a budget overrun or related defect
+  - you're running a milestone's default-suite time check
 ---
 
 # Default Deadvox unit-suite reductions
@@ -23,3 +24,11 @@ Each cut keeps the assertion defining its protected property and removes only re
 - No save-format behavior was given up; remaining guard: see `test/snapshot-format.test.ts`, “round-trips an edited hamlet byte-exactly and continues deterministically from the restored bytes”.
 
 Revisit these cuts when an issue reports another default-suite budget overrun or a defect that a given-up case would have caught. Restore the affected case when responding to such a defect, and link the issue.
+
+## Milestone growth check
+
+For each milestone, compare the previous milestone's merge commit with the new head using three interleaved default-suite runs per head, each in its own isolated run. Treat median growth beyond the run-to-run spread as an overrun, and record per-file deltas. The absolute budget remains the quiet-host target.
+
+On a busy shared host, absolute duration moves with load and can read over budget without a milestone regression. The interleaved d103 comparison between d92's merge and #304's merge found no suite-level median growth despite over-budget absolute readings. Module import accounted for a large share, but its evaluation cost was spread across the graph under per-file isolation, with no single module dominating; Vitest's `experimental.importDurations` reports the module profile. d103 found the candidate import savings small relative to that whole graph, so it changed no tests or runtime imports.
+
+Decided (BR, 2026-10-06): measure milestone growth against the previous milestone and cut import time only when the profile supports a no-test-loss improvement. BR: "agreed; do as suggested".
