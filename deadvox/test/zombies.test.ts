@@ -7,7 +7,8 @@ import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
-import { sunExposedAt } from '../src/core/lights.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
 import { raycast, type SolidAt } from '../src/core/raycast.ts';
@@ -593,6 +594,36 @@ describe('shambler scenarios', () => {
     const blockedId = blocked.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
     blocked.tick(1 / 60);
     expect(blocked.store.get(blockedId)!.mode).toBe('idle');
+  });
+
+  it('keeps a dropped light hidden behind a one-block wall while the same light in the open lures', () => {
+    const lureMode = (behindWall: boolean): string => {
+      const inventory = new Inventory(registry);
+      const glowstick = inventory.create('glowstick');
+      expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+      expect(inventory.add(glowstick, { kind: 'pile', pos: [7, 1, 0] })).toBe(true);
+      const entry = [...inventory.items()].find(({ item }) => item === glowstick)!;
+      const source = lightSenseSourceFor({
+        registry,
+        item: glowstick,
+        location: entry.location,
+        path: entry.path,
+        playerPosition: [100, 1, 100],
+        eyeHeightMetres: 1.3,
+      });
+      if (!source) {
+        throw new Error('Dropped glowstick did not create a sense source');
+      }
+      const sensedPlayer = (): PlayerSense => ({ ...player([100, 1, 100]), lightSources: [source] });
+      const isOpaque: SolidAt = (x, y, z) => FLOOR(x, y, z) || (behindWall && x === 6 && y === 1 && z === 0);
+      const system = new ZombieSystem({ ...senses(sensedPlayer, isOpaque, () => 0), isOpaque });
+      const id = system.add(SHAMBLER, [3.05, 1, 0.5], [1, 0, 0]);
+      system.tick(1 / 60);
+      return system.store.get(id)!.mode;
+    };
+
+    expect(lureMode(false)).toBe('investigate');
+    expect(lureMode(true)).toBe('idle');
   });
 
   it('lets a visible lure complete one search and return without repeating its alert', () => {

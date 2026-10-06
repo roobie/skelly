@@ -53,7 +53,6 @@ import {
   type PlayerMovement,
   type VocalNoise,
   type Zombie,
-  type ZombieLightSource,
   ZombieSystem,
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
@@ -477,13 +476,12 @@ export const createSession = (options: SessionOptions) => {
           path,
           playerPosition: body.pos,
           eyeHeightMetres,
-          blockSize: s,
         }),
       )
-      .filter((source): source is ZombieLightSource => source !== undefined)
+      .filter((source) => source !== undefined)
       .map((source) => ({
         ...source,
-        sunlit: isSunExposedAt([source.pos[0], source.pos[1] + (source.heightMetres ?? 0.15) / s, source.pos[2]], hour),
+        sunlit: isSunExposedAt([source.pos[0], source.pos[1] + source.heightMetres / s, source.pos[2]], hour),
       }));
     const playerLightHeight: Vec3 = [body.pos[0], body.pos[1] + eyeHeightMetres / s, body.pos[2]];
     const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);

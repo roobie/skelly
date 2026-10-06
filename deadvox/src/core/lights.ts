@@ -23,7 +23,7 @@ export type LightExposure = 'carried' | 'world';
 export interface LightSenseSource {
   pos: Vec3;
   seenFrom: number;
-  heightMetres?: number | undefined;
+  heightMetres: number;
   carried: boolean;
 }
 
@@ -57,7 +57,6 @@ export const lightSenseSourceFor = ({
   path,
   playerPosition,
   eyeHeightMetres,
-  blockSize,
 }: {
   registry: Registry;
   item: Item;
@@ -65,7 +64,6 @@ export const lightSenseSourceFor = ({
   path: string;
   playerPosition: Vec3;
   eyeHeightMetres: number;
-  blockSize: number;
 }): LightSenseSource | undefined => {
   const light = registry.items.get(item.type)?.light;
   const exposure = lightExposureFor(registry, item, location, path);
@@ -78,7 +76,7 @@ export const lightSenseSourceFor = ({
   if (location.kind === 'pile') {
     const [x, y, z] = location.pile.pos;
     return {
-      pos: [x + 0.5, y + WORLD_LIGHT_HEIGHT_METRES / blockSize, z + 0.5],
+      pos: [x + 0.5, y + 0.15, z + 0.5],
       seenFrom: light.seenFrom,
       heightMetres: 0,
       carried: false,

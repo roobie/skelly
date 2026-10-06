@@ -76,7 +76,6 @@ describe('made-light point pool', () => {
       path: entry.path,
       playerPosition: [50, 1, 50],
       eyeHeightMetres: 1.3,
-      blockSize: SCALE.blockSize,
     });
     expect(source?.carried).toBe(false);
 
@@ -89,15 +88,13 @@ describe('made-light point pool', () => {
       daylightScale: 1,
     });
     expect(pool.lights[4]!.intensity).toBeGreaterThan(0);
-    expect(
-      pool.lights[4]!.position.distanceTo(
-        new Vector3(
-          source!.pos[0] * SCALE.blockSize,
-          source!.pos[1] * SCALE.blockSize,
-          source!.pos[2] * SCALE.blockSize,
-        ),
-      ),
-    ).toBeLessThan(1e-9);
+    if (entry.location.kind !== 'pile') {
+      throw new Error('Glowstick left its pile');
+    }
+    expect(pool.lights[4]!.position.x).toBeCloseTo((entry.location.pile.pos[0] + 0.5) * SCALE.blockSize);
+    expect(pool.lights[4]!.position.z).toBeCloseTo((entry.location.pile.pos[2] + 0.5) * SCALE.blockSize);
+    expect(pool.lights[4]!.position.x).toBeCloseTo(source!.pos[0] * SCALE.blockSize);
+    expect(pool.lights[4]!.position.z).toBeCloseTo(source!.pos[2] * SCALE.blockSize);
 
     const floor = (_x: number, y: number) => y === 0;
     const zombies = new ZombieSystem({
@@ -139,7 +136,6 @@ describe('made-light point pool', () => {
       path: pocketEntry.path,
       playerPosition: [4, 1, 0],
       eyeHeightMetres: 1.3,
-      blockSize: SCALE.blockSize,
     });
     expect(pocketSource?.carried).toBe(true);
 
@@ -156,7 +152,6 @@ describe('made-light point pool', () => {
         path: storedEntry.path,
         playerPosition: [4, 1, 0],
         eyeHeightMetres: 1.3,
-        blockSize: SCALE.blockSize,
       }),
     ).toBeUndefined();
 
