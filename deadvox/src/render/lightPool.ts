@@ -1,6 +1,6 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
-import { lightExposureFor } from '../core/lights.ts';
 import type { Inventory, Location } from '../core/inventory.ts';
+import { lightExposureFor } from '../core/lights.ts';
 import type { HeldItems } from './hands.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
