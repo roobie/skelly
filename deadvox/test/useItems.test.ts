@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -8,8 +8,8 @@ import { chargeOf } from '../src/core/lights.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { EAT_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { Survival } from '../src/game/survival.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(
@@ -43,6 +43,44 @@ const setup = () => {
 };
 
 describe('using what you hold', () => {
+  it('refuses held and quickbar actions while unconscious and permits them after wake', () => {
+    const t = setup();
+    t.sim.body.impact(1, 'torso', { bleeding: true, shockDamage: 100 });
+    const rag = t.hold('rag', 'left');
+    t.sim.actions.treatment = {
+      validate: (region, _itemUid, treatment) =>
+        t.sim.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
+      finish: (region, _itemUid, treatment) =>
+        t.sim.body.treat(region, treatment) ? true : 'Treatment no longer applies',
+    };
+    expect(t.survival.use(rag)).toBeDefined();
+    expect(t.survival.useFromQuickbar(rag)).toBeDefined();
+
+    t.sim.body.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+
+    expect(t.sim.body.unconscious).toBe(false);
+    expect(t.survival.use(rag)).toBeUndefined();
+  });
+
+  it('uses the selected wound for held treatment and lets the wheel change that target', () => {
+    const t = setup();
+    t.sim.body.impact(1, 'leftArm', { bleeding: true });
+    t.sim.body.impact(3, 'rightArm', { bleeding: true });
+    const rag = t.hold('rag');
+    const initial = t.survival.selectedItemAction(rag);
+    expect(initial?.treatment?.region).toBe('rightArm');
+    const beginTreatment = vi.spyOn(t.sim.actions, 'beginTreatment').mockReturnValue(undefined);
+
+    expect(t.survival.use(rag)).toBeUndefined();
+    expect(beginTreatment.mock.calls[0]?.[0]).toBe(initial?.treatment?.region);
+    expect(beginTreatment.mock.calls[0]?.[1]).toBe(rag.uid);
+    expect(t.survival.cycleItemAction(rag, 1)).toBe(true);
+    const selected = t.survival.selectedItemAction(rag);
+    expect(selected).not.toBe(initial);
+    expect(t.survival.use(rag)).toBeUndefined();
+    expect(beginTreatment.mock.calls[1]?.[0]).toBe(selected?.treatment?.region);
+  });
+
   it('eats from your hands after a few seconds', () => {
     const { sim, inventory, queue, survival, hold } = setup();
     const beans = hold('canned_beans');
@@ -63,7 +101,7 @@ describe('using what you hold', () => {
     survival.use(apple);
     queue.tick(EAT_TIME + 0.1);
     expect(sim.needs.calories).toBe(SPAWN_NEEDS.calories);
-    expect(sim.needs.health).toBe(100 - FOOD_POISONING);
+    expect(sim.body.health).toBe(100 - FOOD_POISONING);
     expect(notices).toContain('The apple was rotten');
   });
 

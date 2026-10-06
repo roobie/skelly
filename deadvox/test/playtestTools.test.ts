@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-import { Simulation } from '../src/core/sim.ts';
 import { controlsCardRows } from '../src/game/controls.ts';
 import { BindingRegistry } from '../src/game/inputBindings.ts';
 import {
@@ -11,6 +10,7 @@ import {
   SessionMetrics,
   snapshotTimerQuantumForUserAgent,
 } from '../src/game/playtestTools.ts';
+import { Simulation } from './simulationFixture.ts';
 
 describe('playtest metrics', () => {
   it('accumulates looting time, deaths, compression, interruptions, and pocket uses', () => {

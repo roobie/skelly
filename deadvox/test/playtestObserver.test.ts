@@ -220,12 +220,13 @@ describe('playtest observer snapshot oracle', () => {
     const entity = { uid: 9, pockets: [] };
     const runtime = {
       sim: {
-        needs: { health: 100 },
+        needs: { calories: 40, hydration: 35, fatigue: 70, stamina: 100 },
+        body: { health: 100 },
         actions: { snapshotState: () => ({ job: null }) },
         paused: false,
         godMode: false,
         ignoreUnsafe: false,
-        snapshotState: () => ({ health: runtime.sim.needs.health }),
+        snapshotState: () => ({ health: runtime.sim.body.health }),
       },
       body: { pos: [1, 2, 3], vel: [0, -1, 0], onGround: false },
       inventory: { snapshotState: () => ({ version: 0 }) },
@@ -243,13 +244,13 @@ describe('playtest observer snapshot oracle', () => {
     const observer = new PlaytestObserver(new SessionMetrics(1));
     const result = observer.measureSnapshot(
       () => {
-        runtime.sim.needs.health -= 1;
+        Object.assign(runtime.sim.body, { health: runtime.sim.body.health - 1 });
         return {};
       },
       runtime,
       1,
     );
     expect(result.netStateUnchanged).toBe(false);
-    expect(runtime.sim.needs.health).toBeLessThan(99);
+    expect(runtime.sim.body.health).toBeLessThan(100);
   });
 });

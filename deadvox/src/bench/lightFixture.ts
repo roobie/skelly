@@ -58,7 +58,11 @@ export const createBenchLightFixture = (engine: RenderedEngine, calendar: number
   dropped(0, INNER_RING_COUNT, 3);
   dropped(1, BENCH_LIGHT_COUNTS.dropped - INNER_RING_COUNT, 6);
 
-  const simulation = new Simulation({ seed: config.seed, clock: { ratio: CLOCK_RATIO, start: calendar } });
+  const simulation = new Simulation({
+    seed: config.seed,
+    bodyTuning: registry.body.get('player')!,
+    clock: { ratio: CLOCK_RATIO, start: calendar },
+  });
   const queue = new HandlingQueue(inventory);
   const survival = new Survival(simulation, inventory, queue, {
     reach: bindReach({ inventory, position: spawn.pos, blockSize }),
