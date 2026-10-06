@@ -172,9 +172,9 @@ The debug actions make import and export available without adding another input-
 surface. Retaining an earlier segment preserves recent history across bounded storage
 rollover while its start snapshot keeps the exported input replayable. An end-state
 fingerprint surfaces simulation drift from uncovered input rather than silently implying
-reproduction. See `debug.input-replay-export` and `debug.input-replay-import` in
-`src/game/inputBindings.ts`, `InputReplayRecorder` and `replayStateFingerprint` in
-`src/game/inputReplay.ts`, and `src/game/play.ts`, `startPlay`.
+reproduction. See `INPUT_BINDINGS` in `src/game/inputBindings.ts` for the debug export
+and import actions, `InputReplayRecorder` and `replayStateFingerprint` in
+`src/game/inputReplay.ts`, and `startPlay` in `src/game/play.ts`.
 
 ## Readiness and melee (2026-10-05, #267)
 
