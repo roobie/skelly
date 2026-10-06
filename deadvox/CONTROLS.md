@@ -45,7 +45,8 @@ controls remain proposals until their issue is implemented.
 - **Debug gate (2026-10-05 19:52):** “debug modifier F2 to not collide with a builtin
   hotkey”. Every debug action uses a held F2 gate. The gate is itself a binding,
   not a native OS modifier. A consumed debug chord cannot also execute its
-  ordinary gameplay command. See `src/game/inputBindings.ts`, `debug.gate`.
+  ordinary gameplay command; enabling the gate preserves a held pointer stance
+  and its ADS toggle. See `src/game/inputBindings.ts`, `KeyboardInput.cancel`.
 - **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.
@@ -75,11 +76,12 @@ controls remain proposals until their issue is implemented.
   chord swap or physical slot migration. See `src/core/character.ts`,
   `dominantSide` and `offSide`; `src/game/primaryAction.ts`,
   `selectPrimaryAction`; and [character-handedness.md](docs/character-handedness.md).
-  Pointer action identities are in `src/game/inputBindings.ts`, `POINTER_ACTIONS`;
-  keyboard rebinding does not add mouse-rebinding UI. For d94, wielded-item wheel
-  selection belongs to a pointer-specific owner, not `BindingRegistry`: a directional
-  wheel event is not a keyboard chord. See `src/game/input.ts`, `Input`, and
-  `src/game/play.ts`, `startPlay`; `src/ui/menuPointer.ts`, `mountMenuPointer`, keeps
+  Mouse-button codes share the binding registry: the held `stance.ready` and
+  pressed `aim.ads-toggle` actions can each use a pointer button or a key, with
+  no Ctrl/Cmd modifiers. For d94, wielded-item wheel selection belongs to a
+  pointer-specific owner, not `BindingRegistry`: a directional wheel event is
+  not a keyboard chord. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and
+  `src/game/input.ts`, `Input`; `src/ui/menuPointer.ts`, `mountMenuPointer`, keeps
   menu scrolling in its separate route.
 - **Quickbar (2026-10-05 14:43):** “okay, yes, quickbar-hold is the secondary allowed
   pathway to activating / but e.g. racking a shell into a shotgun is _not_
@@ -100,11 +102,15 @@ controls remain proposals until their issue is implemented.
   active)”. These are the special-circumstance exception to the debug gate;
   they work only while noclip is active, and WASD remains usable during flight.
   See `src/game/inputBindings.ts`, `noclip.ascend` and `noclip.descend`.
-- **Continue (2026-10-06 11:28):** BR's choice was “1. enter”. Enter continues
-  both after an interruption and a stopped craft. BR also said “let's make
-  crouch a toggle”; #304 may bind C to crouch outside noclip. See
-  `src/game/inputBindings.ts`,
-  `compression.continue` and `craft.continue`.
+- **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
+  continues both after an interruption and a stopped craft. See
+  `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.
+- **Crouch (d98):** BR ruled “let's make crouch a toggle”. On 2026-10-06
+  12:25, BR said “i lean 'no' because if you're in a menu, you're not 'moving'”;
+  the 2026-10-05 20:09 ruling is “long actions disable all actions”. Crouch is therefore
+  available only in moving contexts, not menus or noclip, and a long action
+  leaves the stance unchanged. Context ownership keeps the same physical input
+  distinct from noclip descent; see `src/game/inputBindings.ts`, `INPUT_BINDINGS`.
 
 ## Why there is one keyboard owner
 
@@ -160,9 +166,11 @@ becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
 ## Readiness and melee (2026-10-05, #267)
 
 Firearms fire only while ready and never while sprinting. Ready movement is a
-skill-scaled duck-walk, not crouch. Holding right mouse raises a firearm or enters
-en-garde; middle mouse toggles the sight line while a firearm is raised. Blocking
-also requires the back movement action and succeeds according to melee skill. An
+skill-scaled duck-walk that stacks with crouch pace. Holding the rebindable
+`stance.ready` action raises a firearm or enters en-garde; the rebindable
+`aim.ads-toggle` action toggles the sight line while a firearm is raised. Their
+defaults are right and middle mouse respectively. Blocking also requires the
+back movement action and succeeds according to melee skill. An
 unready firearm click does nothing, including no refusal sound. BR settled the
 skill split: “The FC affects stuff like duck walking, whereas MC affects
 blocking”. See [SLICE-3.md](SLICE-3.md), 3.1,

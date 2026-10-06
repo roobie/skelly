@@ -179,6 +179,17 @@ try {
     }
     assert.equal(await interactionCheckbox.isChecked(), true);
     await pressAction(page, 'ui.main-menu-toggle');
+    const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    await pressAction(page, 'player.crouch-toggle');
+    await page.waitForFunction(
+      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching !== crouchingAtDispatch,
+      crouchBeforeToggle,
+    );
+    await pressAction(page, 'player.crouch-toggle');
+    await page.waitForFunction(
+      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching === crouchingAtDispatch,
+      crouchBeforeToggle,
+    );
     const walk = async (actionId, targetX, increasing) => {
       const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
       const release = await holdInputAction(page, actionId);
@@ -258,6 +269,28 @@ try {
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
     }, chairUid);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), true);
+    const crouchingDuringRest = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    const crouchGuardStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    await pressAction(page, 'player.crouch-toggle');
+    await waitForSimulation(
+      page,
+      (until) => {
+        const { session } = globalThis.readingWitness;
+        return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+      },
+      crouchGuardStart + 0.1,
+      {
+        seconds: 0.1,
+        from: crouchGuardStart,
+        label: 'rest keeps the crouch action locked through simulated progress',
+        record,
+      },
+    );
+    assert.equal(
+      await page.evaluate(() => globalThis.readingWitness.session.crouching),
+      crouchingDuringRest,
+      'long-action lock suppresses the crouch action',
+    );
     await interruptRest('rest stop interruption');
     await pressAction(page, 'handling.stop');
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);

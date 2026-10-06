@@ -50,6 +50,8 @@ import { roundedTriggerGuardSolids } from './roundedTriggerGuard.ts';
 import { COMPACT_TRIGGER_PLATE, PUMP_FOREND_PROPORTIONS, TAPERED_STOCK_PROPORTIONS } from './shotgunProportions.ts';
 import { taperedStockSolids } from './taperedStock.ts';
 
+const SIGHT_GRAIN = GRID / 4;
+
 export const EJECTION_PORT_MARGIN_U = SHARED_EJECTION_PORT_MARGIN_U;
 
 const size: ParamSpec = { values: SIZE_CLASSES, default: 'M' };
@@ -319,6 +321,7 @@ const LOWER_TRIGGER_X = {
   thumbhole: -10.75,
 } as const;
 const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
+const AK_RECEIVER_LIFT_U = 0.75;
 const AK_GAS_CYLINDER_Y = 2;
 const AK_GAS_CYLINDER_HALF_WIDTH = 0.25;
 export const AK_REAR_BEVEL = {
@@ -662,19 +665,24 @@ export const RECEIVER_SECTION = {
     } as const,
   },
   ak: {
-    clip: [AK_REAR_BEVEL.clip],
+    clip: [
+      {
+        ...AK_REAR_BEVEL.clip,
+        offset: AK_REAR_BEVEL.clip.offset + AK_RECEIVER_LIFT_U * AK_REAR_BEVEL.clip.normal[1],
+      },
+    ],
     outline: [
       [-2.5, -2],
       [1, -2],
       [2, -1.75],
-      [2.5, -1.25],
-      [2.5, 1.25],
+      [2.5 + AK_RECEIVER_LIFT_U, -1.25],
+      [2.5 + AK_RECEIVER_LIFT_U, 1.25],
       [2, 1.75],
       [1, 2],
       [-2.5, 2],
     ] as const,
     faces: {
-      top: { y: 2.5, halfWidth: 1.25 },
+      top: { y: 2.5 + AK_RECEIVER_LIFT_U, halfWidth: 1.25 },
       portSide: 2,
       handleSides: [-2, 2],
       front: 0,
@@ -1475,8 +1483,8 @@ const akReceiver: PartFamily = {
           section: 'ak',
           feed: 'box',
           magazineWell: 'standard',
-          receiverBottom: -RECEIVER_FRONT_HALF_HEIGHT,
-          receiverTop: RECEIVER_FRONT_HALF_HEIGHT,
+          receiverBottom: RECEIVER_SECTION.ak.faces.bottom,
+          receiverTop: Math.max(...RECEIVER_SECTION.ak.outline.map(([y]) => y)),
           receiverDrop: 0,
           carrierPattern,
           carrierY,
@@ -1506,7 +1514,7 @@ const akReceiver: PartFamily = {
           id: 'rear-sight',
           mount: 'sight-block',
           gender: 'female',
-          pos: [-2, 2.5, 0],
+          pos: [-2, 4.5, 0],
           normal: Y,
           up: X,
           required: true,
@@ -2603,9 +2611,10 @@ const frontSight: PartFamily = {
   build(params): PartDef {
     const radius = BARREL_RADIUS[cls(params, 'bore')];
     const postHalf = GRID;
-    const postHalfZ = params.style === 'ar' ? GRID / 2 : GRID;
+    const postHalfZ = params.style === 'ar' ? GRID / 2 : SIGHT_GRAIN;
     const postBase = 4.25;
-    const post = solid('post', [-postHalf, postBase, -postHalfZ], [postHalf, 5, postHalfZ]);
+    const postTop = 5;
+    const post = solid('post', [-postHalf, postBase, -postHalfZ], [postHalf, postTop, postHalfZ]);
     const earInner = radius - GRID;
     const commonSolids = octagonalCollar('collar', radius, [-AR_FRONT_SIGHT_HALF_LENGTH, AR_FRONT_SIGHT_HALF_LENGTH]);
     const solids =
@@ -2645,7 +2654,7 @@ const frontSight: PartFamily = {
       solids,
       ports: [{ id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: X, up: Y, required: true }],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, 5, 0], dir: X }],
+      axes: [{ kind: 'sight', origin: [0, postTop, 0], dir: X, eyeReliefU: 4 }],
     };
   },
 };
@@ -2673,7 +2682,7 @@ const railFrontSight: PartFamily = {
       ],
       ports: [{ id: 'base', mount: 'rail-top', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true }],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X }],
+      axes: [{ kind: 'sight', origin: [0, sightAxisY, 0], dir: X, eyeReliefU: 4 }],
     };
   },
 };
@@ -2758,19 +2767,25 @@ const gasCylinder: PartFamily = {
   },
 };
 
-/** A simple leaf rear sight mounted on the AK dust cover, without a receiver rail. */
+/** A leaf with an open U-notch, mounted on the AK dust cover without a receiver rail. */
 const akRearSight: PartFamily = {
   name: 'ak-rear-sight',
   params: {},
   build(): PartDef {
     return {
       family: 'sight',
-      solids: [solid('leaf', [-1, 0, -1.25], [1, 1, 1.25]), solid('notch', [-0.5, 1, -0.25], [0.5, 1.5, 0.25])],
+      solids: [
+        // A short horizontal leaf with a sub-grid U-notch, not tall protective ears.
+        solid('leaf-stem', [-SIGHT_GRAIN, -2, -0.125], [SIGHT_GRAIN, 0, 0.125]),
+        solid('leaf-left', [-SIGHT_GRAIN, 0, -1.125], [SIGHT_GRAIN, 0.5, -0.125]),
+        solid('leaf-right', [-SIGHT_GRAIN, 0, 0.125], [SIGHT_GRAIN, 0.5, 1.125]),
+        solid('leaf-base', [-SIGHT_GRAIN, 0, -0.125], [SIGHT_GRAIN, 0.25, 0.125]),
+      ],
       ports: [
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, 2.5, 0], dir: X }],
+      axes: [{ kind: 'sight', origin: [0, 0.25, 0], dir: X, eyeReliefU: 22 }],
     };
   },
 };

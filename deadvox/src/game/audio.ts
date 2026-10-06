@@ -1,6 +1,7 @@
-import type { Registry, SoundDef } from '../core/content.ts';
+import type { Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { SolidAt } from '../core/raycast.ts';
+import type { SenseDef, SoundDef } from '../core/schema.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { soundOcclusion } from '../core/soundOcclusion.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -70,6 +71,7 @@ export interface GameAudioOptions {
   registry: Registry;
   blockSize: number;
   isSolid: SolidAt;
+  tuning: SenseDef;
   report: (message: string) => void;
 }
 
@@ -78,7 +80,7 @@ export interface HeardSound {
   readonly file: string;
   readonly sourceLabel: string | null;
   readonly distanceMetres: number;
-  readonly wallRuns: number;
+  readonly occluded: boolean;
   readonly lowpassHz: number | null;
   /** Combined sample, occlusion, saved master/category settings, and inverse-distance gain. */
   readonly gain: number;
@@ -111,6 +113,7 @@ export class GameAudio {
   private readonly registry: Registry;
   private readonly blockSize: number;
   private readonly isSolid: SolidAt;
+  private readonly tuning: SenseDef;
   private readonly report: (message: string) => void;
   private readonly recentSounds: HeardSound[] = [];
   private readonly voices = new Map<SoundEventId, Set<Voice>>();
@@ -122,10 +125,11 @@ export class GameAudio {
   private heartbeatUnavailable = false;
   private disposed = false;
 
-  constructor({ registry, blockSize, isSolid, report }: GameAudioOptions) {
+  constructor({ registry, blockSize, isSolid, tuning, report }: GameAudioOptions) {
     this.registry = registry;
     this.blockSize = blockSize;
     this.isSolid = isSolid;
+    this.tuning = tuning;
     this.report = report;
   }
 
@@ -497,8 +501,14 @@ export class GameAudio {
     const sourceBlocks: Vec3 = positionMetres.map((v) => v / this.blockSize) as Vec3;
     const headLocked = listenerRelative || sound.category === 'ui';
     const occlusion = headLocked
-      ? { wallRuns: 0, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
-      : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid);
+      ? { occluded: false, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
+      : soundOcclusion({
+          listener: listenerBlocks,
+          source: sourceBlocks,
+          isSolid: this.isSolid,
+          globalWall: this.tuning.wall,
+          soundWall: sound.wall,
+        });
     const distanceMetres = headLocked
       ? 0
       : Math.hypot(
@@ -570,7 +580,7 @@ export class GameAudio {
       file: pick.file,
       sourceLabel,
       distanceMetres,
-      wallRuns: occlusion.wallRuns,
+      occluded: occlusion.occluded,
       lowpassHz: headLocked ? null : occlusion.cutoffHz,
       gain: pick.gain * occlusion.gain * this.volumes.master * this.volumes[sound.category] * distanceGain,
       emittedAsNoise,

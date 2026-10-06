@@ -91,7 +91,7 @@ export class Character implements HandedCharacter {
       throw new Error(`Invalid practice award for ${skill}`);
     }
     let level = this.skills[skill]!;
-    if (amount === 0) {
+    if (level >= tier || amount === 0) {
       return;
     }
     let remaining = this.practice[skill]! + amount;

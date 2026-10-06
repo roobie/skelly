@@ -8,6 +8,7 @@ export interface FirearmsCombatTuning {
   readonly readyMovementRange: number;
   readonly readyMovementHalfLifeLevels: number;
   readonly loweredPitchRadians: number;
+  readonly adsApertureFill: number;
 }
 
 export interface FirearmsSkillEffects {

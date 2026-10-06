@@ -1,3 +1,9 @@
+---
+read_if:
+  - you change firearm part geometry precision or sight dimensions
+  - you change optic eye-relief validation
+  - d97-3 changes AK receiver cover height relative to the centered bore
+
 # gungen — low-poly firearm designer
 
 The first skelly subproject. It builds super-low-poly 3D firearms by working
@@ -111,7 +117,10 @@ cheaply.
   to it.
 - Conventions to fix before writing code: the up axis, handedness, units.
 - **Size classes, not exact numbers**: S/M/L with snapping. This fits low-poly
-  and keeps us within the Level 2 boundary.
+  and keeps us within the Level 2 boundary. Sights alone use a finer sub-grid
+  where small notches and posts must remain legible at their authored dimensions.
+- Optic cheek-datum validation applies to long-eye-relief optics. Compact optics
+  can be mounted on stockless firearms; a handgun has no shoulder cheek datum.
 
 ### 5. The person holding it
 
@@ -666,6 +675,12 @@ explicitly named `battle-rifle`.
   cylinder axis is checked parallel to the bore. The AK front sight uses its
   own style with the post 2.5u behind the muzzle, consistent with the gas-block
   position.
+- The AKM side profile on [Wikimedia Commons](https://en.wikipedia.org/wiki/AKM)
+  shows the receiver cover above the barrel axis while the lower, magazine and
+  grip remain tied to the action. `parts.ts`, `AK_RECEIVER_LIFT_U`, raises only
+  the receiver roof: translating the full action body would displace the bolt
+  carrier from the centered barrel axis. The top contour is matched to the side
+  profile while the rear sight base remains embedded in the roof.
 - Added an `ak` lower layout with a flat face seat and no magazine-well walls.
   The curved AK magazine has seat kind `face` and zero insertion depth; its
   conservative rock-in keep-out starts at the front hook point. This swept box

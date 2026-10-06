@@ -71,6 +71,19 @@ it('drops excess activity practice at its tier', () => {
   expect(character.practice.fixture_skill).toBe(0);
 });
 
+it('preserves harder-activity progress when a lower-tier activity is awarded', () => {
+  const character = makeCharacter();
+  character.awardPractice('fixture_skill', practiceForNextLevel(0), 1);
+  const harderActivityPractice = practiceForNextLevel(1) / 2;
+  character.awardPractice('fixture_skill', harderActivityPractice, 5);
+  const practiceBeforeLowerTier = character.practice.fixture_skill;
+
+  character.awardPractice('fixture_skill', 0.01, 1);
+
+  expect(character.skills.fixture_skill).toBe(1);
+  expect(character.practice.fixture_skill).toBe(practiceBeforeLowerTier);
+});
+
 it('maps legendary skill to ordinary-top effect level', () => {
   expect(skillEffectLevel(SKILL_LEVEL_LEGENDARY)).toBe(SKILL_LEVEL_MAX);
 });

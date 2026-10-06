@@ -53,7 +53,14 @@ export interface DeadvoxModelEntry {
   readonly grip?: { readonly at: Vec3; readonly turn: Vec3 };
   readonly anchors?: Readonly<Record<string, Vec3>>;
   /** The model-derived eye point and sight axis used to align the player view. */
-  readonly sight?: { readonly kind: 'iron' | 'optic'; readonly eye: Vec3; readonly direction: Vec3; readonly up: Vec3 };
+  readonly sight?: {
+    readonly kind: 'iron' | 'optic';
+    readonly eye: Vec3;
+    readonly direction: Vec3;
+    readonly up: Vec3;
+    readonly eyeReliefMetres: number;
+    readonly ocularDiameterMetres?: number;
+  };
   /** Unit barrel direction in the same local model frame as anchors. */
   readonly muzzleDirection?: Vec3;
   /** Exact id from gungen/cartridges/, not a slug or display designation. */
@@ -145,6 +152,8 @@ interface SightCandidate {
   kind: 'optic' | 'iron';
   eye: Vec3;
   direction: Vec3;
+  eyeReliefMetres: number;
+  ocularDiameterMetres?: number;
 }
 const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCandidate | undefined => {
   const axis = part.axes.find(({ kind }) => kind === 'sight');
@@ -156,6 +165,10 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
   const params = resolved.params.get(id);
   const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
   const direction = normalize(applyDir(transform, axis.dir));
+  const eyeReliefU = optic?.eyeReliefU ?? axis.eyeReliefU;
+  if (eyeReliefU === undefined) {
+    throw new Error(`Sight part ${id} needs exported eye relief`);
+  }
   const eyeLocal = optic ? ([optic.ocularX, optic.opticalAxisY, 0] as Vec3) : axis.origin;
   let priority = 3;
   if (optic) {
@@ -171,6 +184,8 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
     kind: optic ? 'optic' : 'iron',
     eye: applyPoint(transform, eyeLocal),
     direction,
+    eyeReliefMetres: eyeReliefU * resolved.domain.units.metresPerUnit,
+    ...(optic ? { ocularDiameterMetres: optic.ocularOpeningDiameterU * resolved.domain.units.metresPerUnit } : {}),
   };
 };
 
@@ -183,14 +198,42 @@ const sightMetadata = (resolved: Resolved): GunDeadvoxModelEntry['sight'] => {
   if (!chosen) {
     return undefined;
   }
-  const up = normalize(applyDir(resolved.placed.get(chosen.id)!, [0, 1, 0]));
+  const {
+    id: sightId,
+    kind: sightKind,
+    eye,
+    direction: chosenDirection,
+    eyeReliefMetres,
+    ocularDiameterMetres,
+  } = chosen;
+  let direction = chosenDirection;
+  if (sightKind === 'iron' && resolved.assembly.parts[sightId]!.family === 'ak-rear-sight') {
+    const frontId = Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
+    const frontTransform = frontId && resolved.placed.get(frontId);
+    const frontSight = frontId ? resolved.defs.get(frontId) : undefined;
+    const frontAxis = frontSight?.axes.find(({ kind }) => kind === 'sight');
+    if (!(frontTransform && frontAxis)) {
+      throw new Error('AK rear sight needs a front-sight post to define its aim line');
+    }
+    const postTip = applyPoint(frontTransform, frontAxis.origin);
+    direction = normalize([postTip[0] - eye[0], postTip[1] - eye[1], postTip[2] - eye[2]]);
+  }
+  const upAxis = normalize(applyDir(resolved.placed.get(sightId)!, [0, 1, 0]));
+  const upDot = upAxis[0] * direction[0] + upAxis[1] * direction[1] + upAxis[2] * direction[2];
+  const up = normalize([
+    upAxis[0] - direction[0] * upDot,
+    upAxis[1] - direction[1] * upDot,
+    upAxis[2] - direction[2] * upDot,
+  ]);
   const toModel = (point: Vec3): Vec3 => modelPoint(point, resolved.domain.units.metresPerUnit);
   const toModelDirection = (vector: Vec3): Vec3 => normalize(toFileAxes(vector));
   return {
-    kind: chosen.kind,
-    eye: toModel(chosen.eye),
-    direction: toModelDirection(chosen.direction),
+    kind: sightKind,
+    eye: toModel(eye),
+    direction: toModelDirection(direction),
     up: toModelDirection(up),
+    eyeReliefMetres: round6(eyeReliefMetres),
+    ...(ocularDiameterMetres === undefined ? {} : { ocularDiameterMetres: round6(ocularDiameterMetres) }),
   };
 };
 

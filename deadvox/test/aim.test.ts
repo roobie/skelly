@@ -12,6 +12,7 @@ const stanceTuning = {
   readyMovementRange: 0.35,
   readyMovementHalfLifeLevels: 5,
   loweredPitchRadians: 0.5,
+  adsApertureFill: 0.85,
 } as const;
 
 const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) => ({

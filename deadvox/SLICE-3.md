@@ -114,29 +114,72 @@ Paperwork; no game code.
 > 3.1, 1. for now, yes, firearms combat is simply firearms renamed - but longer term, firerams combat is different from how well you shoot with e.g. a shotgun or something else. Ie. we will have skills for each main type of firearm, e.g. shotguns, rifles, smgs, pistols etc
 > 3.1, 2. it works like this: press-and-hold right mouse -> readies the weapon (hip fire), while in this state a toggle button (default, mouse-3) toggles whether ADS or not
 
+**BR, 2026-10-06 13:29, second look:**
+
+> as for the 3.1 ADS : the AK shows only the front sight , so the camera needs adjustment backwards a slight bit - but also, I think the AK actually don't have a notch (it's a single pin too, what i can see - we need to fix this too)
+>
+> but then the AR scope ADS is not good at all - but i can't take a screenshot because the view resets when I pause during ADS
+
+**BR, 2026-10-06 14:34, AK sights:**
+
+> the sight's post is not on the actual/virtual cross hair
+>
+> the sides of the notch won't work - they must be much smaller - like a real AK notch - maybe 2 mm or so?
+
+**BR, 2026-10-06 15:16, AK sight picture:**
+
+> The AK rear-sight leaf is a flat, horizontal plate: wider than it's tall (roughly 2–3 cm wide, and only a few mm of it shows above the base), across the top of the receiver, ahead of the eye. The U-notch is cut into the middle of its top edge: about 2 mm wide and about as deep.
+>
+> The sight picture: the front post sits centred in the notch, and the post's tip is level with the leaf's top edge (the AK's centre hold).
+>
+> At the ADS eye (the rear leaf sits roughly a forearm's length ahead of the eye), the whole leaf is a short horizontal bar spanning only a small fraction of the screen width, with a tiny notch.
+
+`gungen/src/gun/parts.ts`, `akRearSight`, uses a finer sight-only grain because the shared gun grid cannot represent a 2 mm notch; its authored leaf remains a physical part. The exported eye datum keeps the receiver cover below the sight line, while the model-derived aim line keeps the front-post tip at screen centre.
+
+**BR, 2026-10-06 13:32, AR scope:**
+
+> the issue with the AR scope (I'm guessing scopes in general) is that the aperture is like 30px diameter whereas the tube fills the screen
+
+**BR, 2026-10-06 13:57, on the optic window:**
+
+> you should _mainly_ see through the optic
+>
+> but it is shown as if looking through a pipe
+>
+> the ocular lens is a window that shows the scene
+
+The optic window shows the 1× scene through a large ocular aperture; the pipe interior is hidden while ADS, with the ring framing the view. Its fill is derived from exported ocular geometry and a content tuning so later 3.7 magnification can use the same window. Keep the eye at the sight position BR accepted as “somewhat okay”; do not move the AR eye far from its 4dbc6e37 ADS placement. Iron sights follow a separate rule: the AK rear notch and front post must frame each other above the receiver cover, with the eye behind the leaf and the post tip at the screen-centre aim ray. Holding F2 for debug controls must preserve ready and ADS so F2+M can freeze that pose.
+
 **BR's #275 answers (2026-10-06, verbatim):**
 
-> aside: that which a skill affects is also trained by it
-
-> amend: skill training comes in tiers
->
-> simply duck walking can train FC up to N, where N is pretty low, maybe even just 1
-> hitting enemies with firearm fire while duck walking can train it to P, where P is higher than 1
->
-> the above is a specific example, but in a general application is that skills are trained by doing stuff that they affect, but some activites are harder than others, and thus allow for attaining higher skill levels than simpler activities
+At 09:57, answering how crafting activity tiers should be set:
 
 > choose: a. worked out from the required level (my recommendation);
 
+At 09:57, answering whether reading should train skills:
+
 > no, not now - we might open up this again for discussion
+
+At 10:04, answering whether practice above an activity's tier is kept or dropped:
 
 > dropped
 
-**In:** Rename the current `firearms` skill to firearms combat (FC) and add melee combat (MC). FC governs the ready gait and related handling; MC governs blocking. Every practice source supplies an activity tier, and excess practice is dropped when the skill reaches it. Crafting derives its tier from the recipe's required level plus the shared offset, capped at ordinary expert level; reading trains nothing. Activities train the skills they affect, with harder activities able to train higher. Readying takes simulation time that improves with FC. Holding right mouse readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, a rebindable toggle (default: mouse-3, the middle button) switches ADS; ADS works through iron sights and optics. Melee requires en-garde; blocking also requires backing off with S and succeeds according to MC, per #267. The ready gait is its own speed factor, not the C crouch.
+At 13:35, answering the crafting tier offset and how crouch and ready movement combine (option c was “crouch pace × the ready fraction”):
+
+> as for crafting: each recipe: its required level + 1
+>
+> (c) both stack
+
+At 13:33, answering whether the ADS toggle should be rebindable now or fixed to mouse-3:
+
+> 2. rebindable now
+
+**In:** Rename the current `firearms` skill to firearms combat (FC) and add melee combat (MC). FC governs the ready gait and related handling; MC governs blocking. Every practice source supplies an activity tier, and only that activity's excess is dropped when the skill reaches its tier. The current activity-tier starting values in base content are proposals for first-look play, not BR rulings. Crafting derives its tier from the recipe's required level plus the single offset in the crafting skill's training entry, capped at ordinary expert level; validation rejects craftable content when that offset is missing. BR's 13:35 ruling set that offset to required level + 1. Reading trains nothing. Activities train the skills they affect, with harder activities able to train higher. Readying takes simulation time that improves with FC. The rebindable `stance.ready` action defaults to right mouse and readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, the rebindable `aim.ads-toggle` action (middle-mouse default) switches ADS and accepts keyboard or pointer bindings without Ctrl/Cmd modifiers. ADS works with iron sights and optics. Optic ADS shows the scene through a content-sized ocular window rather than down a pipe; iron-sight ADS keeps the rear notch and front post visible together. Melee requires en-garde; blocking also requires backing off with S and succeeds according to MC, per #267. Crouch pace and the ready movement factor both stack.
 
 **Saves:** Character skill levels and practice use the existing character snapshot and fingerprint (`src/core/character.ts`, `Character.awardPractice`); renaming a skill changes that saved mapping, and melee combat adds its own progression. Held ready, ADS and en-garde inputs are transient. Partial firearm raise progress stays with the saved firearm because it determines when that weapon can fire (`src/core/firearmState.ts`, `FirearmState`).
 **Tests:** an unreadied firearm cannot fire and makes no refusal sound; a ready firearm can fire but never while sprinting; raising takes simulation time and improves monotonically with skill; ADS toggles while ready and works with iron sights and optics; en-garde plus S can block according to skill, while en-garde alone cannot; activities stop training at their tier and discard excess practice. Save/load preserves skill progression and active raise progress.
 **Done when:** the ready and en-garde states are visible in the held pose, input rules behave as ruled, and skill training respects activity tiers.
-**First look / BR approval:** ready and ADS, including iron-sight ADS and the raised/unraised weapon poses.
+**First look / BR approval:** ready and ADS, including iron-sight ADS, raised/unraised poses, an AK rear notch framing the front post, and an optic aperture that reads large and centred with the tube only framing it. The optic's magnification and blurred 1× surround remain in 3.7.
 
 ### 3.2 Firearms for real
 
@@ -210,13 +253,15 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 2. keep it real simple
 > 3. defer
 
-**In:** C crouch is slower, quieter and harder to see. Sight worsens at night and while the player crouches. Noise and positional sound are muffled by walls under the proposal below. Smell remains deferred (#278).
+**In (d98):** C toggles crouch, which is slower, quieter and harder to see. Sight worsens at night and while the player crouches. BR (2026-10-06 11:28) ruled: “3. somewhat yes - if a half-wall blocks the light at that altitude, then yes, it occludes, but otherwise no - same reach”. A crouched player's lowered eye and held-light height let a half-wall block sight and light, while crouching alone does not shorten light reach in the open. BR (2026-10-06 12:25) approved sighting standing players from eye height (“good”); a wall a little over chest height can hide a crouched player without hiding a standing one. Noise and positional sound are muffled by walls under the approved rule below. Smell remains deferred (#278).
 
-**Proposal for BR:** if a wall lies between a noise source and listener, apply one coarse muffling step; do not accumulate a separate penalty for every intervening block. Keep the noise event and positional sound in agreement. This implements “keep it real simple” without adding a per-block propagation simulation.
+**Decision (d98, BR, 2026-10-06 10:12):** “wall muffling: Approve it as written”. Use the direct ray test shared with zombie sight (`src/core/zombies.ts`, `seesPlayer`): a closed door counts, while a doorway or window gap does not. Any solid on the ray applies one coarse hearing attenuation, not a penalty per intervening block. Keep positional sound at its source and muffle it with gain and a low-pass filter rather than making it seem farther away. Starting values belong to the base content pack's `senses` entry and `deadvox/src/core/schema.ts`, `SenseSchema`.
 
-**Saves:** Crouch is held input and is not saved as a separate state. Noise pulses are transient. Any persistent zombie attention/investigation state remains in the zombie snapshot and fingerprint; do not add a second owner.
-**Tests:** crouching changes movement, sound and sight in the ruled directions; a wall muffles hearing and positional audio consistently under the approved rule, with sound still attached to its source; saving does not replay transient noise, while persistent zombie attention resumes deterministically. Extend the existing noise and sight owners (`src/core/zombies.ts`, `hearingTier`, `hearVocalNoise`, `seesPlayer`) rather than creating parallel sensory state.
-**Done when:** crouch and night visibility affect detection, and walls apply the approved simple muffling rule to noise and positional sound.
+**Per-sound tuning (d98-2; BR, 2026-10-06 11:10–11:11):** BR asked, “3.5 sounds pretty  good but some sounds are harder to judge than others. How much effort is it to tune each event?” and chose option A: “ok. Let's go for option A for now”. An optional `wall` setting on `src/core/schema.ts`, `SoundSchema.wall`, lets each sound tune positional-audio gain and cutoff when occluded; otherwise the global wall step applies. Zombie hearing keeps its global attenuation. Shipped sounds have no overrides until BR chooses which events need them.
+
+**Saves:** BR ruled “let's make crouch a toggle” (2026-10-06), so crouch belongs in the player snapshot and simulation fingerprint; it persists through menus and long actions. Noise pulses remain transient. Persistent zombie attention/investigation stays in the zombie snapshot; do not add a second owner.
+**Tests:** crouching changes movement, hearing and sight in the ruled directions; its toggle survives an inactive long action and save/restore, and replay with the toggle is deterministic. A wall muffles hearing and positional audio consistently under the approved rule, with sound still attached to its source. `deadvox/test/zombies.test.ts`, `does not replay a live far vocal pulse after a searching zombie is restored`, proves the saved vocal-noise ID prevents a still-live far pulse from replaying with a new bearing; the restored search then matches uninterrupted simulation. The crouched-light tests in `deadvox/test/zombies.test.ts` distinguish open-ground lit visibility from half-wall occlusion for crouched players while preserving sight of standing players over that wall. Extend the existing noise and sight owners (`src/core/zombies.ts`, `hearingTier`, `hearVocalNoise`, `seesPlayer`) rather than creating parallel sensory state. Tuning belongs in `deadvox/src/content/base/senses.json`, validated by `deadvox/src/core/schema.ts`, `SenseSchema`.
+**Done when:** crouch and night visibility affect detection, the crouch toggle survives save/restore, walls apply the approved simple muffling rule to noise and positional sound, and cover blocks light at crouched height.
 
 ### 3.6 Light as a sense
 

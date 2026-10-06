@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 24;
+export const SAVE_SCHEMA_VERSION = 25;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -394,7 +394,6 @@ const soundPicker = obj({
   ),
 });
 const playerAudio = obj({ vocalNoiseId: nonNegativeInt, vocalNoise: nullable(vocalNoise), soundPicker });
-const player = obj({ body, yaw: finite, pitch: finite, walk: bool });
 const handling = obj({ jobs: arr(anyJson) });
 const zombie = obj({
   type: str({ id: true }),
@@ -463,6 +462,7 @@ const playerState = obj({
   yaw: finite,
   pitch: finite,
   walk: bool,
+  crouching: bool,
 });
 const meleeAction = nullable(
   obj({
@@ -552,7 +552,7 @@ const wirePayloadSchema = obj({
     id: str({ nonEmpty: true }),
     progression,
     simulation: simulationWithoutWorldIdentity,
-    player,
+    player: playerState,
     aim,
     inventory: playerStateInventory,
     longAction,

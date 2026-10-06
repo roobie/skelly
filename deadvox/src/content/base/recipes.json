@@ -1,7 +1,7 @@
 {
   "skills": [
-    { "id": "crafting", "name": "Crafting", "training": { "craftingTierOffset": 2 } },
-    { "id": "mechanics", "name": "Mechanics", "training": { "craftingTierOffset": 2 } },
+    { "id": "crafting", "name": "Crafting", "training": { "craftingTierOffset": 1 } },
+    { "id": "mechanics", "name": "Mechanics" },
     {
       "id": "firearms_combat",
       "name": "Firearms Combat (FC)",
@@ -21,7 +21,8 @@
           "readyMovementMinimum": 0.45,
           "readyMovementRange": 0.35,
           "readyMovementHalfLifeLevels": 5,
-          "loweredPitchRadians": 0.55
+          "loweredPitchRadians": 0.55,
+          "adsApertureFill": 0.85
         }
       }
     },

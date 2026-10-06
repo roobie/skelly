@@ -10,6 +10,7 @@ import {
   type BufferGeometry,
   ConeGeometry,
   DirectionalLight,
+  DoubleSide,
   Euler,
   Group,
   HemisphereLight,
@@ -20,6 +21,7 @@ import {
   Object3D,
   PerspectiveCamera,
   Quaternion,
+  RingGeometry,
   Scene,
   Vector3,
   type WebGLRenderer,
@@ -33,6 +35,7 @@ import { HOLD, heldAnchorOffset, heldFirearmTransform, heldGripOffset, modelToVi
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { HELD_DISPLAY_KIND } from '../core/schema.ts';
 import { createCompass } from './compass.ts';
 import {
@@ -76,9 +79,19 @@ export interface HeldHandlingFrame {
 
 export class HeldItems {
   private readonly scene = new Scene();
-  private readonly camera = new PerspectiveCamera(75, 1, 0.01, 10);
+  private readonly camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.01, 10);
   /** Turned like the main camera each frame, so the sky's light directions carry over as they are. */
   private readonly view = new Group();
+  private readonly opticWindow = new Mesh(
+    new RingGeometry(0.01, 0.011, 64),
+    new MeshBasicMaterial({
+      color: 0x0b_0c_0d,
+      side: DoubleSide,
+      depthTest: false,
+      depthWrite: false,
+      toneMapped: false,
+    }),
+  );
   /** First-person shoulder frame; unlike the camera, this can twist during an unarmed strike. */
   private readonly torso = new Group();
   private readonly light = new DirectionalLight();
@@ -102,6 +115,9 @@ export class HeldItems {
   private readonly handBases = new Map<HandSide, Vec3>();
   private readonly heldByHand = new Map<HandSide, Object3D>();
   private readonly relativeCamera = new Quaternion();
+  private readonly opticWindowRotation = new Quaternion();
+  private readonly baseCameraQuaternion = new Quaternion();
+  private opticWindowShape = '';
   private readonly lockedCamera = new Quaternion();
   private readonly poseRotation = new Quaternion();
   private readonly recoilRotation = new Quaternion();
@@ -118,7 +134,9 @@ export class HeldItems {
     this.inventory = inventory;
     this.models = models;
     this.palette = palette;
-    this.view.add(this.torso);
+    this.opticWindow.visible = false;
+    this.opticWindow.renderOrder = 100;
+    this.view.add(this.torso, this.opticWindow);
     this.scene.add(this.view, this.light, this.ambient);
     // Hidden: gives `renderer.compile` the hand material before anything is held. `sync` only clears `view`.
     const warmUp = new Mesh(this.geometry, this.material);
@@ -140,6 +158,7 @@ export class HeldItems {
   ): void {
     const { firearms: firearmPoses, readiness } = handling;
     const baseCameraQuaternion = main.quaternion.clone();
+    this.baseCameraQuaternion.copy(baseCameraQuaternion);
     this.restoreRummageSupport();
     this.sync();
     this.poseFirearms(firearmPoses);
@@ -152,6 +171,7 @@ export class HeldItems {
     let adsSightWorld: Vector3 | undefined;
     let adsSightUpWorld: Vector3 | undefined;
     this.torso.rotation.y = pose?.torsoYaw ?? 0;
+    this.opticWindow.visible = false;
     for (const side of ['right', 'left'] as const) {
       const sights = this.poseHeldHand({
         side,
@@ -287,12 +307,12 @@ export class HeldItems {
       item,
       itemDefinition,
     });
-    const { firearmPose, firearmReadiness, aimingDownSights, sights } = presentation;
+    const { firearmPose, firearmReadiness, aimingDownSights, sights, modelDefinition } = presentation;
     if (firearmPose) {
       transform.offset = [...firearmPose.rootOffset];
       if (aimingDownSights) {
-        transform.rotation = [0, 0, 0];
-        this.poseRotation.setFromEuler(this.poseEuler.set(0, 0, 0, 'YXZ'));
+        transform.rotation = firearmPose.aimingRotation ?? [0, 0, 0];
+        this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
       }
     }
     const pumpModel = item && this.pumpModels.get(item.uid);
@@ -309,6 +329,23 @@ export class HeldItems {
     this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
     this.poseRotation.multiply(this.recoilRotation);
     this.placeHandAndHeldItem(side, arm, transform, firearmPose);
+    if (item && itemDefinition?.firearm) {
+      const opticSight = Boolean(aimingDownSights && modelDefinition?.sight?.kind === 'optic');
+      const heldModel = this.shown.get(item.uid);
+      if (heldModel) {
+        heldModel.visible = !opticSight;
+      }
+      const ocularDiameter = modelDefinition?.sight?.ocularDiameterMetres;
+      const apertureFill = this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.adsApertureFill;
+      this.updateOpticWindow({
+        active: opticSight,
+        diameter: ocularDiameter,
+        fill: apertureFill,
+        fov: main.fov,
+        baseCamera: this.baseCameraQuaternion,
+        aimedCamera: main.quaternion,
+      });
+    }
     return sights;
   }
 
@@ -331,7 +368,9 @@ export class HeldItems {
     item: Item | undefined;
     itemDefinition: ReturnType<typeof defOf> | undefined;
   }) {
-    const modelDefinition = itemDefinition?.model && this.inventory.registry.models.get(itemDefinition.model);
+    const modelDefinition = itemDefinition?.model
+      ? this.inventory.registry.models.get(itemDefinition.model)
+      : undefined;
     const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
     const aimingDownSights = Boolean(
       item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
@@ -347,6 +386,8 @@ export class HeldItems {
             aimingDownSights,
             aimFrame: handling.aim ?? NEUTRAL_AIM,
             loweredPitchRadians,
+            adsApertureFill: this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.adsApertureFill,
+            verticalFovDegrees: main.fov,
           })
         : undefined;
     const sights =
@@ -356,7 +397,7 @@ export class HeldItems {
             up: new Vector3(...firearmPose.sightUp).applyQuaternion(main.quaternion).normalize(),
           }
         : {};
-    return { firearmPose, firearmReadiness, aimingDownSights, sights };
+    return { firearmPose, firearmReadiness, aimingDownSights, sights, modelDefinition };
   }
 
   private placeHandAndHeldItem(
@@ -418,6 +459,40 @@ export class HeldItems {
       }
       this.view.updateMatrixWorld(true);
     }
+  }
+
+  private updateOpticWindow({
+    active,
+    diameter,
+    fill,
+    fov,
+    baseCamera,
+    aimedCamera,
+  }: {
+    active: boolean;
+    diameter: number | undefined;
+    fill: number | undefined;
+    fov: number;
+    baseCamera: Quaternion;
+    aimedCamera: Quaternion;
+  }): void {
+    if (!(active && diameter !== undefined && fill !== undefined)) {
+      this.opticWindow.visible = false;
+      return;
+    }
+    const distance = opticWindowDistance(diameter, fill, fov);
+    const innerRadius = diameter / 2;
+    const outerRadius = innerRadius * 1.12;
+    const shape = `${innerRadius}:${outerRadius}`;
+    if (shape !== this.opticWindowShape) {
+      this.opticWindow.geometry.dispose();
+      this.opticWindow.geometry = new RingGeometry(innerRadius, outerRadius, 64);
+      this.opticWindowShape = shape;
+    }
+    this.opticWindow.position.set(0, 0, -distance);
+    this.opticWindowRotation.copy(baseCamera).invert().multiply(aimedCamera);
+    this.opticWindow.quaternion.copy(this.opticWindowRotation);
+    this.opticWindow.visible = true;
   }
 
   private poseAim(item: Item | undefined, aim: AimFrame | undefined): void {
@@ -605,7 +680,7 @@ export class HeldItems {
     this.disposeCompasses();
     this.clearArms();
     this.view.clear();
-    this.view.add(this.torso);
+    this.view.add(this.torso, this.opticWindow);
     this.shown.clear();
     this.firearmParts.clear();
     this.pumpModels.clear();
@@ -640,6 +715,8 @@ export class HeldItems {
     }
     this.flameMaterials.clear();
     this.flameGeometry.dispose();
+    this.opticWindow.geometry.dispose();
+    (this.opticWindow.material as MeshBasicMaterial).dispose();
     this.view.clear();
     this.shown.clear();
     this.heldByHand.clear();

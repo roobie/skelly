@@ -135,7 +135,7 @@ Text on screen falls into four classes, and only three of them ship:
    is the refusal cue; see
    `src/game/play.ts`, `showRefusal`.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
-   ("press R", "open the inventory", "C: continue"). **Development only.**
+   ("press R", "open the inventory", "Enter: continue"). **Development only.**
 
 ### How it's encoded
 
@@ -169,9 +169,9 @@ to use it. BR's 2026-10-05 direction for #267 was:
 >
 > "and by that, I mean that you never fire while sprinting, but instead when holding right mouse, you 'duck walk' (which also can be a skill-dependent thing in that you duck walk faster with higher skill)"
 
-Firearms fire only while ready and never while sprinting; the ready gait is a
-skill-dependent speed factor separate from C crouch. Firearms combat governs ready movement and related handling; melee combat
-governs block success. The tiered practice contract is in
+Firearms fire only while ready and never while sprinting; the ready movement
+factor stacks with crouch pace. Firearms combat governs ready movement and related
+handling; melee combat governs block success. The tiered practice contract is in
 [SLICE-3.md](SLICE-3.md), 3.1.
 
 - **Right mouse sets the combat stance:** holding it raises a melee weapon into
@@ -181,8 +181,14 @@ governs block success. The tiered practice contract is in
   with the firearm because it changes when that weapon can shoot; held input is
   transient.
 - **ADS is a toggle inside a fully raised firearm stance,** for iron sights and
-  optics. It is not a separate HUD mode. Rebindable actions are registered in
-  `src/game/inputBindings.ts`, `inputBindings`.
+  optics. It is not a separate HUD mode. The `aim.ads-toggle` action defaults to
+  mouse-3 and can be rebound to a mouse button or key; both it and the held ready
+  action share the pointer/keyboard binding registry. In optic ADS, an ocular
+  window shows the unmagnified scene instead of a pipe view down the tube; the
+  aperture fill is content-tuned from exported ocular geometry. The later
+  magnification and blurred surround remain in 3.7. See
+  `src/game/inputBindings.ts`, `BindingRegistry`, and `src/render/hands.ts`,
+  `HeldItems.updateOpticWindow`.
 - **Melee also requires readiness:** en-garde is the held melee stance; a swing
   outside it does not start. See `src/game/play.ts`, `updateHeldItems`, for the
   pose path.

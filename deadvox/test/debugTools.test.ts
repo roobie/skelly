@@ -15,6 +15,7 @@ import { copyTextOrSelect, equipDebugStartLight, formatMeleeResult } from '../sr
 import { stepNoclip } from '../src/debug/noclip.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -125,6 +126,7 @@ describe('debug starting equipment', () => {
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
+      tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
       onSever: (_id, _zombie, _part, hit) => {
         launchImpulse = hit.impulse;

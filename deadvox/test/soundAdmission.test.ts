@@ -8,6 +8,7 @@ import { type SoundEmission, SoundPicker } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { createSession, IDLE, type SessionAudio } from '../src/game/session.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -104,7 +105,13 @@ describe('simulation sound admission', () => {
     sounds.set('player_strain', { ...definition, variants: ['assets/audio/not-bundled.ogg'] });
     const content = { ...registry, sounds };
     const report = vi.fn();
-    const output = new GameAudio({ registry: content, blockSize: 0.5, isSolid: () => false, report });
+    const output = new GameAudio({
+      registry: content,
+      blockSize: 0.5,
+      isSolid: () => false,
+      tuning: TEST_SENSE_TUNING,
+      report,
+    });
     const session = makeSession(
       (sound) => output.play(sound, sound.position.map((v) => v * 0.5) as [number, number, number]),
       content,

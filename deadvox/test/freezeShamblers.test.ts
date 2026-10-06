@@ -7,6 +7,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type MeleeResult, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -39,6 +40,7 @@ const makeSystem = (
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
     hurtPlayer,
     ...(onMeleeResult ? { onMeleeResult } : {}),
     seed: 31,
@@ -94,6 +96,7 @@ describe('debug shambler freeze', () => {
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
+      tuning: TEST_SENSE_TUNING,
       hurtPlayer: () => undefined,
       seed: 31,
     });

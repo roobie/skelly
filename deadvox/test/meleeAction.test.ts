@@ -12,6 +12,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -47,6 +48,7 @@ const makeSystem = (
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
     hour: () => 12,
     hurtPlayer: () => undefined,
     onMeleeResult: (result) => results.push(result.id === undefined ? 'miss' : 'hit'),

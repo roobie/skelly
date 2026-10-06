@@ -19,9 +19,32 @@ import {
   encodeFixture,
   formatVersion,
   registry,
+  startRest,
 } from './snapshotTestSupport.ts';
 
 describe('snapshot state components', () => {
+  it('keeps a crouch toggle through an inactive long action and deterministic save continuation', () => {
+    const uninterrupted = createRuntime(undefined, true);
+    expect(startRest(uninterrupted, 'rest')).toBeUndefined();
+    uninterrupted.toggleCrouch();
+    uninterrupted.session.frame(1 / 60);
+    expect(uninterrupted.session.crouching).toBe(true);
+
+    const restored = createRuntime(capture(uninterrupted), true);
+    expect(restored.session.crouching).toBe(true);
+    for (let frame = 0; frame < 30; frame++) {
+      uninterrupted.session.frame(1 / 60);
+      restored.session.frame(1 / 60);
+      expect(restored.session.crouching).toBe(uninterrupted.session.crouching);
+    }
+    uninterrupted.toggleCrouch();
+    restored.toggleCrouch();
+    uninterrupted.session.frame(1 / 60);
+    restored.session.frame(1 / 60);
+    expect(uninterrupted.session.crouching).toBe(false);
+    expect(restored.session.crouching).toBe(false);
+    expect(capture(restored).character.player.crouching).toBe(false);
+  });
   it('persists zero-start skills and changed recipe knowledge without reseeding or mutating live state', async () => {
     const runtime = createRuntime();
     const actor = runtime.session.character;

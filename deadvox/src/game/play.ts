@@ -72,7 +72,6 @@ import { Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
-import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -133,17 +132,21 @@ export const startPlay = (
   }
   const { scale } = config;
   const s = scale.blockSize;
-  const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
+  const playerSenseTuning = registry.senses.get('player');
+  if (!playerSenseTuning) {
+    throw new Error('Missing player sense tuning');
+  }
   const audio = new GameAudio({
     registry,
     blockSize: s,
     isSolid: engine.isSolid,
+    tuning: playerSenseTuning,
     report: (message) => {
       const errors = $('errors');
       errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
@@ -169,13 +172,10 @@ export const startPlay = (
     }
     return action.item;
   };
-  const updateAutomaticFireUid = (automaticItem: Item | undefined, pressed: boolean, triggerHeld: boolean): void => {
+  const updateAutomaticFireUid = (automaticItem: Item | undefined, pressed: boolean): void => {
     if (pressed) {
       automaticFireUid =
         automaticItem && isFirearmReady(automaticItem.uid) && !session.sprinting ? automaticItem.uid : undefined;
-    }
-    if (!triggerHeld) {
-      automaticFireUid = undefined;
     }
   };
   const readyAutomaticWeapon = (automaticItem: Item | undefined): Item | undefined =>
@@ -198,8 +198,11 @@ export const startPlay = (
   };
   const handleHeldDominantUse = (time: number, pressed: boolean, triggerHeld: boolean): void => {
     const automaticItem = automaticFireWeapon();
-    updateAutomaticFireUid(automaticItem, pressed, triggerHeld);
+    updateAutomaticFireUid(automaticItem, pressed);
     advanceAutomaticTrigger(time, pressed, triggerHeld, readyAutomaticWeapon(automaticItem));
+    if (!triggerHeld) {
+      automaticFireUid = undefined;
+    }
   };
   const session = createSession({
     registry,
@@ -222,6 +225,7 @@ export const startPlay = (
       blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
+      consumeCrouchToggle: () => input.consumeCrouchToggle(),
       useDominant: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(inventory);
@@ -307,12 +311,16 @@ export const startPlay = (
     search,
   } = session;
   const isFirearmReady = (uid: number): boolean =>
-    input.rightMouseHeld && input.locked && !input.menuPointer && !compression.locksInput && firearms.isReady(uid);
+    input.rightMouseActionHeld &&
+    input.locked &&
+    !input.menuPointer &&
+    !compression.locksInput &&
+    firearms.isReady(uid);
   const isAimingDownSights = (): boolean => {
     const action = selectPrimaryAction(inventory);
     return (
       input.aimingDownSights &&
-      input.rightMouseHeld &&
+      input.rightMouseActionHeld &&
       input.locked &&
       !input.menuPointer &&
       action.kind === 'firearm' &&
@@ -853,8 +861,8 @@ export const startPlay = (
     return playContext();
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
-  keyboardInput.cancelled = () => {
-    input.cancel();
+  keyboardInput.cancelled = (preservePointer) => {
+    input.cancel(preservePointer);
     quickbarInput.cancel();
     hintToggleInput.cancel();
   };
@@ -881,10 +889,36 @@ export const startPlay = (
     }
     return mainMenuOpen || timeKeys(action);
   };
+  const withUnlockedInput = (action: () => void): void => {
+    if (!compression.locksInput) {
+      action();
+    }
+  };
+  const stopHandling = (): void => {
+    input.reload.cancel();
+    queue.cancel();
+    if (sim.actions.job || rest.action || compression.active) {
+      stopAction();
+    }
+  };
+  const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
+    if (slot !== undefined && !compression.locksInput) {
+      quickbarInput.keyDown(slot, at);
+    }
+  };
   const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
     switch (action) {
+      case 'stance.ready':
+        input.rightMouseHeld = true;
+        break;
+      case 'aim.ads-toggle':
+        input.toggleAimingDownSights();
+        break;
       case 'movement.walk-toggle':
         input.walking = !input.walking;
+        break;
+      case 'player.crouch-toggle':
+        withUnlockedInput(() => input.requestCrouchToggle());
         break;
       case 'hand.use-off':
         input.useOff();
@@ -893,9 +927,7 @@ export const startPlay = (
         input.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
-        if (!compression.locksInput) {
-          use();
-        }
+        withUnlockedInput(use);
         break;
       case 'craft.continue':
         if (session.crafting.currentUid !== undefined) {
@@ -903,20 +935,18 @@ export const startPlay = (
         }
         break;
       case 'handling.stop':
-        input.reload.cancel();
-        queue.cancel();
-        if (sim.actions.job || rest.action || compression.active) {
-          stopAction();
-        }
+        stopHandling();
         break;
       default:
         break;
     }
-    if (slot !== undefined && !compression.locksInput) {
-      quickbarInput.keyDown(slot, at);
-    }
+    assignQuickbarIfUnlocked(slot, at);
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'stance.ready') {
+      input.rightMouseHeld = false;
+      input.aimingDownSights = false;
+    }
     if (action === 'firearm.reload') {
       input.reload.keyUp(at);
     }
@@ -966,7 +996,7 @@ export const startPlay = (
   );
 
   const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
-  const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
+  const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
   const lookedAt = (): BlockEntity | undefined =>
@@ -1175,7 +1205,7 @@ export const startPlay = (
   const shouldPlayerBlock = (): boolean => {
     const action = selectPrimaryAction(inventory);
     const enGarde = shouldEnterMeleeReady({
-      rightMouseHeld: input.rightMouseHeld && input.locked && !input.menuPointer,
+      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
       meleeWeaponHeld: action.kind === 'melee',
       handsEmpty: !(inventory.hands.right || inventory.hands.left),
       debugBuild: debugTools?.buildOn ?? false,
@@ -1410,7 +1440,7 @@ export const startPlay = (
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
     const ready = shouldEnterMeleeReady({
-      rightMouseHeld: input.rightMouseHeld && input.locked && !input.menuPointer,
+      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
       meleeWeaponHeld: selectedMelee.item !== undefined,
       handsEmpty: !(inventory.hands.right || inventory.hands.left),
       debugBuild: debugTools?.buildOn ?? false,
@@ -1423,7 +1453,7 @@ export const startPlay = (
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
     const selected = selectPrimaryAction(inventory);
     const readiness =
-      selected.kind === 'firearm' && input.rightMouseHeld && input.locked && !input.menuPointer
+      selected.kind === 'firearm' && input.rightMouseActionHeld && input.locked && !input.menuPointer
         ? {
             uid: selected.item.uid,
             progress: firearms.readyProgress(selected.item.uid),

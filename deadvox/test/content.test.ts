@@ -333,6 +333,26 @@ describe('content', () => {
     }
   });
 
+  it('validates optional per-sound wall tuning', () => {
+    const sound = {
+      id: 'fixture_wall_tuning',
+      variants: ['assets/audio/fixture.ogg'],
+      gain: 0.7,
+      pitchJitter: [1, 1],
+      gainJitter: [1, 1],
+      minIntervalSeconds: 0,
+      category: 'world',
+      noise: { enabled: false, radiusMetres: 1 },
+      wall: { gain: 0.3, cutoffHz: 900 },
+    };
+    expect(validateContent({ source: 'fixture.json', data: { sounds: [sound] } })).toEqual([]);
+    const invalid = validateContent({
+      source: 'fixture.json',
+      data: { sounds: [{ ...sound, wall: { gain: 1.1, cutoffHz: 0 } }] },
+    });
+    expect(invalid.map(({ path }) => path).sort()).toEqual(['sounds[0].wall.cutoffHz', 'sounds[0].wall.gain']);
+  });
+
   it('validates the shambler search-duration range', () => {
     const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
     const data = structuredClone(zombiePack.data) as {
@@ -555,6 +575,25 @@ describe('content references', () => {
     ],
   };
 
+  it('rejects craftable content when the single crafting tier offset is missing', () => {
+    const withoutOffset = base.map(({ source, data }) => {
+      if (source !== 'recipes.json') {
+        return { source, data };
+      }
+      const recipes = structuredClone(data) as { skills: { id: string; name: string; training?: unknown }[] };
+      recipes.skills = recipes.skills.map(({ training, ...skill }) =>
+        skill.id === 'crafting' ? skill : { ...skill, ...(training === undefined ? {} : { training }) },
+      );
+      return { source, data: recipes };
+    });
+    const { issues } = buildRegistry(withoutOffset);
+    expect(
+      issues.some(
+        (issue) => issue.source === 'recipes.json' && issue.message.includes('missing required skill tuning'),
+      ),
+    ).toBe(true);
+  });
+
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
     const { registry, issues } = buildRegistry([...base, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);
@@ -681,7 +720,6 @@ describe('content references', () => {
               farMultiplier: 2,
               bearingErrorRadians: 0.61,
               investigationDistanceMetres: 8,
-              wallRunCostMetres: 6,
               searchSeconds: { min: 40, max: 50 },
               searchRadiusMetres: 4,
               searchStrollSeconds: { min: 1, max: 3 },

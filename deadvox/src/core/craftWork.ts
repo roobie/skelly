@@ -95,11 +95,11 @@ export const craftActionHooks = (
     const work = item?.work;
     if (item && work) {
       const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
+      const offset = inventory.registry.skills.get('crafting')?.training?.craftingTierOffset;
       const practice = recipe
         ? Object.entries(recipe.skills).map(([skill, level]) => {
-            const offset = inventory.registry.skills.get(skill)?.training?.craftingTierOffset;
             if (offset === undefined) {
-              throw new Error(`Missing ${skill} crafting practice tier offset`);
+              throw new Error('Missing crafting practice tier offset');
             }
             return { skill, amount: recipe.time, tier: craftingActivityTier(level, offset) };
           })

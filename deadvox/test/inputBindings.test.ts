@@ -3,6 +3,7 @@ import {
   type Binding,
   BindingRegistry,
   bindingConflict,
+  type Chord,
   capturedChord,
   chordIssue,
   INPUT_BINDINGS,
@@ -110,13 +111,116 @@ describe('keyboard registry', () => {
       }
     }
   });
-  it('keeps both continue paths on Enter in their separate owners', () => {
+  it('dispatches the crouch action in play but not in menus or text entry', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    expect(bindings.rebind('player.crouch-toggle', [{ code: 'KeyY' }])).toBeUndefined();
+    const keyboard = new KeyboardInput(bindings);
+    let context: InputContext = 'play';
+    keyboard.context = () => ({ context, debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+
+    expect(keyboard.press(event('KeyY'))).toBe(true);
+    expect(commands).toEqual([{ action: 'player.crouch-toggle', phase: 'down', at: 0 }]);
+    keyboard.release(event('KeyY'));
+    commands.length = 0;
+    expect(keyboard.press(event('KeyY'), true)).toBe(false);
+    expect(commands).toEqual([]);
+    let captured: Chord | string | undefined;
+    keyboard.capture = (chord) => {
+      captured = chord;
+    };
+    expect(keyboard.press(event('KeyY'))).toBe(true);
+    expect(captured).toEqual({ code: 'KeyY' });
+    expect(commands).toEqual([]);
+    keyboard.release(event('KeyY'));
+    keyboard.capture = undefined;
+
+    context = 'menu';
+    keyboard.sync();
+    expect(keyboard.press(event('KeyY'))).toBe(false);
+    context = 'noclip';
+    keyboard.sync();
+    expect(keyboard.press(event('KeyY'))).toBe(false);
+    expect(commands).toEqual([]);
+  });
+  it('rebinds the ADS pointer action to another mouse button or a key', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+
+    expect(bindings.rebind('aim.ads-toggle', [{ code: 'Mouse4' }])).toBeUndefined();
+    expect(bindings.label('aim.ads-toggle')).toBe('Mouse 5');
+    expect(
+      keyboard.pressPointer(1, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 1 }),
+    ).toBe(false);
+    expect(
+      keyboard.pressPointer(4, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 2 }),
+    ).toBe(true);
+    expect(commands).toEqual([{ action: 'aim.ads-toggle', phase: 'down', at: 2 }]);
+    keyboard.releasePointer(4, 3);
+    commands.length = 0;
+
+    expect(bindings.rebind('aim.ads-toggle', [{ code: 'KeyY' }])).toBeUndefined();
+    expect(keyboard.press(event('KeyY'))).toBe(true);
+    expect(commands).toEqual([{ action: 'aim.ads-toggle', phase: 'down', at: 0 }]);
+  });
+  it('routes ready stance through a rebindable held pointer action', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+    expect(
+      keyboard.pressPointer(2, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 1 }),
+    ).toBe(true);
+    expect(keyboard.held('stance.ready')).toBe(true);
+    keyboard.releasePointer(2, 2);
+    expect(commands.map(({ action, phase }) => [action, phase])).toEqual([
+      ['stance.ready', 'down'],
+      ['stance.ready', 'up'],
+    ]);
+  });
+  it('keeps ready and ADS held when F2 enables debug controls', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    keyboard.context = () => ({ context: 'play', debug: true });
+    let ready = false;
+    let ads = false;
+    keyboard.command = ({ action, phase }) => {
+      if (action === 'stance.ready') {
+        ready = phase === 'down';
+        if (!ready) {
+          ads = false;
+        }
+      }
+      if (action === 'aim.ads-toggle' && phase === 'down' && ready) {
+        ads = !ads;
+      }
+    };
+    keyboard.cancelled = (preservePointer) => {
+      if (!preservePointer) {
+        ready = false;
+        ads = false;
+      }
+    };
+
+    expect(
+      keyboard.pressPointer(2, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 1 }),
+    ).toBe(true);
+    expect(
+      keyboard.pressPointer(1, { shiftKey: false, altKey: false, ctrlKey: false, metaKey: false, timeStamp: 2 }),
+    ).toBe(true);
+    keyboard.releasePointer(1, 3);
+    expect([ready, ads]).toEqual([true, true]);
+    expect(keyboard.press(event('F2'))).toBe(true);
+    expect([ready, ads, keyboard.held('stance.ready')]).toEqual([true, true, true]);
+  });
+  it('keeps both continue paths in their separate owners', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     const craft = bindings.binding('craft.continue')!;
     const interruption = bindings.binding('compression.continue')!;
-    expect(craft.defaults.map(({ code }) => code)).toEqual(['Enter']);
     expect(craft.contexts).toEqual(['play']);
-    expect(interruption.defaults.map(({ code }) => code)).toEqual(['Enter']);
     expect(interruption.contexts).toEqual(['interrupted']);
   });
   it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {

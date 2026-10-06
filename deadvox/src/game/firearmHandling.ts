@@ -12,6 +12,7 @@ import type { HandlingQueue, Job } from '../core/handling.ts';
 import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { dropTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
@@ -396,6 +397,8 @@ export class FirearmMechanics {
       aimingDownSights: input.aimingDownSights ?? false,
       aimFrame: input.aimFrame,
       loweredPitchRadians: this.requiredFirearmsCombatTuning().loweredPitchRadians,
+      adsApertureFill: this.requiredFirearmsCombatTuning().adsApertureFill,
+      verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
     });
     const eyeMetres = input.eye.map((value) => value * this.blockSize) as Vec3;
     const rootMetres = eyeMetres.map(

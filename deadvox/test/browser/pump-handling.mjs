@@ -163,6 +163,7 @@ try {
   }, ids.gun);
   assert.deepEqual(rangeStock, { firearm: true, compatibleRound: true, compatibleBox: true });
   const select = async (uid) => {
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
     const rows = await page
       .locator('#inventory [data-uid]')
       .evaluateAll((items) => items.map((item) => item.dataset.uid));
@@ -174,6 +175,7 @@ try {
         () => document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null,
       );
       await pressAction(page, 'inventory.next');
+      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
       // Serialize key input with the selection's next-frame DOM update.
       try {
         await page.waitForFunction(
@@ -371,7 +373,9 @@ try {
   assert.equal(racked.gun.tube.length, loaded.gun.tube.length - 1);
   assert.equal(racked.rest, null);
   const shotsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'shotgun_blast').length;
+  const refusalsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'player_nope').length;
   await page.mouse.click(640, 450);
+  await page.evaluate(() => globalThis.pumpHandlingTest.session.frame(0.1));
   const unreadyClick = await observe();
   assert.equal(unreadyClick.gun.chamber, racked.gun.chamber, 'unreadied click leaves the chamber unchanged');
   assert.equal(unreadyClick.gun.tube.length, racked.gun.tube.length, 'unreadied click spends no shell');
@@ -379,6 +383,11 @@ try {
     unreadyClick.sounds.filter((sound) => sound.event === 'shotgun_blast').length,
     shotsBeforeUnreadyClick,
     'unreadied click makes no firearm sound',
+  );
+  assert.equal(
+    unreadyClick.sounds.filter((sound) => sound.event === 'player_nope').length,
+    refusalsBeforeUnreadyClick,
+    'unreadied click makes no refusal sound',
   );
   await page.mouse.down({ button: 'right' });
   const raiseDuration = await page.evaluate((uid) => {

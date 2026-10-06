@@ -350,6 +350,12 @@ const SoundSchema = strictObject({
   minIntervalSeconds: NonNegative,
   category: picklist(['world', 'body', 'ui']),
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+  wall: optional(
+    strictObject({
+      gain: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      cutoffHz: Positive,
+    }),
+  ),
 });
 
 const UnitVector = pipe(
@@ -445,6 +451,8 @@ const ModelSchema = pipe(
       strictObject({
         kind: picklist(['iron', 'optic']),
         eye: Point,
+        eyeReliefMetres: NonNegative,
+        ocularDiameterMetres: optional(Positive),
         direction: UnitVector,
         up: UnitVector,
       }),
@@ -460,6 +468,10 @@ const ModelSchema = pipe(
         ? true
         : calibre !== undefined && capacity !== undefined && rounds !== undefined && rounds.length === capacity,
     'magazine metadata needs calibre, capacity, and one round pose per capacity slot',
+  ),
+  check(
+    ({ sight }) => sight?.kind !== 'optic' || sight.ocularDiameterMetres !== undefined,
+    'optic sight metadata needs an ocular opening diameter',
   ),
   check(
     ({ tube, calibre, anchors, capacity, rounds }) =>
@@ -710,7 +722,6 @@ const ZombieSchema = strictObject({
       farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
-      wallRunCostMetres: NonNegative,
       searchSeconds: strictObject({ min: Positive, max: Positive }),
       searchRadiusMetres: Positive,
       searchStrollSeconds: strictObject({ min: Positive, max: Positive }),
@@ -810,6 +821,7 @@ const SkillSchema = pipe(
             readyMovementRange: Fraction,
             readyMovementHalfLifeLevels: Positive,
             loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
+            adsApertureFill: pipe(Positive, maxValue(0.95)),
           }),
         ),
         melee: optional(
@@ -843,6 +855,22 @@ const SkillSchema = pipe(
     );
   }, 'missing required skill tuning or effect range exceeds one'),
 );
+const SenseSchema = strictObject({
+  id: Id,
+  crouch: strictObject({
+    speedMetresPerSecond: Positive,
+    hearingRangeScale: Fraction,
+    sightRangeScale: Fraction,
+    eyeDropMetres: Positive,
+  }),
+  wall: strictObject({
+    hearingRangeScale: Fraction,
+    gain: Fraction,
+    cutoffHz: Positive,
+    clearGain: Fraction,
+    clearCutoffHz: Positive,
+  }),
+});
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
@@ -876,6 +904,7 @@ const SECTION_DESCRIPTOR = {
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
+  senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 12 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -901,6 +930,7 @@ export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type SenseDef = InferOutput<typeof SenseSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

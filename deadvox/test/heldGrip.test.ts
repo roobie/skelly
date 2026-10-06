@@ -8,6 +8,7 @@ import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 
 const base = 'src/content/base';
@@ -17,6 +18,17 @@ const { registry: source } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
 );
 const rifleType = 'debug_rifle_assault';
+const projectionErrorPixels = (direction: readonly number[]): readonly [number, number, number] => {
+  const viewportHeight = 720;
+  const aspect = 1280 / viewportHeight;
+  const tangent = Math.tan((PLAYER_VIEW_FOV_DEGREES * Math.PI) / 360);
+  const depth = -direction[2]!;
+  return [
+    Math.abs((direction[0]! / depth / (tangent * aspect)) * (viewportHeight / 2)),
+    Math.abs((direction[1]! / depth / tangent) * (viewportHeight / 2)),
+    depth,
+  ];
+};
 const items = new Map(source.items);
 items.set(rifleType, { ...items.get(rifleType)!, twoHanded: true });
 const registry = { ...source, items };
@@ -63,7 +75,7 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
 };
 
 describe('actual-slot held placement', () => {
-  it('aligns the exported sight eye with the camera origin in ADS', () => {
+  it('projects the optic centre to screen centre within one pixel in ADS', () => {
     const model = registry.models.get('rifle_assault')!;
     const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
     const pose = heldFirearmTransform({
@@ -75,12 +87,46 @@ describe('actual-slot held placement', () => {
       aimingDownSights: true,
       aimFrame: NEUTRAL_AIM,
       loweredPitchRadians: tuning.loweredPitchRadians,
+      adsApertureFill: tuning.adsApertureFill,
+      verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
     });
     expect(pose.sightEyeOffset).toBeDefined();
     for (let axis = 0; axis < 3; axis++) {
       expect(pose.rootOffset[axis]! + pose.sightEyeOffset![axis]!).toBeCloseTo(0);
     }
     expect(pose.sightDirection).toBeDefined();
+    const [horizontalErrorPixels, verticalErrorPixels, depth] = projectionErrorPixels(pose.sightDirection!);
+    expect(depth).toBeGreaterThan(0);
+    expect(horizontalErrorPixels).toBeLessThanOrEqual(1);
+    expect(verticalErrorPixels).toBeLessThanOrEqual(1);
+  });
+
+  it('projects each exported sight line to screen centre within one pixel in ADS', () => {
+    const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    for (const modelId of ['rifle_assault', 'rifle_ak']) {
+      const model = registry.models.get(modelId)!;
+      expect(model.sight?.eyeReliefMetres).toBeGreaterThan(0);
+      const pose = heldFirearmTransform({
+        model,
+        side: 'right',
+        leadingSide: 'right',
+        twoHanded: true,
+        progress: 1,
+        aimingDownSights: true,
+        aimFrame: NEUTRAL_AIM,
+        loweredPitchRadians: firearms.loweredPitchRadians,
+        adsApertureFill: firearms.adsApertureFill,
+        verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
+      });
+      expect(pose.sightEyeOffset).toBeDefined();
+      for (let axis = 0; axis < 3; axis++) {
+        expect(pose.rootOffset[axis]! + pose.sightEyeOffset![axis]!).toBeCloseTo(0);
+      }
+      const [horizontalErrorPixels, verticalErrorPixels, depth] = projectionErrorPixels(pose.sightDirection!);
+      expect(depth).toBeGreaterThan(0);
+      expect(horizontalErrorPixels).toBeLessThanOrEqual(1);
+      expect(verticalErrorPixels).toBeLessThanOrEqual(1);
+    }
   });
 
   it('translates two-handed ejection origins by physical slot, not actor dominance, without mirroring authored direction', () => {

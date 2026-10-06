@@ -40,9 +40,10 @@ export interface PlayerState {
   yaw: number;
   pitch: number;
   walk: boolean;
+  crouching: boolean;
 }
 
-export const snapshotPlayer = (body: Body, yaw: number, pitch: number, walk: boolean): Readonly<PlayerState> =>
+export const snapshotPlayer = (body: Body, state: Omit<PlayerState, 'body'>): Readonly<PlayerState> =>
   freezeSnapshot({
     body: {
       pos: [...body.pos],
@@ -51,9 +52,7 @@ export const snapshotPlayer = (body: Body, yaw: number, pitch: number, walk: boo
       height: body.height,
       onGround: body.onGround,
     },
-    yaw,
-    pitch,
-    walk,
+    ...state,
   });
 
 export const restorePlayer = (state: PlayerState): PlayerState => ({
@@ -67,6 +66,7 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
   yaw: state.yaw,
   pitch: state.pitch,
   walk: state.walk,
+  crouching: state.crouching,
 });
 
 export interface MoveIntent {
@@ -76,6 +76,10 @@ export interface MoveIntent {
   sprint: boolean;
   /** Walk instead of jog. Sprinting wins over walking. */
   walk: boolean;
+  /** Persistent crouch stance overrides walking and sprinting pace. */
+  crouch?: boolean | undefined;
+  /** Crouch pace from the loaded base/mod content. */
+  crouchSpeed?: number | undefined;
   /** Edge-triggered dominant-hand use; the player tick consumes this once. */
   useDominant?: boolean;
   /** Held dominant trigger; only debug firearms repeat, not other item actions. */
@@ -96,6 +100,21 @@ export const paceFactor = (grams: number, handling: boolean): number => {
   return handling ? load * 0.5 : load;
 };
 
+export const movementPace = (
+  intent: MoveIntent,
+  {
+    grams,
+    handling,
+    readyMovementFactor,
+    crouchSpeed,
+  }: { grams: number; handling: boolean; readyMovementFactor: number; crouchSpeed: number },
+): MoveIntent => ({
+  ...intent,
+  crouch: intent.crouch,
+  crouchSpeed,
+  pace: paceFactor(grams, handling) * readyMovementFactor,
+});
+
 /** Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. */
 export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent): void => {
   let { forward, right } = intent;
@@ -104,8 +123,14 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
     forward /= len;
     right /= len;
   }
-  const pace = intent.walk ? PLAYER.walk : PLAYER.jog;
-  const speed = ((intent.sprint ? PLAYER.sprint : pace) * (intent.pace ?? 1)) / scale.blockSize;
+  let pace: number = PLAYER.jog;
+  if (intent.walk) {
+    pace = PLAYER.walk;
+  }
+  if (intent.crouch) {
+    pace = intent.crouchSpeed ?? PLAYER.walk;
+  }
+  const speed = ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1)) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.
