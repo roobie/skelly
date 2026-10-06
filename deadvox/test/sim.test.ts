@@ -80,6 +80,33 @@ describe('Simulation', () => {
     expect(events.read()).toContainEqual({ kind: 'damage', amount: 10, cause: 'a shambler', time: 0 });
   });
 
+  it('defaults unresolved hits to the torso region', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.hit(1, 'a bite', undefined, { bleeding: true });
+
+    expect(sim.body.regionDamage.torso).toBeGreaterThan(0);
+    expect(sim.body.wounds.torso?.bleeding).toBe(true);
+  });
+
+  it('finishes early-stage antiseptic treatment before the next infection advance', () => {
+    const sim = new Simulation({ seed: 1 });
+    sim.body.impact(1, 'head', { bleeding: true });
+    sim.body.advance(1, true);
+    expect(sim.body.canTreat('head', 'antiseptic')).toBe(true);
+    sim.actions.treatment = {
+      validate: (region, _itemUid, treatment) =>
+        sim.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
+      finish: (region, _itemUid, treatment) =>
+        sim.body.treat(region, treatment) ? undefined : 'Treatment no longer applies',
+    };
+    expect(sim.actions.beginTreatment('head', 1, 'antiseptic', sim.clock.ratio)).toBeUndefined();
+
+    sim.scheduler.advance(1);
+
+    expect(sim.body.wounds.head?.infection).toBe('resolved');
+    expect(sim.actions.job).toBeUndefined();
+  });
+
   it('gives the same clock and needs for a compressed and an uncompressed hour', () => {
     const plain = new Simulation({ seed: 1 });
     const realPlain = runUntil(plain, HOUR);
@@ -199,14 +226,14 @@ describe('Simulation', () => {
     sim.needs.calories = 0;
     sim.needs.hydration = 0;
     sim.frame(HOUR);
-    expect(sim.needs.health).toBe(100);
+    expect(sim.body.health).toBe(100);
     expect(sim.needs.calories).toBe(0);
     expect(sim.needs.hydration).toBe(0);
     expect(sim.dead).toBeUndefined();
 
     sim.godMode = false;
     sim.frame(HOUR);
-    expect(sim.needs.health).toBeLessThan(100);
+    expect(sim.body.health).toBeLessThan(100);
   });
 
   describe('debug time skip', () => {

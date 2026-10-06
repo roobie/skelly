@@ -13,14 +13,6 @@ export const adjustLookPitch = (pitch: number, delta: number): { pitch: number; 
   const next = Math.max(-LOOK_PITCH_LIMIT, Math.min(LOOK_PITCH_LIMIT, pitch + delta));
   return { pitch: next, applied: next - pitch };
 };
-const MAC_PLATFORM = /Mac/i;
-
-/** Cmd on macOS (best effort), Ctrl elsewhere; Shift alone stays free for splitting. */
-export const quickMoveModifier = (
-  event: Pick<MouseEvent, 'ctrlKey' | 'metaKey'>,
-  platform = globalThis.navigator?.platform ?? '',
-): boolean => (MAC_PLATFORM.test(platform) ? event.metaKey : event.ctrlKey);
-
 /** UI key bindings and browser-owned keys referenced by the help and browser contract. */
 export const KEY_BINDINGS = {
   debugModifier: { code: 'F2', label: 'F2' },

@@ -38,6 +38,7 @@ export interface PlayCameraFrame {
   readonly yaw: number;
   readonly pitch: number;
   readonly eye: Vec3;
+  readonly sightImpaired: boolean;
 }
 
 export interface PlayWorldFrame {
@@ -171,7 +172,7 @@ export const createPlayView = (
       engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
-      const { dt, body, paused, noclip, yaw, pitch, eye } = frame;
+      const { dt, body, paused, noclip, yaw, pitch, eye, sightImpaired } = frame;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
         body.onGround,
@@ -189,7 +190,7 @@ export const createPlayView = (
       const feedback = damageFeedback.step(dt);
       cameraRoll = feedback.roll;
       camera.rotation.copy(cameraRotation(pitch, yaw, feedback.roll));
-      damage.style.opacity = String(feedback.vignetteOpacity);
+      damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
     },
     updateHeld: (
       dt: number,

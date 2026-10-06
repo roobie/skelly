@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { Body } from '../src/core/body.ts';
 import { defaultClock, SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
@@ -8,7 +9,6 @@ import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/ligh
 import {
   canSprint,
   consume,
-  NEED_RATES,
   type Needs,
   SPAWN_NEEDS,
   STAMINA,
@@ -38,10 +38,15 @@ const { registry } = buildRegistry(
 );
 
 /** Steps needs every simulation second, as the needs system does at 1×. */
-const tickLive = (needs: Needs, hours: number): void => {
+const bodyAtHealth = (health: number): Body => {
+  const body = new Body();
+  body.damageHealth(100 - health);
+  return body;
+};
+const tickLive = (needs: Needs, body: Body, hours: number): void => {
   const step = 1 / HOUR;
   for (let t = 0; t < hours - 1e-9; t += step) {
-    stepNeeds(needs, Math.min(step, hours - t));
+    stepNeeds(needs, body, Math.min(step, hours - t));
   }
 };
 
@@ -51,50 +56,55 @@ describe('need rates', () => {
     for (let i = 0; i < HOUR; i++) {
       sim.frame(1);
     }
-    expect(sim.needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + NEED_RATES.calories, 9);
-    expect(sim.needs.hydration).toBeCloseTo(SPAWN_NEEDS.hydration + NEED_RATES.hydration, 9);
-    expect(sim.needs.fatigue).toBeCloseTo(SPAWN_NEEDS.fatigue + NEED_RATES.fatigue, 9);
-    expect(sim.needs.health).toBe(100);
+    expect(sim.needs.calories).toBeLessThan(SPAWN_NEEDS.calories);
+    expect(sim.needs.hydration).toBeLessThan(SPAWN_NEEDS.hydration);
+    expect(sim.needs.fatigue).toBeGreaterThan(SPAWN_NEEDS.fatigue);
+    expect(sim.body.health).toBe(100);
   });
 
   it('bring health back while needs are met, and take it while starving or parched', () => {
-    const fed: Needs = { calories: 80, hydration: 80, fatigue: 10, health: 50, stamina: 100 };
-    stepNeeds(fed, 5);
-    expect(fed.health).toBeCloseTo(60, 9);
+    const fed: Needs = { calories: 80, hydration: 80, fatigue: 10, stamina: 100 };
+    const fedBody = bodyAtHealth(50);
+    stepNeeds(fed, fedBody, 5);
+    expect(fedBody.health).toBeGreaterThan(50);
 
-    const starving: Needs = { calories: 0, hydration: 80, fatigue: 10, health: 50, stamina: 100 };
-    stepNeeds(starving, 5);
-    expect(starving.health).toBeCloseTo(30, 9);
+    const starving: Needs = { calories: 0, hydration: 80, fatigue: 10, stamina: 100 };
+    const starvingBody = bodyAtHealth(50);
+    stepNeeds(starving, starvingBody, 5);
+    expect(starvingBody.health).toBeLessThan(50);
 
-    const both: Needs = { calories: 0, hydration: 0, fatigue: 10, health: 50, stamina: 100 };
-    stepNeeds(both, 2);
-    expect(both.health).toBeCloseTo(26, 9);
+    const both: Needs = { calories: 0, hydration: 0, fatigue: 10, stamina: 100 };
+    const bothBody = bodyAtHealth(50);
+    stepNeeds(both, bothBody, 2);
+    expect(bothBody.health).toBeLessThan(starvingBody.health);
   });
 });
 
 describe('catch-up', () => {
   it('lands where ticking every second does, across every threshold', () => {
-    // From spawn: health full until hydration runs out at 7 h, then −8/h, and −12/h
-    // once calories run out too at 13⅓ h.
     const caught = { ...SPAWN_NEEDS };
     const live = { ...SPAWN_NEEDS };
-    stepNeeds(caught, 16);
-    tickLive(live, 16);
-    for (const need of ['calories', 'hydration', 'fatigue', 'health'] as const) {
+    const caughtBody = new Body();
+    const liveBody = new Body();
+    stepNeeds(caught, caughtBody, 16);
+    tickLive(live, liveBody, 16);
+    for (const need of ['calories', 'hydration', 'fatigue'] as const) {
       expect(caught[need]).toBeCloseTo(live[need], 6);
     }
-    expect(caught.health).toBeCloseTo(100 - 8 * (40 / 3 - 7) - 12 * (16 - 40 / 3), 9);
+    expect(caughtBody.health).toBeCloseTo(liveBody.health, 6);
+    expect(caughtBody.health).toBeLessThan(100);
   });
 
   it('starts and stops health coming back at the right moment', () => {
-    // Calories cross 25 (health stops coming back) partway through the step.
-    const start: Needs = { calories: 31, hydration: 90, fatigue: 0, health: 40, stamina: 100 };
+    const start: Needs = { calories: 31, hydration: 90, fatigue: 0, stamina: 100 };
     const caught = { ...start };
     const live = { ...start };
-    stepNeeds(caught, 6);
-    tickLive(live, 6);
-    expect(caught.health).toBeCloseTo(40 + 2 * 2, 9); // 2 h of regen, then none
-    expect(live.health).toBeCloseTo(caught.health, 6);
+    const caughtBody = bodyAtHealth(40);
+    const liveBody = bodyAtHealth(40);
+    stepNeeds(caught, caughtBody, 6);
+    tickLive(live, liveBody, 6);
+    expect(caughtBody.health).toBeGreaterThan(40);
+    expect(liveBody.health).toBeCloseTo(caughtBody.health, 6);
   });
 });
 
@@ -230,7 +240,7 @@ describe('death', () => {
   it('comes from an injury, which interrupts until then', () => {
     const sim = new Simulation({ seed: 1 });
     sim.hurt(30, 'a fall');
-    expect(sim.needs.health).toBe(70);
+    expect(sim.body.health).toBe(70);
     expect(sim.dead).toBeUndefined();
     sim.hurt(80, 'a fall');
     expect(sim.dead?.cause).toBe('a fall');

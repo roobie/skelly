@@ -1377,7 +1377,7 @@ describe('shambler scenarios', () => {
         system.tick(1 / 60);
         sim.frame(1 / 60);
       }
-      return { health: sim.needs.health, hits };
+      return { health: sim.body.health, hits };
     };
     const protectedRun = simulateAttacks(true);
     const ordinaryRun = simulateAttacks(false);

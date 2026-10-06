@@ -19,6 +19,7 @@ const capabilities = [
   { id: 'held_food', kind: 'use', category: 'food', food: { calories: 1, water: 0 } },
   { id: 'held_drink', kind: 'use', category: 'drink', food: { calories: 0, water: 1 } },
   { id: 'held_bandage', kind: 'use', category: 'medical' },
+  { id: 'held_rag', kind: 'use', category: 'material', treatment: 'rag' },
   { id: 'held_gun', kind: 'firearm', firearm: { recoilKickRadians: 0.02, dispersionRadians: 0.01 }, twoHanded: true },
   {
     id: 'held_igniter',
@@ -194,7 +195,7 @@ describe('held-item hand action', () => {
     });
   });
 
-  it.each(['held_food', 'held_drink', 'held_bandage'])('runs the held %s primary use through Survival.use', (type) => {
+  it.each(['held_food', 'held_drink', 'held_bandage', 'held_rag'])('runs the held %s primary use through Survival.use', (type) => {
     const inventory = hold(type);
     const action = selectPrimaryAction(inventory, 'right');
     if (action.kind !== 'use') {
@@ -215,7 +216,7 @@ describe('held-item hand action', () => {
     });
 
     const refusal = survival.use(action.item);
-    if (type === 'held_bandage') {
+    if (type === 'held_bandage' || type === 'held_rag') {
       expect(refusal).toBeTruthy();
       expect(queue.jobs).toHaveLength(0);
     } else {

@@ -301,6 +301,8 @@ export const ItemSchema = strictObject({
   container: optional(ContainerSchema),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
+  /** An item that applies a named treatment to one body wound. */
+  treatment: optional(picklist(['bandage', 'rag', 'antiseptic', 'antibiotics'])),
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),

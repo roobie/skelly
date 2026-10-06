@@ -7,7 +7,6 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { EAT_TIME, options, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
-import { quickMoveModifier } from '../src/game/input.ts';
 
 const directory = join(import.meta.dirname, '../src/content/base');
 const { registry } = buildRegistry(
@@ -323,12 +322,4 @@ describe('quick move rules', () => {
     const item = t.add('flashlight', { kind: 'hand', side: offSide(t.inventory.character) });
     expect(quickMove(item, t.view()).target).toEqual({ kind: 'pile', pos: [0, 0, 0] });
   });
-});
-
-it('maps Ctrl off macOS and Cmd on macOS, leaving unmodified and Shift-only clicks alone', () => {
-  expect(quickMoveModifier({ ctrlKey: true, metaKey: false }, 'Linux x86_64')).toBe(true);
-  expect(quickMoveModifier({ ctrlKey: false, metaKey: true }, 'MacIntel')).toBe(true);
-  expect(quickMoveModifier({ ctrlKey: false, metaKey: true }, 'Win32')).toBe(false);
-  expect(quickMoveModifier({ ctrlKey: true, metaKey: false }, 'MacIntel')).toBe(false);
-  expect(quickMoveModifier({ ctrlKey: false, metaKey: false }, 'Linux x86_64')).toBe(false);
 });

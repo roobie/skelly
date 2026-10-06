@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { Window } from 'happy-dom';
 import { afterAll, describe, expect, it, vi } from 'vitest';
+import { Body } from '../src/core/body.ts';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { WorkOperation, WorkOption } from '../src/core/craftCommands.ts';
@@ -80,6 +81,7 @@ function setup() {
     searching.delete(entity);
     inv.entities.markSearched(entity);
   });
+  const body = new Body();
   const notices: string[] = [];
   const refusals: string[] = [];
   const hooks = {
@@ -104,14 +106,28 @@ function setup() {
     assign: (_slot: number, _item: typeof beans) => undefined,
     workOptions: (_uid: number): WorkOption[] => [],
     work: (_uid: number, _operation: WorkOperation): string | undefined => undefined,
+    body: () => body.snapshotState(),
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks };
+  return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks, body };
 }
 
 describe('inventory screen Lit rendering', () => {
+  it('shows wound state without adding treatment controls to the body panel', () => {
+    const { root, screen, inv, body } = setup();
+    const rag = inv.create('rag');
+    expect(inv.add(rag, { kind: 'hand', side: 'left' })).toBe(true);
+    body.impact(1, 'leftArm', { bleeding: true });
+    screen.selected = rag;
+    screen.update();
+
+    const region = root.querySelector<HTMLElement>('[data-body-region="leftArm"]');
+    expect(region?.querySelector('.inv-body-warning')).not.toBeNull();
+    expect(region?.querySelector('button')).toBeNull();
+  });
+
   it('keeps inventory commands owned without a selection, but lets gameplay and debug modals reach debug', () => {
     const codes = [
       CONTROL_CODES.hands,
@@ -216,44 +232,7 @@ describe('inventory screen Lit rendering', () => {
     expect(test.root.querySelectorAll('.inv-pane')[1]?.querySelector('button.inv-option')).toBeNull();
   });
 
-  it.each([
-    {
-      name: 'Ctrl (plus Alt)',
-      platform: 'Linux x86_64',
-      ctrlKey: true,
-      metaKey: false,
-      shiftKey: false,
-      altKey: true,
-      quick: true,
-    },
-    {
-      name: 'Cmd (plus Shift, best-effort Mac mapping)',
-      platform: 'MacIntel',
-      ctrlKey: false,
-      metaKey: true,
-      shiftKey: true,
-      altKey: false,
-      quick: true,
-    },
-    {
-      name: 'unmodified',
-      platform: 'Linux x86_64',
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: false,
-      altKey: false,
-      quick: false,
-    },
-    {
-      name: 'Shift only',
-      platform: 'Linux x86_64',
-      ctrlKey: false,
-      metaKey: false,
-      shiftKey: true,
-      altKey: false,
-      quick: false,
-    },
-  ])('$name crosses the locked-menu adapter with unchanged modifiers and inventory behavior', (binding) => {
+  it('forwards an ordinary locked-menu click without queueing a quick move', () => {
     const t = setup();
     const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
     const canvas = document.createElement('canvas');
@@ -261,60 +240,17 @@ describe('inventory screen Lit rendering', () => {
     const input = { locked: true, menuPointer: true, cursorX: 100, cursorY: 100, moveMenuCursor: () => undefined };
     const adapter = mountMenuPointer({ input, canvas, cursor: document.createElement('div') });
     const hit = vi.spyOn(document, 'elementFromPoint').mockReturnValue(node);
-    vi.stubGlobal('navigator', { platform: binding.platform });
-    const modifiers = {
-      ctrlKey: binding.ctrlKey,
-      metaKey: binding.metaKey,
-      shiftKey: binding.shiftKey,
-      altKey: binding.altKey,
-    };
-    let received: typeof modifiers | undefined;
-    node.addEventListener('pointerdown', (event) => {
-      received = { ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey, altKey: event.altKey };
-    });
     try {
-      // The locked canvas receives the original event; only the production adapter can deliver it to the item.
-      canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, ...modifiers }));
-      expect(received).toEqual(modifiers);
+      canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
       expect(t.screen.selected).toBe(t.beans);
-      expect(t.inv.hands.right).toBe(t.beans);
-      expect(t.queue.jobs).toHaveLength(binding.quick ? 1 : 0);
-      input.cursorX += 10;
-      canvas.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 1 }));
-      expect(document.querySelector('.inv-ghost') !== null).toBe(!binding.quick);
+      expect(t.queue.jobs).toHaveLength(0);
       canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
-      if (binding.quick) {
-        t.queue.tick(t.queue.remaining);
-        expect(t.inv.locate(t.beans)?.kind).toBe('pocket');
-      }
       expect(document.querySelector('#inventory-drag-root')?.textContent).toBe('');
     } finally {
       input.locked = false;
       adapter.releaseCaptures();
       t.screen.close();
       hit.mockRestore();
-      vi.unstubAllGlobals();
-    }
-  });
-
-  it('repeated quick-clicks keep one owned move and emit refusal feedback for every duplicate', () => {
-    const t = setup();
-    vi.stubGlobal('navigator', { platform: 'Linux x86_64' });
-    try {
-      expect(t.inv.move(t.beans, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
-      t.screen.update();
-      const attempts = 3;
-      for (let click = 0; click < attempts; click++) {
-        const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
-        expect(node).not.toBeNull();
-        node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, ctrlKey: true, pointerId: 1 }));
-      }
-      expect.soft(t.queue.jobs).toHaveLength(1);
-      expect(t.refusals).toHaveLength(attempts - 1);
-      expect(t.refusals.every((refusal) => refusal.length > 0)).toBe(true);
-    } finally {
-      t.screen.close();
-      vi.unstubAllGlobals();
     }
   });
 

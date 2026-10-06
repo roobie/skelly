@@ -268,11 +268,10 @@ Paperwork; no game code.
 
 - **Quick move** (BR, 2026-10-03; pulled into 2.1 with BR's go). It's one more
   option from the core `options()`: `quickMove(item, reach)` returns the move it
-  would make, or the reason it can't. The UI binds it to Ctrl-click today. BR
-  ruled on 2026-10-04 that it becomes **hold T and click** ("hold T+click on item
-  does the quick action (auto move)"), under his rule of no Ctrl or Cmd, ever
-  (CONTROLS.md). d44, the input registry, makes that change. Shift-click stays
-  free for splitting a stack later.
+  would make, or the reason it can't. BR ruled on 2026-10-04 that quick actions
+  use **hold T and click** ("hold T+click on item does the quick action (auto
+  move)") and that Ctrl and Cmd are never used (CONTROLS.md). The old pointer
+  modifier path has been removed; d44 owns the held-T binding.
   - **An item you carry** (in hands, worn, in a pocket or a container) drops to
     the ground pile at your feet. A worn container drops with its contents.
     Taking it off costs its usual handling time.

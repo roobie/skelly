@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { Body } from '../src/core/body.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { defaultClock, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
@@ -73,7 +74,7 @@ describe('stepNeeds with a custom fatigue rate', () => {
   it('recovers fatigue at the given rate, leaving the other needs alone', () => {
     const needs = { ...SPAWN_NEEDS, fatigue: 50 };
     const rates = { ...NEED_RATES, fatigue: -20 };
-    stepNeeds(needs, 1, false, rates);
+    stepNeeds(needs, new Body(), 1, false, rates);
     expect(needs.fatigue).toBeCloseTo(30, 9);
     expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + NEED_RATES.calories, 9);
   });

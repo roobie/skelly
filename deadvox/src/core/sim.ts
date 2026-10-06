@@ -2,6 +2,7 @@
 // systems registered on it. Pure, so scenario tests run it headless.
 
 import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
+import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
 import { Compression, type CompressionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
@@ -29,6 +30,7 @@ export interface SimulationState {
   time: number;
   scheduler: SchedulerState;
   needs: Needs;
+  body: BodyState;
   compression: { c: number; active: boolean; interruption?: string };
   pendingInterrupt?: string;
   dead?: { cause: string; time: number };
@@ -61,6 +63,7 @@ export class Simulation {
   readonly compression = new Compression();
   readonly actions: LongActions;
   readonly needs: Needs = { ...SPAWN_NEEDS };
+  readonly body = new Body();
   /** Esc pauses everything; the inventory screen doesn't. */
   paused = false;
   /** Set when health reaches 0; from then on nothing advances. */
@@ -87,15 +90,27 @@ export class Simulation {
       tick: (dt) => {
         const rate = this.restRate();
         const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
-        for (const reason of stepNeeds(this.needs, gameHours(this.clock, dt), this.godMode, rates)) {
+        for (const reason of stepNeeds(this.needs, this.body, gameHours(this.clock, dt), this.godMode, rates)) {
           this.emit({ kind: 'interrupt', reason });
         }
-        if (this.needs.health <= 0) {
+        if (this.body.health <= 0) {
           this.die(causeOf(this.needs) ?? 'your injuries');
         }
       },
     });
+    // A due treatment resolves before this tick advances an early infection to antibiotic-only.
     this.actions = new LongActions(this);
+    this.scheduler.register({
+      id: 'body',
+      rate: NEEDS_RATE,
+      maxStep: NEEDS_MAX_STEP,
+      tick: (dt) => {
+        const cause = this.body.advance(dt, this.godMode);
+        if (cause) {
+          this.die(cause);
+        }
+      },
+    });
   }
 
   /** Isolated plain-data continuation state; an unread interrupt is carried to the next frame. */
@@ -106,6 +121,7 @@ export class Simulation {
       time: this.time,
       scheduler: this.scheduler.snapshotState() as SchedulerState,
       needs: { ...this.needs },
+      body: this.body.snapshotState() as BodyState,
       compression: {
         c: this.compression.c,
         active: this.compression.active,
@@ -130,6 +146,7 @@ export class Simulation {
       throw new Error('Invalid pending interruption state');
     }
     Object.assign(this.needs, state.needs);
+    this.body.restoreState(state.body);
     this.compression.c = state.compression.c;
     this.compression.active = state.compression.active;
     this.compression.interruption = state.compression.interruption;
@@ -180,18 +197,22 @@ export class Simulation {
 
   /** Takes health (a fall, food poisoning, later a bite); at 0 you die of `cause`. */
   hurt(amount: number, cause: string): void {
-    if (this.dead) {
+    this.takeDamage(cause, () => this.body.damageHealth(amount));
+  }
+
+  hit(amount: number, cause: string, region: BodyRegion = 'torso', effects: BodyImpact = {}): void {
+    this.takeDamage(cause, () => this.body.impact(amount, region, effects));
+  }
+
+  private takeDamage(cause: string, apply: () => number): void {
+    if (this.dead || this.godMode) {
       return;
     }
-    if (this.godMode) {
-      return;
-    }
-    const applied = Math.min(amount, this.needs.health);
-    this.needs.health = Math.max(0, this.needs.health - amount);
+    const applied = apply();
     if (applied > 0) {
       this.emit({ kind: 'damage', amount: applied, cause });
     }
-    if (this.needs.health <= 0) {
+    if (this.body.health <= 0) {
       this.die(cause);
     } else {
       this.emit({ kind: 'interrupt', reason: "You're hurt" });

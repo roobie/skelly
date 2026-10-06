@@ -1,5 +1,6 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
 import type { WorkPlan } from './crafting.ts';
+import type { BodyRegion, BodyTreatment } from './body.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -15,12 +16,26 @@ export interface RestAction {
 export type LongJob =
   | { jobType: RestKind; stopped: boolean; last: number; elapsed: number; rest: RestAction }
   | { jobType: 'craft'; stopped: boolean; last: number; workUid: number }
-  | { jobType: 'reading'; stopped: boolean; last: number; bookUid: number; elapsed: number; duration: number };
+  | { jobType: 'reading'; stopped: boolean; last: number; bookUid: number; elapsed: number; duration: number }
+  | {
+      jobType: 'treatment';
+      stopped: boolean;
+      last: number;
+      region: BodyRegion;
+      itemUid: number;
+      treatment: BodyTreatment;
+      elapsed: number;
+      duration: number;
+    };
 export interface ReadingActionHooks {
   owns: (bookUid: number) => boolean;
   validate: (bookUid: number) => string | undefined;
   duration: (bookUid: number) => number | undefined;
   finish: (bookUid: number) => void;
+}
+export interface TreatmentActionHooks {
+  validate: (region: BodyRegion, itemUid: number, treatment: BodyTreatment) => string | undefined;
+  finish: (region: BodyRegion, itemUid: number, treatment: BodyTreatment) => string | undefined;
 }
 export interface LongActionState {
   job: LongJob | null;
@@ -59,6 +74,22 @@ const validateRest = (job: Extract<LongJob, { jobType: RestKind }>): void => {
   }
 };
 
+const validateTreatment = (job: Extract<LongJob, { jobType: 'treatment' }>): void => {
+  if (
+    !['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'].includes(job.region) ||
+    !Number.isSafeInteger(job.itemUid) ||
+    job.itemUid < 1 ||
+    !['bandage', 'rag', 'antiseptic', 'antibiotics'].includes(job.treatment) ||
+    !Number.isFinite(job.elapsed) ||
+    job.elapsed < 0 ||
+    !Number.isFinite(job.duration) ||
+    job.duration <= 0 ||
+    job.elapsed > job.duration
+  ) {
+    throw new Error('Invalid treatment descriptor');
+  }
+};
+
 const validateReading = (job: Extract<LongJob, { jobType: 'reading' }>): void => {
   if (
     !Number.isSafeInteger(job.bookUid) ||
@@ -90,6 +121,9 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
     case 'reading':
       validateReading(job);
       return;
+    case 'treatment':
+      validateTreatment(job);
+      return;
     case 'rest':
     case 'sleep':
       validateRest(job);
@@ -103,6 +137,7 @@ export class LongActions {
   private current: LongJob | undefined;
   craft: CraftActionHooks | undefined;
   reading: ReadingActionHooks | undefined;
+  treatment: TreatmentActionHooks | undefined;
   notice: (text: string) => void = () => undefined;
   private readonly sim: Simulation;
   constructor(sim: Simulation) {
@@ -141,6 +176,12 @@ export class LongActions {
     }
     if (state.job?.jobType === 'reading' && !this.reading?.owns(state.job.bookUid)) {
       throw new Error('Missing reading book');
+    }
+    if (state.job?.jobType === 'treatment') {
+      const reason = this.treatment?.validate(state.job.region, state.job.itemUid, state.job.treatment);
+      if (!this.treatment || reason) {
+        throw new Error(reason ?? 'Missing treatment owner');
+      }
     }
     this.current = state.job === null ? undefined : structuredClone(state.job);
   }
@@ -219,6 +260,39 @@ export class LongActions {
     }
     return undefined;
   }
+  beginTreatment(
+    region: BodyRegion,
+    itemUid: number,
+    treatment: BodyTreatment,
+    duration: number,
+  ): string | undefined {
+    if (!this.treatment) {
+      return 'Missing treatment owner';
+    }
+    const reason = this.treatment.validate(region, itemUid, treatment);
+    if (reason) {
+      return reason;
+    }
+    if (this.current && !this.current.stopped) {
+      return 'Stop the current action first';
+    }
+    if (!Number.isFinite(duration) || duration <= 0) {
+      return 'Invalid treatment time';
+    }
+    const result = this.sim.compressLongAction();
+    if (!result.ok) {
+      return result.reason;
+    }
+    const elapsed =
+      this.current?.jobType === 'treatment' &&
+      this.current.region === region &&
+      this.current.itemUid === itemUid &&
+      this.current.treatment === treatment
+        ? this.current.elapsed
+        : 0;
+    this.current = { jobType: 'treatment', stopped: false, last: this.sim.time, region, itemUid, treatment, elapsed, duration };
+    return undefined;
+  }
   beginReading(bookUid: number): string | undefined {
     if (!this.reading) {
       return 'Missing reading action owner';
@@ -249,6 +323,9 @@ export class LongActions {
     }
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return 'Stop reading first';
+    }
+    if (this.current?.jobType === 'treatment' && !this.current.stopped) {
+      return 'Stop treatment first';
     }
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
@@ -283,6 +360,11 @@ export class LongActions {
       const reason = this.reading?.validate(this.current.bookUid);
       if (!this.reading || reason) {
         return reason ?? 'Missing reading action owner';
+      }
+    } else if (this.current.jobType === 'treatment') {
+      const reason = this.treatment?.validate(this.current.region, this.current.itemUid, this.current.treatment);
+      if (!this.treatment || reason) {
+        return reason ?? 'Missing treatment owner';
       }
     }
     const result = this.sim.compressLongAction();
@@ -340,13 +422,19 @@ export class LongActions {
     if (job.jobType === 'reading') {
       return this.reading?.validate(job.bookUid) ?? (this.reading ? undefined : 'Missing reading action owner');
     }
+    if (job.jobType === 'treatment') {
+      return (
+        this.treatment?.validate(job.region, job.itemUid, job.treatment) ??
+        (this.treatment ? undefined : 'Missing treatment action owner')
+      );
+    }
     return undefined;
   }
   private advanceJob(job: LongJob, seconds: number): boolean {
     if (job.jobType === 'craft') {
       return this.craft!.advance(job.workUid, seconds);
     }
-    if (job.jobType === 'reading') {
+    if (job.jobType === 'reading' || job.jobType === 'treatment') {
       job.elapsed = Math.min(job.duration, job.elapsed + seconds);
       return job.elapsed === job.duration;
     }
@@ -359,6 +447,11 @@ export class LongActions {
         this.craft!.finish(job.workUid);
       } else if (job.jobType === 'reading') {
         this.reading!.finish(job.bookUid);
+      } else if (job.jobType === 'treatment') {
+        const reason = this.treatment!.finish(job.region, job.itemUid, job.treatment);
+        if (reason) {
+          this.failedEffect(job, new Error(reason));
+        }
       } else {
         this.notice('You feel rested');
       }

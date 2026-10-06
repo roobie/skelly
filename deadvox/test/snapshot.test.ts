@@ -60,6 +60,49 @@ describe('snapshot state components', () => {
     expect(actor.practice.crafting).toBe(0);
   });
 
+  it('round-trips body wounds and a stopped treatment action with its item uid and progress', async () => {
+    const runtime = createRuntime();
+    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
+      if (item) {
+        expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
+      }
+    }
+    const rag = runtime.inventory.create('rag');
+    expect(runtime.inventory.add(rag, { kind: 'hand', side: 'right' })).toBe(true);
+    runtime.sim.body.impact(1, 'leftArm', { bleeding: true });
+    expect(runtime.survival.use(rag)).toBeUndefined();
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'treatment', region: 'leftArm', itemUid: rag.uid });
+    const treatmentJob = runtime.sim.actions.job;
+    if (treatmentJob?.jobType !== 'treatment') {
+      throw new Error('Treatment action was not started');
+    }
+    runtime.sim.scheduler.advance(treatmentJob.duration / (runtime.sim.clock.ratio * 2));
+    runtime.sim.actions.stop();
+
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toMatchObject({
+      jobType: 'treatment',
+      stopped: true,
+      region: 'leftArm',
+      itemUid: rag.uid,
+      treatment: 'rag',
+    });
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.body.snapshotState()).toEqual(runtime.sim.body.snapshotState());
+    expect(loaded.sim.actions.job).toMatchObject({
+      jobType: 'treatment',
+      stopped: true,
+      region: 'leftArm',
+      itemUid: rag.uid,
+      treatment: 'rag',
+      elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
+    });
+    expect(loaded.sim.actions.resume()).toBeUndefined();
+    loaded.sim.actions.stop();
+  });
+
   it('round-trips a stopped reading action with its held book uid and progress', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;

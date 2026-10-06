@@ -46,8 +46,7 @@ acting").
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
   flashlight in hands, then left-click to activate (left-click generally means
   'do the thing with the thing you're holding')." For held food, drinks and
-  bandages, BR later ruled (2026-10-05): "activate them"; bandages remain
-  refused until Slice 3's body model supplies wounds. For #252, BR's re-look
+  bandages, BR later ruled (2026-10-05): "activate them"; BR's 2026-10-06 08:33 ruling makes wound treatment a held-item action, with quickbar hold as the secondary path. For #252, BR's re-look
   (2026-10-05 13:44) confirmed that activating a held igniter lights an unlit
   firestarter light in the other hand; left-click uses the dominant hand and `=`
   the off hand. An igniter with no eligible light still refuses. Whether matches
@@ -167,7 +166,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Inventory screen | now | menu |
 | Quickbar slots 1–5 | now | tap to take or put away; hold to use |
 | Use held item: light on/off | now (quickbar hold or primary action) | instant |
-| Use held item: eat, drink, bandage | now (primary action or quickbar hold) | long |
+| Use held item: eat, drink, treat a wound | now (primary action or quickbar hold) | long |
 | Cancel handling | now | instant |
 | Rest, sleep, stop, continue after an interruption | now; rest and sleep move to F on restable and sleepable furniture (BR, 2026-10-04) | long, state |
 | Melee strike | implemented; see `src/game/primaryAction.ts`, `selectPrimaryAction` | instant, noise |

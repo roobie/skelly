@@ -6,15 +6,17 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import type { BodyRegion, BodyState } from '../core/body.ts';
+import { BODY_REGIONS } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, type Option, options, quickMove, toHands } from '../core/options.ts';
+import { bestPocket, dropTarget, type Option, options, toHands } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { CONTROL_CODES, quickbarSlotForKey, quickMoveModifier } from '../game/input.ts';
+import { CONTROL_CODES, quickbarSlotForKey } from '../game/input.ts';
 import { craftTime, workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
@@ -68,6 +70,7 @@ export interface ScreenHooks {
   assign: (slot: number, item: Item) => void;
   workOptions: (uid: number) => readonly WorkOption[];
   work: (uid: number, operation: WorkOperation) => string | undefined;
+  body: () => Readonly<BodyState>;
 }
 
 interface Drag {
@@ -145,7 +148,20 @@ interface DetailsViewModel {
   readonly options: readonly OptionViewModel[];
 }
 
+interface BodyRegionViewModel {
+  readonly region: BodyRegion;
+  readonly bleeding: boolean;
+  readonly infection: string;
+  readonly damage: string;
+}
+
 interface InventoryScreenViewModel {
+  readonly body: {
+    readonly health: string;
+    readonly blood: string;
+    readonly shock: string;
+    readonly regions: readonly BodyRegionViewModel[];
+  };
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
   readonly worn: readonly SlotViewModel[];
@@ -261,9 +277,21 @@ const inventoryTemplate = (
   <header class="inv-head">
     <h2>Inventory</h2>
     <span class="inv-weight">Carrying ${vm.weight}</span>
-    <span class="inv-help">Drag items · Ctrl/Cmd-click quick move · H hands · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
+    <span class="inv-help">Drag items · H hands · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
   </header>
   <div class="inv-body">
+    <section class="inv-pane inv-body-panel">
+      <h3>Body</h3>
+      <div class="inv-body-vitals">Health ${vm.body.health} · Blood ${vm.body.blood} · Shock ${vm.body.shock}</div>
+      ${vm.body.regions.map((region) => html`
+        <div class="inv-body-region" data-body-region=${region.region}>
+          <span class="inv-body-region-name">${region.region.replace(/([A-Z])/g, ' $1')}</span>
+          <span>${region.damage} damage</span>
+          ${region.bleeding ? html`<span class="inv-body-warning">Bleeding</span>` : nothing}
+          ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
+        </div>
+      `)}
+    </section>
     <section class="inv-pane">
       <h3>You</h3>
       <div class="inv-hands">
@@ -406,7 +434,8 @@ export class InventoryScreen {
       .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
     const view = this.hooks.reach();
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}`;
+    const bodyKey = JSON.stringify(this.hooks.body());
+    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -576,6 +605,18 @@ export class InventoryScreen {
   }
 
   private viewModel(): InventoryScreenViewModel {
+    const body = this.hooks.body();
+    const bodyView = {
+      health: `${Math.round(body.health)}%`,
+      blood: `${Math.round(body.blood)}%`,
+      shock: `${Math.round(body.shock)}%`,
+      regions: BODY_REGIONS.map((region) => ({
+        region,
+        damage: `${Math.round(body.regionDamage[region])}%`,
+        bleeding: body.wounds[region]?.bleeding ?? false,
+        infection: body.wounds[region]?.infection ?? 'none',
+      })),
+    };
     const hands = (['right', 'left'] as const).map(
       (side): SlotViewModel => ({
         target: `hand:${side}`,
@@ -631,6 +672,7 @@ export class InventoryScreen {
       };
     });
     return {
+      body: bodyView,
       weight: kg(this.inv.carriedWeight()),
       hands,
       worn,
@@ -787,13 +829,6 @@ export class InventoryScreen {
     }
     e.preventDefault();
     this.selected = item;
-    if (quickMoveModifier(e)) {
-      const option = quickMove(item, this.hooks.reach());
-      this.report(option.plan.ok ? this.tryQueue(item, option.target) : option.plan.reason);
-      this.drawn = '';
-      this.update();
-      return;
-    }
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;

@@ -31,6 +31,7 @@ const content = [
           container: { pockets: [{ grid: [1, 12], handling: 0.1 }] },
         })),
         { id: 'scroll_token', name: 'Scroll token', category: 'tool', weight: 1, size: [1, 1] },
+        { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
       ],
     },
   },
@@ -39,6 +40,7 @@ const fixture = `
 import '/src/ui/style.css';
 import { buildRegistry } from '/src/core/content.ts';
 import { Inventory } from '/src/core/inventory.ts';
+import { Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
@@ -46,6 +48,8 @@ import { mountMenuPointer } from '/src/ui/menuPointer.ts';
 const { registry, issues } = buildRegistry(${JSON.stringify(content)});
 if (issues.length) throw Error('Invalid scroll fixture: ' + JSON.stringify(issues));
 const inventory = new Inventory(registry);
+const body = new Body();
+body.impact(1, 'leftArm', { bleeding: true });
 for (const slot of ['legs', 'torso', 'back']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }
@@ -57,9 +61,14 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
+  body: () => body.snapshotState(),
 });
+const rag = inventory.create('rag');
+if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
+screen.selected = rag;
 screen.open();
 screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));
+screen.selected = rag;
 screen.update();
 const inputState = { locked: false, menuPointer: false };
 const input = {
@@ -138,10 +147,18 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+  if (process.env.BODY_PANEL_SCREENSHOT) {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.screenshot({ path: process.env.BODY_PANEL_SCREENSHOT });
+    await page.setViewportSize({ width: 1280, height: 480 });
+  }
+  assert.equal(await page.locator('[data-body-region]').count(), 6);
+  assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   const failures = [];
   for (const selector of [
     '#inventory .inv-pane:nth-child(1)',
     '#inventory .inv-pane:nth-child(2)',
+    '#inventory .inv-pane:nth-child(3)',
     '#inventory .inv-details',
   ]) {
     const size = await page

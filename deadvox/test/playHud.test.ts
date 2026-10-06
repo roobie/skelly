@@ -104,11 +104,13 @@ it('omits expired notices and the duplicated rest interruption but retains the s
     notice: 'old',
     noticeUntil: 10,
     interactionHint: 'F: search the cupboard',
+    itemActionHint: 'Rag:\n› left arm · bleeding',
     interruption: 'Hurt',
     resting: true,
   });
   const restingPrompt = playPromptText(state, visible);
   expect(restingPrompt).toContain(state.interactionHint);
+  expect(restingPrompt).toContain(state.itemActionHint);
   expect(restingPrompt).not.toContain(state.interruption);
   const interruptedPrompt = playPromptText({ ...state, resting: false }, visible);
   expect(interruptedPrompt).toContain(state.interactionHint);
@@ -122,6 +124,7 @@ it('shows a refusal reason only when the messages option is on', () => {
     notice: `Can't sleep: ${reason}`,
     noticeUntil: 2,
     interactionHint: undefined,
+    itemActionHint: undefined,
     interruption: undefined,
     resting: false,
   });

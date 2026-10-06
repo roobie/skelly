@@ -1,5 +1,5 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -43,6 +43,25 @@ const setup = () => {
 };
 
 describe('using what you hold', () => {
+  it('uses the selected wound for held treatment and lets the wheel change that target', () => {
+    const t = setup();
+    t.sim.body.impact(1, 'leftArm', { bleeding: true });
+    t.sim.body.impact(3, 'rightArm', { bleeding: true });
+    const rag = t.hold('rag');
+    const initial = t.survival.selectedItemAction(rag);
+    expect(initial?.treatment?.region).toBe('rightArm');
+    const beginTreatment = vi.spyOn(t.sim.actions, 'beginTreatment').mockReturnValue(undefined);
+
+    expect(t.survival.use(rag)).toBeUndefined();
+    expect(beginTreatment.mock.calls[0]?.[0]).toBe(initial?.treatment?.region);
+    expect(beginTreatment.mock.calls[0]?.[1]).toBe(rag.uid);
+    expect(t.survival.cycleItemAction(rag, 1)).toBe(true);
+    const selected = t.survival.selectedItemAction(rag);
+    expect(selected).not.toBe(initial);
+    expect(t.survival.use(rag)).toBeUndefined();
+    expect(beginTreatment.mock.calls[1]?.[0]).toBe(selected?.treatment?.region);
+  });
+
   it('eats from your hands after a few seconds', () => {
     const { sim, inventory, queue, survival, hold } = setup();
     const beans = hold('canned_beans');
@@ -63,7 +82,7 @@ describe('using what you hold', () => {
     survival.use(apple);
     queue.tick(EAT_TIME + 0.1);
     expect(sim.needs.calories).toBe(SPAWN_NEEDS.calories);
-    expect(sim.needs.health).toBe(100 - FOOD_POISONING);
+    expect(sim.body.health).toBe(100 - FOOD_POISONING);
     expect(notices).toContain('The apple was rotten');
   });
 

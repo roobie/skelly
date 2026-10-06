@@ -4,6 +4,7 @@
 // The needs themselves are in the simulation (core/needs.ts).
 
 import { canonicalJson } from '../core/canonicalJson.ts';
+import { dominantSide } from '../core/character.ts';
 import { gameHours } from '../core/clock.ts';
 import { freshnessWord, isRotten } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
@@ -15,6 +16,9 @@ import { DRINK_TIME, EAT_TIME, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
+import { itemActionsFor, ItemActionSelection, type ItemAction } from './itemActions.ts';
+
+const BODY_TREATMENT_SECONDS = 8;
 
 const numberParam = (params: JobParams, key: string): number => {
   const value = params[key];
@@ -68,6 +72,7 @@ export class Survival {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly hooks: SurvivalHooks;
+  private readonly itemActionSelection = new ItemActionSelection();
   private sprinting = false;
 
   constructor(sim: Simulation, inventory: Inventory, queue: HandlingQueue, hooks: SurvivalHooks) {
@@ -142,8 +147,49 @@ export class Survival {
     return at?.kind === 'hand' ? at.side : undefined;
   }
 
+  availableItemActions(item: Item): readonly ItemAction[] {
+    return itemActionsFor(item, this.inventory, this.sim.body);
+  }
+
+  selectedItemAction(item: Item): ItemAction | undefined {
+    return this.itemActionSelection.forItem(item, this.availableItemActions(item));
+  }
+
+  cycleItemAction(item: Item, direction: number): boolean {
+    return this.itemActionSelection.step(item, this.availableItemActions(item), direction);
+  }
+
+  wieldedItemActionHint(): string | undefined {
+    const item = this.inventory.hands[dominantSide(this.inventory.character)];
+    if (!item) {
+      return undefined;
+    }
+    const actions = this.availableItemActions(item);
+    if (actions.length === 0) {
+      return undefined;
+    }
+    const selected = this.selectedItemAction(item);
+    const name = defOf(this.inventory.registry, item.type).name;
+    return [`${name}:`, ...actions.map((action) => `${action === selected ? '›' : ' '} ${action.label}`)].join('\n');
+  }
+
+  private applyItemAction(item: Item, action: ItemAction | undefined): string | undefined {
+    const treatment = action?.treatment;
+    if (!treatment) {
+      return `No wound needs the ${defOf(this.inventory.registry, item.type).name.toLowerCase()}`;
+    }
+    return this.sim.actions.beginTreatment(treatment.region, item.uid, treatment.kind, BODY_TREATMENT_SECONDS);
+  }
+
   /** Executes the live core option; this owner retains effects and serializable queue actions. */
   use(item: Item): string | undefined {
+    const definition = defOf(this.inventory.registry, item.type);
+    if (definition.treatment) {
+      if (this.handOf(item) === undefined) {
+        return `Take the ${definition.name.toLowerCase()} in your hands first`;
+      }
+      return this.applyItemAction(item, this.selectedItemAction(item));
+    }
     const option = useOption(item, this.hooks.reach());
     if (!option.plan.ok) {
       return option.plan.reason;
@@ -184,6 +230,15 @@ export class Survival {
     const at = this.inventory.locate(item);
     if (!at) {
       return `The ${def.name.toLowerCase()} isn't there any more`;
+    }
+    if (def.treatment) {
+      if (at.kind === 'hand') {
+        return this.use(item);
+      }
+      if (at.kind === 'pocket' && this.hooks.reach().entries.some((entry) => entry.item === item)) {
+        return this.applyItemAction(item, this.selectedItemAction(item));
+      }
+      return `Take the ${def.name.toLowerCase()} in your hands first`;
     }
     if (def.firearm) {
       return 'Use R to work the firearm';

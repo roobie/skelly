@@ -29,7 +29,7 @@ const observationPlugin = {
       marker,
       `
   const proof = {
-    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions,
+    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions, hudOptions,
     selectPrimaryAction, ignitionTargetForHand,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
@@ -734,6 +734,39 @@ try {
     undefined,
     { timeout: 10_000 },
   );
+  const treatment = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const rag = r.inventory.create('rag');
+    r.setHand(r.dominant, rag);
+    r.session.sim.body.impact(1, 'leftArm', { bleeding: true });
+    r.session.sim.body.impact(3, 'rightArm', { bleeding: true });
+    return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
+  });
+  assert.equal(await page.locator('#prompt').evaluate((node) => node.hidden), true);
+  await page.evaluate(() => { globalThis.primaryActionTest.hudOptions.interaction = true; });
+  await page.waitForFunction(() => !document.querySelector('#prompt').hidden);
+  const selectedBeforeWheel = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
+  }, treatment.uid);
+  await page.evaluate(() => globalThis.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, cancelable: true })));
+  await page.waitForFunction((args) => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.itemByUid(args.uid))?.treatment?.region !== args.before;
+  }, { uid: treatment.uid, before: selectedBeforeWheel });
+  const selected = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
+  }, treatment.uid);
+  await page.mouse.click(640, 450);
+  await page.waitForFunction((uid) => {
+    const { sim } = globalThis.primaryActionTest.session;
+    return sim.actions.job?.jobType === 'treatment' && sim.actions.job.itemUid === uid;
+  }, treatment.uid, { timeout: 10_000 });
+  const treatmentRegion = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.region);
+  assert.equal(treatmentRegion, selected);
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
     'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold and held-book reading.\n',

@@ -185,6 +185,8 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 **Tests:** damage affects the struck region and its associated consequences; bleeding consumes blood until treated; antiseptic and antibiotic treatment apply at the ruled stages; save/load preserves wounds, blood and infection progress without duplicating treatment. Assert behavior and ownership, not exact damage rates or anatomical tuning.
 **Done when:** body damage has region-specific consequences, bleeding and infection can be treated, and their state survives a save round trip.
 
+**Treatment targeting:** BR ruled on 2026-10-06 08:41: “yes, most urgent wound is pre selected”. This avoids applying a treatment to an arbitrary valid wound when interaction hints are hidden; see `src/game/itemActions.ts`, `defaultItemAction`, and `src/core/longAction.ts`, `beginTreatment` for the selected action and its saved target.
+
 ### 3.5 Noise and senses
 
 **BR, 2026-10-05 21:14:**

@@ -7,6 +7,7 @@
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
+import { bodyRegionForHitArea } from '../core/body.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
@@ -368,6 +369,31 @@ export const createSession = (options: SessionOptions) => {
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   sim.actions.reading = bookReadingHooks(inventory, character);
+  sim.actions.treatment = {
+    validate: (region, itemUid, treatment) => {
+      const item = inventory.itemByUid(itemUid);
+      if (!item || item.type !== treatment) {
+        return 'Treatment item is unavailable';
+      }
+      return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
+    },
+    finish: (region, itemUid, treatment) => {
+      const item = inventory.itemByUid(itemUid);
+      if (!item || item.type !== treatment) {
+        return 'Treatment item is no longer available';
+      }
+      if (!sim.body.canTreat(region, treatment)) {
+        return 'That treatment no longer applies';
+      }
+      if (!inventory.consume(item)) {
+        return 'Treatment item is no longer available';
+      }
+      if (!sim.body.treat(region, treatment)) {
+        throw new Error('Body treatment changed during completion');
+      }
+      return undefined;
+    },
+  };
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
@@ -386,7 +412,7 @@ export const createSession = (options: SessionOptions) => {
   let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
   const playerMovement = (): PlayerMovement => {
-    const moving = controls.active() && !compression.locksInput ? controls.intent() : IDLE;
+    const moving = controls.active() && !compression.locksInput && !sim.body.unconscious ? controls.intent() : IDLE;
     if (moving.forward === 0 && moving.right === 0) {
       return 'still';
     }
@@ -403,7 +429,7 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
       yaw: controls.yaw(),
       pitch: controls.pitch(),
-      variance: skill.variance,
+      variance: skill.variance * sim.body.consequences.aimSway,
       firing,
       recoilRecoveryRate: skill.recoilRecoveryRate,
     });
@@ -466,7 +492,7 @@ export const createSession = (options: SessionOptions) => {
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount, area) => {
       wearOnPlayerHit(inventory, area);
-      sim.hurt(amount, 'a shambler');
+      sim.hit(amount, 'a shambler', bodyRegionForHitArea(area), { bleeding: true, blunt: true });
     },
     onSound: (event, position, zombie) =>
       playWorldSound(
@@ -581,7 +607,7 @@ export const createSession = (options: SessionOptions) => {
     tick: (dt, time) => {
       lastPlayerStep = time;
       const requested = controls.active() ? controls.intent() : IDLE;
-      const moving = controls.active() && !compression.locksInput;
+      const moving = controls.active() && !compression.locksInput && !sim.body.unconscious;
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
@@ -600,7 +626,7 @@ export const createSession = (options: SessionOptions) => {
       const pacedIntent = {
         ...intent,
         sprint: sprinting,
-        pace: paceFactor(inventory.carriedWeight(), handling),
+        pace: paceFactor(inventory.carriedWeight(), handling) * sim.body.consequences.movementSpeed,
       };
       const tools = debug?.();
       if (tools?.noclip) {

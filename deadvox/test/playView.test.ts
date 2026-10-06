@@ -99,7 +99,10 @@ describe('play presentation ownership', () => {
     const body: Body = { pos: [2, 1, 6], vel: [0, 0, 0], halfWidth: 0.6, height: 3.6, onGround: true };
     const before = structuredClone(body);
     const damage = { style: { opacity: '' } } as unknown as HTMLElement;
-    view.updateCamera({ dt: 0.1, body, paused: false, noclip: false, yaw: 0, pitch: 0, eye: [2, 4.24, 6] }, damage);
+    view.updateCamera(
+      { dt: 0.1, body, paused: false, noclip: false, yaw: 0, pitch: 0, eye: [2, 4.24, 6], sightImpaired: false },
+      damage,
+    );
     expect(engine.camera.position.toArray()).toEqual([1, 2.12, 3]);
     expect(body).toEqual(before);
     expect(damage.style.opacity).toBe('0');

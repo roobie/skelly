@@ -434,6 +434,7 @@ export const startPlay = (
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
+    body: () => sim.body.snapshotState(),
     assign: (slot, item) => {
       quickbar.assign(slot, item);
       showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
@@ -887,7 +888,17 @@ export const startPlay = (
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer) {
-        debugTools?.wheel(e.deltaY);
+        if (debugTools?.buildOn) {
+          debugTools.wheel(e.deltaY);
+        } else {
+          const item = inventory.hands[dominantSide(inventory.character)];
+          const direction = Math.sign(e.deltaY);
+          if (item && survival.cycleItemAction(item, direction)) {
+            e.preventDefault();
+          } else {
+            debugTools?.wheel(e.deltaY);
+          }
+        }
       }
     },
     { passive: false },
@@ -1038,7 +1049,10 @@ export const startPlay = (
     const result = startPlayerMelee(playerCombat, sim.needs, {
       origin: eye(),
       direction: lookDir(),
-      weapon: selected.weapon,
+      weapon: {
+        ...selected.weapon,
+        cooldown: selected.weapon.cooldown * session.sim.body.consequences.swingSlowdown,
+      },
       profile: selected.profile,
       ...(selected.hand === undefined ? {} : { hand: selected.hand }),
       twoHanded: selected.twoHanded,
@@ -1217,6 +1231,7 @@ export const startPlay = (
     speed: compression.c,
     paused: sim.paused,
     needs: sim.needs,
+    health: sim.body.health,
     sprinting: session.sprinting,
     lightCharge: survival.lit ? (chargeShare(registry, survival.lit) ?? 0) : undefined,
   });
@@ -1245,6 +1260,8 @@ export const startPlay = (
         notice,
         noticeUntil,
         interactionHint: entity ? useText(entity) : undefined,
+        itemActionHint:
+          visible.interaction && input.locked && !debugTools?.buildOn ? survival.wieldedItemActionHint() : undefined,
         interruption: compression.interruption,
         resting: rest.action !== undefined,
       },
@@ -1277,6 +1294,7 @@ export const startPlay = (
         yaw: input.yaw,
         pitch: input.pitch,
         eye: eye(),
+        sightImpaired: sim.body.consequences.sightImpaired,
       },
       $('damage'),
     );
