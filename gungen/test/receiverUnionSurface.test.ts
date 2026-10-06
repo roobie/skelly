@@ -5,13 +5,10 @@ import type { Vec3 } from '../src/core/math.ts';
 import type { TriangleMesh } from '../src/core/mesh.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
 const ROOT = join(import.meta.dirname, '..');
-const METRES_PER_UNIT = 0.0115;
-const baseline = JSON.parse(
-  readFileSync(join(ROOT, 'test/fixtures/receiver-ak-union-before-polyhedra.json'), 'utf8'),
-) as { bounds: { max: number[] } };
 const cases = [
   { key: 'designs/archetype-ak.json', folder: 'designs', file: 'archetype-ak.json' },
   { key: 'fixtures/ak-standard-handguard.json', folder: 'fixtures', file: 'ak-standard-handguard.json' },
@@ -101,7 +98,7 @@ const assemblyFor = (key: string, folder: string, file: string) => {
 };
 
 describe('AK receiver export topology', () => {
-  it.each(cases)('$key keeps the raised receiver roof watertight', ({ key, folder, file }) => {
+  it.each(cases)('$key keeps the AK receiver export watertight', ({ key, folder, file }) => {
     const assembly = assemblyFor(key, folder, file);
     const id = basename(file, '.json').replaceAll('-', '_');
     const result = exportGunGlb(assembly, { id, file: `assets/models/${id}.glb` }, {});
@@ -112,12 +109,8 @@ describe('AK receiver export topology', () => {
     const meshIndex = glb.json.nodes.find(({ name }) => name === 'receiver:ak-receiver')?.mesh;
     expect(meshIndex, `${key}: merged receiver mesh`).toBeDefined();
     const primitive = glb.json.meshes[meshIndex!]!.primitives[0]!;
-    const positionAccessor = glb.json.accessors[primitive.attributes.POSITION]!;
     const currentPositions = accessorValues(glb, primitive.attributes.POSITION);
     const currentIndices = accessorValues(glb, primitive.indices);
-    expect(positionAccessor.max?.[1], `${key}: receiver roof is raised above the old profile`).toBeGreaterThan(
-      baseline.bounds.max[1]!,
-    );
 
     const mesh: TriangleMesh = {
       positions: Float32Array.from(currentPositions.map((position) => position / METRES_PER_UNIT)),

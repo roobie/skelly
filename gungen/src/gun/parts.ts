@@ -321,7 +321,10 @@ const LOWER_TRIGGER_X = {
   thumbhole: -10.75,
 } as const;
 const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
-const AK_RECEIVER_LIFT_U = 0.75;
+const AK_RECEIVER_BASE_ROOF_U = 2.5;
+const AK_REAR_SIGHT_NOTCH_DATUM_U = 4.75;
+const AK_REAR_SIGHT_BLOCK_HEIGHT_U = 0.25;
+const AK_RECEIVER_LIFT_U = AK_REAR_SIGHT_NOTCH_DATUM_U - AK_RECEIVER_BASE_ROOF_U - AK_REAR_SIGHT_BLOCK_HEIGHT_U;
 const AK_GAS_CYLINDER_Y = 2;
 const AK_GAS_CYLINDER_HALF_WIDTH = 0.25;
 export const AK_REAR_BEVEL = {
@@ -342,7 +345,7 @@ export const PUMP_REAR_SLOPE = {
   ],
 } as const;
 const PUMP_REAR_PORT_Y = -1;
-const AK_STOCK_PORT_Y = 0.5;
+const AK_STOCK_PORT_Y = 0.5 + AK_RECEIVER_LIFT_U;
 const AR_STOCK_PORT_Y = 0;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
@@ -665,24 +668,19 @@ export const RECEIVER_SECTION = {
     } as const,
   },
   ak: {
-    clip: [
-      {
-        ...AK_REAR_BEVEL.clip,
-        offset: AK_REAR_BEVEL.clip.offset + AK_RECEIVER_LIFT_U * AK_REAR_BEVEL.clip.normal[1],
-      },
-    ],
+    clip: [AK_REAR_BEVEL.clip],
     outline: [
       [-2.5, -2],
       [1, -2],
       [2, -1.75],
-      [2.5 + AK_RECEIVER_LIFT_U, -1.25],
-      [2.5 + AK_RECEIVER_LIFT_U, 1.25],
+      [2.5, -1.25],
+      [2.5, 1.25],
       [2, 1.75],
       [1, 2],
       [-2.5, 2],
     ] as const,
     faces: {
-      top: { y: 2.5 + AK_RECEIVER_LIFT_U, halfWidth: 1.25 },
+      top: { y: AK_RECEIVER_BASE_ROOF_U, halfWidth: 1.25 },
       portSide: 2,
       handleSides: [-2, 2],
       front: 0,
@@ -1473,7 +1471,7 @@ const akReceiver: PartFamily = {
       rail: 'none',
     });
     const carrierPattern: BoltCarrierPattern = 'ak';
-    const carrierY = carrierAxisY(carrierPattern, 0);
+    const carrierY = carrierAxisY(carrierPattern, -AK_RECEIVER_LIFT_U);
     const travel = BOLT_TRAVEL.ak;
     const portWindow = ejectionPortWindow(carrierPattern, travel.restX, carrierY);
     return {
@@ -1483,9 +1481,9 @@ const akReceiver: PartFamily = {
           section: 'ak',
           feed: 'box',
           magazineWell: 'standard',
-          receiverBottom: RECEIVER_SECTION.ak.faces.bottom,
-          receiverTop: Math.max(...RECEIVER_SECTION.ak.outline.map(([y]) => y)),
-          receiverDrop: 0,
+          receiverBottom: RECEIVER_SECTION.ak.faces.bottom + AK_RECEIVER_LIFT_U,
+          receiverTop: Math.max(...RECEIVER_SECTION.ak.outline.map(([y]) => y)) + AK_RECEIVER_LIFT_U,
+          receiverDrop: -AK_RECEIVER_LIFT_U,
           carrierPattern,
           carrierY,
           portWindow,
@@ -1494,12 +1492,21 @@ const akReceiver: PartFamily = {
         }),
       ],
       // The AK's attached stock occupies the generic extraction sweep; other parts remain excluded from it.
-      keepOuts: base.keepOuts.map((path) =>
-        path.id === 'bolt-stock-clearance' ? { ...path, allowPort: 'stock' } : path,
-      ),
+      keepOuts: base.keepOuts.map((path) => ({
+        ...path,
+        box: {
+          ...path.box,
+          center: [path.box.center[0], path.box.center[1] + AK_RECEIVER_LIFT_U, path.box.center[2]] as Vec3,
+        },
+        ...(path.id === 'bolt-stock-clearance' ? { allowPort: 'stock' } : {}),
+      })),
       ports: [
         ...base.ports.map((port) =>
-          port.id === 'stock' ? { ...port, pos: [port.pos[0], AK_STOCK_PORT_Y, port.pos[2]] as const } : port,
+          port.id === 'stock'
+            ? { ...port, pos: [port.pos[0], AK_STOCK_PORT_Y, port.pos[2]] as const }
+            : ['lower', 'bolt-carrier'].includes(port.id)
+              ? { ...port, pos: [port.pos[0], port.pos[1] + AK_RECEIVER_LIFT_U, port.pos[2]] as const }
+              : port,
         ),
         {
           id: 'gas-cylinder',
@@ -2767,7 +2774,7 @@ const gasCylinder: PartFamily = {
   },
 };
 
-/** A leaf with an open U-notch, mounted on the AK dust cover without a receiver rail. */
+/** A leaf with an open U-notch, seated on the AK receiver without a rail or post. */
 const akRearSight: PartFamily = {
   name: 'ak-rear-sight',
   params: {},
@@ -2775,17 +2782,16 @@ const akRearSight: PartFamily = {
     return {
       family: 'sight',
       solids: [
-        // A short horizontal leaf with a sub-grid U-notch, not tall protective ears.
-        solid('leaf-stem', [-SIGHT_GRAIN, -2, -0.125], [SIGHT_GRAIN, 0, 0.125]),
+        // The broad block seats on the receiver; the leaf rises directly from it without a post.
+        solid('rear-sight-block', [-0.75, 0, -0.75], [0.75, AK_REAR_SIGHT_BLOCK_HEIGHT_U, 0.75]),
         solid('leaf-left', [-SIGHT_GRAIN, 0, -1.125], [SIGHT_GRAIN, 0.5, -0.125]),
         solid('leaf-right', [-SIGHT_GRAIN, 0, 0.125], [SIGHT_GRAIN, 0.5, 1.125]),
-        solid('leaf-base', [-SIGHT_GRAIN, 0, -0.125], [SIGHT_GRAIN, 0.25, 0.125]),
       ],
       ports: [
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, 0.25, 0], dir: X, eyeReliefU: 22 }],
+      axes: [{ kind: 'sight', origin: [0, AK_REAR_SIGHT_BLOCK_HEIGHT_U, 0], dir: X, eyeReliefU: 22 }],
     };
   },
 };

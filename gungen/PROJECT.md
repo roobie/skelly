@@ -2,7 +2,7 @@
 read_if:
   - you change firearm part geometry precision or sight dimensions
   - you change optic eye-relief validation
-  - d97-3 changes AK receiver cover height relative to the centered bore
+  - you change the AK receiver's position relative to its centered bore
 
 # gungen — low-poly firearm designer
 
@@ -675,12 +675,14 @@ explicitly named `battle-rifle`.
   cylinder axis is checked parallel to the bore. The AK front sight uses its
   own style with the post 2.5u behind the muzzle, consistent with the gas-block
   position.
-- The AKM side profile on [Wikimedia Commons](https://en.wikipedia.org/wiki/AKM)
-  shows the receiver cover above the barrel axis while the lower, magazine and
-  grip remain tied to the action. `parts.ts`, `AK_RECEIVER_LIFT_U`, raises only
-  the receiver roof: translating the full action body would displace the bolt
-  carrier from the centered barrel axis. The top contour is matched to the side
-  profile while the rear sight base remains embedded in the roof.
+- The [Wikimedia Commons AKM side profile](https://commons.wikimedia.org/wiki/File:03_akm_noBG.png)
+  is the reference for the receiver cover, bore, rear-sight block and the
+  receiver-mounted lower, stock, grip and magazine. Their relative vertical
+  placement is checked against the preserved notch datum, the receiver's
+  original roof and the seated block height in `src/gun/parts.ts`, `AK_RECEIVER_LIFT_U`.
+  The rear-sight block seats directly on the raised receiver while the notch
+  datum remains fixed to the barrel and front sight. The receiver-mounted assembly follows the receiver; the barrel,
+  bore, handguard, gas system and front sight remain in their original frame.
 - Added an `ak` lower layout with a flat face seat and no magazine-well walls.
   The curved AK magazine has seat kind `face` and zero insertion depth; its
   conservative rock-in keep-out starts at the front hook point. This swept box
