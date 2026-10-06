@@ -7,7 +7,13 @@ import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
-import { type FirearmsCombatTuning, firearmStanceEffects, firearmsSkillEffects } from '../core/firearmsSkill.ts';
+import {
+  type FirearmsCombatTuning,
+  type FirearmsSkillShotKind,
+  type FirearmsSkillZeroHandling,
+  firearmStanceEffects,
+  firearmsSkillEffects,
+} from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
 import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
@@ -203,9 +209,11 @@ export class FirearmMechanics {
   private readonly onShot: (shot: PelletShot, time: number) => void;
   private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
   private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
-  private readonly onCommittedShot: (seed: number, recoilKickRadians: number) => void;
+  private readonly onCommittedShot: (seed: number, recoilKickRadians: number, shotKind: FirearmsSkillShotKind) => void;
   private readonly firearmsSkillLevel: () => number;
+  private readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
+  private readonly previousShotAt = new Map<number, number>();
 
   constructor(
     inventory: Inventory,
@@ -219,6 +227,7 @@ export class FirearmMechanics {
       onSound = () => undefined,
       onCommittedShot = () => undefined,
       firearmsSkillLevel = () => 0,
+      firearmsSkillZeroHandling,
     }: {
       blockSize: number;
       pose: (uid: number) => FirearmPoseInput | undefined;
@@ -226,8 +235,9 @@ export class FirearmMechanics {
       onShot?: (shot: PelletShot, time: number) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
       onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
-      onCommittedShot?: (seed: number, recoilKickRadians: number) => void;
+      onCommittedShot?: (seed: number, recoilKickRadians: number, shotKind: FirearmsSkillShotKind) => void;
       firearmsSkillLevel?: () => number;
+      firearmsSkillZeroHandling?: () => FirearmsSkillZeroHandling;
     },
   ) {
     this.inventory = inventory;
@@ -241,6 +251,15 @@ export class FirearmMechanics {
     this.onCommittedShot = onCommittedShot;
     this.firearmsSkillLevel = firearmsSkillLevel;
     this.firearmsCombatTuning = inventory.registry.skills.get('firearms_combat')?.combat?.firearms;
+    this.firearmsSkillZeroHandling =
+      firearmsSkillZeroHandling ??
+      (() => {
+        const tuning = this.firearmsCombatTuning;
+        if (!tuning) {
+          throw new Error('Missing firearms-combat skill-zero handling tuning');
+        }
+        return tuning.skillZeroHandling;
+      });
     for (const { item } of inventory.items()) {
       if (item.firearm?.cycle || item.firearm?.landing) {
         this.active.add(item.uid);
@@ -350,7 +369,20 @@ export class FirearmMechanics {
     if (!tuning) {
       throw new Error('Missing firearms-combat stance tuning');
     }
-    return tuning;
+    return { ...tuning, skillZeroHandling: this.firearmsSkillZeroHandling() };
+  }
+
+  /** The next shot is a follow-up only inside the same weapon's short, content-cadence burst window. */
+  handlingShotKind(uid: number, time: number): FirearmsSkillShotKind {
+    const item = this.inventory.itemByUid(uid);
+    if (!item) {
+      return 'singleShot';
+    }
+    const { roundsPerSimSecond } = firearmHandlingFor(item, this.inventory.registry);
+    const previous = this.previousShotAt.get(uid);
+    return roundsPerSimSecond !== undefined && previous !== undefined && time >= previous && time - previous <= 1.5 / roundsPerSimSecond + 1e-9
+      ? 'automaticFollowup'
+      : 'singleShot';
   }
 
   isReady(uid: number): boolean {
@@ -424,17 +456,20 @@ export class FirearmMechanics {
       return false;
     }
     const state = item.firearm!;
+    const shotKind = this.handlingShotKind(item.uid, input.simTime);
     state.chamber = 'case';
     state.roundType = undefined;
     state.pendingCase = { ...emission, seed };
     const pellets = pelletShotFromBasis({ ammo, origin: muzzle, basis: shotBasis, seed: input.seed, key: shotKey });
     this.onShot(pellets, input.simTime);
     this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
-    this.onCommittedShot(seed, data.recoilKickRadians);
+    this.onCommittedShot(seed, data.recoilKickRadians, shotKind);
+    this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
 
   private commitBallisticShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+    const shotKind = this.handlingShotKind(item.uid, input.simTime);
     item.firearm = {
       chamber: 'case',
       ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
@@ -455,7 +490,8 @@ export class FirearmMechanics {
       Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
     );
     this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
-    this.onCommittedShot(seed, data.recoilKickRadians);
+    this.onCommittedShot(seed, data.recoilKickRadians, shotKind);
+    this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
 
@@ -568,7 +604,8 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       LOAD_ACTION,
       `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.tube!.capacity}`,
-      SHELL_LOAD_SECONDS * firearmsSkillEffects(this.firearmsSkillLevel()).reloadDuration,
+      SHELL_LOAD_SECONDS *
+        firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
       { uid: gun.uid, ammoUid: ammo.uid },
     );
     this.onSound('shotgun_insert', undefined, time);
@@ -596,7 +633,8 @@ export class FirearmMechanics {
     const pump = this.isPump(item);
     const state: FirearmState = item.firearm ?? { chamber: 'round' };
     const duration =
-      actionCycleSeconds(data.action, 'hand') * firearmsSkillEffects(this.firearmsSkillLevel()).rackDuration;
+      actionCycleSeconds(data.action, 'hand') *
+      firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).rackDuration;
     state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, duration, ejected: false, feedRound: !pump };
     item.firearm = state;
     this.active.add(uid);

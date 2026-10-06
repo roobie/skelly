@@ -77,6 +77,22 @@ describe('content', () => {
     }
   });
 
+  it('rejects a non-positive firearms skill-zero handling value', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: { skillZeroHandling?: { singleShot?: { variance?: number } } } } }[];
+    };
+    data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!.skillZeroHandling!.singleShot!.variance =
+      0;
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+    expect(
+      issues.some(
+        ({ source: issueSource, path }) =>
+          issueSource === source.source && path.endsWith('.combat.firearms.skillZeroHandling.singleShot.variance'),
+      ),
+    ).toBe(true);
+  });
+
   it('rejects a negative configured light lure scale', () => {
     const sensesFile = base.find((file) => file.source === 'senses.json')!;
     const data = structuredClone(sensesFile.data) as { senses: { light: { lureRangeScale: number } }[] };

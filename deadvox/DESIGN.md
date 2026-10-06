@@ -514,10 +514,16 @@ plain box in your hands. Files are small, and follow
   contact after `min(0.4 × cooldown, 0.25 s)`, with recovery filling the rest of
   cooldown. Misses and wall-blocked swings still spend stamina and cooldown.
   Active swings are saved and fingerprinted so Continue preserves one pending
-  hit; changing held items cancels that hit without refunding cooldown. Holding
-  right mouse raises a cosmetic ready stance. First-person motions use shared
-  blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
-  items animate both arms. Confirmed hits add only clamped first-person recoil.
+  hit; changing held items cancels that hit without refunding cooldown. BR
+  (d113-1, 2026-10-06 23:52): “calling it 'cosmetic' seems like a bug”. Holding right
+  mouse with a melee weapon or empty hands enters en-garde; holding S while
+  en-garde attempts to block incoming melee, with success by melee-combat skill.
+  En-garde does not change movement pace. See `src/game/melee.ts`,
+  `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`, `src/game/session.ts`,
+  `hurtPlayer`, `src/core/meleeCombat.ts`, `blocksAttack`, and
+  `src/game/player.ts`, `movementPace`. First-person motions use shared blunt-arc,
+  cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
+  animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
@@ -532,9 +538,33 @@ plain box in your hands. Files are small, and follow
   but control is": firearm-owned `dispersionRadians` is sampled per round, while
   `firearmsSkillEffects` controls sway, kick per shot and recoil recovery,
   with legendary progression granting no control beyond ordinary expert per
-  BR's ruling. The pump keeps its pellet spread and adds no firearm cone. This
-  reuses the already saved player pitch, so no aim-state field or save-schema
-  change is needed. See
+  BR's ruling. When `debug_rifle_ak` fires on full auto at skill 0, BR reported
+  (2026-10-06): “also; now that i can properly fire from ADS on the AK, I can
+  note that a firearm skill level zero (=0) is way too good at controlling
+  automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
+  BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”.
+  BR chose four times what they felt at `7a8c72db` as the comparison (“1: a”). They wanted
+  kick, shot-to-shot dispersion and recovery all worsened (“2: all”), mostly for automatic
+  follow-ups but for singles too (“3: mostly full auto, but singles too”). BR approved
+  moving the values into moddable content with live debug controls: “yes, make them content
+  and add debug sliders”. Accordingly, skill-zero endpoints for single/first shots and
+  automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
+  firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
+  them. A follow-up is a committed shot from the same firearm within its burst window; see
+  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
+  stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
+  The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
+  and four times for follow-ups. BR approved those values: “oh yeah! Now we're talking.
+  #324 approved as such / but it's important to note that we need different factors for
+  different guns - e.g. a MP5 style SMG does not have the same kick as a AK/M pattern gun”.
+  Until d112 gives each firearm its own factors, skill-zero handling is shared across firearms.
+  `src/debug/index.ts`, `firearmsSkillEffectSlider`, places the controls in
+  the debug panel's Tools group, applies them to the running session, and can copy the
+  values. The tuning is runtime-only and resets on reload; saves carry no slider state. The
+  shared skill effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
+  per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
+  spread and adds no firearm cone. This reuses the already saved player pitch, so no
+  aim-state field or save-schema change is needed. See
   `src/game/firearmHandling.ts`, `FirearmMechanics.fire` and
   `firearmHandlingFor`, `src/core/pellets.ts`, `coneDirection`,
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
@@ -546,8 +576,13 @@ plain box in your hands. Files are small, and follow
   separates firearm quality's dispersion from skill-controlled handling.
   The #267 ruling makes ready stance gate firearm fire, prohibits firing while
   sprinting, assigns duck-walk speed to firearms combat and block success to
-  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. Until
-  3.1 lands, aim-sway look comparisons use the current movement rules;
+  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. BR
+  (d113-1, 2026-10-06 23:51): “i tested the shotgun on gungen/ak-muzzles / issue: when RR
+  racking, a readied shotgun returns to unreadied during racking / this happens
+  too when loading / i don't think it should”. A held, completed ready stance
+  remains active through firearm rack/load handling; raising still takes its
+  skill-scaled simulation time. See `src/game/session.ts`,
+  `advancePlayerReadiness`. Until 3.1 lands, aim-sway look comparisons use the current movement rules;
   afterward, moving-fire comparisons use the skill-dependent duck-walk speed.
   d62 leaves practice unawarded until its source is ruled; #275 sets tiered
   training, while tiers for existing sources and above-tier practice remain

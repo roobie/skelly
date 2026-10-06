@@ -28,6 +28,12 @@
           "length": "M"
         }
       },
+      "muzzle-device": {
+        "family": "ak-muzzle-device",
+        "params": {
+          "style": "slant"
+        }
+      },
       "handguard": {
         "family": "handguard",
         "params": {
@@ -83,6 +89,10 @@
       {
         "from": "receiver.barrel",
         "to": "barrel.rear"
+      },
+      {
+        "from": "barrel.muzzle",
+        "to": "muzzle-device.base"
       },
       {
         "from": "receiver.bolt-carrier",

@@ -330,7 +330,7 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | --- | --- | --- |
 | `archetype-ar` | Classic AR-pattern rifle | A2 front-sight block at the gas-port station; the clamped handguard ends at its collar |
 | `archetype-ar-free-float` | Free-floating AR-pattern rifle | No fixed barrel block; detachable front post on the forward handguard rail slot |
-| `archetype-ak` | AK-pattern rifle | AKM proportions: front sight with open ears just behind the slant brake, upper and lower handguards, wooden buttstock |
+| `archetype-ak` | AK-pattern rifle | AKM proportions: front sight with open ears just behind the slant brake (the template also offers the AK-74 brake), upper and lower handguards, wooden buttstock |
 | `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
 | `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the receiver rail |
@@ -367,7 +367,7 @@ The lengths below remain abstract units on the existing grid. Optic reference so
   the fixed AR handguard ends at the rear face of the A2 collar. AK handguards
   end at the gas block. The AR front sight is at the standard gas-port station; its
   muzzle distances are 6.25/9.25/12u for S/M/L. The AK post stands just behind
-  the barrel's end, behind the slant brake (`src/gun/parts.ts`,
+  the barrel's end, behind the muzzle device (`src/gun/parts.ts`,
   `frontSightPosition`). The AK's barrel, handguard and stock lengths are mapped
   from its golden photo (see "AK" under Milestone 2.3). Tilted magazine seating is declared per lower layout: conventional
   and AR layouts support the standard magazine profile; bullpup, AK, and trigger
@@ -675,7 +675,23 @@ explicitly named `battle-rifle`.
   barrel at the gas-port station, and its riser spans from the barrel to the
   cylinder. The gas piston rides on the cylinder's axis, and the cylinder's axis
   is checked parallel to the bore. The AK front sight uses its own style, its
-  post just behind the barrel's end and behind the slant brake.
+  post just behind the barrel's end and behind the muzzle device.
+- The muzzle device threads on the barrel's `muzzle` port: the AKM's slant
+  brake or the AK-74's brake (`src/gun/parts.ts`, `akMuzzleDevice`; sizes in
+  `AK_PROPORTIONS`, `muzzleDevice`). BR, 2026-10-06 22:51, verbatim: "since
+  we're on it; i'd like also to allow for two different muzzles ; the AKM's
+  iconic slanted muzzle as it is on the model currently, but also the
+  compensator style seen on the ak 74 - then we have a good basis for making a
+  good pool of different looking models". The slant brake keeps v2's shape;
+  the AK-74 brake is measured on BR's reference screenshot (2026-10-06),
+  scaled by v2's front sight ears.
+  - Why a separate part, not a barrel option: both devices thread on the real
+    gun's muzzle, as the anti-materiel brake does here. A new device is a new
+    style without touching the barrel. The device carries the `muzzle` port on
+    to its own front, so the muzzle anchor and the muzzle mount for later
+    attachments sit where the shot leaves.
+  - The template offers both devices; the archetype designs keep the slant
+    brake, as v2 was mapped on an AKM.
 - Sight alignment takes its vertical datum from the notch's upper edge, not the
   block seat, so the front-post tip sits at that edge in ADS (d97-6); see
   `src/gun/parts.ts`, `akRearSight`, and `src/gun/exportGlb.ts`, `sightMetadata`.
@@ -1170,15 +1186,18 @@ an implementation except the ones that belong to later packages (`Suggest`,
   `GUN_ANCHOR_POLICY`. For `hold` it takes the candidates of the best rank
   (`grip`, then `firing-grip-stock`); two candidates of one rank return
   `ambiguous-anchor` with the candidate part ids, and no candidate returns
-  `missing-required-anchor`. For `support` and `muzzle` there may be several
-  candidates; the one on the lowest part id (plain string sort) wins, so the
-  choice is deterministic, and the name is left out when there is none.
+  `missing-required-anchor`. For `muzzle` the frontmost candidate along its
+  own forward wins: a muzzle device threaded on a barrel carries the muzzle on
+  to its front, and a gun fires from the front of whatever is on its barrel
+  (g43). For `support` there may be several candidates; the one on the lowest
+  part id (plain string sort) wins, so the choice is deterministic. A name is
+  left out when there is no candidate.
 - Anchor data is in `src/gun/anchorData.ts` (`GUN_ANCHORS`), not in `parts.ts`.
   `hold` is declared by `grip`, `frame` (the integrated pistol grip) and
   `stock` (only when the stock carries `FIRING_GRIP`); `support` by
-  `handguard` and `forend` (underside of the `bottom` solid); `muzzle` by
-  `barrel` (its `muzzle` port). Frames are computed from the built part, so
-  they follow params.
+  `handguard` and `forend` (underside of the `bottom` solid); `muzzle` by each
+  barrel and muzzle device, at its `muzzle` port (`muzzlePortAnchor`). Frames
+  are computed from the built part, so they follow params.
 
 **Palette.** `src/gun/palette.ts`: `GUN_PALETTE`, `createPalette` (throws on a
 channel that isn't finite or lies outside [0,1]), `solidColor(palette, role,

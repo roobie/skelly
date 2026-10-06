@@ -67,6 +67,9 @@ const magazineStackLength = (solids: readonly Solid[]) =>
     const front = Math.hypot(profile[1]![0] - profile[2]![0], profile[1]![1] - profile[2]![1]);
     return sum + (rear + front) / 2;
   }, 0);
+/** Seeds a sweep may scan for every offered value; missing one within it means a value is unreachable. */
+const SEED_SCAN_BOUND = 64;
+
 const akWithVariant = (variant: string) => ({
   ...akFixture,
   parts: {
@@ -310,19 +313,24 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  // The first two fixed seeds emit both curve variants (AKM at 0, AK-74 at 1).
-  // Direct geometry and fixture checks below cover each variant; this sweep guards template selection.
-  sweepGroup('selects both AK-74 and AKM curve data from representative seeds', () => {
+  it('offers every AK magazine variant in the AK template', () => {
+    const offered = ak.slots.find(({ id }) => id === 'magazine')?.params?.variant;
+    expect(Array.isArray(offered) ? [...offered].sort() : offered).toEqual(
+      [...FAMILIES.magazine!.params.variant!.values].sort(),
+    );
+  });
+
+  // No seed is pinned: any template slot shifts the draws. Direct geometry and fixture checks cover each variant.
+  sweepGroup('generates a valid AK with every magazine variant within a bounded seed scan', () => {
     it('passes', () => {
-      const variants = new Set<string>();
-      for (const seed of [0, 1]) {
+      const wanted = new Set(FAMILIES.magazine!.params.variant!.values);
+      const seen = new Set<string>();
+      for (let seed = 0; seed < SEED_SCAN_BOUND && seen.size < wanted.size; seed += 1) {
         const assembly = generate(ak, gunDomain, seed);
-        const variant = assembly.parts.magazine!.params!.variant!;
-        variants.add(variant);
-        expect(['ak74', 'akm']).toContain(variant);
+        seen.add(assembly.parts.magazine!.params!.variant!);
         expect(validate(assembly, gunDomain).ok, `seed ${seed}`).toBe(true);
       }
-      expect(variants).toEqual(new Set(['akm', 'ak74']));
+      expect(seen).toEqual(wanted);
     });
   });
 
@@ -422,16 +430,19 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  // Seeds 0 and 1 select the two declared layouts; mount is constant template data, not RNG output.
+  // Mount is not a slot choice, so it stays clamped; no seed is pinned to a layout.
   sweepGroup('offers both clamped AK handguard layouts without selecting free-float', () => {
     it('passes', () => {
+      const offered = ak.slots.find(({ id }) => id === 'handguard')?.params?.layout;
+      const wanted = new Set(Array.isArray(offered) ? offered : [offered]);
+      expect(wanted).toEqual(new Set(['ak', 'standard']));
       const layouts = new Set<string>();
-      for (const seed of [0, 1]) {
+      for (let seed = 0; seed < SEED_SCAN_BOUND && layouts.size < wanted.size; seed += 1) {
         const params = generate(ak, gunDomain, seed).parts.handguard!.params ?? {};
         layouts.add(String(params.layout));
         expect(params.mount ?? 'clamped', `seed ${seed}`).toBe('clamped');
       }
-      expect(layouts).toEqual(new Set(['ak', 'standard']));
+      expect(layouts).toEqual(wanted);
     });
   });
 });
