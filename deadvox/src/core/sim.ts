@@ -244,6 +244,9 @@ export class Simulation {
 
   /** Starts unowned compression, such as the debug skip, only while it is safe. */
   compress(limits?: CompressionLimits): { ok: true } | { ok: false; reason: string } {
+    if (this.actions.job?.jobType === 'pry' && !this.actions.job.stopped) {
+      return { ok: false, reason: 'Stop prying first' };
+    }
     return this.compression.start(this.unsafeReason(), limits);
   }
 
@@ -311,10 +314,14 @@ export class Simulation {
     this.pendingInterrupt = undefined;
     const emitted = events.find((e): e is Timed<Extract<SimEvent, { kind: 'interrupt' }>> => e.kind === 'interrupt');
     const { compression } = this;
+    const action = this.actions.job;
     if (!(compression.active || compression.c > 1)) {
+      if (action?.jobType === 'pry' && emitted) {
+        compression.interrupt(emitted.reason);
+        return true;
+      }
       return false;
     }
-    const action = this.actions.job;
     const reason =
       emitted?.reason ?? (compression.active && !(action && !action.stopped) ? this.unsafeReason() : undefined);
     if (reason === undefined) {

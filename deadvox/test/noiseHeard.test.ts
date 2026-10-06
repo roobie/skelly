@@ -302,6 +302,20 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
         played.some(({ sound }) => sound.event === event),
       );
     }
+    const soundCount = played.length;
+    const eventCount = scenario.events.length;
+    session.playPlayerSound('lock_pry', session.sim.time, { sourceLabel: 'noise-pairing fixture' });
+    scenario.drainEvents();
+    observe(
+      scenario,
+      'prying sound reaches the noise event path',
+      scenario.events.slice(eventCount).some((event) => event.kind === 'noise' && event.event === 'lock_pry'),
+    );
+    observe(
+      scenario,
+      'prying sound is played',
+      played.slice(soundCount).some(({ sound }) => sound.event === 'lock_pry'),
+    );
   };
 
   const exerciseShotgun = (scenario: NoiseScenario) => {
@@ -449,9 +463,12 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   exerciseFight(fixture);
   exercisePlayerPain(fixture);
   const result = pairingChecks(fixture);
+  for (const observation of fixture.observations) {
+    expect(observation.passed, observation.label).toBe(true);
+  }
   expect(new Set(result.noises.map(({ event }) => event))).toEqual(contentNoiseEvents);
   expect(fixture.played.map(({ sound }) => sound)).toEqual(result.sounds.map(({ kind: _kind, ...sound }) => sound));
-  for (const observation of [...fixture.observations, ...result.checks]) {
+  for (const observation of result.checks) {
     expect(observation.passed, observation.label).toBe(true);
   }
 });

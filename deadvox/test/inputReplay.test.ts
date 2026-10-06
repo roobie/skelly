@@ -58,9 +58,11 @@ const dispatchWalkToggle = (
 };
 
 const recordActiveSession = (start: Readonly<SaveSnapshot>, recorder: InputReplayRecorder) => {
-  const source = createRuntime(start, false, undefined, (_tick, live, _time, compression) => {
-    recorder.recordTick(live, compression);
-    return live;
+  const source = createRuntime(start, false, undefined, {
+    sampleAtPlayerTick: (_tick, live, _time, compression) => {
+      recorder.recordTick(live, compression);
+      return live;
+    },
   });
   source.sim.paused = false;
   source.view.intent.forward = 1;
@@ -89,10 +91,12 @@ const recordActiveSession = (start: Readonly<SaveSnapshot>, recorder: InputRepla
 const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData) => {
   let replay!: ReturnType<typeof createRuntime>;
   const player = new InputReplayPlayer(inputs, (action) => dispatchWalkToggle(replay, action.phase));
-  replay = createRuntime(start, false, undefined, () => {
-    const sample = player.next()!;
-    applyReplayLook(replay.view, sample);
-    return sample;
+  replay = createRuntime(start, false, undefined, {
+    sampleAtPlayerTick: () => {
+      const sample = player.next()!;
+      applyReplayLook(replay.view, sample);
+      return sample;
+    },
   });
   replay.sim.paused = false;
   for (let frame = 0; !player.finished; frame += 1) {
@@ -188,9 +192,11 @@ describe('input replay', () => {
     const ticksPerWindow = 121;
     let recorder = new InputReplayRecorder(start, ticksPerWindow);
     let previous: ReplayInputData | undefined;
-    const source = createRuntime(start, false, undefined, (_tick, live, _time, compression) => {
-      recorder.recordTick(live, compression);
-      return live;
+    const source = createRuntime(start, false, undefined, {
+      sampleAtPlayerTick: (_tick, live, _time, compression) => {
+        recorder.recordTick(live, compression);
+        return live;
+      },
     });
     source.sim.paused = false;
     source.view.intent.forward = 1;

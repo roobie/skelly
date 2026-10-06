@@ -79,17 +79,21 @@ export interface HandlingViewModel {
   readonly time: string;
   readonly percent: number;
   readonly next: string;
+  readonly cancelLabel: string;
+  readonly movementLabel: string;
 }
 
 export interface HandlingPresentationSource {
   readonly jobs: readonly { readonly label: string; readonly duration: number; readonly elapsed: number }[];
+  readonly cancelLabel?: string;
+  readonly movementLabel?: string;
 }
 
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource): HandlingViewModel => {
   const [job, next] = queue.jobs;
   if (!job) {
-    return { visible: false, label: '', time: '', percent: 0, next: '' };
+    return { visible: false, label: '', time: '', percent: 0, next: '', cancelLabel: '', movementLabel: '' };
   }
   return {
     visible: true,
@@ -97,6 +101,8 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
     time: `${job.elapsed.toFixed(1)} / ${job.duration.toFixed(1)} s`,
     percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
     next: next ? `Then: ${next.label}` : '',
+    cancelLabel: queue.cancelLabel ?? 'X cancels',
+    movementLabel: queue.movementLabel ?? 'Half speed · no sprinting',
   };
 };
 
@@ -108,9 +114,9 @@ const handlingTemplate = (vm: HandlingViewModel): TemplateResult => html`
   <div class="hd-bar"><div class="hd-fill" style=${`width: ${vm.percent}%`}></div></div>
   <div class="hd-row hd-muted">
     <span>${vm.next}</span>
-    <span>X cancels</span>
+    <span>${vm.cancelLabel}</span>
   </div>
-  <div class="hd-slow">Half speed · no sprinting</div>
+  ${vm.movementLabel ? html`<div class="hd-slow">${vm.movementLabel}</div>` : ''}
 `;
 
 export const renderHandling = (root: HTMLElement, queue: HandlingPresentationSource): void => {
