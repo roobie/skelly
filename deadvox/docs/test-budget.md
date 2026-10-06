@@ -7,7 +7,7 @@ read_if:
 
 # Default Deadvox unit-suite reductions
 
-The default Deadvox unit suite exceeded its budget. BR chose named cuts without changing the budget (d92, 2026-10-06, option B). The budget value and measurement method remain in the lead's host notes.
+The default Deadvox unit suite exceeded its budget. BR chose named cuts without changing the budget (d92, 2026-10-06, option B). The absolute budget value and the host's timing procedure remain in the lead's host notes; the milestone growth check is below.
 
 Each cut keeps the assertion defining its protected property and removes only repeated or incidental work. Worker policy is unchanged; timeouts remain proportional to their work. Follow `AGENTS.md`, “Tests,” when recording the coverage given up and its remaining guard.
 
@@ -31,4 +31,6 @@ For each milestone, compare the previous milestone's merge commit with the new h
 
 On a busy shared host, absolute duration moves with load and can read over budget without a milestone regression. The interleaved d103 comparison between d92's merge and #304's merge found no suite-level median growth despite over-budget absolute readings. Module import accounted for a large share, but its evaluation cost was spread across the graph under per-file isolation, with no single module dominating; Vitest's `experimental.importDurations` reports the module profile. d103 found the candidate import savings small relative to that whole graph, so it changed no tests or runtime imports.
 
-Decided (BR, 2026-10-06): measure milestone growth against the previous milestone and cut import time only when the profile supports a no-test-loss improvement. BR: "agreed; do as suggested".
+Decided (BR, 2026-10-06): measure each milestone's growth against the previous milestone's merge and cut loading time with no test loss. BR: "agreed; do as suggested".
+
+In d103, the lead held the renderer-edge import split and `inputLiterals` prefilter: their expected savings were small against the whole import graph, the split changes runtime imports and the bundle, and the prefilter risks weakening the input-registry guard. Revisit either only if BR asks for it.
