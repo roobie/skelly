@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 7,
-  "nextobjectid": 21,
+  "nextobjectid": 27,
   "properties": [
     {
       "name": "id",
@@ -61,7 +61,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[12,1,2],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"can_opener\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"kitchen_knife\",\"count\":1},{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[12,1,7],\"items\":[{\"item\":\"evacuation_note\",\"count\":1},{\"item\":\"flashlight\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[12,9,11],\"items\":[{\"item\":\"school_backpack\",\"count\":1},{\"item\":\"baseball_cap\",\"count\":1}]}]"
+              "value": "[{\"at\":[12,1,2],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"aa_battery\",\"count\":1},{\"item\":\"stick\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"kitchen_knife\",\"count\":1},{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[12,1,7],\"items\":[{\"item\":\"can_opener\",\"count\":1},{\"item\":\"evacuation_note\",\"count\":1},{\"item\":\"flashlight\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[12,9,11],\"items\":[{\"item\":\"school_backpack\",\"count\":1},{\"item\":\"baseball_cap\",\"count\":1}]}]"
             }
           ]
         },
@@ -80,12 +80,12 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "shed"
+              "value": "playtest_tool_shack"
             },
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[5,1,3],\"items\":[{\"item\":\"stick\",\"count\":1},{\"item\":\"hammer\",\"count\":1},{\"item\":\"duct_tape\",\"count\":1}]}]"
+              "value": "[]"
             }
           ]
         },
@@ -157,16 +157,16 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[]"
+              "value": "[{\"at\":[4,1,13],\"items\":[{\"item\":\"home_repair_book\",\"count\":1}]},{\"at\":[1,1,5],\"items\":[{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[14,1,14],\"items\":[{\"item\":\"jacket\",\"count\":1}]}]"
             }
           ]
         },
         {
           "id": 6,
-          "name": "Ransacked store — front blocked from inside",
+          "name": "Corner store — back room supplies",
           "type": "building",
           "x": 198,
-          "y": 62,
+          "y": 63,
           "width": 10,
           "height": 8,
           "rotation": 0,
@@ -176,23 +176,23 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "playtest_store"
+              "value": "corner_store"
             },
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[2,1,3],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1}]},{\"at\":[8,1,6],\"items\":[{\"item\":\"bandage\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"canned_beans\",\"count\":1}]}]"
+              "value": "[{\"at\":[1,1,13],\"items\":[{\"item\":\"duct_tape\",\"count\":1}]},{\"at\":[8,1,13],\"items\":[{\"item\":\"painkillers\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[14,1,13],\"items\":[{\"item\":\"canned_soup\",\"count\":1},{\"item\":\"crackers\",\"count\":1},{\"item\":\"soda_can\",\"count\":1}]}]"
             }
           ]
         },
         {
           "id": 7,
-          "name": "Hardware store",
+          "name": "Small house north of the hamlet road",
           "type": "building",
-          "x": 184,
-          "y": 78,
-          "width": 9,
-          "height": 6,
+          "x": 166,
+          "y": 56,
+          "width": 10,
+          "height": 7,
           "rotation": 0,
           "visible": true,
           "properties": [
@@ -200,12 +200,12 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "hardware_store"
+              "value": "small_house"
             },
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[2,1,3],\"items\":[{\"item\":\"crowbar\",\"count\":1,\"condition\":0.6},{\"item\":\"home_repair_book\",\"count\":1}]},{\"at\":[6,1,3],\"items\":[{\"item\":\"scrap_metal\",\"count\":1},{\"item\":\"duct_tape\",\"count\":1},{\"item\":\"rag\",\"count\":1}]}]"
+              "value": "[]"
             }
           ]
         },
@@ -224,12 +224,12 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "playtest_gas_station"
+              "value": "gas_station"
             },
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[12,1,13],\"items\":[{\"item\":\"portable_radio\",\"count\":1},{\"item\":\"compass\",\"count\":1}]}]"
+              "value": "[{\"at\":[12,1,13],\"items\":[{\"item\":\"portable_radio\",\"count\":1,\"condition\":0.2},{\"item\":\"compass\",\"count\":1}]},{\"at\":[1,1,22],\"items\":[{\"item\":\"scrap_metal\",\"count\":1}]}]"
             }
           ]
         },
@@ -253,7 +253,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[2,7,12],\"items\":[{\"item\":\"pump_shotgun\",\"count\":1},{\"item\":\"shotshell_box\",\"count\":1}]},{\"at\":[11,7,1],\"items\":[{\"item\":\"dad_cabin_key\",\"count\":1}]},{\"at\":[4,1,12],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1}]}]"
+              "value": "[{\"at\":[2,7,12],\"items\":[{\"item\":\"pump_shotgun\",\"count\":1}]},{\"at\":[11,7,1],\"items\":[{\"item\":\"dad_cabin_key\",\"count\":1}]},{\"at\":[4,1,12],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"shotshell_box\",\"count\":1}]}]"
             }
           ]
         },
@@ -304,6 +304,30 @@
               "value": "[]"
             }
           ]
+        },
+        {
+          "id": 26,
+          "name": "South hamlet shed",
+          "type": "building",
+          "x": 194,
+          "y": 82,
+          "width": 4,
+          "height": 3,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "shed"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[5,1,3],\"items\":[{\"item\":\"crowbar\",\"count\":1,\"condition\":0.6}]}]"
+            }
+          ]
         }
       ]
     },
@@ -320,11 +344,11 @@
       "objects": [
         {
           "id": 13,
-          "name": "Shambler among the hamlet buildings",
+          "name": "Shambler beside the hamlet road at dusk",
           "type": "shambler",
           "point": true,
           "x": 196,
-          "y": 85,
+          "y": 77,
           "width": 0,
           "height": 0,
           "rotation": 0,
@@ -345,6 +369,86 @@
           "point": true,
           "x": 354,
           "y": 160,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 21,
+          "name": "Shambler in corner-store back room",
+          "type": "shambler",
+          "point": true,
+          "x": 203,
+          "y": 69,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "name": "Shambler in gas-station garage",
+          "type": "shambler",
+          "point": true,
+          "x": 212,
+          "y": 101,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 23,
+          "name": "Dusk straggler following the track",
+          "type": "shambler",
+          "point": true,
+          "x": 181,
+          "y": 74,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 24,
+          "name": "Dusk shambler at the cabin treeline",
+          "type": "shambler",
+          "point": true,
+          "x": 304,
+          "y": 134,
           "width": 0,
           "height": 0,
           "rotation": 0,
@@ -434,6 +538,30 @@
               "x": 22,
               "y": 74
             }
+          ],
+          "properties": [
+            {
+              "name": "density",
+              "type": "float",
+              "value": 0.9
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "name": "Cabin treeline",
+          "type": "woodland",
+          "x": 300,
+          "y": 128,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            { "x": 0, "y": 0 },
+            { "x": 21, "y": 0 },
+            { "x": 25, "y": 11 },
+            { "x": 4, "y": 14 }
           ],
           "properties": [
             {

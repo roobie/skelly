@@ -103,9 +103,9 @@ fallback, not a bespoke paper mesh.
 
 The samples loudly say **PLACEHOLDER / NOT PLAYTEST LORE** and remain separate
 from the authored progression. `items-playtest.json` and `furniture-playtest.json`
-provide d99-1's evacuation note, two signs and hunter's logbook; their short drafts
-await BR's first-look approval. `layouts-playtest.json` places them in the beats
-1–3 site.
+provide d99-1's evacuation note, two signs and hunter's logbook. BR approved the
+note and logbook texts as written on 2026-10-06 at 14:43 (#181); the signs also
+have approved text. `layouts-playtest.json` places them in the beats 1–3 site.
 
 ## Reading in darkness: report-only
 

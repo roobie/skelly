@@ -294,6 +294,10 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 
 ### 3.11 Authored playtest map and playtest
 
+**BR, 2026-10-06 12:31:** “can we continue on the authored playtest map meanwhile?”
+This request brings beats 1–3 forward while the agreed beats 4–6 wait for their
+dependencies.
+
 **BR, 2026-10-03 14:52, verbatim (#181):**
 
 > 3. no I didn't mean a mission assigned to the player, but rather that the lore could be that the medial place was setup in order to do that - and that there is lore items for the player to discover / 4. preliminary: yes
@@ -338,7 +342,6 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 Only questions BR left open; don't infer answers from implementation or old proposals.
 
 - **#275 — practice tiers:** what tiers apply to existing practice sources such as crafting and reading, and is practice above an activity's tier kept or dropped?
-- **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
 - **#308 — boss mob:** the design questions remain open; see 3.8.
 
 ## Definition of done
