@@ -92,7 +92,7 @@ BR's ruling above. See `src/debug/vehicles/wear.ts`, `fittingWear` and `wearGrid
   (`wearPalette`), and never changes a shape. Few shades keep most of the greedy mesher's
   merges, and only a worn fitting gets its own geometry; an unworn one still shares its
   type's. A texture would need UVs and a material per fitting, which the vertex-coloured
-  mesh avoids. Measured on the 4×4 in r43-6 (PR #310 has the figures): draw calls stayed
+  mesh avoids. Measured on the 4×4 in r43-6: draw calls stayed
   the same, triangles grew by about half at the page's default wear and nearly doubled at
   full wear, and assembly took about a fifth longer.
 - **At 20 m it reads as grime around the arches;** scratches and rust show up close. BR
