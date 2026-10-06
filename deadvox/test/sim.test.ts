@@ -97,7 +97,7 @@ describe('Simulation', () => {
       validate: (region, _itemUid, treatment) =>
         sim.body.canTreat(region, treatment) ? undefined : 'Treatment no longer applies',
       finish: (region, _itemUid, treatment) =>
-        sim.body.treat(region, treatment) ? undefined : 'Treatment no longer applies',
+        sim.body.treat(region, treatment) ? true : 'Treatment no longer applies',
     };
     expect(sim.actions.beginTreatment('head', 1, 'antiseptic', sim.clock.ratio)).toBeUndefined();
 

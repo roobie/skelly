@@ -1204,13 +1204,13 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
   if (!ownsLongActionItem(job, tree)) {
-    throw new Error(
-      job?.jobType === 'reading'
-        ? 'Missing reading book'
-        : job?.jobType === 'treatment'
-          ? 'Missing treatment item'
-          : 'Missing craft work item',
-    );
+    let message = 'Missing craft work item';
+    if (job?.jobType === 'reading') {
+      message = 'Missing reading book';
+    } else if (job?.jobType === 'treatment') {
+      message = 'Missing treatment item';
+    }
+    throw new Error(message);
   }
 }
 

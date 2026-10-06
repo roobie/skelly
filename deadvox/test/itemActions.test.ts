@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultItemAction, ItemActionSelection, type ItemAction } from '../src/game/itemActions.ts';
+import { defaultItemAction, type ItemAction, ItemActionSelection } from '../src/game/itemActions.ts';
 
 const actions: readonly ItemAction[] = [
   { id: 'damaged-nonbleeding', label: 'nonbleeding', priority: { bleeding: false, damage: 90 } },

@@ -6,15 +6,7 @@ import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
-import {
-  canSprint,
-  consume,
-  type Needs,
-  SPAWN_NEEDS,
-  STAMINA,
-  stepNeeds,
-  stepStamina,
-} from '../src/core/needs.ts';
+import { canSprint, consume, type Needs, SPAWN_NEEDS, STAMINA, stepNeeds, stepStamina } from '../src/core/needs.ts';
 import { Simulation } from '../src/core/sim.ts';
 
 const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds

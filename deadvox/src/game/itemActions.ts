@@ -1,5 +1,5 @@
-import { BODY_REGIONS, type BodyRegion, type BodyTreatment, type BodyWounds } from '../core/body.ts';
 import type { Body } from '../core/body.ts';
+import { BODY_REGIONS, type BodyRegion, type BodyTreatment, type BodyWounds } from '../core/body.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
@@ -17,7 +17,7 @@ const woundDescription = (wound: NonNullable<BodyWounds[BodyRegion]>, treatment:
   treatment === 'bandage' || treatment === 'rag' ? 'bleeding' : `${wound.infection} infection`;
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
-  const treatment = defOf(inventory.registry, item.type).treatment;
+  const { treatment } = defOf(inventory.registry, item.type);
   if (!treatment) {
     return [];
   }
@@ -46,7 +46,7 @@ export const defaultItemAction = (actions: readonly ItemAction[]): ItemAction | 
     }
     const actionPriority = action.priority;
     const bestPriority = best.priority;
-    if (!actionPriority || !bestPriority) {
+    if (!(actionPriority && bestPriority)) {
       return best;
     }
     if (actionPriority.bleeding !== bestPriority.bleeding) {

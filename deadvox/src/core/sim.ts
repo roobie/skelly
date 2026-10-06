@@ -1,8 +1,8 @@
 // The simulation core: clock, scheduler, events, compression and pause, with the
 // systems registered on it. Pure, so scenario tests run it headless.
 
-import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
+import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
 import { Compression, type CompressionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
@@ -90,7 +90,10 @@ export class Simulation {
       tick: (dt) => {
         const rate = this.restRate();
         const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
-        for (const reason of stepNeeds(this.needs, this.body, gameHours(this.clock, dt), this.godMode, rates)) {
+        for (const reason of stepNeeds(this.needs, this.body, gameHours(this.clock, dt), {
+          damageImmune: this.godMode,
+          rates,
+        })) {
           this.emit({ kind: 'interrupt', reason });
         }
         if (this.body.health <= 0) {

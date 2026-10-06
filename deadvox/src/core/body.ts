@@ -109,11 +109,11 @@ export class Body {
   }
 
   private validate(state: BodyState = this.state): void {
-    if (!validVitals(state.health) || !validVitals(state.blood) || !validVitals(state.shock)) {
+    if (!(validVitals(state.health) && validVitals(state.blood) && validVitals(state.shock))) {
       throw new Error('Invalid body vitals');
     }
     for (const region of BODY_REGIONS) {
-      if (!validVitals(state.regionDamage[region]) || !validWound(state.wounds[region])) {
+      if (!(validVitals(state.regionDamage[region]) && validWound(state.wounds[region]))) {
         throw new Error(`Invalid body region ${region}`);
       }
     }
@@ -150,9 +150,7 @@ export class Body {
     this.state.shock = Math.max(0, this.state.shock - shockDamage);
     if (effects.bleeding) {
       const wound = this.state.wounds[region];
-      this.state.wounds[region] = wound
-        ? { ...wound, bleeding: true }
-        : { bleeding: true, infection: 'none' };
+      this.state.wounds[region] = wound ? { ...wound, bleeding: true } : { bleeding: true, infection: 'none' };
     }
     return applied;
   }
@@ -169,12 +167,7 @@ export class Body {
       if (!wound) {
         continue;
       }
-      const infection: InfectionStage =
-        seconds > 0 && wound.infection === 'none'
-          ? 'early'
-          : seconds > 0 && wound.infection === 'early'
-            ? 'advanced'
-            : wound.infection;
+      const infection = advanceInfection(wound.infection, seconds);
       this.state.wounds[region] = { ...wound, infection };
       if (wound.bleeding) {
         bleedingRegions += 1;
@@ -184,12 +177,12 @@ export class Body {
       }
     }
     if (!damageImmune) {
-      const bloodChange =
-        bleedingRegions > 0
-          ? -BLOOD_LOSS_PER_SECOND * bleedingRegions * seconds
-          : BLOOD_RECOVERY_PER_SECOND * seconds;
-      this.state.blood = clamp(this.state.blood + bloodChange);
+      this.state.blood = advanceBlood(this.state.blood, bleedingRegions, seconds);
     }
+    return this.terminalCause();
+  }
+
+  private terminalCause(): string | undefined {
     if (this.state.health <= 0) {
       return 'your injuries';
     }
@@ -212,6 +205,8 @@ export class Body {
         return wound.infection === 'early';
       case 'antibiotics':
         return wound.infection === 'advanced';
+      default:
+        return false;
     }
   }
 
@@ -229,9 +224,31 @@ export class Body {
       case 'antibiotics':
         this.state.wounds[region] = { ...wound, infection: 'resolved' };
         return true;
+      default:
+        return false;
     }
   }
 }
 
-export const bodyRegionForHitArea = (area: 'head' | 'torso' | 'legs'): BodyRegion =>
-  area === 'head' ? 'head' : area === 'legs' ? 'leftLeg' : 'torso';
+const advanceInfection = (infection: InfectionStage, seconds: number): InfectionStage => {
+  if (seconds <= 0 || infection === 'resolved' || infection === 'advanced') {
+    return infection;
+  }
+  return infection === 'none' ? 'early' : 'advanced';
+};
+
+const advanceBlood = (blood: number, bleedingRegions: number, seconds: number): number => {
+  const change =
+    bleedingRegions > 0 ? -BLOOD_LOSS_PER_SECOND * bleedingRegions * seconds : BLOOD_RECOVERY_PER_SECOND * seconds;
+  return clamp(blood + change);
+};
+
+export const bodyRegionForHitArea = (area: 'head' | 'torso' | 'legs'): BodyRegion => {
+  if (area === 'head') {
+    return 'head';
+  }
+  if (area === 'legs') {
+    return 'leftLeg';
+  }
+  return 'torso';
+};

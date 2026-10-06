@@ -745,29 +745,37 @@ try {
     return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
   });
   assert.equal(await page.locator('#prompt').evaluate((node) => node.hidden), true);
-  await page.evaluate(() => { globalThis.primaryActionTest.hudOptions.interaction = true; });
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = true;
+  });
   await page.waitForFunction(() => !document.querySelector('#prompt').hidden);
   const actionHint = await page.locator('#prompt').textContent();
   assert.equal((actionHint?.match(/›/g) ?? []).length, 1);
-  if (process.env.BODY_ACTION_SCREENSHOT) await page.screenshot({ path: process.env.BODY_ACTION_SCREENSHOT });
   const selectedBeforeWheel = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
   }, treatment.uid);
   await page.evaluate(() => globalThis.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, cancelable: true })));
-  await page.waitForFunction((args) => {
-    const r = globalThis.primaryActionTest;
-    return r.survival.selectedItemAction(r.inventory.itemByUid(args.uid))?.treatment?.region !== args.before;
-  }, { uid: treatment.uid, before: selectedBeforeWheel });
+  await page.waitForFunction(
+    (args) => {
+      const r = globalThis.primaryActionTest;
+      return r.survival.selectedItemAction(r.inventory.itemByUid(args.uid))?.treatment?.region !== args.before;
+    },
+    { uid: treatment.uid, before: selectedBeforeWheel },
+  );
   const selected = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
   }, treatment.uid);
   await page.mouse.click(640, 450);
-  await page.waitForFunction((uid) => {
-    const { sim } = globalThis.primaryActionTest.session;
-    return sim.actions.job?.jobType === 'treatment' && sim.actions.job.itemUid === uid;
-  }, treatment.uid, { timeout: 10_000 });
+  await page.waitForFunction(
+    (uid) => {
+      const { sim } = globalThis.primaryActionTest.session;
+      return sim.actions.job?.jobType === 'treatment' && sim.actions.job.itemUid === uid;
+    },
+    treatment.uid,
+    { timeout: 10_000 },
+  );
   const treatmentRegion = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.region);
   assert.equal(treatmentRegion, selected);
   assert.deepEqual(pageErrors, []);

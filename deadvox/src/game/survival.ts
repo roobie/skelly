@@ -16,7 +16,7 @@ import { DRINK_TIME, EAT_TIME, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
-import { itemActionsFor, ItemActionSelection, type ItemAction } from './itemActions.ts';
+import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 
 const BODY_TREATMENT_SECONDS = 8;
 
@@ -169,8 +169,10 @@ export class Survival {
       return undefined;
     }
     const selectedId = this.selectedItemAction(item)?.id;
-    const name = defOf(this.inventory.registry, item.type).name;
-    return [`${name}:`, ...actions.map((action) => `${action.id === selectedId ? '›' : ' '} ${action.label}`)].join('\n');
+    const { name } = defOf(this.inventory.registry, item.type);
+    return [`${name}:`, ...actions.map((action) => `${action.id === selectedId ? '›' : ' '} ${action.label}`)].join(
+      '\n',
+    );
   }
 
   private applyItemAction(item: Item, action: ItemAction | undefined): string | undefined {
@@ -207,7 +209,6 @@ export class Survival {
       case 'switch':
         return this.switchLight(item);
       case 'read': {
-        const definition = defOf(this.inventory.registry, item.type);
         if (definition.book) {
           const reason = this.sim.actions.beginReading(item.uid);
           if (reason) {
@@ -224,6 +225,42 @@ export class Survival {
     }
   }
 
+  private useTreatmentFromQuickbar(
+    item: Item,
+    location: NonNullable<ReturnType<Inventory['locate']>>,
+  ): string | undefined {
+    const { name } = defOf(this.inventory.registry, item.type);
+    if (location.kind === 'hand') {
+      return this.use(item);
+    }
+    if (location.kind === 'pocket' && this.hooks.reach().entries.some((entry) => entry.item === item)) {
+      return this.applyItemAction(item, this.selectedItemAction(item));
+    }
+    return `Take the ${name.toLowerCase()} in your hands first`;
+  }
+
+  private useQuickbarFood(item: Item, def: ReturnType<typeof defOf>, at: LightLocation): string | undefined {
+    if (!this.hooks.reach().entries.some((entry) => entry.item === item)) {
+      return 'Too far away';
+    }
+    const target = this.inventory.targetForLocation(at);
+    const hand = { kind: 'hand', side: 'right' } as const;
+    const isDrink = def.category === 'drink';
+    const useTime = isDrink ? DRINK_TIME : EAT_TIME;
+    const duration =
+      this.inventory.handlingTime(item, at, hand) + useTime + this.inventory.handlingTime(item, hand, target);
+    this.queue.enqueueAction(
+      'survival.quickbarEat',
+      `${isDrink ? 'Drink' : 'Eat'} the ${def.name.toLowerCase()}`,
+      duration,
+      {
+        itemUid: item.uid,
+        source: JSON.parse(canonicalJson(this.inventory.targetState(target))) as JobValue,
+      },
+    );
+    return undefined;
+  }
+
   /** Quickbar hold uses pocket food as one action, without displacing either hand. */
   useFromQuickbar(item: Item): string | undefined {
     const def = defOf(this.inventory.registry, item.type);
@@ -232,13 +269,7 @@ export class Survival {
       return `The ${def.name.toLowerCase()} isn't there any more`;
     }
     if (def.treatment) {
-      if (at.kind === 'hand') {
-        return this.use(item);
-      }
-      if (at.kind === 'pocket' && this.hooks.reach().entries.some((entry) => entry.item === item)) {
-        return this.applyItemAction(item, this.selectedItemAction(item));
-      }
-      return `Take the ${def.name.toLowerCase()} in your hands first`;
+      return this.useTreatmentFromQuickbar(item, at);
     }
     if (def.firearm) {
       return 'Use R to work the firearm';
@@ -250,25 +281,7 @@ export class Survival {
       return this.use(item);
     }
     if (def.food && at.kind === 'pocket') {
-      if (!this.hooks.reach().entries.some((entry) => entry.item === item)) {
-        return 'Too far away';
-      }
-      const target = this.inventory.targetForLocation(at);
-      const hand = { kind: 'hand', side: 'right' } as const;
-      const isDrink = def.category === 'drink';
-      const useTime = isDrink ? DRINK_TIME : EAT_TIME;
-      const duration =
-        this.inventory.handlingTime(item, at, hand) + useTime + this.inventory.handlingTime(item, hand, target);
-      this.queue.enqueueAction(
-        'survival.quickbarEat',
-        `${isDrink ? 'Drink' : 'Eat'} the ${def.name.toLowerCase()}`,
-        duration,
-        {
-          itemUid: item.uid,
-          source: JSON.parse(canonicalJson(this.inventory.targetState(target))) as JobValue,
-        },
-      );
-      return undefined;
+      return this.useQuickbarFood(item, def, at);
     }
     return `Take the ${def.name.toLowerCase()} in your hands first`;
   }

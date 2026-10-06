@@ -102,7 +102,12 @@ const LEVELS: readonly [Need, number][] = [
 ];
 
 /** Hours until the next level. */
-const nextBreak = (needs: Needs, bodyHealth: number, healthRatePerHour: number, rates: Readonly<Record<Need, number>>): number => {
+const nextBreak = (
+  needs: Needs,
+  bodyHealth: number,
+  healthRatePerHour: number,
+  rates: Readonly<Record<Need, number>>,
+): number => {
   const times = LEVELS.map(([need, level]) => hoursTo(needs[need], rates[need], level));
   return Math.min(...times, hoursTo(bodyHealth, healthRatePerHour, 0), hoursTo(bodyHealth, healthRatePerHour, 100));
 };
@@ -137,16 +142,20 @@ const segmentRate = (needs: Needs, health: number, rates: Readonly<Record<Need, 
  */
 export interface HealthPool {
   readonly health: number;
-  damageHealth(amount: number): number;
-  restoreHealth(amount: number): void;
+  damageHealth: (amount: number) => number;
+  restoreHealth: (amount: number) => void;
+}
+
+export interface StepNeedsOptions {
+  damageImmune?: boolean;
+  rates?: Readonly<Record<Need, number>>;
 }
 
 export const stepNeeds = (
   needs: Needs,
   body: HealthPool,
   hours: number,
-  damageImmune = false,
-  rates: Readonly<Record<Need, number>> = NEED_RATES,
+  { damageImmune = false, rates = NEED_RATES }: StepNeedsOptions = {},
 ): string[] => {
   const before = { ...needs };
   const beforeHealth = body.health;

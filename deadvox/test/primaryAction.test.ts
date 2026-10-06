@@ -195,37 +195,40 @@ describe('held-item hand action', () => {
     });
   });
 
-  it.each(['held_food', 'held_drink', 'held_bandage', 'held_rag'])('runs the held %s primary use through Survival.use', (type) => {
-    const inventory = hold(type);
-    const action = selectPrimaryAction(inventory, 'right');
-    if (action.kind !== 'use') {
-      throw new Error(`Expected ${type} to select its use action`);
-    }
-    const simulation = new Simulation({ seed: 1 });
-    const queue = new HandlingQueue(inventory);
-    const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
-    const survival = new Survival(simulation, inventory, queue, {
-      reach: bindReach(player),
-      feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
-      notice: () => {
-        throw new Error('Unexpected use notice in primary-action fixture');
-      },
-      read: () => {
-        throw new Error('Unexpected reading in primary-action fixture');
-      },
-    });
+  it.each(['held_food', 'held_drink', 'held_bandage', 'held_rag'])(
+    'runs the held %s primary use through Survival.use',
+    (type) => {
+      const inventory = hold(type);
+      const action = selectPrimaryAction(inventory, 'right');
+      if (action.kind !== 'use') {
+        throw new Error(`Expected ${type} to select its use action`);
+      }
+      const simulation = new Simulation({ seed: 1 });
+      const queue = new HandlingQueue(inventory);
+      const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
+      const survival = new Survival(simulation, inventory, queue, {
+        reach: bindReach(player),
+        feet: () => ({ kind: 'pile', pos: [0, 0, 0] }),
+        notice: () => {
+          throw new Error('Unexpected use notice in primary-action fixture');
+        },
+        read: () => {
+          throw new Error('Unexpected reading in primary-action fixture');
+        },
+      });
 
-    const refusal = survival.use(action.item);
-    if (type === 'held_bandage' || type === 'held_rag') {
-      expect(refusal).toBeTruthy();
-      expect(queue.jobs).toHaveLength(0);
-    } else {
-      expect(refusal).toBeUndefined();
-      expect(queue.jobs).toMatchObject([
-        { kind: 'action', jobType: 'survival.eat', params: { itemUid: action.item.uid } },
-      ]);
-    }
-  });
+      const refusal = survival.use(action.item);
+      if (type === 'held_bandage' || type === 'held_rag') {
+        expect(refusal).toBeTruthy();
+        expect(queue.jobs).toHaveLength(0);
+      } else {
+        expect(refusal).toBeUndefined();
+        expect(queue.jobs).toMatchObject([
+          { kind: 'action', jobType: 'survival.eat', params: { itemUid: action.item.uid } },
+        ]);
+      }
+    },
+  );
 
   it('refuses a ruined held melee weapon instead of attacking with it', () => {
     const inventory = new Inventory(registry);

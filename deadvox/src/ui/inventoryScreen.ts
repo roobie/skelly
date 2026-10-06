@@ -283,14 +283,16 @@ const inventoryTemplate = (
     <section class="inv-pane inv-body-panel">
       <h3>Body</h3>
       <div class="inv-body-vitals">Health ${vm.body.health} · Blood ${vm.body.blood} · Shock ${vm.body.shock}</div>
-      ${vm.body.regions.map((region) => html`
+      ${vm.body.regions.map(
+        (region) => html`
         <div class="inv-body-region" data-body-region=${region.region}>
           <span class="inv-body-region-name">${region.region.replace(/([A-Z])/g, ' $1')}</span>
           <span>${region.damage} damage</span>
           ${region.bleeding ? html`<span class="inv-body-warning">Bleeding</span>` : nothing}
           ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
         </div>
-      `)}
+      `,
+      )}
     </section>
     <section class="inv-pane">
       <h3>You</h3>

@@ -881,6 +881,11 @@ export const startPlay = (
     }
     handleGameplayKey(event);
   });
+  const cycleWieldedAction = (deltaY: number): boolean => {
+    const item = inventory.hands[dominantSide(inventory.character)];
+    return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
+  };
+
   globalThis.addEventListener(
     'wheel',
     (e) => {
@@ -888,16 +893,10 @@ export const startPlay = (
         $('overlay').querySelector<HTMLElement>('.card')!.scrollTop += e.deltaY;
         e.preventDefault();
       } else if (input.locked && !input.menuPointer) {
-        if (debugTools?.buildOn) {
-          debugTools.wheel(e.deltaY);
+        if (debugTools?.buildOn || !cycleWieldedAction(e.deltaY)) {
+          debugTools?.wheel(e.deltaY);
         } else {
-          const item = inventory.hands[dominantSide(inventory.character)];
-          const direction = Math.sign(e.deltaY);
-          if (item && survival.cycleItemAction(item, direction)) {
-            e.preventDefault();
-          } else {
-            debugTools?.wheel(e.deltaY);
-          }
+          e.preventDefault();
         }
       }
     },

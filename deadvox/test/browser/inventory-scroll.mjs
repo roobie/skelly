@@ -147,11 +147,6 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
   await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
-  if (process.env.BODY_PANEL_SCREENSHOT) {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.screenshot({ path: process.env.BODY_PANEL_SCREENSHOT });
-    await page.setViewportSize({ width: 1280, height: 480 });
-  }
   assert.equal(await page.locator('[data-body-region]').count(), 6);
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   const failures = [];

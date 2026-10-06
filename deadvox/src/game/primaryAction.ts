@@ -28,7 +28,11 @@ const CAPABILITY_DISPATCH: readonly CapabilityDispatch[] = [
   { kind: 'key', supports: (definition) => definition.key !== undefined },
   { kind: 'unpack', supports: (definition) => definition.unpack !== undefined },
   { kind: 'read', supports: (definition) => definition.book !== undefined },
-  { kind: 'use', supports: (definition) => definition.food !== undefined || definition.category === 'medical' || definition.treatment !== undefined },
+  {
+    kind: 'use',
+    supports: (definition) =>
+      definition.food !== undefined || definition.category === 'medical' || definition.treatment !== undefined,
+  },
 ];
 
 const primaryActionForDefinition = (definition: ItemDef): PrimaryItemAction =>

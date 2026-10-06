@@ -7,8 +7,8 @@
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
-import { bodyRegionForHitArea } from '../core/body.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { bodyRegionForHitArea } from '../core/body.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
@@ -391,7 +391,7 @@ export const createSession = (options: SessionOptions) => {
       if (!sim.body.treat(region, treatment)) {
         throw new Error('Body treatment changed during completion');
       }
-      return undefined;
+      return true;
     },
   };
   const rest = new RestController(sim, {
