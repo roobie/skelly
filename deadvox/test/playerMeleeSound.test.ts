@@ -66,5 +66,6 @@ it('keeps the struck shambler body pitch on player melee hits', () => {
   const reference = new SoundPicker(seed, registry.sounds);
   const unpitchedHit = reference.pick('melee_hit_fist', hit!.time)!;
   const unpitchedHurt = reference.pick('shambler_hurt', hurt!.time)!;
+  expect(hurt!.pick.pitch / unpitchedHurt.pitch).not.toBeCloseTo(1);
   expect(hit!.pick.pitch / unpitchedHit.pitch).toBeCloseTo(hurt!.pick.pitch / unpitchedHurt.pitch);
 });
