@@ -501,7 +501,7 @@ describe('real pump ammunition', () => {
     const targetPoint = pose.eye.map(
       (value, axis) => value + aimDirectionForShot[axis]! * SHOT_TRACE_RANGE_BLOCKS,
     ) as Vec3;
-    const origin = f.trajectories[0]!.origin;
+    const { origin } = f.trajectories[0]!;
     const offset = targetPoint.map((value, axis) => value - origin[axis]!);
     const offsetLength = Math.hypot(...offset);
     const center = offset.map((value) => value / offsetLength);

@@ -5,8 +5,8 @@ import { type AimBasis, type AimFrame, aimBasis, aimDirection, NEUTRAL_AIM } fro
 import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
-import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import { SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
+import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
 import {
   type FirearmsCombatTuning,
@@ -16,7 +16,6 @@ import {
   firearmsSkillEffects,
 } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
 import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
@@ -24,6 +23,7 @@ import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { dropTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
+import { raycast, type SolidAt } from '../core/raycast.ts';
 import { pilesInRadius } from '../core/reach.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
@@ -66,6 +66,41 @@ const basisAlong = (forward: Vec3, up: Vec3): AimBasis => {
     right[0] * forward[1] - right[1] * forward[0],
   ]);
   return { forward, right, up: correctedUp };
+};
+
+const resolveShotAim = ({
+  input,
+  muzzle,
+  muzzleDirection,
+  muzzleUp,
+  isSolid,
+}: {
+  input: DebugFirearmShotInput;
+  muzzle: Vec3;
+  muzzleDirection: Vec3;
+  muzzleUp: Vec3;
+  isSolid: SolidAt;
+}): { shotOrigin: Vec3; shotBasis: AimBasis } => {
+  const centerDirection = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
+  const targetDistance = input.aimPoint
+    ? input.aimPoint.reduce((sum, value, axis) => sum + (value - input.eye[axis]!) * centerDirection[axis]!, 0)
+    : SHOT_TRACE_RANGE_BLOCKS;
+  const aimDistance = Number.isFinite(targetDistance) && targetDistance > 0 ? targetDistance : SHOT_TRACE_RANGE_BLOCKS;
+  const targetDirection = aimDirection(input.yaw, input.pitch, input.aimFrame);
+  const aimTarget = input.eye.map((value, axis) => value + targetDirection[axis]! * aimDistance) as Vec3;
+  const eyeToMuzzle = muzzle.map((value, axis) => value - input.eye[axis]!) as Vec3;
+  const eyeMuzzleDistance = Math.hypot(...eyeToMuzzle);
+  const muzzleBlocked =
+    eyeMuzzleDistance > 0 &&
+    raycast(input.eye, eyeToMuzzle.map((value) => value / eyeMuzzleDistance) as Vec3, eyeMuzzleDistance, isSolid) !==
+      undefined;
+  const muzzleForwardDistance = eyeToMuzzle.reduce((sum, value, axis) => sum + value * centerDirection[axis]!, 0);
+  const aimingDownSights = input.aimingDownSights ?? false;
+  const shotOrigin = muzzleBlocked || (!aimingDownSights && aimDistance <= muzzleForwardDistance) ? input.eye : muzzle;
+  const shotDirection = aimingDownSights
+    ? muzzleDirection
+    : unit(aimTarget.map((value, axis) => value - shotOrigin[axis]!) as Vec3);
+  return { shotOrigin, shotBasis: basisAlong(shotDirection, muzzleUp) };
 };
 
 type Action = NonNullable<ModelDef['action']>;
@@ -451,41 +486,30 @@ export class FirearmMechanics {
     const muzzle = muzzleMetres.map((value) => value / this.blockSize) as Vec3;
     const muzzleDirection = unit(cameraVectorInWorld(heldPose.muzzleDirection, input.yaw, input.pitch));
     const muzzleUp = unit(cameraVectorInWorld(heldPose.muzzleUp, input.yaw, input.pitch));
-    const centerDirection = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
-    const targetDistance = input.aimPoint
-      ? input.aimPoint.reduce(
-          (sum, value, axis) => sum + (value - input.eye[axis]!) * centerDirection[axis]!,
-          0,
-        )
-      : SHOT_TRACE_RANGE_BLOCKS;
-    const aimDistance = Number.isFinite(targetDistance) && targetDistance > 0 ? targetDistance : SHOT_TRACE_RANGE_BLOCKS;
-    const targetDirection = aimDirection(input.yaw, input.pitch, input.aimFrame);
-    const aimTarget = input.eye.map((value, axis) => value + targetDirection[axis]! * aimDistance) as Vec3;
-    const eyeToMuzzle = muzzle.map((value, axis) => value - input.eye[axis]!) as Vec3;
-    const eyeMuzzleDistance = Math.hypot(...eyeToMuzzle);
-    const muzzleBlocked =
-      eyeMuzzleDistance > 0 &&
-      raycast(
-        input.eye,
-        eyeToMuzzle.map((value) => value / eyeMuzzleDistance) as Vec3,
-        eyeMuzzleDistance,
-        this.isSolid,
-      ) !== undefined;
-    const muzzleForwardDistance = eyeToMuzzle.reduce((sum, value, axis) => sum + value * centerDirection[axis]!, 0);
-    const aimingDownSights = input.aimingDownSights ?? false;
-    const shotOrigin =
-      muzzleBlocked || (!aimingDownSights && aimDistance <= muzzleForwardDistance) ? input.eye : muzzle;
-    const shotDirection = aimingDownSights
-      ? muzzleDirection
-      : unit(aimTarget.map((value, axis) => value - shotOrigin[axis]!) as Vec3);
-    const shotBasis = basisAlong(shotDirection, muzzleUp);
+    const { shotOrigin, shotBasis } = resolveShotAim({
+      input,
+      muzzle,
+      muzzleDirection,
+      muzzleUp,
+      isSolid: this.isSolid,
+    });
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
     const commit = { input, item, data, emission, muzzle, shotOrigin, shotBasis, shotKey, seed };
     return pump ? this.commitPumpShot(commit) : this.commitBallisticShot(commit);
   }
 
-  private commitPumpShot({ input, item, data, emission, muzzle, shotOrigin, shotBasis, shotKey, seed }: ShotCommit): boolean {
+  private commitPumpShot({
+    input,
+    item,
+    data,
+    emission,
+    muzzle,
+    shotOrigin,
+    shotBasis,
+    shotKey,
+    seed,
+  }: ShotCommit): boolean {
     const roundType = item.firearm?.roundType;
     const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
     if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
@@ -504,7 +528,17 @@ export class FirearmMechanics {
     return true;
   }
 
-  private commitBallisticShot({ input, item, data, emission, muzzle, shotOrigin, shotBasis, shotKey, seed }: ShotCommit): boolean {
+  private commitBallisticShot({
+    input,
+    item,
+    data,
+    emission,
+    muzzle,
+    shotOrigin,
+    shotBasis,
+    shotKey,
+    seed,
+  }: ShotCommit): boolean {
     const shotKind = this.handlingShotKind(item.uid, input.simTime);
     item.firearm = {
       chamber: 'case',

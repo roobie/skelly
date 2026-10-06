@@ -1,8 +1,8 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
-import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import type {
   FirearmsSkillShotKind,
   FirearmsSkillZeroEffect,

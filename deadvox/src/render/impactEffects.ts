@@ -14,8 +14,8 @@ import {
   SphereGeometry,
   Vector3,
 } from 'three';
-import { SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import type { FirearmTrajectory } from '../game/firearmHandling.ts';
 import { type ShotTrace, traceShot } from './shotTrace.ts';

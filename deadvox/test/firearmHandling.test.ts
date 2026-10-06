@@ -189,7 +189,10 @@ describe('debug firearm handling', () => {
       const eyeMetres = pose.eye.map((value) => value * pose.blockSize);
       const target = [eyeMetres[0]!, eyeMetres[1]!, eyeMetres[2]! - rangeMetres];
       const direction = trajectory.directions[0]!;
-      const alongRay = target.reduce((sum, value, axis) => sum + (value - shotOriginMetres[axis]!) * direction[axis]!, 0);
+      const alongRay = target.reduce(
+        (sum, value, axis) => sum + (value - shotOriginMetres[axis]!) * direction[axis]!,
+        0,
+      );
       const miss = Math.hypot(
         ...shotOriginMetres.map((value, axis) => value + alongRay * direction[axis]! - target[axis]!),
       );
@@ -250,15 +253,15 @@ describe('debug firearm handling', () => {
     if (!trajectory) {
       throw new Error('Hip-fire did not publish a trajectory');
     }
-    const published = trajectory;
-    expect(published.origin).toEqual(eye);
-    const direction = published.directions[0]!;
+    const firedTrajectory = trajectory;
+    expect(firedTrajectory.origin).toEqual(eye);
+    const direction = firedTrajectory.directions[0]!;
     const alongRay = target.point.reduce(
-      (sum, value, axis) => sum + (value - published.origin[axis]!) * direction[axis]!,
+      (sum, value, axis) => sum + (value - firedTrajectory.origin[axis]!) * direction[axis]!,
       0,
     );
     const miss = Math.hypot(
-      ...published.origin.map((value, axis) => value + alongRay * direction[axis]! - target.point[axis]!),
+      ...firedTrajectory.origin.map((value, axis) => value + alongRay * direction[axis]! - target.point[axis]!),
     );
     expect(miss).toBeLessThan(0.05);
   });

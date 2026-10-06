@@ -44,9 +44,16 @@ export const crosshairTarget = (
     return undefined;
   }
   const dir: Vec3 = direction.map((component) => component / magnitude) as Vec3;
-  const furniture = pickFurnitureHit({ entities, origin, direction: dir, maxDistance: maxDistanceBlocks, blockSize, isSolid });
+  const furniture = pickFurnitureHit({
+    entities,
+    origin,
+    direction: dir,
+    maxDistance: maxDistanceBlocks,
+    blockSize,
+    isSolid,
+  });
   if (furniture && entities.blocks(furniture.entity)) {
-    const distanceBlocks = furniture.distanceBlocks;
+    const { distanceBlocks } = furniture;
     return {
       distanceBlocks,
       distanceMetres: distanceBlocks * blockSize,
@@ -56,7 +63,7 @@ export const crosshairTarget = (
   }
   const hit = raycast(origin, dir, maxDistanceBlocks, isSolid);
   const block = hit && registry.blocks[world.getBlock(...hit.block)];
-  if (!hit || !block || block.id === 'air') {
+  if (!(hit && block) || block.id === 'air') {
     return undefined;
   }
   return {

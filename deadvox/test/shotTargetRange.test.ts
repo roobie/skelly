@@ -1,15 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { crosshairTarget } from '../src/core/crosshairTarget.ts';
 import type { Registry } from '../src/core/content.ts';
+import { crosshairTarget } from '../src/core/crosshairTarget.ts';
 import type { World } from '../src/core/world.ts';
 
 const fixtureRegistry = (): Registry =>
   ({
     blocks: [{ id: 'air' }, { id: 'stone' }],
-    furniture: new Map([
-      ['target', { id: 'target', name: 'Target', size: [4, 2, 2], solid: true }],
-    ]),
+    furniture: new Map([['target', { id: 'target', name: 'Target', size: [4, 2, 2], solid: true }]]),
   }) as unknown as Registry;
 
 describe('debug crosshair target range', () => {

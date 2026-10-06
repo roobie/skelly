@@ -90,7 +90,10 @@ describe('shot traces and diegetic impacts', () => {
     const effects = new ImpactEffects(0.5, () => false);
     effects.fire({ eye: [100, 30, 20], muzzle: [100, 30, 20], origin: [100, 30, 20], directions: [[1, 0, 0]] }, true);
     effects.laser.geometry.computeBoundingSphere();
-    effects.fire({ eye: [-100, -20, 100], muzzle: [-100, -20, 100], origin: [-100, -20, 100], directions: [[0, 0, 1]] }, true);
+    effects.fire(
+      { eye: [-100, -20, 100], muzzle: [-100, -20, 100], origin: [-100, -20, 100], directions: [[0, 0, 1]] },
+      true,
+    );
     const { boundingSphere } = effects.laser.geometry;
     const positions = effects.laser.geometry.getAttribute('position');
     let allEndpointsInsideBounds = boundingSphere !== null;
