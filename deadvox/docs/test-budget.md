@@ -25,6 +25,8 @@ Each cut keeps the assertion defining its protected property and removes only re
 
 Revisit these cuts when an issue reports another default-suite budget overrun or a defect that a given-up case would have caught. Restore the affected case when responding to such a defect, and link the issue.
 
+For #318, neither whole-tree scan guard carries the whole tree under one test timeout. Parsing is spread across per-file cases, and the mutation checks reuse the collected graph instead of re-collecting it. See `test/inputLiterals.test.ts` and `test/simulationFingerprint.test.ts`, `mutateSimulationSource`.
+
 ## Milestone growth check
 
 For each milestone, compare the previous milestone's merge commit with the new head using three interleaved default-suite runs per head, each in its own isolated run. Treat median growth beyond the run-to-run spread as an overrun, and record per-file deltas. The absolute budget remains the quiet-host target.

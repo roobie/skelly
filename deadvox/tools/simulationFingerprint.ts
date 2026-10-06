@@ -366,6 +366,13 @@ export async function collectSimulationSourceGraph(
 }
 
 /** Hash a canonical manifest of source paths and their normalized contents. */
+export function fingerprintSimulationSourceMap(sources: ReadonlyMap<string, string>): string {
+  const manifest = [...sources.entries()]
+    .sort(([left], [right]) => comparePaths(left, right))
+    .map(([path, source]) => [path, createHash('sha256').update(source, 'utf8').digest('hex')]);
+  return createHash('sha256').update(canonicalJson(manifest), 'utf8').digest('hex');
+}
+
 export async function fingerprintSimulationSources(
   entries: readonly string[],
   root: string,
@@ -373,8 +380,5 @@ export async function fingerprintSimulationSources(
   options: SimulationFingerprintOptions = {},
 ): Promise<string> {
   const { sources } = await collectSimulationSourceGraph(entries, root, host, options);
-  const manifest = [...sources.entries()]
-    .sort(([left], [right]) => comparePaths(left, right))
-    .map(([path, source]) => [path, createHash('sha256').update(source, 'utf8').digest('hex')]);
-  return createHash('sha256').update(canonicalJson(manifest), 'utf8').digest('hex');
+  return fingerprintSimulationSourceMap(sources);
 }
