@@ -28,7 +28,7 @@ export const saveCheckpointInterval = (clock: ClockSettings): number =>
 const CONTINUE_KEY = 'deadvox.continue-namespace';
 const RESTORE_REFUSAL_KEY = 'deadvox.restore-refusal';
 
-const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): boolean => {
+export const contentLookup = (registry: Registry, kind: SaveContentKind, id: string): boolean => {
   switch (kind) {
     case 'block':
       return registry.blockIds.has(id);

@@ -74,9 +74,11 @@ import { type InputCommand, type InputContext, keyboardInput, labelForAction } f
 import {
   encodeInputReplay,
   InputReplayRecorder,
+  joinInputReplayWindows,
   type ReplayAction,
   type ReplayControlSample,
   type ReplayInputData,
+  replayStateFingerprint,
   stashInputReplay,
 } from './inputReplay.ts';
 import { InputReplayPlayer } from './inputReplayPlayer.ts';
@@ -92,6 +94,7 @@ import {
 } from './playtestTools.ts';
 import { PressHoldInput } from './pressHoldInput.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
+import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
@@ -106,29 +109,59 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
+const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
+const isGestureAction = (action: string): boolean =>
+  action === 'firearm.reload' || action === 'player.throw-glowstick' || action.startsWith('quickbar.use.');
 
-const inputReplayStatus = (
-  replayPlayer: InputReplayPlayer | undefined,
-  inputRecorder: InputReplayRecorder | undefined,
-  total: number,
-): string => {
+type InputReplayVerification = 'matched' | 'diverged' | 'unavailable' | undefined;
+interface InputReplayStatusOptions {
+  readonly replayPlayer: InputReplayPlayer | undefined;
+  readonly inputRecorder: InputReplayRecorder | undefined;
+  readonly previousRecorder: InputReplayRecorder | undefined;
+  readonly total: number;
+  readonly verification: InputReplayVerification;
+  readonly verificationTick: number | undefined;
+}
+
+const inputReplayStatus = ({
+  replayPlayer,
+  inputRecorder,
+  previousRecorder,
+  total,
+  verification,
+  verificationTick,
+}: InputReplayStatusOptions): string => {
   if (replayPlayer) {
+    if (verification === 'matched') {
+      return `Replay verified at ${verificationTick} ticks`;
+    }
+    if (verification === 'diverged') {
+      return `Replay end state differs after ${verificationTick} ticks`;
+    }
+    if (verification === 'unavailable') {
+      return `Replay could not be verified after ${verificationTick} ticks`;
+    }
     return `Replay ${Math.min(replayPlayer.tickCount, total)} / ${total} ticks`;
   }
   if (inputRecorder) {
-    return `Recording ${inputRecorder.tickCount} ticks · ${inputRecorder.retainedBufferBytes} buffer bytes`;
+    const ticks = inputRecorder.tickCount + (previousRecorder?.tickCount ?? 0);
+    const bytes = inputRecorder.retainedBufferBytes + (previousRecorder?.retainedBufferBytes ?? 0);
+    return `Recording ${ticks} ticks · ${bytes} buffer bytes`;
   }
   return 'Recording starts when play begins';
 };
 
 const encodeRecentInputReplay = (
+  previousRecorder: InputReplayRecorder | undefined,
   recorder: InputReplayRecorder | undefined,
   worldOptions: { blockSize: number; site: string; storeys: number; density: number | null },
+  endSnapshot: Readonly<SaveSnapshot>,
 ): Promise<Uint8Array> => {
   if (!recorder) {
     throw new Error('Input recording has not started');
   }
-  return encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), worldOptions);
+  const inputs = joinInputReplayWindows(previousRecorder?.copyInputs(), recorder.copyInputs());
+  return encodeInputReplay(previousRecorder?.startSnapshot ?? recorder.startSnapshot, inputs, worldOptions, endSnapshot);
 };
 
 const createInputReplayPlayer = (
@@ -151,19 +184,6 @@ const createInputReplayRecorder = (
   return new InputReplayRecorder(snapshot());
 };
 
-const commandInputTime = (
-  at: number,
-  replayPlayer: InputReplayPlayer | undefined,
-  recorder: InputReplayRecorder | undefined,
-): number => {
-  if (replayPlayer) {
-    return (replayPlayer.tickCount * 1000) / 60;
-  }
-  if (recorder) {
-    return (recorder.tickCount * 1000) / 60;
-  }
-  return at;
-};
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -182,7 +202,7 @@ export interface StartPlayOptions {
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
-  readonly replay?: ReplayInputData;
+  readonly replay?: { readonly inputs: ReplayInputData; readonly endStateFingerprint: string };
 }
 
 export const startPlay = (
@@ -234,9 +254,13 @@ export const startPlay = (
   let debugLaserEnabled = true;
   const firearmTrigger = new DebugFirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
+  let previousInputRecorder: InputReplayRecorder | undefined;
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
-  const replayPlayer = createInputReplayPlayer(options.replay, (action, sample) =>
+  let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
+  let replayVerificationTick: number | undefined;
+  let replayVerificationStarted = false;
+  const replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
   const samplePlayerInput = (
@@ -607,14 +631,27 @@ export const startPlay = (
     location.assign(url);
   };
   const inputReplayHooks: DebugHooks['inputReplay'] = {
-    status: () => inputReplayStatus(replayPlayer, inputRecorder, options.replay?.frames.length ?? 0),
-    export: () =>
-      encodeRecentInputReplay(inputRecorder, {
-        blockSize: s,
-        site: config.site,
-        storeys: config.storeys,
-        density: config.density,
+    status: () =>
+      inputReplayStatus({
+        replayPlayer,
+        inputRecorder,
+        previousRecorder: previousInputRecorder,
+        total: options.replay?.inputs.frames.length ?? 0,
+        verification: replayVerification,
+        verificationTick: replayVerificationTick,
       }),
+    export: () =>
+      encodeRecentInputReplay(
+        previousInputRecorder,
+        inputRecorder,
+        {
+          blockSize: s,
+          site: config.site,
+          storeys: config.storeys,
+          density: config.density,
+        },
+        captureSnapshot(),
+      ),
     import: importReplay,
   };
   debugTools = debugModule?.attachDebugTools({
@@ -849,6 +886,9 @@ export const startPlay = (
     notice: (text) => showRefusal(text, sim.time),
   });
   const quickbarTap = (slot: number) => {
+    if (!replayPlayer) {
+      inputRecorder?.queueAction(`quickbar.tap.${slot + 1}`, 'down', inputContext());
+    }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
       showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
@@ -857,6 +897,9 @@ export const startPlay = (
     quickbarActions.tap(item);
   };
   const quickbarHold = (slot: number) => {
+    if (!replayPlayer) {
+      inputRecorder?.queueAction(`quickbar.hold.${slot + 1}`, 'down', inputContext());
+    }
     const item = quickbar.resolve(slot, inventory);
     if (!item) {
       showRefusal(`Quickbar ${slot + 1} is empty`, sim.time);
@@ -904,6 +947,8 @@ export const startPlay = (
         const reason = firearms.loadNext(uid, sim.time);
         if (reason) {
           showRefusal(reason, sim.time);
+        } else {
+          inputRecorder?.queueAction('firearm.load', 'down', inputContext());
         }
         return reason === undefined;
       },
@@ -911,6 +956,8 @@ export const startPlay = (
         const reason = firearms.cock(uid, sim.time);
         if (reason) {
           showRefusal(reason, sim.time);
+        } else {
+          inputRecorder?.queueAction('firearm.rack', 'down', inputContext());
         }
       },
       cancelLoad: () => firearms.cancelLoad(uid),
@@ -1003,7 +1050,7 @@ export const startPlay = (
         withUnlockedInput(() => input.requestCrouchToggle());
         break;
       case 'player.throw-glowstick':
-        withUnlockedInput(beginGlowstickCharge);
+        withUnlockedInput(() => beginGlowstickCharge(at));
         break;
       case 'hand.use-off':
         if (!replayPlayer) {
@@ -1034,7 +1081,7 @@ export const startPlay = (
       input.reload.keyUp(at);
     }
     if (action === 'player.throw-glowstick') {
-      finishGlowstickCharge();
+      finishGlowstickCharge(at);
     }
     if (slot !== undefined) {
       quickbarInput.keyUp(slot, at);
@@ -1065,10 +1112,10 @@ export const startPlay = (
     if (replayPlayer && !fromReplay) {
       return;
     }
-    if (!fromReplay) {
+    if (!fromReplay && !isGestureAction(action)) {
       inputRecorder?.queueAction(action, phase, inputContext());
     }
-    const inputTime = commandInputTime(at, replayPlayer, inputRecorder);
+    const inputTime = at;
     const slot = quickbarSlotFor(action);
     if (handleHintCommand(action, phase, inputTime)) {
       return;
@@ -1088,12 +1135,40 @@ export const startPlay = (
     }
   };
   keyboardInput.command = (command) => dispatchInputCommand(command);
+  const dispatchReplayGesture = (action: ReplayAction): boolean => {
+    if (action.action === 'firearm.load') {
+      reloadBinding()?.load();
+      return true;
+    }
+    if (action.action === 'firearm.rack') {
+      reloadBinding()?.rack();
+      return true;
+    }
+    const quickbarGesture = QUICKBAR_ACTION.exec(action.action);
+    if (quickbarGesture && Number(quickbarGesture[2]) >= 1 && Number(quickbarGesture[2]) <= QUICKBAR_SLOTS) {
+      const slot = Number(quickbarGesture[2]) - 1;
+      (quickbarGesture[1] === 'tap' ? quickbarTap : quickbarHold)(slot);
+      return true;
+    }
+    if (action.action === 'glowstick.throw') {
+      const glowstick = [inventory.hands.right, inventory.hands.left].find((item) => item?.type === 'glowstick');
+      if (glowstick && action.value !== undefined) {
+        throwHeldGlowstick(glowstick, action.value);
+      }
+      return true;
+    }
+    if (action.action === 'glowstick.cancel') {
+      cancelGlowstickCharge();
+      return true;
+    }
+    return false;
+  };
   dispatchReplayAction = (action, sample) => {
     replaySample = sample;
-    dispatchInputCommand(
-      { action: action.action, phase: action.phase, at: ((replayPlayer?.tickCount ?? 0) * 1000) / 60 },
-      true,
-    );
+    if (dispatchReplayGesture(action)) {
+      return;
+    }
+    dispatchInputCommand({ action: action.action, phase: action.phase, at: performance.now() }, true);
   };
   keyboardInput.install();
   keyboardInput.sync();
@@ -1170,7 +1245,7 @@ export const startPlay = (
     useTarget(entity);
   }
 
-  function beginGlowstickCharge(): void {
+  function beginGlowstickCharge(at: number): void {
     if (glowstickChargeStartedAt !== undefined || refusePrimaryUseWhileHandling()) {
       return;
     }
@@ -1186,18 +1261,21 @@ export const startPlay = (
       showRefusal('Light the glowstick first', sim.time);
       return;
     }
-    glowstickChargeStartedAt = sim.time;
+    glowstickChargeStartedAt = at;
     glowstickChargeItemUid = item.uid;
   }
 
-  function finishGlowstickCharge(): void {
+  function finishGlowstickCharge(at: number): void {
     if (glowstickChargeStartedAt === undefined || glowstickChargeItemUid === undefined) {
       return;
     }
-    const heldSeconds = Math.max(0, sim.time - glowstickChargeStartedAt);
+    const heldSeconds = Math.max(0, (at - glowstickChargeStartedAt) / 1000);
     const uid = glowstickChargeItemUid;
     cancelGlowstickCharge();
     if (input.consumeRightMousePressed() || input.rightMouseHeld) {
+      if (!replayPlayer) {
+        inputRecorder?.queueAction('glowstick.cancel', 'down', inputContext());
+      }
       input.suppressRightMouseUntilRelease();
       return;
     }
@@ -1205,7 +1283,11 @@ export const startPlay = (
     if (!(item && [inventory.hands.right, inventory.hands.left].includes(item))) {
       return;
     }
-    throwHeldGlowstick(item, chargedThrowDistance(throwMaxDistanceMetres, throwChargeSeconds, heldSeconds));
+    const distance = chargedThrowDistance(throwMaxDistanceMetres, throwChargeSeconds, heldSeconds);
+    if (!replayPlayer) {
+      inputRecorder?.queueAction('glowstick.throw', 'down', inputContext(), distance);
+    }
+    throwHeldGlowstick(item, distance);
   }
 
   function cancelGlowstickCharge(): void {
@@ -1662,8 +1744,27 @@ export const startPlay = (
     });
   };
 
+  const verifyReplayEndState = (): void => {
+    if (!(replayPlayer?.finished && !replayVerificationStarted)) {
+      return;
+    }
+    replayVerificationStarted = true;
+    replayVerificationTick = replayPlayer.tickCount;
+    const finalSnapshot = captureSnapshot();
+    sim.paused = true;
+    replayStateFingerprint(finalSnapshot).then(
+      (actual) => {
+        replayVerification = actual === options.replay?.endStateFingerprint ? 'matched' : 'diverged';
+      },
+      () => {
+        replayVerification = 'unavailable';
+      },
+    );
+  };
+
   const cancelGlowstickChargeOnRightClick = (): void => {
-    if (input.consumeRightMousePressed() && glowstickChargeStartedAt !== undefined) {
+    if (!replayPlayer && input.consumeRightMousePressed() && glowstickChargeStartedAt !== undefined) {
+      inputRecorder?.queueAction('glowstick.cancel', 'down', inputContext());
       cancelGlowstickCharge();
       input.suppressRightMouseUntilRelease();
     }
@@ -1679,6 +1780,7 @@ export const startPlay = (
       if (!sim.paused) {
         sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
         session.frameReplay(1 / 60);
+        verifyReplayEndState();
       }
     } else {
       sim.paused = menuPaused || gameFrozen;
@@ -1689,6 +1791,7 @@ export const startPlay = (
       updateSkip(skipUntil);
     }
     if (!replayPlayer && inputRecorder?.full) {
+      previousInputRecorder = inputRecorder;
       inputRecorder = new InputReplayRecorder(captureSnapshot());
     }
     stepFrozenNoclip(dt, gameFrozen && !menuPaused);
@@ -1696,20 +1799,14 @@ export const startPlay = (
   };
 
   const updateInputGestures = (now: number): void => {
-    let inputNow = now;
-    if (replayPlayer) {
-      inputNow = (replayPlayer.tickCount * 1000) / 60;
-    } else if (inputRecorder) {
-      inputNow = (inputRecorder.tickCount * 1000) / 60;
-    }
     const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
-    input.reload.advance(inputNow, reloadBinding());
+    input.reload.advance(now, reloadBinding());
     if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead) {
       quickbarInput.cancel();
     } else {
-      quickbarInput.update(inputNow);
+      quickbarInput.update(now);
     }
-    hintToggleInput.update(inputNow);
+    hintToggleInput.update(now);
   };
 
   const updateDebugTargets = () => {

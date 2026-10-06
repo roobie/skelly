@@ -6,8 +6,6 @@ import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { parseTimeOfDay } from './core/clock.ts';
-import type { Registry } from './core/content.ts';
-import type { SaveContentKind } from './core/saveFormat.ts';
 import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
@@ -18,31 +16,7 @@ import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
-import { SaveController } from './ui/saveController.ts';
-
-const SCHEDULER_IDS = new Set(['needs', 'long-action', 'lights', 'zombies', 'player', 'handling', 'firearms']);
-const replayContentLookup = (registry: Registry, kind: SaveContentKind, id: string): boolean => {
-  switch (kind) {
-    case 'block':
-      return registry.blockIds.has(id);
-    case 'item':
-      return registry.items.has(id);
-    case 'furniture':
-      return registry.furniture.has(id);
-    case 'zombie':
-      return registry.zombies.has(id);
-    case 'sound':
-      return registry.sounds.has(id);
-    case 'scheduler':
-      return SCHEDULER_IDS.has(id);
-    case 'skill':
-      return registry.skills.has(id);
-    case 'recipe':
-      return registry.recipes.has(id);
-    default:
-      return false;
-  }
-};
+import { contentLookup, SaveController } from './ui/saveController.ts';
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
@@ -93,10 +67,13 @@ if (bench === 'report') {
       replayConfig.density = identity.density;
       const engine = createEngine(replayConfig, view, undefined, { render: !renderFree });
       const decoded = await decodeInputReplay(pendingReplay, {
-        contentLookup: (kind, id) => replayContentLookup(engine.registry, kind, id),
+        contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
       });
       clearPendingInputReplay();
-      startPlay(engine, debugModule!, { restore: decoded.snapshot, replay: decoded.inputs });
+      startPlay(engine, debugModule!, {
+        restore: decoded.snapshot,
+        replay: { inputs: decoded.inputs, endStateFingerprint: decoded.endStateFingerprint },
+      });
     } catch (error) {
       clearPendingInputReplay();
       document.getElementById('errors')!.textContent =

@@ -300,10 +300,11 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 > 2. i think downloaded file makes most sense - depending on size it could be an attachment to the github issue?
 > 3. i'd say in general until we've hit v1 RC
 
-**In:** The rolling recorder is always on in play sessions; the debug panel exports and imports a replay in every build when debug access is enabled. The artifact embeds the starting save and recorded inputs, remains separate from world-save state, and refuses incompatible simulation identity. See `src/game/inputReplay.ts`, `InputReplayRecorder`, and `src/main.ts`, replay import.
-**Saves:** Replay embeds the exact-version starting save instead of adding state to world saves. The input buffer remains transient and export remains explicit.
-**Tests:** `test/inputReplay.test.ts` compares the captured simulation-state fingerprint with playback from the same start snapshot, protects tick-ordered semantic input, and checks incompatible embedded identity.
-**Done:** users can export and replay a recent recording from its start save; always-on capture is bounded and its measured cost is reported with the work item. Input controls and the debug-panel rationale are recorded in [CONTROLS.md](CONTROLS.md).
+**In:** Keep a rolling recent input window, if its measured performance cost allows; export a replay file containing the starting save and recorded inputs, small enough for a GitHub issue attachment where possible. Make it available in all builds until v1 RC. The replay is an artifact, not a second game-save format.
+**Saves:** No new world-save state. The replay file carries the start save and input sequence with enough build/simulation identity to reject an incompatible replay; the recording buffer is transient and the export is explicit.
+**Tests:** replaying a captured input sequence from its start save reproduces the same simulation result; export/import preserves the input order and fails clearly when the build/simulation identity is incompatible; measure always-on buffer cost before accepting it.
+**Done when:** a bug can be reported with a downloadable replay that reproduces the same state, and always-on capture fits the measured budget or is kept only when cost permits.
+Implementation is in `src/game/inputReplay.ts`, `InputReplayRecorder`; the player-facing rationale is in [CONTROLS.md](CONTROLS.md).
 
 ### 3.11 Authored playtest map and playtest
 

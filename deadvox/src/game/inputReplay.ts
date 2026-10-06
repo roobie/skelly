@@ -2,19 +2,29 @@ import { canonicalJsonBytes } from '../core/canonicalJson.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { INPUT_BINDINGS, type InputContext, POINTER_ACTIONS } from './inputBindings.ts';
+import { QUICKBAR_SLOTS } from './quickbar.ts';
 import type { MoveIntent } from './player.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 1;
-const INPUT_REPLAY_MAX_TICKS = 60 * 60 * 2;
-const INPUT_REPLAY_MAX_ACTIONS = 8192;
+const INPUT_REPLAY_SCHEMA_VERSION = 2;
+const INPUT_REPLAY_TICKS_PER_WINDOW = 60 * 60 * 2;
+const INPUT_REPLAY_MAX_TICKS = INPUT_REPLAY_TICKS_PER_WINDOW * 2;
+const INPUT_REPLAY_ACTIONS_PER_WINDOW = 8192;
+const INPUT_REPLAY_MAX_ACTIONS = INPUT_REPLAY_ACTIONS_PER_WINDOW * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 
 const MAGIC = 'DEADVOX_REPLAY';
+const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;/
 const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
+const REPLAY_SEMANTIC_ACTIONS = [
+  'glowstick.throw',
+  'glowstick.cancel',
+  ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [`quickbar.tap.${index + 1}`, `quickbar.hold.${index + 1}`]).flat(),
+] as const;
 const ACTION_IDS = [
   ...new Set([
     ...INPUT_BINDINGS.flatMap((binding) => binding.commands.map((command) => command.id)),
     ...POINTER_ACTIONS.map((action) => action.id),
+    ...REPLAY_SEMANTIC_ACTIONS,
   ]),
 ];
 const ACTION_INDEX = new Map(ACTION_IDS.map((id, index) => [id, index]));
@@ -59,6 +69,7 @@ export interface ReplayAction {
   readonly action: string;
   readonly phase: 'down' | 'up';
   readonly context: InputContext;
+  readonly value?: number;
 }
 
 export type ReplayFrame = readonly [
@@ -79,6 +90,7 @@ export interface DecodedInputReplay {
   readonly snapshot: Readonly<SaveSnapshot>;
   readonly worldOptions: SaveWorldOptions & { seed: number; clock: { ratio: number; start: number } };
   readonly inputs: ReplayInputData;
+  readonly endStateFingerprint: string;
 }
 
 interface ReplayWire {
@@ -87,6 +99,7 @@ interface ReplayWire {
   startSave: string;
   frames: ReplayFrame[];
   actions: ReplayAction[];
+  endStateFingerprint: string;
 }
 
 const encodeBase64 = (bytes: Uint8Array): string => {
@@ -149,15 +162,16 @@ export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample =
 };
 
 export class InputReplayRecorder {
-  private readonly yawPitch = new Float64Array(INPUT_REPLAY_MAX_TICKS * 2);
-  private readonly compression = new Float64Array(INPUT_REPLAY_MAX_TICKS);
-  private readonly movement = new Int8Array(INPUT_REPLAY_MAX_TICKS * 2);
-  private readonly flags = new Uint16Array(INPUT_REPLAY_MAX_TICKS);
-  private readonly actionTicks = new Uint16Array(INPUT_REPLAY_MAX_ACTIONS);
-  private readonly actionIds = new Uint16Array(INPUT_REPLAY_MAX_ACTIONS);
-  private readonly actionPhases = new Uint8Array(INPUT_REPLAY_MAX_ACTIONS);
-  private readonly actionContexts = new Uint8Array(INPUT_REPLAY_MAX_ACTIONS);
-  private pending: { action: string; phase: 'down' | 'up'; context: InputContext }[] = [];
+  private readonly yawPitch = new Float64Array(INPUT_REPLAY_TICKS_PER_WINDOW * 2);
+  private readonly compression = new Float64Array(INPUT_REPLAY_TICKS_PER_WINDOW);
+  private readonly movement = new Int8Array(INPUT_REPLAY_TICKS_PER_WINDOW * 2);
+  private readonly flags = new Uint16Array(INPUT_REPLAY_TICKS_PER_WINDOW);
+  private readonly actionTicks = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  private readonly actionIds = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  private readonly actionContexts = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  private readonly actionValues = new Float64Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  private pending: { action: string; phase: 'down' | 'up'; context: InputContext; value?: number }[] = [];
   private frameCount = 0;
   private actionCount = 0;
   private batchStartedAt = 0;
@@ -175,7 +189,8 @@ export class InputReplayRecorder {
 
   get full(): boolean {
     return (
-      this.frameCount >= INPUT_REPLAY_MAX_TICKS || this.actionCount + this.pending.length >= INPUT_REPLAY_MAX_ACTIONS
+      this.frameCount >= INPUT_REPLAY_TICKS_PER_WINDOW ||
+      this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
     );
   }
 
@@ -189,22 +204,28 @@ export class InputReplayRecorder {
       this.actionIds.byteLength +
       this.actionPhases.byteLength +
       this.actionContexts.byteLength +
+      this.actionValues.byteLength +
       this.batchCosts.byteLength
     );
   }
 
-  queueAction(action: string, phase: 'down' | 'up', context: InputContext): void {
+  queueAction(action: string, phase: 'down' | 'up', context: InputContext, value?: number): void {
     if (this.full) {
       return;
     }
-    if (!(ACTION_INDEX.has(action) && CONTEXT_INDEX.has(context))) {
+    if (
+      !(ACTION_INDEX.has(action) && CONTEXT_INDEX.has(context)) ||
+      (action === 'glowstick.throw'
+        ? typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 10_000
+        : value !== undefined)
+    ) {
       throw new Error(`Input replay cannot encode ${action} in ${context}`);
     }
-    this.pending.push({ action, phase, context });
+    this.pending.push({ action, phase, context, ...(value === undefined ? {} : { value }) });
   }
 
   recordTick(sample: Omit<ReplayControlSample, 'compression'>, compression = 1): void {
-    if (this.frameCount >= INPUT_REPLAY_MAX_TICKS) {
+    if (this.frameCount >= INPUT_REPLAY_TICKS_PER_WINDOW) {
       return;
     }
     if (this.frameCount % 60 === 0) {
@@ -217,6 +238,9 @@ export class InputReplayRecorder {
       this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
       this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
       this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
+      if (pending.value !== undefined) {
+        this.actionValues[index] = pending.value;
+      }
     }
     this.pending = [];
     const frame = this.frameCount;
@@ -247,6 +271,9 @@ export class InputReplayRecorder {
       action: ACTION_IDS[this.actionIds[index]!]!,
       phase: this.actionPhases[index] === 0 ? 'down' : 'up',
       context: CONTEXTS[this.actionContexts[index]!]!,
+      ...(ACTION_IDS[this.actionIds[index]!] === 'glowstick.throw'
+        ? { value: this.actionValues[index]! }
+        : {}),
     }));
     return { frames, actions };
   }
@@ -264,6 +291,25 @@ export class InputReplayRecorder {
       maxMs: costs.at(-1)!,
     };
   }
+}
+
+export function joinInputReplayWindows(
+  previous: ReplayInputData | undefined,
+  current: ReplayInputData,
+): ReplayInputData {
+  if (!previous) {
+    return current;
+  }
+  const offset = previous.frames.length;
+  const frames = [...previous.frames, ...current.frames];
+  const actions = [
+    ...previous.actions,
+    ...current.actions.map((action) => ({ ...action, tick: action.tick + offset })),
+  ];
+  if (frames.length > INPUT_REPLAY_MAX_TICKS || actions.length > INPUT_REPLAY_MAX_ACTIONS) {
+    throw new Error('Combined replay windows exceed the supported recording bounds');
+  }
+  return { frames, actions };
 }
 
 export function stashInputReplay(bytes: Uint8Array): void {
@@ -295,10 +341,35 @@ export function clearPendingInputReplay(): void {
   }
 }
 
+export async function replayStateFingerprint(snapshot: Readonly<SaveSnapshot>): Promise<string> {
+  if (!globalThis.crypto?.subtle) {
+    throw new Error('Replay state verification requires Web Crypto');
+  }
+  // Live frame accumulation and fixed-step replay can differ below simulation precision.
+  const normalize = (value: unknown): unknown => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Number(value.toFixed(9));
+    }
+    if (Array.isArray(value)) {
+      return value.map(normalize);
+    }
+    if (value && typeof value === 'object') {
+      return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, normalize(entry)]));
+    }
+    return value;
+  };
+  const canonical = canonicalJsonBytes(normalize(snapshot));
+  const buffer = new ArrayBuffer(canonical.byteLength);
+  new Uint8Array(buffer).set(canonical);
+  const digest = await globalThis.crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('');
+}
+
 export async function encodeInputReplay(
   snapshot: Readonly<SaveSnapshot>,
   inputs: ReplayInputData,
   worldOptions: SaveWorldOptions,
+  endSnapshot: Readonly<SaveSnapshot>,
 ): Promise<Uint8Array> {
   if (inputs.frames.length === 0 || inputs.frames.length > INPUT_REPLAY_MAX_TICKS) {
     throw new Error('Replay has no input ticks or exceeds its rolling window');
@@ -310,6 +381,7 @@ export async function encodeInputReplay(
     startSave: encodeBase64(startSave),
     frames: inputs.frames.map((frame) => [...frame] as ReplayFrame),
     actions: inputs.actions.map((action) => ({ ...action })),
+    endStateFingerprint: await replayStateFingerprint(endSnapshot),
   };
   const bytes = canonicalJsonBytes(wire);
   if (bytes.byteLength > INPUT_REPLAY_MAX_BYTES) {
@@ -337,7 +409,13 @@ export async function decodeInputReplay(
   if (!isRecord(value) || value.magic !== MAGIC || value.schemaVersion !== INPUT_REPLAY_SCHEMA_VERSION) {
     throw new Error('Unsupported replay format');
   }
-  if (typeof value.startSave !== 'string' || !Array.isArray(value.frames) || !Array.isArray(value.actions)) {
+  if (
+    typeof value.startSave !== 'string' ||
+    !Array.isArray(value.frames) ||
+    !Array.isArray(value.actions) ||
+    typeof value.endStateFingerprint !== 'string' ||
+    !FINGERPRINT_PATTERN.test(value.endStateFingerprint)
+  ) {
     throw new Error('Replay is missing its starting save or input sequence');
   }
   if (value.frames.length === 0 || value.frames.length > INPUT_REPLAY_MAX_TICKS) {
@@ -384,6 +462,12 @@ export async function decodeInputReplay(
       (candidate.tick as number) < lastTick ||
       typeof candidate.action !== 'string' ||
       !ACTION_INDEX.has(candidate.action) ||
+      (candidate.action === 'glowstick.throw'
+        ? typeof candidate.value !== 'number' ||
+          !Number.isFinite(candidate.value) ||
+          candidate.value < 0 ||
+          candidate.value > 10_000
+        : Object.hasOwn(candidate, 'value')) ||
       (candidate.phase !== 'down' && candidate.phase !== 'up') ||
       typeof candidate.context !== 'string' ||
       !CONTEXT_INDEX.has(candidate.context as InputContext)
@@ -396,6 +480,7 @@ export async function decodeInputReplay(
       action: candidate.action,
       phase: candidate.phase,
       context: candidate.context as InputContext,
+      ...(candidate.action === 'glowstick.throw' ? { value: candidate.value as number } : {}),
     };
   });
   const saveBytes = decodeBase64(value.startSave);
@@ -404,5 +489,6 @@ export async function decodeInputReplay(
     snapshot: decoded.snapshot,
     worldOptions: decoded.worldOptions,
     inputs: { frames, actions },
+    endStateFingerprint: value.endStateFingerprint,
   };
 }

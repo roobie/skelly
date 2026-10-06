@@ -32,12 +32,12 @@ describe('hamlet save/load continuation', () => {
       furnitureIn: () => [],
       zombiesIn: () => [marker],
     } as Site;
-    const original = createRuntime(undefined, false, [fixtureZombieColumn], start);
+    const original = createRuntime(undefined, false, [fixtureZombieColumn], undefined, start);
     original.session.onColumn(cx, cz, timedSite);
     const key = `shambler:${pos.join(',')}`;
     expect(original.spawner.snapshotState()).not.toContain(key);
 
-    const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], start);
+    const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], undefined, start);
     loaded.session.onColumn(cx, cz, timedSite);
     const atHome = () =>
       [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i])).length;

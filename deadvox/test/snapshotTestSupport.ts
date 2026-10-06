@@ -104,11 +104,17 @@ export type Runtime = ReturnType<typeof createRuntime>;
 // supplies what the DOM would: controls, sound output, and the hamlet's world. Fresh and
 // restored runs share it.
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: keep test runtime wiring in one auditable place.
+// biome-ignore lint/complexity/useMaxParams: fixture restore, world, tick-hook and clock inputs are independent test controls.
 export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
-  sampleAtPlayerTick?: (tick: number, live: PlayerInputSample) => PlayerInputSample,
+  sampleAtPlayerTick?: (
+    tick: number,
+    live: PlayerInputSample,
+    time: number,
+    compression: number,
+  ) => PlayerInputSample,
   start = defaultClock.start,
 ) {
   const restFixture = fixture === true;
@@ -128,7 +134,7 @@ export function createRuntime(
   // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
-  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false };
+  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false, intent: { ...IDLE } };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const spawn: Vec3 = [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
@@ -162,7 +168,7 @@ export function createRuntime(
     ready: () => true,
     controls: {
       active: () => Boolean(sampleAtPlayerTick),
-      intent: () => IDLE,
+      intent: () => view.intent,
       ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
       consumeCrouchToggle: () => {
         const pressed = view.crouchToggle;
@@ -250,6 +256,7 @@ export function createRuntime(
     world,
     sim,
     player,
+    view,
     inventory,
     entities,
     sharedEntities,
