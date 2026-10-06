@@ -5,8 +5,10 @@ import type { TriangleMesh } from '../src/core/mesh.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Solid, Vec2 } from '../src/core/schema.ts';
+import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import {
+  AK_REAR_BEVEL,
   BOLT_CARRIER_RUNNING_CLEARANCE_U,
   carrierCavityBounds,
   FAMILIES,
@@ -219,9 +221,8 @@ describe('receiver section builder', () => {
     expect(cavities.ak).toEqual({ y: [-1.35, 1.35], z: [-1.35, 1.35] });
     expect(cavities.pump).toEqual({ y: [0.15, 1.85], z: [-0.85, 0.85] });
     expect(carrierCavityBounds('pump', 0).y).toEqual([-0.85, 0.85]);
-    const wall = cavityWallThickness(RECEIVER_SECTION.ak.outline, cavities.ak);
-    expect(wall).toBeCloseTo(0.545_705_156_3, 8);
-    expect(wall).toBeGreaterThanOrEqual(0.5);
+    const akCavity = carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU);
+    expect(cavityWallThickness(RECEIVER_SECTION.ak.outline, akCavity)).toBeGreaterThanOrEqual(0.5);
   });
 
   it('gives the AR a distinct flat-top upper profile with stepped shoulders', () => {
@@ -276,15 +277,20 @@ describe('receiver section builder', () => {
       {
         id: 'receiver-ar',
         cavity: carrierCavityBounds('ar', 0),
+        rearX: RECEIVER_SECTION.ar.faces.rear,
         def: FAMILIES.receiver!.build({ action: 'auto', feed: 'box', bore: 'M', section: 'ar', rail: 'full' }),
       },
       {
         id: 'receiver-ak',
-        cavity: carrierCavityBounds('ak', 0),
+        cavity: carrierCavityBounds('ak', AK_PROPORTIONS.carrierAxisU),
+        rearX: RECEIVER_SECTION.ak.faces.rear,
+        // The dust cover's slope dips below the carrier, so the cavity ends where the slope does.
+        cavityRearX: RECEIVER_SECTION.ak.faces.rear + AK_REAR_BEVEL.run,
         def: FAMILIES['ak-receiver']!.build({ action: 'bolt', feed: 'box', bore: 'M' }),
       },
     ];
-    for (const { id, cavity, def } of receivers) {
+    for (const { id, cavity, rearX, def, ...ends } of receivers) {
+      const cavityRearX = 'cavityRearX' in ends ? ends.cavityRearX : rearX + 0.5;
       const sectionSolids = def.solids.filter((solid) => solid.display?.mergeGroup === id);
       const ids = sectionSolids.map(({ id: solidId }) => solidId);
       const receiverMesh = meshForSolidGroup(sectionSolids);
@@ -292,14 +298,17 @@ describe('receiver section builder', () => {
       const cavityCenterZ = (cavity.z[0] + cavity.z[1]) / 2;
       const frontFaceX = 0;
       if (id === 'receiver-ar') {
-        expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} buffer-tube bore`).toBe(
+        expect(faceContainsPoint(receiverMesh, rearX, cavityCenterY, cavityCenterZ), `${id} buffer-tube bore`).toBe(
           false,
         );
         expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} breech bore`).toBe(false);
         expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(false);
         expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(false);
       } else {
-        expect(faceContainsPoint(receiverMesh, -16, cavityCenterY, cavityCenterZ), `${id} rear face`).toBe(true);
+        expect(
+          faceContainsPoint(receiverMesh, cavityRearX, cavityCenterY, cavityCenterZ),
+          `${id} cavity's rear wall`,
+        ).toBe(true);
         expect(faceContainsPoint(receiverMesh, 0, cavityCenterY, cavityCenterZ), `${id} front face`).toBe(true);
         expect(ids.some((solidId) => solidId.startsWith(`${id}-rear-adapter`))).toBe(true);
         expect(ids.some((solidId) => solidId.startsWith(`${id}-front-adapter`))).toBe(true);
@@ -308,12 +317,12 @@ describe('receiver section builder', () => {
         expect(rearAdapter?.kind).toBe('extruded-polygon');
         expect(frontAdapter?.kind).toBe('extruded-polygon');
         if (rearAdapter?.kind === 'extruded-polygon' && frontAdapter?.kind === 'extruded-polygon') {
-          expect(rearAdapter.z).toEqual([-16, -15.5]);
+          expect(rearAdapter.z).toEqual([rearX, cavityRearX]);
           expect(frontAdapter.z).toEqual([-0.5, 0]);
         }
       }
       expectWatertightMesh(receiverMesh, id);
-      expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(-16);
+      expect(def.ports.find(({ id: portId }) => portId === 'stock')?.pos[0]).toBe(rearX);
       expect(def.ports.find(({ id: portId }) => portId === 'handguard')?.pos[0]).toBe(frontFaceX);
     }
   });
