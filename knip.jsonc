@@ -21,6 +21,9 @@
       "entry": [
         "index.html!",
         "sounds.html!",
+        "vehicle-spike.html!",
+        // Vite dev-only page is deliberately outside the production build inputs.
+        "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
         "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",
