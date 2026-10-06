@@ -12,9 +12,9 @@ import {
   profileHeight,
   standingHeight,
 } from '../src/core/authoredTerrain.mjs';
+import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { compassBearing, toChunk } from '../src/core/coords.ts';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
@@ -215,7 +215,7 @@ describe('authored layout acceptance', () => {
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
-    expect(BUNDLED_CONTENT.registry.layouts.get('playtest')?.startTimeGameTimeOfDay).toBe(16 * 3_600);
+    expect(BUNDLED_CONTENT.registry.layouts.get('playtest')?.startTimeGameTimeOfDay).toBe(16 * 3600);
     expect(configFromUrl(new URLSearchParams('site=playtest')).site).toBe('playtest');
     expect(configFromUrl(new URLSearchParams('site=playtest')).start).toBe(16 * 60 * 60);
     expect(configFromUrl(new URLSearchParams('site=playtest&time=18:30')).start).toBe(18.5 * 60 * 60);
@@ -322,7 +322,10 @@ describe('authored layout acceptance', () => {
       'expected a named game time or HH:MM',
     );
     invalid(
-      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } }] },
+      {
+        ...layout,
+        shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } }],
+      },
       'from and to must differ',
     );
   });

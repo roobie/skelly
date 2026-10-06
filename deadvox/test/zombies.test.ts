@@ -16,9 +16,9 @@ import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
-import { gameTimeOfDay, simRate } from '../src/core/time.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
+import { gameTimeOfDay, simRate } from '../src/core/time.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
   FIGURE_BOXES,
@@ -997,7 +997,7 @@ describe('shambler scenarios', () => {
       sightCone: 180,
       wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
-      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) }
+      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
     };
     for (const seed of [1, 7, 23]) {
       const system = new ZombieSystem({
@@ -1026,7 +1026,7 @@ describe('shambler scenarios', () => {
       nightSight: 1,
       wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
-      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) }
+      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
     };
     const system = new ZombieSystem({
       ...senses(() => player([30, 1, 0], [-1, 0, 0], 'sprinting'), wall),
@@ -1805,7 +1805,11 @@ describe('shambler scenarios', () => {
   });
 
   it('waits for the game clock to enter a loaded spawn marker window', () => {
-    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } };
+    const spawn: ZombieSpawn = {
+      type: 'shambler',
+      pos: [0, 1, 0],
+      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) },
+    };
     const site = spawnSite(spawn);
     const spawner = new ZombieSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
@@ -1851,7 +1855,11 @@ describe('shambler scenarios', () => {
   });
 
   it('spawns a marker when its column first loads inside the window', () => {
-    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3_600) } };
+    const spawn: ZombieSpawn = {
+      type: 'shambler',
+      pos: [0, 1, 0],
+      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
+    };
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     new ZombieSpawner().onColumn({
       cx: 0,
@@ -1865,7 +1873,11 @@ describe('shambler scenarios', () => {
   });
 
   it('drops pending markers on unload and retries a missed bounded window the next day', () => {
-    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3_600) } };
+    const spawn: ZombieSpawn = {
+      type: 'shambler',
+      pos: [0, 1, 0],
+      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
+    };
     const site = spawnSite(spawn);
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     const spawner = new ZombieSpawner();
@@ -2306,7 +2318,7 @@ describe('lurching chase', () => {
     const type = {
       ...SHAMBLER,
       sight: 1000,
-      chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSimSecond: simRate(1) }
+      chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSimSecond: simRate(1) },
     };
     const system = new ZombieSystem({ ...senses(() => player([20, 1, 0])), seed: 19 });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
@@ -2369,7 +2381,10 @@ describe('lurching chase', () => {
     expect(rms).toBeLessThanOrEqual(1.5);
     expect(largestOneSecondRange).toBeGreaterThanOrEqual(0.3 * SHAMBLER.speed.chaseMetresPerSimSecond);
     const beelineSeconds =
-      (15 - SHAMBLER.attack.reach - SHAMBLER.speed.chaseMetresPerSimSecond ** 2 / (2 * SHAMBLER.wander.movementAccelerationMetresPerSimSecondSquared)) /
+      (15 -
+        SHAMBLER.attack.reach -
+        SHAMBLER.speed.chaseMetresPerSimSecond ** 2 /
+          (2 * SHAMBLER.wander.movementAccelerationMetresPerSimSecondSquared)) /
         SHAMBLER.speed.chaseMetresPerSimSecond +
       SHAMBLER.speed.chaseMetresPerSimSecond / SHAMBLER.wander.movementAccelerationMetresPerSimSecondSquared;
     expect(ticks / 20).toBeLessThanOrEqual(beelineSeconds * 1.6);
@@ -2708,7 +2723,12 @@ describe('two-tier shambler hearing', () => {
     const minSearchTicks = Math.floor((type.hearingModel.searchSimSeconds.min - 0.1) * 20);
     expect(stayInsideSearch(system, zombie, minSearchTicks, type.hearingModel.searchRadiusMetres)).toBe(true);
     expect(
-      finishSearch(system, zombie, type.hearingModel.searchSimSeconds.max * 20 + 5, type.hearingModel.searchRadiusMetres),
+      finishSearch(
+        system,
+        zombie,
+        type.hearingModel.searchSimSeconds.max * 20 + 5,
+        type.hearingModel.searchRadiusMetres,
+      ),
     ).toBe(true);
     expect(advanceToMode(system, zombie, 'idle', 20 * 20)).toBe(true);
   });

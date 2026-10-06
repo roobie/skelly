@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BODY_REGIONS, Body, type BodyTreatment, bodyRegionForHitArea } from '../src/core/body.ts';
-import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 import { simSeconds } from '../src/core/time.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 describe('player body', () => {
   it('applies each approved region consequence to the struck body region', () => {

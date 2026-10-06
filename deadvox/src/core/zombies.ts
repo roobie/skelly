@@ -1535,7 +1535,10 @@ export class ZombieSystem {
         const offset = sub(target, zombie.body.pos);
         const distance = Math.hypot(offset[0], offset[2]) * blockSize;
         direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
-        speed = distance > 0.5 ? Math.min(zombie.type.speed.chaseMetresPerSimSecond, BACKGROUND_STEP_CAP_METRES / dt, distance / dt) : 0;
+        speed =
+          distance > 0.5
+            ? Math.min(zombie.type.speed.chaseMetresPerSimSecond, BACKGROUND_STEP_CAP_METRES / dt, distance / dt)
+            : 0;
         if (direction[0] !== 0 || direction[2] !== 0) {
           zombie.facing = copy(direction);
         }
@@ -1842,7 +1845,11 @@ export class ZombieSystem {
           (type.wander.bodyTurnDegreesPerSimSecond * Math.PI * dt) / 180,
         );
         scratch.direction = zombie.facing;
-        zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180);
+        zombie.headYaw = approachAngle(
+          zombie.headYaw,
+          0,
+          (type.wander.headTurnDegreesPerSimSecond * Math.PI * dt) / 180,
+        );
       }
     } else {
       zombie.modeTimer -= dt;

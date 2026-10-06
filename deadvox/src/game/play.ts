@@ -22,10 +22,10 @@ import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds, simSeconds } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
-import { planRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
@@ -59,7 +59,6 @@ import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { GameAudio } from './audio.ts';
-import { realSeconds, simSeconds, type RealSeconds, type RealTimestamp } from '../core/time.ts';
 import {
   createRefusalPresenter,
   firearmShotSound,
@@ -71,6 +70,7 @@ import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
+import { planRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';

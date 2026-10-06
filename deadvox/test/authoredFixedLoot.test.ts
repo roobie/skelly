@@ -537,7 +537,9 @@ describe('authored fixed loot', () => {
     const parsedRoadsideThreats = parsedThreats.filter(
       (spawn) =>
         spawn.type === 'shambler' &&
-        !treelineThreats.some(({ position }) => position.every((coordinate, axis) => coordinate === spawn.position[axis])) &&
+        !treelineThreats.some(({ position }) =>
+          position.every((coordinate, axis) => coordinate === spawn.position[axis]),
+        ) &&
         polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
     );
     const parsedTreelineThreats = parsedThreats.filter(({ position }) =>
@@ -547,7 +549,7 @@ describe('authored fixed loot', () => {
       spawn.window?.fromGameTimeOfDay === SPAWN_TIMES.dusk;
     expect(parsedRoadsideThreats.filter(hasDuskWindow)).toHaveLength(1);
     expect(parsedTreelineThreats.filter(hasDuskWindow)).toHaveLength(1);
-    expect(parsedLayout.startTimeGameTimeOfDay).toBe(16 * 3_600);
+    expect(parsedLayout.startTimeGameTimeOfDay).toBe(16 * 3600);
   });
 
   it('keeps the authored route near progression areas, clear of buildings and walkable over terrain', () => {

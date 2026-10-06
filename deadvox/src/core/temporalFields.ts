@@ -1,5 +1,14 @@
 export type TemporalClock = 'Sim' | 'Game' | 'Real';
-export type TemporalUnit = 'Milliseconds' | 'Seconds' | 'Minutes' | 'Hours' | 'TimeOfDay' | 'PerSecond' | 'PerMinute' | 'PerHour' | 'PerSecondSquared';
+export type TemporalUnit =
+  | 'Milliseconds'
+  | 'Seconds'
+  | 'Minutes'
+  | 'Hours'
+  | 'TimeOfDay'
+  | 'PerSecond'
+  | 'PerMinute'
+  | 'PerHour'
+  | 'PerSecondSquared';
 export type TemporalDimension = 'duration' | 'instant' | 'timeOfDay' | 'rate' | 'acceleration';
 
 export interface TemporalField {
@@ -35,7 +44,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'models.action.roundsPerSimMinute', clock: 'Sim', unit: 'PerMinute', dimension: 'rate' },
   { path: 'sounds.minIntervalSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.training.practicePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
-  { path: 'skills.training.activities.readying.practicePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
+  {
+    path: 'skills.training.activities.readying.practicePerSimSecond',
+    clock: 'Sim',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
   { path: 'skills.combat.firearms.raiseMinimumSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.combat.firearms.raiseRangeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.crouch.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
@@ -58,7 +72,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.wander.headTurnDegreesPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.speed.wanderMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.speed.chaseMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
-  { path: 'zombies.wander.movementAccelerationMetresPerSimSecondSquared', clock: 'Sim', unit: 'PerSecondSquared', dimension: 'acceleration' },
+  {
+    path: 'zombies.wander.movementAccelerationMetresPerSimSecondSquared',
+    clock: 'Sim',
+    unit: 'PerSecondSquared',
+    dimension: 'acceleration',
+  },
   { path: 'zombies.stimulusMemorySimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.hearingModel.searchSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.hearingModel.searchStrollSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
@@ -67,7 +86,12 @@ export const TEMPORAL_FIELDS = [
   { path: 'zombies.chaseMotion.stumbleChancePerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'zombies.chaseMotion.stumbleDurationSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.chaseMotion.stumbleEaseSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
-  { path: 'zombies.chaseMotion.stumbleDecelerationMetresPerSimSecondSquared', clock: 'Sim', unit: 'PerSecondSquared', dimension: 'acceleration' },
+  {
+    path: 'zombies.chaseMotion.stumbleDecelerationMetresPerSimSecondSquared',
+    clock: 'Sim',
+    unit: 'PerSecondSquared',
+    dimension: 'acceleration',
+  },
   { path: 'zombies.attack.cooldownSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'zombies.attack.windupSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
 ] as const satisfies readonly TemporalField[];

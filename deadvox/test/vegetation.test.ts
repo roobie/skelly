@@ -14,6 +14,7 @@ import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
+import { simRate, simSeconds } from '../src/core/time.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -29,7 +30,6 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { simRate, simSeconds } from '../src/core/time.ts';
 
 const { registry, issues } = buildRegistry(
   readdirSync('src/content/base')
@@ -46,7 +46,12 @@ const senseTuning = {
   id: 'fixture_player',
   crouch: { speedMetresPerSimSecond: simRate(0.8), hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
   wall: soundTuning,
-  light: { playerDaySightScale: 0, lureRangeScale: 0, throwMaxDistanceMetres: 8, throwChargeSimSeconds: simSeconds(1.25) },
+  light: {
+    playerDaySightScale: 0,
+    lureRangeScale: 0,
+    throwMaxDistanceMetres: 8,
+    throwChargeSimSeconds: simSeconds(1.25),
+  },
 };
 
 const verticalBrushSession = (spawnY: number) => {

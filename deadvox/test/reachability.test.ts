@@ -145,7 +145,7 @@ describe('static reachability', () => {
     });
     registry.items.set('field_manual', {
       ...registry.items.get('field_manual')!,
-      book: { title: 'Field Manual', recipes: ['learned_from_book'], readingGameMinutes: gameMinutes(5) }
+      book: { title: 'Field Manual', recipes: ['learned_from_book'], readingGameMinutes: gameMinutes(5) },
     });
     const withBook = checkReachability(registry);
     expect(withBook.found.has('field_manual')).toBe(true);

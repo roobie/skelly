@@ -12,9 +12,8 @@ import {
 } from '../src/core/clock.ts';
 import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
-import { realSeconds } from '../src/core/time.ts';
+import { gameSeconds, gameToSimSeconds, realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
-import { gameSeconds, gameToSimSeconds } from '../src/core/time.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;

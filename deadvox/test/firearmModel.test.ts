@@ -4,8 +4,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
 import type { ModelDef } from '../src/core/content.ts';
-import { simPerMinute, simSeconds } from '../src/core/time.ts';
 import { heldEjectionPose, heldGripOffset } from '../src/core/heldPose.ts';
+import { simPerMinute, simSeconds } from '../src/core/time.ts';
 import {
   actionPartPaths,
   cloneHeldModel,
@@ -73,7 +73,12 @@ describe('exported firearm presentation', () => {
       dwellSimSeconds: simSeconds(0.1),
       forwardSimSeconds: simSeconds(0.2),
     };
-    const action = { ...ar.action!, fire: cycle, hand: cycle, roundsPerSimMinute: simPerMinute(600) } satisfies FirearmAction;
+    const action = {
+      ...ar.action!,
+      fire: cycle,
+      hand: cycle,
+      roundsPerSimMinute: simPerMinute(600),
+    } satisfies FirearmAction;
     for (const [time, stroke] of [
       [0, 0],
       [0.0125, 0.5],

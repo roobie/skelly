@@ -12,7 +12,7 @@ import { defOf, type Item } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
 import { sunDirection } from './sky.ts';
-import { gameSeconds, type GameRate, type GameSeconds } from './time.ts';
+import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
 /** Seconds to swap the battery in a light. */
 export const BATTERY_SWAP = 2;
@@ -201,7 +201,11 @@ export const drainBurnLight = (light: Item, calendar: number): boolean => {
  * Drains a light that's on over `elapsedGameSeconds`, in place. Returns the Game seconds into
  * the step when it ran out, or undefined if it's still going (or wasn't on).
  */
-export const drainLight = (registry: Registry, light: Item, elapsedGameSeconds: GameSeconds): GameSeconds | undefined => {
+export const drainLight = (
+  registry: Registry,
+  light: Item,
+  elapsedGameSeconds: GameSeconds,
+): GameSeconds | undefined => {
   const ratePerGameSecond = drainRateOf(registry, light);
   if (!(light.on && ratePerGameSecond !== undefined)) {
     return undefined;

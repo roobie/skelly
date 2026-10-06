@@ -12,9 +12,9 @@ import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { SimSeconds } from './time.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import type { SoundEmission } from './soundPicker.ts';
+import type { SimSeconds } from './time.ts';
 
 /** Events systems emit. Sound choices and their hearing stimuli are committed before playback. */
 export type SimEvent =

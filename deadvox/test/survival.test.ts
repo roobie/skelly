@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { defaultClock, SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, SPAWN_NEEDS, STAMINA, stepNeeds, stepStamina } from '../src/core/needs.ts';
+import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds

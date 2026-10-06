@@ -7,9 +7,9 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
+import { gameTimeOfDay, realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
-import { gameTimeOfDay, realSeconds } from '../src/core/time.ts';
 import { planRealFrame } from '../src/game/frameDriver.ts';
 import { IDLE } from '../src/game/session.ts';
 import {

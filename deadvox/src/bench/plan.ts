@@ -163,7 +163,10 @@ export interface BenchRecord {
     actors: ActorRenderer;
     settings: Record<
       string,
-      Pick<NonNullable<ItemDef['light']>, 'color' | 'emissive' | 'intensity' | 'radius' | 'seenFrom' | 'burnTimeGameHours'>
+      Pick<
+        NonNullable<ItemDef['light']>,
+        'color' | 'emissive' | 'intensity' | 'radius' | 'seenFrom' | 'burnTimeGameHours'
+      >
     >;
   };
   env?: Environment;

@@ -65,7 +65,8 @@ const addWalker = (system: ZombieSystem, store: MapEntityStore<Zombie>, position
   zombie.modeTimer = 100;
   zombie.lastPerceived = [40, position[1], position[2]];
   zombie.strollHeading = [1, 0, 0];
-  zombie.horizontalSpeed = mode === 'stroll' ? SHAMBLER.speed.wanderMetresPerSimSecond : SHAMBLER.speed.chaseMetresPerSimSecond;
+  zombie.horizontalSpeed =
+    mode === 'stroll' ? SHAMBLER.speed.wanderMetresPerSimSecond : SHAMBLER.speed.chaseMetresPerSimSecond;
   zombie.lurchValue = 1;
   zombie.stumbleFactor = 1;
   return zombie;

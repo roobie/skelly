@@ -23,8 +23,8 @@ import {
   regex,
   strictObject,
   string,
-  tuple,
   transform,
+  tuple,
   union,
   boolean as vBoolean,
 } from 'valibot';
@@ -33,7 +33,16 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
-import { gameHours, gameMinutes, gamePerHour, gameTimeOfDay, simAcceleration, simPerMinute, simRate, simSeconds } from './time.ts';
+import {
+  gameHours,
+  gameMinutes,
+  gamePerHour,
+  gameTimeOfDay,
+  simAcceleration,
+  simPerMinute,
+  simRate,
+  simSeconds,
+} from './time.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
@@ -68,7 +77,7 @@ const GameTimeOfDay = pipe(
   regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'expected HH:MM'),
   transform((text) => {
     const [hours, minutes] = text.split(':').map(Number);
-    return gameTimeOfDay(hours! * 3_600 + minutes! * 60);
+    return gameTimeOfDay(hours! * 3600 + minutes! * 60);
   }),
 );
 
@@ -152,7 +161,7 @@ const PocketSchema = strictObject({
   /** Its grid: the only limit on what fits (DESIGN.md, "The item model"). */
   grid: Area,
   /** Sim seconds to take an item out or put one in, before the per-cell part. */
-  handlingSimSeconds: SimSeconds
+  handlingSimSeconds: SimSeconds,
 });
 
 const ContainerSchema = strictObject({ pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')) });
@@ -394,7 +403,8 @@ const ActionCycleSchema = pipe(
     forwardSimSeconds: PositiveSimSeconds,
   }),
   check(
-    (cycle) => cycle.rearwardSimSeconds + cycle.dwellSimSeconds + cycle.forwardSimSeconds <= cycle.durationSimSeconds + 1e-9,
+    (cycle) =>
+      cycle.rearwardSimSeconds + cycle.dwellSimSeconds + cycle.forwardSimSeconds <= cycle.durationSimSeconds + 1e-9,
     'cycle phases must fit within durationSimSeconds',
   ),
 );
@@ -591,8 +601,7 @@ const SpawnTime = pipe(
 const SpawnWindowSchema = pipe(
   strictObject({ fromGameTimeOfDay: SpawnTime, toGameTimeOfDay: optional(SpawnTime) }),
   check(
-    ({ fromGameTimeOfDay, toGameTimeOfDay }) =>
-      toGameTimeOfDay === undefined || fromGameTimeOfDay !== toGameTimeOfDay,
+    ({ fromGameTimeOfDay, toGameTimeOfDay }) => toGameTimeOfDay === undefined || fromGameTimeOfDay !== toGameTimeOfDay,
     'from and to must differ',
   ),
 );
@@ -845,11 +854,13 @@ const ZombieSchema = strictObject({
     ),
   ),
   attack: pipe(
-    strictObject({ damage: Positive, reach: Positive, cooldownSimSeconds: PositiveSimSeconds, windupSimSeconds: PositiveSimSeconds }),
-    check(
-      (attack) => attack.windupSimSeconds < attack.cooldownSimSeconds,
-      'windup must be less than cooldown',
-    ),
+    strictObject({
+      damage: Positive,
+      reach: Positive,
+      cooldownSimSeconds: PositiveSimSeconds,
+      windupSimSeconds: PositiveSimSeconds,
+    }),
+    check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
   ),
   /** Per-hit chance of severing a random not-yet-severed arm part (src/core/zombies.ts's swing); a
    * killing blow additionally rolls headOnKillChance to sever the head too. Both independent 0..1 chances,

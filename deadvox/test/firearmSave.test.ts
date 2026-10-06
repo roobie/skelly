@@ -448,7 +448,7 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
     throw new Error('AR save fixture needs exported automatic action data');
   }
   const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
-  const cycleTime = action.fire.durationSimSeconds
+  const cycleTime = action.fire.durationSimSeconds;
   expect(
     original.firearms.fire({
       debugMode: true,

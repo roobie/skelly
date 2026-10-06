@@ -11,7 +11,10 @@ describe('spawn time windows', () => {
   });
 
   it('treats bounded windows as daily half-open intervals, including overnight ranges', () => {
-    const window = { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dawn) };
+    const window = {
+      fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk),
+      toGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dawn),
+    };
     expect(spawnWindowOpen(SPAWN_TIMES.dusk - 1, window)).toBe(false);
     expect(spawnWindowOpen(SPAWN_TIMES.dusk, window)).toBe(true);
     expect(spawnWindowOpen(SPAWN_TIMES.dusk + 1, window)).toBe(true);

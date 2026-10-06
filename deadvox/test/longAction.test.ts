@@ -142,7 +142,7 @@ describe('core long actions', () => {
     const torch = registry.recipes.get('torch')!;
     expected.awardPractice(
       'crafting',
-      torch.timeGameMinutes / 3_600,
+      torch.timeGameMinutes / 3600,
       craftingActivityTier(torch.skills.crafting!, registry.skills.get('crafting')!.training!.craftingTierOffset!),
     );
     const runtime = start();

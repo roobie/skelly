@@ -68,7 +68,12 @@ describe('made light burn state', () => {
       expect(expired).toBe(second === duration);
       expect(live.on).toBe(second < duration);
     }
-    expect([caught.on, caught.burnRemainingGameSeconds, live.on, live.burnRemainingGameSeconds]).toEqual([false, 0, false, 0]);
+    expect([caught.on, caught.burnRemainingGameSeconds, live.on, live.burnRemainingGameSeconds]).toEqual([
+      false,
+      0,
+      false,
+      0,
+    ]);
   });
 
   it('keeps pile presentation stable while a glowstick burns, then invalidates it when it expires', () => {

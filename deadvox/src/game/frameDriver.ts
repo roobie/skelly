@@ -1,6 +1,13 @@
 import { COMPRESSION, type Compression } from '../core/compression.ts';
 import type { Simulation } from '../core/sim.ts';
-import { realSeconds, realTimestamp, simSeconds, type RealSeconds, type RealTimestamp, type SimSeconds } from '../core/time.ts';
+import {
+  type RealSeconds,
+  type RealTimestamp,
+  realSeconds,
+  realTimestamp,
+  type SimSeconds,
+  simSeconds,
+} from '../core/time.ts';
 
 const RAMP_PROFILES = {
   normal: { up: realSeconds(1.5), down: realSeconds(0.4) },

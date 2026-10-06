@@ -219,7 +219,10 @@ export class Body {
         bleedingRegions += 1;
       }
       if (!damageImmune && infection === 'advanced') {
-        this.state.health = Math.max(0, this.state.health - this.tuning.advancedInfectionHealthLossPerSimSecond * seconds);
+        this.state.health = Math.max(
+          0,
+          this.state.health - this.tuning.advancedInfectionHealthLossPerSimSecond * seconds,
+        );
       }
     }
     if (!damageImmune) {

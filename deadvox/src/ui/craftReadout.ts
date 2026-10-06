@@ -45,7 +45,9 @@ export const craftStatus = (
   }
   const { elapsed, duration } = itemWork;
   const work =
-    itemWork.kind === 'craft' ? inventory.registry.recipes.get(itemWork.recipe)!.timeGameMinutes : duration - itemWork.gather;
+    itemWork.kind === 'craft'
+      ? inventory.registry.recipes.get(itemWork.recipe)!.timeGameMinutes
+      : duration - itemWork.gather;
   const gather = itemWork.kind === 'craft' ? duration - work : itemWork.gather;
   return {
     uid: item.uid,

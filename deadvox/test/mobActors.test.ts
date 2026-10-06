@@ -70,7 +70,8 @@ const setOneHitParityPose = (zombie: Zombie, pose: HitParityPose): void => {
   zombie.stepOffset = pose.stepOffset ?? 0;
   zombie.gaitPhase = pose.phase;
   zombie.attackWindup = pose.windup;
-  zombie.attackWait = pose.windup > 0 ? zombie.type.attack.cooldownSimSeconds - (zombie.type.attack.windupSimSeconds - pose.windup) : 0;
+  zombie.attackWait =
+    pose.windup > 0 ? zombie.type.attack.cooldownSimSeconds - (zombie.type.attack.windupSimSeconds - pose.windup) : 0;
   zombie.wanderClock = pose.idleTime ?? 0;
   zombie.hitFlinchTime = pose.hitFlinchTime;
   zombie.headYaw = pose.headYaw ?? 0;

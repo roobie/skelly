@@ -109,11 +109,16 @@ const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
   const burnTime = def.light?.burnTimeGameHours;
   const invalidRemaining =
     state.burnRemainingGameSeconds !== undefined &&
-    (burnTime === undefined || state.burnRemainingGameSeconds > burnTime || !Number.isFinite(state.burnRemainingGameSeconds));
+    (burnTime === undefined ||
+      state.burnRemainingGameSeconds > burnTime ||
+      !Number.isFinite(state.burnRemainingGameSeconds));
   const missingActiveState =
-    state.litAtGameTimestamp !== undefined && (burnTime === undefined || state.on !== true || state.burnRemainingGameSeconds === undefined);
+    state.litAtGameTimestamp !== undefined &&
+    (burnTime === undefined || state.on !== true || state.burnRemainingGameSeconds === undefined);
   const litWithoutBurnState =
-    burnTime !== undefined && state.on === true && (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined);
+    burnTime !== undefined &&
+    state.on === true &&
+    (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined);
   if (invalidRemaining || missingActiveState || litWithoutBurnState) {
     throw new Error('Invalid saved light burn state');
   }
@@ -157,7 +162,9 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     condition: state.condition,
     ...(state.charges === undefined ? {} : { charges: state.charges }),
     ...(state.on === undefined ? {} : { on: state.on }),
-    ...(state.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: state.burnRemainingGameSeconds }),
+    ...(state.burnRemainingGameSeconds === undefined
+      ? {}
+      : { burnRemainingGameSeconds: state.burnRemainingGameSeconds }),
     ...(state.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: state.litAtGameTimestamp }),
     ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),

@@ -68,7 +68,9 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
   zombie.gaitPhase = pose.gaitPhase;
   zombie.attackWindup = pose.attackWindup;
   zombie.attackWait =
-    pose.attackWindup > 0 ? zombie.type.attack.cooldownSimSeconds - (zombie.type.attack.windupSimSeconds - pose.attackWindup) : 0;
+    pose.attackWindup > 0
+      ? zombie.type.attack.cooldownSimSeconds - (zombie.type.attack.windupSimSeconds - pose.attackWindup)
+      : 0;
   return { system, id, zombie };
 };
 

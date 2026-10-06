@@ -179,7 +179,13 @@
       "color": "#7a5534",
       "door": {
         "handlingSimSeconds": 0.6,
-        "prying": { "quality": 3, "skill": "mechanics", "timeSimSeconds": 15, "fastestTimeSimSeconds": 7.5, "strikeIntervalSimSeconds": 0.5 }
+        "prying": {
+          "quality": 3,
+          "skill": "mechanics",
+          "timeSimSeconds": 15,
+          "fastestTimeSimSeconds": 7.5,
+          "strikeIntervalSimSeconds": 0.5
+        }
       }
     }
   ]

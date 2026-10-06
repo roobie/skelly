@@ -4,7 +4,7 @@ import '../src/core/sim.ts';
 // Keep this augmentation in test/ so RealSeconds and GameSeconds remain rejected in game code.
 declare module '../src/core/sim.ts' {
   interface Simulation {
+    // biome-ignore lint/style/useConsistentMethodSignatures: Overloads the production method for numeric-only fixtures.
     frame(simDt: number, until?: number): number;
   }
 }
-export {};

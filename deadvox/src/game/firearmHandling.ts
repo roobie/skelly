@@ -380,7 +380,10 @@ export class FirearmMechanics {
     }
     const { roundsPerSimSecond } = firearmHandlingFor(item, this.inventory.registry);
     const previous = this.previousShotAt.get(uid);
-    return roundsPerSimSecond !== undefined && previous !== undefined && time >= previous && time - previous <= 1.5 / roundsPerSimSecond + 1e-9
+    return roundsPerSimSecond !== undefined &&
+      previous !== undefined &&
+      time >= previous &&
+      time - previous <= 1.5 / roundsPerSimSecond + 1e-9
       ? 'automaticFollowup'
       : 'singleShot';
   }

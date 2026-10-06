@@ -59,7 +59,7 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Presentation-only development render selection; does not alter simulation or save identity.',
   'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
-  'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.'
+  'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.',
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {

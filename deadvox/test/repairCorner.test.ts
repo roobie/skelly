@@ -7,9 +7,9 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
+import { gameMinutes } from '../src/core/time.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { populateTestHouseRepairCorner } from '../src/game/testHouse.ts';
-import { gameMinutes } from '../src/core/time.ts';
 
 const { registry: baseRegistry } = buildRegistry(
   readdirSync('src/content/base')

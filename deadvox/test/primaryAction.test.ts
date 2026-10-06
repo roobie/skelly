@@ -41,7 +41,11 @@ const capabilities = [
     },
   },
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
-  { id: 'held_book', kind: 'read', book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingGameMinutes: 1 } },
+  {
+    id: 'held_book',
+    kind: 'read',
+    book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingGameMinutes: 1 },
+  },
   { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
   {
     id: 'held_plain',
@@ -60,7 +64,13 @@ const { registry, issues } = buildRegistry([
     data: {
       skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 2 } }],
       furniture: [
-        { id: 'fixture_door', name: 'Fixture door', size: [1, 1, 1], color: '#666666', door: { handlingSimSeconds: 0 } },
+        {
+          id: 'fixture_door',
+          name: 'Fixture door',
+          size: [1, 1, 1],
+          color: '#666666',
+          door: { handlingSimSeconds: 0 },
+        },
       ],
       templates: [
         {

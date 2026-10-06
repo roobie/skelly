@@ -730,7 +730,13 @@ describe('content references', () => {
             color: '#333333',
             door: {
               handlingSimSeconds: 0.4,
-              prying: { quality: 1, skill: 'missing_skill', timeSimSeconds: 2, fastestTimeSimSeconds: 1, strikeIntervalSimSeconds: 1 },
+              prying: {
+                quality: 1,
+                skill: 'missing_skill',
+                timeSimSeconds: 2,
+                fastestTimeSimSeconds: 1,
+                strikeIntervalSimSeconds: 1,
+              },
             },
           },
         ],
@@ -854,7 +860,9 @@ describe('templates', () => {
     const doors = {
       source: 'doors.json',
       data: {
-        furniture: [{ id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534', door: { handlingSimSeconds: 0.5 } }],
+        furniture: [
+          { id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534', door: { handlingSimSeconds: 0.5 } },
+        ],
       },
     };
     expect(buildRegistry([...base, doors, t]).issues).toEqual([]);
@@ -869,7 +877,11 @@ describe('templates', () => {
     expect(check(valid)).toEqual([]);
     expect(
       check(
-        template([['Z..', '...']], { '.': 'air', Z: { spawn: 'shambler', window: { fromGameTimeOfDay: 'sunset' } } }, [3, 1, 2]),
+        template(
+          [['Z..', '...']],
+          { '.': 'air', Z: { spawn: 'shambler', window: { fromGameTimeOfDay: 'sunset' } } },
+          [3, 1, 2],
+        ),
       ),
     ).toEqual(expect.arrayContaining([expect.stringContaining('Expected (string | Object) but received Object')]));
     expect(
@@ -882,7 +894,13 @@ describe('templates', () => {
       ),
     ).toEqual(expect.arrayContaining([expect.stringContaining('from and to must differ')]));
     expect(
-      check(template([['F..', '...']], { '.': 'air', F: { furniture: 'crate', window: { fromGameTimeOfDay: 'dusk' } } }, [3, 1, 2])),
+      check(
+        template(
+          [['F..', '...']],
+          { '.': 'air', F: { furniture: 'crate', window: { fromGameTimeOfDay: 'dusk' } } },
+          [3, 1, 2],
+        ),
+      ),
     ).toEqual(expect.arrayContaining([expect.stringContaining('window" only goes with "spawn')]));
   });
 

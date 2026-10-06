@@ -20,9 +20,9 @@ import {
   shamblerSummary,
 } from '../src/bench/report.ts';
 import { benchRunFromUrl, nextUrl } from '../src/bench/run.ts';
-import { gameHours } from '../src/core/time.ts';
 import { shamblerRunFromUrl } from '../src/bench/shamblers.ts';
 import { frameStats, percentile } from '../src/bench/stats.ts';
+import { gameHours } from '../src/core/time.ts';
 
 describe('bench stats', () => {
   it('takes nearest-rank percentiles', () => {
@@ -206,7 +206,14 @@ describe('bench report', () => {
         shamblers: 1,
         actors: 'detailed',
         settings: {
-          fixture: { color: '#ffffff', emissive: 1, intensity: 1, radius: 1, seenFrom: 1, burnTimeGameHours: gameHours(1) },
+          fixture: {
+            color: '#ffffff',
+            emissive: 1,
+            intensity: 1,
+            radius: 1,
+            seenFrom: 1,
+            burnTimeGameHours: gameHours(1),
+          },
         },
       },
     };

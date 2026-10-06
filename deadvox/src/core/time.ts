@@ -25,8 +25,10 @@ export const simSeconds = (value: number): SimSeconds => finiteNonNegative(value
 export const gameSeconds = (value: number): GameSeconds => finiteNonNegative(value, 'GameSeconds') as GameSeconds;
 export const realSeconds = (value: number): RealSeconds => finiteNonNegative(value, 'RealSeconds') as RealSeconds;
 export const simTimestamp = (value: number): SimTimestamp => finiteNonNegative(value, 'SimTimestamp') as SimTimestamp;
-export const gameTimestamp = (value: number): GameTimestamp => finiteNonNegative(value, 'GameTimestamp') as GameTimestamp;
-export const realTimestamp = (value: number): RealTimestamp => finiteNonNegative(value, 'RealTimestamp') as RealTimestamp;
+export const gameTimestamp = (value: number): GameTimestamp =>
+  finiteNonNegative(value, 'GameTimestamp') as GameTimestamp;
+export const realTimestamp = (value: number): RealTimestamp =>
+  finiteNonNegative(value, 'RealTimestamp') as RealTimestamp;
 export const simRate = (value: number): SimRate => finiteNonNegative(value, 'SimRate') as SimRate;
 export const gameRate = (value: number): GameRate => finiteNonNegative(value, 'GameRate') as GameRate;
 export const realRate = (value: number): RealRate => finiteNonNegative(value, 'RealRate') as RealRate;
@@ -40,17 +42,20 @@ export const gameTimeOfDay = (value: number): GameTimeOfDay => {
 };
 
 /** Unit-normalizing constructors for numeric content fields. */
-export const simMilliseconds = (value: number): SimSeconds => simSeconds(finiteNonNegative(value, 'SimMilliseconds') / 1_000);
+export const simMilliseconds = (value: number): SimSeconds =>
+  simSeconds(finiteNonNegative(value, 'SimMilliseconds') / 1000);
 export const simMinutes = (value: number): SimSeconds => simSeconds(finiteNonNegative(value, 'SimMinutes') * 60);
-export const simHours = (value: number): SimSeconds => simSeconds(finiteNonNegative(value, 'SimHours') * 3_600);
-export const gameMilliseconds = (value: number): GameSeconds => gameSeconds(finiteNonNegative(value, 'GameMilliseconds') / 1_000);
+export const simHours = (value: number): SimSeconds => simSeconds(finiteNonNegative(value, 'SimHours') * 3600);
+export const gameMilliseconds = (value: number): GameSeconds =>
+  gameSeconds(finiteNonNegative(value, 'GameMilliseconds') / 1000);
 export const gameMinutes = (value: number): GameSeconds => gameSeconds(finiteNonNegative(value, 'GameMinutes') * 60);
-export const gameHours = (value: number): GameSeconds => gameSeconds(finiteNonNegative(value, 'GameHours') * 3_600);
-export const realMilliseconds = (value: number): RealSeconds => realSeconds(finiteNonNegative(value, 'RealMilliseconds') / 1_000);
+export const gameHours = (value: number): GameSeconds => gameSeconds(finiteNonNegative(value, 'GameHours') * 3600);
+export const realMilliseconds = (value: number): RealSeconds =>
+  realSeconds(finiteNonNegative(value, 'RealMilliseconds') / 1000);
 export const realMinutes = (value: number): RealSeconds => realSeconds(finiteNonNegative(value, 'RealMinutes') * 60);
-export const realHours = (value: number): RealSeconds => realSeconds(finiteNonNegative(value, 'RealHours') * 3_600);
+export const realHours = (value: number): RealSeconds => realSeconds(finiteNonNegative(value, 'RealHours') * 3600);
 export const simPerMinute = (value: number): SimRate => simRate(finiteNonNegative(value, 'SimPerMinute') / 60);
-export const gamePerHour = (value: number): GameRate => gameRate(finiteNonNegative(value, 'GamePerHour') / 3_600);
+export const gamePerHour = (value: number): GameRate => gameRate(finiteNonNegative(value, 'GamePerHour') / 3600);
 export const realPerMinute = (value: number): RealRate => realRate(finiteNonNegative(value, 'RealPerMinute') / 60);
 
 export interface ClockConversion {

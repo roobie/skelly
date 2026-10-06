@@ -88,7 +88,8 @@ describe('furniture', () => {
     const def = registry.furniture.get('kitchen_cupboard')!;
     const [w, h] = registry.items.get('canned_beans')!.size;
     const cells = w * h;
-    const expected = def.container!.pockets[0]!.handlingSimSeconds + inv.pocketHandling(hoodie, 0) + 2 * HANDLING.perCell * cells;
+    const expected =
+      def.container!.pockets[0]!.handlingSimSeconds + inv.pocketHandling(hoodie, 0) + 2 * HANDLING.perCell * cells;
     expect(plan.ok && plan.time).toBeCloseTo(expected);
   });
 

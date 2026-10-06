@@ -93,7 +93,7 @@ export const parseSpawnTime = (text: string): number | undefined =>
 export const spawnWindowOpen = (calendar: number, timeWindow: SpawnTimeWindow): boolean => {
   const from = timeWindow.fromGameTimeOfDay;
   const to = timeWindow.toGameTimeOfDay;
-  if (from === undefined || to !== undefined && !Number.isFinite(to)) {
+  if (from === undefined || (to !== undefined && !Number.isFinite(to))) {
     return false;
   }
   if (to === undefined) {

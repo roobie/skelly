@@ -34,7 +34,10 @@ export class Compression {
   interruption: string | undefined;
 
   /** Asks for compression. Refused, with the reason, when it isn't safe. */
-  start(unsafe: string | undefined, limits: CompressionLimits = COMPRESSION): { ok: true } | { ok: false; reason: string } {
+  start(
+    unsafe: string | undefined,
+    limits: CompressionLimits = COMPRESSION,
+  ): { ok: true } | { ok: false; reason: string } {
     if (unsafe !== undefined) {
       return { ok: false, reason: unsafe };
     }
