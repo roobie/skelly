@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
 const { firefox } = await import('playwright');
@@ -127,18 +128,62 @@ try {
     { timeout: 10_000 },
   );
   await page.waitForFunction((time) => globalThis.firefoxNativeSim.time > time, before, { timeout: 20_000 });
+  const gateCode = await page.evaluate(
+    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+  );
+  await page.evaluate((code) => {
+    globalThis.firefoxNativeGateEvents = [];
+    addEventListener('keydown', (event) => {
+      if (event.code === code) {
+        globalThis.firefoxNativeGateEvents.push({
+          type: 'keydown',
+          trusted: event.isTrusted,
+          prevented: event.defaultPrevented,
+        });
+      }
+    });
+    addEventListener('keyup', (event) => {
+      if (event.code === code) {
+        globalThis.firefoxNativeGateEvents.push({
+          type: 'keyup',
+          trusted: event.isTrusted,
+          prevented: event.defaultPrevented,
+        });
+      }
+    });
+  }, gateCode);
+  const godBefore = await page.evaluate(() => globalThis.firefoxNativeSim.godMode);
+  await pressAction(page, 'debug.god-toggle', { includeGate: false });
+  assert.equal(
+    await page.evaluate(() => globalThis.firefoxNativeSim.godMode),
+    godBefore,
+    'plain debug key cannot author',
+  );
+  await pressAction(page, 'debug.god-toggle');
+  assert.equal(
+    await page.evaluate(() => globalThis.firefoxNativeSim.godMode),
+    !godBefore,
+    'held F2 authorizes one debug action',
+  );
+  await pressAction(page, 'debug.god-toggle', { includeGate: false });
+  assert.equal(await page.evaluate(() => globalThis.firefoxNativeSim.godMode), !godBefore, 'gate release cannot latch');
+  const gateEvents = await page.evaluate(() => globalThis.firefoxNativeGateEvents);
+  assert.equal(gateEvents.length, 2);
+  assert.ok(gateEvents.every((event) => event.trusted));
+  assert.ok(gateEvents.some((event) => event.type === 'keydown' && event.prevented));
+  assert.equal(page.context().pages().length, 1, 'debug gate opens no Help page or window');
   const gesture = await page.evaluate(() => globalThis.__startGesture);
   assert.equal(gesture.pointerDownTarget, gesture.clickTarget);
   assert.equal(gesture.pointerDownTarget, 'p#go.go');
   assert.equal(gesture.lockRequests.length, 1, 'one initial gesture makes one native lock request');
-  assert.equal(gesture.lockRequests[0].target, 'div#view');
+  assert.equal(gesture.lockRequests[0].target, 'main#view');
   assert.equal(gesture.lockRequests[0].userActivationActive, true);
-  assert.ok(gesture.lockChanges.includes('div#view'));
+  assert.ok(gesture.lockChanges.includes('main#view'));
   assert.ok(gesture.audioResumeCalls.some((call) => call.duringAcceptedClick && call.userActivationActive));
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
   process.stdout.write(
-    'Firefox NATIVE first-gesture lock/audio/progress passed; menu/inventory are tested separately.\n',
+    'Firefox NATIVE first-gesture lock/audio/progress and F2-gated debug passed; menu/inventory are tested separately.\n',
   );
 } catch (error) {
   let timer;

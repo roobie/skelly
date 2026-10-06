@@ -14,6 +14,7 @@ import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
@@ -54,6 +55,7 @@ const zombieHooks = (player: PlayerSense, hour = 23) => ({
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   jumpSpeed: PLAYER.jump,
+  tuning: TEST_SENSE_TUNING,
   player: () => player,
   hour: () => hour,
   hurtPlayer: () => undefined,
@@ -340,6 +342,49 @@ describe('Session long-action input lock', () => {
     expect(sim.time).toBeGreaterThan(time);
     expect([session.body.pos[0], session.body.pos[2]]).toEqual([position[0], position[2]]);
     expect(actions).toBe(0);
+  });
+
+  it('pauses queued handling until a knockout ends', () => {
+    const entities = new BlockEntities(registry);
+    const session = createSession({
+      registry,
+      world: new World(),
+      isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      entities,
+      scale: SCALE,
+      seed: 1,
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => false,
+        intent: () => IDLE,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in knockout handling fixture');
+      },
+    });
+    let completed = false;
+    session.queue.registerAction('test.knockout-handling', () => {
+      completed = true;
+    });
+    session.queue.enqueueAction('test.knockout-handling', 'Fixture action', 0.01);
+    session.sim.body.impact(0, 'torso', { shockDamage: session.sim.body.shock });
+
+    const maxFrames = Math.ceil(session.sim.body.tuning.knockoutSeconds * 60) + 2;
+    for (let frame = 0; frame < maxFrames && session.sim.body.unconscious; frame += 1) {
+      session.frame(1 / 60);
+    }
+
+    expect(session.sim.body.unconscious).toBe(false);
+    expect(completed).toBe(false);
   });
 
   it('wakes after damage with movement unlocked and no pending sleep action', () => {

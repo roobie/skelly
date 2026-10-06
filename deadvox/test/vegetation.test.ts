@@ -10,9 +10,10 @@ import { footstepEventForBlock, shamblerFootstepEventForBlock } from '../src/cor
 import { Forest } from '../src/core/forest.ts';
 import { HAMLET, Hamlet } from '../src/core/hamlet.ts';
 import { PlayerCombat } from '../src/core/playerCombat.ts';
-import { countSolidRuns, raycast } from '../src/core/raycast.ts';
+import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
+import { soundOcclusion } from '../src/core/soundOcclusion.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -39,6 +40,12 @@ const { registry, issues } = buildRegistry(
     })),
 );
 const scale = makeScale(0.5);
+const soundTuning = { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 };
+const senseTuning = {
+  id: 'fixture_player',
+  crouch: { speedMetresPerSecond: 0.8, hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
+  wall: soundTuning,
+};
 
 const verticalBrushSession = (spawnY: number) => {
   const world = new World();
@@ -107,6 +114,7 @@ describe('passable but opaque vegetation', () => {
         hour: 12,
         blockSize: 0.5,
         isSolid: opaque,
+        tuning: senseTuning,
       });
     expect(sense()).toBe(true);
     for (const name of ['tree_trunk', 'tree_branch', 'leaves', 'hedge', 'leaf_litter']) {
@@ -118,7 +126,15 @@ describe('passable but opaque vegetation', () => {
         chunk.set(4, y, 0, id);
       }
       expect(solid(4, 4, 0), name).toBe(blocksMovement);
-      expect(countSolidRuns([0.5, 4.5, 0.5], [10.5, 4.5, 0.5], solid), name).toBe(blocksMovement ? 1 : 0);
+      expect(
+        soundOcclusion({
+          listener: [0.5, 4.5, 0.5],
+          source: [10.5, 4.5, 0.5],
+          isSolid: solid,
+          globalWall: senseTuning.wall,
+        }).occluded,
+        name,
+      ).toBe(blocksMovement);
       expect(raycast([0.5, 4.5, 0.5], [1, 0, 0], 10, opaque)?.block, name).toEqual([4, 4, 0]);
       expect(sense(), name).toBe(false);
     }
@@ -148,6 +164,7 @@ describe('passable but opaque vegetation', () => {
       blockSize: 0.5,
       physics: physicsFor(scale),
       jumpSpeed: PLAYER.jump,
+      tuning: senseTuning,
       player: () => player,
       hour: () => 12,
       hurtPlayer: () => undefined,

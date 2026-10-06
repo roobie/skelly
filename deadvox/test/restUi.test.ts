@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { formatClock } from '../src/core/clock.ts';
 import type { RestAction } from '../src/core/longAction.ts';
-import { labelForCode } from '../src/game/controls.ts';
-import { CONTROL_CODES } from '../src/game/input.ts';
+import { labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { restViewModel } from '../src/ui/rest.ts';
 import { Simulation } from './simulationFixture.ts';
@@ -28,11 +27,9 @@ describe('restViewModel', () => {
   it('offers cancellation for rest but not sleep', () => {
     const sim = new Simulation({ seed: 1 });
     const rest: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
-    const interactKey = labelForCode(CONTROL_CODES.interact);
-    const cancelKey = labelForCode(CONTROL_CODES.cancel);
+    const stopKey = labelForAction('handling.stop');
     const restVm = restViewModel(rest, true, sim, false);
-    expect(restVm.stopHint).toContain(interactKey);
-    expect(restVm.stopHint).toContain(cancelKey);
+    expect(restVm.stopHint).toContain(stopKey);
     expect(restVm.canStop).toBe(true);
     const sleep: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 40 };
     const sleepVm = restViewModel(sleep, false, sim, false);

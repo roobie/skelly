@@ -268,10 +268,11 @@ Paperwork; no game code.
 
 - **Quick move** (BR, 2026-10-03; pulled into 2.1 with BR's go). It's one more
   option from the core `options()`: `quickMove(item, reach)` returns the move it
-  would make, or the reason it can't. BR ruled on 2026-10-04 that quick actions
-  use **hold T and click** ("hold T+click on item does the quick action (auto
-  move)") and that Ctrl and Cmd are never used (CONTROLS.md). d44 owns the
-  held-T binding.
+  would make, or the reason it can't. The default UI binding is **hold T and
+  click**, as BR ruled on 2026-10-04 ("hold T+click on item does the quick action
+  (auto move)"), under BR's rule that Ctrl, Cmd and Meta never invoke a game action
+  (`CONTROLS.md`). See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, for its
+  rebindable gate. Shift-click stays free for splitting a stack later.
   - **An item you carry** (in hands, worn, in a pocket or a container) drops to
     the ground pile at your feet. A worn container drops with its contents.
     Taking it off costs its usual handling time.
@@ -288,8 +289,8 @@ Paperwork; no game code.
     and goes through the handling queue, so it saves clicks, not game time.
   - **Tests:** one case per rule: carried to the floor, wielded with and without
     room, floor to the backpack, falling through to a pocket, no room giving the
-    hint, a floor backpack worn with its contents, and a whole stack. Plus the
-    platform key mapping.
+    hint, a floor backpack worn with its contents, a whole stack, and the
+    property that browser-owned modifiers cannot bind to game actions.
 
 **Saves:** none; queries hold no state.
 **Tests:** an item in a pile or a backpack lying just inside 2 m is in reach,

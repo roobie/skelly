@@ -120,6 +120,7 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
       isSolid: engine.isSolid,
       isOpaque: engine.isOpaque,
       blockSize: s,
+      tuning: engine.registry.senses.get('player')!,
       terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
       physics: physicsFor(scale),
       jumpSpeed: PLAYER.jump,

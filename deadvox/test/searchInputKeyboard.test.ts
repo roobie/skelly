@@ -1,43 +1,97 @@
 // @vitest-environment happy-dom
 import { expect, it } from 'vitest';
-import { installSearchInputKeyboardBoundary } from '../src/debug/searchInputKeyboard.ts';
-import { Input } from '../src/game/input.ts';
+import { BindingRegistry, KeyboardInput } from '../src/game/inputBindings.ts';
 
-it('preserves both walking states while typing Z, then restores normal toggling after dismissal', () => {
-  const gameTarget = document.createElement('canvas');
-  const search = document.createElement('input');
-  document.body.append(gameTarget, search);
-  const input = new Input(gameTarget);
-  let menuOpen = true;
-  const removeBoundary = installSearchInputKeyboardBoundary((target) => menuOpen && target === search);
-  const codesAtSearch: string[] = [];
-  search.addEventListener('keydown', (event) => codesAtSearch.push((event as KeyboardEvent).code));
-
-  const keyEvent = (type: 'keydown' | 'keyup') =>
-    new KeyboardEvent(type, { bubbles: true, cancelable: true, code: 'KeyZ', key: 'z' });
-
-  try {
-    for (const walking of [false, true]) {
-      input.walking = walking;
-      const searchDown = keyEvent('keydown');
-      search.dispatchEvent(searchDown);
-      expect(input.walking).toBe(walking);
-      expect(codesAtSearch.at(-1)).toBe('');
-      expect(searchDown.code).toBe('KeyZ');
-      expect(searchDown.defaultPrevented).toBe(false);
-      search.dispatchEvent(keyEvent('keyup'));
-      expect(input.held.size).toBe(0);
-
-      menuOpen = false;
-      search.dispatchEvent(keyEvent('keydown'));
-      expect(input.walking).toBe(!walking);
-      search.dispatchEvent(keyEvent('keyup'));
-      expect(input.held.size).toBe(0);
-      menuOpen = true;
+it('keeps native text codes and defaults intact without emitting gameplay intents', () => {
+  const keyboard = new KeyboardInput(
+    new BindingRegistry([
+      {
+        id: 'fixture.walk',
+        description: 'Fixture walking toggle',
+        contexts: ['play'],
+        defaults: [{ code: 'KeyZ' }],
+        commands: [{ id: 'fixture.walk', kind: 'press' }],
+      },
+    ]),
+  );
+  keyboard.context = () => ({ context: 'play', debug: false });
+  const commands: string[] = [];
+  keyboard.command = ({ action, phase }) => {
+    if (phase === 'down') {
+      commands.push(action);
     }
+  };
+  const remove = keyboard.install();
+  const search = document.createElement('input');
+  const canvas = document.createElement('canvas');
+  document.body.append(search, canvas);
+  const observed: string[] = [];
+  search.addEventListener('keydown', (domEvent) => observed.push((domEvent as KeyboardEvent).code));
+  const event = (type: 'keydown' | 'keyup') =>
+    new KeyboardEvent(type, { bubbles: true, cancelable: true, code: 'KeyZ' });
+  try {
+    const textDown = event('keydown');
+    search.dispatchEvent(textDown);
+    search.dispatchEvent(event('keyup'));
+    expect(observed).toEqual(['KeyZ']);
+    expect(textDown.code).toBe('KeyZ');
+    expect(textDown.defaultPrevented).toBe(false);
+    expect(commands).toEqual([]);
+    const playDown = event('keydown');
+    canvas.dispatchEvent(playDown);
+    expect(playDown.defaultPrevented).toBe(true);
+    expect(commands).toEqual(['fixture.walk']);
+    canvas.dispatchEvent(event('keyup'));
   } finally {
-    removeBoundary();
-    gameTarget.remove();
+    remove();
     search.remove();
+    canvas.remove();
+  }
+});
+
+it('gates native debug-checkbox activation but leaves text editing native', () => {
+  const keyboard = new KeyboardInput(
+    new BindingRegistry(
+      [
+        {
+          id: 'debug.gate',
+          description: 'Fixture debug gate',
+          contexts: ['debug-panel'],
+          defaults: [{ code: 'F2' }],
+          commands: [{ id: 'debug.gate', kind: 'held-state' }],
+          debug: true,
+        },
+      ],
+      undefined,
+    ),
+  );
+  keyboard.context = () => ({ context: 'debug-panel', debug: true });
+  const remove = keyboard.install();
+  const panel = document.createElement('section');
+  panel.dataset.debugControls = '';
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  const text = document.createElement('input');
+  panel.append(checkbox, text);
+  document.body.append(panel);
+  const key = (target: EventTarget, code: string, type = 'keydown') => {
+    const event = new KeyboardEvent(type, { bubbles: true, cancelable: true, code });
+    target.dispatchEvent(event);
+    return event;
+  };
+  try {
+    expect(key(checkbox, 'Space').defaultPrevented).toBe(true);
+    key(checkbox, 'Space', 'keyup');
+    expect(key(text, 'Space').defaultPrevented).toBe(false);
+    key(text, 'Space', 'keyup');
+    expect(key(panel, 'F2').defaultPrevented).toBe(true);
+    expect(keyboard.held('debug.gate')).toBe(true);
+    expect(key(checkbox, 'Space').defaultPrevented).toBe(false);
+    key(checkbox, 'Space', 'keyup');
+    key(panel, 'F2', 'keyup');
+    expect(key(checkbox, 'Space').defaultPrevented).toBe(true);
+  } finally {
+    remove();
+    panel.remove();
   }
 });

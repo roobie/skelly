@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
@@ -29,7 +30,7 @@ const observationPlugin = {
       marker,
       `
   const proof = {
-    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, playKeys, quickbarActions, hudOptions,
+    input, keyboardInput, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions, hudOptions,
     selectPrimaryAction, ignitionTargetForHand,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
@@ -209,7 +210,7 @@ try {
     if (trigger === 'click') {
       await page.mouse.click(640, 450);
     } else {
-      await page.keyboard.press('Equal');
+      await pressAction(page, 'hand.use-off');
     }
     await page.waitForFunction((uid) => globalThis.primaryActionTest.inventory.itemByUid(uid)?.on === true, before.uid);
     const after = await page.evaluate((uid) => {
@@ -319,18 +320,45 @@ try {
     r.performHandUse('right');
     const handBlocked = { before: swings, after: r.swings.length, notice: r.getNotice() };
     r.clearNotice();
-    r.playKeys('KeyF');
+    r.keyboardInput.command({ action: 'world.interact', phase: 'down', at: 0 });
     const interactNotice = r.getNotice();
     r.clearNotice();
-    r.playKeys('KeyL');
-    const sleepNotice = r.getNotice();
-    r.session.sim.body.advance(r.session.sim.body.tuning.knockoutSeconds);
-    return { ...handBlocked, interactNotice, sleepNotice };
+    r.keyboardInput.command({ action: 'player.crouch-toggle', phase: 'down', at: 0 });
+    const crouchNotice = r.getNotice();
+    return { ...handBlocked, interactNotice, crouchNotice };
   });
   assert.equal(knockout.after, knockout.before, 'both hand actions are refused while unconscious');
   assert.notEqual(knockout.notice, '', 'the unconscious hand-action refusal is surfaced');
   assert.notEqual(knockout.interactNotice, '', 'world interaction is refused while unconscious');
-  assert.notEqual(knockout.sleepNotice, '', 'sleep is refused while unconscious');
+  assert.notEqual(knockout.crouchNotice, '', 'crouch is refused while unconscious');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return document.body.classList.contains('unconscious') && r.audio.isOutputMuted;
+  });
+  const unconsciousPresentation = await page.evaluate(() => {
+    const { audio, session } = globalThis.primaryActionTest;
+    return {
+      black: document.body.classList.contains('unconscious'),
+      muted: audio.isOutputMuted,
+      eyeHeight: session.playerEyeHeightMetres,
+      proneHeight: session.sim.body.tuning.proneEyeHeightMetres,
+    };
+  });
+  assert.equal(unconsciousPresentation.black, true, 'unconscious presentation blacks out the view');
+  assert.equal(unconsciousPresentation.muted, true, 'unconscious presentation mutes player audio');
+  assert.equal(
+    unconsciousPresentation.eyeHeight,
+    unconsciousPresentation.proneHeight,
+    'unconscious eye height is prone',
+  );
+  await page.evaluate(() => {
+    const { sim } = globalThis.primaryActionTest.session;
+    sim.body.advance(sim.body.tuning.knockoutSeconds);
+  });
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !(document.body.classList.contains('unconscious') || r.audio.isOutputMuted);
+  });
 
   const nextFrame = async () => {
     const frame = await page.evaluate(() => globalThis.primaryActionTest.frames);
@@ -356,10 +384,10 @@ try {
     assert.ok(after.stamina < before.stamina, 'an admitted swing spends stamina');
     return after;
   };
-  const toggleLight = async (key, on) => {
+  const toggleLight = async (actionId, on) => {
     const before = await observe();
-    if (key) {
-      await page.keyboard.press(key);
+    if (actionId) {
+      await pressAction(page, actionId);
     } else {
       await page.mouse.click(640, 450);
     }
@@ -452,18 +480,22 @@ try {
       time: globalThis.primaryActionTest.session.sim.time,
       feet: globalThis.primaryActionTest.feet(),
     }));
-    await page.keyboard.down('KeyW');
-    await waitForSimulation(
-      page,
-      progressingSample,
-      { start: before.time },
-      {
-        seconds: 0.35,
-        label: 'render-free input and simulation witness',
-        record: (line) => process.stderr.write(`${line}\n`),
-        stop: () => page.keyboard.up('KeyW'),
-      },
-    );
+    const releaseForward = await holdAction(page, 'movement.forward');
+    try {
+      await waitForSimulation(
+        page,
+        progressingSample,
+        { start: before.time },
+        {
+          seconds: 0.35,
+          label: 'render-free input and simulation witness',
+          record: (line) => process.stderr.write(`${line}\n`),
+          stop: releaseForward,
+        },
+      );
+    } finally {
+      await releaseForward();
+    }
     const witness = await page.evaluate(() => ({
       renderer: Boolean(globalThis.primaryActionTest.engine.renderer),
       requests: globalThis.renderFreeWitness.webglRequests,
@@ -477,7 +509,7 @@ try {
     );
   }
   // Gunshots attract shamblers; mortality is not the hand-action contract.
-  await page.keyboard.press('KeyH');
+  await pressAction(page, 'debug.god-toggle');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.session.sim.godMode), true);
   const loadout = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
@@ -561,7 +593,7 @@ try {
     attachment.every((sample) => sample.gap <= 0.001 && sample.angle < 1e-6),
     'held item follows its physical arm',
   );
-  await toggleLight('Equal', true);
+  await toggleLight('hand.use-off', true);
   const roundTrip = await page.evaluate(() => {
     const { inventory, session, lightUid } = globalThis.primaryActionTest;
     const snapshot = session.snapshot({ worldId: 'primary-world', characterId: 'primary-actor' });
@@ -583,7 +615,7 @@ try {
   assert.equal(roundTrip.savedOn, true);
   assert.equal(roundTrip.restoredOn, true);
   assert.equal(roundTrip.restoredHand, 'left');
-  await toggleLight('Equal', false);
+  await toggleLight('hand.use-off', false);
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.create(r.types.tool));
@@ -601,8 +633,8 @@ try {
   const mouse5WhileHandling = await attemptDuringHandling(roles.off, roles.dominant, true);
   assert.equal(mouse5WhileHandling.inputActive, true, 'Mouse 5 is dispatched while the game owns input');
   assertHandlingRefusal(mouse5WhileHandling, 'off-hand instant action');
-  await toggleLight('Equal', true);
-  await toggleLight('Equal', false);
+  await toggleLight('hand.use-off', true);
+  await toggleLight('hand.use-off', false);
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.itemByUid(r.lightUid));
@@ -622,7 +654,7 @@ try {
   const unsupported = await observe();
   assert.deepEqual(unsupported.swings, unsupportedBefore.swings, 'unsupported held item never falls back to fists');
   assert.ok(unsupported.stamina >= unsupportedBefore.stamina);
-  await toggleLight('Equal', true);
+  await toggleLight('hand.use-off', true);
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
@@ -641,24 +673,24 @@ try {
     r.swings = [];
   });
   const blockedBefore = await observe();
-  await page.keyboard.press('KeyB');
+  await pressAction(page, 'debug.build-toggle');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.debugTools.buildOn), true);
-  await page.keyboard.press('Equal');
+  await pressAction(page, 'hand.use-off');
   await nextFrame();
   const build = await observe();
   assert.equal(build.on, false);
   assert.deepEqual(build.swings, []);
   assert.ok(build.stamina >= blockedBefore.stamina);
-  await page.keyboard.press('KeyB');
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'debug.build-toggle');
+  await pressAction(page, 'ui.inventory-toggle');
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.input.menuPointer), true);
-  await page.keyboard.press('Equal');
+  await pressAction(page, 'hand.use-off');
   await nextFrame();
   const menu = await observe();
   assert.equal(menu.on, false);
   assert.deepEqual(menu.swings, []);
   assert.ok(menu.stamina >= blockedBefore.stamina);
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'ui.inventory-toggle');
 
   const firearm = await page.evaluate(async () => {
     const moduleUrl = '/src/game/firearmHandling.ts';
@@ -713,7 +745,7 @@ try {
     r.session.quickbar.assign(0, item);
     return { uid: item.uid, count: item.count, heldUid: r.inventory.hands.left?.uid };
   });
-  await page.keyboard.down('Digit1');
+  const releaseQuickbar = await holdAction(page, 'quickbar.use.1');
   try {
     await page.waitForFunction(({ uid, count, heldUid }) => {
       const r = globalThis.primaryActionTest;
@@ -721,7 +753,7 @@ try {
       return (!item || item.count < count) && r.inventory.hands.left?.uid === heldUid;
     }, food);
   } finally {
-    await page.keyboard.up('Digit1');
+    await releaseQuickbar();
   }
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.inventory.hands.left?.uid), food.heldUid);
   const bookUid = await page.evaluate(() => {
@@ -747,7 +779,7 @@ try {
   );
   // The reading card owns keyboard input until it is closed.
   await page.keyboard.press('Escape');
-  await page.keyboard.press('KeyX');
+  await pressAction(page, 'handling.stop');
   await page.waitForFunction(
     () => {
       const { sim } = globalThis.primaryActionTest.session;

@@ -9,7 +9,7 @@ import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { Rng } from '../src/core/random.ts';
-import type { SolidAt } from '../src/core/raycast.ts';
+import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DoorLockDef } from '../src/core/schema.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
@@ -34,6 +34,7 @@ import {
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
 import { ZombieMeshes } from '../src/render/zombies.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';
@@ -47,13 +48,16 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const PHYSICS = physicsFor(SCALE);
+const SENSE_TUNING = TEST_SENSE_TUNING;
 const FLOOR: SolidAt = (_x, y) => y === 0;
+// biome-ignore lint/complexity/useMaxParams: compact shared fixture maps independent player-sense fields.
 const player = (
   pos: Vec3,
   facing: Vec3 = [-1, 0, 0],
   movement: PlayerSense['movement'] = 'still',
   lit = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40 });
+  crouching = false,
+): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, crouching });
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
@@ -67,6 +71,7 @@ const senses = (
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   jumpSpeed: PLAYER.jump,
+  tuning: SENSE_TUNING,
   hurtPlayer,
 });
 const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
@@ -317,7 +322,7 @@ describe('melee hit sounds', () => {
 });
 
 describe('shambler perception', () => {
-  it('uses configured day/night/light/cone/ray bounds and jogging/sprinting hearing bounds', () => {
+  it('uses configured day/night/light/cone/ray bounds and movement hearing bounds', () => {
     // biome-ignore lint/complexity/useMaxParams: compact table-driven test inputs vary independent perception dimensions.
     const sees = (
       at: Vec3,
@@ -334,6 +339,7 @@ describe('shambler perception', () => {
         hour,
         blockSize: BLOCK_SIZE,
         isSolid: wall,
+        tuning: SENSE_TUNING,
       });
     expect(sees([48, 2, 0], 12)).toBe(true);
     expect(sees([52, 2, 0], 12)).toBe(false);
@@ -351,8 +357,10 @@ describe('shambler perception', () => {
     expect(sees([10, 2, 0], 12, false, (x, y, z) => x === 4 && y === 4 && z === 0)).toBe(false);
     const opaque = (x: number, y: number, _z: number) => x === 4 && y === 4;
     const muffledHearingEdge = (movement: 'jog' | 'sprint') =>
-      (SHAMBLER.hearingRange[movement] * SHAMBLER.hearing * SHAMBLER.hearingModel.farMultiplier -
-        SHAMBLER.hearingModel.wallRunCostMetres) /
+      (SHAMBLER.hearingRange[movement] *
+        SHAMBLER.hearing *
+        SHAMBLER.hearingModel.farMultiplier *
+        SENSE_TUNING.wall.hearingRangeScale) /
       BLOCK_SIZE;
     expect(sees([10, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
     expect(sees([muffledHearingEdge('jog') - 1, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
@@ -368,6 +376,7 @@ describe('shambler perception', () => {
         hour: 12,
         blockSize: BLOCK_SIZE,
         isSolid: wall,
+        tuning: SENSE_TUNING,
       });
     expect(hears([5, 2, 0], 'walking')).toBe(true);
     expect(hears([7, 2, 0], 'walking')).toBe(true);
@@ -376,6 +385,97 @@ describe('shambler perception', () => {
     expect(hears([walkingFarEdge - 1, 2, 0], 'walking')).toBe(true);
     expect(hears([walkingFarEdge + 1, 2, 0], 'walking')).toBe(false);
     expect(hears([5, 2, 0], 'still')).toBe(false);
+  });
+
+  it('makes a moving crouching player harder to hear and see', () => {
+    const from: Vec3 = [0, 2, 0];
+    const perceives = ({
+      distanceMetres,
+      hour,
+      crouching,
+      movement,
+      zombie = SHAMBLER,
+    }: {
+      distanceMetres: number;
+      hour: number;
+      crouching: boolean;
+      movement: PlayerSense['movement'];
+      zombie?: typeof SHAMBLER;
+    }) =>
+      perceivePlayer({
+        zombie,
+        from,
+        facing: [1, 0, 0],
+        player: player([distanceMetres / BLOCK_SIZE, 2, 0], [-1, 0, 0], movement, false, crouching),
+        hour,
+        blockSize: BLOCK_SIZE,
+        isSolid: FLOOR,
+        tuning: SENSE_TUNING,
+      });
+    const sightDistance = (SHAMBLER.sight * (1 + SENSE_TUNING.crouch.sightRangeScale)) / 2;
+    const hearingDistance =
+      (SHAMBLER.hearingRange.walk *
+        SHAMBLER.hearing *
+        SHAMBLER.hearingModel.farMultiplier *
+        (1 + SENSE_TUNING.crouch.hearingRangeScale)) /
+      2;
+
+    expect(perceives({ distanceMetres: sightDistance, hour: 12, crouching: false, movement: 'still' })).toBe(true);
+    expect(perceives({ distanceMetres: sightDistance, hour: 12, crouching: true, movement: 'still' })).toBe(false);
+    const hearingOnly = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    expect(
+      perceives({
+        distanceMetres: hearingDistance,
+        hour: 12,
+        crouching: false,
+        movement: 'walking',
+        zombie: hearingOnly,
+      }),
+    ).toBe(true);
+    expect(
+      perceives({
+        distanceMetres: hearingDistance,
+        hour: 12,
+        crouching: true,
+        movement: 'walking',
+        zombie: hearingOnly,
+      }),
+    ).toBe(false);
+  });
+
+  it('keeps crouched light reach in the open but lets a half-wall block the lowered light', () => {
+    const { lightSeenFrom } = player([0, 0, 0], [-1, 0, 0], 'still', true);
+    const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
+    const distanceMetres = (crouchSightRange + lightSeenFrom) / 2;
+    const distanceBlocks = distanceMetres / BLOCK_SIZE;
+    const crouchedEye = PLAYER.eye - SENSE_TUNING.crouch.eyeDropMetres;
+    const wallFraction = (1.3 - 0.9) / (1.3 - crouchedEye);
+    const wallX = Math.floor(distanceBlocks * wallFraction);
+    const isSolid: SolidAt = (x, y) => x === wallX && y >= 0 && y < 2;
+    const visible = (crouching: boolean, blocked: boolean) => {
+      const eyeHeightMetres = PLAYER.eye - (crouching ? SENSE_TUNING.crouch.eyeDropMetres : 0);
+      return perceivePlayer({
+        zombie: { ...SHAMBLER, sight: 0.1, nightSight: 0.1 },
+        from: [0, 0, 0],
+        facing: [1, 0, 0],
+        player: {
+          ...player([distanceBlocks, 0, 0], [-1, 0, 0], 'still', true, crouching),
+          eyeHeightMetres,
+          lightHeightMetres: eyeHeightMetres,
+        },
+        hour: 12,
+        blockSize: BLOCK_SIZE,
+        isSolid: blocked ? isSolid : () => false,
+        tuning: SENSE_TUNING,
+      });
+    };
+    const lowRay: Vec3 = [distanceBlocks, crouchedEye - 1.3, 0];
+    expect(raycast([0, 1.3, 0], normalized(lowRay), Math.hypot(...lowRay), isSolid)).toBeDefined();
+    expect(distanceMetres).toBeGreaterThan(crouchSightRange);
+    expect(distanceMetres).toBeLessThan(lightSeenFrom);
+    expect(visible(true, false)).toBe(true);
+    expect(visible(false, true)).toBe(true);
+    expect(visible(true, true)).toBe(false);
   });
 });
 
@@ -1974,6 +2074,7 @@ describe('two-tier shambler hearing', () => {
       blockSize: BLOCK_SIZE,
       isSolid,
       rng: Rng.stream(seed, 'hearing-test'),
+      tuning: SENSE_TUNING,
     });
 
   it('reports the exact near source and bounded, approximate far bearings over fifty seeds', () => {
@@ -2022,6 +2123,7 @@ describe('two-tier shambler hearing', () => {
         blockSize: BLOCK_SIZE,
         isSolid,
         rng: Rng.stream(9, 'voice-test'),
+        tuning: SENSE_TUNING,
       });
 
     expect(hear(noise.pos)?.tier).toBe('near');
@@ -2088,7 +2190,7 @@ describe('two-tier shambler hearing', () => {
     expect(second.lastPerceived).toBeUndefined();
   });
 
-  it('counts each solid run once and lets a wall demote a near noise to far', () => {
+  it('applies one coarse wall step that demotes a near noise to far', () => {
     const from: Vec3 = [0, 1, 0];
     const source = player([28, 1, 0], [-1, 0, 0], 'sprinting');
     const clear = hearing(4, from, source);
@@ -2526,6 +2628,52 @@ describe('attack windup', () => {
     restored.setFrozen(false);
     run(restored, 0.3);
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
+  });
+
+  it('does not replay a live far vocal pulse after a searching zombie is restored', () => {
+    const { hearing, hearingModel } = SHAMBLER;
+    const { farMultiplier, investigationDistanceMetres } = hearingModel;
+    const hearingRadius = (4 * investigationDistanceMetres) / (farMultiplier - 1);
+    const radiusMetres = hearingRadius / hearing;
+    const farHearingRadius = hearingRadius * farMultiplier;
+    const distanceMetres = (hearingRadius + farHearingRadius) / 2;
+    const noise = {
+      id: 1,
+      pos: [0.5 + distanceMetres / BLOCK_SIZE, 1, 0] as Vec3,
+      radiusMetres,
+      expiresAt: 30,
+    };
+    const makeSystem = () => new ZombieSystem(senses(() => ({ ...player([100, 2, 0]), vocalNoise: noise }), FLOOR));
+    const uninterrupted = makeSystem();
+    const id = uninterrupted.add(SHAMBLER, [0.5, 1, 0]);
+    const dt = 1 / 60;
+    let frame = 0;
+    uninterrupted.tick(dt, frame * dt);
+    expect(uninterrupted.store.get(id)!.mode).toBe('investigate');
+    expect(uninterrupted.store.get(id)!.investigationTier).toBe('far');
+    expect(uninterrupted.store.get(id)!.lastVocalNoiseId).toBe(noise.id);
+
+    while (uninterrupted.store.get(id)!.mode !== 'search' && frame < 1800) {
+      frame += 1;
+      uninterrupted.tick(dt, frame * dt);
+    }
+    expect(uninterrupted.store.get(id)!.mode).toBe('search');
+    expect(frame * dt).toBeLessThan(noise.expiresAt);
+
+    const searchFrame = frame;
+    const restored = makeSystem();
+    restored.restoreState(uninterrupted.snapshotState(), (typeId) => registry.zombies.get(typeId));
+    const firstAfterRestore = searchFrame + 1;
+    uninterrupted.tick(dt, firstAfterRestore * dt);
+    restored.tick(dt, firstAfterRestore * dt);
+    expect(uninterrupted.store.get(id)!.mode).toBe('search');
+    expect(restored.store.get(id)!.mode).toBe('search');
+    for (let nextFrame = firstAfterRestore + 1; nextFrame <= searchFrame + 600; nextFrame += 1) {
+      uninterrupted.tick(dt, nextFrame * dt);
+      restored.tick(dt, nextFrame * dt);
+    }
+
+    expect(restored.snapshotState()).toEqual(uninterrupted.snapshotState());
   });
 
   it('round-trips obstacle movement state without persisting route state', () => {

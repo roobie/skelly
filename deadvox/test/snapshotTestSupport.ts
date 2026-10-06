@@ -126,7 +126,7 @@ export function createRuntime(
   // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
-  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false };
+  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const spawn: Vec3 = [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
@@ -161,6 +161,11 @@ export function createRuntime(
     controls: {
       active: () => false,
       intent: () => IDLE,
+      consumeCrouchToggle: () => {
+        const pressed = view.crouchToggle;
+        view.crouchToggle = false;
+        return pressed;
+      },
       yaw: () => view.yaw,
       pitch: () => view.pitch,
       walking: () => view.walk,
@@ -254,6 +259,9 @@ export function createRuntime(
     playerAudio,
     heardSounds,
     emitPlayerSound: session.playPlayerSound,
+    toggleCrouch: () => {
+      view.crouchToggle = true;
+    },
   };
 }
 
@@ -308,6 +316,7 @@ export const inspect = (runtime: Runtime): unknown => {
       yaw: runtime.player.yaw,
       pitch: runtime.player.pitch,
       walk: runtime.player.walk,
+      crouching: runtime.session.crouching,
     },
     inventory: {
       nextUid: runtime.inventory.factory.next,

@@ -13,26 +13,14 @@ import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, type Option, options, toHands } from '../core/options.ts';
+import { bestPocket, dropTarget, type Option, options, quickMove, toHands } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
-import { CONTROL_CODES, quickbarSlotForKey } from '../game/input.ts';
+import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
 import { craftTime, workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
 const CELL = 32;
-
-// These item commands remain inventory intents even with no selected item.
-const ITEM_COMMAND_CODES = new Set<string>([
-  ...CONTROL_CODES.quickbar,
-  CONTROL_CODES.hands,
-  CONTROL_CODES.wear,
-  CONTROL_CODES.drop,
-  CONTROL_CODES.rotate,
-  CONTROL_CODES.bestPocket,
-  CONTROL_CODES.takeAll,
-  'Enter',
-]);
 
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
@@ -63,7 +51,8 @@ export interface ScreenHooks {
   /** Whether a search of it is queued. */
   searching: (entity: BlockEntity) => boolean;
   notice: (text: string) => void;
-  refusal?: ((text: string) => void) | undefined;
+  /** Diegetic feedback for an action the inventory cannot perform. */
+  refusal?: (text: string) => void;
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
   /** Assigns a quickbar slot (0–4). */
@@ -278,7 +267,7 @@ const inventoryTemplate = (
   <header class="inv-head">
     <h2>Inventory</h2>
     <span class="inv-weight">Carrying ${vm.weight}</span>
-    <span class="inv-help">Drag items · H hands · W wear · D drop · E take · R rotate · S search · 1–5 quickbar · X cancel · Tab close</span>
+    <span class="inv-help">Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
   </header>
   <div class="inv-body">
     <section class="inv-pane inv-body-panel" data-pane="body">
@@ -368,7 +357,7 @@ const queueTemplate = (queue: HandlingQueue): TemplateResult => {
   return html`
     <div class="inv-queue-title">
       <strong>Doing next</strong>
-      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · half speed, no sprinting · X cancels` : 'Nothing queued'}</span>
+      <span class="inv-muted">${queue.busy ? `${secs(queue.remaining)} left · half speed, no sprinting · ${labelForAction('handling.stop')} cancels` : 'Nothing queued'}</span>
     </div>
     ${rows.map(
       (row) => html`
@@ -438,7 +427,7 @@ export class InventoryScreen {
       .join(',');
     const view = this.hooks.reach();
     const bodyKey = JSON.stringify(this.hooks.body());
-    const key = `${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}`;
+    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -446,66 +435,12 @@ export class InventoryScreen {
     this.renderQueue();
   }
 
-  /** Handles a key while the screen is open. Returns true if it was used. */
-  onKey(e: KeyboardEvent): boolean {
-    if (this.handleRefusedKey(e) || this.rotateMovedDrag(e)) {
-      return true;
-    }
-    const digit = quickbarSlotForKey(e.code);
-    const item = this.selected;
-    if (e.code === CONTROL_CODES.cancel) {
-      this.queue.cancel();
-      return true;
-    }
-    if (e.code.startsWith('Arrow')) {
-      this.step(e.code === 'ArrowDown' || e.code === 'ArrowRight' ? 1 : -1);
-      return true;
-    }
-    if (e.code === CONTROL_CODES.search) {
-      const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
-      this.report(next ? this.hooks.search(next) : 'Nothing here to search');
-      return true;
-    }
-    if (!item) {
-      return ITEM_COMMAND_CODES.has(e.code);
-    }
-    if (digit !== undefined) {
-      this.hooks.assign(digit, item);
-      return true;
-    }
-    switch (e.code) {
-      case CONTROL_CODES.hands:
-        this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));
-        return true;
-      case CONTROL_CODES.wear:
-        this.wearOrTakeOff(item);
-        return true;
-      case CONTROL_CODES.drop:
-        this.tryQueue(item, dropTarget(this.inv, item, this.hooks.feet()).target);
-        return true;
-      case CONTROL_CODES.rotate:
-        this.rotateInPlace(item);
-        return true;
-      case 'Enter':
-      case CONTROL_CODES.bestPocket: {
-        const best = bestPocket(this.inv, item);
-        this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
-        return true;
-      }
-      case CONTROL_CODES.takeAll:
-        this.takeAllLike(item);
-        return true;
-      default:
-        return false;
-    }
-  }
-
-  private handleRefusedKey(e: KeyboardEvent): boolean {
+  private refuseUnconsciousAction(action: string): boolean {
     const refusal = this.hooks.actionRefusal?.();
     if (
       !(
         refusal &&
-        (ITEM_COMMAND_CODES.has(e.code) || e.code === CONTROL_CODES.search || e.code === CONTROL_CODES.cancel)
+        (action.startsWith('inventory.') || action.startsWith('quickbar.assign.') || action === 'handling.stop')
       )
     ) {
       return false;
@@ -514,14 +449,75 @@ export class InventoryScreen {
     return true;
   }
 
-  private rotateMovedDrag(e: KeyboardEvent): boolean {
-    if (!this.drag?.moved || e.code !== CONTROL_CODES.rotate) {
+  private rotateDraggedItem(action: string): boolean {
+    if (!this.drag?.moved || action !== 'inventory.rotate') {
       return false;
     }
     this.drag.rotated = !this.drag.rotated;
     this.drag.grab = [CELL / 2, CELL / 2];
     this.renderDrag();
     return true;
+  }
+
+  private quickbarDigit(action: string): number | undefined {
+    return action.startsWith('quickbar.assign.') ? Number(action.slice('quickbar.assign.'.length)) - 1 : undefined;
+  }
+
+  /** The shared input owner has already selected an inventory command. */
+  onAction(action: string): boolean {
+    if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action)) {
+      return true;
+    }
+    const digit = this.quickbarDigit(action);
+    const item = this.selected;
+    if (action === 'handling.stop') {
+      this.queue.cancel();
+      return true;
+    }
+    if (action === 'inventory.previous' || action === 'inventory.next') {
+      this.step(action === 'inventory.next' ? 1 : -1);
+      return true;
+    }
+    if (action === 'inventory.search') {
+      const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
+      this.report(next ? this.hooks.search(next) : 'Nothing here to search');
+      return true;
+    }
+    if (!item) {
+      return action.startsWith('inventory.') || digit !== undefined;
+    }
+    if (digit !== undefined) {
+      this.hooks.assign(digit, item);
+      return true;
+    }
+    return this.selectedAction(action, item);
+  }
+
+  private selectedAction(action: string, item: Item): boolean {
+    switch (action) {
+      case 'inventory.hands':
+        this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));
+        return true;
+      case 'inventory.wear':
+        this.wearOrTakeOff(item);
+        return true;
+      case 'inventory.drop':
+        this.tryQueue(item, dropTarget(this.inv, item, this.hooks.feet()).target);
+        return true;
+      case 'inventory.rotate':
+        this.rotateInPlace(item);
+        return true;
+      case 'inventory.best-pocket': {
+        const best = bestPocket(this.inv, item);
+        this.report(best ? this.tryQueue(item, best.target) : 'No room on you');
+        return true;
+      }
+      case 'inventory.take-all-like':
+        this.takeAllLike(item);
+        return true;
+      default:
+        return false;
+    }
   }
 
   // ---- actions ----
@@ -536,11 +532,7 @@ export class InventoryScreen {
   }
 
   private refuse(text: string): void {
-    if (this.hooks.refusal) {
-      this.hooks.refusal(text);
-    } else {
-      this.hooks.notice(text);
-    }
+    (this.hooks.refusal ?? this.hooks.notice)(text);
   }
 
   private report(reason: string | undefined): void {
@@ -868,6 +860,13 @@ export class InventoryScreen {
     }
     e.preventDefault();
     this.selected = item;
+    if (keyboardInput.held('inventory.quick-action-gate')) {
+      const option = quickMove(item, this.hooks.reach());
+      this.report(option.plan.ok ? this.tryQueue(item, option.target) : option.plan.reason);
+      this.drawn = '';
+      this.update();
+      return;
+    }
     const rect = node.getBoundingClientRect();
     const at = this.inv.locate(item);
     const rotated = (at && spotOf(at)?.rotated) ?? false;

@@ -63,24 +63,15 @@ import {
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
-import { labelForCode } from './controls.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
-import {
-  CONTROL_CODES,
-  Input,
-  isMenuOpeningKey,
-  KEY_BINDINGS,
-  quickbarSlotForKey,
-  worldActionForKey,
-} from './input.ts';
+import { Input } from './input.ts';
+import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
-import { handlePlayMenuKey } from './menuKeys.ts';
-import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -89,6 +80,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
+import { PressHoldInput } from './pressHoldInput.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
@@ -140,17 +132,21 @@ export const startPlay = (
   }
   const { scale } = config;
   const s = scale.blockSize;
-  const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
+  const playerSenseTuning = registry.senses.get('player');
+  if (!playerSenseTuning) {
+    throw new Error('Missing player sense tuning');
+  }
   const audio = new GameAudio({
     registry,
     blockSize: s,
     isSolid: engine.isSolid,
+    tuning: playerSenseTuning,
     report: (message) => {
       const errors = $('errors');
       errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
@@ -184,6 +180,7 @@ export const startPlay = (
       intent: () => input.intent(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
+      consumeCrouchToggle: () => input.consumeCrouchToggle(),
       useDominant: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(inventory);
@@ -241,7 +238,7 @@ export const startPlay = (
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
-      descending: () => input.held.has(CONTROL_CODES.descend),
+      descending: () => keyboardInput.held('noclip.descend'),
     },
     // The session works in blocks; playback is in metres.
     audio: {
@@ -511,7 +508,7 @@ export const startPlay = (
     newGame: options.restore === undefined,
     sim,
     input,
-    debugModifierHeld: () => input.held.has(KEY_BINDINGS.debugModifier.code),
+    debugModifierHeld: () => keyboardInput.held('debug.gate'),
     impactLaser: {
       enabled: () => debugLaserEnabled,
       toggle: () => {
@@ -567,6 +564,7 @@ export const startPlay = (
       debugTools?.closeMenus();
     }
     input.menuPointer = state.menuPointer;
+    keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
     if (options.saveController) {
       options.saveController.setGoLabel(state.goLabel);
@@ -711,16 +709,15 @@ export const startPlay = (
     }
   };
 
-  /** C continues; X stops only actions whose owner permits cancellation. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
       return false;
     }
-    if (code === CONTROL_CODES.continue) {
+    if (code === 'compression.continue') {
       continueAction();
       return true;
     }
-    if (code === CONTROL_CODES.cancel) {
+    if (code === 'handling.stop') {
       stopAction();
       return true;
     }
@@ -770,82 +767,21 @@ export const startPlay = (
     quickbarActions.hold(item);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
-  globalThis.addEventListener('blur', () => quickbarInput.cancel());
-
-  /** L remains until d44 removes the legacy binding; F starts actions through furniture. */
-  const longActionKeys = new Map<string, () => void>([
-    [
-      CONTROL_CODES.sleep,
-      () => {
-        const entity = lookedAt();
-        if (entity && restKindForFurniture(entities.defOf(entity)) === 'sleep') {
-          toggleRest('sleep', entity);
-        }
-      },
-    ],
-    [CONTROL_CODES.continue, () => session.crafting.currentUid !== undefined && continueAction()],
-  ]);
-
-  const playKeys = (code: string) => {
-    const restAction = longActionKeys.get(code);
-    if (restAction) {
-      if (code === CONTROL_CODES.sleep && sim.body.actionRefusal) {
-        showRefusal(sim.body.actionRefusal, sim.time);
-      } else {
-        restAction();
+  const hintToggleInput = new PressHoldInput<string>({
+    holdDuration: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
+    tap: () => undefined,
+    hold: (action) => {
+      if (action === 'hud.toggle-interaction-hints' && !sim.body.actionRefusal) {
+        hudOptions.interaction = !hudOptions.interaction;
+        writeHudOptions(hudOptions);
+        drawHudOptions();
       }
-      return;
-    }
-    const action = worldActionForKey(code);
-    if (action === 'interact' && sim.body.actionRefusal) {
-      showRefusal(sim.body.actionRefusal, sim.time);
-    } else if (action === 'interact' && (!compression.locksInput || rest.action !== undefined)) {
-      use();
-    } else if (action === 'cancel') {
-      input.reload.cancel();
-      queue.cancel();
-      if (sim.actions.job) {
-        stopAction();
-      }
-    }
-  };
-
-  const handleMainMenuKey = (e: KeyboardEvent): boolean => {
-    if (e.code !== KEY_BINDINGS.mainMenu.code) {
-      return false;
-    }
-    e.preventDefault();
-    if (!(e.repeat || sim.dead)) {
-      quickbarInput.cancel();
-      mainMenuOpen = !mainMenuOpen;
-      syncMenuState();
-    }
-    return true;
-  };
-
-  const handleTitleKey = (event: KeyboardEvent): boolean => {
-    if (!options.saveController || options.saveController.isEntered) {
-      return false;
-    }
-    if (event.code === KEY_BINDINGS.performanceOverlay.code || event.code === 'Backquote') {
-      debugTools?.handleKey(event);
-      syncMenuState();
-      return true;
-    }
-    if (event.code === 'Tab' || event.code === KEY_BINDINGS.mainMenu.code) {
-      event.preventDefault();
-    }
-    return true;
-  };
-
-  const handleMenuKey = (e: KeyboardEvent): boolean =>
-    handlePlayMenuKey(e, {
-      inventory: screen,
-      debug: debugTools,
-      locksInput: compression.locksInput,
-      toggleInventory,
-      syncMenuState,
-    });
+    },
+  });
+  globalThis.addEventListener('blur', () => {
+    quickbarInput.cancel();
+    hintToggleInput.cancel();
+  });
 
   /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
   const reloadBinding = (): ReloadBinding | undefined => {
@@ -884,57 +820,160 @@ export const startPlay = (
     };
   };
 
-  const prepareGameplayKey = (e: KeyboardEvent): boolean => {
-    if (handleMainMenuKey(e)) {
-      return false;
+  const playContext = (): InputContext => {
+    if (mainMenuOpen || sim.dead) {
+      return 'menu';
     }
-    // Prevent an opening key from becoming text in the newly focused menu.
-    if (
-      e.code === CONTROL_CODES.inventory ||
-      (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false))
-    ) {
-      e.preventDefault();
+    if (reading.isOpen) {
+      return 'reading';
     }
-    return !(e.repeat || sim.dead);
+    if (screen.isOpen) {
+      return 'inventory';
+    }
+    if (compression.interruption !== undefined) {
+      return 'interrupted';
+    }
+    if (debugTools?.buildOn) {
+      return 'build';
+    }
+    return debugTools?.noclip ? 'noclip' : 'play';
   };
-
-  const handleGameplayKey = (e: KeyboardEvent): void => {
-    if (!prepareGameplayKey(e) || handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
-      return;
+  const inputContext = (): InputContext => {
+    if (options.saveController && !options.saveController.isEntered) {
+      return 'title';
     }
-    if (e.code === CONTROL_CODES.reload) {
-      e.preventDefault();
-      if (sim.body.actionRefusal) {
-        showRefusal(sim.body.actionRefusal, sim.time);
-      } else {
-        input.reload.keyDown(e.timeStamp, reloadBinding());
-      }
-      return;
+    if (debugTools?.spawnOpen) {
+      return 'spawn';
     }
-    if (quickbarSlotForKey(e.code) !== undefined) {
-      e.preventDefault();
+    if (debugTools?.menuOpen) {
+      return 'debug-panel';
+    }
+    return playContext();
+  };
+  keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
+  keyboardInput.cancelled = () => {
+    input.cancel();
+    quickbarInput.cancel();
+    hintToggleInput.cancel();
+  };
+  keyboardInput.escape = () => reading.close();
+  const modalCommand = (action: string): boolean => {
+    if (action === 'ui.main-menu-toggle') {
+      mainMenuOpen = !mainMenuOpen;
+      syncMenuState();
+      return true;
+    }
+    if (reading.isOpen) {
+      reading.onAction(action);
+      return true;
+    }
+    if (action === 'ui.inventory-toggle') {
       if (!compression.locksInput) {
-        quickbarInput.keyDown(e.code, e.timeStamp);
+        toggleInventory();
+      }
+      return true;
+    }
+    if (screen.isOpen) {
+      screen.onAction(action);
+      return true;
+    }
+    return mainMenuOpen || timeKeys(action);
+  };
+  const withUnlockedInput = (action: () => void): void => {
+    if (!compression.locksInput) {
+      action();
+    }
+  };
+  const stopHandling = (): void => {
+    input.reload.cancel();
+    queue.cancel();
+    if (sim.actions.job || rest.action || compression.active) {
+      stopAction();
+    }
+  };
+  const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
+    if (slot !== undefined && !compression.locksInput) {
+      quickbarInput.keyDown(slot, at);
+    }
+  };
+  const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
+    switch (action) {
+      case 'movement.walk-toggle':
+        input.walking = !input.walking;
+        break;
+      case 'player.crouch-toggle':
+        withUnlockedInput(() => input.requestCrouchToggle());
+        break;
+      case 'hand.use-off':
+        input.useOff();
+        break;
+      case 'firearm.reload':
+        input.reload.keyDown(at, reloadBinding());
+        break;
+      case 'world.interact':
+        withUnlockedInput(use);
+        break;
+      case 'craft.continue':
+        if (session.crafting.currentUid !== undefined) {
+          continueAction();
+        }
+        break;
+      case 'handling.stop':
+        stopHandling();
+        break;
+      default:
+        break;
+    }
+    assignQuickbarIfUnlocked(slot, at);
+  };
+  const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'firearm.reload') {
+      input.reload.keyUp(at);
+    }
+    if (slot !== undefined) {
+      quickbarInput.keyUp(slot, at);
+    }
+  };
+  keyboardInput.command = ({ action, phase, at }: InputCommand) => {
+    const slot = action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
+    if (phase === 'up') {
+      if (sim.body.actionRefusal) {
+        input.reload.cancel();
+        quickbarInput.cancel();
+      } else {
+        releaseCommand(action, at, slot);
       }
       return;
     }
-    playKeys(e.code);
+    const refusal = sim.body.actionRefusal;
+    if (refusal) {
+      input.reload.cancel();
+      quickbarInput.cancel();
+      showRefusal(refusal, sim.time);
+      return;
+    }
+    if (action === 'hud.toggle-interaction-hints') {
+      hintToggleInput.keyDown(action, at);
+      return;
+    }
+    if (action.startsWith('debug.') || action.startsWith('spawn.')) {
+      debugTools?.handleAction(action);
+      syncMenuState();
+      return;
+    }
+    if (sim.dead) {
+      return;
+    }
+    if (!modalCommand(action)) {
+      gameplayCommand(action, at, slot);
+    }
   };
-
-  globalThis.addEventListener('keydown', (event) => {
-    if (handleTitleKey(event)) {
-      return;
-    }
-    if (event.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(event)) {
-      return;
-    }
-    handleGameplayKey(event);
-  });
+  keyboardInput.install();
+  keyboardInput.sync();
   const cycleWieldedAction = (deltaY: number): boolean => {
     const item = inventory.hands[dominantSide(inventory.character)];
     return item !== undefined && survival.cycleItemAction(item, Math.sign(deltaY));
   };
-
   globalThis.addEventListener(
     'wheel',
     (e) => {
@@ -952,13 +991,8 @@ export const startPlay = (
     { passive: false },
   );
 
-  globalThis.addEventListener('keyup', (event) => {
-    const e = event as KeyboardEvent;
-    quickbarInput.keyUp(e.code, e.timeStamp);
-  });
-
   const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
-  const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
+  const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
   const lookedAt = (): BlockEntity | undefined =>
@@ -1001,7 +1035,6 @@ export const startPlay = (
       container: Boolean(entity.pockets),
       readable: Boolean(entities.defOf(entity).readable),
       restAction: restKindForFurniture(entities.defOf(entity)),
-      interactLabel: labelForCode(CONTROL_CODES.interact),
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
@@ -1425,7 +1458,7 @@ export const startPlay = (
       yaw: input.yaw,
       pitch: input.pitch,
       intent: input.intent(),
-      descend: input.held.has(CONTROL_CODES.descend),
+      descend: keyboardInput.held('noclip.descend'),
       dt,
     });
   };
@@ -1453,6 +1486,21 @@ export const startPlay = (
     debugTools.updateLookedAt(eye(), lookDir(), input.locked);
   };
 
+  const updateActionInputs = (now: number) => {
+    if (sim.body.actionRefusal) {
+      input.reload.cancel();
+      quickbarInput.cancel();
+    } else {
+      input.reload.advance(now, reloadBinding());
+    }
+    if (screen.isOpen || mainMenuOpen || compression.locksInput || sim.dead || sim.body.actionRefusal) {
+      quickbarInput.cancel();
+    } else {
+      quickbarInput.update(now);
+    }
+    hintToggleInput.update(now);
+  };
+
   const frame = (now: number) => {
     const workStart = performance.now();
     const realSeconds = Math.max(0, (now - last) / 1000);
@@ -1466,12 +1514,7 @@ export const startPlay = (
     let mark = performance.now();
     streamer.update(body.pos[0], body.pos[2]);
     meshingQueueMs = performance.now() - mark;
-    input.reload.advance(now, reloadBinding());
-    if (screen.isOpen || mainMenuOpen || compression.locksInput || sim.dead) {
-      quickbarInput.cancel();
-    } else {
-      quickbarInput.update(now);
-    }
+    updateActionInputs(now);
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
@@ -1510,6 +1553,9 @@ export const startPlay = (
     mark = performance.now();
 
     updateVisualFeedback(dt);
+    const unconsciousPresentation = sim.body.unconscious && !sim.dead;
+    document.body.classList.toggle('unconscious', unconsciousPresentation);
+    audio.setOutputMuted(unconsciousPresentation);
     audio.updateHeartbeat(sim.needs.stamina);
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();

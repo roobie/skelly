@@ -9,6 +9,7 @@ import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } f
 import { type HitImpulse, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BLOCK = 0.5;
 const BASE = 'src/content/base';
@@ -27,6 +28,7 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   blockSize: BLOCK,
   physics: physicsFor(makeScale(BLOCK)),
   jumpSpeed: PLAYER.jump,
+  tuning: TEST_SENSE_TUNING,
   player: () => ({
     pos: [100, 2, 100] as Vec3,
     facing: [0, 0, -1] as Vec3,

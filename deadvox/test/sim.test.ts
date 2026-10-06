@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BODY_REGIONS } from '../src/core/body.ts';
 import {
   calendarAt,
   defaultClock,
@@ -91,13 +92,23 @@ describe('Simulation', () => {
   it('replays at-risk wound decisions from the seeded simulation RNG and saves the result', () => {
     const first = new Simulation({ seed: 31 });
     const replay = new Simulation({ seed: 31 });
-    first.hit(1, 'a bite', 'torso', { bleeding: true });
-    replay.hit(1, 'a bite', 'torso', { bleeding: true });
+    for (const region of BODY_REGIONS) {
+      first.hit(1, 'a bite', region, { bleeding: true });
+      replay.hit(1, 'a bite', region, { bleeding: true });
+    }
 
-    expect(first.body.wounds.torso?.infectionAtRisk).toBe(replay.body.wounds.torso?.infectionAtRisk);
+    const firstRisks = Object.fromEntries(
+      BODY_REGIONS.map((region) => [region, first.body.wounds[region]?.infectionAtRisk]),
+    );
+    const replayRisks = Object.fromEntries(
+      BODY_REGIONS.map((region) => [region, replay.body.wounds[region]?.infectionAtRisk]),
+    );
+    expect(firstRisks).toEqual(replayRisks);
     const restored = new Simulation({ seed: 31 });
     restored.restoreState(first.snapshotState());
-    expect(restored.body.wounds.torso?.infectionAtRisk).toBe(first.body.wounds.torso?.infectionAtRisk);
+    expect(
+      Object.fromEntries(BODY_REGIONS.map((region) => [region, restored.body.wounds[region]?.infectionAtRisk])),
+    ).toEqual(firstRisks);
   });
 
   it('uses the body tuning chance to decide which bleeding wounds are infection risks', () => {

@@ -157,6 +157,41 @@ it('a codec save preserves the session-shifted view pitch after over-limit recoi
   expect(resumed.restoredLook?.pitch).toBeCloseTo(look.pitch, 8);
 });
 
+it('holds an active automatic firearm cycle through unconsciousness', () => {
+  const runtime = session([]);
+  const rifle = runtime.inventory.create('debug_rifle_assault');
+  expect(runtime.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
+  const { action, calibre } = firearmHandlingFor(rifle, registry);
+  if (!action.fire) {
+    throw new Error('AR knockout fixture needs exported automatic action data');
+  }
+  const ejectAt = action.fire.rearwardSeconds * action.ejectAt;
+  expect(
+    runtime.firearms.fire({
+      debugMode: true,
+      item: rifle,
+      seed: 71,
+      simTime: 0,
+      feet: [0, 0, 0],
+      eye: [0, PLAYER.eye / 0.5, 0],
+      yaw: 0,
+      pitch: 0,
+      aimFrame: { yaw: 0, pitch: 0 },
+      blockSize: 0.5,
+    }),
+  ).toBe(true);
+  runtime.sim.body.impact(0, 'torso', { shockDamage: runtime.sim.body.shock });
+  const frames = Math.ceil((ejectAt + 0.1) * 60);
+  for (let frame = 0; frame < frames; frame += 1) {
+    runtime.frame(1 / 60);
+  }
+
+  const spentCases = [...runtime.inventory.items()].filter(({ item }) => item.type === spentCaseItemId(calibre));
+  expect(runtime.sim.body.unconscious).toBe(true);
+  expect(spentCases).toHaveLength(0);
+  expect(runtime.inventory.itemByUid(rifle.uid)?.firearm?.cycle).toBeDefined();
+});
+
 it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
   const originalEffects: FirearmShotEffect[] = [];
   const original = session(originalEffects);

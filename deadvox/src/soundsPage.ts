@@ -19,6 +19,7 @@ const audio = new GameAudio({
   registry,
   blockSize: 1,
   isSolid: () => false,
+  tuning: registry.senses.get('player')!,
   report: (message) => {
     errorRoot.textContent = message;
   },

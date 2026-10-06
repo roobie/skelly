@@ -18,8 +18,6 @@ import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 
-const BODY_TREATMENT_SECONDS = 8;
-
 const numberParam = (params: JobParams, key: string): number => {
   const value = params[key];
   if (typeof value !== 'number' || !Number.isSafeInteger(value)) {
@@ -180,7 +178,12 @@ export class Survival {
     if (!treatment) {
       return `No wound needs the ${defOf(this.inventory.registry, item.type).name.toLowerCase()}`;
     }
-    return this.sim.actions.beginTreatment(treatment.region, item.uid, treatment.kind, BODY_TREATMENT_SECONDS);
+    return this.sim.actions.beginTreatment(
+      treatment.region,
+      item.uid,
+      treatment.kind,
+      this.sim.body.tuning.treatmentSeconds,
+    );
   }
 
   /** Executes the live core option; this owner retains effects and serializable queue actions. */

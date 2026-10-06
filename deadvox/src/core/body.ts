@@ -164,7 +164,7 @@ export class Body {
     if (!Number.isFinite(amount) || amount < 0) {
       throw new Error('Invalid body damage');
     }
-    const shockDamage = effects.shockDamage ?? (effects.blunt ? amount * 2 : 0);
+    const shockDamage = effects.shockDamage ?? (effects.blunt ? amount * this.tuning.bluntShockPerDamage : 0);
     if (!Number.isFinite(shockDamage) || shockDamage < 0) {
       throw new Error('Invalid shock damage');
     }
@@ -201,6 +201,7 @@ export class Body {
       this.state.knockoutElapsed += unconsciousStep;
       shockRecoverySeconds -= unconsciousStep;
       if (this.state.knockoutElapsed >= this.tuning.knockoutSeconds) {
+        this.state.knockoutElapsed = 0;
         this.state.shock = this.tuning.wakeShock;
       }
     }

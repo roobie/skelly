@@ -280,6 +280,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
         isSolid: engine.isSolid,
         isOpaque: engine.isOpaque,
         blockSize: s,
+        tuning: engine.registry.senses.get('player')!,
         physics: physicsFor(config.scale),
         jumpSpeed: PLAYER.jump,
         player: () => ({

@@ -94,7 +94,7 @@ export interface DebugRuntime {
   readonly spawnOpen: boolean;
   readonly revealZombies: boolean;
   dangerReason: () => string | undefined;
-  handleKey: (e: KeyboardEvent) => boolean;
+  handleAction: (action: string) => boolean;
   closeMenus: () => void;
   target: (eye: Vec3, dir: Vec3, active: boolean) => string;
   click: (button: number, eye: Vec3, dir: Vec3) => void;

@@ -9,20 +9,25 @@ import { parseTimeOfDay } from './core/clock.ts';
 import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
-import { KEY_BINDINGS } from './game/input.ts';
+import { inputBindings, keyboardInput, labelForAction } from './game/inputBindings.ts';
 import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
+import { mountInputOptions } from './ui/inputOptions.ts';
 import { SaveController } from './ui/saveController.ts';
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
 const menuKeyLabel = document.querySelector<HTMLElement>('[data-key-binding="mainMenu"]');
-if (menuKeyLabel) {
-  menuKeyLabel.textContent = KEY_BINDINGS.mainMenu.label;
-  menuKeyLabel.dataset.code = KEY_BINDINGS.mainMenu.code;
-}
+const drawMenuLabel = () => {
+  if (menuKeyLabel) {
+    menuKeyLabel.textContent = labelForAction('ui.main-menu-toggle');
+    menuKeyLabel.dataset.code = inputBindings.chords('ui.main-menu-toggle')[0]!.code;
+  }
+};
+inputBindings.subscribe(drawMenuLabel);
+drawMenuLabel();
 const bench = params.get('bench');
 const renderFree = renderFreeFromUrl(params, import.meta.env.DEV);
 
@@ -31,14 +36,11 @@ if (bench === 'report') {
   showReport(document.querySelector<HTMLElement>('#overlay .card')!, loadRecord());
 } else if (bench === null) {
   mountControlsCard(document.getElementById('controls')!);
+  mountInputOptions(document.getElementById('input-options')!);
+  keyboardInput.install();
+  inputBindings.loadLayout();
   let config = configFromUrl(params);
-  if (config.debug) {
-    globalThis.addEventListener('keydown', (event) => {
-      if (event.code === KEY_BINDINGS.debugModifier.code) {
-        event.preventDefault();
-      }
-    });
-  }
+  keyboardInput.context = () => ({ context: 'title', debug: config.debug });
   const saveBackend = params.get('save-backend');
   const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
   const saveController = new SaveController(backend);

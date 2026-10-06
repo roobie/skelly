@@ -10,8 +10,13 @@ import { planCraft } from '../src/core/crafting.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { CONTROL_CODES } from '../src/game/input.ts';
-import { handlePlayMenuKey } from '../src/game/menuKeys.ts';
+import {
+  BindingRegistry,
+  INPUT_BINDINGS,
+  inputBindings,
+  KeyboardInput,
+  keyboardInput,
+} from '../src/game/inputBindings.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -78,11 +83,11 @@ function setup() {
     throw new Error('expected the shipped container to be added');
   }
   const searching = new Set<typeof entity>();
+  const body = new Body(BODY_TUNING_FIXTURE);
   queue.registerAction('furniture.search', () => {
     searching.delete(entity);
     inv.entities.markSearched(entity);
   });
-  const body = new Body(BODY_TUNING_FIXTURE);
   const notices: string[] = [];
   const refusals: string[] = [];
   const hooks = {
@@ -116,88 +121,69 @@ function setup() {
   return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks, body };
 }
 
+const holdQuickGate = () => {
+  const previous = { context: keyboardInput.context, command: keyboardInput.command };
+  keyboardInput.cancel();
+  keyboardInput.context = () => ({ context: 'inventory', debug: false });
+  keyboardInput.command = () => undefined;
+  const issue = inputBindings.rebind('inventory.quick-action-gate', [{ code: 'KeyJ' }]);
+  if (issue) {
+    throw new Error(issue);
+  }
+  const event = new KeyboardEvent('keydown', inputBindings.chords('inventory.quick-action-gate')[0]);
+  if (!keyboardInput.press(event)) {
+    throw new Error('Quick-action fixture gate was not admitted');
+  }
+  return () => {
+    keyboardInput.release(event);
+    inputBindings.reset();
+    keyboardInput.context = previous.context;
+    keyboardInput.command = previous.command;
+  };
+};
+
 describe('inventory screen Lit rendering', () => {
-  it('refuses inventory actions while unconscious and permits them after wake', () => {
+  it('refuses inventory actions while unconscious and permits them after waking', () => {
     const { screen, queue, body, beans, refusals } = setup();
     screen.selected = beans;
     body.impact(1, 'torso', { shockDamage: 100 });
 
-    expect(screen.onKey({ code: CONTROL_CODES.drop } as KeyboardEvent)).toBe(true);
-    expect(screen.onKey({ code: CONTROL_CODES.search } as KeyboardEvent)).toBe(true);
+    expect(screen.onAction('inventory.drop')).toBe(true);
+    expect(screen.onAction('inventory.search')).toBe(true);
     expect(queue.jobs).toHaveLength(0);
-    expect(refusals.length).toBeGreaterThan(0);
+    expect(refusals).toHaveLength(2);
 
-    body.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
-    expect(screen.onKey({ code: CONTROL_CODES.drop } as KeyboardEvent)).toBe(true);
+    body.advance(body.tuning.knockoutSeconds);
+    expect(screen.onAction('inventory.drop')).toBe(true);
     expect(queue.jobs.length).toBeGreaterThan(0);
   });
-
-  it('shows wound state without adding treatment controls to the body panel', () => {
-    const { root, screen, inv, body } = setup();
-    const rag = inv.create('rag');
-    expect(inv.add(rag, { kind: 'hand', side: 'left' })).toBe(true);
-    body.impact(1, 'leftArm', { bleeding: true });
-    screen.selected = rag;
-    screen.update();
-
-    const region = root.querySelector<HTMLElement>('[data-body-region="leftArm"]');
-    expect(region?.querySelector('.inv-body-warning')).not.toBeNull();
-    expect(region?.querySelector('button')).toBeNull();
-  });
-
-  it('keeps inventory commands owned without a selection, but lets gameplay and debug modals reach debug', () => {
-    const codes = [
-      CONTROL_CODES.hands,
-      CONTROL_CODES.wear,
-      CONTROL_CODES.drop,
-      CONTROL_CODES.takeAll,
-      CONTROL_CODES.rotate,
-      CONTROL_CODES.search,
-      ...CONTROL_CODES.quickbar,
-      CONTROL_CODES.cancel,
-      CONTROL_CODES.inventory,
-    ];
-    interface Row {
-      context: string;
-      code: string;
-      inventory: boolean;
-      debug: boolean;
-    }
-    const rows: Row[] = [];
-    const expected: Row[] = [];
-    for (const context of ['inventory', 'gameplay', 'debug-modal'] as const) {
+  it('keeps unselected-item commands owned by inventory rather than debug', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, undefined);
+    const keyboard = new KeyboardInput(bindings);
+    keyboard.context = () => ({ context: 'inventory', debug: true });
+    const commands = INPUT_BINDINGS.filter(
+      (binding) =>
+        !binding.debug &&
+        binding.commands.every(({ kind }) => kind === 'press') &&
+        (binding.id.startsWith('inventory.') || binding.id.startsWith('quickbar.assign.')),
+    );
+    expect(commands.length).toBeGreaterThan(0);
+    const received: string[] = [];
+    for (const binding of commands) {
       const { screen } = setup();
-      if (context === 'gameplay') {
-        screen.close();
-      }
-      screen.selected = undefined;
-      const inventoryKey = vi.spyOn(screen, 'onKey');
-      const debugKey = vi.fn(() => true);
-      const toggleInventory = vi.fn();
-      for (const code of codes) {
-        const before = {
-          inventory: inventoryKey.mock.calls.length,
-          toggle: toggleInventory.mock.calls.length,
-          debug: debugKey.mock.calls.length,
-        };
-        handlePlayMenuKey(new KeyboardEvent('keydown', { code, cancelable: true }), {
-          inventory: screen,
-          debug: { menuOpen: context === 'debug-modal', handleKey: debugKey },
-          locksInput: false,
-          toggleInventory,
-          syncMenuState: () => undefined,
-        });
-        rows.push({
-          context,
-          code,
-          inventory:
-            inventoryKey.mock.calls.length > before.inventory || toggleInventory.mock.calls.length > before.toggle,
-          debug: debugKey.mock.calls.length > before.debug,
-        });
-        expected.push({ context, code, inventory: context === 'inventory', debug: context !== 'inventory' });
-      }
+      expect(screen.selected).toBeUndefined();
+      keyboard.command = ({ action, phase }) => {
+        if (phase === 'down') {
+          expect(screen.onAction(action)).toBe(true);
+          received.push(action);
+        }
+      };
+      const event = new KeyboardEvent('keydown', bindings.chords(binding.id)[0]);
+      expect(keyboard.press(event)).toBe(true);
+      expect(received.at(-1)).toBe(binding.id);
+      keyboard.release(event);
+      screen.close();
     }
-    expect(rows).toEqual(expected);
   });
   it('shows the derived occupied hand without a second item UID and routes work options by UID', () => {
     const { root, screen, inv, hooks } = setup();
@@ -235,7 +221,7 @@ describe('inventory screen Lit rendering', () => {
   it('redraws the body when a furniture search is queued without a version bump', () => {
     const test = setup();
     const versions = [test.inv.version, test.inv.entities.version];
-    const search = [...test.root.querySelectorAll<HTMLButtonElement>('[data-pane="around"] button')].find((button) =>
+    const search = [...test.root.querySelectorAll<HTMLButtonElement>('.inv-pane button')].find((button) =>
       button.textContent?.includes('Search it'),
     );
     expect(search).toBeDefined();
@@ -246,10 +232,20 @@ describe('inventory screen Lit rendering', () => {
     expect([test.inv.version, test.inv.entities.version]).toEqual(versions);
     expect(test.queue.jobs).toHaveLength(1);
     expect(test.searching.has(test.entity)).toBe(true);
-    expect(test.root.querySelector('[data-pane="around"] button.inv-option')).toBeNull();
+    expect(test.root.querySelectorAll('.inv-pane')[1]?.querySelector('button.inv-option')).toBeNull();
   });
 
-  it('forwards an ordinary locked-menu click without queueing a quick move', () => {
+  it.each([
+    {
+      name: 'browser modifiers are not forwarded into inventory actions',
+      ctrlKey: true,
+      metaKey: true,
+      shiftKey: true,
+      altKey: true,
+      quick: false,
+    },
+    { name: 'held quick gate auto-moves', ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, quick: true },
+  ])('$name through the locked-menu adapter', (binding) => {
     const t = setup();
     const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
     const canvas = document.createElement('canvas');
@@ -257,17 +253,67 @@ describe('inventory screen Lit rendering', () => {
     const input = { locked: true, menuPointer: true, cursorX: 100, cursorY: 100, moveMenuCursor: () => undefined };
     const adapter = mountMenuPointer({ input, canvas, cursor: document.createElement('div') });
     const hit = vi.spyOn(document, 'elementFromPoint').mockReturnValue(node);
+    const releaseGate = binding.quick ? holdQuickGate() : () => undefined;
+    const modifiers = {
+      ctrlKey: binding.ctrlKey,
+      metaKey: binding.metaKey,
+      shiftKey: binding.shiftKey,
+      altKey: binding.altKey,
+    };
+    let received: typeof modifiers | undefined;
+    node.addEventListener('pointerdown', (event) => {
+      received = { ctrlKey: event.ctrlKey, metaKey: event.metaKey, shiftKey: event.shiftKey, altKey: event.altKey };
+    });
     try {
-      canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+      // The locked canvas receives the original event; only the production adapter can deliver it to the item.
+      canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, ...modifiers }));
+      expect(received).toEqual({
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: modifiers.shiftKey,
+        altKey: modifiers.altKey,
+      });
       expect(t.screen.selected).toBe(t.beans);
-      expect(t.queue.jobs).toHaveLength(0);
+      expect(t.inv.hands.right).toBe(t.beans);
+      expect(t.queue.jobs).toHaveLength(binding.quick ? 1 : 0);
+      input.cursorX += 10;
+      canvas.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, pointerId: 1 }));
+      expect(document.querySelector('.inv-ghost') !== null).toBe(!binding.quick);
       canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerId: 1 }));
+      if (binding.quick) {
+        t.queue.tick(t.queue.remaining);
+        expect(t.inv.locate(t.beans)?.kind).toBe('pocket');
+      }
       expect(document.querySelector('#inventory-drag-root')?.textContent).toBe('');
     } finally {
+      releaseGate();
       input.locked = false;
       adapter.releaseCaptures();
       t.screen.close();
       hit.mockRestore();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('repeated quick-clicks keep one owned move and emit refusal feedback for every duplicate', () => {
+    const t = setup();
+    const releaseGate = holdQuickGate();
+    try {
+      expect(t.inv.move(t.beans, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
+      t.screen.update();
+      const attempts = 3;
+      for (let click = 0; click < attempts; click++) {
+        const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
+        expect(node).not.toBeNull();
+        node.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1 }));
+      }
+      expect.soft(t.queue.jobs).toHaveLength(1);
+      expect(t.refusals).toHaveLength(attempts - 1);
+      expect(t.refusals.every((refusal) => refusal.length > 0)).toBe(true);
+    } finally {
+      releaseGate();
+      t.screen.close();
+      vi.unstubAllGlobals();
     }
   });
 

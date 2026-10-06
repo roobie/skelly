@@ -97,6 +97,7 @@ interface SessionControls {
   /** Clears edge-triggered intents after the player tick samples them. */
   consumeDominantUse?: () => void;
   consumeOffUse?: () => void;
+  consumeCrouchToggle?: () => boolean;
   /** Runs dominant use on the player-tick boundary, with that tick's aim/state. */
   useDominant?: () => void;
   /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
@@ -203,10 +204,82 @@ interface RestoredLook {
 const firearmsSkillLevel = (character: Character): number =>
   skillEffectLevel(character.skills.firearms ?? SKILL_LEVEL_MIN);
 
-const createCharacter = (options: SessionOptions): Character =>
-  options.restore
-    ? Character.restoreState(options.registry, options.restore.character.progression)
-    : new Character(options.registry, { handedness: options.handedness });
+const nextCrouchState = (togglePressed: boolean, noclip: boolean, crouching: boolean): boolean =>
+  togglePressed && !noclip ? !crouching : crouching;
+
+const resolvePlayerEyeHeight = (
+  unconscious: boolean,
+  proneHeight: number,
+  crouching: boolean,
+  crouchDrop: number,
+): number => (unconscious ? proneHeight : PLAYER.eye - (crouching ? crouchDrop : 0));
+
+const movementIntent = (refusal: string | undefined, intent: MoveIntent): MoveIntent => (refusal ? IDLE : intent);
+
+const playerMovementForIntent = (moving: MoveIntent, crouching: boolean, sprinting: boolean): PlayerMovement => {
+  if (moving.forward === 0 && moving.right === 0) {
+    return 'still';
+  }
+  if (crouching) {
+    return 'walking';
+  }
+  if (sprinting) {
+    return 'sprinting';
+  }
+  return moving.walk ? 'walking' : 'jogging';
+};
+
+const createSessionCharacter = (
+  registry: Registry,
+  handedness: SessionOptions['handedness'],
+  restored: Readonly<SaveSnapshot> | undefined,
+): Character =>
+  restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
+
+const playerBodyTuning = (registry: Registry) => {
+  const tuning = registry.body.get('player');
+  if (!tuning) {
+    throw new Error('Missing player body tuning');
+  }
+  return tuning;
+};
+
+const playerSenseTuning = (registry: Registry) => {
+  const tuning = registry.senses.get('player');
+  if (!tuning) {
+    throw new Error('Missing player sense tuning');
+  }
+  return tuning;
+};
+
+const playerTreatmentHooks = (
+  inventory: Inventory,
+  sim: Simulation,
+): NonNullable<Simulation['actions']['treatment']> => ({
+  validate: (region, itemUid, treatment) => {
+    const item = inventory.itemByUid(itemUid);
+    if (!item || item.type !== treatment) {
+      return 'Treatment item is unavailable';
+    }
+    return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
+  },
+  finish: (region, itemUid, treatment) => {
+    const item = inventory.itemByUid(itemUid);
+    if (!item || item.type !== treatment) {
+      return 'Treatment item is no longer available';
+    }
+    if (!sim.body.canTreat(region, treatment)) {
+      return 'That treatment no longer applies';
+    }
+    if (!inventory.consume(item)) {
+      return 'Treatment item is no longer available';
+    }
+    if (!sim.body.treat(region, treatment)) {
+      throw new Error('Body treatment changed during completion');
+    }
+    return true;
+  },
+});
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
@@ -215,6 +288,8 @@ export const createSession = (options: SessionOptions) => {
   const restored = options.restore;
 
   const restoredPlayer = restored ? restorePlayer(restored.character.player) : undefined;
+  const senseTuning = playerSenseTuning(registry);
+  let crouching = restoredPlayer?.crouching ?? false;
   const body: Body =
     restoredPlayer?.body ?? createPlayerBody(scale, options.spawn[0], options.spawn[1], options.spawn[2]);
   const restoredLook: RestoredLook | undefined = restoredPlayer && {
@@ -223,7 +298,7 @@ export const createSession = (options: SessionOptions) => {
     walk: restoredPlayer.walk,
   };
 
-  const character = createCharacter(options);
+  const character = createSessionCharacter(registry, options.handedness, restored);
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
@@ -247,10 +322,7 @@ export const createSession = (options: SessionOptions) => {
   const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
   const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
-  const bodyTuning = registry.body.get('player');
-  if (!bodyTuning) {
-    throw new Error('Missing player body tuning');
-  }
+  const bodyTuning = playerBodyTuning(registry);
   const sim = new Simulation({
     seed,
     bodyTuning,
@@ -350,7 +422,7 @@ export const createSession = (options: SessionOptions) => {
       inventory.hands.right?.uid === uid || inventory.hands.left?.uid === uid
         ? {
             feet: feet(),
-            eye: [body.pos[0], body.pos[1] + PLAYER.eye / s, body.pos[2]],
+            eye: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
             yaw: controls.yaw(),
             pitch: controls.pitch(),
             blockSize: s,
@@ -377,31 +449,7 @@ export const createSession = (options: SessionOptions) => {
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   sim.actions.reading = bookReadingHooks(inventory, character);
-  sim.actions.treatment = {
-    validate: (region, itemUid, treatment) => {
-      const item = inventory.itemByUid(itemUid);
-      if (!item || item.type !== treatment) {
-        return 'Treatment item is unavailable';
-      }
-      return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
-    },
-    finish: (region, itemUid, treatment) => {
-      const item = inventory.itemByUid(itemUid);
-      if (!item || item.type !== treatment) {
-        return 'Treatment item is no longer available';
-      }
-      if (!sim.body.canTreat(region, treatment)) {
-        return 'That treatment no longer applies';
-      }
-      if (!inventory.consume(item)) {
-        return 'Treatment item is no longer available';
-      }
-      if (!sim.body.treat(region, treatment)) {
-        throw new Error('Body treatment changed during completion');
-      }
-      return true;
-    },
-  };
+  sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
@@ -416,19 +464,20 @@ export const createSession = (options: SessionOptions) => {
   });
 
   let sprinting = false;
+  const playerEyeHeightMetres = (): number =>
+    resolvePlayerEyeHeight(
+      sim.body.unconscious,
+      sim.body.tuning.proneEyeHeightMetres,
+      crouching,
+      senseTuning.crouch.eyeDropMetres,
+    );
   let footstepClock = initialFootstepClock();
   let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
-  const playerMovement = (): PlayerMovement => {
-    const moving = controls.active() && !compression.locksInput && !sim.body.actionRefusal ? controls.intent() : IDLE;
-    if (moving.forward === 0 && moving.right === 0) {
-      return 'still';
-    }
-    if (sprinting) {
-      return 'sprinting';
-    }
-    return moving.walk ? 'walking' : 'jogging';
-  };
+  const currentIntent = (): MoveIntent => (controls.active() && !compression.locksInput ? controls.intent() : IDLE);
+  const playerCrouching = (): boolean => crouching;
+  const playerMovement = (): PlayerMovement =>
+    playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
   const updateAim = (dt: number, firing: boolean): void => {
     const skill = firearmsSkillEffects(firearmsSkillLevel(character));
     aim.advance({
@@ -476,10 +525,13 @@ export const createSession = (options: SessionOptions) => {
       body: debug?.()?.noclip ? undefined : body,
       facing: [-Math.sin(yaw), 0, -Math.cos(yaw)] as Vec3,
       movement: playerMovement(),
+      crouching: playerCrouching(),
       vocalNoise:
         playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
       lit: survival.lit?.on === true,
       lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
+      eyeHeightMetres: playerEyeHeightMetres(),
+      lightHeightMetres: playerEyeHeightMetres(),
     };
   };
   const heldItemUids = () => ({
@@ -496,6 +548,7 @@ export const createSession = (options: SessionOptions) => {
     physics,
     // Metres per second, as PLAYER.jump is: the system divides by blockSize itself.
     jumpSpeed: PLAYER.jump,
+    tuning: senseTuning,
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
     hurtPlayer: (amount, area) => {
@@ -633,13 +686,15 @@ export const createSession = (options: SessionOptions) => {
       }
       const handling = queue.busy || firearms.busy;
       const going = intent.forward !== 0 || intent.right !== 0;
-      sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
+      sprinting = !crouching && intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
       survival.setSprinting(sprinting);
       stepStamina(sim.needs, dt, sprinting);
       const pacedIntent = {
         ...intent,
         sprint: sprinting,
         pace: paceFactor(inventory.carriedWeight(), handling) * sim.body.consequences.movementSpeed,
+        crouch: crouching,
+        crouchSpeed: senseTuning.crouch.speedMetresPerSecond,
       };
       const tools = debug?.();
       if (tools?.noclip) {
@@ -660,23 +715,36 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
+  let handlingPausedForKnockout = false;
+  const tickHandling = (dt: number) => {
+    // Handling happens in real time; compressed time belongs to long actions.
+    if (sim.body.actionRefusal) {
+      handlingPausedForKnockout = true;
+      return;
+    }
+    if (compression.c > 1 || handlingPausedForKnockout) {
+      handlingPausedForKnockout = false;
+      return;
+    }
+    const result = queue.tick(dt);
+    options.onHandlingOutcomes?.(result);
+    for (const { job, reason } of result.failed) {
+      (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);
+    }
+  };
+  sim.scheduler.register({ id: 'handling', rate: HANDLING_RATE, tick: tickHandling });
+
   sim.scheduler.register({
-    id: 'handling',
-    rate: HANDLING_RATE,
-    tick: (dt) => {
-      // Handling happens in real time; compressed time belongs to long actions.
-      if (compression.c > 1) {
-        return;
-      }
-      const result = queue.tick(dt);
-      options.onHandlingOutcomes?.(result);
-      for (const { job, reason } of result.failed) {
-        (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);
+    id: 'firearms',
+    rate: PHYSICS_RATE,
+    tick: (_dt, time) => {
+      if (sim.body.actionRefusal) {
+        firearms.pauseTo(time);
+      } else {
+        firearms.advanceTo(time);
       }
     },
   });
-
-  sim.scheduler.register({ id: 'firearms', rate: PHYSICS_RATE, tick: (_dt, time) => firearms.advanceTo(time) });
 
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();
@@ -766,6 +834,12 @@ export const createSession = (options: SessionOptions) => {
     get sprinting() {
       return sprinting;
     },
+    get crouching() {
+      return crouching;
+    },
+    get playerEyeHeightMetres() {
+      return playerEyeHeightMetres();
+    },
     /** Furniture (with its loot) and spawns arrive with their column; saved state makes revisits idempotent. */
     onColumn: (cx: number, cz: number, site: Site | undefined) => {
       for (const { spec, loot } of site?.furnitureIn(cx, cz) ?? []) {
@@ -808,6 +882,7 @@ export const createSession = (options: SessionOptions) => {
      * sounds. `until` caps the simulation time reached, for the debug time skip.
      */
     frame: (dt: number, until?: number): void => {
+      crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frame(dt, until);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
@@ -825,7 +900,12 @@ export const createSession = (options: SessionOptions) => {
         inventory,
         character,
         simulation: sim,
-        player: snapshotPlayer(body, controls.yaw(), controls.pitch(), controls.walking()),
+        player: snapshotPlayer(body, {
+          yaw: controls.yaw(),
+          pitch: controls.pitch(),
+          walk: controls.walking(),
+          crouching,
+        }),
         aim,
         survival,
         quickbar: quickbar.snapshotState(inventory),

@@ -27,6 +27,14 @@ body {
 #view canvas {
   display: block;
 }
+body.unconscious::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: #000;
+  pointer-events: none;
+}
 
 #game-cursor-root {
   position: fixed;

@@ -352,6 +352,12 @@ const SoundSchema = strictObject({
   minIntervalSeconds: NonNegative,
   category: picklist(['world', 'body', 'ui']),
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+  wall: optional(
+    strictObject({
+      gain: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      cutoffHz: Positive,
+    }),
+  ),
 });
 
 const UnitVector = pipe(
@@ -701,7 +707,6 @@ const ZombieSchema = strictObject({
       farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
-      wallRunCostMetres: NonNegative,
       searchSeconds: strictObject({ min: Positive, max: Positive }),
       searchRadiusMetres: Positive,
       searchStrollSeconds: strictObject({ min: Positive, max: Positive }),
@@ -766,6 +771,22 @@ const FigureSchema = strictObject({
 // ---- skills and recipes ----
 
 const SkillSchema = strictObject({ id: Id, name: Name });
+const SenseSchema = strictObject({
+  id: Id,
+  crouch: strictObject({
+    speedMetresPerSecond: Positive,
+    hearingRangeScale: Fraction,
+    sightRangeScale: Fraction,
+    eyeDropMetres: Positive,
+  }),
+  wall: strictObject({
+    hearingRangeScale: Fraction,
+    gain: Fraction,
+    cutoffHz: Positive,
+    clearGain: Fraction,
+    clearCutoffHz: Positive,
+  }),
+});
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
@@ -778,6 +799,12 @@ const BodyTuningSchema = strictObject({
   infectionChance: Fraction,
   /** Simulation seconds that the player remains unconscious. */
   knockoutSeconds: Positive,
+  /** Player eye height in metres while unconscious and prone. */
+  proneEyeHeightMetres: Positive,
+  /** Blunt-force shock damage per point of health damage. */
+  bluntShockPerDamage: Positive,
+  /** Simulation seconds required to apply wound treatment. */
+  treatmentSeconds: Positive,
   /** Shock restored when the player wakes, on a 0–100 scale. */
   wakeShock: pipe(
     Positive,
@@ -835,6 +862,7 @@ const SECTION_DESCRIPTOR = {
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
+  senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -861,6 +889,7 @@ export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type SenseDef = InferOutput<typeof SenseSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

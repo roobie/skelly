@@ -32,6 +32,13 @@ describe('player body', () => {
     expect(body.unconscious).toBe(true);
     expect(body.actionRefusal).toBeDefined();
     body.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+    expect(
+      () =>
+        new Body(
+          { ...BODY_TUNING_FIXTURE, knockoutSeconds: BODY_TUNING_FIXTURE.knockoutSeconds / 2 },
+          body.snapshotState(),
+        ),
+    ).not.toThrow();
     expect(body.unconscious).toBe(false);
     expect(body.actionRefusal).toBeUndefined();
     expect(body.shock).toBeGreaterThan(0);

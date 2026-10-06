@@ -10,6 +10,7 @@ import { resolve as resolvePath } from 'node:path';
 import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { pressAction } from './input-actions.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
@@ -177,8 +178,8 @@ try {
       entered: deadvoxSaveTest.controller.isEntered,
     }));
     assert.deepEqual(before, { hasSnapshot: false, entered: false });
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('w');
+    await pressAction(page, 'ui.inventory-toggle');
+    await pressAction(page, 'movement.forward');
     await page.keyboard.press('F10');
     const after = await page.evaluate(() => ({
       hasSnapshot: typeof deadvoxSaveTest.controller.snapshot === 'function',

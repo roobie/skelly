@@ -1,0 +1,20 @@
+{
+  "senses": [
+    {
+      "id": "player",
+      "crouch": {
+        "speedMetresPerSecond": 1,
+        "hearingRangeScale": 0.5,
+        "sightRangeScale": 0.5,
+        "eyeDropMetres": 0.7
+      },
+      "wall": {
+        "hearingRangeScale": 0.5,
+        "gain": 0.55,
+        "cutoffHz": 1800,
+        "clearGain": 1,
+        "clearCutoffHz": 18000
+      }
+    }
+  ]
+}

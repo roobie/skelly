@@ -54,6 +54,9 @@ const body = new Body({
   antisepticWindowGameHours: 1,
   infectionChance: 0.5,
   knockoutSeconds: 1,
+  proneEyeHeightMetres: 0.2,
+  bluntShockPerDamage: 2,
+  treatmentSeconds: 1,
   wakeShock: 5,
   bloodLossPerSecond: 0.004,
   bloodRecoveryPerSecond: 0.002,
@@ -82,7 +85,7 @@ const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
 screen.selected = rag;
 screen.open();
-screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));
+screen.onAction('inventory.next');
 screen.selected = rag;
 screen.update();
 const inputState = { locked: false, menuPointer: false };

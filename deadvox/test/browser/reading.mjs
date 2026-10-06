@@ -1,12 +1,14 @@
 // biome-ignore-all lint/correctness/noNodejsModules: maintained standalone Vite/Chrome contract.
-// biome-ignore-all lint/style/noProcessEnv: runner supplies executable and artifact destination.
+// biome-ignore-all lint/style/noProcessEnv: runner may supply the browser executable and artifact destination.
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative consumer/presentation assertions.
+// biome-ignore-all lint/correctness/noUnresolvedImports: page-evaluated imports address Vite URLs, not Node files.
 import assert from 'node:assert/strict';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
@@ -34,7 +36,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,playKeys,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
         );
       },
     },
@@ -45,7 +47,7 @@ try {
   await vite.listen();
   const { port } = vite.httpServer.address();
   browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
+    executablePath: process.env.CHROME_BIN ?? chromium.executablePath(),
     headless: true,
     args: browserStageArgs('reading'),
   });
@@ -65,14 +67,46 @@ try {
       'reading',
       `http://127.0.0.1:${port}/?site=testHouse&seed=1&radius=16&time=12:00&post=0&sunshadow=0&torchshadow=0`,
     ),
+    { waitUntil: 'domcontentloaded' },
   );
-  await page.waitForFunction(
-    () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
-    undefined,
-    {
-      timeout: 60_000,
-    },
-  );
+  try {
+    await page.waitForFunction(
+      () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+      undefined,
+      { timeout: 60_000 },
+    );
+  } catch (error) {
+    const readiness = await page
+      .evaluate(() => ({
+        status: document.querySelector('#save-status')?.textContent,
+        go: document.querySelector('#go')?.getAttribute('aria-disabled'),
+        errors: document.querySelector('#errors')?.textContent,
+      }))
+      .catch((failure) => ({ evaluationError: String(failure) }));
+    throw new Error(`Reading title did not become ready: ${JSON.stringify({ readiness, errors })}`, { cause: error });
+  }
+  if (mode === 'consumer') {
+    await page.locator('.input-options > summary').click();
+    await page.locator('[data-binding-id="world.interact"] button').click();
+    // KeyJ is the new chord being captured; world.interact still resolves to the old key until capture commits.
+    await page.keyboard.press('KeyJ');
+    await page.waitForFunction(
+      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code === 'KeyJ')",
+    );
+    await page.reload();
+    await page.waitForFunction(
+      () => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false',
+      undefined,
+      { timeout: 60_000 },
+    );
+    assert.equal(
+      await page.evaluate(
+        "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('world.interact')[0].code)",
+      ),
+      'KeyJ',
+      'settings rebind persists across reload',
+    );
+  }
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.readingWitness, undefined, { timeout: 60_000 });
   await page.waitForFunction(
@@ -123,11 +157,42 @@ try {
     });
     await page.evaluate(dispatchMenuPointerClick, { canvasSelector: '#view' });
   };
+  const holdAction = async (actionId, run) => {
+    const release = await holdInputAction(page, actionId);
+    try {
+      await run();
+    } finally {
+      await release();
+    }
+  };
   let proof;
   if (mode === 'consumer') {
-    const walk = async (key, targetX, increasing) => {
+    await pressAction(page, 'ui.main-menu-toggle');
+    const interactionOption = await page.evaluate(
+      "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('interaction'))",
+    );
+    assert.ok(interactionOption >= 0);
+    const interactionCheckbox = page.locator('#hud-options input[type="checkbox"]').nth(interactionOption);
+    // The prompt oracle requires player-enabled hints, not a particular HUD default.
+    if (!(await interactionCheckbox.isChecked())) {
+      await uiClick(interactionCheckbox);
+    }
+    assert.equal(await interactionCheckbox.isChecked(), true);
+    await pressAction(page, 'ui.main-menu-toggle');
+    const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    await pressAction(page, 'player.crouch-toggle');
+    await page.waitForFunction(
+      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching !== crouchingAtDispatch,
+      crouchBeforeToggle,
+    );
+    await pressAction(page, 'player.crouch-toggle');
+    await page.waitForFunction(
+      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching === crouchingAtDispatch,
+      crouchBeforeToggle,
+    );
+    const walk = async (actionId, targetX, increasing) => {
       const from = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-      await page.keyboard.down(key);
+      const release = await holdInputAction(page, actionId);
       try {
         await waitForSimulation(
           page,
@@ -140,14 +205,20 @@ try {
             };
           },
           { x: targetX, up: increasing },
-          { seconds: 10, from, label: `walk ${key} to ${targetX}`, record, stop: () => page.keyboard.up(key) },
+          {
+            seconds: 10,
+            from,
+            label: `walk ${actionId} to ${targetX}`,
+            record,
+            stop: release,
+          },
         );
       } finally {
-        await page.keyboard.up(key);
+        await release();
       }
     };
     const startX = await page.evaluate(() => globalThis.readingWitness.body.pos[0]);
-    await walk('w', startX + 10, true);
+    await walk('movement.forward', startX + 10, true);
     const aim = async (type) => {
       const target = await page.evaluate((id) => {
         const { engine, input, eye } = globalThis.readingWitness;
@@ -171,7 +242,7 @@ try {
       }
       return chair.pos[0] - 2;
     });
-    await walk('w', chairApproachX, true);
+    await walk('movement.forward', chairApproachX, true);
     await aim('chair');
     const chairUid = await page.evaluate(() => globalThis.readingWitness.lookedAt().uid);
     const interruptRest = async (label) => {
@@ -192,23 +263,45 @@ try {
       );
     };
     assert.ok(await page.evaluate(() => globalThis.readingWitness.session.sim.needs.fatigue > 0));
-    await page.keyboard.press('f');
+    await pressAction(page, 'world.interact');
     await page.waitForFunction((uid) => {
       const { session } = globalThis.readingWitness;
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
     }, chairUid);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), true);
+    const crouchingDuringRest = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    const crouchGuardStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    await pressAction(page, 'player.crouch-toggle');
+    await waitForSimulation(
+      page,
+      (until) => {
+        const { session } = globalThis.readingWitness;
+        return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+      },
+      crouchGuardStart + 0.1,
+      {
+        seconds: 0.1,
+        from: crouchGuardStart,
+        label: 'rest keeps the crouch action locked through simulated progress',
+        record,
+      },
+    );
+    assert.equal(
+      await page.evaluate(() => globalThis.readingWitness.session.crouching),
+      crouchingDuringRest,
+      'long-action lock suppresses the crouch action',
+    );
     await interruptRest('rest stop interruption');
-    await page.keyboard.press('f');
+    await pressAction(page, 'handling.stop');
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.interruption), undefined);
-    await page.keyboard.press('f');
+    await pressAction(page, 'world.interact');
     await page.waitForFunction((uid) => {
       const { session } = globalThis.readingWitness;
       return session.rest.action?.kind === 'rest' && session.rest.action.furnitureUid === uid;
     }, chairUid);
     await interruptRest('rest continue interruption');
-    await page.keyboard.press('c');
+    await pressAction(page, 'compression.continue');
     await page.waitForFunction((uid) => {
       const { session } = globalThis.readingWitness;
       return (
@@ -217,7 +310,7 @@ try {
         session.rest.action?.furnitureUid === uid
       );
     }, chairUid);
-    await page.keyboard.press('f');
+    await pressAction(page, 'handling.stop');
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
     const rampFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
@@ -256,24 +349,14 @@ try {
       const { session } = globalThis.readingWitness;
       return session.rest.action?.kind === 'sleep' && session.rest.action.furnitureUid === uid;
     }, bedUid);
-    await page.evaluate((uid) => {
-      const { engine, useTarget, playKeys } = globalThis.readingWitness;
-      const furniture = engine.entities.byUid(uid);
-      if (!furniture) {
-        throw new Error('Sleep input fixture disappeared');
-      }
-      useTarget(furniture); // F on the anchor does not end sleep.
-      playKeys('KeyX'); // X does not end sleep.
-    }, bedUid);
     const sleeping = await page.evaluate(() => {
       const { body, session } = globalThis.readingWitness;
       return { position: [...body.pos], time: session.sim.time };
     });
-    await page.keyboard.press('f');
-    await page.keyboard.press('x');
-    await page.keyboard.down('w');
-    try {
-      await waitForSimulation(
+    await pressAction(page, 'world.interact');
+    await pressAction(page, 'handling.stop');
+    await holdAction('movement.forward', () =>
+      waitForSimulation(
         page,
         (until) => {
           const { session } = globalThis.readingWitness;
@@ -281,10 +364,8 @@ try {
         },
         sleeping.time + 0.5,
         { seconds: 2, from: sleeping.time, label: 'sleep ignores movement and stop keys', record },
-      );
-    } finally {
-      await page.keyboard.up('w');
-    }
+      ),
+    );
     const stillSleeping = await page.evaluate(() => {
       const { body, session } = globalThis.readingWitness;
       return {
@@ -332,10 +413,14 @@ try {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
     });
-    await walk('s', startX + 10, false);
+    await walk('movement.back', startX + 10, false);
     await aim('crate');
     const searchStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-    await page.keyboard.press('f');
+    const interactLabel = await page.evaluate(
+      "import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('world.interact'))",
+    );
+    await page.waitForFunction((label) => document.querySelector('#prompt').textContent.includes(label), interactLabel);
+    await pressAction(page, 'world.interact');
     await waitForSimulation(
       page,
       () => {
@@ -354,7 +439,7 @@ try {
     await note.waitFor();
     await uiClick(note);
     const handStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
-    await page.keyboard.press('h');
+    await pressAction(page, 'inventory.hands');
     await waitForSimulation(
       page,
       () => {
@@ -368,14 +453,12 @@ try {
       undefined,
       { seconds: 5, from: handStart, label: 'note to hand', record },
     );
-    await page.keyboard.press('1');
-    await page.keyboard.press('Tab');
+    await pressAction(page, 'quickbar.assign.1');
+    await pressAction(page, 'ui.inventory-toggle');
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
     // Observe the real pre-open focus, never manufacture a focus for the restore assertion.
     const previousFocus = await page.evaluateHandle(() => document.activeElement);
-    await page.keyboard.down('1');
-    await page.locator('#reading').waitFor({ state: 'visible' });
-    await page.keyboard.up('1');
+    await holdAction('quickbar.use.1', () => page.locator('#reading').waitFor({ state: 'visible' }));
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a folded note');
     assert.ok((await page.locator('.reading-text').innerText()).includes('NOT PLAYTEST LORE'));
     assert.equal(await page.evaluate(() => document.activeElement?.getAttribute('role')), 'dialog');
@@ -395,14 +478,13 @@ try {
         };
       });
     const before = await itemState();
-    await page.keyboard.press('1');
-    await page.keyboard.press('=');
+    await pressAction(page, 'quickbar.use.1');
+    await pressAction(page, 'hand.use-off');
     await uiClick(page.locator('.reading-text'));
-    await page.keyboard.press('z');
-    await page.keyboard.press('r');
-    await page.keyboard.down('w');
-    try {
-      await waitForSimulation(
+    await pressAction(page, 'movement.walk-toggle');
+    await pressAction(page, 'firearm.reload');
+    await holdAction('movement.forward', () =>
+      waitForSimulation(
         page,
         (until) => {
           const { session } = globalThis.readingWitness;
@@ -410,10 +492,8 @@ try {
         },
         before.time + 0.5,
         { seconds: 2, from: before.time, label: 'live world while reading', record },
-      );
-    } finally {
-      await page.keyboard.up('w');
-    }
+      ),
+    );
     const during = await itemState();
     assert.ok(during.time >= before.time + 0.5);
     assert.deepEqual([during.position[0], during.position[2]], [before.position[0], before.position[2]]);
@@ -423,7 +503,7 @@ try {
     assert.equal(during.jobs, 0);
     assert.equal(during.open, true);
     await page.screenshot({ path: resolve(artifacts, 'note-reading.png') });
-    await page.keyboard.press('Tab');
+    await pressAction(page, 'reading.close');
     assert.equal(await page.locator('#reading').isVisible(), false);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
     assert.equal(await previousFocus.evaluate((element) => element === document.activeElement), true);
@@ -436,12 +516,12 @@ try {
       const sign = [...globalThis.readingWitness.engine.entities.all].find((entity) => entity.type === 'sample_sign');
       return sign.pos[0] + sign.size[0] / 2;
     });
-    await walk('s', signX, false);
+    await walk('movement.back', signX, false);
     await aim('sample_sign');
-    await page.keyboard.press('f');
+    await pressAction(page, 'world.interact');
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
-    await page.keyboard.press('F9');
+    await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.readingWitness.session.sim.paused);
     const menu = await record('pause while reading');
     assert.equal(menu.readingOpen, false);
@@ -450,14 +530,14 @@ try {
     assert.equal(menu.menuPointer, true);
     assert.deepEqual(menu.jobs, []);
     assert.equal(await page.locator('#reading').isVisible(), false);
-    await page.keyboard.press('F9');
+    await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => !globalThis.readingWitness.session.sim.paused);
     const resumed = await record('resume with reading hidden');
     assert.equal(resumed.readingOpen, false);
     assert.equal(resumed.menuPointer, false);
     assert.equal(await page.locator('#reading').isVisible(), false);
     // A hidden reading surface must not capture F after resume.
-    await page.keyboard.press('f');
+    await pressAction(page, 'world.interact');
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
     await page.screenshot({ path: resolve(artifacts, 'sign-reading.png') });
@@ -524,10 +604,10 @@ try {
     };
     await checkSize({ width: 360, height: 640 });
     await checkSize({ width: 800, height: 600 });
-    await page.keyboard.press('Home');
-    await page.keyboard.press('PageDown');
+    await pressAction(page, 'reading.first');
+    await pressAction(page, 'reading.page-down');
     assert.ok(await page.locator('.reading-text').evaluate((text) => text.scrollTop > 0));
-    await page.keyboard.press('Home');
+    await pressAction(page, 'reading.first');
     const textBox = await page.locator('.reading-text').boundingBox();
     await page.evaluate(
       ({ x, y }) => {
@@ -538,7 +618,7 @@ try {
     );
     await page.mouse.wheel(0, 200);
     await page.waitForFunction(() => document.querySelector('.reading-text').scrollTop > 0);
-    await page.keyboard.press('End');
+    await pressAction(page, 'reading.last');
     const endVisible = await page.locator('.reading-text').evaluate((text, end) => {
       const node = document.createTreeWalker(text, NodeFilter.SHOW_TEXT).nextNode();
       const range = document.createRange();
@@ -554,10 +634,10 @@ try {
     await page.evaluate(() =>
       globalThis.readingWitness.reading.open({ title: 'Main menu close', text: 'Placeholder' }),
     );
-    await page.keyboard.press('F9');
+    await pressAction(page, 'ui.main-menu-toggle');
     assert.equal(await page.locator('#reading').isVisible(), false);
     assert.equal(await page.locator('#overlay').isVisible(), true);
-    await page.keyboard.press('F9');
+    await pressAction(page, 'ui.main-menu-toggle');
     await page.waitForFunction(() => globalThis.readingWitness.input.locked);
     await page.evaluate(() => globalThis.readingWitness.reading.open({ title: 'Pointer loss', text: 'Placeholder' }));
     await page.evaluate(() => document.exitPointerLock());

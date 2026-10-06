@@ -1,11 +1,8 @@
-import { KEY_BINDINGS } from '../game/input.ts';
+import { labelForAction } from '../game/inputBindings.ts';
 
 // The debug panel's groups, their open/closed state, and the catalogue of keys and URL parameters.
 //
-// Every debug action in the table in index.ts names its group and, if it reads or writes one, its URL
-// parameter; this file lists the groups. The panel, the keys-at-a-glance in each group header and the
-// table in TROUBLESHOOTING.md (checked by test/debugGroups.test.ts) are all derived from those two
-// lists, so none of them can drift from the keys.
+// Binding labels resolve through the registry so collapsing a group cannot preserve a stale shortcut.
 
 export type GroupId =
   | 'tools'
@@ -50,7 +47,12 @@ export const DEBUG_GROUPS: readonly GroupDef[] = [
     title: 'Diagnostics',
     notes: [
       { label: 'Mouse readout (bottom left, always on)' },
-      { label: 'Performance overlay', key: KEY_BINDINGS.performanceOverlay.label },
+      {
+        label: 'Performance overlay',
+        get key() {
+          return labelForAction('debug.performance-toggle');
+        },
+      },
     ],
   },
   {
@@ -85,29 +87,6 @@ export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: s
 
 /** The bare parameter name of a `name=values` hint. */
 export const paramName = (param: string): string => param.split('=')[0]!;
-
-const cell = (text: string): string => text.replaceAll('|', '\\|');
-const code = (text: string): string => `\`${text}\``;
-
-/**
- * The catalogue as a Markdown table, one row per control. TROUBLESHOOTING.md holds this text between
- * its debug-keys markers; test/debugGroups.test.ts fails when they differ.
- */
-export const debugKeyTable = (actions: readonly GroupedAction[]): string => {
-  const rows = ['| Group | Key | Control | URL parameter |', '| --- | --- | --- | --- |'];
-  for (const { def, actions: inGroup } of actionsByGroup(actions)) {
-    const entries = [
-      ...inGroup.map((action) => ({ key: action.key, label: action.label, param: action.param })),
-      ...(def.notes ?? []).map((note) => ({ key: note.key, label: note.label, param: note.param })),
-    ];
-    for (const entry of entries) {
-      rows.push(
-        `| ${def.title} | ${entry.key ? code(entry.key) : '—'} | ${cell(entry.label)} | ${entry.param ? code(cell(entry.param)) : '—'} |`,
-      );
-    }
-  }
-  return rows.join('\n');
-};
 
 const STORAGE_KEY = 'deadvox.debug-groups-closed';
 

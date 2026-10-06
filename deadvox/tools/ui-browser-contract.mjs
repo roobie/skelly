@@ -11,6 +11,7 @@ import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
 import { createServer } from 'vite';
+import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
@@ -173,8 +174,19 @@ try {
     'accepted-launch readiness',
   );
   discovery.phase = 'UI assertions';
-  const keyBindings = await evaluate("import('/src/game/input.ts').then(({ KEY_BINDINGS }) => KEY_BINDINGS)");
-  const pressBinding = async (binding) => press(binding.code, binding.label, binding.virtualKeyCode);
+  const keyBindings = await evaluate(`import('/src/game/inputBindings.ts').then(({ inputBindings, NATIVE_INPUTS }) => ({
+    mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
+    browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
+  }))`);
+  const pressBinding = async (binding) => {
+    const key = cdpKey(binding.code);
+    await press(key.code, key.key, key.windowsVirtualKeyCode);
+  };
+  const action = async (actionId) => {
+    await pressCdpAction(evaluate, send, actionId);
+    await delay(80);
+  };
+
   const saveNote = 'Saves are kept in this browser. When two tabs play the same world, the last one to save wins.';
   const assertSaveNote = async (screen) =>
     assert.equal(
@@ -314,17 +326,23 @@ try {
     true,
     'F3 no longer toggles the performance overlay',
   );
-  await press('F4', 'F4', 115);
-  await waitFor(() => evaluate("!document.querySelector('#f3-debug-overlay').hidden"), 'F4 overlay opens');
+  await action('debug.performance-toggle');
+  await waitFor(
+    () => evaluate("!document.querySelector('#f3-debug-overlay').hidden"),
+    'gated performance overlay opens',
+  );
   assert.match(
     await evaluate("document.querySelector('#f3-debug-overlay').textContent"),
     /snapshot .*p95/i,
     'F4 readout includes snapshot statistics',
   );
   assert.equal(await evaluate('window.__f4Prevented'), true, 'F4 prevents the browser default');
-  await press('F4', 'F4', 115);
-  await waitFor(() => evaluate("document.querySelector('#f3-debug-overlay').hidden"), 'F4 overlay closes');
-  await press('Backquote', '`', 192);
+  await action('debug.performance-toggle');
+  await waitFor(
+    () => evaluate("document.querySelector('#f3-debug-overlay').hidden"),
+    'gated performance overlay closes',
+  );
+  await action('debug.panel-toggle');
   await evaluate(`(() => {
     document.querySelector('#debug-time').value = '08:00';
     document.querySelector('#set-debug-time')?.click();
@@ -371,7 +389,7 @@ try {
     /^deadvox-metrics-seed-\d+\.json$/,
     'metrics download has a useful filename',
   );
-  await press('Backquote', '`', 192);
+  await action('debug.panel-toggle');
   await evaluate(`(() => {
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
@@ -437,9 +455,7 @@ try {
   await press('Tab', 'Tab', 9);
   assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'Tab closes inventory');
   assert.equal(
-    await evaluate(
-      "[...document.querySelectorAll('#controls dt')].find((node) => node.textContent === 'F9')?.textContent",
-    ),
+    await evaluate('document.querySelector(\'[data-input-action="ui.main-menu-toggle"]\')?.textContent'),
     keyBindings.mainMenu.label,
     'help label comes from the key binding table',
   );
@@ -558,8 +574,8 @@ try {
   );
   assert.ok(browserKeyEvent, 'browser-owned key reaches the page in Chrome');
   assert.equal(browserKeyEvent.defaultPrevented, false, 'game leaves the browser-owned key unprevented');
-  await press('KeyG', 'g', 71);
-  assert.equal(await evaluate("!document.querySelector('#spawn').hidden"), true, 'G opens spawn menu');
+  await action('debug.spawn-menu-toggle');
+  assert.equal(await evaluate("!document.querySelector('#spawn').hidden"), true, 'gated spawn action opens menu');
   assert.equal(
     await evaluate("document.querySelector('#spawn input').value"),
     '',
@@ -575,8 +591,12 @@ try {
   assert.equal(await evaluate("document.querySelector('#spawn input').value"), 'g', 'focused search accepts text');
   await press('Tab', 'Tab', 9);
   assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes spawn menu');
-  await press('Backquote', '`', 192);
-  assert.equal(await evaluate("!document.querySelector('.debug-panel').hidden"), true, 'Backquote opens debug panel');
+  await action('debug.panel-toggle');
+  assert.equal(
+    await evaluate("!document.querySelector('.debug-panel').hidden"),
+    true,
+    'gated panel action opens debug panel',
+  );
   const debugScroll = await evaluate(`(() => {
     const panel = document.querySelector('.debug-panel');
     panel.scrollTop = 0;
@@ -605,7 +625,9 @@ try {
     await evaluate(
       "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Spawn 1 shamblers')).textContent",
     ),
-    /Spawn 1 shamblers \(V\)/,
+    new RegExp(
+      `Spawn 1 shamblers \\(${(await evaluate("import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('debug.spawn-shamblers'))")).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`,
+    ),
   );
   await evaluate(
     `document.querySelector('[aria-label="Increase shambler count"]').scrollIntoView({ block: 'center' })`,
@@ -617,11 +639,17 @@ try {
     await evaluate(
       "Array.from(document.querySelectorAll('.debug-actions button')).find((button) => button.textContent.includes('Spawn 2 shamblers')).textContent",
     ),
-    /Spawn 2 shamblers \(V\)/,
+    new RegExp(
+      `Spawn 2 shamblers \\(${(await evaluate("import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.label('debug.spawn-shamblers'))")).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\)`,
+    ),
   );
-  await press('Backquote', '`', 192);
-  assert.equal(await evaluate("document.querySelector('.debug-panel').hidden"), true, 'Backquote closes debug panel');
-  await press('Backquote', '`', 192);
+  await action('debug.panel-toggle');
+  assert.equal(
+    await evaluate("document.querySelector('.debug-panel').hidden"),
+    true,
+    'gated panel action closes debug panel',
+  );
+  await action('debug.panel-toggle');
   assert.equal(
     await evaluate("document.querySelector('.debug-shambler-count output').textContent"),
     '2',
@@ -638,14 +666,14 @@ try {
   );
   await clickAt('[aria-label="Increase shambler count"]');
   assert.equal(await evaluate("document.querySelector('.debug-shambler-count output').textContent"), '2');
-  await press('KeyV', 'v', 86);
+  await action('debug.spawn-shamblers');
   assert.match(
     await evaluate("document.querySelector('#shambler-spawn-status').textContent"),
     /^Placed \d+ of 2$/,
     'V reports the number placed out of the selected count',
   );
-  await press('KeyO', 'o', 79);
-  await press('Backquote', '`', 192);
+  await action('debug.freeze-shamblers');
+  await action('debug.panel-toggle');
   assert.deepEqual(
     await evaluate('window.__pointerCalls'),
     { request: 0, exit: 0 },
@@ -653,7 +681,7 @@ try {
   );
 
   // Exercise keyboard input while pointer lock is held; the game's drawn-cursor menu route is active.
-  await press('KeyG', 'g', 71);
+  await action('debug.spawn-menu-toggle');
   assert.equal(
     await evaluate("document.activeElement === document.querySelector('#spawn input')"),
     true,
@@ -674,7 +702,7 @@ try {
   await press('Tab', 'Tab', 9);
   assert.equal(await evaluate("document.querySelector('#spawn').hidden"), true, 'Tab closes without spawning');
 
-  await press('KeyG', 'g', 71);
+  await action('debug.spawn-menu-toggle');
   await typeText('a');
   assert.ok(
     (await evaluate("document.querySelectorAll('#spawn .spawn-list button').length")) > 1,
@@ -688,7 +716,7 @@ try {
     "document.querySelector('#spawn .spawn-list button[aria-current=true] span').textContent",
   );
   assert.notEqual(selectedSpawnName, firstSpawnName, 'ArrowDown visibly changes the selected item');
-  await press('Enter', 'Enter', 13);
+  await action('spawn.confirm');
   assert.equal(
     await evaluate("document.querySelector('#spawn').hidden"),
     true,
@@ -706,7 +734,7 @@ try {
   assert.ok(nearbyAfterEnter.includes(selectedSpawnName), 'Enter spawned the selected item');
   await press('Tab', 'Tab', 9);
 
-  await press('KeyG', 'g', 71);
+  await action('debug.spawn-menu-toggle');
   await typeText('crowbar');
   assert.equal(await evaluate("document.querySelectorAll('#spawn .spawn-list button').length"), 1);
   await press('Tab', 'Tab', 9);
@@ -721,7 +749,7 @@ try {
   );
   await press('Tab', 'Tab', 9);
 
-  await press('KeyG', 'g', 71);
+  await action('debug.spawn-menu-toggle');
   const spawnNames = await evaluate(`Array.from(document.querySelectorAll('#spawn .spawn-list button'))
     .map((button, index) => ({ index, name: button.querySelector('span')?.textContent }))
     .filter(({ name }) => name && name !== 'Can of beans')
@@ -788,7 +816,7 @@ try {
     `scroll survives selecting an item (${inventoryScroll.top} -> ${paneTop})`,
   );
 
-  await press('KeyE', 'e', 69);
+  await action('inventory.best-pocket');
   assert.notEqual(
     await evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
     true,
@@ -862,7 +890,7 @@ try {
 
   // With a menu open and pointer locked, move the drawn cursor, dispatch a click to its target,
   // and verify both a button handler and input focus receive the forwarded click.
-  await press('KeyG', 'g', 71);
+  await action('debug.spawn-menu-toggle');
   await evaluate("document.querySelector('#spawn .spawn-list button').scrollIntoView({ block: 'center' })");
   await evaluate('window.__setPointerLocked(true)');
   await waitFor(() => evaluate("!document.querySelector('#game-cursor').hidden"), 'menu cursor visibility');
@@ -940,7 +968,7 @@ try {
     'input-surface click resumes after inventory unlock',
   );
 
-  await press('Backquote', '`', 192);
+  await action('debug.panel-toggle');
   await evaluate('window.__setPointerLocked(false)');
   await delay(100);
   assert.equal(

@@ -358,7 +358,7 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   with the thing you're holding." Activation follows the character's dominant
   and off-hand roles, not a fixed physical side. A held item must never turn
   into an unarmed attack, and a reserved support hand must not redirect an
-  action. See `src/game/input.ts`, `KEY_BINDINGS`, for inputs;
+  action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`, for inputs;
   `src/game/primaryAction.ts`, `selectPrimaryAction`, for capability admission;
   and `src/core/playerCombat.ts`, `PlayerCombat`, for the saved physical fist
   sequence. Continue preserves that sequence rather than reseeding it.
@@ -506,9 +506,8 @@ plain box in your hands. Files are small, and follow
   is a starting tuning value, not a number BR chose. BR clarified at 11:32:
   “and, just to be clear, the aim is to define all content and tunables via
   mods - even the _core game_”, and at 11:34: “yeah, let's do it now”.
-  `src/content/base/body.json`, `body.player`, is the base-pack tuning source;
-  `src/core/schema.ts`, `BodyTuningSchema`, validates it. `src/core/sim.ts`,
-  `Simulation`, injects the loaded tuning into `Body`.
+  BR's 14:41 answer on knockout presentation was “knockout = totally black and no sound and prone”. While unconscious, the view is black, player audio is muted and the eye-height owner makes the player prone; all three return on waking. These presentation states derive from `Body.unconscious` and saved knockout state. `src/game/session.ts`, `playerEyeHeightMetres`, owns prone eye height; `src/game/audio.ts`, `GameAudio.setOutputMuted`, mutes player output; `src/game/play.ts`, `frame`, and `src/ui/style.css`, `body.unconscious`, own blackout presentation.
+  `src/content/base/body.json`, `body.player`, is the base-pack tuning source, including body damage, treatment duration and prone height; `src/core/schema.ts`, `BodyTuningSchema`, validates it. `src/core/sim.ts`, `Simulation`, injects the loaded tuning into `Body`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 
@@ -593,9 +592,10 @@ system, not just bigger numbers.
   stay where they are. Collapse is a later, separate system.
 - **Shamblers have body regions and die only when the head is destroyed.**
   Melee hits apply damage to the posed region they land on; a destroyed limb is
-  severed and leaves a prop, while a destroyed head kills. A legless shambler
-  crawls; losing arms does not otherwise change its behavior. `src/core/zombies.ts`,
-  `ZombieSystem.applyMeleeHit` and `ZombieSystem.applyMeleeEffects`, own hit,
+  severed and leaves a prop, while a destroyed head kills. Losing both arms
+  prevents new attacks; `canStillAttack` in `src/core/zombies.ts` owns that rule.
+  How a legless shambler moves remains open; no crawling behavior is modeled.
+  `ZombieSystem.applyMeleeHit` and `ZombieSystem.applyMeleeEffects` own hit,
   death and severing; `src/core/zombieRegions.ts`, `posedShamblerRegionBoxes`, owns
   the posed hitboxes. Region health and severed state are simulation state and
   persist in saves.
@@ -604,8 +604,8 @@ system, not just bigger numbers.
   it goes into the save snapshot and the source fingerprint.
 Still open: the full list of damage types and each material's resistances,
 whether wounds bleed or slow a shambler, partial block damage (cracked looks),
-explosives and breach charges, and the sounds for severing and destruction (the
-audio manifest).
+blast damage by distance across body regions, explosives and breach charges, and
+the sounds for severing and destruction (the audio manifest).
 
 ## Light
 
@@ -794,7 +794,11 @@ something in play, not only decorate it.
   - **Cover (BR, 2026-10-03):** leaves and hedges are passable but opaque to
     zombie sight, player aim and LOS. Trunks/branches are solid and opaque.
     Movement rules apply to player, zombies and physical bodies alike. A hedge
-    hides you without trapping you; richer crouching/light rules remain Slice 3.
+    hides you without trapping you. Passive cover remains world geometry while
+    crouch is player state, so the stance does not change foliage opacity; this
+    keeps visibility rules attached to the obstacle rather than making scenery
+    appear or disappear with player input. `src/core/zombies.ts`, `seesPlayer`
+    and `hearingTier`, own the stance's visibility and hearing effects.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Lead
