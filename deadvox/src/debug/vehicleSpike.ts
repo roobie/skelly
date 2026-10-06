@@ -4,24 +4,21 @@ import {
   BoxGeometry,
   CanvasTexture,
   Color,
-  CylinderGeometry,
   DirectionalLight,
   DoubleSide,
-  ExtrudeGeometry,
   Group,
   HemisphereLight,
   InstancedMesh,
   Mesh,
   MeshLambertMaterial,
-  MeshStandardMaterial,
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
-  Shape,
   Sprite,
   SpriteMaterial,
   SRGBColorSpace,
+  Vector3,
   WebGLRenderer,
 } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
@@ -36,17 +33,19 @@ import { applySky } from '../render/sky.ts';
 
 const stage = document.querySelector<HTMLElement>('#stage');
 const error = document.querySelector<HTMLElement>('#error');
-if (!(stage && error)) {
-  throw new Error('Vehicle spike page is missing its stage or error element');
+const spinWheels = document.querySelector<HTMLInputElement>('#spin-wheels');
+const grainNote = document.querySelector<HTMLElement>('#grain-note');
+if (!(stage && error && spinWheels && grainNote)) {
+  throw new Error('Vehicle spike page is missing a required element');
 }
 
 const scene = new Scene();
 const camera = new PerspectiveCamera(45, 1, 0.05, 96);
-camera.position.set(2, 10, 35);
+camera.position.set(2, 9, 32);
 camera.layers.enable(PLAYER_FIGURE_LAYER);
 camera.lookAt(2, 0.6, 4.1);
 const renderer = new WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 1));
 renderer.outputColorSpace = SRGBColorSpace;
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 stage.appendChild(renderer.domElement);
@@ -55,29 +54,48 @@ const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
 applySky({ scene, light: sunlight, ambient, camera, radiusM: 96 }, DAY_SKY);
-sunlight.castShadow = true;
-sunlight.shadow.mapSize.set(1024, 1024);
-sunlight.shadow.camera.left = -20;
-sunlight.shadow.camera.right = 20;
-sunlight.shadow.camera.top = 18;
-sunlight.shadow.camera.bottom = -18;
-sunlight.shadow.camera.near = 0.1;
-sunlight.shadow.camera.far = 55;
-sunlight.shadow.bias = -0.0005;
-renderer.shadowMap.enabled = true;
+// A large voxel cutaway is a static visual sample; omitting the shadow-map pass keeps it responsive.
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(2, 0.65, 4.1);
-controls.enableDamping = true;
-controls.dampingFactor = 0.075;
+controls.enableDamping = false;
 controls.minDistance = 12;
 controls.maxDistance = 48;
 controls.maxPolarAngle = Math.PI * 0.48;
 
-const ground = new Mesh(new PlaneGeometry(46, 28), new MeshLambertMaterial({ color: 0x66_66_5e }));
+const panDirection = new Vector3();
+const panRight = new Vector3();
+const panUp = new Vector3(0, 1, 0);
+globalThis.addEventListener('keydown', (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey || document.activeElement === spinWheels) {
+    return;
+  }
+  camera.getWorldDirection(panDirection);
+  panDirection.y = 0;
+  panDirection.normalize();
+  panRight.crossVectors(panDirection, panUp).normalize();
+  const distance = 0.8;
+  const movement = new Vector3();
+  if (event.key === 'ArrowLeft') {
+    movement.copy(panRight).negate();
+  } else if (event.key === 'ArrowRight') {
+    movement.copy(panRight);
+  } else if (event.key === 'ArrowUp') {
+    movement.copy(panDirection);
+  } else if (event.key === 'ArrowDown') {
+    movement.copy(panDirection).negate();
+  } else {
+    return;
+  }
+  event.preventDefault();
+  camera.position.addScaledVector(movement, distance);
+  controls.target.addScaledVector(movement, distance);
+  scheduleRender();
+});
+
+const ground = new Mesh(new PlaneGeometry(500, 500), new MeshLambertMaterial({ color: 0x66_66_5e }));
 ground.rotation.x = -Math.PI / 2;
 ground.position.y = -0.035;
-ground.receiveShadow = true;
 scene.add(ground);
 const blockGrid = new Group();
 const lineMaterial = new MeshLambertMaterial({
@@ -98,31 +116,44 @@ for (let z = -10; z <= 18; z += BLOCK_SIZE) {
 }
 scene.add(blockGrid);
 
+const MOBGEN_VOXEL = shambler.voxelSize;
+const FINE_VOXEL = MOBGEN_VOXEL * 0.75;
 const unitCube = new BoxGeometry(1, 1, 1);
 const cubeTransform = new Object3D();
-const VOXEL = shambler.voxelSize;
+const rollingWheels: Group[] = [];
 interface VoxelBin {
   color: string;
   points: Vec3[];
 }
 
+const isSurfaceCell = ([ix, iy, iz]: Vec3, [nx, ny, nz]: Vec3): boolean =>
+  ix === 0 || ix === nx - 1 || iy === 0 || iy === ny - 1 || iz === 0 || iz === nz - 1;
+
 class VoxelShape {
   private readonly bins = new Map<string, VoxelBin>();
+  private readonly voxelSize: number;
 
-  box(center: Vec3, size: Vec3, color: string): void {
-    const counts = size.map((length) => Math.max(1, Math.round(length / VOXEL))) as Vec3;
+  constructor(voxelSize = MOBGEN_VOXEL) {
+    this.voxelSize = voxelSize;
+  }
+
+  box(center: Vec3, size: Vec3, color: string, omitPositiveZ = false): void {
+    const counts = size.map((length) => Math.max(1, Math.round(length / this.voxelSize))) as Vec3;
     const [nx, ny, nz] = counts;
     for (let ix = 0; ix < nx; ix += 1) {
       for (let iy = 0; iy < ny; iy += 1) {
         for (let iz = 0; iz < nz; iz += 1) {
-          if (ix !== 0 && ix !== nx - 1 && iy !== 0 && iy !== ny - 1 && iz !== 0 && iz !== nz - 1) {
+          if (!isSurfaceCell([ix, iy, iz], counts)) {
             continue;
           }
-          this.point(
+          if (omitPositiveZ && iz === nz - 1) {
+            continue;
+          }
+          this.voxel(
             [
-              center[0] + (ix + 0.5 - nx / 2) * VOXEL,
-              center[1] + (iy + 0.5 - ny / 2) * VOXEL,
-              center[2] + (iz + 0.5 - nz / 2) * VOXEL,
+              center[0] + (ix + 0.5 - nx / 2) * this.voxelSize,
+              center[1] + (iy + 0.5 - ny / 2) * this.voxelSize,
+              center[2] + (iz + 0.5 - nz / 2) * this.voxelSize,
             ],
             color,
           );
@@ -132,20 +163,36 @@ class VoxelShape {
   }
 
   disk(center: Vec3, radius: number, depth: number, color: string): void {
-    const r = Math.max(1, Math.round(radius / VOXEL));
-    const layers = Math.max(1, Math.round(depth / VOXEL));
+    const r = Math.max(1, Math.round(radius / this.voxelSize));
+    const layers = Math.max(1, Math.round(depth / this.voxelSize));
     for (let ix = -r; ix <= r; ix += 1) {
       for (let iy = -r; iy <= r; iy += 1) {
         if (ix * ix + iy * iy > r * r) {
           continue;
         }
         for (let iz = 0; iz < layers; iz += 1) {
-          this.point(
-            [center[0] + ix * VOXEL, center[1] + iy * VOXEL, center[2] + (iz + 0.5 - layers / 2) * VOXEL],
+          this.voxel(
+            [
+              center[0] + ix * this.voxelSize,
+              center[1] + iy * this.voxelSize,
+              center[2] + (iz + 0.5 - layers / 2) * this.voxelSize,
+            ],
             color,
           );
         }
       }
+    }
+  }
+
+  segment(from: Vec3, to: Vec3, color: string): void {
+    const distance = Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
+    const steps = Math.ceil((distance / this.voxelSize) * 1.4);
+    for (let index = 0; index <= steps; index += 1) {
+      const t = steps === 0 ? 0 : index / steps;
+      this.voxel(
+        [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t, from[2] + (to[2] - from[2]) * t],
+        color,
+      );
     }
   }
 
@@ -154,22 +201,19 @@ class VoxelShape {
     for (const { color, points } of this.bins.values()) {
       const material = new MeshLambertMaterial({ color });
       const mesh = new InstancedMesh(unitCube, material, points.length);
-      mesh.count = points.length;
       for (const [index, point] of points.entries()) {
         cubeTransform.position.set(...point);
-        cubeTransform.scale.setScalar(VOXEL * 1.025);
+        cubeTransform.scale.setScalar(this.voxelSize * 1.025);
         cubeTransform.updateMatrix();
         mesh.setMatrixAt(index, cubeTransform.matrix);
       }
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
       mesh.instanceMatrix.needsUpdate = true;
       group.add(mesh);
     }
     return group;
   }
 
-  private point(point: Vec3, color: string): void {
+  private voxel(point: Vec3, color: string): void {
     let bin = this.bins.get(color);
     if (!bin) {
       bin = { color, points: [] };
@@ -185,61 +229,85 @@ const glass = '#78939a';
 const rubber = '#202326';
 const rim = '#9b9b8b';
 const rust = '#765443';
+const interior = '#514b43';
 
-const carWheels = (shape: VoxelShape, radius = 0.37): void => {
-  for (const x of [-1.32, 1.28]) {
+interface WheelLayout {
+  readonly xs: readonly number[];
+  readonly y: number;
+  readonly halfWidth: number;
+  readonly radius: number;
+  readonly voxelSize?: number;
+}
+
+const addWheels = (parent: Group, { xs, y, halfWidth, radius, voxelSize = MOBGEN_VOXEL }: WheelLayout): void => {
+  for (const x of xs) {
     for (const side of [-1, 1]) {
-      const z = side * 0.82;
-      shape.disk([x, radius + 0.08, z], radius, 0.18, rubber);
-      shape.disk([x, radius + 0.08, z + side * 0.1], radius * 0.48, 0.035, rim);
-      shape.disk([x, radius + 0.08, z + side * 0.125], radius * 0.16, 0.04, trim);
+      const pivot = new Group();
+      pivot.position.set(x, y, side * halfWidth);
+      const wheel = new VoxelShape(voxelSize);
+      wheel.disk([0, 0, 0], radius, 0.18, rubber);
+      wheel.disk([0, 0, side * 0.12], radius * 0.47, 0.035, rim);
+      wheel.disk([0, 0, side * 0.145], radius * 0.14, 0.04, trim);
+      pivot.add(wheel.finish());
+      parent.add(pivot);
+      rollingWheels.push(pivot);
     }
   }
 };
 
-const voxelHatchback = (stripped = false): Group => {
-  const shape = new VoxelShape();
-  if (stripped) {
-    // A deliberately incomplete shell: missing doors, glass and wheels, with the engine exposed.
-    shape.box([0, 0.68, 0], [4.0, 0.3, 1.48], rust);
-    shape.box([0, 0.47, 0], [3.7, 0.12, 1.25], trim);
-    shape.box([1.4, 0.91, 0], [0.95, 0.25, 1.1], '#8b7656');
-    shape.box([-0.55, 1.0, 0], [1.8, 0.08, 1.22], '#5d5a50');
-    for (const side of [-1, 1]) {
-      shape.box([-0.5, 1.3, side * 0.58], [0.04, 0.67, 0.04], rust);
-      shape.box([0.44, 1.3, side * 0.58], [0.04, 0.67, 0.04], rust);
+interface HatchbackOptions {
+  readonly voxelSize?: number;
+  readonly cutaway?: boolean;
+}
+
+const hatchback = ({ voxelSize = MOBGEN_VOXEL, cutaway = false }: HatchbackOptions = {}): Group => {
+  const group = new Group();
+  const shape = new VoxelShape(voxelSize);
+  const bodyColor = cutaway ? '#677270' : paint;
+
+  shape.box([0.06, 0.75, 0], [4.0, 0.55, 1.58], bodyColor, cutaway);
+  shape.box([1.28, 1.08, 0], [1.55, 0.18, 1.43], bodyColor);
+  shape.box([-0.22, 1.42, 0], [1.72, 0.68, 1.25], bodyColor, cutaway);
+  shape.box([-0.2, 1.81, 0], [1.24, 0.1, 1.28], '#747d7d');
+
+  for (const side of [-1, 1]) {
+    if (!cutaway || side < 0) {
+      shape.box([-0.55, 1.48, side * 0.635], [0.72, 0.38, 0.035], glass);
+      shape.box([0.12, 1.48, side * 0.635], [0.35, 0.38, 0.035], glass);
+      shape.segment([-0.98, 1.12, side * 0.79], [-0.72, 1.82, side * 0.64], trim);
     }
-    for (const x of [-1.3, 1.2]) {
-      shape.box([x, 1.18, -0.5], [0.12, 0.26, 0.12], '#b39b6d');
-      shape.box([x, 1.18, 0.5], [0.12, 0.26, 0.12], '#b39b6d');
+    shape.segment([-1.68, 1.05, side * 0.64], [-1.08, 1.78, side * 0.64], bodyColor);
+    shape.box([2.02, 0.76, side * 0.44], [0.035, 0.12, 0.18], '#d1bd87');
+    shape.box([-1.91, 0.76, side * 0.5], [0.035, 0.12, 0.18], '#a84737');
+  }
+  shape.box([0.62, 1.46, 0], [0.04, 0.38, 0.92], glass);
+  shape.box([-1.5, 1.4, 0], [0.035, 0.35, 0.87], glass);
+  shape.segment([-1.68, 1.08, -0.66], [-1.08, 1.78, -0.64], '#aeb9b7');
+
+  if (cutaway) {
+    for (const seatZ of [-0.34, 0.34]) {
+      shape.box([0.02, 1.03, seatZ], [0.52, 0.12, 0.42], '#b29a72');
+      shape.box([-0.18, 1.34, seatZ], [0.14, 0.55, 0.42], '#a88d68');
     }
-    return shape.finish();
+    shape.box([0.62, 1.28, 0], [0.28, 0.19, 1.08], '#393d3c');
+    shape.box([0.7, 1.39, 0], [0.08, 0.08, 0.78], '#77796f');
+    for (let index = 0; index < 12; index += 1) {
+      const angle = (index / 12) * Math.PI * 2;
+      shape.segment(
+        [0.66, 1.48 + Math.cos(angle) * 0.14, 0.36 + Math.sin(angle) * 0.14],
+        [0.66, 1.48 + Math.cos(angle + 0.16) * 0.14, 0.36 + Math.sin(angle + 0.16) * 0.14],
+        trim,
+      );
+    }
   }
 
-  shape.box([0, 0.79, 0], [4.25, 0.66, 1.58], paint);
-  shape.box([1.28, 1.18, 0], [1.45, 0.22, 1.44], paint);
-  shape.box([-0.45, 1.48, 0], [1.9, 0.67, 1.28], paint);
-  shape.box([-0.45, 1.84, 0], [1.18, 0.09, 1.3], '#747d7d');
-  for (const side of [-1, 1]) {
-    shape.box([-0.83, 1.53, side * 0.65], [0.68, 0.38, 0.04], glass);
-    shape.box([-0.12, 1.53, side * 0.65], [0.49, 0.38, 0.04], glass);
-    shape.box([-0.46, 1.16, side * 0.8], [0.025, 0.47, 0.025], trim);
-    shape.box([0.22, 1.16, side * 0.8], [0.025, 0.47, 0.025], trim);
-    shape.box([-0.05, 1.0, side * 0.82], [0.12, 0.035, 0.025], '#b4b1a1');
-  }
-  shape.box([0.58, 1.49, 0], [0.04, 0.38, 0.92], glass);
-  shape.box([-1.48, 1.49, 0], [0.04, 0.38, 0.92], glass);
-  shape.box([2.1, 0.79, 0], [0.12, 0.2, 1.55], '#a79d82');
-  shape.box([-2.1, 0.79, 0], [0.12, 0.2, 1.55], trim);
-  for (const side of [-1, 1]) {
-    shape.box([2.17, 0.93, side * 0.43], [0.035, 0.13, 0.2], '#d1bd87');
-    shape.box([-2.17, 0.92, side * 0.55], [0.035, 0.1, 0.18], '#a84737');
-  }
-  carWheels(shape);
-  return shape.finish();
+  addWheels(group, { xs: [-1.35, 1.27], y: 0.44, halfWidth: 0.79, radius: 0.36, voxelSize });
+  group.add(shape.finish());
+  return group;
 };
 
-const voxelPickup = (): Group => {
+const pickup = (): Group => {
+  const group = new Group();
   const shape = new VoxelShape();
   shape.box([0, 0.78, 0], [4.7, 0.62, 1.72], '#686e6a');
   shape.box([1.42, 1.17, 0], [1.3, 0.19, 1.54], '#686e6a');
@@ -256,17 +324,14 @@ const voxelPickup = (): Group => {
     shape.box([0.26, 1.0, side * 0.86], [0.1, 0.035, 0.025], '#b4b1a1');
     shape.box([2.36, 0.78, side * 0.43], [0.035, 0.12, 0.2], '#d1bd87');
   }
-  carWheels(shape, 0.4);
-  return shape.finish();
+  addWheels(group, { xs: [-1.35, 1.3], y: 0.48, halfWidth: 0.86, radius: 0.4 });
+  group.add(shape.finish());
+  return group;
 };
 
-const voxelMotorbike = (): Group => {
+const motorbike = (): Group => {
+  const group = new Group();
   const shape = new VoxelShape();
-  for (const x of [-0.72, 0.72]) {
-    shape.disk([x, 0.41, 0], 0.4, 0.11, rubber);
-    shape.disk([x, 0.41, 0.07], 0.14, 0.035, rim);
-    shape.disk([x, 0.41, 0.1], 0.055, 0.04, trim);
-  }
   shape.box([-0.06, 0.67, 0], [0.95, 0.09, 0.14], '#9b9c8b');
   shape.box([0.18, 0.86, 0], [0.45, 0.3, 0.42], '#78775d');
   shape.box([-0.34, 0.91, 0], [0.5, 0.13, 0.34], '#292e30');
@@ -275,116 +340,77 @@ const voxelMotorbike = (): Group => {
   shape.box([0.78, 1.26, 0], [0.54, 0.08, 0.08], '#858b84');
   shape.box([0.84, 1.18, 0], [0.1, 0.12, 0.1], '#c4b182');
   shape.box([-0.9, 0.52, 0], [0.18, 0.09, 0.28], '#a54c3d');
-  return shape.finish();
-};
-
-const solid = (parent: Group, size: Vec3, position: Vec3, color: string): Mesh => {
-  const mesh = new Mesh(
-    new BoxGeometry(...size),
-    new MeshStandardMaterial({ color, roughness: 0.88, flatShading: true }),
-  );
-  mesh.position.set(...position);
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  parent.add(mesh);
-  return mesh;
-};
-
-const addPolyWheel = (parent: Group, x: number, zSide: number): void => {
-  const tire = new Mesh(
-    new CylinderGeometry(0.37, 0.37, 0.18, 9, 1),
-    new MeshStandardMaterial({ color: rubber, roughness: 1, flatShading: true }),
-  );
-  tire.rotation.x = Math.PI / 2;
-  tire.position.set(x, 0.45, zSide * 0.82);
-  tire.castShadow = true;
-  parent.add(tire);
-  const hub = new Mesh(
-    new CylinderGeometry(0.18, 0.18, 0.2, 8, 1),
-    new MeshStandardMaterial({ color: rim, roughness: 0.8, flatShading: true }),
-  );
-  hub.rotation.x = Math.PI / 2;
-  hub.position.set(x, 0.45, zSide * 0.82 + zSide * 0.08);
-  parent.add(hub);
-};
-
-const extrudedSide = (points: readonly Vec3[], width: number, color: string): Mesh => {
-  const profile = new Shape();
-  const first = points[0]!;
-  profile.moveTo(first[0], first[1]);
-  for (const [x, y] of points.slice(1)) {
-    profile.lineTo(x, y);
-  }
-  profile.closePath();
-  const geometry = new ExtrudeGeometry(profile, { depth: width, bevelEnabled: false, steps: 1 });
-  geometry.translate(0, 0, -width / 2);
-  const mesh = new Mesh(
-    geometry,
-    new MeshStandardMaterial({ color, roughness: 0.82, flatShading: true, side: DoubleSide }),
-  );
-  mesh.castShadow = true;
-  mesh.receiveShadow = true;
-  return mesh;
-};
-
-const lowPolyHatchback = (): Group => {
-  const group = new Group();
-  group.add(
-    extrudedSide(
-      [
-        [-2.15, 0.46, 0],
-        [2.12, 0.46, 0],
-        [2.12, 1.06, 0],
-        [1.55, 1.22, 0],
-        [0.55, 1.25, 0],
-        [0.12, 1.92, 0],
-        [-0.96, 1.92, 0],
-        [-1.43, 1.18, 0],
-        [-2.15, 1.12, 0],
-      ],
-      1.64,
-      paint,
-    ),
-  );
-  solid(group, [0.78, 0.4, 0.045], [-0.81, 1.53, 0.84], glass);
-  solid(group, [0.78, 0.4, 0.045], [-0.81, 1.53, -0.84], glass);
-  solid(group, [0.55, 0.39, 0.045], [-0.05, 1.53, 0.84], glass);
-  solid(group, [0.55, 0.39, 0.045], [-0.05, 1.53, -0.84], glass);
-  solid(group, [0.08, 0.48, 1.08], [0.58, 1.48, 0], '#87999c');
-  solid(group, [0.08, 0.48, 1.08], [-1.38, 1.48, 0], '#87999c');
-  solid(group, [0.14, 0.2, 1.68], [2.12, 0.8, 0], '#a79d82');
-  for (const x of [-1.32, 1.28]) {
-    addPolyWheel(group, x, -1);
-    addPolyWheel(group, x, 1);
-  }
+  addWheels(group, { xs: [-0.72, 0.72], y: 0.41, halfWidth: 0, radius: 0.4, voxelSize: MOBGEN_VOXEL });
+  group.add(shape.finish());
   return group;
 };
 
-const liftCar = (): Group => {
-  const lift = new Group();
-  for (const x of [-1.35, 1.22]) {
+const liftedRangeRover = (): Group => {
+  const frame = new VoxelShape();
+  for (const x of [-1.7, 1.65]) {
     for (const side of [-1, 1]) {
-      solid(lift, [0.16, 1.45, 0.16], [x, 0.73, side * 0.87], '#68716c');
+      frame.box([x, 1.08, side * 0.96], [0.2, 2.16, 0.2], '#727a71');
     }
-    solid(lift, [0.32, 0.1, 1.95], [x, 1.48, 0], '#c09b56');
+    frame.box([x, 2.13, 0], [0.32, 0.12, 2.2], '#c09b56');
   }
-  const stripped = voxelHatchback(true);
-  stripped.position.y = 1.55;
-  lift.add(stripped);
+  const lift = frame.finish();
+  const rover = new Group();
+  const shell = new VoxelShape();
+  shell.box([0, 0.83, 0], [4.9, 0.62, 1.9], rust, true);
+  shell.box([1.52, 1.36, 0], [1.65, 0.45, 1.85], '#716b5d', true);
+  shell.box([-0.38, 1.82, 0], [2.8, 1.08, 1.76], '#626963', true);
+  shell.box([-0.38, 2.4, 0], [2.72, 0.12, 1.92], '#817d70');
+  shell.box([1.05, 1.94, -0.9], [0.72, 0.66, 0.05], glass);
+  shell.box([-0.1, 1.94, -0.9], [0.78, 0.66, 0.05], glass);
+  shell.box([-1.08, 1.92, -0.9], [0.66, 0.68, 0.05], glass);
+  shell.box([2.46, 1.35, 0], [0.1, 0.34, 1.78], '#363c3b');
+  shell.box([2.53, 1.38, -0.45], [0.035, 0.18, 0.25], '#d1bd87');
+  shell.box([-2.43, 1.18, -0.4], [0.04, 0.16, 0.22], '#a84737');
+  for (const x of [-1.55, 1.48]) {
+    for (const side of [-1, 1]) {
+      shell.box([x, 0.84, side * 0.88], [0.2, 0.23, 0.16], '#9d9b8b');
+      shell.box([x, 0.91, side * 1.0], [0.1, 0.12, 0.08], '#b39b6d');
+    }
+  }
+  rover.add(shell.finish());
+  const strippedSide = new VoxelShape();
+  strippedSide.box([-0.25, 1.48, 0.94], [2.25, 0.76, 0.04], rust);
+  strippedSide.box([-0.25, 1.9, 0.94], [2.25, 0.05, 0.04], '#b39b6d');
+  strippedSide.box([-1.32, 1.88, 0.94], [0.06, 0.92, 0.06], '#b39b6d');
+  strippedSide.box([0.82, 1.88, 0.94], [0.06, 0.92, 0.06], '#b39b6d');
+  strippedSide.box([-0.55, 1.03, 0.96], [1.7, 0.14, 0.04], '#363c3b');
+  strippedSide.box([-0.76, 1.34, 0.4], [0.42, 0.12, 0.38], interior);
+  strippedSide.box([-0.9, 1.61, 0.4], [0.12, 0.48, 0.38], '#5a5147');
+  strippedSide.box([0.1, 1.34, 0.4], [0.42, 0.12, 0.38], interior);
+  strippedSide.box([-0.04, 1.61, 0.4], [0.12, 0.48, 0.38], '#5a5147');
+  rover.add(strippedSide.finish());
+  rover.position.y = 1.72;
+  lift.add(rover);
   return lift;
 };
 
-const voxelHatch = voxelHatchback();
-const voxelTruck = voxelPickup();
-const voxelBike = voxelMotorbike();
+const voxelHatch = hatchback();
+const interiorHatch = hatchback({ voxelSize: FINE_VOXEL, cutaway: true });
+const voxelTruck = pickup();
+const voxelBike = motorbike();
+const lifted = liftedRangeRover();
 voxelHatch.position.set(-7, 0, 4.1);
+interiorHatch.position.set(-1, 0, 4.1);
 voxelTruck.position.set(5, 0, 4.1);
 voxelBike.position.set(11, 0, 4.1);
-const comparison = lowPolyHatchback();
-comparison.position.set(-1, 0, 4.1);
-const lifted = liftCar();
 lifted.position.set(17, 0, 4.1);
-scene.add(voxelHatch, comparison, voxelTruck, voxelBike, lifted);
+scene.add(voxelHatch, interiorHatch, voxelTruck, voxelBike, lifted);
+
+const countVoxels = (group: Group): number => {
+  let count = 0;
+  group.traverse((object) => {
+    if (object instanceof InstancedMesh) {
+      count += object.count;
+    }
+  });
+  return count;
+};
+grainNote.textContent = `Mobgen cell ${(MOBGEN_VOXEL * 100).toFixed(2)} cm: ${countVoxels(voxelHatch).toLocaleString()} voxels · fine cell ${(FINE_VOXEL * 100).toFixed(2)} cm: ${countVoxels(interiorHatch).toLocaleString()} voxels`;
 
 const player = BUNDLED_CONTENT.registry.figures.get('player');
 if (!player) {
@@ -405,9 +431,9 @@ head.castShadow = true;
 person.group.add(head);
 scene.add(person.group);
 
-const addLabel = (text: string, x: number, z: number): void => {
+const addLabel = (text: string, x: number, y = 3.05, z = 4.1): void => {
   const canvas = document.createElement('canvas');
-  canvas.width = 640;
+  canvas.width = 720;
   canvas.height = 128;
   const context = canvas.getContext('2d');
   if (!context) {
@@ -419,24 +445,24 @@ const addLabel = (text: string, x: number, z: number): void => {
   context.lineWidth = 5;
   context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
   context.fillStyle = '#f0eee5';
-  context.font = 'bold 42px system-ui, sans-serif';
+  context.font = 'bold 38px system-ui, sans-serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.fillText(text, canvas.width / 2, canvas.height / 2);
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   const sprite = new Sprite(new SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
-  sprite.position.set(x, 3.05, z);
-  sprite.scale.set(4.5, 0.9, 1);
+  sprite.position.set(x, y, z);
+  sprite.scale.set(5.1, 0.9, 1);
   scene.add(sprite);
 };
 
-addLabel('1.8 m PLAYER', -13, 4.1);
-addLabel('HATCHBACK · VOXEL', -7, 4.1);
-addLabel('HATCHBACK · LOW POLY', -1, 4.1);
-addLabel('PICKUP', 5, 4.1);
-addLabel('MOTORBIKE', 11, 4.1);
-addLabel('STRIPPED CAR · LIFT', 17, 4.1);
+addLabel('1.8 m PLAYER', -13);
+addLabel('HATCHBACK · MOBGEN GRAIN', -7);
+addLabel('HATCHBACK · FINE CUTAWAY', -1);
+addLabel('PICKUP', 5);
+addLabel('MOTORBIKE', 11);
+addLabel('RANGE-ROVER-TYPE 4×4 · LIFT', 17, 5.15);
 
 const resize = (): void => {
   const width = Math.max(stage.clientWidth, 1);
@@ -444,12 +470,60 @@ const resize = (): void => {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height);
+  renderScene();
 };
 new ResizeObserver(resize).observe(stage);
 globalThis.addEventListener('error', (event) => {
   error.textContent = event.message;
 });
-renderer.setAnimationLoop(() => {
+const renderScene = (): void => {
   controls.update();
   renderer.render(scene, camera);
+};
+let scheduledRender: number | undefined;
+const scheduleRender = (): void => {
+  if (scheduledRender !== undefined) {
+    return;
+  }
+  scheduledRender = requestAnimationFrame(() => {
+    scheduledRender = undefined;
+    renderScene();
+  });
+};
+let wheelFrame = 0;
+let previousWheelFrame = 0;
+let previousWheelRender = 0;
+const animateWheels = (time: number): void => {
+  const delta = previousWheelFrame === 0 ? 0 : Math.min((time - previousWheelFrame) / 1000, 0.1);
+  previousWheelFrame = time;
+  for (const wheel of rollingWheels) {
+    wheel.rotation.z -= delta * 1.8;
+  }
+  if (time - previousWheelRender >= 160) {
+    previousWheelRender = time;
+    scheduleRender();
+  }
+  if (spinWheels.checked) {
+    wheelFrame = requestAnimationFrame(animateWheels);
+  }
+};
+spinWheels.addEventListener('change', () => {
+  if (spinWheels.checked) {
+    previousWheelFrame = 0;
+    previousWheelRender = 0;
+    wheelFrame = requestAnimationFrame(animateWheels);
+  } else {
+    cancelAnimationFrame(wheelFrame);
+    previousWheelFrame = 0;
+    previousWheelRender = 0;
+    scheduleRender();
+  }
 });
+renderer.domElement.addEventListener('pointermove', (event) => {
+  if (event.buttons !== 0) {
+    scheduleRender();
+  }
+});
+renderer.domElement.addEventListener('pointerup', scheduleRender);
+renderer.domElement.addEventListener('wheel', scheduleRender);
+renderScene();
