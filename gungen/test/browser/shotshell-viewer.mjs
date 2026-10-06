@@ -18,7 +18,6 @@ try {
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.route('https://scripts.simpleanalyticscdn.com/**', (route) => route.abort());
   await page.route('**/src/viewer/main.ts*', async (route) => {
     const response = await route.fetch();
     const source = await response.text();
