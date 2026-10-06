@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { HUD_HINTS_HOLD_MS, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
-import { PressHoldInput, QuickbarInput } from '../src/game/quickbarInput.ts';
+import { PressHoldInput } from '../src/game/pressHoldInput.ts';
+import { QuickbarInput } from '../src/game/quickbarInput.ts';
 
 const fixture = () => {
   const taps: number[] = [];

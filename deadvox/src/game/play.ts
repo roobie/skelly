@@ -81,9 +81,10 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
+import { PressHoldInput } from './pressHoldInput.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
-import { PressHoldInput, QuickbarInput } from './quickbarInput.ts';
+import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession } from './session.ts';
