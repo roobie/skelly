@@ -108,6 +108,7 @@ export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
+  start = defaultClock.start,
 ) {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
@@ -155,7 +156,7 @@ export function createRuntime(
     entities: sharedEntities,
     scale,
     seed,
-    start: defaultClock.start,
+    start,
     spawn,
     ready: () => true,
     controls: {

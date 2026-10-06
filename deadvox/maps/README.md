@@ -2,6 +2,7 @@
 read_if:
   - you're authoring or exporting a Deadvox site in Tiled
   - you're changing authored-site fixed loot or playtest-map scope
+  - you're authoring time-windowed Tiled spawn markers
 ---
 
 # Authored sites
@@ -14,8 +15,12 @@ The current scenario is `maps/playtest.tmj`, exported to `src/content/base/layou
 
 ## Fixed loot
 
-`SiteLayoutDef` in `src/core/schema.ts` gives a building placement fixed items at a template-local container anchor. `AuthoredSite.furnitureIn` combines those with the container's ordinary seeded table, and `fixedItems` in `src/core/loot.ts` preserves item stack limits. Fixed items are supplied first to `Inventory.furnish`: progression and craft ingredients therefore cannot be crowded out by seed-owned filler, while the remaining capacity still receives its normal deterministic roll. The fixed source regenerates from site and seed; looted state remains owned by the existing inventory save.
+`SiteLayoutDef` in `src/core/schema.ts` gives a building placement fixed items at a template-local container anchor. `src/core/authoredSite.ts`, `AuthoredSite.furnitureIn`, combines those with the container's ordinary seeded table, and `src/core/loot.ts`, `fixedItems`, preserves item stack limits. Fixed items are supplied first to `src/core/inventory.ts`, `Inventory.furnish`: progression and craft ingredients therefore cannot be crowded out by seed-owned filler, while the remaining capacity still receives its normal deterministic roll. The fixed source regenerates from site and seed; looted state remains owned by the existing inventory save.
 
-The contract records item, count and optional condition, not a second generic item-state format. The beats' named contents already belong to item definitions and construction defaults: `shotshell_box` owns its twenty-shell unpacking, `ItemFactory.create` makes a pump shotgun empty, and an unpowered flashlight needs no inserted battery. This keeps authored placement separate from the state and behavior each item already owns.
+The contract records item, count and optional condition, not a second generic item-state format. The beats' named contents already belong to item definitions and construction defaults: `shotshell_box` owns its unpacking, `src/core/items.ts`, `ItemFactory.create`, makes a pump shotgun empty, and an unpowered flashlight needs no inserted battery. This keeps authored placement separate from the state and behavior each item already owns.
 
-The scenario start belongs to its layout so a playtest begins at the authored beat's time; `configFromUrl` still lets an explicit `time` parameter override it. The wristwatch remains out of d99-1, pending BR's design decision.
+The scenario start belongs to its layout so a playtest begins at the authored beat's time; `src/game/config.ts`, `configFromUrl`, still lets an explicit `time` parameter override it.
+
+## Time-windowed spawns
+
+Tiled shambler markers use `window_from` and optional `window_to`; `maps/extensions/deadvox.mjs`, `exportLayout`, writes them into the spawn `window`. Named game-clock boundaries live in `src/core/clock.ts`, `SPAWN_TIMES`. See `DESIGN.md`, "Spawning", for the rule and its reason.
