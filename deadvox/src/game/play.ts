@@ -727,6 +727,7 @@ export const startPlay = (
     stashInputReplay(bytes);
     const url = new URL(location.href);
     url.searchParams.delete('cam');
+    url.searchParams.delete('freeze');
     url.searchParams.set('debug', '1');
     location.assign(url);
   };
@@ -2054,7 +2055,7 @@ export const startPlay = (
     if (replayPlayer.finished) {
       const endRemainder = options.replay!.endSimTime - sim.time;
       if (endRemainder > 0) {
-        session.frameReplay(endRemainder);
+        session.frameReplay(endRemainder / sim.compression.c);
       }
     }
     verifyReplayEndState();
