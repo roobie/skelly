@@ -29,8 +29,10 @@ acting").
   mouse readies a firearm, and firearms fire only while ready and never while
   sprinting. When #267 lands, ready movement is a separate duck-walk gait, not
   crouch, and mainly a speed factor. BR said its speed "can be a skill-dependent thing" and
-  called it an "own gait, but mainly it's simply a speed factor"; which skill
-  applies remains open in #267, with a generic "warfare" skill only a lean. BR
+  called it an "own gait, but mainly it's simply a speed factor". BR then
+  settled the skill in #267 (2026-10-05 20:52): "The FC affects stuff like duck
+  walking, whereas MC affects blocking", meaning firearms combat and melee
+  combat; see [SLICE-3.md](SLICE-3.md), 3.1. BR
   also said, "yeah, melee needs 'en-garde' on right-mouse-hold, which also
   enables blocking incoming melee (based on skill)". When #267 lands, holding
   right mouse and S blocks incoming melee; whether the block succeeds depends

@@ -173,9 +173,10 @@ When #267 lands, firearms fire only while ready and never while sprinting;
 ready movement is a skill-dependent duck walk, a separate gait from C crouch
 and mainly a speed factor. BR described it as an "own gait, but mainly it's
 simply a speed factor" and said its governing skill is "not defined yet -
-maybe a generic 'warfare' skill". Which skill governs duck-walk speed and block
-success is the remaining open point in #267; BR's warfare skill is a lean, not a
-ruling.
+maybe a generic 'warfare' skill". BR later settled it in #267 (2026-10-05
+20:52): "The FC affects stuff like duck walking, whereas MC affects blocking".
+So firearms combat governs duck-walk speed and melee combat governs block
+success; see [SLICE-3.md](SLICE-3.md), 3.1.
 
 - **Right mouse sets the combat stance:** holding it raises a melee weapon into
   en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
@@ -194,7 +195,7 @@ ruling.
   When #267 lands, an unready left-click does not swing.
 - **Blocking:** When #267 lands, holding right mouse and S blocks incoming
   melee; en-garde alone does not, and whether the block succeeds depends on
-  the skill still open in #267. BR answered #267's question 1a on 2026-10-05: "1a. yes S is required
+  the melee combat skill. BR answered #267's question 1a on 2026-10-05: "1a. yes S is required
   to actually block from en-garde".
 - **Unready firearm left-click is an exception to refusal:** BR's answer for an
   unreadied firearm was "nothing". When #267 lands, it produces no shot and no
