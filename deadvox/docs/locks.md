@@ -32,7 +32,9 @@ Use distinct palette characters and ids for independently keyed doors.
 
 ## Interaction
 
-- **F** opens/closes. Opening a locked door refuses with **It's locked**.
+- `world.interact` opens/closes doors. A locked door with prying tuning starts
+  a pry when a qualifying tool is carried; other locked doors remain locked.
+  See `src/game/play.ts`, `startPlay`, and `src/core/prying.ts`, `pryPlan`.
 - Wield the matching key and activate it on a closed door to lock/unlock it,
   from either side, in the door's handling time. The door must be in reach.
 - A missing held key says **Hold the key in your hands**; a wrong key says

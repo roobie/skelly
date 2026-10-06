@@ -363,7 +363,15 @@ systems now.
 
 **2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `src/core/saveState.ts`, `SaveSnapshot`, and `src/core/longAction.ts`, `LongActions`.
 
-**d105-1 amendment:** Interrupted prying must resume against the same door and tool, and a completed pry must preserve the missing lock; both affect future play, not presentation. Keep action progress in `LongActions` and the lock outcome in `BlockEntities`; because the descriptor changes saved shape, advance the exact-version schema beyond concurrent save changes rather than migrate old saves. See `src/core/longAction.ts`, `LongActions`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
+**d105-1 amendment:** Interrupted prying must resume against the same door and
+tool, and a completed pry must preserve the resulting lock outcome on that
+door; both affect future play, not presentation. Keep action progress in
+`LongActions` and the lock outcome in `BlockEntities`. Whether prying destroys
+the padlock or leaves it reusable is BR's open choice; removal is the working
+default. Because the descriptor changes saved shape, advance the exact-version
+schema beyond concurrent save changes rather than migrate old saves. See
+`src/core/longAction.ts`, `LongActions`, and `src/core/blockEntities.ts`,
+`BlockEntities.breakLock`.
 
 ### Storage, browsers, and recovery
 
