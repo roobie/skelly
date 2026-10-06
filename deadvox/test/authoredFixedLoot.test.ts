@@ -50,15 +50,16 @@ const fixedCount = (placements: OverridePlacement[], template: string, item: str
 
 const overrideFor = (placements: OverridePlacement[], template: string, item: string) =>
   placements.find(
-    ({ building, override }) =>
-      building.template === template && override.items.some((fixed) => fixed.item === item),
+    ({ building, override }) => building.template === template && override.items.some((fixed) => fixed.item === item),
   );
 
 const furnitureAt = ({ building, override }: OverridePlacement): string | undefined => {
   const template = result.registry.templates.get(building.template);
-  return template && compileTemplate(result.registry, template).pieces.find(
-    (piece) => piece.pos.join(',') === override.at.join(','),
-  )?.furniture;
+  return (
+    template &&
+    compileTemplate(result.registry, template).pieces.find((piece) => piece.pos.join(',') === override.at.join(','))
+      ?.furniture
+  );
 };
 
 const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
@@ -275,9 +276,7 @@ describe('authored fixed loot', () => {
     const torch = result.registry.recipes.get('torch');
     expect(torch).toBeDefined();
     for (const alternatives of torch!.components) {
-      expect(
-        alternatives.some((ingredient) => (houseCounts.get(ingredient.item) ?? 0) >= ingredient.count),
-      ).toBe(true);
+      expect(alternatives.some((ingredient) => (houseCounts.get(ingredient.item) ?? 0) >= ingredient.count)).toBe(true);
     }
 
     expect(fixedCount(overrides, 'shed', 'crowbar')).toBeGreaterThan(0);
@@ -329,7 +328,8 @@ describe('authored fixed loot', () => {
     expect(upstairs[0]?.pos[1]).toBe(bedroomFloor);
 
     for (const templateId of ['playtest_tool_shack', 'shed']) {
-      const spawns = compileTemplate(result.registry, result.registry.templates.get(templateId)!).spawns;
+      const template = result.registry.templates.get(templateId)!;
+      const { spawns } = compileTemplate(result.registry, template);
       expect(spawns.some(({ zombie, chance }) => zombie === 'shambler' && chance < 1)).toBe(true);
     }
 
@@ -348,19 +348,22 @@ describe('authored fixed loot', () => {
     expect(storeThreats).toHaveLength(1);
     expect(garageThreats).toHaveLength(1);
 
-    const insideWoodland = (x: number, z: number, polygon: Point[]): boolean => {
-      let inside = false;
+    const isInsideWoodland = (x: number, z: number, polygon: Point[]): boolean => {
+      let contains = false;
       for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index, index += 1) {
         const [xi, zi] = polygon[index]!;
         const [xj, zj] = polygon[previous]!;
-        if ((zi > z) !== (zj > z) && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) inside = !inside;
+        const crossesZ = zi > z !== zj > z;
+        if (crossesZ && x < ((xj - xi) * (z - zi)) / (zj - zi) + xi) {
+          contains = !contains;
+        }
       }
-      return inside;
+      return contains;
     };
     const treelineThreats = layout.shamblers.filter(
       ({ type, position }) =>
         type === 'shambler' &&
-        layout.woodlands.some(({ polygon }) => insideWoodland(position[0], position[2], polygon)),
+        layout.woodlands.some(({ polygon }) => isInsideWoodland(position[0], position[2], polygon)),
     );
     expect(treelineThreats.length).toBeGreaterThanOrEqual(1);
     expect(treelineThreats.length).toBeLessThanOrEqual(2);
