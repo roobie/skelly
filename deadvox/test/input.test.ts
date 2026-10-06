@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  COMBAT_BINDINGS,
   Input,
   isMenuOpeningKey,
   KEY_BINDINGS,
@@ -176,6 +177,8 @@ describe('menu input', () => {
     });
     try {
       const input = new Input(target);
+      let adsAllowed = false;
+      input.setAimingDownSightsAllowed(() => adsAllowed);
       documentStub.pointerLockElement = null;
       targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
       expect(input.intent().useDominant).toBe(false);
@@ -192,13 +195,27 @@ describe('menu input', () => {
       windowListeners.get('keyup')?.({ code: KEY_BINDINGS.useOff.code } as KeyboardEvent);
       windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
       input.menuPointer = false;
-      targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.adsToggleButton.button } as MouseEvent);
+      expect(input.aimingDownSights).toBe(false);
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.readyButton.button } as MouseEvent);
       expect(input.rightMouseHeld).toBe(true);
-      windowListeners.get('mouseup')?.({ button: 2 } as MouseEvent);
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.adsToggleButton.button } as MouseEvent);
+      expect(input.aimingDownSights).toBe(false);
+      adsAllowed = true;
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.adsToggleButton.button } as MouseEvent);
+      expect(input.aimingDownSights).toBe(true);
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.adsToggleButton.button } as MouseEvent);
+      expect(input.aimingDownSights).toBe(false);
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.adsToggleButton.button } as MouseEvent);
+      expect(input.aimingDownSights).toBe(true);
+      windowListeners.get('mouseup')?.({ button: COMBAT_BINDINGS.readyButton.button } as MouseEvent);
       expect(input.rightMouseHeld).toBe(false);
-      targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
+      expect(input.aimingDownSights).toBe(false);
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.readyButton.button } as MouseEvent);
+      targetListeners.get('mousedown')?.({ button: COMBAT_BINDINGS.adsToggleButton.button } as MouseEvent);
       windowListeners.get('blur')?.(new Event('blur'));
       expect(input.rightMouseHeld).toBe(false);
+      expect(input.aimingDownSights).toBe(false);
       input.menuPointer = true;
       targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
       expect(input.intent().useDominant).toBe(false);

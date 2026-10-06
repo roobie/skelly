@@ -1,8 +1,42 @@
 {
   "skills": [
-    { "id": "crafting", "name": "Crafting" },
-    { "id": "mechanics", "name": "Mechanics" },
-    { "id": "firearms", "name": "Firearms" }
+    { "id": "crafting", "name": "Crafting", "training": { "craftingTierOffset": 2 } },
+    { "id": "mechanics", "name": "Mechanics", "training": { "craftingTierOffset": 2 } },
+    {
+      "id": "firearms_combat",
+      "name": "Firearms Combat (FC)",
+      "training": {
+        "activities": {
+          "readying": { "practicePerSecond": 0.1, "tier": 1 },
+          "handling": { "practice": 1, "tier": 3 },
+          "shot": { "practice": 1, "tier": 3 },
+          "hit": { "practice": 1, "tier": 5 }
+        }
+      },
+      "combat": {
+        "firearms": {
+          "raiseMinimumSeconds": 0.28,
+          "raiseRangeSeconds": 0.42,
+          "raiseHalfLifeLevels": 5,
+          "readyMovementMinimum": 0.45,
+          "readyMovementRange": 0.35,
+          "readyMovementHalfLifeLevels": 5,
+          "loweredPitchRadians": 0.55
+        }
+      }
+    },
+    {
+      "id": "melee_combat",
+      "name": "Melee Combat (MC)",
+      "training": { "activities": { "block": { "practice": 1, "tier": 5 } } },
+      "combat": {
+        "melee": {
+          "blockChanceMinimum": 0.12,
+          "blockChanceRange": 0.7,
+          "blockChanceHalfLifeLevels": 4
+        }
+      }
+    }
   ],
   "items": [
     { "id": "stick", "name": "Stick", "category": "material", "weight": 200, "size": [1, 4], "stack": 6 },

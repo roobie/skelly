@@ -9,7 +9,7 @@ import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
-import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
+import { Character, dominantSide, offSide, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -17,7 +17,8 @@ import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
-import { firearmsSkillEffects } from '../core/firearmsSkill.ts';
+import { firearmStanceEffects, firearmsSkillEffects } from '../core/firearmsSkill.ts';
+import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
   advanceFootsteps,
@@ -30,6 +31,7 @@ import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling
 import { Inventory, type Location } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
+import { blocksAttack } from '../core/meleeCombat.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import type { SolidAt } from '../core/raycast.ts';
@@ -56,7 +58,12 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
-import { FirearmMechanics, type FirearmShotEffect, type FirearmTrajectory } from './firearmHandling.ts';
+import {
+  FirearmMechanics,
+  isFirearmTrainingAction,
+  type FirearmShotEffect,
+  type FirearmTrajectory,
+} from './firearmHandling.ts';
 import {
   createPlayerBody,
   type MoveIntent,
@@ -100,6 +107,10 @@ interface SessionControls {
   useDominant?: () => void;
   /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
   heldDominantUse?: (time: number, pressed: boolean, held: boolean) => void;
+  /** Right mouse requests firearm readiness; input gates this while a menu or lock owns the pointer. */
+  readyHeld?: () => boolean;
+  /** True only for S held while the player is in the melee en-garde stance. */
+  blocking?: () => boolean;
   /** True only while an automatic firearm is selected and its trigger is held. */
   automaticFireHeld?: () => boolean;
   /** Applies a requested camera-pitch shift and returns the amount accepted by its pitch limits. */
@@ -200,7 +211,7 @@ interface RestoredLook {
 }
 
 const firearmsSkillLevel = (character: Character): number =>
-  skillEffectLevel(character.skills.firearms ?? SKILL_LEVEL_MIN);
+  skillEffectLevel(character.skills.firearms_combat ?? SKILL_LEVEL_MIN);
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
@@ -220,6 +231,11 @@ export const createSession = (options: SessionOptions) => {
   const character = restored
     ? Character.restoreState(registry, restored.character.progression)
     : new Character(registry, { handedness: options.handedness });
+  const firearmsCombatTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+  const meleeCombatTuning = registry.skills.get('melee_combat')?.combat?.melee;
+  if (!(firearmsCombatTuning && meleeCombatTuning)) {
+    throw new Error('Missing combat skill tuning');
+  }
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
@@ -350,10 +366,17 @@ export const createSession = (options: SessionOptions) => {
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
-    onCommittedShot: (shotSeed, recoilKickRadians) =>
-      aim.recordShot(shotSeed, recoilKickRadians, firearmsSkillEffects(firearmsSkillLevel(character)).recoilKickScale),
+    onCommittedShot: (shotSeed, recoilKickRadians) => {
+      const training = skillActivityPractice(registry, 'firearms_combat', 'shot');
+      character.awardPractice('firearms_combat', training.practice, training.tier);
+      aim.recordShot(shotSeed, recoilKickRadians, firearmsSkillEffects(firearmsSkillLevel(character)).recoilKickScale);
+    },
     onShot: (shot, time) => {
-      zombieSystem.firePellets(shot);
+      const hits = zombieSystem.firePellets(shot);
+      if (hits > 0 && firearmReadyWalking) {
+        const training = skillActivityPractice(registry, 'firearms_combat', 'hit');
+        character.awardPractice('firearms_combat', training.practice, training.tier);
+      }
       playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });
     },
     onSound: (event, position, time) =>
@@ -382,6 +405,7 @@ export const createSession = (options: SessionOptions) => {
   });
 
   let sprinting = false;
+  let firearmReadyWalking = false;
   let footstepClock = initialFootstepClock();
   let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
@@ -452,6 +476,10 @@ export const createSession = (options: SessionOptions) => {
     right: inventory.hands.right?.uid ?? null,
     left: inventory.hands.left?.uid ?? null,
   });
+  const firearmInHands = () =>
+    [inventory.hands[dominantSide(character)], inventory.hands[offSide(character)]].find(
+      (item) => item && registry.items.get(item.type)?.firearm,
+    );
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
@@ -464,7 +492,19 @@ export const createSession = (options: SessionOptions) => {
     jumpSpeed: PLAYER.jump,
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
-    hurtPlayer: (amount, area) => {
+    hurtPlayer: (amount, area, attacker) => {
+      if (
+        controls.blocking?.() &&
+        blocksAttack(
+          character.skills.melee_combat ?? SKILL_LEVEL_MIN,
+          sim.rng(`block:${attacker}:${sim.time}`).next(),
+          meleeCombatTuning,
+        )
+      ) {
+        const training = skillActivityPractice(registry, 'melee_combat', 'block');
+        character.awardPractice('melee_combat', training.practice, training.tier);
+        return;
+      }
       wearOnPlayerHit(inventory, area);
       sim.hurt(amount, 'a shambler');
     },
@@ -583,6 +623,17 @@ export const createSession = (options: SessionOptions) => {
       const requested = controls.active() ? controls.intent() : IDLE;
       const moving = controls.active() && !compression.locksInput;
       const intent = moving ? requested : IDLE;
+      const handling = queue.busy || firearms.busy;
+      const heldFirearm = firearmInHands();
+      const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.());
+      const readyUid = readyGait ? heldFirearm?.uid : undefined;
+      firearms.advanceReadiness(dt, readyUid, readyGait);
+      const going = intent.forward !== 0 || intent.right !== 0;
+      firearmReadyWalking = readyGait && going;
+      if (readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
+        const training = skillActivityPracticeRate(registry, 'firearms_combat', 'readying');
+        character.awardPractice('firearms_combat', dt * training.practicePerSecond, training.tier);
+      }
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
       updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
@@ -592,15 +643,15 @@ export const createSession = (options: SessionOptions) => {
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }
-      const handling = queue.busy || firearms.busy;
-      const going = intent.forward !== 0 || intent.right !== 0;
-      sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
+      sprinting = intent.sprint && going && !handling && !readyGait && canSprint(sim.needs, sprinting);
       survival.setSprinting(sprinting);
       stepStamina(sim.needs, dt, sprinting);
       const pacedIntent = {
         ...intent,
         sprint: sprinting,
-        pace: paceFactor(inventory.carriedWeight(), handling),
+        pace:
+          paceFactor(inventory.carriedWeight(), handling) *
+          (readyGait ? firearmStanceEffects(firearmsSkillLevel(character), firearmsCombatTuning).readyMovementFactor : 1),
       };
       const tools = debug?.();
       if (tools?.noclip) {
@@ -630,6 +681,12 @@ export const createSession = (options: SessionOptions) => {
         return;
       }
       const result = queue.tick(dt);
+      for (const job of result.done) {
+        if (isFirearmTrainingAction(job)) {
+          const training = skillActivityPractice(registry, 'firearms_combat', 'handling');
+          character.awardPractice('firearms_combat', training.practice, training.tier);
+        }
+      }
       options.onHandlingOutcomes?.(result);
       for (const { job, reason } of result.failed) {
         (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);

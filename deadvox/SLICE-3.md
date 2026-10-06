@@ -114,10 +114,27 @@ Paperwork; no game code.
 > 3.1, 1. for now, yes, firearms combat is simply firearms renamed - but longer term, firerams combat is different from how well you shoot with e.g. a shotgun or something else. Ie. we will have skills for each main type of firearm, e.g. shotguns, rifles, smgs, pistols etc
 > 3.1, 2. it works like this: press-and-hold right mouse -> readies the weapon (hip fire), while in this state a toggle button (default, mouse-3) toggles whether ADS or not
 
-**In:** Rename the current `firearms` skill to firearms combat for now and add melee combat. The former governs the ready gait and related handling; the latter governs blocking. Activities train the skills they affect, with tiers so simple activities cannot train indefinitely. Readying takes time that improves with skill. Holding right mouse readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, a rebindable toggle (default: mouse-3, the middle button) switches ADS; ADS works through iron sights and optics. Melee requires en-garde; blocking also requires backing off with S and succeeds according to skill, per #267. The ready gait is its own speed factor, not the C crouch.
+**BR's #275 answers (2026-10-06, verbatim):**
 
-**Saves:** Character skill levels and practice use the existing character snapshot and fingerprint (`src/core/character.ts`, `Character.awardPractice`); renaming a skill changes that saved mapping, and melee combat adds its own progression. Held ready, ADS and en-garde inputs are transient. If raise progress can change a shot or block, its simulation-time progress belongs in the existing saved action/handling owner.
-**Tests:** an unreadied firearm cannot fire and makes no refusal sound; a ready firearm can fire but never while sprinting; raising takes simulation time and improves monotonically with skill; ADS toggles while ready and works with iron sights and optics; en-garde plus S can block according to skill, while en-garde alone cannot; activities stop training at their tier. Save/load preserves skill progression and any active simulation-time raise.
+> aside: that which a skill affects is also trained by it
+
+> amend: skill training comes in tiers
+>
+> simply duck walking can train FC up to N, where N is pretty low, maybe even just 1
+> hitting enemies with firearm fire while duck walking can train it to P, where P is higher than 1
+>
+> the above is a specific example, but in a general application is that skills are trained by doing stuff that they affect, but some activites are harder than others, and thus allow for attaining higher skill levels than simpler activities
+
+> choose: a. worked out from the required level (my recommendation);
+
+> no, not now - we might open up this again for discussion
+
+> dropped
+
+**In:** Rename the current `firearms` skill to firearms combat (FC) and add melee combat (MC). FC governs the ready gait and related handling; MC governs blocking. Every practice source supplies an activity tier, and excess practice is dropped when the skill reaches it. Crafting derives its tier from the recipe's required level plus the shared offset, capped at ordinary expert level; reading trains nothing. Activities train the skills they affect, with harder activities able to train higher. Readying takes simulation time that improves with FC. Holding right mouse readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, a rebindable toggle (default: mouse-3, the middle button) switches ADS; ADS works through iron sights and optics. Melee requires en-garde; blocking also requires backing off with S and succeeds according to MC, per #267. The ready gait is its own speed factor, not the C crouch.
+
+**Saves:** Character skill levels and practice use the existing character snapshot and fingerprint (`src/core/character.ts`, `Character.awardPractice`); renaming a skill changes that saved mapping, and melee combat adds its own progression. Held ready, ADS and en-garde inputs are transient. Partial firearm raise progress stays with the saved firearm because it determines when that weapon can fire (`src/core/firearmState.ts`, `FirearmState`).
+**Tests:** an unreadied firearm cannot fire and makes no refusal sound; a ready firearm can fire but never while sprinting; raising takes simulation time and improves monotonically with skill; ADS toggles while ready and works with iron sights and optics; en-garde plus S can block according to skill, while en-garde alone cannot; activities stop training at their tier and discard excess practice. Save/load preserves skill progression and active raise progress.
 **Done when:** the ready and en-garde states are visible in the held pose, input rules behave as ruled, and skill training respects activity tiers.
 **First look / BR approval:** ready and ADS, including iron-sight ADS and the raised/unraised weapon poses.
 
@@ -149,7 +166,7 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 
 > they should be saved
 
-**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. The existing firearms skill's aim-variance, reload and rack effects carry into firearms combat; later, shooting proficiency splits by firearm archetype. A firearm shot's recoil is carried in from d80; d78's impact trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
+**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. The existing firearms-combat skill's aim-variance, reload and rack effects carry forward; later, shooting proficiency splits by firearm archetype. A firearm shot's recoil is carried in from d80; d78's impact trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
 **Saves:** Magazine contents and any new chamber/action state that determines the next shot are saved with their owning items. Spent casings are world state: save where they fall and preserve them through save/load (BR, 2026-10-05 22:17: “they should be saved”). Body damage is owned and saved by 3.4. BR ruled that impact marks and dust are presentation, not simulation damage or save state (see [DESIGN.md](DESIGN.md), “Shot impacts”).
 **Tests:** loading and firing conserve rounds across magazine, chamber and weapon; a round resolves against the body region it actually intersects and uses firearm/calibre data; save/load preserves the next shot, ammunition and spent-casing positions; changing impact presentation does not change damage. The impact presentation builds on `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, and `src/render/shotTrace.ts`, `traceShot`. Test military loot reachability through the authored site rather than pinning a loot count.
 **Done when:** magazines can be loaded one round at a time, rifle ammunition and weapons come from the map's military source, shots damage the appropriate region, and save round trips preserve ammunition and spent casings.
@@ -322,7 +339,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 ## Carried in
 
 - **d84, shamblers beeline (#279):** the beeline movement brain every zombie milestone uses; attention selection is unchanged. It replaces the proposed flow-field dependency; #244's route follow-up is obsolete under this direction.
-- **d83, skills and legendary:** the 0–10 skill scale and legendary level feed 3.1; #275 supplies activity tiers and the remaining training questions.
+- **d83, skills and legendary:** the 0–10 skill scale and legendary level feed 3.1; #275 rules activity tiers, crafting practice, reading and dropped excess.
 - **d80 recoil and d78 impacts:** their firearm-owned recoil, aim control and shared shot-trace work feed 3.2.
 - **Authored sites:** the Tiled site / ASCII interior pipeline from #196 feeds 3.11.
 
@@ -330,7 +347,6 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 
 Only questions BR left open; don't infer answers from implementation or old proposals.
 
-- **#275 — practice tiers:** what tiers apply to existing practice sources such as crafting and reading, and is practice above an activity's tier kept or dropped?
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
 - **#181 beats 4–6:** detail the larger workshop, medical site and military site one beat per turn. BR's earlier answers settle the order and purpose, but not these beats' contents and layouts.
 - **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”

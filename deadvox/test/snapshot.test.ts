@@ -33,12 +33,12 @@ describe('snapshot state components', () => {
     }
     const firstThreshold = practiceForNextLevel(actor.skills.crafting!);
     const award = firstThreshold + practiceForNextLevel(actor.skills.crafting! + 1) / 2;
-    actor.awardPractice('crafting', award);
+    actor.awardPractice('crafting', award, SKILL_LEVEL_LEGENDARY);
     const savedLevel = actor.skills.crafting!;
     const savedPractice = actor.practice.crafting;
     actor.knownRecipes.delete(removedRecipe);
     const snapshot = capture(runtime);
-    actor.awardPractice('crafting', practiceForNextLevel(savedLevel));
+    actor.awardPractice('crafting', practiceForNextLevel(savedLevel), SKILL_LEVEL_LEGENDARY);
     const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
     const loadedRuntime = createRuntime(decoded.snapshot);
     const loaded = loadedRuntime.session.character;
@@ -52,10 +52,10 @@ describe('snapshot state components', () => {
   it('advances a skill only when its accumulated practice reaches the next-level threshold', () => {
     const actor = new Character(registry);
     const threshold = practiceForNextLevel(actor.skills.crafting!);
-    actor.awardPractice('crafting', threshold / 2);
+    actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
     expect(actor.skills.crafting).toBe(0);
     expect(actor.practice.crafting).toBe(threshold / 2);
-    actor.awardPractice('crafting', threshold / 2);
+    actor.awardPractice('crafting', threshold / 2, SKILL_LEVEL_LEGENDARY);
     expect(actor.skills.crafting).toBe(1);
     expect(actor.practice.crafting).toBe(0);
   });

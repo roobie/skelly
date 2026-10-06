@@ -43,6 +43,8 @@ const pose = {
   pitch: 0.2,
   aimFrame: { yaw: 0, pitch: 0 },
   blockSize: 0.5,
+  ready: true,
+  sprinting: false,
 };
 const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0) => {
   // Own the capacity fixture rather than pinning the evolving exported tube count.

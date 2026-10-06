@@ -24,23 +24,14 @@ acting").
 
 ## What's already ruled
 
-- **Ready before acting (BR, 2026-09-27; direction for #267, 2026-10-05):**
-  holding right mouse puts melee en-garde. When #267 lands, holding right
-  mouse readies a firearm, and firearms fire only while ready and never while
-  sprinting. When #267 lands, ready movement is a separate duck-walk gait, not
-  crouch, and mainly a speed factor. BR said its speed "can be a skill-dependent thing" and
-  called it an "own gait, but mainly it's simply a speed factor". BR then
-  settled the skill in #267 (2026-10-05 20:52): "The FC affects stuff like duck
-  walking, whereas MC affects blocking", meaning firearms combat and melee
-  combat; see [SLICE-3.md](SLICE-3.md), 3.1. BR
-  also said, "yeah, melee needs 'en-garde' on right-mouse-hold, which also
-  enables blocking incoming melee (based on skill)". When #267 lands, holding
-  right mouse and S blocks incoming melee; whether the block succeeds depends
-  on skill. BR said, "1a. yes S is required to actually block from en-garde".
-  When #267 lands, an unreadied firearm's left-click does
-  "nothing": no shot and no nope sound. When #267 lands, the held firearm pose
-  shows ready state, not a HUD indicator. Middle click or Shift toggles hip and
-  sights while a firearm is ready.
+- **Ready before acting (BR, 2026-10-05; #267; implemented for Slice 3.1):**
+  firearm readiness and melee en-garde are held stances; an unreadied firearm
+  click is a no-op, ready fire cannot happen while sprinting, and blocking needs
+  both en-garde and backing off. The held pose carries the state instead of a
+  HUD mode label. See `src/game/input.ts`, `COMBAT_BINDINGS`, for the defaults;
+  `src/game/session.ts`, `createSession`, for simulation-time readiness, gait and
+  blocking; and `src/render/hands.ts`, `HeldItems.update`, for the body cue. d44
+  moves these defaults into the shared rebindable registry.
 - **F interacts; Q and E are reserved (BR, 2026-09-27).**
 - **F9 is the main menu; F10 belongs to the browser (BR, 2026-09-28).**
 - **Left click uses what you hold (BR, issue #27, 2026-09-26):** "hold the
@@ -193,9 +184,9 @@ below). Implemented hand activation is not duplicated in this proposal; see
 | W A S D | move | move in the ready-only duck-walk speed factor, not sprint or crouch; S plus en-garde (right mouse) blocks with skill-based success | menu navigation where it has any, otherwise nothing | nothing (the action holds you) | nothing |
 | Mouse | look | aim | drawn cursor | look | look |
 | Left click, hold | unreadied firearm: nothing, no shot or nope; melee: no swing until en-garde; other held item: proposed long use (d44) | ready firearm: fire; en-garde melee: swing | drag | keep holding | — |
-| Right mouse, hold | melee: enter en-garde; when #267 lands, also ready a firearm | hold stance; when #267 lands, ready movement uses duck-walk speed and cannot sprint; held pose, not HUD | — | — | — |
-| Middle click | — | toggle hip / sights | — | — | — |
-| Shift | sprint | toggle hip / sights | — | — | — |
+| Right mouse, hold | melee: enter en-garde; firearm: begin raising | hold stance; ready gait cannot sprint; held pose, not HUD | — | — | — |
+| Middle click | — | toggle hip / sights while ready | — | — | — |
+| Shift | sprint | sprint input is suppressed while firearm-ready | — | — | — |
 | Space | jump | jump | — | — | — |
 | Z | walk / jog toggle | — | — | — | — |
 | C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |

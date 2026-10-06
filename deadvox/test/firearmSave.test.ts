@@ -58,7 +58,12 @@ const session = (
   effects: FirearmShotEffect[],
   restore?: Readonly<SaveSnapshot>,
   look: { pitch: number } = { pitch: restore?.character.player.pitch ?? 0 },
-  options: { readonly firing?: boolean; readonly adjustPitch?: boolean } = {},
+  options: {
+    readonly firing?: boolean;
+    readonly adjustPitch?: boolean;
+    readonly readyHeld?: boolean;
+    readonly active?: boolean;
+  } = {},
 ) =>
   createSession({
     registry,
@@ -71,8 +76,9 @@ const session = (
     spawn: [0, 0, 0],
     ready: () => true,
     controls: {
-      active: () => options.firing ?? false,
+      active: () => options.active ?? options.firing ?? false,
       automaticFireHeld: () => options.firing ?? false,
+      readyHeld: () => options.readyHeld ?? false,
       intent: () => IDLE,
       yaw: () => 0,
       pitch: () => look.pitch,
@@ -157,6 +163,36 @@ it('a codec save preserves the session-shifted view pitch after over-limit recoi
   expect(resumed.restoredLook?.pitch).toBeCloseTo(look.pitch, 8);
 });
 
+it('advances firearm readiness from simulation time while the stance input is held', () => {
+  const original = session([], undefined, undefined, { readyHeld: true, active: true });
+  const rifle = original.inventory.create('debug_rifle_assault');
+  expect(original.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
+  original.frame(1 / 60);
+  const duration = rifle.firearm!.readying!.duration;
+  expect(original.firearms.isReady(rifle.uid)).toBe(false);
+  original.frame(duration);
+  expect(original.firearms.isReady(rifle.uid)).toBe(true);
+});
+
+it('a codec save resumes firearm ready progress', async () => {
+  const original = session([], undefined, undefined, { readyHeld: true });
+  const rifle = original.inventory.create('debug_rifle_assault');
+  expect(original.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
+  original.firearms.advanceReadiness(0, rifle.uid, true);
+  const duration = rifle.firearm!.readying!.duration;
+  original.firearms.advanceReadiness(duration / 2, rifle.uid, true);
+  const progress = structuredClone(rifle.firearm!.readying);
+  const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup });
+  const resumed = session([], decoded.snapshot, undefined, { readyHeld: true });
+  expect(resumed.inventory.itemByUid(rifle.uid)?.firearm?.readying).toEqual(progress);
+  expect(resumed.firearms.isReady(rifle.uid)).toBe(false);
+});
+
 it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
   const originalEffects: FirearmShotEffect[] = [];
   const original = session(originalEffects);
@@ -181,6 +217,8 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
       pitch: 0,
       aimFrame: { yaw: 0, pitch: 0 },
       blockSize: 0.5,
+      ready: true,
+      sprinting: false,
     }),
   ).toBe(true);
   original.frame(ejectTime / 2);

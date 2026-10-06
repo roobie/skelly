@@ -60,6 +60,13 @@ export const CONTROL_CODES = {
   spawnMenu: 'KeyG',
 } as const;
 
+/** Combat defaults stay together for transfer into the shared rebindable registry. */
+export const COMBAT_BINDINGS = {
+  readyButton: { button: 2, label: 'Right mouse' },
+  adsToggleButton: { button: 1, label: 'Mouse 3' },
+  block: { code: CONTROL_CODES.back },
+} as const;
+
 /** Rest has no keyboard binding; sleep alone retains its existing toggle. */
 export const restKindForControl = (control: string): 'sleep' | undefined =>
   control === CONTROL_CODES.sleep ? 'sleep' : undefined;
@@ -100,6 +107,7 @@ export class Input {
   walking = false;
   menuPointer = false;
   rightMouseHeld = false;
+  aimingDownSights = false;
   private dominantUsePressed = false;
   private dominantUseDown = false;
   private offUsePressed = false;
@@ -108,14 +116,24 @@ export class Input {
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
   private readonly dominantUseAllowed: () => boolean;
+  private aimingDownSightsAllowed: () => boolean = () => true;
 
   constructor(target: HTMLElement, dominantUseAllowed: () => boolean = () => true) {
     this.target = target;
     this.dominantUseAllowed = dominantUseAllowed;
     target.addEventListener('mousedown', (event) => {
       const mouse = event as MouseEvent;
-      if (mouse.button === 2) {
+      if (mouse.button === COMBAT_BINDINGS.readyButton.button) {
         this.rightMouseHeld = true;
+      }
+      if (
+        mouse.button === COMBAT_BINDINGS.adsToggleButton.button &&
+        this.rightMouseHeld &&
+        this.locked &&
+        !this.menuPointer &&
+        this.aimingDownSightsAllowed()
+      ) {
+        this.aimingDownSights = !this.aimingDownSights;
       }
       if (
         mouse.button === 0 &&
@@ -130,8 +148,9 @@ export class Input {
     });
     globalThis.addEventListener('mouseup', (event) => {
       const { button } = event as MouseEvent;
-      if (button === 2) {
+      if (button === COMBAT_BINDINGS.readyButton.button) {
         this.rightMouseHeld = false;
+        this.aimingDownSights = false;
       }
       if (button === 0) {
         this.dominantUseDown = false;
@@ -168,6 +187,7 @@ export class Input {
       this.reload.cancel();
       this.held.clear();
       this.rightMouseHeld = false;
+      this.aimingDownSights = false;
       this.dominantUseDown = false;
       this.dominantUsePressed = false;
       this.offUseDown = false;
@@ -184,6 +204,10 @@ export class Input {
 
   get locked(): boolean {
     return document.pointerLockElement === this.target;
+  }
+
+  setAimingDownSightsAllowed(allowed: () => boolean): void {
+    this.aimingDownSightsAllowed = allowed;
   }
 
   get dominantUseHeld(): boolean {

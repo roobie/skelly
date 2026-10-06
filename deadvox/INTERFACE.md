@@ -160,7 +160,7 @@ so class 4 is made mechanical:
 - **Review asks one question:** could the player learn this from the world or
   their hands? If yes, the text goes.
 
-## Readying before acting (BR, 2026-09-27; refined by #267)
+## Readying before acting (BR, 2026-09-27; refined by #267 and implemented for Slice 3.1)
 
 **Combat is modal, as in DayZ.** Holding a weapon is not the same as being ready
 to use it. BR's 2026-10-05 direction for #267 was:
@@ -169,37 +169,29 @@ to use it. BR's 2026-10-05 direction for #267 was:
 >
 > "and by that, I mean that you never fire while sprinting, but instead when holding right mouse, you 'duck walk' (which also can be a skill-dependent thing in that you duck walk faster with higher skill)"
 
-When #267 lands, firearms fire only while ready and never while sprinting;
-ready movement is a skill-dependent duck walk, a separate gait from C crouch
-and mainly a speed factor. BR described it as an "own gait, but mainly it's
-simply a speed factor" and said its governing skill is "not defined yet -
-maybe a generic 'warfare' skill". BR later settled it in #267 (2026-10-05
-20:52): "The FC affects stuff like duck walking, whereas MC affects blocking".
-So firearms combat governs duck-walk speed and melee combat governs block
-success; see [SLICE-3.md](SLICE-3.md), 3.1.
+Firearms fire only while ready and never while sprinting; the ready gait is a
+skill-dependent speed factor separate from C crouch. Firearms combat governs ready movement and related handling; melee combat
+governs block success. The tiered practice contract is in
+[SLICE-3.md](SLICE-3.md), 3.1.
 
 - **Right mouse sets the combat stance:** holding it raises a melee weapon into
-  en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
-  also ready a firearm, bringing it up to fire from the hip; releasing it will
-  lower the firearm. When #267 lands, the held firearm pose will show readiness;
-  there will be no HUD indicator. BR described the pose direction on 2026-10-05:
-  "the UI must show unreadied vs readied / unreadied does not have muzzle
-  forward - rather downward". When #267 lands, an unreadied firearm's muzzle
-  points down; readying brings it up and forward.
-- **Aiming down the sights is a toggle within the ready stance,** for firearms
-  only: while right-click is held, a middle click or Shift switches between hip
-  and sights (the view narrows through the sights). Input interpretation belongs
-  to `src/game/input.ts`, `Input`, rather than a parallel interface map.
-- **Melee also requires readiness:** BR said, "yeah, melee needs 'en-garde' on
-  right-mouse-hold, which also enables blocking incoming melee (based on skill)".
-  When #267 lands, an unready left-click does not swing.
-- **Blocking:** When #267 lands, holding right mouse and S blocks incoming
-  melee; en-garde alone does not, and whether the block succeeds depends on
-  the melee combat skill. BR answered #267's question 1a on 2026-10-05: "1a. yes S is required
-  to actually block from en-garde".
-- **Unready firearm left-click is an exception to refusal:** BR's answer for an
-  unreadied firearm was "nothing". When #267 lands, it produces no shot and no
-  nope sound; this deliberate no-op does not use the ordinary refusal cue.
+  en-garde, and releasing it lowers the weapon. It also readies a firearm for hip fire; releasing it lowers the stance. The
+  firearm's held pose shows readiness without a HUD indicator, with the muzzle
+  lowered when unready and forward when raised. Partial raise progress is saved
+  with the firearm because it changes when that weapon can shoot; held input is
+  transient.
+- **ADS is a toggle inside a fully raised firearm stance,** for iron sights and
+  optics. It is not a separate HUD mode. The defaults live together in
+  `src/game/input.ts`, `COMBAT_BINDINGS`, pending transfer to d44's rebindable
+  registry.
+- **Melee also requires readiness:** en-garde is the held melee stance; a swing
+  outside it does not start. See `src/game/play.ts`, `updateHeldItems`, for the
+  pose path.
+- **Blocking:** en-garde alone does not block; backing off is also required, and
+  the attempt succeeds according to melee-combat skill. `src/game/melee.ts`,
+  `shouldBlockFromEnGarde`, owns the stance gate.
+- **Unready firearm left-click is an exception to refusal:** it produces no shot
+  and no nope sound; this deliberate no-op does not use the ordinary refusal cue.
 - **Hand activation follows actor roles (BR, 2026-10-04):** dominance is
   identity, not a remapping of physical inventory slots. A held item cannot
   become an unarmed attack, and a two-handed hold's support must not activate
@@ -209,8 +201,8 @@ success; see [SLICE-3.md](SLICE-3.md), 3.1.
   identity rather than consulting creation preferences. See
   `docs/character-handedness.md` for the accepted-launch and physical-pose
   boundaries.
-- Lowered, a held item may block part of the view (as held models do today).
-  When #267 lands, readying a firearm brings its held pose forward.
+- Lowered, a held item may block part of the view; its firearm pose rises with
+  simulation-time readiness, as shown by `src/render/hands.ts`, `HeldItems.update`.
 
 ## Development and playtest
 

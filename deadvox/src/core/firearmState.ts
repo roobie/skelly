@@ -21,6 +21,12 @@ export interface FirearmCycleState {
   forwardSounded?: boolean;
 }
 
+export interface FirearmRaiseState {
+  elapsed: number;
+  /** Duration sampled when this raise began; saved so progression resumes under the same handling. */
+  duration: number;
+}
+
 export interface FirearmState {
   chamber: 'empty' | 'round' | 'case';
   /** A real loaded cartridge's item type, when present (debug rifles use virtual rounds). */
@@ -31,11 +37,12 @@ export interface FirearmState {
   landing?: { at: number; position: Vec3 } | undefined;
   pendingCase?: PendingCase | undefined;
   cycle?: FirearmCycleState | undefined;
+  readying?: FirearmRaiseState | undefined;
 }
 
 /** No live state is advanced or cancelled by a snapshot. */
 export const snapshotFirearm = (state: FirearmState): FirearmState => {
-  const { chamber, roundType, tube, landing, pendingCase, cycle } = state;
+  const { chamber, roundType, tube, landing, pendingCase, cycle, readying } = state;
   return {
     chamber,
     ...(roundType === undefined ? {} : { roundType }),
@@ -43,6 +50,7 @@ export const snapshotFirearm = (state: FirearmState): FirearmState => {
     ...(landing === undefined ? {} : { landing: structuredClone(landing) }),
     ...(pendingCase === undefined ? {} : { pendingCase: structuredClone(pendingCase) }),
     ...(cycle === undefined || cycle.mode === 'hand' ? {} : { cycle: structuredClone(cycle) }),
+    ...(readying === undefined ? {} : { readying: { ...readying } }),
   };
 };
 
@@ -93,6 +101,17 @@ export const assertFirearmState = (state: FirearmState): void => {
   assertCycleState(cycle);
   if (cycle?.ejected && state.chamber === 'case') {
     throw new Error('Ejected case remains in the chamber');
+  }
+  const { readying } = state;
+  if (
+    readying &&
+    (!Number.isFinite(readying.elapsed) ||
+      readying.elapsed < 0 ||
+      !Number.isFinite(readying.duration) ||
+      readying.duration <= 0 ||
+      readying.elapsed > readying.duration)
+  ) {
+    throw new Error('Invalid firearm ready progress');
   }
   const pending = state.pendingCase;
   if (

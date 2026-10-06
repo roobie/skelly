@@ -1,9 +1,10 @@
 // A held grip is a shared spatial contract: gameplay ejection and the rendered model
 // use the same metres/axes. Camera bob/recoil/roll remain cosmetic, not ballistic input.
-import { type AimFrame, aimBasis } from './aim.ts';
+import { type AimFrame, aimBasis, NEUTRAL_AIM } from './aim.ts';
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandSide } from './inventory.ts';
+import { readyMeleePose } from './meleePose.ts';
 
 export const HOLD: Readonly<Record<HandSide, Vec3>> = {
   right: [0.2, -0.2, -0.38],
@@ -77,6 +78,105 @@ export const heldAnchorWorldPosition = ({
     eye[1] + right[1] * offset[0] + up[1] * offset[1] - forward[1] * offset[2],
     eye[2] + right[2] * offset[0] + up[2] * offset[1] - forward[2] * offset[2],
   ];
+};
+
+const rotateYXZ = ([x, y, z]: Vec3, [pitch, yaw, roll]: Vec3): Vec3 =>
+  ry(rx(rz([x, y, z], roll), pitch), yaw);
+
+const inCameraFrame = (vector: Vec3, frame: AimFrame): Vec3 => {
+  const { right, up, forward } = aimBasis(0, 0, frame);
+  return [
+    right[0] * vector[0] + up[0] * vector[1] - forward[0] * vector[2],
+    right[1] * vector[0] + up[1] * vector[1] - forward[1] * vector[2],
+    right[2] * vector[0] + up[2] * vector[1] - forward[2] * vector[2],
+  ];
+};
+
+export interface HeldFirearmTransformInput {
+  readonly model: ModelDef;
+  readonly side: HandSide;
+  readonly leadingSide: HandSide;
+  readonly twoHanded: boolean;
+  readonly progress: number;
+  readonly aimingDownSights: boolean;
+  readonly aimFrame: AimFrame;
+  readonly loweredPitchRadians: number;
+}
+
+export interface HeldFirearmTransform {
+  /** Held-root position in camera-local metres. */
+  readonly rootOffset: Vec3;
+  /** The muzzle anchor after the exact root rotation used by the held model. */
+  readonly muzzleOffset: Vec3;
+  readonly muzzleDirection: Vec3;
+  readonly muzzleUp: Vec3;
+  readonly sightEyeOffset?: Vec3;
+  readonly sightDirection?: Vec3;
+  readonly sightUp?: Vec3;
+}
+
+/** Shared simulation/render firearm pose. Anchors and directions use the model's grip frame. */
+export const heldFirearmTransform = ({
+  model,
+  side,
+  leadingSide,
+  twoHanded,
+  progress,
+  aimingDownSights,
+  aimFrame,
+  loweredPitchRadians,
+}: HeldFirearmTransformInput): HeldFirearmTransform => {
+  if (
+    !(model.grip && model.anchors?.muzzle) ||
+    ![progress, loweredPitchRadians].every(Number.isFinite) ||
+    progress < 0 ||
+    progress > 1 ||
+    loweredPitchRadians < 0
+  ) {
+    throw new Error(`Invalid held firearm pose for ${model.id}`);
+  }
+  const pose = readyMeleePose(true, leadingSide)[side];
+  const eased = progress * progress * (3 - 2 * progress);
+  const handRotation = aimingDownSights
+    ? ([0, 0, 0] as Vec3)
+    : pose.rotation.map((value) => value * eased) as Vec3;
+  const loweredPitch = -loweredPitchRadians * (1 - progress);
+  const applyRootRotation = (vector: Vec3): Vec3 =>
+    inCameraFrame(rotateYXZ(rx(vector, loweredPitch), handRotation), progress >= 1 ? aimFrame : NEUTRAL_AIM);
+  const normalRoot = heldGripOffset(side, twoHanded).map(
+    (value, index) => value + pose.offset[index]! * eased,
+  ) as Vec3;
+  const rootOffset =
+    aimingDownSights && model.sight
+      ? applyRootRotation(modelToView(model, model.sight.eye.map((value, index) => value - model.grip!.at[index]!) as Vec3)).map(
+          (value) => -value,
+        ) as Vec3
+      : normalRoot;
+  const muzzleOffset = applyRootRotation(heldAnchorOffset(model, 'muzzle'));
+  const muzzleDirection = applyRootRotation(modelToView(model, model.muzzleDirection ?? [1, 0, 0]));
+  const muzzleUp = applyRootRotation(modelToView(model, [0, 1, 0]));
+  const sightEyeOffset = model.sight
+    ? applyRootRotation(modelToView(model, model.sight.eye.map((value, index) => value - model.grip!.at[index]!) as Vec3))
+    : undefined;
+  const sightDirection = model.sight ? applyRootRotation(modelToView(model, model.sight.direction)) : undefined;
+  const sightUp = model.sight ? applyRootRotation(modelToView(model, model.sight.up)) : undefined;
+  return {
+    rootOffset,
+    muzzleOffset,
+    muzzleDirection: normalize(muzzleDirection),
+    muzzleUp: normalize(muzzleUp),
+    ...(sightEyeOffset ? { sightEyeOffset } : {}),
+    ...(sightDirection ? { sightDirection: normalize(sightDirection) } : {}),
+    ...(sightUp ? { sightUp: normalize(sightUp) } : {}),
+  };
+};
+
+const normalize = (vector: Vec3): Vec3 => {
+  const length = Math.hypot(...vector);
+  if (!(length > 0 && Number.isFinite(length))) {
+    throw new Error('Cannot normalize a zero held-pose vector');
+  }
+  return vector.map((value) => value / length) as Vec3;
 };
 
 export const heldEjectionPose = ({

@@ -1,5 +1,5 @@
 import { html, render } from 'lit-html';
-import { CONTROL_CODES, KEY_BINDINGS } from './input.ts';
+import { COMBAT_BINDINGS, CONTROL_CODES, KEY_BINDINGS } from './input.ts';
 
 export const labelForCode = (code: string): string => {
   if (code === 'mousemove') {
@@ -45,7 +45,10 @@ export const PLAYER_CONTROL_BINDINGS = [
   { keys: 'Z', codes: [CONTROL_CODES.walkToggle], action: 'Walk / jog' },
   { keys: 'Space', codes: [CONTROL_CODES.jump], action: 'Jump' },
   { keys: 'Mouse', codes: ['mousemove'], action: 'Look' },
-  { keys: 'Left click', codes: [], action: 'Dominant-hand use; dominant jab if empty' },
+  { keys: COMBAT_BINDINGS.readyButton.label, codes: [], action: 'Ready a firearm; enter en-garde with a melee weapon' },
+  { keys: COMBAT_BINDINGS.adsToggleButton.label, codes: [], action: 'Toggle iron sights while ready' },
+  { keys: 'Left click', codes: [], action: 'Dominant-hand use; fire only while ready; swing only en-garde' },
+  { keys: 'S', codes: [COMBAT_BINDINGS.block.code], action: 'Block while en-garde' },
   {
     keys: '=',
     codes: [KEY_BINDINGS.useOff.code],

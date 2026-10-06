@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 23;
+export const SAVE_SCHEMA_VERSION = 24;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -271,6 +271,7 @@ itemSchema = obj({
           seed: num({ integer: true, safe: true, min: 0, max: 0xff_ff_ff_ff }),
         }),
       ),
+      readying: opt(obj({ elapsed: nonNegative, duration: positive })),
       cycle: opt(
         obj({
           mode: enumeration(['fire', 'hand']),

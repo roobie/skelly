@@ -11,6 +11,8 @@ export const shouldEnterMeleeReady = (input: {
 }): boolean =>
   input.rightMouseHeld && (input.meleeWeaponHeld || input.handsEmpty) && !input.debugBuild && !input.inputLocked;
 
+export const shouldBlockFromEnGarde = (enGarde: boolean, backingOff: boolean): boolean => enGarde && backingOff;
+
 /** Refuses without cost when tired/busy; every accepted swing spends stamina, including a miss. */
 export const startPlayerMelee = (
   combat: PlayerCombat,

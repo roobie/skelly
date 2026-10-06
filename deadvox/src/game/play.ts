@@ -70,6 +70,7 @@ import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import {
+  COMBAT_BINDINGS,
   CONTROL_CODES,
   Input,
   isMenuOpeningKey,
@@ -78,7 +79,7 @@ import {
   worldActionForKey,
 } from './input.ts';
 import { startingLoadout } from './loadout.ts';
-import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import { shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { handlePlayMenuKey } from './menuKeys.ts';
 import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
@@ -165,6 +166,7 @@ export const startPlay = (
   let playtestObserver: PlaytestObserver | undefined;
   let debugLaserEnabled = true;
   const firearmTrigger = new DebugFirearmTrigger();
+  let automaticFireUid: number | undefined;
   const session = createSession({
     registry,
     handedness: config.debugHandedness ?? options.handedness,
@@ -182,6 +184,18 @@ export const startPlay = (
     controls: {
       active: () => input.locked && !input.menuPointer,
       intent: () => input.intent(),
+      readyHeld: () => input.rightMouseHeld,
+      blocking: () => {
+        const action = selectPrimaryAction(inventory);
+        const enGarde = shouldEnterMeleeReady({
+          rightMouseHeld: input.rightMouseHeld && input.locked && !input.menuPointer,
+          meleeWeaponHeld: action.kind === 'melee',
+          handsEmpty: !(inventory.hands.right || inventory.hands.left),
+          debugBuild: debugTools?.buildOn ?? false,
+          inputLocked: compression.locksInput,
+        });
+        return shouldBlockFromEnGarde(enGarde, input.held.has(COMBAT_BINDINGS.block.code));
+      },
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
       useDominant: () => {
@@ -198,7 +212,7 @@ export const startPlay = (
       },
       heldDominantUse: (time, pressed, triggerHeld) => {
         const action = selectPrimaryAction(inventory);
-        const weapon =
+        const automaticItem =
           config.debug &&
           !debugTools?.buildOn &&
           !queue.busy &&
@@ -206,7 +220,26 @@ export const startPlay = (
           !registry.items.get(action.item.type)?.firearm?.pump
             ? action.item
             : undefined;
-        const deadlines = firearmTrigger.advance(time, triggerWeapon(weapon, pressed), pressed, triggerHeld);
+        if (pressed) {
+          automaticFireUid =
+            automaticItem && isFirearmReady(automaticItem.uid) && !session.sprinting
+              ? automaticItem.uid
+              : undefined;
+        }
+        if (!triggerHeld) {
+          automaticFireUid = undefined;
+        }
+        const weapon =
+          automaticItem && automaticItem.uid === automaticFireUid && isFirearmReady(automaticItem.uid) && !session.sprinting
+            ? automaticItem
+            : undefined;
+        const acceptedPress = pressed && weapon !== undefined;
+        const deadlines = firearmTrigger.advance(
+          time,
+          triggerWeapon(weapon, acceptedPress),
+          acceptedPress,
+          triggerHeld && automaticFireUid !== undefined,
+        );
         if (weapon) {
           for (const deadline of deadlines) {
             fireDebugWeapon(weapon, deadline);
@@ -217,6 +250,11 @@ export const startPlay = (
         const action = selectPrimaryAction(inventory);
         return (
           input.dominantUseHeld &&
+          automaticFireUid !== undefined &&
+          action.kind === 'firearm' &&
+          action.item.uid === automaticFireUid &&
+          isFirearmReady(action.item.uid) &&
+          !session.sprinting &&
           config.debug &&
           !debugTools?.buildOn &&
           !queue.busy &&
@@ -285,6 +323,28 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const isFirearmReady = (uid: number): boolean =>
+    input.rightMouseHeld &&
+    input.locked &&
+    !input.menuPointer &&
+    !compression.locksInput &&
+    firearms.isReady(uid);
+  const isAimingDownSights = (): boolean => {
+    const action = selectPrimaryAction(inventory);
+    return (
+      input.aimingDownSights &&
+      input.rightMouseHeld &&
+      input.locked &&
+      !input.menuPointer &&
+      action.kind === 'firearm' &&
+      isFirearmReady(action.item.uid) &&
+      !session.sprinting
+    );
+  };
+  input.setAimingDownSightsAllowed(() => {
+    const action = selectPrimaryAction(inventory);
+    return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
+  });
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet);
   if (session.restoredLook) {
@@ -1055,6 +1115,9 @@ export const startPlay = (
     const fired = firearms.fire({
       aimFrame: aim.frame,
       debugMode: config.debug,
+      ready: isFirearmReady(item.uid),
+      aimingDownSights: isAimingDownSights(),
+      sprinting: session.sprinting,
       item,
       feet: feet(),
       eye: eye(),
@@ -1133,6 +1196,9 @@ export const startPlay = (
         refusalReason(survival.use(action.item));
         return;
       case 'firearm': {
+        if (!isFirearmReady(action.item.uid) || session.sprinting) {
+          return;
+        }
         if (!fireDebugWeapon(action.item, sim.time)) {
           showRefusal(
             config.debug || registry.items.get(action.item.type)?.firearm?.pump
@@ -1337,7 +1403,21 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
-    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), aim: aim.frame, job: queue.jobs[0] });
+    const selected = selectPrimaryAction(inventory);
+    const readiness =
+      selected.kind === 'firearm' && input.rightMouseHeld && input.locked && !input.menuPointer
+        ? {
+            uid: selected.item.uid,
+            progress: firearms.readyProgress(selected.item.uid),
+            aimingDownSights: isAimingDownSights(),
+          }
+        : undefined;
+    view.updateHeld(dt, pose, survival.lit, {
+      firearms: firearms.frames(),
+      ...(readiness === undefined ? {} : { readiness }),
+      aim: aim.frame,
+      job: queue.jobs[0],
+    });
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */

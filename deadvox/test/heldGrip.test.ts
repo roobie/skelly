@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
+import { NEUTRAL_AIM } from '../src/core/aim.ts';
+import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
@@ -34,6 +36,8 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
     pitch: 0,
     aimFrame: { yaw: 0, pitch: 0 },
     blockSize: 0.5,
+    ready: true,
+    sprinting: false,
   } as const;
   const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
     blockSize: pose.blockSize,
@@ -59,6 +63,26 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
 };
 
 describe('actual-slot held placement', () => {
+  it('aligns the exported sight eye with the camera origin in ADS', () => {
+    const model = registry.models.get('rifle_assault')!;
+    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const pose = heldFirearmTransform({
+      model,
+      side: 'right',
+      leadingSide: 'right',
+      twoHanded: true,
+      progress: 1,
+      aimingDownSights: true,
+      aimFrame: NEUTRAL_AIM,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+    });
+    expect(pose.sightEyeOffset).toBeDefined();
+    for (let axis = 0; axis < 3; axis++) {
+      expect(pose.rootOffset[axis]! + pose.sightEyeOffset![axis]!).toBeCloseTo(0);
+    }
+    expect(pose.sightDirection).toBeDefined();
+  });
+
   it('translates two-handed ejection origins by physical slot, not actor dominance, without mirroring authored direction', () => {
     const rightEffects = ejectFrom('right');
     const leftEffects = ejectFrom('left');

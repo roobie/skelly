@@ -440,6 +440,17 @@ const ModelSchema = pipe(
     roll: optional(pipe(number(), minValue(-180), maxValue(180))),
     /** Named points, such as the flashlight's `lens` or a firearm's `magwell`. */
     anchors: optional(record(Id, Point)),
+    /** Model-derived eye point, sight line and up axis for ADS presentation and ballistics. */
+    sight: optional(
+      strictObject({
+        kind: picklist(['iron', 'optic']),
+        eye: Point,
+        direction: UnitVector,
+        up: UnitVector,
+      }),
+    ),
+    /** Unit barrel direction in the same local model frame as anchors. */
+    muzzleDirection: optional(UnitVector),
     /** Optional estimated action cycles and the named moving GLB nodes. */
     action: optional(ActionSchema),
   }),
@@ -763,7 +774,76 @@ const FigureSchema = strictObject({
 
 // ---- skills and recipes ----
 
-const SkillSchema = strictObject({ id: Id, name: Name });
+const SkillSchema = pipe(
+  strictObject({
+  id: Id,
+  name: Name,
+  training: optional(
+    strictObject({
+      craftingTierOffset: optional(Count),
+      activities: optional(
+        record(
+          Id,
+          pipe(
+            strictObject({
+              practice: optional(NonNegative),
+              practicePerSecond: optional(NonNegative),
+              tier: SkillLevel,
+            }),
+            check(
+              (activity) => (activity.practice === undefined) !== (activity.practicePerSecond === undefined),
+              'needs exactly one of "practice" or "practicePerSecond"',
+            ),
+          ),
+        ),
+      ),
+    }),
+  ),
+  combat: optional(
+    strictObject({
+      firearms: optional(
+        strictObject({
+          raiseMinimumSeconds: Positive,
+          raiseRangeSeconds: NonNegative,
+          raiseHalfLifeLevels: Positive,
+          readyMovementMinimum: Fraction,
+          readyMovementRange: Fraction,
+          readyMovementHalfLifeLevels: Positive,
+          loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
+        }),
+      ),
+      melee: optional(
+        strictObject({
+          blockChanceMinimum: Fraction,
+          blockChanceRange: Fraction,
+          blockChanceHalfLifeLevels: Positive,
+        }),
+      ),
+    }),
+  ),
+  }),
+  check((skill) => {
+    const training = skill.training;
+    const activity = (id: string, field: 'practice' | 'practicePerSecond') =>
+      training?.activities?.[id]?.[field] !== undefined;
+    const complete =
+      (skill.id !== 'crafting' || training?.craftingTierOffset !== undefined) &&
+      (skill.id !== 'firearms_combat' ||
+        (skill.combat?.firearms !== undefined &&
+          activity('readying', 'practicePerSecond') &&
+          activity('handling', 'practice') &&
+          activity('shot', 'practice') &&
+          activity('hit', 'practice'))) &&
+      (skill.id !== 'melee_combat' || (skill.combat?.melee !== undefined && activity('block', 'practice')));
+    const firearm = skill.combat?.firearms;
+    const melee = skill.combat?.melee;
+    return (
+      complete &&
+      (!firearm || firearm.readyMovementMinimum + firearm.readyMovementRange <= 1) &&
+      (!melee || melee.blockChanceMinimum + melee.blockChanceRange <= 1)
+    );
+  }, 'missing required skill tuning or effect range exceeds one'),
+);
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */

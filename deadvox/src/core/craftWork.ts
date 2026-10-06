@@ -7,6 +7,7 @@ import { type Inventory, validateWorkItem } from './inventory.ts';
 import type { Item } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
 import type { ReachSnapshot } from './reach.ts';
+import { craftingActivityTier } from './skillTraining.ts';
 
 const inputsValid = (inventory: Inventory, item: Item): boolean => {
   try {
@@ -94,11 +95,18 @@ export const craftActionHooks = (
     const work = item?.work;
     if (item && work) {
       const recipe = work.kind === 'craft' ? inventory.registry.recipes.get(work.recipe) : undefined;
+      const practice = recipe
+        ? Object.entries(recipe.skills).map(([skill, level]) => {
+            const offset = inventory.registry.skills.get(skill)?.training?.craftingTierOffset;
+            if (offset === undefined) {
+              throw new Error(`Missing ${skill} crafting practice tier offset`);
+            }
+            return { skill, amount: recipe.time, tier: craftingActivityTier(level, offset) };
+          })
+        : [];
       inventory.releaseWork(item, true, feet());
-      if (recipe) {
-        for (const skill of Object.keys(recipe.skills)) {
-          character.awardPractice(skill, recipe.time);
-        }
+      for (const entry of practice) {
+        character.awardPractice(entry.skill, entry.amount, entry.tier);
       }
     }
   },

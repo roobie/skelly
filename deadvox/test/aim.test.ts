@@ -2,7 +2,17 @@ import { Euler, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
+import { firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
+
+const stanceTuning = {
+  raiseMinimumSeconds: 0.25,
+  raiseRangeSeconds: 0.4,
+  raiseHalfLifeLevels: 5,
+  readyMovementMinimum: 0.4,
+  readyMovementRange: 0.35,
+  readyMovementHalfLifeLevels: 5,
+  loweredPitchRadians: 0.5,
+} as const;
 
 const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) => ({
   dt: 1 / 60,
@@ -240,5 +250,11 @@ it('firearms skill effects improve through expert level and legendary matches ex
   expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
   expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
   expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
+  const noviceStance = firearmStanceEffects(0, stanceTuning);
+  const experiencedStance = firearmStanceEffects(SKILL_LEVEL_MAX, stanceTuning);
+  const legendaryStance = firearmStanceEffects(SKILL_LEVEL_LEGENDARY, stanceTuning);
+  expect(experiencedStance.raiseDuration).toBeLessThan(noviceStance.raiseDuration);
+  expect(experiencedStance.readyMovementFactor).toBeGreaterThan(noviceStance.readyMovementFactor);
   expect(legendary).toEqual(experienced);
+  expect(legendaryStance).toEqual(experiencedStance);
 });
