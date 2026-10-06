@@ -8,12 +8,12 @@ import type { Assembly, Domain, PartDef, PartFamily, RevolvedSolid, Solid } from
 import type { DeadvoxModelEntry, DeadvoxModelFile } from './exportGlb.ts';
 import { shotshellGeometry, shotshellHullColor } from './shotshellGeometry.ts';
 
-export interface CartridgeModel {
+interface CartridgeModel {
   readonly glb: Uint8Array;
   readonly modelEntry: DeadvoxModelEntry;
 }
 
-export interface CartridgeModels {
+interface CartridgeModels {
   readonly round: CartridgeModel;
   readonly case: CartridgeModel;
 }

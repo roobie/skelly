@@ -31,7 +31,7 @@ export interface Transform {
   readonly t: Vec3;
 }
 
-export const ZERO: Vec3 = [0, 0, 0];
+const ZERO: Vec3 = [0, 0, 0];
 export const IDENTITY_M: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
 export const IDENTITY: Transform = { r: IDENTITY_M, t: ZERO };
 

@@ -40,7 +40,7 @@ import { validate } from './validate.ts';
  * `Domain.families`, as stored in `PartInstance.family`); it is not
  * `PartDef.family`. The gun catalogue's `PrefabCatalogueEntry` fits this.
  */
-export interface DesignPrefabEntry {
+interface DesignPrefabEntry {
   readonly id: string;
   readonly version: number;
   readonly family: string;

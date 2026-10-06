@@ -3,8 +3,8 @@ import { localSolidBounds } from '../core/geometry.ts';
 import type { Resolved } from '../core/resolve.ts';
 
 /** Visual fit estimates, not manufacturer's tube specifications. */
-export const TUBE_FOLLOWER_SPRING_RESERVE_U = 1;
-export const TUBE_RIM_ALLOWANCE_MM = 0.25;
+const TUBE_FOLLOWER_SPRING_RESERVE_U = 1;
+const TUBE_RIM_ALLOWANCE_MM = 0.25;
 
 /** Geometry-derived axial capacity; shells enter singly, so no box-magazine round column is emitted. */
 export const tubeMagazineCapacity = (resolved: Resolved, shell: Shotshell): number | undefined => {

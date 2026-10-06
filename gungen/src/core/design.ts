@@ -5,7 +5,7 @@ import type { Assembly, Domain, Gender, PartDef } from './schema.ts';
 import type { Template } from './template.ts';
 
 /** Version of the persisted design-file contract, independent of the assembly schema. */
-export type DesignFormat = 1;
+type DesignFormat = 1;
 
 /** Parameter values and optional-slot choices that a designer deliberately fixed. */
 export interface DesignLocks {
@@ -42,7 +42,7 @@ export interface Design {
 
 export type DesignStatus = 'draft' | 'published';
 
-export type DesignIssueCode = 'infeasible' | 'template-choice' | 'prefab-values-mismatch';
+type DesignIssueCode = 'infeasible' | 'template-choice' | 'prefab-values-mismatch';
 
 /** A non-fatal loading/publishing problem; a design with issues is loaded only as a draft. */
 export interface DesignIssue {
@@ -52,7 +52,7 @@ export interface DesignIssue {
   readonly parts?: readonly string[];
 }
 
-export type DesignLoadErrorCode = 'invalid-json' | 'invalid-shape' | 'unsupported-format' | 'unknown-prefab';
+type DesignLoadErrorCode = 'invalid-json' | 'invalid-shape' | 'unsupported-format' | 'unknown-prefab';
 
 /** A fatal parse/load failure. Unknown prefab ids or versions are refused, not downgraded. */
 export interface DesignLoadError {
@@ -148,13 +148,13 @@ export interface Palette {
 export type PartPortId = `${string}.${string}`;
 
 /** Mating frame in gungen assembly coordinates and units; its local X/normal points out of the part. */
-export interface PortMatingFrame {
+interface PortMatingFrame {
   readonly position: Vec3;
   readonly normal: Vec3;
   readonly up: Vec3;
 }
 
-export interface RailPortMetadata {
+interface RailPortMetadata {
   readonly count: number;
   readonly pitch: number;
 }
@@ -225,4 +225,4 @@ export type Suggest = (
 ) => SuggestionResult;
 
 /** Kept on PartInstance so a saved design preserves the selected catalogue version. */
-export type { PrefabReference } from './schema.ts';
+;

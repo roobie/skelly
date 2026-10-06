@@ -1367,7 +1367,7 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
   return [...shell, ...receiverHandles, ...tubeSeat, ...opticRail];
 };
 
-export const receiver: PartFamily = {
+const receiver: PartFamily = {
   name: 'receiver',
   params: {
     /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. */
@@ -1446,7 +1446,7 @@ export const receiver: PartFamily = {
 };
 
 /** AK-style stamped receiver with a removable dust cover, gas-cylinder and rear-sight interfaces. */
-export const akReceiver: PartFamily = {
+const akReceiver: PartFamily = {
   name: 'receiver',
   params: {
     action: choice('bolt'),
@@ -1868,7 +1868,7 @@ const smgSlidingHandle: PartFamily = {
 
 // ---- procedural bolt-carrier group ----
 
-export const boltCarrier: PartFamily = {
+const boltCarrier: PartFamily = {
   name: 'bolt-carrier',
   params: {
     action: { ...choice('auto', 'bolt', 'pump'), from: [{ port: 'mount', param: 'action' }] },
@@ -2014,7 +2014,7 @@ export const boltCarrier: PartFamily = {
  *   bullpup       grip ahead of the magazine, with the butt built in
  *   trigger       trigger and grip anchor for tube-fed, top-fed, and revolver designs
  */
-export const lower: PartFamily = {
+const lower: PartFamily = {
   name: 'lower',
   params: {
     layout: { values: Object.keys(LOWER_LAYOUTS), default: 'conventional' },
@@ -2464,7 +2464,7 @@ const akGasBlockX = (layout: string | undefined, length: SizeClass): number => {
 const frontSightPosition = (style: string, length: SizeClass): number =>
   style === 'ak' ? barrelLength({ length }) - 2.5 : akGasBlockX('standard', length);
 const arHandguardLength = (length: SizeClass): number => akGasBlockX('standard', length) - AR_FRONT_SIGHT_HALF_LENGTH;
-export const barrel: PartFamily = {
+const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
   params: {
@@ -2594,7 +2594,7 @@ const octagonalCollar = (id: string, flatRadius: number, along: readonly [number
 };
 
 /** A fixed A2 or AK front sight block and post, with the bore axis at y = 0. */
-export const frontSight: PartFamily = {
+const frontSight: PartFamily = {
   name: 'front-sight',
   params: {
     bore: { ...size, from: [{ port: 'base', param: 'bore' }] },
@@ -2651,7 +2651,7 @@ export const frontSight: PartFamily = {
 };
 
 /** A detachable AR front post that clamps to the forward top-rail slot. */
-export const railFrontSight: PartFamily = {
+const railFrontSight: PartFamily = {
   name: 'rail-front-sight',
   params: {
     bore: { ...size, from: [{ port: 'base', param: 'barrelBore' }] },
@@ -2679,7 +2679,7 @@ export const railFrontSight: PartFamily = {
 };
 
 /** An AK gas block collars the barrel and rises to the gas cylinder with a raked fore face. */
-export const gasBlock: PartFamily = {
+const gasBlock: PartFamily = {
   name: 'gas-block',
   params: {
     bore: { ...size, from: [{ port: 'barrel', param: 'bore' }] },
@@ -2730,7 +2730,7 @@ export const gasBlock: PartFamily = {
 };
 
 /** The AK gas cylinder runs under the rear handguard cover and is exposed ahead of it. */
-export const gasCylinder: PartFamily = {
+const gasCylinder: PartFamily = {
   name: 'gas-cylinder',
   params: {
     barrelLength: { ...size, from: [{ port: 'front', param: 'barrelLength' }] },
@@ -2759,7 +2759,7 @@ export const gasCylinder: PartFamily = {
 };
 
 /** A simple leaf rear sight mounted on the AK dust cover, without a receiver rail. */
-export const akRearSight: PartFamily = {
+const akRearSight: PartFamily = {
   name: 'ak-rear-sight',
   params: {},
   build(): PartDef {
@@ -2776,7 +2776,7 @@ export const akRearSight: PartFamily = {
 };
 
 /** A barrel-fitted handguard, capped by the receiver's front-face envelope. */
-export const handguard: PartFamily = {
+const handguard: PartFamily = {
   name: 'handguard',
   params: {
     length: { ...size, from: [{ port: 'front', param: 'length' }] },
@@ -2920,7 +2920,7 @@ export const handguard: PartFamily = {
 };
 
 /** A magazine tube under the barrel; its front fixes to the barrel's lug. */
-export const tubeMagazine: PartFamily = {
+const tubeMagazine: PartFamily = {
   name: 'tube-magazine',
   // Tube reach is a percentage of the actual barrel length, not a tube size class.
   params: {
@@ -2987,7 +2987,7 @@ export const tubeMagazine: PartFamily = {
 };
 
 /** Sliding tubular forend: the octagonal sleeve leaves only a narrow top slit for the action bar. */
-export const forend: PartFamily = {
+const forend: PartFamily = {
   name: 'forend',
   params: {
     bore: { ...size, from: [{ port: 'rear', param: 'bore' }] },
@@ -3106,7 +3106,7 @@ export const forend: PartFamily = {
 // ---- held parts ----
 
 // Hand-derived S/M/L lengths: about four fingers through a hand-and-a-bit; lean stays at 18°.
-export const grip: PartFamily = {
+const grip: PartFamily = {
   name: 'grip',
   params: { length: size, well: choice('none', 'magazine') },
   build(params): PartDef {
@@ -3304,7 +3304,7 @@ const integratedPistolGrip = (gripLength: string): PartDef => {
 
 const pistolSlideEnd = (length: string): number => PISTOL_BARREL_LENGTH[length as SizeClass] - PISTOL_CROWN_LENGTH;
 
-export const pistolFrame: PartFamily = {
+const pistolFrame: PartFamily = {
   name: 'frame',
   params: {
     bore: size,
@@ -3365,7 +3365,7 @@ export const pistolFrame: PartFamily = {
   },
 };
 
-export const pistolSlide: PartFamily = {
+const pistolSlide: PartFamily = {
   name: 'slide',
   params: {
     bore: { ...size, from: [{ port: 'frame', param: 'bore' }] },
@@ -3709,7 +3709,7 @@ const m4StockSolids = (len: number): Solid[] => {
   ];
 };
 
-export const stock: PartFamily = {
+const stock: PartFamily = {
   name: 'stock',
   params: {
     length: size,
@@ -3829,7 +3829,7 @@ export const stock: PartFamily = {
   },
 };
 
-export const sight: PartFamily = {
+const sight: PartFamily = {
   name: 'sight',
   params: {
     type: { values: OPTIC_TYPE_IDS, default: 'mini-reflex' },

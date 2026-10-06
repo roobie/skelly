@@ -22,16 +22,16 @@ const OUTER_HALF_WIDTH = WELL_HALF_WIDTH + WELL_CLEARANCE;
 const FRONT_PANEL = 0.25;
 const PORT_Y = -1.5;
 
-export const HEAVY_WELL_FRONT_X = -1.25;
+const HEAVY_WELL_FRONT_X = -1.25;
 export const HEAVY_WELL_CENTER_X = HEAVY_WELL_FRONT_X - WELL_DEPTH / 2;
 const WELL_REAR_X = HEAVY_WELL_FRONT_X - WELL_DEPTH;
 
 /** The trigger finger sits 3.5u behind the well, and the grip 2.25u behind the trigger, as in the shared lower. */
 const TRIGGER_X = WELL_REAR_X - 3.5;
-export const HEAVY_GRIP_X = TRIGGER_X - 2.25;
+const HEAVY_GRIP_X = TRIGGER_X - 2.25;
 
 export const HEAVY_TRIGGER_GUARD = { innerXClearance: 0.5, sideWall: 0.5, verticalWall: 0.25, zRatio: 0.625 } as const;
-export const HEAVY_GRIP_LEAN_DEGREES = 18;
+const HEAVY_GRIP_LEAN_DEGREES = 18;
 const GRIP_LEAN = (HEAVY_GRIP_LEAN_DEGREES * Math.PI) / 180;
 /** The grip's upper mount outline (grip-local x, y): the front vertex first, then the two rear ones. */
 export const HEAVY_GRIP_MOUNT_PROFILE = [

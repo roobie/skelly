@@ -29,7 +29,7 @@ export const HEAVY_CARRIER_ENVELOPE = {
 export const HEAVY_HANDLE_SCALE = 1.4;
 // Quarter-unit grid rounding keeps the nominal ~1.4x scale in buildable dimensions (each remains 1.3–1.5x AK).
 export const HEAVY_HANDLE_OUTSTAND_U = 3.25;
-export const HEAVY_HANDLE_PADDLE_THICKNESS_U = 0.75;
+const HEAVY_HANDLE_PADDLE_THICKNESS_U = 0.75;
 export const HEAVY_HANDLE_STICK_HEIGHT_U = 1.25;
 export const HEAVY_HANDLE_STICK_WIDTH_U = 0.5;
 export const HEAVY_HANDLE_ROOT_DROP_U = 0;

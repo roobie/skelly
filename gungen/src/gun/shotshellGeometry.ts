@@ -5,15 +5,15 @@ import type { ExtrudedPolygonSolid, RevolvedSolid, Vec2 } from '../core/schema.t
 type ShotshellSolid = RevolvedSolid | ExtrudedPolygonSolid;
 
 /** Visual approximation only: the cartridge format has no hull wall thickness. */
-export const SHOTSHELL_WALL_MM = 0.65;
+const SHOTSHELL_WALL_MM = 0.65;
 /** Visual edge chamfer, matching the metallic cartridge's profile-based bevel style. */
-export const SHOTSHELL_EDGE_MM = 0.12;
+const SHOTSHELL_EDGE_MM = 0.12;
 /** Presentation proxy: rolled lip depth and inward curl, not a manufacturer measurement. */
-export const ROLL_CRIMP_PROXY_MM = 1.2;
+const ROLL_CRIMP_PROXY_MM = 1.2;
 /** Presentation proxy for a fold crimp: six leaves and narrow visible seams. */
-export const FOLD_CRIMP_LEAVES = 6;
+const FOLD_CRIMP_LEAVES = 6;
 /** Unknown closure uses the authorised conservative roll-crimp visual proxy; source stays null. */
-export const UNKNOWN_CLOSURE_PROXY = 'roll-crimp' as const;
+const UNKNOWN_CLOSURE_PROXY = 'roll-crimp' as const;
 
 const required = (measure: Measure, name: string): number => {
   if (measure.value === null) {
@@ -124,7 +124,7 @@ export const shotshellGeometry = (shell: Shotshell): ShotshellGeometry => {
 };
 
 /** Named display colours; the red choice is read from the cited hull colour, not guessed material. */
-export const SHOTSHELL_HULL_COLORS: Readonly<Record<string, readonly [number, number, number]>> = {
+const SHOTSHELL_HULL_COLORS: Readonly<Record<string, readonly [number, number, number]>> = {
   red: [0.7, 0.035, 0.025],
   green: [0.08, 0.4, 0.13],
   blue: [0.04, 0.15, 0.6],

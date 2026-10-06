@@ -96,7 +96,7 @@ export const obbPolyhedron = (box: Obb): ConvexPolyhedron => {
   };
 };
 
-export const polygonAreaVector = (points: readonly Vec3[]): Vec3 => {
+const polygonAreaVector = (points: readonly Vec3[]): Vec3 => {
   let area: Vec3 = [0, 0, 0];
   for (let i = 0; i < points.length; i++) {
     area = add(area, cross(points[i]!, points[(i + 1) % points.length]!));
@@ -108,7 +108,7 @@ export const polygonArea = (points: readonly Vec3[]): number => length(polygonAr
 
 const samePoint = (a: Vec3, b: Vec3, tolerance = 1e-8): boolean => length(sub(a, b)) <= tolerance;
 
-export const uniquePoints = (points: readonly Vec3[], tolerance = 1e-8): Vec3[] => {
+const uniquePoints = (points: readonly Vec3[], tolerance = 1e-8): Vec3[] => {
   const unique: Vec3[] = [];
   for (const point of points) {
     if (!unique.some((candidate) => samePoint(candidate, point, tolerance))) {
@@ -178,7 +178,7 @@ export const clipPolygon = (
   return clipPolygonByDistances(polygon, distances, keepInside, tolerance);
 };
 
-export const signedArea2D = (points: readonly Vec2[]): number => {
+const signedArea2D = (points: readonly Vec2[]): number => {
   let areaSum = 0;
   for (let i = 0; i < points.length; i++) {
     const a = points[i]!;
@@ -642,7 +642,7 @@ const edgePairs = (poly: ConvexPolyhedron): [Vec3, Vec3][] => {
 };
 
 /** Exact minimum Euclidean distance between two convex solids; overlapping solids have distance 0. */
-export const distanceConvex = (a: ConvexPolyhedron, b: ConvexPolyhedron): number => {
+const distanceConvex = (a: ConvexPolyhedron, b: ConvexPolyhedron): number => {
   if (penetrationConvex(a, b) >= 0) {
     return 0;
   }

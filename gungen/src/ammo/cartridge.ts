@@ -72,10 +72,10 @@ export interface Measure extends Sourced<number> {
 }
 
 export const CASE_MATERIALS = ['brass', 'steel', 'lacquered-steel', 'polymer-coated-steel', 'aluminium'] as const;
-export type CaseMaterial = (typeof CASE_MATERIALS)[number];
+type CaseMaterial = (typeof CASE_MATERIALS)[number];
 
 export const PRIMER_TYPES = ['boxer', 'berdan'] as const;
-export type PrimerType = (typeof PRIMER_TYPES)[number];
+type PrimerType = (typeof PRIMER_TYPES)[number];
 
 export interface Primer {
   /** Visible on a fired case, so a cartridge can offer both. */
@@ -92,7 +92,7 @@ export interface Alias {
 }
 
 export const RELATIONS = ['same-external-dimensions', 'safe-in-chamber-of', 'unsafe-in-chamber-of'] as const;
-export type Relation = (typeof RELATIONS)[number];
+type Relation = (typeof RELATIONS)[number];
 
 /**
  * A directed statement from this cartridge to another one. Read it as "this cartridge <relation>
@@ -125,7 +125,7 @@ export interface CartridgeBase {
 
 // ---------------------------------------------------------------- metallic cartridges
 
-export interface Rim {
+interface Rim {
   readonly diameter: Measure;
   /** Axial thickness of the rim, from the head face. */
   readonly thickness: Measure;
@@ -140,22 +140,21 @@ export interface ExtractorGroove {
 
 /** How the head is formed; independent of the body shape. */
 export const HEAD_TYPES = ['rimless', 'rimmed'] as const;
-export type HeadType = (typeof HEAD_TYPES)[number];
 
 /** Rim equal to the head diameter, cut with an extractor groove. */
-export interface RimlessHead {
+interface RimlessHead {
   readonly type: 'rimless';
   readonly extractorGroove: ExtractorGroove;
 }
 
 /** Rim wider than the head; no groove. */
-export interface RimmedHead {
+interface RimmedHead {
   readonly type: 'rimmed';
 }
 
 export type Head = RimlessHead | RimmedHead;
 
-export interface Shoulder {
+interface Shoulder {
   /** Axial position where the body ends and the shoulder cone starts. */
   readonly startPosition: Measure;
   /** Axial position where the cone meets the neck. */
@@ -164,15 +163,14 @@ export interface Shoulder {
   readonly angle: Measure;
 }
 
-export interface Neck {
+interface Neck {
   readonly diameterAtBase: Measure;
   readonly diameterAtMouth: Measure;
 }
 
 export const BODY_TYPES = ['bottleneck', 'straight'] as const;
-export type BodyType = (typeof BODY_TYPES)[number];
 
-export interface BottleneckBody {
+interface BottleneckBody {
   readonly type: 'bottleneck';
   readonly diameterAtHead: Measure;
   readonly diameterAtShoulderStart: Measure;
@@ -181,7 +179,7 @@ export interface BottleneckBody {
 }
 
 /** No shoulder or neck: a straight or tapered tube from head to mouth. */
-export interface StraightBody {
+interface StraightBody {
   readonly type: 'straight';
   readonly diameterAtHead: Measure;
   readonly diameterAtMouth: Measure;
@@ -211,7 +209,7 @@ export const BULLET_KINDS = [
   'lead',
   'other',
 ] as const;
-export type BulletKind = (typeof BULLET_KINDS)[number];
+type BulletKind = (typeof BULLET_KINDS)[number];
 
 export interface BulletVariant {
   readonly kind: BulletKind;
@@ -239,10 +237,10 @@ export interface MetallicCartridge extends CartridgeBase {
 // ---------------------------------------------------------------- shotshells
 
 export const HULL_MATERIALS = ['plastic', 'paper'] as const;
-export type HullMaterial = (typeof HULL_MATERIALS)[number];
+type HullMaterial = (typeof HULL_MATERIALS)[number];
 
 export const CLOSURES = ['fold-crimp', 'roll-crimp'] as const;
-export type Closure = (typeof CLOSURES)[number];
+type Closure = (typeof CLOSURES)[number];
 
 export interface Hull {
   readonly outerDiameter: Measure;
@@ -268,7 +266,7 @@ export interface ShotPayload {
 }
 
 export const SLUG_STYLES = ['foster', 'brenneke', 'sabot', 'other'] as const;
-export type SlugStyle = (typeof SLUG_STYLES)[number];
+type SlugStyle = (typeof SLUG_STYLES)[number];
 
 export interface SlugPayload {
   readonly type: 'slug';

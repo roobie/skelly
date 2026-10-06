@@ -9,9 +9,9 @@ import { BIPOD_GROUND_CLEARANCE_U, BIPOD_LEG_LENGTH } from './bipod.ts';
 import { X } from './common.ts';
 
 /** The barrel recoils inside the shroud, so the cavity must stay this clear of it (u). */
-export const SHROUD_BARREL_CLEARANCE_U = 0.25;
+const SHROUD_BARREL_CLEARANCE_U = 0.25;
 /** Barrel that must show ahead of the shroud, for the muzzle device (u). */
-export const SHROUD_MIN_FREE_BARREL_U = 4;
+const SHROUD_MIN_FREE_BARREL_U = 4;
 
 const EPSILON = 1e-6;
 

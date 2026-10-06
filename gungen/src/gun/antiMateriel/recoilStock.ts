@@ -7,7 +7,7 @@ import { box, choice, NEG_Y, RUBBER, X, Y } from './common.ts';
  * for a rear monopod under the butt, which the shared stock has no port for. The grip is separate, so the
  * stock is not tagged as a firing grip.
  */
-export const RECOIL_STOCK_LENGTH: Readonly<Record<string, number>> = { M: 16, L: 22 };
+const RECOIL_STOCK_LENGTH: Readonly<Record<string, number>> = { M: 16, L: 22 };
 
 const BODY_TOP = 2.5;
 const BODY_BOTTOM = -3;
