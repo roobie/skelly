@@ -100,7 +100,7 @@ describe('bench plan', () => {
 });
 
 const ROW_START = /^\| 0\.5 m \| 96 m \|/;
-const SHAMBLER_ROW_START = /^\| 25 \| 12 \|/;
+const SHAMBLER_ROW_START = /^\| 25 \| – \| 12 \|/;
 
 describe('bench report', () => {
   const frames = { frames: 10, fpsMean: 60, msMedian: 16.7, msP95: 17, msP99: 20, msMax: 25, slowFraction: 0.1 };
@@ -152,19 +152,21 @@ describe('bench report', () => {
     expect(shamblerResultRow(shambler)).toHaveLength(SHAMBLER_HEADERS.length);
     expect(shamblerResultRow(shambler)).toEqual([
       '25',
+      '–',
       '12',
       'boxes',
       '16.5 / 19.0 / 20%',
       '0.4 / 0.8',
+      '–',
       '–',
       '1.1 / 2.2',
       '–',
       '3 / 10%',
       'no',
     ]);
-    expect(shamblerSummary([shambler])).toContain('N=25 seed=12 actors=boxes');
+    expect(shamblerSummary([shambler])).toContain('N=25 active/background=–/– seed=12 actors=boxes');
     const report = markdownReport({ startedAt: 'now', quick: false, runs: [], shamblers: [shambler] });
-    expect(report).toContain('Shambler summary: N=25 seed=12 actors=boxes');
+    expect(report).toContain('Shambler summary: N=25 active/background=–/– seed=12 actors=boxes');
     expect(report.split('\n')[2]).toMatch(SHAMBLER_ROW_START);
   });
 
@@ -184,9 +186,9 @@ describe('bench report', () => {
       interrupted: false,
     };
     const row = shamblerResultRow(shambler);
-    expect(row[2]).toBe('detailed');
-    expect(row[5]).toBe('2.3 / 4.1');
-    expect(row[7]).toBe('12 / 365');
+    expect(row[3]).toBe('detailed');
+    expect(row[7]).toBe('2.3 / 4.1');
+    expect(row[9]).toBe('12 / 365');
     expect(shamblerSummary([shambler])).toContain('actors=detailed');
   });
 

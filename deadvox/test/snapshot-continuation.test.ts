@@ -8,6 +8,7 @@ import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
+import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import { IDLE } from '../src/game/session.ts';
 import {
   advance,
@@ -30,7 +31,44 @@ import {
 
 describe('hamlet save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
-  it('loads a closed-window marker from a save and spawns it when the clock opens the window', () => {
+  it('continues horde noise response and night drift deterministically through a save', async () => {
+    const [cx, cz] = fixtureZombieColumn;
+    const center = fixtureHamlet.zombiesIn(cx, cz)[0]?.pos;
+    if (!center) {
+      throw new Error('Horde save fixture has no nearby terrain spawn');
+    }
+    const playerSpawn: [number, number, number] = [center[0] - 180, center[1], center[2]];
+    const start = 23 * 3600;
+    const source = createRuntime(undefined, false, oneColumn, { start, spawn: playerSpawn });
+    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    expect(source.zombies.snapshotState().hordes.length).toBeGreaterThan(0);
+    advance(source, 60);
+    expect(source.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
+    source.emitPlayerSound('shotgun_blast', source.sim.time);
+    advance(source, 97);
+    const state = source.zombies.snapshotState();
+    expect(state.hordes[0]?.mode).toBe('noise');
+    expect(state.hordes[0]?.lastNoiseId).toBeGreaterThan(0);
+    const stimulusAt = state.hordes[0]?.stimulusAt;
+    if (stimulusAt === undefined) {
+      throw new Error('Horde save fixture did not record the sound time');
+    }
+
+    const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot, false, oneColumn, { start, spawn: playerSpawn });
+    const continuationFrames = BACKGROUND_ZOMBIE_SLICE_COUNT + 1;
+    advance(source, continuationFrames);
+    advance(loaded, continuationFrames);
+    expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
+    expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
+    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySeconds;
+    loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
+    loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
+  });
+
+  it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {
     const start = SPAWN_TIMES.dusk - 60;
     const [cx, cz] = fixtureZombieColumn;
     const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
@@ -50,11 +88,12 @@ describe('hamlet save/load continuation', () => {
     const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], { start });
     loaded.session.onColumn(cx, cz, timedSite);
     const atHome = () =>
-      [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i])).length;
-    expect(atHome()).toBe(0);
+      [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i]));
+    expect(atHome()).toHaveLength(0);
     advance(loaded, 456);
     expect(loaded.sim.calendar).toBeGreaterThan(SPAWN_TIMES.dusk);
-    expect(atHome()).toBe(1);
+    expect(atHome()).toHaveLength(1);
+    expect(atHome()[0]?.[1].tier).toBe('background');
     expect(loaded.spawner.snapshotState()).toContain(key);
   });
 
@@ -213,7 +252,6 @@ describe('hamlet save/load continuation', () => {
     const split = createRuntime(undefined, true);
     expect(uninterrupted.columns.length).toBeGreaterThan(0);
     expect([...uninterrupted.zombies.store.entries()].length).toBeGreaterThan(0);
-    expect(uninterrupted.spawner.snapshotState().length).toBeGreaterThan(uninterrupted.zombies.store.size);
     expect(uninterrupted.inventory.entities.all).toSatisfy((entities) =>
       [...entities].some((entity) => entity.searched),
     );

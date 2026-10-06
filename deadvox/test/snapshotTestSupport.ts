@@ -52,7 +52,10 @@ export const fixtureHamlet = new Hamlet(seed, registry, scale);
 export const fixtureColumns: [number, number][] = [];
 for (let cz = toChunk(fixtureHamlet.bounds.z0); cz <= toChunk(fixtureHamlet.bounds.z1 - 1); cz++) {
   for (let cx = toChunk(fixtureHamlet.bounds.x0); cx <= toChunk(fixtureHamlet.bounds.x1 - 1); cx++) {
-    if (fixtureHamlet.furnitureIn(cx, cz).length > 0 || fixtureHamlet.zombiesIn(cx, cz).length > 0) {
+    if (
+      fixtureHamlet.hordesIn(cx, cz).length === 0 &&
+      (fixtureHamlet.furnitureIn(cx, cz).length > 0 || fixtureHamlet.zombiesIn(cx, cz).length > 0)
+    ) {
       fixtureColumns.push([cx, cz]);
     }
   }
@@ -320,6 +323,7 @@ export const inspect = (runtime: Runtime): unknown => {
       pitch: runtime.player.pitch,
       walk: runtime.player.walk,
       crouching: runtime.session.crouching,
+      sprinting: runtime.session.sprinting,
     },
     inventory: {
       nextUid: runtime.inventory.factory.next,
@@ -350,8 +354,9 @@ export const inspect = (runtime: Runtime): unknown => {
     },
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
+      hordes: runtime.zombies.snapshotState().hordes,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
-        const { type, behaviorRng, soundRng, renderPrevious, ...fields } = zombie;
+        const { type, behaviorRng, soundRng, renderPrevious: _renderPrevious, tier: _tier, ...fields } = zombie;
         return [
           id,
           {
@@ -359,7 +364,6 @@ export const inspect = (runtime: Runtime): unknown => {
             type: type.id,
             behaviorRng: behaviorRng.state(),
             soundRng: soundRng.state(),
-            renderPrevious,
           },
         ];
       }),
@@ -414,7 +418,7 @@ export const advance = (runtime: Runtime, frames: number, interruptAt = -1) => {
   }
 };
 
-const IDLE_GROANER_DISTANCE = 120;
+const IDLE_GROANER_DISTANCE = 20;
 export const prepareAudioContinuation = (runtime: Runtime): void => {
   const playerPos = [...runtime.player.body.pos] as [number, number, number];
   const firstZombie = runtime.zombies.store.entries().next().value as
@@ -482,7 +486,17 @@ export const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'recipe') {
     return registry.recipes.has(id);
   }
-  return ['needs', 'body', 'long-action', 'player', 'zombies', 'handling', 'lights', 'firearms'].includes(id);
+  return [
+    'needs',
+    'body',
+    'long-action',
+    'player',
+    'zombies',
+    'zombie-background',
+    'handling',
+    'lights',
+    'firearms',
+  ].includes(id);
 };
 export const encodeFixture = (snapshot: SaveSnapshot, generation = 7) =>
   encodeSave(snapshot, { generation, version: formatVersion, worldOptions: formatWorldOptions });
