@@ -233,7 +233,7 @@ export interface PlayerSense {
   vocalNoise?: VocalNoise | undefined;
 }
 
-export interface ZombieLightSource {
+interface ZombieLightSource {
   pos: Vec3;
   seenFrom: number;
   heightMetres?: number | undefined;
