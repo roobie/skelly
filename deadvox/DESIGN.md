@@ -567,6 +567,12 @@ plain box in your hands. Files are small, and follow
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
   (see the screamer below). Stealth is a matter of managing noise and staying
   out of sight.
+- **Player-owned sound playback (d111-1):** Character- and held-item sounds
+  follow the listener instead of trailing at their starting point. This is
+  presentation only: simulation sound/noise events retain their source positions
+  for zombie hearing, while independent world sources remain positional. See
+  `src/game/session.ts`, `playPlayerSound` and `playWorldSound`, and
+  `src/game/audio.ts`, `GameAudio.startSource`.
 
 ## Damage, destruction and dismemberment
 
