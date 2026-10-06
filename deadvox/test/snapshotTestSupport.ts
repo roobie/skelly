@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
 import { defaultClock } from '../src/core/clock.ts';
+import { worldSolid } from '../src/core/collision.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { CHUNK, localIndex, toChunk } from '../src/core/coords.ts';
@@ -18,6 +19,7 @@ import type { SaveSnapshot, snapshotSession } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
+import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
@@ -114,6 +116,9 @@ export function createRuntime(
   options: {
     spawn?: Vec3;
     start?: number;
+    yaw?: number;
+    active?: boolean;
+    intent?: () => MoveIntent;
     ready?: () => boolean;
     sampleAtPlayerTick?: (
       tick: number,
@@ -141,7 +146,13 @@ export function createRuntime(
   // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
-  const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false, intent: { ...IDLE } };
+  const view = {
+    yaw: options.yaw ?? hamlet.spawn.yaw,
+    pitch: 0.03,
+    walk: false,
+    crouchToggle: false,
+    intent: { ...IDLE },
+  };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const spawn: Vec3 = options.spawn ?? [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
@@ -165,7 +176,7 @@ export function createRuntime(
   const session = createSession({
     registry,
     world,
-    isSolid: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
+    isSolid: worldSolid(world, registry, sharedEntities),
     isOpaque: (x, y, z) => world.getBlock(x, y, z) !== 0 || sharedEntities.isSolid(x, y, z),
     entities: sharedEntities,
     scale,
@@ -174,8 +185,8 @@ export function createRuntime(
     spawn,
     ready: options.ready ?? (() => true),
     controls: {
-      active: () => Boolean(sampleAtPlayerTick),
-      intent: () => view.intent,
+      active: () => options.active ?? Boolean(sampleAtPlayerTick),
+      intent: options.intent ?? (() => view.intent),
       ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
       consumeCrouchToggle: () => {
         const pressed = view.crouchToggle;
@@ -184,7 +195,7 @@ export function createRuntime(
       },
       yaw: () => view.yaw,
       pitch: () => view.pitch,
-      walking: () => view.walk,
+      walking: () => options.intent?.().walk ?? view.walk,
       descending: () => false,
     },
     audio: {
@@ -334,6 +345,7 @@ export const inspect = (runtime: Runtime): unknown => {
       pitch: runtime.player.pitch,
       walk: runtime.player.walk,
       crouching: runtime.session.crouching,
+      sprinting: runtime.session.sprinting,
     },
     inventory: {
       nextUid: runtime.inventory.factory.next,
@@ -366,15 +378,7 @@ export const inspect = (runtime: Runtime): unknown => {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
       hordes: runtime.zombies.snapshotState().hordes,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
-        const {
-          type,
-          behaviorRng,
-          soundRng,
-          footstepClock: _footstepClock,
-          renderPrevious: _renderPrevious,
-          tier: _tier,
-          ...fields
-        } = zombie;
+        const { type, behaviorRng, soundRng, renderPrevious: _renderPrevious, tier: _tier, ...fields } = zombie;
         return [
           id,
           {
