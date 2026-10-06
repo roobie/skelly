@@ -109,6 +109,7 @@ export function createRuntime(
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
   sampleAtPlayerTick?: (tick: number, live: PlayerInputSample) => PlayerInputSample,
+  start = defaultClock.start,
 ) {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
@@ -156,7 +157,7 @@ export function createRuntime(
     entities: sharedEntities,
     scale,
     seed,
-    start: defaultClock.start,
+    start,
     spawn,
     ready: () => true,
     controls: {
