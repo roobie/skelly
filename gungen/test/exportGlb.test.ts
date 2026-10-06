@@ -428,7 +428,7 @@ describe('glb export: deadvox model entry', () => {
     expect(iron.modelEntry.sight?.ocularDiameterMetres).toBeUndefined();
   });
 
-  it('aims the AK sight axis from the rear notch bottom to the front post tip', () => {
+  it('aims the AK sight axis from the rear notch top edge to the front post tip', () => {
     const out = exported(design('archetype-ak'));
     const rearId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'ak-rear-sight')?.[0];
     const frontId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
@@ -456,6 +456,7 @@ describe('glb export: deadvox model entry', () => {
     const leafWidth = opposite.box.center[2] + opposite.box.half[2] - (leaf.box.center[2] - leaf.box.half[2]);
     const leafHeight = leaf.box.half[1] * 2;
     const leafTop = applyPoint(out.resolved.placed.get(rearId)!, [0, leaf.box.center[1] + leaf.box.half[1], 0]);
+    expect(eye[1]).toBeCloseTo(leafTop[1], 7);
     expect(postTip[1]).toBeCloseTo(leafTop[1], 7);
     expect(post.box.half[2] * 2).toBeLessThan(notchWidth);
     expect(notchWidth).toBeLessThan(leafWidth / 2);

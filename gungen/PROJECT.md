@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change firearm part geometry precision or sight dimensions
+  - you change the AK ADS sight alignment
   - you change optic eye-relief validation
   - you change the AK receiver's position relative to its centered bore
 
@@ -680,9 +681,12 @@ explicitly named `battle-rifle`.
   receiver-mounted lower, stock, grip and magazine. Their relative vertical
   placement is checked against the preserved notch datum, the receiver's
   original roof and the seated block height in `src/gun/parts.ts`, `AK_RECEIVER_LIFT_U`.
-  The rear-sight block seats directly on the raised receiver while the notch
-  datum remains fixed to the barrel and front sight. The receiver-mounted assembly follows the receiver; the barrel,
-  bore, handguard, gas system and front sight remain in their original frame.
+  The rear-sight block seats directly on the raised receiver. For d97-6, sight
+  alignment takes its vertical datum from the notch's upper edge, not the block
+  seat, so the front-post tip sits at that edge in ADS; see `src/gun/parts.ts`,
+  `akRearSight`, and `src/gun/exportGlb.ts`, `sightMetadata`. The receiver-mounted
+  assembly follows the receiver; the barrel, bore, handguard, gas system and front
+  sight remain in their original frame.
 - Added an `ak` lower layout with a flat face seat and no magazine-well walls.
   The curved AK magazine has seat kind `face` and zero insertion depth; its
   conservative rock-in keep-out starts at the front hook point. This swept box

@@ -327,6 +327,7 @@ const AK_REAR_SIGHT_BLOCK_HEIGHT_U = 0.25;
 const AK_RECEIVER_LIFT_U = AK_REAR_SIGHT_NOTCH_DATUM_U - AK_RECEIVER_BASE_ROOF_U - AK_REAR_SIGHT_BLOCK_HEIGHT_U;
 const AK_GAS_CYLINDER_Y = 2;
 const AK_GAS_CYLINDER_HALF_WIDTH = 0.25;
+const AK_REAR_SIGHT_NOTCH_TOP_U = 0.5;
 export const AK_REAR_BEVEL = {
   run: 2,
   rise: 1.5,
@@ -2789,14 +2790,14 @@ const akRearSight: PartFamily = {
       solids: [
         // The broad block seats on the receiver; the leaf rises directly from it without a post.
         solid('rear-sight-block', [-0.75, 0, -0.75], [0.75, AK_REAR_SIGHT_BLOCK_HEIGHT_U, 0.75]),
-        solid('leaf-left', [-SIGHT_GRAIN, 0, -1.125], [SIGHT_GRAIN, 0.5, -0.125]),
-        solid('leaf-right', [-SIGHT_GRAIN, 0, 0.125], [SIGHT_GRAIN, 0.5, 1.125]),
+        solid('leaf-left', [-SIGHT_GRAIN, 0, -1.125], [SIGHT_GRAIN, AK_REAR_SIGHT_NOTCH_TOP_U, -0.125]),
+        solid('leaf-right', [-SIGHT_GRAIN, 0, 0.125], [SIGHT_GRAIN, AK_REAR_SIGHT_NOTCH_TOP_U, 1.125]),
       ],
       ports: [
         { id: 'base', mount: 'sight-block', gender: 'male', pos: [0, 0, 0], normal: NEG_Y, up: X, required: true },
       ],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, AK_REAR_SIGHT_BLOCK_HEIGHT_U, 0], dir: X, eyeReliefU: 22 }],
+      axes: [{ kind: 'sight', origin: [0, AK_REAR_SIGHT_NOTCH_TOP_U, 0], dir: X, eyeReliefU: 22 }],
     };
   },
 };
