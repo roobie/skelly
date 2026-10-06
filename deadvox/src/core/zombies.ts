@@ -1523,15 +1523,15 @@ export class ZombieSystem {
         const offset = sub(target, zombie.body.pos);
         const distance = Math.hypot(offset[0], offset[2]) * blockSize;
         direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
-        speed =
-          distance > 0.5 ? Math.min(zombie.type.speed.chase, BACKGROUND_STEP_CAP_METRES / dt, distance / dt) : 0;
+        speed = distance > 0.5 ? Math.min(zombie.type.speed.chase, BACKGROUND_STEP_CAP_METRES / dt, distance / dt) : 0;
         if (direction[0] !== 0 || direction[2] !== 0) {
           zombie.facing = copy(direction);
         }
       } else {
         this.selectMovementIntent();
-        direction = scratch.direction;
-        speed = scratch.desiredSpeed;
+        const { direction: movementDirection, desiredSpeed } = scratch;
+        direction = movementDirection;
+        speed = desiredSpeed;
       }
       zombie.horizontalSpeed = speed;
       zombie.body.vel[0] = (direction[0] * speed) / blockSize;

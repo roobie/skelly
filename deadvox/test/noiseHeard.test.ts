@@ -495,7 +495,9 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   });
   session.sim.paused = false;
   const shambler = registry.zombies.get('shambler');
-  if (!shambler) throw new Error('Missing shambler fixture');
+  if (!shambler) {
+    throw new Error('Missing shambler fixture');
+  }
   session.zombies.addHorde('noise-fixture', shambler, [150, 1, 0], 5);
   session.frame(0.5);
   const members = () => [...session.zombieStore.entries()].filter(([, zombie]) => zombie.hordeId === 'noise-fixture');
@@ -509,8 +511,10 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   const shotgun = registry.sounds.get('shotgun_blast')!;
   const shotgunRadius = shotgun.noise.radiusMetres * shambler.hearing;
   const groupDistance = Math.max(
-    ...members().map(([, zombie]) =>
-      Math.hypot(zombie.body.pos[0] - session.body.pos[0], zombie.body.pos[2] - session.body.pos[2]) * scale.blockSize,
+    ...members().map(
+      ([, zombie]) =>
+        Math.hypot(zombie.body.pos[0] - session.body.pos[0], zombie.body.pos[2] - session.body.pos[2]) *
+        scale.blockSize,
     ),
   );
   expect(groupDistance).toBeLessThan(shotgunRadius);
@@ -518,8 +522,12 @@ it('keeps a daytime background horde converging after a session shotgun blast', 
   expect(session.playPlayerSound('shotgun_blast')).toBe(true);
   const noise = session.playerAudio.vocalNoise;
   expect(noise).toBeDefined();
-  if (!noise) throw new Error('Session shotgun blast did not commit a player-noise event');
-  for (let frame = 0; frame < 180; frame++) session.frame(1 / 60);
+  if (!noise) {
+    throw new Error('Session shotgun blast did not commit a player-noise event');
+  }
+  for (let frame = 0; frame < 180; frame++) {
+    session.frame(1 / 60);
+  }
 
   const horde = session.zombies.snapshotState().hordes.find(({ id }) => id === 'noise-fixture');
   expect(members().every(([, zombie]) => zombie.lastVocalNoiseId === noise.id)).toBe(true);

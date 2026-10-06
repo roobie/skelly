@@ -256,7 +256,6 @@ const playerSenseTuning = (registry: Registry) => {
   return tuning;
 };
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep session ownership and dependency wiring centralized at the construction boundary.
 const playerTreatmentHooks = (
   inventory: Inventory,
   sim: Simulation,
@@ -285,6 +284,7 @@ const playerTreatmentHooks = (
     return true;
   },
 });
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep session ownership and dependency wiring centralized at the construction boundary.
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;

@@ -182,6 +182,10 @@ export const fallDirectionAwayFromPlayer = (facing: Vec3, zombiePos: Vec3, playe
  * mobgen's own node_modules) — palette-index colour bytes to per-vertex RGB. */
 const SHADE_FACTORS = [0.72, 0.88, 1.04, 1.2] as const;
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
+const backgroundActorBlend = (zombie: Zombie, simulationTime: number | undefined, fallback: number): number =>
+  simulationTime === undefined || zombie.renderPrevious.time === undefined
+    ? fallback
+    : clamp01((simulationTime - zombie.renderPrevious.time) * BACKGROUND_ZOMBIE_RATE);
 const vertexColorsFrom = (colorBytes: Uint8Array, palette: Readonly<Record<Material, MobVec3>>): Float32Array => {
   const out = new Float32Array(colorBytes.length * 3);
   for (let v = 0; v < colorBytes.length; v++) {
@@ -1364,11 +1368,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
       present.add(id);
-      const previousTime = zombie.renderPrevious.time;
-      const actorBackgroundBlend =
-        simulationTime !== undefined && previousTime !== undefined
-          ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ZOMBIE_RATE))
-          : this.backgroundBlend;
+      const actorBackgroundBlend = backgroundActorBlend(zombie, simulationTime, this.backgroundBlend);
       this.renderBlend = zombie.tier === 'background' ? actorBackgroundBlend : this.activeBlend;
       anyDirty = this.syncZombie({ id, zombie }) || anyDirty;
     }

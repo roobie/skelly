@@ -4,11 +4,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry } from '../core/content.ts';
-import {
-  BACKGROUND_ZOMBIE_RATE,
-  BACKGROUND_ZOMBIE_SLICE_COUNT,
-  ZombieSystem,
-} from '../core/zombies.ts';
+import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
@@ -125,10 +121,17 @@ for (const count of counts) {
       if ((frame + 1) % 3 === 0) {
         const start = process.hrtime.bigint();
         system.tickActive(1 / 20, simTime);
-        if (collect) activeSamples.push(Number(process.hrtime.bigint() - start) / 1e6);
+        if (collect) {
+          activeSamples.push(Number(process.hrtime.bigint() - start) / 1e6);
+        }
       }
       const backgroundStart = process.hrtime.bigint();
-      system.tickBackground(1 / BACKGROUND_ZOMBIE_RATE, simTime, frame % BACKGROUND_ZOMBIE_SLICE_COUNT, BACKGROUND_ZOMBIE_SLICE_COUNT);
+      system.tickBackground(
+        1 / BACKGROUND_ZOMBIE_RATE,
+        simTime,
+        frame % BACKGROUND_ZOMBIE_SLICE_COUNT,
+        BACKGROUND_ZOMBIE_SLICE_COUNT,
+      );
       if (collect) {
         backgroundSamples.push(Number(process.hrtime.bigint() - backgroundStart) / 1e6);
         frameSamples.push(Number(process.hrtime.bigint() - frameStart) / 1e6);
