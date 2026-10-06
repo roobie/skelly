@@ -1,79 +1,78 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { generate } from '../src/core/generate.ts';
-import { worldSolid } from '../src/core/geometry.ts';
-import { applyPoint, extrusionPoint, IDENTITY, type Transform, type Vec3 } from '../src/core/math.ts';
+import type { SizeClass } from '../src/core/conventions.ts';
+import { boundsOfPoints, obbPolyhedron, worldSolid } from '../src/core/geometry.ts';
+import { applyPoint, type Transform, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, PortDef, Solid } from '../src/core/schema.ts';
+import type { PortDef, Solid } from '../src/core/schema.ts';
+import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { ak } from '../src/gun/templates.ts';
-import { loadFixture } from './helpers.ts';
+import { FAMILIES } from '../src/gun/parts.ts';
+import { loadCorpus } from './helpers.ts';
 
-const ROOT = join(import.meta.dirname, '..');
-const akDesign = (
-  JSON.parse(readFileSync(join(ROOT, 'designs', 'archetype-ak.json'), 'utf8')) as {
-    assembly: Assembly;
-  }
-).assembly;
+const akCorpus = loadCorpus().filter(({ assembly }) =>
+  Object.values(assembly.parts).some(({ family }) => family === 'ak-receiver'),
+);
 
-const solidVertices = (solid: Solid): Vec3[] => {
-  if (solid.kind === 'box') {
-    const { center, half } = solid.box;
-    return [-1, 1].flatMap((x) =>
-      [-1, 1].flatMap((y) =>
-        [-1, 1].map((z) => [center[0] + x * half[0], center[1] + y * half[1], center[2] + z * half[2]] as const),
-      ),
-    );
-  }
-  if (solid.kind === 'revolved') {
-    throw new Error('gun designs have no revolved solids');
-  }
-  const polyhedron = worldSolid(IDENTITY, solid);
-  return 'vertices' in polyhedron
-    ? [...polyhedron.vertices]
-    : solid.profile.flatMap((point) => solid.z.map((along) => extrusionPoint(solid.axis, point, along)));
-};
+const worldVertices = (solids: readonly Solid[], transform: Transform): readonly Vec3[] =>
+  solids.flatMap((solid) => {
+    const shape = worldSolid(transform, solid);
+    return 'vertices' in shape ? shape.vertices : obbPolyhedron(shape).vertices;
+  });
 
-const facePointsAtX = (solids: readonly Solid[], x: number, transform: Transform): readonly Vec3[] =>
-  solids.flatMap((solid) =>
-    solidVertices(solid)
-      .filter(([pointX]) => Math.abs(pointX - x) < 1e-8)
-      .map((point) => applyPoint(transform, point)),
-  );
-
-const stockM = generate(ak, gunDomain, 2);
-const stockL = generate(ak, gunDomain, 0);
-const samples: { assembly: Assembly; label: string; stockLength: 'M' | 'L' }[] = [
-  { assembly: loadFixture('archetype-ak'), label: 'archetype-ak fixture', stockLength: 'L' },
-  { assembly: akDesign, label: 'archetype-ak design', stockLength: 'L' },
-  { assembly: stockM, label: 'AK template seed 2 (M stock)', stockLength: 'M' },
-  { assembly: stockL, label: 'AK template seed 0 (L stock)', stockLength: 'L' },
-];
+const facePointsAtX = (solids: readonly Solid[], transform: Transform, x: number): readonly Vec3[] =>
+  worldVertices(solids, transform).filter(([pointX]) => Math.abs(pointX - x) < 1e-8);
 
 describe('AK stock mating alignment', () => {
-  it('exposes the new rear-face stock step for visual review', () => {
-    for (const { assembly, label, stockLength } of samples) {
+  it('seats the stock’s front on the receiver’s rear face: as tall, centred, and no wider', () => {
+    expect(akCorpus.length).toBeGreaterThan(0);
+    for (const { label, assembly } of akCorpus) {
       const resolved = resolve(assembly, gunDomain);
       const receiver = resolved.defs.get('receiver')!;
-      const receiverTransform = resolved.placed.get('receiver')!;
       const stock = resolved.defs.get('stock')!;
-      const stockTransform = resolved.placed.get('stock')!;
+      const stockPlaced = resolved.placed.get('stock')!;
       const receiverPort = receiver.ports.find(({ id }) => id === 'stock') as PortDef;
       const stockPort = stock.ports.find(({ id }) => id === 'front') as PortDef;
-      expect(applyPoint(receiverTransform, receiverPort.pos), `${label}: receiver interface`).toEqual(
-        applyPoint(stockTransform, stockPort.pos),
+      const interfacePoint = applyPoint(resolved.placed.get('receiver')!, receiverPort.pos);
+      expect(applyPoint(stockPlaced, stockPort.pos), `${label}: interface`).toEqual(interfacePoint);
+      const [faceX] = interfacePoint;
+      const rearFace = ['receiver', 'lower'].flatMap((partId) =>
+        facePointsAtX(resolved.defs.get(partId)!.solids, resolved.placed.get(partId)!, faceX),
       );
-      const receiverFace = facePointsAtX(receiver.solids, receiverPort.pos[0], receiverTransform);
-      const stockFace = facePointsAtX(stock.solids, stockPort.pos[0], stockTransform);
-      expect(receiverFace.length, `${label}: receiver rear face vertices`).toBeGreaterThan(0);
-      expect(stockFace.length, `${label}: stock mating face vertices`).toBeGreaterThan(0);
-      const receiverTop = Math.max(...receiverFace.map(([, y]) => y));
-      const stockTop = Math.max(...stockFace.map(([, y]) => y));
-      // The raised receiver roof creates a visible step above the stock's rear face.
-      expect(receiverTop, `${label}: raised receiver rear face`).toBeGreaterThan(stockTop);
-      expect(assembly.parts.stock?.params?.style, `${label}: AK-specific stock`).toBe('ak-dropped');
-      expect(assembly.parts.stock?.params?.length, `${label}: stock length`).toBe(stockLength);
+      const stockFace = facePointsAtX(stock.solids, stockPlaced, faceX);
+      expect(rearFace.length, `${label}: receiver rear-face vertices`).toBeGreaterThan(0);
+      expect(stockFace.length, `${label}: stock front-face vertices`).toBeGreaterThan(0);
+      const [rearMin, rearMax] = boundsOfPoints(rearFace);
+      const [stockMin, stockMax] = boundsOfPoints(stockFace);
+      expect(stockMin[1], `${label}: height min`).toBeCloseTo(rearMin[1], 9);
+      expect(stockMax[1], `${label}: height max`).toBeCloseTo(rearMax[1], 9);
+      expect(stockMin[2] + stockMax[2], `${label}: centred`).toBeCloseTo(rearMin[2] + rearMax[2], 9);
+      // BR 22:42 made the stock narrower than the receiver; no part of it may stick out past the receiver's sides.
+      const [wholeMin, wholeMax] = boundsOfPoints(worldVertices(stock.solids, stockPlaced));
+      expect(wholeMin[2], `${label}: no wider than the receiver`).toBeGreaterThanOrEqual(rearMin[2] - 1e-9);
+      expect(wholeMax[2], `${label}: no wider than the receiver`).toBeLessThanOrEqual(rearMax[2] + 1e-9);
+    }
+  });
+
+  // BR 23:19: the bottom is one straight line from the receiver to the toe, with no belly.
+  it('runs the stock’s bottom edge straight from its front face to the toe at every length', () => {
+    const lengths = FAMILIES.stock!.params.length!.values;
+    expect(lengths.length).toBeGreaterThan(1);
+    for (const length of lengths) {
+      const toeStart = -AK_PROPORTIONS.stock.lengthU[length as SizeClass] + AK_PROPORTIONS.stock.toeRoundU;
+      // A wood cell's profile starts with its bottom edge, back corner then front corner.
+      const bottom = FAMILIES.stock!.build({ length, style: 'ak-buttstock' })
+        .solids.filter((solid) => solid.kind === 'extruded-polygon' && solid.slot === 'furniture')
+        .flatMap((solid) => (solid.kind === 'extruded-polygon' ? solid.profile.slice(0, 2) : []))
+        .filter(([x]) => x >= toeStart - 1e-9);
+      const front = bottom.find(([x]) => Math.abs(x) < 1e-9);
+      const toe = bottom.find(([x]) => Math.abs(x - toeStart) < 1e-9);
+      expect(front, `${length}: front corner`).toBeDefined();
+      expect(toe, `${length}: toe corner`).toBeDefined();
+      expect(new Set(bottom.map(([x]) => x)).size, `${length}: points between`).toBeGreaterThan(2);
+      const slope = (toe![1] - front![1]) / (toe![0] - front![0]);
+      for (const [x, y] of bottom) {
+        expect(y, `${length}: bottom at x ${x}`).toBeCloseTo(front![1] + slope * x, 9);
+      }
     }
   });
 });

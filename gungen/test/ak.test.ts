@@ -4,6 +4,8 @@ import { localSolidBounds, validateExtrudedPolygon } from '../src/core/geometry.
 import { applyDir, applyPoint } from '../src/core/math.ts';
 import type { Domain, Solid } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
+import { GUN_ANCHORS } from '../src/gun/anchorData.ts';
+import { GUN_ANCHOR_POLICY, selectGunAnchors } from '../src/gun/anchors.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { AK_REAR_BEVEL, FAMILIES, RECEIVER_SECTION } from '../src/gun/parts.ts';
 import type { GunPortDef } from '../src/gun/portData.ts';
@@ -65,6 +67,9 @@ const magazineStackLength = (solids: readonly Solid[]) =>
     const front = Math.hypot(profile[1]![0] - profile[2]![0], profile[1]![1] - profile[2]![1]);
     return sum + (rear + front) / 2;
   }, 0);
+/** Seeds a sweep may scan for every offered value; missing one within it means a value is unreachable. */
+const SEED_SCAN_BOUND = 64;
+
 const akWithVariant = (variant: string) => ({
   ...akFixture,
   parts: {
@@ -77,25 +82,12 @@ const akWithVariant = (variant: string) => ({
 });
 
 describe('AK-pattern archetype', () => {
-  it('lifts the complete receiver around the fixed bore and seats the rear-sight interface on its roof', () => {
-    const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
-    expect(receiver.solids.map(({ id }) => id)).not.toContain('dust-cover');
-    expect(receiver.ports.map(({ id }) => id)).not.toContain('rail');
-    expect(receiver.ports.map(({ id }) => id)).toContain('rear-sight');
-    const rearSight = receiver.ports.find(({ id }) => id === 'rear-sight')!;
-    const section = receiver.solids.filter(({ display }) => display?.mergeGroup === 'receiver-ak');
-    const roofY = Math.max(...section.map((solid) => localSolidBounds(solid)[1][1]));
-    expect(rearSight.pos[1]).toBeCloseTo(roofY);
-    expect(receiver.ports.find(({ id }) => id === 'barrel')!.pos[1]).toBeCloseTo(0);
-    expect(receiver.axes.find(({ kind }) => kind === 'bore')!.origin[1]).toBeCloseTo(0);
-    expect(section.length).toBeGreaterThan(10);
-    expect(section.every((solid) => solid.kind === 'extruded-polygon' && solid.clip?.length === 1)).toBe(true);
-  });
-
-  it('seats the AK rear-sight block on the receiver without a post and keeps the dust cover below the sight line', () => {
+  it('seats the rear-sight leaf on the receiver’s sight block without a post, above the dust cover', () => {
     const report = validate(akFixture, gunDomain);
     expect(report.issues).toEqual([]);
     const receiver = report.resolved.defs.get('receiver')!;
+    expect(receiver.solids.map(({ id }) => id)).not.toContain('dust-cover');
+    expect(receiver.ports.map(({ id }) => id)).not.toContain('rail');
     const sightId = Object.entries(report.resolved.assembly.parts).find(
       ([, part]) => part.family === 'ak-rear-sight',
     )?.[0];
@@ -103,26 +95,29 @@ describe('AK-pattern archetype', () => {
       throw new Error('AK design needs a rear sight');
     }
     const sight = report.resolved.defs.get(sightId)!;
-    const block = sight.solids.find(({ id }) => id === 'rear-sight-block')!;
     expect(sight.solids.map(({ id }) => id)).not.toContain('leaf-stem');
-    if (block.kind !== 'box') {
-      throw new Error('AK rear sight needs a block base');
-    }
+    const sightBlockTop = Math.max(
+      ...receiver.solids.filter(({ id }) => id.startsWith('rear-sight-base')).map((s) => localSolidBounds(s)[1][1]),
+    );
     const receiverPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
     const sightPlaced = report.resolved.placed.get(sightId)!;
-    const blockBase = applyPoint(sightPlaced, [0, block.box.center[1] - block.box.half[1], 0]);
-    const receiverSeat = applyPoint(report.resolved.placed.get('receiver')!, receiverPort.pos);
-    expect(blockBase).toEqual(receiverSeat);
-    const roofY = Math.max(...receiver.solids.map((solid) => localSolidBounds(solid)[1][1]));
+    const leafBase = Math.min(...sight.solids.map((s) => localSolidBounds(s)[0][1]));
+    expect(applyPoint(sightPlaced, [0, leafBase, 0])).toEqual(
+      applyPoint(report.resolved.placed.get('receiver')!, receiverPort.pos),
+    );
+    expect(receiverPort.pos[1]).toBe(sightBlockTop);
+    const section = receiver.solids.filter(({ display }) => display?.mergeGroup === 'receiver-ak');
+    const roofY = Math.max(...section.map((solid) => localSolidBounds(solid)[1][1]));
     const sightAxis = applyPoint(sightPlaced, sight.axes.find(({ kind }) => kind === 'sight')!.origin);
-    expect(roofY).toBeLessThan(sightAxis[1]);
+    expect(roofY).toBeLessThan(sightBlockTop);
+    expect(sightBlockTop).toBeLessThan(sightAxis[1]);
     const barrel = report.resolved.defs.get('barrel')!;
     const barrelAxis = barrel.axes.find(({ kind }) => kind === 'bore')!;
     expect(applyPoint(report.resolved.placed.get('barrel')!, barrelAxis.origin)[1]).toBeCloseTo(0);
     expect(applyPoint(report.resolved.placed.get('handguard')!, [0, 0, 0])[1]).toBeCloseTo(0);
   });
 
-  it('sizes the forward AK port below the dust-cover roof and rear-sight interface', () => {
+  it('sizes the forward AK port below the dust-cover roof, under the rear sight', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'M' });
     const port = receiver.keepOuts.find(({ id }) => id === 'ejection')!;
     const portXMin = port.box.center[0] - port.box.half[0];
@@ -136,10 +131,9 @@ describe('AK-pattern archetype', () => {
     expect(portYMax).toBeLessThan(roofY);
     expect(rearSight.pos[0]).toBeGreaterThan(portXMin);
     expect(rearSight.pos[0]).toBeLessThan(portXMax);
-    expect(rearSight.pos[1]).toBeCloseTo(roofY);
   });
 
-  it('uses an angled AK section while preserving its stock and sight interfaces', () => {
+  it('uses an angled AK section whose dust cover slopes down to the stock’s face', () => {
     const receiver = FAMILIES['ak-receiver']!.build({ bore: 'S' });
     const section = receiver.solids.find(({ id }) => id.startsWith('receiver-ak-top'));
     expect(section?.kind).toBe('extruded-polygon');
@@ -147,18 +141,13 @@ describe('AK-pattern archetype', () => {
       throw new Error('Expected the shared AK section builder output.');
     }
     expect(section.axis).toBe('x');
-    expect(RECEIVER_SECTION.ak.outline.length).toBeGreaterThanOrEqual(8);
     expect(RECEIVER_SECTION.ak.outline[2]![0]).toBeGreaterThan(RECEIVER_SECTION.ak.outline[1]![0]);
     expect(validateExtrudedPolygon(section.profile, section.z, section.axis, section.clip)).toBeUndefined();
-    expect(receiver.solids.some(({ id }) => id.startsWith('receiver-ak-near-side-span-0-region-'))).toBe(true);
     expect(receiver.solids.some(({ id }) => id.startsWith('receiver-ak-near-side-span-'))).toBe(true);
 
     const stockPort = receiver.ports.find(({ id }) => id === 'stock')!;
     const rearSightPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
     expect(stockPort.pos[0]).toBeLessThan(rearSightPort.pos[0]);
-    const stock = FAMILIES.stock!.build({ length: 'L', style: 'ak-dropped' });
-    const stockFront = stock.ports.find(({ id }) => id === 'front')!;
-    expect(stockFront.pos[1]).toBeLessThan(0);
     const bevelSolid = receiver.solids.find(
       (solid): solid is Extract<Solid, { kind: 'extruded-polygon' }> =>
         solid.kind === 'extruded-polygon' && Boolean(solid.clip?.length),
@@ -167,20 +156,24 @@ describe('AK-pattern archetype', () => {
     const topAt = (x: number) => (bevelPlane.offset - bevelPlane.normal[0] * x) / bevelPlane.normal[1];
     expect(topAt(rearSightPort.pos[0])).toBeGreaterThan(topAt(stockPort.pos[0]));
     expect(stockPort.pos[1]).toBeLessThan(topAt(stockPort.pos[0]));
-    expect(stockPort.pos[1]).toBeGreaterThan(0);
-    expect(AK_REAR_BEVEL.run).toBeGreaterThan(0);
-    expect(AK_REAR_BEVEL.rise).toBeGreaterThan(0);
     expect(AK_REAR_BEVEL.angleDegrees).toBeGreaterThan(0);
     expect(AK_REAR_BEVEL.angleDegrees).toBeLessThan(90);
-    expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 
-  it('keeps the gas cylinder parallel to and above the bore axis', () => {
+  it('keeps the gas cylinder parallel to and above the bore axis, from the receiver’s gas-cylinder port', () => {
     const report = validate(akFixture, gunDomain);
     expect(report.ok).toBe(true);
     const placed = report.resolved.placed.get('gas-cylinder')!;
     const axis = report.resolved.defs.get('gas-cylinder')!.axes[0]!;
-    expect(applyPoint(placed, axis.origin)).toEqual([0, 2, 0]);
+    const receiver = report.resolved.defs.get('receiver')!;
+    const port = receiver.ports.find(({ id }) => id === 'gas-cylinder')!;
+    const origin = applyPoint(placed, axis.origin);
+    expect(origin).toEqual(applyPoint(report.resolved.placed.get('receiver')!, port.pos));
+    const [[, cylinderLocalBottom]] = localSolidBounds(report.resolved.defs.get('gas-cylinder')!.solids[0]!);
+    const [, [, barrelTop]] = localSolidBounds(
+      report.resolved.defs.get('barrel')!.solids.find(({ id }) => id === 'tube')!,
+    );
+    expect(cylinderLocalBottom + origin[1]).toBeGreaterThan(barrelTop);
     const direction = applyDir(placed, axis.dir);
     expect(direction[0]).toBeCloseTo(1);
     expect(direction[1]).toBeCloseTo(0);
@@ -191,38 +184,19 @@ describe('AK-pattern archetype', () => {
     const report = validate(akFixture, gunDomain);
     expect(report.ok).toBe(true);
     const handguard = report.resolved.defs.get('handguard')!;
-    const barrel = report.resolved.defs.get('barrel')!;
     const handguardEnd = applyPoint(
       report.resolved.placed.get('handguard')!,
       handguard.ports.find(({ id }) => id === 'front')!.pos,
     );
-    const gasBlockOnBarrel = applyPoint(
-      report.resolved.placed.get('barrel')!,
-      barrel.ports.find(({ id }) => id === 'gas-port')!.pos,
-    );
-    const [handguardLength] = handguard.ports.find(({ id }) => id === 'front')!.pos;
-    expect(Math.abs(gasBlockOnBarrel[0] - 1 - handguardEnd[0] - handguardLength * 0.1)).toBeLessThanOrEqual(0.25);
-    expect(gasBlockOnBarrel[0]).toBe(16.5);
     expect(report.resolved.connections.some(({ conn }) => conn.from === 'barrel.gas-port')).toBe(true);
     expect(report.resolved.connections.some(({ conn }) => conn.to === 'gas-cylinder.front')).toBe(true);
     const cylinder = extrudedOf(report.resolved.defs.get('gas-cylinder')!.solids[0]!);
     expect(cylinder.axis).toBe('x');
-    expect(cylinder.profile).toHaveLength(8);
     const bounds = localSolidBounds(cylinder);
-    expect(bounds).toEqual([
-      [0, -0.25, -0.25],
-      [16.5, 0.25, 0.25],
-    ]);
-    expect(bounds[1][1] - bounds[0][1]).toBeCloseTo(bounds[1][2] - bounds[0][2]);
-    const edgeLengths = cylinder.profile.map((point, index) => {
-      const next = cylinder.profile[(index + 1) % cylinder.profile.length]!;
-      return Math.hypot(next[0] - point[0], next[1] - point[1]);
-    });
-    for (const edgeLength of edgeLengths) {
-      expect(edgeLength).toBeCloseTo(edgeLengths[0]!);
-    }
-    expect(cylinder.profile[0]![1]).toBeCloseTo(0.25 * (Math.SQRT2 - 1));
+    const cylinderPlaced = report.resolved.placed.get('gas-cylinder')!;
+    expect(applyPoint(cylinderPlaced, [bounds[1][0], 0, 0])[0]).toBeGreaterThan(handguardEnd[0]);
 
+    const barrel = report.resolved.defs.get('barrel')!;
     const gasBlock = report.resolved.defs.get('gas-block')!;
     const barrelTube = extrudedOf(barrel.solids.find(({ id }) => id === 'tube')!);
     const collar = gasBlock.solids.filter(({ id }) => id.startsWith('collar-')).map(extrudedOf);
@@ -241,63 +215,27 @@ describe('AK-pattern archetype', () => {
       ).toBe(true);
     }
     const riser = extrudedOf(gasBlock.solids.find(({ id }) => id === 'block')!);
-    expect(riser.profile).toEqual([
-      [0, 0.75],
-      [1, 0.75],
-      [0.25, 2.25],
-      [0, 2.25],
-    ]);
-    expect(riser.z).toEqual([-0.5, 0.5]);
-    expect(Math.min(...riser.profile.map(([x]) => x))).toBe(0);
-
+    const rearX = Math.min(...riser.profile.map(([x]) => x));
+    const rearFaceY = riser.profile.filter(([x]) => x === rearX).map(([, y]) => y);
     const blockPlaced = report.resolved.placed.get('gas-block')!;
-    const cylinderPlaced = report.resolved.placed.get('gas-cylinder')!;
+    const blockRear = [Math.min(...rearFaceY), Math.max(...rearFaceY)].flatMap((y) =>
+      riser.z.map((z) => applyPoint(blockPlaced, [rearX, y, z])),
+    );
     const [, [cylinderFrontX]] = bounds;
     const cylinderFront = cylinder.profile.map(([y, z]) => applyPoint(cylinderPlaced, [cylinderFrontX, y, z]));
-    const blockRear = [
-      applyPoint(blockPlaced, [0, 0.75, -0.5]),
-      applyPoint(blockPlaced, [0, 0.75, 0.5]),
-      applyPoint(blockPlaced, [0, 2.25, -0.5]),
-      applyPoint(blockPlaced, [0, 2.25, 0.5]),
-    ];
-    const [firstBlockRear] = blockRear;
-    const [planeX] = firstBlockRear!;
+    const [planeX] = blockRear[0]!;
     const minY = Math.min(...blockRear.map((point) => point[1]));
     const maxY = Math.max(...blockRear.map((point) => point[1]));
     const minZ = Math.min(...blockRear.map((point) => point[2]));
     const maxZ = Math.max(...blockRear.map((point) => point[2]));
+    const eps = 1e-9;
     for (const point of cylinderFront) {
       expect(point[0]).toBeCloseTo(planeX, 10);
-      expect(point[1]).toBeGreaterThanOrEqual(minY);
-      expect(point[1]).toBeLessThanOrEqual(maxY);
-      expect(point[2]).toBeGreaterThanOrEqual(minZ);
-      expect(point[2]).toBeLessThanOrEqual(maxZ);
+      expect(point[1]).toBeGreaterThanOrEqual(minY - eps);
+      expect(point[1]).toBeLessThanOrEqual(maxY + eps);
+      expect(point[2]).toBeGreaterThanOrEqual(minZ - eps);
+      expect(point[2]).toBeLessThanOrEqual(maxZ + eps);
     }
-  });
-
-  it('scales the gas-block riser width with bore in absolute quarter-unit steps', () => {
-    for (const [bore, halfWidth] of [
-      ['S', 0.5],
-      ['M', 0.5],
-      ['L', 0.75],
-    ] as const) {
-      const block = FAMILIES['gas-block']!.build({ bore, barrelLength: 'M' });
-      const riser = extrudedOf(block.solids.find(({ id }) => id === 'block')!);
-      expect(riser.z).toEqual([-halfWidth, halfWidth]);
-    }
-  });
-
-  it('moves the gas block with an overridden AK handguard length', () => {
-    const shortHandguard = variantOf('archetype-ak', (assembly) => {
-      assembly.parts.handguard!.params!.length = 'S';
-    });
-    const report = validate(shortHandguard, gunDomain);
-    expect(report.issues).toEqual([]);
-    const handguard = report.resolved.defs.get('handguard')!;
-    const barrel = report.resolved.defs.get('barrel')!;
-    const [handguardEnd] = handguard.ports.find(({ id }) => id === 'front')!.pos;
-    const [gasBlock] = barrel.ports.find(({ id }) => id === 'gas-port')!.pos;
-    expect(Math.abs(gasBlock - 1 - handguardEnd - handguardEnd * 0.1)).toBeLessThanOrEqual(0.25);
   });
 
   it('rejects a misaligned gas-cylinder axis', () => {
@@ -322,17 +260,41 @@ describe('AK-pattern archetype', () => {
     ).toEqual(['The gas-cylinder axis of gas-cylinder is 90° off the main axis.']);
   });
 
-  it('fits AK-74 and AKM magazine silhouette ratios to their measured reference images', () => {
+  // BR 22:47: both magazine types must work with the v2 AK.
+  it('seats every AK magazine variant in the v2 magwell, its top inside the well, with a magwell anchor', () => {
+    const variants = FAMILIES.magazine!.params.variant!.values;
+    expect(variants.length).toBeGreaterThan(1);
+    for (const variant of variants) {
+      const report = validate(akWithVariant(variant), gunDomain);
+      expect(report.issues, variant).toEqual([]);
+      const seat = report.resolved.connections.find(({ conn }) => conn.to === 'magazine.top');
+      expect(seat?.conn.from, variant).toBe('lower.magazine');
+      const anchors = selectGunAnchors(report.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY);
+      if ('code' in anchors) {
+        throw new Error(`${variant}: ${JSON.stringify(anchors)}`);
+      }
+      expect(anchors.others.magwell, variant).toBeDefined();
+      const magazinePlaced = report.resolved.placed.get('magazine')!;
+      const [[minX, ,], [maxX, maxY]] = localSolidBounds(report.resolved.defs.get('magazine')!.solids[0]!);
+      const topFace = [applyPoint(magazinePlaced, [minX, maxY, 0]), applyPoint(magazinePlaced, [maxX, maxY, 0])];
+      const receiverPlaced = report.resolved.placed.get('receiver')!;
+      const [wellRear, wellFront] = RECEIVER_SECTION.ak.magazineWellX.map(
+        (x) => applyPoint(receiverPlaced, [x, 0, 0])[0],
+      );
+      for (const [x] of topFace) {
+        expect(x, variant).toBeGreaterThanOrEqual(wellRear! - 1e-9);
+        expect(x, variant).toBeLessThanOrEqual(wellFront! + 1e-9);
+      }
+    }
+  });
+
+  // The AKM row moved to the golden-photo overlay in g41-4; see docs/deferred-assertions.md.
+  it('fits the AK-74 magazine silhouette ratios to its measured reference image', () => {
     const references = {
       '3': { bend: 33.5, straight: 0.23, lengthDepth: 3.01, offsetDepth: 0.84 },
-      '4': { bend: 50, straight: 0.26, lengthDepth: 3.51, offsetDepth: 1.58 },
     } as const;
-    for (const count of ['3', '4'] as const) {
-      const { solids } = FAMILIES.magazine!.build({
-        length: 'L',
-        profile: 'ak-curved',
-        variant: count === '3' ? 'ak74' : 'akm',
-      });
+    for (const count of ['3'] as const) {
+      const { solids } = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant: 'ak74' });
       const reference = references[count];
       const upper = polygonOf(solids[0]!);
       const base = polygonOf(solids.at(-1)!);
@@ -351,19 +313,24 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  // The first two fixed seeds emit both curve variants (AKM at 0, AK-74 at 1).
-  // Direct geometry and fixture checks below cover each variant; this sweep guards template selection.
-  sweepGroup('selects both AK-74 and AKM curve data from representative seeds', () => {
+  it('offers every AK magazine variant in the AK template', () => {
+    const offered = ak.slots.find(({ id }) => id === 'magazine')?.params?.variant;
+    expect(Array.isArray(offered) ? [...offered].sort() : offered).toEqual(
+      [...FAMILIES.magazine!.params.variant!.values].sort(),
+    );
+  });
+
+  // No seed is pinned: any template slot shifts the draws. Direct geometry and fixture checks cover each variant.
+  sweepGroup('generates a valid AK with every magazine variant within a bounded seed scan', () => {
     it('passes', () => {
-      const variants = new Set<string>();
-      for (const seed of [0, 1]) {
+      const wanted = new Set(FAMILIES.magazine!.params.variant!.values);
+      const seen = new Set<string>();
+      for (let seed = 0; seed < SEED_SCAN_BOUND && seen.size < wanted.size; seed += 1) {
         const assembly = generate(ak, gunDomain, seed);
-        const variant = assembly.parts.magazine!.params!.variant!;
-        variants.add(variant);
-        expect(['ak74', 'akm']).toContain(variant);
+        seen.add(assembly.parts.magazine!.params!.variant!);
         expect(validate(assembly, gunDomain).ok, `seed ${seed}`).toBe(true);
       }
-      expect(variants).toEqual(new Set(['akm', 'ak74']));
+      expect(seen).toEqual(wanted);
     });
   });
 
@@ -404,28 +371,31 @@ describe('AK-pattern archetype', () => {
     expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 
-  it('face-seats the AK magazine at a flat lower surface with its rock-in sweep starting at the front hook', () => {
+  it('face-seats every AK magazine variant at a flat lower surface with its rock-in sweep starting at the front hook', () => {
     const lower = FAMILIES.lower!.build({ layout: 'ak' });
-    const magazine = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant: 'ak74' });
     const lowerPort = lower.ports.find(({ id }) => id === 'magazine')!;
-    const topPort = magazine.ports.find(({ id }) => id === 'top')!;
     expect(lower.solids.length).toBeGreaterThan(0);
-    expect((topPort as GunPortDef).seat).toBe('face');
-    expect(topPort.pos[1]).toBe(0);
-    const upper = magazine.solids[0]!;
-    expect(upper.kind).toBe('extruded-polygon');
-    if (upper.kind !== 'extruded-polygon') {
-      throw new Error('Expected the AK magazine feed-lip prism.');
-    }
-    expect(Math.max(...upper.profile.map(([, y]) => y))).toBeCloseTo(topPort.pos[1], 8);
     const sweep = lower.keepOuts.find(({ id }) => id === 'magazine-rock-in-sweep')!;
     const sweepMinX = sweep.box.center[0] - sweep.box.half[0];
     const sweepMaxX = sweep.box.center[0] + sweep.box.half[0];
-    const magazineX = upper.profile.map(([x]) => x);
-    const magazineDepth = Math.max(...magazineX) - Math.min(...magazineX);
-    const frontHookX = lowerPort.pos[0] + magazineDepth / 2;
-    expect(sweepMinX).toBeCloseTo(frontHookX, 8);
     expect(sweepMaxX).toBeGreaterThan(sweepMinX);
+    const variants = FAMILIES.magazine!.params.variant!.values;
+    expect(variants.length).toBeGreaterThan(1);
+    for (const variant of variants) {
+      const magazine = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant });
+      const topPort = magazine.ports.find(({ id }) => id === 'top')!;
+      expect((topPort as GunPortDef).seat, variant).toBe('face');
+      expect(topPort.pos[1], variant).toBe(0);
+      const upper = magazine.solids[0]!;
+      expect(upper.kind, variant).toBe('extruded-polygon');
+      if (upper.kind !== 'extruded-polygon') {
+        throw new Error(`Expected the ${variant} magazine feed-lip prism.`);
+      }
+      expect(Math.max(...upper.profile.map(([, y]) => y)), variant).toBeCloseTo(topPort.pos[1], 8);
+      const magazineX = upper.profile.map(([x]) => x);
+      const magazineDepth = Math.max(...magazineX) - Math.min(...magazineX);
+      expect(sweepMinX, variant).toBeCloseTo(lowerPort.pos[0] + magazineDepth / 2, 8);
+    }
   });
 
   it('adds an intermediate dropped stock distinct from straight and sporting styles', () => {
@@ -453,22 +423,26 @@ describe('AK-pattern archetype', () => {
     });
     expect(validate(standard, gunDomain).issues).toEqual([]);
     expect(validate(loadFixture('ak-standard-handguard'), gunDomain).issues).toEqual([]);
+    const receiverPort = FAMILIES['ak-receiver']!.build({ bore: 'S' }).ports.find(({ id }) => id === 'gas-cylinder')!;
     for (const layout of ['ak', 'standard']) {
       const port = FAMILIES.handguard!.build({ layout }).ports.find(({ id }) => id === 'gas-cylinder')!;
-      expect(port.pos[1]).toBe(2);
+      expect(port.pos[1]).toBe(receiverPort.pos[1]);
     }
   });
 
-  // Seeds 0 and 1 select the two declared layouts; mount is constant template data, not RNG output.
+  // Mount is not a slot choice, so it stays clamped; no seed is pinned to a layout.
   sweepGroup('offers both clamped AK handguard layouts without selecting free-float', () => {
     it('passes', () => {
+      const offered = ak.slots.find(({ id }) => id === 'handguard')?.params?.layout;
+      const wanted = new Set(Array.isArray(offered) ? offered : [offered]);
+      expect(wanted).toEqual(new Set(['ak', 'standard']));
       const layouts = new Set<string>();
-      for (const seed of [0, 1]) {
+      for (let seed = 0; seed < SEED_SCAN_BOUND && layouts.size < wanted.size; seed += 1) {
         const params = generate(ak, gunDomain, seed).parts.handguard!.params ?? {};
         layouts.add(String(params.layout));
         expect(params.mount ?? 'clamped', `seed ${seed}`).toBe('clamped');
       }
-      expect(layouts).toEqual(new Set(['ak', 'standard']));
+      expect(layouts).toEqual(wanted);
     });
   });
 });

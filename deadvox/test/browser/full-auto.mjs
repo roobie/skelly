@@ -143,7 +143,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&firearmsCombat=0&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -350,6 +350,24 @@ try {
     () => globalThis.fullAutoRuntime.session.sim.time > globalThis.fullAutoProbe.releaseAt + 0.25,
   );
   assert.equal(await page.evaluate(() => globalThis.fullAutoProbe.shots.length), 27, 'release stops firing');
+  const recoilState = await page.evaluate(() => {
+    const { input, session } = globalThis.fullAutoRuntime;
+    const state = session.aim.snapshotState();
+    return {
+      finite: [
+        state.gaitPhase,
+        state.lookYaw,
+        state.lookPitch,
+        state.recoilYaw,
+        state.recoilPitch,
+        state.frame.yaw,
+        state.frame.pitch,
+      ].every(Number.isFinite),
+      pitch: input.pitch,
+    };
+  });
+  assert.ok(recoilState.finite, 'the skill-zero burst keeps aim state finite');
+  assert.ok(Math.abs(recoilState.pitch) <= Math.PI / 2, 'recoil keeps camera pitch within its valid range');
 
   // Warm buffers are real decoded bundled samples. Seed 32 live tails so this burst must steal.
   await page.waitForFunction(() =>
@@ -421,6 +439,27 @@ try {
       );
     }
   }
+  await page.locator('.debug-marker:not(.debug-frozen)').click();
+  const toolsHeader = page.locator('[data-group="tools"] .debug-group-header');
+  if ((await toolsHeader.getAttribute('aria-expanded')) === 'false') {
+    await toolsHeader.click();
+  }
+  const skillKickSlider = page.locator('#firearms-skill-automaticFollowup-recoilKickScale');
+  await skillKickSlider.waitFor();
+  const runtimeTuning = await page.evaluate(() => {
+    const slider = document.querySelector('#firearms-skill-automaticFollowup-recoilKickScale');
+    const current = Number(slider.value);
+    slider.value = String(current + 0.1);
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    const { session } = globalThis.fullAutoRuntime;
+    return {
+      slider: Number(slider.value),
+      runtime: session.firearmsSkillZeroHandling.automaticFollowup.recoilKickScale,
+      saved: JSON.stringify(session.snapshot({ worldId: 'world', characterId: 'character' })),
+    };
+  });
+  assert.equal(runtimeTuning.runtime, runtimeTuning.slider, 'the debug slider updates the running session');
+  assert.ok(!runtimeTuning.saved.includes('skillZeroHandling'), 'runtime tuning is not included in a save');
   assert.deepEqual(errors, []);
   process.stdout.write(
     `full-auto native WebAudio passed: 27 shots/2s at 800rpm, 27 cases, release stops, ${native.records.length} starts, ${nativeSpan.toFixed(3)}s native attack span, peak ${native.peak}, faded steals, all source/gain nodes released.\n`,

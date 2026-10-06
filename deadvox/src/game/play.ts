@@ -293,7 +293,7 @@ export const startPlay = (
       onMoveStart: (move, ownerLocation, position, time) => {
         const cue = handlingMoveStartCue(move, ownerLocation, position);
         if (cue) {
-          session.playWorldSound(cue.event, cue.position, time);
+          session.playPlayerSound(cue.event, time);
         }
       },
       onMoveComplete: (move, time) => {
@@ -618,6 +618,8 @@ export const startPlay = (
     },
     measureSnapshot,
     exportMetrics,
+    firearmsSkillZeroHandling: () => session.firearmsSkillZeroHandling,
+    setFirearmsSkillZeroHandling: (value) => session.setFirearmsSkillZeroHandling(value),
   });
 
   let started = options.restore !== undefined;

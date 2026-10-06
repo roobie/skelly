@@ -69,7 +69,8 @@ const OTHER_ANCHORS = [
 /**
  * Resolves every declared anchor into assembly space (core), then applies the gun policy. The `hold` comes
  * from the best-ranked candidates; two candidates of that rank are ambiguous and no `hold` is an error.
- * Other names take the candidate on the lowest part id, so the choice is deterministic.
+ * The `muzzle` is the frontmost candidate along its own forward, so a muzzle device threaded on a barrel
+ * outranks the barrel. Other names take the candidate on the lowest part id, so the choice is deterministic.
  */
 export const selectGunAnchors: SelectGunAnchors = (resolved, declarations, policy) => {
   const frames = resolveAnchors(
@@ -94,6 +95,10 @@ export const selectGunAnchors: SelectGunAnchors = (resolved, declarations, polic
   return { code: 'missing-required-anchor', name: 'hold' };
 };
 
+const along = ({ position, forward }: AnchorFrame): number =>
+  position[0] * forward[0] + position[1] * forward[1] + position[2] * forward[2];
+const frontmost = (best: AnchorFrame, frame: AnchorFrame): AnchorFrame => (along(frame) > along(best) ? frame : best);
+
 const selectOthers = (
   frames: ResolvedAnchors<GunAnchorName>,
   ids: readonly string[],
@@ -101,9 +106,10 @@ const selectOthers = (
 ): SelectedAnchors => {
   const others: Partial<Record<GunAnchorName, AnchorFrame>> = {};
   for (const name of OTHER_ANCHORS) {
-    const id = ids.find((i) => frames[i]![name]);
-    if (id) {
-      others[name] = frames[id]![name]!;
+    const candidates = ids.flatMap((i) => frames[i]![name] ?? []);
+    const [first] = candidates;
+    if (first) {
+      others[name] = name === 'muzzle' ? candidates.reduce((best, frame) => frontmost(best, frame)) : first;
     }
   }
   return { hold, others };

@@ -892,6 +892,18 @@ const SkillSchema = pipe(
             readyMovementHalfLifeLevels: Positive,
             loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
             adsApertureFill: pipe(Positive, maxValue(0.95)),
+            skillZeroHandling: strictObject({
+              singleShot: strictObject({
+                variance: Positive,
+                recoilKickScale: Positive,
+                recoilRecoveryScale: Positive,
+              }),
+              automaticFollowup: strictObject({
+                variance: Positive,
+                recoilKickScale: Positive,
+                recoilRecoveryScale: Positive,
+              }),
+            }),
           }),
         ),
         melee: optional(

@@ -4,6 +4,7 @@ read_if:
   - you change the AK ADS sight alignment
   - you change optic eye-relief validation
   - you change the AK receiver's position relative to its centered bore
+  - you change the AK archetype's proportions, or map them against its golden photo
 
 # gungen — low-poly firearm designer
 
@@ -329,7 +330,7 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | --- | --- | --- |
 | `archetype-ar` | Classic AR-pattern rifle | A2 front-sight block at the gas-port station; the clamped handguard ends at its collar |
 | `archetype-ar-free-float` | Free-floating AR-pattern rifle | No fixed barrel block; detachable front post on the forward handguard rail slot |
-| `archetype-ak` | AK-pattern rifle | AK block front sight with open ears, 2.5u behind the muzzle |
+| `archetype-ak` | AK-pattern rifle | AKM proportions: front sight with open ears just behind the slant brake (the template also offers the AK-74 brake), upper and lower handguards, wooden buttstock |
 | `archetype-battle-rifle` | FAL/FNC-like battle rifle, conventional layout | auto/box receiver, conventional lower, pistol grip, straight stock, clamped handguard |
 | `archetype-smg` | Submachine gun | Same layout as the battle rifle at small bore, with a short barrel and stock and a long magazine |
 | `archetype-bolt-rifle` | Bolt-action rifle, loaded from the top | bolt/top receiver, sporting stock, full-length handguard, sight on the receiver rail |
@@ -344,10 +345,12 @@ The lengths below remain abstract units on the existing grid. Optic reference so
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
 - Magazine S/M/L body lengths by profile are: standard, SMG, and pistol
-  `6/10/16u`; AK-74 curved `6/10/16.5u`; AKM curved `6/10/19.25u`; STANAG
-  curved `6/10/15.75u`. The curved L values follow the traced reference
-  lengths: AK-74/AKM ratios and STANAG 30-round, with STANAG 20-round anchoring
-  M near `10u`. Ordinary S begins at the plausible 10-round length (`6u`).
+  `6/10/16u`; AK-74 curved `6/10/16.5u`; STANAG curved `6/10/15.75u`. These
+  curved L values follow the traced reference lengths: the AK-74 ratio and
+  STANAG 30-round, with STANAG 20-round anchoring M near `10u`. The AKM curved
+  band is in `src/gun/parts.ts`, `MAGAZINE_PROFILE_LENGTHS_U`; its L is fitted
+  to the AK's golden photo (g41-4).
+  Ordinary S begins at the plausible 10-round length (`6u`).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
@@ -356,17 +359,17 @@ The lengths below remain abstract units on the existing grid. Optic reference so
   former square's flat-to-flat width; bounds and ports are unchanged. Pump tubes
   and cap lugs are regular octagonal; the support band is an eight-sided prism
   clipped to its existing rectangular bounds. The AK gas cylinder is a regular
-  octagon with 0.5u flat-to-flat width, matching its former 0.5u height; its
-  lateral extent narrows from 1u to 0.5u to fit. Its corner setback is 0.14645u
-  at 45° (vertex offset 0.10355u from the centreline). The gas block is now an
-  octagonal barrel collar with a bore-scaled riser: its fore face rakes back as
-  it rises, and its rear vertical face mates the cylinder's full front end face.
+  octagon. The gas block is an octagonal barrel collar whose riser spans from
+  the barrel to the cylinder: its fore face rakes back as it rises, and its rear
+  vertical face mates the cylinder's full front end face. Their sizes are in
+  `src/gun/akProportions.ts`, `AK_PROPORTIONS`.
 - Standard and free-float AR handguards occupy 65% of exposed barrel length;
   the fixed AR handguard ends at the rear face of the A2 collar. AK handguards
-  use compact S/M/L bands and their gas block clears the handguard by about 10%
-  of its length. The AR front sight is at the standard gas-port station; its
-  muzzle distances are 6.25/9.25/12u for S/M/L. The AK post is 2.5u behind the
-  muzzle. Tilted magazine seating is declared per lower layout: conventional
+  end at the gas block. The AR front sight is at the standard gas-port station; its
+  muzzle distances are 6.25/9.25/12u for S/M/L. The AK post stands just behind
+  the barrel's end, behind the muzzle device (`src/gun/parts.ts`,
+  `frontSightPosition`). The AK's barrel, handguard and stock lengths are mapped
+  from its golden photo (see "AK" under Milestone 2.3). Tilted magazine seating is declared per lower layout: conventional
   and AR layouts support the standard magazine profile; bullpup, AK, and trigger
   layouts do not. Unsupported combinations are rejected by `magazine-well-axis`,
   not surfaced as contact gaps.
@@ -385,11 +388,9 @@ The lengths below remain abstract units on the existing grid. Optic reference so
 | Grip | 7.5 / 86 | 8.5 / 98 | 9.5 / 109 | Hand-sized bands, along grip axis; pistol-integrated grip uses the same bands |
 | Standard, SMG, pistol magazine | 6 / 69 | 10 / 115 | 16 / 184 | Abstract length bands; STANAG top depth anchors 1u ≈ 11.5mm |
 | AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
-| AKM curved magazine | 6 / 69 | 10 / 115 | 19.25 / 221 | Pixel-traced body centreline ratio, `br-ref-akm-mag.jpg` |
 | STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
 | Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
 | Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |
-| AK handguard | 8 / 92 | 14 / 161 | 22 / 253 | Compact bands; gas block clears its end by 10%, snapped to the grid |
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
@@ -662,44 +663,133 @@ explicitly named `battle-rifle`.
 
 ### AK
 
-- Added a dedicated AK receiver with a removable dust-cover solid and no
-  receiver rail. Its rear-top corner is cut 2u forward and 1.5u down (a 36.9°
-  slope toward the stock), removing 30% of the receiver's 5u height at the rear
-  while retaining the stock port on the rear face and the flat dust-cover seat.
-  Its right-side bolt handle uses the existing `action: bolt` travel keep-out.
-  A leaf rear sight mounts on a receiver sight-block port.
-- The gas cylinder runs from the receiver's gas-cylinder port under the rear
-  handguard to the gas block. The octagonal collar seats on the barrel at the
-  declared gas-port station; its asymmetric riser meets the gas cylinder's
-  top flat and mates the full front end face at its vertical rear face. Its fore
-  face is slanted back. The
-  cylinder axis is checked parallel to the bore. The AK front sight uses its
-  own style with the post 2.5u behind the muzzle, consistent with the gas-block
-  position.
-- The [Wikimedia Commons AKM side profile](https://commons.wikimedia.org/wiki/File:03_akm_noBG.png)
-  is the reference for the receiver cover, bore, rear-sight block and the
-  receiver-mounted lower, stock, grip and magazine. Their relative vertical
-  placement is checked against the preserved notch datum, the receiver's
-  original roof and the seated block height in `src/gun/parts.ts`, `AK_RECEIVER_LIFT_U`.
-  The rear-sight block seats directly on the raised receiver. For d97-6, sight
-  alignment takes its vertical datum from the notch's upper edge, not the block
-  seat, so the front-post tip sits at that edge in ADS; see `src/gun/parts.ts`,
-  `akRearSight`, and `src/gun/exportGlb.ts`, `sightMetadata`. The receiver-mounted
-  assembly follows the receiver; the barrel, bore, handguard, gas system and front
-  sight remain in their original frame.
-- Added an `ak` lower layout with a flat face seat and no magazine-well walls.
-  The curved AK magazine has seat kind `face` and zero insertion depth; its
-  conservative rock-in keep-out starts at the front hook point. This swept box
-  is not an arc-aware motion simulation.
-- The `ak-curved` magazine is three convex prisms: a slanted-bottom upper
-  section, a trapezoidal middle section and a forward-turned lower section.
-  Their joint faces match exactly. The middle prism has parallel grip-facing
-  and barrel-facing sides of different lengths; its top interface is slanted
-  5° and its size-derived lower bend is 10°/12°/15°. The lower prism meets its
-  angled end face without arbitrary X-axis compensation. Added an intermediate dropped-stock style.
+- A dedicated AK receiver with no receiver rail. Its dust cover slopes down at
+  the rear to the stock's face (`src/gun/parts.ts`, `AK_REAR_BEVEL`). The
+  carrier cavity ends where the slope does, so the rear wall carries the whole
+  slope, as on the pump; a cavity running under the slope would open a hole in
+  it. Its right-side bolt handle uses the existing `action: bolt` travel
+  keep-out. The leaf rear sight sits on the receiver's sight block, without a
+  post.
+- The gas cylinder runs from the receiver's gas-cylinder port, under the upper
+  handguard, to the gas block. The gas block's octagonal collar seats on the
+  barrel at the gas-port station, and its riser spans from the barrel to the
+  cylinder. The gas piston rides on the cylinder's axis, and the cylinder's axis
+  is checked parallel to the bore. The AK front sight uses its own style, its
+  post just behind the barrel's end and behind the muzzle device.
+- The muzzle device threads on the barrel's `muzzle` port: the AKM's slant
+  brake or the AK-74's brake (`src/gun/parts.ts`, `akMuzzleDevice`; sizes in
+  `AK_PROPORTIONS`, `muzzleDevice`). BR, 2026-10-06 22:51, verbatim: "since
+  we're on it; i'd like also to allow for two different muzzles ; the AKM's
+  iconic slanted muzzle as it is on the model currently, but also the
+  compensator style seen on the ak 74 - then we have a good basis for making a
+  good pool of different looking models". The slant brake keeps v2's shape;
+  the AK-74 brake is measured on BR's reference screenshot (2026-10-06),
+  scaled by v2's front sight ears.
+  - Why a separate part, not a barrel option: both devices thread on the real
+    gun's muzzle, as the anti-materiel brake does here. A new device is a new
+    style without touching the barrel. The device carries the `muzzle` port on
+    to its own front, so the muzzle anchor and the muzzle mount for later
+    attachments sit where the shot leaves.
+  - The template offers both devices; the archetype designs keep the slant
+    brake, as v2 was mapped on an AKM.
+- Sight alignment takes its vertical datum from the notch's upper edge, not the
+  block seat, so the front-post tip sits at that edge in ADS (d97-6); see
+  `src/gun/parts.ts`, `akRearSight`, and `src/gun/exportGlb.ts`, `sightMetadata`.
+- The `ak` lower layout is the receiver's lower half: its frame runs the
+  receiver's full length and width, down to the receiver's bottom, with a flat
+  face seat and no magazine-well walls. The curved AK magazine has seat kind
+  `face` and zero insertion depth; its conservative rock-in keep-out starts at
+  the front hook point. This swept box is not an arc-aware motion simulation.
+- The `ak-curved` magazine is a straight upper section with a slanted bottom,
+  then a ring of convex arc sectors whose joint faces match exactly, with a
+  finer tessellation for display. Each variant's straight top, top slope, arc
+  radius and sweep are in `src/gun/parts.ts`, `CURVED_MAGAZINE_PROFILES`. The
+  AKM's are fitted to the golden photo's magazine (g41-4). Its top slope stays
+  small because the round column's same-side rounds close up across that
+  corner. The AK-74's follow its traced reference.
+- The stock is `ak-buttstock`, the AKM's wooden buttstock: a wedge with no
+  wrist or grip. Its front is as tall as the receiver's rear face and centred on
+  it, but narrower than the receiver. Behind the receiver, its top dips into a
+  slim neck's saddle and rises to a level comb, which carries the cheek datum.
+  Its bottom runs straight from the receiver's bottom to the toe, with no
+  belly (BR 23:19). It widens slightly toward a steel buttplate
+  (`src/gun/akButtstock.ts`). It builds on the wood
+  helpers it shares with the tapered stock (`src/gun/stockWood.ts`), and it
+  replaces the former ak-dropped style.
 - A passing fixture and a missing-gas-cylinder fixture exercise the layout. At
-  1000 seeds, AK is 100% valid with 32 distinct builds. Individual rounds,
-  magazine latching and the actual rock-in motion are not simulated.
+  1000 seeds the AK template stays 100% valid (`npm run stats`). Individual
+  rounds, magazine latching and the actual rock-in motion are not simulated.
+
+#### Version 2: mapped from the golden photo (g41)
+
+BR, 2026-10-06 21:13, verbatim: "As for the AK, let's do a quality pass / here's
+a good image, we can call golden:
+https://www.americanrifleman.org/media/caqhmu12/izhmash_akm_right.jpg?width=1920&height=620
+/ have the coder do an overlay and try to map it out (let's call it version 2 of
+the AK archetype) / actually - a luna coder can't handle this. This must be
+issued to an Opus model agent".
+
+The rulings v2 carries, verbatim:
+
+- Receiver, BR 18:36: "the AK still had the rear sight on top of a post / this
+  is not how it should be - compare a standard AKM's rear sight / i wanted the
+  received as a whole lifted so that the bore in relation to the receiver goes
+  down by a margin great enough for the rear sight to align with the front
+  without being lifted on a pin".
+- Gas cylinder, BR 20:27: "the spacing between barrel and gas cylinder must
+  expand (and as such, the gas block will extend too)". On the amount, BR 20:39:
+  "(b) but also fix the piston block to accomodate", where the lead's option (b)
+  was "Raise it by the full receiver lift, 2u (23 mm)".
+- Handguard, BR 20:27: "the handguard must adjust accordingly, among other
+  things the prism acting as the bottom of the handguard must become as thin as
+  the other walls of the handguard". BR 20:39: "well, the handguard bottom
+  should not extend lower than the receiver's bottom".
+- Stock, BR 20:34: "so what id like to do is to remove the ak-dropped buttstock
+  altogether, and replace it with what we'd call ak-buttstock which should be
+  modelled after the bog standard wooden buttstock as seen on the AKM". On
+  sharing the tapered stock's helpers rather than copying them, BR 20:39:
+  "agreed". After the first look at v2, BR 22:42: "ak v2 overall very nice /
+  however, i'd like to try to adjust the following: / 1) the butt stock profile
+  -> a bit more slender the first ~decimeter nearest the receiver / 2) the width
+  of the buttstock should be less - i propose ~60% of current width". The neck's
+  saddle is measured on the golden photo, like the rest of v2. The width is
+  about 60% of the earlier receiver-wide stock, snapped so each full width
+  stays on the grid (`AK_PROPORTIONS`, `stock`). On the next look, BR 23:19:
+  "overall #330 looks really good - the only thing I'm feeling nitpicky about
+  is the bottom of the buttstock Screenshot_2026-10-06_23-17-24.png / Our
+  current model has a little extra dip (red line) whereas i think it should be
+  more "straight" like the blue line)". The photo's stock is a wedge with a
+  straight bottom, but the photo reads the receiver's rear bottom lower than
+  the model's level receiver, so a bottom fitted to the photo had to bend up
+  into the receiver. The bottom now runs straight from the receiver's bottom
+  corner to the photo's toe, a little above the photo's wood near the receiver.
+
+Why v2's proportions are what they are: every proportion in
+`src/gun/akProportions.ts`, `AK_PROPORTIONS`, is measured part by part on an
+overlay of the model on the golden photo and snapped to the grid. The photo is
+registered by its barrel: the bore runs through the barrel's measured centres,
+the scale comes from the AKM's published overall length (its published sight
+radius checks it), and the model's origin is the receiver's front face on the
+bore. So the receiver itself sits around the bore as on the AKM, and the rear
+sight reaches the sight line on the receiver's sight block, without the
+receiver lift or a post. Parts the photo doesn't show follow rules instead: the
+dust cover's minimum wall sets the carrier's height, and the piston sits on the
+gas cylinder's axis.
+The photo and its overlays stay out of the repository; cite the URL above.
+
+BR's answers to v2's two open questions, verbatim:
+
+- Gas cylinder, BR 22:53: "yes, gas cylinder stays where it is - it's
+  perfect". It stays at the photo's height rather than the 2u rise of the 20:39
+  ruling: that rise answered the receiver lift, and once v2 removed the lift,
+  the photo's height lines up.
+- Magazine, BR 22:47: "as for the mag question: we should make it so both
+  types of mags work with the v2 AK pattern rifle". Both the AK-74 and the AKM
+  magazine seat in v2's magwell. `designs/archetype-ak.json` keeps the AK-74
+  one, and `designs/archetype-ak-akm.json` shows the AKM one.
+
+The properties BR ruled on are tested in `test/akGeometry.test.ts`,
+`test/akStockAlignment.test.ts` and, for the magazines, `test/ak.test.ts`.
 
 **Known risks and open questions:** the current `auto` charging-handle
 keep-out sits on the left; the `bolt` handle keep-out is on the right. The
@@ -1096,15 +1186,18 @@ an implementation except the ones that belong to later packages (`Suggest`,
   `GUN_ANCHOR_POLICY`. For `hold` it takes the candidates of the best rank
   (`grip`, then `firing-grip-stock`); two candidates of one rank return
   `ambiguous-anchor` with the candidate part ids, and no candidate returns
-  `missing-required-anchor`. For `support` and `muzzle` there may be several
-  candidates; the one on the lowest part id (plain string sort) wins, so the
-  choice is deterministic, and the name is left out when there is none.
+  `missing-required-anchor`. For `muzzle` the frontmost candidate along its
+  own forward wins: a muzzle device threaded on a barrel carries the muzzle on
+  to its front, and a gun fires from the front of whatever is on its barrel
+  (g43). For `support` there may be several candidates; the one on the lowest
+  part id (plain string sort) wins, so the choice is deterministic. A name is
+  left out when there is no candidate.
 - Anchor data is in `src/gun/anchorData.ts` (`GUN_ANCHORS`), not in `parts.ts`.
   `hold` is declared by `grip`, `frame` (the integrated pistol grip) and
   `stock` (only when the stock carries `FIRING_GRIP`); `support` by
-  `handguard` and `forend` (underside of the `bottom` solid); `muzzle` by
-  `barrel` (its `muzzle` port). Frames are computed from the built part, so
-  they follow params.
+  `handguard` and `forend` (underside of the `bottom` solid); `muzzle` by each
+  barrel and muzzle device, at its `muzzle` port (`muzzlePortAnchor`). Frames
+  are computed from the built part, so they follow params.
 
 **Palette.** `src/gun/palette.ts`: `GUN_PALETTE`, `createPalette` (throws on a
 channel that isn't finite or lies outside [0,1]), `solidColor(palette, role,

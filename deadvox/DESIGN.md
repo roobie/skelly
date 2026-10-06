@@ -539,9 +539,33 @@ plain box in your hands. Files are small, and follow
   but control is": firearm-owned `dispersionRadians` is sampled per round, while
   `firearmsSkillEffects` controls sway, kick per shot and recoil recovery,
   with legendary progression granting no control beyond ordinary expert per
-  BR's ruling. The pump keeps its pellet spread and adds no firearm cone. This
-  reuses the already saved player pitch, so no aim-state field or save-schema
-  change is needed. See
+  BR's ruling. When `debug_rifle_ak` fires on full auto at skill 0, BR reported
+  (2026-10-06): “also; now that i can properly fire from ADS on the AK, I can
+  note that a firearm skill level zero (=0) is way too good at controlling
+  automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
+  BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”.
+  BR chose four times what they felt at `7a8c72db` as the comparison (“1: a”). They wanted
+  kick, shot-to-shot dispersion and recovery all worsened (“2: all”), mostly for automatic
+  follow-ups but for singles too (“3: mostly full auto, but singles too”). BR approved
+  moving the values into moddable content with live debug controls: “yes, make them content
+  and add debug sliders”. Accordingly, skill-zero endpoints for single/first shots and
+  automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
+  firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
+  them. A follow-up is a committed shot from the same firearm within its burst window; see
+  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
+  stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
+  The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
+  and four times for follow-ups. BR approved those values: “oh yeah! Now we're talking.
+  #324 approved as such / but it's important to note that we need different factors for
+  different guns - e.g. a MP5 style SMG does not have the same kick as a AK/M pattern gun”.
+  Until d112 gives each firearm its own factors, skill-zero handling is shared across firearms.
+  `src/debug/index.ts`, `firearmsSkillEffectSlider`, places the controls in
+  the debug panel's Tools group, applies them to the running session, and can copy the
+  values. The tuning is runtime-only and resets on reload; saves carry no slider state. The
+  shared skill effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
+  per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
+  spread and adds no firearm cone. This reuses the already saved player pitch, so no
+  aim-state field or save-schema change is needed. See
   `src/game/firearmHandling.ts`, `FirearmMechanics.fire` and
   `firearmHandlingFor`, `src/core/pellets.ts`, `coneDirection`,
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
@@ -568,6 +592,13 @@ plain box in your hands. Files are small, and follow
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
   (see the screamer below). Stealth is a matter of managing noise and staying
   out of sight.
+- **Player-owned sound playback (d111-1):** BR: “their position in the world is
+  the player, and the player is a mobile thing, so”. Character- and held-item
+  sounds have the player as their source; listener-relative playback makes them
+  move with the player, who is the listener. Simulation sound/noise events keep
+  their source positions for zombie hearing, while independent world sources
+  remain positional. See `src/game/session.ts`, `playPlayerSound` and
+  `playWorldSound`, and `src/game/audio.ts`, `GameAudio.startSource`.
 
 ## Damage, destruction and dismemberment
 
@@ -966,10 +997,11 @@ Sound is the main way threat arrives, so it's part of the simulation, not
 decoration.
 
 - **The player should be able to judge a threat by sound:** where it is, how
-  many there are, and what they're doing. Sounds are positional and walls muffle
-  them, so the player can hear danger before seeing it. Noise events (see
-  [Combat and noise](#combat-and-noise)) also play as positional sounds, with
-  occlusion shared by the player's hearing and zombie hearing.
+  many there are, and what they're doing. Sounds come from their source; walls
+  muffle sound travelling through the world, so the player can hear danger
+  before seeing it. A player's own source moves with them. Noise events (see
+  [Combat and noise](#combat-and-noise)) keep that source position for zombie
+  hearing and the shared occlusion model.
 - **A shambler's presence should be audible even when it stands still.** It
   should sometimes moan or groan so the player can hear that one is there.
   `shambler_idle` provides an occasional groan while idling or strolling. Each

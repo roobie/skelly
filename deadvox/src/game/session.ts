@@ -18,7 +18,13 @@ import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
-import { firearmStanceEffects, firearmsSkillEffects } from '../core/firearmsSkill.ts';
+import {
+  type FirearmsCombatTuning,
+  type FirearmsSkillShotKind,
+  type FirearmsSkillZeroHandling,
+  firearmStanceEffects,
+  firearmsSkillEffects,
+} from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
   advanceFootsteps,
@@ -296,7 +302,36 @@ const playerTreatmentHooks = (
     return true;
   },
 });
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep session ownership and dependency wiring centralized at the construction boundary.
+
+const restoreSessionAudio = (restored: Readonly<SaveSnapshot> | undefined, soundPicker: SoundPicker) => {
+  if (!restored) {
+    return {
+      playerAudio: { vocalNoiseId: 0, vocalNoise: undefined as VocalNoise | undefined },
+      footstepClock: initialFootstepClock(),
+      rustleClock: initialRustleClock(),
+      airbornePeakY: undefined as number | undefined,
+    };
+  }
+  const saved = restorePlayerAudioState(restored.character.playerAudio);
+  soundPicker.restoreState(structuredClone(saved.soundPicker));
+  return {
+    playerAudio: {
+      vocalNoiseId: saved.vocalNoiseId,
+      vocalNoise:
+        saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] as Vec3 },
+    },
+    footstepClock: saved.footstepClock,
+    rustleClock: { cells: new Set(saved.rustleClock.cells), nextTime: saved.rustleClock.nextTime },
+    airbornePeakY: saved.airbornePeakY ?? undefined,
+  };
+};
+
+const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | undefined) => ({
+  sprinting: player?.sprinting ?? false,
+  firearmReadyWalking: player?.firearmReadyWalking ?? false,
+  handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
+});
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
@@ -318,11 +353,22 @@ export const createSession = (options: SessionOptions) => {
 
   const character = createSessionCharacter(registry, options.handedness, restored);
   const firearmsCombatTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+  if (!firearmsCombatTuning) {
+    throw new Error('Missing firearms-combat skill tuning');
+  }
+  let firearmsSkillZeroHandling = firearmsCombatTuning.skillZeroHandling;
+  const currentFirearmsCombatTuning = (): FirearmsCombatTuning => ({
+    ...firearmsCombatTuning,
+    skillZeroHandling: firearmsSkillZeroHandling,
+  });
   const meleeCombatTuning = registry.skills.get('melee_combat')?.combat?.melee;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
-  const aim = new AimController(restored?.character.aim, firearmsSkillEffects(firearmsSkillLevel(character)).variance);
+  const aim = new AimController(
+    restored?.character.aim,
+    firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).variance,
+  );
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();
@@ -355,17 +401,12 @@ export const createSession = (options: SessionOptions) => {
   const soundPicker = new SoundPicker(seed, registry.sounds);
 
   // The player's own noise, which shamblers can hear. Saved with the character.
-  const playerAudio: { vocalNoiseId: number; vocalNoise: VocalNoise | undefined } = {
-    vocalNoiseId: 0,
-    vocalNoise: undefined,
-  };
-  if (restored) {
-    const saved = restorePlayerAudioState(restored.character.playerAudio);
-    playerAudio.vocalNoiseId = saved.vocalNoiseId;
-    playerAudio.vocalNoise =
-      saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] };
-    soundPicker.restoreState(structuredClone(saved.soundPicker));
-  }
+  const {
+    playerAudio,
+    footstepClock: savedFootstepClock,
+    rustleClock: restoredRustleClock,
+    airbornePeakY: restoredAirbornePeakY,
+  } = restoreSessionAudio(restored, soundPicker);
 
   const admitSound = (
     event: SoundEventId,
@@ -423,7 +464,7 @@ export const createSession = (options: SessionOptions) => {
     meta: SoundEmissionMeta & { body?: MobBody } = {},
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
-    admitSound(event, chest(), time, { ...meta, player: true });
+    admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const queue = new HandlingQueue(
     inventory,
     (move) =>
@@ -451,10 +492,15 @@ export const createSession = (options: SessionOptions) => {
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
-    onCommittedShot: (shotSeed, recoilKickRadians) => {
+    firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
+    onCommittedShot: (shotSeed, recoilKickRadians, shotKind) => {
       const training = skillActivityPractice(registry, 'firearms_combat', 'shot');
       character.awardPractice('firearms_combat', training.practice, training.tier);
-      aim.recordShot(shotSeed, recoilKickRadians, firearmsSkillEffects(firearmsSkillLevel(character)).recoilKickScale);
+      aim.recordShot(
+        shotSeed,
+        recoilKickRadians,
+        firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning(), shotKind).recoilKickScale,
+      );
     },
     onShot: (shot, time) => {
       const hits = zombieSystem.firePellets(shot);
@@ -462,10 +508,10 @@ export const createSession = (options: SessionOptions) => {
         const training = skillActivityPractice(registry, 'firearms_combat', 'hit');
         character.awardPractice('firearms_combat', training.practice, training.tier);
       }
-      playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });
+      playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
     },
     onSound: (event, position, time) =>
-      position ? playWorldSound(event, position, time) : playPlayerSound(event, time, { listenerRelative: true }),
+      position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
   });
 
   const survival = new Survival(sim, inventory, queue, {
@@ -490,8 +536,13 @@ export const createSession = (options: SessionOptions) => {
     notice: options.notice,
   });
 
-  let sprinting = false;
-  let firearmReadyWalking = false;
+  const {
+    sprinting: restoredSprinting,
+    firearmReadyWalking: restoredFirearmReadyWalking,
+    handlingPausedForKnockout: restoredHandlingPause,
+  } = restorePlayerSessionLatches(restoredPlayer);
+  let sprinting = restoredSprinting;
+  let firearmReadyWalking = restoredFirearmReadyWalking;
   const playerEyeHeightMetres = (): number =>
     resolvePlayerEyeHeight(
       sim.body.unconscious,
@@ -499,15 +550,19 @@ export const createSession = (options: SessionOptions) => {
       crouching,
       senseTuning.crouch.eyeDropMetres,
     );
-  let footstepClock = initialFootstepClock();
-  let rustleClock = initialRustleClock();
-  let airbornePeakY: number | undefined;
+  let footstepClock = savedFootstepClock;
+  let rustleClock = restoredRustleClock;
+  let airbornePeakY = restoredAirbornePeakY;
   const currentIntent = (): MoveIntent => (controls.active() && !compression.locksInput ? controls.intent() : IDLE);
   const playerCrouching = (): boolean => crouching;
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
   const updateAim = (dt: number, firing: boolean): void => {
-    const skill = firearmsSkillEffects(firearmsSkillLevel(character));
+    const held = inventory.hands.right ?? inventory.hands.left;
+    const shotKind: FirearmsSkillShotKind = held?.firearm
+      ? firearms.handlingShotKind(held.uid, sim.time)
+      : 'singleShot';
+    const skill = firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning(), shotKind);
     aim.advance({
       dt,
       velocity: body.vel,
@@ -630,13 +685,22 @@ export const createSession = (options: SessionOptions) => {
       const attackerType = zombieStore.get(attacker)?.type.name.toLowerCase() ?? 'zombie';
       sim.hit(amount, `a ${attackerType}`, region, { bleeding: true, blunt: true });
     },
-    onSound: (event, position, zombie) =>
+    onSound: (event, position, zombie) => {
+      if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {
+        playWorldSound(event, position, sim.time, {
+          listenerRelative: true,
+          sourceLabel: 'player melee',
+          ...(zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {}),
+        });
+        return;
+      }
       playWorldSound(
         event,
         position,
         sim.time,
         zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {},
-      ),
+      );
+    },
     onFootstep: (position, id, mode, zombie) => {
       const event = shamblerFootstepEventAt(position, (x, y, z) => {
         const block = world.getBlock(x, y, z);
@@ -745,13 +809,17 @@ export const createSession = (options: SessionOptions) => {
     });
     rustleClock = rustle.clock;
     if (rustle.sound) {
-      admitSound(rustle.sound.event, rustle.sound.position, time, { player: true, sourceLabel: 'brushing foliage' });
+      admitSound(rustle.sound.event, rustle.sound.position, time, {
+        player: true,
+        listenerRelative: true,
+        sourceLabel: 'brushing foliage',
+      });
     }
   };
 
   const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
     const heldFirearm = firearmInHands();
-    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
+    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.());
     const readyUid = readyGait ? heldFirearm?.uid : undefined;
     firearms.advanceReadiness(dt, readyUid, readyGait);
     const going = intent.forward !== 0 || intent.right !== 0;
@@ -792,10 +860,9 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting);
     survival.setSprinting(sprinting);
     stepStamina(sim.needs, dt, sprinting);
-    const readyMovementFactor =
-      readyGait && firearmsCombatTuning
-        ? firearmStanceEffects(firearmsSkillLevel(character), firearmsCombatTuning).readyMovementFactor
-        : 1;
+    const readyMovementFactor = readyGait
+      ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
+      : 1;
     const pacedIntent = movementPace(
       { ...intent, sprint: sprinting, crouch: crouching },
       {
@@ -841,7 +908,7 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
-  let handlingPausedForKnockout = false;
+  let handlingPausedForKnockout = restoredHandlingPause;
   const tickHandling = (dt: number) => {
     // Handling happens in real time; compressed time belongs to long actions.
     if (sim.body.actionRefusal) {
@@ -954,6 +1021,12 @@ export const createSession = (options: SessionOptions) => {
     queue,
     firearms,
     aim,
+    get firearmsSkillZeroHandling() {
+      return currentFirearmsCombatTuning().skillZeroHandling;
+    },
+    setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling): void => {
+      firearmsSkillZeroHandling = structuredClone(value);
+    },
     quickbar,
     character,
     planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
@@ -1067,6 +1140,9 @@ export const createSession = (options: SessionOptions) => {
           pitch: controls.pitch(),
           walk: controls.walking(),
           crouching,
+          sprinting,
+          firearmReadyWalking,
+          handlingPausedForKnockout,
         }),
         aim,
         survival,
@@ -1077,6 +1153,9 @@ export const createSession = (options: SessionOptions) => {
         handling: queue,
         vocalNoiseId: playerAudio.vocalNoiseId,
         vocalNoise: playerAudio.vocalNoise,
+        footstepClock,
+        airbornePeakY,
+        rustleClock,
         audio: soundPicker,
       }),
   };

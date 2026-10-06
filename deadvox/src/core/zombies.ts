@@ -197,14 +197,7 @@ export interface Zombie {
 
 export type ZombieState = Omit<
   Zombie,
-  | 'type'
-  | 'tier'
-  | 'behaviorRng'
-  | 'soundRng'
-  | 'dismemberRng'
-  | 'renderPrevious'
-  | 'footstepClock'
-  | 'lastVocalNoiseId'
+  'type' | 'tier' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'lastVocalNoiseId'
 > & {
   type: string;
   behaviorRng: RngState;
@@ -225,12 +218,18 @@ const validObstacleWanderState = (zombie: ZombieState): boolean =>
       zombie.obstacleWanderHeading.every(Number.isFinite))) &&
   typeof zombie.obstacleContact === 'boolean' &&
   (zombie.obstacleSlideSide === -1 || zombie.obstacleSlideSide === 0 || zombie.obstacleSlideSide === 1);
+const validShamblerFootstepClock = (clock: ShamblerFootstepClock): boolean =>
+  Boolean(clock) &&
+  Number.isFinite(clock.distanceUntilStep) &&
+  clock.distanceUntilStep > 0 &&
+  typeof clock.nextLongStep === 'boolean';
 const validZombieEventState = (zombie: ZombieState): boolean =>
   (zombie.lastVocalNoiseId === null ||
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
   (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
   Array.isArray(zombie.severed) &&
-  zombie.severed.every((part) => typeof part === 'string');
+  zombie.severed.every((part) => typeof part === 'string') &&
+  validShamblerFootstepClock(zombie.footstepClock);
 const validHordeMemberState = (zombie: ZombieState): boolean =>
   (zombie.hordeId === undefined && zombie.hordeOffset === undefined) ||
   (typeof zombie.hordeId === 'string' &&
@@ -956,7 +955,6 @@ export class ZombieSystem {
           dismemberRng,
           tier: _tier,
           renderPrevious: _renderPrevious,
-          footstepClock: _footstepClock,
           searchAnchor,
           obstacleWanderHeading,
           lastPerceived,
@@ -1053,7 +1051,7 @@ export class ZombieSystem {
           soundRng: new Rng(soundRng),
           dismemberRng: new Rng(dismemberRng),
           lastVocalNoiseId: lastVocalNoiseId ?? undefined,
-          footstepClock: initialShamblerFootstepClock(type.stepLength),
+          footstepClock: { ...zombie.footstepClock },
           body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
           facing: [...zombie.facing],
           home: [...zombie.home],
