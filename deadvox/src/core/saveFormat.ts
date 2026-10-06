@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 28;
+export const SAVE_SCHEMA_VERSION = 29;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -435,7 +435,17 @@ const soundPicker = obj({
     }),
   ),
 });
-const playerAudio = obj({ vocalNoiseId: nonNegativeInt, vocalNoise: nullable(vocalNoise), soundPicker });
+const playerAudio = obj({
+  vocalNoiseId: nonNegativeInt,
+  vocalNoise: nullable(vocalNoise),
+  footstepClock: obj({
+    gait: enumeration(['still', 'walking', 'jogging', 'sprinting']),
+    distanceUntilStep: nonNegative,
+  }),
+  airbornePeakY: nullable(finite),
+  rustleClock: obj({ cells: arr(str()), nextTime: finite }),
+  soundPicker,
+});
 const handling = obj({ jobs: arr(anyJson) });
 const horde = obj({
   id: str({ nonEmpty: true }),
@@ -505,6 +515,7 @@ const zombie = obj({
   attackWait: finite,
   attackWindup: finite,
   gaitPhase: finite,
+  footstepClock: obj({ distanceUntilStep: positive, nextLongStep: bool }),
   wanderClock: finite,
   stanceWeight: opt(finite),
   stepOffset: opt(finite),
@@ -519,6 +530,9 @@ const playerState = obj({
   pitch: finite,
   walk: bool,
   crouching: bool,
+  sprinting: bool,
+  firearmReadyWalking: bool,
+  handlingPausedForKnockout: bool,
 });
 const meleeAction = nullable(
   obj({
