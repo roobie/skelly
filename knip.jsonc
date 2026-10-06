@@ -1,0 +1,98 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "site/index.html",
+        "site/launcher.js",
+        "test/**/*.mjs",
+        "testPool.ts",
+        "tools/**/*.mjs"
+      ],
+      "project": [
+        "site/**/*.js",
+        "test/**/*.{js,mjs,ts,tsx}",
+        "testPool.ts",
+        "tools/**/*.{js,mjs,ts,tsx}"
+      ]
+    },
+    "deadvox": {
+      "entry": [
+        "index.html",
+        "sounds.html",
+        "src/cli/validate.ts",
+        "src/bench/shamblers-cpu.mjs",
+        // Vite's secondary HTML page is an entry even when static analysis misses its module script.
+        "src/soundsPage.ts",
+        "test/browser/case-visual-pool.mjs",
+        "test/browser/firefox-first-click.mjs",
+        "test/browser/firefox-ui.mjs",
+        "test/browser/full-auto.mjs",
+        "test/browser/insecure-saves.mjs",
+        "test/browser/inventory-scroll.mjs",
+        "test/browser/melee-build-click.mjs",
+        "test/browser/primary-action.mjs",
+        "test/browser/pump-handling.mjs",
+        "test/browser/reading.mjs",
+        "test/browser/save-controller-regressions.mjs",
+        "test/browser/save-storage.mjs",
+        "test/browser/stairs.mjs",
+        "tools/bench-rigid-body.mjs",
+        "tools/bench-zombie-swings.mjs",
+        "tools/check-favicon.mjs",
+        "tools/render-probe.mjs",
+        "tools/ui-browser-contract.mjs",
+        "vite.config.ts"
+      ],
+      "project": [
+        "src/**/*.{js,mjs,ts,tsx}",
+        "test/**/*.{js,mjs,ts,tsx}",
+        "tools/**/*.{js,mjs,ts,tsx}",
+        "vite.config.ts"
+      ],
+      "paths": {
+        "@mobgen/*": ["../mobgen/src/*"]
+      }
+    },
+    "gungen": {
+      "entry": [
+        "index.html",
+        "src/cli/checkDesigns.ts",
+        "src/cli/export.ts",
+        "src/cli/exportCartridges.ts",
+        "src/cli/generate.ts",
+        "src/cli/mesh-stats.ts",
+        "src/cli/stats.ts",
+        "src/cli/validate.ts",
+        "test/browser/pump-hand-cycle.mjs",
+        "test/browser/pump-pose-note.mjs",
+        "test/browser/shotshell-viewer.mjs",
+        "test/browser/upload-error.mjs",
+        "vite.config.ts"
+      ],
+      "project": [
+        "src/**/*.{js,mjs,ts,tsx}",
+        "test/**/*.{js,mjs,ts,tsx}",
+        "vite.config.ts"
+      ]
+    },
+    "mobgen": {
+      "entry": [
+        "index.html",
+        "stress.html",
+        "src/cli/bench.ts",
+        "src/cli/generate.ts",
+        "src/cli/stats.ts",
+        "src/cli/view.ts",
+        // `stress.html` is the second Vite page and its module script is a separate entry.
+        "src/viewer/stress.ts",
+        "vite.config.ts"
+      ],
+      "project": [
+        "src/**/*.{js,mjs,ts,tsx}",
+        "test/**/*.{js,mjs,ts,tsx}",
+        "vite.config.ts"
+      ]
+    }
+  }
+}
