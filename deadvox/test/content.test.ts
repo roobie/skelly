@@ -746,6 +746,7 @@ describe('content references', () => {
             },
             sight: 20,
             nightSight: 10,
+            stimulusMemorySeconds: 1,
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },

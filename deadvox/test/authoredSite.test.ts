@@ -86,6 +86,15 @@ const invalidWithFullPack = (data: unknown, message: string) => {
   );
   expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds);
 };
+const fixedLootBuilding = layout.buildings[0]!;
+const fixedLootTemplate = compileTemplate(registry, registry.templates.get(fixedLootBuilding.template)!);
+const fixedLootContainer = fixedLootTemplate.pieces.find(
+  (piece) => registry.furniture.get(piece.furniture)?.container,
+)!;
+const withFixedLoot = (at: readonly [number, number, number], item: string) => ({
+  ...layout,
+  buildings: [{ ...fixedLootBuilding, fixedLoot: [{ at, items: [{ item }] }] }, ...layout.buildings.slice(1)],
+});
 
 const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
   const columns = new Map<string, [number, number]>();
@@ -271,18 +280,15 @@ describe('authored layout acceptance', () => {
     invalid({ ...layout, terrain: [{ ...hill, radii: [0, 1] }] }, 'Invalid value');
     invalid({ ...layout, terrain: [{ ...hill, rise: -1 }] }, 'Invalid value');
   });
-  it('rejects fixed loot on non-containers, empty anchors and unknown item ids', () => {
-    const building = layout.buildings[0]!;
-    const template = compileTemplate(registry, registry.templates.get(building.template)!);
-    const container = template.pieces.find((piece) => registry.furniture.get(piece.furniture)?.container)!;
-    const nonContainer = template.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
-    const withLoot = (at: readonly [number, number, number], item: string) => ({
-      ...layout,
-      buildings: [{ ...building, fixedLoot: [{ at, items: [{ item }] }] }, ...layout.buildings.slice(1)],
-    });
-    invalidWithFullPack(withLoot(container.pos, 'not_an_item'), 'no item');
-    invalidWithFullPack(withLoot(nonContainer.pos, 'rag'), 'has no container');
-    invalidWithFullPack(withLoot([0, 0, 0], 'rag'), 'no furniture anchor');
+  it('rejects fixed loot that names an unknown item', () => {
+    invalidWithFullPack(withFixedLoot(fixedLootContainer.pos, 'not_an_item'), 'no item');
+  });
+  it('rejects fixed loot on a non-container', () => {
+    const nonContainer = fixedLootTemplate.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
+    invalidWithFullPack(withFixedLoot(nonContainer.pos, 'rag'), 'has no container');
+  });
+  it('rejects fixed loot without a furniture anchor', () => {
+    invalidWithFullPack(withFixedLoot([0, 0, 0], 'rag'), 'no furniture anchor');
   });
   it('rejects an unknown building template', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], template: 'missing' }] }, 'no template');

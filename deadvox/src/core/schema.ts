@@ -748,6 +748,8 @@ const ZombieSchema = strictObject({
   sight: Positive,
   /** Metres by night. */
   nightSight: Positive,
+  /** Simulation seconds before a heard or seen stimulus is forgotten. */
+  stimulusMemorySeconds: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** Idle/stroll timing, home leash and eased look controls. */

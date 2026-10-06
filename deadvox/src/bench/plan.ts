@@ -14,7 +14,9 @@ export interface BenchConfig {
 /** The game's 0.5 m blocks at each view distance on offer. Compare sizes with `?plan=1:96,0.5:96`. */
 export const DEFAULT_PLAN: readonly BenchConfig[] = [64, 96, 128].map((radiusM) => ({ blockSize: 0.5, radiusM }));
 
-export const DEFAULT_SHAMBLER_COUNTS = [10, 25, 50, 100] as const;
+export const ACTIVE_SHAMBLER_TARGET = 60;
+export const BACKGROUND_SHAMBLER_BENCH_RING_METRES = [80, 90] as const;
+export const DEFAULT_SHAMBLER_COUNTS = [ACTIVE_SHAMBLER_TARGET, ACTIVE_SHAMBLER_TARGET + 300] as const;
 const MAX_SHAMBLER_COUNT = 500;
 const SHAMBLER_COUNTS_PATTERN = /^\d+(,\d+)*$/;
 
@@ -100,12 +102,15 @@ export interface Environment {
 
 export interface ShamblerRunResult {
   n: number;
+  active?: number;
+  background?: number;
   seed: number;
   /** Which renderer drew the zombies. Absent on records from before this existed — treat as 'boxes'
    * (report.ts does). */
   actors?: ActorRenderer;
   frame: FrameStats;
   zombieTick: SampleStats;
+  backgroundTick?: SampleStats;
   renderSubmit: SampleStats;
   /** CPU ms in the actor renderer's own sync() (pose + matrix/texture writes for 'detailed'; ZombieMeshes'
    * instance-matrix writes for 'boxes'). Absent on records from before this existed. */

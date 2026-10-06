@@ -5,6 +5,8 @@ import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
 import type { AimState } from './aim.ts';
 import type { Character, CharacterState } from './character.ts';
+import type { RustleClock } from './foliageRustle.ts';
+import type { FootstepClock } from './footsteps.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
 import type { LongActionState } from './longAction.ts';
@@ -42,6 +44,9 @@ export interface SaveSnapshot {
 export interface PlayerAudioSnapshot {
   vocalNoiseId: number;
   vocalNoise: VocalNoise | null;
+  footstepClock: FootstepClock;
+  airbornePeakY: number | null;
+  rustleClock: { cells: readonly string[]; nextTime: number };
   soundPicker: SoundPickerState;
 }
 
@@ -64,6 +69,9 @@ export interface SnapshotSessionInput {
   handling: HandlingQueue;
   vocalNoiseId: number;
   vocalNoise?: VocalNoise | undefined;
+  footstepClock: FootstepClock;
+  airbornePeakY?: number | undefined;
+  rustleClock: RustleClock;
   audio: { snapshotState: () => Readonly<SoundPickerState> };
 }
 
@@ -86,6 +94,9 @@ export const snapshotSession = ({
   handling,
   vocalNoiseId,
   vocalNoise,
+  footstepClock,
+  airbornePeakY,
+  rustleClock,
   audio,
 }: SnapshotSessionInput): Readonly<SaveSnapshot> => {
   const lightUid = survival.snapshotState().litUid ?? null;
@@ -125,6 +136,9 @@ export const snapshotSession = ({
                 radiusMetres: vocalNoise.radiusMetres,
                 expiresAt: vocalNoise.expiresAt,
               },
+        footstepClock: structuredClone(footstepClock),
+        airbornePeakY: airbornePeakY ?? null,
+        rustleClock: { cells: [...rustleClock.cells].sort(), nextTime: rustleClock.nextTime },
         soundPicker: audio.snapshotState() as SoundPickerState,
       },
     },
@@ -136,7 +150,16 @@ export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<Pl
     !(state && Number.isSafeInteger(state.vocalNoiseId)) ||
     state.vocalNoiseId < 0 ||
     !state.soundPicker ||
-    !Array.isArray(state.soundPicker.events)
+    !Array.isArray(state.soundPicker.events) ||
+    !state.footstepClock ||
+    !['still', 'walking', 'jogging', 'sprinting'].includes(state.footstepClock.gait) ||
+    !Number.isFinite(state.footstepClock.distanceUntilStep) ||
+    state.footstepClock.distanceUntilStep < 0 ||
+    (state.airbornePeakY !== null && !Number.isFinite(state.airbornePeakY)) ||
+    !state.rustleClock ||
+    !Array.isArray(state.rustleClock.cells) ||
+    state.rustleClock.cells.some((cell) => typeof cell !== 'string') ||
+    !Number.isFinite(state.rustleClock.nextTime)
   ) {
     throw new Error('Invalid player audio state');
   }
@@ -166,6 +189,9 @@ export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<Pl
             radiusMetres: noise.radiusMetres,
             expiresAt: noise.expiresAt,
           },
+    footstepClock: { ...state.footstepClock },
+    airbornePeakY: state.airbornePeakY,
+    rustleClock: { cells: [...state.rustleClock.cells], nextTime: state.rustleClock.nextTime },
     soundPicker: structuredClone(state.soundPicker),
   });
 };

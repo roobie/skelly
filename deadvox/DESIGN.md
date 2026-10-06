@@ -5,6 +5,7 @@ read_if:
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
   - you change shambler attention, movement, obstacle response or floor-transition behavior
+  - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
   - you change the game's design, especially held-item feedback, body damage or treatment, or hand ownership
   - you tune body infection or unconsciousness through content packs
@@ -733,19 +734,31 @@ worse the world gets.
 - **Simulation structure (BR, 2026-10-06 06:14; d93-1):** “Start with a refactoring trial on the worst offender”. The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background movement (BR, 2026-10-05 21:32):** “yes”: background zombies beeline in big, cheap steps.
+- **Distant attention and noise persistence (d104-4):** Daylight changes a horde's roaming choice, not its response to a heard event; a daytime home preference cannot replace a noise target before arrival. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
+- **Stimulus memory (d104-5):** The question for BR was how long a zombie or horde should retain an unreachable stimulus instead of resuming its hour-driven wandering. BR answered, “after some time, they should forget about what drew them there (or anywhere) so they'd resume drifting and roaming after 3 minutes”. The real-time versus game-time interpretation remains open; the shared content duration is counted in simulation seconds, so compression affects elapsed wall time. Both tiers use that duration, and the stimulus timestamp is saved so loading does not restart the wait. See `src/core/schema.ts`, `ZombieSchema`; and `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.forgetIndividualStimulus`.
+- **Background cadence persistence (d104-4):** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `src/game/session.ts`, `zombie-background`.
 
 - **Level of detail:**
 
   | Tier | Where | Simulation |
   | --- | --- | --- |
   | Active | Nearby actors | Detailed AI, body physics and beeline movement (implemented) |
-  | Background | Distant actors in loaded chunks | Reduced-rate, large-step beeline toward the shared attention target (planned) |
-  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
+  | Background | Distant actors in loaded chunks | Reduced-rate, collision-resolved beeline toward attention (implemented) |
+  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (Slice 4) |
 
-  The background tier and first horde are Slice 3 work; abstract hordes remain
-  Slice 4 work. Shared flow fields and crowd navigation are dropped from the
-  Slice 3 plan. d84's beeline brain replaces the route follow-up in
-  [#244](https://github.com/roobie/skelly/issues/244).
+  For Slice 3 milestone 3.9, keep loaded distant actors in the same store and
+  switch their update schedule by derived proximity and terrain availability.
+  The hamlet's first group shares noise-driven targets and drifts at night, but
+  remains individual actors rather than a region-map abstraction. Save the
+  group's target and random stream with member offsets so noise response and
+  roaming continue after load; derive the tier again instead of saving it. This
+  keeps the terrain collision authority live and avoids persisting a navigation
+  field. See `src/core/zombies.ts`, `ZombieSystem.tickActive`,
+  `ZombieSystem.tickBackground` and `ZombieSystem.addHorde`; and
+  `src/game/session.ts`, the `zombies` and `zombie-background` scheduler systems.
+  Abstract hordes remain Slice 4 work. Shared flow fields and crowd navigation
+  are dropped from the Slice 3 plan. d84's beeline brain replaces the route
+  follow-up in [#244](https://github.com/roobie/skelly/issues/244).
 
 BR said “defer the bashing” (2026-10-05 20:36). For #273, bashing waits until mob and obstacle strength exist; closed doors remain obstacles like walls. If #273 supplies those strengths, the bash decision belongs at `obstacleContact` in `ZombieSystem.tick`. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
 

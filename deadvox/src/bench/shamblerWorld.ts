@@ -6,9 +6,10 @@ import { HAMLET_BLOCK_SIZE, Hamlet } from '../core/hamlet.ts';
 import { chunksFor, makeScale } from '../core/scale.ts';
 import { World } from '../core/world.ts';
 import { generateColumn, worldGroundAt } from '../core/worldgen.ts';
+import { BACKGROUND_SHAMBLER_BENCH_RING_METRES } from './plan.ts';
 import type { ShamblerPlacementWorld } from './shamblerPlacement.ts';
 
-const PLACEMENT_RING_METRES = 20;
+const [, PLACEMENT_RING_METRES] = BACKGROUND_SHAMBLER_BENCH_RING_METRES;
 const PLAYER_SEARCH_METRES = 6;
 const COLUMN_MARGIN_METRES = CHUNK * HAMLET_BLOCK_SIZE;
 

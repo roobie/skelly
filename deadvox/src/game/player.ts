@@ -41,6 +41,9 @@ export interface PlayerState {
   pitch: number;
   walk: boolean;
   crouching: boolean;
+  sprinting: boolean;
+  firearmReadyWalking: boolean;
+  handlingPausedForKnockout: boolean;
 }
 
 export const snapshotPlayer = (body: Body, state: Omit<PlayerState, 'body'>): Readonly<PlayerState> =>
@@ -67,6 +70,9 @@ export const restorePlayer = (state: PlayerState): PlayerState => ({
   pitch: state.pitch,
   walk: state.walk,
   crouching: state.crouching,
+  sprinting: state.sprinting,
+  firearmReadyWalking: state.firearmReadyWalking,
+  handlingPausedForKnockout: state.handlingPausedForKnockout,
 });
 
 export interface MoveIntent {

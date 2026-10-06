@@ -192,6 +192,30 @@ export const stepBody = (body: Body, dt: number, isSolid: SolidAt, params: Physi
   }
 };
 
+/** Moves a grounded actor horizontally in collision-bounded substeps without running gravity. */
+export const stepBodyHorizontal = (
+  body: Body,
+  movement: { dx: number; dz: number; isSolid: SolidAt; params: PhysicsParams },
+): void => {
+  const { dx, dz, isSolid, params } = movement;
+  const largest = Math.max(Math.abs(dx), Math.abs(dz));
+  const substeps = Math.max(1, Math.ceil(largest / MAX_STEP));
+  for (let i = 0; i < substeps; i++) {
+    const ctx: MoveContext = {
+      body,
+      isSolid,
+      stepHeight: params.stepHeight,
+      grounded: body.onGround,
+      bodies: params.obstacles ?? [],
+    };
+    moveHorizontal(ctx, 0, dx / substeps);
+    moveHorizontal(ctx, 2, dz / substeps);
+    if (body.onGround) {
+      body.onGround = moveAxis(body, 1, -2 * CONTACT_SKIN, { isSolid });
+    }
+  }
+};
+
 const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: CollisionContext): void => {
   if (!overlapsBody(first, second)) {
     return;
