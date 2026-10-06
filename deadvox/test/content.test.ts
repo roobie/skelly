@@ -678,11 +678,23 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
-  it('checks furniture, zombie and light references', () => {
+  it('checks furniture, prying-skill, zombie and light references', () => {
     const mod = {
       source: 'mod.json',
       data: {
-        furniture: [{ id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333', loot: 'vault' }],
+        furniture: [
+          { id: 'safe', name: 'Safe', size: [1, 1, 1], color: '#333333', loot: 'vault' },
+          {
+            id: 'pry_door',
+            name: 'Pry door',
+            size: [1, 1, 1],
+            color: '#333333',
+            door: {
+              handling: 0.4,
+              prying: { quality: 1, skill: 'missing_skill', time: 2, fastestTime: 1, strikeInterval: 1 },
+            },
+          },
+        ],
         zombies: [
           {
             id: 'clerk',
@@ -754,6 +766,7 @@ describe('content references', () => {
     expect(paths(withBase(mod).issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
+      'furniture[1].door.prying.skill',
       'items[0].light.power.battery',
       'zombies[0].loot',
     ]);

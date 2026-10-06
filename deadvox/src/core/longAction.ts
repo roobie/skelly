@@ -38,7 +38,6 @@ export type LongJob =
       treatment: BodyTreatment;
       elapsed: number;
       duration: number;
-
     };
 export interface ReadingActionHooks {
   owns: (bookUid: number) => boolean;
@@ -54,7 +53,6 @@ export interface PryActionHooks {
 export interface TreatmentActionHooks {
   validate: (region: BodyRegion, itemUid: number, treatment: BodyTreatment) => string | undefined;
   finish: (region: BodyRegion, itemUid: number, treatment: BodyTreatment) => string | true;
-
 }
 export interface LongActionState {
   job: LongJob | null;
@@ -544,24 +542,20 @@ export class LongActions {
     job.stopped = true;
   }
   private validateOwner(job: LongJob): string | undefined {
-    if (job.jobType === 'craft') {
-      return this.craft?.validate(job.workUid) ?? (this.craft ? undefined : 'Missing craft action owner');
+    switch (job.jobType) {
+      case 'craft':
+        return this.craft ? this.craft.validate(job.workUid) : 'Missing craft action owner';
+      case 'reading':
+        return this.reading ? this.reading.validate(job.bookUid) : 'Missing reading action owner';
+      case 'pry':
+        return this.prying ? this.prying.validate(job.entityUid, job.toolUid) : 'Missing prying action owner';
+      case 'treatment':
+        return this.treatment
+          ? this.treatment.validate(job.region, job.itemUid, job.treatment)
+          : 'Missing treatment action owner';
+      default:
+        return undefined;
     }
-    if (job.jobType === 'reading') {
-      return this.reading?.validate(job.bookUid) ?? (this.reading ? undefined : 'Missing reading action owner');
-    }
-    if (job.jobType === 'pry') {
-      return (
-        this.prying?.validate(job.entityUid, job.toolUid) ?? (this.prying ? undefined : 'Missing prying action owner')
-      );
-    }
-    if (job.jobType === 'treatment') {
-      return (
-        this.treatment?.validate(job.region, job.itemUid, job.treatment) ??
-        (this.treatment ? undefined : 'Missing treatment action owner')
-      );
-    }
-    return undefined;
   }
   private advanceJob(job: LongJob, seconds: number, fromTime: number): boolean {
     if (job.jobType === 'pry') {

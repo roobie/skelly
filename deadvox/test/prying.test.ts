@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
+import { Character, practiceForNextLevel, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { doorOptions } from '../src/core/options.ts';
@@ -92,6 +93,83 @@ it('requires a carried tool meeting the door quality and takes its time from con
   expect(plan.tool.uid).toBe(crowbar.uid);
   expect(plan.time).toBe(tuning.time);
   expect(plan.strikeInterval).toBe(tuning.strikeInterval);
+});
+
+it('higher mechanics skill shortens prying and preserves its strike count', () => {
+  const inventory = new Inventory(registry);
+  const definition = registry.furniture.get('wood_door')!;
+  const door = inventory.furnish({
+    type: definition.id,
+    pos: [0, 1, 1],
+    size: definition.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  })!;
+  const crowbar = inventory.create('crowbar');
+  expect(inventory.add(crowbar, { kind: 'hand', side: 'right' })).toBe(true);
+  const character = new Character(registry);
+  const slow = pryPlan(inventory, door, crowbar.uid, character);
+  if (!slow.ok) {
+    throw new Error(slow.reason);
+  }
+  const tuning = definition.door!.prying!;
+  expect(slow.time).toBe(tuning.time);
+  while (character.skills.mechanics! < SKILL_LEVEL_MAX) {
+    character.awardPractice('mechanics', practiceForNextLevel(character.skills.mechanics!));
+  }
+  const fast = pryPlan(inventory, door, crowbar.uid, character);
+  if (!fast.ok) {
+    throw new Error(fast.reason);
+  }
+  expect(fast.time).toBe(tuning.fastestTime);
+  expect(fast.time).toBeLessThan(slow.time);
+  expect(Math.floor(fast.time / fast.strikeInterval)).toBe(Math.floor(slow.time / slow.strikeInterval));
+});
+
+it('prying advances at normal simulation speed without compression', () => {
+  const runtime = makePryRuntime();
+  const control = makePryRuntime();
+  const door = makeDoor(runtime);
+  const crowbar = carryCrowbar(runtime);
+  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  expect(runtime.sim.compression.active).toBe(false);
+
+  runtime.sim.frame(1);
+  control.sim.frame(1);
+
+  expect(runtime.sim.time).toBe(control.sim.time);
+  expect(runtime.sim.compression.active).toBe(false);
+  expect(runtime.sim.actions.job?.jobType).toBe('pry');
+  if (runtime.sim.actions.job?.jobType !== 'pry') {
+    throw new Error('The normal-speed pry did not retain its action');
+  }
+  expect(runtime.sim.actions.job.stopped).toBe(false);
+  expect(runtime.sim.actions.job.elapsed).toBeGreaterThan(0);
+});
+
+it('an interruption pauses normal-speed prying and resume preserves its cursor', () => {
+  const runtime = makePryRuntime();
+  const door = makeDoor(runtime);
+  const crowbar = carryCrowbar(runtime);
+  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  runtime.sim.frame(1);
+  const elapsed = runtime.sim.actions.job?.jobType === 'pry' ? runtime.sim.actions.job.elapsed : 0;
+  const reason = 'A test interruption';
+
+  runtime.sim.emit({ kind: 'interrupt', reason });
+  runtime.sim.frame(0.1);
+
+  const stopped = runtime.sim.actions.job;
+  expect(stopped).toMatchObject({ jobType: 'pry', stopped: true, elapsed });
+  expect(runtime.sim.compression.interruption).toBe(reason);
+  expect(runtime.sim.compression.c).toBe(1);
+  expect(runtime.sim.compression.active).toBe(false);
+
+  expect(runtime.sim.actions.resume()).toBeUndefined();
+  expect(runtime.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed });
+  expect(runtime.sim.compression.interruption).toBeUndefined();
+  expect(runtime.sim.compression.locksInput).toBe(false);
+  expect(runtime.sim.compression.active).toBe(false);
 });
 
 it('the matching key still unlocks a pryable door silently', () => {

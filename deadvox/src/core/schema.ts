@@ -469,14 +469,21 @@ const ModelSchema = pipe(
 
 // ---- furniture ----
 
-const DoorPryingSchema = strictObject({
-  /** Minimum tool quality needed to force the door's lock. */
-  quality: QualityLevel,
-  /** Simulated seconds of work. */
-  time: Positive,
-  /** Simulated seconds between noisy strikes. */
-  strikeInterval: Positive,
-});
+const DoorPryingSchema = pipe(
+  strictObject({
+    /** Minimum tool quality needed to force the door's lock. */
+    quality: QualityLevel,
+    /** Skill whose level shortens prying time. */
+    skill: Id,
+    /** Simulated seconds of work at the lowest skill level. */
+    time: Positive,
+    /** Simulated seconds of work at the fastest skill level. */
+    fastestTime: Positive,
+    /** Simulated seconds between noisy strikes at the lowest skill level. */
+    strikeInterval: Positive,
+  }),
+  check(({ time, fastestTime }) => fastestTime <= time, 'fastest prying time cannot exceed the base time'),
+);
 
 const FurnitureSchema = strictObject({
   id: Id,

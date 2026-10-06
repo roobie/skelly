@@ -1,10 +1,24 @@
 import type { BlockEntity } from './blockEntities.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN, skillEffectLevel, skillSaturation } from './character.ts';
 import type { Inventory } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
+
+export interface PryCharacter {
+  readonly skills: Readonly<Record<string, number>>;
+}
 
 export type PryPlan =
   | { ok: true; time: number; tool: Item; strikeInterval: number }
   | { ok: false; reason: string; toolNames: string[] };
+
+const durationForSkill = (time: number, fastestTime: number, skillLevel: number): number => {
+  const effectLevel = skillEffectLevel(skillLevel);
+  const slowEffect = skillSaturation(SKILL_LEVEL_MIN, 0.42, 4);
+  const fastEffect = skillSaturation(SKILL_LEVEL_MAX, 0.42, 4);
+  const effect = skillSaturation(effectLevel, 0.42, 4);
+  const progress = (slowEffect - effect) / (slowEffect - fastEffect);
+  return time + (fastestTime - time) * progress;
+};
 
 const toolNamesForQuality = (inventory: Inventory, quality: number): string[] =>
   [...inventory.registry.items.values()]
@@ -12,7 +26,12 @@ const toolNamesForQuality = (inventory: Inventory, quality: number): string[] =>
     .map((definition) => definition.name)
     .sort((a, b) => a.localeCompare(b));
 
-export const pryPlan = (inventory: Inventory, entity: BlockEntity, toolUid?: number): PryPlan => {
+export const pryPlan = (
+  inventory: Inventory,
+  entity: BlockEntity,
+  toolUid?: number,
+  character?: PryCharacter,
+): PryPlan => {
   const furniture = inventory.entities.defOf(entity);
   const prying = furniture.door?.prying;
   const toolNames = prying ? toolNamesForQuality(inventory, prying.quality) : [];
@@ -44,5 +63,8 @@ export const pryPlan = (inventory: Inventory, entity: BlockEntity, toolUid?: num
   if (!tool || (defOf(inventory.registry, tool.type).tool?.qualities.prying ?? 0) < prying.quality) {
     return refuse(`Need a tool with prying quality ${prying.quality}`);
   }
-  return { ok: true, time: prying.time, strikeInterval: prying.strikeInterval, tool };
+  const skillLevel = character?.skills[prying.skill] ?? SKILL_LEVEL_MIN;
+  const time = durationForSkill(prying.time, prying.fastestTime, skillLevel);
+  const strikeInterval = prying.strikeInterval * (time / prying.time);
+  return { ok: true, time, strikeInterval, tool };
 };

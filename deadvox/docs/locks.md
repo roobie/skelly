@@ -49,9 +49,9 @@ loadout includes the crowbar; the key remains outside the hamlet's found-materia
 closure.
 
 The crowbar is a costly fallback so a key left on a corpse does not strand the
-player; its strikes use the existing sound and zombie-hearing path. The first
-look treats prying as physically removing the padlock, making forced entry a
-one-way breach. BR's choice about reuse remains open. See `src/core/prying.ts`,
+player; its strikes use the existing sound and zombie-hearing path. BR answered
+#309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door
+unlocked, making forced entry a one-way breach. See `src/core/prying.ts`,
 `pryPlan`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 
 Picking, shambler bashing, and the hunting-cabin map placement remain outside

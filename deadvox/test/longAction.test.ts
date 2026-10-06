@@ -169,6 +169,7 @@ describe('core long actions', () => {
     const duration = 100;
     const strikeInterval = 50;
     expect(sim.actions.beginPrying(7, 11, duration, strikeInterval)).toBeUndefined();
+    expect(sim.compression.active).toBe(false);
     sim.scheduler.advance(10 / ratio);
     sim.actions.stop();
     const { job } = sim.actions;
@@ -180,6 +181,7 @@ describe('core long actions', () => {
     expect(strikes).toEqual([]);
 
     expect(sim.actions.resume()).toBeUndefined();
+    expect(sim.compression.active).toBe(false);
     sim.scheduler.advance(10 / ratio);
     const resumed = sim.actions.job;
     if (resumed?.jobType !== 'pry') {

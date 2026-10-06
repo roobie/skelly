@@ -806,7 +806,7 @@ export const createSession = (options: SessionOptions) => {
       if (!entity) {
         return 'The door is no longer there';
       }
-      const plan = pryPlan(inventory, entity, toolUid);
+      const plan = pryPlan(inventory, entity, toolUid, character);
       return plan.ok ? undefined : plan.reason;
     },
     strike: (_entityUid, _toolUid, time) => playPlayerSound('lock_pry', time, { sourceLabel: 'prying padlock' }),
@@ -815,7 +815,7 @@ export const createSession = (options: SessionOptions) => {
       if (!entity) {
         return 'The door is no longer there';
       }
-      const plan = pryPlan(inventory, entity, toolUid);
+      const plan = pryPlan(inventory, entity, toolUid, character);
       return plan.ok ? entities.breakLock(entity) : plan.reason;
     },
   };
@@ -851,7 +851,7 @@ export const createSession = (options: SessionOptions) => {
     character,
     planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
     pryDoor: (entity: BlockEntity, toolUid?: number) => {
-      const plan = pryPlan(inventory, entity, toolUid);
+      const plan = pryPlan(inventory, entity, toolUid, character);
       return plan.ok ? sim.actions.beginPrying(entity.uid, plan.tool.uid, plan.time, plan.strikeInterval) : plan.reason;
     },
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),

@@ -16,7 +16,7 @@ import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickTh
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import type { RestKind } from '../core/longAction.ts';
+import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan } from '../core/options.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
@@ -32,7 +32,7 @@ import { mountCraftPanel } from '../ui/craftController.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
-import { quickbarKey, renderQuickbar, type HandlingPresentationSource } from '../ui/hud.ts';
+import { type HandlingPresentationSource, quickbarKey, renderQuickbar } from '../ui/hud.ts';
 import {
   type HudOptionsState,
   hudVisibility,
@@ -98,6 +98,18 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
+
+const handlingPresentationFor = (
+  job: Readonly<LongJob> | undefined,
+  queue: HandlingPresentationSource,
+): HandlingPresentationSource =>
+  job?.jobType === 'pry' && !job.stopped
+    ? {
+        jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
+        cancelLabel: 'X pauses',
+        movementLabel: '',
+      }
+    : queue;
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -1740,12 +1752,11 @@ export const startPlay = (
     renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
-    const pryJob = sim.actions.job;
-    const handlingPresentation: HandlingPresentationSource =
-      pryJob?.jobType === 'pry' && !pryJob.stopped
-        ? { jobs: [{ label: 'Prying padlock', duration: pryJob.duration, elapsed: pryJob.elapsed }] }
-        : queue;
-    renderPlayHandling(handlingBox, handlingPresentation, !screen.isOpen && visible.handling);
+    renderPlayHandling(
+      handlingBox,
+      handlingPresentationFor(sim.actions.job, queue),
+      !screen.isOpen && visible.handling,
+    );
     view.prepareLighting(sky);
     updateHeldItems(dt);
     view.updateShadows(hour, sky);

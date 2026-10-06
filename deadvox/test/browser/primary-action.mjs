@@ -1128,11 +1128,14 @@ try {
     return !root.hidden && root.querySelector('.hd-bar');
   });
   const pryElapsed = await page.evaluate(() => {
-    const sim = globalThis.primaryActionTest.session.sim;
+    const { session } = globalThis.primaryActionTest;
+    const { sim } = session;
     sim.frame(1);
     sim.actions.stop();
-    const job = sim.actions.job;
-    if (job?.jobType !== 'pry') throw new Error('Stopping the pry lost its progress');
+    const { job } = sim.actions;
+    if (job?.jobType !== 'pry') {
+      throw new Error('Stopping the pry lost its progress');
+    }
     return job.elapsed;
   });
   assert.ok(pryElapsed > 0, 'normal-speed simulation advances visible pry progress');
@@ -1140,17 +1143,24 @@ try {
   await page.evaluate((doorUid) => {
     const r = globalThis.primaryActionTest;
     const door = r.inventory.entities.byUid(doorUid);
-    if (!door) throw new Error('The prying door disappeared before resume');
+    if (!door) {
+      throw new Error('The prying door disappeared before resume');
+    }
     r.useTarget(door);
   }, pryPreview.doorUid);
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
     const root = document.querySelector('#handling');
     const fill = root.querySelector('.hd-fill');
-    return r.session.sim.actions.job?.jobType === 'pry' && !root.hidden && fill && Number.parseFloat(fill.style.width) > 0;
+    return (
+      r.session.sim.actions.job?.jobType === 'pry' && !root.hidden && fill && Number.parseFloat(fill.style.width) > 0
+    );
   });
   const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
   assert.equal(resumedElapsed, pryElapsed, 'the progress bar resumes from the saved pry cursor');
+  const pryProgressText = await page.locator('#handling').textContent();
+  assert.match(pryProgressText ?? '', /X pauses/);
+  assert.doesNotMatch(pryProgressText ?? '', /Half speed/);
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.handling = false;
   });

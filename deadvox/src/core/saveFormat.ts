@@ -1204,7 +1204,6 @@ function ownsLongActionItem(
   }
   if (job?.jobType === 'treatment') {
     return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.treatment);
-
   }
   return true;
 }
@@ -1238,7 +1237,6 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
     !snapshot.character.inventory.entities.entities.some(({ uid }) => uid === job.entityUid)
   ) {
     throw new Error('Missing prying target');
-
   }
 }
 

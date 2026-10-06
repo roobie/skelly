@@ -366,10 +366,11 @@ systems now.
 **d105-1 amendment:** Interrupted prying must resume against the same door and
 tool, and a completed pry must preserve the resulting lock outcome on that
 door; both affect future play, not presentation. Keep action progress in
-`LongActions` and the lock outcome in `BlockEntities`. Whether prying destroys
-the padlock or leaves it reusable is BR's open choice; removal is the working
-default. Because the descriptor changes saved shape, advance the exact-version
-schema beyond concurrent save changes rather than migrate old saves. See
+`LongActions` and the lock outcome in `BlockEntities`. BR answered #309 at
+19:31, “it's destroyed”: a completed pry destroys the padlock and leaves the
+door unlocked, so the save preserves a destroyed-lock outcome. Because the
+descriptor changes saved shape, advance the exact-version schema beyond
+concurrent save changes rather than migrate old saves. See
 `src/core/longAction.ts`, `LongActions`, and `src/core/blockEntities.ts`,
 `BlockEntities.breakLock`.
 
