@@ -27,6 +27,10 @@ const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 /** BR ruled legendary is mostly vanity; its effects match ordinary level 10. */
 export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
 
+/** Shared diminishing-return curve for effects that improve with skill. */
+export const skillSaturation = (effectLevel: number, floor: number, halfLife: number): number =>
+  floor + (1 - floor) * (halfLife / (halfLife + effectLevel));
+
 /** Practice required for the next level grows with the level already reached. */
 export const practiceForNextLevel = (level: number): number => {
   if (level === SKILL_LEVEL_LEGENDARY) {

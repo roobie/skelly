@@ -469,6 +469,22 @@ const ModelSchema = pipe(
 
 // ---- furniture ----
 
+const DoorPryingSchema = pipe(
+  strictObject({
+    /** Minimum tool quality needed to force the door's lock. */
+    quality: QualityLevel,
+    /** Skill whose level shortens prying time. */
+    skill: Id,
+    /** Simulated seconds of work at the lowest skill level. */
+    time: Positive,
+    /** Simulated seconds of work at the fastest skill level. */
+    fastestTime: Positive,
+    /** Simulated seconds between noisy strikes at the lowest skill level. */
+    strikeInterval: Positive,
+  }),
+  check(({ time, fastestTime }) => fastestTime <= time, 'fastest prying time cannot exceed the base time'),
+);
+
 const FurnitureSchema = strictObject({
   id: Id,
   name: Name,
@@ -483,7 +499,7 @@ const FurnitureSchema = strictObject({
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
   /** It opens and closes, taking this many seconds. */
-  door: optional(strictObject({ handling: NonNegative })),
+  door: optional(strictObject({ handling: NonNegative, prying: optional(DoorPryingSchema) })),
   /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
   rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
   /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */

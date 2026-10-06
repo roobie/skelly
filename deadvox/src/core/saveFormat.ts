@@ -136,7 +136,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 25;
+export const SAVE_SCHEMA_VERSION = 26;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -396,16 +396,20 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'pry', 'treatment']),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),
       workUid: opt(positiveInt),
       bookUid: opt(positiveInt),
+      entityUid: opt(positiveInt),
+      toolUid: opt(positiveInt),
       region: opt(enumeration(bodyRegionValues)),
       itemUid: opt(positiveInt),
       treatment: opt(enumeration(BODY_TREATMENTS)),
       duration: opt(positive),
+      strikeInterval: opt(positive),
+      nextStrike: opt(positive),
       rest: opt(
         obj({
           kind: enumeration(['rest', 'sleep']),
@@ -1195,6 +1199,9 @@ function ownsLongActionItem(
   if (job?.jobType === 'reading') {
     return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
   }
+  if (job?.jobType === 'pry') {
+    return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
+  }
   if (job?.jobType === 'treatment') {
     return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.treatment);
   }
@@ -1204,17 +1211,32 @@ function ownsLongActionItem(
 function validateActionReferences(snapshot: SaveSnapshot): void {
   const { job } = snapshot.character.longAction;
   validateLongJob(job, snapshot.character.simulation.time);
+  if (
+    job?.jobType === 'pry' &&
+    !job.stopped &&
+    (snapshot.character.simulation.compression.active || snapshot.character.simulation.compression.c !== 1)
+  ) {
+    throw new Error('Running prying action cannot use compression');
+  }
   const tree = [...savedItemTree(snapshot.character.inventory)];
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
   if (!ownsLongActionItem(job, tree)) {
-    let message = 'Missing craft work item';
+    let reason = 'Missing craft work item';
     if (job?.jobType === 'reading') {
-      message = 'Missing reading book';
+      reason = 'Missing reading book';
+    } else if (job?.jobType === 'pry') {
+      reason = 'Missing prying tool';
     } else if (job?.jobType === 'treatment') {
-      message = 'Missing treatment item';
+      reason = 'Missing treatment item';
     }
-    throw new Error(message);
+    throw new Error(reason);
+  }
+  if (
+    job?.jobType === 'pry' &&
+    !snapshot.character.inventory.entities.entities.some(({ uid }) => uid === job.entityUid)
+  ) {
+    throw new Error('Missing prying target');
   }
 }
 
