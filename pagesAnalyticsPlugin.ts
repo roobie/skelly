@@ -7,6 +7,9 @@ export const pagesAnalyticsPlugin = (enabled: boolean) => ({
     if (!enabled) {
       return html;
     }
+    if (!html.includes('</head>')) {
+      throw new Error('Pages analytics requires a closing </head> tag');
+    }
     return html.replace('</head>', `  ${ANALYTICS_SCRIPT}\n</head>`);
   },
 });
