@@ -33,12 +33,13 @@ const replaySample = {
   pitch: -0.2,
   walking: false,
   descending: false,
+  worldReady: true,
 } as const;
 
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 2,
+    schemaVersion: 3,
     endStateFingerprint: '0'.repeat(64),
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
     frames: inputs.frames,
@@ -57,8 +58,13 @@ const dispatchWalkToggle = (
   }
 };
 
-const recordActiveSession = (start: Readonly<SaveSnapshot>, recorder: InputReplayRecorder) => {
+const recordActiveSession = (
+  start: Readonly<SaveSnapshot>,
+  recorder: InputReplayRecorder,
+  ready?: () => boolean,
+) => {
   const source = createRuntime(start, false, undefined, {
+    ...(ready ? { ready } : {}),
     sampleAtPlayerTick: (_tick, live, _time, compression) => {
       recorder.recordTick(live, compression);
       return live;
@@ -126,6 +132,16 @@ describe('input replay', () => {
     expect(joined.actions.map(({ tick }) => tick)).toEqual([0, 1]);
   });
 
+  it('records whether the player column was ready at each player tick', () => {
+    const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
+    recorder.recordTick({ ...replaySample, worldReady: true });
+    recorder.recordTick({ ...replaySample, worldReady: false });
+    const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
+
+    expect(player.next()?.worldReady).toBe(true);
+    expect(player.next()?.worldReady).toBe(false);
+  });
+
   it('bounds the always-on recording window and retained buffers', () => {
     const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
     while (!recorder.full) {
@@ -185,6 +201,18 @@ describe('input replay', () => {
     expect(source.view.pitch).not.toBe(start.character.player.pitch);
     const replay = playSession(start, decoded.inputs);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('replays movement skips captured while the player column was unready', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    let readyTick = 0;
+    const source = recordActiveSession(start, recorder, () => readyTick++ % 4 !== 0);
+    const replay = playSession(start, recorder.copyInputs());
+
+    expect(source.player.body.pos).not.toEqual(start.character.player.body.pos);
+    expect(replay.player.body.pos).toEqual(source.player.body.pos);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(capture(source)));
   });
 
   it('preserves end state when a multi-tick frame crosses the recording window seam', async () => {

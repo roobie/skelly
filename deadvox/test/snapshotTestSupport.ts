@@ -111,6 +111,7 @@ export function createRuntime(
   options: {
     spawn?: Vec3;
     start?: number;
+    ready?: () => boolean;
     sampleAtPlayerTick?: (
       tick: number,
       live: PlayerInputSample,
@@ -168,7 +169,7 @@ export function createRuntime(
     seed,
     start: options.start ?? defaultClock.start,
     spawn,
-    ready: () => true,
+    ready: options.ready ?? (() => true),
     controls: {
       active: () => Boolean(sampleAtPlayerTick),
       intent: () => view.intent,

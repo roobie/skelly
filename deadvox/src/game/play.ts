@@ -304,6 +304,7 @@ export const startPlay = (
       pitch: input.pitch,
       walking: false,
       descending: false,
+      worldReady: false,
     };
   };
   const session = createSession({
@@ -1948,7 +1949,11 @@ export const startPlay = (
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
-      sim.paused = menuPaused || gameFrozen || replayPlayer.finished;
+      const nextSample = replayPlayer.peek();
+      const waitingForWorld = Boolean(
+        nextSample?.worldReady && !streamer.isReady(body.pos[0], body.pos[2]),
+      );
+      sim.paused = menuPaused || gameFrozen || replayPlayer.finished || waitingForWorld;
       if (!sim.paused) {
         sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
         session.frameReplay(1 / 60);

@@ -7,7 +7,7 @@ import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 2;
+const INPUT_REPLAY_SCHEMA_VERSION = 3;
 const INPUT_REPLAY_TICKS_PER_WINDOW = 60 * 60 * 2;
 // Keep each render frame's bounded compressed ticks available so rollover cannot cut it in half.
 const INPUT_REPLAY_TICKS_PER_FRAME = Math.ceil(SKIP_COMPRESSION.maxSimPerFrame * PHYSICS_RATE);
@@ -58,6 +58,7 @@ const FRAME_FLAGS = {
   useDominantHeld: 1 << 6,
   useOff: 1 << 7,
   descending: 1 << 8,
+  worldReady: 1 << 9,
 } as const;
 
 export interface ReplayControlSample {
@@ -68,6 +69,7 @@ export interface ReplayControlSample {
   readonly pitch: number;
   readonly walking: boolean;
   readonly descending: boolean;
+  readonly worldReady: boolean;
   readonly compression: number;
 }
 
@@ -143,7 +145,8 @@ const flagOf = (sample: Omit<ReplayControlSample, 'compression'>): number =>
   (sample.intent.useDominant ? FRAME_FLAGS.useDominant : 0) |
   (sample.intent.useDominantHeld ? FRAME_FLAGS.useDominantHeld : 0) |
   (sample.intent.useOff ? FRAME_FLAGS.useOff : 0) |
-  (sample.descending ? FRAME_FLAGS.descending : 0);
+  (sample.descending ? FRAME_FLAGS.descending : 0) |
+  (sample.worldReady ? FRAME_FLAGS.worldReady : 0);
 
 export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample => {
   const [yaw, pitch, forward, right, flags] = frame;
@@ -164,6 +167,7 @@ export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample =
     pitch,
     walking: Boolean(flags & FRAME_FLAGS.walk),
     descending: Boolean(flags & FRAME_FLAGS.descending),
+    worldReady: Boolean(flags & FRAME_FLAGS.worldReady),
     compression: frame[5],
   };
 };
@@ -247,7 +251,7 @@ export class InputReplayRecorder {
 
   recordTick(sample: Omit<ReplayControlSample, 'compression'>, compression = 1): void {
     if (this.frameCount >= this.bufferTicks) {
-      return;
+      throw new Error('Input replay tick buffer is full');
     }
     if (this.frameCount % 60 === 0) {
       this.batchStartedAt = performance.now();
@@ -457,7 +461,7 @@ export async function decodeInputReplay(
       Math.abs(candidate[3]) > 1 ||
       !Number.isSafeInteger(candidate[4]) ||
       candidate[4] < 0 ||
-      candidate[4] > 0x1_ff ||
+      candidate[4] > 0x3_ff ||
       candidate[5] < 1 ||
       candidate[5] > 1_000_000
     ) {

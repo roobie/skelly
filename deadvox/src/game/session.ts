@@ -100,6 +100,7 @@ export interface PlayerInputSample {
   readonly pitch: number;
   readonly walking: boolean;
   readonly descending: boolean;
+  readonly worldReady: boolean;
 }
 
 interface SessionControls {
@@ -660,6 +661,7 @@ export const createSession = (options: SessionOptions) => {
       pitch: controls.pitch(),
       walking: controls.walking(),
       descending: controls.descending(),
+      worldReady: false,
     };
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
     controls.heldDominantUse?.(
@@ -735,6 +737,7 @@ export const createSession = (options: SessionOptions) => {
         pitch: controls.pitch(),
         walking: controls.walking(),
         descending: controls.descending(),
+        worldReady: options.ready(body.pos[0], body.pos[2]),
       };
       const tick = playerTick;
       playerTick += 1;
@@ -748,7 +751,7 @@ export const createSession = (options: SessionOptions) => {
       playerCombat.tick(dt, heldItemUids());
       dispatchPlayerActions(moving, intent);
       applyAimViewPitchShift();
-      if (!options.ready(body.pos[0], body.pos[2])) {
+      if (!playerInput.worldReady) {
         return;
       }
       const handling = queue.busy || firearms.busy;

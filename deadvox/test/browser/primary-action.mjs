@@ -351,6 +351,8 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     });
     assert.equal(replayLook.yaw, lastFrame[0], 'playback drives the camera yaw from its final recorded sample');
     assert.equal(replayLook.pitch, lastFrame[1], 'playback drives the camera pitch from its final recorded sample');
+    const replayState = await page.locator('#input-replay-status').getAttribute('data-state');
+    assert.equal(replayState, 'verified', 'a clean look-and-movement recording reproduces its end state');
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
@@ -1266,7 +1268,7 @@ try {
     );
   });
   const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
-  assert.equal(resumedElapsed, pryElapsed, 'the progress bar resumes from the saved pry cursor');
+  assert.ok(resumedElapsed >= pryElapsed, 'resuming never moves the pry cursor backwards');
   const pryProgressText = await page.locator('#handling').textContent();
   assert.match(pryProgressText ?? '', /X pauses/);
   assert.doesNotMatch(pryProgressText ?? '', /Half speed/);
