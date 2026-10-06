@@ -54,7 +54,7 @@ describe('stimulus memory', () => {
     { hour: 12, expected: 'home' },
     { hour: 23, expected: 'roam' },
   ] as const)('forgets an unreachable horde sound during $expected mode', ({ hour, expected }) => {
-    let noise = noiseAtPlayer(1, 1);
+    const noise = noiseAtPlayer(1, 1);
     const target = () => ({ ...player([0, 1, 0]), vocalNoise: noise });
     const system = new ZombieSystem({ ...senses(target, unreachableWall, hour), isLoaded: () => true });
     system.addHorde('memory-fixture', SHAMBLER, [200, 1, 0], 1);
@@ -109,7 +109,7 @@ describe('stimulus memory', () => {
     system.tickActive(dt, time);
     expect(zombie.mode).toBe('investigate');
     expect(zombie.body.pos[0]).toBeGreaterThan(10);
-    const stimulusAt = zombie.stimulusAt;
+    const { stimulusAt } = zombie;
     if (stimulusAt === undefined) {
       throw new Error('Active zombie did not record the heard sound time');
     }

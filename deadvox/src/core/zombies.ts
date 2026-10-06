@@ -213,6 +213,8 @@ export type ZombieState = Omit<
   lastVocalNoiseId: number | null;
 };
 
+const validRngState = (state: unknown): state is RngState =>
+  Array.isArray(state) && state.length === 4 && state.every((word) => Number.isSafeInteger(word));
 const validObstacleWanderState = (zombie: ZombieState): boolean =>
   Number.isFinite(zombie.obstacleWanderRemaining) &&
   zombie.obstacleWanderRemaining >= 0 &&
@@ -248,6 +250,26 @@ export interface HordeState {
   lastNoiseId: number;
   rng: RngState;
 }
+
+const validVec3State = (value: unknown): boolean =>
+  Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
+const validHordeSnapshotState = (
+  horde: HordeState,
+  hasHorde: boolean,
+  resolveType: (id: string) => ZombieDef | undefined,
+): boolean =>
+  horde.id.length > 0 &&
+  !hasHorde &&
+  resolveType(horde.type) !== undefined &&
+  validVec3State(horde.home) &&
+  validVec3State(horde.target) &&
+  ['home', 'roam', 'noise'].includes(horde.mode) &&
+  Number.isFinite(horde.roamTimer) &&
+  horde.roamTimer >= 0 &&
+  Number.isSafeInteger(horde.lastNoiseId) &&
+  horde.lastNoiseId >= 0 &&
+  (horde.stimulusAt === undefined || (Number.isFinite(horde.stimulusAt) && horde.stimulusAt >= 0)) &&
+  validRngState(horde.rng);
 
 export interface ZombieSystemState {
   nextEntityId: number;
@@ -990,15 +1012,9 @@ export class ZombieSystem {
         if (
           !Number.isSafeInteger(id) ||
           id < 1 ||
-          !Array.isArray(zombie.behaviorRng) ||
-          zombie.behaviorRng.length !== 4 ||
-          zombie.behaviorRng.some((word) => !Number.isSafeInteger(word)) ||
-          !Array.isArray(zombie.soundRng) ||
-          zombie.soundRng.length !== 4 ||
-          zombie.soundRng.some((word) => !Number.isSafeInteger(word)) ||
-          !Array.isArray(zombie.dismemberRng) ||
-          zombie.dismemberRng.length !== 4 ||
-          zombie.dismemberRng.some((word) => !Number.isSafeInteger(word)) ||
+          !validRngState(zombie.behaviorRng) ||
+          !validRngState(zombie.soundRng) ||
+          !validRngState(zombie.dismemberRng) ||
           !Number.isFinite(zombie.idleSoundTimer) ||
           zombie.idleSoundTimer < 0 ||
           !validZombieEventState(zombie) ||
@@ -1064,26 +1080,7 @@ export class ZombieSystem {
     this.store.restore(entries, state.nextEntityId);
     this.hordes.clear();
     for (const horde of state.hordes ?? []) {
-      if (
-        !horde.id ||
-        this.hordes.has(horde.id) ||
-        !resolveType(horde.type) ||
-        !Array.isArray(horde.home) ||
-        horde.home.length !== 3 ||
-        !horde.home.every(Number.isFinite) ||
-        !Array.isArray(horde.target) ||
-        horde.target.length !== 3 ||
-        !horde.target.every(Number.isFinite) ||
-        !['home', 'roam', 'noise'].includes(horde.mode) ||
-        !Number.isFinite(horde.roamTimer) ||
-        horde.roamTimer < 0 ||
-        !Number.isSafeInteger(horde.lastNoiseId) ||
-        horde.lastNoiseId < 0 ||
-        (horde.stimulusAt !== undefined && (!Number.isFinite(horde.stimulusAt) || horde.stimulusAt < 0)) ||
-        !Array.isArray(horde.rng) ||
-        horde.rng.length !== 4 ||
-        horde.rng.some((word) => !Number.isSafeInteger(word))
-      ) {
+      if (!validHordeSnapshotState(horde, this.hordes.has(horde.id), resolveType)) {
         throw new Error(`Invalid horde state ${horde.id}`);
       }
       this.hordes.set(horde.id, {

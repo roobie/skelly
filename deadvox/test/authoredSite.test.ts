@@ -88,13 +88,12 @@ const invalidWithFullPack = (data: unknown, message: string) => {
 };
 const fixedLootBuilding = layout.buildings[0]!;
 const fixedLootTemplate = compileTemplate(registry, registry.templates.get(fixedLootBuilding.template)!);
-const fixedLootContainer = fixedLootTemplate.pieces.find((piece) => registry.furniture.get(piece.furniture)?.container)!;
+const fixedLootContainer = fixedLootTemplate.pieces.find(
+  (piece) => registry.furniture.get(piece.furniture)?.container,
+)!;
 const withFixedLoot = (at: readonly [number, number, number], item: string) => ({
   ...layout,
-  buildings: [
-    { ...fixedLootBuilding, fixedLoot: [{ at, items: [{ item }] }] },
-    ...layout.buildings.slice(1),
-  ],
+  buildings: [{ ...fixedLootBuilding, fixedLoot: [{ at, items: [{ item }] }] }, ...layout.buildings.slice(1)],
 });
 
 const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
