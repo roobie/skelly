@@ -1808,7 +1808,12 @@ describe('shambler scenarios', () => {
       return [...system.store.entries()].map(([id, zombie]) => ({ id, home: zombie.home }));
     };
 
-    expect(spawnOrder(markers)).toEqual(spawnOrder([...markers].reverse()));
+    const first = spawnOrder(markers);
+    expect(first.map(({ home }) => home)).toEqual([
+      [0, 1, 0],
+      [32, 1, 0],
+    ]);
+    expect(first).toEqual(spawnOrder([...markers].reverse()));
   });
 
   it('spawns a marker when its column first loads inside the window', () => {
