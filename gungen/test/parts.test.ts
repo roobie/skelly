@@ -533,7 +533,9 @@ describe('part library', () => {
     let gridStep = GRID;
     if (family.name === 'forend' || family.name === 'ar-charging-handle') {
       gridStep = GRID / 5;
-    } else if (['frame', 'slide', 'front-sight', 'rail-front-sight'].includes(family.name)) {
+    } else if (['front-sight', 'rail-front-sight', 'ak-rear-sight'].includes(family.name)) {
+      gridStep = GRID / 4;
+    } else if (['frame', 'slide'].includes(family.name)) {
       gridStep = GRID / 2;
     }
     const check = (params: Record<string, string>) => {

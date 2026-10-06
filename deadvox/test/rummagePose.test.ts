@@ -157,6 +157,8 @@ it('a live firearm pose takes precedence over a generic held move', () => {
       pitch: 0,
       aimFrame: { yaw: 0, pitch: 0 },
       blockSize: 0.5,
+      ready: true,
+      sprinting: false,
     }),
   ).toBe(true);
   expect(f.queue.enqueue(f.item, { kind: 'pile', pos: [2, 0, 0] }).ok).toBe(true);

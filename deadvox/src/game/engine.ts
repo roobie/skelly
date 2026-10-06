@@ -6,6 +6,7 @@
 
 import { DirectionalLight, Group, HemisphereLight, PerspectiveCamera, Scene, WebGLRenderer } from 'three';
 import { CHUNK, toChunk } from '../core/coords.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { DAY_SKY } from '../core/sky.ts';
 import { ChunkMeshes } from '../render/chunks.ts';
 import { Mood } from '../render/mood.ts';
@@ -64,7 +65,7 @@ export function createEngine(
 
   const scene = new Scene();
   // The far plane is set by the sky: it ends where the fog does.
-  const camera = new PerspectiveCamera(75, 1, 0.05, radiusM);
+  const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 1, 0.05, radiusM);
   camera.rotation.order = 'YXZ';
   camera.layers.enable(PLAYER_FIGURE_LAYER);
   const sky: SkyTargets = { scene, light: new DirectionalLight(), ambient: new HemisphereLight(), camera, radiusM };

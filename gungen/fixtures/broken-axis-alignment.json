@@ -1,7 +1,7 @@
 {
   "name": "broken-axis-alignment",
   "description": "Rifle with its sight rolled 90° on the rail, so it looks sideways.",
-  "expect": ["axis-alignment"],
+  "expect": ["axis-alignment", "optic-eye-relief"],
   "root": "receiver",
   "parts": {
     "receiver": { "family": "receiver", "params": { "action": "auto", "feed": "box", "bore": "M" } },

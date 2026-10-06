@@ -292,6 +292,21 @@ try {
       },
     });
   });
+  await page.mouse.down({ button: 'right' });
+  const readyDuration = await page.evaluate(() => {
+    const { inventory, session } = globalThis.fullAutoRuntime;
+    session.frame(1 / 60);
+    return inventory.hands.right.firearm.readying.duration;
+  });
+  await page.evaluate((duration) => globalThis.fullAutoRuntime.session.frame(duration), readyDuration);
+  assert.equal(
+    await page.evaluate(() => {
+      const { inventory, session } = globalThis.fullAutoRuntime;
+      return session.firearms.isReady(inventory.hands.right.uid);
+    }),
+    true,
+    'fixture rifle is ready before firing',
+  );
   await page.mouse.move(500, 400);
   await page.mouse.down();
   await page.waitForFunction(() => globalThis.fullAutoProbe.released);
@@ -363,6 +378,7 @@ try {
   await page.mouse.down();
   await page.waitForFunction(() => globalThis.fullAutoProbe.released);
   await page.mouse.up();
+  await page.mouse.up({ button: 'right' });
   await page.waitForFunction(() =>
     globalThis.fullAutoProbe.sources
       .filter((record) => record.event === 'gunshot')

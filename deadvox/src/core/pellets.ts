@@ -1,4 +1,4 @@
-import { type AimFrame, aimBasis } from './aim.ts';
+import { type AimBasis, type AimFrame, aimBasis } from './aim.ts';
 import type { Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { ItemDef } from './schema.ts';
@@ -36,6 +36,32 @@ export const coneDirection = (basis: ReturnType<typeof aimBasis>, halfAngleRadia
   return vector.map((value) => value / length) as Vec3;
 };
 
+export const pelletShotFromBasis = ({
+  ammo,
+  origin,
+  basis,
+  seed,
+  key,
+}: {
+  ammo: NonNullable<ItemDef['ammo']>;
+  origin: Vec3;
+  basis: AimBasis;
+  seed: number;
+  key: string;
+}): PelletShot => {
+  const rng = Rng.stream(seed, `buckshot:${key}`);
+  const directions = Array.from({ length: ammo.pellets }, (): Vec3 => coneDirection(basis, BUCK_HALF_ANGLE, rng));
+  return {
+    origin: [...origin],
+    directions,
+    diameterMm: ammo.diameterMm,
+    // Diameter-scaled game balance: 20 region HP and 0.35 N·s per nominal 00 pellet. Not ballistics.
+    damage: 20 * (ammo.diameterMm / 8.38) ** 3,
+    impulse: 0.35 * (ammo.diameterMm / 8.38) ** 3,
+    rangeMetres: BUCK_RANGE_METRES,
+  };
+};
+
 export const pelletShot = ({
   ammo,
   origin,
@@ -52,18 +78,4 @@ export const pelletShot = ({
   aimFrame: AimFrame;
   seed: number;
   key: string;
-}): PelletShot => {
-  const rng = Rng.stream(seed, `buckshot:${key}`);
-  const { forward, right, up } = aimBasis(yaw, pitch, aimFrame);
-  const basis = { forward, right, up };
-  const directions = Array.from({ length: ammo.pellets }, (): Vec3 => coneDirection(basis, BUCK_HALF_ANGLE, rng));
-  return {
-    origin: [...origin],
-    directions,
-    diameterMm: ammo.diameterMm,
-    // Diameter-scaled game balance: 20 region HP and 0.35 N·s per nominal 00 pellet. Not ballistics.
-    damage: 20 * (ammo.diameterMm / 8.38) ** 3,
-    impulse: 0.35 * (ammo.diameterMm / 8.38) ** 3,
-    rangeMetres: BUCK_RANGE_METRES,
-  };
-};
+}): PelletShot => pelletShotFromBasis({ ammo, origin, basis: aimBasis(yaw, pitch, aimFrame), seed, key });
