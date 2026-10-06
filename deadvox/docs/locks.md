@@ -48,8 +48,8 @@ closure.
 
 The crowbar is a costly fallback so a key left on a corpse does not strand the
 player; its strikes use the existing sound and zombie-hearing path. The first
-look destroys the padlock rather than adding a reusable lock item and its door
-lifecycle. BR's choice about reuse remains open. See `src/core/prying.ts`,
+look treats prying as physically removing the padlock, making forced entry a
+one-way breach. BR's choice about reuse remains open. See `src/core/prying.ts`,
 `pryPlan`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 
 Picking, shambler bashing, and the hunting-cabin map placement remain outside

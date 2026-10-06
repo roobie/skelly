@@ -178,13 +178,17 @@ affects stuff like duck walking, whereas MC affects blocking”. See
 `src/game/melee.ts`, `shouldEnterMeleeReady`; the registry owns keyboard
 bindings, not these mouse actions.
 
+## Charged glowstick throw (d100-2)
+
+**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. Holding the rebindable action makes throw distance a deliberate choice; right-click cancels rather than starting another held action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginGlowstickCharge`.
+
 ## Remaining questions
 
 1. Press-and-hold for every long use remains a direction, not a universal
    cancellation rule. Do not redesign mouse use as part of rebinding.
 2. Best-pocket's default remains BR's decision; its entry is authoritative in
    the registry, not duplicated here.
-3. Future throw, lean and magazine-check inputs are added only when their
-   mechanics land, against the whole conflict model.
+3. Lean and magazine-check inputs are added only when their mechanics land,
+   against the whole conflict model.
 4. Whether matches strike alone is open for BR; the question came out of the
    #252 re-look (2026-10-05 13:44).

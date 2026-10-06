@@ -215,6 +215,26 @@
       }
     },
     {
+      "id": "headlamp",
+      "name": "Headlamp",
+      "category": "light",
+      "weight": 180,
+      "size": [1, 2],
+      "description": "A battery-powered beam worn on the head, leaving both hands free.",
+      "wearable": { "slot": "head", "encumbrance": 0 },
+      "light": {
+        "radius": 12,
+        "seenFrom": 30,
+        "color": "#fff1d8",
+        "intensity": 2.5,
+        "beam": 24,
+        "power": {
+          "battery": "aa_battery",
+          "perHour": 0.2
+        }
+      }
+    },
+    {
       "id": "torch",
       "name": "Torch",
       "category": "light",
@@ -288,7 +308,7 @@
         "radius": 2,
         "seenFrom": 15,
         "color": "#62ff81",
-        "intensity": 0.25,
+        "intensity": 0.5,
         "emissive": 0.12,
         "burnTime": 8,
         "burning": {

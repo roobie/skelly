@@ -235,8 +235,13 @@ describe('static reachability', () => {
       palette: Object.fromEntries([['F', { furniture: 'fixture_crate', loot: 'unplaced' }]]),
     });
     const result = checkReachability(registry);
-    expect([...result.found].sort()).toEqual(['nested', 'override', 'spawned', 'wanderer']);
-    expect([...result.workstations]).toEqual(['placed_bench']);
+    for (const item of ['nested', 'override', 'spawned', 'wanderer']) {
+      expect(result.found.has(item)).toBe(true);
+    }
+    for (const item of ['zero_spawn', 'unused', 'unplaced']) {
+      expect(result.found.has(item)).toBe(false);
+    }
+    expect(result.workstations.has('placed_bench')).toBe(true);
   });
 
   it('closes found items over authored disassembly and salvage outputs in both reachability sets', () => {

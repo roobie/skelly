@@ -200,6 +200,23 @@ const lightOption = (item: Item, view: ReachSnapshot): UseOption => {
   };
 };
 
+const useLocationRefusal = (
+  item: Item,
+  at: NonNullable<ReturnType<Inventory['locate']>>,
+  inventory: Inventory,
+): string | undefined => {
+  if (at.kind === 'hand') {
+    return undefined;
+  }
+  const { light } = defOf(inventory.registry, item.type);
+  if (at.kind === 'worn' && at.slot === 'head' && light?.beam !== undefined) {
+    return !item.on && chargeOf(inventory.registry, item) === 0
+      ? 'Take the headlamp in your hands to replace its battery'
+      : undefined;
+  }
+  return `Take the ${defOf(inventory.registry, item.type).name.toLowerCase()} in your hands first`;
+};
+
 const foodOption = (name: string, drink: boolean): UseOption => ({
   kind: 'use',
   label: `${drink ? 'Drink' : 'Eat'} the ${name}`,
@@ -223,8 +240,9 @@ export const useOption = (item: Item, view: ReachSnapshot): UseOption => {
   if (def.battery) {
     return batteryOption(item, inv);
   }
-  if (at.kind !== 'hand') {
-    return refuseUse(`Take the ${name} in your hands first`);
+  const locationRefusal = useLocationRefusal(item, at, inv);
+  if (locationRefusal) {
+    return refuseUse(locationRefusal);
   }
   if (def.book || def.readable) {
     return {
