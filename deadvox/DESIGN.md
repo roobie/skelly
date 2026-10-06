@@ -541,12 +541,26 @@ plain box in your hands. Files are small, and follow
   (2026-10-06): “also; now that i can properly fire from ADS on the AK, I can
   note that a firearm skill level zero (=0) is way too good at controlling
   automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
-  In a
-  stationary held burst, variance has no sway input and recovery is disabled, so
-  `firearmsSkillEffects` changes only per-shot kick; it reshapes the existing
-  saturating curve while keeping the expert kick. The shared skill multiplier
-  belongs in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`; per-firearm
-  recoil and dispersion remain firearm-owned content. The pump keeps its pellet
+  BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”
+  and “yes, lean”. Asked whether the comparison should be 4× the expert or 4× what BR felt at
+  `7a8c72db`, BR answered “1: a”. Asked whether to worsen kick, shot-to-shot dispersion,
+  and recovery, BR answered “2: all”. Asked whether to apply this only to full-auto or to
+  singles too, BR answered “3: mostly full auto, but singles too”. BR approved moving the
+  values into content and adding live controls: “yes, make them content and add debug sliders”.
+  Accordingly, skill-zero endpoints for single/first shots and automatic follow-ups are
+  separate values in `src/content/base/recipes.json`, under the firearms-combat skill's
+  `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates them. A follow-up is
+  a committed shot from the same firearm within one-and-a-half content cadence periods
+  (`90 / rpm`) of its prior shot. The expert endpoint stays on the existing curve, so skill
+  10 is unchanged; legendary still matches expert. The authored endpoints are provisional
+  starting values: singles and first shots are twice the old skill-zero handling, while
+  follow-ups are four times the old skill-zero handling, pending BR's live tuning. The
+  values belong in moddable content per BR; `src/debug/index.ts`, `firearmsSkillEffectSlider`,
+  places all six sliders in the debug panel's Tools group, applies them to the running
+  session, and can copy the values. The tuning is
+  runtime-only and resets on reload; saves carry no slider state. The shared skill effects
+  are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`; per-firearm recoil
+  and pellet spread remain firearm-owned. The pump keeps its pellet
   spread and adds no firearm cone. This
   reuses the already saved player pitch, so no aim-state field or save-schema
   change is needed. See

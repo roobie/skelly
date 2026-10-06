@@ -323,6 +323,39 @@ describe('debug firearm handling', () => {
     }
   });
 
+  it('uses the same weapon cadence window to classify automatic follow-up handling', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const shotKinds: string[] = [];
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ feet: [...pose.feet], eye: [...pose.eye], yaw: pose.yaw, pitch: pose.pitch, blockSize: 0.5 }),
+      onEjection: () => undefined,
+      onCommittedShot: (_seed, _recoilKickRadians, shotKind) => shotKinds.push(shotKind),
+    });
+    const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
+    const firearmDef = registry.items.get(rifle.type)!.firearm!;
+    expect(configuredKick).toBe(firearmDef.recoilKickRadians);
+    const rpm = firearmHandlingFor(rifle, registry).rpm;
+    if (configuredKick === undefined || rpm === undefined) {
+      throw new Error('Firing fixture needs firearm kick and cadence data');
+    }
+
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(shotKinds).toEqual(['singleShot']);
+    expect(mechanics.handlingShotKind(rifle.uid, 1 + 90 / rpm)).toBe('automaticFollowup');
+    expect(mechanics.handlingShotKind(rifle.uid, 1 + 90 / rpm + 1e-6)).toBe('singleShot');
+  });
+
   it('passes the held firearm’s data-owned kick with each committed shot', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const kicks: number[] = [];
@@ -338,7 +371,6 @@ describe('debug firearm handling', () => {
     if (configuredKick === undefined) {
       throw new Error('Firing fixture needs firearm kick data');
     }
-
     expect(
       mechanics.fire({
         ...pose,

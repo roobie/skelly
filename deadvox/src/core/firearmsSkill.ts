@@ -6,6 +6,19 @@ import {
   skillSaturation,
 } from './character.ts';
 
+export interface FirearmsSkillZeroEffect {
+  readonly variance: number;
+  readonly recoilKickScale: number;
+  readonly recoilRecoveryPerSimSecond: number;
+}
+
+export interface FirearmsSkillZeroHandling {
+  readonly singleShot: FirearmsSkillZeroEffect;
+  readonly automaticFollowup: FirearmsSkillZeroEffect;
+}
+
+export type FirearmsSkillShotKind = keyof FirearmsSkillZeroHandling;
+
 export interface FirearmsCombatTuning {
   readonly raiseMinimumSeconds: number;
   readonly raiseRangeSeconds: number;
@@ -15,6 +28,7 @@ export interface FirearmsCombatTuning {
   readonly readyMovementHalfLifeLevels: number;
   readonly loweredPitchRadians: number;
   readonly adsApertureFill: number;
+  readonly skillZeroHandling: FirearmsSkillZeroHandling;
 }
 
 export interface FirearmsSkillEffects {
@@ -31,7 +45,6 @@ export interface FirearmStanceEffects {
 }
 
 const expertControl = skillSaturation(SKILL_LEVEL_MAX, 0.42, 4);
-const recoilKickAtZero = 3;
 const effectLevelFor = (level: number): number => {
   if (!Number.isSafeInteger(level) || level < SKILL_LEVEL_MIN || level > SKILL_LEVEL_LEGENDARY) {
     throw new Error('Invalid firearms skill level');
@@ -39,15 +52,23 @@ const effectLevelFor = (level: number): number => {
   return skillEffectLevel(level);
 };
 
-/** Existing firearm handling effects remain code-owned until the content-language spike. */
-export const firearmsSkillEffects = (level: number): FirearmsSkillEffects => {
+/** Skill-zero handling endpoints are content-owned; expert handling remains the established curve endpoint. */
+export const firearmsSkillEffects = (
+  level: number,
+  tuning: FirearmsCombatTuning,
+  shotKind: FirearmsSkillShotKind = 'singleShot',
+): FirearmsSkillEffects => {
   const effectLevel = effectLevelFor(level);
   const control = skillSaturation(effectLevel, 0.42, 4);
   const progressFromExpert = (control - expertControl) / (1 - expertControl);
+  const zero = tuning.skillZeroHandling[shotKind];
+  const expertRecovery = 2 - expertControl;
+  const atSkillZero = (expertValue: number, zeroValue: number): number =>
+    expertValue + (zeroValue - expertValue) * progressFromExpert;
   return {
-    variance: control,
-    recoilKickScale: expertControl + (recoilKickAtZero - expertControl) * progressFromExpert,
-    recoilRecoveryRate: 2 - control,
+    variance: atSkillZero(expertControl, zero.variance),
+    recoilKickScale: atSkillZero(expertControl, zero.recoilKickScale),
+    recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryPerSimSecond),
     reloadDuration: skillSaturation(effectLevel, 0.55, 5),
     rackDuration: skillSaturation(effectLevel, 0.62, 3),
   };

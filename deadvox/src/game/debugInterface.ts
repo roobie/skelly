@@ -7,6 +7,7 @@ import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
+import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';
@@ -40,6 +41,8 @@ export interface DebugHooks {
   readonly measureSnapshot: () => SnapshotMeasurement;
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly exportMetrics: () => void;
+  readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
+  readonly setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling) => void;
 }
 
 export interface DebugNoclipStep {

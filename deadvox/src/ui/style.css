@@ -1321,6 +1321,33 @@ body.inventory-open #inventory-stats {
 #debug-ui-root .debug-panel .debug-group-body {
   padding-top: 6px;
 }
+#debug-ui-root .debug-firearms-skill-tuning {
+  display: grid;
+  grid-template-columns: minmax(105px, 1fr) minmax(90px, 1.2fr) 3.5em;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  padding: 6px;
+  color: var(--text);
+  font-size: 10px;
+}
+#debug-ui-root .debug-firearms-skill-tuning legend {
+  color: var(--muted);
+}
+#debug-ui-root .debug-firearms-skill-tuning input[type="range"] {
+  width: 100%;
+  margin: 0;
+}
+#debug-ui-root .debug-firearms-skill-tuning output {
+  color: var(--text);
+  font: 10px ui-monospace, monospace;
+  text-align: right;
+}
+#debug-ui-root .debug-firearms-skill-tuning button,
+#debug-ui-root .debug-firearms-skill-tuning output:not([for]) {
+  grid-column: 1 / -1;
+}
 #debug-ui-root .debug-panel p {
   margin: 6px 0 0;
   color: var(--muted);
