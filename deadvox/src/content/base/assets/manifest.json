@@ -243,17 +243,17 @@
       "changes": "Selected six grass/sand and five stone steps (the source says its sand steps also sound like grass); converted from FLAC to mono Opus in Ogg containers; unused sixth stone sample excluded"
     },
     {
-      "title": "25 CC0 mud sfx",
-      "url": "https://opengameart.org/content/25-cc0-mud-sfx",
+      "title": "100 CC0 SFX #2",
+      "url": "https://opengameart.org/content/100-cc0-sfx-2",
       "author": "rubberduck",
       "licence": "CC0-1.0",
-      "download": "25-CC0-mud-sfx.zip",
+      "download": "sfx_100_v2.zip",
       "files": [
         "assets/audio/footstep-mud-02.ogg",
         "assets/audio/footstep-mud-03.ogg",
         "assets/audio/footstep-mud-04.ogg"
       ],
-      "changes": "Selected three muddy footfall variations; converted to mono Opus in Ogg containers; unused source effects excluded"
+      "changes": "Selected three wet-footstep variations (sfx100v2_footstep_wet_01–03.ogg); converted from stereo 48 kHz Vorbis to mono 48 kHz Opus in Ogg containers without loudness normalization; unused source effects excluded"
     },
     {
       "title": "Jump Landing Sound",
