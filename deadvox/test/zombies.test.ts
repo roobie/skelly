@@ -444,7 +444,7 @@ describe('shambler perception', () => {
   });
 
   it('keeps crouched light reach in the open but lets a half-wall block the lowered light', () => {
-    const lightSeenFrom = player([0, 0, 0], [-1, 0, 0], 'still', true).lightSeenFrom;
+    const { lightSeenFrom } = player([0, 0, 0], [-1, 0, 0], 'still', true);
     const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
     const distanceMetres = (crouchSightRange + lightSeenFrom) / 2;
     const distanceBlocks = distanceMetres / BLOCK_SIZE;
@@ -2631,9 +2631,10 @@ describe('attack windup', () => {
   });
 
   it('does not replay a live far vocal pulse after a searching zombie is restored', () => {
-    const farMultiplier = SHAMBLER.hearingModel.farMultiplier;
-    const hearingRadius = (4 * SHAMBLER.hearingModel.investigationDistanceMetres) / (farMultiplier - 1);
-    const radiusMetres = hearingRadius / SHAMBLER.hearing;
+    const { hearing, hearingModel } = SHAMBLER;
+    const { farMultiplier, investigationDistanceMetres } = hearingModel;
+    const hearingRadius = (4 * investigationDistanceMetres) / (farMultiplier - 1);
+    const radiusMetres = hearingRadius / hearing;
     const farHearingRadius = hearingRadius * farMultiplier;
     const distanceMetres = (hearingRadius + farHearingRadius) / 2;
     const noise = {

@@ -839,15 +839,30 @@ export const startPlay = (
     }
     return mainMenuOpen || timeKeys(action);
   };
+  const withUnlockedInput = (action: () => void): void => {
+    if (!compression.locksInput) {
+      action();
+    }
+  };
+  const stopHandling = (): void => {
+    input.reload.cancel();
+    queue.cancel();
+    if (sim.actions.job || rest.action || compression.active) {
+      stopAction();
+    }
+  };
+  const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
+    if (slot !== undefined && !compression.locksInput) {
+      quickbarInput.keyDown(slot, at);
+    }
+  };
   const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
     switch (action) {
       case 'movement.walk-toggle':
         input.walking = !input.walking;
         break;
       case 'player.crouch-toggle':
-        if (!compression.locksInput) {
-          input.requestCrouchToggle();
-        }
+        withUnlockedInput(() => input.requestCrouchToggle());
         break;
       case 'hand.use-off':
         input.useOff();
@@ -856,9 +871,7 @@ export const startPlay = (
         input.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
-        if (!compression.locksInput) {
-          use();
-        }
+        withUnlockedInput(use);
         break;
       case 'craft.continue':
         if (session.crafting.currentUid !== undefined) {
@@ -866,18 +879,12 @@ export const startPlay = (
         }
         break;
       case 'handling.stop':
-        input.reload.cancel();
-        queue.cancel();
-        if (sim.actions.job || rest.action || compression.active) {
-          stopAction();
-        }
+        stopHandling();
         break;
       default:
         break;
     }
-    if (slot !== undefined && !compression.locksInput) {
-      quickbarInput.keyDown(slot, at);
-    }
+    assignQuickbarIfUnlocked(slot, at);
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
     if (action === 'firearm.reload') {

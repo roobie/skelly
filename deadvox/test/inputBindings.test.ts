@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   type Binding,
   BindingRegistry,
-  type Chord,
   bindingConflict,
+  type Chord,
   capturedChord,
   chordIssue,
   INPUT_BINDINGS,

@@ -189,12 +189,12 @@ try {
     const crouchBeforeToggle = await page.evaluate(() => globalThis.readingWitness.session.crouching);
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (before) => globalThis.readingWitness.session.crouching !== before,
+      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching !== crouchingAtDispatch,
       crouchBeforeToggle,
     );
     await pressAction(page, 'player.crouch-toggle');
     await page.waitForFunction(
-      (before) => globalThis.readingWitness.session.crouching === before,
+      (crouchingAtDispatch) => globalThis.readingWitness.session.crouching === crouchingAtDispatch,
       crouchBeforeToggle,
     );
     const walk = async (actionId, targetX, increasing) => {
