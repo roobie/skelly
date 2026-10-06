@@ -13,6 +13,9 @@ read_if:
 Slice 2.4 established the shared item-tree boundary, pure planner, persisted
 character state and shared core long actions. Slice 2.5 adds progression, recipe
 learning and reading; work-item options and command wiring use those same contracts.
+Door prying uses that action-state owner without requesting compression (see
+`src/core/longAction.ts`, `LongActions.beginPrying`): its noisy fallback must not
+speed the shamblers it attracts.
 
 ## Item tree (F3)
 

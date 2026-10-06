@@ -429,6 +429,16 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "lock_pry",
+      "variants": ["assets/audio/door_blocked_close-01.ogg"],
+      "gain": 0.8,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSeconds": 0,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 60 }
+    },
+    {
       "id": "door_open",
       "variants": ["assets/audio/door-open-03.ogg"],
       "gain": 0.65,
