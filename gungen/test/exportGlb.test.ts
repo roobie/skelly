@@ -556,7 +556,8 @@ describe('glb export: deadvox model entry', () => {
         hold: { position: base.hold.position, forward: [c, s, 0], up: [-s, c, 0] },
         others: base.others,
       };
-      return createGunModelEntry(ASSET, anchors, resolved.domain.units.metresPerUnit).grip.turn;
+      return createGunModelEntry({ asset: ASSET, anchors, metresPerUnit: resolved.domain.units.metresPerUnit }).grip
+        .turn;
     };
     expect(turnFor(0)).toEqual(turnFor(18));
     expect(turnFor(-25)).toEqual(turnFor(18));

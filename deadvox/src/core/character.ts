@@ -82,8 +82,7 @@ export class Character implements HandedCharacter {
   /** The awarding activity supplies its own tier; practice beyond that ceiling is discarded. */
   awardPractice(skill: string, amount: number, tier: number): void {
     if (
-      !Object.hasOwn(this.skills, skill) ||
-      !Number.isFinite(amount) ||
+      !(Object.hasOwn(this.skills, skill) && Number.isFinite(amount)) ||
       amount < 0 ||
       !Number.isSafeInteger(tier) ||
       tier < SKILL_LEVEL_MIN ||
@@ -92,7 +91,7 @@ export class Character implements HandedCharacter {
       throw new Error(`Invalid practice award for ${skill}`);
     }
     let level = this.skills[skill]!;
-    if (level >= tier || amount === 0) {
+    if (amount === 0) {
       return;
     }
     let remaining = this.practice[skill]! + amount;

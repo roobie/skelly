@@ -24,18 +24,12 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
-import { NEUTRAL_AIM, type AimFrame } from '../core/aim.ts';
+import { type AimFrame, NEUTRAL_AIM } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
-import {
-  HOLD,
-  heldAnchorOffset,
-  heldFirearmTransform,
-  heldGripOffset,
-  modelToView,
-} from '../core/heldPose.ts';
+import { HOLD, heldAnchorOffset, heldFirearmTransform, heldGripOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -67,7 +61,7 @@ export interface HeldFirearmPose {
   readonly roundType?: string;
 }
 
-export interface HeldReadiness {
+interface HeldReadiness {
   readonly uid: number;
   readonly progress: number;
   readonly aimingDownSights: boolean;
@@ -144,12 +138,11 @@ export class HeldItems {
     recoil = 0,
     handling: HeldHandlingFrame = { firearms: [] },
   ): void {
-    const { firearms: firearmPoses } = handling;
+    const { firearms: firearmPoses, readiness } = handling;
     const baseCameraQuaternion = main.quaternion.clone();
     this.restoreRummageSupport();
     this.sync();
     this.poseFirearms(firearmPoses);
-    const readiness = handling.readiness;
     const loweredPitchRadians =
       this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.loweredPitchRadians ?? 0;
     const leadingSide = dominantSide(this.inventory.character);
@@ -160,82 +153,20 @@ export class HeldItems {
     let adsSightUpWorld: Vector3 | undefined;
     this.torso.rotation.y = pose?.torsoYaw ?? 0;
     for (const side of ['right', 'left'] as const) {
-      const neutral = { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
-      const hand = pose?.[side] ?? neutral;
-      const target = readyPose?.[side];
-      const stanceHand = target
-        ? {
-            offset: hand.offset.map(
-              (value, index) => value + (target.offset[index]! - value) * easedReady,
-            ) as Vec3,
-            rotation: hand.rotation.map((value, index) => value + (target.rotation[index]! - value) * easedReady) as Vec3,
-          }
-        : hand;
-      const base = this.handBases.get(side);
-      if (!base) {
-        continue;
-      }
-      const arm = this.arms.get(side);
-      if (!arm) {
-        continue;
-      }
-      const transform = interpolateHandPose(base, stanceHand);
-      this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
-      this.applyViewPose(main, pose, transform);
-      this.lockCutBladeRoll(side, pose);
-      const item = this.inventory.hands[side];
-      const itemDefinition = item && defOf(this.inventory.registry, item.type);
-      const modelDefinition = itemDefinition?.model && this.inventory.registry.models.get(itemDefinition.model);
-      const firearmReadiness = readiness?.uid === item?.uid ? readyAmount : 0;
-      const aimingDownSights = Boolean(item && readiness && readiness.uid === item.uid && readiness.aimingDownSights);
-      const firearmPose = itemDefinition?.firearm && modelDefinition
-        ? heldFirearmTransform({
-            model: modelDefinition,
-            side,
-            leadingSide,
-            twoHanded: Boolean(itemDefinition.twoHanded),
-            progress: firearmReadiness,
-            aimingDownSights,
-            aimFrame: handling.aim ?? NEUTRAL_AIM,
-            loweredPitchRadians,
-          })
-        : undefined;
-      if (firearmPose) {
-        transform.offset = [...firearmPose.rootOffset];
-        if (aimingDownSights) {
-          transform.rotation = [0, 0, 0];
-          this.poseRotation.setFromEuler(this.poseEuler.set(0, 0, 0, 'YXZ'));
-        }
-      }
-      if (aimingDownSights && firearmPose?.sightDirection && firearmPose.sightUp) {
-        adsSightWorld = new Vector3(...firearmPose.sightDirection).applyQuaternion(main.quaternion).normalize();
-        adsSightUpWorld = new Vector3(...firearmPose.sightUp).applyQuaternion(main.quaternion).normalize();
-      }
-      const pumpModel = item && this.pumpModels.get(item.uid);
-      const frame = item && firearmPoses.find((entry) => entry.uid === item.uid);
-      const cant = rackCant(pumpModel, side, frame, { x: transform.offset[0], y: transform.offset[1] });
-      const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
-      const readyAim = readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
-      this.poseAim(item, readyAim);
-      this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch, 0, cant, 'YXZ'));
-      this.poseRotation.multiply(this.rackRotation);
-      const strength = Math.max(0, Math.min(1, recoil));
-      transform.offset[1] += 0.012 * strength;
-      transform.offset[2] += 0.025 * strength;
-      this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
-      this.poseRotation.multiply(this.recoilRotation);
-      if (arm.parent === this.torso) {
-        if (firearmPose) {
-          arm.position.set(...transform.offset);
-        } else {
-          this.placeTorsoArm(side, arm, transform);
-        }
-        arm.quaternion.copy(this.poseRotation);
-      }
-      const held = this.heldByHand.get(side);
-      if (held) {
-        this.placeHeldItem(held, arm, transform);
-      }
+      const sights = this.poseHeldHand({
+        side,
+        main,
+        pose,
+        recoil,
+        handling,
+        leadingSide,
+        readyPose,
+        readyAmount,
+        easedReady,
+        loweredPitchRadians,
+      });
+      adsSightWorld = sights.direction ?? adsSightWorld;
+      adsSightUpWorld = sights.up ?? adsSightUpWorld;
     }
     if (adsSightWorld && adsSightUpWorld) {
       const currentForward = new Vector3(0, 0, -1).applyQuaternion(main.quaternion);
@@ -261,6 +192,191 @@ export class HeldItems {
       this.updateArmChain(side, arm);
     }
     this.view.updateMatrixWorld(true);
+  }
+
+  private poseHeldHand({
+    side,
+    main,
+    pose,
+    recoil,
+    handling,
+    leadingSide,
+    readyPose,
+    readyAmount,
+    easedReady,
+    loweredPitchRadians,
+  }: {
+    side: HandSide;
+    main: PerspectiveCamera;
+    pose: MeleePoseFrame | undefined;
+    recoil: number;
+    handling: HeldHandlingFrame;
+    leadingSide: HandSide;
+    readyPose: ReturnType<typeof readyMeleePose> | undefined;
+    readyAmount: number;
+    easedReady: number;
+    loweredPitchRadians: number;
+  }): { direction?: Vector3; up?: Vector3 } {
+    const neutral = { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
+    const hand = pose?.[side] ?? neutral;
+    const target = readyPose?.[side];
+    const stanceHand = target
+      ? {
+          offset: hand.offset.map((value, index) => value + (target.offset[index]! - value) * easedReady) as Vec3,
+          rotation: hand.rotation.map((value, index) => value + (target.rotation[index]! - value) * easedReady) as Vec3,
+        }
+      : hand;
+    const base = this.handBases.get(side);
+    const arm = this.arms.get(side);
+    if (!(base && arm)) {
+      return {};
+    }
+    const transform = interpolateHandPose(base, stanceHand);
+    this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
+    this.applyViewPose(main, pose, transform);
+    this.lockCutBladeRoll(side, pose);
+    const item = this.inventory.hands[side];
+    const itemDefinition = item && defOf(this.inventory.registry, item.type);
+    return this.poseHeldItem({
+      side,
+      main,
+      recoil,
+      handling,
+      leadingSide,
+      readyAmount,
+      loweredPitchRadians,
+      arm,
+      transform,
+      item,
+      itemDefinition,
+    });
+  }
+
+  private poseHeldItem({
+    side,
+    main,
+    recoil,
+    handling,
+    leadingSide,
+    readyAmount,
+    loweredPitchRadians,
+    arm,
+    transform,
+    item,
+    itemDefinition,
+  }: {
+    side: HandSide;
+    main: PerspectiveCamera;
+    recoil: number;
+    handling: HeldHandlingFrame;
+    leadingSide: HandSide;
+    readyAmount: number;
+    loweredPitchRadians: number;
+    arm: Group;
+    transform: ReturnType<typeof interpolateHandPose>;
+    item: Item | undefined;
+    itemDefinition: ReturnType<typeof defOf> | undefined;
+  }): { direction?: Vector3; up?: Vector3 } {
+    const presentation = this.heldFirearmPresentation({
+      side,
+      main,
+      handling,
+      leadingSide,
+      readyAmount,
+      loweredPitchRadians,
+      item,
+      itemDefinition,
+    });
+    const { firearmPose, firearmReadiness, aimingDownSights, sights } = presentation;
+    if (firearmPose) {
+      transform.offset = [...firearmPose.rootOffset];
+      if (aimingDownSights) {
+        transform.rotation = [0, 0, 0];
+        this.poseRotation.setFromEuler(this.poseEuler.set(0, 0, 0, 'YXZ'));
+      }
+    }
+    const pumpModel = item && this.pumpModels.get(item.uid);
+    const frame = item && handling.firearms.find((entry) => entry.uid === item.uid);
+    const cant = rackCant(pumpModel, side, frame, { x: transform.offset[0], y: transform.offset[1] });
+    const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
+    const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
+    this.poseAim(item, readyAim);
+    this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch, 0, cant, 'YXZ'));
+    this.poseRotation.multiply(this.rackRotation);
+    const strength = Math.max(0, Math.min(1, recoil));
+    transform.offset[1] += 0.012 * strength;
+    transform.offset[2] += 0.025 * strength;
+    this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
+    this.poseRotation.multiply(this.recoilRotation);
+    this.placeHandAndHeldItem(side, arm, transform, firearmPose);
+    return sights;
+  }
+
+  private heldFirearmPresentation({
+    side,
+    main,
+    handling,
+    leadingSide,
+    readyAmount,
+    loweredPitchRadians,
+    item,
+    itemDefinition,
+  }: {
+    side: HandSide;
+    main: PerspectiveCamera;
+    handling: HeldHandlingFrame;
+    leadingSide: HandSide;
+    readyAmount: number;
+    loweredPitchRadians: number;
+    item: Item | undefined;
+    itemDefinition: ReturnType<typeof defOf> | undefined;
+  }) {
+    const modelDefinition = itemDefinition?.model && this.inventory.registry.models.get(itemDefinition.model);
+    const firearmReadiness = handling.readiness?.uid === item?.uid ? readyAmount : 0;
+    const aimingDownSights = Boolean(
+      item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
+    );
+    const firearmPose =
+      itemDefinition?.firearm && modelDefinition
+        ? heldFirearmTransform({
+            model: modelDefinition,
+            side,
+            leadingSide,
+            twoHanded: Boolean(itemDefinition.twoHanded),
+            progress: firearmReadiness,
+            aimingDownSights,
+            aimFrame: handling.aim ?? NEUTRAL_AIM,
+            loweredPitchRadians,
+          })
+        : undefined;
+    const sights =
+      aimingDownSights && firearmPose?.sightDirection && firearmPose.sightUp
+        ? {
+            direction: new Vector3(...firearmPose.sightDirection).applyQuaternion(main.quaternion).normalize(),
+            up: new Vector3(...firearmPose.sightUp).applyQuaternion(main.quaternion).normalize(),
+          }
+        : {};
+    return { firearmPose, firearmReadiness, aimingDownSights, sights };
+  }
+
+  private placeHandAndHeldItem(
+    side: HandSide,
+    arm: Group,
+    transform: ReturnType<typeof interpolateHandPose>,
+    firearmPose: ReturnType<typeof heldFirearmTransform> | undefined,
+  ): void {
+    if (arm.parent === this.torso) {
+      if (firearmPose) {
+        arm.position.set(...transform.offset);
+      } else {
+        this.placeTorsoArm(side, arm, transform);
+      }
+      arm.quaternion.copy(this.poseRotation);
+    }
+    const held = this.heldByHand.get(side);
+    if (held) {
+      this.placeHeldItem(held, arm, transform);
+    }
   }
 
   private restoreRummageSupport(): void {

@@ -6,8 +6,8 @@ import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import {
@@ -31,9 +31,11 @@ const { registry } = buildRegistry(base);
 const caseType = spentCaseItemId('5.56x45');
 const worldVector = (vector: readonly number[], yaw: number, pitch: number): [number, number, number] => {
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
-  return [0, 1, 2].map(
-    (axis) => right[axis]! * vector[0]! + up[axis]! * vector[1]! - forward[axis]! * vector[2]!,
-  ) as [number, number, number];
+  return [0, 1, 2].map((axis) => right[axis]! * vector[0]! + up[axis]! * vector[1]! - forward[axis]! * vector[2]!) as [
+    number,
+    number,
+    number,
+  ];
 };
 
 const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Inventory['create']> } => {
@@ -82,7 +84,7 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
 describe('debug firearm handling', () => {
   it('fires from the same ready-pose muzzle used by the held model', () => {
     const { inventory, rifle } = inventoryWithRifle();
-    const model = firearmHandlingFor(rifle, registry).model;
+    const { model } = firearmHandlingFor(rifle, registry);
     const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
     const common = {
       model,
@@ -95,8 +97,8 @@ describe('debug firearm handling', () => {
     };
     const lowered = heldFirearmTransform({ ...common, progress: 0 });
     const raised = heldFirearmTransform({ ...common, progress: 1 });
-    const poseOrigin = (pose: typeof raised) =>
-      pose.rootOffset.map((value, axis) => value + pose.muzzleOffset[axis]!);
+    const poseOrigin = (heldPose: typeof raised) =>
+      heldPose.rootOffset.map((value, axis) => value + heldPose.muzzleOffset[axis]!);
     expect(poseOrigin(raised)).not.toEqual(poseOrigin(lowered));
 
     let trajectory: FirearmTrajectory | undefined;
@@ -104,8 +106,8 @@ describe('debug firearm handling', () => {
       blockSize: 0.5,
       pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
       onEjection: () => undefined,
-      onTrajectory: (shot) => {
-        trajectory = shot;
+      onTrajectory: (trajectoryShot) => {
+        trajectory = trajectoryShot;
       },
     });
     expect(
@@ -239,9 +241,15 @@ describe('debug firearm handling', () => {
     });
     const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
     const baseDirection = [
-      right[0] * heldPose.muzzleDirection[0] + up[0] * heldPose.muzzleDirection[1] - forward[0] * heldPose.muzzleDirection[2],
-      right[1] * heldPose.muzzleDirection[0] + up[1] * heldPose.muzzleDirection[1] - forward[1] * heldPose.muzzleDirection[2],
-      right[2] * heldPose.muzzleDirection[0] + up[2] * heldPose.muzzleDirection[1] - forward[2] * heldPose.muzzleDirection[2],
+      right[0] * heldPose.muzzleDirection[0] +
+        up[0] * heldPose.muzzleDirection[1] -
+        forward[0] * heldPose.muzzleDirection[2],
+      right[1] * heldPose.muzzleDirection[0] +
+        up[1] * heldPose.muzzleDirection[1] -
+        forward[1] * heldPose.muzzleDirection[2],
+      right[2] * heldPose.muzzleDirection[0] +
+        up[2] * heldPose.muzzleDirection[1] -
+        forward[2] * heldPose.muzzleDirection[2],
     ];
     const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
     const cone = firearmHandlingFor(fixtureItem, fixtureRegistry).dispersionRadians!;

@@ -21,7 +21,7 @@ export interface FirearmCycleState {
   forwardSounded?: boolean;
 }
 
-export interface FirearmRaiseState {
+interface FirearmRaiseState {
   elapsed: number;
   /** Duration sampled when this raise began; saved so progression resumes under the same handling. */
   duration: number;

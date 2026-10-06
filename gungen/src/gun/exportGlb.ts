@@ -4,15 +4,15 @@ import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResu
 import { exportGlb } from '../core/glb.ts';
 import { applyDir, applyPoint, length, normalize, type Vec3 } from '../core/math.ts';
 import { type Resolved, resolve } from '../core/resolve.ts';
-import type { Assembly } from '../core/schema.ts';
+import type { Assembly, PartDef } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { gripTurn, toFileAxes } from './exportFrame.ts';
-import { GUN_PALETTE } from './palette.ts';
 import { getOptic } from './optics.ts';
+import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
 export type DeadvoxModelFile = `assets/models/${string}.glb`;
@@ -139,22 +139,47 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
   };
 };
 
+interface SightCandidate {
+  id: string;
+  priority: number;
+  kind: 'optic' | 'iron';
+  eye: Vec3;
+  direction: Vec3;
+}
+const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCandidate | undefined => {
+  const axis = part.axes.find(({ kind }) => kind === 'sight');
+  const transform = resolved.placed.get(id);
+  if (!(axis && transform)) {
+    return undefined;
+  }
+  const { family } = resolved.assembly.parts[id]!;
+  const params = resolved.params.get(id);
+  const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
+  const direction = normalize(applyDir(transform, axis.dir));
+  const eyeLocal = optic ? ([optic.ocularX, optic.opticalAxisY, 0] as Vec3) : axis.origin;
+  let priority = 3;
+  if (optic) {
+    priority = 0;
+  } else if (family.includes('rear-sight')) {
+    priority = 1;
+  } else if (family.includes('front-sight')) {
+    priority = 2;
+  }
+  return {
+    id,
+    priority,
+    kind: optic ? 'optic' : 'iron',
+    eye: applyPoint(transform, eyeLocal),
+    direction,
+  };
+};
+
 const sightMetadata = (resolved: Resolved): GunDeadvoxModelEntry['sight'] => {
   const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
-    const axis = part.axes.find(({ kind }) => kind === 'sight');
-    const transform = resolved.placed.get(id);
-    if (!(axis && transform)) {
-      return [];
-    }
-    const family = resolved.assembly.parts[id]!.family;
-    const params = resolved.params.get(id);
-    const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
-    const direction = normalize(applyDir(transform, axis.dir));
-    const eyeLocal = optic ? [optic.ocularX, optic.opticalAxisY, 0] as Vec3 : axis.origin;
-    const priority = optic ? 0 : family.includes('rear-sight') ? 1 : family.includes('front-sight') ? 2 : 3;
-    return [{ id, priority, kind: optic ? 'optic' as const : 'iron' as const, eye: applyPoint(transform, eyeLocal), direction }];
+    const candidate = sightCandidate(resolved, id, part);
+    return candidate ? [candidate] : [];
   });
-  const chosen = candidates.sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))[0];
+  const [chosen] = candidates.sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
   if (!chosen) {
     return undefined;
   }
@@ -169,13 +194,19 @@ const sightMetadata = (resolved: Resolved): GunDeadvoxModelEntry['sight'] => {
   };
 };
 
-export const createGunModelEntry = (
-  asset: GunAssetIdentity,
-  anchors: SelectedAnchors,
-  metresPerUnit: number,
-  options: GunModelEntryOptions = {},
-  sight?: GunDeadvoxModelEntry['sight'],
-): GunDeadvoxModelEntry => {
+export const createGunModelEntry = ({
+  asset,
+  anchors,
+  metresPerUnit,
+  options = {},
+  sight,
+}: {
+  asset: GunAssetIdentity;
+  anchors: SelectedAnchors;
+  metresPerUnit: number;
+  options?: GunModelEntryOptions;
+  sight?: GunDeadvoxModelEntry['sight'];
+}): GunDeadvoxModelEntry => {
   const { handling } = options;
   const calibre = options.cartridge?.id;
   if (calibre !== undefined) {
@@ -236,16 +267,16 @@ export const exportGunGlb = (
     metadata.cartridge?.kind === 'shotshell' ? tubeMagazineCapacity(resolved, metadata.cartridge) : undefined;
   return {
     ...result,
-    modelEntry: createGunModelEntry(
+    modelEntry: createGunModelEntry({
       asset,
       anchors,
-      resolved.domain.units.metresPerUnit,
-      {
+      metresPerUnit: resolved.domain.units.metresPerUnit,
+      options: {
         ...metadata,
         ...(handling ? { handling } : {}),
         ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
       },
-      sightMetadata(resolved),
-    ),
+      sight: sightMetadata(resolved),
+    }),
   };
 };

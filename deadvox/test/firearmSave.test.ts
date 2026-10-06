@@ -168,7 +168,8 @@ it('advances firearm readiness from simulation time while the stance input is he
   const rifle = original.inventory.create('debug_rifle_assault');
   expect(original.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
   original.frame(1 / 60);
-  const duration = rifle.firearm!.readying!.duration;
+  const { readying } = rifle.firearm!;
+  const { duration } = readying!;
   expect(original.firearms.isReady(rifle.uid)).toBe(false);
   original.frame(duration);
   expect(original.firearms.isReady(rifle.uid)).toBe(true);
@@ -179,9 +180,10 @@ it('a codec save resumes firearm ready progress', async () => {
   const rifle = original.inventory.create('debug_rifle_assault');
   expect(original.inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
   original.firearms.advanceReadiness(0, rifle.uid, true);
-  const duration = rifle.firearm!.readying!.duration;
+  const { readying } = rifle.firearm!;
+  const { duration } = readying!;
   original.firearms.advanceReadiness(duration / 2, rifle.uid, true);
-  const progress = structuredClone(rifle.firearm!.readying);
+  const progress = structuredClone(readying);
   const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
     generation: 1,
     version,

@@ -18,7 +18,6 @@ import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import { firearmStanceEffects, firearmsSkillEffects } from '../core/firearmsSkill.ts';
-import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
   advanceFootsteps,
@@ -30,8 +29,8 @@ import {
 import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { rollLoot } from '../core/loot.ts';
-import { canSprint, stepStamina } from '../core/needs.ts';
 import { blocksAttack } from '../core/meleeCombat.ts';
+import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import type { SolidAt } from '../core/raycast.ts';
@@ -41,6 +40,7 @@ import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../
 import type { Scale } from '../core/scale.ts';
 import { Simulation } from '../core/sim.ts';
 import type { Site } from '../core/site.ts';
+import { skillActivityPractice, skillActivityPracticeRate } from '../core/skillTraining.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
@@ -60,9 +60,9 @@ import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
 import {
   FirearmMechanics,
-  isFirearmTrainingAction,
   type FirearmShotEffect,
   type FirearmTrajectory,
+  isFirearmTrainingAction,
 } from './firearmHandling.ts';
 import {
   createPlayerBody,
@@ -610,66 +610,89 @@ export const createSession = (options: SessionOptions) => {
     }
   };
 
+  const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
+    const heldFirearm = firearmInHands();
+    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
+    const readyUid = readyGait ? heldFirearm?.uid : undefined;
+    firearms.advanceReadiness(dt, readyUid, readyGait);
+    const going = intent.forward !== 0 || intent.right !== 0;
+    firearmReadyWalking = readyGait && going;
+    if (readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
+      const training = skillActivityPracticeRate(registry, 'firearms_combat', 'readying');
+      character.awardPractice('firearms_combat', dt * training.practicePerSecond, training.tier);
+    }
+    return readyGait;
+  };
+
+  const preparePlayerStep = (dt: number) => {
+    const active = controls.active();
+    const requested = active ? controls.intent() : IDLE;
+    const moving = active && !compression.locksInput;
+    const intent = moving ? requested : IDLE;
+    const handling = queue.busy || firearms.busy;
+    const readyGait = advancePlayerReadiness(dt, intent, moving);
+    controls.consumeDominantUse?.();
+    controls.consumeOffUse?.();
+    updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
+    playerCombat.tick(dt, heldItemUids());
+    dispatchPlayerActions(moving, intent);
+    return { intent, moving, handling, readyGait };
+  };
+
+  const advancePlayerMovement = (
+    dt: number,
+    time: number,
+    { intent, handling, readyGait }: ReturnType<typeof preparePlayerStep>,
+  ): void => {
+    sprinting =
+      intent.sprint &&
+      (intent.forward !== 0 || intent.right !== 0) &&
+      !handling &&
+      !readyGait &&
+      canSprint(sim.needs, sprinting);
+    survival.setSprinting(sprinting);
+    stepStamina(sim.needs, dt, sprinting);
+    const pacedIntent = {
+      ...intent,
+      sprint: sprinting,
+      pace:
+        paceFactor(inventory.carriedWeight(), handling) *
+        (readyGait && firearmsCombatTuning
+          ? firearmStanceEffects(firearmsSkillLevel(character), firearmsCombatTuning).readyMovementFactor
+          : 1),
+    };
+    const tools = debug?.();
+    if (tools?.noclip) {
+      footstepClock = initialFootstepClock();
+      airbornePeakY = undefined;
+      tools.stepNoclip({
+        body,
+        scale,
+        yaw: controls.yaw(),
+        pitch: controls.pitch(),
+        intent: pacedIntent,
+        descend: controls.descending(),
+        dt,
+      });
+      return;
+    }
+    advancePlayerBody(dt, time, pacedIntent);
+  };
+
   // The player is held still until there is ground under them. Inputs are locked
-  // while time is compressed. Handling and a heavy load slow you down, and sprinting
-  // spends stamina: once winded, you jog until you've got your breath back.
+  // while time is compressed. Handling and a heavy load slow them down, and sprinting
+  // spends stamina: once winded, they jog until they've got their breath back.
   sim.scheduler.register({
     id: 'player',
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
       lastPlayerStep = time;
-      const requested = controls.active() ? controls.intent() : IDLE;
-      const moving = controls.active() && !compression.locksInput;
-      const intent = moving ? requested : IDLE;
-      const handling = queue.busy || firearms.busy;
-      const heldFirearm = firearmInHands();
-      const readyGait =
-        moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
-      const readyUid = readyGait ? heldFirearm?.uid : undefined;
-      firearms.advanceReadiness(dt, readyUid, readyGait);
-      const going = intent.forward !== 0 || intent.right !== 0;
-      firearmReadyWalking = readyGait && going;
-      if (readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
-        const training = skillActivityPracticeRate(registry, 'firearms_combat', 'readying');
-        character.awardPractice('firearms_combat', dt * training.practicePerSecond, training.tier);
-      }
-      controls.consumeDominantUse?.();
-      controls.consumeOffUse?.();
-      updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
-      playerCombat.tick(dt, heldItemUids());
-      dispatchPlayerActions(moving, intent);
+      const step = preparePlayerStep(dt);
       applyAimViewPitchShift();
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }
-      sprinting = intent.sprint && going && !handling && !readyGait && canSprint(sim.needs, sprinting);
-      survival.setSprinting(sprinting);
-      stepStamina(sim.needs, dt, sprinting);
-      const pacedIntent = {
-        ...intent,
-        sprint: sprinting,
-        pace:
-          paceFactor(inventory.carriedWeight(), handling) *
-          (readyGait && firearmsCombatTuning
-            ? firearmStanceEffects(firearmsSkillLevel(character), firearmsCombatTuning).readyMovementFactor
-            : 1),
-      };
-      const tools = debug?.();
-      if (tools?.noclip) {
-        footstepClock = initialFootstepClock();
-        airbornePeakY = undefined;
-        tools.stepNoclip({
-          body,
-          scale,
-          yaw: controls.yaw(),
-          pitch: controls.pitch(),
-          intent: pacedIntent,
-          descend: controls.descending(),
-          dt,
-        });
-        return;
-      }
-      advancePlayerBody(dt, time, pacedIntent);
+      advancePlayerMovement(dt, time, step);
     },
   });
 

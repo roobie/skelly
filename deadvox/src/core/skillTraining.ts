@@ -14,7 +14,7 @@ export const craftingActivityTier = (requiredLevel: number, offset: number): num
   return Math.min(SKILL_LEVEL_MAX, requiredLevel + offset);
 };
 
-export const skillActivityTraining = (registry: Registry, skillId: string, activityId: string) => {
+const skillActivityTraining = (registry: Registry, skillId: string, activityId: string) => {
   const activity = registry.skills.get(skillId)?.training?.activities?.[activityId];
   if (!activity) {
     throw new Error(`Missing training activity ${skillId}.${activityId}`);

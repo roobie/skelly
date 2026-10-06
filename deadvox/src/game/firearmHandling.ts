@@ -2,14 +2,14 @@
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 
 import { type AimBasis, type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
-import type { ModelDef, Registry } from '../core/content.ts';
 import { dominantSide } from '../core/character.ts';
+import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
 import type { FirearmCycleState, FirearmState, PendingCase } from '../core/firearmState.ts';
-import { firearmStanceEffects, firearmsSkillEffects, type FirearmsCombatTuning } from '../core/firearmsSkill.ts';
+import { type FirearmsCombatTuning, firearmStanceEffects, firearmsSkillEffects } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
-import { heldFirearmTransform, heldEjectionPose } from '../core/heldPose.ts';
+import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { dropTarget } from '../core/options.ts';
@@ -172,6 +172,16 @@ export interface DebugFirearmShotInput extends FirearmPoseInput {
   readonly seed: number;
   readonly simTime: number;
 }
+interface ShotCommit {
+  readonly input: DebugFirearmShotInput;
+  readonly item: Item;
+  readonly data: ReturnType<typeof firearmHandlingFor> & { recoilKickRadians: number; dispersionRadians: number };
+  readonly emission: Omit<PendingCase, 'seed'>;
+  readonly muzzle: Vec3;
+  readonly shotBasis: AimBasis;
+  readonly shotKey: string;
+  readonly seed: number;
+}
 export interface FirearmCycleFrame {
   readonly uid: number;
   readonly mode: 'fire' | 'hand' | 'load';
@@ -317,7 +327,11 @@ export class FirearmMechanics {
     if (!(item && defOf(this.inventory.registry, item.type).firearm)) {
       return;
     }
-    const state = (item.firearm ??= { chamber: 'round' });
+    let state = item.firearm;
+    if (!state) {
+      state = { chamber: 'round' };
+      item.firearm = state;
+    }
     let progress = state.readying;
     if (!progress) {
       progress = {
@@ -350,7 +364,12 @@ export class FirearmMechanics {
 
   fire(input: DebugFirearmShotInput): boolean {
     const pump = this.isPump(input.item);
-    if (!input.ready || input.sprinting || !((input.debugMode || pump) && this.held(input.item.uid)) || this.queue.busy) {
+    if (
+      !input.ready ||
+      input.sprinting ||
+      !((input.debugMode || pump) && this.held(input.item.uid)) ||
+      this.queue.busy
+    ) {
       return false;
     }
     // Advancing to the exact deadline also handles a coarse input sample containing several shots.
@@ -391,49 +410,49 @@ export class FirearmMechanics {
     const shotBasis = basisAlong(muzzleDirection, muzzleUp);
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
-    if (pump) {
-      const roundType = item.firearm?.roundType;
-      const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
-      if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
-        return false;
-      }
-      const state = item.firearm!;
-      state.chamber = 'case';
-      state.roundType = undefined;
-      state.pendingCase = { ...emission, seed };
-      const pellets = pelletShotFromBasis({
-        ammo,
-        origin: muzzle,
-        basis: shotBasis,
-        seed: input.seed,
-        key: shotKey,
-      });
-      this.onShot(pellets, input.simTime);
-      this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
-      this.onCommittedShot(seed, data.recoilKickRadians);
-    } else {
-      item.firearm = {
-        chamber: 'case',
-        ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
-        pendingCase: { ...emission, seed },
-        cycle: {
-          mode: 'fire',
-          startedAt: input.simTime,
-          elapsed: 0,
-          duration: actionCycleSeconds(data.action, 'fire'),
-          ejected: false,
-          feedRound: true,
-        },
-      };
-      this.active.add(item.uid);
-      const direction = coneDirection(
-        shotBasis,
-        data.dispersionRadians,
-        Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
-      );
-      this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
-      this.onCommittedShot(seed, data.recoilKickRadians);
+    const commit = { input, item, data, emission, muzzle, shotBasis, shotKey, seed };
+    return pump ? this.commitPumpShot(commit) : this.commitBallisticShot(commit);
+  }
+
+  private commitPumpShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+    const roundType = item.firearm?.roundType;
+    const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
+    if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
+      return false;
     }
+    const state = item.firearm!;
+    state.chamber = 'case';
+    state.roundType = undefined;
+    state.pendingCase = { ...emission, seed };
+    const pellets = pelletShotFromBasis({ ammo, origin: muzzle, basis: shotBasis, seed: input.seed, key: shotKey });
+    this.onShot(pellets, input.simTime);
+    this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
+    this.onCommittedShot(seed, data.recoilKickRadians);
+    return true;
+  }
+
+  private commitBallisticShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+    item.firearm = {
+      chamber: 'case',
+      ...(item.firearm?.readying === undefined ? {} : { readying: item.firearm.readying }),
+      pendingCase: { ...emission, seed },
+      cycle: {
+        mode: 'fire',
+        startedAt: input.simTime,
+        elapsed: 0,
+        duration: actionCycleSeconds(data.action, 'fire'),
+        ejected: false,
+        feedRound: true,
+      },
+    };
+    this.active.add(item.uid);
+    const direction = coneDirection(
+      shotBasis,
+      data.dispersionRadians,
+      Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
+    );
+    this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
+    this.onCommittedShot(seed, data.recoilKickRadians);
     return true;
   }
 

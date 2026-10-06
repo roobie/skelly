@@ -6,11 +6,11 @@ import { Character } from '../src/core/character.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { planCraft } from '../src/core/crafting.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
-import { craftingActivityTier } from '../src/core/skillTraining.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { craftingActivityTier } from '../src/core/skillTraining.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
 
 const baseContent = readdirSync('src/content/base')
@@ -113,10 +113,7 @@ describe('core long actions', () => {
     expected.awardPractice(
       'crafting',
       torch.time,
-      craftingActivityTier(
-        torch.skills.crafting!,
-        registry.skills.get('crafting')!.training!.craftingTierOffset!,
-      ),
+      craftingActivityTier(torch.skills.crafting!, registry.skills.get('crafting')!.training!.craftingTierOffset!),
     );
     const runtime = start();
     expect(runtime.character.skills).toEqual(starting.skills);

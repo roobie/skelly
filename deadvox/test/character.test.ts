@@ -20,7 +20,11 @@ const makeCharacter = (): Character => {
 
 const trainToOrdinaryTop = (character: Character): void => {
   while (character.skills.fixture_skill! < SKILL_LEVEL_MAX) {
-    character.awardPractice('fixture_skill', practiceForNextLevel(character.skills.fixture_skill!), SKILL_LEVEL_LEGENDARY);
+    character.awardPractice(
+      'fixture_skill',
+      practiceForNextLevel(character.skills.fixture_skill!),
+      SKILL_LEVEL_LEGENDARY,
+    );
   }
 };
 

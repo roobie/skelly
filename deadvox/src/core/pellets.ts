@@ -78,5 +78,4 @@ export const pelletShot = ({
   aimFrame: AimFrame;
   seed: number;
   key: string;
-}): PelletShot =>
-  pelletShotFromBasis({ ammo, origin, basis: aimBasis(yaw, pitch, aimFrame), seed, key });
+}): PelletShot => pelletShotFromBasis({ ammo, origin, basis: aimBasis(yaw, pitch, aimFrame), seed, key });

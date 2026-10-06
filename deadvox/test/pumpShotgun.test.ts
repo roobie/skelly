@@ -513,8 +513,7 @@ describe('real pump ammunition', () => {
     const center = [basis.right, basis.up, basis.forward].reduce<Vec3>(
       (world, axis, index) =>
         world.map(
-          (value, component) =>
-            value + axis[component]! * held.muzzleDirection[index]! * (index === 2 ? -1 : 1),
+          (value, component) => value + axis[component]! * held.muzzleDirection[index]! * (index === 2 ? -1 : 1),
         ) as Vec3,
       [0, 0, 0],
     );

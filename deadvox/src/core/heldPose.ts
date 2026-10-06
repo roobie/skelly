@@ -50,38 +50,7 @@ export const heldAnchorOffset = (model: ModelDef, name: string): Vec3 => {
   return modelToView(model, anchor.map((value, index) => value - model.grip!.at[index]!) as Vec3);
 };
 
-export const heldAnchorWorldPosition = ({
-  model,
-  anchor,
-  side,
-  twoHanded,
-  eye,
-  yaw,
-  pitch,
-  aimFrame,
-}: {
-  model: ModelDef;
-  anchor: string;
-  side: HandSide;
-  twoHanded: boolean;
-  eye: Vec3;
-  yaw: number;
-  pitch: number;
-  aimFrame: AimFrame;
-}): Vec3 => {
-  const local = heldAnchorOffset(model, anchor);
-  const grip = heldGripOffset(side, twoHanded);
-  const offset = local.map((value, index) => value + grip[index]!) as Vec3;
-  const { right, up, forward } = aimBasis(yaw, pitch, aimFrame);
-  return [
-    eye[0] + right[0] * offset[0] + up[0] * offset[1] - forward[0] * offset[2],
-    eye[1] + right[1] * offset[0] + up[1] * offset[1] - forward[1] * offset[2],
-    eye[2] + right[2] * offset[0] + up[2] * offset[1] - forward[2] * offset[2],
-  ];
-};
-
-const rotateYXZ = ([x, y, z]: Vec3, [pitch, yaw, roll]: Vec3): Vec3 =>
-  ry(rx(rz([x, y, z], roll), pitch), yaw);
+const rotateYXZ = ([x, y, z]: Vec3, [pitch, yaw, roll]: Vec3): Vec3 => ry(rx(rz([x, y, z], roll), pitch), yaw);
 
 const inCameraFrame = (vector: Vec3, frame: AimFrame): Vec3 => {
   const { right, up, forward } = aimBasis(0, 0, frame);
@@ -127,8 +96,7 @@ export const heldFirearmTransform = ({
   loweredPitchRadians,
 }: HeldFirearmTransformInput): HeldFirearmTransform => {
   if (
-    !(model.grip && model.anchors?.muzzle) ||
-    ![progress, loweredPitchRadians].every(Number.isFinite) ||
+    !(model.grip && model.anchors?.muzzle && [progress, loweredPitchRadians].every(Number.isFinite)) ||
     progress < 0 ||
     progress > 1 ||
     loweredPitchRadians < 0
@@ -137,26 +105,24 @@ export const heldFirearmTransform = ({
   }
   const pose = readyMeleePose(true, leadingSide)[side];
   const eased = progress * progress * (3 - 2 * progress);
-  const handRotation = aimingDownSights
-    ? ([0, 0, 0] as Vec3)
-    : pose.rotation.map((value) => value * eased) as Vec3;
+  const handRotation = aimingDownSights ? ([0, 0, 0] as Vec3) : (pose.rotation.map((value) => value * eased) as Vec3);
   const loweredPitch = -loweredPitchRadians * (1 - progress);
   const applyRootRotation = (vector: Vec3): Vec3 =>
     inCameraFrame(rotateYXZ(rx(vector, loweredPitch), handRotation), progress >= 1 ? aimFrame : NEUTRAL_AIM);
-  const normalRoot = heldGripOffset(side, twoHanded).map(
-    (value, index) => value + pose.offset[index]! * eased,
-  ) as Vec3;
+  const normalRoot = heldGripOffset(side, twoHanded).map((value, index) => value + pose.offset[index]! * eased) as Vec3;
   const rootOffset =
     aimingDownSights && model.sight
-      ? applyRootRotation(modelToView(model, model.sight.eye.map((value, index) => value - model.grip!.at[index]!) as Vec3)).map(
-          (value) => -value,
-        ) as Vec3
+      ? (applyRootRotation(
+          modelToView(model, model.sight.eye.map((value, index) => value - model.grip!.at[index]!) as Vec3),
+        ).map((value) => -value) as Vec3)
       : normalRoot;
   const muzzleOffset = applyRootRotation(heldAnchorOffset(model, 'muzzle'));
   const muzzleDirection = applyRootRotation(modelToView(model, model.muzzleDirection ?? [1, 0, 0]));
   const muzzleUp = applyRootRotation(modelToView(model, [0, 1, 0]));
   const sightEyeOffset = model.sight
-    ? applyRootRotation(modelToView(model, model.sight.eye.map((value, index) => value - model.grip!.at[index]!) as Vec3))
+    ? applyRootRotation(
+        modelToView(model, model.sight.eye.map((value, index) => value - model.grip!.at[index]!) as Vec3),
+      )
     : undefined;
   const sightDirection = model.sight ? applyRootRotation(modelToView(model, model.sight.direction)) : undefined;
   const sightUp = model.sight ? applyRootRotation(modelToView(model, model.sight.up)) : undefined;

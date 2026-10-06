@@ -88,11 +88,11 @@ it('rack pose turns an away-facing port only during handling without changing ga
     readiness: { uid: gun.uid, progress: 1, aimingDownSights: false },
   });
   const unracked = held.warmUpTarget.scene.getObjectByName('rack-pose-probe')!.getWorldQuaternion(new Quaternion());
-  const unrackedPort = new Vector3(...heldAnchorOffset(model, 'ejection'))
-    .applyQuaternion(unracked)
-    .add(position);
+  const unrackedPort = new Vector3(...heldAnchorOffset(model, 'ejection')).applyQuaternion(unracked).add(position);
   const unrackedFace = new Vector3(1, 0, 0).applyQuaternion(unracked);
-  expect(face.dot(toCamera)).toBeGreaterThan(unrackedFace.dot(camera.getWorldPosition(new Vector3()).sub(unrackedPort)));
+  expect(face.dot(toCamera)).toBeGreaterThan(
+    unrackedFace.dot(camera.getWorldPosition(new Vector3()).sub(unrackedPort)),
+  );
   expect(rackCant(model, 'left', frame, position)).toBe(0); // same port already faces this hand's view
   const oppositePort = {
     ...model,

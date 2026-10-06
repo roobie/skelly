@@ -31,12 +31,11 @@ describe('export CLI core', () => {
     }
     expect(optic.modelEntry.sight?.kind).toBe('optic');
     expect(irons.modelEntry.sight?.kind).toBe('iron');
-    for (const model of [optic.modelEntry, irons.modelEntry]) {
-      const sight = model.sight;
+    for (const { sight, muzzleDirection } of [optic.modelEntry, irons.modelEntry]) {
       expect(sight).toBeDefined();
       expect(Math.hypot(...sight!.direction)).toBeCloseTo(1);
       expect(Math.hypot(...sight!.up)).toBeCloseTo(1);
-      expect(Math.hypot(...model.muzzleDirection!)).toBeCloseTo(1);
+      expect(Math.hypot(...muzzleDirection!)).toBeCloseTo(1);
     }
   });
 

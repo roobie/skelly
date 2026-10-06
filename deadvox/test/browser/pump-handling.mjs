@@ -192,31 +192,36 @@ try {
     throw new Error(`Native arrows cannot select ${uid}; visible rows: ${rows.join(',')}`);
   };
   const handlingWaits = [];
-  const waitForWork = async (condition, uid, futureSeconds = 0) => {
-    const result = await page.evaluate(({ condition, uid, futureSeconds }) => {
-      const { session } = globalThis.pumpHandlingTest;
-      const complete = () => {
-        const item = session.inventory.itemByUid(uid);
-        switch (condition) {
-          case 'rightHand':
-            return !session.queue.busy && session.inventory.hands.right?.uid === uid;
-          case 'itemGone':
-            return item === undefined;
-          case 'tubeLoaded':
-            return (item?.firearm?.tube?.length ?? 0) > 0;
-          case 'chamberRound':
-            return !session.queue.busy && item?.firearm?.chamber === 'round';
+  const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
+    const result = await page.evaluate(
+      ({ condition, uid, futureSeconds }) => {
+        const { session } = globalThis.pumpHandlingTest;
+        const complete = () => {
+          const item = session.inventory.itemByUid(uid);
+          switch (condition) {
+            case 'rightHand':
+              return !session.queue.busy && session.inventory.hands.right?.uid === uid;
+            case 'itemGone':
+              return item === undefined;
+            case 'tubeLoaded':
+              return (item?.firearm?.tube?.length ?? 0) > 0;
+            case 'chamberRound':
+              return !session.queue.busy && item?.firearm?.chamber === 'round';
+            default:
+              throw new Error(`Unknown simulation-work condition: ${condition}`);
+          }
+        };
+        const seconds = session.queue.remaining + futureSeconds;
+        const frameLimit = Math.max(1, Math.ceil(seconds / 0.1) + 2);
+        let frames = 0;
+        while (!complete() && frames < frameLimit) {
+          session.frame(0.1);
+          frames += 1;
         }
-      };
-      const seconds = session.queue.remaining + futureSeconds;
-      const frameLimit = Math.max(1, Math.ceil(seconds / 0.1) + 2);
-      let frames = 0;
-      while (!complete() && frames < frameLimit) {
-        session.frame(0.1);
-        frames++;
-      }
-      return { complete: complete(), seconds, frames, queueBusy: session.queue.busy };
-    }, { condition, uid, futureSeconds });
+        return { complete: complete(), seconds, frames, queueBusy: session.queue.busy };
+      },
+      { condition: wantedCondition, uid: wantedUid, futureSeconds: extraSeconds },
+    );
     handlingWaits.push(result);
     assert.equal(result.complete, true, `simulation work did not finish deterministically: ${JSON.stringify(result)}`);
   };

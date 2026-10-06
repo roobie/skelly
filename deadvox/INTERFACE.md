@@ -181,9 +181,8 @@ governs block success. The tiered practice contract is in
   with the firearm because it changes when that weapon can shoot; held input is
   transient.
 - **ADS is a toggle inside a fully raised firearm stance,** for iron sights and
-  optics. It is not a separate HUD mode. The defaults live together in
-  `src/game/input.ts`, `COMBAT_BINDINGS`, pending transfer to d44's rebindable
-  registry.
+  optics. It is not a separate HUD mode. Rebindable actions are registered in
+  `src/game/inputBindings.ts`, `inputBindings`.
 - **Melee also requires readiness:** en-garde is the held melee stance; a swing
   outside it does not start. See `src/game/play.ts`, `updateHeldItems`, for the
   pose path.

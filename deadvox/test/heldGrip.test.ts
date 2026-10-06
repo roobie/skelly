@@ -1,12 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { Character } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
-import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 
