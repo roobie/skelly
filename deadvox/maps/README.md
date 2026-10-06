@@ -1,7 +1,7 @@
 ---
 read_if:
-  - you're authoring or validating Tiled site maps
-  - you're authoring time-windowed Tiled spawn markers
+  - "you're authoring or validating Tiled site maps"
+  - "you're authoring time-windowed Tiled spawn markers"
 ---
 
 # Authored-site spike (d35)

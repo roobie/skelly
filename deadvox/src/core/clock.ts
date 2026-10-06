@@ -17,6 +17,8 @@ export interface SpawnTimeWindow {
   to?: string | undefined;
 }
 
+export type SpawnTimeWindowField = { [Property in 'window']?: SpawnTimeWindow };
+
 /** Calendar seconds per simulation second. 1:8 makes a game day 3 real hours. */
 export const CLOCK_RATIO = 8;
 

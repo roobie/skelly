@@ -6,7 +6,7 @@
 // the same whichever chunk generates first.
 
 import type { Chunk } from './chunk.ts';
-import type { SpawnTimeWindow } from './clock.ts';
+import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import type { DoorLockDef, TemplateAccess } from './schema.ts';
@@ -100,11 +100,10 @@ interface Piece {
   size: Vec3;
 }
 
-export interface SpawnMarker {
+export interface SpawnMarker extends SpawnTimeWindowField {
   zombie: string;
   chance: number;
   pos: Vec3;
-  "window"?: SpawnTimeWindow;
 }
 
 export interface CompiledTemplate {
