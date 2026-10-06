@@ -3,6 +3,7 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: standalone browser contract uses Node assertions
 // biome-ignore-all lint/style/noProcessEnv: runner controls the executable and source checkout for A/B tests
 import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -17,6 +18,139 @@ const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
 };
+const glowstickChargeSample = ({ start, seconds }) => {
+  const { session } = globalThis.primaryActionTest;
+  return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
+};
+const measureGlowstickFloor = async (page, uid, label) => {
+  const screenshot = await page.locator('#view canvas').screenshot();
+  const artifacts = resolve(projectRoot, 'test-results/primary-action');
+  await mkdir(artifacts, { recursive: true });
+  await writeFile(resolve(artifacts, `dropped-glowstick-${label}.png`), screenshot);
+  return page.evaluate(
+    async ({ base64, itemUid }) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(itemUid);
+      const location = item && r.inventory.locate(item);
+      if (location?.kind !== 'pile') {
+        throw new Error('Glowstick pixel fixture is not on the ground');
+      }
+      const { camera } = r.engine;
+      camera.updateMatrixWorld(true);
+      const forward = camera.getWorldDirection(camera.position.clone());
+      forward.y = 0;
+      forward.normalize();
+      const { blockSize } = r.scale;
+      const point = camera.position
+        .clone()
+        .set(
+          (location.pile.pos[0] + 0.5) * blockSize + forward.x * 0.8,
+          location.pile.pos[1] * blockSize + 0.015,
+          (location.pile.pos[2] + 0.5) * blockSize + forward.z * 0.8,
+        )
+        .project(camera);
+      const decoded = new Image();
+      decoded.src = `data:image/png;base64,${base64}`;
+      await decoded.decode();
+      const x = Math.round(((point.x + 1) / 2) * decoded.naturalWidth);
+      const y = Math.round(((1 - point.y) / 2) * decoded.naturalHeight);
+      const radius = 6;
+      if (x < radius || y < radius || x + radius >= decoded.naturalWidth || y + radius >= decoded.naturalHeight) {
+        throw new Error(`Floor sample projects outside the canvas: ${x},${y}`);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = decoded.naturalWidth;
+      canvas.height = decoded.naturalHeight;
+      const context = canvas.getContext('2d');
+      context.drawImage(decoded, 0, 0);
+      const pixels = context.getImageData(x - radius, y - radius, radius * 2 + 1, radius * 2 + 1).data;
+      let sum = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        sum += pixels[index] + pixels[index + 1] + pixels[index + 2];
+      }
+      return { x, y, luminance: sum / ((pixels.length / 4) * 3), on: item.on };
+    },
+    { base64: screenshot.toString('base64'), itemUid: uid },
+  );
+};
+const checkDroppedGlowstickPixel = async (port) => {
+  const browser = await chromium.launch({
+    executablePath: process.env.CHROME_BIN,
+    headless: true,
+    args: browserStageArgs('primary-action', ['--enable-webgl'], 'pixel'),
+  });
+  try {
+    const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=21:00&post=0&sunshadow=0&torchshadow=0`,
+        'pixel',
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#dominant-hand').selectOption('left');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const fixture = await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.input.pitch = -0.55;
+      const item = r.inventory.create('glowstick');
+      if (!r.inventory.add(item, { kind: 'pile', pos: r.feet() })) {
+        throw new Error('Could not place dropped-glowstick pixel fixture');
+      }
+      return { uid: item.uid, frame: r.frames };
+    });
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, fixture.frame);
+    const off = await measureGlowstickFloor(page, fixture.uid, 'off');
+    assert.notEqual(off.on, true);
+    const onFrame = await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      const item = r.inventory.itemByUid(uid);
+      r.setHand(r.dominant, item);
+      const reason = r.survival.use(item);
+      if (reason) {
+        throw new Error(`Could not light dropped glowstick fixture: ${reason}`);
+      }
+      const dropped = r.inventory.move(item, { kind: 'pile', pos: r.feet() });
+      if (!dropped.ok) {
+        throw new Error(`Could not drop lit glowstick fixture: ${dropped.reason}`);
+      }
+      return r.frames;
+    }, fixture.uid);
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, onFrame);
+    const on = await measureGlowstickFloor(page, fixture.uid, 'on');
+    assert.equal(on.on, true);
+    process.stdout.write(`Dropped glowstick floor luminance: ${JSON.stringify({ off, on })}\n`);
+    assert.ok(
+      on.luminance > off.luminance + 3,
+      'a dropped lit glowstick visibly brightens nearby floor pixels at night',
+    );
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await browser.close();
+  }
+};
 const observationPlugin = {
   name: 'primary-action-test-observation',
   enforce: 'pre',
@@ -30,10 +164,26 @@ const observationPlugin = {
       marker,
       `
   const proof = {
-    input, keyboardInput, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions, hudOptions,
+    input,
+    keyboardInput,
+    inventory,
+    session,
+    survival,
+    debugTools,
+    engine,
+    caseEffects,
+    glowstickThrows,
+    audio,
+    feet,
+    scale,
+    performHandUse,
+    quickbarActions,
+    hudOptions,
+    beginGlowstickCharge,
     selectPrimaryAction, ignitionTargetForHand,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
+    isChargingGlowstick: () => glowstickChargeStartedAt !== undefined,
     clearNotice: () => showNotice(''),
     clearHand: (side) => {
       const held = inventory.hands[side];
@@ -639,6 +789,120 @@ try {
   assert.equal(roundTrip.restoredOn, true);
   assert.equal(roundTrip.restoredHand, 'left');
   await toggleLight('hand.use-off', false);
+  const throwFixture = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const glowstick = r.inventory.create('glowstick');
+    r.setHand(r.off, glowstick);
+    const reason = r.survival.use(glowstick);
+    if (reason) {
+      throw new Error(`Could not light throw fixture: ${reason}`);
+    }
+    return {
+      uid: glowstick.uid,
+      start: [...r.session.body.pos],
+      blockSize: r.scale.blockSize,
+      distance: r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres,
+      chargeSeconds: r.inventory.registry.senses.get('player').light.throwChargeSeconds,
+    };
+  });
+  const interruptedThrow = await holdAction(page, 'player.throw-glowstick');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingGlowstick());
+  const beforeKnockout = await page.evaluate(() => globalThis.primaryActionTest.frames);
+  await page.evaluate(() => {
+    const { body } = globalThis.primaryActionTest.session.sim;
+    body.impact(0, 'torso', { shockDamage: body.shock + 1 });
+  });
+  await page.waitForFunction(() => globalThis.primaryActionTest.session.sim.body.unconscious);
+  await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, beforeKnockout);
+  assert.equal(
+    await page.evaluate(() => globalThis.primaryActionTest.isChargingGlowstick()),
+    false,
+    'knockout cancels an active glowstick charge',
+  );
+  await interruptedThrow();
+  const rejectedThrow = await holdAction(page, 'player.throw-glowstick');
+  assert.equal(
+    await page.evaluate(() => globalThis.primaryActionTest.isChargingGlowstick()),
+    false,
+    'unconsciousness refuses a new glowstick charge',
+  );
+  assert.equal(
+    await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.beginGlowstickCharge();
+      return r.isChargingGlowstick();
+    }),
+    false,
+    'beginGlowstickCharge independently refuses unconsciousness',
+  );
+  await rejectedThrow();
+  assert.equal(
+    await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
+      throwFixture.uid,
+    ),
+    'hand',
+    'neither charge consumes the held glowstick',
+  );
+  await page.evaluate(() => {
+    const { body } = globalThis.primaryActionTest.session.sim;
+    body.advance(body.tuning.knockoutSeconds);
+  });
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.body.unconscious);
+  const cancelThrow = await holdAction(page, 'player.throw-glowstick');
+  await page.mouse.down({ button: 'right' });
+  await cancelThrow();
+  await page.mouse.up({ button: 'right' });
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'hand',
+    throwFixture.uid,
+  );
+  const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  const releaseThrow = await holdAction(page, 'player.throw-glowstick');
+  await waitForSimulation(
+    page,
+    glowstickChargeSample,
+    { start: chargeStartedAt, seconds: throwFixture.chargeSeconds },
+    {
+      seconds: throwFixture.chargeSeconds + 1,
+      label: 'glowstick charge reaches its maximum throw range',
+      record: (line) => process.stderr.write(`${line}\n`),
+      stop: releaseThrow,
+    },
+  );
+  await page.waitForFunction((uid) => {
+    const r = globalThis.primaryActionTest;
+    return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.glowstickThrows.activeCount > 0;
+  }, throwFixture.uid);
+  const thrown = await page.evaluate(({ uid, start, blockSize }) => {
+    const r = globalThis.primaryActionTest;
+    const location = r.inventory.locate(r.inventory.itemByUid(uid));
+    if (location?.kind !== 'pile') {
+      throw new Error('Thrown glowstick did not land in a pile');
+    }
+    const [x, , z] = location.pile.pos;
+    return Math.hypot(x + 0.5 - start[0], z + 0.5 - start[2]) * blockSize;
+  }, throwFixture);
+  const landingTolerance = throwFixture.blockSize * 2;
+  assert.ok(
+    await page.evaluate(() => globalThis.primaryActionTest.glowstickThrows.activeCount > 0),
+    'throw presents a visible arc to the landing point',
+  );
+  assert.ok(
+    thrown >= throwFixture.distance - landingTolerance,
+    `throw reaches its tuned landing range (distance ${thrown})`,
+  );
+  assert.ok(
+    thrown <= throwFixture.distance + landingTolerance,
+    `throw uses the tuned landing range (distance ${thrown})`,
+  );
+  await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
+  });
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.create(r.types.tool));
@@ -856,8 +1120,11 @@ try {
   const treatmentRegion = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.region);
   assert.equal(treatmentRegion, selected);
   assert.deepEqual(pageErrors, []);
+  await browser.close();
+  browser = undefined;
+  await checkDroppedGlowstickPixel(address.port);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold and held-book reading.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, thrown-glowstick arc, refusals, firearm emission, quickbar hold and held-book reading.\n',
   );
 } finally {
   await browser?.close();

@@ -63,7 +63,6 @@
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/menuPointer.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/playHud.ts", "count": 1 },
     { "path": "deadvox/LESSONS.md", "check": "path", "text": "ui/playReadout.ts", "count": 1 },
-    { "path": "deadvox/maps/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "assets/", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "content/base/assets/manifest.json", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "core/assets.ts", "count": 1 },

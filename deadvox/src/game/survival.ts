@@ -1,6 +1,6 @@
 // Using what's in your hands (DESIGN.md, "Hands"): eating and drinking are short
 // actions in the handling queue, a light switches on and off, and a battery goes into
-// the light you're holding. Only a light in your hands shines; one put away goes off.
+// the light you're holding. Head-worn beam lights also remain usable while worn.
 // The needs themselves are in the simulation (core/needs.ts).
 
 import { canonicalJson } from '../core/canonicalJson.ts';
@@ -31,7 +31,8 @@ type LightLocation = NonNullable<ReturnType<Inventory['locate']>>;
 
 const shouldDouse = (spec: LightSpec, location: LightLocation, sprinting: boolean): boolean => {
   const { burning } = spec;
-  const movedOutOfHand = location.kind !== 'hand';
+  const wornHeadlamp = location.kind === 'worn' && location.slot === 'head' && spec.beam !== undefined;
+  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp;
   const dropped = location.kind === 'pile';
   return (
     (dropped ? burning?.drop !== 'stay' : movedOutOfHand && burning?.stow !== 'stay') ||

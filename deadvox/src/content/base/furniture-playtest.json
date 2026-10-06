@@ -1,0 +1,24 @@
+{
+  "furniture": [
+    {
+      "id": "clinic_sign",
+      "name": "Clinic direction sign",
+      "size": [2, 3, 1],
+      "color": "#99794c",
+      "readable": {
+        "title": "Hand-painted sign",
+        "text": "Clinic set up south — they took the sick there"
+      }
+    },
+    {
+      "id": "gas_directions_sign",
+      "name": "Hand-painted direction sign",
+      "size": [2, 3, 1],
+      "color": "#99794c",
+      "readable": {
+        "title": "Hand-painted sign",
+        "text": "Dad's cabin is up the ridge, key under the step"
+      }
+    }
+  ]
+}

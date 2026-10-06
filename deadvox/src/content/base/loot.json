@@ -138,6 +138,11 @@
           "condition": [0.5, 1]
         },
         {
+          "item": "headlamp",
+          "weight": 1,
+          "condition": [0.5, 1]
+        },
+        {
           "item": "painkillers",
           "weight": 1
         },
