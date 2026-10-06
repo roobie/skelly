@@ -1,6 +1,7 @@
 ---
 read_if:
   - you dispatch, build, review or merge a change and need its steps
+  - you maintain the slice checklist when milestone PRs merge
   - you record a decision by BR and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you hit a working rule's situation (shared host, test pool, run bounds, units, CI cost)
@@ -58,6 +59,12 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
    workflow too, so green CI on the head commit applies to them as well.
 7. **Clean up after the merge:** remove the worktree, stop its dev server, and delete the remote
    branch.
+
+## Slice checklist
+
+After checklist drift recorded in `deadvox/docs/retro-slice-2.md`, “What hurt,” BR accepted proposal 1, “Keep the checklist live” (2026-10-06 06:54): “accept”. BR approved option A, a merge-time action (2026-10-06 06:56): “yes, queue A”.
+
+For checklist issue #293, milestone PRs carry a `Slice-Milestone: <id>` line. On merge, `.github/workflows/slice-checklist.yml` uses `tools/slice-checklist.mjs`, `milestonesFromPrBody` and `tickMilestone` to tick the checklist. The lead adds evidence and carried-forward links by hand. The workflow uses `pull_request`, not `pull_request_target`; GitHub withholds issue-write permission for fork PRs, so the lead ticks the checklist manually after those merges.
 
 ## Done, per subproject
 

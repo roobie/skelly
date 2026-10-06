@@ -5,7 +5,7 @@
   "scripts": {
     "check": "biome check",
     "fix": "biome check --write",
-    "ci": "biome ci && node --test test/vitest-temp.test.mjs test/deadvox-browser-ci.test.mjs test/browser-ci-result.test.mjs test/zero-drift-check.test.mjs && node tools/zero-drift-check.mjs",
+    "ci": "biome ci && node --test test/vitest-temp.test.mjs test/deadvox-browser-ci.test.mjs test/browser-ci-result.test.mjs test/zero-drift-check.test.mjs test/slice-checklist.test.mjs && node tools/zero-drift-check.mjs",
     "check:zero-drift": "node tools/zero-drift-check.mjs",
     "test:zero-drift": "node --test test/zero-drift-check.test.mjs",
     "test:site": "node --test test/site-launcher.test.mjs",
