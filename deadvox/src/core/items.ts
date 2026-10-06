@@ -56,7 +56,7 @@ export interface ItemFields<Node> {
 }
 
 /** One entry per slot kind; a magazine-fed firearm has the magazine slot. */
-export interface ItemSlots<Node> {
+interface ItemSlots<Node> {
   magazine?: Node | undefined;
 }
 
