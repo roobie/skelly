@@ -54,13 +54,19 @@ const validStanceWeight = (weight: number | undefined): boolean =>
 const validStepOffset = (offset: number | undefined): boolean =>
   offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
+export type MeleeDamageType = 'blunt' | 'cut' | 'pierce';
+
 export interface MeleeWeapon {
   readonly damage: number;
   readonly reach: number;
   readonly cooldown: number;
   readonly stamina?: number | undefined;
   readonly impulse?: number | undefined;
-  readonly type?: 'blunt' | 'cut' | 'pierce' | undefined;
+  readonly damageVariance?: number | undefined;
+  readonly headDamageMultiplier?: number | undefined;
+  readonly limbDamageMultiplier?: number | undefined;
+  readonly speedMultiplier?: number | undefined;
+  readonly type?: MeleeDamageType | undefined;
 }
 
 export interface ZombieAim {
@@ -82,6 +88,7 @@ interface MeleeHitContext {
   readonly direction: Vec3;
   readonly distanceMetres: number;
   readonly weapon: MeleeWeapon;
+  readonly damageType: MeleeDamageType;
   readonly isFist: boolean;
 }
 
@@ -93,6 +100,25 @@ interface MeleeEffectsContext {
   readonly killed: boolean;
   readonly hit: HitImpulse;
 }
+
+const meleeDamageForContact = (
+  zombie: Zombie,
+  region: ZombieRegion,
+  weapon: MeleeWeapon,
+  damageType: MeleeDamageType,
+): number => {
+  const spread = weapon.damageVariance;
+  const rolled =
+    spread === undefined ? weapon.damage : weapon.damage * zombie.dismemberRng.range(1 - spread, 1 + spread);
+  let multiplier = 1;
+  if (region === 'head') {
+    multiplier = weapon.headDamageMultiplier ?? 1;
+  } else if (region !== 'torso') {
+    multiplier = weapon.limbDamageMultiplier ?? 1;
+  }
+  const resistance = zombie.type.meleeDamageResistance?.[region][damageType] ?? 0;
+  return rolled * multiplier * (1 - resistance);
+};
 
 export interface MeleeResult {
   readonly id?: EntityId | undefined;
@@ -129,9 +155,9 @@ export interface Zombie {
   behaviorRng: Rng;
   /** Separate seeded stream keeps ambient sound timing from changing movement decisions. */
   soundRng: Rng;
-  /** Separate seeded stream (same reasoning as soundRng) keeps dismemberment rolls, which only ever
-   * happen on a player's melee hit — an external event, not part of the per-tick AI loop — from shifting
-   * the sequence of subsequent behaviorRng-driven decisions. */
+  /** Separate seeded stream keeps melee damage variation and dismemberment rolls (both external hit
+   * events) from shifting behaviorRng-driven AI. Each class weapon consumes one damage draw before its
+   * dismemberment rolls, including zero-spread weapons, so contact draw order is stable. */
   dismemberRng: Rng;
   idleSoundTimer: number;
   lastVocalNoiseId?: number | undefined;
@@ -2334,6 +2360,7 @@ export class ZombieSystem {
         direction,
         distanceMetres: aim.distanceMetres,
         weapon,
+        damageType: 'pierce',
         isFist: false,
         projectile: true,
       });
@@ -2373,6 +2400,7 @@ export class ZombieSystem {
       direction,
       distanceMetres: aim.distanceMetres,
       weapon,
+      damageType: weapon.type ?? 'blunt',
       isFist,
     });
     return aim.id;
@@ -2392,6 +2420,7 @@ export class ZombieSystem {
     direction,
     distanceMetres,
     weapon,
+    damageType,
     isFist,
     projectile = false,
   }: MeleeHitContext & { projectile?: boolean }): void {
@@ -2411,7 +2440,7 @@ export class ZombieSystem {
       this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos), zombie);
     }
     this.options.onSound?.('shambler_hurt', copy(zombie.body.pos), zombie);
-    const healthAfter = Math.max(0, healthBefore - weapon.damage);
+    const healthAfter = Math.max(0, healthBefore - meleeDamageForContact(zombie, region, weapon, damageType));
     zombie.regions[region] = healthAfter;
     if (healthAfter < healthBefore) {
       zombie.hitFlinchTime = 0;

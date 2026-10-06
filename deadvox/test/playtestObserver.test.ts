@@ -220,7 +220,13 @@ describe('playtest observer snapshot oracle', () => {
     const entity = { uid: 9, pockets: [] };
     const runtime = {
       sim: {
-        needs: { calories: 40, hydration: 35, fatigue: 70, stamina: 100 },
+        needs: {
+          calories: 40,
+          hydration: 35,
+          fatigue: 70,
+          stamina: 100,
+          staminaRegenDelayRemainingSimSeconds: 0,
+        },
         body: { health: 100 },
         actions: { snapshotState: () => ({ job: null }) },
         paused: false,

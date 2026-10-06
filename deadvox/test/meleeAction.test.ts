@@ -1,18 +1,25 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type ZombieDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
+import { SPAWN_NEEDS, STAMINA, stepStamina } from '../src/core/needs.ts';
 import { type MeleeActionState, PlayerCombat } from '../src/core/playerCombat.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
-import { shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from '../src/game/melee.ts';
+import {
+  resolveMeleeWeapon,
+  shouldBlockFromEnGarde,
+  shouldEnterMeleeReady,
+  startPlayerMelee,
+} from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -39,9 +46,11 @@ const makeSystem = (
   isSolid: SolidAt = FLOOR,
   results: string[] = [],
   sounds: string[] = [],
-  weaponHits: number[] = [],
+  options: { weaponHits?: number[]; seed?: number } = {},
 ) => {
+  const { weaponHits = [], seed = 0 } = options;
   const system = new ZombieSystem({
+    seed,
     player: () => blockedPlayer,
     isSolid,
     isOpaque: isSolid,
@@ -58,17 +67,22 @@ const makeSystem = (
   return system;
 };
 
-const makeTarget = (system: ZombieSystem) => {
-  const id = system.add(SHAMBLER, [0, 1, 4], [0, 0, 1]);
+const makeTarget = (system: ZombieSystem, type: ZombieDef = SHAMBLER) => {
+  const id = system.add(type, [0, 1, 4], [0, 0, 1]);
   const zombie = system.store.get(id)!;
   zombie.body.onGround = true;
   system.setFrozen(true);
   return { id, zombie };
 };
 
-const headRay = (zombie: Zombie, id: number): { origin: Vec3; direction: Vec3 } => {
+const regionRay = (
+  zombie: Zombie,
+  id: number,
+  region: 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg',
+): { origin: Vec3; direction: Vec3 } => {
   const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
-  const { center } = posed.head.find((box) => box.bone === 'head')!;
+  const box = region === 'head' ? posed.head.find((candidate) => candidate.bone === 'head')! : posed[region][0]!;
+  const { center } = box;
   const front = [-zombie.facing[0], 0, -zombie.facing[2]] as Vec3;
   const origin: Vec3 = [
     center[0] + (front[0] * 0.75) / BLOCK_SIZE,
@@ -79,6 +93,7 @@ const headRay = (zombie: Zombie, id: number): { origin: Vec3; direction: Vec3 } 
   const length = Math.hypot(...delta);
   return { origin, direction: delta.map((value) => value / length) as Vec3 };
 };
+const headRay = (zombie: Zombie, id: number) => regionRay(zombie, id, 'head');
 
 const start = (
   system: ZombieSystem,
@@ -124,7 +139,7 @@ const actionPose = (overrides: Partial<MeleeActionState> = {}): MeleeActionState
 describe('melee pose and contact contract', () => {
   it('reports one weapon-wear event at confirmed contact and none on a miss', () => {
     const hits: number[] = [];
-    const system = makeSystem(FLOOR, [], [], hits);
+    const system = makeSystem(FLOOR, [], [], { weaponHits: hits });
     const target = makeTarget(system);
     const ray = headRay(target.zombie, target.id);
     expect(start(system, ray, 'blunt', BASE_WEAPON)).toBe(true);
@@ -133,7 +148,7 @@ describe('melee pose and contact contract', () => {
     expect(hits).toEqual([11]);
 
     const misses: number[] = [];
-    const missSystem = makeSystem(FLOOR, [], [], misses);
+    const missSystem = makeSystem(FLOOR, [], [], { weaponHits: misses });
     expect(start(missSystem, { origin: [100, 2, 100], direction: [1, 0, 0] })).toBe(true);
     advance(missSystem, 0.25);
     expect(misses).toEqual([]);
@@ -211,7 +226,7 @@ describe('player melee action', () => {
     const ray = headRay(zombie, id);
     expect(system.aimAt(ray.origin, ray.direction, BASE_WEAPON)?.inReach).toBe(true);
     const initialHealth = zombie.regions.head;
-    const needs = { stamina: 100 };
+    const needs = { stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 };
     expect(
       startPlayerMelee(combatFor(system), needs, {
         ...ray,
@@ -269,13 +284,56 @@ describe('player melee action', () => {
     expect(resolvedThroughSharedPath).toBe(true);
   });
 
+  it('refuses a zero-stamina swing even when its weapon has no stamina cost', () => {
+    const needs = { ...SPAWN_NEEDS };
+    stepStamina(needs, needs.stamina / -STAMINA.sprint + 1, true);
+    expect(needs.stamina).toBe(0);
+    const system = makeSystem();
+    const missRay = { origin: [0, 2, 2] as Vec3, direction: [1, 0, 0] as Vec3 };
+
+    expect(
+      startPlayerMelee(combatFor(system), needs, {
+        ...missRay,
+        weapon: { ...BASE_WEAPON, stamina: 0 },
+        profile: 'blunt',
+        twoHanded: false,
+        hands: { right: 11, left: null },
+      }),
+    ).toBe('too-tired');
+    expect(combatFor(system).activeMeleeAction).toBeUndefined();
+    expect(needs.stamina).toBe(0);
+  });
+
+  it('starts the authored regeneration delay when a melee cost empties stamina', () => {
+    const needs = { stamina: BASE_WEAPON.stamina!, staminaRegenDelayRemainingSimSeconds: 0 };
+    const system = makeSystem();
+    const missRay = { origin: [0, 2, 2] as Vec3, direction: [1, 0, 0] as Vec3 };
+
+    expect(
+      startPlayerMelee(
+        combatFor(system),
+        needs,
+        {
+          ...missRay,
+          weapon: BASE_WEAPON,
+          profile: 'blunt',
+          twoHanded: false,
+          hands: { right: 11, left: null },
+        },
+        BODY_TUNING_FIXTURE.staminaRegenDelaySimSeconds,
+      ),
+    ).toBe('started');
+    expect(needs.stamina).toBe(0);
+    expect(needs.staminaRegenDelayRemainingSimSeconds).toBe(BODY_TUNING_FIXTURE.staminaRegenDelaySimSeconds);
+  });
+
   it('spends stamina and cooldown on a miss or wall impact, but refuses tired and overlapping starts', () => {
     const results: string[] = [];
     const sounds: string[] = [];
     const missSystem = makeSystem(FLOOR, results, sounds);
     makeTarget(missSystem);
     const missRay = { origin: [0, 2, 2] as Vec3, direction: [1, 0, 0] as Vec3 };
-    const needs = { stamina: 3 };
+    const needs = { stamina: 3, staminaRegenDelayRemainingSimSeconds: 0 };
     expect(
       startPlayerMelee(combatFor(missSystem), needs, {
         ...missRay,
@@ -451,5 +509,126 @@ describe('player melee action', () => {
     }
     expect(swapTarget.regions.head).toBe(health);
     expect(combatFor(swapping).snapshotState().playerAttackWait).toBe(0);
+  });
+
+  it('keeps the weapon-class contact defaults ordered', () => {
+    const blunt = registry.meleeClasses.get('blunt')!;
+    const cut = registry.meleeClasses.get('cut')!;
+    const pierce = registry.meleeClasses.get('pierce')!;
+
+    expect(blunt.damageVariance).toBeLessThan(cut.damageVariance);
+    expect(cut.damageVariance).toBeLessThan(pierce.damageVariance);
+    expect(blunt.headDamageMultiplier).toBeGreaterThan(cut.headDamageMultiplier);
+    expect(blunt.headDamageMultiplier).toBeGreaterThan(pierce.headDamageMultiplier);
+    expect(cut.limbDamageMultiplier).toBeGreaterThan(blunt.limbDamageMultiplier);
+    expect(cut.limbDamageMultiplier).toBeGreaterThan(pierce.limbDamageMultiplier);
+    const base = { damage: 1, reach: 3, cooldown: 1 };
+    const bluntCooldown = resolveMeleeWeapon({ ...base, type: 'blunt' }, blunt).cooldown;
+    const cutCooldown = resolveMeleeWeapon({ ...base, type: 'cut' }, cut).cooldown;
+    const pierceCooldown = resolveMeleeWeapon({ ...base, type: 'pierce' }, pierce).cooldown;
+    expect(pierceCooldown).toBeLessThan(cutCooldown);
+    expect(cutCooldown).toBeLessThan(bluntCooldown);
+    const overridden = resolveMeleeWeapon(
+      {
+        ...base,
+        type: 'blunt',
+        damageVariance: 0,
+        headDamageMultiplier: 2.5,
+        limbDamageMultiplier: 0.75,
+        speedMultiplier: 2,
+      },
+      blunt,
+    );
+    expect(overridden).toMatchObject({
+      damageVariance: 0,
+      headDamageMultiplier: 2.5,
+      limbDamageMultiplier: 0.75,
+      speedMultiplier: 2,
+      cooldown: 0.5,
+    });
+  });
+
+  it('blunt contact takes fewer head hits on average', () => {
+    const withoutDismemberment: ZombieDef = {
+      ...SHAMBLER,
+      dismember: { chance: 0, headOnKillChance: 0 },
+    };
+    const hitsToKill = (type: 'blunt' | 'cut' | 'pierce', seed: number): number => {
+      const system = makeSystem(FLOOR, [], [], { seed });
+      const { id, zombie } = makeTarget(system, withoutDismemberment);
+      const weapon = resolveMeleeWeapon({ damage: 20, reach: 3, cooldown: 1, type }, registry.meleeClasses.get(type)!);
+      let hits = 0;
+      while (system.store.get(id) && hits < 10) {
+        const ray = headRay(zombie, id);
+        system.swing(ray.origin, ray.direction, weapon);
+        hits += 1;
+      }
+      return hits;
+    };
+    const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
+    const average = (type: 'blunt' | 'cut' | 'pierce') =>
+      seeds.reduce((total, seed) => total + hitsToKill(type, seed), 0) / seeds.length;
+
+    expect(average('blunt')).toBeLessThan(average('cut'));
+    expect(average('blunt')).toBeLessThan(average('pierce'));
+  });
+
+  it('cut contact severs a limb where equal blunt damage does not', () => {
+    const withoutDismemberment: ZombieDef = {
+      ...SHAMBLER,
+      dismember: { chance: 0, headOnKillChance: 0 },
+    };
+    const armHealth = SHAMBLER.regions.leftArm;
+    const bluntScale = registry.meleeClasses.get('blunt')!.limbDamageMultiplier;
+    const cutScale = registry.meleeClasses.get('cut')!.limbDamageMultiplier;
+    const sameBaseDamage = armHealth / ((bluntScale + cutScale) / 2);
+    const remainingArm = (type: 'blunt' | 'cut'): number => {
+      const system = makeSystem();
+      const { id, zombie } = makeTarget(system, withoutDismemberment);
+      const weapon = resolveMeleeWeapon(
+        { damage: sameBaseDamage, damageVariance: 0, reach: 3, cooldown: 1, type },
+        registry.meleeClasses.get(type)!,
+      );
+      const ray = regionRay(zombie, id, 'leftArm');
+      system.swing(ray.origin, ray.direction, weapon);
+      return zombie.regions.leftArm;
+    };
+
+    expect(remainingArm('cut')).toBe(0);
+    expect(remainingArm('blunt')).toBeGreaterThan(0);
+  });
+
+  it('pierce contact has the widest seeded damage spread', () => {
+    const withoutDismemberment: ZombieDef = {
+      ...SHAMBLER,
+      dismember: { chance: 0, headOnKillChance: 0 },
+    };
+    const contactDamage = (type: 'blunt' | 'cut' | 'pierce', seed: number, damageVariance?: number): number => {
+      const system = makeSystem(FLOOR, [], [], { seed });
+      const { id, zombie } = makeTarget(system, withoutDismemberment);
+      const weapon = resolveMeleeWeapon(
+        {
+          damage: 10,
+          reach: 3,
+          cooldown: 1,
+          type,
+          ...(damageVariance === undefined ? {} : { damageVariance }),
+        },
+        registry.meleeClasses.get(type)!,
+      );
+      const ray = regionRay(zombie, id, 'torso');
+      system.swing(ray.origin, ray.direction, weapon);
+      return SHAMBLER.regions.torso - zombie.regions.torso;
+    };
+    const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
+    const span = (type: 'blunt' | 'cut' | 'pierce') => {
+      const samples = seeds.map((seed) => contactDamage(type, seed));
+      return Math.max(...samples) - Math.min(...samples);
+    };
+
+    expect(span('blunt')).toBeLessThan(span('cut'));
+    expect(span('cut')).toBeLessThan(span('pierce'));
+    expect(contactDamage('pierce', 31, 0)).toBe(10);
+    expect(contactDamage('pierce', 31)).toBe(contactDamage('pierce', 31));
   });
 });
