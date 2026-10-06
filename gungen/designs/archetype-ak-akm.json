@@ -2,8 +2,8 @@
   "format": 1,
   "template": "ak",
   "assembly": {
-    "name": "archetype-ak",
-    "description": "AK-pattern rifle with dust cover, exposed gas block and gas cylinder, banana magazine, and block sights.",
+    "name": "archetype-ak-akm",
+    "description": "The archetype-ak rifle carrying the AKM magazine instead of the AK-74 one.",
     "root": "receiver",
     "parts": {
       "receiver": {
@@ -51,10 +51,10 @@
         "params": {
           "length": "L",
           "profile": "ak-curved",
-          "variant": "ak74"
+          "variant": "akm"
         },
         "prefab": {
-          "id": "ak74-30",
+          "id": "akm-30",
           "version": 1
         }
       },

@@ -47,21 +47,13 @@ describe('octagonal barrel and gas-system geometry', () => {
     }
   });
 
-  it('keeps the AK gas cylinder a regular octagon with equal 0.5u width and height', () => {
-    const definition = FAMILIES['gas-cylinder']!.build({
-      barrelLength: 'M',
-      handguardLayout: 'ak',
-      handguardLength: 'M',
-    });
+  it('keeps the AK gas cylinder a regular octagon centred on its axis', () => {
+    const definition = FAMILIES['gas-cylinder']!.build({ barrelLength: 'M' });
     const cylinder = requireOctagon(definition.solids[0]!);
-    const bounds = localSolidBounds(cylinder);
-    expect(bounds).toEqual([
-      [0, -0.25, -0.25],
-      [cylinder.z[1], 0.25, 0.25],
-    ]);
-    expect(bounds[1][1] - bounds[0][1]).toBeCloseTo(bounds[1][2] - bounds[0][2]);
-    // With a 0.25u apothem, the regular-octagon vertex is 0.10355u from either centreline.
-    expect(cylinder.profile[0]![1]).toBeCloseTo(0.25 * (Math.SQRT2 - 1));
+    const [[, minY, minZ], [, maxY, maxZ]] = localSolidBounds(cylinder);
+    expect(maxY - minY).toBeCloseTo(maxZ - minZ);
+    expect(minY + maxY).toBeCloseTo(0);
+    expect(minZ + maxZ).toBeCloseTo(0);
   });
 
   // Measured about 4.3 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.

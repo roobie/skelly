@@ -318,9 +318,14 @@ describe('anchor data', () => {
     }
   });
 
-  it('selects support on handguard and forend, and muzzle on barrel', () => {
-    expect(selected(loadFixture('archetype-ar')).others.support).toBeDefined();
-    expect(selected(loadFixture('archetype-pump-shotgun')).others.support).toBeDefined();
+  it('selects support on every handguard and forend, and muzzle on barrel', () => {
+    const fronted = ARCHETYPES.filter((a) =>
+      Object.values(a.parts).some(({ family }) => family === 'handguard' || family === 'forend'),
+    );
+    expect(fronted.map(({ name }) => name)).toEqual(expect.arrayContaining(['archetype-ar', 'archetype-ak']));
+    for (const a of fronted) {
+      expect(selected(a).others.support, a.name).toBeDefined();
+    }
     for (const a of ARCHETYPES) {
       expect(selected(a).others.muzzle, a.name).toBeDefined();
     }
