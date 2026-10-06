@@ -89,8 +89,6 @@ controls remain proposals until their issue is implemented.
   `src/game/quickbarActions.ts`, `QuickbarActions`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
-- **Matches (2026-10-05 13:44):** “Whether matches strike alone remains open for
-  BR.”
 - **Interaction hints (2026-10-06 08:35):** BR said “we should make
   press-and-hold-for-1-second tilde key to toggle messages/hints”. A hold on the
   rebindable tilde-position key toggles the existing HUD option; a tap does
@@ -178,3 +176,5 @@ bindings, not these mouse actions.
    the registry, not duplicated here.
 3. Future throw, lean and magazine-check inputs are added only when their
    mechanics land, against the whole conflict model.
+4. Whether matches strike alone is open for BR; the question came out of the
+   #252 re-look (2026-10-05 13:44).

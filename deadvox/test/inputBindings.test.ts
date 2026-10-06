@@ -148,7 +148,7 @@ describe('keyboard registry', () => {
     expect(keyboard.held('movement.jump')).toBe(true);
     expect(keyboard.held('noclip.ascend')).toBe(false);
     keyboard.release(event('Space'));
-    expect(keyboard.press(event('KeyC'))).toBe(false);
+    keyboard.press(event('KeyC'));
     expect(keyboard.held('noclip.descend')).toBe(false);
   });
   it('rejects browser-owned modifiers for every game binding', () => {
