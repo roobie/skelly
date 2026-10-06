@@ -45,6 +45,7 @@ export interface PlayStatus {
   readonly speed: number;
   readonly paused: boolean;
   readonly needs: Readonly<Needs>;
+  readonly health: number;
   readonly sprinting: boolean;
   /** Undefined means no selected light; zero means an empty selected light. */
   readonly lightCharge: number | undefined;
@@ -62,8 +63,8 @@ export interface PlayHudState extends PlayStatus {
   readonly looking: string;
 }
 
-export const playNeedsText = ({ needs, sprinting, lightCharge }: PlayStatus): string => {
-  const { calories, hydration, fatigue, health, stamina } = needs;
+export const playNeedsText = ({ needs, health, sprinting, lightCharge }: PlayStatus): string => {
+  const { calories, hydration, fatigue, stamina } = needs;
   const light = lightCharge === undefined ? '' : `   light ${Math.round(lightCharge * 100)}%`;
   return [
     `health ${health.toFixed(0)}%   stamina ${stamina.toFixed(0)}%${sprinting ? ' (sprinting)' : ''}${light}`,
@@ -96,15 +97,19 @@ export interface PlayPromptState {
   readonly notice: string;
   readonly noticeUntil: number;
   readonly interactionHint: string | undefined;
+  readonly itemActionHint: string | undefined;
   readonly interruption: string | undefined;
   readonly resting: boolean;
 }
 
 export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOptionsState>): string => {
-  const { now, notice, noticeUntil, interactionHint, interruption, resting } = state;
+  const { now, notice, noticeUntil, interactionHint, itemActionHint, interruption, resting } = state;
   const lines = visible.messages && now < noticeUntil ? [notice] : [];
   if (visible.interaction && interactionHint !== undefined) {
     lines.push(interactionHint);
+  }
+  if (visible.interaction && itemActionHint !== undefined) {
+    lines.push(itemActionHint);
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {

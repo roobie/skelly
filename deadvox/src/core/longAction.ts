@@ -1,4 +1,6 @@
 // Native resumable actions. Scheduler owns time; Inventory owns craft work trees.
+
+import { BODY_REGIONS, BODY_TREATMENTS, type BodyRegion, type BodyTreatment } from './body.ts';
 import type { WorkPlan } from './crafting.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
@@ -26,6 +28,17 @@ export type LongJob =
       duration: number;
       strikeInterval: number;
       nextStrike: number;
+    }
+  | {
+      jobType: 'treatment';
+      stopped: boolean;
+      last: number;
+      region: BodyRegion;
+      itemUid: number;
+      treatment: BodyTreatment;
+      elapsed: number;
+      duration: number;
+
     };
 export interface ReadingActionHooks {
   owns: (bookUid: number) => boolean;
@@ -37,6 +50,11 @@ export interface PryActionHooks {
   validate: (entityUid: number, toolUid: number) => string | undefined;
   strike: (entityUid: number, toolUid: number, time: number) => void;
   finish: (entityUid: number, toolUid: number) => string | undefined;
+}
+export interface TreatmentActionHooks {
+  validate: (region: BodyRegion, itemUid: number, treatment: BodyTreatment) => string | undefined;
+  finish: (region: BodyRegion, itemUid: number, treatment: BodyTreatment) => string | true;
+
 }
 export interface LongActionState {
   job: LongJob | null;
@@ -96,6 +114,21 @@ const validatePry = (job: Extract<LongJob, { jobType: 'pry' }>): void => {
   }
 };
 
+const validateTreatment = (job: Extract<LongJob, { jobType: 'treatment' }>): void => {
+  if (
+    !(BODY_REGIONS.includes(job.region) && Number.isSafeInteger(job.itemUid)) ||
+    job.itemUid < 1 ||
+    !BODY_TREATMENTS.includes(job.treatment) ||
+    !Number.isFinite(job.elapsed) ||
+    job.elapsed < 0 ||
+    !Number.isFinite(job.duration) ||
+    job.duration <= 0 ||
+    job.elapsed > job.duration
+  ) {
+    throw new Error('Invalid treatment descriptor');
+  }
+};
+
 const validateReading = (job: Extract<LongJob, { jobType: 'reading' }>): void => {
   if (
     !Number.isSafeInteger(job.bookUid) ||
@@ -130,6 +163,9 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
     case 'pry':
       validatePry(job);
       return;
+    case 'treatment':
+      validateTreatment(job);
+      return;
     case 'rest':
     case 'sleep':
       validateRest(job);
@@ -144,11 +180,15 @@ export class LongActions {
   craft: CraftActionHooks | undefined;
   reading: ReadingActionHooks | undefined;
   prying: PryActionHooks | undefined;
+  treatment: TreatmentActionHooks | undefined;
   notice: (text: string) => void = () => undefined;
   private readonly sim: Simulation;
   constructor(sim: Simulation) {
     this.sim = sim;
     sim.scheduler.register({ id: 'long-action', rate: 1, maxStep: 30, tick: (_dt, time) => this.advance(time) });
+  }
+  private bodyActionRefusal(): string | undefined {
+    return this.sim.body.actionRefusal;
   }
   get job(): Readonly<LongJob> | undefined {
     return this.current;
@@ -183,9 +223,25 @@ export class LongActions {
     if (state.job?.jobType === 'reading' && !this.reading?.owns(state.job.bookUid)) {
       throw new Error('Missing reading book');
     }
+    if (state.job?.jobType === 'pry') {
+      const reason = this.prying?.validate(state.job.entityUid, state.job.toolUid);
+      if (!this.prying || reason) {
+        throw new Error(reason ?? 'Missing prying action owner');
+      }
+    }
+    if (state.job?.jobType === 'treatment') {
+      const reason = this.treatment?.validate(state.job.region, state.job.itemUid, state.job.treatment);
+      if (!this.treatment || reason) {
+        throw new Error(reason ?? 'Missing treatment owner');
+      }
+    }
     this.current = state.job === null ? undefined : structuredClone(state.job);
   }
   startRest(kind: RestKind, rate: number, furnitureUid: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (this.sim.needs.fatigue <= 0) {
       return "You're not tired";
     }
@@ -194,6 +250,9 @@ export class LongActions {
     }
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return 'Stop reading first';
+    }
+    if (this.current?.jobType === 'pry' && !this.current.stopped) {
+      return 'Stop prying first';
     }
     const result = this.sim.compressLongAction();
     if (!result.ok) {
@@ -210,6 +269,10 @@ export class LongActions {
   }
   /** Admit and secure compression before any structural escrow effect. */
   beginCraft(plan: WorkPlan, repair?: CraftRepair): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (!this.craft) {
       return 'Missing craft action owner';
     }
@@ -221,6 +284,9 @@ export class LongActions {
     }
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return 'Stop reading first';
+    }
+    if (this.current?.jobType === 'pry' && !this.current.stopped) {
+      return 'Stop prying first';
     }
     const reason = this.craft.admit(plan);
     if (reason) {
@@ -261,6 +327,10 @@ export class LongActions {
     return undefined;
   }
   beginPrying(entityUid: number, toolUid: number, duration: number, strikeInterval: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (!this.prying) {
       return 'Missing prying action owner';
     }
@@ -274,14 +344,12 @@ export class LongActions {
     if (!Number.isFinite(duration) || duration <= 0 || !Number.isFinite(strikeInterval) || strikeInterval <= 0) {
       return 'Invalid prying time';
     }
-    const result = this.sim.compressLongAction();
-    if (!result.ok) {
-      return result.reason;
-    }
     const previous =
       this.current?.jobType === 'pry' && this.current.entityUid === entityUid && this.current.toolUid === toolUid
         ? this.current
         : undefined;
+    this.sim.compression.stop();
+    this.sim.compression.snap();
     this.current = {
       jobType: 'pry',
       stopped: false,
@@ -295,7 +363,52 @@ export class LongActions {
     };
     return undefined;
   }
+  beginTreatment(region: BodyRegion, itemUid: number, treatment: BodyTreatment, duration: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
+    if (!this.treatment) {
+      return 'Missing treatment owner';
+    }
+    const reason = this.treatment.validate(region, itemUid, treatment);
+    if (reason) {
+      return reason;
+    }
+    if (this.current && !this.current.stopped) {
+      return 'Stop the current action first';
+    }
+    if (!Number.isFinite(duration) || duration <= 0) {
+      return 'Invalid treatment time';
+    }
+    const result = this.sim.compressLongAction();
+    if (!result.ok) {
+      return result.reason;
+    }
+    const elapsed =
+      this.current?.jobType === 'treatment' &&
+      this.current.region === region &&
+      this.current.itemUid === itemUid &&
+      this.current.treatment === treatment
+        ? this.current.elapsed
+        : 0;
+    this.current = {
+      jobType: 'treatment',
+      stopped: false,
+      last: this.sim.time,
+      region,
+      itemUid,
+      treatment,
+      elapsed,
+      duration,
+    };
+    return undefined;
+  }
   beginReading(bookUid: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     if (!this.reading) {
       return 'Missing reading action owner';
     }
@@ -319,12 +432,22 @@ export class LongActions {
     return undefined;
   }
   startCraft(workUid: number): string | undefined {
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
     const reason = this.craft?.validate(workUid);
     if (!this.craft || reason) {
       return reason ?? 'Missing craft action owner';
     }
     if (this.current?.jobType === 'reading' && !this.current.stopped) {
       return 'Stop reading first';
+    }
+    if (this.current?.jobType === 'treatment' && !this.current.stopped) {
+      return 'Stop treatment first';
+    }
+    if (this.current?.jobType === 'pry' && !this.current.stopped) {
+      return 'Stop prying first';
     }
     if (this.current && this.current.jobType === 'craft' && !this.current.stopped && this.current.workUid !== workUid) {
       return 'Another craft is active';
@@ -341,22 +464,38 @@ export class LongActions {
     if (!job) {
       return undefined;
     }
-    if (job.jobType === 'reading' && job.stopped && this.reading && !this.reading.owns(job.bookUid)) {
-      this.current = undefined;
-      this.sim.compression.stop();
+    const actionRefusal = this.bodyActionRefusal();
+    if (actionRefusal) {
+      return actionRefusal;
+    }
+    if (this.discardMissingStoppedReading()) {
       return undefined;
     }
     const reason = this.validateOwner(job);
     if (reason) {
       return reason;
     }
-    const result = this.sim.compressLongAction();
-    if (!result.ok) {
-      return result.reason;
+    if (job.jobType === 'pry') {
+      this.sim.compression.stop();
+      this.sim.compression.snap();
+    } else {
+      const result = this.sim.compressLongAction();
+      if (!result.ok) {
+        return result.reason;
+      }
     }
     job.stopped = false;
     job.last = this.sim.time;
     return undefined;
+  }
+  private discardMissingStoppedReading(): boolean {
+    const job = this.current;
+    if (job?.jobType !== 'reading' || !job.stopped || !this.reading || this.reading.owns(job.bookUid)) {
+      return false;
+    }
+    this.current = undefined;
+    this.sim.compression.stop();
+    return true;
   }
   /** No payload is discarded. A second Stop cannot spend more time. */
   stop(): void {
@@ -390,6 +529,12 @@ export class LongActions {
       return;
     }
     const reason = this.sim.compression.interruption;
+    if (job.jobType === 'pry') {
+      if (reason !== undefined) {
+        job.stopped = true;
+      }
+      return;
+    }
     if (job.jobType === 'sleep' && reason !== undefined) {
       this.current = undefined;
       this.sim.compression.stop();
@@ -410,6 +555,12 @@ export class LongActions {
         this.prying?.validate(job.entityUid, job.toolUid) ?? (this.prying ? undefined : 'Missing prying action owner')
       );
     }
+    if (job.jobType === 'treatment') {
+      return (
+        this.treatment?.validate(job.region, job.itemUid, job.treatment) ??
+        (this.treatment ? undefined : 'Missing treatment action owner')
+      );
+    }
     return undefined;
   }
   private advanceJob(job: LongJob, seconds: number, fromTime: number): boolean {
@@ -426,7 +577,7 @@ export class LongActions {
     if (job.jobType === 'craft') {
       return this.craft!.advance(job.workUid, seconds);
     }
-    if (job.jobType === 'reading') {
+    if (job.jobType === 'reading' || job.jobType === 'treatment') {
       job.elapsed = Math.min(job.duration, job.elapsed + seconds);
       return job.elapsed === job.duration;
     }
@@ -443,6 +594,11 @@ export class LongActions {
         const reason = this.prying!.finish(job.entityUid, job.toolUid);
         if (reason) {
           throw new Error(reason);
+        }
+      } else if (job.jobType === 'treatment') {
+        const reason = this.treatment!.finish(job.region, job.itemUid, job.treatment);
+        if (reason !== true) {
+          this.failedEffect(job, new Error(reason));
         }
       } else {
         this.notice('You feel rested');
@@ -461,7 +617,17 @@ export class LongActions {
       this.sim.compression.stop();
       return;
     }
-    if (job.stopped || !this.sim.compression.active) {
+    if (job.jobType === 'pry' && this.sim.compression.active) {
+      this.sim.compression.stop();
+      this.sim.compression.snap();
+    }
+    if (job.stopped || (job.jobType !== 'pry' && !this.sim.compression.active)) {
+      return;
+    }
+    const { actionRefusal } = this.sim.body;
+    if (actionRefusal) {
+      job.stopped = true;
+      this.sim.compression.interrupt(actionRefusal);
       return;
     }
     const reason = this.validateOwner(job);

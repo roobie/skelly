@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { Simulation } from '../src/core/sim.ts';
 import { DamageFeedback } from '../src/game/damageFeedback.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
 

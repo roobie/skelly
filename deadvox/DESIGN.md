@@ -6,7 +6,8 @@ read_if:
   - you're changing the rules for time, survival, light or zombies
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're restructuring the per-tick zombie simulation
-  - you change the game's design, especially held-item feedback or hand ownership
+  - you change the game's design, especially held-item feedback, body damage or treatment, or hand ownership
+  - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
@@ -482,14 +483,29 @@ plain box in your hands. Files are small, and follow
 
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Temperature comes after Slice 1.
-- **Body.** Slice 1 has a single health pool. The body model that follows has
-  head, torso, two arms and two legs, each with its own health and status
-  effects:
-  - bleeding: needs a bandage
-  - infection: wounds left dirty get infected, which needs disinfectant
-  - fracture: needs a splint
-  - bite: raises zombification risk; how and whether that's treatable is part
-    of the lore
+- **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
+  defaults”. The model makes injury decisions consequential beyond a single
+  health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
+  and `src/ui/inventoryScreen.ts`, `InventoryScreen`.
+
+  BR's 08:33 treatment rule is “the \"treat with rag\" is not the way to go.
+  You wield the rag and left-click apply it (or quickbar-hold)”;
+  `src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`, own
+  that path. BR's 08:35 follow-up was “however, there need to be a \"select\"
+  mechanism in the UI for when wielded where to apply - it could be a message
+  box (visible only when messages/hints are enabled)”. BR then ruled at 08:36:
+  “scrolling on mouse changes which action is selected for the wielded item”.
+  `src/game/itemActions.ts`, `ItemActionSelection`, and `src/ui/playHud.ts`,
+  `playHudText`, cue selection and its hints-only presentation. BR's 08:41 default
+  is recorded in [SLICE-3.md](SLICE-3.md), 3.4.
+
+  BR (2026-10-06 11:05) agreed to time-based infection onset, an antiseptic
+  window, deterministic infection risk and a timed knockout, adding “agreed
+  with your suggestiong; but let's keep them tunable”. The wake-shock setting
+  is a starting tuning value, not a number BR chose. BR clarified at 11:32:
+  “and, just to be clear, the aim is to define all content and tunables via
+  mods - even the _core game_”, and at 11:34: “yeah, let's do it now”.
+  BR's 14:41 ruling was “knockout = totally black and no sound and prone”. BR approved the look at 16:35: “looks good - black screen and then death 👍”. See `src/game/session.ts`, `playerEyeHeightMetres`; `src/game/audio.ts`, `GameAudio.setOutputMuted`; `src/game/play.ts`, `frame`; `src/ui/style.css`, `body.unconscious`; and `src/core/schema.ts`, `BodyTuningSchema`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 
@@ -572,24 +588,22 @@ system, not just bigger numbers.
   persists without new save machinery; saves grow with the damage done.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
-- **Shamblers are body regions, and die only when the head is destroyed.** The
-  single health pool (`src/core/zombies.ts:57`) becomes regions: head, torso,
-  arms and legs. A hit damages the region it lands on. A blast damages each
-  region by distance. A limb at zero comes off: its rigid part is hidden and a
-  limb prop drops. Otherwise it's kept as simple as possible to start with.
-  Losing limbs doesn't yet change behaviour, beyond what having no legs forces
-  (how a legless shambler moves is decided in the first slice). Head at zero
-  kills it.
+- **Shamblers have body regions and die only when the head is destroyed.**
+  Melee hits apply damage to the posed region they land on; a destroyed limb is
+  severed and leaves a prop, while a destroyed head kills. Losing both arms
+  prevents new attacks; `canStillAttack` in `src/core/zombies.ts` owns that rule.
+  How a legless shambler moves remains open; no crawling behavior is modeled.
+  `ZombieSystem.applyMeleeHit` and `ZombieSystem.applyMeleeEffects` own hit,
+  death and severing; `src/core/zombieRegions.ts`, `posedShamblerRegionBoxes`, owns
+  the posed hitboxes. Region health and severed state are simulation state and
+  persist in saves.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
-- **Order.** First slice: shambler regions and melee-driven limb loss, with
-  head-only death. Then materials and block destruction. Explosives and breach
-  charges come once throwing and firing exist.
-
 Still open: the full list of damage types and each material's resistances,
 whether wounds bleed or slow a shambler, partial block damage (cracked looks),
-and the sounds for severing and destruction (the audio manifest).
+blast damage by distance across body regions, explosives and breach charges, and
+the sounds for severing and destruction (the audio manifest).
 
 ## Light
 

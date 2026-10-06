@@ -109,7 +109,11 @@ export const startShamblerBench = (engine: RenderedEngine, run: ShamblerBenchRun
   let lastZombieTickAt = performance.now();
   const prepare = (): void => {
     playerBody = findShamblerBenchPlayer(engine);
-    const simulation = new Simulation({ seed: run.seed, clock: { ratio: CLOCK_RATIO, start: startTime } });
+    const simulation = new Simulation({
+      seed: run.seed,
+      bodyTuning: engine.registry.body.get('player')!,
+      clock: { ratio: CLOCK_RATIO, start: startTime },
+    });
     simulation.godMode = true;
     zombies = new ZombieSystem({
       seed: run.seed,

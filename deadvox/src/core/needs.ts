@@ -1,9 +1,6 @@
-// The player's body (DESIGN.md, "Character"): needs in percent changing at rates
-// per game hour, health as a single pool, and stamina, which is spent and got back
-// by the second. Needs and health move in straight lines between thresholds (a need
-// running out, or dropping low enough to stop health coming back), so `stepNeeds`
-// advances exactly from one threshold to the next: a step of many hours lands where
-// ticking every second would. That is what catch-up and compressed time rely on.
+// Needs change in percent per game hour; stamina is spent and recovered by the
+// second. `stepNeeds` advances exactly across need thresholds so catch-up and
+// compressed time land where ticking every second would. Health belongs to Body.
 
 export interface Needs {
   /** 100 is full. */
@@ -12,8 +9,6 @@ export interface Needs {
   hydration: number;
   /** 0 is rested, 100 is exhausted. */
   fatigue: number;
-  /** 100 is unhurt; at 0 you die. */
-  health: number;
   /** 100 is fresh; sprinting spends it. */
   stamina: number;
 }
@@ -49,17 +44,16 @@ export const STAMINA = {
   winded: 10,
 } as const;
 
-export const SPAWN_NEEDS: Readonly<Needs> = { calories: 40, hydration: 35, fatigue: 70, health: 100, stamina: 100 };
+export const SPAWN_NEEDS: Readonly<Needs> = { calories: 40, hydration: 35, fatigue: 70, stamina: 100 };
 
 /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */
 const FULL = { kcal: 2500, ml: 2500 } as const;
 
 /** Crossing one of these interrupts a long action. */
-const CRITICAL: readonly { need: keyof Needs; below?: number; above?: number; message: string }[] = [
+const CRITICAL: readonly { need: Need; below?: number; above?: number; message: string }[] = [
   { need: 'calories', below: 10, message: "You're starving" },
   { need: 'hydration', below: 10, message: "You're parched" },
   { need: 'fatigue', above: 90, message: "You're exhausted" },
-  { need: 'health', below: 25, message: "You're badly hurt" },
 ];
 
 const clamp = (v: number): number => Math.min(100, Math.max(0, v));
@@ -69,7 +63,7 @@ const isCritical = (needs: Needs, rule: (typeof CRITICAL)[number]): boolean =>
   (rule.above !== undefined && needs[rule.need] > rule.above);
 
 /** Health's rate per game hour for the needs as they are now. */
-const healthRate = (needs: Needs): number => {
+const healthRate = (needs: Needs, health: number): number => {
   let rate = 0;
   if (needs.calories <= 0) {
     rate += HEALTH.starving;
@@ -82,7 +76,7 @@ const healthRate = (needs: Needs): number => {
   if (rate < 0) {
     return rate;
   }
-  return met && needs.health < 100 ? HEALTH.regen : 0;
+  return met && health < 100 ? HEALTH.regen : 0;
 };
 
 /** What's draining health right now, for the death screen. */
@@ -108,9 +102,14 @@ const LEVELS: readonly [Need, number][] = [
 ];
 
 /** Hours until the next level. */
-const nextBreak = (needs: Needs, health: number, rates: Readonly<Record<Need, number>>): number => {
+const nextBreak = (
+  needs: Needs,
+  bodyHealth: number,
+  healthRatePerHour: number,
+  rates: Readonly<Record<Need, number>>,
+): number => {
   const times = LEVELS.map(([need, level]) => hoursTo(needs[need], rates[need], level));
-  return Math.min(...times, hoursTo(needs.health, health, 0), hoursTo(needs.health, health, 100));
+  return Math.min(...times, hoursTo(bodyHealth, healthRatePerHour, 0), hoursTo(bodyHealth, healthRatePerHour, 100));
 };
 
 /** Puts a value that has just reached a level exactly on it, so rounding can't carry it past unnoticed. */
@@ -120,23 +119,18 @@ const snap = (needs: Needs): void => {
       needs[need] = level;
     }
   }
-  for (const level of [0, 100]) {
-    if (Math.abs(needs.health - level) < 1e-9) {
-      needs.health = level;
-    }
-  }
 };
 
 /**
  * Health's rate over the stretch that starts now: judged a moment ahead, so a need
  * sitting exactly on a threshold counts as the side it's heading to.
  */
-const segmentRate = (needs: Needs, rates: Readonly<Record<Need, number>>): number => {
+const segmentRate = (needs: Needs, health: number, rates: Readonly<Record<Need, number>>): number => {
   const ahead = { ...needs };
   for (const need of Object.keys(NEED_RATES) as Need[]) {
     ahead[need] = clamp(needs[need] + rates[need] * 1e-6);
   }
-  return healthRate(ahead);
+  return healthRate(ahead, health);
 };
 
 /**
@@ -146,26 +140,49 @@ const segmentRate = (needs: Needs, rates: Readonly<Record<Need, number>>): numbe
  * and recovery. `rates` overrides the per-hour rates (resting and sleeping use it for
  * fatigue; see REST). Stamina isn't touched; it moves by the second (`stepStamina`).
  */
+export interface HealthPool {
+  readonly health: number;
+  damageHealth: (amount: number) => number;
+  restoreHealth: (amount: number) => void;
+}
+
+export interface StepNeedsOptions {
+  damageImmune?: boolean;
+  rates?: Readonly<Record<Need, number>>;
+}
+
 export const stepNeeds = (
   needs: Needs,
+  body: HealthPool,
   hours: number,
-  damageImmune = false,
-  rates: Readonly<Record<Need, number>> = NEED_RATES,
+  { damageImmune = false, rates = NEED_RATES }: StepNeedsOptions = {},
 ): string[] => {
   const before = { ...needs };
+  const beforeHealth = body.health;
   let left = hours;
-  while (left > 0 && needs.health > 0) {
-    const rate = segmentRate(needs, rates);
-    const health = damageImmune ? Math.max(0, rate) : rate;
-    const h = Math.min(left, nextBreak(needs, health, rates));
+  while (left > 0 && body.health > 0) {
+    const rate = segmentRate(needs, body.health, rates);
+    const healthRatePerHour = damageImmune ? Math.max(0, rate) : rate;
+    const h = Math.min(left, nextBreak(needs, body.health, healthRatePerHour, rates));
     for (const need of Object.keys(NEED_RATES) as Need[]) {
       needs[need] = clamp(needs[need] + rates[need] * h);
     }
-    needs.health = clamp(needs.health + health * h);
+    const healthChange = healthRatePerHour * h;
+    if (healthChange < 0) {
+      body.damageHealth(-healthChange);
+    } else {
+      body.restoreHealth(healthChange);
+    }
     snap(needs);
     left -= h;
   }
-  return CRITICAL.filter((rule) => !isCritical(before, rule) && isCritical(needs, rule)).map((rule) => rule.message);
+  const messages = CRITICAL.filter((rule) => !isCritical(before, rule) && isCritical(needs, rule)).map(
+    (rule) => rule.message,
+  );
+  if (beforeHealth >= 25 && body.health < 25) {
+    messages.push("You're badly hurt");
+  }
+  return messages;
 };
 
 /** Stamina recovers at half speed when you're worn down. */

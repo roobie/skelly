@@ -9,8 +9,8 @@ import { craftActionHooks } from '../src/core/craftWork.ts';
 import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const baseContent = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
@@ -105,6 +105,36 @@ const startRepair = () => {
 };
 
 describe('core long actions', () => {
+  it('stops long-action progress while unconscious and resumes after wake', () => {
+    const { sim } = make();
+    let finished = 0;
+    sim.actions.treatment = {
+      validate: () => undefined,
+      finish: () => {
+        finished += 1;
+        return true;
+      },
+    };
+    expect(sim.actions.beginTreatment('torso', 1, 'rag', 10)).toBeUndefined();
+    sim.body.impact(0, 'torso', { shockDamage: 100 });
+    expect(sim.actions.beginTreatment('torso', 1, 'rag', 10)).toBeDefined();
+    expect(sim.actions.resume()).toBeDefined();
+
+    sim.scheduler.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+    expect(sim.actions.job).toMatchObject({ jobType: 'treatment', stopped: true });
+    expect(finished).toBe(0);
+    expect(sim.body.unconscious).toBe(false);
+    expect(sim.actions.resume()).toBeUndefined();
+    const resumedJob = sim.actions.job;
+    if (resumedJob?.jobType !== 'treatment') {
+      throw new Error('Treatment action did not resume');
+    }
+    sim.scheduler.advance((resumedJob.duration - resumedJob.elapsed) / sim.clock.ratio + 1);
+
+    expect(finished).toBe(1);
+    expect(sim.actions.job).toBeUndefined();
+  });
+
   it('awards recipe-skill practice only when the craft finishes', () => {
     const starting = new Character(registry);
     const expected = new Character(registry);

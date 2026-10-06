@@ -93,6 +93,7 @@ controls remain proposals until their issue is implemented.
   hand or puts it away; a hold uses an available action. See
   `src/game/quickbarInput.ts`, `QuickbarInput`, and
   `src/game/quickbarActions.ts`, `QuickbarActions`.
+- **Wound treatment (2026-10-06 08:33):** BR said “the \"treat with rag\" is not the way to go. You wield the rag and left-click apply it (or quickbar-hold)”. Wielded-item action selection is stepped by the wheel and shown in the interaction hint; see `src/game/play.ts`, `cycleWieldedAction`, `src/game/itemActions.ts`, `ItemActionSelection`, and `src/game/survival.ts`, `wieldedItemActionHint`.
 - **Lighting (2026-10-05 14:43):** “lighting need the matches in your hand.”
   See `src/game/primaryAction.ts`, `selectPrimaryAction`.
 - **Interaction hints (2026-10-06 08:35):** BR said “we should make
