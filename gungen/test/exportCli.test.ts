@@ -22,6 +22,24 @@ describe('export CLI core', () => {
     }
   });
 
+  it("exports the weapon's eye point and sight axes for ADS", () => {
+    const optic = exportFileText(read('designs', 'archetype-ar'), ASSET);
+    const irons = exportFileText(read('fixtures', 'archetype-ak'), ASSET);
+    expect(optic.ok && irons.ok).toBe(true);
+    if (!(optic.ok && irons.ok)) {
+      return;
+    }
+    expect(optic.modelEntry.sight?.kind).toBe('optic');
+    expect(irons.modelEntry.sight?.kind).toBe('iron');
+    for (const model of [optic.modelEntry, irons.modelEntry]) {
+      const sight = model.sight;
+      expect(sight).toBeDefined();
+      expect(Math.hypot(...sight!.direction)).toBeCloseTo(1);
+      expect(Math.hypot(...sight!.up)).toBeCloseTo(1);
+      expect(Math.hypot(...model.muzzleDirection!)).toBeCloseTo(1);
+    }
+  });
+
   it('preserves curated AWM and bare AK fixture appearances on the file-export path', () => {
     const awm = exportFileText(read('designs', 'archetype-awm'), ASSET);
     const ak = exportFileText(read('fixtures', 'archetype-ak'), ASSET);

@@ -2,7 +2,7 @@ import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
 import { exportGlb } from '../core/glb.ts';
-import { length, type Vec3 } from '../core/math.ts';
+import { applyDir, applyPoint, length, normalize, type Vec3 } from '../core/math.ts';
 import { type Resolved, resolve } from '../core/resolve.ts';
 import type { Assembly } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
@@ -12,6 +12,7 @@ import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { gripTurn, toFileAxes } from './exportFrame.ts';
 import { GUN_PALETTE } from './palette.ts';
+import { getOptic } from './optics.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
 
 export type DeadvoxModelFile = `assets/models/${string}.glb`;
@@ -51,6 +52,10 @@ export interface DeadvoxModelEntry {
   readonly file: DeadvoxModelFile;
   readonly grip?: { readonly at: Vec3; readonly turn: Vec3 };
   readonly anchors?: Readonly<Record<string, Vec3>>;
+  /** The model-derived eye point and sight axis used to align the player view. */
+  readonly sight?: { readonly kind: 'iron' | 'optic'; readonly eye: Vec3; readonly direction: Vec3; readonly up: Vec3 };
+  /** Unit barrel direction in the same local model frame as anchors. */
+  readonly muzzleDirection?: Vec3;
   /** Exact id from gungen/cartridges/, not a slug or display designation. */
   readonly calibre?: string;
   /** Present on magazine entries; one local pose per round slot, top to bottom. */
@@ -134,11 +139,42 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
   };
 };
 
+const sightMetadata = (resolved: Resolved): GunDeadvoxModelEntry['sight'] => {
+  const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
+    const axis = part.axes.find(({ kind }) => kind === 'sight');
+    const transform = resolved.placed.get(id);
+    if (!(axis && transform)) {
+      return [];
+    }
+    const family = resolved.assembly.parts[id]!.family;
+    const params = resolved.params.get(id);
+    const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
+    const direction = normalize(applyDir(transform, axis.dir));
+    const eyeLocal = optic ? [optic.ocularX, optic.opticalAxisY, 0] as Vec3 : axis.origin;
+    const priority = optic ? 0 : family.includes('rear-sight') ? 1 : family.includes('front-sight') ? 2 : 3;
+    return [{ id, priority, kind: optic ? 'optic' as const : 'iron' as const, eye: applyPoint(transform, eyeLocal), direction }];
+  });
+  const chosen = candidates.sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))[0];
+  if (!chosen) {
+    return undefined;
+  }
+  const up = normalize(applyDir(resolved.placed.get(chosen.id)!, [0, 1, 0]));
+  const toModel = (point: Vec3): Vec3 => modelPoint(point, resolved.domain.units.metresPerUnit);
+  const toModelDirection = (vector: Vec3): Vec3 => normalize(toFileAxes(vector));
+  return {
+    kind: chosen.kind,
+    eye: toModel(chosen.eye),
+    direction: toModelDirection(chosen.direction),
+    up: toModelDirection(up),
+  };
+};
+
 export const createGunModelEntry = (
   asset: GunAssetIdentity,
   anchors: SelectedAnchors,
   metresPerUnit: number,
   options: GunModelEntryOptions = {},
+  sight?: GunDeadvoxModelEntry['sight'],
 ): GunDeadvoxModelEntry => {
   const { handling } = options;
   const calibre = options.cartridge?.id;
@@ -153,6 +189,8 @@ export const createGunModelEntry = (
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
     grip: { at: modelPoint(anchors.hold.position, metresPerUnit), turn: gripTurn() },
+    ...(sight ? { sight } : {}),
+    ...(anchors.others.muzzle ? { muzzleDirection: normalize(toFileAxes(anchors.others.muzzle.forward)) } : {}),
     ...(others.length > 0 || handling
       ? {
           anchors: {
@@ -198,10 +236,16 @@ export const exportGunGlb = (
     metadata.cartridge?.kind === 'shotshell' ? tubeMagazineCapacity(resolved, metadata.cartridge) : undefined;
   return {
     ...result,
-    modelEntry: createGunModelEntry(asset, anchors, resolved.domain.units.metresPerUnit, {
-      ...metadata,
-      ...(handling ? { handling } : {}),
-      ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
-    }),
+    modelEntry: createGunModelEntry(
+      asset,
+      anchors,
+      resolved.domain.units.metresPerUnit,
+      {
+        ...metadata,
+        ...(handling ? { handling } : {}),
+        ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
+      },
+      sightMetadata(resolved),
+    ),
   };
 };
