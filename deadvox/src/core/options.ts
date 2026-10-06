@@ -4,7 +4,7 @@ import type { BlockEntity, DoorOperation } from './blockEntities.ts';
 import { dominantSide, offSide } from './character.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandlingQueue } from './handling.ts';
-import { dropSpots, type HandSide, type Inventory, type Plan, type Target } from './inventory.ts';
+import { dropSpots, type HandSide, Inventory, type Plan, type Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
 import { BATTERY_SWAP, chargeOf, fitsLight } from './lights.ts';
 import type { ReachSnapshot } from './reach.ts';
@@ -268,8 +268,45 @@ export const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
 };
 
-/** Quickbar tap: clear only the hand(s) the item needs, then take it there. */
-export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, feet: Vec3): string | undefined => {
+const queueQuickbarStows = (
+  inventory: Inventory,
+  queue: HandlingQueue,
+  displaced: ReadonlySet<Item>,
+): { queued: number; unable: Item[] } => {
+  const plannedInventory = Inventory.restoreState(inventory.registry, inventory.snapshotState());
+  const unable: Item[] = [];
+  let queued = 0;
+  for (const held of displaced) {
+    const plannedItem = plannedInventory.itemByUid(held.uid);
+    const pocket = plannedItem && bestPocket(plannedInventory, plannedItem);
+    if (!(plannedItem && pocket?.plan.ok && pocket.target.kind === 'pocket')) {
+      unable.push(held);
+      continue;
+    }
+    const plannedTarget: Target = pocket.plan.at ? { ...pocket.target, at: pocket.plan.at } : pocket.target;
+    const owner = inventory.itemByUid(pocket.target.owner.uid);
+    if (!owner) {
+      unable.push(held);
+      continue;
+    }
+    const target: Target = plannedTarget.kind === 'pocket' ? { ...plannedTarget, owner } : plannedTarget;
+    const stow = queue.enqueue(held, target);
+    if (!stow.ok) {
+      unable.push(held);
+      continue;
+    }
+    if (!plannedInventory.move(plannedItem, plannedTarget).ok) {
+      queue.cancelJob(stow.job);
+      unable.push(held);
+      continue;
+    }
+    queued += 1;
+  }
+  return { queued, unable };
+};
+
+/** Quickbar tap: stow what fits without dropping anything, then take only with free hands. */
+export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, _feet: Vec3): string | undefined => {
   const def = defOf(inv.registry, item.type);
   const side = quickbarHand(inv, item);
   const needs: HandSide[] = def.twoHanded ? [...SIDES] : [side];
@@ -283,14 +320,12 @@ export const quickbarTake = (inv: Inventory, queue: HandlingQueue, item: Item, f
       displaced.add(held);
     }
   }
-  for (const held of displaced) {
-    const away = bestPocket(inv, held)?.target ?? dropTarget(inv, held, feet).target;
-    const stow = queue.enqueue(held, away);
-    if (!stow.ok) {
-      return stow.reason;
-    }
+  const { queued, unable } = queueQuickbarStows(inv, queue, displaced);
+  if (unable.length > 0) {
+    const names = unable.map((held) => inv.name(held));
+    return `Can't stow ${names.join(' or ')}; your hands stay occupied`;
   }
-  const take = queue.enqueue(item, { kind: 'hand', side }, item.count, displaced.size > 0);
+  const take = queue.enqueue(item, { kind: 'hand', side }, item.count, queued > 0);
   return take.ok ? undefined : take.reason;
 };
 

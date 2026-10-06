@@ -5,6 +5,7 @@ read_if:
   - you change crafting, skill progression, recipe knowledge or reading
   - you change item ownership, resumable actions or saved work
   - you change workstation admission or craft/reachability tests
+  - you change test-house repair-corner stock or its content-driven pile placement
 ---
 
 # Crafting ownership and planning
@@ -71,7 +72,30 @@ reach snapshot and re-plan.
 ## Minimal character state
 
 `src/core/character.ts`, `Character`, owns skill levels, source-agnostic practice
-and recipe knowledge. Starting recipes are explicit and filtered to loaded IDs;
+and recipe knowledge; `SKILL_LEVEL_MIN` and `SKILL_LEVEL_MAX` own the ordinary
+scale's bounds, with `SKILL_LEVEL_LEGENDARY` as its single exceptional level.
+BR ruled: “skill scale: let's go for a 0-10 scale, where 0 is completely without
+understanding even that it exists, 10 is true expert (world class, like olymplic
+podium level / nobel prize level)” (BR, 2026-10-05) and “Practice past 10: it can
+count towards legendary level - but it's so time consuming that you'd likely not
+reach it” (BR, 2026-10-05). The named `LEGENDARY_LEVEL_PRACTICE` threshold in
+`src/core/character.ts` governs that step; practice after reaching legendary is
+discarded. BR judged the cost “sounds about right” (BR, 2026-10-05) and described
+legendary as a “mostly vanity thing, but we might come up with something along the
+way” (BR, 2026-10-05). Legendary is mostly vanity, with effects equal to ordinary
+top; `src/core/character.ts`, `skillEffectLevel`, maps them to those effects.
+
+BR also ruled: “that which a skill affects is also trained by it” (BR,
+2026-10-05) and “amend: skill training comes in tiers / simply duck walking can
+train FC up to N, where N is pretty low, maybe even just 1 / hitting enemies with
+firearm fire while duck walking can train it to P, where P is higher than 1 / the
+above is a specific example, but in a general application is that skills are
+trained by doing stuff that they affect, but some activites are harder than
+others, and thus allow for attaining higher skill levels than simpler
+activities” (BR, 2026-10-05). `src/core/character.ts`, `Character.awardPractice`,
+does not yet accept an activity tier; issue #275 is the trigger for that change.
+
+Starting recipes are explicit and filtered to loaded IDs;
 workbench-dependent base recipes join that source, while new arbitrary recipes
 are not automatically known. Reachable books add recipe knowledge without
 changing item ownership. Books teach recipes only, as BR ruled for Slice 2.
@@ -132,8 +156,8 @@ use the step-5 F7 projections. The first-person renderer already uses the generi
 two-handed stand-in box without adding a second item UID.
 
 `LongActions.beginCraft(plan)` admits recipe/knowledge/skill/equipment and secures
-safe compression before calling Inventory's structural escrow primitive. Refusal
-moves no inputs; a stale structural plan stops compression without creating a job.
+compression before calling Inventory's structural escrow primitive. Refusal moves
+no inputs; a stale structural plan stops compression without creating a job.
 Unreferenced work remains legal and can be released via `cancelCraft(workUid)`.
 Free hands and no active craft permit another work tree; a stopped descriptor is
 not a one-pending-craft restriction. Dropped half-finished work keeps its own inputs.
@@ -180,6 +204,13 @@ skill change. Salvage uses the fixed work duration in `SALVAGE_DURATION`; gather
 adds its handling time. Finishing places disassembly outputs at the player's feet,
 while cancelling returns the exact source item. These rules keep taking apart an
 item a resumable action without changing its promised output or losing the source.
+
+## Repair-corner stock
+
+The content-derived test-house scenario spreads repair stock across its available piles, so
+repair recipes need no hand-authored pile assignment. See `src/game/testHouse.ts`,
+`populateTestHouseRepairCorner`. The corner demonstrates recipe reach and planning, not a
+fixed catalogue size.
 
 ## Proofs
 

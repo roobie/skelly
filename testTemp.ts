@@ -5,7 +5,7 @@ import process from 'node:process';
 
 const PID_PREFIX = /^([1-9]\d*)-/;
 
-export const ownerIsAlive = (pid: number): boolean => {
+const ownerIsAlive = (pid: number): boolean => {
   try {
     process.kill(pid, 0);
     return true;

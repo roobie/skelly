@@ -2,6 +2,7 @@
 read_if:
   - you're authoring or changing readable item or furniture content
   - you're changing how authored readings enter play
+  - you're changing movement or action input while a readable is open
 ---
 
 # Authored notes and signs
@@ -70,9 +71,19 @@ uses the existing scroll-pane/menu-pointer implementation. **Esc, Tab or Put awa
 close it and restore previous focus. F9 opens the main menu and puts it away;
 pointer-lock loss and death also close it. Other gameplay, inventory, quickbar and
 primary-action keys do not leak through. The world **keeps moving**, just as with
-inventory; movement/action input is inactive. Main-menu/pointer-loss pause rules
-are unchanged. This does not add or enable the HUD: existing HUD preferences and
-compass/watch item plans remain unchanged.
+inventory; movement/action input is inactive. BR's d73-2 long-action ruling is "long
+actions disable all actions"; `src/core/longAction.ts`, `LongActions`, owns the
+timed book action that may continue while its separate paper surface is open.
+`src/ui/reading.ts`, `mountReading`, retains the surface's close and scroll keys.
+Main-menu/pointer-loss pause rules are unchanged. This does not add or enable the
+HUD: existing HUD preferences and compass/watch item plans remain unchanged.
+
+A book may define both `book` and `readable`. `book` supplies the timed
+recipe-learning action; `readable` supplies authored prose for the paper surface.
+`Survival.use` starts the book action and then opens that text, so the visible
+handbook text is not an action-progress view. Closing the surface dismisses only
+the presentation; the long-action owner remains responsible for the book job and
+its progress.
 
 The maintained browser contract exercises the real sample pickup/search/handling/
 quickbar-held Read path, sign F interaction, input ownership, focus, scrolling and

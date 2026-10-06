@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { Character, practiceForNextLevel } from '../src/core/character.ts';
-import { buildRegistry, type RecipeDef } from '../src/core/content.ts';
+import { buildRegistry, type RecipeDef, type Registry } from '../src/core/content.ts';
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
@@ -16,6 +16,54 @@ const inputs = readdirSync('src/content/base')
     data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
   }));
 const { registry } = buildRegistry(inputs);
+
+interface BenchmarkEntry {
+  type: string;
+  count: number;
+}
+
+const recipeInputs = (definition: RecipeDef, source: Registry): Map<string, number> => {
+  const required = new Map<string, number>();
+  for (const alternatives of definition.components) {
+    for (const component of alternatives) {
+      required.set(component.item, (required.get(component.item) ?? 0) + component.count);
+    }
+  }
+  for (const [quality, level] of Object.entries(definition.qualities)) {
+    const providerItem = [...source.items.values()].find((item) => (item.tool?.qualities[quality] ?? 0) >= level);
+    if (!providerItem) {
+      throw new Error(`No benchmark item provides ${quality} quality for ${definition.id}`);
+    }
+    required.set(providerItem.id, (required.get(providerItem.id) ?? 0) + 1);
+  }
+  return required;
+};
+
+const benchmarkEntries = (source: Registry): BenchmarkEntry[] => {
+  const maximum = new Map<string, number>();
+  for (const definition of source.recipes.values()) {
+    for (const [itemType, count] of recipeInputs(definition, source)) {
+      maximum.set(itemType, Math.max(maximum.get(itemType) ?? 0, count));
+    }
+  }
+  const entries: BenchmarkEntry[] = [];
+  for (const [itemType, count] of maximum) {
+    const stack = source.items.get(itemType)?.stack ?? 1;
+    for (let remaining = count; remaining > 0; remaining -= stack) {
+      entries.push({ type: itemType, count: Math.min(remaining, stack) });
+    }
+  }
+  const fillerTypes = ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'];
+  for (let nextFiller = 0; entries.length < 199; nextFiller += 1) {
+    const fillerType = fillerTypes[nextFiller % fillerTypes.length]!;
+    entries.push({ type: fillerType, count: Math.min(3, source.items.get(fillerType)?.stack ?? 1) });
+  }
+  if (entries.length > 199) {
+    throw new Error('The benchmark recipe inputs exceed one 200-item reach snapshot');
+  }
+  return entries;
+};
+
 const recipe = (components: RecipeDef['components'], qualities: RecipeDef['qualities'] = {}): RecipeDef => ({
   id: 'fixture',
   result: { item: 'torch', count: 1 },
@@ -365,25 +413,18 @@ describe('pure craft planner', () => {
     const inventory = new Inventory(benchmarkRegistry);
     const bag = inventory.create('school_backpack');
     expect(inventory.add(bag, { kind: 'worn' })).toBe(true);
-    const types = [
-      'stick',
-      'rag',
-      'wax',
-      'repair_kit',
-      'kitchen_knife',
-      'hammer',
-      'scrap_metal',
-      'duct_tape',
-      'copper_wire',
-      'field_patch',
-    ];
-    for (let i = 0; i < 199; i += 1) {
-      const type = types[i % types.length]!;
-      const item = inventory.create(type, ['stick', 'rag', 'wax', 'scrap_metal', 'duct_tape'].includes(type) ? 3 : 1);
+    const entries = benchmarkEntries(benchmarkRegistry);
+    entries.forEach(({ type: itemType, count }, entryIndex) => {
+      const item = inventory.create(itemType, count);
       expect(
-        inventory.add(item, { kind: 'pocket', owner: bag, pocket: 0, at: { x: i * 3, y: 0, rotated: false } }),
+        inventory.add(item, {
+          kind: 'pocket',
+          owner: bag,
+          pocket: 0,
+          at: { x: entryIndex * 3, y: 0, rotated: false },
+        }),
       ).toBe(true);
-    }
+    });
     inventory.entities.add({ type: 'workbench', pos: [0, 0, 0], size: [3, 2, 2], facing: 'n' });
     const snapshot = bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 })();
     expect(snapshot.entries).toHaveLength(200);

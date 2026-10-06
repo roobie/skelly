@@ -2,6 +2,7 @@
 read_if:
   - you're planning a version 1 slice, milestone or playtest
   - you're deciding which features belong in deadvox version 1
+  - you're changing firearm handling or combat design for version 1
 ---
 
 # deadvox — the road to version 1

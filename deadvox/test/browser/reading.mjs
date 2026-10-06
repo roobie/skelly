@@ -34,7 +34,7 @@ const vite = await createServer({
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
-          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
+          `let proofReadCalls=0; const proofOpen=reading.open; reading.open=(value)=>{proofReadCalls++;proofOpen(value);}; Object.assign(globalThis,{readingWitness:{engine,session,input,body,screen,reading,eye,lookedAt,useTarget,playKeys,get readCalls(){return proofReadCalls;},get mainMenuOpen(){return mainMenuOpen;}}});\n${marker}`,
         );
       },
     },
@@ -220,6 +220,114 @@ try {
     await page.keyboard.press('f');
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.rest.action), undefined);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), false);
+    const rampFrom = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    await waitForSimulation(
+      page,
+      () => {
+        const { sim } = globalThis.readingWitness.session;
+        return { time: sim.time, paused: sim.paused, reached: !sim.compression.locksInput };
+      },
+      undefined,
+      { seconds: 5, from: rampFrom, label: 'rest cancellation returns input at normal speed', record },
+    );
+    const bedUid = await page.evaluate(() => {
+      const { body, engine } = globalThis.readingWitness;
+      const furniture = [...engine.entities.registry.furniture.values()].find((value) => value.rest?.sleep);
+      if (!furniture) {
+        throw new Error('Sleep input fixture has no sleepable furniture');
+      }
+      const entity = engine.entities.add({
+        type: furniture.id,
+        pos: [Math.floor(body.pos[0]) + 2, Math.floor(body.pos[1]), Math.floor(body.pos[2]) + 1],
+        size: furniture.size,
+        facing: 'n',
+      });
+      if (!entity) {
+        throw new Error('Could not place the sleep input fixture');
+      }
+      return entity.uid;
+    });
+    const sleepRefusal = await page.evaluate((uid) => {
+      const { session } = globalThis.readingWitness;
+      return session.rest.start('sleep', uid);
+    }, bedUid);
+    assert.equal(sleepRefusal, undefined);
+    await page.waitForFunction((uid) => {
+      const { session } = globalThis.readingWitness;
+      return session.rest.action?.kind === 'sleep' && session.rest.action.furnitureUid === uid;
+    }, bedUid);
+    await page.evaluate((uid) => {
+      const { engine, useTarget, playKeys } = globalThis.readingWitness;
+      const furniture = engine.entities.byUid(uid);
+      if (!furniture) {
+        throw new Error('Sleep input fixture disappeared');
+      }
+      useTarget(furniture); // F on the anchor does not end sleep.
+      playKeys('KeyX'); // X does not end sleep.
+    }, bedUid);
+    const sleeping = await page.evaluate(() => {
+      const { body, session } = globalThis.readingWitness;
+      return { position: [...body.pos], time: session.sim.time };
+    });
+    await page.keyboard.press('f');
+    await page.keyboard.press('x');
+    await page.keyboard.down('w');
+    try {
+      await waitForSimulation(
+        page,
+        (until) => {
+          const { session } = globalThis.readingWitness;
+          return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+        },
+        sleeping.time + 0.5,
+        { seconds: 2, from: sleeping.time, label: 'sleep ignores movement and stop keys', record },
+      );
+    } finally {
+      await page.keyboard.up('w');
+    }
+    const stillSleeping = await page.evaluate(() => {
+      const { body, session } = globalThis.readingWitness;
+      return {
+        position: [...body.pos],
+        active: session.sim.compression.active,
+        action: session.rest.action?.kind,
+      };
+    });
+    assert.deepEqual(stillSleeping.position, sleeping.position);
+    assert.equal(stillSleeping.active, true);
+    assert.equal(stillSleeping.action, 'sleep');
+    const wakeStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
+    await page.evaluate(() => globalThis.readingWitness.session.sim.hurt(1, 'sleep interruption fixture'));
+    await waitForSimulation(
+      page,
+      () => {
+        const { session } = globalThis.readingWitness;
+        return {
+          time: session.sim.time,
+          paused: session.sim.paused,
+          reached:
+            session.rest.action === undefined &&
+            !session.sim.compression.active &&
+            session.sim.compression.interruption === undefined &&
+            !session.sim.compression.locksInput,
+        };
+      },
+      undefined,
+      { seconds: 5, from: wakeStart, label: 'an interruption wakes the player from sleep', record },
+    );
+    const awakened = await page.evaluate(() => {
+      const { session } = globalThis.readingWitness;
+      return {
+        action: session.rest.action,
+        active: session.sim.compression.active,
+        interruption: session.sim.compression.interruption,
+        locksInput: session.sim.compression.locksInput,
+      };
+    });
+    assert.equal(awakened.action, undefined);
+    assert.equal(awakened.active, false);
+    assert.equal(awakened.interruption, undefined);
+    assert.equal(awakened.locksInput, false);
     await page.evaluate(() => {
       globalThis.readingWitness.input.yaw = -Math.PI / 2;
       globalThis.readingWitness.input.pitch = 0;
@@ -330,17 +438,25 @@ try {
     });
     await walk('s', signX, false);
     await aim('sample_sign');
+    await page.keyboard.press('f');
+    await page.locator('#reading').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
     await page.keyboard.press('F9');
     await page.waitForFunction(() => globalThis.readingWitness.session.sim.paused);
-    await page.keyboard.press('f');
-    await page.keyboard.press('1');
-    const menu = await record('pause menu F and quickbar');
+    const menu = await record('pause while reading');
     assert.equal(menu.readingOpen, false);
     assert.equal(menu.paused, true);
     assert.equal(menu.inventoryOpen, false);
+    assert.equal(menu.menuPointer, true);
     assert.deepEqual(menu.jobs, []);
+    assert.equal(await page.locator('#reading').isVisible(), false);
     await page.keyboard.press('F9');
     await page.waitForFunction(() => !globalThis.readingWitness.session.sim.paused);
+    const resumed = await record('resume with reading hidden');
+    assert.equal(resumed.readingOpen, false);
+    assert.equal(resumed.menuPointer, false);
+    assert.equal(await page.locator('#reading').isVisible(), false);
+    // A hidden reading surface must not capture F after resume.
     await page.keyboard.press('f');
     await page.locator('#reading').waitFor({ state: 'visible' });
     assert.equal(await page.locator('#reading h1').innerText(), 'Placeholder — a wooden sign');
@@ -352,7 +468,7 @@ try {
       overlayHidden: document.querySelector('#overlay').hidden,
     }));
     assert.equal(escaped.overlayHidden, escaped.locked);
-    proof = { escaped, menu };
+    proof = { before, during, escaped, menu, resumed };
   } else {
     // Pure view fixture: no pickup/handling/movement claimed here.
     const marker = 'END-OF-READING';

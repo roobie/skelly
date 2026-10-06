@@ -28,6 +28,8 @@ export interface AimStep {
   readonly yaw: number;
   readonly pitch: number;
   readonly variance: number;
+  readonly firing: boolean;
+  readonly recoilRecoveryRate: number;
 }
 
 const TAU = Math.PI * 2;
@@ -43,20 +45,32 @@ const MAX_OFFSET = 0.12;
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 const bounded = (value: number): number => Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, value));
 
-const boundedFrame = (yaw: number, pitch: number): AimFrame => {
-  const yawOffset = bounded(yaw);
-  const pitchOffset = bounded(pitch);
-  const magnitude = Math.hypot(yawOffset, pitchOffset);
-  const scale = magnitude > MAX_OFFSET ? MAX_OFFSET / magnitude : 1;
-  return Object.freeze({ yaw: yawOffset * scale, pitch: pitchOffset * scale });
-};
-
-const frameFromState = (state: AimState, speed: number, variance: number): AimFrame => {
+const frameFromState = (
+  state: AimState,
+  speed: number,
+  variance: number,
+): { frame: AimFrame; viewPitchShift: number } => {
   const gait = Math.sin(state.gaitPhase);
-  const yawOffset = (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED + state.recoilYaw) * variance;
-  const pitchOffset =
-    (state.lookPitch + Math.cos(state.gaitPhase) * speed * MOVE_PITCH_PER_SPEED + state.recoilPitch) * variance;
-  return boundedFrame(yawOffset, pitchOffset);
+  const yawSway = (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance;
+  const pitchSway = (state.lookPitch + Math.cos(state.gaitPhase) * speed * MOVE_PITCH_PER_SPEED) * variance;
+  const yawOffset = bounded(yawSway + state.recoilYaw);
+  const pitchOffset = pitchSway + state.recoilPitch;
+  const pitchLimit = Math.sqrt(Math.max(0, MAX_OFFSET ** 2 - yawOffset ** 2));
+  const boundedPitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitchOffset));
+  const excessPitch = pitchOffset - boundedPitch;
+  let viewPitchShift = 0;
+  if (state.recoilPitch > 0) {
+    viewPitchShift = Math.min(state.recoilPitch, Math.max(0, excessPitch));
+  } else if (state.recoilPitch < 0) {
+    viewPitchShift = Math.max(state.recoilPitch, Math.min(0, excessPitch));
+  }
+  return {
+    frame: Object.freeze({
+      yaw: yawOffset,
+      pitch: Math.max(-pitchLimit, Math.min(pitchLimit, pitchOffset - viewPitchShift)),
+    }),
+    viewPitchShift,
+  };
 };
 
 export const initialAimState = (): AimState => ({
@@ -103,6 +117,8 @@ export const assertAimState = (state: AimState): void => {
 export class AimController {
   private readonly state: AimState;
   private variance: number;
+  private speed = 0;
+  private viewPitchShift = 0;
 
   constructor(state: AimState = initialAimState(), variance = 1) {
     assertAimState(state);
@@ -118,11 +134,36 @@ export class AimController {
     return this.state.frame;
   }
 
+  get pendingViewPitchShift(): number {
+    return this.viewPitchShift;
+  }
+
+  /** Discard unaccepted overflow and rebase look sampling for the accepted camera shift. */
+  applyViewPitchShift(requested: number, applied: number): void {
+    if (
+      !(Number.isFinite(requested) && Number.isFinite(applied)) ||
+      Math.abs(requested - this.viewPitchShift) > 1e-9 ||
+      Math.abs(applied) > Math.abs(requested) + 1e-9 ||
+      (applied !== 0 && Math.sign(applied) !== Math.sign(requested))
+    ) {
+      throw new Error('Invalid aim view-pitch shift');
+    }
+    this.state.recoilPitch -= requested;
+    this.state.lastPitch += applied;
+    this.recomputeFrame();
+  }
+
+  private recomputeFrame(): void {
+    const result = frameFromState(this.state, this.speed, this.variance);
+    this.state.frame = result.frame;
+    this.viewPitchShift = result.viewPitchShift;
+  }
+
   snapshotState(): Readonly<AimState> {
     return Object.freeze({ ...this.state });
   }
 
-  advance({ dt, velocity, blockSize, yaw, pitch, variance }: AimStep): AimFrame {
+  advance({ dt, velocity, blockSize, yaw, pitch, variance, firing, recoilRecoveryRate }: AimStep): AimFrame {
     if (
       !(
         Number.isFinite(dt) &&
@@ -132,7 +173,9 @@ export class AimController {
         Number.isFinite(variance) &&
         variance > 0 &&
         velocity.every(Number.isFinite) &&
-        [yaw, pitch].every(Number.isFinite)
+        [yaw, pitch, recoilRecoveryRate].every(Number.isFinite) &&
+        typeof firing === 'boolean' &&
+        recoilRecoveryRate > 0
       )
     ) {
       throw new Error('Invalid aim step');
@@ -140,6 +183,7 @@ export class AimController {
     const { state } = this;
     const speed = Math.hypot(velocity[0], velocity[2]) * blockSize;
     this.variance = variance;
+    this.speed = speed;
     const phaseRate = TAU * (GAIT_BASE_HZ + speed * GAIT_SPEED_HZ);
     state.gaitPhase = (state.gaitPhase + dt * phaseRate) % TAU;
 
@@ -154,24 +198,26 @@ export class AimController {
     state.hasLookSample = true;
 
     const lookDecay = Math.exp(-dt / LOOK_SETTLE_SECONDS);
-    const recoilDecay = Math.exp(-dt / RECOIL_RECOVERY_SECONDS);
+    const recoilDecay = firing ? 1 : Math.exp((-dt * recoilRecoveryRate) / RECOIL_RECOVERY_SECONDS);
     state.lookYaw *= lookDecay;
     state.lookPitch *= lookDecay;
     state.recoilYaw *= recoilDecay;
     state.recoilPitch *= recoilDecay;
 
-    state.frame = frameFromState(state, speed, variance);
+    this.recomputeFrame();
     return state.frame;
   }
 
   /** A committed shot applies its firearm's kick; the seed makes direction deterministic. */
-  recordShot(seed: number, recoilKickRadians: number): void {
+  recordShot(seed: number, recoilKickRadians: number, recoilKickScale = 1): void {
     if (
       !Number.isSafeInteger(seed) ||
       seed < 0 ||
       seed > 0xff_ff_ff_ff ||
       !Number.isFinite(recoilKickRadians) ||
-      recoilKickRadians <= 0
+      recoilKickRadians <= 0 ||
+      !Number.isFinite(recoilKickScale) ||
+      recoilKickScale <= 0
     ) {
       throw new Error('Invalid aim recoil input');
     }
@@ -179,12 +225,10 @@ export class AimController {
     const previousYaw = this.state.recoilYaw;
     const previousPitch = this.state.recoilPitch;
     const yawFactor = 0.5 + ((seed >>> 1) & 0xff) / 510;
-    this.state.recoilYaw = bounded(previousYaw + sign * recoilKickRadians * yawFactor);
-    this.state.recoilPitch = bounded(previousPitch + recoilKickRadians);
-    this.state.frame = boundedFrame(
-      this.state.frame.yaw + (this.state.recoilYaw - previousYaw) * this.variance,
-      this.state.frame.pitch + (this.state.recoilPitch - previousPitch) * this.variance,
-    );
+    const kick = recoilKickRadians * recoilKickScale;
+    this.state.recoilYaw = bounded(previousYaw + sign * kick * yawFactor);
+    this.state.recoilPitch = previousPitch + kick;
+    this.recomputeFrame();
   }
 }
 

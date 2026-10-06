@@ -74,6 +74,21 @@ const cases: { name: string; input: TransitionInput; expected: ReturnType<typeof
     },
   },
   {
+    name: 'the pause card closes a conflicting reading surface before capturing menu input',
+    input: { ...base, started: true, pointerLocked: true, readingOpen: true },
+    expected: {
+      started: true,
+      mainMenuOpen: true,
+      inventoryOpen: false,
+      debugMenuOpen: false,
+      closeOtherMenus: true,
+      menuPointer: true,
+      overlayHidden: false,
+      paused: true,
+      goLabel: 'Paused. Click to continue',
+    },
+  },
+  {
     name: 'F9 closes the main menu while locked',
     input: { ...base, started: true, mainMenuOpen: false, pointerLocked: true },
     expected: {

@@ -89,9 +89,15 @@ an interruption (a runner covers 30 m between two checks).
 
 **Plan.**
 
-- **Compression only when it's safe:** no hostile is aware of the player, and
-  none is within 30 m. That keeps the expensive active zombies out of the
-  compressed simulation.
+- **Danger and compression:** unowned compression (such as the debug skip) is
+  admitted only while safe. Long actions fast-forward even when a hostile is
+  nearby or aware; a real interrupt event, such as a hit or critical need, still
+  ends the action. BR (2026-10-05 22:28) chose option B; the lead's wording for
+  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
+  BR said "it's up to the player to make the area safe for them to do the long
+  action. We're not holding hands". In `src/core/sim.ts`, `Simulation.compress`
+  retains the safety check for unowned compression; `Simulation.compressLongAction`
+  does not apply it to long actions.
 - **Bigger steps, not more ticks,** for slow systems (needs, fire, power), and
   closed-form updates where they exist.
 - **Background entities** use the beeline movement brain from d84, taking

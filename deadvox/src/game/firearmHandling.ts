@@ -1,7 +1,7 @@
 // Item-owned chamber/cycle facts. Existing simulation/handling schedulers advance them;
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 
-import { type AimFrame, aimDirection } from '../core/aim.ts';
+import { type AimFrame, aimBasis } from '../core/aim.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { actionCycleSeconds, ejectSeconds } from '../core/firearmAction.ts';
@@ -12,7 +12,7 @@ import { heldAnchorWorldPosition, heldEjectionPose } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { dropTarget } from '../core/options.ts';
-import { type PelletShot, pelletShot } from '../core/pellets.ts';
+import { coneDirection, type PelletShot, pelletShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
@@ -33,7 +33,13 @@ export interface FirearmHandlingData {
   readonly caseModelId?: string;
   readonly rpm: number | undefined;
   readonly recoilKickRadians?: number;
+  readonly dispersionRadians?: number;
 }
+
+const hasTraceProperties = (
+  data: FirearmHandlingData,
+): data is FirearmHandlingData & { recoilKickRadians: number; dispersionRadians: number } =>
+  data.recoilKickRadians !== undefined && data.dispersionRadians !== undefined;
 
 export const firearmModelForType = (type: string, registry: Registry): ModelDef | undefined => {
   const id = defOf(registry, type).model;
@@ -75,7 +81,10 @@ export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandl
     rpm: action.rpm,
     ...(caseModelId ? { caseModelId } : {}),
     ...(defOf(registry, item.type).firearm
-      ? { recoilKickRadians: defOf(registry, item.type).firearm!.recoilKickRadians }
+      ? {
+          recoilKickRadians: defOf(registry, item.type).firearm!.recoilKickRadians,
+          dispersionRadians: defOf(registry, item.type).firearm!.dispersionRadians,
+        }
       : {}),
   };
 };
@@ -259,7 +268,7 @@ export class FirearmMechanics {
       return false;
     }
     const data = firearmHandlingFor(item, this.inventory.registry);
-    if (data.recoilKickRadians === undefined) {
+    if (!hasTraceProperties(data)) {
       return false;
     }
     const emission = this.emission(item, data, input);
@@ -312,10 +321,13 @@ export class FirearmMechanics {
         },
       };
       this.active.add(item.uid);
-      this.onTrajectory(
-        { eye: input.eye, muzzle, directions: [aimDirection(input.yaw, input.pitch, input.aimFrame)] },
-        input.simTime,
+      const basis = aimBasis(input.yaw, input.pitch, input.aimFrame);
+      const direction = coneDirection(
+        basis,
+        data.dispersionRadians,
+        Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
       );
+      this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
       this.onCommittedShot(seed, data.recoilKickRadians);
     }
     return true;

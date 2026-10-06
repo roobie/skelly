@@ -9,7 +9,7 @@ import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
-import { Character } from '../core/character.ts';
+import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -37,7 +37,6 @@ import { bindReach, pileDistance as distanceToPile, furnitureDistance, INVENTORY
 import type { Readable } from '../core/readable.ts';
 import { restorePlayerAudioState, type SaveSnapshot, snapshotSession } from '../core/saveState.ts';
 import type { Scale } from '../core/scale.ts';
-import type { StairRouteLink, TerrainFloorAt } from '../core/shamblerRoutes.ts';
 import { Simulation } from '../core/sim.ts';
 import type { Site } from '../core/site.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
@@ -101,6 +100,10 @@ export interface SessionControls {
   useDominant?: () => void;
   /** Held-trigger sampling, including release/inactive ticks, for debug firearm cadence. */
   heldDominantUse?: (time: number, pressed: boolean, held: boolean) => void;
+  /** True only while an automatic firearm is selected and its trigger is held. */
+  automaticFireHeld?: () => boolean;
+  /** Applies a requested camera-pitch shift and returns the amount accepted by its pitch limits. */
+  adjustPitch?: (delta: number) => number;
   /** Runs off-hand use on the player-tick boundary, with that tick's aim/state. */
   useOff?: () => void;
   /** Radians; 0 looks down -z. */
@@ -144,8 +147,7 @@ export interface SessionOptions {
   spawn: Vec3;
   /** The game's shared block entities; restore populates this same object in place. */
   entities?: Inventory['entities'];
-  stairFlights?: readonly StairRouteLink[];
-  terrainFloor?: TerrainFloorAt;
+  terrainFloor?: (x: number, z: number) => number;
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
   controls: SessionControls;
@@ -197,10 +199,11 @@ export interface RestoredLook {
   walk: boolean;
 }
 
-const firearmsSkillLevel = (character: Character): number => character.skills.firearms ?? 0;
+const firearmsSkillLevel = (character: Character): number =>
+  skillEffectLevel(character.skills.firearms ?? SKILL_LEVEL_MIN);
 
 export const createSession = (options: SessionOptions) => {
-  const { registry, world, isSolid, scale, seed, controls, audio, debug, stairFlights = [] } = options;
+  const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
   const physics = physicsFor(scale);
   const restored = options.restore;
@@ -347,7 +350,8 @@ export const createSession = (options: SessionOptions) => {
     onEjection: (effect) => options.onFirearmEjection?.(effect),
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
-    onCommittedShot: (shotSeed, recoilKickRadians) => aim.recordShot(shotSeed, recoilKickRadians),
+    onCommittedShot: (shotSeed, recoilKickRadians) =>
+      aim.recordShot(shotSeed, recoilKickRadians, firearmsSkillEffects(firearmsSkillLevel(character)).recoilKickScale),
     onShot: (shot, time) => {
       zombieSystem.firePellets(shot);
       playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });
@@ -391,15 +395,24 @@ export const createSession = (options: SessionOptions) => {
     }
     return moving.walk ? 'walking' : 'jogging';
   };
-  const updateAim = (dt: number): void => {
+  const updateAim = (dt: number, firing: boolean): void => {
+    const skill = firearmsSkillEffects(firearmsSkillLevel(character));
     aim.advance({
       dt,
       velocity: body.vel,
       blockSize: s,
       yaw: controls.yaw(),
       pitch: controls.pitch(),
-      variance: firearmsSkillEffects(firearmsSkillLevel(character)).variance,
+      variance: skill.variance,
+      firing,
+      recoilRecoveryRate: skill.recoilRecoveryRate,
     });
+  };
+  const applyAimViewPitchShift = (): void => {
+    const requested = aim.pendingViewPitchShift;
+    if (requested !== 0) {
+      aim.applyViewPitchShift(requested, controls.adjustPitch?.(requested) ?? 0);
+    }
   };
   const updatePlayerSounds = (wasGrounded: boolean, previousPosition: Vec3, time: number) => {
     if (body.onGround) {
@@ -442,7 +455,6 @@ export const createSession = (options: SessionOptions) => {
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
-    stairFlights,
     terrainFloor: options.terrainFloor,
     isSolid,
     isOpaque: options.isOpaque,
@@ -528,14 +540,6 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
-  const stopRestOnMovement = (intent: MoveIntent): void => {
-    if (!rest.action || (intent.forward === 0 && intent.right === 0 && !intent.jump)) {
-      return;
-    }
-    rest.stop();
-    compression.snap();
-  };
-
   const advancePlayerBody = (dt: number, time: number, pacedIntent: MoveIntent): void => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
@@ -577,14 +581,14 @@ export const createSession = (options: SessionOptions) => {
     tick: (dt, time) => {
       lastPlayerStep = time;
       const requested = controls.active() ? controls.intent() : IDLE;
-      stopRestOnMovement(requested);
       const moving = controls.active() && !compression.locksInput;
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
-      updateAim(dt);
+      updateAim(dt, moving && Boolean(controls.automaticFireHeld?.()));
       playerCombat.tick(dt, heldItemUids());
       dispatchPlayerActions(moving, intent);
+      applyAimViewPitchShift();
       if (!options.ready(body.pos[0], body.pos[2])) {
         return;
       }

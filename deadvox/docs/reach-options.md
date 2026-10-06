@@ -2,6 +2,7 @@
 read_if:
   - you change inventory reach, wield preferences or quick-move admission
   - you change delayed item use or battery selection
+  - you change quickbar hand displacement or automatic item-stow behavior
 ---
 
 # Inventory reach and options (Slice 2.1)
@@ -43,10 +44,12 @@ immediately or invokes use/eat/drink/switch.
   change when the actor's preference changes. See `src/core/character.ts`,
   `dominantSide` and `offSide`, and `src/core/options.ts`, `quickMove`, for
   role resolution and placement admission. Refusal must preserve ownership.
-- Other carried items, including worn containers, drop exactly at the feet.
-  Ground-grid placement now permits filled containers, with contents intact;
-  pocket/furniture nesting still requires an empty bag. This also enables the
-  corresponding ordinary drop, previously refused by the blanket empty-bag check.
+- Ordinary `toHands` in `src/core/options.ts`, `toHands`, drops other carried
+  items, including worn containers, exactly at the feet. Quickbar takes have a
+  separate best-effort stow rule and never drop items automatically. Ground-grid
+  placement permits filled containers, with contents intact; pocket/furniture
+  nesting still requires an empty bag. This also enables the corresponding
+  ordinary drop, previously refused by the blanket empty-bag check.
 - External items stow with that same priority, never into hands. A directly
   floor-lying wearable container wears if its slot is free and other wear rules
   permit it; otherwise it follows stow priority.

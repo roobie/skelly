@@ -1,0 +1,629 @@
+{
+  "items": [
+    {
+      "id": "lamp_oil",
+      "name": "Lamp oil",
+      "category": "material",
+      "weight": 500,
+      "size": [1, 2],
+      "description": "A small sealed bottle of fuel for lamps and improvised lighting.",
+      "model": "lamp_oil_bottle"
+    },
+    {
+      "id": "glass_shards",
+      "name": "Glass shards",
+      "category": "material",
+      "weight": 80,
+      "size": [1, 1],
+      "stack": 6,
+      "model": "glass_shards"
+    },
+    {
+      "id": "electrical_tape",
+      "name": "Electrical tape",
+      "category": "material",
+      "weight": 30,
+      "size": [1, 1],
+      "stack": 6,
+      "model": "tape_roll"
+    },
+    {
+      "id": "fastener_pack",
+      "name": "Mixed fasteners",
+      "category": "material",
+      "weight": 180,
+      "size": [1, 1],
+      "stack": 5,
+      "model": "fastener_pack",
+      "disassembly": {
+        "time": 5,
+        "skill": "crafting",
+        "yields": [
+          { "item": "nails", "count": 2, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "wood_offcut",
+      "name": "Wood offcut",
+      "category": "material",
+      "weight": 250,
+      "size": [1, 2],
+      "stack": 4,
+      "model": "wood_offcut",
+      "disassembly": {
+        "time": 3,
+        "skill": "crafting",
+        "yields": [{ "item": "stick", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    },
+    {
+      "id": "rubber_strip",
+      "name": "Rubber strip",
+      "category": "material",
+      "weight": 45,
+      "size": [1, 1],
+      "stack": 6,
+      "model": "rubber_strip"
+    },
+    {
+      "id": "circuit_board",
+      "name": "Circuit board",
+      "category": "material",
+      "weight": 75,
+      "size": [1, 2],
+      "stack": 2,
+      "model": "circuit_board"
+    },
+    {
+      "id": "glass_lens",
+      "name": "Small glass lens",
+      "category": "material",
+      "weight": 40,
+      "size": [1, 1],
+      "stack": 3,
+      "model": "glass_lens"
+    },
+    {
+      "id": "small_spring",
+      "name": "Small spring",
+      "category": "material",
+      "weight": 20,
+      "size": [1, 1],
+      "stack": 8,
+      "model": "small_spring"
+    },
+    {
+      "id": "cloth_strip",
+      "name": "Cloth strip",
+      "category": "material",
+      "weight": 25,
+      "size": [1, 1],
+      "stack": 8,
+      "model": "cloth_bundle",
+      "disassembly": {
+        "time": 3,
+        "skill": "crafting",
+        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    },
+    {
+      "id": "sewing_thread",
+      "name": "Sewing thread",
+      "category": "material",
+      "weight": 15,
+      "size": [1, 1],
+      "stack": 6,
+      "model": "thread_spool"
+    },
+    {
+      "id": "fuse",
+      "name": "Glass fuse",
+      "category": "material",
+      "weight": 10,
+      "size": [1, 1],
+      "stack": 10,
+      "model": "fuse"
+    },
+    {
+      "id": "nylon_cord",
+      "name": "Nylon cord",
+      "category": "material",
+      "weight": 60,
+      "size": [1, 2],
+      "stack": 5,
+      "model": "cord_coil"
+    },
+    {
+      "id": "wire_strippers",
+      "name": "Wire strippers",
+      "category": "tool",
+      "weight": 180,
+      "size": [1, 2],
+      "model": "pliers",
+      "tool": { "qualities": { "cutting": 1, "screwing": 1 } },
+      "disassembly": {
+        "time": 8,
+        "skill": "mechanics",
+        "yields": [
+          { "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "rubber_strip", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "adjustable_pliers",
+      "name": "Adjustable pliers",
+      "category": "tool",
+      "weight": 300,
+      "size": [1, 2],
+      "model": "pliers",
+      "tool": { "qualities": { "wrenching": 1, "cutting": 1 } },
+      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "rubber_strip", "count": 1 }]
+    },
+    {
+      "id": "sewing_kit",
+      "name": "Sewing kit",
+      "category": "tool",
+      "weight": 220,
+      "size": [2, 1],
+      "model": "sewing_kit",
+      "tool": { "qualities": { "sewing": 1 } },
+      "disassembly": {
+        "time": 6,
+        "skill": "crafting",
+        "yields": [
+          { "item": "sewing_thread", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "fastener_pack", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "broken_toaster",
+      "name": "Broken toaster",
+      "category": "misc",
+      "weight": 1400,
+      "size": [3, 2],
+      "model": "broken_toaster",
+      "salvage": [
+        { "item": "circuit_board", "count": 1 },
+        { "item": "fuse", "count": 1 },
+        { "item": "scrap_metal", "count": 1 },
+        { "item": "copper_wire", "count": 1 }
+      ]
+    },
+    {
+      "id": "dead_desk_lamp",
+      "name": "Dead desk lamp",
+      "category": "misc",
+      "weight": 900,
+      "size": [2, 3],
+      "model": "desk_lamp",
+      "salvage": [
+        { "item": "glass_bulb", "count": 1 },
+        { "item": "glass_lens", "count": 1 },
+        { "item": "copper_wire", "count": 1 },
+        { "item": "scrap_metal", "count": 1 }
+      ]
+    },
+    {
+      "id": "broken_table_fan",
+      "name": "Broken table fan",
+      "category": "misc",
+      "weight": 1500,
+      "size": [3, 3],
+      "model": "table_fan",
+      "salvage": [
+        { "item": "small_spring", "count": 1 },
+        { "item": "copper_wire", "count": 1 },
+        { "item": "scrap_metal", "count": 1 }
+      ]
+    },
+    {
+      "id": "cracked_phone",
+      "name": "Cracked mobile phone",
+      "category": "misc",
+      "weight": 250,
+      "size": [1, 2],
+      "model": "cracked_phone",
+      "salvage": [
+        { "item": "circuit_board", "count": 1 },
+        { "item": "glass_shards", "count": 1 },
+        { "item": "copper_wire", "count": 1 }
+      ]
+    },
+    {
+      "id": "broken_clock",
+      "name": "Broken alarm clock",
+      "category": "misc",
+      "weight": 350,
+      "size": [2, 2],
+      "model": "broken_clock",
+      "salvage": [
+        { "item": "small_spring", "count": 1 },
+        { "item": "circuit_board", "count": 1 },
+        { "item": "fastener_pack", "count": 1 }
+      ]
+    },
+    {
+      "id": "sewing_repair_kit",
+      "name": "Clothing repair kit",
+      "category": "tool",
+      "weight": 420,
+      "size": [2, 2],
+      "model": "sewing_kit",
+      "description": "Thread, patches and needles for mending clothing.",
+      "tool": { "qualities": { "sewing": 1, "repairing": 1 } },
+      "disassembly": {
+        "time": 8,
+        "skill": "crafting",
+        "yields": [
+          { "item": "sewing_thread", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "cloth_strip", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "electrical_repair_kit",
+      "name": "Electrical repair kit",
+      "category": "tool",
+      "weight": 650,
+      "size": [2, 2],
+      "model": "electrical_repair_kit",
+      "description": "Insulated tape, wire and a few replacement fuses.",
+      "tool": { "qualities": { "screwing": 1, "repairing": 1 } },
+      "disassembly": {
+        "time": 10,
+        "skill": "mechanics",
+        "yields": [
+          { "item": "copper_wire", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "fuse", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "electrical_tape", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "taped_flashlight_mount",
+      "name": "Taped-on flashlight mount",
+      "category": "weapon",
+      "weight": 120,
+      "size": [1, 2],
+      "model": "flashlight_mount",
+      "description": "A loose strap-and-bracket assembly; fitting it to a weapon is not modeled.",
+      "disassembly": {
+        "time": 7,
+        "skill": "mechanics",
+        "yields": [
+          { "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "electrical_tape", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "scrap_foregrip",
+      "name": "Scrap foregrip",
+      "category": "weapon",
+      "weight": 180,
+      "size": [1, 2],
+      "model": "scrap_foregrip",
+      "description": "A rough grip made from a wood offcut and rubber; fitting is not modeled.",
+      "disassembly": {
+        "time": 7,
+        "skill": "mechanics",
+        "yields": [
+          { "item": "wood_offcut", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
+          { "item": "rubber_strip", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }
+        ]
+      }
+    },
+    {
+      "id": "hinge_set",
+      "name": "Small hinge set",
+      "category": "material",
+      "weight": 360,
+      "size": [2, 1],
+      "model": "hinge_set",
+      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "fastener_pack", "count": 1 }]
+    },
+    {
+      "id": "glass_bulb",
+      "name": "Small light bulb",
+      "category": "material",
+      "weight": 30,
+      "size": [1, 1],
+      "stack": 3,
+      "model": "glass_bulb"
+    },
+    {
+      "id": "hand_saw",
+      "name": "Hand saw",
+      "category": "tool",
+      "weight": 650,
+      "size": [1, 3],
+      "model": "hand_saw",
+      "tool": { "qualities": { "sawing": 1 } },
+      "salvage": [{ "item": "scrap_metal", "count": 1 }, { "item": "wooden_plank", "count": 1 }]
+    },
+    {
+      "id": "screwdriver",
+      "name": "Screwdriver",
+      "category": "tool",
+      "weight": 160,
+      "size": [1, 2],
+      "model": "screwdriver",
+      "tool": { "qualities": { "screwing": 1 } },
+      "salvage": [{ "item": "scrap_metal", "count": 1 }]
+    },
+    {
+      "id": "wrench",
+      "name": "Adjustable wrench",
+      "category": "tool",
+      "weight": 500,
+      "size": [1, 3],
+      "model": "wrench",
+      "tool": { "qualities": { "wrenching": 1 } },
+      "salvage": [{ "item": "scrap_metal", "count": 1 }]
+    },
+    {
+      "id": "improvised_suppressor",
+      "name": "Improvised suppressor",
+      "category": "weapon",
+      "weight": 350,
+      "size": [1, 2],
+      "description": "A short scavenged tube with crude end collars. It is a loose item; fitting is not modeled.",
+      "model": "improvised_suppressor",
+      "disassembly": {
+        "time": 8,
+        "skill": "mechanics",
+        "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
+      }
+    }
+  ],
+  "recipes": [
+    {
+      "id": "rag_to_cloth_strip",
+      "result": { "item": "cloth_strip", "count": 2 },
+      "time": 4,
+      "skills": { "crafting": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [[{ "item": "rag", "count": 1 }]]
+    },
+    {
+      "id": "trim_wood_offcut",
+      "result": { "item": "wood_offcut", "count": 2 },
+      "time": 5,
+      "skills": { "crafting": 0 },
+      "qualities": { "sawing": 1 },
+      "components": [[{ "item": "wooden_plank", "count": 1 }]],
+      "workstation": "workbench"
+    },
+    {
+      "id": "make_sewing_kit",
+      "result": { "item": "sewing_kit", "count": 1 },
+      "time": 12,
+      "skills": { "crafting": 0 },
+      "qualities": { "cutting": 1 },
+      "components": [
+        [{ "item": "sewing_thread", "count": 1 }],
+        [{ "item": "cloth_strip", "count": 1 }],
+        [{ "item": "fastener_pack", "count": 1 }]
+      ]
+    },
+    {
+      "id": "make_sewing_repair_kit",
+      "result": { "item": "sewing_repair_kit", "count": 1 },
+      "time": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [
+        [{ "item": "sewing_thread", "count": 1 }],
+        [{ "item": "cloth_strip", "count": 2 }],
+        [{ "item": "duct_tape", "count": 1 }]
+      ]
+    },
+    {
+      "id": "make_electrical_repair_kit",
+      "result": { "item": "electrical_repair_kit", "count": 1 },
+      "time": 20,
+      "skills": { "mechanics": 0 },
+      "qualities": { "screwing": 1 },
+      "components": [
+        [{ "item": "copper_wire", "count": 1 }],
+        [{ "item": "electrical_tape", "count": 1 }],
+        [{ "item": "fuse", "count": 1 }]
+      ],
+      "workstation": "workbench"
+    },
+    {
+      "id": "make_wire_strippers",
+      "result": { "item": "wire_strippers", "count": 1 },
+      "time": 18,
+      "skills": { "mechanics": 0 },
+      "qualities": { "hammering": 1 },
+      "components": [
+        [{ "item": "scrap_metal", "count": 1 }],
+        [{ "item": "rubber_strip", "count": 1 }],
+        [{ "item": "fastener_pack", "count": 1 }]
+      ],
+      "workstation": "workbench"
+    },
+    {
+      "id": "assemble_fastener_pack",
+      "result": { "item": "fastener_pack", "count": 2 },
+      "time": 6,
+      "skills": { "crafting": 0 },
+      "qualities": { "hammering": 1 },
+      "components": [[{ "item": "nails", "count": 5 }], [{ "item": "scrap_metal", "count": 1 }]]
+    },
+    {
+      "id": "make_improvised_suppressor",
+      "result": { "item": "improvised_suppressor", "count": 1 },
+      "time": 35,
+      "skills": { "mechanics": 0 },
+      "qualities": { "screwing": 1, "wrenching": 1 },
+      "components": [
+        [{ "item": "steel_pipe", "count": 1 }],
+        [{ "item": "rubber_strip", "count": 1 }],
+        [{ "item": "electrical_tape", "count": 1 }]
+      ],
+      "workstation": "workbench"
+    },
+    {
+      "id": "make_taped_flashlight_mount",
+      "result": { "item": "taped_flashlight_mount", "count": 1 },
+      "time": 18,
+      "skills": { "mechanics": 0 },
+      "qualities": { "screwing": 1 },
+      "components": [
+        [{ "item": "scrap_metal", "count": 1 }],
+        [{ "item": "electrical_tape", "count": 1 }],
+        [{ "item": "fastener_pack", "count": 1 }]
+      ],
+      "workstation": "workbench"
+    },
+    {
+      "id": "make_scrap_foregrip",
+      "result": { "item": "scrap_foregrip", "count": 1 },
+      "time": 15,
+      "skills": { "mechanics": 0 },
+      "qualities": { "hammering": 1, "sawing": 1 },
+      "components": [
+        [{ "item": "wood_offcut", "count": 1 }],
+        [{ "item": "rubber_strip", "count": 1 }],
+        [{ "item": "fastener_pack", "count": 1 }]
+      ],
+      "workstation": "workbench"
+    },
+    {
+      "id": "repair_hammer",
+      "kind": "repair",
+      "result": { "item": "hammer", "count": 1 },
+      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
+      "time": 12,
+      "skills": { "mechanics": 0 },
+      "qualities": { "repairing": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "repair_machete",
+      "kind": "repair",
+      "result": { "item": "machete", "count": 1 },
+      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
+      "time": 15,
+      "skills": { "mechanics": 0 },
+      "qualities": { "repairing": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "repair_kabar",
+      "kind": "repair",
+      "result": { "item": "kabar", "count": 1 },
+      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
+      "time": 12,
+      "skills": { "mechanics": 0 },
+      "qualities": { "repairing": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "repair_baseball_bat",
+      "kind": "repair",
+      "result": { "item": "baseball_bat", "count": 1 },
+      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
+      "time": 14,
+      "skills": { "mechanics": 0 },
+      "qualities": { "repairing": 1, "hammering": 1 },
+      "components": [[{ "item": "wood_offcut", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "repair_steel_pipe",
+      "kind": "repair",
+      "result": { "item": "steel_pipe", "count": 1 },
+      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
+      "time": 14,
+      "skills": { "mechanics": 0 },
+      "qualities": { "repairing": 1 },
+      "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
+    },
+    {
+      "id": "repair_jeans",
+      "kind": "repair",
+      "result": { "item": "jeans", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
+    },
+    {
+      "id": "repair_cargo_pants",
+      "kind": "repair",
+      "result": { "item": "cargo_pants", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 12,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
+    },
+    {
+      "id": "repair_hoodie",
+      "kind": "repair",
+      "result": { "item": "hoodie", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 12,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
+    },
+    {
+      "id": "repair_jacket",
+      "kind": "repair",
+      "result": { "item": "jacket", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
+    },
+    {
+      "id": "repair_utility_vest",
+      "kind": "repair",
+      "result": { "item": "utility_vest", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 15,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
+    },
+    {
+      "id": "repair_hiking_backpack",
+      "kind": "repair",
+      "result": { "item": "hiking_backpack", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 16,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "nylon_cord", "count": 1 }]]
+    },
+    {
+      "id": "repair_fanny_pack",
+      "kind": "repair",
+      "result": { "item": "fanny_pack", "count": 1 },
+      "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
+      "time": 10,
+      "skills": { "crafting": 0 },
+      "qualities": { "sewing": 1 },
+      "components": [[{ "item": "cloth_strip", "count": 1 }], [{ "item": "sewing_thread", "count": 1 }]]
+    },
+    {
+      "id": "repair_flashlight",
+      "kind": "repair",
+      "result": { "item": "flashlight", "count": 1 },
+      "repair": { "skill": "mechanics", "amount": 0.2, "perSkill": 0.1 },
+      "time": 14,
+      "skills": { "mechanics": 0 },
+      "qualities": { "screwing": 1 },
+      "components": [[{ "item": "fuse", "count": 1 }], [{ "item": "electrical_tape", "count": 1 }]]
+    }
+  ]
+}
