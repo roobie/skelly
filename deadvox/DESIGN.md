@@ -520,10 +520,16 @@ plain box in your hands. Files are small, and follow
   contact after `min(0.4 × cooldown, 0.25 s)`, with recovery filling the rest of
   cooldown. Misses and wall-blocked swings still spend stamina and cooldown.
   Active swings are saved and fingerprinted so Continue preserves one pending
-  hit; changing held items cancels that hit without refunding cooldown. Holding
-  right mouse raises a cosmetic ready stance. First-person motions use shared
-  blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
-  items animate both arms. Confirmed hits add only clamped first-person recoil.
+  hit; changing held items cancels that hit without refunding cooldown. BR
+  (d113-1, 2026-10-06 23:52): “calling it 'cosmetic' seems like a bug”. Holding right
+  mouse with a melee weapon or empty hands enters en-garde; holding S while
+  en-garde attempts to block incoming melee, with success by melee-combat skill.
+  En-garde does not change movement pace. See `src/game/melee.ts`,
+  `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`, `src/game/session.ts`,
+  `hurtPlayer`, `src/core/meleeCombat.ts`, `blocksAttack`, and
+  `src/game/player.ts`, `movementPace`. First-person motions use shared blunt-arc,
+  cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
+  animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
@@ -584,8 +590,13 @@ plain box in your hands. Files are small, and follow
   separates firearm quality's dispersion from skill-controlled handling.
   The #267 ruling makes ready stance gate firearm fire, prohibits firing while
   sprinting, assigns duck-walk speed to firearms combat and block success to
-  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. Until
-  3.1 lands, aim-sway look comparisons use the current movement rules;
+  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. BR
+  (d113-1, 2026-10-06 23:51): “i tested the shotgun on gungen/ak-muzzles / issue: when RR
+  racking, a readied shotgun returns to unreadied during racking / this happens
+  too when loading / i don't think it should”. A held, completed ready stance
+  remains active through firearm rack/load handling; raising still takes its
+  skill-scaled simulation time. See `src/game/session.ts`,
+  `advancePlayerReadiness`. Until 3.1 lands, aim-sway look comparisons use the current movement rules;
   afterward, moving-fire comparisons use the skill-dependent duck-walk speed.
   d62 leaves practice unawarded until its source is ruled; #275 sets tiered
   training, while tiers for existing sources and above-tier practice remain
