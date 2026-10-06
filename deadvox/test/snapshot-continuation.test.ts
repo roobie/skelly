@@ -249,7 +249,8 @@ describe('hamlet save/load continuation', () => {
     expect(source.player.body.onGround).toBe(true);
     expect(source.sim.needs.stamina).toBe(0);
     intent = { ...IDLE };
-    advance(source, 60);
+    const framesBeforeRecovery = Math.floor((source.sim.body.tuning.staminaRegenDelaySimSeconds * 60) / 2);
+    advance(source, framesBeforeRecovery);
     expect(source.sim.needs.stamina).toBe(0);
 
     const snapshot = capture(source);

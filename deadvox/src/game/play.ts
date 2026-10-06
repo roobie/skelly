@@ -73,7 +73,12 @@ import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import { Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
-import { resolveMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import {
+  resolvePlayerMeleeWeapon,
+  shouldBlockFromEnGarde,
+  shouldEnterMeleeReady,
+  startPlayerMelee,
+} from './melee.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -1354,10 +1359,11 @@ export const startPlay = (
     if (selected.profile !== 'fists' && classTuning === undefined) {
       throw new Error(`Missing melee class tuning for ${selected.profile}`);
     }
-    const swingWeapon =
-      classTuning === undefined
-        ? selected.weapon
-        : resolveMeleeWeapon(selected.weapon, classTuning, session.sim.body.consequences.swingSlowdown);
+    const swingWeapon = resolvePlayerMeleeWeapon(
+      selected.weapon,
+      classTuning,
+      session.sim.body.consequences.swingSlowdown,
+    );
     const result = startPlayerMelee(
       playerCombat,
       sim.needs,

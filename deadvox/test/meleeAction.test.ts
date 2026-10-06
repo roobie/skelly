@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ZombieDef } from '../src/core/content.ts';
+import { Body } from '../src/core/body.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { SPAWN_NEEDS, STAMINA, stepStamina } from '../src/core/needs.ts';
@@ -13,6 +14,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type MeleeWeapon, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import {
   resolveMeleeWeapon,
+  resolvePlayerMeleeWeapon,
   shouldBlockFromEnGarde,
   shouldEnterMeleeReady,
   startPlayerMelee,
@@ -511,6 +513,15 @@ describe('player melee action', () => {
     expect(combatFor(swapping).snapshotState().playerAttackWait).toBe(0);
   });
 
+  it('applies injured-arm cooldown slowdown to fist swings', () => {
+    const uninjured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, 1);
+    const injuredBody = new Body(BODY_TUNING_FIXTURE);
+    injuredBody.impact(1, 'rightArm');
+    const injured = resolvePlayerMeleeWeapon(FISTS_MELEE, undefined, injuredBody.consequences.swingSlowdown);
+
+    expect(injured.cooldown).toBeGreaterThan(uninjured.cooldown);
+  });
+
   it('keeps the weapon-class contact defaults ordered', () => {
     const blunt = registry.meleeClasses.get('blunt')!;
     const cut = registry.meleeClasses.get('cut')!;
@@ -596,6 +607,28 @@ describe('player melee action', () => {
 
     expect(remainingArm('cut')).toBe(0);
     expect(remainingArm('blunt')).toBeGreaterThan(0);
+  });
+
+  it('keeps the dismemberment stream aligned when damage spread is zero', () => {
+    const withoutDismemberment: ZombieDef = {
+      ...SHAMBLER,
+      dismember: { chance: 0, headOnKillChance: 0 },
+    };
+    const hitWithVariance = (damageVariance: number) => {
+      const system = makeSystem(FLOOR, [], [], { seed: 419 });
+      const { id, zombie } = makeTarget(system, withoutDismemberment);
+      const ray = regionRay(zombie, id, 'torso');
+      const weapon = resolveMeleeWeapon(
+        { damage: 1, reach: 3, cooldown: 1, type: 'blunt', damageVariance },
+        registry.meleeClasses.get('blunt')!,
+      );
+      expect(system.swing(ray.origin, ray.direction, weapon)).toBe(id);
+      return zombie.dismemberRng.state();
+    };
+
+    expect(hitWithVariance(0)).toEqual(
+      hitWithVariance(registry.meleeClasses.get('blunt')!.damageVariance),
+    );
   });
 
   it('pierce contact has the widest seeded damage spread', () => {

@@ -18,16 +18,25 @@ export const shouldEnterMeleeReady = (input: {
 export const shouldBlockFromEnGarde = (enGarde: boolean, backingOff: boolean): boolean => enGarde && backingOff;
 
 /** Applies content class defaults and per-weapon overrides once, before the action is saved. */
-export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef, swingSlowdown = 1): MeleeWeapon => {
+export const resolveMeleeWeapon = (weapon: MeleeWeapon, defaults: MeleeClassDef): MeleeWeapon => {
   const speedMultiplier = weapon.speedMultiplier ?? defaults.speedMultiplier;
   return {
     ...weapon,
-    cooldown: (weapon.cooldown / speedMultiplier) * swingSlowdown,
+    cooldown: weapon.cooldown / speedMultiplier,
     damageVariance: weapon.damageVariance ?? defaults.damageVariance,
     headDamageMultiplier: weapon.headDamageMultiplier ?? defaults.headDamageMultiplier,
     limbDamageMultiplier: weapon.limbDamageMultiplier ?? defaults.limbDamageMultiplier,
     speedMultiplier,
   };
+};
+
+export const resolvePlayerMeleeWeapon = (
+  weapon: MeleeWeapon,
+  defaults: MeleeClassDef | undefined,
+  swingSlowdown: number,
+): MeleeWeapon => {
+  const resolved = defaults ? resolveMeleeWeapon(weapon, defaults) : weapon;
+  return { ...resolved, cooldown: resolved.cooldown * swingSlowdown };
 };
 
 /** Refuses without cost when tired/busy; every accepted swing spends stamina, including a miss. */
