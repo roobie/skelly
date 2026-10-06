@@ -345,10 +345,11 @@ The lengths below remain abstract units on the existing grid. Optic reference so
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
 - Magazine S/M/L body lengths by profile are: standard, SMG, and pistol
-  `6/10/16u`; AK-74 curved `6/10/16.5u`; AKM curved `6/10/16.75u`; STANAG
-  curved `6/10/15.75u`. The curved L values follow the traced reference
-  lengths: the AK-74 ratio and STANAG 30-round, with STANAG 20-round anchoring
-  M near `10u`. The AKM's is fitted to the AK's golden photo (g41-4).
+  `6/10/16u`; AK-74 curved `6/10/16.5u`; STANAG curved `6/10/15.75u`. These
+  curved L values follow the traced reference lengths: the AK-74 ratio and
+  STANAG 30-round, with STANAG 20-round anchoring M near `10u`. The AKM curved
+  band is in `src/gun/parts.ts`, `MAGAZINE_PROFILE_LENGTHS_U`; its L is fitted
+  to the AK's golden photo (g41-4).
   Ordinary S begins at the plausible 10-round length (`6u`).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
@@ -387,7 +388,6 @@ The lengths below remain abstract units on the existing grid. Optic reference so
 | Grip | 7.5 / 86 | 8.5 / 98 | 9.5 / 109 | Hand-sized bands, along grip axis; pistol-integrated grip uses the same bands |
 | Standard, SMG, pistol magazine | 6 / 69 | 10 / 115 | 16 / 184 | Abstract length bands; STANAG top depth anchors 1u ≈ 11.5mm |
 | AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
-| AKM curved magazine | 6 / 69 | 10 / 115 | 16.75 / 193 | Fitted to the golden AKM photo's magazine (g41-4) |
 | STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
 | Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
 | Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |

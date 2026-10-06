@@ -363,28 +363,31 @@ describe('AK-pattern archetype', () => {
     expect(validate(akFixture, gunDomain).ok).toBe(true);
   });
 
-  it('face-seats the AK magazine at a flat lower surface with its rock-in sweep starting at the front hook', () => {
+  it('face-seats every AK magazine variant at a flat lower surface with its rock-in sweep starting at the front hook', () => {
     const lower = FAMILIES.lower!.build({ layout: 'ak' });
-    const magazine = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant: 'ak74' });
     const lowerPort = lower.ports.find(({ id }) => id === 'magazine')!;
-    const topPort = magazine.ports.find(({ id }) => id === 'top')!;
     expect(lower.solids.length).toBeGreaterThan(0);
-    expect((topPort as GunPortDef).seat).toBe('face');
-    expect(topPort.pos[1]).toBe(0);
-    const upper = magazine.solids[0]!;
-    expect(upper.kind).toBe('extruded-polygon');
-    if (upper.kind !== 'extruded-polygon') {
-      throw new Error('Expected the AK magazine feed-lip prism.');
-    }
-    expect(Math.max(...upper.profile.map(([, y]) => y))).toBeCloseTo(topPort.pos[1], 8);
     const sweep = lower.keepOuts.find(({ id }) => id === 'magazine-rock-in-sweep')!;
     const sweepMinX = sweep.box.center[0] - sweep.box.half[0];
     const sweepMaxX = sweep.box.center[0] + sweep.box.half[0];
-    const magazineX = upper.profile.map(([x]) => x);
-    const magazineDepth = Math.max(...magazineX) - Math.min(...magazineX);
-    const frontHookX = lowerPort.pos[0] + magazineDepth / 2;
-    expect(sweepMinX).toBeCloseTo(frontHookX, 8);
     expect(sweepMaxX).toBeGreaterThan(sweepMinX);
+    const variants = FAMILIES.magazine!.params.variant!.values;
+    expect(variants.length).toBeGreaterThan(1);
+    for (const variant of variants) {
+      const magazine = FAMILIES.magazine!.build({ length: 'L', profile: 'ak-curved', variant });
+      const topPort = magazine.ports.find(({ id }) => id === 'top')!;
+      expect((topPort as GunPortDef).seat, variant).toBe('face');
+      expect(topPort.pos[1], variant).toBe(0);
+      const upper = magazine.solids[0]!;
+      expect(upper.kind, variant).toBe('extruded-polygon');
+      if (upper.kind !== 'extruded-polygon') {
+        throw new Error(`Expected the ${variant} magazine feed-lip prism.`);
+      }
+      expect(Math.max(...upper.profile.map(([, y]) => y)), variant).toBeCloseTo(topPort.pos[1], 8);
+      const magazineX = upper.profile.map(([x]) => x);
+      const magazineDepth = Math.max(...magazineX) - Math.min(...magazineX);
+      expect(sweepMinX, variant).toBeCloseTo(lowerPort.pos[0] + magazineDepth / 2, 8);
+    }
   });
 
   it('adds an intermediate dropped stock distinct from straight and sporting styles', () => {

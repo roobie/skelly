@@ -47,7 +47,7 @@ export const akButtstockSolids = (length: SizeClass): Solid[] => {
   ];
   return [
     ...woodRegion(contour(4), 'stock-neck', [0, S.neck.x]),
-    ...woodRegion(contour(S.neck.x - S.comb.x), 'stock-saddle', [S.neck.x, S.comb.x]),
+    ...woodRegion(contour(6), 'stock-saddle', [S.neck.x, S.comb.x]),
     ...woodRegion(contour(1), 'stock-belly', [S.comb.x, toeStart]),
     ...woodRegion(contour(3), 'stock-toe', [toeStart, plateFrontX]),
     {
