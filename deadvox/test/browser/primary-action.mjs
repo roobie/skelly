@@ -506,14 +506,27 @@ try {
     const r = globalThis.primaryActionTest;
     return !document.querySelector('#overlay')?.hidden && r.session.sim.paused;
   });
-  const pausedKnockout = await page.evaluate(() => ({
-    black: document.body.classList.contains('unconscious'),
-    overlayAboveBlackout:
-      Number.parseInt(getComputedStyle(document.querySelector('#overlay')).zIndex, 10) >
-      Number.parseInt(getComputedStyle(document.body, '::after').zIndex, 10),
-  }));
+  const pausedKnockout = await page.evaluate(() => {
+    const overlay = document.querySelector('#overlay');
+    const cursorRoot = document.querySelector('#game-cursor-root');
+    const cursor = document.querySelector('#game-cursor');
+    return {
+      black: document.body.classList.contains('unconscious'),
+      overlayAboveBlackout:
+        Number.parseInt(getComputedStyle(overlay).zIndex, 10) >
+        Number.parseInt(getComputedStyle(document.body, '::after').zIndex, 10),
+      menuPointer: globalThis.primaryActionTest.input.menuPointer,
+      cursorVisible: Boolean(cursor && getComputedStyle(cursor).display !== 'none'),
+      cursorAboveOverlay:
+        Number.parseInt(getComputedStyle(cursorRoot).zIndex, 10) >
+        Number.parseInt(getComputedStyle(overlay).zIndex, 10),
+    };
+  });
   assert.equal(pausedKnockout.black, true, 'opening the pause menu leaves the knockout blackout active');
   assert.equal(pausedKnockout.overlayAboveBlackout, true, 'the pause menu is layered above the blackout');
+  assert.equal(pausedKnockout.menuPointer, true, 'the open menu uses the software cursor');
+  assert.equal(pausedKnockout.cursorVisible, true, 'the software cursor stays visible over the menu');
+  assert.equal(pausedKnockout.cursorAboveOverlay, true, 'the software cursor layers above the pause menu');
   await page.keyboard.press('F9');
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
@@ -807,13 +820,14 @@ try {
   });
   const interruptedThrow = await holdAction(page, 'player.throw-glowstick');
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingGlowstick());
-  const beforeKnockout = await page.evaluate(() => globalThis.primaryActionTest.frames);
   await page.evaluate(() => {
     const { body } = globalThis.primaryActionTest.session.sim;
     body.impact(0, 'torso', { shockDamage: body.shock + 1 });
   });
-  await page.waitForFunction(() => globalThis.primaryActionTest.session.sim.body.unconscious);
-  await page.waitForFunction((frame) => globalThis.primaryActionTest.frames > frame, beforeKnockout);
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.session.sim.body.unconscious && !r.isChargingGlowstick();
+  });
   assert.equal(
     await page.evaluate(() => globalThis.primaryActionTest.isChargingGlowstick()),
     false,

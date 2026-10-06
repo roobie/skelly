@@ -384,6 +384,7 @@ describe('Session long-action input lock', () => {
     }
 
     expect(session.sim.body.unconscious).toBe(false);
+    expect(completed).toBe(false);
     const handlingFrames = Math.ceil((job.duration + 2 / HANDLING_RATE) * 60);
     for (let frame = 0; frame < handlingFrames && !completed; frame += 1) {
       session.frame(1 / 60);

@@ -39,7 +39,7 @@ body.unconscious::after {
 #game-cursor-root {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2003;
   pointer-events: none;
   mix-blend-mode: difference;
 }
@@ -168,7 +168,7 @@ body.unconscious::after {
 
 #save-recovery {
   position: fixed;
-  z-index: 20;
+  z-index: 2002;
   left: 12px;
   bottom: 12px;
   max-width: min(680px, calc(100vw - 24px));

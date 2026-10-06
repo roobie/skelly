@@ -1713,7 +1713,7 @@ describe('shambler scenarios', () => {
 
   it('god mode blocks shambler damage without stopping attacks or their cooldown', () => {
     const simulateAttacks = (godMode: boolean) => {
-      const sim = new Simulation({ seed: 9 });
+      const sim = new Simulation({ seed: 9, bodyTuning: registry.body.get('player')! });
       sim.godMode = godMode;
       let hits = 0;
       const system = new ZombieSystem(
