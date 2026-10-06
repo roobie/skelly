@@ -9,6 +9,7 @@ import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from
 import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -95,6 +96,7 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
 describe('rendered and hit shambler poses', () => {
   it('matches a frozen lunge pose after windup cancellation', () => {
     const system = new ZombieSystem({
+      tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
@@ -129,6 +131,7 @@ describe('rendered and hit shambler poses', () => {
 
   it('targets aggravated stance while chasing, winding up, and during the attack clip', () => {
     const system = new ZombieSystem({
+      tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
@@ -162,6 +165,7 @@ describe('rendered and hit shambler poses', () => {
 
   it('blends slack and aggravated idle poses and initializes a newly tracked chase as aggravated', () => {
     const system = new ZombieSystem({
+      tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
@@ -185,6 +189,7 @@ describe('rendered and hit shambler poses', () => {
     expect(midpoint.rotations.chest).not.toEqual(aggravated.rotations.chest);
 
     const freshSystem = new ZombieSystem({
+      tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({ pos: [2, 1, 1], facing: [0, 0, 1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,
@@ -204,6 +209,7 @@ describe('rendered and hit shambler poses', () => {
 
   it('aimAt hits the rendered head centre during a frozen lunge and turned head-look', () => {
     const system = new ZombieSystem({
+      tuning: TEST_SENSE_TUNING,
       isOpaque: FLOOR,
       player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
       isSolid: FLOOR,

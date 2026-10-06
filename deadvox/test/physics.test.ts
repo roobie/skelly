@@ -178,6 +178,17 @@ describe('steer', () => {
     expect(speed({ sprint: false, walk: false })).toBeCloseTo(PLAYER.jog);
     expect(speed({ sprint: true, walk: true })).toBeCloseTo(PLAYER.sprint);
   });
+
+  it('slows the same sprint intent while crouching', () => {
+    const intent = { forward: 1, right: 0, jump: false, sprint: true, walk: false };
+    const crouched = createPlayerBody(half, 0, 0, 0);
+    steer(crouched, half, 0, { ...intent, crouch: true, crouchSpeed: 0.8 });
+    const crouchSpeed = Math.hypot(crouched.vel[0], crouched.vel[2]) * half.blockSize;
+    const standing = createPlayerBody(half, 0, 0, 0);
+    steer(standing, half, 0, intent);
+    const standingSpeed = Math.hypot(standing.vel[0], standing.vel[2]) * half.blockSize;
+    expect(crouchSpeed).toBeLessThan(standingSpeed);
+  });
 });
 
 describe('raycast', () => {

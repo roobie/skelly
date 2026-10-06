@@ -180,7 +180,7 @@ const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
               <li data-sound-event=${sound.event}>
                 <code>${sound.event}</code> · <code>${sound.file}</code>
                 ${sound.sourceLabel ? html` · ${sound.sourceLabel}` : ''}<br />
-                ${sound.distanceMetres.toFixed(1)} m · ${sound.wallRuns} walls ·
+                ${sound.distanceMetres.toFixed(1)} m · ${sound.occluded ? 'muffled' : 'clear'} ·
                 LP ${sound.lowpassHz === null ? '—' : `${Math.round(sound.lowpassHz)} Hz`} ·
                 gain ${sound.gain.toFixed(3)} ·
                 ${sound.emittedAsNoise ? `noise ${sound.noiseRadiusMetres} m` : 'not noise'}
