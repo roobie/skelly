@@ -2,6 +2,7 @@
 read_if:
   - you're reviewing Slice 2 closure, its delivery, or its process lessons
   - you're planning Slice 3 from Slice 2's carried-forward work
+  - you're applying BR's decisions on the Slice 2 retrospective's process proposals
 ---
 
 # Slice 2 retrospective
@@ -96,10 +97,16 @@ The review rounds improved both code and evidence: examples include the non-vacu
 These are proposals for BR's decision, not settled process:
 
 1. **Keep the checklist live.** The lead could update the checklist issue at each milestone's merge with its evidence and carried-forward links, then use it as the source for the closure retrospective.
+   - **Decided (BR, 2026-10-06):** “accept” (06:54); on the mechanism, “yes, queue A” (06:56). See the “Slice checklist” section in `docs/PROCESS.md`.
 2. **Keep visual first looks before full engineering.** For buildings, foliage, lights, and other appearance-driven work, a rough in-game view could be a prerequisite to the full round; record BR's approved reference with the work item.
+   - **Decided (BR, 2026-10-06):** “as for #2 -> yes tiny visual spike first” (06:56).
 3. **Make slice boundaries explicit for playtest discoveries.** BR could continue directing discoveries into separately tracked features, while the slice plan names which adjacent changes are prerequisites, dependencies, or explicitly outside its exit gates.
+   - **Decided (BR, 2026-10-06):** “accept / every discovery must get tagged with slice-blocker or deferred-blocker or nice-to-have / if that rubric makes sense?” (06:58); “i agree on the refinements, but the labels themselves - are they well-designed? I mean, we could use just 'blocker' and 'not-blocker' and tag also with a slice or version tag” (07:01); “yes, do so” (07:02).
 4. **Pair review counts with fix causes.** A short category for each FIX round—behavior, persistence, test hygiene, visual feedback, or integration—could show whether briefs, ownership boundaries, or test design need improvement, without rewarding fewer reviews as an end in itself.
+   - **Decided (BR, 2026-10-06):** “proposal 4: what's the overhead vs gain?” and “accept” (07:04).
 5. **Close test-budget overruns with evidence.** The slice lead could ask the assigned owner to profile the default suite, remove redundant work without losing coverage, and record the resulting budget before declaring closure.
+   - **Decided (BR, 2026-10-06):** “p5 accept” (07:06).
 6. **Keep incident status separate from product status.** If hosted CI is unavailable at closure, the lead could leave the PRs open and report the blocked gate explicitly, then finish merge and checklist closure only after the required runs are green.
+   - **Decided (BR, 2026-10-06):** “p6: accept” (07:09).
 
-BR's decision on these proposals remains open.
+BR decided all six proposals on 2026-10-06. The standing rules are in `docs/PROCESS.md`; proposal 1's `Slice-Milestone:` mechanism is cued in its “Slice checklist” section.
