@@ -639,9 +639,19 @@ export const opticEyeRelief: Rule = {
       if (optic.eyeReliefU === undefined) {
         continue;
       }
-      const stock = placedParts(r, 'stock').find(
-        ([part, def]) => def.axes.some((axis) => axis.kind === 'cheek') && r.placed.has(part),
-      );
+      const stocks = placedParts(r, 'stock');
+      // Compact optics can serve stockless designs; long-eye-relief optics need a cheek datum.
+      if (stocks.length === 0) {
+        if (optic.eyeReliefU > 4) {
+          issues.push({
+            rule: 'optic-eye-relief',
+            message: `${sight} (${optic.id}) needs a stock with a named cheek datum.`,
+            parts: [sight],
+          });
+        }
+        continue;
+      }
+      const stock = stocks.find(([part, def]) => def.axes.some((axis) => axis.kind === 'cheek') && r.placed.has(part));
       const sightTransform = r.placed.get(sight)!;
       if (!stock) {
         issues.push({

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type Body, bodyOverlapsBlock, stepBody } from '../src/core/physics.ts';
 import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
+import { createPlayerBody, movementPace, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { StepOffset } from '../src/render/stepOffset.ts';
 
 const metre = makeScale(1);
@@ -177,6 +177,28 @@ describe('steer', () => {
     expect(speed({ sprint: false, walk: true })).toBeCloseTo(PLAYER.walk);
     expect(speed({ sprint: false, walk: false })).toBeCloseTo(PLAYER.jog);
     expect(speed({ sprint: true, walk: true })).toBeCloseTo(PLAYER.sprint);
+  });
+
+  it('stacks crouch, injury and ready movement factors', () => {
+    const readyFactor = 0.6;
+    const crouchSpeed = 0.8;
+    const intent = { forward: 1, right: 0, jump: false, sprint: false, walk: false, crouch: true };
+    const paceOptions = { grams: 0, handling: false, movementSpeed: 1, crouchSpeed };
+    const speeds = [
+      movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: 1 }),
+      movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: readyFactor }),
+      movementPace(intent, { ...paceOptions, readyMovementFactor: 1 }),
+      movementPace(intent, { ...paceOptions, readyMovementFactor: readyFactor }),
+      movementPace(intent, { ...paceOptions, movementSpeed: 0.5, readyMovementFactor: readyFactor }),
+    ].map((paced) => {
+      const body = createPlayerBody(half, 0, 0, 0);
+      steer(body, half, 0, paced);
+      return Math.hypot(body.vel[0], body.vel[2]) * half.blockSize;
+    });
+    expect(speeds[3]).toBeCloseTo(crouchSpeed * readyFactor);
+    expect(speeds[3]).toBeLessThan(speeds[1]!);
+    expect(speeds[3]).toBeLessThan(speeds[2]!);
+    expect(speeds[4]).toBeCloseTo(speeds[3]! * 0.5);
   });
 
   it('slows the same sprint intent while crouching', () => {

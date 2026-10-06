@@ -8,10 +8,12 @@ const mib = (bytes: number): string => f(bytes / MIB);
 
 export const SHAMBLER_HEADERS = [
   'N',
+  'Active / background',
   'Seed',
   'Actors',
   'Frame ms p50 / p95 / slow fraction',
-  'Zombie tick CPU ms p50 / p95',
+  'Active tick CPU ms p50 / p95',
+  'Background tick CPU ms p50 / p95',
   'Actor sync CPU ms p50 / p95',
   'Render-submit ms p50 / p95',
   'Draws / k tris',
@@ -40,10 +42,12 @@ const actorsOf = (r: ShamblerRunResult): ActorRenderer => r.actors ?? 'boxes';
 
 export const shamblerResultRow = (r: ShamblerRunResult): string[] => [
   String(r.n),
+  r.active === undefined || r.background === undefined ? '–' : `${r.active} / ${r.background}`,
   String(r.seed),
   actorsOf(r),
   `${f(r.frame.msMedian)} / ${f(r.frame.msP95)} / ${pct(r.frame.slowFraction)}`,
   `${f(r.zombieTick.median)} / ${f(r.zombieTick.p95)}`,
+  r.backgroundTick ? `${f(r.backgroundTick.median)} / ${f(r.backgroundTick.p95)}` : '–',
   r.actorSync ? `${f(r.actorSync.median)} / ${f(r.actorSync.p95)}` : '–',
   `${f(r.renderSubmit.median)} / ${f(r.renderSubmit.p95)}`,
   r.draws === undefined || r.triangles === undefined ? '–' : `${f(r.draws, 0)} / ${f(r.triangles / 1000, 0)}`,
@@ -55,7 +59,7 @@ export const shamblerSummary = (runs: readonly ShamblerRunResult[]): string =>
   runs
     .map(
       (r) =>
-        `N=${r.n} seed=${r.seed} actors=${actorsOf(r)}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; ZombieSystem ${f(r.zombieTick.median)}/${f(r.zombieTick.p95)} ms p50/p95; actor sync ${r.actorSync ? `${f(r.actorSync.median)}/${f(r.actorSync.p95)}` : '–'} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
+        `N=${r.n} active/background=${r.active ?? '–'}/${r.background ?? '–'} seed=${r.seed} actors=${actorsOf(r)}: frame ${f(r.frame.msMedian)}/${f(r.frame.msP95)} ms p50/p95, ${pct(r.frame.slowFraction)} >18 ms; active tick ${f(r.zombieTick.median)}/${f(r.zombieTick.p95)} ms p50/p95; background tick ${r.backgroundTick ? `${f(r.backgroundTick.median)}/${f(r.backgroundTick.p95)}` : '–'} ms p50/p95; actor sync ${r.actorSync ? `${f(r.actorSync.median)}/${f(r.actorSync.p95)}` : '–'} ms p50/p95; render-submit ${f(r.renderSubmit.median)}/${f(r.renderSubmit.p95)} ms p50/p95; holes ${r.holesMax} max (${pct(r.holeFraction)} frames)${r.interrupted ? ' [INTERRUPTED]' : ''}`,
     )
     .join(' | ');
 

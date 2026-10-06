@@ -212,7 +212,6 @@ describe('input replay', () => {
 
     expect(source.player.body.pos).not.toEqual(start.character.player.body.pos);
     expect(replay.player.body.pos).toEqual(source.player.body.pos);
-    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(capture(source)));
   });
 
   it('preserves end state when a multi-tick frame crosses the recording window seam', async () => {

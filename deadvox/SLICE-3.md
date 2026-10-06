@@ -115,12 +115,69 @@ Paperwork; no game code.
 > 3.1, 1. for now, yes, firearms combat is simply firearms renamed - but longer term, firerams combat is different from how well you shoot with e.g. a shotgun or something else. Ie. we will have skills for each main type of firearm, e.g. shotguns, rifles, smgs, pistols etc
 > 3.1, 2. it works like this: press-and-hold right mouse -> readies the weapon (hip fire), while in this state a toggle button (default, mouse-3) toggles whether ADS or not
 
-**In:** Rename the current `firearms` skill to firearms combat for now and add melee combat. The former governs the ready gait and related handling; the latter governs blocking. Activities train the skills they affect, with tiers so simple activities cannot train indefinitely. Readying takes time that improves with skill. Holding right mouse readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, a rebindable toggle (default: mouse-3, the middle button) switches ADS; ADS works through iron sights and optics. Melee requires en-garde; blocking also requires backing off with S and succeeds according to skill, per #267. The ready gait is its own speed factor, not the C crouch.
+**BR, 2026-10-06 13:29, second look:**
 
-**Saves:** Character skill levels and practice use the existing character snapshot and fingerprint (`src/core/character.ts`, `Character.awardPractice`); renaming a skill changes that saved mapping, and melee combat adds its own progression. Held ready, ADS and en-garde inputs are transient. If raise progress can change a shot or block, its simulation-time progress belongs in the existing saved action/handling owner.
-**Tests:** an unreadied firearm cannot fire and makes no refusal sound; a ready firearm can fire but never while sprinting; raising takes simulation time and improves monotonically with skill; ADS toggles while ready and works with iron sights and optics; en-garde plus S can block according to skill, while en-garde alone cannot; activities stop training at their tier. Save/load preserves skill progression and any active simulation-time raise.
+> as for the 3.1 ADS : the AK shows only the front sight , so the camera needs adjustment backwards a slight bit - but also, I think the AK actually don't have a notch (it's a single pin too, what i can see - we need to fix this too)
+>
+> but then the AR scope ADS is not good at all - but i can't take a screenshot because the view resets when I pause during ADS
+
+**BR, 2026-10-06 14:34, AK sights:**
+
+> the sight's post is not on the actual/virtual cross hair
+>
+> the sides of the notch won't work - they must be much smaller - like a real AK notch - maybe 2 mm or so?
+
+**BR, 2026-10-06 18:36, AK receiver:**
+
+> the AK still had the rear sight on top of a post
+> this is not how it should be - compare a standard AKM's rear sight
+>
+> i wanted the received as a whole lifted so that the bore in relation to the receiver goes down by a margin great enough for the rear sight to align with the front without being lifted on a pin
+
+`gungen/src/gun/parts.ts`, `akRearSight`, uses a finer sight-only grain because the shared gun grid cannot represent a 2 mm notch. The rear sight's broad block seats on the receiver; its notch datum and front-post aim line remain aligned while the receiver-mounted furniture follows the raised receiver. The barrel, bore axis, handguard and front sight remain fixed.
+
+**BR, 2026-10-06 13:32, AR scope:**
+
+> the issue with the AR scope (I'm guessing scopes in general) is that the aperture is like 30px diameter whereas the tube fills the screen
+
+**BR, 2026-10-06 13:57, on the optic window:**
+
+> you should _mainly_ see through the optic
+>
+> but it is shown as if looking through a pipe
+
+The optic window shows the 1× scene through a large ocular aperture; the pipe interior is hidden while ADS, with the ring framing the view. Its fill is derived from exported ocular geometry and a content tuning so later 3.7 magnification can use the same window. Keep the eye at the sight position BR accepted as “somewhat okay”; do not move the AR eye far from its 4dbc6e37 ADS placement. Iron sights follow a separate rule: the AK rear notch and front post must frame each other above the receiver cover, with the eye behind the leaf and the post tip at the screen-centre aim ray. Holding F2 for debug controls must preserve ready and ADS so F2+M can freeze that pose.
+
+**BR's #275 answers (2026-10-06, verbatim):**
+
+At 09:57, answering how crafting activity tiers should be set:
+
+> choose: a. worked out from the required level (my recommendation);
+
+At 09:57, answering whether reading should train skills:
+
+> no, not now - we might open up this again for discussion
+
+At 10:04, answering whether practice above an activity's tier is kept or dropped:
+
+> dropped
+
+At 13:35, answering the crafting tier offset and how crouch and ready movement combine (option c was “crouch pace × the ready fraction”):
+
+> as for crafting: each recipe: its required level + 1
+>
+> (c) both stack
+
+At 13:33, answering whether the ADS toggle should be rebindable now or fixed to mouse-3:
+
+> 2. rebindable now
+
+**In:** Rename the current `firearms` skill to firearms combat (FC) and add melee combat (MC). FC governs the ready gait and related handling; MC governs blocking. Every practice source supplies an activity tier, and only that activity's excess is dropped when the skill reaches its tier. The current activity-tier starting values in base content are proposals for first-look play, not BR rulings. Crafting derives its tier from the recipe's required level plus the single offset in the crafting skill's training entry, capped at ordinary expert level; validation rejects craftable content when that offset is missing. BR's 13:35 ruling set that offset to required level + 1. Reading trains nothing. Activities train the skills they affect, with harder activities able to train higher. Readying takes simulation time that improves with FC. The rebindable `stance.ready` action defaults to right mouse and readies a firearm for hip fire; its unreadied muzzle points down and its ready pose brings the muzzle forward, with no HUD mode indicator. While ready, the rebindable `aim.ads-toggle` action (middle-mouse default) switches ADS and accepts keyboard or pointer bindings without Ctrl/Cmd modifiers. ADS works with iron sights and optics. Optic ADS shows the scene through a content-sized ocular window rather than down a pipe; iron-sight ADS keeps the rear notch and front post visible together. Melee requires en-garde; blocking also requires backing off with S and succeeds according to MC, per #267. Crouch pace and the ready movement factor both stack.
+
+**Saves:** Character skill levels and practice use the existing character snapshot and fingerprint (`src/core/character.ts`, `Character.awardPractice`); renaming a skill changes that saved mapping, and melee combat adds its own progression. Held ready, ADS and en-garde inputs are transient. Partial firearm raise progress stays with the saved firearm because it determines when that weapon can fire (`src/core/firearmState.ts`, `FirearmState`).
+**Tests:** an unreadied firearm cannot fire and makes no refusal sound; a ready firearm can fire but never while sprinting; raising takes simulation time and improves monotonically with skill; ADS toggles while ready and works with iron sights and optics; en-garde plus S can block according to skill, while en-garde alone cannot; activities stop training at their tier and discard excess practice. Save/load preserves skill progression and active raise progress.
 **Done when:** the ready and en-garde states are visible in the held pose, input rules behave as ruled, and skill training respects activity tiers.
-**First look / BR approval:** ready and ADS, including iron-sight ADS and the raised/unraised weapon poses.
+**First look / BR approval:** ready and ADS, including iron-sight ADS, raised/unraised poses, an AK rear notch framing the front post, and an optic aperture that reads large and centred with the tube only framing it. The optic's magnification and blurred 1× surround remain in 3.7.
 
 ### 3.2 Firearms for real
 
@@ -150,7 +207,7 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 
 > they should be saved
 
-**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. The existing firearms skill's aim-variance, reload and rack effects carry into firearms combat; later, shooting proficiency splits by firearm archetype. A firearm shot's recoil is carried in from d80; d78's impact trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
+**In:** Real magazines loaded round by round, ammunition and rifle damage by body region/calibre. AR and AK are loot only at the military site placed by 3.11. The existing firearms-combat skill's aim-variance, reload and rack effects carry forward; later, shooting proficiency splits by firearm archetype. A firearm shot's recoil is carried in from d80; d78's impact trace owns visible world impacts. Body marks are desired where practical. Spent casings and body-part consequences should make firing feel consequential, without making cosmetic impact marks authoritative damage.
 **Saves:** Magazine contents and any new chamber/action state that determines the next shot are saved with their owning items. Spent casings are world state: save where they fall and preserve them through save/load (BR, 2026-10-05 22:17: “they should be saved”). Body damage is owned and saved by 3.4. BR ruled that impact marks and dust are presentation, not simulation damage or save state (see [DESIGN.md](DESIGN.md), “Shot impacts”).
 **Tests:** loading and firing conserve rounds across magazine, chamber and weapon; a round resolves against the body region it actually intersects and uses firearm/calibre data; save/load preserves the next shot, ammunition and spent-casing positions; changing impact presentation does not change damage. The impact presentation builds on `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, and `src/render/shotTrace.ts`, `traceShot`. Test military loot reachability through the authored site rather than pinning a loot count.
 **Done when:** magazines can be loaded one round at a time, rifle ammunition and weapons come from the map's military source, shots damage the appropriate region, and save round trips preserve ammunition and spent casings.
@@ -353,7 +410,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 ## Carried in
 
 - **d84, shamblers beeline (#279):** the beeline movement brain every zombie milestone uses; attention selection is unchanged. It replaces the proposed flow-field dependency; #244's route follow-up is obsolete under this direction.
-- **d83, skills and legendary:** the 0–10 skill scale and legendary level feed 3.1; #275 supplies activity tiers and the remaining training questions.
+- **d83, skills and legendary:** the 0–10 skill scale and legendary level feed 3.1; #275 rules activity tiers, crafting practice, reading and dropped excess.
 - **d80 recoil and d78 impacts:** their firearm-owned recoil, aim control and shared shot-trace work feed 3.2.
 - **Authored sites:** the Tiled site / ASCII interior pipeline from #196 feeds 3.11.
 
@@ -361,7 +418,9 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 
 Only questions BR left open; don't infer answers from implementation or old proposals.
 
-- **#275 — practice tiers:** what tiers apply to existing practice sources such as crafting and reading, and is practice above an activity's tier kept or dropped?
+- **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
+- **#181 beats 4–6:** detail the larger workshop, medical site and military site one beat per turn. BR's earlier answers settle the order and purpose, but not these beats' contents and layouts.
+- **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
 - **#308 — boss mob:** the design questions remain open; see 3.8.
 
 ## Definition of done

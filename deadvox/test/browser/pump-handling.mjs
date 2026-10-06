@@ -8,7 +8,6 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
-import { handlingWaitMilliseconds } from './handling-budget.ts';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
@@ -164,6 +163,7 @@ try {
   }, ids.gun);
   assert.deepEqual(rangeStock, { firearm: true, compatibleRound: true, compatibleBox: true });
   const select = async (uid) => {
+    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
     const rows = await page
       .locator('#inventory [data-uid]')
       .evaluateAll((items) => items.map((item) => item.dataset.uid));
@@ -175,6 +175,7 @@ try {
         () => document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null,
       );
       await pressAction(page, 'inventory.next');
+      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
       // Serialize key input with the selection's next-frame DOM update.
       try {
         await page.waitForFunction(
@@ -193,14 +194,38 @@ try {
     throw new Error(`Native arrows cannot select ${uid}; visible rows: ${rows.join(',')}`);
   };
   const handlingWaits = [];
-  const waitForWork = async (predicate, argument, futureSeconds = 0) => {
-    const work = await page.evaluate(() => {
-      const test = globalThis.pumpHandlingTest;
-      return { seconds: test.session.queue.remaining, frameP95Ms: test.getFramePacing().p95 };
-    });
-    const timeout = handlingWaitMilliseconds(work.seconds + futureSeconds, work.frameP95Ms);
-    handlingWaits.push({ ...work, futureSeconds, timeout });
-    await page.waitForFunction(predicate, argument, { timeout });
+  const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
+    const result = await page.evaluate(
+      ({ condition, uid, futureSeconds }) => {
+        const { session } = globalThis.pumpHandlingTest;
+        const complete = () => {
+          const item = session.inventory.itemByUid(uid);
+          switch (condition) {
+            case 'rightHand':
+              return !session.queue.busy && session.inventory.hands.right?.uid === uid;
+            case 'itemGone':
+              return item === undefined;
+            case 'tubeLoaded':
+              return (item?.firearm?.tube?.length ?? 0) > 0;
+            case 'chamberRound':
+              return !session.queue.busy && item?.firearm?.chamber === 'round';
+            default:
+              throw new Error(`Unknown simulation-work condition: ${condition}`);
+          }
+        };
+        const seconds = session.queue.remaining + futureSeconds;
+        const frameLimit = Math.max(1, Math.ceil(seconds / 0.1) + 2);
+        let frames = 0;
+        while (!complete() && frames < frameLimit) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        return { complete: complete(), seconds, frames, queueBusy: session.queue.busy };
+      },
+      { condition: wantedCondition, uid: wantedUid, futureSeconds: extraSeconds },
+    );
+    handlingWaits.push(result);
+    assert.equal(result.complete, true, `simulation work did not finish deterministically: ${JSON.stringify(result)}`);
   };
   const waitForHands = async (uid) => {
     const admission = await page.evaluate((wanted) => {
@@ -221,10 +246,7 @@ try {
       admission.right === uid || admission.queued,
       `H must admit the intended right-hand move: ${JSON.stringify(admission)}`,
     );
-    await waitForWork((wanted) => {
-      const s = globalThis.pumpHandlingTest.session;
-      return !s.queue.busy && s.inventory.hands.right?.uid === wanted;
-    }, uid);
+    await waitForWork('rightHand', uid);
   };
   const observe = () =>
     page.evaluate((selectedIds) => {
@@ -243,6 +265,7 @@ try {
         jobs: session.queue.jobs.length,
         rest: session.rest.action?.kind ?? null,
         fov: camera.fov,
+        ads: globalThis.pumpHandlingTest.input.aimingDownSights,
         paused: session.sim.paused,
         dead: session.sim.dead ?? null,
         sounds: globalThis.pumpHandlingTest.audio.heardSounds,
@@ -267,7 +290,7 @@ try {
     const s = globalThis.pumpHandlingTest.session;
     return !s.inventory.itemByUid(uid) || s.queue.jobs.some((job) => job.jobType === 'item.unpack');
   }, ids.box);
-  await waitForWork((uid) => !globalThis.pumpHandlingTest.session.inventory.itemByUid(uid), ids.box);
+  await waitForWork('itemGone', ids.box);
   const unpacked = await observe();
   assert.equal(unpacked.loose, ids.payload);
   assert.equal(unpacked.hand, null);
@@ -315,10 +338,7 @@ try {
     // One completed insertion is enough for native gesture/rack/fire integration.
     // Full-tube repeat/conservation stays in pumpShotgun.test.ts and reloadInput.test.ts;
     // do not spend a tuning-derived full magazine of simulation work in the smoke.
-    await waitForWork(
-      (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.tube.length > 0,
-      ids.gun,
-    );
+    await waitForWork('tubeLoaded', ids.gun);
   } finally {
     await releaseReload();
   }
@@ -347,14 +367,44 @@ try {
     (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.mode === 'hand',
     ids.gun,
   );
-  await waitForWork((uid) => {
-    const s = globalThis.pumpHandlingTest.session;
-    return !s.queue.busy && s.inventory.itemByUid(uid).firearm.chamber === 'round';
-  }, ids.gun);
+  await waitForWork('chamberRound', ids.gun);
   const racked = await observe();
   assert.equal(racked.loose, loaded.loose);
   assert.equal(racked.gun.tube.length, loaded.gun.tube.length - 1);
   assert.equal(racked.rest, null);
+  const shotsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'shotgun_blast').length;
+  const refusalsBeforeUnreadyClick = racked.sounds.filter((sound) => sound.event === 'player_nope').length;
+  await page.mouse.click(640, 450);
+  await page.evaluate(() => globalThis.pumpHandlingTest.session.frame(0.1));
+  const unreadyClick = await observe();
+  assert.equal(unreadyClick.gun.chamber, racked.gun.chamber, 'unreadied click leaves the chamber unchanged');
+  assert.equal(unreadyClick.gun.tube.length, racked.gun.tube.length, 'unreadied click spends no shell');
+  assert.equal(
+    unreadyClick.sounds.filter((sound) => sound.event === 'shotgun_blast').length,
+    shotsBeforeUnreadyClick,
+    'unreadied click makes no firearm sound',
+  );
+  assert.equal(
+    unreadyClick.sounds.filter((sound) => sound.event === 'player_nope').length,
+    refusalsBeforeUnreadyClick,
+    'unreadied click makes no refusal sound',
+  );
+  await page.mouse.down({ button: 'right' });
+  const raiseDuration = await page.evaluate((uid) => {
+    const test = globalThis.pumpHandlingTest;
+    test.session.frame(1 / 60);
+    return test.session.inventory.itemByUid(uid).firearm.readying.duration;
+  }, ids.gun);
+  await page.evaluate((duration) => globalThis.pumpHandlingTest.session.frame(duration), raiseDuration);
+  assert.equal(
+    await page.evaluate((uid) => globalThis.pumpHandlingTest.session.firearms.isReady(uid), ids.gun),
+    true,
+    'held stance becomes ready after simulation time advances',
+  );
+  await page.mouse.click(640, 450, { button: 'middle' });
+  const aimed = await observe();
+  assert.equal(aimed.ads, true, 'middle mouse toggles ADS while the firearm is ready');
+  assert.equal(aimed.fov, ids.fov, 'ADS aligns the sight instead of relying on zoom');
   await page.mouse.click(640, 450);
   await page.waitForFunction(
     (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.chamber === 'case',
@@ -365,7 +415,12 @@ try {
   assert.equal(fired.gun.tube.length, racked.gun.tube.length);
   assert.equal(fired.loose, racked.loose);
   assert.equal(fired.dead, null);
-  assert.equal(fired.fov, ids.fov, 'handling never changes the camera field of view');
+  assert.equal(fired.ads, true, 'ADS remains active while the firearm is raised');
+  assert.equal(fired.fov, ids.fov);
+  await page.mouse.up({ button: 'right' });
+  const lowered = await observe();
+  assert.equal(lowered.ads, false, 'releasing the stance exits ADS');
+  assert.equal(lowered.fov, ids.fov);
   assert.deepEqual(errors, []);
   await page.waitForFunction(() => globalThis.pumpDecoded.some((source) => source.event === 'shotgun_blast'));
   const decoded = await page.evaluate(() =>

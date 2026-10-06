@@ -84,7 +84,7 @@ import {
 } from './inputReplay.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
-import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import { shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -307,6 +307,49 @@ export const startPlay = (
       worldReady: false,
     };
   };
+  let automaticFireUid: number | undefined;
+  const automaticFireWeapon = (): Item | undefined => {
+    if (!config.debug || debugTools?.buildOn || queue.busy) {
+      return undefined;
+    }
+    const action = selectPrimaryAction(inventory);
+    if (action.kind !== 'firearm' || registry.items.get(action.item.type)?.firearm?.pump) {
+      return undefined;
+    }
+    return action.item;
+  };
+  const updateAutomaticFireUid = (automaticItem: Item | undefined, pressed: boolean): void => {
+    if (pressed) {
+      automaticFireUid =
+        automaticItem && isFirearmReady(automaticItem.uid) && !session.sprinting ? automaticItem.uid : undefined;
+    }
+  };
+  const readyAutomaticWeapon = (automaticItem: Item | undefined): Item | undefined =>
+    automaticItem && automaticItem.uid === automaticFireUid && isFirearmReady(automaticItem.uid) && !session.sprinting
+      ? automaticItem
+      : undefined;
+  const advanceAutomaticTrigger = (time: number, pressed: boolean, triggerHeld: boolean, weapon?: Item): void => {
+    const acceptedPress = pressed && weapon !== undefined;
+    const deadlines = firearmTrigger.advance(
+      time,
+      triggerWeapon(weapon, acceptedPress),
+      acceptedPress,
+      triggerHeld && automaticFireUid !== undefined,
+    );
+    if (weapon) {
+      for (const deadline of deadlines) {
+        fireDebugWeapon(weapon, deadline);
+      }
+    }
+  };
+  const handleHeldDominantUse = (time: number, pressed: boolean, triggerHeld: boolean): void => {
+    const automaticItem = automaticFireWeapon();
+    updateAutomaticFireUid(automaticItem, pressed);
+    advanceAutomaticTrigger(time, pressed, triggerHeld, readyAutomaticWeapon(automaticItem));
+    if (!triggerHeld) {
+      automaticFireUid = undefined;
+    }
+  };
   const session = createSession({
     registry,
     handedness: config.debugHandedness ?? options.handedness,
@@ -325,6 +368,8 @@ export const startPlay = (
       active: () => Boolean(options.replay) || (input.locked && !input.menuPointer),
       intent: () => input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
+      readyHeld: () => input.rightMouseHeld,
+      blocking: () => shouldPlayerBlock(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
       consumeCrouchToggle: () => input.consumeCrouchToggle(),
@@ -348,32 +393,17 @@ export const startPlay = (
           }
           return;
         }
-        const action = selectPrimaryAction(inventory);
-        const weapon =
-          config.debug &&
-          !debugTools?.buildOn &&
-          !queue.busy &&
-          action.kind === 'firearm' &&
-          !registry.items.get(action.item.type)?.firearm?.pump
-            ? action.item
-            : undefined;
-        const deadlines = firearmTrigger.advance(time, triggerWeapon(weapon, pressed), pressed, triggerHeld);
-        if (weapon) {
-          for (const deadline of deadlines) {
-            fireDebugWeapon(weapon, deadline);
-          }
-        }
+        handleHeldDominantUse(time, pressed, triggerHeld);
       },
       automaticFireHeld: () => {
-        const action = selectPrimaryAction(inventory);
-        return (
+        const weapon = automaticFireWeapon();
+        return Boolean(
           (replaySample?.intent.useDominantHeld ?? input.dominantUseHeld) &&
-          !sim.body.actionRefusal &&
-          config.debug &&
-          !debugTools?.buildOn &&
-          !queue.busy &&
-          action.kind === 'firearm' &&
-          !registry.items.get(action.item.type)?.firearm?.pump
+            !sim.body.actionRefusal &&
+            weapon &&
+            automaticFireUid === weapon.uid &&
+            isFirearmReady(weapon.uid) &&
+            !session.sprinting,
         );
       },
       adjustPitch: (delta) => {
@@ -445,6 +475,28 @@ export const startPlay = (
     nameOf,
     search,
   } = session;
+  const isFirearmReady = (uid: number): boolean =>
+    input.rightMouseActionHeld &&
+    input.locked &&
+    !input.menuPointer &&
+    !compression.locksInput &&
+    firearms.isReady(uid);
+  const isAimingDownSights = (): boolean => {
+    const action = selectPrimaryAction(inventory);
+    return (
+      input.aimingDownSights &&
+      input.rightMouseActionHeld &&
+      input.locked &&
+      !input.menuPointer &&
+      action.kind === 'firearm' &&
+      isFirearmReady(action.item.uid) &&
+      !session.sprinting
+    );
+  };
+  input.setAimingDownSightsAllowed(() => {
+    const action = selectPrimaryAction(inventory);
+    return action.kind === 'firearm' && isFirearmReady(action.item.uid) && !session.sprinting;
+  });
   const { compression } = sim;
   const unpacking = new Unpacking(inventory, queue, feet);
   if (session.restoredLook) {
@@ -1083,8 +1135,8 @@ export const startPlay = (
     return playContext();
   };
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
-  keyboardInput.cancelled = () => {
-    input.cancel();
+  keyboardInput.cancelled = (preservePointer) => {
+    input.cancel(preservePointer);
     cancelGlowstickCharge();
     quickbarInput.cancel();
     hintToggleInput.cancel();
@@ -1131,6 +1183,12 @@ export const startPlay = (
   };
   const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
     switch (action) {
+      case 'stance.ready':
+        input.rightMouseHeld = true;
+        break;
+      case 'aim.ads-toggle':
+        input.toggleAimingDownSights();
+        break;
       case 'movement.walk-toggle':
         input.walking = !input.walking;
         break;
@@ -1165,6 +1223,10 @@ export const startPlay = (
     assignQuickbarIfUnlocked(slot, at);
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'stance.ready') {
+      input.rightMouseHeld = false;
+      input.aimingDownSights = false;
+    }
     if (action === 'firearm.reload') {
       input.reload.keyUp(at);
     }
@@ -1595,6 +1657,9 @@ export const startPlay = (
     const fired = firearms.fire({
       aimFrame: aim.frame,
       debugMode: config.debug,
+      ready: isFirearmReady(item.uid),
+      aimingDownSights: isAimingDownSights(),
+      sprinting: session.sprinting,
       item,
       feet: feet(),
       eye: eye(),
@@ -1643,6 +1708,18 @@ export const startPlay = (
     return true;
   };
 
+  const shouldPlayerBlock = (): boolean => {
+    const action = selectPrimaryAction(inventory);
+    const enGarde = shouldEnterMeleeReady({
+      rightMouseHeld: input.rightMouseActionHeld && input.locked && !input.menuPointer,
+      meleeWeaponHeld: action.kind === 'melee',
+      handsEmpty: !(inventory.hands.right || inventory.hands.left),
+      debugBuild: debugTools?.buildOn ?? false,
+      inputLocked: compression.locksInput,
+    });
+    return shouldBlockFromEnGarde(enGarde, keyboardInput.held('movement.back'));
+  };
+
   const activateIgniter = (item: Item, hand: HandSide): void => {
     const target = ignitionTargetForHand(inventory, hand);
     const usable = target ?? (registry.items.get(item.type)?.light ? item : undefined);
@@ -1651,6 +1728,17 @@ export const startPlay = (
       return;
     }
     showRefusal(primaryActionHint(registry, item), sim.time);
+  };
+  const fireHeldItem = (item: Item): void => {
+    if (!isFirearmReady(item.uid) || session.sprinting || fireDebugWeapon(item, sim.time)) {
+      return;
+    }
+    const firearm = registry.items.get(item.type)?.firearm;
+    const refusal =
+      config.debug || firearm?.pump
+        ? (firearms.fireReason(item.uid) ?? 'Firearm is not ready')
+        : 'Firearms can only be fired in debug mode';
+    showRefusal(refusal, sim.time);
   };
   performHandUse = (hand: 'right' | 'left') => {
     if (sim.body.actionRefusal) {
@@ -1676,17 +1764,9 @@ export const startPlay = (
       case 'use':
         refusalReason(survival.use(action.item));
         return;
-      case 'firearm': {
-        if (!fireDebugWeapon(action.item, sim.time)) {
-          showRefusal(
-            config.debug || registry.items.get(action.item.type)?.firearm?.pump
-              ? (firearms.fireReason(action.item.uid) ?? 'Firearm is not ready')
-              : 'Firearms can only be fired in debug mode',
-            sim.time,
-          );
-        }
+      case 'firearm':
+        fireHeldItem(action.item);
         return;
-      }
       case 'fists':
         swing(action.hand);
         return;
@@ -1894,7 +1974,21 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
-    view.updateHeld(dt, pose, survival.lit, { firearms: firearms.frames(), aim: aim.frame, job: queue.jobs[0] });
+    const selected = selectPrimaryAction(inventory);
+    const readiness =
+      selected.kind === 'firearm' && input.rightMouseActionHeld && input.locked && !input.menuPointer
+        ? {
+            uid: selected.item.uid,
+            progress: firearms.readyProgress(selected.item.uid),
+            aimingDownSights: isAimingDownSights(),
+          }
+        : undefined;
+    view.updateHeld(dt, pose, survival.lit, {
+      firearms: firearms.frames(),
+      ...(readiness === undefined ? {} : { readiness }),
+      aim: aim.frame,
+      job: queue.jobs[0],
+    });
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
@@ -2043,6 +2137,7 @@ export const startPlay = (
       calendar: sim.calendar,
       time: sim.time,
       lastZombieStep: session.lastZombieStep,
+      lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,
       zombies: zombieStore,

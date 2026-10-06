@@ -1,7 +1,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Character, dominantSide, offSide, practiceForNextLevel } from '../src/core/character.ts';
+import {
+  Character,
+  dominantSide,
+  offSide,
+  practiceForNextLevel,
+  SKILL_LEVEL_LEGENDARY,
+} from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { CraftCommands } from '../src/core/craftCommands.ts';
 import { craftActionHooks } from '../src/core/craftWork.ts';
@@ -47,7 +53,7 @@ const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 describe('live craft commands', () => {
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
-    r.character.awardPractice('crafting', practiceForNextLevel(0));
+    r.character.awardPractice('crafting', practiceForNextLevel(0), SKILL_LEVEL_LEGENDARY);
     const target = r.inventory.create('crowbar', 1, 0.5);
     for (const item of [
       target,
@@ -265,7 +271,7 @@ describe('live craft commands', () => {
     const work = r.inventory.hands.right!;
     r.sim.actions.stop();
     for (let level = 0; level < topSkill; level += 1) {
-      r.character.awardPractice(definition.disassembly!.skill, practiceForNextLevel(level));
+      r.character.awardPractice(definition.disassembly!.skill, practiceForNextLevel(level), SKILL_LEVEL_LEGENDARY);
     }
     expect(r.character.skills[definition.disassembly!.skill]).toBe(topSkill);
     expect(r.commands.act(work.uid, 'continue')).toBeUndefined();

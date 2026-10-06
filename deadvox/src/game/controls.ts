@@ -9,7 +9,11 @@ export const controlsCardRows = (registry: BindingRegistry = inputBindings) => [
       keys: registry.label(binding.id),
       action: `${binding.description} (${binding.contexts.join(', ')})`,
     })),
-  ...POINTER_ACTIONS.map((action) => ({ id: action.id, keys: action.label, action: action.description })),
+  ...POINTER_ACTIONS.map((action) => ({
+    id: action.id,
+    keys: registry.binding(action.id) ? registry.label(action.id) : action.label,
+    action: action.description,
+  })),
   ...NATIVE_INPUTS.map((native) => ({
     id: `browser.${native.code}`,
     keys: native.code,

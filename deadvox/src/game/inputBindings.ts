@@ -20,6 +20,7 @@ export interface Chord {
 }
 export interface Binding {
   readonly id: string;
+  readonly device?: 'keyboard' | 'pointer';
   readonly description: string;
   readonly contexts: readonly InputContext[];
   readonly commands: readonly { readonly id: string; readonly kind: PressKind }[];
@@ -72,6 +73,10 @@ const debugModifiedRow = (id: string, description: string, code: string, modifie
 });
 
 export const INPUT_BINDINGS: readonly Binding[] = [
+  row('stance.ready', 'Hold to ready a firearm or enter en-garde', world, ['Mouse2'], 'held-state', {
+    device: 'pointer',
+  }),
+  row('aim.ads-toggle', 'Toggle sights while firearm is ready', world, ['Mouse1'], 'press', { device: 'pointer' }),
   row('movement.forward', 'Move forward', moving, ['KeyW'], 'held-state'),
   row('movement.back', 'Move backward', moving, ['KeyS'], 'held-state'),
   row('movement.left', 'Move left', moving, ['KeyA'], 'held-state'),
@@ -192,6 +197,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
 export const POINTER_ACTIONS = [
   { id: 'hand.use-dominant', description: 'Use dominant hand', label: 'Left click' },
   { id: 'hand.off-instant', description: 'Instant off-hand use', label: 'Mouse 5' },
+  { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde', label: 'Right mouse' },
+  { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },
   { id: 'pointer.look', description: 'Look', label: 'Mouse' },
 ] as const;
 export const NATIVE_INPUTS = [
@@ -258,7 +265,9 @@ const otherCodes = new Set([
   ...NATIVE_INPUTS.map(({ code }) => code),
 ]);
 const physicalPattern = /^(?:Key[A-Z]|Digit[0-9]|Numpad[0-9]|F(?:[1-9]|1[0-9]|2[0-4]))$/;
-const physicalCode = (code: string): boolean => physicalPattern.test(code) || otherCodes.has(code);
+const pointerPattern = /^Mouse[0-4]$/;
+const physicalCode = (code: string): boolean =>
+  physicalPattern.test(code) || otherCodes.has(code) || pointerPattern.test(code);
 export const chordIssue = (chord: Chord): string | undefined => {
   if (!physicalCode(chord.code)) {
     return 'Unknown physical key';
@@ -408,7 +417,14 @@ const punctuation: Readonly<Record<string, string>> = {
   ArrowRight: '→',
 };
 const codeLabel = (code: string, layout?: ReadonlyMap<string, string>): string => {
-  const label = layout?.get(code) || punctuation[code];
+  const mouseLabels: Readonly<Record<string, string>> = {
+    Mouse0: 'Left mouse',
+    Mouse1: 'Middle mouse',
+    Mouse2: 'Right mouse',
+    Mouse3: 'Mouse 4',
+    Mouse4: 'Mouse 5',
+  };
+  const label = layout?.get(code) || punctuation[code] || mouseLabels[code];
   if (label) {
     return label;
   }
@@ -606,7 +622,7 @@ export class KeyboardInput {
   private removeListeners: (() => void) | undefined;
   context: () => KeyboardState = () => this.state;
   command: (command: InputCommand) => void = () => undefined;
-  cancelled: () => void = () => undefined;
+  cancelled: (preservePointer?: boolean) => void = () => undefined;
   escape: () => void = () => undefined;
   capture: ((chord: Chord | string | undefined) => void) | undefined;
   readonly registry: BindingRegistry;
@@ -628,15 +644,15 @@ export class KeyboardInput {
       this.state = next;
     }
   }
-  cancel(keepGate = false): void {
+  cancel(keepGate = false, preservePointer = false): void {
     for (const code of this.down) {
-      if (keepGate && this.active.get(code) === 'debug.gate') {
+      if ((keepGate && this.active.get(code) === 'debug.gate') || (preservePointer && code.startsWith('Mouse'))) {
         continue;
       }
       this.blocked.add(code);
       this.active.delete(code);
     }
-    this.cancelled();
+    this.cancelled(preservePointer);
   }
   release(event: KeyEvent): void {
     this.down.delete(event.code);
@@ -665,6 +681,29 @@ export class KeyboardInput {
       this.capture?.(capturedChord(event));
     }
     return !REFUSED_MODIFIERS.some((modifier) => event[flags[modifier]] || modifierCodes[event.code] === modifier);
+  }
+  pressPointer(
+    button: number,
+    event: Pick<MouseEvent, 'shiftKey' | 'altKey' | 'ctrlKey' | 'metaKey' | 'timeStamp'>,
+  ): boolean {
+    if (!Number.isInteger(button) || button < 0 || button > 4) {
+      return false;
+    }
+    return this.press({ code: `Mouse${button}`, ...event, repeat: false, isComposing: false });
+  }
+  releasePointer(button: number, timeStamp: number): void {
+    if (Number.isInteger(button) && button >= 0 && button <= 4) {
+      this.release({
+        code: `Mouse${button}`,
+        shiftKey: false,
+        altKey: false,
+        ctrlKey: false,
+        metaKey: false,
+        repeat: false,
+        isComposing: false,
+        timeStamp,
+      });
+    }
   }
   press(event: KeyEvent, text = false): boolean {
     this.sync();
@@ -727,7 +766,7 @@ export class KeyboardInput {
       if (!this.active.has(event.code)) {
         this.active.set(event.code, selectedBinding.id);
         if (selectedBinding.id === 'debug.gate') {
-          this.cancel(true);
+          this.cancel(true, true);
         }
       }
       this.command({ action: selectedBinding.id, phase: 'down', at: event.timeStamp });
@@ -752,6 +791,13 @@ export class KeyboardInput {
       }
     };
     const keyUp = (event: KeyboardEvent) => this.release(event);
+    const pointerCapture = (event: MouseEvent) => {
+      if (this.capture) {
+        this.pressPointer(event.button, event);
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
     const blur = () => this.cancel();
     const visibility = () => {
       if (document.hidden) {
@@ -776,6 +822,7 @@ export class KeyboardInput {
     };
     globalThis.addEventListener('keydown', keyDown, true);
     globalThis.addEventListener('keyup', keyUp, true);
+    globalThis.addEventListener('mousedown', pointerCapture, true);
     globalThis.addEventListener('blur', blur);
     globalThis.addEventListener('click', click, true);
     document.addEventListener('visibilitychange', visibility);
@@ -784,6 +831,7 @@ export class KeyboardInput {
     this.removeListeners = () => {
       globalThis.removeEventListener('keydown', keyDown, true);
       globalThis.removeEventListener('keyup', keyUp, true);
+      globalThis.removeEventListener('mousedown', pointerCapture, true);
       globalThis.removeEventListener('blur', blur);
       globalThis.removeEventListener('click', click, true);
       document.removeEventListener('visibilitychange', visibility);

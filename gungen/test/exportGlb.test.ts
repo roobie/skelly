@@ -419,6 +419,49 @@ describe('glb export: deadvox model entry', () => {
     }
   });
 
+  it('exports optic ocular diameter and eye relief with the sight line', () => {
+    const optic = exported(design('archetype-ar'));
+    const iron = exported(design('archetype-ak'));
+    expect(optic.modelEntry.sight?.eyeReliefMetres).toBeGreaterThan(0);
+    expect(optic.modelEntry.sight?.ocularDiameterMetres).toBeGreaterThan(0);
+    expect(iron.modelEntry.sight?.eyeReliefMetres).toBeGreaterThan(0);
+    expect(iron.modelEntry.sight?.ocularDiameterMetres).toBeUndefined();
+  });
+
+  it('aims the AK sight axis from the rear notch top edge to the front post tip', () => {
+    const out = exported(design('archetype-ak'));
+    const rearId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'ak-rear-sight')?.[0];
+    const frontId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'front-sight')?.[0];
+    if (!(rearId && frontId && out.modelEntry.sight)) {
+      throw new Error('AK design needs rear and front sights');
+    }
+    const rearAxis = out.resolved.defs.get(rearId)!.axes.find(({ kind }) => kind === 'sight')!;
+    const frontAxis = out.resolved.defs.get(frontId)!.axes.find(({ kind }) => kind === 'sight')!;
+    const eye = applyPoint(out.resolved.placed.get(rearId)!, rearAxis.origin);
+    const postTip = applyPoint(out.resolved.placed.get(frontId)!, frontAxis.origin);
+    const vector: Vec3 = [postTip[0] - eye[0], postTip[1] - eye[1], postTip[2] - eye[2]];
+    const magnitude = Math.hypot(...vector);
+    const expectedDirection: Vec3 = toFileAxes([vector[0] / magnitude, vector[1] / magnitude, vector[2] / magnitude]);
+    near(out.modelEntry.sight.direction, expectedDirection);
+
+    const rear = out.resolved.defs.get(rearId)!;
+    const front = out.resolved.defs.get(frontId)!;
+    const leaf = rear.solids.find(({ id }) => id === 'leaf-left')!;
+    const opposite = rear.solids.find(({ id }) => id === 'leaf-right')!;
+    const post = front.solids.find(({ id }) => id === 'post')!;
+    if (leaf.kind !== 'box' || opposite.kind !== 'box' || post.kind !== 'box') {
+      throw new Error('AK notch sides and post need box dimensions');
+    }
+    const notchWidth = opposite.box.center[2] - opposite.box.half[2] - (leaf.box.center[2] + leaf.box.half[2]);
+    const leafWidth = opposite.box.center[2] + opposite.box.half[2] - (leaf.box.center[2] - leaf.box.half[2]);
+    const leafHeight = leaf.box.half[1] * 2;
+    const leafTop = applyPoint(out.resolved.placed.get(rearId)!, [0, leaf.box.center[1] + leaf.box.half[1], 0]);
+    expect(eye[1]).toBeCloseTo(leafTop[1], 7);
+    expect(postTip[1]).toBeCloseTo(leafTop[1], 7);
+    expect(post.box.half[2] * 2).toBeLessThan(notchWidth);
+    expect(notchWidth).toBeLessThan(leafWidth / 2);
+    expect(leafWidth).toBeGreaterThan(leafHeight);
+  });
   it('emits muzzle and support anchors in metres when the design has them', () => {
     const out = exported(design('archetype-ar'));
     const selected = selectGunAnchors(out.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
@@ -556,7 +599,8 @@ describe('glb export: deadvox model entry', () => {
         hold: { position: base.hold.position, forward: [c, s, 0], up: [-s, c, 0] },
         others: base.others,
       };
-      return createGunModelEntry(ASSET, anchors, resolved.domain.units.metresPerUnit).grip.turn;
+      return createGunModelEntry({ asset: ASSET, anchors, metresPerUnit: resolved.domain.units.metresPerUnit }).grip
+        .turn;
     };
     expect(turnFor(0)).toEqual(turnFor(18));
     expect(turnFor(-25)).toEqual(turnFor(18));

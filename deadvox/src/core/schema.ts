@@ -449,6 +449,19 @@ const ModelSchema = pipe(
     roll: optional(pipe(number(), minValue(-180), maxValue(180))),
     /** Named points, such as the flashlight's `lens` or a firearm's `magwell`. */
     anchors: optional(record(Id, Point)),
+    /** Model-derived eye point, sight line and up axis for ADS presentation and ballistics. */
+    sight: optional(
+      strictObject({
+        kind: picklist(['iron', 'optic']),
+        eye: Point,
+        eyeReliefMetres: NonNegative,
+        ocularDiameterMetres: optional(Positive),
+        direction: UnitVector,
+        up: UnitVector,
+      }),
+    ),
+    /** Unit barrel direction in the same local model frame as anchors. */
+    muzzleDirection: optional(UnitVector),
     /** Optional estimated action cycles and the named moving GLB nodes. */
     action: optional(ActionSchema),
   }),
@@ -458,6 +471,10 @@ const ModelSchema = pipe(
         ? true
         : calibre !== undefined && capacity !== undefined && rounds !== undefined && rounds.length === capacity,
     'magazine metadata needs calibre, capacity, and one round pose per capacity slot',
+  ),
+  check(
+    ({ sight }) => sight?.kind !== 'optic' || sight.ocularDiameterMetres !== undefined,
+    'optic sight metadata needs an ocular opening diameter',
   ),
   check(
     ({ tube, calibre, anchors, capacity, rounds }) =>
@@ -731,6 +748,8 @@ const ZombieSchema = strictObject({
   sight: Positive,
   /** Metres by night. */
   nightSight: Positive,
+  /** Simulation seconds before a heard or seen stimulus is forgotten. */
+  stimulusMemorySeconds: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** Idle/stroll timing, home leash and eased look controls. */
@@ -818,7 +837,76 @@ const FigureSchema = strictObject({
 
 // ---- skills and recipes ----
 
-const SkillSchema = strictObject({ id: Id, name: Name });
+const SkillSchema = pipe(
+  strictObject({
+    id: Id,
+    name: Name,
+    training: optional(
+      strictObject({
+        craftingTierOffset: optional(Count),
+        activities: optional(
+          record(
+            Id,
+            pipe(
+              strictObject({
+                practice: optional(NonNegative),
+                practicePerSecond: optional(NonNegative),
+                tier: SkillLevel,
+              }),
+              check(
+                (activity) => (activity.practice === undefined) !== (activity.practicePerSecond === undefined),
+                'needs exactly one of "practice" or "practicePerSecond"',
+              ),
+            ),
+          ),
+        ),
+      }),
+    ),
+    combat: optional(
+      strictObject({
+        firearms: optional(
+          strictObject({
+            raiseMinimumSeconds: Positive,
+            raiseRangeSeconds: NonNegative,
+            raiseHalfLifeLevels: Positive,
+            readyMovementMinimum: Fraction,
+            readyMovementRange: Fraction,
+            readyMovementHalfLifeLevels: Positive,
+            loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
+            adsApertureFill: pipe(Positive, maxValue(0.95)),
+          }),
+        ),
+        melee: optional(
+          strictObject({
+            blockChanceMinimum: Fraction,
+            blockChanceRange: Fraction,
+            blockChanceHalfLifeLevels: Positive,
+          }),
+        ),
+      }),
+    ),
+  }),
+  check(({ training, id, combat }) => {
+    const activity = (activityId: string, field: 'practice' | 'practicePerSecond') =>
+      training?.activities?.[activityId]?.[field] !== undefined;
+    const complete =
+      (id !== 'crafting' || training?.craftingTierOffset !== undefined) &&
+      (id !== 'firearms_combat' ||
+        (combat?.firearms !== undefined &&
+          activity('readying', 'practicePerSecond') &&
+          activity('handling', 'practice') &&
+          activity('shot', 'practice') &&
+          activity('hit', 'practice'))) &&
+      (id !== 'melee_combat' || (combat?.melee !== undefined && activity('block', 'practice')));
+    const firearm = combat?.firearms;
+    const melee = combat?.melee;
+    return (
+      complete &&
+      (!firearm || firearm.readyMovementMinimum + firearm.readyMovementRange <= 1) &&
+      (!melee || melee.blockChanceMinimum + melee.blockChanceRange <= 1)
+    );
+  }, 'missing required skill tuning or effect range exceeds one'),
+);
 const SenseSchema = strictObject({
   id: Id,
   crouch: strictObject({
