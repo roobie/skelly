@@ -39,14 +39,7 @@
       "entry": [
         "index.html!",
         "stress.html!",
-        "src/viewer/stress.ts!",
-        // Deadvox consumes these modules through its @mobgen source alias, across the workspace boundary.
-        "../deadvox/src/core/zombiePose.ts!",
-        "../deadvox/src/core/zombieRegions.ts!",
-        "../deadvox/src/core/zombies.ts!",
-        "../deadvox/src/game/session.ts!",
-        "../deadvox/src/game/shamblerAudio.ts!",
-        "../deadvox/src/render/mobActors.ts!"
+        "src/viewer/stress.ts!"
       ],
       "paths": {
         "@mobgen/*": ["src/*"]

@@ -22,7 +22,7 @@ export interface BoneMesh {
 
 type Point = readonly [number, number, number];
 
-/** X and Z voxel centres are at index*v; Y centres are at (index + 0.5)*v (see conventions.ts),
+/** X and Z voxel centres are at index*v; Y centres are at (index + 0.5)*v (see mobgen/PROJECT.md, "Conventions"),
  * so a face plane at boundary `e` sits at (e - 0.5)*v for X/Z and e*v for Y. */
 const edgeX = (voxels: Voxels, e: number): number => (voxels.origin[0] + e - 0.5) * voxels.size;
 const edgeY = (voxels: Voxels, e: number): number => (voxels.origin[1] + e) * voxels.size;
