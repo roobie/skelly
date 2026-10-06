@@ -1,14 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import {
   advance,
   capture,
+  contentLookup,
   createRuntime,
   fixtureZombieColumn,
+  encodeFixture,
+  formatVersion,
   frozenTree,
   inspect,
   plainDataTree,
@@ -46,6 +50,26 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.sim.calendar).toBeGreaterThan(SPAWN_TIMES.dusk);
     expect(atHome()).toBe(1);
     expect(loaded.spawner.snapshotState()).toContain(key);
+  });
+
+  it('preserves the whole sound-event stream across save and load', async () => {
+    const uninterrupted = createRuntime(undefined, true);
+    const split = createRuntime(undefined, true);
+    const framesBeforeSave = 290;
+    const framesAfterSave = 900;
+    advance(uninterrupted, framesBeforeSave);
+    advance(split, framesBeforeSave);
+    const soundCountAtSave = uninterrupted.heardSounds.length;
+    const bytes = await encodeFixture(capture(split));
+    const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot, true);
+
+    advance(uninterrupted, framesAfterSave);
+    advance(loaded, framesAfterSave);
+
+    const continuedSounds = uninterrupted.heardSounds.slice(soundCountAtSave);
+    expect(continuedSounds.length).toBeGreaterThan(0);
+    expect(loaded.heardSounds).toEqual(continuedSounds);
   });
 
   it('continues active compressed rest through the first 1 Hz tick after load', () => {
@@ -105,7 +129,7 @@ describe('hamlet save/load continuation', () => {
     expect(Object.keys(snapshot.character.playerAudio).sort()).toEqual(['soundPicker', 'vocalNoise', 'vocalNoiseId']);
     expect(snapshot.character.playerAudio.vocalNoise).not.toBeNull();
     expect(snapshot.character.playerAudio.vocalNoise!.expiresAt - split.sim.time).toBeCloseTo(0.25);
-    expect(snapshot.world.zombies.zombies[0]!.zombie).not.toHaveProperty('footstepClock');
+    expect(snapshot.world.zombies.zombies[0]!.zombie).toHaveProperty('footstepClock');
     expect(snapshot.character.playerAudio.soundPicker.events).toContainEqual(
       expect.objectContaining({ event: 'player_strain', lastPlayedAt: split.sim.time }),
     );

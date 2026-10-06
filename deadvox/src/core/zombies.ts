@@ -178,7 +178,7 @@ export interface Zombie {
 
 export type ZombieState = Omit<
   Zombie,
-  'type' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'footstepClock' | 'lastVocalNoiseId'
+  'type' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'lastVocalNoiseId'
 > & {
   type: string;
   behaviorRng: RngState;
@@ -202,6 +202,11 @@ const validZombieEventState = (zombie: ZombieState): boolean =>
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
   Array.isArray(zombie.severed) &&
   zombie.severed.every((part) => typeof part === 'string');
+const validShamblerFootstepClock = (clock: ShamblerFootstepClock): boolean =>
+  Boolean(clock) &&
+  Number.isFinite(clock.distanceUntilStep) &&
+  clock.distanceUntilStep > 0 &&
+  typeof clock.nextLongStep === 'boolean';
 
 export interface ZombieSystemState {
   nextEntityId: number;
@@ -882,7 +887,6 @@ export class ZombieSystem {
           soundRng,
           dismemberRng,
           renderPrevious: _renderPrevious,
-          footstepClock: _footstepClock,
           searchAnchor,
           obstacleWanderHeading,
           lastPerceived,
@@ -956,6 +960,7 @@ export class ZombieSystem {
         throw new Error(`Missing zombie type ${zombie.type}`);
       }
       if (
+        !validShamblerFootstepClock(zombie.footstepClock) ||
         !zombie.regions ||
         ZOMBIE_REGION_NAMES.some(
           (region) =>
@@ -975,7 +980,6 @@ export class ZombieSystem {
         soundRng: new Rng(soundRng),
         dismemberRng: new Rng(dismemberRng),
         lastVocalNoiseId: lastVocalNoiseId ?? undefined,
-        footstepClock: initialShamblerFootstepClock(type.stepLength),
         body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
         facing: [...zombie.facing],
         home: [...zombie.home],

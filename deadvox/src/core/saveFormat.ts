@@ -136,7 +136,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 26;
+export const SAVE_SCHEMA_VERSION = 27;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -489,6 +489,7 @@ const zombie = obj({
   attackWait: finite,
   attackWindup: finite,
   gaitPhase: finite,
+  footstepClock: obj({ distanceUntilStep: positive, nextLongStep: bool }),
   wanderClock: finite,
   stanceWeight: opt(finite),
   stepOffset: opt(finite),

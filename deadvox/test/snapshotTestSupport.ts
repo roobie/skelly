@@ -349,7 +349,7 @@ export const inspect = (runtime: Runtime): unknown => {
     zombies: {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
-        const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
+        const { type, behaviorRng, soundRng, renderPrevious, ...fields } = zombie;
         return [
           id,
           {
