@@ -623,6 +623,89 @@ describe('shambler scenarios', () => {
     }
   });
 
+  it('does not wander through repeated obstacle contacts while its target stays visible', () => {
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5 && z >= -2 && z <= 2);
+    const target: Vec3 = [30, 1, 0];
+    const type = {
+      ...SHAMBLER,
+      sight: 100,
+      sightCone: 180,
+      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSecond: 0 },
+    };
+    for (const seed of [1, 7, 23]) {
+      const system = new ZombieSystem({
+        ...senses(() => player(target, [-1, 0, 0], 'sprinting'), wall),
+        isOpaque: () => false,
+        seed,
+      });
+      const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+      const zombie = system.store.get(id)!;
+      let sawObstacleContact = false;
+      for (let tick = 0; tick < 5 * 60; tick++) {
+        system.tick(1 / 60);
+        sawObstacleContact ||= zombie.obstacleContact;
+        expect(zombie.obstacleWanderRemaining).toBe(0);
+      }
+      expect(sawObstacleContact).toBe(true);
+      expect(zombie.mode).toBe('chase');
+    }
+  });
+
+  it('still wanders at an obstacle when the same target is unseen', () => {
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5 && z >= -2 && z <= 2);
+    const type = {
+      ...SHAMBLER,
+      sight: 1,
+      nightSight: 1,
+      wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSecond: 0 },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => player([30, 1, 0], [-1, 0, 0], 'sprinting'), wall),
+      isOpaque: () => false,
+    });
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    let beganWandering = false;
+    for (let tick = 0; tick < 5 * 60 && !beganWandering; tick++) {
+      system.tick(1 / 60);
+      beganWandering = zombie.obstacleWanderRemaining > 0;
+    }
+    expect(zombie.mode).toBe('investigate');
+    expect(beganWandering).toBe(true);
+  });
+
+  it('ends an active wander when its target enters sight', () => {
+    let target = player([300, 1, 0], [-1, 0, 0], 'sprinting');
+    const type = {
+      ...SHAMBLER,
+      sight: 100,
+      sightCone: 180,
+      hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
+    };
+    const system = new ZombieSystem({
+      ...senses(() => target),
+      isOpaque: () => false,
+    });
+    const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+    const zombie = system.store.get(id)!;
+    zombie.obstacleWanderHeading = [0, 0, 1];
+    zombie.obstacleWanderRemaining = 3;
+    zombie.mode = 'investigate';
+    zombie.investigationTier = 'near';
+    zombie.lastPerceived = [...target.pos];
+    target = player([30, 1, 0], [-1, 0, 0], 'sprinting');
+
+    system.tick(1 / 60);
+
+    expect(zombie.mode).toBe('chase');
+    expect(zombie.obstacleWanderRemaining).toBe(0);
+    expect(zombie.obstacleWanderHeading).toBeUndefined();
+  });
+
   it('wanders a distance set by type in an open direction, then resumes pursuit', () => {
     const obstacle: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5 && z >= -2 && z <= 2);
     const target: Vec3 = [300, 1, 0];
