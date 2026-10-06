@@ -174,7 +174,7 @@ export const ar: Template = {
 export const ak: Template = {
   name: 'ak',
   description:
-    'AK-pattern rifle: dust cover, exposed gas block and gas cylinder, forward-leaning curved magazine, dropped stock, and block sights.',
+    'AK-pattern rifle: dust cover, exposed gas block and gas cylinder, forward-leaning curved magazine, wooden buttstock, and block sights.',
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },
@@ -186,7 +186,7 @@ export const ak: Template = {
     { id: 'gas-block', family: 'gas-block' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
     { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved', variant: ['ak74', 'akm'] } },
-    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'ak-dropped' } },
+    { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'ak-buttstock' } },
     { id: 'rear-sight', family: 'ak-rear-sight' },
     { id: 'front-sight', family: 'front-sight', params: { style: 'ak' } },
   ],

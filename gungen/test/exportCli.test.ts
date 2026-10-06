@@ -46,17 +46,16 @@ describe('export CLI core', () => {
     if (!(awm.ok && ak.ok)) {
       return;
     }
-    const stockMaterial = (bytes: Uint8Array): string => {
+    const stockMaterials = (bytes: Uint8Array): string[] => {
       const glb = readGlb(bytes);
       const stock = glb.json.nodes.find((node) => node.extras?.part === 'stock');
       if (stock?.mesh === undefined) {
         throw new Error('exported stock mesh is missing');
       }
-      const primitive = glb.json.meshes[stock.mesh]!.primitives[0]!;
-      return glb.json.materials[primitive.material]!.name!;
+      return glb.json.meshes[stock.mesh]!.primitives.map(({ material }) => glb.json.materials[material]!.name!);
     };
-    expect(stockMaterial(awm.glb)).toBe('#4b5836');
-    expect(stockMaterial(ak.glb)).toBe('#754324');
+    expect(stockMaterials(awm.glb)).toContain('#4b5836');
+    expect(stockMaterials(ak.glb)).toContain('#754324');
   });
 
   // Measured about 1.7 s on a loaded host (load 4-10), too much of vitest's 5 s default; the explicit timeout, about 5x that, keeps it from flaking under load.

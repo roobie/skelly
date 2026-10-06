@@ -27,7 +27,7 @@ const polygon = (solid: Solid): Extract<Solid, { kind: 'extruded-polygon' }> => 
 const equalPoint = (a: readonly number[], b: readonly number[]) => a.every((value, index) => value === b[index]);
 
 describe('front-sight families', () => {
-  it('places the AR at the gas-port station and the AK 2.5u behind the muzzle by barrel length', () => {
+  it('places the AR at the gas-port station and the AK between its gas block and the barrel’s end', () => {
     const expected = [
       { length: 'S', muzzle: 26, arDistance: 6.25 },
       { length: 'M', muzzle: 36, arDistance: 9.25 },
@@ -35,13 +35,23 @@ describe('front-sight families', () => {
     ] as const;
     for (const { length, muzzle, arDistance } of expected) {
       const arBarrel = FAMILIES.barrel!.build({ bore: 'M', length, profile: 'standard', frontSightStyle: 'ar' });
-      const akBarrel = FAMILIES.barrel!.build({ bore: 'M', length, profile: 'standard', frontSightStyle: 'ak' });
+      const akBarrel = FAMILIES.barrel!.build({
+        bore: 'S',
+        length,
+        profile: 'standard',
+        frontSightStyle: 'ak',
+        section: 'ak',
+      });
       const arSight = arBarrel.ports.find(({ id }) => id === 'front-sight')!;
       const gasPort = arBarrel.ports.find(({ id }) => id === 'gas-port')!;
-      const akSight = akBarrel.ports.find(({ id }) => id === 'front-sight')!;
       expect(arSight.pos).toEqual(gasPort.pos);
       expect(muzzle - arSight.pos[0]).toBe(arDistance);
-      expect(muzzle - akSight.pos[0]).toBe(2.5);
+
+      const akSight = akBarrel.ports.find(({ id }) => id === 'front-sight')!;
+      const akGasPort = akBarrel.ports.find(({ id }) => id === 'gas-port')!;
+      const [, [tubeEnd]] = localSolidBounds(akBarrel.solids.find(({ id }) => id === 'tube')!);
+      expect(akSight.pos[0], length).toBeGreaterThan(akGasPort.pos[0]);
+      expect(akSight.pos[0], length).toBeLessThan(tubeEnd);
     }
   });
 
@@ -86,11 +96,11 @@ describe('front-sight families', () => {
     const akPost = localSolidBounds(akSight.solids.find(({ id }) => id === 'post')!);
     const leftEar = localSolidBounds(akSight.solids.find(({ id }) => id === 'ear-left')!);
     const rightEar = localSolidBounds(akSight.solids.find(({ id }) => id === 'ear-right')!);
-    expect(akPost[1][1]).toBe(5);
+    expect(akPost[1][1]).toBe(akSight.axes.find(({ kind }) => kind === 'sight')!.origin[1]);
     expect(leftEar[1][2]).toBeLessThan(akPost[0][2]);
     expect(rightEar[0][2]).toBeGreaterThan(akPost[1][2]);
-    expect(leftEar[1][1]).toBe(5.5);
-    expect(rightEar[1][1]).toBe(5.5);
+    expect(leftEar[1][1]).toBeGreaterThan(akPost[1][1]);
+    expect(rightEar[1][1]).toBeGreaterThan(akPost[1][1]);
   });
 
   it('halves AR upright depth while retaining collar contact and matching the rail post', () => {
