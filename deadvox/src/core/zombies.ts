@@ -197,16 +197,17 @@ const validObstacleWanderState = (zombie: ZombieState): boolean =>
       zombie.obstacleWanderHeading.every(Number.isFinite))) &&
   typeof zombie.obstacleContact === 'boolean' &&
   (zombie.obstacleSlideSide === -1 || zombie.obstacleSlideSide === 0 || zombie.obstacleSlideSide === 1);
-const validZombieEventState = (zombie: ZombieState): boolean =>
-  (zombie.lastVocalNoiseId === null ||
-    (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
-  Array.isArray(zombie.severed) &&
-  zombie.severed.every((part) => typeof part === 'string');
 const validShamblerFootstepClock = (clock: ShamblerFootstepClock): boolean =>
   Boolean(clock) &&
   Number.isFinite(clock.distanceUntilStep) &&
   clock.distanceUntilStep > 0 &&
   typeof clock.nextLongStep === 'boolean';
+const validZombieEventState = (zombie: ZombieState): boolean =>
+  (zombie.lastVocalNoiseId === null ||
+    (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
+  Array.isArray(zombie.severed) &&
+  zombie.severed.every((part) => typeof part === 'string') &&
+  validShamblerFootstepClock(zombie.footstepClock);
 
 export interface ZombieSystemState {
   nextEntityId: number;
@@ -960,7 +961,7 @@ export class ZombieSystem {
         throw new Error(`Missing zombie type ${zombie.type}`);
       }
       if (
-        !(validShamblerFootstepClock(zombie.footstepClock) && zombie.regions) ||
+        !zombie.regions ||
         ZOMBIE_REGION_NAMES.some(
           (region) =>
             !Number.isFinite(zombie.regions[region]) ||
