@@ -10,6 +10,7 @@ import { dominantSide, offSide } from '../core/character.ts';
 import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
+import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickThrow.ts';
@@ -1370,8 +1371,18 @@ export const startPlay = (
   };
 
   const fireDebugWeapon = (item: Item, time: number): boolean => {
+    const shotEye = eye();
+    const centerDirection = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
+    const target = crosshairTarget(
+      { world: engine.world, registry, entities, isSolid: engine.isSolid, blockSize: s },
+      shotEye,
+      centerDirection,
+    );
+    const aimPoint =
+      target?.point ?? (shotEye.map((value, axis) => value + centerDirection[axis]! * SHOT_TRACE_RANGE_BLOCKS) as Vec3);
     const fired = firearms.fire({
       aimFrame: aim.frame,
+      aimPoint,
       debugMode: config.debug,
       ready: isFirearmReady(item.uid),
       aimingDownSights: isAimingDownSights(),

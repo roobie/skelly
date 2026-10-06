@@ -220,9 +220,12 @@ handling; melee combat governs block success. The tiered practice contract is in
   `DebugTestHouseSite`, `src/debug/index.ts`, `createDebugActions`, and
   `src/render/impactEffects.ts`, `ImpactEffects`. BR also said on 2026-10-05:
   "also: in debug mode we should render the rage to target down by the direction
-  gizmo so that i can say which range i'm at". The readout uses
-  `src/debug/shotTargetRange.ts`, `rangeToNearestShotTargetMetres`, beside the
-  gizmo in `src/debug/index.ts`, `attachDebugTools`.
+  gizmo so that i can say which range i'm at". The readout is beside the
+  gizmo in `src/debug/index.ts`, `attachDebugTools`. The range comes from
+  `src/core/crosshairTarget.ts`, `crosshairTarget`, so it follows the world
+  surface under the crosshair rather than measuring an authored target's
+  centre. Hip-fire converges on that point while retaining aim-frame sway and
+  firearm spread.
 - **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
   a build) shows the hint channel and nothing from `src/debug`, so a tester sees
   the game close to how it ships, with the instructions it still needs.

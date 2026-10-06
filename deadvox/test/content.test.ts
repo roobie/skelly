@@ -857,29 +857,30 @@ describe('templates', () => {
   });
 
   it('validates optional windows on template spawn markers', () => {
-    const valid = template(
-      [['Z..', '...']],
-      { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: '06:30' } } },
-      [3, 1, 2],
+    const issues = check(
+      template(
+        [
+          ['FFZ', 'FFA'],
+          ['FFB', 'FF.'],
+        ],
+        {
+          '.': 'air',
+          F: { furniture: 'crate', window: { from: 'dusk' } },
+          Z: { spawn: 'shambler', window: { from: 'dusk', to: '06:30' } },
+          A: { spawn: 'shambler', window: { from: 'sunset' } },
+          B: { spawn: 'shambler', window: { from: 'dusk', to: 'dusk' } },
+        },
+        [3, 2, 2],
+      ),
     );
-    expect(check(valid)).toEqual([]);
-    expect(
-      check(
-        template([['Z..', '...']], { '.': 'air', Z: { spawn: 'shambler', window: { from: 'sunset' } } }, [3, 1, 2]),
-      ),
-    ).toEqual(expect.arrayContaining([expect.stringContaining('expected a named game time or HH:MM')]));
-    expect(
-      check(
-        template(
-          [['Z..', '...']],
-          { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: 'dusk' } } },
-          [3, 1, 2],
-        ),
-      ),
-    ).toEqual(expect.arrayContaining([expect.stringContaining('from and to must differ')]));
-    expect(
-      check(template([['F..', '...']], { '.': 'air', F: { furniture: 'crate', window: { from: 'dusk' } } }, [3, 1, 2])),
-    ).toEqual(expect.arrayContaining([expect.stringContaining('window" only goes with "spawn')]));
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('expected a named game time or HH:MM'),
+        expect.stringContaining('from and to must differ'),
+        expect.stringContaining('window" only goes with "spawn'),
+      ]),
+    );
+    expect(issues.some((issue) => issue.includes('palette["Z"]'))).toBe(false);
   });
 
   it('checks layer sizes and that characters are in the palette', () => {

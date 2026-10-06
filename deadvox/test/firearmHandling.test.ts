@@ -2,9 +2,11 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../src/core/crosshairTarget.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
@@ -132,6 +134,167 @@ describe('debug firearm handling', () => {
     expect(trajectory.muzzle[2]).toBeCloseTo(expectedMuzzle[2]!);
   });
 
+  it('hip-fire at skill 10 hits the camera centre ray at near and far ranges', () => {
+    const definition = registry.items.get('debug_rifle_ak')!;
+    const fixtureBuild = buildRegistry([
+      ...base,
+      {
+        source: 'hip-fire-convergence-fixture.json',
+        data: {
+          items: [
+            {
+              ...definition,
+              id: 'fixture_hipfire_rifle',
+              name: 'Hip-fire fixture rifle',
+              firearm: { ...definition.firearm!, dispersionRadians: 0 },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(fixtureBuild.issues).toEqual([]);
+    for (const rangeMetres of [0.7, 2, 13.1]) {
+      const inventory = new Inventory(fixtureBuild.registry);
+      const rifle = inventory.create('fixture_hipfire_rifle');
+      if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+        throw new Error('Could not hold the hip-fire fixture rifle');
+      }
+      let trajectory: FirearmTrajectory | undefined;
+      const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+        blockSize: pose.blockSize,
+        pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+        onEjection: () => undefined,
+        onTrajectory: (published) => {
+          trajectory = published;
+        },
+        firearmsSkillLevel: () => SKILL_LEVEL_MAX,
+      });
+      expect(
+        mechanics.fire({
+          ...pose,
+          feet: [...pose.feet],
+          eye: [...pose.eye],
+          aimFrame: NEUTRAL_AIM,
+          aimPoint: [pose.eye[0], pose.eye[1], pose.eye[2] - rangeMetres / pose.blockSize],
+          debugMode: true,
+          item: rifle,
+          seed: 71,
+          simTime: 1,
+        }),
+      ).toBe(true);
+      if (!trajectory) {
+        throw new Error('Hip-fire did not publish a trajectory');
+      }
+      const shotOriginMetres = trajectory.origin.map((value) => value * pose.blockSize);
+      const eyeMetres = pose.eye.map((value) => value * pose.blockSize);
+      const target = [eyeMetres[0]!, eyeMetres[1]!, eyeMetres[2]! - rangeMetres];
+      const direction = trajectory.directions[0]!;
+      const alongRay = target.reduce((sum, value, axis) => sum + (value - shotOriginMetres[axis]!) * direction[axis]!, 0);
+      const miss = Math.hypot(
+        ...shotOriginMetres.map((value, axis) => value + alongRay * direction[axis]! - target[axis]!),
+      );
+      expect(miss).toBeLessThan(1e-6);
+    }
+  });
+
+  it('ranges and hip-fires to the shooting-table surface at the crosshair', () => {
+    const entities = new BlockEntities(registry);
+    entities.add({ type: 'range_table', pos: [0, 3, -3], size: [4, 2, 2], facing: 'n' });
+    const eye: [number, number, number] = [0, 4, 0.4];
+    const target = crosshairTarget(
+      {
+        world: { getBlock: () => 0 },
+        registry,
+        entities,
+        isSolid: (x, y, z) => entities.isSolid(x, y, z),
+        blockSize: pose.blockSize,
+      },
+      eye,
+      aimDirection(0, 0, NEUTRAL_AIM),
+    );
+    if (!target) {
+      throw new Error('Crosshair did not hit the shooting table');
+    }
+    expect(target.distanceMetres).toBeCloseTo(0.7);
+    expect(target.point[2]).toBeCloseTo(-1);
+
+    const inventory = new Inventory(registry);
+    const rifle = inventory.create('debug_rifle_ak');
+    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the debug rifle');
+    }
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: pose.blockSize,
+      isSolid: (x, y, z) => entities.isSolid(x, y, z),
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...eye] }),
+      onEjection: () => undefined,
+      onTrajectory: (published) => {
+        trajectory = published;
+      },
+      firearmsSkillLevel: () => SKILL_LEVEL_MAX,
+    });
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...eye],
+        aimFrame: NEUTRAL_AIM,
+        aimPoint: target.point,
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    if (!trajectory) {
+      throw new Error('Hip-fire did not publish a trajectory');
+    }
+    const published = trajectory;
+    expect(published.origin).toEqual(eye);
+    const direction = published.directions[0]!;
+    const alongRay = target.point.reduce(
+      (sum, value, axis) => sum + (value - published.origin[axis]!) * direction[axis]!,
+      0,
+    );
+    const miss = Math.hypot(
+      ...published.origin.map((value, axis) => value + alongRay * direction[axis]! - target.point[axis]!),
+    );
+    expect(miss).toBeLessThan(0.05);
+  });
+
+  it('traces from the eye when solid geometry blocks the eye-to-muzzle path', () => {
+    const inventory = new Inventory(registry);
+    const rifle = inventory.create('debug_rifle_ak');
+    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the debug rifle');
+    }
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: pose.blockSize,
+      isSolid: (_x, _y, z) => z === -1,
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+      onEjection: () => undefined,
+      onTrajectory: (published) => {
+        trajectory = published;
+      },
+      firearmsSkillLevel: () => SKILL_LEVEL_MAX,
+    });
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        aimFrame: NEUTRAL_AIM,
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(trajectory?.origin).toEqual(pose.eye);
+  });
+
   it('requires a completed ready stance, rejects sprinting and cancels released readying', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
@@ -227,30 +390,11 @@ describe('debug firearm handling', () => {
     const novice = publish(0);
     const experienced = publish(SKILL_LEVEL_MAX);
     const direction = novice.directions[0]!;
-    const model = fixtureRegistry.models.get('rifle_assault')!;
-    const tuning = fixtureRegistry.skills.get('firearms_combat')!.combat!.firearms!;
-    const heldPose = heldFirearmTransform({
-      model,
-      side: 'right',
-      leadingSide: 'right',
-      twoHanded: true,
-      progress: 1,
-      aimingDownSights: false,
-      aimFrame,
-      loweredPitchRadians: tuning.loweredPitchRadians,
-    });
-    const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
-    const baseDirection = [
-      right[0] * heldPose.muzzleDirection[0] +
-        up[0] * heldPose.muzzleDirection[1] -
-        forward[0] * heldPose.muzzleDirection[2],
-      right[1] * heldPose.muzzleDirection[0] +
-        up[1] * heldPose.muzzleDirection[1] -
-        forward[1] * heldPose.muzzleDirection[2],
-      right[2] * heldPose.muzzleDirection[0] +
-        up[2] * heldPose.muzzleDirection[1] -
-        forward[2] * heldPose.muzzleDirection[2],
-    ];
+    const targetDirection = aimDirection(yaw, pitch, aimFrame);
+    const targetPoint = pose.eye.map((value, axis) => value + targetDirection[axis]! * SHOT_TRACE_RANGE_BLOCKS);
+    const offset = targetPoint.map((value, axis) => value - novice.origin[axis]!);
+    const offsetLength = Math.hypot(...offset);
+    const baseDirection = offset.map((value) => value / offsetLength);
     const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
     const cone = firearmHandlingFor(fixtureItem, fixtureRegistry).dispersionRadians!;
     const angle = Math.acos(
