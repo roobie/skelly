@@ -5,6 +5,7 @@ const senseTuning = {
   id: 'fixture_player',
   crouch: { speedMetresPerSecond: 0.8, hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
+  light: { playerDaySightScale: 0, lureRangeScale: 0, throwMaxDistanceMetres: 8, throwChargeSeconds: 1.25 },
 } as const;
 
 afterEach(() => vi.unstubAllGlobals());

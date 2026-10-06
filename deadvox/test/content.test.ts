@@ -76,6 +76,17 @@ describe('content', () => {
     }
   });
 
+  it('rejects a negative configured light lure scale', () => {
+    const sensesFile = base.find((file) => file.source === 'senses.json')!;
+    const data = structuredClone(sensesFile.data) as { senses: { light: { lureRangeScale: number } }[] };
+    data.senses[0]!.light.lureRangeScale = -1;
+
+    const { issues } = buildRegistry([{ source: 'senses.json', data }]);
+    expect(issues).toContainEqual(
+      expect.objectContaining({ source: 'senses.json', path: 'senses[0].light.lureRangeScale' }),
+    );
+  });
+
   it('rejects an independent dispersion cone on a pump because pellets own the cone', () => {
     const source = 'pump-dispersion-fixture.json';
     const item = {

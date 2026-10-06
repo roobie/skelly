@@ -18,6 +18,7 @@ import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
+import { GlowstickThrows } from './glowstickThrows.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { ImpactEffects } from './impactEffects.ts';
 import { LightPool } from './lightPool.ts';
@@ -93,6 +94,7 @@ export const createPlayView = (
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
+  const glowstickThrows = new GlowstickThrows();
   const targetCell = config.debug
     ? (block: Vec3) => {
         const entity = engine.entities.at(...block);
@@ -101,11 +103,12 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
   const held = new HeldItems(inventory, models, playerPalette);
-  scene.add(caseEffects.mesh, impactEffects.group);
+  scene.add(caseEffects.mesh, impactEffects.group, glowstickThrows.group);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
     impactEffects.dispose();
+    glowstickThrows.dispose();
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
@@ -131,6 +134,7 @@ export const createPlayView = (
     models,
     piles,
     caseEffects,
+    glowstickThrows,
     impactEffects,
     furniture,
     playerMeshes,
@@ -149,6 +153,7 @@ export const createPlayView = (
       meleeRecoilTime = 0.08;
     },
     syncWorld: ({ calendar, time, lastZombieStep, dt, entities, zombies, frozen }: PlayWorldFrame) => {
+      glowstickThrows.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour), weather);
       applySky(engine.sky, sky);
@@ -200,7 +205,7 @@ export const createPlayView = (
       meleeRecoilTime = Math.max(0, meleeRecoilTime - dt);
       const recoil = meleeRecoilStrength * Math.max(0, Math.min(1, meleeRecoilTime / 0.08));
       held.update(camera, pose, recoil, handling);
-      flashlight.update(registry, light, held, camera);
+      flashlight.update({ registry, lit: light, held, camera, inventory });
       lightPool.update(inventory, { held, camera, blockSize: s, daylightScale: flashlight.daylightScale });
     },
     render: (): number | null => {

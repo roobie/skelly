@@ -212,10 +212,23 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 3. yes, at least glowstick - but it must not work _too_ well
 > 4. yes
 
-**In:** Shamblers beeline to a light they can see through the existing zombie attention owner (`src/core/zombies.ts`, `ZombieSystem`). Light makes the player easier to spot only when it is dark enough for the light to matter. A thrown glowstick is a lure, tuned so it attracts but does not trivialize stealth. Add a headlamp; light sensing must not install a second pursuit system.
+**BR, d100-2 first look (2026-10-06 14:21):**
+
+> the glow stick is too weak in illuminating - let's try 100% more
+> also dropping an active glow stick on the ground seems to make it not illuminate anything
+
+**BR, d100-2 answers (2026-10-06 14:24):**
+
+> 1. no - it should be completely overtaken by the sun's light
+> 2. yes
+> 3. press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse
+
+Daylight overwhelms portable light wherever the sky is open, including outdoor shade; a roof or cellar leaves light mattering at noon. Brighter glowsticks keep their existing sensing reach. A lure gets one investigation so it creates risk without holding a shambler indefinitely; a nearby sound takes priority. Charging makes throw distance a deliberate choice, and cancellation prevents a mistaken release.
+
+**In:** Lights affect detection through the existing zombie attention owner (`src/core/zombies.ts`, `ZombieSystem`). The player has a headlamp and a throwable glowstick; light sensing does not add a second pursuit system.
 **Saves:** Headlamp and glowstick state use their existing item/light owners. Any persistent zombie attention target belongs to the existing saved zombie state and fingerprint; light visibility is derived from active sources and surrounding conditions.
-**Tests:** a visible light can become the beeline target; a player light changes detection in darkness but not in conditions where light is implausible; in the first look, check whether a thrown glowstick reads as a lure and tune its effect with BR's “must not work _too_ well” direction; headlamp state survives the existing item save round trip. Do not pin lure radius, content counts or seeded positions.
-**Done when:** light sources affect zombie attention, darkness gates the player's light signature, and the headlamp and thrown lure work.
+**Tests:** a visible light can become the beeline target; an investigation searches and returns without re-alerting to the same lure, and near sound outranks a lure. Daylight sky exposure gates player light and world lures locally, including open noon, noon indoors, open night and outdoor shade. A dropped or thrown active glowstick appears in the renderer's fixed light set and is a zombie sense source; stored lights that do not shine into the world are excluded. A longer charge throws farther, maximum range is bounded by tuning, right-click cancels, and the world trace stops at walls and ceilings before settling on solid ground. Headlamp state survives the existing item save round trip. Do not pin tuning values, content counts or seeded positions.
+**Done when:** visible light sources affect zombie attention only where plausible, the headlamp and charged glowstick are useful without replacing sound or sight, and dropped light state remains consistent across simulation and rendering.
 
 ### 3.7 Modular weapons
 
