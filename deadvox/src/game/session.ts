@@ -577,14 +577,14 @@ export const createSession = (options: SessionOptions) => {
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
     isSunExposedAt,
-    hurtPlayer: (amount, area) => {
+    hurtPlayer: (amount, area, attacker) => {
       wearOnPlayerHit(inventory, area);
       const legSide = sim.rng(`player-leg-hit:${sim.time}`).int(0, 1) === 0 ? 'leftLeg' : 'rightLeg';
       const region =
         area === 'legs'
           ? bodyRegionForHitArea('legs', legSide)
           : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
-      sim.hit(amount, 'a shambler', region, { bleeding: true, blunt: true });
+      sim.hit(amount, `a ${attacker.type.name.toLowerCase()}`, region, { bleeding: true, blunt: true });
     },
     onSound: (event, position, zombie) =>
       playWorldSound(
@@ -599,7 +599,7 @@ export const createSession = (options: SessionOptions) => {
         return registry.blocks[block]?.id ?? 'unknown';
       });
       playWorldSound(event, position, sim.time, {
-        sourceLabel: `shambler #${id} · ${mode}`,
+        sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
         body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body,
       });
     },

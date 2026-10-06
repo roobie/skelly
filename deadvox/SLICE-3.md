@@ -267,13 +267,13 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 > “maybe we should consider adding a 'boss' mob - maybe an amalgamation of several shamblers - an enemy the size of a car”
 > “yes, I think it's worth it, and it makes it end with something new and exciting”
 
-The boss is a separate later item tracked in #308, not part of 3.8.
-
-**In:** Add the runner (sprinting beeline, rarer than shamblers) and crawler, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
+**In:** Add the runner (sprinting beeline, rarer than shamblers), crawler and boss mob, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design; the boss's design questions are tracked in #308. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
-**Done when:** runner and crawler are distinct playable threats and their persistent state round-trips.
-**First look / BR approval:** runner and crawler silhouettes, movement and hit response.
+**Done when:** runner, crawler and boss are distinct playable threats and their persistent state round-trips.
+**First look / BR approval:** runner and crawler silhouettes, movement and hit response; the boss's size, silhouette and encounter read.
+
+**Work split:** d106-1 implements the runner and crawler; #308 tracks the boss as a separate work item within 3.8.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 

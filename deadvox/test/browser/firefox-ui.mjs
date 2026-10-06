@@ -20,7 +20,10 @@ const observation = {
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(marker, `  Object.assign(globalThis, { firefoxUiTest: { session, input } });\n${marker}`);
+    return code.replace(
+      marker,
+      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry } });\n${marker}`,
+    );
   },
 };
 const vite = await createServer({
@@ -215,11 +218,11 @@ try {
     { timeout: 5000 },
   );
   await page.evaluate(() => {
-    const runner = [...globalThis.firefoxUiTest.session.zombies.store.entries()].find(
-      ([, zombie]) => zombie.type.id === 'runner',
-    )?.[1];
-    if (runner?.type.model !== 'runner') {
-      throw new Error('debug runner spawn did not select its mobgen model');
+    const { registry, session } = globalThis.firefoxUiTest;
+    const runnerModel = registry.zombies.get('runner')?.model;
+    const runner = [...session.zombies.store.entries()].find(([, zombie]) => zombie.type.id === 'runner')?.[1];
+    if (!runnerModel || runner?.type.model !== runnerModel) {
+      throw new Error('debug runner spawn did not select the registered mobgen model');
     }
   });
   await pressAction(page, 'ui.inventory-toggle');

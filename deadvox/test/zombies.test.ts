@@ -35,6 +35,7 @@ import {
   hearVocalNoise,
   type PlayerSense,
   perceivePlayer,
+  type Zombie,
   ZombieSystem,
 } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
@@ -69,7 +70,7 @@ const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
   hourFn: () => number = () => 12,
-  hurtPlayer: (amount: number, area?: 'head' | 'torso' | 'legs') => void = () => undefined,
+  hurtPlayer: (amount: number, area?: 'head' | 'torso' | 'legs', attacker?: Zombie) => void = () => undefined,
 ) => ({
   player: playerFn,
   isSolid,
@@ -1617,19 +1618,26 @@ describe('shambler scenarios', () => {
     expect(runner.body.pos[0]).toBeGreaterThan(Math.abs(runner.body.pos[2]));
   });
 
-  it('crawler attacks wear the player legs region', () => {
+  it('crawler attacks wear the player legs region and identify their attacker', () => {
     const hitAreas: ('head' | 'torso' | 'legs')[] = [];
+    const attackers: Zombie[] = [];
     const system = new ZombieSystem(
       senses(
         () => player([1.5, 1, 0]),
         FLOOR,
         () => 12,
-        (_damage, area) => hitAreas.push(area ?? 'torso'),
+        (_damage, area, attacker) => {
+          hitAreas.push(area ?? 'torso');
+          if (attacker) {
+            attackers.push(attacker);
+          }
+        },
       ),
     );
     system.add(CRAWLER, [0, 1, 0], [1, 0, 0]);
     run(system, 2);
     expect(hitAreas).toContain('legs');
+    expect(attackers.some(({ type }) => type.name === CRAWLER.name)).toBe(true);
   });
 
   it('runner and crawler identity, body and movement state survive zombie restore', () => {

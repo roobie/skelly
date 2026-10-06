@@ -18,6 +18,25 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
+describe('zombie attack causes', () => {
+  it('uses the attacking zombie type name in the player damage cause', () => {
+    const runtime = createRuntime();
+    for (const [id] of runtime.zombies.store.entries()) {
+      runtime.zombies.store.remove(id);
+    }
+
+    const events = runtime.sim.events.reader();
+    const runner = registry.zombies.get('runner')!;
+    const playerPos = runtime.session.body.pos;
+    runtime.zombies.add(runner, [playerPos[0] + 0.5, playerPos[1], playerPos[2]], [-1, 0, 0]);
+    advance(runtime, 300);
+
+    expect(events.read()).toContainEqual(
+      expect.objectContaining({ kind: 'damage', cause: `a ${runner.name.toLowerCase()}` }),
+    );
+  });
+});
+
 describe('hamlet save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
   it('loads a closed-window marker from a save and spawns it when the clock opens the window', () => {

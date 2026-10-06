@@ -259,7 +259,7 @@ export interface ZombieSystemOptions {
   player: () => PlayerSense;
   hour: () => number;
   isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
-  hurtPlayer: (amount: number, area: PlayerHitArea) => void;
+  hurtPlayer: (amount: number, area: PlayerHitArea, attacker: Zombie) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
   /** Called once when torso health reaches zero while the head remains intact. */
@@ -1716,7 +1716,7 @@ export class ZombieSystem {
         zombie.attackWindup <= 0 &&
         withinAttackReach({ zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid })
       ) {
-        this.options.hurtPlayer(type.attack.damage, type.attack.hitRegion ?? 'torso');
+        this.options.hurtPlayer(type.attack.damage, type.attack.hitRegion ?? 'torso', zombie);
       }
     } else if (
       zombie.mode === 'chase' &&
