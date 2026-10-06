@@ -541,7 +541,7 @@ renderer.render(scene, camera);
 
 /** Advances the walk clock/gridZ if walking — keeps advancing through an attack too. */
 const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
-  if (!(walking && speed > 0 && current) || !current.legGeometry) {
+  if (!walking || speed <= 0 || !current || !current.legGeometry) {
     return;
   }
   clock = advanceClock(clock, speed * dt, {

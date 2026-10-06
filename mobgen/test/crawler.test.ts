@@ -7,6 +7,7 @@ import { crawlerPose } from '../src/mob/crawler.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const crawler = TEMPLATES.find((template) => template.name === 'crawler')!;
+const LOWER_LEG_BONE = /^(shin|foot)\./;
 const lowestSurfaceByBone = (realized: ReturnType<typeof realize>, pose: Pose): Map<string, number> => {
   const { voxels, body } = realized;
   const transforms = boneTransforms(body.bones, pose);
@@ -23,7 +24,8 @@ const lowestSurfaceByBone = (realized: ReturnType<typeof realize>, pose: Pose): 
         const boneId = body.bones[owner - 1]!.id;
         const transform = transforms.get(boneId)!;
         const center = applyPoint(transform, worldPosition(voxels, i, j, k));
-        const verticalHalfExtent = half * (Math.abs(transform.r[3]) + Math.abs(transform.r[4]) + Math.abs(transform.r[5]));
+        const verticalHalfExtent =
+          half * (Math.abs(transform.r[3]) + Math.abs(transform.r[4]) + Math.abs(transform.r[5]));
         lowest.set(boneId, Math.min(lowest.get(boneId) ?? Number.POSITIVE_INFINITY, center[1] - verticalHalfExtent));
       }
     }
@@ -35,7 +37,7 @@ describe('crawler', () => {
   it('uses upper-thigh stumps rather than intact lower legs', () => {
     const { body } = realize(generate(crawler, 1));
     expect(body.bones.some((bone) => bone.id.startsWith('thigh.'))).toBe(true);
-    expect(body.bones.some((bone) => /^(shin|foot)\./.test(bone.id))).toBe(false);
+    expect(body.bones.some((bone) => LOWER_LEG_BONE.test(bone.id))).toBe(false);
   });
 
   it('keeps both thigh stumps, both forearms or hands, and the torso close to the ground', () => {

@@ -690,7 +690,7 @@ export const createSession = (options: SessionOptions) => {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {}),
+          ...(zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {}),
         });
         return;
       }

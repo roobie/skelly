@@ -21,7 +21,8 @@ const lowestVoxelBottom = (realized: Realized, rotations: Record<string, Mat3>):
         }
         const transform = transforms.get(bones[owner - 1]!.id)!;
         const center = applyPoint(transform, worldPosition(voxels, i, j, k));
-        const verticalHalfExtent = half * (Math.abs(transform.r[3]) + Math.abs(transform.r[4]) + Math.abs(transform.r[5]));
+        const verticalHalfExtent =
+          half * (Math.abs(transform.r[3]) + Math.abs(transform.r[4]) + Math.abs(transform.r[5]));
         lowest = Math.min(lowest, center[1] - verticalHalfExtent);
       }
     }
