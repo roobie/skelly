@@ -6,6 +6,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 import { defineConfig } from 'vitest/config';
+import { pagesAnalyticsPlugin } from '../pagesAnalyticsPlugin.ts';
 import { TEST_POOL } from '../testPool.ts';
 import { buildRevisionFromGit } from './src/core/buildRevision.ts';
 import { canonicalJson } from './src/core/canonicalJson.ts';
@@ -179,8 +180,13 @@ function simulationFingerprintPlugin() {
 const mobgenSrc = fileURLToPath(new URL('../mobgen/src/', import.meta.url));
 
 export default defineConfig({
-  // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
-  plugins: [simulationFingerprintPlugin(), ...(process.env.DEADVOX_HTTPS === '1' ? [basicSsl()] : [])],
+  plugins: [
+    // biome-ignore lint/style/noProcessEnv: only the Pages deploy opts into production analytics.
+    pagesAnalyticsPlugin(process.env.PAGES_ANALYTICS === '1'),
+    simulationFingerprintPlugin(),
+    // biome-ignore lint/style/noProcessEnv: HTTPS is an opt-in local development server mode.
+    ...(process.env.DEADVOX_HTTPS === '1' ? [basicSsl()] : []),
+  ],
   define: {
     [buildRevisionDefine]: JSON.stringify(buildRevision),
     [baseContentHashDefine]: JSON.stringify(baseContentHash),
