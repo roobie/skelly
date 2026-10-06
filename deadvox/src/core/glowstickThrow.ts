@@ -26,14 +26,21 @@ const settleOnWorld = (position: Vec3, blockSize: number, minY: number, isSolid:
 };
 
 /** Sweeps the rendered arc through voxels, then settles the item on the first solid below it. */
-export const traceGlowstickLanding = (
-  from: Vec3,
-  direction: Vec3,
-  distanceMetres: number,
-  blockSize: number,
-  minY: number,
-  isSolid: SolidAt,
-): Vec3 | undefined => {
+export const traceGlowstickLanding = ({
+  from,
+  direction,
+  distanceMetres,
+  blockSize,
+  minY,
+  isSolid,
+}: {
+  from: Vec3;
+  direction: Vec3;
+  distanceMetres: number;
+  blockSize: number;
+  minY: number;
+  isSolid: SolidAt;
+}): Vec3 | undefined => {
   const magnitude = Math.hypot(...direction);
   const unit: Vec3 = magnitude > 0 ? (direction.map((axis) => axis / magnitude) as Vec3) : [0, 0, 1];
   const to: Vec3 = [

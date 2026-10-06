@@ -63,7 +63,6 @@ const senses = (
   isSolid: SolidAt = FLOOR,
   hourFn: () => number = () => 12,
   hurtPlayer: (amount: number, area?: 'head' | 'torso' | 'legs') => void = () => undefined,
-  isSunExposedAt?: (position: Vec3, hour: number) => boolean,
 ) => ({
   player: playerFn,
   isSolid,
@@ -74,8 +73,12 @@ const senses = (
   jumpSpeed: PLAYER.jump,
   tuning: SENSE_TUNING,
   hurtPlayer,
-  ...(isSunExposedAt ? { isSunExposedAt } : {}),
 });
+const sensesWithLocalSun = (
+  playerFn: () => PlayerSense,
+  hour: number,
+  isSunExposedAt: (position: Vec3, hour: number) => boolean,
+) => ({ ...senses(playerFn, FLOOR, () => hour), isSunExposedAt });
 const run = (system: ZombieSystem, seconds: number, onStep?: () => void) => {
   const frames = Math.ceil(seconds * 60);
   for (let frame = 0; frame < frames; frame++) {
@@ -493,15 +496,7 @@ describe('shambler perception', () => {
         ...player([100, 1, 100]),
         lightSources: [{ pos: target, seenFrom: 20, carried: false }],
       });
-      const system = new ZombieSystem(
-        senses(
-          sensed,
-          FLOOR,
-          () => hour,
-          undefined,
-          () => sunlit,
-        ),
-      );
+      const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
       system.tick(1 / 60);
       return system.store.get(id)!.mode;
@@ -511,15 +506,7 @@ describe('shambler perception', () => {
         ...player([100, 1, 100]),
         lightSources: [{ pos: target, seenFrom: 20, carried: true }],
       });
-      const system = new ZombieSystem(
-        senses(
-          sensed,
-          FLOOR,
-          () => hour,
-          undefined,
-          () => sunlit,
-        ),
-      );
+      const system = new ZombieSystem(sensesWithLocalSun(sensed, hour, () => sunlit));
       const id = system.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
       system.tick(1 / 60);
       return system.store.get(id)!.mode;

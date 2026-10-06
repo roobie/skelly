@@ -2,9 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { PerspectiveCamera, Scene, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import { makeScale } from '../src/core/scale.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -68,7 +68,14 @@ describe('made-light point pool', () => {
     expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
     expect(inventory.move(glowstick, { kind: 'pile', pos: [3, 1, 0] }).ok).toBe(true);
     const entry = [...inventory.items()].find(({ item }) => item === glowstick)!;
-    const source = lightSenseSourceFor(registry, glowstick, entry.location, entry.path, [50, 1, 50], 1.3);
+    const source = lightSenseSourceFor({
+      registry,
+      item: glowstick,
+      location: entry.location,
+      path: entry.path,
+      playerPosition: [50, 1, 50],
+      eyeHeightMetres: 1.3,
+    });
     expect(source?.carried).toBe(false);
 
     const camera = new PerspectiveCamera();
@@ -114,14 +121,14 @@ describe('made-light point pool', () => {
     expect(toggleLight(registry, pocketLight, 0)).toBeUndefined();
     expect(inventory.add(pocketLight, { kind: 'pocket', owner: backpack, pocket: 0 })).toBe(true);
     const pocketEntry = [...inventory.items()].find(({ item }) => item === pocketLight)!;
-    const pocketSource = lightSenseSourceFor(
+    const pocketSource = lightSenseSourceFor({
       registry,
-      pocketLight,
-      pocketEntry.location,
-      pocketEntry.path,
-      [4, 1, 0],
-      1.3,
-    );
+      item: pocketLight,
+      location: pocketEntry.location,
+      path: pocketEntry.path,
+      playerPosition: [4, 1, 0],
+      eyeHeightMetres: 1.3,
+    });
     expect(pocketSource?.carried).toBe(true);
 
     const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' }, [])!;
@@ -130,7 +137,14 @@ describe('made-light point pool', () => {
     expect(inventory.add(storedLight, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
     const storedEntry = [...inventory.items()].find(({ item }) => item === storedLight)!;
     expect(
-      lightSenseSourceFor(registry, storedLight, storedEntry.location, storedEntry.path, [4, 1, 0], 1.3),
+      lightSenseSourceFor({
+        registry,
+        item: storedLight,
+        location: storedEntry.location,
+        path: storedEntry.path,
+        playerPosition: [4, 1, 0],
+        eyeHeightMetres: 1.3,
+      }),
     ).toBeUndefined();
 
     const pool = new LightPool(new Scene());

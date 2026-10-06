@@ -27,7 +27,14 @@ describe('charged glowstick throws', () => {
 
   it('settles a charged arc on the thrower side of a near wall', () => {
     const isSolid: SolidAt = (x, y) => y === 0 || (x === 4 && y > 0 && y < 4);
-    const landing = traceGlowstickLanding([1.5, 1.5, 1.5], [1, 0, 0], 8, 1, -8, isSolid);
+    const landing = traceGlowstickLanding({
+      from: [1.5, 1.5, 1.5],
+      direction: [1, 0, 0],
+      distanceMetres: 8,
+      blockSize: 1,
+      minY: -8,
+      isSolid,
+    });
 
     expect(landing).toBeDefined();
     expect(landing![0]).toBeLessThan(4);
@@ -36,7 +43,14 @@ describe('charged glowstick throws', () => {
 
   it('stops the charged arc at a low ceiling and settles below it', () => {
     const isSolid: SolidAt = (x, y) => y === 0 || (y === 2 && x < 6);
-    const landing = traceGlowstickLanding([1.5, 1.5, 1.5], [1, 0, 0], 8, 1, -8, isSolid);
+    const landing = traceGlowstickLanding({
+      from: [1.5, 1.5, 1.5],
+      direction: [1, 0, 0],
+      distanceMetres: 8,
+      blockSize: 1,
+      minY: -8,
+      isSolid,
+    });
 
     expect(landing).toBeDefined();
     expect(landing![0]).toBeLessThan(6);

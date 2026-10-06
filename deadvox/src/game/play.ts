@@ -12,9 +12,9 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
+import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickThrow.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
-import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan } from '../core/options.ts';
@@ -1037,7 +1037,7 @@ export const startPlay = (
       return;
     }
     const item = inventory.itemByUid(uid);
-    if (!item || ![inventory.hands.right, inventory.hands.left].includes(item)) {
+    if (!(item && [inventory.hands.right, inventory.hands.left].includes(item))) {
       return;
     }
     throwHeldGlowstick(item, chargedThrowDistance(throwMaxDistanceMetres, throwChargeSeconds, heldSeconds));
@@ -1079,7 +1079,14 @@ export const startPlay = (
 
   function glowstickLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
     const from: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
-    const pos = traceGlowstickLanding(from, lookDir(), distanceMetres, s, scale.minCy * CHUNK, engine.isSolid);
+    const pos = traceGlowstickLanding({
+      from,
+      direction: lookDir(),
+      distanceMetres,
+      blockSize: s,
+      minY: scale.minCy * CHUNK,
+      isSolid: engine.isSolid,
+    });
     return pos ? { kind: 'pile', pos } : undefined;
   }
 

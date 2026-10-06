@@ -6,13 +6,12 @@
 
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
-import type { Inventory, Location, Target } from './inventory.ts';
 import type { Vec3 } from './coords.ts';
-import type { SenseDef } from './schema.ts';
+import type { Inventory, Location, Target } from './inventory.ts';
+import { defOf, type Item } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
+import type { SenseDef } from './schema.ts';
 import { sunDirection } from './sky.ts';
-import type { Item } from './items.ts';
-import { defOf } from './items.ts';
 
 /** Seconds to swap the battery in a light. */
 export const BATTERY_SWAP = 2;
@@ -49,17 +48,24 @@ export const lightExposureFor = (
   return undefined;
 };
 
-export const lightSenseSourceFor = (
-  registry: Registry,
-  item: Item,
-  location: Location,
-  path: string,
-  playerPosition: Vec3,
-  eyeHeightMetres: number,
-): LightSenseSource | undefined => {
+export const lightSenseSourceFor = ({
+  registry,
+  item,
+  location,
+  path,
+  playerPosition,
+  eyeHeightMetres,
+}: {
+  registry: Registry;
+  item: Item;
+  location: Location;
+  path: string;
+  playerPosition: Vec3;
+  eyeHeightMetres: number;
+}): LightSenseSource | undefined => {
   const light = registry.items.get(item.type)?.light;
   const exposure = lightExposureFor(registry, item, location, path);
-  if (!light || !exposure) {
+  if (!(light && exposure)) {
     return undefined;
   }
   if (exposure === 'carried') {

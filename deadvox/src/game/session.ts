@@ -469,7 +469,9 @@ export const createSession = (options: SessionOptions) => {
     const eyeHeightMetres = playerEyeHeightMetres();
     const hour = hourOfDay(sim.calendar);
     const lightSources = [...inventory.items()]
-      .map(({ item, location, path }) => lightSenseSourceFor(registry, item, location, path, body.pos, eyeHeightMetres))
+      .map(({ item, location, path }) =>
+        lightSenseSourceFor({ registry, item, location, path, playerPosition: body.pos, eyeHeightMetres }),
+      )
       .filter((source): source is ZombieLightSource => source !== undefined)
       .map((source) => ({ ...source, sunlit: isSunExposedAt(source.pos, hour) }));
     const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);
