@@ -42,6 +42,7 @@ export interface DebugHooks {
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly exportMetrics: () => void;
   readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
+  readonly firearmsSkillZeroTarget: () => string | undefined;
   readonly setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling) => void;
 }
 

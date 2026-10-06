@@ -112,9 +112,13 @@ const session = (
     ...(restore ? { restore } : {}),
   });
 
-it('runtime firearm skill slider tuning changes this session but is not carried by its save', () => {
+it('runtime firearm skill sliders tune the held gun and reset when its save is loaded', () => {
   const original = session([]);
-  const contentTuning = registry.skills.get('firearms_combat')!.combat!.firearms!.skillZeroHandling;
+  const rifle = original.inventory.create('debug_rifle_assault');
+  if (!original.inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+    throw new Error('could not put the test rifle in the right hand');
+  }
+  const contentTuning = registry.items.get('debug_rifle_assault')!.firearm!.skillZeroHandling!;
   const changed = {
     ...original.firearmsSkillZeroHandling,
     automaticFollowup: {
@@ -122,8 +126,10 @@ it('runtime firearm skill slider tuning changes this session but is not carried 
       recoilKickScale: original.firearmsSkillZeroHandling.automaticFollowup.recoilKickScale + 1,
     },
   };
+  expect(original.firearmsSkillZeroTarget).toBe('Assault rifle (debug)');
   original.setFirearmsSkillZeroHandling(changed);
   expect(original.firearmsSkillZeroHandling).toEqual(changed);
+  expect(registry.items.get('debug_rifle_assault')!.firearm!.skillZeroHandling).toEqual(contentTuning);
   const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
   expect(JSON.stringify(saved)).not.toContain('skillZeroHandling');
   expect(session([], saved).firearmsSkillZeroHandling).toEqual(contentTuning);

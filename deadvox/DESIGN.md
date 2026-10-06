@@ -554,14 +554,22 @@ plain box in your hands. Files are small, and follow
   `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
   stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
   The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
-  and four times for follow-ups. BR approved those values: “oh yeah! Now we're talking.
-  #324 approved as such / but it's important to note that we need different factors for
-  different guns - e.g. a MP5 style SMG does not have the same kick as a AK/M pattern gun”.
-  Until d112 gives each firearm its own factors, skill-zero handling is shared across firearms.
-  `src/debug/index.ts`, `firearmsSkillEffectSlider`, places the controls in
-  the debug panel's Tools group, applies them to the running session, and can copy the
-  values. The tuning is runtime-only and resets on reload; saves carry no slider state. The
-  shared skill effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
+  and four times for follow-ups. BR approved those values and ruled that guns need different
+  factors: “oh yeah! Now we're talking. #324 approved as such / but it's important to note
+  that we need different factors for different guns - e.g. a MP5 style SMG does not have the
+  same kick as a AK/M pattern gun”. d112 puts the optional skill-zero factors beside base
+  recoil in each item's `firearm` data in `src/content/base/models-firearms.json`; the
+  `FirearmSchema` in `src/core/schema.ts` requires a complete in-range shape when present.
+  A per-gun shape replaces the shared skill-zero endpoints as a whole; absent factors use the
+  global firearms-combat endpoints. Keeping the override complete avoids mixing fields from
+  different guns. `src/game/firearmHandling.ts`, `FirearmMechanics.skillZeroHandlingFor`,
+  selects the effective factors, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
+  interpolates them toward the same expert endpoint. The provisional per-gun starting values
+  follow base recoil and await BR's slider review for d112. The MP5 comparison has no matching
+  in-game SMG item; d112 adds factors to existing firearms, not a new gun. `src/debug/index.ts`,
+  `firearmsSkillEffectSlider`, tunes the firearm in hand and copies its content-shaped values.
+  The controls are runtime-only, reset on reload, and do not alter saves. The shared skill
+  effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
   per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
   spread and adds no firearm cone. This reuses the already saved player pitch, so no
   aim-state field or save-schema change is needed. See

@@ -619,6 +619,7 @@ export const startPlay = (
     measureSnapshot,
     exportMetrics,
     firearmsSkillZeroHandling: () => session.firearmsSkillZeroHandling,
+    firearmsSkillZeroTarget: () => session.firearmsSkillZeroTarget,
     setFirearmsSkillZeroHandling: (value) => session.setFirearmsSkillZeroHandling(value),
   });
 

@@ -56,6 +56,15 @@ const windowFrameRuns = (definition: TemplateDef, frame: string): WindowFrameRun
     layer.flatMap((row, z) => frameRunsInRow(row, frame).map(({ start, end }) => ({ y, z, start, end }))),
   );
 
+const firearmFixture = (skillZeroHandling: unknown) => ({
+  id: 'fixture_skill_zero_gun',
+  name: 'Fixture gun',
+  category: 'weapon',
+  weight: 1,
+  size: [1, 1],
+  firearm: { recoilKickRadians: 0.01, dispersionRadians: 0, skillZeroHandling },
+});
+
 const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: string): boolean => {
   for (const adjacentY of [run.y - 1, run.y + 1]) {
     const row = definition.layers[adjacentY]?.[run.z];
@@ -90,6 +99,37 @@ describe('content', () => {
           issueSource === source.source && path.endsWith('.combat.firearms.skillZeroHandling.singleShot.variance'),
       ),
     ).toBe(true);
+  });
+
+  it('rejects incomplete per-firearm skill-zero factors', () => {
+    const issues = validateContent({
+      source: 'fixture-firearm.json',
+      data: {
+        items: [
+          firearmFixture({
+            singleShot: { variance: 1, recoilKickScale: 1, recoilRecoveryScale: 1 },
+          }),
+        ],
+      },
+    });
+    expect(issues.some(({ path }) => path.endsWith('.firearm.skillZeroHandling.automaticFollowup'))).toBe(true);
+  });
+
+  it('rejects a per-firearm skill-zero factor outside its supported range', () => {
+    const issues = validateContent({
+      source: 'fixture-firearm.json',
+      data: {
+        items: [
+          firearmFixture({
+            singleShot: { variance: 1, recoilKickScale: 101, recoilRecoveryScale: 1 },
+            automaticFollowup: { variance: 1, recoilKickScale: 1, recoilRecoveryScale: 1 },
+          }),
+        ],
+      },
+    });
+    expect(issues.some(({ path }) => path.endsWith('.firearm.skillZeroHandling.singleShot.recoilKickScale'))).toBe(
+      true,
+    );
   });
 
   it('rejects a negative configured light lure scale', () => {
