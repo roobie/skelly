@@ -100,9 +100,11 @@ an interruption (a runner covers 30 m between two checks).
   does not apply it to long actions.
 - **Bigger steps, not more ticks,** for slow systems (needs, fire, power), and
   closed-form updates where they exist.
-- **Background entities** move along flow fields with larger steps and
-  approximate collision. Each step is capped so the fastest entity moves at
-  most about 2 m per step. That bounds how late an interruption can be.
+- **Background entities** use the beeline movement brain from d84, taking
+  larger, cheaper steps with approximate collision; attention selection is
+  unchanged. Each step is capped so the fastest entity moves at most about 2 m
+  per step. That bounds how late an interruption can be, independently of any
+  navigation-field approach.
 - **Interruption checks every step,** and they drop straight back to 1× before
   the next step runs.
 - **Readability:** a clock that spins visibly, a progress bar, and an edge
@@ -126,18 +128,17 @@ invalidates cached paths.
 - **Level-of-detail tiers** (see [DESIGN.md](DESIGN.md#zombies)). v1 targets:
   60 active zombies, 300 in the background tier, and thousands as abstract
   hordes.
-- **Flow fields for groups.** One field per goal (the player, a noise) is
-  shared by every zombie heading there. A* is reserved for active zombies with
-  short paths.
-- **Localised updates:** block changes invalidate only the field cells and
-  path segments they touch.
+- **Beeline steering, not flow fields.** d84 makes active zombies beeline; the
+  existing attention selection is unchanged. 3.9 gives the background tier the
+  same movement in larger, cheap steps, with the per-step cap above (BR,
+  2026-10-05 21:32).
 - **Structure-of-arrays storage in a worker** once the counts need it. The
   `EntityStore` abstraction in `src/core/entities.ts` keeps a storage change from
   altering system APIs.
 - **Instanced rendering,** no allocations per tick, and pooled objects.
 
-**When.** Basics in Slice 1 (a handful of shamblers); hordes and flow fields in
-Slice 3.
+**When.** Basics in Slice 1 (a handful of shamblers); hordes and cheap
+background beelines in Slice 3. Abstract hordes remain Slice 4 work.
 
 **How we'll know.** 60 active and 300 background zombies at 60 fps on the
 reference laptop, with the simulation under 4 ms a frame. *Measure.* BR's
@@ -358,7 +359,7 @@ is used on purpose.
 ## 14. Testing emergent systems
 
 **Why it's hard.** Bugs in systemic games come from interactions: a door, a
-flow field and a horde. They're hard to reproduce by hand.
+noise target and a horde. They're hard to reproduce by hand.
 
 **Plan.**
 
