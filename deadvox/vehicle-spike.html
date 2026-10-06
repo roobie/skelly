@@ -3,31 +3,76 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Deadvox vehicle look — visual spike</title>
+    <title>Deadvox vehicle parts — visual spike</title>
     <style>
       * { box-sizing: border-box; }
-      html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #a9bfd0; font-family: system-ui, sans-serif; }
-      #stage { width: 100%; height: 100%; }
-      canvas { display: block; }
-      #note { position: fixed; top: 16px; left: 18px; max-width: 430px; padding: 12px 16px; color: #e9ecee; background: #111923d9; border: 1px solid #98a7b4; border-radius: 5px; line-height: 1.45; pointer-events: none; }
-      #note h1 { margin: 0 0 4px; font-size: 16px; letter-spacing: .06em; text-transform: uppercase; }
-      #note p { margin: 4px 0 0; font-size: 13px; }
-      #wheel-toggle { position: fixed; left: 18px; bottom: 14px; padding: 8px 11px; color: #202a31; background: #f2f0e8e8; border-radius: 4px; font-size: 13px; }
-      #hint { position: fixed; right: 16px; bottom: 14px; color: #202a31; background: #f2f0e8dc; padding: 7px 10px; border-radius: 4px; font-size: 12px; pointer-events: none; }
-      #error { position: fixed; inset: auto 12px 52px; color: #a20d19; font-weight: 700; }
+      :root { color-scheme: light; font-family: system-ui, sans-serif; color: #20282d; background: #d8e0df; }
+      html, body { width: 100%; height: 100%; margin: 0; }
+      body { overflow: hidden; }
+      header { height: 44px; display: flex; align-items: center; padding: 0 18px; color: #f2f0e8; background: #20282d; letter-spacing: .06em; font-size: 14px; font-weight: 700; }
+      #workspace { display: grid; grid-template-columns: minmax(0, 1fr) minmax(390px, 450px); height: calc(100% - 44px); }
+      #stage { position: relative; min-width: 0; min-height: 0; background: #a9bfd0; }
+      #stage canvas { display: block; width: 100%; height: 100%; }
+      #vehicle-label { position: absolute; top: 14px; left: 16px; padding: 9px 12px; color: #f2f0e8; background: #172128e8; border: 1px solid #abb6b5; border-radius: 4px; font-weight: 700; pointer-events: none; }
+      #hint { position: absolute; right: 14px; bottom: 12px; max-width: 280px; padding: 7px 9px; color: #20282d; background: #f2f0e8e8; border-radius: 4px; font-size: 12px; pointer-events: none; }
+      #controls { min-height: 0; overflow: auto; padding: 15px; background: #f1f0e9; border-left: 1px solid #9fa9a7; }
+      h1 { margin: 0 0 5px; font-size: 17px; }
+      h2 { margin: 17px 0 6px; color: #596356; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+      p { margin: 5px 0; font-size: 12px; line-height: 1.4; }
+      .quiet { color: #596356; }
+      .row { display: flex; flex-wrap: wrap; gap: 5px; }
+      button { border: 1px solid #8d9994; border-radius: 3px; padding: 6px 8px; color: #293238; background: #e5e6df; font: inherit; font-size: 12px; cursor: pointer; }
+      button:hover { background: #d9ddd5; }
+      button[aria-pressed="true"] { border-color: #996e31; color: #603f16; background: #f1dfb8; }
+      #stats { padding: 7px 8px; background: #e3e5df; border-left: 3px solid #997744; font-size: 12px; line-height: 1.45; }
+      #schematic { display: block; width: 100%; height: auto; border: 1px solid #9da49f; background: #171b20; touch-action: manipulation; cursor: crosshair; }
+      #parts-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; max-height: 150px; overflow: auto; margin-top: 7px; }
+      .part-toggle { overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; padding: 5px; }
+      #spin-toggle { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 12px; }
+      #grain-note { color: #404d4c; font-size: 11px; }
+      #error { position: fixed; z-index: 4; left: 12px; bottom: 54px; color: #a20d19; font-weight: 700; }
+      @media (max-width: 950px) {
+        body { overflow: auto; }
+        #workspace { height: auto; min-height: calc(100% - 44px); grid-template-columns: 1fr; }
+        #stage { height: min(70vh, 650px); min-height: 430px; }
+        #controls { overflow: visible; border-left: 0; border-top: 1px solid #9fa9a7; }
+      }
     </style>
   </head>
   <body>
-    <main id="stage" aria-label="Vehicle visual spike"></main>
-    <aside id="note">
-      <h1>Voxel vehicle scale / interior probe</h1>
-      <p>Hatchback proportions, a side cutaway with seats, dashboard and steering wheel, pickup, motorbike, and a stripped Range-Rover-type 4×4 on a lift.</p>
-      <p id="grain-note">Comparing Mobgen and finer interior voxel grain…</p>
-      <p>Fine cutaway uses a three-quarter cell edge to expose cabin detail. Drag, wheel and arrow-key camera controls work independently.</p>
-    </aside>
-    <label id="wheel-toggle"><input id="spin-wheels" type="checkbox" /> Spin wheels</label>
-    <div id="hint">Drag to orbit · wheel to zoom · arrow keys to pan</div>
-    <div id="error" role="status"></div>
+    <header>DEADVOX · VEHICLE PARTS SPIKE</header>
+    <main id="workspace">
+      <section id="stage" aria-label="Assembled voxel vehicle">
+        <div id="vehicle-label"></div>
+        <div id="hint">Drag to orbit · wheel to zoom · arrow keys to pan</div>
+      </section>
+      <aside id="controls">
+        <h1>Vehicles from parts</h1>
+        <p class="quiet">Each fitting reuses a small voxel part model at a vehicle-local lattice position. Select a build, inspect a top-down layer, then click a fitting to add or remove it from the 3D assembly.</p>
+        <h2>Build</h2>
+        <div class="row">
+          <button type="button" data-build="hatchback">Hatchback</button>
+          <button type="button" data-build="rover">4×4</button>
+          <button type="button" data-build="stripped">Same 4×4 · stripped / lift</button>
+        </div>
+        <p id="stats" aria-live="polite"></p>
+        <h2>Part schematic · top-down</h2>
+        <div class="row">
+          <button type="button" data-layer="frame">Frame</button>
+          <button type="button" data-layer="under">Under</button>
+          <button type="button" data-layer="interior">Interior</button>
+          <button type="button" data-layer="body">Body</button>
+          <button type="button" data-layer="roof">Roof</button>
+        </div>
+        <canvas id="schematic" width="720" height="320" role="img" aria-label="Top-down vehicle part lattice; click a fitting to toggle it"></canvas>
+        <p class="quiet">Solid = installed; dashed outline = absent. The amber cross is the computed centre of mass. The selected layer controls which fitting a cell click toggles.</p>
+        <h2>Fittings in selected layer</h2>
+        <div id="parts-list"></div>
+        <label id="spin-toggle"><input id="spin-wheels" type="checkbox" /> Spin wheel parts</label>
+        <p id="grain-note">A 4×4 sub-tile part lattice and finer voxel grain keep the interior legible. Parts are meshed by fitting, not drawn as a whole-vehicle mesh.</p>
+        <div id="error" role="status"></div>
+      </aside>
+    </main>
     <script type="module" src="./src/debug/vehicleSpike.ts"></script>
   </body>
 </html>

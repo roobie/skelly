@@ -2,16 +2,15 @@
 import { shambler } from '@mobgen/mob/templates.ts';
 import {
   BoxGeometry,
+  BufferAttribute,
+  BufferGeometry,
   CanvasTexture,
   Color,
   DirectionalLight,
-  DoubleSide,
   Group,
   HemisphereLight,
-  InstancedMesh,
   Mesh,
   MeshLambertMaterial,
-  Object3D,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -31,451 +30,890 @@ import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
 
-const stage = document.querySelector<HTMLElement>('#stage');
-const error = document.querySelector<HTMLElement>('#error');
-const spinWheels = document.querySelector<HTMLInputElement>('#spin-wheels');
-const grainNote = document.querySelector<HTMLElement>('#grain-note');
-if (!(stage && error && spinWheels && grainNote)) {
-  throw new Error('Vehicle spike page is missing a required element');
+const required = <T extends Element>(selector: string): T => {
+  const element = document.querySelector<T>(selector);
+  if (!element) {
+    throw new Error(`Vehicle parts spike is missing ${selector}`);
+  }
+  return element;
+};
+
+const stage = required<HTMLElement>('#stage');
+const error = required<HTMLElement>('#error');
+const schematic = required<HTMLCanvasElement>('#schematic');
+const schematicContext = schematic.getContext('2d');
+if (!schematicContext) {
+  throw new Error('Vehicle schematic canvas is unavailable');
+}
+const partsList = required<HTMLElement>('#parts-list');
+const stats = required<HTMLElement>('#stats');
+const layerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer]')];
+const buildButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-build]')];
+const spinWheels = required<HTMLInputElement>('#spin-wheels');
+const viewLabel = required<HTMLElement>('#vehicle-label');
+const grainNote = required<HTMLElement>('#grain-note');
+
+const PART_CELLS_PER_BLOCK = 4;
+const PART_CELL = BLOCK_SIZE / PART_CELLS_PER_BLOCK;
+const VOXEL_EDGE = shambler.voxelSize * 0.75;
+const VOXELS_PER_PART_CELL = Math.round(PART_CELL / VOXEL_EDGE);
+const CAR_CELLS = { x: 36, z: 16 } as const;
+const VIEW_LAYERS = ['frame', 'under', 'interior', 'body', 'roof'] as const;
+type PartLayer = (typeof VIEW_LAYERS)[number];
+interface Voxel {
+  readonly x: number;
+  readonly y: number;
+  readonly z: number;
+  readonly color: string;
+}
+type VoxelBox = readonly [x: number, y: number, z: number, width: number, height: number, depth: number, color: string];
+type Cell = readonly [x: number, z: number];
+type Footprint = readonly [x: number, z: number];
+interface PartInstance {
+  readonly id: string;
+  readonly type: PartId;
+  readonly cell: Cell;
+  readonly installed?: boolean;
+  readonly elevation?: number;
+}
+interface PartDefinition {
+  readonly id: string;
+  readonly label: string;
+  readonly short: string;
+  readonly footprint: Footprint;
+  readonly layer: PartLayer;
+  readonly massKg: number;
+  readonly elevation: number;
+  readonly voxels: readonly Voxel[];
+  readonly axlePivot?: boolean;
 }
 
+const isBoxSurface = (point: Vec3, origin: Vec3, size: Vec3): boolean => {
+  const [x, y, z] = point;
+  const [x0, y0, z0] = origin;
+  const [width, height, depth] = size;
+  return x === x0 || x === x0 + width - 1 || y === y0 || y === y0 + height - 1 || z === z0 || z === z0 + depth - 1;
+};
+
+const voxelBoxes = (...boxes: readonly VoxelBox[]): readonly Voxel[] => {
+  const points = new Map<string, Voxel>();
+  for (const [x0, y0, z0, width, height, depth, color] of boxes) {
+    for (let x = x0; x < x0 + width; x += 1) {
+      for (let y = y0; y < y0 + height; y += 1) {
+        for (let z = z0; z < z0 + depth; z += 1) {
+          if (!isBoxSurface([x, y, z], [x0, y0, z0], [width, height, depth])) {
+            continue;
+          }
+          const voxel = { x, y, z, color };
+          points.set(`${x},${y},${z}`, voxel);
+        }
+      }
+    }
+  }
+  return [...points.values()];
+};
+
+const wheelColor = (radius: number): string | undefined => {
+  if (radius >= 8.5 && radius <= 11.5) {
+    return '#292e31';
+  }
+  if (radius >= 5 && radius < 8.5) {
+    return '#9b9d91';
+  }
+  if (radius < 2.5) {
+    return '#555b5b';
+  }
+  return undefined;
+};
+
+const wheelVoxels = (): readonly Voxel[] => {
+  const points: Voxel[] = [];
+  for (let x = 0; x < 24; x += 1) {
+    for (let y = 0; y < 24; y += 1) {
+      const radius = Math.hypot(x + 0.5 - 12, y + 0.5 - 12);
+      const color = wheelColor(radius);
+      if (!color) {
+        continue;
+      }
+      for (let z = 0; z < 8; z += 1) {
+        points.push({ x, y, z, color });
+      }
+    }
+  }
+  return points;
+};
+
+// Part models are local voxel data; build records below only place these fittings.
+const PART_TYPES = {
+  'frame-rail': {
+    id: 'frame-rail',
+    label: 'Frame rail',
+    short: 'rail',
+    footprint: [4, 1],
+    layer: 'frame',
+    massKg: 10,
+    elevation: 0,
+    voxels: voxelBoxes([0, 0, 0, 16, 3, 4, '#596263'], [2, 3, 0, 12, 2, 4, '#747d78']),
+  },
+  crossmember: {
+    id: 'crossmember',
+    label: 'Crossmember',
+    short: 'cross',
+    footprint: [2, 10],
+    layer: 'frame',
+    massKg: 14,
+    elevation: 0,
+    voxels: voxelBoxes([0, 0, 0, 8, 4, 40, '#68716d'], [0, 4, 12, 8, 2, 16, '#859087']),
+  },
+  'floor-section': {
+    id: 'floor-section',
+    label: 'Floor section',
+    short: 'floor',
+    footprint: [4, 10],
+    layer: 'under',
+    massKg: 15,
+    elevation: 4,
+    voxels: voxelBoxes([0, 0, 0, 16, 2, 40, '#626a67']),
+  },
+  suspension: {
+    id: 'suspension',
+    label: 'Suspension mount',
+    short: 'susp',
+    footprint: [2, 2],
+    layer: 'under',
+    massKg: 9,
+    elevation: 2,
+    voxels: voxelBoxes([0, 0, 0, 8, 4, 8, '#6b706a'], [2, 4, 2, 4, 4, 4, '#8d8776']),
+  },
+  wheel: {
+    id: 'wheel',
+    label: 'Wheel and axle',
+    short: 'wheel',
+    footprint: [6, 2],
+    layer: 'under',
+    massKg: 19,
+    elevation: 0,
+    voxels: wheelVoxels(),
+    axlePivot: true,
+  },
+  engine: {
+    id: 'engine',
+    label: 'Engine',
+    short: 'engine',
+    footprint: [6, 6],
+    layer: 'under',
+    massKg: 145,
+    elevation: 6,
+    voxels: voxelBoxes(
+      [0, 0, 0, 24, 12, 24, '#5b6260'],
+      [4, 12, 3, 16, 7, 18, '#8a765c'],
+      [7, 19, 7, 10, 3, 10, '#474c4a'],
+    ),
+  },
+  transmission: {
+    id: 'transmission',
+    label: 'Transmission',
+    short: 'gear',
+    footprint: [4, 4],
+    layer: 'under',
+    massKg: 34,
+    elevation: 4,
+    voxels: voxelBoxes([0, 0, 0, 16, 9, 16, '#68685f'], [4, 9, 4, 8, 4, 8, '#898576']),
+  },
+  'fuel-tank': {
+    id: 'fuel-tank',
+    label: 'Fuel tank',
+    short: 'tank',
+    footprint: [6, 5],
+    layer: 'under',
+    massKg: 48,
+    elevation: 4,
+    voxels: voxelBoxes([0, 0, 0, 24, 9, 20, '#405d4b'], [3, 9, 3, 18, 3, 14, '#586e56']),
+  },
+  seat: {
+    id: 'seat',
+    label: 'Seat',
+    short: 'seat',
+    footprint: [3, 3],
+    layer: 'interior',
+    massKg: 16,
+    elevation: 18,
+    voxels: voxelBoxes(
+      [0, 0, 0, 12, 4, 12, '#907859'],
+      [4, 4, 1, 4, 18, 10, '#a48b67'],
+      [5, 22, 2, 2, 3, 8, '#5d5142'],
+    ),
+  },
+  dashboard: {
+    id: 'dashboard',
+    label: 'Dashboard',
+    short: 'dash',
+    footprint: [4, 12],
+    layer: 'interior',
+    massKg: 18,
+    elevation: 20,
+    voxels: voxelBoxes([0, 0, 0, 16, 9, 48, '#343a3a'], [2, 9, 4, 12, 4, 40, '#676c63']),
+  },
+  steering: {
+    id: 'steering',
+    label: 'Steering wheel',
+    short: 'steer',
+    footprint: [2, 2],
+    layer: 'interior',
+    massKg: 4,
+    elevation: 24,
+    voxels: voxelBoxes([2, 0, 2, 4, 15, 4, '#77786e'], [0, 12, 2, 8, 2, 4, '#b4aa90'], [2, 10, 0, 4, 5, 8, '#8b8d82']),
+  },
+  door: {
+    id: 'door',
+    label: 'Door',
+    short: 'door',
+    footprint: [10, 1],
+    layer: 'body',
+    massKg: 31,
+    elevation: 17,
+    voxels: voxelBoxes(
+      [0, 0, 0, 40, 11, 4, '#68726f'],
+      [5, 11, 0, 30, 9, 4, '#78939a'],
+      [0, 20, 0, 40, 2, 4, '#727c77'],
+    ),
+  },
+  hood: {
+    id: 'hood',
+    label: 'Hood',
+    short: 'hood',
+    footprint: [8, 12],
+    layer: 'body',
+    massKg: 37,
+    elevation: 22,
+    voxels: voxelBoxes([0, 0, 0, 32, 4, 48, '#68726f'], [5, 4, 5, 22, 2, 38, '#7c8580']),
+  },
+  tailgate: {
+    id: 'tailgate',
+    label: 'Tailgate',
+    short: 'tail',
+    footprint: [5, 12],
+    layer: 'body',
+    massKg: 29,
+    elevation: 6,
+    voxels: voxelBoxes([0, 0, 0, 20, 22, 4, '#69736e'], [4, 13, 0, 12, 7, 4, '#78939a']),
+  },
+  windshield: {
+    id: 'windshield',
+    label: 'Windshield',
+    short: 'glass',
+    footprint: [1, 12],
+    layer: 'body',
+    massKg: 11,
+    elevation: 24,
+    voxels: voxelBoxes([0, 0, 0, 4, 20, 48, '#8aabb0']),
+  },
+  'roof-panel': {
+    id: 'roof-panel',
+    label: 'Roof panel',
+    short: 'roof',
+    footprint: [16, 12],
+    layer: 'roof',
+    massKg: 42,
+    elevation: 43,
+    voxels: voxelBoxes([0, 0, 0, 64, 3, 48, '#626b66'], [3, 3, 3, 58, 2, 42, '#778078']),
+  },
+  'roof-rack': {
+    id: 'roof-rack',
+    label: 'Roof rack',
+    short: 'rack',
+    footprint: [8, 8],
+    layer: 'roof',
+    massKg: 24,
+    elevation: 48,
+    voxels: voxelBoxes(
+      [0, 0, 0, 32, 2, 3, '#6e716a'],
+      [0, 0, 29, 32, 2, 3, '#6e716a'],
+      [0, 0, 0, 3, 2, 32, '#8a8c7e'],
+      [29, 0, 0, 3, 2, 32, '#8a8c7e'],
+    ),
+  },
+  'armour-plate': {
+    id: 'armour-plate',
+    label: 'Armour plate',
+    short: 'armour',
+    footprint: [4, 12],
+    layer: 'body',
+    massKg: 58,
+    elevation: 16,
+    voxels: voxelBoxes([0, 0, 0, 16, 19, 4, '#565c56'], [3, 19, 0, 10, 3, 4, '#858a7b']),
+  },
+  bumper: {
+    id: 'bumper',
+    label: 'Bumper',
+    short: 'bumper',
+    footprint: [2, 14],
+    layer: 'body',
+    massKg: 22,
+    elevation: 3,
+    voxels: voxelBoxes([0, 0, 0, 8, 5, 56, '#74796f'], [1, 5, 4, 6, 2, 48, '#484e4c']),
+  },
+  'roof-support': {
+    id: 'roof-support',
+    label: 'Roof support',
+    short: 'post',
+    footprint: [1, 1],
+    layer: 'body',
+    massKg: 8,
+    elevation: 18,
+    voxels: voxelBoxes([0, 0, 0, 4, 25, 4, '#65706c']),
+  },
+} as const satisfies Record<string, PartDefinition>;
+type PartId = keyof typeof PART_TYPES;
+
+const part = (
+  id: string,
+  type: PartId,
+  cell: Cell,
+  options: { readonly installed?: boolean; readonly elevation?: number } = {},
+): PartInstance => ({ id, type, cell, ...options });
+
+const CHASSIS: readonly PartInstance[] = [
+  part('rail-near-0', 'frame-rail', [0, 2]),
+  part('rail-near-1', 'frame-rail', [4, 2]),
+  part('rail-near-2', 'frame-rail', [8, 2]),
+  part('rail-near-3', 'frame-rail', [12, 2]),
+  part('rail-near-4', 'frame-rail', [16, 2]),
+  part('rail-near-5', 'frame-rail', [20, 2]),
+  part('rail-near-6', 'frame-rail', [24, 2]),
+  part('rail-near-7', 'frame-rail', [28, 2]),
+  part('rail-near-8', 'frame-rail', [32, 2]),
+  part('rail-far-0', 'frame-rail', [0, 13]),
+  part('rail-far-1', 'frame-rail', [4, 13]),
+  part('rail-far-2', 'frame-rail', [8, 13]),
+  part('rail-far-3', 'frame-rail', [12, 13]),
+  part('rail-far-4', 'frame-rail', [16, 13]),
+  part('rail-far-5', 'frame-rail', [20, 13]),
+  part('rail-far-6', 'frame-rail', [24, 13]),
+  part('rail-far-7', 'frame-rail', [28, 13]),
+  part('rail-far-8', 'frame-rail', [32, 13]),
+  part('cross-rear', 'crossmember', [2, 3]),
+  part('cross-rear-seat', 'crossmember', [8, 3]),
+  part('cross-front-seat', 'crossmember', [17, 3]),
+  part('cross-front', 'crossmember', [28, 3]),
+  part('floor-rear-0', 'floor-section', [0, 3]),
+  part('floor-rear-1', 'floor-section', [4, 3]),
+  part('floor-mid-0', 'floor-section', [8, 3]),
+  part('floor-mid-1', 'floor-section', [12, 3]),
+  part('floor-mid-2', 'floor-section', [16, 3]),
+  part('floor-mid-3', 'floor-section', [20, 3]),
+  part('floor-front-0', 'floor-section', [24, 3]),
+];
+
+const RUNNING_GEAR: readonly PartInstance[] = [
+  part('suspension-rear-near', 'suspension', [4, 1]),
+  part('suspension-rear-far', 'suspension', [4, 13]),
+  part('suspension-front-near', 'suspension', [27, 1]),
+  part('suspension-front-far', 'suspension', [27, 13]),
+  part('wheel-rear-near', 'wheel', [3, 0]),
+  part('wheel-rear-far', 'wheel', [3, 14]),
+  part('wheel-front-near', 'wheel', [27, 0]),
+  part('wheel-front-far', 'wheel', [27, 14]),
+  part('transmission', 'transmission', [21, 6]),
+  part('engine', 'engine', [28, 5]),
+  part('fuel-tank', 'fuel-tank', [3, 5]),
+];
+
+const CABIN: readonly PartInstance[] = [
+  part('seat-driver', 'seat', [19, 4]),
+  part('seat-passenger', 'seat', [19, 9]),
+  part('seat-rear-near', 'seat', [10, 4]),
+  part('seat-rear-far', 'seat', [10, 9]),
+  part('dashboard', 'dashboard', [26, 2]),
+  part('steering-wheel', 'steering', [29, 5]),
+];
+
+const HATCHBACK_PARTS: readonly PartInstance[] = [
+  ...CHASSIS,
+  ...RUNNING_GEAR,
+  ...CABIN,
+  part('hatch-hood', 'hood', [28, 2]),
+  part('hatch-windshield', 'windshield', [27, 2]),
+  part('hatch-tailgate', 'tailgate', [1, 2]),
+  part('hatch-door-near', 'door', [13, 15], { installed: false, elevation: 17 }),
+  part('hatch-door-far', 'door', [13, 0], { elevation: 17 }),
+  part('hatch-roof', 'roof-panel', [11, 2]),
+  part('hatch-roof-rack', 'roof-rack', [15, 4], { installed: false }),
+  part('hatch-armour', 'armour-plate', [17, 0], { installed: false }),
+  part('hatch-front-bumper', 'bumper', [34, 1]),
+  part('hatch-rear-bumper', 'bumper', [0, 1]),
+];
+
+const RANGE_ROVER_PARTS: readonly PartInstance[] = [
+  ...CHASSIS,
+  ...RUNNING_GEAR,
+  ...CABIN,
+  part('rover-hood', 'hood', [28, 2]),
+  part('rover-windshield', 'windshield', [27, 2]),
+  part('rover-tailgate', 'tailgate', [1, 2]),
+  part('rover-door-front-near', 'door', [13, 15], { elevation: 17 }),
+  part('rover-door-front-far', 'door', [13, 0], { elevation: 17 }),
+  part('rover-door-rear-near', 'door', [21, 15], { elevation: 17 }),
+  part('rover-door-rear-far', 'door', [21, 0], { elevation: 17 }),
+  part('rover-roof-front', 'roof-panel', [4, 2], { elevation: 43 }),
+  part('rover-roof-rear', 'roof-panel', [20, 2], { elevation: 43 }),
+  part('rover-roof-rack', 'roof-rack', [17, 4]),
+  part('rover-armour-front-near', 'armour-plate', [28, 0]),
+  part('rover-armour-front-far', 'armour-plate', [28, 4]),
+  part('rover-armour-rear-near', 'armour-plate', [3, 0]),
+  part('rover-armour-rear-far', 'armour-plate', [3, 4]),
+  part('rover-front-post-near', 'roof-support', [27, 1]),
+  part('rover-front-post-far', 'roof-support', [27, 14]),
+  part('rover-rear-post-near', 'roof-support', [10, 1]),
+  part('rover-rear-post-far', 'roof-support', [10, 14]),
+  part('rover-front-bumper', 'bumper', [34, 1]),
+  part('rover-rear-bumper', 'bumper', [0, 1]),
+];
+
+const VEHICLES = {
+  hatchback: { id: 'hatchback', label: 'Hatchback · cutaway', parts: HATCHBACK_PARTS, removed: [] },
+  rover: { id: 'rover', label: 'Boxy 4×4', parts: RANGE_ROVER_PARTS, removed: [] },
+  stripped: {
+    id: 'stripped',
+    label: 'Same 4×4 · stripped on lift',
+    base: 'rover',
+    removed: [
+      'rover-hood',
+      'rover-windshield',
+      'rover-tailgate',
+      'rover-door-front-near',
+      'rover-door-front-far',
+      'rover-door-rear-near',
+      'rover-door-rear-far',
+      'rover-roof-front',
+      'rover-roof-rear',
+      'rover-roof-rack',
+      'rover-armour-front-near',
+      'rover-armour-front-far',
+      'rover-armour-rear-near',
+      'rover-armour-rear-far',
+      'rover-front-post-near',
+      'rover-front-post-far',
+      'rover-rear-post-near',
+      'rover-rear-post-far',
+      'rover-front-bumper',
+      'rover-rear-bumper',
+    ],
+  },
+} as const;
+type VehicleId = keyof typeof VEHICLES;
+
+const fittingsFor = (vehicle: VehicleId): readonly PartInstance[] => {
+  const spec = VEHICLES[vehicle];
+  return 'base' in spec ? VEHICLES[spec.base].parts : spec.parts;
+};
+
+const colorFor = (type: PartId): string => PART_TYPES[type].voxels[0]?.color ?? '#777777';
+const geometryCache = new Map<PartId, BufferGeometry>();
+const voxelMaterial = new MeshLambertMaterial({ vertexColors: true });
+const buildStates = new Map<VehicleId, Set<string>>();
+let activeBuild: VehicleId = 'hatchback';
+let activeLayer: PartLayer = 'body';
+let vehicleGroup = new Group();
+let wheelPivots: Group[] = [];
+let liftGroup: Group | undefined;
+
+const initialState = (vehicle: VehicleId): Set<string> => {
+  const spec = VEHICLES[vehicle];
+  const removed = new Set<string>(spec.removed);
+  return new Set(
+    fittingsFor(vehicle)
+      .filter((fitting) => fitting.installed !== false && !removed.has(fitting.id))
+      .map((fitting) => fitting.id),
+  );
+};
+
+const getBuildState = (vehicle: VehicleId): Set<string> => {
+  let state = buildStates.get(vehicle);
+  if (!state) {
+    state = initialState(vehicle);
+    buildStates.set(vehicle, state);
+  }
+  return state;
+};
+
+const occupiedVoxels = (voxels: readonly Voxel[]): Map<string, string> => {
+  const map = new Map<string, string>();
+  for (const voxel of voxels) {
+    map.set(`${voxel.x},${voxel.y},${voxel.z}`, voxel.color);
+  }
+  return map;
+};
+
+const faceCorners: readonly { readonly neighbor: Vec3; readonly normal: Vec3; readonly corners: readonly Vec3[] }[] = [
+  {
+    neighbor: [1, 0, 0],
+    normal: [1, 0, 0],
+    corners: [
+      [1, 0, 0],
+      [1, 1, 0],
+      [1, 1, 1],
+      [1, 0, 1],
+    ],
+  },
+  {
+    neighbor: [-1, 0, 0],
+    normal: [-1, 0, 0],
+    corners: [
+      [0, 0, 1],
+      [0, 1, 1],
+      [0, 1, 0],
+      [0, 0, 0],
+    ],
+  },
+  {
+    neighbor: [0, 1, 0],
+    normal: [0, 1, 0],
+    corners: [
+      [0, 1, 1],
+      [1, 1, 1],
+      [1, 1, 0],
+      [0, 1, 0],
+    ],
+  },
+  {
+    neighbor: [0, -1, 0],
+    normal: [0, -1, 0],
+    corners: [
+      [0, 0, 0],
+      [1, 0, 0],
+      [1, 0, 1],
+      [0, 0, 1],
+    ],
+  },
+  {
+    neighbor: [0, 0, 1],
+    normal: [0, 0, 1],
+    corners: [
+      [1, 0, 1],
+      [1, 1, 1],
+      [0, 1, 1],
+      [0, 0, 1],
+    ],
+  },
+  {
+    neighbor: [0, 0, -1],
+    normal: [0, 0, -1],
+    corners: [
+      [0, 0, 0],
+      [0, 1, 0],
+      [1, 1, 0],
+      [1, 0, 0],
+    ],
+  },
+];
+
+const buildPartGeometry = (type: PartId): BufferGeometry => {
+  const cached = geometryCache.get(type);
+  if (cached) {
+    return cached;
+  }
+  const points = occupiedVoxels(PART_TYPES[type].voxels);
+  const positions: number[] = [];
+  const normals: number[] = [];
+  const colors: number[] = [];
+  for (const [key, color] of points) {
+    const [x, y, z] = key.split(',').map(Number) as [number, number, number];
+    const tint = new Color(color);
+    for (const face of faceCorners) {
+      const [nx, ny, nz] = face.neighbor;
+      if (points.has(`${x + nx},${y + ny},${z + nz}`)) {
+        continue;
+      }
+      const corners = [
+        face.corners[0]!,
+        face.corners[1]!,
+        face.corners[2]!,
+        face.corners[0]!,
+        face.corners[2]!,
+        face.corners[3]!,
+      ];
+      for (const corner of corners) {
+        const [cx, cy, cz] = corner;
+        positions.push((x + cx) * VOXEL_EDGE, (y + cy) * VOXEL_EDGE, (z + cz) * VOXEL_EDGE);
+        normals.push(...face.normal);
+        colors.push(tint.r, tint.g, tint.b);
+      }
+    }
+  }
+  const geometry = new BufferGeometry();
+  geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
+  geometry.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
+  geometry.setAttribute('color', new BufferAttribute(new Float32Array(colors), 3));
+  geometry.computeBoundingSphere();
+  geometryCache.set(type, geometry);
+  return geometry;
+};
+
+const installedInstances = (): readonly PartInstance[] => {
+  const state = getBuildState(activeBuild);
+  return fittingsFor(activeBuild).filter((fitting) => state.has(fitting.id));
+};
+
+const measureVehicle = (installed: readonly PartInstance[]): { mass: number; comX: number; comZ: number } => {
+  let mass = 0;
+  let weightedX = 0;
+  let weightedZ = 0;
+  for (const fitting of installed) {
+    const definition = PART_TYPES[fitting.type];
+    const x = (fitting.cell[0] + definition.footprint[0] / 2 - CAR_CELLS.x / 2) * PART_CELL;
+    const z = (fitting.cell[1] + definition.footprint[1] / 2 - CAR_CELLS.z / 2) * PART_CELL;
+    mass += definition.massKg;
+    weightedX += x * definition.massKg;
+    weightedZ += z * definition.massKg;
+  }
+  return { mass, comX: mass ? weightedX / mass : 0, comZ: mass ? weightedZ / mass : 0 };
+};
+
+const addLift = (): Group => {
+  const group = new Group();
+  const steel = new MeshLambertMaterial({ color: '#6c706a' });
+  const yellow = new MeshLambertMaterial({ color: '#b3985d' });
+  const add = (size: Vec3, at: Vec3, material: MeshLambertMaterial): void => {
+    const mesh = new Mesh(new BoxGeometry(...size), material);
+    mesh.position.set(...at);
+    group.add(mesh);
+  };
+  for (const x of [-1.7, 1.7]) {
+    for (const z of [-0.8, 0.8]) {
+      add([0.12, 1.35, 0.12], [x, 0.68, z], steel);
+    }
+    add([0.18, 0.12, 2.0], [x, 1.32, 0], yellow);
+  }
+  return group;
+};
+
+const clearGroup = (group: Group): void => {
+  for (const child of [...group.children]) {
+    group.remove(child);
+  }
+};
+
+const renderVehicle = (): void => {
+  if (liftGroup) {
+    scene.remove(liftGroup);
+    liftGroup = undefined;
+  }
+  scene.remove(vehicleGroup);
+  clearGroup(vehicleGroup);
+  wheelPivots = [];
+  vehicleGroup = new Group();
+  const installed = installedInstances();
+  for (const fitting of installed) {
+    const definition = PART_TYPES[fitting.type];
+    const startX = fitting.cell[0] * PART_CELL - (CAR_CELLS.x * PART_CELL) / 2;
+    const startZ = fitting.cell[1] * PART_CELL - (CAR_CELLS.z * PART_CELL) / 2;
+    const geometry = buildPartGeometry(fitting.type);
+    if ('axlePivot' in definition && definition.axlePivot) {
+      const pivot = new Group();
+      const width = definition.footprint[0] * PART_CELL;
+      const depth = definition.footprint[1] * PART_CELL;
+      pivot.position.set(
+        startX + width / 2,
+        (fitting.elevation ?? definition.elevation) * VOXEL_EDGE + 12 * VOXEL_EDGE,
+        startZ + depth / 2,
+      );
+      const mesh = new Mesh(geometry, voxelMaterial);
+      mesh.position.set(-width / 2, -12 * VOXEL_EDGE, -depth / 2);
+      pivot.add(mesh);
+      vehicleGroup.add(pivot);
+      wheelPivots.push(pivot);
+    } else {
+      const mesh = new Mesh(geometry, voxelMaterial);
+      mesh.position.set(startX, (fitting.elevation ?? definition.elevation) * VOXEL_EDGE, startZ);
+      vehicleGroup.add(mesh);
+    }
+  }
+  if (activeBuild === 'stripped') {
+    liftGroup = addLift();
+    scene.add(liftGroup);
+    vehicleGroup.position.y = 1.35;
+  }
+  scene.add(vehicleGroup);
+  const { mass, comX, comZ } = measureVehicle(installed);
+  stats.textContent = `${installed.length} installed fittings · ${mass.toLocaleString()} kg · centre of mass ${comX >= 0 ? '+' : ''}${comX.toFixed(2)} m forward, ${comZ >= 0 ? '+' : ''}${comZ.toFixed(2)} m passenger-side`;
+  viewLabel.textContent = VEHICLES[activeBuild].label;
+  for (const button of buildButtons) {
+    button.setAttribute('aria-pressed', String(button.dataset.build === activeBuild));
+  }
+  drawSchematic();
+  drawPartsList();
+  scheduleRender();
+};
+
+const drawSchematic = (): void => {
+  const ctx = schematicContext;
+  const { width, height } = schematic;
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = '#171b20';
+  ctx.fillRect(0, 0, width, height);
+  const cell = Math.min((width - 100) / CAR_CELLS.x, (height - 72) / CAR_CELLS.z);
+  const x0 = Math.round((width - cell * CAR_CELLS.x) / 2);
+  const z0 = Math.round((height - cell * CAR_CELLS.z) / 2) + 8;
+  ctx.font = `${Math.max(10, cell * 0.75)}px system-ui, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#d9cda8';
+  ctx.fillText('REAR', x0 - 28, z0 + (cell * CAR_CELLS.z) / 2);
+  ctx.fillText('FRONT →', x0 + cell * CAR_CELLS.x + 40, z0 + (cell * CAR_CELLS.z) / 2);
+  ctx.strokeStyle = '#343b42';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= CAR_CELLS.x; x += 1) {
+    ctx.beginPath();
+    ctx.moveTo(x0 + x * cell, z0);
+    ctx.lineTo(x0 + x * cell, z0 + CAR_CELLS.z * cell);
+    ctx.stroke();
+  }
+  for (let z = 0; z <= CAR_CELLS.z; z += 1) {
+    ctx.beginPath();
+    ctx.moveTo(x0, z0 + z * cell);
+    ctx.lineTo(x0 + CAR_CELLS.x * cell, z0 + z * cell);
+    ctx.stroke();
+  }
+  const state = getBuildState(activeBuild);
+  const visible = fittingsFor(activeBuild).filter((fitting) => PART_TYPES[fitting.type].layer === activeLayer);
+  for (const fitting of visible) {
+    const definition = PART_TYPES[fitting.type];
+    const [x, z] = fitting.cell;
+    const [footX, footZ] = definition.footprint;
+    const left = x0 + x * cell;
+    const top = z0 + z * cell;
+    const present = state.has(fitting.id);
+    ctx.fillStyle = present ? colorFor(fitting.type) : '#252a2d';
+    ctx.globalAlpha = present ? 0.82 : 0.35;
+    ctx.fillRect(left + 1, top + 1, footX * cell - 2, footZ * cell - 2);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = present ? '#d9ddcf' : colorFor(fitting.type);
+    ctx.setLineDash(present ? [] : [4, 3]);
+    ctx.strokeRect(left + 1, top + 1, footX * cell - 2, footZ * cell - 2);
+    ctx.setLineDash([]);
+    if (footX * cell > 34 && footZ * cell > 16) {
+      ctx.fillStyle = '#101416';
+      ctx.fillText(definition.short, left + (footX * cell) / 2, top + (footZ * cell) / 2);
+    }
+  }
+  const { mass, comX, comZ } = measureVehicle(installedInstances());
+  if (mass) {
+    const cx = x0 + (CAR_CELLS.x / 2 + comX / PART_CELL) * cell;
+    const cz = z0 + (CAR_CELLS.z / 2 + comZ / PART_CELL) * cell;
+    ctx.strokeStyle = '#ffcf67';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - 7, cz);
+    ctx.lineTo(cx + 7, cz);
+    ctx.moveTo(cx, cz - 7);
+    ctx.lineTo(cx, cz + 7);
+    ctx.stroke();
+    ctx.fillStyle = '#ffcf67';
+    ctx.fillText('COM', cx, cz - 10);
+  }
+};
+
+const togglePart = (id: string): void => {
+  const state = getBuildState(activeBuild);
+  if (state.has(id)) {
+    state.delete(id);
+  } else {
+    state.add(id);
+  }
+  renderVehicle();
+};
+
+const drawPartsList = (): void => {
+  partsList.replaceChildren();
+  const state = getBuildState(activeBuild);
+  const visible = fittingsFor(activeBuild).filter((fitting) => PART_TYPES[fitting.type].layer === activeLayer);
+  for (const fitting of visible) {
+    const definition = PART_TYPES[fitting.type];
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'part-toggle';
+    button.setAttribute('aria-pressed', String(state.has(fitting.id)));
+    button.textContent = `${state.has(fitting.id) ? '●' : '○'} ${definition.label} · ${fitting.id}`;
+    button.addEventListener('click', () => togglePart(fitting.id));
+    partsList.append(button);
+  }
+  for (const button of layerButtons) {
+    button.setAttribute('aria-pressed', String(button.dataset.layer === activeLayer));
+  }
+};
+
+const setBuild = (id: VehicleId): void => {
+  activeBuild = id;
+  renderVehicle();
+};
+
+for (const button of buildButtons) {
+  button.addEventListener('click', () => {
+    const id = button.dataset.build as VehicleId | undefined;
+    if (id && id in VEHICLES) {
+      setBuild(id);
+    }
+  });
+}
+for (const button of layerButtons) {
+  button.addEventListener('click', () => {
+    const layer = button.dataset.layer as PartLayer | undefined;
+    if (layer && VIEW_LAYERS.includes(layer)) {
+      activeLayer = layer;
+      drawSchematic();
+      drawPartsList();
+    }
+  });
+}
+
+schematic.addEventListener('pointerdown', (event) => {
+  const bounds = schematic.getBoundingClientRect();
+  const px = (event.clientX - bounds.left) * (schematic.width / bounds.width);
+  const py = (event.clientY - bounds.top) * (schematic.height / bounds.height);
+  const cell = Math.min((schematic.width - 100) / CAR_CELLS.x, (schematic.height - 72) / CAR_CELLS.z);
+  const x0 = Math.round((schematic.width - cell * CAR_CELLS.x) / 2);
+  const z0 = Math.round((schematic.height - cell * CAR_CELLS.z) / 2) + 8;
+  const x = Math.floor((px - x0) / cell);
+  const z = Math.floor((py - z0) / cell);
+  if (x < 0 || z < 0 || x >= CAR_CELLS.x || z >= CAR_CELLS.z) {
+    return;
+  }
+  const visible = fittingsFor(activeBuild).filter((fitting) => PART_TYPES[fitting.type].layer === activeLayer);
+  const hit = [...visible].reverse().find(({ type, cell: [left, top] }) => {
+    const [width, depth] = PART_TYPES[type].footprint;
+    return x >= left && x < left + width && z >= top && z < top + depth;
+  });
+  if (hit) {
+    togglePart(hit.id);
+  }
+});
+
 const scene = new Scene();
-const camera = new PerspectiveCamera(45, 1, 0.05, 96);
-camera.position.set(2, 9, 32);
+const camera = new PerspectiveCamera(42, 1, 0.05, 96);
+camera.position.set(5.8, 4.7, 7.2);
+camera.lookAt(0, 0.7, 0);
 camera.layers.enable(PLAYER_FIGURE_LAYER);
-camera.lookAt(2, 0.6, 4.1);
 const renderer = new WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 1));
 renderer.outputColorSpace = SRGBColorSpace;
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 stage.appendChild(renderer.domElement);
-
 const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
 applySky({ scene, light: sunlight, ambient, camera, radiusM: 96 }, DAY_SKY);
-// A large voxel cutaway is a static visual sample; omitting the shadow-map pass keeps it responsive.
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(2, 0.65, 4.1);
-controls.enableDamping = false;
-controls.minDistance = 12;
-controls.maxDistance = 48;
-controls.maxPolarAngle = Math.PI * 0.48;
-
-const panDirection = new Vector3();
-const panRight = new Vector3();
-const panUp = new Vector3(0, 1, 0);
-globalThis.addEventListener('keydown', (event) => {
-  if (event.ctrlKey || event.metaKey || event.altKey || document.activeElement === spinWheels) {
-    return;
-  }
-  camera.getWorldDirection(panDirection);
-  panDirection.y = 0;
-  panDirection.normalize();
-  panRight.crossVectors(panDirection, panUp).normalize();
-  const distance = 0.8;
-  const movement = new Vector3();
-  if (event.key === 'ArrowLeft') {
-    movement.copy(panRight).negate();
-  } else if (event.key === 'ArrowRight') {
-    movement.copy(panRight);
-  } else if (event.key === 'ArrowUp') {
-    movement.copy(panDirection);
-  } else if (event.key === 'ArrowDown') {
-    movement.copy(panDirection).negate();
-  } else {
-    return;
-  }
-  event.preventDefault();
-  camera.position.addScaledVector(movement, distance);
-  controls.target.addScaledVector(movement, distance);
-  scheduleRender();
-});
-
 const ground = new Mesh(new PlaneGeometry(500, 500), new MeshLambertMaterial({ color: 0x66_66_5e }));
 ground.rotation.x = -Math.PI / 2;
-ground.position.y = -0.035;
+ground.position.y = -0.04;
 scene.add(ground);
-const blockGrid = new Group();
-const lineMaterial = new MeshLambertMaterial({
-  color: new Color(0x79_79_70),
-  transparent: true,
-  opacity: 0.3,
-  side: DoubleSide,
-});
-for (let x = -23; x <= 23; x += BLOCK_SIZE) {
-  const line = new Mesh(new BoxGeometry(0.008, 0.006, 28), lineMaterial);
-  line.position.set(x, 0.002, 0);
-  blockGrid.add(line);
-}
-for (let z = -10; z <= 18; z += BLOCK_SIZE) {
-  const line = new Mesh(new BoxGeometry(46, 0.006, 0.008), lineMaterial);
-  line.position.set(0, 0.002, z);
-  blockGrid.add(line);
-}
-scene.add(blockGrid);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.7, 0);
+controls.enableDamping = false;
+controls.minDistance = 5;
+controls.maxDistance = 18;
+controls.maxPolarAngle = Math.PI * 0.48;
 
-const MOBGEN_VOXEL = shambler.voxelSize;
-const FINE_VOXEL = MOBGEN_VOXEL * 0.75;
-const unitCube = new BoxGeometry(1, 1, 1);
-const cubeTransform = new Object3D();
-const rollingWheels: Group[] = [];
-interface VoxelBin {
-  color: string;
-  points: Vec3[];
-}
-
-const isSurfaceCell = ([ix, iy, iz]: Vec3, [nx, ny, nz]: Vec3): boolean =>
-  ix === 0 || ix === nx - 1 || iy === 0 || iy === ny - 1 || iz === 0 || iz === nz - 1;
-
-class VoxelShape {
-  private readonly bins = new Map<string, VoxelBin>();
-  private readonly voxelSize: number;
-
-  constructor(voxelSize = MOBGEN_VOXEL) {
-    this.voxelSize = voxelSize;
-  }
-
-  box(center: Vec3, size: Vec3, color: string, omitPositiveZ = false): void {
-    const counts = size.map((length) => Math.max(1, Math.round(length / this.voxelSize))) as Vec3;
-    const [nx, ny, nz] = counts;
-    for (let ix = 0; ix < nx; ix += 1) {
-      for (let iy = 0; iy < ny; iy += 1) {
-        for (let iz = 0; iz < nz; iz += 1) {
-          if (!isSurfaceCell([ix, iy, iz], counts)) {
-            continue;
-          }
-          if (omitPositiveZ && iz === nz - 1) {
-            continue;
-          }
-          this.voxel(
-            [
-              center[0] + (ix + 0.5 - nx / 2) * this.voxelSize,
-              center[1] + (iy + 0.5 - ny / 2) * this.voxelSize,
-              center[2] + (iz + 0.5 - nz / 2) * this.voxelSize,
-            ],
-            color,
-          );
-        }
-      }
-    }
-  }
-
-  disk(center: Vec3, radius: number, depth: number, color: string): void {
-    const r = Math.max(1, Math.round(radius / this.voxelSize));
-    const layers = Math.max(1, Math.round(depth / this.voxelSize));
-    for (let ix = -r; ix <= r; ix += 1) {
-      for (let iy = -r; iy <= r; iy += 1) {
-        if (ix * ix + iy * iy > r * r) {
-          continue;
-        }
-        for (let iz = 0; iz < layers; iz += 1) {
-          this.voxel(
-            [
-              center[0] + ix * this.voxelSize,
-              center[1] + iy * this.voxelSize,
-              center[2] + (iz + 0.5 - layers / 2) * this.voxelSize,
-            ],
-            color,
-          );
-        }
-      }
-    }
-  }
-
-  segment(from: Vec3, to: Vec3, color: string): void {
-    const distance = Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]);
-    const steps = Math.ceil((distance / this.voxelSize) * 1.4);
-    for (let index = 0; index <= steps; index += 1) {
-      const t = steps === 0 ? 0 : index / steps;
-      this.voxel(
-        [from[0] + (to[0] - from[0]) * t, from[1] + (to[1] - from[1]) * t, from[2] + (to[2] - from[2]) * t],
-        color,
-      );
-    }
-  }
-
-  finish(): Group {
-    const group = new Group();
-    for (const { color, points } of this.bins.values()) {
-      const material = new MeshLambertMaterial({ color });
-      const mesh = new InstancedMesh(unitCube, material, points.length);
-      for (const [index, point] of points.entries()) {
-        cubeTransform.position.set(...point);
-        cubeTransform.scale.setScalar(this.voxelSize * 1.025);
-        cubeTransform.updateMatrix();
-        mesh.setMatrixAt(index, cubeTransform.matrix);
-      }
-      mesh.instanceMatrix.needsUpdate = true;
-      group.add(mesh);
-    }
-    return group;
-  }
-
-  private voxel(point: Vec3, color: string): void {
-    let bin = this.bins.get(color);
-    if (!bin) {
-      bin = { color, points: [] };
-      this.bins.set(color, bin);
-    }
-    bin.points.push(point);
-  }
-}
-
-const paint = '#626c6d';
-const trim = '#30383a';
-const glass = '#78939a';
-const rubber = '#202326';
-const rim = '#9b9b8b';
-const rust = '#765443';
-const interior = '#514b43';
-
-interface WheelLayout {
-  readonly xs: readonly number[];
-  readonly y: number;
-  readonly halfWidth: number;
-  readonly radius: number;
-  readonly voxelSize?: number;
-}
-
-const addWheels = (parent: Group, { xs, y, halfWidth, radius, voxelSize = MOBGEN_VOXEL }: WheelLayout): void => {
-  for (const x of xs) {
-    for (const side of [-1, 1]) {
-      const pivot = new Group();
-      pivot.position.set(x, y, side * halfWidth);
-      const wheel = new VoxelShape(voxelSize);
-      wheel.disk([0, 0, 0], radius, 0.18, rubber);
-      wheel.disk([0, 0, side * 0.12], radius * 0.47, 0.035, rim);
-      wheel.disk([0, 0, side * 0.145], radius * 0.14, 0.04, trim);
-      pivot.add(wheel.finish());
-      parent.add(pivot);
-      rollingWheels.push(pivot);
-    }
-  }
-};
-
-interface HatchbackOptions {
-  readonly voxelSize?: number;
-  readonly cutaway?: boolean;
-}
-
-const hatchback = ({ voxelSize = MOBGEN_VOXEL, cutaway = false }: HatchbackOptions = {}): Group => {
-  const group = new Group();
-  const shape = new VoxelShape(voxelSize);
-  const bodyColor = cutaway ? '#677270' : paint;
-
-  shape.box([0.06, 0.75, 0], [4.0, 0.55, 1.58], bodyColor, cutaway);
-  shape.box([1.28, 1.08, 0], [1.55, 0.18, 1.43], bodyColor);
-  shape.box([-0.22, 1.42, 0], [1.72, 0.68, 1.25], bodyColor, cutaway);
-  shape.box([-0.2, 1.81, 0], [1.24, 0.1, 1.28], '#747d7d');
-
-  for (const side of [-1, 1]) {
-    if (!cutaway || side < 0) {
-      shape.box([-0.55, 1.48, side * 0.635], [0.72, 0.38, 0.035], glass);
-      shape.box([0.12, 1.48, side * 0.635], [0.35, 0.38, 0.035], glass);
-      shape.segment([-0.98, 1.12, side * 0.79], [-0.72, 1.82, side * 0.64], trim);
-    }
-    shape.segment([-1.68, 1.05, side * 0.64], [-1.08, 1.78, side * 0.64], bodyColor);
-    shape.box([2.02, 0.76, side * 0.44], [0.035, 0.12, 0.18], '#d1bd87');
-    shape.box([-1.91, 0.76, side * 0.5], [0.035, 0.12, 0.18], '#a84737');
-  }
-  shape.box([0.62, 1.46, 0], [0.04, 0.38, 0.92], glass);
-  shape.box([-1.5, 1.4, 0], [0.035, 0.35, 0.87], glass);
-  shape.segment([-1.68, 1.08, -0.66], [-1.08, 1.78, -0.64], '#aeb9b7');
-
-  if (cutaway) {
-    for (const seatZ of [-0.34, 0.34]) {
-      shape.box([0.02, 1.03, seatZ], [0.52, 0.12, 0.42], '#b29a72');
-      shape.box([-0.18, 1.34, seatZ], [0.14, 0.55, 0.42], '#a88d68');
-    }
-    shape.box([0.62, 1.28, 0], [0.28, 0.19, 1.08], '#393d3c');
-    shape.box([0.7, 1.39, 0], [0.08, 0.08, 0.78], '#77796f');
-    for (let index = 0; index < 12; index += 1) {
-      const angle = (index / 12) * Math.PI * 2;
-      shape.segment(
-        [0.66, 1.48 + Math.cos(angle) * 0.14, 0.36 + Math.sin(angle) * 0.14],
-        [0.66, 1.48 + Math.cos(angle + 0.16) * 0.14, 0.36 + Math.sin(angle + 0.16) * 0.14],
-        trim,
-      );
-    }
-  }
-
-  addWheels(group, { xs: [-1.35, 1.27], y: 0.44, halfWidth: 0.79, radius: 0.36, voxelSize });
-  group.add(shape.finish());
-  return group;
-};
-
-const pickup = (): Group => {
-  const group = new Group();
-  const shape = new VoxelShape();
-  shape.box([0, 0.78, 0], [4.7, 0.62, 1.72], '#686e6a');
-  shape.box([1.42, 1.17, 0], [1.3, 0.19, 1.54], '#686e6a');
-  shape.box([-1.48, 1.12, 0], [1.25, 0.5, 1.55], '#565e5f');
-  shape.box([-1.48, 0.95, 0], [1.26, 0.055, 1.5], '#303a3c');
-  shape.box([-1.48, 1.25, -0.7], [1.15, 0.35, 0.1], '#71746c');
-  shape.box([-1.48, 1.25, 0.7], [1.15, 0.35, 0.1], '#71746c');
-  shape.box([-2.05, 1.25, 0], [0.08, 0.35, 1.42], '#77786e');
-  shape.box([-0.95, 1.48, 0], [0.06, 0.37, 1.22], '#535d5c');
-  for (const side of [-1, 1]) {
-    shape.box([-1.72, 1.17, side * 0.79], [0.45, 0.28, 0.04], glass);
-    shape.box([-1.2, 1.17, side * 0.79], [0.34, 0.28, 0.04], glass);
-    shape.box([0.05, 1.0, side * 0.86], [0.035, 0.42, 0.03], trim);
-    shape.box([0.26, 1.0, side * 0.86], [0.1, 0.035, 0.025], '#b4b1a1');
-    shape.box([2.36, 0.78, side * 0.43], [0.035, 0.12, 0.2], '#d1bd87');
-  }
-  addWheels(group, { xs: [-1.35, 1.3], y: 0.48, halfWidth: 0.86, radius: 0.4 });
-  group.add(shape.finish());
-  return group;
-};
-
-const motorbike = (): Group => {
-  const group = new Group();
-  const shape = new VoxelShape();
-  shape.box([-0.06, 0.67, 0], [0.95, 0.09, 0.14], '#9b9c8b');
-  shape.box([0.18, 0.86, 0], [0.45, 0.3, 0.42], '#78775d');
-  shape.box([-0.34, 0.91, 0], [0.5, 0.13, 0.34], '#292e30');
-  shape.box([-0.48, 1.12, 0], [0.12, 0.22, 0.12], '#9b9c8b');
-  shape.box([0.64, 1.0, 0], [0.1, 0.57, 0.1], '#94988a');
-  shape.box([0.78, 1.26, 0], [0.54, 0.08, 0.08], '#858b84');
-  shape.box([0.84, 1.18, 0], [0.1, 0.12, 0.1], '#c4b182');
-  shape.box([-0.9, 0.52, 0], [0.18, 0.09, 0.28], '#a54c3d');
-  addWheels(group, { xs: [-0.72, 0.72], y: 0.41, halfWidth: 0, radius: 0.4, voxelSize: MOBGEN_VOXEL });
-  group.add(shape.finish());
-  return group;
-};
-
-const liftedRangeRover = (): Group => {
-  const frame = new VoxelShape();
-  for (const x of [-1.7, 1.65]) {
-    for (const side of [-1, 1]) {
-      frame.box([x, 1.08, side * 0.96], [0.2, 2.16, 0.2], '#727a71');
-    }
-    frame.box([x, 2.13, 0], [0.32, 0.12, 2.2], '#c09b56');
-  }
-  const lift = frame.finish();
-  const rover = new Group();
-  const shell = new VoxelShape();
-  shell.box([0, 0.83, 0], [4.9, 0.62, 1.9], rust, true);
-  shell.box([1.52, 1.36, 0], [1.65, 0.45, 1.85], '#716b5d', true);
-  shell.box([-0.38, 1.82, 0], [2.8, 1.08, 1.76], '#626963', true);
-  shell.box([-0.38, 2.4, 0], [2.72, 0.12, 1.92], '#817d70');
-  shell.box([1.05, 1.94, -0.9], [0.72, 0.66, 0.05], glass);
-  shell.box([-0.1, 1.94, -0.9], [0.78, 0.66, 0.05], glass);
-  shell.box([-1.08, 1.92, -0.9], [0.66, 0.68, 0.05], glass);
-  shell.box([2.46, 1.35, 0], [0.1, 0.34, 1.78], '#363c3b');
-  shell.box([2.53, 1.38, -0.45], [0.035, 0.18, 0.25], '#d1bd87');
-  shell.box([-2.43, 1.18, -0.4], [0.04, 0.16, 0.22], '#a84737');
-  for (const x of [-1.55, 1.48]) {
-    for (const side of [-1, 1]) {
-      shell.box([x, 0.84, side * 0.88], [0.2, 0.23, 0.16], '#9d9b8b');
-      shell.box([x, 0.91, side * 1.0], [0.1, 0.12, 0.08], '#b39b6d');
-    }
-  }
-  rover.add(shell.finish());
-  const strippedSide = new VoxelShape();
-  strippedSide.box([-0.25, 1.48, 0.94], [2.25, 0.76, 0.04], rust);
-  strippedSide.box([-0.25, 1.9, 0.94], [2.25, 0.05, 0.04], '#b39b6d');
-  strippedSide.box([-1.32, 1.88, 0.94], [0.06, 0.92, 0.06], '#b39b6d');
-  strippedSide.box([0.82, 1.88, 0.94], [0.06, 0.92, 0.06], '#b39b6d');
-  strippedSide.box([-0.55, 1.03, 0.96], [1.7, 0.14, 0.04], '#363c3b');
-  strippedSide.box([-0.76, 1.34, 0.4], [0.42, 0.12, 0.38], interior);
-  strippedSide.box([-0.9, 1.61, 0.4], [0.12, 0.48, 0.38], '#5a5147');
-  strippedSide.box([0.1, 1.34, 0.4], [0.42, 0.12, 0.38], interior);
-  strippedSide.box([-0.04, 1.61, 0.4], [0.12, 0.48, 0.38], '#5a5147');
-  rover.add(strippedSide.finish());
-  rover.position.y = 1.72;
-  lift.add(rover);
-  return lift;
-};
-
-const voxelHatch = hatchback();
-const interiorHatch = hatchback({ voxelSize: FINE_VOXEL, cutaway: true });
-const voxelTruck = pickup();
-const voxelBike = motorbike();
-const lifted = liftedRangeRover();
-voxelHatch.position.set(-7, 0, 4.1);
-interiorHatch.position.set(-1, 0, 4.1);
-voxelTruck.position.set(5, 0, 4.1);
-voxelBike.position.set(11, 0, 4.1);
-lifted.position.set(17, 0, 4.1);
-scene.add(voxelHatch, interiorHatch, voxelTruck, voxelBike, lifted);
-
-const countVoxels = (group: Group): number => {
-  let count = 0;
-  group.traverse((object) => {
-    if (object instanceof InstancedMesh) {
-      count += object.count;
-    }
-  });
-  return count;
-};
-grainNote.textContent = `Mobgen cell ${(MOBGEN_VOXEL * 100).toFixed(2)} cm: ${countVoxels(voxelHatch).toLocaleString()} voxels · fine cell ${(FINE_VOXEL * 100).toFixed(2)} cm: ${countVoxels(interiorHatch).toLocaleString()} voxels`;
-
-const player = BUNDLED_CONTENT.registry.figures.get('player');
-if (!player) {
-  throw new Error('The bundled player figure is missing');
-}
-const person = new PlayerMeshes(BLOCK_SIZE, player.palette);
-person.sync({
-  body: { pos: [-13 / BLOCK_SIZE, 0, 4.1 / BLOCK_SIZE], vel: [0, 0, 0], halfWidth: 0.3, height: 1.8, onGround: true },
-  yaw: 0,
-  stepOffset: 0,
-  gaitPhase: 0,
-  moving: false,
-});
-const headBox = FIGURE_BOXES.head;
-const head = new Mesh(new BoxGeometry(...headBox.size), new MeshLambertMaterial({ color: player.palette.skin }));
-head.position.set(-13, headBox.at[1], 4.1 + headBox.at[2]);
-head.castShadow = true;
-person.group.add(head);
-scene.add(person.group);
-
-const addLabel = (text: string, x: number, y = 3.05, z = 4.1): void => {
-  const canvas = document.createElement('canvas');
-  canvas.width = 720;
-  canvas.height = 128;
-  const context = canvas.getContext('2d');
-  if (!context) {
-    return;
-  }
-  context.fillStyle = '#18212a';
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.strokeStyle = '#c8c4ae';
-  context.lineWidth = 5;
-  context.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
-  context.fillStyle = '#f0eee5';
-  context.font = 'bold 38px system-ui, sans-serif';
-  context.textAlign = 'center';
-  context.textBaseline = 'middle';
-  context.fillText(text, canvas.width / 2, canvas.height / 2);
-  const texture = new CanvasTexture(canvas);
-  texture.colorSpace = SRGBColorSpace;
-  const sprite = new Sprite(new SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
-  sprite.position.set(x, y, z);
-  sprite.scale.set(5.1, 0.9, 1);
-  scene.add(sprite);
-};
-
-addLabel('1.8 m PLAYER', -13);
-addLabel('HATCHBACK · MOBGEN GRAIN', -7);
-addLabel('HATCHBACK · FINE CUTAWAY', -1);
-addLabel('PICKUP', 5);
-addLabel('MOTORBIKE', 11);
-addLabel('RANGE-ROVER-TYPE 4×4 · LIFT', 17, 5.15);
-
-const resize = (): void => {
-  const width = Math.max(stage.clientWidth, 1);
-  const height = Math.max(stage.clientHeight, 1);
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
-  renderScene();
-};
-new ResizeObserver(resize).observe(stage);
-globalThis.addEventListener('error', (event) => {
-  error.textContent = event.message;
-});
 const renderScene = (): void => {
   controls.update();
   renderer.render(scene, camera);
@@ -490,16 +928,66 @@ const scheduleRender = (): void => {
     renderScene();
   });
 };
+
+const panDirection = new Vector3();
+const panRight = new Vector3();
+const panUp = new Vector3(0, 1, 0);
+globalThis.addEventListener('keydown', (event) => {
+  if (event.ctrlKey || event.metaKey || event.altKey || document.activeElement === spinWheels) {
+    return;
+  }
+  camera.getWorldDirection(panDirection);
+  panDirection.y = 0;
+  panDirection.normalize();
+  panRight.crossVectors(panDirection, panUp).normalize();
+  const movement = new Vector3();
+  if (event.key === 'ArrowLeft') {
+    movement.copy(panRight).negate();
+  } else if (event.key === 'ArrowRight') {
+    movement.copy(panRight);
+  } else if (event.key === 'ArrowUp') {
+    movement.copy(panDirection);
+  } else if (event.key === 'ArrowDown') {
+    movement.copy(panDirection).negate();
+  } else {
+    return;
+  }
+  event.preventDefault();
+  camera.position.addScaledVector(movement, 0.8);
+  controls.target.addScaledVector(movement, 0.8);
+  scheduleRender();
+});
+
+const resize = (): void => {
+  const width = Math.max(stage.clientWidth, 1);
+  const height = Math.max(stage.clientHeight, 1);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+  renderScene();
+};
+new ResizeObserver(resize).observe(stage);
+globalThis.addEventListener('error', (event) => {
+  error.textContent = event.message;
+});
+renderer.domElement.addEventListener('pointermove', (event) => {
+  if (event.buttons !== 0) {
+    scheduleRender();
+  }
+});
+renderer.domElement.addEventListener('pointerup', scheduleRender);
+renderer.domElement.addEventListener('wheel', scheduleRender);
+
 let wheelFrame = 0;
 let previousWheelFrame = 0;
 let previousWheelRender = 0;
 const animateWheels = (time: number): void => {
   const delta = previousWheelFrame === 0 ? 0 : Math.min((time - previousWheelFrame) / 1000, 0.1);
   previousWheelFrame = time;
-  for (const wheel of rollingWheels) {
-    wheel.rotation.z -= delta * 1.8;
+  for (const pivot of wheelPivots) {
+    pivot.rotation.z -= delta * 1.8;
   }
-  if (time - previousWheelRender >= 160) {
+  if (time - previousWheelRender >= 120) {
     previousWheelRender = time;
     scheduleRender();
   }
@@ -519,11 +1007,61 @@ spinWheels.addEventListener('change', () => {
     scheduleRender();
   }
 });
-renderer.domElement.addEventListener('pointermove', (event) => {
-  if (event.buttons !== 0) {
-    scheduleRender();
+
+const addPlayer = (): void => {
+  const player = BUNDLED_CONTENT.registry.figures.get('player');
+  if (!player) {
+    throw new Error('The bundled player figure is missing');
   }
-});
-renderer.domElement.addEventListener('pointerup', scheduleRender);
-renderer.domElement.addEventListener('wheel', scheduleRender);
+  const person = new PlayerMeshes(BLOCK_SIZE, player.palette);
+  person.sync({
+    body: {
+      pos: [-3.25 / BLOCK_SIZE, 0, 1.2 / BLOCK_SIZE],
+      vel: [0, 0, 0],
+      halfWidth: 0.3,
+      height: 1.8,
+      onGround: true,
+    },
+    yaw: 0,
+    stepOffset: 0,
+    gaitPhase: 0,
+    moving: false,
+  });
+  const headBox = FIGURE_BOXES.head;
+  const head = new Mesh(new BoxGeometry(...headBox.size), new MeshLambertMaterial({ color: player.palette.skin }));
+  head.position.set(-3.25, headBox.at[1], 1.2 + headBox.at[2]);
+  person.group.add(head);
+  scene.add(person.group);
+};
+
+const addTitleSprite = (): void => {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    return;
+  }
+  ctx.fillStyle = '#20282d';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#cbc3a9';
+  ctx.lineWidth = 4;
+  ctx.strokeRect(2, 2, canvas.width - 4, canvas.height - 4);
+  ctx.fillStyle = '#f1eee4';
+  ctx.font = 'bold 36px system-ui';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('1.8 m PLAYER', canvas.width / 2, canvas.height / 2);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  const sprite = new Sprite(new SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
+  sprite.position.set(-3.25, 2.1, 1.2);
+  sprite.scale.set(1.7, 0.32, 1);
+  scene.add(sprite);
+};
+
+addPlayer();
+addTitleSprite();
+grainNote.textContent = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel edge ${(VOXEL_EDGE * 100).toFixed(2)} cm (${VOXELS_PER_PART_CELL} voxels per lattice cell); exposed voxel faces merge into one geometry per fitting.`;
+renderVehicle();
 renderScene();
