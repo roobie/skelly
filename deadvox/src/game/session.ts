@@ -660,7 +660,11 @@ export const createSession = (options: SessionOptions) => {
     },
     onSound: (event, position, zombie) => {
       if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {
-        playWorldSound(event, position, sim.time, { listenerRelative: true, sourceLabel: 'player melee' });
+        playWorldSound(event, position, sim.time, {
+          listenerRelative: true,
+          sourceLabel: 'player melee',
+          ...(zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {}),
+        });
         return;
       }
       playWorldSound(
