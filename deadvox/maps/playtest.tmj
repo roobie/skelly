@@ -439,6 +439,11 @@
               "type": "string",
               "propertytype": "zombie_type",
               "value": "shambler"
+            },
+            {
+              "name": "window_from",
+              "type": "string",
+              "value": "dusk"
             }
           ]
         },
@@ -459,6 +464,11 @@
               "type": "string",
               "propertytype": "zombie_type",
               "value": "shambler"
+            },
+            {
+              "name": "window_from",
+              "type": "string",
+              "value": "dusk"
             }
           ]
         }

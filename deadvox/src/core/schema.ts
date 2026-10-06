@@ -29,6 +29,7 @@ import {
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
+import { parseSpawnTime } from './clock.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
@@ -533,6 +534,15 @@ const LootTableSchema = strictObject({
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
 const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
+const SpawnTime = pipe(
+  string(),
+  check((value) => parseSpawnTime(value) !== undefined, 'expected a named game time or HH:MM'),
+);
+const SpawnWindowSchema = pipe(
+  strictObject({ from: SpawnTime, to: optional(SpawnTime) }),
+  check(({ from, to }) => to === undefined || parseSpawnTime(from) !== parseSpawnTime(to), 'from and to must differ'),
+);
+
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
 const PaletteThingSchema = pipe(
   strictObject({
@@ -545,8 +555,11 @@ const PaletteThingSchema = pipe(
     /** A zombie type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
+    /** Daily game-clock window; omitted markers spawn when their column loads. */
+    window: optional(SpawnWindowSchema),
   }),
   check((e) => (e.furniture === undefined) !== (e.spawn === undefined), 'needs exactly one of "furniture" or "spawn"'),
+  check((e) => e.spawn !== undefined || e.window === undefined, '"window" only goes with "spawn"'),
   check(
     (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),
     '"loot", "facing" and "lock" only go with "furniture"',
@@ -657,7 +670,14 @@ const SiteLayoutSchema = strictObject({
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
     bearing: Degrees,
   }),
-  shamblers: array(strictObject({ type: Id, position: MetrePosition, chance: optional(Fraction) })),
+  shamblers: array(
+    strictObject({
+      type: Id,
+      position: MetrePosition,
+      chance: optional(Fraction),
+      window: optional(SpawnWindowSchema),
+    }),
+  ),
   woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
   tracks: array(
     strictObject({
