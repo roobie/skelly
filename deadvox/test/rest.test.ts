@@ -2,18 +2,20 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
+import { Body } from '../src/core/body.ts';
 import { defaultClock, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { NEED_RATES, REST, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { type SimOptions, Simulation } from '../src/core/sim.ts';
+import type { SimOptions } from '../src/core/sim.ts';
 import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
+import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
 const BASE = 'src/content/base';
@@ -75,7 +77,7 @@ describe('stepNeeds with a custom fatigue rate', () => {
   it('recovers fatigue at the given rate, leaving the other needs alone', () => {
     const needs = { ...SPAWN_NEEDS, fatigue: 50 };
     const rates = { ...NEED_RATES, fatigue: -20 };
-    stepNeeds(needs, 1, false, rates);
+    stepNeeds(needs, new Body(BODY_TUNING_FIXTURE), 1, { rates });
     expect(needs.fatigue).toBeCloseTo(30, 9);
     expect(needs.calories).toBeCloseTo(SPAWN_NEEDS.calories + NEED_RATES.calories, 9);
   });
@@ -340,6 +342,54 @@ describe('Session long-action input lock', () => {
     expect(sim.time).toBeGreaterThan(time);
     expect([session.body.pos[0], session.body.pos[2]]).toEqual([position[0], position[2]]);
     expect(actions).toBe(0);
+  });
+
+  it('pauses queued handling until a knockout ends', () => {
+    const entities = new BlockEntities(registry);
+    const session = createSession({
+      registry,
+      world: new World(),
+      isSolid: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      isOpaque: (x, y, z) => y === 0 || entities.isSolid(x, y, z),
+      entities,
+      scale: SCALE,
+      seed: 1,
+      start: defaultClock.start,
+      spawn: [0, 1, 0],
+      ready: () => true,
+      controls: {
+        active: () => false,
+        intent: () => IDLE,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: () => undefined },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in knockout handling fixture');
+      },
+    });
+    let completed = false;
+    session.queue.registerAction('test.knockout-handling', () => {
+      completed = true;
+    });
+    const job = session.queue.enqueueAction('test.knockout-handling', 'Fixture action', 0.01);
+    session.sim.body.impact(0, 'torso', { shockDamage: session.sim.body.shock });
+
+    const maxFrames = Math.ceil(session.sim.body.tuning.knockoutSeconds * 60) + 2;
+    for (let frame = 0; frame < maxFrames && session.sim.body.unconscious; frame += 1) {
+      session.frame(1 / 60);
+    }
+
+    expect(session.sim.body.unconscious).toBe(false);
+    expect(completed).toBe(false);
+    const handlingFrames = Math.ceil((job.duration + 2 / HANDLING_RATE) * 60);
+    for (let frame = 0; frame < handlingFrames && !completed; frame += 1) {
+      session.frame(1 / 60);
+    }
+    expect(completed).toBe(true);
   });
 
   it('wakes after damage with movement unlocked and no pending sleep action', () => {

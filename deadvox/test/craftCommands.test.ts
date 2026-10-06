@@ -16,7 +16,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const { registry } = buildRegistry(
   readdirSync('src/content/base')

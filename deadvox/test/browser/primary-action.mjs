@@ -164,10 +164,26 @@ const observationPlugin = {
       marker,
       `
   const proof = {
-    input, inventory, session, survival, debugTools, engine, caseEffects, glowstickThrows, audio, feet, scale, performHandUse, quickbarActions,
+    input,
+    keyboardInput,
+    inventory,
+    session,
+    survival,
+    debugTools,
+    engine,
+    caseEffects,
+    glowstickThrows,
+    audio,
+    feet,
+    scale,
+    performHandUse,
+    quickbarActions,
+    hudOptions,
+    beginGlowstickCharge,
     selectPrimaryAction, ignitionTargetForHand,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
+    isChargingGlowstick: () => glowstickChargeStartedAt !== undefined,
     clearNotice: () => showNotice(''),
     clearHand: (side) => {
       const held = inventory.hands[side];
@@ -445,6 +461,91 @@ try {
   assert.deepEqual(pumpState.after, pumpState.before, 'quickbar hold does not rack or otherwise mutate a pump shotgun');
   assert.notEqual(pumpState.notice, '', 'quickbar firearm use is refused');
 
+  const knockout = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearNotice();
+    r.session.sim.body.impact(0, 'torso', { shockDamage: r.session.sim.body.shock });
+    const swings = r.swings.length;
+    r.performHandUse('left');
+    r.performHandUse('right');
+    const handBlocked = { before: swings, after: r.swings.length, notice: r.getNotice() };
+    r.clearNotice();
+    r.keyboardInput.command({ action: 'world.interact', phase: 'down', at: 0 });
+    const interactNotice = r.getNotice();
+    r.clearNotice();
+    r.keyboardInput.command({ action: 'player.crouch-toggle', phase: 'down', at: 0 });
+    const crouchNotice = r.getNotice();
+    return { ...handBlocked, interactNotice, crouchNotice };
+  });
+  assert.equal(knockout.after, knockout.before, 'both hand actions are refused while unconscious');
+  assert.notEqual(knockout.notice, '', 'the unconscious hand-action refusal is surfaced');
+  assert.notEqual(knockout.interactNotice, '', 'world interaction is refused while unconscious');
+  assert.notEqual(knockout.crouchNotice, '', 'crouch is refused while unconscious');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return document.body.classList.contains('unconscious') && r.audio.isOutputMuted;
+  });
+  const unconsciousPresentation = await page.evaluate(() => {
+    const { audio, session } = globalThis.primaryActionTest;
+    return {
+      black: document.body.classList.contains('unconscious'),
+      muted: audio.isOutputMuted,
+      eyeHeight: session.playerEyeHeightMetres,
+      proneHeight: session.sim.body.tuning.proneEyeHeightMetres,
+    };
+  });
+  assert.equal(unconsciousPresentation.black, true, 'unconscious presentation blacks out the view');
+  assert.equal(unconsciousPresentation.muted, true, 'unconscious presentation mutes player audio');
+  assert.equal(
+    unconsciousPresentation.eyeHeight,
+    unconsciousPresentation.proneHeight,
+    'unconscious eye height is prone',
+  );
+  await page.keyboard.press('F9');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !document.querySelector('#overlay')?.hidden && r.session.sim.paused;
+  });
+  const pausedKnockout = await page.evaluate(() => {
+    const overlay = document.querySelector('#overlay');
+    const cursorRoot = document.querySelector('#game-cursor-root');
+    const cursor = document.querySelector('#game-cursor');
+    return {
+      black: document.body.classList.contains('unconscious'),
+      overlayAboveBlackout:
+        Number.parseInt(getComputedStyle(overlay).zIndex, 10) >
+        Number.parseInt(getComputedStyle(document.body, '::after').zIndex, 10),
+      menuPointer: globalThis.primaryActionTest.input.menuPointer,
+      cursorVisible: Boolean(cursor && getComputedStyle(cursor).display !== 'none'),
+      cursorAboveOverlay:
+        Number.parseInt(getComputedStyle(cursorRoot).zIndex, 10) >
+        Number.parseInt(getComputedStyle(overlay).zIndex, 10),
+    };
+  });
+  assert.equal(pausedKnockout.black, true, 'opening the pause menu leaves the knockout blackout active');
+  assert.equal(pausedKnockout.overlayAboveBlackout, true, 'the pause menu is layered above the blackout');
+  assert.equal(pausedKnockout.menuPointer, true, 'the open menu uses the software cursor');
+  assert.equal(pausedKnockout.cursorVisible, true, 'the software cursor stays visible over the menu');
+  assert.equal(pausedKnockout.cursorAboveOverlay, true, 'the software cursor layers above the pause menu');
+  await page.keyboard.press('F9');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return document.querySelector('#overlay')?.hidden && !r.session.sim.paused;
+  });
+  assert.equal(
+    await page.evaluate(() => document.body.classList.contains('unconscious')),
+    true,
+    'resuming returns to the blackout while the knockout continues',
+  );
+  await page.evaluate(() => {
+    const { sim } = globalThis.primaryActionTest.session;
+    sim.body.advance(sim.body.tuning.knockoutSeconds);
+  });
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !(document.body.classList.contains('unconscious') || r.audio.isOutputMuted);
+  });
+
   const nextFrame = async () => {
     const frame = await page.evaluate(() => globalThis.primaryActionTest.frames);
     await page.waitForFunction((before) => globalThis.primaryActionTest.frames > before, frame);
@@ -717,6 +818,52 @@ try {
       chargeSeconds: r.inventory.registry.senses.get('player').light.throwChargeSeconds,
     };
   });
+  const interruptedThrow = await holdAction(page, 'player.throw-glowstick');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingGlowstick());
+  await page.evaluate(() => {
+    const { body } = globalThis.primaryActionTest.session.sim;
+    body.impact(0, 'torso', { shockDamage: body.shock + 1 });
+  });
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.session.sim.body.unconscious && !r.isChargingGlowstick();
+  });
+  assert.equal(
+    await page.evaluate(() => globalThis.primaryActionTest.isChargingGlowstick()),
+    false,
+    'knockout cancels an active glowstick charge',
+  );
+  await interruptedThrow();
+  const rejectedThrow = await holdAction(page, 'player.throw-glowstick');
+  assert.equal(
+    await page.evaluate(() => globalThis.primaryActionTest.isChargingGlowstick()),
+    false,
+    'unconsciousness refuses a new glowstick charge',
+  );
+  assert.equal(
+    await page.evaluate(() => {
+      const r = globalThis.primaryActionTest;
+      r.beginGlowstickCharge();
+      return r.isChargingGlowstick();
+    }),
+    false,
+    'beginGlowstickCharge independently refuses unconsciousness',
+  );
+  await rejectedThrow();
+  assert.equal(
+    await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
+      throwFixture.uid,
+    ),
+    'hand',
+    'neither charge consumes the held glowstick',
+  );
+  await page.evaluate(() => {
+    const { body } = globalThis.primaryActionTest.session.sim;
+    body.advance(body.tuning.knockoutSeconds);
+  });
+  await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.body.unconscious);
   const cancelThrow = await holdAction(page, 'player.throw-glowstick');
   await page.mouse.down({ button: 'right' });
   await cancelThrow();
@@ -956,6 +1103,50 @@ try {
     undefined,
     { timeout: 10_000 },
   );
+  const treatment = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const rag = r.inventory.create('rag');
+    r.setHand(r.dominant, rag);
+    r.session.sim.body.impact(1, 'leftArm', { bleeding: true });
+    r.session.sim.body.impact(3, 'rightArm', { bleeding: true });
+    return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
+  });
+  assert.equal(await page.locator('#prompt').evaluate((node) => node.hidden), true);
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = true;
+  });
+  await page.waitForFunction(() => !document.querySelector('#prompt').hidden);
+  const actionHint = await page.locator('#prompt').textContent();
+  assert.equal((actionHint?.match(/›/g) ?? []).length, 1);
+  const selectedBeforeWheel = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
+  }, treatment.uid);
+  await page.evaluate(() => globalThis.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, cancelable: true })));
+  await page.waitForFunction(
+    (args) => {
+      const r = globalThis.primaryActionTest;
+      return r.survival.selectedItemAction(r.inventory.itemByUid(args.uid))?.treatment?.region !== args.before;
+    },
+    { uid: treatment.uid, before: selectedBeforeWheel },
+  );
+  const selected = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;
+  }, treatment.uid);
+  await page.mouse.click(640, 450);
+  await page.waitForFunction(
+    (uid) => {
+      const { sim } = globalThis.primaryActionTest.session;
+      return sim.actions.job?.jobType === 'treatment' && sim.actions.job.itemUid === uid;
+    },
+    treatment.uid,
+    { timeout: 10_000 },
+  );
+  const treatmentRegion = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.region);
+  assert.equal(treatmentRegion, selected);
   assert.deepEqual(pageErrors, []);
   await browser.close();
   browser = undefined;

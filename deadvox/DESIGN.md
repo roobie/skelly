@@ -6,11 +6,13 @@ read_if:
   - you're changing the rules for time, survival, light or zombies
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're restructuring the per-tick zombie simulation
-  - you change the game's design, especially held-item feedback or hand ownership
+  - you change the game's design, especially held-item feedback, body damage or treatment, or hand ownership
+  - you tune body infection or unconsciousness through content packs
   - you reconcile BR's rulings with player interaction and presentation
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you change what vehicles are for, or how their parts fit, come off and behave
 ---
 
 # deadvox — design
@@ -480,14 +482,29 @@ plain box in your hands. Files are small, and follow
 
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
   are per game hour. Temperature comes after Slice 1.
-- **Body.** Slice 1 has a single health pool. The body model that follows has
-  head, torso, two arms and two legs, each with its own health and status
-  effects:
-  - bleeding: needs a bandage
-  - infection: wounds left dirty get infected, which needs disinfectant
-  - fracture: needs a splint
-  - bite: raises zombification risk; how and whether that's treatable is part
-    of the lore
+- **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
+  defaults”. The model makes injury decisions consequential beyond a single
+  health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
+  and `src/ui/inventoryScreen.ts`, `InventoryScreen`.
+
+  BR's 08:33 treatment rule is “the \"treat with rag\" is not the way to go.
+  You wield the rag and left-click apply it (or quickbar-hold)”;
+  `src/game/survival.ts`, `Survival.use` and `Survival.useFromQuickbar`, own
+  that path. BR's 08:35 follow-up was “however, there need to be a \"select\"
+  mechanism in the UI for when wielded where to apply - it could be a message
+  box (visible only when messages/hints are enabled)”. BR then ruled at 08:36:
+  “scrolling on mouse changes which action is selected for the wielded item”.
+  `src/game/itemActions.ts`, `ItemActionSelection`, and `src/ui/playHud.ts`,
+  `playHudText`, cue selection and its hints-only presentation. BR's 08:41 default
+  is recorded in [SLICE-3.md](SLICE-3.md), 3.4.
+
+  BR (2026-10-06 11:05) agreed to time-based infection onset, an antiseptic
+  window, deterministic infection risk and a timed knockout, adding “agreed
+  with your suggestiong; but let's keep them tunable”. The wake-shock setting
+  is a starting tuning value, not a number BR chose. BR clarified at 11:32:
+  “and, just to be clear, the aim is to define all content and tunables via
+  mods - even the _core game_”, and at 11:34: “yeah, let's do it now”.
+  BR's 14:41 ruling was “knockout = totally black and no sound and prone”. BR approved the look at 16:35: “looks good - black screen and then death 👍”. See `src/game/session.ts`, `playerEyeHeightMetres`; `src/game/audio.ts`, `GameAudio.setOutputMuted`; `src/game/play.ts`, `frame`; `src/ui/style.css`, `body.unconscious`; and `src/core/schema.ts`, `BodyTuningSchema`.
 - **Death is permanent.** A new run is a new world, or the same world with a
   new character (the item piles from the previous run stay).
 
@@ -570,24 +587,22 @@ system, not just bigger numbers.
   persists without new save machinery; saves grow with the damage done.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.
-- **Shamblers are body regions, and die only when the head is destroyed.** The
-  single health pool (`src/core/zombies.ts:57`) becomes regions: head, torso,
-  arms and legs. A hit damages the region it lands on. A blast damages each
-  region by distance. A limb at zero comes off: its rigid part is hidden and a
-  limb prop drops. Otherwise it's kept as simple as possible to start with.
-  Losing limbs doesn't yet change behaviour, beyond what having no legs forces
-  (how a legless shambler moves is decided in the first slice). Head at zero
-  kills it.
+- **Shamblers have body regions and die only when the head is destroyed.**
+  Melee hits apply damage to the posed region they land on; a destroyed limb is
+  severed and leaves a prop, while a destroyed head kills. Losing both arms
+  prevents new attacks; `canStillAttack` in `src/core/zombies.ts` owns that rule.
+  How a legless shambler moves remains open; no crawling behavior is modeled.
+  `ZombieSystem.applyMeleeHit` and `ZombieSystem.applyMeleeEffects` own hit,
+  death and severing; `src/core/zombieRegions.ts`, `posedShamblerRegionBoxes`, owns
+  the posed hitboxes. Region health and severed state are simulation state and
+  persist in saves.
 - **Determinism.** Hit regions, blast falloff and any spread are seeded, so
   saves and replays stay exact. Region and material state is simulation state:
   it goes into the save snapshot and the source fingerprint.
-- **Order.** First slice: shambler regions and melee-driven limb loss, with
-  head-only death. Then materials and block destruction. Explosives and breach
-  charges come once throwing and firing exist.
-
 Still open: the full list of damage types and each material's resistances,
 whether wounds bleed or slow a shambler, partial block damage (cracked looks),
-and the sounds for severing and destruction (the audio manifest).
+blast damage by distance across body regions, explosives and breach charges, and
+the sounds for severing and destruction (the audio manifest).
 
 ## Light
 
@@ -746,18 +761,72 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 
 ## Vehicles
 
-- **A vehicle is a grid of parts** on the 0.5 m grid: frame, wheels, engine,
-  seats, fuel tank, battery, storage, lights, armour. Each part is an item with
-  the `vehiclePart` component and its own condition.
-- **Building and repair are crafting.** A vehicle can be pieced together from
-  wrecks. The fuel tank is a liquid container; the battery is part of the
-  electricity system.
-- **Physics:** a rigid body with a box collider for each part, and ray-cast
-  wheels with suspension. Collisions damage the parts that hit something.
-  Arcade handling first. Rapier (a WebAssembly physics engine) is the candidate;
-  see [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels) for driving over
-  terrain that rises in 0.5 m steps.
-- **Vehicles make noise.** Driving is fast and loud.
+**The goal, decided (BR, 2026-10-06).** BR set the goal at 17:01, while agreeing to a
+design review of the vehicle spike: “But let's first agree on what the goal is: darker_yet's vision is more or less
+what we're after. We want as much modularity as possible in the end, and the vehicle aspect
+of the game shall be very deep - maybe not 'my summer car'-deep, but very flexible and
+customisable”. On the lead's draft of the points below (17:13): “yes, your take on the
+vehicle goal is good; draft approved”. The draft draws on the darker_yet fitting seed, the
+darker_yet crafting seed and darker_yet spike 005.
+
+Vehicles are built, not picked. A vehicle is a set of typed parts fitted on a
+vehicle-local grid. How it looks, holds together, runs, handles, sounds, breaks and gets
+repaired all comes from which parts are fitted, where, and in what state. The vehicle
+spike tests the part model against this goal, and its reasons are in
+[docs/vehicle-spike.md](docs/vehicle-spike.md).
+
+1. **A car builder, not a car customizer.** Parts attach by capability, not by sockets a
+   designer laid out in advance: a wing mirror needs a mountable vertical face, and a
+   door, a halfboard or a plate the player welded on can all provide one. Players can
+   then build things the designers didn't foresee. For that, the spike's vehicles own
+   their fittings rather than switching a designer's list on and off (BR, 2026-10-06
+   18:07; see [docs/vehicle-spike.md](docs/vehicle-spike.md), "Catalogue, blueprints and
+   vehicles"): `src/debug/vehicles/model.ts`, `VehicleInstance`.
+2. **Fitting answers four separate questions:** what may go here (slot and layer); what
+   holds it up (a set of supports, which also decides what can be removed); by what
+   (skill, tools, materials and time to install, remove and repair, because building and
+   repair are crafting); and what it's for (the capabilities it provides). The spike's
+   supports are `src/debug/vehicles/model.ts`, `Fitting.supportedBy`.
+3. **Two layers.** A part type is immutable content that mods can extend. A fitting is
+   that part on this vehicle, with its own state: condition (intact, damaged, badly
+   damaged, broken) and attachment (attached or ripped off). Collisions damage the parts
+   that hit something. The spike's layers: `model.ts`, `PartType`, and `VehicleInstance`,
+   whose own fittings are where that state goes.
+4. **Networks at the fidelity play needs.** Steering is a per-part property. Drive is a
+   per-axle driven flag, so front, rear or all-wheel drive is a build choice. Power and
+   fuel are vehicle-wide pools: is there a charged battery, is there a tank with gas. The
+   fuel tank is a liquid container, and the battery is part of the electricity system,
+   which is a graph with batteries as nodes at base scale (see
+   [Base building and electricity](#base-building-and-electricity)) and one pool inside a
+   vehicle. A real connection graph is used only where the routing itself is gameplay.
+5. **Behaviour comes from the build:** mass, centre of mass, noise and handling, then
+   fuel use, protection and storage. Vehicles make noise, and driving is fast and loud.
+   BR (2026-10-06 16:28): noise is “mainly a property of the engine, but the chassis/hull
+   can factor in too”; the spike reads that as the engine being the source and the hull
+   damping it ([docs/vehicle-spike.md](docs/vehicle-spike.md), "Noise comes from the
+   build"). See `model.ts`, `measure` and `noiseRadius`.
+6. **Parts are items.** A removed part becomes an item carrying its type and condition
+   (the `vehiclePart` component, see [The item model](#the-item-model)): salvage it,
+   carry it, refit it. A vehicle can be pieced together from wrecks. So a part type's id
+   names one type across all vehicles: `src/debug/vehicles/catalogue.ts`, `CATALOGUE`.
+7. **Data-driven and moddable.** Part types and vehicles live in schema-validated content
+   (see [Content and modding](#content-and-modding)), and a mod adds parts without code.
+   The spike keeps its part types content-shaped for that: `src/debug/vehicles/voxels.ts`,
+   `ShapeOp`.
+8. **The grain is "a part a player would name and swap":** wheel, door, engine, battery,
+   seat, bull bar. No bolts, wire runs or plumbing as separate things.
+9. **Cheap at scale.** A street of parked cars costs little to draw, and editing works
+   part by part.
+
+**Open, deliberately (not part of the goal yet):**
+
+- **Driving-physics fidelity.** The plan so far: a rigid body with a box collider for
+  each part, ray-cast wheels with suspension, and arcade handling first. Rapier (a
+  WebAssembly physics engine) is the candidate; see
+  [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels) for driving over terrain that rises
+  in 0.5 m steps.
+- **Whether vehicles are voxel-destructible.**
+- **Vehicles as an enclosure** (gas-tight, a shelter).
 
 ## Content and modding
 

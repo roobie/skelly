@@ -6,6 +6,8 @@
 
 import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import type { BodyRegion, BodyState } from '../core/body.ts';
+import { BODY_REGIONS } from '../core/body.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
@@ -57,6 +59,8 @@ export interface ScreenHooks {
   assign: (slot: number, item: Item) => void;
   workOptions: (uid: number) => readonly WorkOption[];
   work: (uid: number, operation: WorkOperation) => string | undefined;
+  body: () => Readonly<BodyState>;
+  actionRefusal?: () => string | undefined;
 }
 
 interface Drag {
@@ -134,7 +138,20 @@ interface DetailsViewModel {
   readonly options: readonly OptionViewModel[];
 }
 
+interface BodyRegionViewModel {
+  readonly region: BodyRegion;
+  readonly bleeding: boolean;
+  readonly infection: string;
+  readonly damage: string;
+}
+
 interface InventoryScreenViewModel {
+  readonly body: {
+    readonly health: string;
+    readonly blood: string;
+    readonly shock: string;
+    readonly regions: readonly BodyRegionViewModel[];
+  };
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
   readonly worn: readonly SlotViewModel[];
@@ -253,7 +270,21 @@ const inventoryTemplate = (
     <span class="inv-help">Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
   </header>
   <div class="inv-body">
-    <section class="inv-pane">
+    <section class="inv-pane inv-body-panel" data-pane="body">
+      <h3>Body</h3>
+      <div class="inv-body-vitals">Health ${vm.body.health} · Blood ${vm.body.blood} · Shock ${vm.body.shock}</div>
+      ${vm.body.regions.map(
+        (region) => html`
+        <div class="inv-body-region" data-body-region=${region.region}>
+          <span class="inv-body-region-name">${region.region.replace(/([A-Z])/g, ' $1')}</span>
+          <span>${region.damage} damage</span>
+          ${region.bleeding ? html`<span class="inv-body-warning">Bleeding</span>` : nothing}
+          ${region.infection !== 'none' && region.infection !== 'resolved' ? html`<span class="inv-body-warning">${region.infection} infection</span>` : nothing}
+        </div>
+      `,
+      )}
+    </section>
+    <section class="inv-pane" data-pane="you">
       <h3>You</h3>
       <div class="inv-hands">
         ${vm.hands.map(
@@ -275,7 +306,7 @@ const inventoryTemplate = (
         `,
       )}
     </section>
-    <section class="inv-pane">
+    <section class="inv-pane" data-pane="around">
       <h3>Around you</h3>
       ${vm.piles.map(
         (pile) => html`
@@ -395,7 +426,8 @@ export class InventoryScreen {
       .map((entity) => `${entity.uid}:${entity.searched ? 1 : 0}:${this.hooks.searching(entity) ? 1 : 0}`)
       .join(',');
     const view = this.hooks.reach();
-    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}`;
+    const bodyKey = JSON.stringify(this.hooks.body());
+    const key = `${inputBindings.revision}|${this.inv.version}|${this.inv.entities.version}|${this.selected?.uid}|${piles}|${containers}|${view.origin.join(',')}|${bodyKey}`;
     if (key !== this.drawn) {
       this.drawn = key;
       this.render();
@@ -403,17 +435,40 @@ export class InventoryScreen {
     this.renderQueue();
   }
 
+  private refuseUnconsciousAction(action: string): boolean {
+    const refusal = this.hooks.actionRefusal?.();
+    if (
+      !(
+        refusal &&
+        (action.startsWith('inventory.') || action.startsWith('quickbar.assign.') || action === 'handling.stop')
+      )
+    ) {
+      return false;
+    }
+    this.refuse(refusal);
+    return true;
+  }
+
+  private rotateDraggedItem(action: string): boolean {
+    if (!this.drag?.moved || action !== 'inventory.rotate') {
+      return false;
+    }
+    this.drag.rotated = !this.drag.rotated;
+    this.drag.grab = [CELL / 2, CELL / 2];
+    this.renderDrag();
+    return true;
+  }
+
+  private quickbarDigit(action: string): number | undefined {
+    return action.startsWith('quickbar.assign.') ? Number(action.slice('quickbar.assign.'.length)) - 1 : undefined;
+  }
+
   /** The shared input owner has already selected an inventory command. */
   onAction(action: string): boolean {
-    if (this.drag?.moved && action === 'inventory.rotate') {
-      this.drag.rotated = !this.drag.rotated;
-      this.drag.grab = [CELL / 2, CELL / 2];
-      this.renderDrag();
+    if (this.refuseUnconsciousAction(action) || this.rotateDraggedItem(action)) {
       return true;
     }
-    const digit = action.startsWith('quickbar.assign.')
-      ? Number(action.slice('quickbar.assign.'.length)) - 1
-      : undefined;
+    const digit = this.quickbarDigit(action);
     const item = this.selected;
     if (action === 'handling.stop') {
       this.queue.cancel();
@@ -468,6 +523,10 @@ export class InventoryScreen {
   // ---- actions ----
 
   private tryQueue(item: Item, target: Target, count = item.count): string | undefined {
+    const refusal = this.hooks.actionRefusal?.();
+    if (refusal) {
+      return refusal;
+    }
     const result = this.queue.enqueue(item, target, count);
     return result.ok ? undefined : result.reason;
   }
@@ -547,15 +606,21 @@ export class InventoryScreen {
       inventoryTemplate(
         vm,
         (item, target, operation) => {
-          if (operation) {
+          const refusal = this.hooks.actionRefusal?.();
+          if (refusal) {
+            this.refuse(refusal);
+          } else if (operation) {
             this.report(this.hooks.work(item.uid, operation));
           } else if (target) {
             this.report(this.tryQueue(item, target));
           }
         },
         (uid) => {
+          const refusal = this.hooks.actionRefusal?.();
           const entity = this.entityByUid.get(uid);
-          if (entity) {
+          if (refusal) {
+            this.refuse(refusal);
+          } else if (entity) {
             this.report(this.hooks.search(entity));
           }
         },
@@ -566,6 +631,18 @@ export class InventoryScreen {
   }
 
   private viewModel(): InventoryScreenViewModel {
+    const body = this.hooks.body();
+    const bodyView = {
+      health: `${Math.round(body.health)}%`,
+      blood: `${Math.round(body.blood)}%`,
+      shock: `${Math.round(body.shock)}%`,
+      regions: BODY_REGIONS.map((region) => ({
+        region,
+        damage: `${Math.round(body.regionDamage[region])}%`,
+        bleeding: body.wounds[region]?.bleeding ?? false,
+        infection: body.wounds[region]?.infection ?? 'none',
+      })),
+    };
     const hands = (['right', 'left'] as const).map(
       (side): SlotViewModel => ({
         target: `hand:${side}`,
@@ -621,6 +698,7 @@ export class InventoryScreen {
       };
     });
     return {
+      body: bodyView,
       weight: kg(this.inv.carriedWeight()),
       hands,
       worn,
@@ -770,6 +848,11 @@ export class InventoryScreen {
   // ---- drag and drop ----
 
   private pointerDown(e: PointerEvent): void {
+    const refusal = this.hooks.actionRefusal?.();
+    if (refusal) {
+      this.refuse(refusal);
+      return;
+    }
     const node = (e.target as HTMLElement).closest<HTMLElement>('[data-uid]');
     const item = node ? this.byUid.get(Number(node.dataset.uid)) : undefined;
     if (!(node && item) || e.button !== 0) {
