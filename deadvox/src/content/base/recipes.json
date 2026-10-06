@@ -24,8 +24,8 @@
           "loweredPitchRadians": 0.55,
           "adsApertureFill": 0.85,
           "skillZeroHandling": {
-            "singleShot": { "variance": 2, "recoilKickScale": 6, "recoilRecoveryPerSimSecond": 0.5 },
-            "automaticFollowup": { "variance": 4, "recoilKickScale": 12, "recoilRecoveryPerSimSecond": 0.25 }
+            "singleShot": { "variance": 2, "recoilKickScale": 6, "recoilRecoveryScale": 0.5 },
+            "automaticFollowup": { "variance": 4, "recoilKickScale": 12, "recoilRecoveryScale": 0.25 }
           }
         }
       }

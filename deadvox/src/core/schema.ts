@@ -878,12 +878,12 @@ const SkillSchema = pipe(
               singleShot: strictObject({
                 variance: Positive,
                 recoilKickScale: Positive,
-                recoilRecoveryPerSimSecond: Positive,
+                recoilRecoveryScale: Positive,
               }),
               automaticFollowup: strictObject({
                 variance: Positive,
                 recoilKickScale: Positive,
-                recoilRecoveryPerSimSecond: Positive,
+                recoilRecoveryScale: Positive,
               }),
             }),
           }),

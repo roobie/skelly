@@ -542,29 +542,27 @@ plain box in your hands. Files are small, and follow
   (2026-10-06): “also; now that i can properly fire from ADS on the AK, I can
   note that a firearm skill level zero (=0) is way too good at controlling
   automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
-  BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”
-  and “yes, lean”. Asked whether the comparison should be 4× the expert or 4× what BR felt at
-  `7a8c72db`, BR answered “1: a”. Asked whether to worsen kick, shot-to-shot dispersion,
-  and recovery, BR answered “2: all”. Asked whether to apply this only to full-auto or to
-  singles too, BR answered “3: mostly full auto, but singles too”. BR approved moving the
-  values into content and adding live controls: “yes, make them content and add debug sliders”.
-  Accordingly, skill-zero endpoints for single/first shots and automatic follow-ups are
-  separate values in `src/content/base/recipes.json`, under the firearms-combat skill's
-  `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates them. A follow-up is
-  a committed shot from the same firearm within one-and-a-half content cadence periods
-  (`90 / rpm`) of its prior shot. The expert endpoint stays on the existing curve, so skill
-  10 is unchanged; legendary still matches expert. The authored endpoints are provisional
-  starting values: singles and first shots are twice the old skill-zero handling, while
-  follow-ups are four times the old skill-zero handling, pending BR's live tuning. The
-  values belong in moddable content per BR; `src/debug/index.ts`, `firearmsSkillEffectSlider`,
-  places all six sliders in the debug panel's Tools group, applies them to the running
-  session, and can copy the values. The tuning is
-  runtime-only and resets on reload; saves carry no slider state. The shared skill effects
-  are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`; per-firearm recoil
-  and pellet spread remain firearm-owned. The pump keeps its pellet
-  spread and adds no firearm cone. This
-  reuses the already saved player pitch, so no aim-state field or save-schema
-  change is needed. See
+  BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”.
+  BR agreed that novice handling should lean into that difficulty (“yes, lean”),
+  choosing four times what they felt at `7a8c72db` as the comparison (“1: a”). They wanted
+  kick, shot-to-shot dispersion and recovery all worsened (“2: all”), mostly for automatic
+  follow-ups but for singles too (“3: mostly full auto, but singles too”). BR approved
+  moving the values into moddable content with live debug controls: “yes, make them content
+  and add debug sliders”. Accordingly, skill-zero endpoints for single/first shots and
+  automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
+  firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
+  them. A follow-up is a committed shot from the same firearm within its burst window; see
+  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
+  stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
+  The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
+  and four times for follow-ups; the values remain provisional until BR settles them with the
+  sliders (d107). `src/debug/index.ts`, `firearmsSkillEffectSlider`, places the controls in
+  the debug panel's Tools group, applies them to the running session, and can copy the
+  values. The tuning is runtime-only and resets on reload; saves carry no slider state. The
+  shared skill effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
+  per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
+  spread and adds no firearm cone. This reuses the already saved player pitch, so no
+  aim-state field or save-schema change is needed. See
   `src/game/firearmHandling.ts`, `FirearmMechanics.fire` and
   `firearmHandlingFor`, `src/core/pellets.ts`, `coneDirection`,
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and

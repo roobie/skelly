@@ -232,14 +232,14 @@ const firearmsSkillEffectSlider = (
   const effectLabel = {
     variance: 'variance',
     recoilKickScale: 'kick',
-    recoilRecoveryPerSimSecond: 'recovery rate',
+    recoilRecoveryScale: 'recovery',
   }[field];
   const label = `${shotLabel} ${effectLabel}`;
   const id = `firearms-skill-${shotKind}-${field}`;
   const value = handling[shotKind][field];
-  const min = field === 'recoilRecoveryPerSimSecond' ? 0.01 : 0.1;
-  const max = field === 'recoilRecoveryPerSimSecond' ? 10 : 100;
-  const step = field === 'recoilRecoveryPerSimSecond' ? 0.01 : 0.1;
+  const min = field === 'recoilRecoveryScale' ? 0.01 : 0.1;
+  const max = field === 'recoilRecoveryScale' ? 10 : 100;
+  const step = field === 'recoilRecoveryScale' ? 0.01 : 0.1;
   return html`
     <label for=${id}>${label}</label>
     <input id=${id} type="range" min=${min} max=${max} step=${step} .value=${String(value)}
@@ -315,10 +315,10 @@ const panelTemplate = ({
         <legend>Skill-0 firearm handling · runtime only</legend>
         ${firearmsSkillEffectSlider('singleShot', 'variance', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('singleShot', 'recoilKickScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
-        ${firearmsSkillEffectSlider('singleShot', 'recoilRecoveryPerSimSecond', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        ${firearmsSkillEffectSlider('singleShot', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('automaticFollowup', 'variance', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('automaticFollowup', 'recoilKickScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
-        ${firearmsSkillEffectSlider('automaticFollowup', 'recoilRecoveryPerSimSecond', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
+        ${firearmsSkillEffectSlider('automaticFollowup', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         <button id="copy-firearms-skill-tuning" type="button" @click=${copyFirearmsSkillZeroHandling}>Copy firearm skill values</button>
         <output aria-live="polite">${firearmsSkillCopyStatus}</output>
       </fieldset>

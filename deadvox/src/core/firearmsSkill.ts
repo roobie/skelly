@@ -9,7 +9,7 @@ import {
 export interface FirearmsSkillZeroEffect {
   readonly variance: number;
   readonly recoilKickScale: number;
-  readonly recoilRecoveryPerSimSecond: number;
+  readonly recoilRecoveryScale: number;
 }
 
 export interface FirearmsSkillZeroHandling {
@@ -68,7 +68,7 @@ export const firearmsSkillEffects = (
   return {
     variance: atSkillZero(expertControl, zero.variance),
     recoilKickScale: atSkillZero(expertControl, zero.recoilKickScale),
-    recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryPerSimSecond),
+    recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryScale),
     reloadDuration: skillSaturation(effectLevel, 0.55, 5),
     rackDuration: skillSaturation(effectLevel, 0.62, 3),
   };

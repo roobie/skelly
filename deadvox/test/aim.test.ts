@@ -193,8 +193,8 @@ it('expert firearm effects retain the established curve endpoint regardless of s
   const alternate = {
     ...stanceTuning,
     skillZeroHandling: {
-      singleShot: { variance: 17, recoilKickScale: 23, recoilRecoveryPerSimSecond: 0.07 },
-      automaticFollowup: { variance: 31, recoilKickScale: 41, recoilRecoveryPerSimSecond: 0.03 },
+      singleShot: { variance: 17, recoilKickScale: 23, recoilRecoveryScale: 0.07 },
+      automaticFollowup: { variance: 31, recoilKickScale: 41, recoilRecoveryScale: 0.03 },
     },
   };
   expect(skillEffects(SKILL_LEVEL_MAX)).toEqual(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate));
@@ -217,25 +217,39 @@ it('changing a content skill-zero value changes the matching skill effect', () =
   );
 });
 
-it('expert firearms skill improves moving sway and recovers released recoil faster', () => {
+it('skill-zero kick scale increases the immediate recoil from the same shot', () => {
   const novice = new AimController();
-  const experienced = new AimController();
+  const expert = new AimController();
   novice.recordShot(73, 0.02, skillEffects(0).recoilKickScale);
-  experienced.recordShot(73, 0.02, skillEffects(SKILL_LEVEL_MAX).recoilKickScale);
-  const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: skillEffects(0).variance }));
-  const experiencedFrame = experienced.advance(
-    step({ velocity: [2, 0, 0], variance: skillEffects(SKILL_LEVEL_MAX).variance }),
-  );
-  expect(Math.hypot(experiencedFrame.yaw, experiencedFrame.pitch)).toBeLessThan(
-    Math.hypot(noviceFrame.yaw, noviceFrame.pitch),
-  );
+  expert.recordShot(73, 0.02, skillEffects(SKILL_LEVEL_MAX).recoilKickScale);
+  expect(novice.snapshotState().recoilPitch).toBeGreaterThan(expert.snapshotState().recoilPitch);
+  expect(Math.abs(novice.snapshotState().recoilYaw)).toBeGreaterThan(Math.abs(expert.snapshotState().recoilYaw));
+});
+
+it('expert recovery scale decays the same released recoil faster', () => {
+  const novice = new AimController();
+  const expert = new AimController();
+  novice.recordShot(73, 0.02);
+  expert.recordShot(73, 0.02);
+  const noviceRecoveryScale = skillEffects(0).recoilRecoveryRate;
+  const expertRecoveryScale = skillEffects(SKILL_LEVEL_MAX).recoilRecoveryRate;
   for (let tick = 0; tick < 20; tick++) {
-    novice.advance(step({ recoilRecoveryRate: skillEffects(0).recoilRecoveryRate }));
-    experienced.advance(step({ recoilRecoveryRate: skillEffects(SKILL_LEVEL_MAX).recoilRecoveryRate }));
+    novice.advance(step({ recoilRecoveryRate: noviceRecoveryScale }));
+    expert.advance(step({ recoilRecoveryRate: expertRecoveryScale }));
   }
-  expect(Math.hypot(experienced.frame.yaw, experienced.frame.pitch)).toBeLessThan(
-    Math.hypot(novice.frame.yaw, novice.frame.pitch),
+  const noviceRecoil = novice.snapshotState();
+  const expertRecoil = expert.snapshotState();
+  expect(Math.hypot(expertRecoil.recoilYaw, expertRecoil.recoilPitch)).toBeLessThan(
+    Math.hypot(noviceRecoil.recoilYaw, noviceRecoil.recoilPitch),
   );
+});
+
+it('expert firearms skill reduces moving sway', () => {
+  const novice = new AimController();
+  const expert = new AimController();
+  const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: skillEffects(0).variance }));
+  const expertFrame = expert.advance(step({ velocity: [2, 0, 0], variance: skillEffects(SKILL_LEVEL_MAX).variance }));
+  expect(Math.hypot(expertFrame.yaw, expertFrame.pitch)).toBeLessThan(Math.hypot(noviceFrame.yaw, noviceFrame.pitch));
 });
 
 it('firearms skill reduces climb over the same full-auto burst', () => {
@@ -248,6 +262,7 @@ it('firearms skill reduces climb over the same full-auto burst', () => {
   for (let index = 1; index < peaks.length; index++) {
     expect(peaks[index]).toBeLessThanOrEqual(peaks[index - 1]!);
   }
+  expect(peaks.at(-1)).toBeLessThan(peaks[0]!);
 });
 
 it('firearms skill effects improve through expert level and legendary matches expert', () => {

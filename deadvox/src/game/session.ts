@@ -353,13 +353,14 @@ export const createSession = (options: SessionOptions) => {
 
   const character = createSessionCharacter(registry, options.handedness, restored);
   const firearmsCombatTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
-  let firearmsSkillZeroHandling: FirearmsSkillZeroHandling | undefined = firearmsCombatTuning?.skillZeroHandling;
-  const currentFirearmsCombatTuning = (): FirearmsCombatTuning => {
-    if (!(firearmsCombatTuning && firearmsSkillZeroHandling)) {
-      throw new Error('Missing firearms-combat skill tuning');
-    }
-    return { ...firearmsCombatTuning, skillZeroHandling: firearmsSkillZeroHandling };
-  };
+  if (!firearmsCombatTuning) {
+    throw new Error('Missing firearms-combat skill tuning');
+  }
+  let firearmsSkillZeroHandling = firearmsCombatTuning.skillZeroHandling;
+  const currentFirearmsCombatTuning = (): FirearmsCombatTuning => ({
+    ...firearmsCombatTuning,
+    skillZeroHandling: firearmsSkillZeroHandling,
+  });
   const meleeCombatTuning = registry.skills.get('melee_combat')?.combat?.melee;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
@@ -817,7 +818,7 @@ export const createSession = (options: SessionOptions) => {
 
   const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
     const heldFirearm = firearmInHands();
-    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
+    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.());
     const readyUid = readyGait ? heldFirearm?.uid : undefined;
     firearms.advanceReadiness(dt, readyUid, readyGait);
     const going = intent.forward !== 0 || intent.right !== 0;
@@ -858,10 +859,9 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting);
     survival.setSprinting(sprinting);
     stepStamina(sim.needs, dt, sprinting);
-    const readyMovementFactor =
-      readyGait && firearmsCombatTuning
-        ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
-        : 1;
+    const readyMovementFactor = readyGait
+      ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
+      : 1;
     const pacedIntent = movementPace(
       { ...intent, sprint: sprinting, crouch: crouching },
       {
