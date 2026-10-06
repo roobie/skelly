@@ -18,22 +18,33 @@ import type { HandlingQueue, Job } from '../core/handling.ts';
 import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
-import { dropTarget } from '../core/options.ts';
+import { dropTarget, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
+import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
 
 /** Gameplay estimates for transient ballistics, not claimed as measured export data. */
 const CASE_SPEED = 3.5;
 const CASE_FLIGHT_SECONDS = 0.48;
 const COCK_ACTION = 'firearm.cock';
 const LOAD_ACTION = 'firearm.load';
+const MAGAZINE_ACTION = 'firearm.magazine';
+const TRAINING_ACTIONS: ReadonlySet<string> = new Set([
+  COCK_ACTION,
+  LOAD_ACTION,
+  MAGAZINE_ACTION,
+  MAGAZINE_LOAD_ACTION,
+]);
 export const isFirearmTrainingAction = (job: Job): boolean =>
-  job.kind === 'action' && (job.jobType === COCK_ACTION || job.jobType === LOAD_ACTION);
+  job.kind === 'action' && TRAINING_ACTIONS.has(job.jobType);
 /** Single-shell handling estimate, not an exported mechanical phase. */
 export const SHELL_LOAD_SECONDS = 0.9;
+/** Gameplay handling estimate for a magazine change, before the firearms skill's reload factor. */
+const MAGAZINE_CHANGE_SIM_SECONDS = 2.2;
 
 const unit = (vector: Vec3): Vec3 => {
   const length = Math.hypot(...vector);
@@ -169,10 +180,9 @@ export interface FirearmPoseInput {
   readonly pitch: number;
   readonly blockSize: number;
 }
-export interface DebugFirearmShotInput extends FirearmPoseInput {
+export interface FirearmShotInput extends FirearmPoseInput {
   readonly aimFrame: AimFrame;
   readonly aimingDownSights?: boolean;
-  readonly debugMode: boolean;
   readonly ready: boolean;
   readonly sprinting: boolean;
   readonly item: Item;
@@ -180,7 +190,7 @@ export interface DebugFirearmShotInput extends FirearmPoseInput {
   readonly simTime: number;
 }
 interface ShotCommit {
-  readonly input: DebugFirearmShotInput;
+  readonly input: FirearmShotInput;
   readonly item: Item;
   readonly data: ReturnType<typeof firearmHandlingFor> & { recoilKickRadians: number; dispersionRadians: number };
   readonly emission: Omit<PendingCase, 'seed'>;
@@ -294,6 +304,7 @@ export class FirearmMechanics {
       gun.firearm!.tube!.push(ammo.type);
       return undefined;
     });
+    queue.registerAction(MAGAZINE_ACTION, (params) => this.completeMagazineChange(params.uid, params.magazineUid));
   }
 
   private held(uid: number): boolean {
@@ -320,10 +331,11 @@ export class FirearmMechanics {
     }
     // Automatic motion will feed before the next cadence deadline. fire() rejects overlapping cycles;
     // only an idle empty chamber is a persistent refusal that should stop that cadence.
-    if (!item.firearm || item.firearm.cycle || item.firearm.chamber === 'round') {
+    const state = item.firearm;
+    if (state?.cycle || state?.chamber === 'round') {
       return;
     }
-    return item.firearm.chamber === 'empty' ? 'Chamber is empty' : 'Chamber contains a spent case';
+    return state?.chamber === 'case' ? 'Chamber contains a spent case' : 'Chamber is empty';
   }
 
   advanceReadiness(dt: number, uid: number | undefined, held: boolean): void {
@@ -349,7 +361,7 @@ export class FirearmMechanics {
     }
     let state = item.firearm;
     if (!state) {
-      state = { chamber: 'round' };
+      state = { chamber: 'empty' };
       item.firearm = state;
     }
     let progress = state.readying;
@@ -395,14 +407,9 @@ export class FirearmMechanics {
     return readying ? Math.max(0, Math.min(1, readying.elapsed / readying.duration)) : 0;
   }
 
-  fire(input: DebugFirearmShotInput): boolean {
+  fire(input: FirearmShotInput): boolean {
     const pump = this.isPump(input.item);
-    if (
-      !input.ready ||
-      input.sprinting ||
-      !((input.debugMode || pump) && this.held(input.item.uid)) ||
-      this.queue.busy
-    ) {
+    if (!input.ready || input.sprinting || !this.held(input.item.uid) || this.queue.busy) {
       return false;
     }
     // Advancing to the exact deadline also handles a coarse input sample containing several shots.
@@ -469,6 +476,10 @@ export class FirearmMechanics {
   }
 
   private commitBallisticShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+    const roundType = item.firearm?.roundType;
+    if (!(roundType && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
+      return false;
+    }
     const shotKind = this.handlingShotKind(item.uid, input.simTime);
     item.firearm = {
       chamber: 'case',
@@ -480,7 +491,6 @@ export class FirearmMechanics {
         elapsed: 0,
         duration: actionCycleSeconds(data.action, 'fire'),
         ejected: false,
-        feedRound: true,
       },
     };
     this.active.add(item.uid);
@@ -512,7 +522,7 @@ export class FirearmMechanics {
     const data = firearmHandlingFor(item, this.inventory.registry);
     const type = state?.chamber === 'case' ? spentCaseItemId(data.calibre) : state?.roundType;
     if (!type) {
-      return undefined; // Empty or virtual debug chamber has no live item to eject.
+      return undefined; // An empty chamber has no item to eject.
     }
     const pose = this.pose(uid);
     const emission = pose ? this.emission(item, data, pose) : state?.pendingCase;
@@ -539,12 +549,27 @@ export class FirearmMechanics {
     return location?.kind === 'hand' || location?.kind === 'worn';
   }
 
+  private heldMagazineFed(): Item | undefined {
+    return Object.values(this.inventory.hands).find(
+      (item) => item && magazineWellCalibre(this.inventory.registry, item.type) !== undefined,
+    );
+  }
+
   reloadableUid(): number | undefined {
-    return this.heldPump()?.uid;
+    return (this.heldPump() ?? this.heldMagazineFed())?.uid;
+  }
+
+  /** A magazine change takes one press; a pump loads one shell per press-and-hold step. */
+  reloadsInOneAction(uid: number): boolean {
+    return this.heldMagazineFed()?.uid === uid;
   }
 
   /** Loose carried cartridges only; ascending UID makes the source order save-stable. */
   loadNext(uid: number, time: number): string | undefined {
+    const rifle = this.heldMagazineFed();
+    if (rifle?.uid === uid) {
+      return this.changeMagazine(rifle, time);
+    }
     const gun = this.heldPump();
     if (gun?.uid !== uid) {
       return 'Pump shotgun is no longer held';
@@ -612,7 +637,91 @@ export class FirearmMechanics {
     return undefined;
   }
 
+  /**
+   * Swaps in the fullest carried magazine that fits and holds more than the fitted one (lowest UID on a tie, so
+   * the choice is save-stable); with none fuller, takes the fitted magazine out so it can be refilled.
+   */
+  private changeMagazine(gun: Item, time: number): string | undefined {
+    if (this.queue.busy || gun.firearm?.cycle) {
+      return 'Already handling something';
+    }
+    const fitted = gun.slots?.magazine;
+    const replacement = this.fullerMagazine(gun, fitted);
+    if (!(replacement || fitted)) {
+      return 'No magazine for this firearm is carried';
+    }
+    let label = 'Remove magazine';
+    if (replacement) {
+      label = fitted ? 'Change magazine' : 'Insert magazine';
+    }
+    this.queue.enqueueAction(
+      MAGAZINE_ACTION,
+      label,
+      MAGAZINE_CHANGE_SIM_SECONDS *
+        firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
+      replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
+    );
+    this.onSound('magazine_change', undefined, time);
+    return undefined;
+  }
+
+  private fullerMagazine(gun: Item, fitted: Item | undefined): Item | undefined {
+    const rounds = (magazine: Item): number => magazine.cartridges?.length ?? 0;
+    const [best] = [...this.inventory.items()]
+      .map(({ item }) => item)
+      .filter((item) => this.carried(item) && magazineFits(this.inventory.registry, gun.type, item.type))
+      .sort((a, b) => rounds(b) - rounds(a) || a.uid - b.uid);
+    return best && (fitted === undefined || rounds(best) > rounds(fitted)) ? best : undefined;
+  }
+
+  /** Detaches the replacement, stows the fitted magazine, then fits the replacement; any failure undoes all. */
+  private completeMagazineChange(uid: unknown, magazineUid: unknown): string | undefined {
+    const gun = typeof uid === 'number' ? this.inventory.itemByUid(uid) : undefined;
+    if (!(gun?.slots && this.held(gun.uid))) {
+      return 'Firearm is no longer held';
+    }
+    const replacement = magazineUid === undefined ? undefined : this.carriedFitting(gun, magazineUid);
+    if (magazineUid !== undefined && !replacement) {
+      return 'The magazine is no longer carried';
+    }
+    const back = replacement && this.inventory.targetForLocation(this.inventory.locate(replacement)!);
+    if (replacement && !this.inventory.consume(replacement, replacement.count)) {
+      return 'The magazine is no longer carried';
+    }
+    const removed = this.inventory.fitSlot(gun, 'magazine', replacement);
+    if (removed && !this.stow(gun, removed)) {
+      this.inventory.fitSlot(gun, 'magazine', removed);
+      if (replacement && back) {
+        this.inventory.add(replacement, back);
+      }
+      return 'No room for the removed magazine';
+    }
+    return undefined;
+  }
+
+  private carriedFitting(gun: Item, uid: unknown): Item | undefined {
+    const magazine = typeof uid === 'number' ? this.inventory.itemByUid(uid) : undefined;
+    return magazine && this.carried(magazine) && magazineFits(this.inventory.registry, gun.type, magazine.type)
+      ? magazine
+      : undefined;
+  }
+
+  /** Puts an item leaving the held gun into a pocket, or onto the ground at the player's feet. */
+  private stow(gun: Item, item: Item): boolean {
+    const feet = this.pose(gun.uid)?.feet;
+    const target = feet && stowTarget(this.inventory, item, feet);
+    return Boolean(target && this.inventory.add(item, target));
+  }
+
   describe(item: Item): string[] {
+    if (magazineWellCalibre(this.inventory.registry, item.type) !== undefined) {
+      const magazine = item.slots?.magazine;
+      const spec = magazine && magazineSpec(this.inventory.registry, magazine.type);
+      return [
+        `Chamber: ${this.chamberWords(item)}`,
+        `Magazine: ${spec ? `${magazine.cartridges!.length}/${spec.capacity}` : 'none'}`,
+      ];
+    }
     if (!this.isPump(item)) {
       return [];
     }
@@ -623,6 +732,14 @@ export class FirearmMechanics {
     ];
   }
 
+  private chamberWords(item: Item): string {
+    const state = item.firearm;
+    if (state?.chamber === 'round') {
+      return defOf(this.inventory.registry, state.roundType!).name;
+    }
+    return state?.chamber === 'case' ? 'spent case — charge before firing' : 'empty';
+  }
+
   cock(uid: number, time: number): string | undefined {
     const reason = this.cockReason(uid);
     if (reason) {
@@ -631,22 +748,20 @@ export class FirearmMechanics {
     const item = this.inventory.itemByUid(uid)!;
     const data = firearmHandlingFor(item, this.inventory.registry);
     const pump = this.isPump(item);
-    const state: FirearmState = item.firearm ?? { chamber: 'round' };
+    const state: FirearmState = item.firearm ?? { chamber: 'empty' };
     const duration =
       actionCycleSeconds(data.action, 'hand') *
       firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).rackDuration;
-    state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, duration, ejected: false, feedRound: !pump };
+    state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, duration, ejected: false };
     item.firearm = state;
     this.active.add(uid);
     this.queue.enqueueAction(
       COCK_ACTION,
-      `${pump ? 'Rack' : 'Cock'} ${defOf(this.inventory.registry, item.type).name}`,
+      `${pump ? 'Rack' : 'Charge'} ${defOf(this.inventory.registry, item.type).name}`,
       duration,
       { uid },
     );
-    if (pump) {
-      this.onSound('shotgun_rack_back', undefined, time);
-    }
+    this.onSound(pump ? 'shotgun_rack_back' : 'rifle_charge', undefined, time);
     return undefined;
   }
 
@@ -757,7 +872,7 @@ export class FirearmMechanics {
       cycle.ejected = true;
     }
     if (cycle.elapsed + 1e-9 >= duration) {
-      this.feed(item, state, cycle);
+      this.feed(item, state);
       state.cycle = undefined;
       this.retire(item);
     }
@@ -783,13 +898,11 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  private feed(item: Item, state: FirearmState, cycle: FirearmCycleState): void {
-    if (this.isPump(item)) {
-      state.roundType = state.tube!.shift();
-      state.chamber = state.roundType ? 'round' : 'empty';
-    } else if (cycle.feedRound) {
-      state.chamber = 'round';
-    }
+  /** The action closes on the next round: the pump's tube, else the fitted magazine's top round. */
+  private feed(item: Item, state: FirearmState): void {
+    const source = this.isPump(item) ? state.tube : item.slots?.magazine?.cartridges;
+    state.roundType = source?.shift();
+    state.chamber = state.roundType ? 'round' : 'empty';
   }
 
   private emission(item: Item, data: FirearmHandlingData, pose: FirearmPoseInput): Omit<PendingCase, 'seed'> {

@@ -4,7 +4,7 @@
 
 import type { ItemDef, Registry } from './content.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
-import { magazineContentsReason, magazineSpec } from './magazine.ts';
+import { magazineContentsReason, magazineSpec, magazineWellCalibre, slotsReason } from './magazine.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -50,7 +50,14 @@ export interface ItemFields<Node> {
   firearm?: FirearmState;
   /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
   cartridges?: string[];
+  /** Items fitted to this one, owned by it like work components (core/magazine.ts). */
+  slots?: ItemSlots<Node>;
   work?: CraftWork<Node> | undefined;
+}
+
+/** One entry per slot kind; a magazine-fed firearm has the magazine slot. */
+export interface ItemSlots<Node> {
+  magazine?: Node | undefined;
 }
 
 export interface Item extends ItemFields<Item> {
@@ -89,6 +96,11 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.made === undefined ? {} : { made: item.made }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
+    ...(item.slots === undefined
+      ? {}
+      : {
+          slots: item.slots.magazine === undefined ? {} : { magazine: snapshotItem(item.slots.magazine) as ItemState },
+        }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
     ...(item.work === undefined
       ? {}
@@ -132,7 +144,7 @@ const restoreFirearmState = (registry: Registry, def: ItemDef, state: ItemState)
     throw new Error('Mechanical firearm state needs one firearm');
   }
   assertFirearmState(firearm);
-  assertPumpAmmunition(registry, state.type, firearm);
+  assertAmmunition(registry, state.type, firearm);
   if (firearm.roundType !== undefined) {
     defOf(registry, firearm.roundType);
   }
@@ -154,7 +166,8 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertSavedBurnState(def, state);
   const firearm = restoreFirearmState(registry, def, state);
-  const magazineReason = magazineContentsReason(registry, state.type, state.cartridges);
+  const magazineReason =
+    magazineContentsReason(registry, state.type, state.cartridges) ?? slotsReason(registry, state.type, state.slots);
   if (magazineReason) {
     throw new Error(magazineReason);
   }
@@ -170,6 +183,11 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.made === undefined ? {} : { made: state.made }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
+    ...(state.slots === undefined
+      ? {}
+      : {
+          slots: state.slots.magazine === undefined ? {} : { magazine: restoreItem(registry, state.slots.magazine) },
+        }),
     ...(state.pockets === undefined
       ? {}
       : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
@@ -226,6 +244,10 @@ export class ItemFactory {
     if (def.firearm?.pump) {
       item.firearm = { chamber: 'empty', tube: [] };
     }
+    if (magazineWellCalibre(registry, type) !== undefined) {
+      item.firearm = { chamber: 'empty' };
+      item.slots = {};
+    }
     if (magazineSpec(registry, type)) {
       item.cartridges = [];
     }
@@ -267,13 +289,25 @@ export const defOf = (registry: Registry, type: string): ItemDef => {
   return def;
 };
 
+/** A magazine-fed chamber holds exactly one cartridge of the firearm's calibre when loaded. */
+const assertMagazineFedChamber = (registry: Registry, type: string, state: FirearmState): void => {
+  if (state.tube !== undefined || state.landing !== undefined) {
+    throw new Error('Tube/landing state needs a pump firearm');
+  }
+  const calibre = magazineWellCalibre(registry, type);
+  if (
+    (state.chamber === 'round') !== (state.roundType !== undefined) ||
+    (state.roundType !== undefined && defOf(registry, state.roundType).ammo?.calibre !== calibre)
+  ) {
+    throw new Error('Chambered round needs one cartridge of the firearm calibre');
+  }
+};
+
 /** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
-const assertPumpAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
+const assertAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
   const def = defOf(registry, type);
   if (!def.firearm?.pump) {
-    if (state.tube !== undefined || state.landing !== undefined) {
-      throw new Error('Tube/landing state needs a pump firearm');
-    }
+    assertMagazineFedChamber(registry, type, state);
     return;
   }
   const model = def.model ? registry.models.get(def.model) : undefined;
@@ -387,6 +421,7 @@ export const weightOf = (registry: Registry, item: Item): number =>
   defOf(registry, item.type).weight * item.count +
   ammunitionWeight(registry, item) +
   (item.cartridges ?? []).reduce((sum, round) => sum + defOf(registry, round).weight, 0) +
+  (item.slots?.magazine ? weightOf(registry, item.slots.magazine) : 0) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
 

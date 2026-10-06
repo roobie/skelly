@@ -2,16 +2,16 @@
 // them one by one"). Each round is one handling job, so a cancelled press loses no ammunition.
 import type { Vec3 } from '../core/coords.ts';
 import type { HandlingQueue } from '../core/handling.ts';
-import { dropSpots, type Inventory, type Target } from '../core/inventory.ts';
+import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
-import { playerPockets } from '../core/options.ts';
+import { stowTarget } from '../core/options.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 
 /** Gameplay handling estimates per round, before the firearms skill's reload factor. */
 export const ROUND_LOAD_SIM_SECONDS = 0.8;
 export const ROUND_STRIP_SIM_SECONDS = 0.5;
-const LOAD_ACTION = 'magazine.load';
+export const MAGAZINE_LOAD_ACTION = 'magazine.load';
 const STRIP_ACTION = 'magazine.strip';
 
 export class MagazineHandling {
@@ -40,7 +40,7 @@ export class MagazineHandling {
     this.feet = feet;
     this.reloadDurationScale = reloadDurationScale;
     this.onSound = onSound;
-    queue.registerAction(LOAD_ACTION, (params) => this.completeLoad(params.uid, params.ammoUid));
+    queue.registerAction(MAGAZINE_LOAD_ACTION, (params) => this.completeLoad(params.uid, params.ammoUid));
     queue.registerAction(STRIP_ACTION, (params) => this.completeStrip(params.uid));
   }
 
@@ -69,7 +69,7 @@ export class MagazineHandling {
     }
     const spec = magazineSpec(this.inventory.registry, magazine.type)!;
     this.queue.enqueueAction(
-      LOAD_ACTION,
+      MAGAZINE_LOAD_ACTION,
       `Load round ${magazine.cartridges!.length + 1}/${spec.capacity}`,
       ROUND_LOAD_SIM_SECONDS * this.reloadDurationScale(),
       { uid: magazine.uid, ammoUid: round.uid },
@@ -99,7 +99,7 @@ export class MagazineHandling {
 
   cancelLoad(uid: number): void {
     const job = this.queue.jobs.find(
-      (entry) => entry.kind === 'action' && entry.jobType === LOAD_ACTION && entry.params.uid === uid,
+      (entry) => entry.kind === 'action' && entry.jobType === MAGAZINE_LOAD_ACTION && entry.params.uid === uid,
     );
     if (job) {
       this.queue.cancelJob(job);
@@ -152,11 +152,7 @@ export class MagazineHandling {
       return 'Magazine is empty';
     }
     const round = this.inventory.create(type);
-    const target =
-      this.pocketFor(round) ??
-      dropSpots(this.feet())
-        .map((pos): Target => ({ kind: 'pile', pos }))
-        .find((spot) => this.inventory.planAdd(round, spot).ok);
+    const target = stowTarget(this.inventory, round, this.feet());
     if (!(target && this.inventory.add(round, target))) {
       return 'No room for the round nearby';
     }
@@ -184,11 +180,5 @@ export class MagazineHandling {
       location = this.inventory.locate(location.owner);
     }
     return location?.kind === 'hand' || location?.kind === 'worn';
-  }
-
-  private pocketFor(item: Item): Target | undefined {
-    return playerPockets(this.inventory)
-      .map(({ owner, pocket }): Target => ({ kind: 'pocket', owner, pocket }))
-      .find((target) => this.inventory.planAdd(item, target).ok);
   }
 }

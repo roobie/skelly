@@ -10,6 +10,7 @@ import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
+import { chargedRifle } from './rifleFixture.ts';
 
 const base = 'src/content/base';
 const { registry: source } = buildRegistry(
@@ -17,7 +18,7 @@ const { registry: source } = buildRegistry(
     .filter((file) => file.endsWith('.json'))
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
 );
-const rifleType = 'debug_rifle_assault';
+const rifleType = 'rifle_assault';
 const projectionErrorPixels = (direction: readonly number[]): readonly [number, number, number] => {
   const viewportHeight = 720;
   const aspect = 1280 / viewportHeight;
@@ -36,10 +37,6 @@ const registry = { ...source, items };
 const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
   const character = new Character(registry, { handedness: side === 'right' ? 'left' : 'right' });
   const inventory = new Inventory(registry, undefined, undefined, character);
-  const rifle = inventory.create(rifleType);
-  if (!inventory.add(rifle, { kind: 'hand', side })) {
-    throw new Error('Could not place the fixture rifle in its physical slot');
-  }
   const effects: FirearmShotEffect[] = [];
   const pose = {
     feet: [0, 1, 0],
@@ -51,18 +48,19 @@ const ejectFrom = (side: HandSide): FirearmShotEffect[] => {
     ready: true,
     sprinting: false,
   } as const;
-  const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+  const queue = new HandlingQueue(inventory);
+  const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: pose.blockSize,
     pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
     onEjection: (effect) => effects.push(effect),
   });
+  const { rifle } = chargedRifle(inventory, queue, mechanics, { type: rifleType, side });
   if (
     !mechanics.fire({
       ...pose,
       feet: [...pose.feet],
       eye: [...pose.eye],
       item: rifle,
-      debugMode: true,
       seed: 71,
       simTime: 1,
     })

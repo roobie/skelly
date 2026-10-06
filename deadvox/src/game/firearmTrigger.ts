@@ -1,5 +1,5 @@
 /** Exact shot deadlines sampled by the existing player scheduler; no wall-clock timers. */
-export class DebugFirearmTrigger {
+export class FirearmTrigger {
   private burst: { uid: number; rpm: number; start: number; next: number } | undefined;
   advance(time: number, weapon: { uid: number; rpm: number } | undefined, pressed: boolean, held: boolean): number[] {
     if (!(weapon && (pressed || held))) {

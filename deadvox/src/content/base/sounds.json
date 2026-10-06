@@ -61,6 +61,26 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "magazine_change",
+      "variants": ["assets/audio/shotgun-rack-forward.ogg"],
+      "gain": 0.45,
+      "pitchJitter": [0.85, 0.9],
+      "gainJitter": [0.95, 1.05],
+      "minIntervalSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "rifle_charge",
+      "variants": ["assets/audio/shotgun-rack-back.ogg"],
+      "gain": 0.5,
+      "pitchJitter": [1.15, 1.2],
+      "gainJitter": [0.95, 1.05],
+      "minIntervalSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "shotgun_hull_drop",
       "variants": [
         "assets/audio/shotgun-hull-01.ogg",

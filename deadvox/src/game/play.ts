@@ -69,7 +69,7 @@ import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
-import { DebugFirearmTrigger } from './firearmTrigger.ts';
+import { FirearmTrigger } from './firearmTrigger.ts';
 import { Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
@@ -177,10 +177,10 @@ export const startPlay = (
 
   let playtestObserver: PlaytestObserver | undefined;
   let debugLaserEnabled = true;
-  const firearmTrigger = new DebugFirearmTrigger();
+  const firearmTrigger = new FirearmTrigger();
   let automaticFireUid: number | undefined;
   const automaticFireWeapon = (): Item | undefined => {
-    if (!config.debug || debugTools?.buildOn || queue.busy) {
+    if (debugTools?.buildOn || queue.busy) {
       return undefined;
     }
     const action = selectPrimaryAction(inventory);
@@ -209,7 +209,7 @@ export const startPlay = (
     );
     if (weapon) {
       for (const deadline of deadlines) {
-        fireDebugWeapon(weapon, deadline);
+        fireWeapon(weapon, deadline);
       }
     }
   };
@@ -247,10 +247,7 @@ export const startPlay = (
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(inventory);
         if (
-          !(
-            debugTools?.buildOn ||
-            (config.debug && action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
-          )
+          !(debugTools?.buildOn || (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump))
         ) {
           performHandUse(dominantSide(inventory.character));
         }
@@ -901,6 +898,7 @@ export const startPlay = (
       return {
         uid: gun,
         busy: () => queue.busy || firearms.busy,
+        oneAction: firearms.reloadsInOneAction(gun),
         load: () => refuse(firearms.loadNext(gun, sim.time)),
         rack: () => refuse(firearms.cock(gun, sim.time)),
         cancelLoad: () => firearms.cancelLoad(gun),
@@ -1376,10 +1374,9 @@ export const startPlay = (
     }
   };
 
-  const fireDebugWeapon = (item: Item, time: number): boolean => {
+  const fireWeapon = (item: Item, time: number): boolean => {
     const fired = firearms.fire({
       aimFrame: aim.frame,
-      debugMode: config.debug,
       ready: isFirearmReady(item.uid),
       aimingDownSights: isAimingDownSights(),
       sprinting: session.sprinting,
@@ -1453,15 +1450,10 @@ export const startPlay = (
     showRefusal(primaryActionHint(registry, item), sim.time);
   };
   const fireHeldItem = (item: Item): void => {
-    if (!isFirearmReady(item.uid) || session.sprinting || fireDebugWeapon(item, sim.time)) {
+    if (!isFirearmReady(item.uid) || session.sprinting || fireWeapon(item, sim.time)) {
       return;
     }
-    const firearm = registry.items.get(item.type)?.firearm;
-    const refusal =
-      config.debug || firearm?.pump
-        ? (firearms.fireReason(item.uid) ?? 'Firearm is not ready')
-        : 'Firearms can only be fired in debug mode';
-    showRefusal(refusal, sim.time);
+    showRefusal(firearms.fireReason(item.uid) ?? 'Firearm is not ready', sim.time);
   };
   performHandUse = (hand: 'right' | 'left') => {
     if (sim.body.actionRefusal) {

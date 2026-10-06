@@ -294,13 +294,13 @@
       "model": "shotgun_pump"
     },
     {
-      "id": "debug_rifle_assault",
-      "name": "Assault rifle (debug)",
+      "id": "rifle_assault",
+      "name": "AR-pattern rifle",
       "category": "weapon",
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A curated gungen AR with exported carrier and charging-handle cycles. Debug fire uses virtual rounds, without hits or ammunition consumption.",
+      "description": "A curated gungen AR in 5.56×45, fed from STANAG magazines. Hold R to change to the fullest carried magazine, or to take out the fitted one when none is fuller; double-press R to work the charging handle. LMB fires; hold it for automatic fire. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
       "firearm": {
         "recoilKickRadians": 0.006,
         "dispersionRadians": 0.012
@@ -308,13 +308,13 @@
       "model": "rifle_assault"
     },
     {
-      "id": "debug_rifle_ak",
-      "name": "AK-pattern rifle (debug)",
+      "id": "rifle_ak",
+      "name": "AK-pattern rifle",
       "category": "weapon",
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A curated gungen AK with its handle on the carrier. Debug fire uses virtual rounds, without hits or ammunition consumption. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "description": "A curated gungen AK in 7.62×39, fed from AKM magazines, with its handle on the carrier. Hold R to change to the fullest carried magazine, or to take out the fitted one when none is fuller; double-press R to work the charging handle. LMB fires; hold it for automatic fire. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
       "firearm": {
         "recoilKickRadians": 0.012,
         "dispersionRadians": 0.018

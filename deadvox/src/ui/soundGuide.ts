@@ -213,6 +213,21 @@ const TRIGGER_ENTRIES = [
       note: 'Stand-in: the pump-insert recordings, pitched higher still; a magazine-specific click is future work (d114).',
     },
   ],
+  [
+    'magazine_change',
+    {
+      trigger:
+        'Hold R with an AR or AK in hand: a magazine change, insert or removal starts. The change finishes even if R is released.',
+      note: 'Stand-in: the pump rack-forward recording, pitched down; a magazine latch and seating sound is future work (d114).',
+    },
+  ],
+  [
+    'rifle_charge',
+    {
+      trigger: 'Double-press R with an AR or AK in hand to work the charging handle.',
+      note: 'Stand-in: the pump rack-back recording, pitched up; a charging-handle sound is future work (d114).',
+    },
+  ],
   ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],
   ['pouch_take', { trigger: 'Take an item out of a pocket on a worn item.' }],
 ] satisfies readonly (readonly [SoundEventId, SoundTriggerGuide])[];

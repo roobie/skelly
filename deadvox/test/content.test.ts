@@ -521,20 +521,6 @@ describe('content', () => {
     expect(issues).toEqual([{ source: 'dup.json', path: 'blocks[1].id', message: 'duplicate id "ok" in this file' }]);
   });
 
-  it('exposes the debug AR for manual spawning, not loot tables', () => {
-    const registry = baseRegistry;
-    expect(registry.items.get('debug_rifle_assault')).toMatchObject({
-      model: 'rifle_assault',
-      category: 'weapon',
-      weight: 3500,
-      size: [1, 5],
-      twoHanded: true,
-    });
-    expect(
-      [...registry.loot.values()].some((table) => table.entries.some((entry) => entry.item === 'debug_rifle_assault')),
-    ).toBe(false);
-  });
-
   it('merges every descriptor section in the base pack, including recipes and skills', () => {
     const registry = baseRegistry;
     expect(registry.items.size).toBeGreaterThan(30);

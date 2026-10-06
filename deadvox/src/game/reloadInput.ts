@@ -7,6 +7,8 @@ export interface ReloadBinding {
   readonly busy: () => boolean;
   /** True only when a single-shell job was admitted. */
   readonly load: () => boolean;
+  /** One admitted load per press, which release doesn't cancel: a magazine change rather than shell by shell. */
+  readonly oneAction?: boolean;
   readonly rack: () => void;
   readonly cancelLoad: () => void;
 }
@@ -72,8 +74,8 @@ export class ReloadInput {
       this.press = undefined; // A short single tap has no action.
     } else if (!press.binding.busy()) {
       press.loading = press.binding.load();
-      if (!press.loading) {
-        this.press = undefined; // Full tube/no loose shells: wait for a fresh press.
+      if (!press.loading || press.binding.oneAction) {
+        this.press = undefined; // Full tube/no loose shells, or the one action began: wait for a fresh press.
       }
     }
   }

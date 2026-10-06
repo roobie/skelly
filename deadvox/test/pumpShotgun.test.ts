@@ -5,6 +5,7 @@ import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose, heldFirearmTransform } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
@@ -100,7 +101,7 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
     const duration = firearmHandlingFor(gun, inventory.registry).action.hand.durationSeconds;
     finish(duration, time + duration);
   };
-  const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time, debugMode: false });
+  const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time });
   return {
     inventory,
     gun,
@@ -468,6 +469,27 @@ describe('real pump ammunition', () => {
     );
   });
 
+  it('keeps an unejected fired hull in the save copy while cancelling only the rack motion', () => {
+    const f = fixture();
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    expect(f.mechanics.cock(f.gun.uid, 4)).toBeUndefined();
+    const beforeEjection = ejectSeconds(firearmHandlingFor(f.gun, registry).action, 'hand') / 2;
+    f.queue.tick(beforeEjection);
+    f.mechanics.advanceTo(4 + beforeEjection);
+    const { pendingCase } = f.gun.firearm!;
+    const saved = f.inventory.snapshotState();
+    expect(saved.hands.right?.firearm).toMatchObject({ chamber: 'case', pendingCase });
+    expect(saved.hands.right?.firearm?.cycle).toBeUndefined();
+    expect(f.gun.firearm?.cycle?.mode).toBe('hand');
+    expect(Inventory.restoreState(f.inventory.registry, saved).hands.right?.firearm?.pendingCase).toEqual(pendingCase);
+    f.queue.cancel();
+    f.mechanics.advanceTo(4 + beforeEjection * 2);
+    expect(f.gun.firearm?.cycle).toBeUndefined();
+    expect(f.gun.firearm?.chamber).toBe('case');
+  });
+
   it('commits skill-scaled reload and rack durations to their presentation frames', () => {
     const novice = fixture(registry, () => SKILL_LEVEL_MIN);
     const experienced = fixture(registry, () => SKILL_LEVEL_MAX);
@@ -494,7 +516,7 @@ describe('real pump ammunition', () => {
     f.load(0);
     f.rack(1);
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
-    expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, debugMode: false, aimFrame })).toBe(true);
+    expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
     const modelId = f.inventory.registry.items.get(f.gun.type)!.model!;
     const model = f.inventory.registry.models.get(modelId)!;
@@ -568,7 +590,7 @@ describe('real pump ammunition', () => {
     const shotAt = SHELL_LOAD_SECONDS + duration + 1;
     s.firearms.advanceTo(shotAt);
     const events = s.sim.events.reader();
-    expect(s.firearms.fire({ ...pose, item: gun, seed: 71, simTime: shotAt, debugMode: false })).toBe(true);
+    expect(s.firearms.fire({ ...pose, item: gun, seed: 71, simTime: shotAt })).toBe(true);
     const emitted = events.read().filter((event) => event.kind === 'sound' || event.kind === 'noise');
     expect(emitted.map((event) => [event.kind, event.event])).toEqual([
       ['sound', 'shotgun_blast'],

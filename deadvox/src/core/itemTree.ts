@@ -20,6 +20,7 @@ export type TreeLocation<Node, Pile, Entity> =
   | { kind: 'hand'; side: HandSide }
   | { kind: 'worn'; slot: WearSlot }
   | { kind: 'work'; owner: Node }
+  | { kind: 'slot'; owner: Node; slot: 'magazine' }
   | { kind: 'pocket'; owner: Node; pocket: number; placed: PlacedItem<Node> }
   | { kind: 'pile'; pile: Pile; placed: PlacedItem<Node> }
   | { kind: 'furniture'; entity: Entity; pocket: number; placed: PlacedItem<Node> };
@@ -83,6 +84,16 @@ export function* walkItemTree<Node extends NodeShape<Node>, Pile, Entity>(
 ): Generator<TreeEntry<Node, Pile, Entity>> {
   for (const root of roots) {
     yield root;
+    const fitted = root.item.slots?.magazine;
+    if (fitted) {
+      yield* walkItemTree<Node, Pile, Entity>([
+        {
+          item: fitted,
+          location: { kind: 'slot', owner: root.item, slot: 'magazine' },
+          path: `${root.path}.slots.magazine`,
+        },
+      ]);
+    }
     for (const [index, item] of (root.item.work?.components ?? []).entries()) {
       yield* walkItemTree<Node, Pile, Entity>([
         { item, location: { kind: 'work', owner: root.item }, path: `${root.path}.work.components[${index}]` },

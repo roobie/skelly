@@ -31,6 +31,8 @@ export const SOUND_EVENT_IDS = [
   'shotgun_hull_drop',
   'magazine_round_insert',
   'magazine_round_strip',
+  'magazine_change',
+  'rifle_charge',
   'item_drop_wood',
   'pouch_take',
   'shambler_idle',

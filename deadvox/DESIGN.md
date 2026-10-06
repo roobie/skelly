@@ -531,7 +531,8 @@ plain box in your hands. Files are small, and follow
   cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
   animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
-  capacity, handling and noise. Ammo and magazines are items with pockets. The
+  capacity, handling and noise. Ammunition and magazines are items; a magazine holds its
+  cartridges and fits a rifle's magazine slot (see "Magazines" and "Rifles" below). The
   simulation's `AimController` publishes the same offset to shot resolution and
   held-firearm presentation, so the weapon does not visibly aim somewhere other
   than its shot ray. Aim state is saved because it can change hit outcomes. BR's
@@ -544,7 +545,7 @@ plain box in your hands. Files are small, and follow
   but control is": firearm-owned `dispersionRadians` is sampled per round, while
   `firearmsSkillEffects` controls sway, kick per shot and recoil recovery,
   with legendary progression granting no control beyond ordinary expert per
-  BR's ruling. When `debug_rifle_ak` fires on full auto at skill 0, BR reported
+  BR's ruling. When the AK (then a debug item, now `rifle_ak`) fired on full auto at skill 0, BR reported
   (2026-10-06): “also; now that i can properly fire from ADS on the AK, I can
   note that a firearm skill level zero (=0) is way too good at controlling
   automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
@@ -588,7 +589,10 @@ plain box in your hands. Files are small, and follow
   too when loading / i don't think it should”. A held, completed ready stance
   remains active through firearm rack/load handling; raising still takes its
   skill-scaled simulation time. See `src/game/session.ts`,
-  `advancePlayerReadiness`. Until 3.1 lands, aim-sway look comparisons use the current movement rules;
+  `advancePlayerReadiness`. Racking and loading also train firearms handling. A rifle's
+  magazine change and charge, and loading a round into a magazine, follow the same rule (d114-2):
+  each trains handling, and the first two keep a held ready stance. See
+  `src/game/firearmHandling.ts`, `isFirearmTrainingAction`. Until 3.1 lands, aim-sway look comparisons use the current movement rules;
   afterward, moving-fire comparisons use the skill-dependent duck-walk speed.
   d62 leaves practice unawarded until its source is ruled; #275 sets tiered
   training, while tiers for existing sources and above-tier practice remain
@@ -598,6 +602,7 @@ plain box in your hands. Files are small, and follow
   questions triggers expansion.
 - **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. BR's firearm ruling, planned in [SLICE-3.md](SLICE-3.md), settles real ammunition and magazine loading plus body-region damage by calibre. Visible shambler marks are desired ("ideally, yes") and await the 3.2 first look.
 - **Magazines (3.2, d114):** BR, 2026-10-05 21:04: "magazines are real, you load them one by one, like in dayz". A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not a double press, because CONTROLS.md, "Reload only", keeps R for (re)loading and racking. Loading and stripping a round both use the firearms skill's reload factor, extending d62's per-shell reading to per-round handling. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
+- **Rifles (3.2, d114):** the AR and AK are real firearms that fire chambered cartridges in any mode; the debug rifles' virtual rounds are gone. A magazine-fed firearm owns a slot map, and the fitted magazine is its `magazine` entry. It is a whole item that saves inside the rifle, so the same magazine comes back out. The map leaves room for 3.7's attachments to add slot kinds without reshaping saves (SLICE-3.md, "3.7 Modular weapons"). Firing and working the charging handle feed the magazine's top round; with no magazine or an empty one, the chamber stays empty. Hold R starts one magazine change: it swaps in the fullest carried magazine that fits and holds more than the fitted one. When none is fuller, it takes the fitted magazine out to a pocket, or to the ground, so it can be refilled. A change is one motion, so it neither repeats while R is held nor cancels on release, unlike shell-by-shell loading. Double-press R works the charging handle, BR's "double-press R to rack" (CONTROLS.md, "Reload only"). See `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`, `src/game/firearmHandling.ts`, `FirearmMechanics.loadNext` and `FirearmMechanics.cock`, and `src/game/reloadInput.ts`, `ReloadBinding.oneAction`. Until the 3.2 first look (SLICE-3.md, 3.2), the gun model shows its baked magazine whether or not one is fitted.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on

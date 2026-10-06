@@ -63,9 +63,9 @@ describe('refusal audio presentation', () => {
 
 describe('firearm audio presentation', () => {
   it('uses one shared AKM profile while retaining an item-specific extension point', () => {
-    expect(firearmShotSound('debug_rifle_assault')).toEqual({
+    expect(firearmShotSound('rifle_assault')).toEqual({
       event: 'gunshot',
-      sourceLabel: 'debug_rifle_assault',
+      sourceLabel: 'rifle_assault',
       listenerRelative: true,
     });
     expect(firearmShotSound('future_weapon', 'actor')).toEqual({

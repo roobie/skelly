@@ -359,6 +359,8 @@ export class Inventory {
         };
       case 'work':
         throw new Error('Work inputs have no independent target');
+      case 'slot':
+        throw new Error('A fitted item has no independent target');
       default:
         throw new Error(`Unknown location kind ${String((location as { kind: string }).kind)}`);
     }
@@ -391,6 +393,22 @@ export class Inventory {
 
   create(type: string, count = 1, condition = 1): Item {
     return this.factory.create(this.registry, type, count, condition);
+  }
+
+  /** Fills or empties an owner's slot with an item outside the tree; the caller places the item it returns. */
+  fitSlot(owner: Item, slot: 'magazine', item: Item | undefined): Item | undefined {
+    const { slots } = owner;
+    if (!slots || (item && this.locate(item))) {
+      throw new Error('Only a loose item fits a slot');
+    }
+    const previous = slots[slot];
+    if (item) {
+      slots[slot] = item;
+    } else {
+      delete slots[slot];
+    }
+    this.version += 1;
+    return previous;
   }
 
   changeCondition(uid: number, delta: number): boolean {
@@ -455,6 +473,9 @@ export class Inventory {
     }
     if (from.kind === 'work') {
       return refuse('Inputs are held by the work item');
+    }
+    if (from.kind === 'slot') {
+      return refuse('It is fitted to the firearm');
     }
     if (!Number.isInteger(count) || count < 1 || count > item.count) {
       return refuse(`Can't move ${count} of ${item.count}`);
@@ -775,6 +796,7 @@ export class Inventory {
       case 'furniture':
         return { kind: 'furniture', entity: location.entity };
       case 'work':
+      case 'slot':
       case 'pocket': {
         const owner = this.locate(location.owner);
         return owner ? this.placeOf(owner) : undefined;
@@ -960,7 +982,7 @@ export class Inventory {
   /** Uses up `count` of an item wherever it is: eaten, burnt, loaded into something. */
   consume(item: Item, count = 1): boolean {
     const at = this.locate(item);
-    if (!at || item.work || at.kind === 'work' || count > item.count) {
+    if (!at || item.work || at.kind === 'work' || at.kind === 'slot' || count > item.count) {
       return false;
     }
     if (count < item.count) {
@@ -993,6 +1015,8 @@ export class Inventory {
       }
       case 'work':
         throw new Error('Craft inputs are owned by the work item');
+      case 'slot':
+        throw new Error('A fitted item is owned by its firearm');
       default:
         from.pile.items.splice(from.pile.items.indexOf(from.placed), 1);
         if (from.pile.items.length === 0) {
@@ -1211,7 +1235,7 @@ export const validateWorkItem = (registry: Registry, item: ItemState): void => {
 
 /** Where an item lies in a grid, if it's in one. */
 export const spotOf = (at: Location): Spot | undefined =>
-  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work'
+  at.kind === 'hand' || at.kind === 'worn' || at.kind === 'work' || at.kind === 'slot'
     ? undefined
     : { x: at.placed.x, y: at.placed.y, rotated: at.placed.rotated };
 

@@ -293,6 +293,7 @@ itemSchema = obj({
   made: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
+  slots: opt(obj({ magazine: opt(lazy(() => itemSchema)) })),
   firearm: opt(
     obj({
       chamber: enumeration(['empty', 'round', 'case']),
@@ -315,7 +316,6 @@ itemSchema = obj({
           elapsed: nonNegative,
           duration: opt(positive),
           ejected: bool,
-          feedRound: bool,
           forwardSounded: opt(bool),
         }),
       ),

@@ -2,6 +2,7 @@ import { dominantSide } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
+import { magazineSpec } from '../core/magazine.ts';
 import type { ItemDef } from '../core/schema.ts';
 
 export type IncludeDebugWeapon = (item: ItemDef) => boolean;
@@ -41,19 +42,30 @@ export const equipDebugFirearms = (
   return true;
 };
 
-/** The chosen rifle in hand; the other rifle, the held rifle's empty magazine and a box of its cartridges packed. */
+/**
+ * The chosen rifle in hand with a full magazine fitted and an empty chamber, to charge first; the other rifle,
+ * a spare full magazine to change to, and a box of the held rifle's cartridges for loading packed.
+ */
 const equipRifles = (inventory: Inventory, backpack: Item, choice: 'ar' | 'ak'): void => {
-  const rifles = { ar: 'debug_rifle_assault', ak: 'debug_rifle_ak' } as const;
+  const rifles = { ar: 'rifle_assault', ak: 'rifle_ak' } as const;
   const ammunition = {
-    ar: ['magazine_stanag_30', 'cartridge_box_5_d_56x45'],
-    ak: ['magazine_akm_30', 'cartridge_box_7_d_62x39'],
+    ar: { magazine: 'magazine_stanag_30', cartridge: 'cartridge_5_d_56x45', box: 'cartridge_box_5_d_56x45' },
+    ak: { magazine: 'magazine_akm_30', cartridge: 'cartridge_7_d_62x39', box: 'cartridge_box_7_d_62x39' },
   } as const;
+  const { magazine, cartridge, box } = ammunition[choice];
+  const full = (): Item => {
+    const loaded = inventory.create(magazine);
+    loaded.cartridges = Array.from({ length: magazineSpec(inventory.registry, magazine)!.capacity }, () => cartridge);
+    return loaded;
+  };
+  const rifle = inventory.create(rifles[choice]);
+  inventory.fitSlot(rifle, 'magazine', full());
   const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
-  const packed = [rifles[choice === 'ar' ? 'ak' : 'ar'], ...ammunition[choice]];
+  const packed = [inventory.create(rifles[choice === 'ar' ? 'ak' : 'ar']), full(), inventory.create(box)];
   if (
     !(
-      inventory.add(inventory.create(rifles[choice]), { kind: 'hand', side: dominantSide(inventory.character) }) &&
-      packed.every((type) => inventory.add(inventory.create(type), pocket))
+      inventory.add(rifle, { kind: 'hand', side: dominantSide(inventory.character) }) &&
+      packed.every((item) => inventory.add(item, pocket))
     )
   ) {
     throw new Error('Could not equip firearm preview loadout');

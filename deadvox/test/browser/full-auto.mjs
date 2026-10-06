@@ -143,7 +143,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&firearmsCombat=0&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -264,15 +264,17 @@ try {
 
   await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
-    for (const side of ['left', 'right']) {
-      const held = inventory.hands[side];
-      if (held && !inventory.consume(held, held.count)) {
-        throw new Error(`Could not clear ${side} fixture hand`);
-      }
+    // ?loadout=ar holds the AR with a full magazine fitted; work the charging handle as a player would.
+    const rifle = inventory.hands.right;
+    if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
+      throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
     }
-    const rifle = inventory.create('debug_rifle_assault');
-    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
-      throw new Error('Could not place fixture rifle in hand');
+    const refusal = session.firearms.cock(rifle.uid, session.sim.time);
+    if (refusal) {
+      throw new Error(`Could not charge the fixture AR: ${refusal}`);
+    }
+    while (session.queue.busy) {
+      session.frame(1 / 60);
     }
     const probe = globalThis.fullAutoProbe;
     probe.casesBefore = [...inventory.piles.values()]
@@ -338,7 +340,7 @@ try {
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.trajectories),
     cadence.shots.length,
-    'each committed virtual rifle round reaches the shared world-impact presentation',
+    'each committed rifle round reaches the shared world-impact presentation',
   );
   cadence.shots.forEach((time, index) => {
     assert.ok(
@@ -368,6 +370,17 @@ try {
   });
   assert.ok(recoilState.finite, 'the skill-zero burst keeps aim state finite');
   assert.ok(Math.abs(recoilState.pitch) <= Math.PI / 2, 'recoil keeps camera pitch within its valid range');
+  await page.evaluate(() => {
+    // The burst left a few rounds: change to the loadout's spare full magazine, as a player would with R.
+    const { inventory, session } = globalThis.fullAutoRuntime;
+    const refusal = session.firearms.loadNext(inventory.hands.right.uid, session.sim.time);
+    if (refusal) {
+      throw new Error(`Could not change to the spare magazine: ${refusal}`);
+    }
+    while (session.queue.busy) {
+      session.frame(1 / 60);
+    }
+  });
 
   // Warm buffers are real decoded bundled samples. Seed 32 live tails so this burst must steal.
   await page.waitForFunction(() =>

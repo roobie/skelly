@@ -17,6 +17,38 @@ export const magazineSpec = (registry: Registry, type: string): MagazineSpec | u
   return { calibre: model.calibre, capacity: model.capacity };
 };
 
+/** The calibre a magazine-fed firearm takes: every firearm but the pump feeds from a magazine slot. */
+export const magazineWellCalibre = (registry: Registry, type: string): string | undefined => {
+  const def = registry.items.get(type);
+  if (!def?.firearm || def.firearm.pump) {
+    return undefined;
+  }
+  return def.model === undefined ? undefined : registry.models.get(def.model)?.calibre;
+};
+
+/** Whether a magazine of this type fits the firearm's magazine slot: same calibre. */
+export const magazineFits = (registry: Registry, firearmType: string, magazineType: string): boolean => {
+  const calibre = magazineWellCalibre(registry, firearmType);
+  return calibre !== undefined && magazineSpec(registry, magazineType)?.calibre === calibre;
+};
+
+/** Why `slots` can't be fitted to this item, or undefined when they can. */
+export const slotsReason = (
+  registry: Registry,
+  type: string,
+  slots: { readonly magazine?: { readonly type: string } | undefined } | undefined,
+): string | undefined => {
+  if (magazineWellCalibre(registry, type) === undefined) {
+    return slots === undefined ? undefined : 'Only a magazine-fed firearm has slots';
+  }
+  if (slots === undefined) {
+    return 'A magazine-fed firearm needs its slots';
+  }
+  return slots.magazine === undefined || magazineFits(registry, type, slots.magazine.type)
+    ? undefined
+    : 'The fitted magazine does not fit this firearm';
+};
+
 /** Why `cartridges` can't be this magazine's contents, or undefined when they can. */
 export const magazineContentsReason = (
   registry: Registry,
