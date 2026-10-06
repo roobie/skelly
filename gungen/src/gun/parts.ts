@@ -329,6 +329,7 @@ const LOWER_GRIP_X = {
   ar: -13,
 } as const;
 const AK_RECEIVER = AK_PROPORTIONS.receiver;
+const AK_COMB = AK_PROPORTIONS.stock.comb;
 const AK_GAS_CYLINDER_Y = AK_PROPORTIONS.gas.axisU;
 const AK_GAS_CYLINDER_HALF_WIDTH = AK_PROPORTIONS.gas.flatRadiusU;
 const AK_REAR_SIGHT_NOTCH_TOP_U = AK_PROPORTIONS.sightLineU - AK_PROPORTIONS.sightBase.topU;
@@ -3850,7 +3851,8 @@ const stock: PartFamily = {
         solids: akButtstockSolids(cls(params, 'length')),
         ports: [port],
         keepOuts: [],
-        axes: [{ kind: 'cheek', origin: [-5, akStockTop(-5), 0], dir: X }],
+        // The cheek rests on the comb, behind the neck's saddle.
+        axes: [{ kind: 'cheek', origin: [AK_COMB.x, akStockTop(AK_COMB.x), 0], dir: X }],
       };
     }
     if (params.style === 'm4') {

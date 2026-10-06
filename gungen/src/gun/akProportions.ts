@@ -80,11 +80,15 @@ export const AK_PROPORTIONS = {
    */
   stock: {
     lengthU: { S: 13.25, M: 16.25, L: 19.25 },
-    topSlope: 0.05,
+    /** The comb runs level from behind the neck's saddle back to the heel. */
+    comb: { x: -8, topU: -0.25 },
+    /** The neck's top dips into a saddle behind the receiver's tang, then rises to the comb (BR 22:42). */
+    saddle: { x: -5, topU: -0.75, frontSlope: 0.15 },
     neck: { x: -2, dropU: 1.5, frontSlope: 1.25 },
     bellySlope: 0.29,
     toeRoundU: 2.25,
-    halfWidthU: { front: receiver.halfWidthU, butt: 2.25 },
+    /** About 60% of the receiver-wide stock BR saw (22:42), each full width on the grid. */
+    halfWidthU: { front: 1.25, butt: 1.375 },
     buttplateU: 0.5,
     /** How far the toe sits behind the heel. */
     buttRakeU: 0.25,

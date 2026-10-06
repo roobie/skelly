@@ -5,8 +5,13 @@ import { hermite, type StockContour, woodRegion } from './stockWood.ts';
 
 const { receiver: R, stock: S } = AK_PROPORTIONS;
 
-/** The comb's height at x, back from the receiver's rear face (x ≤ 0). */
-export const akStockTop = (x: number): number => R.rearFaceTopU + S.topSlope * x;
+/** The stock's top at x, back from the receiver's rear face (x ≤ 0): shoulder, saddle, then the level comb. */
+export const akStockTop = (x: number): number => {
+  if (x >= S.saddle.x) {
+    return hermite(x, [S.saddle.x, S.saddle.topU, 0], [0, R.rearFaceTopU, S.saddle.frontSlope]);
+  }
+  return x >= S.comb.x ? hermite(x, [S.comb.x, S.comb.topU, 0], [S.saddle.x, S.saddle.topU, 0]) : S.comb.topU;
+};
 
 /**
  * The AKM's wooden buttstock: a wedge with no wrist or grip of its own, whose front is the receiver's rear
@@ -42,7 +47,8 @@ export const akButtstockSolids = (length: SizeClass): Solid[] => {
   ];
   return [
     ...woodRegion(contour(4), 'stock-neck', [0, S.neck.x]),
-    ...woodRegion(contour(1), 'stock-belly', [S.neck.x, toeStart]),
+    ...woodRegion(contour(S.neck.x - S.comb.x), 'stock-saddle', [S.neck.x, S.comb.x]),
+    ...woodRegion(contour(1), 'stock-belly', [S.comb.x, toeStart]),
     ...woodRegion(contour(3), 'stock-toe', [toeStart, plateFrontX]),
     {
       id: 'buttplate',

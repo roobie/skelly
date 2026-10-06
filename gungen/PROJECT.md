@@ -690,8 +690,10 @@ explicitly named `battle-rifle`.
   5° and its size-derived lower bend is 10°/12°/15°. The lower prism meets its
   angled end face without arbitrary X-axis compensation.
 - The stock is `ak-buttstock`, the AKM's wooden buttstock: a wedge with no
-  wrist or grip, its front matching the receiver's rear face, widening slightly
-  toward a steel buttplate (`src/gun/akButtstock.ts`). It builds on the wood
+  wrist or grip. Its front is as tall as the receiver's rear face and centred on
+  it, but narrower than the receiver. Behind the receiver, its top dips into a
+  slim neck's saddle and rises to a level comb, which carries the cheek datum.
+  It widens slightly toward a steel buttplate (`src/gun/akButtstock.ts`). It builds on the wood
   helpers it shares with the tapered stock (`src/gun/stockWood.ts`), and it
   replaces the former ak-dropped style.
 - A passing fixture and a missing-gas-cylinder fixture exercise the layout. At
@@ -726,7 +728,13 @@ The rulings v2 carries, verbatim:
   altogether, and replace it with what we'd call ak-buttstock which should be
   modelled after the bog standard wooden buttstock as seen on the AKM". On
   sharing the tapered stock's helpers rather than copying them, BR 20:39:
-  "agreed".
+  "agreed". After the first look at v2, BR 22:42: "ak v2 overall very nice /
+  however, i'd like to try to adjust the following: / 1) the butt stock profile
+  -> a bit more slender the first ~decimeter nearest the receiver / 2) the width
+  of the buttstock should be less - i propose ~60% of current width". The neck's
+  saddle is measured on the golden photo, like the rest of v2. The width is
+  about 60% of the earlier receiver-wide stock, snapped so each full width
+  stays on the grid (`AK_PROPORTIONS`, `stock`).
 
 Why v2's proportions are what they are: every proportion in
 `src/gun/akProportions.ts`, `AK_PROPORTIONS`, is measured part by part on an
