@@ -56,17 +56,35 @@ describe('need rates', () => {
   });
 
   it('bring health back while needs are met, and take it while starving or parched', () => {
-    const fed: Needs = { calories: 80, hydration: 80, fatigue: 10, stamina: 100 };
+    const fed: Needs = {
+      calories: 80,
+      hydration: 80,
+      fatigue: 10,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const fedBody = bodyAtHealth(50);
     stepNeeds(fed, fedBody, 5);
     expect(fedBody.health).toBeGreaterThan(50);
 
-    const starving: Needs = { calories: 0, hydration: 80, fatigue: 10, stamina: 100 };
+    const starving: Needs = {
+      calories: 0,
+      hydration: 80,
+      fatigue: 10,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const starvingBody = bodyAtHealth(50);
     stepNeeds(starving, starvingBody, 5);
     expect(starvingBody.health).toBeLessThan(50);
 
-    const both: Needs = { calories: 0, hydration: 0, fatigue: 10, stamina: 100 };
+    const both: Needs = {
+      calories: 0,
+      hydration: 0,
+      fatigue: 10,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const bothBody = bodyAtHealth(50);
     stepNeeds(both, bothBody, 2);
     expect(bothBody.health).toBeLessThan(starvingBody.health);
@@ -89,7 +107,13 @@ describe('catch-up', () => {
   });
 
   it('starts and stops health coming back at the right moment', () => {
-    const start: Needs = { calories: 31, hydration: 90, fatigue: 0, stamina: 100 };
+    const start: Needs = {
+      calories: 31,
+      hydration: 90,
+      fatigue: 0,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const caught = { ...start };
     const live = { ...start };
     const caughtBody = bodyAtHealth(40);
@@ -190,6 +214,20 @@ describe('stamina', () => {
     stepStamina(needs, 0.5, false);
     expect(needs.stamina).toBe(STAMINA.recover * 2.5);
     expect(canSprint(needs, false)).toBe(true);
+  });
+
+  it('waits out the remaining simulation-time delay before stamina recovers', () => {
+    const needs = { ...SPAWN_NEEDS };
+    const delay = BODY_TUNING_FIXTURE.staminaRegenDelaySimSeconds;
+    stepStamina(needs, needs.stamina / -STAMINA.sprint, true, delay);
+    expect(needs.stamina).toBe(0);
+    const remaining = needs.staminaRegenDelayRemainingSimSeconds;
+    expect(remaining).toBeGreaterThan(0);
+
+    stepStamina(needs, remaining / 2, false, delay);
+    expect(needs.stamina).toBe(0);
+    stepStamina(needs, remaining, false, delay);
+    expect(needs.stamina).toBeGreaterThan(0);
   });
 
   it('comes back at half speed when you are worn down', () => {

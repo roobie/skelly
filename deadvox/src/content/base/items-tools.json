@@ -11,6 +11,29 @@
       }
     }
   ],
+  "meleeClasses": [
+    {
+      "id": "blunt",
+      "damageVariance": 0.05,
+      "headDamageMultiplier": 1.7,
+      "limbDamageMultiplier": 1,
+      "speedMultiplier": 0.85
+    },
+    {
+      "id": "cut",
+      "damageVariance": 0.18,
+      "headDamageMultiplier": 1,
+      "limbDamageMultiplier": 2.5,
+      "speedMultiplier": 1
+    },
+    {
+      "id": "pierce",
+      "damageVariance": 0.4,
+      "headDamageMultiplier": 1,
+      "limbDamageMultiplier": 1,
+      "speedMultiplier": 1.15
+    }
+  ],
   "items": [
     {
       "id": "compass",

@@ -328,7 +328,19 @@ describe('canonical save format', () => {
     ];
     const length = Math.hypot(...delta);
     const direction = delta.map((value) => value / length) as import('../src/core/coords.ts').Vec3;
-    const weapon: MeleeWeapon = { damage: 1, reach: 4, cooldown: 0.8, stamina: 4, impulse: 4, type: 'blunt' };
+    const bluntTuning = registry.meleeClasses.get('blunt')!;
+    const weapon: MeleeWeapon = {
+      damage: 1,
+      reach: 4,
+      cooldown: 0.8,
+      stamina: 4,
+      impulse: 4,
+      damageVariance: bluntTuning.damageVariance,
+      headDamageMultiplier: bluntTuning.headDamageMultiplier,
+      limbDamageMultiplier: bluntTuning.limbDamageMultiplier,
+      speedMultiplier: bluntTuning.speedMultiplier,
+      type: 'blunt',
+    };
     expect(source.zombies.aimAt(origin, direction, weapon)?.inReach).toBe(true);
     const hands = {
       right: source.inventory.hands.right?.uid ?? null,
@@ -354,6 +366,7 @@ describe('canonical save format', () => {
     loaded.zombies.setFrozen(true);
     expect(loaded.session.playerCombat.activeMeleeAction?.elapsed).toBe(0);
 
+    let restoredContactHealth: number | undefined;
     for (const runtime of [source, loaded]) {
       const held = {
         right: runtime.inventory.hands.right?.uid ?? null,
@@ -368,14 +381,20 @@ describe('canonical save format', () => {
       }
       runtime.session.playerCombat.tick(1 / 60, held);
       runtime.zombies.tick(0.05, 0.25, held);
-      expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
+      const contactHealth = runtime.zombies.store.get(id)?.regions.head;
+      expect(contactHealth).toBeLessThan(initialHealth);
+      if (restoredContactHealth === undefined) {
+        restoredContactHealth = contactHealth;
+      } else {
+        expect(contactHealth).toBe(restoredContactHealth);
+      }
       for (let tick = 0; tick < 48; tick++) {
         runtime.session.playerCombat.tick(1 / 60, held);
         if (tick % 3 === 2) {
           runtime.zombies.tick(0.05, 0.3 + (tick + 1) / 60, held);
         }
       }
-      expect(runtime.zombies.store.get(id)?.regions.head).toBe(initialHealth - weapon.damage);
+      expect(runtime.zombies.store.get(id)?.regions.head).toBe(restoredContactHealth);
     }
   });
 

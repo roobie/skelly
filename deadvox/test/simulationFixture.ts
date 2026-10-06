@@ -8,6 +8,7 @@ export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   antisepticWindowGameHours: gameHours(0.02),
   infectionChance: 0.5,
   knockoutSimSeconds: simSeconds(1),
+  staminaRegenDelaySimSeconds: simSeconds(5),
   proneEyeHeightMetres: 0.2,
   bluntShockPerDamage: 2,
   treatmentSimSeconds: simSeconds(1),

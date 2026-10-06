@@ -152,6 +152,15 @@ export class Simulation {
     if (state.pendingInterrupt !== undefined && (typeof state.pendingInterrupt !== 'string' || state.dead)) {
       throw new Error('Invalid pending interruption state');
     }
+    const staminaDelay = state.needs.staminaRegenDelayRemainingSimSeconds;
+    if (
+      !Number.isFinite(staminaDelay) ||
+      staminaDelay < 0 ||
+      staminaDelay > this.body.tuning.staminaRegenDelaySimSeconds ||
+      (state.needs.stamina > 0 && staminaDelay !== 0)
+    ) {
+      throw new Error('Invalid stamina recovery delay');
+    }
     Object.assign(this.needs, state.needs);
     this.body.restoreState(state.body);
     this.compression.c = state.compression.c;

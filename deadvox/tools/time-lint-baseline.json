@@ -77,9 +77,10 @@
     "debug/index.ts": { "gameTime": 1, "setTimeOfDay": 2, "time": 1 },
     "debug/lookDump.ts": { "gameTime": 2, "timestamp": 1 },
     "game/debugInterface.ts": { "setTimeOfDay": 1 },
+    "game/melee.ts": { "cooldown": 2 },
     "game/firearmHandling.ts": { "duration": 5, "elapsed": 6, "simTime": 1, "startedAt": 3 },
     "game/play.ts": {
-      "cooldown": 2,
+      "cooldown": 1,
       "duration": 1,
       "elapsed": 1,
       "holdDuration": 1,

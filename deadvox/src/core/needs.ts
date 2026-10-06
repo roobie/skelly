@@ -11,6 +11,8 @@ export interface Needs {
   fatigue: number;
   /** 100 is fresh; sprinting spends it. */
   stamina: number;
+  /** Simulation-time delay remaining before stamina can recover after reaching zero. */
+  staminaRegenDelayRemainingSimSeconds: number;
 }
 
 export type Need = 'calories' | 'hydration' | 'fatigue';
@@ -44,7 +46,13 @@ export const STAMINA = {
   winded: 10,
 } as const;
 
-export const SPAWN_NEEDS: Readonly<Needs> = { calories: 40, hydration: 35, fatigue: 70, stamina: 100 };
+export const SPAWN_NEEDS: Readonly<Needs> = {
+  calories: 40,
+  hydration: 35,
+  fatigue: 70,
+  stamina: 100,
+  staminaRegenDelayRemainingSimSeconds: 0,
+};
 
 /** 100% calories is this many kilocalories, and 100% hydration this many millilitres. */
 const FULL = { kcal: 2500, ml: 2500 } as const;
@@ -188,10 +196,55 @@ export const stepNeeds = (
 /** Stamina recovers at half speed when you're worn down. */
 const worn = (needs: Needs): boolean => needs.fatigue > 90 || needs.calories < 10 || needs.hydration < 10;
 
+/** Spends stamina and starts its authored recovery delay on the transition to empty. */
+export const spendStamina = (
+  needs: Pick<Needs, 'stamina' | 'staminaRegenDelayRemainingSimSeconds'>,
+  amount: number,
+  staminaRegenDelaySimSeconds: number,
+): void => {
+  if (
+    !Number.isFinite(amount) ||
+    amount < 0 ||
+    !Number.isFinite(staminaRegenDelaySimSeconds) ||
+    staminaRegenDelaySimSeconds < 0
+  ) {
+    throw new Error('Invalid stamina spend');
+  }
+  const before = needs.stamina;
+  needs.stamina = clamp(needs.stamina - amount);
+  if (before > 0 && needs.stamina === 0) {
+    needs.staminaRegenDelayRemainingSimSeconds = staminaRegenDelaySimSeconds;
+  }
+};
+
 /** Spends or recovers stamina over `seconds` of simulation time, in place. */
-export const stepStamina = (needs: Needs, seconds: number, sprinting: boolean): void => {
-  const rate = sprinting ? STAMINA.sprint : STAMINA.recover * (worn(needs) ? STAMINA.worn : 1);
-  needs.stamina = clamp(needs.stamina + rate * seconds);
+export const stepStamina = (
+  needs: Needs,
+  seconds: number,
+  sprinting: boolean,
+  staminaRegenDelaySimSeconds = 0,
+): void => {
+  if (
+    !Number.isFinite(seconds) ||
+    seconds < 0 ||
+    !Number.isFinite(staminaRegenDelaySimSeconds) ||
+    staminaRegenDelaySimSeconds < 0
+  ) {
+    throw new Error('Invalid stamina step');
+  }
+  if (sprinting) {
+    spendStamina(needs, -STAMINA.sprint * seconds, staminaRegenDelaySimSeconds);
+    return;
+  }
+  let recoverySeconds = seconds;
+  if (needs.stamina === 0 && needs.staminaRegenDelayRemainingSimSeconds > 0) {
+    const waiting = Math.min(recoverySeconds, needs.staminaRegenDelayRemainingSimSeconds);
+    needs.staminaRegenDelayRemainingSimSeconds -= waiting;
+    recoverySeconds -= waiting;
+  }
+  if (recoverySeconds > 0) {
+    needs.stamina = clamp(needs.stamina + STAMINA.recover * (worn(needs) ? STAMINA.worn : 1) * recoverySeconds);
+  }
 };
 
 /** Whether you can sprint: not while winded, and once winded, not until you've got some breath back. */

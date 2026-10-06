@@ -214,6 +214,63 @@ describe('hamlet save/load continuation', () => {
     expect(loadedSprinting.session.sprinting).toBe(uninterrupted.session.sprinting);
   });
 
+  it('continues the stamina recovery delay across save/load', async () => {
+    const hedge = fixtureHamlet.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
+    if (!hedge) {
+      throw new Error('Snapshot fixture has no ground route for stamina recovery');
+    }
+    const [x, , z] = hedge.min;
+    const startZ = z + 3.5;
+    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, scale, x, startZ));
+    const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
+    const cx = toChunk(x);
+    const cz = toChunk(z);
+    const columns: [number, number][] = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        columns.push([cx + dx, cz + dz]);
+      }
+    }
+    let intent = { ...IDLE };
+    const runtimeFor = (savedSnapshot?: ReturnType<typeof capture>) =>
+      createRuntime(savedSnapshot, false, columns, { spawn, active: true, intent: () => intent });
+    const load = async (savedSnapshot: ReturnType<typeof capture>) => {
+      const bytes = await encodeFixture(savedSnapshot);
+      const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+      return runtimeFor(decoded.snapshot);
+    };
+
+    const source = runtimeFor();
+    let frames = 0;
+    while (source.sim.needs.stamina > 0 && frames < 5000) {
+      intent = { ...IDLE, right: frames % 60 < 30 ? 1 : -1, sprint: true };
+      advance(source, 1);
+      frames += 1;
+    }
+    expect(frames).toBeLessThan(5000);
+    expect(source.player.body.onGround).toBe(true);
+    expect(source.sim.needs.stamina).toBe(0);
+    intent = { ...IDLE };
+    const framesBeforeRecovery = Math.floor((source.sim.body.tuning.staminaRegenDelaySimSeconds * 60) / 2);
+    advance(source, framesBeforeRecovery);
+    expect(source.sim.needs.stamina).toBe(0);
+
+    const snapshot = capture(source);
+    const remaining = snapshot.character.simulation.needs.staminaRegenDelayRemainingSimSeconds;
+    expect(remaining).toBeGreaterThan(0);
+    const loaded = await load(snapshot);
+    const beforeExpiry = Math.max(0, Math.floor(remaining * 60) - 1);
+    advance(source, beforeExpiry);
+    advance(loaded, beforeExpiry);
+    expect(source.sim.needs.stamina).toBe(0);
+    expect(loaded.sim.needs.stamina).toBe(0);
+
+    advance(source, 3);
+    advance(loaded, 3);
+    expect(source.sim.needs.stamina).toBeGreaterThan(0);
+    expect(loaded.sim.needs).toEqual(source.sim.needs);
+  });
+
   it('continues active compressed rest through the first 1 Hz tick after load', () => {
     const advanceReal = (runtime: ReturnType<typeof createRuntime>, frames: number) => {
       runtime.sim.paused = false;

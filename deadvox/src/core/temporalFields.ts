@@ -57,6 +57,7 @@ export const TEMPORAL_FIELDS = [
   { path: 'body.infectionOnsetGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.antisepticWindowGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.knockoutSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'body.staminaRegenDelaySimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'body.treatmentSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'body.bloodLossPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'body.bloodRecoveryPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },

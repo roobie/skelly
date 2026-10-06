@@ -11,6 +11,14 @@
         "leftLeg": 24,
         "rightLeg": 24
       },
+      "meleeDamageResistance": {
+        "head": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "torso": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "leftArm": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "rightArm": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "leftLeg": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "rightLeg": { "blunt": 0, "cut": 0, "pierce": 0 }
+      },
       "speed": {
         "wanderMetresPerSimSecond": 0.8,
         "chaseMetresPerSimSecond": 2.8

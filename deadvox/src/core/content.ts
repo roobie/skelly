@@ -25,6 +25,7 @@ export type {
   FurnitureDef,
   ItemDef,
   LootEntry,
+  MeleeClassDef,
   ModelDef,
   RecipeDef,
   SoundDef,
