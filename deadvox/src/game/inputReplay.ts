@@ -4,9 +4,9 @@ import type { SaveSnapshot } from '../core/saveState.ts';
 import { INPUT_BINDINGS, type InputContext, POINTER_ACTIONS } from './inputBindings.ts';
 import type { MoveIntent } from './player.ts';
 
-export const INPUT_REPLAY_SCHEMA_VERSION = 1;
-export const INPUT_REPLAY_MAX_TICKS = 60 * 60 * 2;
-export const INPUT_REPLAY_MAX_ACTIONS = 8192;
+const INPUT_REPLAY_SCHEMA_VERSION = 1;
+const INPUT_REPLAY_MAX_TICKS = 60 * 60 * 2;
+const INPUT_REPLAY_MAX_ACTIONS = 8192;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 
 const MAGIC = 'DEADVOX_REPLAY';
