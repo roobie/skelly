@@ -17,7 +17,7 @@ export interface Bone {
 export const MATERIALS = ['skin', 'bruise', 'shirt', 'pants', 'shoe', 'hair', 'eye', 'mouth', 'gore', 'bone'] as const;
 export type Material = (typeof MATERIALS)[number];
 
-export interface NoiseGate {
+interface NoiseGate {
   /** noise3 is sampled at world position / scale (metres per noise cell). */
   readonly scale: number;
   /** The feature applies where noise3(...) < threshold. */

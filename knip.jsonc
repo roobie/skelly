@@ -3,52 +3,42 @@
   "workspaces": {
     ".": {
       "entry": [
-        "site/index.html",
-        "site/launcher.js",
+        "site/launcher.js!",
         "test/**/*.mjs",
         "testPool.ts",
         "tools/**/*.mjs"
       ],
       "project": [
-        "site/**/*.js",
+        "site/**/*.js!",
         "test/**/*.{js,mjs,ts,tsx}",
-        "testPool.ts",
         "tools/**/*.{js,mjs,ts,tsx}"
       ]
     },
     "deadvox": {
+      "ignoreBinaries": [
+        // OS dependency installed for Firefox's native-window probe; not a project package.
+        "xwininfo",
+        // OS dependency installed for Firefox's native-window probe; not a project package.
+        "xprop"
+      ],
+      "ignoreUnresolved": [
+        // Vite resolves this browser URL from the Deadvox root at runtime.
+        "/src/game/saveStorage.ts",
+        // Vite resolves this browser URL from the Deadvox root at runtime.
+        "/src/core/saveFormat.ts"
+      ],
       "entry": [
-        "index.html",
-        "sounds.html",
-        "src/cli/validate.ts",
-        "src/bench/shamblers-cpu.mjs",
-        // Vite's secondary HTML page is an entry even when static analysis misses its module script.
-        "src/soundsPage.ts",
-        "test/browser/case-visual-pool.mjs",
-        "test/browser/firefox-first-click.mjs",
-        "test/browser/firefox-ui.mjs",
-        "test/browser/full-auto.mjs",
-        "test/browser/insecure-saves.mjs",
-        "test/browser/inventory-scroll.mjs",
-        "test/browser/melee-build-click.mjs",
-        "test/browser/primary-action.mjs",
-        "test/browser/pump-handling.mjs",
-        "test/browser/reading.mjs",
-        "test/browser/save-controller-regressions.mjs",
-        "test/browser/save-storage.mjs",
-        "test/browser/stairs.mjs",
+        "index.html!",
+        "sounds.html!",
+        "src/soundsPage.ts!",
         "tools/bench-rigid-body.mjs",
         "tools/bench-zombie-swings.mjs",
-        "tools/check-favicon.mjs",
-        "tools/render-probe.mjs",
-        "tools/ui-browser-contract.mjs",
-        "vite.config.ts"
+        "tools/ui-browser-contract.mjs"
       ],
       "project": [
-        "src/**/*.{js,mjs,ts,tsx}",
+        "src/**/*.{js,mjs,ts,tsx}!",
         "test/**/*.{js,mjs,ts,tsx}",
-        "tools/**/*.{js,mjs,ts,tsx}",
-        "vite.config.ts"
+        "tools/**/*.{js,mjs,ts,tsx}"
       ],
       "paths": {
         "@mobgen/*": ["../mobgen/src/*"]
@@ -56,42 +46,32 @@
     },
     "gungen": {
       "entry": [
-        "index.html",
-        "src/cli/checkDesigns.ts",
-        "src/cli/export.ts",
-        "src/cli/exportCartridges.ts",
-        "src/cli/generate.ts",
-        "src/cli/mesh-stats.ts",
-        "src/cli/stats.ts",
-        "src/cli/validate.ts",
-        "test/browser/pump-hand-cycle.mjs",
-        "test/browser/pump-pose-note.mjs",
-        "test/browser/shotshell-viewer.mjs",
-        "test/browser/upload-error.mjs",
-        "vite.config.ts"
+        "index.html!"
       ],
       "project": [
-        "src/**/*.{js,mjs,ts,tsx}",
-        "test/**/*.{js,mjs,ts,tsx}",
-        "vite.config.ts"
+        "src/**/*.{js,mjs,ts,tsx}!",
+        "test/**/*.{js,mjs,ts,tsx}"
       ]
     },
     "mobgen": {
       "entry": [
-        "index.html",
-        "stress.html",
-        "src/cli/bench.ts",
-        "src/cli/generate.ts",
-        "src/cli/stats.ts",
-        "src/cli/view.ts",
-        // `stress.html` is the second Vite page and its module script is a separate entry.
-        "src/viewer/stress.ts",
-        "vite.config.ts"
+        "index.html!",
+        "stress.html!",
+        "src/viewer/stress.ts!",
+        // Deadvox consumes these modules through its @mobgen source alias, across the workspace boundary.
+        "../deadvox/src/core/zombiePose.ts!",
+        "../deadvox/src/core/zombieRegions.ts!",
+        "../deadvox/src/core/zombies.ts!",
+        "../deadvox/src/game/session.ts!",
+        "../deadvox/src/game/shamblerAudio.ts!",
+        "../deadvox/src/render/mobActors.ts!"
       ],
+      "paths": {
+        "@mobgen/*": ["src/*"]
+      },
       "project": [
-        "src/**/*.{js,mjs,ts,tsx}",
-        "test/**/*.{js,mjs,ts,tsx}",
-        "vite.config.ts"
+        "src/**/*.{js,mjs,ts,tsx}!",
+        "test/**/*.{js,mjs,ts,tsx}"
       ]
     }
   }

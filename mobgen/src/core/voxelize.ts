@@ -38,7 +38,7 @@ export interface Voxels {
   readonly color: Uint8Array;
 }
 
-export const SHADES = 4;
+const SHADES = 4;
 export const materialOf = (colorByte: number): Material => MATERIALS[Math.floor(colorByte / SHADES)]!;
 export const shadeOf = (colorByte: number): number => colorByte % SHADES;
 
