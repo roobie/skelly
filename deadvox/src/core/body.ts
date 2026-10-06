@@ -2,10 +2,10 @@ import { freezeSnapshot } from './snapshotData.ts';
 
 export const BODY_REGIONS = ['head', 'torso', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'] as const;
 export type BodyRegion = (typeof BODY_REGIONS)[number];
-export type InfectionStage = 'none' | 'early' | 'advanced' | 'resolved';
+type InfectionStage = 'none' | 'early' | 'advanced' | 'resolved';
 export type BodyTreatment = 'bandage' | 'rag' | 'antiseptic' | 'antibiotics';
 
-export interface BodyWound {
+interface BodyWound {
   bleeding: boolean;
   infection: InfectionStage;
 }
@@ -34,7 +34,7 @@ export interface BodyImpact {
   shockDamage?: number;
 }
 
-export const BODY_START: Readonly<BodyState> = Object.freeze({
+const BODY_START: Readonly<BodyState> = Object.freeze({
   health: 100,
   blood: 100,
   shock: 100,
@@ -48,15 +48,6 @@ const SHOCK_RECOVERY_PER_SECOND = 0.1;
 const ADVANCED_INFECTION_HEALTH_LOSS_PER_SECOND = 0.0005;
 
 const clamp = (value: number): number => Math.max(0, Math.min(100, value));
-const recordFor = <T>(value: T): Record<BodyRegion, T> => ({
-  head: value,
-  torso: value,
-  leftArm: value,
-  rightArm: value,
-  leftLeg: value,
-  rightLeg: value,
-});
-
 const validVitals = (value: number): boolean => Number.isFinite(value) && value >= 0 && value <= 100;
 const validWound = (value: unknown): value is BodyWound | null =>
   value === null ||
@@ -244,11 +235,3 @@ export class Body {
 
 export const bodyRegionForHitArea = (area: 'head' | 'torso' | 'legs'): BodyRegion =>
   area === 'head' ? 'head' : area === 'legs' ? 'leftLeg' : 'torso';
-
-export const emptyBodyState = (): BodyState => ({
-  health: 100,
-  blood: 100,
-  shock: 100,
-  regionDamage: recordFor(0),
-  wounds: recordFor(null),
-});

@@ -168,9 +168,9 @@ export class Survival {
     if (actions.length === 0) {
       return undefined;
     }
-    const selected = this.selectedItemAction(item);
+    const selectedId = this.selectedItemAction(item)?.id;
     const name = defOf(this.inventory.registry, item.type).name;
-    return [`${name}:`, ...actions.map((action) => `${action === selected ? '›' : ' '} ${action.label}`)].join('\n');
+    return [`${name}:`, ...actions.map((action) => `${action.id === selectedId ? '›' : ' '} ${action.label}`)].join('\n');
   }
 
   private applyItemAction(item: Item, action: ItemAction | undefined): string | undefined {

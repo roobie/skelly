@@ -747,6 +747,9 @@ try {
   assert.equal(await page.locator('#prompt').evaluate((node) => node.hidden), true);
   await page.evaluate(() => { globalThis.primaryActionTest.hudOptions.interaction = true; });
   await page.waitForFunction(() => !document.querySelector('#prompt').hidden);
+  const actionHint = await page.locator('#prompt').textContent();
+  assert.equal((actionHint?.match(/›/g) ?? []).length, 1);
+  if (process.env.BODY_ACTION_SCREENSHOT) await page.screenshot({ path: process.env.BODY_ACTION_SCREENSHOT });
   const selectedBeforeWheel = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     return r.survival.selectedItemAction(r.inventory.itemByUid(uid))?.treatment?.region;

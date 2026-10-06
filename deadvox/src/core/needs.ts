@@ -63,7 +63,7 @@ const isCritical = (needs: Needs, rule: (typeof CRITICAL)[number]): boolean =>
   (rule.above !== undefined && needs[rule.need] > rule.above);
 
 /** Health's rate per game hour for the needs as they are now. */
-export const healthRate = (needs: Needs, health: number): number => {
+const healthRate = (needs: Needs, health: number): number => {
   let rate = 0;
   if (needs.calories <= 0) {
     rate += HEALTH.starving;

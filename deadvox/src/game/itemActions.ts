@@ -13,10 +13,8 @@ export interface ItemAction {
 
 const regionName = (region: BodyRegion): string =>
   region.replace(/([A-Z])/g, ' $1').replace(/\b\w/g, (letter) => letter.toUpperCase());
-const woundDescription = (wound: NonNullable<BodyWounds[BodyRegion]>): string =>
-  [wound.bleeding ? 'bleeding' : '', wound.infection === 'none' || wound.infection === 'resolved' ? '' : `${wound.infection} infection`]
-    .filter(Boolean)
-    .join(', ');
+const woundDescription = (wound: NonNullable<BodyWounds[BodyRegion]>, treatment: BodyTreatment): string =>
+  treatment === 'bandage' || treatment === 'rag' ? 'bleeding' : `${wound.infection} infection`;
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
   const treatment = defOf(inventory.registry, item.type).treatment;
@@ -28,7 +26,7 @@ export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): re
       return [];
     }
     const wound = body.wounds[region]!;
-    const condition = woundDescription(wound);
+    const condition = woundDescription(wound, treatment);
     return [
       {
         id: `${treatment}:${region}`,
