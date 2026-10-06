@@ -479,6 +479,8 @@ export interface HearingInput {
   isSolid: SolidAt;
   rng: Rng;
 }
+// Phases share this scratch to avoid per-zombie allocation, so write each per-zombie field before its first read.
+// `test/zombies.test.ts`, `vocalNoiseDoesNotLeakBetweenZombiePasses`, guards the cross-pass case.
 interface ZombieTickScratch {
   dt: number;
   time: number;
@@ -1134,10 +1136,6 @@ export class ZombieSystem {
       zombie.hitFlinchTime = nextFlinchTime > HIT_FLINCH_DURATION ? undefined : nextFlinchTime;
     }
     zombie.attackWait = Math.max(0, zombie.attackWait - dt);
-    const scratch = this.tickScratch;
-    scratch.pos = zombie.body.pos;
-    scratch.type = zombie.type;
-    scratch.rng = zombie.behaviorRng;
   }
 
   private updatePerception(): void {
@@ -1691,8 +1689,10 @@ export class ZombieSystem {
       }
       scratch.id = id;
       scratch.zombie = zombie;
+      scratch.pos = zombie.body.pos;
+      scratch.type = zombie.type;
+      scratch.rng = zombie.behaviorRng;
       this.updateZombieTimers();
-      scratch.isOpaque = this.options.isOpaque;
       this.updatePerception();
       this.updateAttention();
 
