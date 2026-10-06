@@ -16,8 +16,9 @@ import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickTh
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
-import type { RestKind } from '../core/longAction.ts';
+import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan } from '../core/options.ts';
+import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -31,7 +32,7 @@ import { mountCraftPanel } from '../ui/craftController.ts';
 import { mountCredits } from '../ui/credits.ts';
 import { newWorldQuery, showDeath } from '../ui/death.ts';
 import { mountGameCursor } from '../ui/gameCursor.ts';
-import { quickbarKey, renderQuickbar } from '../ui/hud.ts';
+import { type HandlingPresentationSource, quickbarKey, renderQuickbar } from '../ui/hud.ts';
 import {
   type HudOptionsState,
   hudVisibility,
@@ -97,6 +98,18 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
+
+const handlingPresentationFor = (
+  job: Readonly<LongJob> | undefined,
+  queue: HandlingPresentationSource,
+): HandlingPresentationSource =>
+  job?.jobType === 'pry' && !job.stopped
+    ? {
+        jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
+        cancelLabel: 'X pauses',
+        movementLabel: '',
+      }
+    : queue;
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -395,6 +408,19 @@ export const startPlay = (
   // ---- furniture: searching and doors ----
 
   const toggleDoor = (entity: BlockEntity) => {
+    if (entity.lock?.locked && entities.defOf(entity).door?.prying) {
+      const plan = pryPlan(inventory, entity, undefined, session.character);
+      if (!plan.ok) {
+        showRefusal(plan.reason, sim.time);
+        return;
+      }
+      queue.cancel();
+      const reason = session.pryDoor(entity, plan.tool.uid);
+      if (reason) {
+        showRefusal(reason, sim.time);
+      }
+      return;
+    }
     const option = doorOptions(inventory, entity)[0]!;
     if (!option.plan.ok) {
       showRefusal(option.plan.reason, sim.time);
@@ -641,7 +667,11 @@ export const startPlay = (
    * during a skip pushes the target out. It replaces a rest/sleep in progress.
    */
   const skipGameHours = (hours: number): void => {
-    rest.stop();
+    if (sim.actions.job?.jobType === 'pry') {
+      sim.actions.stop();
+    } else {
+      rest.stop();
+    }
     queue.cancel();
     skipUntil = skipTarget(sim.clock, skipUntil ?? sim.time, hours);
     sim.ignoreUnsafe = true;
@@ -690,7 +720,7 @@ export const startPlay = (
     if (continueWork()) {
       return;
     }
-    if (rest.action || sim.actions.job?.jobType === 'reading') {
+    if (rest.action || sim.actions.job?.jobType === 'reading' || sim.actions.job?.jobType === 'pry') {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);
@@ -705,7 +735,11 @@ export const startPlay = (
     if (rest.action && !rest.canStop) {
       return;
     }
-    if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
+    if (
+      sim.actions.job?.jobType === 'craft' ||
+      sim.actions.job?.jobType === 'reading' ||
+      sim.actions.job?.jobType === 'pry'
+    ) {
       sim.actions.stop();
     } else if (rest.action) {
       rest.stop();
@@ -1040,12 +1074,27 @@ export const startPlay = (
     return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
   };
 
+  const pryHint = (entity: BlockEntity): string | undefined => {
+    if (!(entity.lock?.locked && entities.defOf(entity).door?.prying)) {
+      return undefined;
+    }
+    const plan = pryPlan(inventory, entity, undefined, session.character);
+    if (plan.ok) {
+      return `with the ${inventory.name(plan.tool).toLowerCase()}`;
+    }
+    const tools = plan.toolNames.map((name) => name.toLowerCase()).join(' or ') || 'a suitable tool';
+    return `with ${tools} — ${plan.reason}`;
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): string => {
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
+    const prying = pryHint(entity);
+    const doorReason = !prying && door?.plan.ok === false ? door.plan.reason : undefined;
     return playInteractionText({
-      doorReason: door?.plan.ok === false ? door.plan.reason : undefined,
+      doorReason,
       lock: keyLockHint(entity),
+      prying,
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
       container: Boolean(entity.pockets),
@@ -1704,7 +1753,11 @@ export const startPlay = (
     renderPlayInventoryStats(inventoryStats, screen.isOpen, needsText());
     drawQuickbar();
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
-    renderPlayHandling(handlingBox, queue, !screen.isOpen && visible.handling);
+    renderPlayHandling(
+      handlingBox,
+      handlingPresentationFor(sim.actions.job, queue),
+      !screen.isOpen && visible.handling,
+    );
     view.prepareLighting(sky);
     updateHeldItems(dt);
     view.updateShadows(hour, sky);

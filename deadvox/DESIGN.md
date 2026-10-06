@@ -13,6 +13,7 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
 ---
 
@@ -757,7 +758,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** Doors can be barricaded; locks can be picked or pried. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
+- **Doors and locks.** The armoury needs a fallback if its key stays on the clinic corpse; the crowbar trades time and noise for entry, while the matching key remains quiet. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads the starting duration as real play time; keep prying out of time compression so attracted shamblers approach at normal pace. The speed curve follows the saturation shape of `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, through `src/core/character.ts`, `skillSaturation`; both endpoint durations are authored in content. See `src/core/prying.ts`, `pryPlan`, and `src/core/longAction.ts`, `LongActions.beginPrying`. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making the forced route one-way. See `src/core/blockEntities.ts`, `BlockEntities.breakLock`. On the #320 first look at 19:33, BR said “prying is better now, but doesn't show a progress bar when they are enabled”; use the existing handling-progress option and bar, not another HUD control, so resumable work remains visible when requested. See `src/game/play.ts`, `renderPlayHandling`, `src/ui/playHud.ts`, `renderPlayHandling`, and `src/ui/hudOptions.ts`, `handling`. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `src/core/zombies.ts`, `ZombieSystem.tick`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,
