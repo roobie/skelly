@@ -7,7 +7,7 @@ import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 3;
+const INPUT_REPLAY_SCHEMA_VERSION = 4;
 const INPUT_REPLAY_TICKS_PER_WINDOW = 60 * 60 * 2;
 // Keep each render frame's bounded compressed ticks available so rollover cannot cut it in half.
 const INPUT_REPLAY_TICKS_PER_FRAME = Math.ceil(SKIP_COMPRESSION.maxSimPerFrame * PHYSICS_RATE);
@@ -100,6 +100,7 @@ export interface DecodedInputReplay {
   readonly worldOptions: SaveWorldOptions & { seed: number; clock: { ratio: number; start: number } };
   readonly inputs: ReplayInputData;
   readonly endStateFingerprint: string;
+  readonly endSimTime: number;
 }
 
 interface ReplayWire {
@@ -109,6 +110,7 @@ interface ReplayWire {
   frames: ReplayFrame[];
   actions: ReplayAction[];
   endStateFingerprint: string;
+  endSimTime: number;
 }
 
 const encodeBase64 = (bytes: Uint8Array): string => {
@@ -405,6 +407,7 @@ export async function encodeInputReplay(
     frames: inputs.frames.map((frame) => [...frame] as ReplayFrame),
     actions: inputs.actions.map((action) => ({ ...action })),
     endStateFingerprint: await replayStateFingerprint(endSnapshot),
+    endSimTime: endSnapshot.character.simulation.time,
   };
   const bytes = canonicalJsonBytes(wire);
   if (bytes.byteLength > INPUT_REPLAY_MAX_BYTES) {
@@ -437,7 +440,10 @@ export async function decodeInputReplay(
     !Array.isArray(value.frames) ||
     !Array.isArray(value.actions) ||
     typeof value.endStateFingerprint !== 'string' ||
-    !FINGERPRINT_PATTERN.test(value.endStateFingerprint)
+    !FINGERPRINT_PATTERN.test(value.endStateFingerprint) ||
+    typeof value.endSimTime !== 'number' ||
+    !Number.isFinite(value.endSimTime) ||
+    value.endSimTime < 0
   ) {
     throw new Error('Replay is missing its starting save or input sequence');
   }
@@ -513,5 +519,6 @@ export async function decodeInputReplay(
     worldOptions: decoded.worldOptions,
     inputs: { frames, actions },
     endStateFingerprint: value.endStateFingerprint,
+    endSimTime: value.endSimTime,
   };
 }

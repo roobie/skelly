@@ -364,7 +364,7 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 **Saves:** No new world-save state. The replay file carries the start save and input sequence with enough build/simulation identity to reject an incompatible replay; the recording buffer is transient and the export is explicit.
 **Tests:** replaying a captured input sequence from its start save reproduces the same simulation result; export/import preserves the input order and fails clearly when the build/simulation identity is incompatible; measure always-on buffer cost before accepting it.
 **Done when:** a bug can be reported with a downloadable replay that reproduces the same state, and always-on capture fits the measured budget or is kept only when cost permits.
-At d101-4, replay samples also preserve whether the source world was ready under the player. Source movement can be skipped while streamed terrain is missing; playback waits when a recorded move needs terrain and keeps source-side skips when it did not. See `src/game/session.ts`, `createSession`, and `src/game/play.ts`, `stepSimulation`.
+At d101-4, replay samples also preserve whether the source world was ready under the player. Source movement can be skipped while streamed terrain is missing; playback waits when a recorded move needs terrain and keeps source-side skips when it did not. Replay captures the source simulation's end time so verification is independent of how render frames grouped the fixed player ticks. See `src/game/session.ts`, `createSession`; `src/game/inputReplay.ts`, `encodeInputReplay`; and `src/game/play.ts`, `stepSimulation`.
 
 Implementation is in `src/game/inputReplay.ts`, `InputReplayRecorder`; the player-facing rationale is in [CONTROLS.md](CONTROLS.md).
 

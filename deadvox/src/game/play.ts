@@ -219,7 +219,11 @@ export interface StartPlayOptions {
   readonly handedness?: HandSide;
   readonly restore?: Readonly<SaveSnapshot>;
   readonly saveController?: SaveController;
-  readonly replay?: { readonly inputs: ReplayInputData; readonly endStateFingerprint: string };
+  readonly replay?: {
+    readonly inputs: ReplayInputData;
+    readonly endStateFingerprint: string;
+    readonly endSimTime: number;
+  };
 }
 
 export const startPlay = (
@@ -722,6 +726,7 @@ export const startPlay = (
   const importReplay = (bytes: Uint8Array): void => {
     stashInputReplay(bytes);
     const url = new URL(location.href);
+    url.searchParams.delete('cam');
     url.searchParams.set('debug', '1');
     location.assign(url);
   };
@@ -2037,22 +2042,31 @@ export const startPlay = (
     }
   };
 
+  const stepReplaySimulation = (menuPaused: boolean, gameFrozen: boolean): void => {
+    const nextSample = replayPlayer?.peek();
+    const waitingForWorld = Boolean(nextSample?.worldReady && !streamer.isReady(body.pos[0], body.pos[2]));
+    sim.paused = menuPaused || gameFrozen || replayPlayer?.finished === true || waitingForWorld;
+    if (sim.paused || !replayPlayer) {
+      return;
+    }
+    sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
+    session.frameReplay(1 / 60);
+    if (replayPlayer.finished) {
+      const endRemainder = options.replay!.endSimTime - sim.time;
+      if (endRemainder > 0) {
+        session.frameReplay(endRemainder);
+      }
+    }
+    verifyReplayEndState();
+  };
+
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
     cancelGlowstickChargeOnRightClick();
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
-      const nextSample = replayPlayer.peek();
-      const waitingForWorld = Boolean(
-        nextSample?.worldReady && !streamer.isReady(body.pos[0], body.pos[2]),
-      );
-      sim.paused = menuPaused || gameFrozen || replayPlayer.finished || waitingForWorld;
-      if (!sim.paused) {
-        sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
-        session.frameReplay(1 / 60);
-        verifyReplayEndState();
-      }
+      stepReplaySimulation(menuPaused, gameFrozen);
     } else {
       sim.paused = menuPaused || gameFrozen;
       session.frame(dt, skipUntil);

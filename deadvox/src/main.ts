@@ -72,7 +72,11 @@ if (bench === 'report') {
       clearPendingInputReplay();
       startPlay(engine, debugModule!, {
         restore: decoded.snapshot,
-        replay: { inputs: decoded.inputs, endStateFingerprint: decoded.endStateFingerprint },
+        replay: {
+          inputs: decoded.inputs,
+          endStateFingerprint: decoded.endStateFingerprint,
+          endSimTime: decoded.endSimTime,
+        },
       });
     } catch (error) {
       clearPendingInputReplay();

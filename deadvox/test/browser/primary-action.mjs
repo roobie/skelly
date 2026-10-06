@@ -15,6 +15,7 @@ import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mod
 const { chromium } = await import('playwright');
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const inputBindingsModule = '/src/game/inputBindings.ts';
+const inputReplayModule = '/src/game/inputReplay.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -186,6 +187,7 @@ const observationPlugin = {
     useTarget,
     useText,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
+    initialPlayerPosition: [...session.body.pos],
     getNotice: () => notice,
     isChargingGlowstick: () => glowstickChargeStartedAt !== undefined,
     clearNotice: () => showNotice(''),
@@ -352,6 +354,21 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert.equal(replayLook.yaw, lastFrame[0], 'playback drives the camera yaw from its final recorded sample');
     assert.equal(replayLook.pitch, lastFrame[1], 'playback drives the camera pitch from its final recorded sample');
     const replayState = await page.locator('#input-replay-status').getAttribute('data-state');
+    const replayInitialPosition = await page.evaluate(() => globalThis.primaryActionTest.initialPlayerPosition);
+    const recordedStartPosition = await page.evaluate(
+      async ({ text, moduleUrl }) => {
+        const { decodeInputReplay } = await import(moduleUrl);
+        const bytes = new TextEncoder().encode(text);
+        const decoded = await decodeInputReplay(bytes, { contentLookup: () => true });
+        return decoded.snapshot.character.player.body.pos;
+      },
+      { text: replayText, moduleUrl: inputReplayModule },
+    );
+    assert.deepEqual(
+      replayInitialPosition,
+      recordedStartPosition,
+      'the replay session starts from the recording snapshot before its first player tick',
+    );
     assert.equal(replayState, 'verified', 'a clean look-and-movement recording reproduces its end state');
     assert.deepEqual(pageErrors, []);
   } finally {
