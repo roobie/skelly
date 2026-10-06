@@ -2,6 +2,7 @@
 read_if:
   - you're new to the repository and want its subprojects and pillars
   - you're about to make a trade-off between churn and maintainability
+  - you're changing lint, dead-code checks or their CI gate
   - you're writing or changing a doc, a comment or an ADR (Zero drift)
 ---
 
@@ -41,8 +42,20 @@ every subproject and to all code, tests included.
   whole repo in [`biome.jsonc`](biome.jsonc). Every stable rule is on as an
   error. An opt-out needs a written reason next to it in the config, and a
   one-off exception needs a `biome-ignore` comment with a reason.
-- **CI enforces it:** `.github/workflows/lint.yml` runs `biome ci` on every push
-  and PR, and the Pages deploy won't publish unless lint, types and tests pass.
+- **Dead-code analysis:** Knip covers the root tools and each subproject. Run
+  `npm run knip` from the repository root. The default-mode scan is in
+  `package.json`, `scripts.ci`, and `.github/workflows/lint.yml`, `jobs.biome`.
+  Narrow Knip exceptions and their reasons are in `knip.jsonc`,
+  `workspaces.deadvox`. BR's 2026-10-06 06:05 r37-1 ruling was:
+  "We'll start with a one time knip, then re evaluate. Goal is 100% clean on
+  knip, and then continually gate on knip". BR also ruled at 2026-10-06 07:23,
+  "delete The two files Knip still flags"; the pointers were removed and their
+  measurement implementation remains in `deadvox/src/game/playtestTools.ts`,
+  `SessionMetrics` and `measureSnapshots`.
+  The `--production` report is not gated; BR will re-evaluate it after r37-1.
+- **CI enforces it:** `.github/workflows/lint.yml`, `jobs.biome`, runs Biome
+  and Knip on every push and PR; the Pages deploy won't publish unless lint,
+  types and tests pass.
 - **Run it as CI does:** `npm ci` at the repo root, then `npm run ci` from the
   root (of the worktree, if you're in one). Don't use `npx biome`: without the
   root install it resolves the unrelated npm package `biome`, which checks
