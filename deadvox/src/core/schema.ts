@@ -614,11 +614,22 @@ const TerrainPrimitive = union([
     rise: PositiveMetres,
   }),
 ]);
+const FixedLootItem = strictObject({
+  item: Id,
+  count: optional(pipe(Count, minValue(1))),
+  condition: optional(Fraction),
+});
+const FixedLootOverride = strictObject({
+  /** Template-local furniture anchor in half-metre block cells. */
+  at: tuple([Count, Count, Count]),
+  items: pipe(array(FixedLootItem), nonEmpty('needs at least one fixed item')),
+});
 const LayoutBuilding = strictObject({
   template: Id,
   position: tuple([HalfMetres, HalfMetres, HalfMetres]),
   rotation: picklist([0, 90, 180, 270], 'rotation must be a quarter turn'),
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
+  fixedLoot: optional(array(FixedLootOverride)),
 });
 
 const SiteLayoutSchema = strictObject({
@@ -629,6 +640,8 @@ const SiteLayoutSchema = strictObject({
   ),
   /** Foundation elevation: lower face of the top ground block, in metres. */
   ground: HalfMetres,
+  /** Calendar time on day 1 when this site is selected without an explicit ?time=. */
+  startTime: optional(pipe(string(), regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'expected HH:MM'))),
   terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),
   player: strictObject({
@@ -837,6 +850,7 @@ export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
+export type FixedLootItemDef = InferOutput<typeof FixedLootItem>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;

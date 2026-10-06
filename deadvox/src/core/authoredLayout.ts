@@ -7,7 +7,13 @@ import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
-import { type Placement, placedBlockAt, templateLockIds, templateResolves } from './templates.ts';
+import {
+  type CompiledTemplate,
+  type Placement,
+  placedBlockAt,
+  templateLockIds,
+  templateResolves,
+} from './templates.ts';
 import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
@@ -16,6 +22,42 @@ const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
 
 /** Maximum intentional levelling of the raw profile at any half-metre footprint cell. */
 const FOUNDATION_TOLERANCE = 1;
+type LayoutBuilding = SiteLayoutDef['buildings'][number];
+
+const fixedLootIssues = (
+  registry: Registry,
+  building: LayoutBuilding,
+  index: number,
+  compiled: CompiledTemplate,
+): [string, string][] => {
+  if (!building.fixedLoot?.length) {
+    return [];
+  }
+  const issues: [string, string][] = [];
+  const fixedAnchors = new Set<string>();
+  for (const [j, override] of (building.fixedLoot ?? []).entries()) {
+    const key = override.at.join(',');
+    const path = `.buildings[${index}].fixedLoot[${j}]`;
+    if (fixedAnchors.has(key)) {
+      issues.push([path, `fixed loot anchor ${key} is used more than once`]);
+    }
+    fixedAnchors.add(key);
+    const piece = compiled.pieces.find((candidate) => candidate.pos.join(',') === key);
+    if (!piece) {
+      issues.push([`${path}.at`, `no furniture anchor at ${key}`]);
+      continue;
+    }
+    if (!registry.furniture.get(piece.furniture)?.container) {
+      issues.push([`${path}.at`, `furniture at ${key} has no container`]);
+    }
+    for (const [itemIndex, fixed] of override.items.entries()) {
+      if (!registry.items.has(fixed.item)) {
+        issues.push([`${path}.items[${itemIndex}].item`, `no item "${fixed.item}"`]);
+      }
+    }
+  }
+  return issues;
+};
 const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['buildings'][number], rect: Rect): boolean => {
   for (let z = rect.z0 + 0.25; z < rect.z1; z += 0.5) {
     for (let x = rect.x0 + 0.25; x < rect.x1; x += 0.5) {
@@ -89,6 +131,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       return; // checkTemplates reports the palette; the placement can't compile without it.
     }
     const placement = placementOf(registry, building);
+    issues.push(...fixedLootIssues(registry, building, i, placement.template));
     if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
       issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
     }

@@ -1,0 +1,43 @@
+{
+  "items": [
+    {
+      "id": "dad_cabin_key",
+      "name": "Dad's cabin key",
+      "category": "tool",
+      "weight": 10,
+      "size": [1, 1],
+      "key": { "lock": "dad_cabin" },
+      "description": "A small key for Dad's cabin."
+    },
+    {
+      "id": "baseball_cap",
+      "name": "Baseball cap",
+      "category": "clothing",
+      "weight": 80,
+      "size": [2, 1],
+      "wearable": { "slot": "head", "encumbrance": 0 }
+    },
+    {
+      "id": "evacuation_note",
+      "name": "Folded evacuation note",
+      "category": "book",
+      "weight": 5,
+      "size": [1, 1],
+      "readable": {
+        "title": "A note from the kitchen",
+        "text": "If you're reading this, they took the sick south to the clinic. We went looking for Dad. Please don't wait for us."
+      }
+    },
+    {
+      "id": "hunter_logbook",
+      "name": "Hunter's logbook",
+      "category": "book",
+      "weight": 350,
+      "size": [2, 2],
+      "readable": {
+        "title": "Hunter's logbook",
+        "text": "The deer ran straight at the fence instead of away from us. The dogs won't go near the creek. Something is wrong with the animals. Mike says his garage down the ridge road has fuel and a radio. I'm heading there at first light."
+      }
+    }
+  ]
+}
