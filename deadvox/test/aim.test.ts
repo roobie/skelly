@@ -91,7 +91,7 @@ const akBurstMetrics = (effects: ReturnType<typeof firearmsSkillEffects>) => {
       directions.push(
         coneDirection(basis, data.dispersionRadians, Rng.stream(73, `ak-burst-dispersion:${directions.length}`)),
       );
-      aim.recordShot(recoilSeeds.int(0, 0xffff_ffff), data.recoilKickRadians, effects.recoilKickScale);
+      aim.recordShot(recoilSeeds.int(0, 0xff_ff_ff_ff), data.recoilKickRadians, effects.recoilKickScale);
       applyViewShift();
       maxAimClimb = Math.max(maxAimClimb, Math.abs(viewPitch + aim.frame.pitch));
       nextShotAt += cadenceSeconds;
