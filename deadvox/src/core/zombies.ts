@@ -960,8 +960,7 @@ export class ZombieSystem {
         throw new Error(`Missing zombie type ${zombie.type}`);
       }
       if (
-        !validShamblerFootstepClock(zombie.footstepClock) ||
-        !zombie.regions ||
+        !(validShamblerFootstepClock(zombie.footstepClock) && zombie.regions) ||
         ZOMBIE_REGION_NAMES.some(
           (region) =>
             !Number.isFinite(zombie.regions[region]) ||
