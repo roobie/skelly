@@ -4,6 +4,21 @@
 export const SECONDS_PER_HOUR = 3600;
 export const SECONDS_PER_DAY = 24 * SECONDS_PER_HOUR;
 
+/** Authored calendar-time boundaries for time-windowed spawn markers. */
+export const SPAWN_TIMES = {
+  midnight: 0,
+  dawn: 6 * SECONDS_PER_HOUR,
+  noon: 12 * SECONDS_PER_HOUR,
+  dusk: 18 * SECONDS_PER_HOUR,
+} as const;
+
+export interface SpawnTimeWindow {
+  from: string;
+  to?: string | undefined;
+}
+
+export type SpawnTimeWindowField = { [Property in 'window']?: SpawnTimeWindow };
+
 /** Calendar seconds per simulation second. 1:8 makes a game day 3 real hours. */
 export const CLOCK_RATIO = 8;
 
@@ -66,4 +81,22 @@ export const parseTimeOfDay = (text: string): number | undefined => {
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
   return hours < 24 && minutes < 60 ? hours * SECONDS_PER_HOUR + minutes * 60 : undefined;
+};
+
+/** Named or numeric game-clock time used by authored spawn windows. */
+export const parseSpawnTime = (text: string): number | undefined =>
+  Object.hasOwn(SPAWN_TIMES, text) ? SPAWN_TIMES[text as keyof typeof SPAWN_TIMES] : parseTimeOfDay(text);
+
+/** Time-of-day windows recur daily; an open-ended window stays eligible after its first start. */
+export const spawnWindowOpen = (calendar: number, timeWindow: SpawnTimeWindow): boolean => {
+  const from = parseSpawnTime(timeWindow.from);
+  const to = timeWindow.to === undefined ? undefined : parseSpawnTime(timeWindow.to);
+  if (from === undefined || (timeWindow.to !== undefined && to === undefined)) {
+    return false;
+  }
+  if (to === undefined) {
+    return calendar >= from;
+  }
+  const now = ((calendar % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY;
+  return from < to ? now >= from && now < to : from > to && (now >= from || now < to);
 };
