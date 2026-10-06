@@ -54,7 +54,7 @@ const validStanceWeight = (weight: number | undefined): boolean =>
 const validStepOffset = (offset: number | undefined): boolean =>
   offset === undefined || (Number.isFinite(offset) && Math.abs(offset) <= 0.5001);
 
-export type MeleeDamageType = 'blunt' | 'cut' | 'pierce';
+type MeleeDamageType = 'blunt' | 'cut' | 'pierce';
 
 export interface MeleeWeapon {
   readonly damage: number;
