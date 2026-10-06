@@ -94,3 +94,4 @@ export const buildDetachedMagazine = (
   const group = new Group();
   group.add(shell, rounds);
   return { group, capacity: column.capacity };
+};

@@ -108,5 +108,3 @@ const selectOthers = (
   }
   return { hold, others };
 };
-
-;

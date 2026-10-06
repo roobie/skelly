@@ -223,6 +223,4 @@ export type Suggest = (
   n: number,
   budget: number,
 ) => SuggestionResult;
-
 /** Kept on PartInstance so a saved design preserves the selected catalogue version. */
-;

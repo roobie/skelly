@@ -2,17 +2,8 @@
   "$schema": "./node_modules/knip/schema.json",
   "workspaces": {
     ".": {
-      "entry": [
-        "site/launcher.js!",
-        "test/**/*.mjs",
-        "testPool.ts",
-        "tools/**/*.mjs"
-      ],
-      "project": [
-        "site/**/*.js!",
-        "test/**/*.{js,mjs,ts,tsx}",
-        "tools/**/*.{js,mjs,ts,tsx}"
-      ]
+      "entry": ["site/launcher.js!", "test/**/*.mjs", "testPool.ts", "tools/**/*.mjs"],
+      "project": ["site/**/*.js!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"]
     },
     "deadvox": {
       "ignoreBinaries": [
@@ -35,23 +26,14 @@
         "tools/bench-zombie-swings.mjs",
         "tools/ui-browser-contract.mjs"
       ],
-      "project": [
-        "src/**/*.{js,mjs,ts,tsx}!",
-        "test/**/*.{js,mjs,ts,tsx}",
-        "tools/**/*.{js,mjs,ts,tsx}"
-      ],
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}", "tools/**/*.{js,mjs,ts,tsx}"],
       "paths": {
         "@mobgen/*": ["../mobgen/src/*"]
       }
     },
     "gungen": {
-      "entry": [
-        "index.html!"
-      ],
-      "project": [
-        "src/**/*.{js,mjs,ts,tsx}!",
-        "test/**/*.{js,mjs,ts,tsx}"
-      ]
+      "entry": ["index.html!"],
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "mobgen": {
       "entry": [
@@ -69,10 +51,7 @@
       "paths": {
         "@mobgen/*": ["src/*"]
       },
-      "project": [
-        "src/**/*.{js,mjs,ts,tsx}!",
-        "test/**/*.{js,mjs,ts,tsx}"
-      ]
+      "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     }
   }
 }
