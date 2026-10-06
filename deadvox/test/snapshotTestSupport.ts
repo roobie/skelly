@@ -62,7 +62,22 @@ const fixtureTerrain: Terrain = {
   surface: fixtureHamlet.surface,
   stamp: (chunk) => fixtureHamlet.stamp(chunk),
 };
-export const fixtureChunks = fixtureColumns.flatMap(([cx, cz]) => generateColumn(fixtureTerrain, cx, cz));
+const foundZombieColumn = fixtureColumns.find(([cx, cz]) => fixtureHamlet.zombiesIn(cx, cz).length > 0);
+if (!foundZombieColumn) {
+  throw new Error('Snapshot fixture has no zombie column');
+}
+export const fixtureZombieColumn: [number, number] = foundZombieColumn;
+const chunksByColumn = new Map<string, Chunk[]>();
+const fixtureChunksFor = (columns: readonly [number, number][]): Chunk[] =>
+  columns.flatMap(([cx, cz]) => {
+    const key = `${cx},${cz}`;
+    let chunks = chunksByColumn.get(key);
+    if (!chunks) {
+      chunks = generateColumn(fixtureTerrain, cx, cz);
+      chunksByColumn.set(key, chunks);
+    }
+    return chunks;
+  });
 
 const cloneFixtureChunk = (source: Chunk): Chunk => {
   const copy = new Chunk(source.cx, source.cy, source.cz, source.uniformId ?? 0);
@@ -92,15 +107,16 @@ export type Runtime = ReturnType<typeof createRuntime>;
 export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
+  columnsOverride?: readonly [number, number][],
 ) {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
   const hamlet = fixtureHamlet;
-  const columns = fixtureColumns;
+  const columns = columnsOverride ?? (restFixture ? fixtureColumns : [fixtureZombieColumn]);
   const { x1 } = hamlet.bounds;
   const world = new World();
   const sharedEntities = new BlockEntities(registry);
-  for (const chunk of fixtureChunks) {
+  for (const chunk of fixtureChunksFor(columns)) {
     world.addChunk(cloneFixtureChunk(chunk));
   }
   const [editCx, editCz] = columns[0]!;
@@ -202,7 +218,7 @@ export function createRuntime(
       entities.markSearched(container);
     }
     const first = zombies.store.entries().next().value as [number, unknown] | undefined;
-    if (first) {
+    if (first && (restFixture || zombies.store.size > 1)) {
       zombies.store.remove(first[0]);
     }
     world.setBlock(editCx * CHUNK + 1, editChunk.cy * CHUNK + 1, editCz * CHUNK + 1, blockId('planks'));

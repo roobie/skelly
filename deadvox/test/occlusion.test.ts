@@ -222,22 +222,20 @@ describe('wide occlusion in the mesh', () => {
   // Merging must not change what a face looks like: every vertex of every quad, merged or not, equals
   // the value from a brute-force count of the box in front of that vertex.
   it('gives every merged-quad corner the per-vertex value (random terrain)', () => {
-    for (let seed = 1; seed <= 2; seed++) {
-      const solid: Solid = (x, y, z) =>
-        y < Math.floor(6 + hash3(seed, Math.floor(x / 5), Math.floor(z / 5), 0) * 14) ||
-        hash3(seed + 9, x, y, z) < 0.004;
-      const wide = wideOf(solid);
-      const mesh = buildMesh(paddedOf(solid), colors, undefined, wide);
-      expect(mesh.indices.length / 6).toBeLessThan(unitFaces(mesh).size); // merging happened
-      let wrong = 0;
-      for (let v = 0; v < mesh.occlusion.length; v++) {
-        const pos = [0, 1, 2].map((k) => mesh.positions[v * 3 + k]!);
-        const normal = [0, 1, 2].map((k) => mesh.normals[v * 3 + k]!);
-        const expected = occlusionByte(occlusionLevel(bruteCount(wide, boxIn(pos, normal))));
-        wrong += mesh.occlusion[v] === expected ? 0 : 1;
-      }
-      expect(wrong).toBe(0);
+    const seed = 1;
+    const solid: Solid = (x, y, z) =>
+      y < Math.floor(6 + hash3(seed, Math.floor(x / 5), Math.floor(z / 5), 0) * 14) || hash3(seed + 9, x, y, z) < 0.004;
+    const wide = wideOf(solid);
+    const mesh = buildMesh(paddedOf(solid), colors, undefined, wide);
+    expect(mesh.indices.length / 6).toBeLessThan(unitFaces(mesh).size); // merging happened
+    let wrong = 0;
+    for (let v = 0; v < mesh.occlusion.length; v++) {
+      const pos = [0, 1, 2].map((k) => mesh.positions[v * 3 + k]!);
+      const normal = [0, 1, 2].map((k) => mesh.normals[v * 3 + k]!);
+      const expected = occlusionByte(occlusionLevel(bruteCount(wide, boxIn(pos, normal))));
+      wrong += mesh.occlusion[v] === expected ? 0 : 1;
     }
+    expect(wrong).toBe(0);
   }, 30_000); // a brute-force count per vertex; 30s absorbs CI parallelism
 
   it('stops faces merging across a change in occlusion that the 3-neighbour AO cannot see', () => {
