@@ -3,6 +3,7 @@ read_if:
   - you're planning or implementing a Slice 3 milestone
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - you're preparing the end-of-slice playtest or its authored map
+  - you're detailing the military site's armoury access and its noisy fallback
 ---
 
 # Slice 3 — Flesh and noise
@@ -385,6 +386,7 @@ dependencies.
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. BR's 2026-10-05 answer confirms the 2026-10-03 ruling: the medical site's virus-sampling research is lore, not a player mission.
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books (BR, 2026-10-03; confirmed 2026-10-05).
 - **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
+- **Armoury access:** the camp must remain reachable if the clinic key stays on the dead officer. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads 15 seconds as real play time; keep prying out of compression so the crowbar's noise draws the dead at normal pace. The matching key remains the quiet route, and `lock_test` is a first-look fixture, not the authored military site. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making forced entry one-way. See `DESIGN.md`, “Base building and electricity”, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 - **Tester prompt:** “find the military camp” (BR, 2026-10-06 13:05: “yes, confirmed”; #181).
 
 The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. BR agreed beats 4–6 in #181; their map rounds follow the dependent 3.7 and 3.8 work for beat 4, 3.4 and 3.8 for beat 5, and 3.2, 3.8 and 3.9 for beat 6. Do not block beats 1–3 on those later rounds.
@@ -400,7 +402,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 - 3.5 precedes 3.6 and 3.9.
 - 3.2 precedes 3.7.
 - 3.10 starts early enough for later milestones to use replays.
-- BR agreed beats 4–6 in #181; each later map round follows its dependencies: beat 4 after 3.7 and 3.8, beat 5 after 3.4 and 3.8, and beat 6 after 3.2, 3.8 and 3.9, with #309's armoury-padlock prying.
+- BR agreed beats 4–6 in #181; each later map round follows its dependencies: beat 4 after 3.7 and 3.8, beat 5 after 3.4 and 3.8, and beat 6 after 3.2, 3.8 and 3.9.
 
 ## Carried in
 

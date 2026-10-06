@@ -42,6 +42,13 @@ const TRIGGER_ENTRIES = [
       note: 'Temporary stand-in: shares the door-close recording; a distinct stuck-door sound is future work.',
     },
   ],
+  [
+    'lock_pry',
+    {
+      trigger: 'Strike a locked door with a crowbar to force its padlock.',
+      note: 'Temporary stand-in: shares the door-blocked recording.',
+    },
+  ],
   ['player_strain', { trigger: 'Press Space while grounded to jump.' }],
   [
     'player_landing_hard',

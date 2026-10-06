@@ -26,7 +26,7 @@ export interface BlockEntity {
   searched: boolean;
   /** Doors only. */
   open: boolean;
-  lock?: DoorLockDef;
+  lock?: DoorLockDef | undefined;
 }
 
 /** What worldgen asks for: a piece of furniture at a place. */
@@ -335,6 +335,19 @@ export class BlockEntities {
       return reason;
     }
     entity.lock!.locked = locked;
+    this.version += 1;
+    return undefined;
+  }
+
+  /** Prying destroys a closed padlock; the door remains unlocked and cannot be relocked. */
+  breakLock(entity: BlockEntity): string | undefined {
+    if (!(this.defOf(entity).door && entity.lock?.locked)) {
+      return "There's no locked padlock to pry";
+    }
+    if (entity.open) {
+      return 'Close the door first';
+    }
+    entity.lock = undefined;
     this.version += 1;
     return undefined;
   }

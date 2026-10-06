@@ -123,6 +123,7 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
 export interface InteractionHint {
   readonly doorReason?: string | undefined;
   readonly lock?: string | undefined;
+  readonly prying?: string | undefined;
   readonly door: boolean;
   readonly open: boolean;
   readonly container: boolean;
@@ -133,12 +134,24 @@ export interface InteractionHint {
   readonly fullName: string;
 }
 
+const doorInteractionText = ({
+  open,
+  doorReason,
+  lock,
+  prying,
+  name,
+}: Pick<InteractionHint, 'open' | 'doorReason' | 'lock' | 'prying' | 'name'>): string => {
+  const action = prying ? `pry the ${name} ${prying}` : `${open ? 'close' : 'open'} the ${name}`;
+  return `${labelForAction('world.interact')}: ${action}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+};
+
 /** Describes an already selected target; never selects/executes the interaction. */
 export const playInteractionText = ({
   door,
   open,
   doorReason,
   lock,
+  prying,
   container,
   readable,
   restAction,
@@ -147,7 +160,7 @@ export const playInteractionText = ({
   fullName,
 }: InteractionHint): string => {
   if (door) {
-    return `${labelForAction('world.interact')}: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+    return doorInteractionText({ open, doorReason, lock, prying, name });
   }
   if (readable) {
     return `${labelForAction('world.interact')}: read the ${name}`;

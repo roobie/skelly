@@ -180,7 +180,10 @@ const observationPlugin = {
     quickbarActions,
     hudOptions,
     beginGlowstickCharge,
-    selectPrimaryAction, ignitionTargetForHand,
+    selectPrimaryAction,
+    ignitionTargetForHand,
+    useTarget,
+    useText,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
     isChargingGlowstick: () => glowstickChargeStartedAt !== undefined,
@@ -1103,6 +1106,92 @@ try {
     undefined,
     { timeout: 10_000 },
   );
+  const pryPreview = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.session.sim.actions.cancel();
+    const definition = r.inventory.registry.furniture.get('wood_door');
+    const pos = r.feet();
+    const door = r.inventory.furnish({
+      type: definition.id,
+      pos,
+      size: definition.size,
+      facing: 'n',
+      lock: { id: 'test_shed', locked: true },
+    });
+    if (!door) {
+      throw new Error('Could not place the first-look prying door');
+    }
+    r.clearHand('right');
+    const crowbar = r.inventory.create('crowbar');
+    if (!r.inventory.add(crowbar, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not carry the first-look crowbar');
+    }
+    r.hudOptions.handling = false;
+    const hint = r.useText(door);
+    r.useTarget(door);
+    return { hint, job: r.session.sim.actions.job, doorUid: door.uid };
+  });
+  assert.ok(pryPreview.hint.toLowerCase().includes('crowbar'), 'the interaction hint names its carried prying tool');
+  assert.equal(pryPreview.job?.jobType, 'pry', 'the door interaction starts the owned prying action');
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.handling = true;
+  });
+  await page.waitForFunction(() => {
+    const root = document.querySelector('#handling');
+    return !root.hidden && root.querySelector('.hd-bar');
+  });
+  const pryElapsed = await page.evaluate(() => {
+    const { session } = globalThis.primaryActionTest;
+    const { sim } = session;
+    sim.frame(1);
+    sim.actions.stop();
+    const { job } = sim.actions;
+    if (job?.jobType !== 'pry') {
+      throw new Error('Stopping the pry lost its progress');
+    }
+    return job.elapsed;
+  });
+  assert.ok(pryElapsed > 0, 'normal-speed simulation advances visible pry progress');
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  await page.evaluate((doorUid) => {
+    const r = globalThis.primaryActionTest;
+    const door = r.inventory.entities.byUid(doorUid);
+    if (!door) {
+      throw new Error('The prying door disappeared before resume');
+    }
+    r.useTarget(door);
+  }, pryPreview.doorUid);
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    const root = document.querySelector('#handling');
+    const fill = root.querySelector('.hd-fill');
+    return (
+      r.session.sim.actions.job?.jobType === 'pry' && !root.hidden && fill && Number.parseFloat(fill.style.width) > 0
+    );
+  });
+  const resumedElapsed = await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.job.elapsed);
+  assert.equal(resumedElapsed, pryElapsed, 'the progress bar resumes from the saved pry cursor');
+  const pryProgressText = await page.locator('#handling').textContent();
+  assert.match(pryProgressText ?? '', /X pauses/);
+  assert.doesNotMatch(pryProgressText ?? '', /Half speed/);
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.handling = false;
+  });
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.handling = true;
+  });
+  await page.waitForFunction(() => {
+    const root = document.querySelector('#handling');
+    const fill = root.querySelector('.hd-fill');
+    return !root.hidden && fill && Number.parseFloat(fill.style.width) > 0;
+  });
+  const pryingScreenshot = resolve(projectRoot, 'test-results/primary-action/prying-progress.png');
+  await mkdir(resolve(projectRoot, 'test-results/primary-action'), { recursive: true });
+  await page.screenshot({ path: pryingScreenshot });
+  await page.evaluate(() => globalThis.primaryActionTest.session.sim.actions.cancel());
+
   const treatment = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
@@ -1152,7 +1241,7 @@ try {
   browser = undefined;
   await checkDroppedGlowstickPixel(address.port);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, thrown-glowstick arc, refusals, firearm emission, quickbar hold and held-book reading.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, thrown-glowstick arc, refusals, firearm emission, quickbar hold, held-book reading and the crowbar door route.\n',
   );
 } finally {
   await browser?.close();

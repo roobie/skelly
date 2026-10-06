@@ -37,7 +37,7 @@ interface Entry {
 }
 
 /** Float slack when comparing accumulated step times. */
-const EPS = 1e-9;
+export const SCHEDULER_TIME_EPSILON = 1e-9;
 
 export class Scheduler {
   /** Simulation seconds reached. */
@@ -147,10 +147,10 @@ export class Scheduler {
   /** The system whose next tick ends first, if it ends by `target`; ties go to the first registered. */
   private nextDue(target: number, c: number): Entry | undefined {
     let best: Entry | undefined;
-    let bestEnd = target + EPS;
+    let bestEnd = target + SCHEDULER_TIME_EPSILON;
     for (const entry of this.entries) {
       const end = entry.done + this.stepFor(entry, c);
-      if (end <= bestEnd - (best ? EPS : 0)) {
+      if (end <= bestEnd - (best ? SCHEDULER_TIME_EPSILON : 0)) {
         best = entry;
         bestEnd = end;
       }
