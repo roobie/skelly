@@ -144,8 +144,11 @@ background beelines in Slice 3. Abstract hordes remain Slice 4 work.
 reference laptop, with the simulation under 4 ms a frame. *Measure.* BR's
 2026-10-02 reference-laptop run reached 100 detailed shamblers at 60 fps, but
 the zombie tick used 11 ms p95 and 1% of frames exceeded 18 ms. That limited
-headroom is why active simulation needs a strict cap and cheaper tiers. The
-benchmark path is `src/bench/shamblers.ts`, `startShamblerBench`.
+headroom is why active simulation needs a strict cap and cheaper tiers.
+`src/bench/shamblers-cpu.mjs` isolates simulation cost from rendering, while
+`src/bench/shamblers.ts`, `startShamblerBench`, records browser frame, tier
+tick, actor-sync and render-submit costs. Compare the isolated simulation
+cost with this gate; use the browser run to judge the full scene.
 
 ## 5. Inventory speed in real time
 

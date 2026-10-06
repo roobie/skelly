@@ -117,7 +117,7 @@ import {
 } from '../core/rigidBody.ts';
 import { type PosedShambler, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 
-import type { HitImpulse, Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -129,7 +129,14 @@ import { castsAndReceives } from './shadowFlags.ts';
  * corpse" apart from "vanished without dying" (despawn/unload) — see MobActorMeshes' own doc comment. */
 export interface ZombieRenderer {
   readonly group: Group;
-  sync: (store: EntityStore<Zombie>, realDt?: number, alpha?: number, freezeLiving?: boolean) => void;
+  sync: (
+    store: EntityStore<Zombie>,
+    realDt?: number,
+    alpha?: number,
+    freezeLiving?: boolean,
+    backgroundAlpha?: number,
+    simulationTime?: number,
+  ) => void;
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
   zombieDied?: (id: EntityId, zombie: Zombie, playerPos?: Vec3) => void;
@@ -175,6 +182,10 @@ export const fallDirectionAwayFromPlayer = (facing: Vec3, zombiePos: Vec3, playe
  * mobgen's own node_modules) — palette-index colour bytes to per-vertex RGB. */
 const SHADE_FACTORS = [0.72, 0.88, 1.04, 1.2] as const;
 const clamp01 = (x: number): number => Math.max(0, Math.min(1, x));
+const backgroundActorBlend = (zombie: Zombie, simulationTime: number | undefined, fallback: number): number =>
+  simulationTime === undefined || zombie.renderPrevious.time === undefined
+    ? fallback
+    : clamp01((simulationTime - zombie.renderPrevious.time) * BACKGROUND_ZOMBIE_RATE);
 const vertexColorsFrom = (colorBytes: Uint8Array, palette: Readonly<Record<Material, MobVec3>>): Float32Array => {
   const out = new Float32Array(colorBytes.length * 3);
   for (let v = 0; v < colorBytes.length; v++) {
@@ -373,6 +384,8 @@ export class MobActorMeshes implements ZombieRenderer {
   private nextDeadOrder = 0;
   private frameCounter = 0;
   private renderBlend = 1;
+  private activeBlend = 1;
+  private backgroundBlend = 1;
   private camera: Camera | undefined;
   private readonly frustum = new Frustum();
   private readonly frustumMatrix = new Matrix4();
@@ -1333,18 +1346,30 @@ export class MobActorMeshes implements ZombieRenderer {
     return true;
   }
 
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, _freezeLiving = false): void {
+  // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with its base implementation.
+  sync(
+    store: EntityStore<Zombie>,
+    realDt = 0,
+    alpha = 1,
+    _freezeLiving = false,
+    backgroundAlpha = alpha,
+    simulationTime?: number,
+  ): void {
     this.frameCounter += 1;
     if (this.camera) {
       this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
       this.frustum.setFromProjectionMatrix(this.frustumMatrix);
     }
     const blend = Math.max(0, Math.min(1, alpha));
+    this.activeBlend = blend;
+    this.backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
     this.renderBlend = blend;
     let anyDirty = false;
     const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
       present.add(id);
+      const actorBackgroundBlend = backgroundActorBlend(zombie, simulationTime, this.backgroundBlend);
+      this.renderBlend = zombie.tier === 'background' ? actorBackgroundBlend : this.activeBlend;
       anyDirty = this.syncZombie({ id, zombie }) || anyDirty;
     }
     for (const [id, state] of this.states) {

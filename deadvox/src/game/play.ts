@@ -1808,6 +1808,7 @@ export const startPlay = (
       calendar: sim.calendar,
       time: sim.time,
       lastZombieStep: session.lastZombieStep,
+      lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,
       zombies: zombieStore,

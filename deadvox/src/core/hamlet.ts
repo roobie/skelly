@@ -12,6 +12,7 @@ import {
   type FurnitureSpawn,
   furnitureOf,
   grow,
+  type HordeSpawn,
   type Rect,
   rectDistance,
   type Site,
@@ -146,6 +147,7 @@ export class Hamlet implements Site {
   /** Road heights from `roadHeights[0]` at x = road.x0. */
   private readonly roadHeights: Int32Array;
   private readonly zombieSpawns: ZombieSpawn[] = [];
+  private hordeSpawn!: HordeSpawn;
 
   constructor(seed: number, registry: Registry, scale: Scale) {
     if (scale.blockSize !== HAMLET_BLOCK_SIZE) {
@@ -285,9 +287,23 @@ export class Hamlet implements Site {
     );
   }
 
+  hordesIn(cx: number, cz: number): HordeSpawn[] {
+    return Math.floor(this.hordeSpawn.pos[0] / CHUNK) === cx && Math.floor(this.hordeSpawn.pos[2] / CHUNK) === cz
+      ? [{ ...this.hordeSpawn, pos: [...this.hordeSpawn.pos] as Vec3 }]
+      : [];
+  }
+
   private makeZombieSpawns(): void {
     const markers = this.lots.flatMap(({ placement }) => placedSpawns(placement));
-    this.zombieSpawns.push(...hamletZombieSpawns(this.seed, this.road, markers, (x) => this.roadHeightAt(x)));
+    this.zombieSpawns.push(...hamletZombieSpawns(this.seed, this.road, markers, (worldX) => this.roadHeightAt(worldX)));
+    const rng = Rng.stream(this.seed, 'hamlet-first-horde');
+    const x = Math.floor(this.road.x0 + (this.road.x1 - this.road.x0) * 0.68);
+    this.hordeSpawn = {
+      id: 'first-horde',
+      type: 'shambler',
+      pos: [x + 0.5, this.roadHeightAt(x) + 1, (this.road.z0 + this.road.z1) / 2],
+      members: rng.int(20, 50),
+    };
   }
 
   // ---- internals ----

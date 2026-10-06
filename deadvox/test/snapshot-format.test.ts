@@ -101,8 +101,7 @@ const applyBudgetPiles = (runtime: ReturnType<typeof createRuntime>) => {
   return { baselinePileCount, baselinePileItems, pileCount, pileCapacity, addedItems };
 };
 
-// Exercise the normal idempotent column-arrival path; the seeded hamlet spawns 6–10
-// shamblers and the existing fixture removes one, leaving its spawn-ledger entry behind.
+// Exercise idempotent column arrival; one group marker can own several live actors.
 const touchBudgetFurnitureAndZombies = (runtime: ReturnType<typeof createRuntime>) => {
   const touchedContainers = [...runtime.entities.all].filter((entity) => entity.pockets);
   for (const entity of touchedContainers) {
@@ -465,7 +464,6 @@ describe('canonical save format', () => {
     expect(pileStats.addedItems).toBe(pileStats.pileCount * pileStats.pileCapacity);
     expect(population.touchedContainers).toBeGreaterThan(0);
     expect(population.spawned).toBeGreaterThan(0);
-    expect(population.alive).toBeLessThanOrEqual(population.spawned);
 
     // 1:8 clock ratio makes 4,500 simulation seconds ten game hours. Advance
     // scheduler cursors without running the fixed-rate physics ticks.
@@ -496,7 +494,7 @@ describe('canonical save format', () => {
     expect(capture(loaded)).toEqual(decoded.snapshot);
     expect(loadMs).toBeLessThan(TEN_HOUR_LOAD_BUDGET_MS);
     process.stdout.write(
-      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawned=${population.spawned} alive=${population.alive} dead=${population.spawned - population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
+      `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
     );
   }, 30_000);
 
