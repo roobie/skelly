@@ -2652,7 +2652,14 @@ describe('background zombie tier', () => {
       ...player([0, 1, 0]),
       lightSources: [{ pos: lightTarget, seenFrom: 100, carried: false }],
     };
-    const system = new ZombieSystem({ ...senses(() => target, FLOOR, () => 23), isLoaded: () => true });
+    const system = new ZombieSystem({
+      ...senses(
+        () => target,
+        FLOOR,
+        () => 23,
+      ),
+      isLoaded: () => true,
+    });
     const id = system.add(SHAMBLER, [100, 1, 0], [-1, 0, 0]);
     system.tickBackground(0.5, 0.5);
     const zombie = system.store.get(id)!;
