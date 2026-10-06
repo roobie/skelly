@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/math.ts';
 import type { TriangleMesh } from '../src/core/mesh.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
-import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
+import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
 const ROOT = join(import.meta.dirname, '..');

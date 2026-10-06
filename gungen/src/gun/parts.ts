@@ -1501,13 +1501,18 @@ const akReceiver: PartFamily = {
         ...(path.id === 'bolt-stock-clearance' ? { allowPort: 'stock' } : {}),
       })),
       ports: [
-        ...base.ports.map((port) =>
-          port.id === 'stock'
-            ? { ...port, pos: [port.pos[0], AK_STOCK_PORT_Y, port.pos[2]] as const }
-            : ['lower', 'bolt-carrier'].includes(port.id)
-              ? { ...port, pos: [port.pos[0], port.pos[1] + AK_RECEIVER_LIFT_U, port.pos[2]] as const }
-              : port,
-        ),
+        ...base.ports.map((port) => {
+          if (port.id === 'stock') {
+            return { ...port, pos: [port.pos[0], AK_STOCK_PORT_Y, port.pos[2]] as const };
+          }
+          if (['lower', 'bolt-carrier'].includes(port.id)) {
+            return {
+              ...port,
+              pos: [port.pos[0], port.pos[1] + AK_RECEIVER_LIFT_U, port.pos[2]] as const,
+            };
+          }
+          return port;
+        }),
         {
           id: 'gas-cylinder',
           mount: 'gas-cylinder',

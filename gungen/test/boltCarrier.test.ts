@@ -291,11 +291,11 @@ const crossSectionGaps = (entry: TravelCase, resolved: ReturnType<typeof resolve
   const receiver = resolved.defs.get('receiver')!;
   const port = receiver.ports.find(({ id }) => id === 'bolt-carrier')!;
   const cavity = carrierCavityBounds(entry.pattern, port.pos[1]);
-  return [cavity.y, cavity.z].map((cavity, axis) => {
+  return [cavity.y, cavity.z].map((cavityBounds, axis) => {
     const worldAxis = axis + 1;
     return {
-      lower: bodyBounds[worldAxis]![0]! - cavity[0],
-      upper: cavity[1] - bodyBounds[worldAxis]![1]!,
+      lower: bodyBounds[worldAxis]![0]! - cavityBounds[0],
+      upper: cavityBounds[1] - bodyBounds[worldAxis]![1]!,
       axis: worldAxis,
     };
   });
@@ -492,7 +492,9 @@ describe('procedural bolt carrier', () => {
     const outlineBottom = Math.min(...receiver.solids.flatMap((solid) => corners(solid).map((point) => point[1])));
     const slotCenterY = (chargingSlot.section[0] + chargingSlot.section[1]) / 2;
     for (let x = portMin - 1 + 0.125; x < portMax; x += 0.25) {
-      expect(receiverSectionHasMaterialAt(receiver.solids, x, slotCenterY, 1.6), `merged opening at x=${x}`).toBe(false);
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, slotCenterY, 1.6), `merged opening at x=${x}`).toBe(
+        false,
+      );
     }
     expect(receiverSectionHasMaterialAt(receiver.solids, portMax + 0.125, slotCenterY, 1.6)).toBe(true);
     for (let sample = 0; sample <= 26; sample++) {

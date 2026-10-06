@@ -96,12 +96,18 @@ describe('AK-pattern archetype', () => {
     const report = validate(akFixture, gunDomain);
     expect(report.issues).toEqual([]);
     const receiver = report.resolved.defs.get('receiver')!;
-    const sightId = Object.entries(report.resolved.assembly.parts).find(([, part]) => part.family === 'ak-rear-sight')?.[0];
-    if (!sightId) throw new Error('AK design needs a rear sight');
+    const sightId = Object.entries(report.resolved.assembly.parts).find(
+      ([, part]) => part.family === 'ak-rear-sight',
+    )?.[0];
+    if (!sightId) {
+      throw new Error('AK design needs a rear sight');
+    }
     const sight = report.resolved.defs.get(sightId)!;
     const block = sight.solids.find(({ id }) => id === 'rear-sight-block')!;
     expect(sight.solids.map(({ id }) => id)).not.toContain('leaf-stem');
-    if (block.kind !== 'box') throw new Error('AK rear sight needs a block base');
+    if (block.kind !== 'box') {
+      throw new Error('AK rear sight needs a block base');
+    }
     const receiverPort = receiver.ports.find(({ id }) => id === 'rear-sight')!;
     const sightPlaced = report.resolved.placed.get(sightId)!;
     const blockBase = applyPoint(sightPlaced, [0, block.box.center[1] - block.box.half[1], 0]);
@@ -154,7 +160,8 @@ describe('AK-pattern archetype', () => {
     const stockFront = stock.ports.find(({ id }) => id === 'front')!;
     expect(stockFront.pos[1]).toBeLessThan(0);
     const bevelSolid = receiver.solids.find(
-      (solid): solid is Extract<Solid, { kind: 'extruded-polygon' }> => solid.kind === 'extruded-polygon' && !!solid.clip?.length,
+      (solid): solid is Extract<Solid, { kind: 'extruded-polygon' }> =>
+        solid.kind === 'extruded-polygon' && Boolean(solid.clip?.length),
     )!;
     const bevelPlane = bevelSolid.clip![0]!;
     const topAt = (x: number) => (bevelPlane.offset - bevelPlane.normal[0] * x) / bevelPlane.normal[1];
