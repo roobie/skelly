@@ -85,7 +85,7 @@ import {
 } from './inputReplay.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
-import { shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -1709,20 +1709,31 @@ export const startPlay = (
       return;
     }
     const selected = meleeSelection(preferredHand);
-    const result = startPlayerMelee(playerCombat, sim.needs, {
-      origin: eye(),
-      direction: lookDir(),
-      weapon: {
-        ...selected.weapon,
-        cooldown: selected.weapon.cooldown * session.sim.body.consequences.swingSlowdown,
+    const classTuning = selected.profile === 'fists' ? undefined : registry.meleeClasses.get(selected.profile);
+    if (selected.profile !== 'fists' && classTuning === undefined) {
+      throw new Error(`Missing melee class tuning for ${selected.profile}`);
+    }
+    const swingWeapon = resolvePlayerMeleeWeapon(
+      selected.weapon,
+      classTuning,
+      session.sim.body.consequences.swingSlowdown,
+    );
+    const result = startPlayerMelee(
+      playerCombat,
+      sim.needs,
+      {
+        origin: eye(),
+        direction: lookDir(),
+        weapon: swingWeapon,
+        profile: selected.profile,
+        ...(selected.hand === undefined ? {} : { hand: selected.hand }),
+        twoHanded: selected.twoHanded,
+        hands: handUids(),
+        aimYaw: input.yaw,
+        aimPitch: input.pitch,
       },
-      profile: selected.profile,
-      ...(selected.hand === undefined ? {} : { hand: selected.hand }),
-      twoHanded: selected.twoHanded,
-      hands: handUids(),
-      aimYaw: input.yaw,
-      aimPitch: input.pitch,
-    });
+      sim.body.tuning.staminaRegenDelaySimSeconds,
+    );
     if (result === 'too-tired') {
       showRefusal('You are too tired to swing', sim.time);
     }
