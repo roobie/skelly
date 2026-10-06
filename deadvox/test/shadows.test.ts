@@ -17,7 +17,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { CHUNK } from '../src/core/coords.ts';
 import type { MeshData } from '../src/core/mesher.ts';
-import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance } from '../src/core/mood.ts';
+import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../src/core/sky.ts';
 import { shadowReadoutText } from '../src/debug/index.ts';
 import { ChunkMeshes } from '../src/render/chunks.ts';
@@ -78,10 +78,10 @@ describe('sun shadow strength', () => {
 });
 
 describe('shadow settings', () => {
-  it('steps the distance through 24, 40, 64 and wraps', () => {
-    expect([24, 40, 64, 24].map(nextShadowDistance)).toEqual([40, 64, 24, 40]);
-    expect(nextShadowDistance(50)).toBe(64);
-    expect(nextShadowDistance(100)).toBe(24);
+  it('steps the distance through the allowed list and wraps', () => {
+    const cycle = [...SHADOW_DISTANCES, SHADOW_DISTANCES[0]!];
+    expect(cycle.slice(0, -1).map(nextShadowDistance)).toEqual(cycle.slice(1));
+    expect(nextShadowDistance(SHADOW_DISTANCES.at(-1)!)).toBe(SHADOW_DISTANCES[0]);
   });
 
   it('clamps a distance to whole metres in 16..96, and a non-number to the default', () => {

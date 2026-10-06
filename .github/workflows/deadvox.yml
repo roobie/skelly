@@ -1,7 +1,6 @@
 name: deadvox
 
-# Keep troubleshooting changes checked with browser contracts: it describes stage modes,
-# and its generated key table is a build input.
+# Keep troubleshooting changes checked with browser contracts because it documents their stage modes.
 on:
   push:
     branches: [main]

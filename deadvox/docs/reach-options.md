@@ -63,11 +63,6 @@ immediately or invokes use/eat/drink/switch.
   The swap revalidates reach/search and consumes no battery on refusal. Swap first,
   then a separate next use switches the light on, as before.
 
-The locked-menu adapter does not forward browser-owned Ctrl, Cmd or Meta
-modifiers into inventory game actions. The inventory regression crosses that
-adapter from the locked canvas and checks modifier refusal alongside the
-rebound held quick gate, not just the inventory's receiving handler.
-
 Tests protect each quick-move rule, locked-menu pointer queue binding, searched/nested
 reach, delayed revalidation and scalar invalidation. Absolute boundary tests fail
 when the 2-metre constant is mutated to 2.1 and pass after restoring 2.

@@ -24,21 +24,20 @@ camera settings live in the URL and update as you change them, so a reload or a 
 link reproduces what you saw. Only deviations from the defaults are written; values and
 their ranges are in `src/debug/lookUrl.ts` and `src/debug/camUrl.ts`.
 
-The panel's collapsible group headers show effective binding labels, so a
-rebind is visible without a second key table. See `src/debug/index.ts`,
-`createDebugActions`, and `src/debug/groups.ts`, `actionsByGroup` and
-`debugKeyTable`, for the generated catalogue and URL-parameter metadata.
-Default bindings are generated from the registry; this document does not freeze
-a copy that would disagree with browser preferences.
+Browser profiles can rebind defaults, so this guide does not reproduce a key
+catalogue that could mislead a player; see `BindingRegistry` in
+`src/game/inputBindings.ts`.
 
-Noclip movement uses the same held F2 gate as other debug actions; spawn-menu
-navigation and dismissal are ordinary modal controls. Keyboard spawn
-confirmation and native activation of debug buttons remain gated. Native text
-editing/focus stays with the browser; see `CONTROLS.md`, “Native browser boundary
-and exceptions”. A desktop OS can intercept a key before the browser receives
-it; report that boundary rather than claiming a synthetic event proves capture.
+Noclip flight is ungated while noclip is active so vertical movement can combine
+with WASD; entering noclip remains gated. Spawn-menu navigation and dismissal
+are ordinary modal controls. Keyboard spawn confirmation and native activation
+of debug buttons remain gated. Native text editing/focus stays with the browser;
+see `CONTROLS.md`, “Native browser boundary and exceptions”. A desktop OS can
+intercept a key before the browser receives it; report that boundary rather than
+claiming a synthetic event proves capture.
 
-In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every content item that has a melee weapon definition; normal games and restored saves are unchanged. Open the spawn menu with its generated gated chord; it focuses the search field. The menu displays its effective navigation, confirmation and dismissal bindings. Search-field keys retain native text behavior and do not control the player. See `src/debug/spawnMenu.ts`, `SpawnMenu`, and `src/game/inputBindings.ts`, `KeyboardInput`.
+Fresh debug games receive an authored loadout so experiments do not alter normal
+games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
@@ -122,10 +121,18 @@ Two single-case quarantines remain; a fresh pass does not establish a fix:
 Neither is in the default Firefox command. No retries or increased bounds; record a
 fixed trial plan and before/after/restored-before evidence before reinstating a case.
 
-Set `DEBUG=pw:browser` for native browser launch/stderr/exit traces. The Chromium UI
-launcher emits `UI_LAUNCH_FAILURE` with both executable/argument/PID/exit/signal records,
-bounded output tails, ports, HTTP status, discovery error (including its cause), and CDP
-targets. Startup fetches and JSON bodies share their stage's remaining deadline.
+Set `DEBUG=pw:browser` for Playwright browser launch and transport traces. The Chromium UI
+contract in `tools/ui-browser-contract.mjs`, `ui-browser-contract`, enables that channel before
+importing Playwright, so Chrome launch messages appear in the job log as `pw:browser` lines. It
+starts Vite and waits for its root response before navigating a Playwright-controlled Chrome; a
+page CDP session preserves raw input. The contract checks DOM, pointer and keyboard behavior, not
+pixels or WebGL output, so it uses render-free mode (`?render=0` and `--disable-gpu`) and asserts
+that no WebGL context is requested. This keeps the stage out of the SwiftShader initialization
+path reported in #256; pixel checks remain in visual stages. `UI_BROWSER_LAUNCH` records
+Chrome version and graphics arguments, while `UI_BROWSER_GRAPHICS` records the render mode and
+WebGL requests. When `chromium.launch` fails, `UI_LAUNCH_FAILURE.error` carries Playwright's
+browser log; the record also includes requested browser arguments, browser connection
+state/version, Vite's last response, navigation phase, page URL and page errors.
 
 Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
 separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,

@@ -16,7 +16,7 @@ import type { HandSide, Pile } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, useOption } from '../core/options.ts';
+import { doorOptions, doorPlan } from '../core/options.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -423,8 +423,7 @@ export const startPlay = (
     },
     searching: session.searching,
     notice: showNotice,
-    use: (item) => survival.use(item),
-    useOption: (item, reachView) => useOption(item, reachView),
+    refusal: (text) => showRefusal(text, sim.time),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
@@ -682,7 +681,6 @@ export const startPlay = (
     }
   };
 
-  /** C continues; X stops only actions whose owner permits cancellation. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
       return false;
@@ -856,6 +854,11 @@ export const startPlay = (
       case 'world.interact':
         if (!compression.locksInput) {
           use();
+        }
+        break;
+      case 'craft.continue':
+        if (session.crafting.currentUid !== undefined) {
+          continueAction();
         }
         break;
       case 'handling.stop':

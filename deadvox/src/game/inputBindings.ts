@@ -75,14 +75,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
   row('movement.jump', 'Jump', ['play', 'build'], ['Space'], 'held-state'),
-  row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state', {
-    debug: true,
-    gate: 'debug.gate',
-  }),
-  row('noclip.descend', 'Descend while flying', ['noclip'], ['Backspace'], 'held-state', {
-    debug: true,
-    gate: 'debug.gate',
-  }),
+  row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state'),
+  row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
   row('hand.use-off', 'Use off hand', world, ['Equal']),
   row('world.interact', 'Interact with the world', world, ['KeyF']),
   row('firearm.reload', 'Hold to load; double-press to rack; tap does nothing', world, ['KeyR'], 'hold', {
@@ -97,7 +91,8 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     holdMs: HUD_HINTS_HOLD_MS,
   }),
   row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted'], ['KeyX']),
-  row('compression.continue', 'Continue after an interruption', ['interrupted'], ['KeyC']),
+  row('craft.continue', 'Continue stopped crafting', ['play'], ['Enter']),
+  row('compression.continue', 'Continue after an interruption', ['interrupted'], ['Enter']),
   ...Array.from({ length: 5 }, (_, i) =>
     row(
       `quickbar.use.${i + 1}`,
@@ -119,7 +114,6 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('inventory.rotate', 'Rotate selected or dragged item', ['inventory'], ['KeyR']),
   row('inventory.best-pocket', 'Move to best pocket', ['inventory'], ['Enter']),
   row('inventory.take-all-like', 'Take all like selected item', ['inventory'], ['KeyA']),
-  row('inventory.use', 'Use selected item', ['inventory'], ['KeyU']),
   row(
     'inventory.quick-action-gate',
     'Hold and click an item for its quick action',

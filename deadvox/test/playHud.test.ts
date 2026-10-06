@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { BufferAttribute, BufferGeometry, Mesh, Object3D } from 'three';
 import { expect, it } from 'vitest';
-import { labelForAction } from '../src/game/inputBindings.ts';
+import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import { playInteractionText, playPromptText, renderPlayHud, renderPlayInventoryStats } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
@@ -62,21 +62,26 @@ it('projects debug positions in metres and counts only existing chunk/geometry a
 
 const root = (): HTMLElement => document.createElement('div');
 
-it('uses the registry label for restable furniture interactions', () => {
-  const keyLabel = labelForAction('world.interact');
-  const hint = playInteractionText({
-    door: false,
-    open: false,
-    doorReason: undefined,
-    lock: undefined,
-    container: false,
-    readable: false,
-    restAction: 'rest',
-    searched: false,
-    name: 'fixture',
-    fullName: 'Fixture',
-  });
-  expect(hint).toContain(keyLabel);
+it('uses a rebound registry label for restable furniture interactions', () => {
+  expect(inputBindings.rebind('world.interact', [{ code: 'KeyJ' }])).toBeUndefined();
+  try {
+    const hint = playInteractionText({
+      door: false,
+      open: false,
+      doorReason: undefined,
+      lock: undefined,
+      container: false,
+      readable: false,
+      restAction: 'rest',
+      searched: false,
+      name: 'fixture',
+      fullName: 'Fixture',
+    });
+    expect(hint).toContain(labelForAction('world.interact'));
+    expect(hint).not.toContain('F:');
+  } finally {
+    inputBindings.reset();
+  }
 });
 
 it('renders immutable HUD projections and resets text/visibility on the next frame', () => {

@@ -1,9 +1,11 @@
 import { NoToneMapping, type ToneMapping } from 'three';
 import { describe, expect, it } from 'vitest';
+import { SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
-import { actionsByGroup, DEBUG_GROUPS, debugKeyTable, paramName } from '../src/debug/groups.ts';
+import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
+import { TONE_MODES } from '../src/render/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 import { inputBindings } from '../src/game/inputBindings.ts';
@@ -15,7 +17,7 @@ interface FakeRenderer {
   toneMappingExposure: number;
 }
 describe('debug action dispatch', () => {
-  it('derives every shortcut from a gated semantic binding and places every action in one group', () => {
+  it('places each exposed debug action in one group and binds it semantically', () => {
     const { actions } = makeActions();
     expect(actions.length).toBeGreaterThan(0);
     for (const action of actions) {
@@ -27,7 +29,6 @@ describe('debug action dispatch', () => {
     const grouped = actionsByGroup(actions).flatMap(({ actions: inGroup }) => inGroup);
     expect(grouped).toHaveLength(actions.length);
     expect(new Set(grouped.map(({ id }) => id)).size).toBe(actions.length);
-    expect(debugKeyTable(actions)).toContain(inputBindings.label('debug.performance-toggle'));
   });
   it('dispatches each exposed toggle to its owner rather than retaining panel-only state', () => {
     const { actions } = makeActions();
@@ -39,6 +40,23 @@ describe('debug action dispatch', () => {
       expect(action.state!()).toBe(!before);
       dispatchDebugAction(actions, action.id);
       expect(action.state!()).toBe(before);
+    }
+  });
+  it('dispatches the tone and sun-shadow cycles through their derived values and wraps', () => {
+    const { actions, look } = makeActions();
+    const toneStart = TONE_MODES.findIndex(({ key }) => key === look.toneKey);
+    const tones = TONE_MODES.map((_, index) => TONE_MODES[(toneStart + index + 1) % TONE_MODES.length]!.key);
+    for (const tone of tones) {
+      expect(dispatchDebugAction(actions, 'debug.tone-cycle')).toBe(true);
+      expect(look.toneKey).toBe(tone);
+    }
+
+    const shadowStart = SHADOW_DISTANCES.indexOf(look.shadowState.distance);
+    expect(shadowStart).toBeGreaterThanOrEqual(0);
+    const distances = SHADOW_DISTANCES.map((_, index) => SHADOW_DISTANCES[(shadowStart + index + 1) % SHADOW_DISTANCES.length]);
+    for (const distance of distances) {
+      expect(dispatchDebugAction(actions, 'debug.shadow-distance-cycle')).toBe(true);
+      expect(look.shadowState.distance).toBe(distance);
     }
   });
   it('steps look controls in opposite directions without pinning tuning or default values', () => {

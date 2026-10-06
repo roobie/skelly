@@ -110,12 +110,46 @@ describe('keyboard registry', () => {
       }
     }
   });
+  it('keeps both continue paths on Enter in their separate owners', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    const craft = bindings.binding('craft.continue')!;
+    const interruption = bindings.binding('compression.continue')!;
+    expect(craft.defaults.map(({ code }) => code)).toEqual(['Enter']);
+    expect(craft.contexts).toEqual(['play']);
+    expect(interruption.defaults.map(({ code }) => code)).toEqual(['Enter']);
+    expect(interruption.contexts).toEqual(['interrupted']);
+  });
   it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
     expect(bindings.binding('hud.toggle-interaction-hints')?.defaults[0]?.code).toBe('Backquote');
     expect(bindings.rebind('hud.toggle-interaction-hints', [{ code: 'KeyJ' }])).toBeUndefined();
     expect(bindings.label('hud.toggle-interaction-hints')).toBe('J');
+  });
+  it('keeps noclip flight ungated and concurrent with ordinary movement', () => {
+    const keyboard = new KeyboardInput(new BindingRegistry(INPUT_BINDINGS, storage()));
+    let context: InputContext = 'noclip';
+    keyboard.context = () => ({ context, debug: true });
+    expect(keyboard.registry.binding('noclip.ascend')?.gate).toBeUndefined();
+    expect(keyboard.registry.binding('noclip.descend')?.gate).toBeUndefined();
+    expect(keyboard.press(event('Space'))).toBe(true);
+    expect(keyboard.press(event('KeyW'))).toBe(true);
+    expect(keyboard.press(event('KeyC'))).toBe(true);
+    expect(keyboard.held('noclip.ascend')).toBe(true);
+    expect(keyboard.held('movement.forward')).toBe(true);
+    expect(keyboard.held('noclip.descend')).toBe(true);
+    keyboard.release(event('Space'));
+    keyboard.release(event('KeyW'));
+    keyboard.release(event('KeyC'));
+
+    context = 'play';
+    keyboard.sync();
+    expect(keyboard.press(event('Space'))).toBe(true);
+    expect(keyboard.held('movement.jump')).toBe(true);
+    expect(keyboard.held('noclip.ascend')).toBe(false);
+    keyboard.release(event('Space'));
+    expect(keyboard.press(event('KeyC'))).toBe(false);
+    expect(keyboard.held('noclip.descend')).toBe(false);
   });
   it('rejects browser-owned modifiers for every game binding', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
@@ -153,7 +187,10 @@ describe('keyboard registry', () => {
     const restored = new BindingRegistry(fixture, prefs);
     expect(restored.label('fixture.interact')).toBe('J');
     expect(restored.rebind('debug.gate', [{ code: 'KeyF' }])).toBeDefined();
-    expect(restored.label('fixture.debug')).toBe('F3 + F');
+    expect(restored.rebind('fixture.debug', [{ code: 'KeyJ' }])).toBeUndefined();
+    restored.setLayout(new Map([['KeyJ', 'Fixture key']]));
+    const chordLabel = restored.alternativeLabel('fixture.debug', 0);
+    expect(chordLabel.indexOf(restored.label('debug.gate'))).toBeLessThan(chordLabel.indexOf('Fixture key'));
     expect(restored.rebind('fixture.quick', [{ code: 'ShiftLeft' }])).toBeDefined();
     expect(restored.rebind('fixture.quick', [{ code: 'KeyJ', modifier: 'alt' }])).toBeDefined();
     expect(restored.label('fixture.quick')).toBe('T');
@@ -228,7 +265,11 @@ describe('keyboard registry', () => {
     expect(commands).toEqual([]);
     keyboard.release(event('KeyF'));
     expect(keyboard.registry.rebind('debug.gate', [{ code: 'F2' }])).toBeUndefined();
-    expect(keyboard.registry.label('fixture.debug')).toBe('F2 + F');
+    expect(keyboard.registry.rebind('fixture.debug', [{ code: 'KeyJ' }])).toBeUndefined();
+    keyboard.registry.setLayout(new Map([['KeyJ', 'Fixture key']]));
+    const chordLabel = keyboard.registry.alternativeLabel('fixture.debug', 0);
+    expect(chordLabel.indexOf(keyboard.registry.label('debug.gate'))).toBeLessThan(chordLabel.indexOf('Fixture key'));
+    expect(keyboard.registry.rebind('fixture.debug', [{ code: 'KeyF' }])).toBeUndefined();
     expect(keyboard.press(event('F3'))).toBe(false);
     keyboard.release(event('F3'));
     expect(keyboard.press(event('F2'))).toBe(true);

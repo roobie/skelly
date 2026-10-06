@@ -88,26 +88,6 @@ export const keysAtAGlance = (def: GroupDef, actions: readonly { readonly key: s
 /** The bare parameter name of a `name=values` hint. */
 export const paramName = (param: string): string => param.split('=')[0]!;
 
-const cell = (text: string): string => text.replaceAll('|', '\\|');
-const code = (text: string): string => `\`${text}\``;
-
-/** The catalogue as a Markdown table, generated from effective action metadata rather than a frozen doc copy. */
-export const debugKeyTable = (actions: readonly GroupedAction[]): string => {
-  const rows = ['| Group | Key | Control | URL parameter |', '| --- | --- | --- | --- |'];
-  for (const { def, actions: inGroup } of actionsByGroup(actions)) {
-    const entries = [
-      ...inGroup.map((action) => ({ key: action.key, label: action.label, param: action.param })),
-      ...(def.notes ?? []).map((note) => ({ key: note.key, label: note.label, param: note.param })),
-    ];
-    for (const entry of entries) {
-      rows.push(
-        `| ${def.title} | ${entry.key ? code(entry.key) : '—'} | ${cell(entry.label)} | ${entry.param ? code(cell(entry.param)) : '—'} |`,
-      );
-    }
-  }
-  return rows.join('\n');
-};
-
 const STORAGE_KEY = 'deadvox.debug-groups-closed';
 
 export type GroupStorage = Pick<Storage, 'getItem' | 'setItem'>;

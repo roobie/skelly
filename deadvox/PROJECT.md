@@ -19,12 +19,11 @@ This file describes the code as it is. The game's design and roadmap are in
 - `?radius=N` sets the view distance in metres (default 96; the start card offers
   64, 96 and 128).
 - `?time=HH:MM` sets the time of day at the start (default 19:30).
-- `?debug=1` enables debug authoring tools. Debug actions, including noclip
-  flight, require the rebindable F2 gate; spawn-menu navigation and dismissal
-  remain ordinary modal controls. Effective chords are generated in settings and
-  the debug panel from `src/game/inputBindings.ts`, `INPUT_BINDINGS`; see
-  `CONTROLS.md` for why text editing stays native rather than becoming a second
-  input platform.
+- `?debug=1` enables debug authoring tools. Authoring actions require the
+  rebindable F2 gate; Space/C flight controls are ungated only while noclip is
+  active. Spawn-menu navigation and dismissal remain ordinary modal controls.
+  Text editing stays native rather than becoming a second input platform; see
+  `CONTROLS.md`, “Native browser boundary and exceptions”.
 - `?bench=1` runs the benchmark; `?bench=report` shows its last results (the
   shambler benchmark's too). `&time=HH:MM` runs it at that time of day instead
   of noon. See `src/bench/run.ts`, `benchRunFromUrl` and `startBench`.
@@ -132,7 +131,7 @@ keeps mobgen source imports available; its obstruction predicate must match play
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (towns, a region map).
-- Rest and sleep start on eligible furniture through the rebindable world-interaction action; neither has a dedicated key. Furniture comfort and sleepability are content-owned in `src/core/schema.ts`, `FurnitureSchema`, and the authored furniture definitions. Their HUD status is a readout, not a second control path.
+- Rest and sleep start on eligible furniture through the rebindable world-interaction action; neither has a dedicated key. Furniture comfort and sleepability are provisional design placeholders, not balance claims; the content contract is in `src/core/schema.ts`, `FurnitureSchema`.
 - A light that's switched on shines only from your hands; put away, it goes off.
 - The death screen's "time survived" is game time; its looting summary counts
   items taken out of furniture, not ones picked up from the ground.
