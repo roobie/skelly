@@ -816,6 +816,13 @@ const SenseSchema = strictObject({
     clearGain: Fraction,
     clearCutoffHz: Positive,
   }),
+  light: strictObject({
+    playerDaySightScale: Fraction,
+    /** Reduce how far shamblers investigate non-player light sources. */
+    lureRangeScale: Fraction,
+    throwMaxDistanceMetres: Positive,
+    throwChargeSeconds: Positive,
+  }),
 });
 const RecipeItemSchema = ItemCountSchema;
 

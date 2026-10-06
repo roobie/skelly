@@ -73,6 +73,16 @@ describe('pointer input', () => {
     windowListeners.get('blur')!(new Event('blur') as MouseEvent);
     expect(input.intent().useDominantHeld).toBe(false);
   });
+  it('suppresses a right-click that cancels a charged action until the button is released', () => {
+    const { input, targetListeners, windowListeners } = fixture();
+    targetListeners.get('mousedown')!({ button: 2 } as MouseEvent);
+    expect(input.rightMouseActionHeld).toBe(true);
+    expect(input.consumeRightMousePressed()).toBe(true);
+    input.suppressRightMouseUntilRelease();
+    expect(input.rightMouseActionHeld).toBe(false);
+    windowListeners.get('mouseup')!({ button: 2 } as MouseEvent);
+    expect(input.rightMouseActionHeld).toBe(false);
+  });
   it('delivers a crouch-toggle request once to the simulation consumer', () => {
     const { input } = fixture();
     input.requestCrouchToggle();
