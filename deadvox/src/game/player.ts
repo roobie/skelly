@@ -94,7 +94,7 @@ export interface MoveIntent {
 const LOAD = { light: 20_000, heavy: 40_000, slowest: 0.6 } as const;
 
 /** Handling an item halves your pace (DESIGN.md, "Handling time"). */
-export const paceFactor = (grams: number, handling: boolean): number => {
+const paceFactor = (grams: number, handling: boolean): number => {
   const over = Math.max(0, grams - LOAD.light) / (LOAD.heavy - LOAD.light);
   const load = Math.max(LOAD.slowest, 1 - (1 - LOAD.slowest) * over);
   return handling ? load * 0.5 : load;

@@ -272,10 +272,23 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 3. yes, at least glowstick - but it must not work _too_ well
 > 4. yes
 
-**In:** Shamblers beeline to a light they can see through the existing zombie attention owner (`src/core/zombies.ts`, `ZombieSystem`). Light makes the player easier to spot only when it is dark enough for the light to matter. A thrown glowstick is a lure, tuned so it attracts but does not trivialize stealth. Add a headlamp; light sensing must not install a second pursuit system.
+**BR, d100-2 first look (2026-10-06 14:21):**
+
+> the glow stick is too weak in illuminating - let's try 100% more
+> also dropping an active glow stick on the ground seems to make it not illuminate anything
+
+**BR, d100-2 answers (2026-10-06 14:24):**
+
+> 1. no - it should be completely overtaken by the sun's light
+> 2. yes
+> 3. press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse
+
+Daylight overwhelms portable light wherever the sky is open, including outdoor shade; a roof or cellar leaves light mattering at noon. Brighter glowsticks keep their existing sensing reach. A lure gets one investigation so it creates risk without holding a shambler indefinitely; a nearby sound takes priority. Charging makes throw distance a deliberate choice, and cancellation prevents a mistaken release.
+
+**In:** Lights affect detection through the existing zombie attention owner (`src/core/zombies.ts`, `ZombieSystem`). The player has a headlamp and a throwable glowstick; light sensing does not add a second pursuit system.
 **Saves:** Headlamp and glowstick state use their existing item/light owners. Any persistent zombie attention target belongs to the existing saved zombie state and fingerprint; light visibility is derived from active sources and surrounding conditions.
-**Tests:** a visible light can become the beeline target; a player light changes detection in darkness but not in conditions where light is implausible; in the first look, check whether a thrown glowstick reads as a lure and tune its effect with BR's “must not work _too_ well” direction; headlamp state survives the existing item save round trip. Do not pin lure radius, content counts or seeded positions.
-**Done when:** light sources affect zombie attention, darkness gates the player's light signature, and the headlamp and thrown lure work.
+**Tests:** a visible light can become the beeline target; an investigation searches and returns without re-alerting to the same lure, and near sound outranks a lure. Daylight sky exposure gates player light and world lures locally, including open noon, noon indoors, open night and outdoor shade. A dropped or thrown active glowstick appears in the renderer's fixed light set and is a zombie sense source; stored lights that do not shine into the world are excluded. A longer charge throws farther, maximum range is bounded by tuning, right-click cancels, and the world trace stops at walls and ceilings before settling on solid ground. Headlamp state survives the existing item save round trip. Do not pin tuning values, content counts or seeded positions.
+**Done when:** visible light sources affect zombie attention only where plausible, the headlamp and charged glowstick are useful without replacing sound or sight, and dropped light state remains consistent across simulation and rendering.
 
 ### 3.7 Modular weapons
 
@@ -307,11 +320,16 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 4. Bloater's cloud: what does it do to you? Damage over time, wound infection (from 3.4), blurred vision, or something else?
 > defer
 
-**In:** Add the runner (sprinting beeline, rarer than shamblers) and crawler, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design; the first look settles its player-facing read. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
+**BR, 2026-10-06, verbatim (#308):**
+
+> “maybe we should consider adding a 'boss' mob - maybe an amalgamation of several shamblers - an enemy the size of a car”
+> “yes, I think it's worth it, and it makes it end with something new and exciting”
+
+**In:** Add the runner (sprinting beeline, rarer than shamblers), crawler and boss mob, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design; the boss's design questions are tracked in #308. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
-**Done when:** runner and crawler are distinct playable threats and their persistent state round-trips.
-**First look / BR approval:** runner and crawler silhouettes, movement and hit response.
+**Done when:** runner, crawler and boss are distinct playable threats and their persistent state round-trips.
+**First look / BR approval:** runner and crawler silhouettes, movement and hit response; the boss's size, silhouette and encounter read.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 
@@ -349,6 +367,10 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 
 ### 3.11 Authored playtest map and playtest
 
+**BR, 2026-10-06 12:31:** “can we continue on the authored playtest map meanwhile?”
+This request brings beats 1–3 forward while the agreed beats 4–6 wait for their
+dependencies.
+
 **BR, 2026-10-03 14:52, verbatim (#181):**
 
 > 3. no I didn't mean a mission assigned to the player, but rather that the lore could be that the medial place was setup in order to do that - and that there is lore items for the player to discover / 4. preliminary: yes
@@ -364,9 +386,9 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. BR's 2026-10-05 answer confirms the 2026-10-03 ruling: the medical site's virus-sampling research is lore, not a player mission.
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books (BR, 2026-10-03; confirmed 2026-10-05).
 - **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
-- **Proposed tester prompt:** “find the military camp” (BR, 2026-10-05 22:17: “Instead it could be: "find the military camp", maybe?”); confirm with BR when detailing beats 4–6.
+- **Tester prompt:** “find the military camp” (BR, 2026-10-06 13:05: “yes, confirmed”; #181).
 
-The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. Beats 4–6 still need their own BR detail in #181; this milestone and the map come last.
+The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. BR agreed beats 4–6 in #181; their map rounds follow the dependent 3.7 and 3.8 work for beat 4, 3.4 and 3.8 for beat 5, and 3.2, 3.8 and 3.9 for beat 6. Do not block beats 1–3 on those later rounds.
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
 **Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. The playtest records consented observation notes and local metrics without changing game state.
 **Done when:** the approved map supports the end-of-slice playtest, its two nights and progression are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
@@ -379,7 +401,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 - 3.5 precedes 3.6 and 3.9.
 - 3.2 precedes 3.7.
 - 3.10 starts early enough for later milestones to use replays.
-- 3.11's beats 4–6 are detailed with BR in #181; the map comes last.
+- BR agreed beats 4–6 in #181; each later map round follows its dependencies: beat 4 after 3.7 and 3.8, beat 5 after 3.4 and 3.8, and beat 6 after 3.2, 3.8 and 3.9, with #309's armoury-padlock prying.
 
 ## Carried in
 
@@ -395,6 +417,7 @@ Only questions BR left open; don't infer answers from implementation or old prop
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
 - **#181 beats 4–6:** detail the larger workshop, medical site and military site one beat per turn. BR's earlier answers settle the order and purpose, but not these beats' contents and layouts.
 - **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
+- **#308 — boss mob:** the design questions remain open; see 3.8.
 
 ## Definition of done
 

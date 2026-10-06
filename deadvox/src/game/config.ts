@@ -103,12 +103,13 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
     Number(params.get('seed') ?? 1) | 0,
     radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
   );
-  config.start = parseTimeOfDay(params.get('time') ?? '') ?? SPAWN_TIME;
+  Object.assign(config, siteFromUrl(params, 'hamlet'));
+  const layoutTime = BUNDLED_CONTENT.registry.layouts.get(config.site)?.startTime ?? '';
+  config.start = parseTimeOfDay(params.get('time') ?? layoutTime) ?? SPAWN_TIME;
   config.debug = params.get('debug') === '1';
   if (config.debug && params.get('handedness') === 'left') {
     config.debugHandedness = 'left';
   }
   config.actors = actorRendererFromUrl(params);
-  Object.assign(config, siteFromUrl(params, 'hamlet'));
   return config;
 };

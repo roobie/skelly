@@ -5,6 +5,7 @@ read_if:
   - you need to see the game without a display
   - a browser contract or stage fails on software GL
   - you investigate native inventory selection or keyboard settlement in browser tests
+  - you're authoring or exporting a Deadvox site in Tiled
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
 ---
@@ -146,3 +147,12 @@ persistence policy. Cgroup deltas cover the entire named group, not just the ren
 The busy-lock fixture owns a real exclusive Web Lock in a same-origin blank document.
 It needs no second world, renderer or save worker; seeding and recovery use the built
 app. It explicitly simulates pointer lock and does not claim native-gesture coverage.
+
+## Tiled site export
+
+If Tiled reports “Format not recognized” for the authored-site export, trust the
+project's scripts before choosing the Deadvox site-layout format. After using the
+project action to generate Deadvox property types, close and reopen the project so
+Tiled refreshes them; do not save the stale project state in between. See
+`maps/extensions/deadvox.mjs`, `exportLayout` and `generatePropertyTypes`, for the
+exporter and project action.

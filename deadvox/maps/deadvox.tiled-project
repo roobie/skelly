@@ -14,9 +14,24 @@
       "values": [
         "bungalow",
         "corner_store",
+        "dads_cabin",
+        "garage",
         "gas_station",
+        "hardware_store",
+        "hen_house",
+        "hunter_cabin",
+        "playtest_dads_cabin",
+        "playtest_gas_station",
+        "playtest_house",
+        "playtest_hunter_cabin",
+        "playtest_store",
+        "playtest_tool_shack",
+        "rickety_fence",
         "shed",
-        "small_house"
+        "small_house",
+        "stairs_cabin",
+        "stairs_house",
+        "woodshed"
       ],
       "valuesAsFlags": false
     },
@@ -44,6 +59,11 @@
           "name": "storeys",
           "type": "int",
           "value": 1
+        },
+        {
+          "name": "fixed_loot",
+          "type": "string",
+          "value": "[]"
         }
       ],
       "type": "class",

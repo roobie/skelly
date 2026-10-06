@@ -249,6 +249,15 @@ class TemplateSpace {
   }
 }
 
+export const templateReachableStandingPositions = (registry: Registry, template: CompiledTemplate): Vec3[] => {
+  if (!template.access) {
+    return [];
+  }
+  return [...new TemplateSpace(registry, template).reached(template.access.entrance)].map(
+    (position) => position.split(',').map(Number) as Vec3,
+  );
+};
+
 export const templateSpatialIssues = (registry: Registry, template: CompiledTemplate): SpatialIssue[] => {
   const { access } = template;
   if (!access) {

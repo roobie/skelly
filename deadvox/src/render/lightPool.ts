@@ -1,5 +1,6 @@
 import { Group, type PerspectiveCamera, PointLight, type Scene, Vector3 } from 'three';
 import type { Inventory, Location } from '../core/inventory.ts';
+import { lightExposureFor, WORLD_LIGHT_HEIGHT_METRES } from '../core/lights.ts';
 import type { HeldItems } from './hands.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
@@ -38,24 +39,21 @@ export class LightPool {
 
   update(inventory: Inventory, { held, camera, blockSize, daylightScale }: LightPoolContext): void {
     const entries = [...inventory.items()]
-      .map((entry, order) => ({ ...entry, order }))
-      .filter(({ item }) => {
-        const definition = inventory.registry.items.get(item.type);
-        return item.on && definition?.light?.beam === undefined && definition?.light !== undefined;
-      });
-    const carried = entries
+      .map((entry, order) => ({
+        ...entry,
+        order,
+        exposure: lightExposureFor(inventory.registry, entry.item, entry.location, entry.path),
+      }))
       .filter(
-        ({ path, location }) =>
-          location.kind === 'hand' ||
-          (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))),
-      )
+        ({ item, exposure }) =>
+          exposure !== undefined && inventory.registry.items.get(item.type)?.light?.beam === undefined,
+      );
+    const carried = entries
+      .filter(({ exposure }) => exposure === 'carried')
       .sort((a, b) => handPriority(a.location) - handPriority(b.location) || a.order - b.order)
       .slice(0, CARRIED_POINT_LIGHTS);
     const dropped = entries
-      .filter(
-        ({ item, location }) =>
-          location.kind === 'pile' && inventory.registry.items.get(item.type)?.light?.burning?.drop === 'stay',
-      )
+      .filter(({ exposure }) => exposure === 'world')
       .sort((a, b) => {
         const [ax, ay, az] = a.location.kind === 'pile' ? a.location.pile.pos : [0, 0, 0];
         const [bx, by, bz] = b.location.kind === 'pile' ? b.location.pile.pos : [0, 0, 0];
@@ -71,9 +69,8 @@ export class LightPool {
       })
       .slice(0, DROPPED_POINT_LIGHTS);
 
-    const selected = [...carried, ...dropped];
     for (const [index, light] of this.lights.entries()) {
-      const entry = selected[index];
+      const entry = index < CARRIED_POINT_LIGHTS ? carried[index] : dropped[index - CARRIED_POINT_LIGHTS];
       if (!entry) {
         light.intensity = 0;
         continue;
@@ -86,7 +83,7 @@ export class LightPool {
         }
       } else if (entry.location.kind === 'pile') {
         const [x, y, z] = entry.location.pile.pos;
-        position.set((x + 0.5) * blockSize, (y + 0.15) * blockSize, (z + 0.5) * blockSize);
+        position.set((x + 0.5) * blockSize, y * blockSize + WORLD_LIGHT_HEIGHT_METRES, (z + 0.5) * blockSize);
       } else {
         position.copy(camera.position);
       }

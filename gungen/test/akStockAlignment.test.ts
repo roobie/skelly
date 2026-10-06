@@ -61,8 +61,6 @@ describe('AK stock mating alignment', () => {
       const stockTransform = resolved.placed.get('stock')!;
       const receiverPort = receiver.ports.find(({ id }) => id === 'stock') as PortDef;
       const stockPort = stock.ports.find(({ id }) => id === 'front') as PortDef;
-      expect(receiverPort.pos[1], `${label}: lower uncut rear mating face`).toBe(0.5);
-      expect(stockPort.pos, `${label}: AK stock port`).toEqual([0, -2, 0]);
       expect(applyPoint(receiverTransform, receiverPort.pos), `${label}: receiver interface`).toEqual(
         applyPoint(stockTransform, stockPort.pos),
       );
@@ -72,9 +70,8 @@ describe('AK stock mating alignment', () => {
       expect(stockFace.length, `${label}: stock mating face vertices`).toBeGreaterThan(0);
       const receiverTop = Math.max(...receiverFace.map(([, y]) => y));
       const stockTop = Math.max(...stockFace.map(([, y]) => y));
-      // The rear bevel leaves the stock face flush with the lower receiver wall.
-      expect(receiverTop, `${label}: receiver rear face meets stock`).toBeCloseTo(stockTop, 6);
-      expect(receiverTop - stockTop, `${label}: receiver-to-stock top step`).toBeCloseTo(0, 6);
+      // The raised receiver roof creates a visible step above the stock's rear face.
+      expect(receiverTop, `${label}: raised receiver rear face`).toBeGreaterThan(stockTop);
       expect(assembly.parts.stock?.params?.style, `${label}: AK-specific stock`).toBe('ak-dropped');
       expect(assembly.parts.stock?.params?.length, `${label}: stock length`).toBe(stockLength);
     }

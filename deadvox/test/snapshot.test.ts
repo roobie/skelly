@@ -83,6 +83,21 @@ describe('snapshot state components', () => {
     expect(actor.practice.crafting).toBe(0);
   });
 
+  it('round-trips a worn, active headlamp as the selected light', async () => {
+    const runtime = createRuntime();
+    const headlamp = runtime.inventory.create('headlamp');
+    expect(runtime.inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+    expect(runtime.survival.use(headlamp)).toBeUndefined();
+    expect(headlamp.on).toBe(true);
+
+    const decoded = await decodeSave(await encodeFixture(capture(runtime)), { version: formatVersion, contentLookup });
+    const restored = createRuntime(decoded.snapshot);
+    const restoredHeadlamp = restored.inventory.itemByUid(headlamp.uid)!;
+    expect(restored.inventory.locate(restoredHeadlamp)).toMatchObject({ kind: 'worn', slot: 'head' });
+    expect(restoredHeadlamp.on).toBe(true);
+    expect(restored.survival.lit?.uid).toBe(headlamp.uid);
+  });
+
   it('round-trips a stopped reading action with its held book uid and progress', async () => {
     const runtime = createRuntime();
     const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
