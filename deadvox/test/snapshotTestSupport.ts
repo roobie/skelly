@@ -119,7 +119,7 @@ export function createRuntime(
     yaw?: number;
     active?: boolean;
     intent?: () => MoveIntent;
-    ready?: () => boolean;
+    ready?: (x: number, z: number) => boolean;
     sampleAtPlayerTick?: (
       tick: number,
       live: PlayerInputSample,

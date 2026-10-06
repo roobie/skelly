@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
+import { toChunk } from '../src/core/coords.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import {
@@ -60,7 +61,11 @@ const dispatchWalkToggle = (
   }
 };
 
-const recordActiveSession = (start: Readonly<SaveSnapshot>, recorder: InputReplayRecorder, ready?: () => boolean) => {
+const recordActiveSession = (
+  start: Readonly<SaveSnapshot>,
+  recorder: InputReplayRecorder,
+  ready?: (x: number, z: number) => boolean,
+) => {
   const frameDts = [1 / 90, 1 / 60, 1 / 120];
   const source = createRuntime(start, false, undefined, {
     ...(ready ? { ready } : {}),
@@ -220,14 +225,14 @@ describe('input replay', () => {
   });
 
   it('replays movement skips captured while the player column was unready', async () => {
-    const fixture = createRuntime();
-    for (const [id] of fixture.zombies.store.entries()) {
-      fixture.zombies.store.remove(id);
-    }
-    const start = capture(fixture);
+    const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     let readyTick = 0;
-    const source = recordActiveSession(start, recorder, () => {
+    const playerColumn = [toChunk(start.character.player.body.pos[0]), toChunk(start.character.player.body.pos[2])];
+    const source = recordActiveSession(start, recorder, (x, z) => {
+      if (toChunk(x) !== playerColumn[0] || toChunk(z) !== playerColumn[1]) {
+        return true;
+      }
       const tick = readyTick;
       readyTick += 1;
       return tick % 4 !== 0;
