@@ -16,9 +16,10 @@ import { buildRegistry } from '../src/core/content.ts';
 import { compassBearing, toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
-import { footprint, placedSpawns } from '../src/core/templates.ts';
+import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { configFromUrl } from '../src/game/config.ts';
 
 const base = readdirSync('src/content/base')
@@ -201,6 +202,10 @@ describe('authored layout acceptance', () => {
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
+    expect(BUNDLED_CONTENT.registry.layouts.get('playtest')?.startTime).toBe('16:00');
+    expect(configFromUrl(new URLSearchParams('site=playtest')).site).toBe('playtest');
+    expect(configFromUrl(new URLSearchParams('site=playtest')).start).toBe(16 * 60 * 60);
+    expect(configFromUrl(new URLSearchParams('site=playtest&time=18:30')).start).toBe(18.5 * 60 * 60);
   });
   it('maps a clockwise east bearing to an east-facing authored spawn', () => {
     const east = new AuthoredSite(1, registry, scale, {
@@ -265,6 +270,19 @@ describe('authored layout acceptance', () => {
     expect(load({ ...layout, terrain: [hill] }).issues).toEqual([]);
     invalid({ ...layout, terrain: [{ ...hill, radii: [0, 1] }] }, 'Invalid value');
     invalid({ ...layout, terrain: [{ ...hill, rise: -1 }] }, 'Invalid value');
+  });
+  it('rejects fixed loot on non-containers, empty anchors and unknown item ids', () => {
+    const building = layout.buildings[0]!;
+    const template = compileTemplate(registry, registry.templates.get(building.template)!);
+    const container = template.pieces.find((piece) => registry.furniture.get(piece.furniture)?.container)!;
+    const nonContainer = template.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
+    const withLoot = (at: readonly [number, number, number], item: string) => ({
+      ...layout,
+      buildings: [{ ...building, fixedLoot: [{ at, items: [{ item }] }] }, ...layout.buildings.slice(1)],
+    });
+    invalidWithFullPack(withLoot(container.pos, 'not_an_item'), 'no item');
+    invalidWithFullPack(withLoot(nonContainer.pos, 'rag'), 'has no container');
+    invalidWithFullPack(withLoot([0, 0, 0], 'rag'), 'no furniture anchor');
   });
   it('rejects an unknown building template', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], template: 'missing' }] }, 'no template');

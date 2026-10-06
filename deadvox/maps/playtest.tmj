@@ -1,0 +1,765 @@
+{
+  "type": "map",
+  "version": "1.10",
+  "tiledversion": "1.11.0",
+  "orientation": "orthogonal",
+  "renderorder": "right-down",
+  "width": 700,
+  "height": 580,
+  "tilewidth": 1,
+  "tileheight": 1,
+  "infinite": false,
+  "nextlayerid": 7,
+  "nextobjectid": 27,
+  "properties": [
+    {
+      "name": "id",
+      "type": "string",
+      "value": "playtest"
+    },
+    {
+      "name": "ground",
+      "type": "float",
+      "value": 21
+    },
+    {
+      "name": "startTime",
+      "type": "string",
+      "value": "16:00"
+    }
+  ],
+  "tilesets": [],
+  "layers": [
+    {
+      "id": 1,
+      "name": "Buildings",
+      "type": "objectgroup",
+      "color": "#ba845c",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 1,
+          "name": "Lone house — playtest two-storey house",
+          "type": "building",
+          "x": 100,
+          "y": 70,
+          "width": 8,
+          "height": 8,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "playtest_house"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[12,1,2],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"aa_battery\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"stick\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"kitchen_knife\",\"count\":1},{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[12,1,7],\"items\":[{\"item\":\"can_opener\",\"count\":1},{\"item\":\"evacuation_note\",\"count\":1},{\"item\":\"flashlight\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[12,9,11],\"items\":[{\"item\":\"school_backpack\",\"count\":1},{\"item\":\"baseball_cap\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 2,
+          "name": "Tool shack",
+          "type": "building",
+          "x": 84,
+          "y": 82,
+          "width": 4,
+          "height": 3,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "playtest_tool_shack"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 3,
+          "name": "Hen house",
+          "type": "building",
+          "x": 110,
+          "y": 82,
+          "width": 4,
+          "height": 3,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "hen_house"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 4,
+          "name": "Rickety fence",
+          "type": "building",
+          "x": 115,
+          "y": 82,
+          "width": 7,
+          "height": 0.5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "rickety_fence"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 5,
+          "name": "Hamlet bungalow",
+          "type": "building",
+          "x": 178,
+          "y": 48,
+          "width": 12,
+          "height": 8,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "bungalow"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[4,1,13],\"items\":[{\"item\":\"home_repair_book\",\"count\":1}]},{\"at\":[1,1,5],\"items\":[{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[14,1,14],\"items\":[{\"item\":\"jacket\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 6,
+          "name": "Corner store — back room supplies",
+          "type": "building",
+          "x": 198,
+          "y": 63,
+          "width": 10,
+          "height": 8,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "playtest_store"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[1,1,13],\"items\":[{\"item\":\"duct_tape\",\"count\":1}]},{\"at\":[8,1,12],\"items\":[{\"item\":\"painkillers\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[14,1,13],\"items\":[{\"item\":\"canned_soup\",\"count\":1},{\"item\":\"crackers\",\"count\":1},{\"item\":\"soda_can\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 7,
+          "name": "Small house north of the hamlet road",
+          "type": "building",
+          "x": 166,
+          "y": 56,
+          "width": 10,
+          "height": 7,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "small_house"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 8,
+          "name": "Gas station",
+          "type": "building",
+          "x": 208,
+          "y": 90,
+          "width": 8,
+          "height": 13,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "playtest_gas_station"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[12,1,13],\"items\":[{\"item\":\"portable_radio\",\"count\":1,\"condition\":0.2},{\"item\":\"compass\",\"count\":1}]},{\"at\":[1,1,22],\"items\":[{\"item\":\"scrap_metal\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 9,
+          "name": "Dad’s locked cabin",
+          "type": "building",
+          "x": 333,
+          "y": 142,
+          "width": 8,
+          "height": 8,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "playtest_dads_cabin"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[2,7,12],\"items\":[{\"item\":\"pump_shotgun\",\"count\":1}]},{\"at\":[11,7,1],\"items\":[{\"item\":\"dad_cabin_key\",\"count\":1}]},{\"at\":[4,1,12],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"shotshell_box\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 10,
+          "name": "Hunter’s cabin",
+          "type": "building",
+          "x": 349,
+          "y": 155,
+          "width": 6,
+          "height": 7,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "playtest_hunter_cabin"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[1,1,11],\"items\":[{\"item\":\"hunter_logbook\",\"count\":1},{\"item\":\"machete\",\"count\":1}]},{\"at\":[5,1,10],\"items\":[{\"item\":\"hiking_backpack\",\"count\":1}]}]"
+            }
+          ]
+        },
+        {
+          "id": 11,
+          "name": "Woodshed",
+          "type": "building",
+          "x": 329,
+          "y": 158,
+          "width": 4,
+          "height": 5,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "woodshed"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[]"
+            }
+          ]
+        },
+        {
+          "id": 26,
+          "name": "South hamlet shed",
+          "type": "building",
+          "x": 194,
+          "y": 82,
+          "width": 4,
+          "height": 3,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "template",
+              "type": "string",
+              "propertytype": "template_id",
+              "value": "shed"
+            },
+            {
+              "name": "fixed_loot",
+              "type": "string",
+              "value": "[{\"at\":[5,1,3],\"items\":[{\"item\":\"crowbar\",\"count\":1,\"condition\":0.6}]}]"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Spawns",
+      "type": "objectgroup",
+      "color": "#e9c368",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 13,
+          "name": "Shambler beside the hamlet road at dusk",
+          "type": "shambler",
+          "point": true,
+          "x": 196,
+          "y": 77,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 14,
+          "name": "Shambler at the hunter cabin",
+          "type": "shambler",
+          "point": true,
+          "x": 354,
+          "y": 160,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 21,
+          "name": "Shambler in corner-store back room",
+          "type": "shambler",
+          "point": true,
+          "x": 203.5,
+          "y": 69,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 22,
+          "name": "Shambler in gas-station garage",
+          "type": "shambler",
+          "point": true,
+          "x": 210,
+          "y": 101,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            }
+          ]
+        },
+        {
+          "id": 23,
+          "name": "Dusk straggler following the track",
+          "type": "shambler",
+          "point": true,
+          "x": 181,
+          "y": 74,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            },
+            {
+              "name": "window_from",
+              "type": "string",
+              "value": "dusk"
+            }
+          ]
+        },
+        {
+          "id": 24,
+          "name": "Dusk shambler at the cabin treeline",
+          "type": "shambler",
+          "point": true,
+          "x": 304,
+          "y": 134,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "zombie",
+              "type": "string",
+              "propertytype": "zombie_type",
+              "value": "shambler"
+            },
+            {
+              "name": "window_from",
+              "type": "string",
+              "value": "dusk"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Woodland",
+      "type": "objectgroup",
+      "color": "#518a4f",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 15,
+          "name": "Woodland behind the house",
+          "type": "woodland",
+          "x": 48,
+          "y": 12,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 102,
+              "y": 0
+            },
+            {
+              "x": 104,
+              "y": 39
+            },
+            {
+              "x": 0,
+              "y": 42
+            }
+          ],
+          "properties": [
+            {
+              "name": "density",
+              "type": "float",
+              "value": 0.9
+            }
+          ]
+        },
+        {
+          "id": 16,
+          "name": "Northeast woodland",
+          "type": "woodland",
+          "x": 430,
+          "y": 24,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 110,
+              "y": 8
+            },
+            {
+              "x": 120,
+              "y": 48
+            },
+            {
+              "x": 22,
+              "y": 74
+            }
+          ],
+          "properties": [
+            {
+              "name": "density",
+              "type": "float",
+              "value": 0.9
+            }
+          ]
+        },
+        {
+          "id": 25,
+          "name": "Cabin treeline",
+          "type": "woodland",
+          "x": 300,
+          "y": 128,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polygon": [
+            { "x": 0, "y": 0 },
+            { "x": 21, "y": 0 },
+            { "x": 25, "y": 11 },
+            { "x": 4, "y": 14 }
+          ],
+          "properties": [
+            {
+              "name": "density",
+              "type": "float",
+              "value": 0.9
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Terrain",
+      "type": "objectgroup",
+      "color": "#6a8568",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 17,
+          "name": "Cabin ridge",
+          "type": "ridge",
+          "x": 296,
+          "y": 146,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polyline": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 76,
+              "y": 0
+            }
+          ],
+          "properties": [
+            {
+              "name": "rise",
+              "type": "float",
+              "value": 10
+            },
+            {
+              "name": "width",
+              "type": "float",
+              "value": 60
+            }
+          ]
+        },
+        {
+          "id": 18,
+          "name": "Natural hill beyond the cabins",
+          "type": "hill",
+          "x": 420,
+          "y": 170,
+          "width": 70,
+          "height": 48,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "rise",
+              "type": "float",
+              "value": 6
+            }
+          ],
+          "ellipse": true
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Route",
+      "type": "objectgroup",
+      "color": "#957448",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 19,
+          "name": "Dirt track from house through hamlet to cabins",
+          "type": "track",
+          "x": 92,
+          "y": 85,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "polyline": [
+            {
+              "x": 0,
+              "y": 0
+            },
+            {
+              "x": 5,
+              "y": -4
+            },
+            {
+              "x": 5,
+              "y": -15
+            },
+            {
+              "x": 10,
+              "y": -17
+            },
+            {
+              "x": 58,
+              "y": -17
+            },
+            {
+              "x": 82,
+              "y": -10
+            },
+            {
+              "x": 128,
+              "y": -10
+            },
+            {
+              "x": 130,
+              "y": 2
+            },
+            {
+              "x": 138,
+              "y": 23
+            },
+            {
+              "x": 198,
+              "y": 45
+            },
+            {
+              "x": 226,
+              "y": 60
+            },
+            {
+              "x": 238,
+              "y": 66
+            }
+          ],
+          "properties": [
+            {
+              "name": "width",
+              "type": "float",
+              "value": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Player spawn",
+      "type": "objectgroup",
+      "color": "#e9c368",
+      "opacity": 1,
+      "visible": true,
+      "x": 0,
+      "y": 0,
+      "draworder": "topdown",
+      "objects": [
+        {
+          "id": 20,
+          "name": "Player spawn",
+          "type": "player_spawn",
+          "point": true,
+          "x": 92,
+          "y": 85,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [
+            {
+              "name": "bearing",
+              "type": "float",
+              "value": 330
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

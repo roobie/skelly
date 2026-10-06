@@ -39,14 +39,12 @@ describe('hamlet save/load continuation', () => {
 
     const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], start);
     loaded.session.onColumn(cx, cz, timedSite);
-    expect([...loaded.zombies.store.entries()].some(([, zombie]) => zombie.home.every((v, i) => v === pos[i]))).toBe(
-      false,
-    );
+    const atHome = () =>
+      [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i])).length;
+    expect(atHome()).toBe(0);
     advance(loaded, 456);
     expect(loaded.sim.calendar).toBeGreaterThan(SPAWN_TIMES.dusk);
-    expect([...loaded.zombies.store.entries()].some(([, zombie]) => zombie.home.every((v, i) => v === pos[i]))).toBe(
-      true,
-    );
+    expect(atHome()).toBe(1);
     expect(loaded.spawner.snapshotState()).toContain(key);
   });
 

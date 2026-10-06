@@ -26,10 +26,16 @@ function writeJson(path, value) {
   file.commit(); // QSaveFile: close() without commit silently cancels the write.
 }
 function content() {
-  return {
-    templates: readJson(`${root}/../src/content/base/templates.json`).templates,
-    zombies: readJson(`${root}/../src/content/base/zombies.json`).zombies,
-  };
+  const base = `${root}/../src/content/base`;
+  const templateFiles = ['templates.json', 'templates-cabins.json', 'templates-stairs.json', 'templates-playtest.json'];
+  const templates = [];
+  for (const file of templateFiles) {
+    const entries = readJson(`${base}/${file}`).templates || [];
+    for (const entry of entries) {
+      templates.push(entry);
+    }
+  }
+  return { templates, zombies: readJson(`${base}/zombies.json`).zombies };
 }
 function scalar(object, name, fallback) {
   const property = object.property(name);
@@ -134,13 +140,27 @@ function addBuilding(object, info, context) {
   if (!Number.isInteger(storeys) || storeys < 1 || storeys > 8) {
     throw new Error(`${name}: storeys must be 1..8`);
   }
+  const fixedLootText = scalar(object, 'fixed_loot', '[]');
+  let fixedLoot;
+  try {
+    fixedLoot = JSON.parse(fixedLootText);
+  } catch (error) {
+    throw new Error(`${name}: fixed_loot must be JSON`, { cause: error });
+  }
+  if (!Array.isArray(fixedLoot)) {
+    throw new Error(`${name}: fixed_loot must be a JSON array`);
+  }
   pointInside(layout, [rect.x0, rect.z0], name);
   pointInside(layout, [rect.x1, rect.z1], name);
   if (footprints.some((r) => r.x0 < rect.x1 && rect.x0 < r.x1 && r.z0 < rect.z1 && rect.z0 < r.z1)) {
     throw new Error(`${name}: buildings overlap`);
   }
   footprints.push(rect);
-  layout.buildings.push({ template, position, rotation, storeys });
+  const building = { template, position, rotation, storeys };
+  if (fixedLoot.length > 0) {
+    building.fixedLoot = fixedLoot;
+  }
+  layout.buildings.push(building);
 }
 function addSpawn(object, info, context) {
   const { name, x, z, cls } = info;
@@ -270,6 +290,10 @@ export function exportLayout(map) {
     woodlands: [],
     tracks: [],
   };
+  const startTime = scalar(map, 'startTime', '');
+  if (startTime) {
+    layout.startTime = startTime;
+  }
   const context = { layout, pack: content(), footprints: [] };
   const writers = {
     building: addBuilding,
@@ -332,7 +356,14 @@ export function generatePropertyTypes() {
       values: pack.zombies.map((t) => t.id).sort(),
       valuesAsFlags: false,
     },
-    { name: 'building', members: [member('template', 'string', '', 'template_id'), member('storeys', 'int', 1)] },
+    {
+      name: 'building',
+      members: [
+        member('template', 'string', '', 'template_id'),
+        member('storeys', 'int', 1),
+        member('fixed_loot', 'string', '[]'),
+      ],
+    },
     { name: 'player_spawn', members: [member('bearing', 'float', 0)] },
     {
       name: 'shambler',

@@ -6,6 +6,7 @@ read_if:
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
   - you author or validate time-windowed template spawns
+  - you're authoring or changing playtest fixed loot
 ---
 
 # Content sections and recipes
@@ -46,16 +47,10 @@ uses exact integer multiplication and reports the count when refusing a file.
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
 
-Template spawn palette entries may carry `window: {from, to?}`. Times use a
-game-clock name from `src/core/clock.ts`, `SPAWN_TIMES`, or `HH:MM`; `to` is
-optional. `src/core/schema.ts`, `PaletteThingSchema`, validates the entry, and
-`src/core/templates.ts`, `compileTemplate`, carries it to placed spawns. A
-windowless marker keeps chunk-load spawning. A closed bounded window is tried
-again at its next daily opening, while an open-ended `from` remains eligible
-after its first opening. Once spawned, the marker remains in the saved spawn
-ledger even if its window closes or the shambler dies. This lets authored
-templates delay their first threat without adding a scripted event;
-`src/core/zombieSpawns.ts`, `ZombieSpawner`, owns eligibility and de-duplication.
+Template spawn palette entries can specify `window: {from, to?}`.
+`src/core/schema.ts`, `PaletteThingSchema`, validates the field; named game-clock
+boundaries live in `src/core/clock.ts`, `SPAWN_TIMES`. See `DESIGN.md`,
+"Spawning", for the rule and its reason.
 
 The initial torch, candle and repair-kit recipes consume whole solid items only.
 There are **no millilitre components, partial liquid use, pouring/mixing, new item
@@ -76,6 +71,12 @@ loot. Nested tables contribute only with positive possible rolls/item counts
 (weights are already strictly positive by schema). Zombie loot comes from
 positive-chance markers that can fit the population cap, accounting for shuffled
 north templates, and roadside wanderers only when a slot can remain.
+
+For #311, a globally reachable item type does not prove that its authored
+container can be looted. `test/authoredFixedLoot.test.ts` uses
+`templateReachableStandingPositions` with `templateSpatialIssues` to check the
+playtest's containers against the same standing traversal as template validation,
+not a second test-owned walker.
 
 For 2.10, store and garage stock stays in template palette loot overrides rather
 than position-specific runtime code. `worldSources()` in

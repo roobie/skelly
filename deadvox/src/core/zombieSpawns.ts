@@ -53,7 +53,14 @@ export class ZombieSpawner {
 
   /** Reconsiders only markers in columns already loaded. */
   advance({ calendar, registry, zombies }: ZombieSpawnAdvance): void {
-    for (const [key, { spawn }] of this.pending) {
+    // Restore can load columns in another order; preserve marker-to-id and RNG assignment.
+    const pending = [...this.pending].sort(([left], [right]) => {
+      if (left === right) {
+        return 0;
+      }
+      return left < right ? -1 : 1;
+    });
+    for (const [key, { spawn }] of pending) {
       if (this.spawned.has(key)) {
         this.pending.delete(key);
       } else if (spawnWindowOpen(calendar, spawn.window)) {

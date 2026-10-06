@@ -1540,6 +1540,31 @@ describe('shambler scenarios', () => {
     expect(spawner.snapshotState()).toContain('shambler:0,1,0');
   });
 
+  it('spawns same-tick pending markers in stable order regardless of column load order', () => {
+    const markers: ZombieSpawn[] = [
+      { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk' } },
+      { type: 'shambler', pos: [32, 1, 0], window: { from: 'dusk' } },
+    ];
+    const spawnOrder = (order: readonly ZombieSpawn[]) => {
+      const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
+      const spawner = new ZombieSpawner();
+      order.forEach((spawn, cx) => {
+        spawner.onColumn({
+          cx,
+          cz: 0,
+          site: spawnSite(spawn),
+          registry,
+          zombies: system,
+          calendar: SPAWN_TIMES.dusk - 1,
+        });
+      });
+      spawner.advance({ calendar: SPAWN_TIMES.dusk, registry, zombies: system });
+      return [...system.store.entries()].map(([id, zombie]) => ({ id, home: zombie.home }));
+    };
+
+    expect(spawnOrder(markers)).toEqual(spawnOrder([...markers].reverse()));
+  });
+
   it('spawns a marker when its column first loads inside the window', () => {
     const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk', to: '20:00' } };
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
