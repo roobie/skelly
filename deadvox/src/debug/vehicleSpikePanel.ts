@@ -2,13 +2,13 @@
 import { html, type TemplateResult } from 'lit-html';
 import { ifDefined } from 'lit-html/directives/if-defined.js';
 
-export interface PanelChoice {
+interface PanelChoice {
   readonly id: string;
   readonly label: string;
   readonly title?: string;
 }
 
-export interface PanelFitting {
+interface PanelFitting {
   readonly id: string;
   readonly label: string;
   readonly fitted: boolean;
