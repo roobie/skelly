@@ -1,13 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 // ADR 0001: every screen in these source trees is rendered with lit-html.
 const NOT_YET_PORTED = new Set<string>();
-// A standalone Three.js spike is a canvas scene, not a Lit-rendered game screen.
-const NON_LIT_DEBUG_PAGES = new Set(['debug/vehicleSpike.ts']);
-const sourceRoot = join(import.meta.dirname, '../src');
-const DIRECTORIES = [join(sourceRoot, 'ui'), join(sourceRoot, 'debug')];
+const DIRECTORIES = ['src/ui', 'src/debug'];
 
 // Hand-built DOM: creating, attaching or rewriting nodes instead of rendering a template.
 const HAND_DOM =
@@ -26,11 +23,7 @@ const sources = DIRECTORIES.flatMap(readSources);
 
 describe('UI source draws with lit-html (ADR 0001)', () => {
   it('has no hand-built DOM outside the not-yet-ported files', () => {
-    const offenders = sources.filter(
-      (source) =>
-        !(NOT_YET_PORTED.has(source.file) || NON_LIT_DEBUG_PAGES.has(relative(sourceRoot, source.file))) &&
-        HAND_DOM.test(source.text),
-    );
+    const offenders = sources.filter((source) => !NOT_YET_PORTED.has(source.file) && HAND_DOM.test(source.text));
     expect(offenders.map((source) => source.file)).toEqual([]);
   });
 
@@ -39,13 +32,6 @@ describe('UI source draws with lit-html (ADR 0001)', () => {
       const source = sources.find((candidate) => candidate.file === file);
       return !(source && HAND_DOM.test(source.text));
     });
-    expect(stale).toEqual([]);
-  });
-
-  it('keeps the standalone debug-page exception attached to an existing source', () => {
-    const stale = [...NON_LIT_DEBUG_PAGES].filter(
-      (file) => !sources.some((source) => relative(sourceRoot, source.file) === file),
-    );
     expect(stale).toEqual([]);
   });
 });

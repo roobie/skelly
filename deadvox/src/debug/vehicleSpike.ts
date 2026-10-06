@@ -1,3 +1,4 @@
+import { html, render } from 'lit-html';
 import {
   BoxGeometry,
   BufferAttribute,
@@ -29,6 +30,7 @@ import { BUNDLED_CONTENT } from '../game/bundledContent.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
+import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
 import { HATCHBACK } from './vehicles/hatchback.ts';
 import {
   dependentsOf,
@@ -37,6 +39,7 @@ import {
   initialFittings,
   isClearMaterial,
   latticeVoxels,
+  type MassReport,
   measure,
   missingSupports,
   PART_CELL,
@@ -60,23 +63,11 @@ const required = <T extends Element>(selector: string): T => {
 };
 
 const stage = required<HTMLElement>('#stage');
-const error = required<HTMLElement>('#error');
-const schematic = required<HTMLCanvasElement>('#schematic');
-const schematicContext = schematic.getContext('2d');
-if (!schematicContext) {
-  throw new Error('Vehicle schematic canvas is unavailable');
-}
-const partsList = required<HTMLElement>('#parts-list');
-const stats = required<HTMLElement>('#stats');
-const notice = required<HTMLElement>('#notice');
-const perf = required<HTMLElement>('#perf');
-const layerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer]')];
-const buildButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-build]')];
-const viewButtons = required<HTMLElement>('#views');
-const spinWheels = required<HTMLInputElement>('#spin-wheels');
-const openDoors = required<HTMLInputElement>('#open-doors');
+const sceneCanvas = required<HTMLCanvasElement>('#scene');
+const controlsPanel = required<HTMLElement>('#controls');
 const viewLabel = required<HTMLElement>('#vehicle-label');
-const grainNote = required<HTMLElement>('#grain-note');
+/** Rendered by the panel template, so it exists once the panel has rendered. */
+const schematicCanvas = (): HTMLCanvasElement => required<HTMLCanvasElement>('#schematic');
 
 /** A removed fitting shown as an item on the workshop floor, in world metres and radians. */
 interface LooseItem {
@@ -85,7 +76,10 @@ interface LooseItem {
   readonly rotation: Vec3;
 }
 interface BuildSpec {
+  /** On the stage. */
   readonly label: string;
+  /** On the build switcher. */
+  readonly button: string;
   readonly vehicle: Vehicle;
   readonly removed: readonly string[];
   readonly lift?: true;
@@ -101,14 +95,20 @@ const wheelStack = (ids: readonly string[]): LooseItem[] =>
   }));
 
 const BUILDS = {
-  hatchback: { label: 'Hatchback · cutaway (round 3)', vehicle: HATCHBACK, removed: [] },
-  rover: { label: 'Range Rover-type 4×4', vehicle: RANGE_ROVER, removed: [] },
+  rover: { label: 'Range Rover-type 4×4', button: '4×4', vehicle: RANGE_ROVER, removed: [] },
   stripped: {
     label: 'Same 4×4 · stripped on the lift',
+    button: 'Same 4×4 · stripped on the lift',
     vehicle: RANGE_ROVER,
     removed: STRIPPED_REMOVED,
     lift: true,
     loose: wheelStack(['wheel-front-near', 'wheel-front-far', 'wheel-rear-near', 'wheel-rear-far']),
+  },
+  hatchback: {
+    label: 'Hatchback · cutaway (round 3)',
+    button: 'Hatchback (round 3)',
+    vehicle: HATCHBACK,
+    removed: [],
   },
 } as const satisfies Record<string, BuildSpec>;
 type BuildId = keyof typeof BUILDS;
@@ -153,8 +153,13 @@ const layerParam = params.get('layer') as PartLayer | null;
 let activeLayer: PartLayer = layerParam && PART_LAYERS.includes(layerParam) ? layerParam : 'body';
 const viewParam = params.get('view');
 let activeView: ViewId = isViewId(viewParam) ? viewParam : 'front34';
-openDoors.checked = params.get('doors') === 'open';
-spinWheels.checked = params.get('spin') === '1';
+let doorsOpen = params.get('doors') === 'open';
+let wheelsSpinning = params.get('spin') === '1';
+let notice = '';
+let statsText = '';
+let perfText = '';
+let errorText = '';
+let massReport: MassReport = { massKg: 0, centre: [0, 0, 0] };
 
 const libraries = new Map<Vehicle, PartLibrary>();
 const libraryFor = (vehicle: Vehicle): PartLibrary => {
@@ -283,7 +288,7 @@ const placeFitting = (vehicle: Vehicle, fitting: Fitting): Object3D => {
     wheelPivots.push(pivot);
   } else {
     const sign = fitting.mirror ? -1 : 1;
-    pivot.rotation.y = openDoors.checked ? sign * DOOR_OPEN : 0;
+    pivot.rotation.y = doorsOpen ? sign * DOOR_OPEN : 0;
     doorPivots.push({ pivot, sign });
   }
   return pivot;
@@ -354,7 +359,7 @@ const buildLift = (vehicle: Vehicle): Group => {
   return group;
 };
 
-const renderer = new WebGLRenderer({ antialias: true });
+const renderer = new WebGLRenderer({ antialias: true, canvas: sceneCanvas });
 const camera = new PerspectiveCamera(38, 1, 0.05, 96);
 
 const renderVehicle = (): void => {
@@ -388,17 +393,15 @@ const renderVehicle = (): void => {
   }
   scene.add(vehicleGroup);
   const assemblyMs = performance.now() - started;
-  const { massKg, centre } = measure(libraryFor(vehicle), installed);
+  massReport = measure(libraryFor(vehicle), installed);
+  const { massKg, centre } = massReport;
   const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
-  stats.textContent = `${installed.size} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed(centre[0])} m forward, ${centre[1].toFixed(2)} m up, ${signed(centre[2])} m toward the near side`;
-  viewLabel.textContent = spec.label;
-  for (const button of buildButtons) {
-    button.setAttribute('aria-pressed', String(button.dataset.build === activeBuild));
-  }
+  statsText = `${installed.size} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed(centre[0])} m forward, ${centre[1].toFixed(2)} m up, ${signed(centre[2])} m toward the near side`;
+  renderPanel();
   drawSchematic();
-  drawPartsList();
   renderScene();
-  perf.textContent = `${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString('en')} triangles · ${meshCost.types} part meshes built in ${meshCost.ms.toFixed(0)} ms · assembly ${assemblyMs.toFixed(1)} ms`;
+  perfText = `${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString('en')} triangles · ${meshCost.types} part meshes built since load, in ${meshCost.ms.toFixed(0)} ms · assembly ${assemblyMs.toFixed(1)} ms`;
+  renderPanel();
 };
 
 interface CellRect {
@@ -418,6 +421,7 @@ const fittingCells = (vehicle: Vehicle, fitting: Fitting): CellRect => {
 };
 
 const schematicLayout = (vehicle: Vehicle): { readonly cell: number; readonly left: number; readonly top: number } => {
+  const schematic = schematicCanvas();
   const [cx, , cz] = vehicle.lattice;
   const cell = Math.min((schematic.width - 100) / cx, (schematic.height - 40) / cz);
   return {
@@ -463,7 +467,11 @@ const fittingColor = (vehicle: Vehicle, fitting: Fitting): string => {
 
 /** Top-down lattice: each fitting of the selected layer as the cells its voxels cover; z grows downward. */
 const drawSchematic = (): void => {
-  const ctx = schematicContext;
+  const schematic = schematicCanvas();
+  const ctx = schematic.getContext('2d');
+  if (!ctx) {
+    throw new Error('Vehicle schematic canvas is unavailable');
+  }
   const { vehicle } = BUILDS[activeBuild];
   const [, , cz] = vehicle.lattice;
   const layout = schematicLayout(vehicle);
@@ -491,7 +499,7 @@ const drawSchematic = (): void => {
     ctx.strokeRect(x + 1, y + 1, width - 2, height - 2);
     ctx.setLineDash([]);
   }
-  const { massKg, centre } = measure(libraryFor(vehicle), installed);
+  const { massKg, centre } = massReport;
   if (massKg > 0) {
     const [lx, , lz] = latticeVoxels(vehicle);
     const comX = left + (centre[0] / PART_CELL + lx / VOXELS_PER_CELL / 2) * cell;
@@ -521,62 +529,45 @@ const togglePart = (id: string): void => {
   if (installed.has(id)) {
     const blockers = dependentsOf(vehicle, installed, id);
     if (blockers.length > 0) {
-      notice.textContent = `Can't take off ${labelOf(vehicle, id)}: ${blockers.map((f) => labelOf(vehicle, f.id)).join(', ')} rest on it.`;
+      notice = `Can't take off ${labelOf(vehicle, id)}: ${blockers.map((f) => labelOf(vehicle, f.id)).join(', ')} rest on it.`;
+      renderPanel();
       return;
     }
     installed.delete(id);
   } else {
     const missing = missingSupports(vehicle, installed, id);
     if (missing.length > 0) {
-      notice.textContent = `Can't fit ${labelOf(vehicle, id)}: it rests on ${missing.map((m) => labelOf(vehicle, m)).join(', ')}.`;
+      notice = `Can't fit ${labelOf(vehicle, id)}: it rests on ${missing.map((m) => labelOf(vehicle, m)).join(', ')}.`;
+      renderPanel();
       return;
     }
     installed.add(id);
   }
-  notice.textContent = '';
+  notice = '';
   renderVehicle();
 };
 
-const drawPartsList = (): void => {
-  partsList.replaceChildren();
-  const { vehicle } = BUILDS[activeBuild];
-  const installed = installedFor(activeBuild);
-  for (const fitting of layerFittings(vehicle)) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'part-toggle';
-    button.setAttribute('aria-pressed', String(installed.has(fitting.id)));
-    button.textContent = `${installed.has(fitting.id) ? '●' : '○'} ${partTypeOf(vehicle, fitting).label} · ${fitting.id}`;
-    button.addEventListener('click', () => togglePart(fitting.id));
-    partsList.append(button);
-  }
-  for (const button of layerButtons) {
-    button.setAttribute('aria-pressed', String(button.dataset.layer === activeLayer));
+const selectBuild = (id: string): void => {
+  if (isBuildId(id)) {
+    activeBuild = id;
+    notice = '';
+    renderVehicle();
+    applyView(activeView);
   }
 };
 
-for (const button of buildButtons) {
-  button.addEventListener('click', () => {
-    if (isBuildId(button.dataset.build)) {
-      activeBuild = button.dataset.build;
-      notice.textContent = '';
-      renderVehicle();
-      applyView(activeView);
-    }
-  });
-}
-for (const button of layerButtons) {
-  button.addEventListener('click', () => {
-    const layer = button.dataset.layer as PartLayer | undefined;
-    if (layer && PART_LAYERS.includes(layer)) {
-      activeLayer = layer;
-      drawSchematic();
-      drawPartsList();
-    }
-  });
-}
+const selectLayer = (id: string): void => {
+  const layer = PART_LAYERS.find((candidate) => candidate === id);
+  if (layer) {
+    activeLayer = layer;
+    drawSchematic();
+    renderPanel();
+  }
+};
 
-schematic.addEventListener('pointerdown', (event) => {
+/** Toggles the smallest fitting of the selected layer under the clicked cell. */
+const pickSchematic = (event: PointerEvent): void => {
+  const schematic = schematicCanvas();
   const { vehicle } = BUILDS[activeBuild];
   const [cx, , cz] = vehicle.lattice;
   const bounds = schematic.getBoundingClientRect();
@@ -596,14 +587,13 @@ schematic.addEventListener('pointerdown', (event) => {
   if (hit) {
     togglePart(hit.fitting.id);
   }
-});
+};
 
 camera.layers.enable(PLAYER_FIGURE_LAYER);
 renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 1));
 renderer.outputColorSpace = SRGBColorSpace;
 renderer.shadowMap.enabled = true;
 renderer.setSize(stage.clientWidth, stage.clientHeight);
-stage.appendChild(renderer.domElement);
 const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
@@ -645,10 +635,11 @@ const scheduleRender = (): void => {
 };
 
 const setDoors = (open: boolean): void => {
-  openDoors.checked = open;
+  doorsOpen = open;
   for (const { pivot, sign } of doorPivots) {
     pivot.rotation.y = open ? sign * DOOR_OPEN : 0;
   }
+  renderPanel();
   scheduleRender();
 };
 
@@ -661,24 +652,12 @@ const applyView = (id: ViewId): void => {
   controls.target.set(view.target[0], view.target[1] + lift, view.target[2]);
   camera.fov = view.fov;
   camera.updateProjectionMatrix();
-  for (const button of viewButtons.querySelectorAll<HTMLButtonElement>('button')) {
-    button.setAttribute('aria-pressed', String(button.dataset.view === id));
-  }
   if (view.doors) {
     setDoors(true);
   }
+  renderPanel();
   scheduleRender();
 };
-
-for (const [id, view] of Object.entries(VIEWS)) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.dataset.view = id;
-  button.title = `Key ${view.key}`;
-  button.textContent = `${view.key} · ${view.label}`;
-  button.addEventListener('click', () => applyView(id as ViewId));
-  viewButtons.append(button);
-}
 
 const panDirection = new Vector3();
 const panRight = new Vector3();
@@ -727,7 +706,8 @@ const resize = (): void => {
 };
 new ResizeObserver(resize).observe(stage);
 globalThis.addEventListener('error', (event) => {
-  error.textContent = event.message;
+  errorText = event.message;
+  renderPanel();
 });
 renderer.domElement.addEventListener('pointermove', (event) => {
   if (event.buttons !== 0) {
@@ -750,7 +730,7 @@ const animateWheels = (time: number): void => {
     previousWheelRender = time;
     scheduleRender();
   }
-  if (spinWheels.checked) {
+  if (wheelsSpinning) {
     wheelFrame = requestAnimationFrame(animateWheels);
   }
 };
@@ -759,15 +739,16 @@ const startWheels = (): void => {
   previousWheelRender = 0;
   wheelFrame = requestAnimationFrame(animateWheels);
 };
-spinWheels.addEventListener('change', () => {
-  if (spinWheels.checked) {
+const setSpin = (on: boolean): void => {
+  wheelsSpinning = on;
+  if (on) {
     startWheels();
   } else {
     cancelAnimationFrame(wheelFrame);
     scheduleRender();
   }
-});
-openDoors.addEventListener('change', () => setDoors(openDoors.checked));
+  renderPanel();
+};
 
 /** Behind the car's far rear corner: in the side view for scale, out of the three-quarter views. */
 const PLAYER_AT = [-3.4, 0, -1.9] as const;
@@ -803,9 +784,7 @@ const addPlayer = (): void => {
 };
 
 const addTitleSprite = (): void => {
-  const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 96;
+  const canvas = new OffscreenCanvas(512, 96);
   const ctx = canvas.getContext('2d');
   if (!ctx) {
     return;
@@ -828,12 +807,68 @@ const addTitleSprite = (): void => {
   scene.add(sprite);
 };
 
+const GRAIN_NOTE = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel ${(VOXEL * 100).toFixed(3)} cm (${VOXELS_PER_CELL} per cell, ${VOXELS_PER_CELL * (BLOCK_SIZE / PART_CELL)} per block). Each part type is greedy-meshed once and every fitting of it reuses that geometry.`;
+const LAYER_LABELS: Readonly<Record<PartLayer, string>> = {
+  frame: 'Frame',
+  under: 'Under',
+  interior: 'Interior',
+  body: 'Body',
+  roof: 'Roof',
+};
+
+const panelModel = (): PanelModel => {
+  const { vehicle } = BUILDS[activeBuild];
+  const installed = installedFor(activeBuild);
+  return {
+    builds: (Object.entries(BUILDS) as [BuildId, BuildSpec][]).map(([id, spec]) => ({ id, label: spec.button })),
+    build: activeBuild,
+    views: (Object.entries(VIEWS) as [ViewId, ViewPreset][]).map(([id, view]) => ({
+      id,
+      label: `${view.key} · ${view.label}`,
+      title: `Key ${view.key}`,
+    })),
+    view: activeView,
+    layers: PART_LAYERS.map((id) => ({ id, label: LAYER_LABELS[id] })),
+    layer: activeLayer,
+    stats: statsText,
+    notice,
+    spin: wheelsSpinning,
+    doors: doorsOpen,
+    fittings: layerFittings(vehicle).map((fitting) => ({
+      id: fitting.id,
+      label: partTypeOf(vehicle, fitting).label,
+      fitted: installed.has(fitting.id),
+    })),
+    grain: GRAIN_NOTE,
+    perf: perfText,
+    error: errorText,
+  };
+};
+
+const panelActions: PanelActions = {
+  onBuild: selectBuild,
+  onView: (id) => {
+    if (isViewId(id)) {
+      applyView(id);
+    }
+  },
+  onLayer: selectLayer,
+  onSpin: setSpin,
+  onDoors: setDoors,
+  onFitting: togglePart,
+  onSchematic: pickSchematic,
+};
+
+const renderPanel = (): void => {
+  render(panelTemplate(panelModel(), panelActions), controlsPanel);
+  render(html`${BUILDS[activeBuild].label}`, viewLabel);
+};
+
 addPlayer();
 addTitleSprite();
-grainNote.textContent = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel ${(VOXEL * 100).toFixed(3)} cm (${VOXELS_PER_CELL} per cell, ${VOXELS_PER_CELL * (BLOCK_SIZE / PART_CELL)} per block). Each part type is greedy-meshed once and every fitting of it reuses that geometry.`;
 renderVehicle();
 applyView(activeView);
-if (spinWheels.checked) {
+if (wheelsSpinning) {
   startWheels();
 }
 document.body.dataset.ready = 'true';
