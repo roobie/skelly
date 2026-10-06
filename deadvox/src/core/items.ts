@@ -4,6 +4,7 @@
 
 import type { ItemDef, Registry } from './content.ts';
 import { assertFirearmState, type FirearmState, snapshotFirearm } from './firearmState.ts';
+import { magazineContentsReason, magazineSpec } from './magazine.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
 /** Craft or disassembly inputs/progress have exactly one owner: this ordinary item subtree. */
@@ -47,6 +48,8 @@ export interface ItemFields<Node> {
   pockets?: PlacedItem<Node>[][];
   /** Chamber contents and in-flight mechanical action; separate from handling jobs. */
   firearm?: FirearmState;
+  /** A magazine's cartridge item types in feed order, top round first (core/magazine.ts). */
+  cartridges?: string[];
   work?: CraftWork<Node> | undefined;
 }
 
@@ -85,6 +88,7 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     ...(item.litAt === undefined ? {} : { litAt: item.litAt }),
     ...(item.made === undefined ? {} : { made: item.made }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
+    ...(item.cartridges === undefined ? {} : { cartridges: [...item.cartridges] }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
     ...(item.work === undefined
       ? {}
@@ -150,6 +154,10 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
   assertSavedBurnState(def, state);
   const firearm = restoreFirearmState(registry, def, state);
+  const magazineReason = magazineContentsReason(registry, state.type, state.cartridges);
+  if (magazineReason) {
+    throw new Error(magazineReason);
+  }
   return {
     uid: state.uid,
     type: state.type,
@@ -161,6 +169,7 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     ...(state.litAt === undefined ? {} : { litAt: state.litAt }),
     ...(state.made === undefined ? {} : { made: state.made }),
     ...(firearm === undefined ? {} : { firearm }),
+    ...(state.cartridges === undefined ? {} : { cartridges: [...state.cartridges] }),
     ...(state.pockets === undefined
       ? {}
       : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
@@ -216,6 +225,9 @@ export class ItemFactory {
     }
     if (def.firearm?.pump) {
       item.firearm = { chamber: 'empty', tube: [] };
+    }
+    if (magazineSpec(registry, type)) {
+      item.cartridges = [];
     }
     if (def.igniter) {
       item.charges = def.igniter.capacity;
@@ -374,6 +386,7 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
 export const weightOf = (registry: Registry, item: Item): number =>
   defOf(registry, item.type).weight * item.count +
   ammunitionWeight(registry, item) +
+  (item.cartridges ?? []).reduce((sum, round) => sum + defOf(registry, round).weight, 0) +
   (item.pockets ?? []).flat().reduce((sum, p) => sum + weightOf(registry, p.item), 0) +
   (item.work?.components ?? []).reduce((sum, component) => sum + weightOf(registry, component), 0);
 

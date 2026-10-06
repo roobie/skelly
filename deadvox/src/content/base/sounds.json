@@ -41,6 +41,26 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "magazine_round_insert",
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
+      "gain": 0.35,
+      "pitchJitter": [1.12, 1.2],
+      "gainJitter": [0.95, 1.05],
+      "minIntervalSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "magazine_round_strip",
+      "variants": ["assets/audio/shotgun-insert-01.ogg", "assets/audio/shotgun-insert-02.ogg"],
+      "gain": 0.3,
+      "pitchJitter": [1.25, 1.35],
+      "gainJitter": [0.95, 1.05],
+      "minIntervalSeconds": 0,
+      "category": "body",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "shotgun_hull_drop",
       "variants": [
         "assets/audio/shotgun-hull-01.ogg",

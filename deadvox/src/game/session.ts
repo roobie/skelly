@@ -76,6 +76,7 @@ import {
   type FirearmTrajectory,
   isFirearmTrainingAction,
 } from './firearmHandling.ts';
+import { MagazineHandling } from './magazineHandling.ts';
 import {
   createPlayerBody,
   type MoveIntent,
@@ -512,6 +513,13 @@ export const createSession = (options: SessionOptions) => {
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
+  });
+
+  const magazines = new MagazineHandling(inventory, queue, {
+    feet,
+    reloadDurationScale: () =>
+      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadDuration,
+    onSound: (event, time) => playPlayerSound(event, time),
   });
 
   const survival = new Survival(sim, inventory, queue, {
@@ -1019,6 +1027,7 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     firearms,
+    magazines,
     aim,
     get firearmsSkillZeroHandling() {
       return currentFirearmsCombatTuning().skillZeroHandling;

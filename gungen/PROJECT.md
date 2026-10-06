@@ -1115,6 +1115,12 @@ the geometry declares them, whether or not a cartridge is assigned.
   labelled in `docs/shotshell-export.md`; none is written back as sourced data.
   `npm run export:cartridges -- <cartridge.json> <model-dir> [entry-dir]` handles
   both kinds; `?ammo=12-gauge-00-buck` shows shell and hull with a proxy label.
+- A curated magazine prefab exports detached, with the round column fitted to
+  its cartridge (`src/cli/exportMagazine.ts`, `src/gun/magazineExport.ts`,
+  `exportMagazineGlb`). Deadvox's magazine items (d114) take their calibre and
+  capacity from that model entry, so the geometry that fits the rounds also
+  sets how many load: `npm run export:magazine -- <cartridge.json> <prefab-id>
+  <model-id> <finish-variant> <model-dir> [entry-dir]`.
 
 #### 3.0b (implemented)
 

@@ -326,6 +326,7 @@ export const startPlay = (
     entities,
     queue,
     firearms,
+    magazines,
     aim,
     quickbar,
     survival,
@@ -519,7 +520,7 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
+    describe: (item) => [...survival.describe(item), ...firearms.describe(item), ...magazines.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     work: (uid, operation) => actOnWork(uid, operation),
     body: () => sim.body.snapshotState(),
@@ -889,27 +890,33 @@ export const startPlay = (
     ) {
       return;
     }
-    const uid = firearms.reloadableUid();
-    if (uid === undefined) {
+    const refuse = (reason: string | undefined): boolean => {
+      if (reason) {
+        showRefusal(reason, sim.time);
+      }
+      return reason === undefined;
+    };
+    const gun = firearms.reloadableUid();
+    if (gun !== undefined) {
+      return {
+        uid: gun,
+        busy: () => queue.busy || firearms.busy,
+        load: () => refuse(firearms.loadNext(gun, sim.time)),
+        rack: () => refuse(firearms.cock(gun, sim.time)),
+        cancelLoad: () => firearms.cancelLoad(gun),
+      };
+    }
+    // A wielded magazine: hold R loads it round by round, a double press strips the top round.
+    const magazine = magazines.reloadableUid();
+    if (magazine === undefined) {
       return;
     }
     return {
-      uid,
+      uid: magazine,
       busy: () => queue.busy || firearms.busy,
-      load: () => {
-        const reason = firearms.loadNext(uid, sim.time);
-        if (reason) {
-          showRefusal(reason, sim.time);
-        }
-        return reason === undefined;
-      },
-      rack: () => {
-        const reason = firearms.cock(uid, sim.time);
-        if (reason) {
-          showRefusal(reason, sim.time);
-        }
-      },
-      cancelLoad: () => firearms.cancelLoad(uid),
+      load: () => refuse(magazines.loadNext(magazine, sim.time)),
+      rack: () => refuse(magazines.strip(magazine, sim.time)),
+      cancelLoad: () => magazines.cancelLoad(magazine),
     };
   };
 

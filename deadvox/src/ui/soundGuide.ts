@@ -198,6 +198,21 @@ const TRIGGER_ENTRIES = [
       note: 'Placeholder: LFA hollow plastic clicks, not actual brass-headed hull drops; no metal layer. Approved as-is with #209 by BR (2026-10-04); further improvements deferred.',
     },
   ],
+  [
+    'magazine_round_insert',
+    {
+      trigger:
+        'Hold R with a magazine in hand and loose matching cartridges carried; each round is one handling job. Release cancels the partial job.',
+      note: 'Stand-in: the pump-insert recordings, pitched up; a magazine-specific click is future work (d114).',
+    },
+  ],
+  [
+    'magazine_round_strip',
+    {
+      trigger: 'Double-press R with a loaded magazine in hand to strip its top round.',
+      note: 'Stand-in: the pump-insert recordings, pitched higher still; a magazine-specific click is future work (d114).',
+    },
+  ],
   ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],
   ['pouch_take', { trigger: 'Take an item out of a pocket on a worn item.' }],
 ] satisfies readonly (readonly [SoundEventId, SoundTriggerGuide])[];

@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 29;
+export const SAVE_SCHEMA_VERSION = 31;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -292,6 +292,7 @@ itemSchema = obj({
   litAt: opt(nonNegative),
   made: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
+  cartridges: opt(arr(str({ id: true }))),
   firearm: opt(
     obj({
       chamber: enumeration(['empty', 'round', 'case']),
@@ -1283,6 +1284,9 @@ function validateItemContentReferences(
     }
     item.firearm?.tube?.forEach((type, index) => {
       check('item', type, `${path}.firearm.tube[${index}]`);
+    });
+    item.cartridges?.forEach((type, index) => {
+      check('item', type, `${path}.cartridges[${index}]`);
     });
     if (item.work?.kind === 'craft') {
       check('recipe', item.work.recipe, `${path}.work.recipe`);

@@ -1,6 +1,7 @@
 import { dominantSide } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import type { ItemDef } from '../core/schema.ts';
 
 export type IncludeDebugWeapon = (item: ItemDef) => boolean;
@@ -36,17 +37,27 @@ export const equipDebugFirearms = (
     }
     return true;
   }
-  const held = choice === 'ar' ? 'debug_rifle_assault' : 'debug_rifle_ak';
-  const other = choice === 'ar' ? 'debug_rifle_ak' : 'debug_rifle_assault';
+  equipRifles(inventory, backpack, choice);
+  return true;
+};
+
+/** The chosen rifle in hand; the other rifle, the held rifle's empty magazine and a box of its cartridges packed. */
+const equipRifles = (inventory: Inventory, backpack: Item, choice: 'ar' | 'ak'): void => {
+  const rifles = { ar: 'debug_rifle_assault', ak: 'debug_rifle_ak' } as const;
+  const ammunition = {
+    ar: ['magazine_stanag_30', 'cartridge_box_5_d_56x45'],
+    ak: ['magazine_akm_30', 'cartridge_box_7_d_62x39'],
+  } as const;
+  const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
+  const packed = [rifles[choice === 'ar' ? 'ak' : 'ar'], ...ammunition[choice]];
   if (
     !(
-      inventory.add(inventory.create(held), { kind: 'hand', side: dominantSide(inventory.character) }) &&
-      inventory.add(inventory.create(other), { kind: 'pocket', owner: backpack, pocket: 0 })
+      inventory.add(inventory.create(rifles[choice]), { kind: 'hand', side: dominantSide(inventory.character) }) &&
+      packed.every((type) => inventory.add(inventory.create(type), pocket))
     )
   ) {
     throw new Error('Could not equip firearm preview loadout');
   }
-  return true;
 };
 
 /** Selects the melee tools at runtime; a future caller can include ranged weapons with another predicate. */

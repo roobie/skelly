@@ -14,6 +14,7 @@
     "check:designs": "node src/cli/checkDesigns.ts",
     "export:glb": "node src/cli/export.ts",
     "export:cartridges": "node src/cli/exportCartridges.ts",
+    "export:magazine": "node src/cli/exportMagazine.ts",
     "generate": "node src/cli/generate.ts",
     "stats": "node src/cli/stats.ts",
     "mesh-stats": "node src/cli/mesh-stats.ts"
