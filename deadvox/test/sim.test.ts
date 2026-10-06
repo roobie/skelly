@@ -12,6 +12,8 @@ import {
 } from '../src/core/clock.ts';
 import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
+import { realSeconds } from '../src/core/time.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
@@ -21,7 +23,7 @@ const HOUR = simSecondsPerHour(defaultClock);
 const runUntil = (sim: Simulation, until: number): number => {
   let frames = 0;
   while (sim.time < until - 1e-9) {
-    sim.frame(FRAME, until);
+    advanceLiveFrame(sim, realSeconds(FRAME), until);
     frames += 1;
     if (frames > 1_000_000) {
       throw new Error('stuck');
@@ -182,7 +184,7 @@ describe('Simulation', () => {
     runUntil(sim, 20); // ramp up
     expect(sim.compression.c).toBe(COMPRESSION.cap);
     const before = sim.scheduler.tickCounts().get('needs')!;
-    sim.frame(FRAME);
+    advanceLiveFrame(sim, realSeconds(FRAME));
     // One frame at 30× is half a simulation second: at most one needs tick, not 30.
     expect(sim.scheduler.tickCounts().get('needs')! - before).toBeLessThanOrEqual(1);
     expect(sim.scheduler.stepOf('needs', COMPRESSION.cap)).toBe(30);
@@ -206,7 +208,7 @@ describe('Simulation', () => {
     sim.compress();
     runUntil(sim, 60);
     fireAt = sim.time + 7.05;
-    sim.frame(1); // 30 simulation seconds at the cap
+    advanceLiveFrame(sim, realSeconds(1)); // 30 simulation seconds at the cap
     expect(sim.compression.c).toBe(1);
     expect(sim.compression.interruption).toBe('You hear something outside');
     expect(sim.time).toBeCloseTo(firedAt[0]!, 9);
@@ -214,7 +216,7 @@ describe('Simulation', () => {
 
     // Continue: compression ramps up again.
     expect(sim.compress().ok).toBe(true);
-    sim.frame(0.5);
+    advanceLiveFrame(sim, realSeconds(0.5));
     expect(sim.compression.c).toBeGreaterThan(1);
     expect(sim.compression.interruption).toBeUndefined();
   });
@@ -230,7 +232,7 @@ describe('Simulation', () => {
     runUntil(sim, 30);
     expect(sim.compression.c).toBeGreaterThan(1);
     danger = 'A shambler noticed you';
-    sim.frame(FRAME);
+    advanceLiveFrame(sim, realSeconds(FRAME));
     expect(sim.compression.c).toBe(1);
     expect(sim.compression.interruption).toBe('A shambler noticed you');
   });
@@ -250,11 +252,11 @@ describe('Simulation', () => {
     runUntil(sim, 60);
     sim.compression.stop();
     for (let i = 0; i < 60; i++) {
-      sim.frame(FRAME);
+      advanceLiveFrame(sim, realSeconds(FRAME));
     }
     expect(sim.compression.c).toBe(1);
     sim.emit({ kind: 'interrupt', reason: 'You hear something outside' });
-    sim.frame(FRAME);
+    advanceLiveFrame(sim, realSeconds(FRAME));
     expect(sim.compression.interruption).toBeUndefined();
     expect(sim.compression.locksInput).toBe(false);
   });
@@ -309,7 +311,7 @@ describe('Simulation', () => {
       sim.compress();
       const until = skipTarget(sim.clock, sim.time, 23);
       for (let frames = 0; sim.compression.interruption === undefined && frames < 100_000; frames++) {
-        sim.frame(FRAME, until);
+        advanceLiveFrame(sim, realSeconds(FRAME), until);
       }
       // Spawn needs run out of hydration and rest within about 5 game hours.
       expect(sim.compression.interruption).toBe("You're parched");
@@ -321,7 +323,7 @@ describe('Simulation', () => {
       const sim = new Simulation({ seed: 1 });
       sim.compress();
       const until = skipTarget(sim.clock, sim.time, 1);
-      sim.frame(FRAME, until);
+      advanceLiveFrame(sim, realSeconds(FRAME), until);
       const frozenAt = { time: sim.time, c: sim.compression.c };
       sim.paused = true;
       for (let i = 0; i < 120; i++) {
@@ -370,7 +372,7 @@ describe('Simulation', () => {
         // Keeps the needs from turning critical, which would interrupt the skip.
         Object.assign(sim.needs, SPAWN_NEEDS);
         const before = ticks;
-        sim.frame(FRAME, until);
+        advanceLiveFrame(sim, realSeconds(FRAME), until);
         worstFrameTicks = Math.max(worstFrameTicks, ticks - before);
         frames += 1;
       }

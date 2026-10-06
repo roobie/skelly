@@ -12,6 +12,7 @@ import { Rng } from './random.ts';
 import { Scheduler, type SchedulerState } from './scheduler.ts';
 import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
+import type { SimSeconds } from './time.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import type { SoundEmission } from './soundPicker.ts';
 
@@ -259,20 +260,15 @@ export class Simulation {
     return this.ignoreUnsafe ? undefined : this.unsafe();
   }
 
-  /**
-   * Advances by one real frame of `realDt` seconds. With `until`, it stops at that
-   * simulation time (the end of a long action). Returns the simulation seconds
-   * advanced.
-   */
-  frame(realDt: number, until?: number): number {
+  /** Advances by an already-planned Sim-time step. Real-time conversion belongs to the outer frame driver. */
+  frame(simDt: SimSeconds, until?: number): number {
     if (this.paused || this.dead) {
       return 0;
     }
-    this.compression.update(realDt);
     // Events emitted between frames (input, debug keys) count too.
     this.checkInterruptions();
     const { c } = this.compression;
-    const wanted = Math.min(realDt * c, this.compression.limits.maxSimPerFrame);
+    const wanted = Math.min(simDt, this.compression.limits.maxSimPerFrame ?? Number.POSITIVE_INFINITY);
     const dt = until === undefined ? wanted : Math.min(wanted, Math.max(0, until - this.time));
     const hadAction = this.actions.job !== undefined;
     const advanced = this.scheduler.advance(

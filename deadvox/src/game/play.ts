@@ -25,7 +25,7 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
-import { startPlayFrames } from '../render/playFrames.ts';
+import { planRealFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
@@ -59,6 +59,7 @@ import { mountReading } from '../ui/reading.ts';
 import { renderRest } from '../ui/rest.ts';
 import type { SaveController } from '../ui/saveController.ts';
 import { GameAudio } from './audio.ts';
+import { realSeconds, simSeconds, type RealSeconds, type RealTimestamp } from '../core/time.ts';
 import {
   createRefusalPresenter,
   firearmShotSound,
@@ -433,7 +434,7 @@ export const startPlay = (
   let noticeUntil = 0;
   const showNotice = (text: string) => {
     notice = text;
-    noticeUntil = performance.now() + 3000;
+    noticeUntil = realNow() + 3000;
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -1539,7 +1540,7 @@ export const startPlay = (
 
   // ---- loop ----
 
-  let last = performance.now();
+  let last = realNow();
   let lastDebugUpdate = 0;
   let fps = 0;
   // Debug readout: frame intervals and CPU work alongside simulation, rendering and mesh timings.
@@ -1722,7 +1723,7 @@ export const startPlay = (
   };
 
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
-  const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
+  const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
     if (sim.body.actionRefusal && glowstickChargeStartedAt !== undefined) {
       cancelGlowstickCharge();
     }
@@ -1733,12 +1734,13 @@ export const startPlay = (
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     sim.paused = menuPaused || gameFrozen;
-    session.frame(dt, skipUntil);
+    const simDt = sim.paused ? simSeconds(0) : planRealFrame(compression, realDt);
+    session.frame(simDt, skipUntil);
     // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
     if (skipUntil !== undefined) {
       updateSkip(skipUntil);
     }
-    stepFrozenNoclip(dt, gameFrozen && !menuPaused);
+    stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     return gameFrozen;
   };
 
@@ -1766,35 +1768,35 @@ export const startPlay = (
     hintToggleInput.update(now);
   };
 
-  const frame = (now: number) => {
-    const workStart = performance.now();
-    const realSeconds = Math.max(0, (now - last) / 1000);
-    const dt = Math.min(0.1, realSeconds);
+  const frame = (now: RealTimestamp) => {
+    const workStart = realNow();
+    const elapsedReal = Math.max(0, (now - last) / 1000);
+    const dt = realSeconds(Math.min(0.1, elapsedReal));
     frameInterval.record(now, now - last);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
     const visible = hudVisibility(hudOptions);
-    let mark = performance.now();
+    let mark = realNow();
     streamer.update(body.pos[0], body.pos[2]);
-    meshingQueueMs = performance.now() - mark;
+    meshingQueueMs = realNow() - mark;
     updateActionInputs(now);
     playtestObserver?.beforeFrame(queue, inventory);
-    mark = performance.now();
+    mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
     caseEffects.update(dt, engine.isSolid);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
-    simulationMs = performance.now() - mark;
+    simulationMs = realNow() - mark;
     options.saveController?.afterFrame();
     playtestObserver?.afterFrame(
-      { realSeconds, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
+      { realSeconds: elapsedReal, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
       queue,
       session,
     );
     if (
       playtestObserver?.frame({
-        realSeconds,
+        realSeconds: elapsedReal,
         paused: sim.paused,
         visible: document.visibilityState === 'visible',
         compression: compression.c,
@@ -1816,7 +1818,7 @@ export const startPlay = (
     });
     updateDebugTargets();
     updateDebugReadout(now);
-    mark = performance.now();
+    mark = realNow();
 
     updateVisualFeedback(dt);
     const unconsciousPresentation = sim.body.unconscious && !sim.dead;
@@ -1856,7 +1858,7 @@ export const startPlay = (
     updateHeldItems(dt);
     view.updateShadows(hour, sky);
     renderMs = view.render();
-    frameWork.record(now, performance.now() - workStart);
+    frameWork.record(now, realNow() - workStart);
     if (sim.dead) {
       die(sim.dead);
       return false;
@@ -1893,7 +1895,7 @@ export const startPlay = (
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
-  startPlayFrames(frame);
+  startRealFrames(frame);
   return {
     enter: () => {
       audio.unlock();

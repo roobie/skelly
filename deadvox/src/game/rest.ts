@@ -2,6 +2,7 @@
 import type { RestAction, RestKind } from '../core/longAction.ts';
 import { REST } from '../core/needs.ts';
 import type { Simulation } from '../core/sim.ts';
+import { simSeconds } from '../core/time.ts';
 
 interface RestFurniture {
   quality: number;
@@ -81,7 +82,7 @@ export class RestController {
     }
     return this.start(kind, furnitureUid);
   }
-  frame(realDt: number, until?: number): void {
-    this.sim.frame(realDt, until);
+  frame(simDt: number, until?: number): void {
+    this.sim.frame(simSeconds(simDt), until);
   }
 }
