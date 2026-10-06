@@ -25,6 +25,8 @@ import { GRID, SIZE_CLASSES, type SizeClass } from '../core/conventions.ts';
 import { boxFromMinMax, localSolidBounds } from '../core/geometry.ts';
 import type { Vec3 } from '../core/math.ts';
 import type { KeepOut, ParamSpec, PartDef, PartFamily, PortDef, Solid, Vec2 } from '../core/schema.ts';
+import { akButtstockSolids, akStockTop } from './akButtstock.ts';
+import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
@@ -161,14 +163,13 @@ const keepOut = (
 /** Tag for parts the firing hand can hold (see rules.ts). */
 export const FIRING_GRIP = 'firing-grip';
 
-// Standard handguards reach 65% of the exposed barrel. AK handguards use
-// distinct compact bands, and their gas block clears the end by 10%.
+// Standard handguards reach 65% of the exposed barrel, and the gas station clears their end by 10%.
 const HANDGUARD_REACH = { barrelFraction: 0.65 } as const;
 const AR_FRONT_SIGHT_HALF_LENGTH = 1;
-const AK_HANDGUARD_LENGTH: Record<SizeClass, number> = { S: 8, M: 14, L: 22 };
-const AK_GAS_BLOCK_CLEARANCE = 0.1;
-const AK_GAS_BLOCK_HALF_LENGTH = 1;
-const akHandguardLength = (length: SizeClass): number => AK_HANDGUARD_LENGTH[length];
+const GAS_STATION_CLEARANCE = 0.1;
+const GAS_STATION_HALF_LENGTH = 1;
+const akHandguardLength = (length: SizeClass): number => AK_PROPORTIONS.handguard.lengthU[length];
+const akBarrelLength = (length: SizeClass): number => AK_PROPORTIONS.barrel.lengthU[length];
 
 /** Tube magazines keep the approved barrel-support clearance; the larger forend clears the barrel with a groove. */
 const TUBE_HALF_HEIGHT = 1;
@@ -220,7 +221,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   pistol: { S: 6, M: 10, L: 16 },
   'ak-curved': {
     ak74: { S: 6, M: 10, L: 16.5 },
-    akm: { S: 6, M: 10, L: 19.25 },
+    akm: { S: 6, M: 10, L: 16.75 },
   },
   'stanag-curved': { S: 6, M: 10, L: 15.75 },
 };
@@ -267,12 +268,13 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 5,
   },
+  // Fitted to the golden AKM photo's magazine (gungen/PROJECT.md, "Version 2: mapped from the golden photo").
   akm: {
     seat: 'face',
-    straightTop: 3.5,
-    arc: { radius: 20.12, sweepDegrees: 45, collisionFacets: 8, displayFacets: 24 },
+    straightTop: 1,
+    arc: { radius: 16, sweepDegrees: 56.5, collisionFacets: 8, displayFacets: 24 },
     straightBottom: 0,
-    topSlopeDegrees: 5,
+    topSlopeDegrees: 6,
   },
   stanag30: {
     seat: 'well',
@@ -316,23 +318,32 @@ const LOWER_TRIGGER_X = {
   bullpup: 5,
   trigger: -11.5,
   pump: -13,
-  ak: -10.75,
+  ak: AK_PROPORTIONS.lower.triggerX,
   ar: -10.75,
   thumbhole: -10.75,
 } as const;
-const LOWER_GRIP_X = { conventional: -13, bullpup: 3, trigger: -14, ak: -13, ar: -13 } as const;
-const AK_RECEIVER_BASE_ROOF_U = 2.5;
-const AK_REAR_SIGHT_NOTCH_DATUM_U = 4.75;
-const AK_REAR_SIGHT_BLOCK_HEIGHT_U = 0.25;
-const AK_RECEIVER_LIFT_U = AK_REAR_SIGHT_NOTCH_DATUM_U - AK_RECEIVER_BASE_ROOF_U - AK_REAR_SIGHT_BLOCK_HEIGHT_U;
-const AK_GAS_CYLINDER_Y = 2;
-const AK_GAS_CYLINDER_HALF_WIDTH = 0.25;
-const AK_REAR_SIGHT_NOTCH_TOP_U = 0.5;
+const LOWER_GRIP_X = {
+  conventional: -13,
+  bullpup: 3,
+  trigger: -14,
+  ak: AK_PROPORTIONS.lower.gripX,
+  ar: -13,
+} as const;
+const AK_RECEIVER = AK_PROPORTIONS.receiver;
+const AK_COMB = AK_PROPORTIONS.stock.comb;
+const AK_GAS_CYLINDER_Y = AK_PROPORTIONS.gas.axisU;
+const AK_GAS_CYLINDER_HALF_WIDTH = AK_PROPORTIONS.gas.flatRadiusU;
+const AK_REAR_SIGHT_NOTCH_TOP_U = AK_PROPORTIONS.sightLineU - AK_PROPORTIONS.sightBase.topU;
+const akRearRise = AK_PROPORTIONS.receiver.roofU - AK_PROPORTIONS.receiver.rearFaceTopU;
+const akRearSlope = akRearRise / AK_PROPORTIONS.receiver.rearSlopeRunU;
 export const AK_REAR_BEVEL = {
-  run: 2,
-  rise: 1.5,
-  angleDegrees: (Math.atan(1.5 / 2) * 180) / Math.PI,
-  clip: { normal: [-0.75, 1, 0], offset: 13 },
+  run: AK_PROPORTIONS.receiver.rearSlopeRunU,
+  rise: akRearRise,
+  angleDegrees: (Math.atan(akRearSlope) * 180) / Math.PI,
+  clip: {
+    normal: [-akRearSlope, 1, 0],
+    offset: AK_PROPORTIONS.receiver.rearFaceTopU - akRearSlope * AK_PROPORTIONS.receiver.rearX,
+  },
 } as const;
 export const PUMP_REAR_SLOPE = {
   run: 4,
@@ -346,7 +357,6 @@ export const PUMP_REAR_SLOPE = {
   ],
 } as const;
 const PUMP_REAR_PORT_Y = -1;
-const AK_STOCK_PORT_Y = 0.5 + AK_RECEIVER_LIFT_U;
 const AR_STOCK_PORT_Y = 0;
 export const HANDGUARD_CLEARANCE: Record<SizeClass, number> = { S: 0.25, M: 0.25, L: 0.5 };
 const HANDGUARD_WALL_THICKNESS = 0.5;
@@ -623,7 +633,7 @@ const carrierHandleStyleFor = (params: Readonly<Record<string, string>>): Carrie
 const carrierAxisY = (pattern: BoltCarrierPattern, receiverDrop: number): number => {
   let y = 1.25;
   if (pattern === 'ak') {
-    y = 0;
+    y = AK_PROPORTIONS.carrierAxisU;
   } else if (pattern === 'ar') {
     y = 0;
   } else if (pattern === 'pump') {
@@ -670,23 +680,29 @@ export const RECEIVER_SECTION = {
   },
   ak: {
     clip: [AK_REAR_BEVEL.clip],
+    // The dust cover's rounded corners stay in the wall above the carrier's cavity.
     outline: [
-      [-2.5, -2],
-      [1, -2],
-      [2, -1.75],
-      [2.5, -1.25],
-      [2.5, 1.25],
-      [2, 1.75],
-      [1, 2],
-      [-2.5, 2],
+      [AK_RECEIVER.shellBottomU, -AK_RECEIVER.halfWidthU],
+      [AK_RECEIVER.roofU - 0.75, -AK_RECEIVER.halfWidthU],
+      [AK_RECEIVER.roofU - 0.25, -AK_RECEIVER.halfWidthU + 0.25],
+      [AK_RECEIVER.roofU, -AK_RECEIVER.halfWidthU + 0.5],
+      [AK_RECEIVER.roofU, AK_RECEIVER.halfWidthU - 0.5],
+      [AK_RECEIVER.roofU - 0.25, AK_RECEIVER.halfWidthU - 0.25],
+      [AK_RECEIVER.roofU - 0.75, AK_RECEIVER.halfWidthU],
+      [AK_RECEIVER.shellBottomU, AK_RECEIVER.halfWidthU],
+    ] as const,
+    // The face-seated magazine's top, through the shell's floor.
+    magazineWellX: [
+      AK_PROPORTIONS.lower.magazineX - MAGAZINE_DEPTH / 2,
+      AK_PROPORTIONS.lower.magazineX + MAGAZINE_DEPTH / 2,
     ] as const,
     faces: {
-      top: { y: AK_RECEIVER_BASE_ROOF_U, halfWidth: 1.25 },
-      portSide: 2,
-      handleSides: [-2, 2],
+      top: { y: AK_RECEIVER.roofU, halfWidth: AK_RECEIVER.halfWidthU - 0.5 },
+      portSide: AK_RECEIVER.halfWidthU,
+      handleSides: [-AK_RECEIVER.halfWidthU, AK_RECEIVER.halfWidthU],
       front: 0,
-      rear: -16,
-      bottom: -2.5,
+      rear: AK_RECEIVER.rearX,
+      bottom: AK_RECEIVER.shellBottomU,
     } as const,
   },
   pump: {
@@ -756,13 +772,14 @@ const receiverShellSolids = ({
             offset: plane.offset - plane.normal[1] * receiverDrop,
           }))
         : undefined;
+    // End the pump and AK cavities in the full-height section; their rear walls carry the entire slope.
+    const rearSlopeRun = { pump: PUMP_REAR_SLOPE.run, ak: AK_REAR_BEVEL.run, ar: undefined }[section];
     const spec: ReceiverSectionSpec = {
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax] as const,
       wall: 0.5,
-      // End the pump cavity in the full-height section; its own rear wall carries the entire slope.
-      cavity: section === 'pump' ? { ...cavity, x: [xMin + PUMP_REAR_SLOPE.run, xMax - 0.5] } : cavity,
+      cavity: rearSlopeRun === undefined ? cavity : { ...cavity, x: [xMin + rearSlopeRun, xMax - 0.5] },
       port: {
         x: portWindow.x,
         sectionAxis: 0,
@@ -775,7 +792,11 @@ const receiverShellSolids = ({
       ...(clipPlanes ? { clip: clipPlanes } : {}),
       ...(feed === 'box'
         ? {
-            magazineWell: { x: [-7, -1.5], sectionAxis: 1 as const, section: [-1.25, 1.25] as const },
+            magazineWell: {
+              x: 'magazineWellX' in data ? data.magazineWellX : ([-7, -1.5] as const),
+              sectionAxis: 1 as const,
+              section: [-1.25, 1.25] as const,
+            },
           }
         : {}),
     };
@@ -1452,6 +1473,18 @@ const receiver: PartFamily = {
   },
 };
 
+/**
+ * The AKM's rear-sight block: on the receiver's front roof and on ahead of it over the handguard, where the
+ * gas cylinder starts. The leaf seats on its top without a post (BR, 2026-10-06 18:36).
+ */
+const akSightBaseSolids = (): Solid[] => {
+  const { rearX, frontX, bottomU, topU, halfWidthU } = AK_PROPORTIONS.sightBase;
+  return [
+    metalSolid('rear-sight-base-roof', [rearX, AK_RECEIVER.roofU, -halfWidthU], [0, topU, halfWidthU]),
+    metalSolid('rear-sight-base', [0, bottomU, -halfWidthU], [frontX, topU, halfWidthU]),
+  ];
+};
+
 /** AK-style stamped receiver with a removable dust cover, gas-cylinder and rear-sight interfaces. */
 const akReceiver: PartFamily = {
   name: 'receiver',
@@ -1463,16 +1496,17 @@ const akReceiver: PartFamily = {
   },
   build(params): PartDef {
     const bore = cls(params, 'bore');
+    const carrierPattern: BoltCarrierPattern = 'ak';
     const base = receiver.build({
       action: 'bolt',
       feed: 'box',
       bore,
       section: 'ak',
+      carrierPattern,
       chargingHandle: 'side',
       rail: 'none',
     });
-    const carrierPattern: BoltCarrierPattern = 'ak';
-    const carrierY = carrierAxisY(carrierPattern, -AK_RECEIVER_LIFT_U);
+    const carrierY = carrierAxisY(carrierPattern, 0);
     const travel = BOLT_TRAVEL.ak;
     const portWindow = ejectionPortWindow(carrierPattern, travel.restX, carrierY);
     return {
@@ -1482,43 +1516,26 @@ const akReceiver: PartFamily = {
           section: 'ak',
           feed: 'box',
           magazineWell: 'standard',
-          receiverBottom: RECEIVER_SECTION.ak.faces.bottom + AK_RECEIVER_LIFT_U,
-          receiverTop: Math.max(...RECEIVER_SECTION.ak.outline.map(([y]) => y)) + AK_RECEIVER_LIFT_U,
-          receiverDrop: -AK_RECEIVER_LIFT_U,
+          receiverBottom: AK_RECEIVER.shellBottomU,
+          receiverTop: AK_RECEIVER.roofU,
+          receiverDrop: 0,
           carrierPattern,
           carrierY,
           portWindow,
           frontFaceX: 0,
           portSlots: [akChargingHandleSlotWindow(carrierY, portWindow, travel.length)],
         }),
+        ...akSightBaseSolids(),
       ],
-      // The AK's attached stock occupies the generic extraction sweep; other parts remain excluded from it.
-      keepOuts: base.keepOuts.map((path) => ({
-        ...path,
-        box: {
-          ...path.box,
-          center: [path.box.center[0], path.box.center[1] + AK_RECEIVER_LIFT_U, path.box.center[2]] as Vec3,
-        },
-        ...(path.id === 'bolt-stock-clearance' ? { allowPort: 'stock' } : {}),
-      })),
+      // The carrier travels inside the receiver, so a bolt action's extraction sweep behind it doesn't apply.
+      keepOuts: base.keepOuts.filter(({ id }) => id !== 'bolt-stock-clearance'),
       ports: [
-        ...base.ports.map((port) => {
-          if (port.id === 'stock') {
-            return { ...port, pos: [port.pos[0], AK_STOCK_PORT_Y, port.pos[2]] as const };
-          }
-          if (['lower', 'bolt-carrier'].includes(port.id)) {
-            return {
-              ...port,
-              pos: [port.pos[0], port.pos[1] + AK_RECEIVER_LIFT_U, port.pos[2]] as const,
-            };
-          }
-          return port;
-        }),
+        ...base.ports,
         {
           id: 'gas-cylinder',
           mount: 'gas-cylinder',
           gender: 'female',
-          pos: [0, AK_GAS_CYLINDER_Y, 0],
+          pos: [AK_PROPORTIONS.sightBase.frontX, AK_GAS_CYLINDER_Y, 0],
           normal: X,
           up: Y,
           required: true,
@@ -1527,7 +1544,7 @@ const akReceiver: PartFamily = {
           id: 'rear-sight',
           mount: 'sight-block',
           gender: 'female',
-          pos: [-2, 4.5, 0],
+          pos: [AK_PROPORTIONS.rearSightX, AK_PROPORTIONS.sightBase.topU, 0],
           normal: Y,
           up: X,
           required: true,
@@ -1933,7 +1950,10 @@ const boltCarrier: PartFamily = {
         ]),
       );
     } else if (pattern === 'ak') {
-      solids.push(block('piston', [-4.75, 0.2, -0.35], [-0.25, 0.6, 0.35]));
+      // A rod on the gas cylinder's axis, thin enough to run inside the carrier's cavity under the dust cover.
+      const piston = octagonalPrism('piston', SIGHT_GRAIN, [-4.75, -0.25]);
+      const pistonY = AK_PROPORTIONS.pistonOnCarrierU;
+      solids.push({ ...translateSolid(piston, [0, pistonY, 0]), display: { bevel: false } });
     } else if (pattern === 'pump') {
       solids.push(...pumpActionBarSolids((params.bore ?? size.default) as SizeClass));
     } else if (pattern === 'barrett') {
@@ -2297,18 +2317,20 @@ const lower: PartFamily = {
           axes: [],
         };
       case 'ak': {
-        const frontHookX = conventionalWell.port.pos[0] + MAGAZINE_DEPTH / 2;
+        // The receiver's lower half: the frame runs its full length and width, down to its bottom.
+        const akWell = well(AK_PROPORTIONS.lower.magazineX);
+        const frontHookX = akWell.port.pos[0] + MAGAZINE_DEPTH / 2;
         return {
           family: 'lower',
           solids: [
             solid(
               'frame',
-              [Math.min(-14.75, lowerGripRearX(LOWER_GRIP_X.ak)), -1.5, -LOWER_HALF_WIDTH],
-              [0, 0, LOWER_HALF_WIDTH],
+              [AK_RECEIVER.rearX, AK_RECEIVER.bottomU - AK_RECEIVER.shellBottomU, -AK_RECEIVER.halfWidthU],
+              [0, 0, AK_RECEIVER.halfWidthU],
             ),
             ...triggerGuards,
           ],
-          ports: [top, grip(LOWER_GRIP_X.ak), conventionalWell.port],
+          ports: [top, grip(LOWER_GRIP_X.ak), akWell.port],
           keepOuts: [
             triggerFinger,
             keepOut(
@@ -2403,7 +2425,7 @@ const barrelLength = (params: Readonly<Record<string, string>>): number => {
     return PISTOL_BARREL_LENGTH[cls(params, 'length')];
   }
   const sizeClass = cls(params, 'length');
-  return { S: 26, M: 36, L: 46 }[sizeClass];
+  return params.section === 'ak' ? akBarrelLength(sizeClass) : { S: 26, M: 36, L: 46 }[sizeClass];
 };
 
 /** Regular octagon with horizontal and vertical flats at the requested half-width. */
@@ -2477,14 +2499,35 @@ const octagonalRectanglePrism = (
   };
 };
 
-const akGasBlockX = (layout: string | undefined, length: SizeClass): number => {
-  const handguardLength =
-    layout === 'ak' ? akHandguardLength(length) : snapAkGrid(barrelLength({ length }) * HANDGUARD_REACH.barrelFraction);
-  return snapAkGrid(handguardLength * (1 + AK_GAS_BLOCK_CLEARANCE) + AK_GAS_BLOCK_HALF_LENGTH);
+/** The gas station of a non-AK barrel: the AR's fixed front sight and gas port. */
+const gasStationX = (length: SizeClass): number => {
+  const handguardLength = snapAkGrid(barrelLength({ length }) * HANDGUARD_REACH.barrelFraction);
+  return snapAkGrid(handguardLength * (1 + GAS_STATION_CLEARANCE) + GAS_STATION_HALF_LENGTH);
 };
-const frontSightPosition = (style: string, length: SizeClass): number =>
-  style === 'ak' ? barrelLength({ length }) - 2.5 : akGasBlockX('standard', length);
-const arHandguardLength = (length: SizeClass): number => akGasBlockX('standard', length) - AR_FRONT_SIGHT_HALF_LENGTH;
+const akGasStationX = (length: SizeClass): number => akGasPortX(akBarrelLength(length));
+const frontSightPosition = (style: string, length: SizeClass, barrelEnd: number): number =>
+  style === 'ak' ? barrelEnd - AK_PROPORTIONS.frontSight.behindBarrelEndU : gasStationX(length);
+const arHandguardLength = (length: SizeClass): number => gasStationX(length) - AR_FRONT_SIGHT_HALF_LENGTH;
+/** A plain handguard's reach along its barrel; on an AK it stops at the gas block. */
+const standardHandguardLength = (length: SizeClass, section: string | undefined): number => {
+  const reach = snapAkGrid(barrelLength({ length, section: section ?? 'standard' }) * HANDGUARD_REACH.barrelFraction);
+  return section === 'ak' ? Math.min(reach, akGasStationX(length) + AK_PROPORTIONS.gasBlock.rearX) : reach;
+};
+
+/** The AKM's slant brake: the top lip ends first, and the cut falls forward at 45° to the lower lip. */
+const akSlantBrake = (barrelEnd: number): Solid => {
+  const { lengthU, flatRadiusU, topLipU } = AK_PROPORTIONS.barrel.brake;
+  return {
+    id: 'slant-brake',
+    kind: 'extruded-polygon',
+    profile: octagonalProfile(flatRadiusU),
+    axis: 'x',
+    z: [barrelEnd, barrelEnd + lengthU],
+    clip: [{ normal: [1, 1, 0], offset: barrelEnd + topLipU + flatRadiusU }],
+    display: { bevel: false },
+    slot: 'metal',
+  };
+};
 const barrel: PartFamily = {
   name: 'barrel',
   // Bore follows the receiver it's mounted in, unless set. Pistol profile keeps the same family and size but a shorter external tube.
@@ -2517,6 +2560,8 @@ const barrel: PartFamily = {
       fore = akHandguardLength(handguardLengthClass);
     } else if (params.handguardLayout === 'ar') {
       fore = arHandguardLength(handguardLengthClass);
+    } else if (params.section === 'ak') {
+      fore = standardHandguardLength(lengthClass, params.section);
     } else {
       fore = snapAkGrid(len * HANDGUARD_REACH.barrelFraction);
     }
@@ -2530,9 +2575,12 @@ const barrel: PartFamily = {
     const tube = octagonalPrism('tube', r, [0, len]);
     const breechX = params.section === 'ar' ? -AR_ACTION_LAYOUT.barrelExtensionLengthU : 0;
     const extension = breechX < 0 ? [octagonalPrism('barrel-extension', BARREL_RADIUS[bore], [breechX, 0])] : [];
+    const brake = params.section === 'ak' ? [akSlantBrake(len)] : [];
+    const muzzleX = len + (brake.length > 0 ? AK_PROPORTIONS.barrel.brake.lengthU : 0);
+    const gasPortX = params.section === 'ak' ? akGasStationX(lengthClass) : gasStationX(lengthClass);
     return {
       family: 'barrel',
-      solids: [...extension, tube],
+      solids: [...extension, tube, ...brake],
       ports: [
         {
           id: 'rear',
@@ -2563,7 +2611,7 @@ const barrel: PartFamily = {
           mount: 'sight-block',
           gender: 'female',
           size: bore,
-          pos: [frontSightPosition(params.frontSightStyle ?? 'ar', lengthClass), 0, 0],
+          pos: [frontSightPosition(params.frontSightStyle ?? 'ar', lengthClass, len), 0, 0],
           normal: NEG_X,
           up: Y,
         },
@@ -2574,14 +2622,7 @@ const barrel: PartFamily = {
                 mount: 'gas-block',
                 gender: 'male' as const,
                 size: bore,
-                pos: [
-                  akGasBlockX(
-                    params.handguardLayout,
-                    params.handguardLayout === 'ak' ? handguardLengthClass : lengthClass,
-                  ),
-                  0,
-                  0,
-                ] as Vec3,
+                pos: [gasPortX, 0, 0] as Vec3,
                 normal: X,
                 up: Y,
               },
@@ -2590,9 +2631,9 @@ const barrel: PartFamily = {
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [tubeEnd, -tubeDrop, 0], normal: NEG_X, up: Y },
         ...supportLug,
-        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
+        { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [muzzleX, 0, 0], normal: X, up: Y },
       ],
-      keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
+      keepOuts: [keepOut('muzzle', [muzzleX, -1.5, -1.5], [muzzleX + 30, 1.5, 1.5], 'muzzle')],
       axes: [{ kind: 'bore', origin: [0, 0, 0], dir: X }],
     };
   },
@@ -2623,45 +2664,46 @@ const frontSight: PartFamily = {
   },
   build(params): PartDef {
     const radius = BARREL_RADIUS[cls(params, 'bore')];
+    const ak = params.style === 'ak';
     const postHalf = GRID;
-    const postHalfZ = params.style === 'ar' ? GRID / 2 : SIGHT_GRAIN;
-    const postBase = 4.25;
-    const postTop = 5;
+    const postHalfZ = ak ? SIGHT_GRAIN : GRID / 2;
+    const postBase = ak ? AK_PROPORTIONS.frontSight.postBaseU : 4.25;
+    const postTop = ak ? AK_PROPORTIONS.sightLineU : 5;
     const post = solid('post', [-postHalf, postBase, -postHalfZ], [postHalf, postTop, postHalfZ]);
     const earInner = radius - GRID;
     const commonSolids = octagonalCollar('collar', radius, [-AR_FRONT_SIGHT_HALF_LENGTH, AR_FRONT_SIGHT_HALF_LENGTH]);
-    const solids =
-      params.style === 'ak'
-        ? [
-            ...commonSolids,
-            extrudedPolygon(
-              'block',
-              [
-                [-radius, radius],
-                [radius, radius],
-                [radius - GRID, postBase],
-                [-radius + GRID, postBase],
-              ],
+    const { earBottomU, earTopU } = AK_PROPORTIONS.frontSight;
+    const solids = ak
+      ? [
+          ...commonSolids,
+          extrudedPolygon(
+            'block',
+            [
               [-radius, radius],
-            ),
-            post,
-            solid('ear-left', [-postHalf, 4, -radius], [postHalf, 5.5, -earInner]),
-            solid('ear-right', [-postHalf, 4, earInner], [postHalf, 5.5, radius]),
-          ]
-        : [
-            ...commonSolids,
-            extrudedPolygon(
-              'stem',
-              [
-                [-radius, radius],
-                [radius, radius],
-                [Math.max(GRID, radius - GRID), postBase],
-                [-Math.max(GRID, radius - GRID), postBase],
-              ],
-              [-radius / 2, radius / 2],
-            ),
-            post,
-          ];
+              [radius, radius],
+              [radius - GRID, postBase],
+              [-radius + GRID, postBase],
+            ],
+            [-radius, radius],
+          ),
+          post,
+          solid('ear-left', [-postHalf, earBottomU, -radius], [postHalf, earTopU, -earInner]),
+          solid('ear-right', [-postHalf, earBottomU, earInner], [postHalf, earTopU, radius]),
+        ]
+      : [
+          ...commonSolids,
+          extrudedPolygon(
+            'stem',
+            [
+              [-radius, radius],
+              [radius, radius],
+              [Math.max(GRID, radius - GRID), postBase],
+              [-Math.max(GRID, radius - GRID), postBase],
+            ],
+            [-radius / 2, radius / 2],
+          ),
+          post,
+        ];
     return {
       family: 'front-sight',
       solids,
@@ -2700,7 +2742,10 @@ const railFrontSight: PartFamily = {
   },
 };
 
-/** An AK gas block collars the barrel and rises to the gas cylinder with a raked fore face. */
+/**
+ * An AK gas block collars the barrel at the gas port and reaches back to the gas cylinder's end face: a
+ * flat top over the cylinder, then a rake down to the collar's front.
+ */
 const gasBlock: PartFamily = {
   name: 'gas-block',
   params: {
@@ -2709,19 +2754,23 @@ const gasBlock: PartFamily = {
   },
   build(params): PartDef {
     const radius = BARREL_RADIUS[cls(params, 'bore')];
+    const { rearX, flatTopX, collarHalfLengthU, halfWidthU } = AK_PROPORTIONS.gasBlock;
+    const cylinderBottom = AK_GAS_CYLINDER_Y - AK_GAS_CYLINDER_HALF_WIDTH;
+    const cylinderTop = AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH;
     return {
       family: 'gas-block',
       solids: [
-        ...octagonalCollar('collar', radius, [-AR_FRONT_SIGHT_HALF_LENGTH, AR_FRONT_SIGHT_HALF_LENGTH]),
+        ...octagonalCollar('collar', radius, [-collarHalfLengthU, collarHalfLengthU]),
         extrudedPolygon(
           'block',
           [
-            [0, radius],
-            [1, radius],
-            [0.25, AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH],
-            [0, AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH],
+            [rearX, cylinderBottom],
+            [-collarHalfLengthU, radius],
+            [collarHalfLengthU, radius],
+            [flatTopX, cylinderTop],
+            [rearX, cylinderTop],
           ],
-          [-Math.max(GRID, snapAkGrid(radius * 0.5)), Math.max(GRID, snapAkGrid(radius * 0.5))],
+          [-halfWidthU, halfWidthU],
         ),
       ],
       ports: [
@@ -2739,7 +2788,7 @@ const gasBlock: PartFamily = {
           id: 'gas-cylinder',
           mount: 'gas-block',
           gender: 'female',
-          pos: [0, AK_GAS_CYLINDER_Y, 0],
+          pos: [rearX, AK_GAS_CYLINDER_Y, 0],
           normal: NEG_X,
           up: Y,
           required: true,
@@ -2751,27 +2800,30 @@ const gasBlock: PartFamily = {
   },
 };
 
-/** The AK gas cylinder runs under the rear handguard cover and is exposed ahead of it. */
+/** The AK gas cylinder runs from the rear-sight block, under the upper handguard, to the gas block. */
 const gasCylinder: PartFamily = {
   name: 'gas-cylinder',
   params: {
     barrelLength: { ...size, from: [{ port: 'front', param: 'barrelLength' }] },
-    handguardLayout: {
-      values: ['standard', 'ak'],
-      default: 'standard',
-      from: [{ port: 'handguard', param: 'layout' }],
-    },
-    handguardLength: { ...size, from: [{ port: 'handguard', param: 'length' }] },
   },
   build(params): PartDef {
-    const lengthClass = params.handguardLayout === 'ak' ? cls(params, 'handguardLength') : cls(params, 'barrelLength');
-    const len = akGasBlockX(params.handguardLayout, lengthClass);
+    const rearX = AK_PROPORTIONS.sightBase.frontX;
+    const len = akGasStationX(cls(params, 'barrelLength')) + AK_PROPORTIONS.gasBlock.rearX - rearX;
+    const handguardX = AK_PROPORTIONS.handguard.cylinderPortX - rearX;
     return {
       family: 'gas-cylinder',
       solids: [octagonalPrism('cylinder', AK_GAS_CYLINDER_HALF_WIDTH, [0, len])],
       ports: [
         { id: 'rear', mount: 'gas-cylinder', gender: 'male', pos: [0, 0, 0], normal: NEG_X, up: Y, required: true },
-        { id: 'handguard', mount: 'gas-cylinder', gender: 'female', pos: [8, 0, 0], normal: X, up: Y, required: true },
+        {
+          id: 'handguard',
+          mount: 'gas-cylinder',
+          gender: 'female',
+          pos: [handguardX, 0, 0],
+          normal: X,
+          up: Y,
+          required: true,
+        },
         { id: 'front', mount: 'gas-block', gender: 'male', pos: [len, 0, 0], normal: X, up: Y, required: true },
       ],
       keepOuts: [],
@@ -2780,7 +2832,7 @@ const gasCylinder: PartFamily = {
   },
 };
 
-/** A leaf with an open U-notch, seated on the AK receiver without a rail or post. */
+/** A leaf with an open U-notch, seated on the AK's rear-sight block without a post. */
 const akRearSight: PartFamily = {
   name: 'ak-rear-sight',
   params: {},
@@ -2788,8 +2840,6 @@ const akRearSight: PartFamily = {
     return {
       family: 'sight',
       solids: [
-        // The broad block seats on the receiver; the leaf rises directly from it without a post.
-        solid('rear-sight-block', [-0.75, 0, -0.75], [0.75, AK_REAR_SIGHT_BLOCK_HEIGHT_U, 0.75]),
         solid('leaf-left', [-SIGHT_GRAIN, 0, -1.125], [SIGHT_GRAIN, AK_REAR_SIGHT_NOTCH_TOP_U, -0.125]),
         solid('leaf-right', [-SIGHT_GRAIN, 0, 0.125], [SIGHT_GRAIN, AK_REAR_SIGHT_NOTCH_TOP_U, 1.125]),
       ],
@@ -2802,11 +2852,43 @@ const akRearSight: PartFamily = {
   },
 };
 
+/**
+ * The AKM's handguards: a lower one under the barrel and an upper one over the gas cylinder, every wall the
+ * same thickness, held at the front by a steel ring.
+ */
+const akHandguardSolids = (len: number): Solid[] => {
+  const { wallU, lowerBottomU, lowerTopU, lowerHalfWidthU, upperStartX, upperTopU, ringLengthU } =
+    AK_PROPORTIONS.handguard;
+  const cylinderTop = AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH;
+  const upperHalfWidth = AK_GAS_CYLINDER_HALF_WIDTH + wallU;
+  // The lower handguard's bottom keeps the plain id `bottom`: the support-hand anchor cups it.
+  const lowerWalls = (prefix: string, x: readonly [number, number]): Solid[] => [
+    solid(`${prefix}bottom`, [x[0], lowerBottomU, -lowerHalfWidthU], [x[1], lowerBottomU + wallU, lowerHalfWidthU]),
+    solid(`${prefix}left`, [x[0], lowerBottomU + wallU, -lowerHalfWidthU], [x[1], lowerTopU, -lowerHalfWidthU + wallU]),
+    solid(`${prefix}right`, [x[0], lowerBottomU + wallU, lowerHalfWidthU - wallU], [x[1], lowerTopU, lowerHalfWidthU]),
+  ];
+  const upperWalls = (prefix: string, x: readonly [number, number]): Solid[] => [
+    solid(`${prefix}upper-top`, [x[0], cylinderTop, -upperHalfWidth], [x[1], upperTopU, upperHalfWidth]),
+    solid(`${prefix}upper-left`, [x[0], lowerTopU, -upperHalfWidth], [x[1], cylinderTop, -AK_GAS_CYLINDER_HALF_WIDTH]),
+    solid(`${prefix}upper-right`, [x[0], lowerTopU, AK_GAS_CYLINDER_HALF_WIDTH], [x[1], cylinderTop, upperHalfWidth]),
+  ];
+  const ringX = len - ringLengthU;
+  return [
+    ...lowerWalls('', [0, ringX]),
+    ...upperWalls('', [upperStartX, ringX]),
+    ...[...lowerWalls('ring-', [ringX, len]), ...upperWalls('ring-', [ringX, len])].map((wall) => ({
+      ...wall,
+      slot: 'metal' as const,
+    })),
+  ];
+};
+
 /** A barrel-fitted handguard, capped by the receiver's front-face envelope. */
 const handguard: PartFamily = {
   name: 'handguard',
   params: {
     length: { ...size, from: [{ port: 'front', param: 'length' }] },
+    section: { ...choice('standard', 'ar', 'pump', 'ak'), from: [{ port: 'rear', param: 'section' }] },
     barrelBore: {
       ...size,
       from: [
@@ -2829,29 +2911,34 @@ const handguard: PartFamily = {
     } else if (params.layout === 'ar' && params.mount !== 'free-float') {
       len = arHandguardLength(lengthClass);
     } else {
-      len = snapAkGrid(barrelLength({ length: lengthClass }) * HANDGUARD_REACH.barrelFraction);
+      len = standardHandguardLength(lengthClass, params.section);
     }
     const bore = (params.barrelBore ?? (params.bore === 'none' ? 'M' : (params.bore ?? 'M'))) as SizeClass;
+    // On an AK receiver a plain handguard stays under the gas cylinder, giving up clearance before wall.
+    const ceiling =
+      params.section === 'ak'
+        ? Math.min(RECEIVER_FRONT_HALF_HEIGHT, AK_GAS_CYLINDER_Y - AK_GAS_CYLINDER_HALF_WIDTH)
+        : RECEIVER_FRONT_HALF_HEIGHT;
     const inner =
       params.fit === 'too-tight'
         ? BARREL_RADIUS[bore] - 0.5
-        : BARREL_RADIUS[bore] + HANDGUARD_CLEARANCE[(params.clearance ?? 'M') as SizeClass];
+        : Math.min(
+            BARREL_RADIUS[bore] + HANDGUARD_CLEARANCE[(params.clearance ?? 'M') as SizeClass],
+            ceiling - HANDGUARD_WALL_THICKNESS,
+          );
     const akLayout = params.layout === 'ak';
     let outerY: number;
     if (params.fit === 'oversized') {
       outerY = RECEIVER_FRONT_HALF_HEIGHT + 1;
     } else if (akLayout) {
-      outerY = RECEIVER_FRONT_HALF_HEIGHT;
+      outerY = AK_PROPORTIONS.handguard.upperTopU;
     } else {
-      outerY = Math.min(RECEIVER_FRONT_HALF_HEIGHT, inner + HANDGUARD_WALL_THICKNESS);
+      outerY = Math.min(ceiling, inner + HANDGUARD_WALL_THICKNESS);
     }
     const outerZ =
       params.fit === 'oversized'
         ? RECEIVER_FRONT_HALF_WIDTH + 1
         : Math.min(RECEIVER_FRONT_HALF_WIDTH, inner + HANDGUARD_WALL_THICKNESS);
-    const cylinderTop = AK_GAS_CYLINDER_Y + AK_GAS_CYLINDER_HALF_WIDTH;
-    const topInner = akLayout ? cylinderTop : inner;
-    const sideTop = akLayout ? cylinderTop : inner;
     const clampRadius =
       params.mount === 'free-float' || params.bore === 'none' ? undefined : BARREL_RADIUS[cls(params, 'bore')];
     const handleStyleKey = (params.handleStyle ?? 'none') as keyof typeof CARRIER_HANDLE_STYLES;
@@ -2883,10 +2970,14 @@ const handguard: PartFamily = {
     return {
       family: 'handguard',
       solids: [
-        solid('top', [0, topInner, -outerZ], [len, outerY, outerZ]),
-        solid('bottom', [0, -outerY, -outerZ], [len, -inner, outerZ]),
-        solid('left', [0, -inner, -outerZ], [len, sideTop, -inner]),
-        solid('right', [0, -inner, inner], [len, sideTop, outerZ]),
+        ...(akLayout
+          ? akHandguardSolids(len)
+          : [
+              solid('top', [0, inner, -outerZ], [len, outerY, outerZ]),
+              solid('bottom', [0, -outerY, -outerZ], [len, -inner, outerZ]),
+              solid('left', [0, -inner, -outerZ], [len, inner, -inner]),
+              solid('right', [0, -inner, inner], [len, inner, outerZ]),
+            ]),
         ...clamp,
         ...cockingTube,
       ],
@@ -2899,7 +2990,7 @@ const handguard: PartFamily = {
           id: 'gas-cylinder',
           mount: 'gas-cylinder',
           gender: 'male',
-          pos: [8, AK_GAS_CYLINDER_Y, 0],
+          pos: [AK_PROPORTIONS.handguard.cylinderPortX, AK_GAS_CYLINDER_Y, 0],
           normal: NEG_X,
           up: Y,
         },
@@ -3740,7 +3831,7 @@ const stock: PartFamily = {
   name: 'stock',
   params: {
     length: size,
-    style: choice('straight', 'sporting', 'dropped', 'ak-dropped', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
+    style: choice('straight', 'sporting', 'dropped', 'ak-buttstock', 'm4', 'tapered', 'tapered-sawed', 'thumbhole'),
   },
   build(params): PartDef {
     const tapered = params.style === 'tapered' || params.style === 'tapered-sawed';
@@ -3750,11 +3841,21 @@ const stock: PartFamily = {
       id: 'front',
       mount: 'stock',
       gender: 'male',
-      pos: [0, params.style === 'ak-dropped' ? -2 : 0, 0],
+      pos: [0, 0, 0],
       normal: X,
       up: Y,
       required: true,
     };
+    if (params.style === 'ak-buttstock') {
+      return {
+        family: 'stock',
+        solids: akButtstockSolids(cls(params, 'length')),
+        ports: [port],
+        keepOuts: [],
+        // The cheek rests on the comb, behind the neck's saddle.
+        axes: [{ kind: 'cheek', origin: [AK_COMB.x, akStockTop(AK_COMB.x), 0], dir: X }],
+      };
+    }
     if (params.style === 'm4') {
       return {
         family: 'stock',
@@ -3833,7 +3934,7 @@ const stock: PartFamily = {
         tags: [FIRING_GRIP],
       };
     }
-    if (params.style === 'dropped' || params.style === 'ak-dropped') {
+    if (params.style === 'dropped') {
       return {
         family: 'stock',
         solids: [

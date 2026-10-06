@@ -1,18 +1,9 @@
 import { clipPolygon } from '../core/geometry.ts';
 import type { Solid, Vec2 } from '../core/schema.ts';
 import { TAPERED_STOCK_PROPORTIONS as P } from './shotgunProportions.ts';
+import { hermite as curve, type StockContour, woodCell, woodRegion } from './stockWood.ts';
 
-/** Cubic Hermite graph, with endpoint slopes expressed as dy/dx. */
-const curve = (x: number, a: readonly [number, number, number], b: readonly [number, number, number]): number => {
-  const dx = b[0] - a[0];
-  const t = (x - a[0]) / dx;
-  return (
-    (2 * t ** 3 - 3 * t ** 2 + 1) * a[1] +
-    (t ** 3 - 2 * t ** 2 + t) * dx * a[2] +
-    (-2 * t ** 3 + 3 * t ** 2) * b[1] +
-    (t ** 3 - t ** 2) * dx * b[2]
-  );
-};
+const MERGE_GROUP = 'tapered-stock-wood';
 const combSlope = Math.tan((P.combDegrees * Math.PI) / 180);
 const top = (x: number): number => {
   if (x >= P.gripX) {
@@ -70,50 +61,9 @@ export const taperedStockSolids = ({ length, sawed }: { length: 'S' | 'M' | 'L';
     }
     return curve(x, [P.gripX, widths.grip, 0], [P.combStartX, widths.joint, bodyWidthSlope]);
   };
-  const wood = (
-    id: string,
-    role: string,
-    profile: readonly Vec2[],
-    width: readonly [number, number, number, number],
-  ): Solid => {
-    const [frontX, frontHalf, backX, backHalf] = width;
-    const slope = (backHalf - frontHalf) / (backX - frontX);
-    const offset = frontHalf - slope * frontX;
-    const half = Math.max(frontHalf, backHalf);
-    return {
-      id,
-      kind: 'extruded-polygon',
-      profile,
-      z: [-half, half],
-      clip: [
-        { normal: [-slope, 0, 1], offset },
-        { normal: [-slope, 0, -1], offset },
-      ],
-      slot: 'furniture',
-      display: { bevel: false, outline: false, outlineAngleDeg: 30, mergeGroup: 'tapered-stock-wood', role },
-    };
-  };
-  const region = (role: string, [front, back]: readonly [number, number], breaks: readonly number[] = []): Solid[] => {
-    const xs = [
-      ...new Set([
-        ...Array.from({ length: P.curveSegments + 1 }, (_, i) => front + ((back - front) * i) / P.curveSegments),
-        ...breaks,
-      ]),
-    ].sort((a, b) => b - a);
-    return xs.slice(1).map((x, i) =>
-      wood(
-        i === 0 ? role : `${role}-${i}`,
-        role,
-        [
-          [x, bottom(x)],
-          [xs[i]!, bottom(xs[i]!)],
-          [xs[i]!, top(xs[i]!)],
-          [x, top(x)],
-        ],
-        [xs[i]!, halfWidth(xs[i]!), x, halfWidth(x)],
-      ),
-    );
-  };
+  const contour: StockContour = { top, bottom, halfWidth, segments: P.curveSegments, mergeGroup: MERGE_GROUP };
+  const region = (role: string, span: readonly [number, number], breaks: readonly number[] = []): Solid[] =>
+    woodRegion(contour, role, span, breaks);
   const hand = [
     ...region('fore-stock', [0, P.wristStartX]),
     ...region('stock-wrist', [P.wristStartX, P.wristX]),
@@ -145,9 +95,8 @@ export const taperedStockSolids = ({ length, sawed }: { length: 'S' | 'M' | 'L';
   return [
     ...hand,
     ...joint,
-    wood(
-      'stock-comb',
-      'stock-comb',
+    woodCell(
+      { mergeGroup: MERGE_GROUP, id: 'stock-comb', role: 'stock-comb' },
       [
         [padBottomX, toe],
         [P.combStartX, P.neckBottomU],
