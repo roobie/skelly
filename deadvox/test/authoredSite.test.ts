@@ -276,13 +276,27 @@ describe('authored layout acceptance', () => {
     const template = compileTemplate(registry, registry.templates.get(building.template)!);
     const container = template.pieces.find((piece) => registry.furniture.get(piece.furniture)?.container)!;
     const nonContainer = template.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
-    const withLoot = (at: readonly [number, number, number], item: string) => ({
+    // A full registry validates real item/furniture references; check all rejection cases in one build.
+    const result = load({
       ...layout,
-      buildings: [{ ...building, fixedLoot: [{ at, items: [{ item }] }] }, ...layout.buildings.slice(1)],
+      buildings: [
+        {
+          ...building,
+          fixedLoot: [
+            { at: container.pos, items: [{ item: 'not_an_item' }] },
+            { at: nonContainer.pos, items: [{ item: 'rag' }] },
+            { at: [0, 0, 0], items: [{ item: 'rag' }] },
+          ],
+        },
+        ...layout.buildings.slice(1),
+      ],
     });
-    invalidWithFullPack(withLoot(container.pos, 'not_an_item'), 'no item');
-    invalidWithFullPack(withLoot(nonContainer.pos, 'rag'), 'has no container');
-    invalidWithFullPack(withLoot([0, 0, 0], 'rag'), 'no furniture anchor');
+    for (const message of ['no item', 'has no container', 'no furniture anchor']) {
+      expect(
+        result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message)),
+      ).toBe(true);
+    }
+    expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds);
   });
   it('rejects an unknown building template', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], template: 'missing' }] }, 'no template');
