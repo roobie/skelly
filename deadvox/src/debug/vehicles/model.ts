@@ -214,11 +214,11 @@ export const fittingById = (fittings: readonly Fitting[]): ReadonlyMap<string, F
   new Map(fittings.map((fitting) => [fitting.id, fitting]));
 
 /** Fittings that rest on `id`; while any remain, `id` can't come off. */
-export const dependentsOf = (fittings: readonly Fitting[], id: string): readonly Fitting[] =>
+const dependentsOf = (fittings: readonly Fitting[], id: string): readonly Fitting[] =>
   fittings.filter((fitting) => fitting.supportedBy.includes(id));
 
 /** Supports of `fitting` that aren't among `fittings`; it can't go on until they are. */
-export const missingSupports = (fittings: readonly Fitting[], fitting: Fitting): readonly string[] => {
+const missingSupports = (fittings: readonly Fitting[], fitting: Fitting): readonly string[] => {
   const present = fittingById(fittings);
   return fitting.supportedBy.filter((support) => !present.has(support));
 };
