@@ -2,7 +2,7 @@ import { Euler, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
-import { firearmStanceEffects, firearmsSkillEffects, type FirearmsSkillShotKind } from '../src/core/firearmsSkill.ts';
+import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 
 const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;

@@ -604,7 +604,8 @@ export class FirearmMechanics {
     this.queue.enqueueAction(
       LOAD_ACTION,
       `Load shell ${(gun.firearm?.tube?.length ?? 0) + 1}/${firearmHandlingFor(gun, this.inventory.registry).model.tube!.capacity}`,
-      SHELL_LOAD_SECONDS * firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
+      SHELL_LOAD_SECONDS *
+        firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
       { uid: gun.uid, ammoUid: ammo.uid },
     );
     this.onSound('shotgun_insert', undefined, time);
@@ -632,7 +633,8 @@ export class FirearmMechanics {
     const pump = this.isPump(item);
     const state: FirearmState = item.firearm ?? { chamber: 'round' };
     const duration =
-      actionCycleSeconds(data.action, 'hand') * firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).rackDuration;
+      actionCycleSeconds(data.action, 'hand') *
+      firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).rackDuration;
     state.cycle = { mode: 'hand', startedAt: time, elapsed: 0, duration, ejected: false, feedRound: !pump };
     item.firearm = state;
     this.active.add(uid);

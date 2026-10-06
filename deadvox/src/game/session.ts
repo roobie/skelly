@@ -355,7 +355,7 @@ export const createSession = (options: SessionOptions) => {
   const firearmsCombatTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
   let firearmsSkillZeroHandling: FirearmsSkillZeroHandling | undefined = firearmsCombatTuning?.skillZeroHandling;
   const currentFirearmsCombatTuning = (): FirearmsCombatTuning => {
-    if (!firearmsCombatTuning || !firearmsSkillZeroHandling) {
+    if (!(firearmsCombatTuning && firearmsSkillZeroHandling)) {
       throw new Error('Missing firearms-combat skill tuning');
     }
     return { ...firearmsCombatTuning, skillZeroHandling: firearmsSkillZeroHandling };

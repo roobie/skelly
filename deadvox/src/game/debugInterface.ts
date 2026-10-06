@@ -1,5 +1,6 @@
 import type { Character } from '../core/character.ts';
 import type { Vec3 } from '../core/coords.ts';
+import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Body } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
@@ -7,7 +8,6 @@ import type { Simulation } from '../core/sim.ts';
 import type { Weather } from '../core/weather.ts';
 import type { MeleeResult, ZombieAim, ZombieSystem } from '../core/zombies.ts';
 import type { FrameSummary } from '../render/frameTimes.ts';
-import type { FirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import type { HeardSound } from './audio.ts';
 import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';

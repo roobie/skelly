@@ -2,10 +2,10 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
-import {
-  type FirearmsSkillShotKind,
-  type FirearmsSkillZeroEffect,
-  type FirearmsSkillZeroHandling,
+import type {
+  FirearmsSkillShotKind,
+  FirearmsSkillZeroEffect,
+  FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
@@ -228,9 +228,13 @@ const firearmsSkillEffectSlider = (
   handling: FirearmsSkillZeroHandling,
   change: (shotKind: FirearmsSkillShotKind, field: keyof FirearmsSkillZeroEffect, value: number) => void,
 ): TemplateResult => {
-  const label = `${shotKind === 'singleShot' ? 'Single / first shot' : 'Automatic follow-up'} ${
-    field === 'variance' ? 'variance' : field === 'recoilKickScale' ? 'kick' : 'recovery rate'
-  }`;
+  const shotLabel = shotKind === 'singleShot' ? 'Single / first shot' : 'Automatic follow-up';
+  const effectLabel = {
+    variance: 'variance',
+    recoilKickScale: 'kick',
+    recoilRecoveryPerSimSecond: 'recovery rate',
+  }[field];
+  const label = `${shotLabel} ${effectLabel}`;
   const id = `firearms-skill-${shotKind}-${field}`;
   const value = handling[shotKind][field];
   const min = field === 'recoilRecoveryPerSimSecond' ? 0.01 : 0.1;
@@ -296,7 +300,11 @@ const panelTemplate = ({
   copyViewLink: () => void;
   copyStatus: string;
   firearmsSkillZeroHandling: FirearmsSkillZeroHandling;
-  changeFirearmsSkillZeroEffect: (shotKind: FirearmsSkillShotKind, field: keyof FirearmsSkillZeroEffect, value: number) => void;
+  changeFirearmsSkillZeroEffect: (
+    shotKind: FirearmsSkillShotKind,
+    field: keyof FirearmsSkillZeroEffect,
+    value: number,
+  ) => void;
   copyFirearmsSkillZeroHandling: () => void;
   firearmsSkillCopyStatus: string;
 }): TemplateResult => {

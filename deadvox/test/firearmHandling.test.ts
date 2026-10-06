@@ -335,7 +335,7 @@ describe('debug firearm handling', () => {
     const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
     const firearmDef = registry.items.get(rifle.type)!.firearm!;
     expect(configuredKick).toBe(firearmDef.recoilKickRadians);
-    const rpm = firearmHandlingFor(rifle, registry).rpm;
+    const { rpm } = firearmHandlingFor(rifle, registry);
     if (configuredKick === undefined || rpm === undefined) {
       throw new Error('Firing fixture needs firearm kick and cadence data');
     }

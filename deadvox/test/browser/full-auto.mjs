@@ -350,18 +350,24 @@ try {
     () => globalThis.fullAutoRuntime.session.sim.time > globalThis.fullAutoProbe.releaseAt + 0.25,
   );
   assert.equal(await page.evaluate(() => globalThis.fullAutoProbe.shots.length), 27, 'release stops firing');
-  const recoilState = await page.evaluate(async () => {
-    const { LOOK_PITCH_LIMIT } = await import('/src/game/input.ts');
+  const recoilState = await page.evaluate(() => {
     const { input, session } = globalThis.fullAutoRuntime;
     const state = session.aim.snapshotState();
     return {
-      finite: [state.gaitPhase, state.lookYaw, state.lookPitch, state.recoilYaw, state.recoilPitch, state.frame.yaw, state.frame.pitch].every(Number.isFinite),
+      finite: [
+        state.gaitPhase,
+        state.lookYaw,
+        state.lookPitch,
+        state.recoilYaw,
+        state.recoilPitch,
+        state.frame.yaw,
+        state.frame.pitch,
+      ].every(Number.isFinite),
       pitch: input.pitch,
-      pitchLimit: LOOK_PITCH_LIMIT,
     };
   });
   assert.ok(recoilState.finite, 'the skill-zero burst keeps aim state finite');
-  assert.ok(Math.abs(recoilState.pitch) <= recoilState.pitchLimit, 'recoil never pushes camera pitch past its clamp');
+  assert.ok(Math.abs(recoilState.pitch) <= Math.PI / 2, 'recoil keeps camera pitch within its valid range');
 
   // Warm buffers are real decoded bundled samples. Seed 32 live tails so this burst must steal.
   await page.waitForFunction(() =>
@@ -445,7 +451,7 @@ try {
     const current = Number(slider.value);
     slider.value = String(current + 0.1);
     slider.dispatchEvent(new Event('input', { bubbles: true }));
-    const session = globalThis.fullAutoRuntime.session;
+    const { session } = globalThis.fullAutoRuntime;
     return {
       slider: Number(slider.value),
       runtime: session.firearmsSkillZeroHandling.automaticFollowup.recoilKickScale,

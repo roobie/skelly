@@ -2,8 +2,8 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { type AimStep, assertAimState } from '../src/core/aim.ts';
-import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { pelletShot } from '../src/core/pellets.ts';
 import {
   decodeSave,
@@ -166,7 +166,11 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
 
 it('keeps headless session recoil valid when held fire has no view-pitch control', () => {
   const headless = session([], undefined, { pitch: LOOK_PITCH_LIMIT }, { firing: true, adjustPitch: false });
-  const followup = firearmsSkillEffects(0, registry.skills.get('firearms_combat')!.combat!.firearms!, 'automaticFollowup');
+  const followup = firearmsSkillEffects(
+    0,
+    registry.skills.get('firearms_combat')!.combat!.firearms!,
+    'automaticFollowup',
+  );
   for (let shot = 0; shot < 80; shot++) {
     headless.aim.recordShot(shot, 0.035, followup.recoilKickScale);
     headless.frame(1 / 60);
