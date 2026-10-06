@@ -101,15 +101,21 @@ export class AuthoredSite implements Site {
       type: marker.zombie,
       pos: marker.pos,
       chance: marker.chance,
+      ...(marker.window ? { window: marker.window } : {}),
     }));
     const explicit = layout.shamblers.map((spawn) => ({
       ...spawn,
       pos: blocks(spawn.position),
       chance: spawn.chance ?? 1,
+      ...(spawn.window ? { window: spawn.window } : {}),
     }));
     this.spawns = [...markers, ...explicit]
       .filter((spawn, i) => Rng.stream(seed, `layout:${layout.id}:spawn:${i}`).chance(spawn.chance))
-      .map(({ type, pos }) => ({ type, pos }));
+      .map((spawn) => ({
+        type: spawn.type,
+        pos: spawn.pos,
+        ...(spawn.window ? { window: spawn.window } : {}),
+      }));
   }
 
   stamp(chunk: Chunk): void {

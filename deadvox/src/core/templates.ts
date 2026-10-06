@@ -6,6 +6,7 @@
 // the same whichever chunk generates first.
 
 import type { Chunk } from './chunk.ts';
+import type { SpawnTimeWindow } from './clock.ts';
 import type { Registry, TemplateDef } from './content.ts';
 import { CHUNK, type Vec3 } from './coords.ts';
 import type { DoorLockDef, TemplateAccess } from './schema.ts';
@@ -103,6 +104,7 @@ export interface SpawnMarker {
   zombie: string;
   chance: number;
   pos: Vec3;
+  "window"?: SpawnTimeWindow;
 }
 
 export interface CompiledTemplate {
@@ -139,7 +141,12 @@ export const compileTemplate = (registry: Registry, template: TemplateDef): Comp
     if (entry.spawn !== undefined) {
       for (const pos of cellsOf(template.size)) {
         if (charAt(template, ...pos) === char) {
-          spawns.push({ zombie: entry.spawn, chance: entry.chance ?? 1, pos });
+          spawns.push({
+            zombie: entry.spawn,
+            chance: entry.chance ?? 1,
+            pos,
+            ...(entry.window ? { window: entry.window } : {}),
+          });
         }
       }
       continue;

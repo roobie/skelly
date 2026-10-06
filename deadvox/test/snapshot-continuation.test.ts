@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
+import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import {
   advance,
@@ -18,6 +20,36 @@ import {
 
 describe('hamlet save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
+  it('loads a closed-window marker from a save and spawns it when the clock opens the window', () => {
+    const start = SPAWN_TIMES.dusk - 60;
+    const [cx, cz] = fixtureZombieColumn;
+    const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
+    const marker = { type: 'shambler', pos, window: { from: 'dusk' } };
+    const timedSite = {
+      surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
+      spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
+      stamp: () => undefined,
+      furnitureIn: () => [],
+      zombiesIn: () => [marker],
+    } as Site;
+    const original = createRuntime(undefined, false, [fixtureZombieColumn], start);
+    original.session.onColumn(cx, cz, timedSite);
+    const key = `shambler:${pos.join(',')}`;
+    expect(original.spawner.snapshotState()).not.toContain(key);
+
+    const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], start);
+    loaded.session.onColumn(cx, cz, timedSite);
+    expect([...loaded.zombies.store.entries()].some(([, zombie]) => zombie.home.every((v, i) => v === pos[i]))).toBe(
+      false,
+    );
+    advance(loaded, 456);
+    expect(loaded.sim.calendar).toBeGreaterThan(SPAWN_TIMES.dusk);
+    expect([...loaded.zombies.store.entries()].some(([, zombie]) => zombie.home.every((v, i) => v === pos[i]))).toBe(
+      true,
+    );
+    expect(loaded.spawner.snapshotState()).toContain(key);
+  });
+
   it('continues active compressed rest through the first 1 Hz tick after load', () => {
     const source = createRuntime(undefined, true, oneColumn);
     expect(startRest(source, 'sleep')).toBeUndefined();

@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { placementOf } from '../src/core/authoredPlacement.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import {
   buildingBounds,
@@ -14,8 +15,8 @@ import {
 import { buildRegistry } from '../src/core/content.ts';
 import { compassBearing, toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { footprint } from '../src/core/templates.ts';
+import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
+import { footprint, placedSpawns } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { configFromUrl } from '../src/game/config.ts';
@@ -137,6 +138,66 @@ const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number
 };
 
 describe('authored layout acceptance', () => {
+  it('carries a spawn window from a template marker into its world column', () => {
+    const templateSource = base.find((file) => file.source === 'templates.json')!;
+    const templateFile = structuredClone(templateSource.data) as { templates: TemplateDef[] };
+    const building = layout.buildings[0]!;
+    const templateIndex = templateFile.templates.findIndex(({ id }) => id === building.template);
+    const definition = templateFile.templates[templateIndex]!;
+    const air = Object.entries(definition.palette).find(([, entry]) => entry === 'air')?.[0];
+    expect(air).toBeDefined();
+    const used = new Set(Object.keys(definition.palette));
+    const markerChar = ['@', '$', '?', '!'].find((char) => !used.has(char));
+    expect(markerChar).toBeDefined();
+    const layers = definition.layers.map((rows) => [...rows]);
+    let placed = false;
+    for (let y = 0; y < layers.length && !placed; y++) {
+      for (let z = 0; z < layers[y]!.length && !placed; z++) {
+        const x = layers[y]![z]!.indexOf(air!);
+        if (x >= 0) {
+          layers[y]![z] = `${layers[y]![z]!.slice(0, x)}${markerChar}${layers[y]![z]!.slice(x + 1)}`;
+          placed = true;
+        }
+      }
+    }
+    expect(placed).toBe(true);
+    templateFile.templates[templateIndex] = {
+      ...definition,
+      layers,
+      palette: { ...definition.palette, [markerChar!]: { spawn: 'shambler', window: { from: 'dusk' } } },
+    };
+    const files = base.map((file) =>
+      file.source === templateSource.source ? { source: file.source, data: templateFile } : file,
+    );
+    const result = buildRegistry([...files, { source: 'layout-test.json', data: { layouts: [layout] } }]);
+    expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+    const admitted = result.registry.layouts.get(layout.id)!;
+    const placement = placementOf(result.registry, admitted.buildings[0]!);
+    const expected = placedSpawns(placement).find(({ window }) => window?.from === 'dusk')!;
+    expect(expected.window).toEqual({ from: 'dusk' });
+    const site = new AuthoredSite(1, result.registry, scale, admitted);
+    expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
+      type: 'shambler',
+      pos: expected.pos,
+      window: { from: 'dusk' },
+    });
+  });
+  it('carries a spawn window from an authored marker into its world column', () => {
+    const marker = { ...layout.shamblers[0]!, chance: 1, window: { from: 'dusk' } };
+    const timedLayout = { ...layout, shamblers: [marker] };
+    const result = load(timedLayout);
+    expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+    const admitted = result.registry.layouts.get(layout.id)!;
+    const site = new AuthoredSite(1, result.registry, scale, admitted);
+    const x = marker.position[0] / scale.blockSize;
+    const z = marker.position[2] / scale.blockSize;
+    expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
+      type: marker.type,
+      pos: [x, marker.position[1] / scale.blockSize, z],
+      window: marker.window,
+    });
+  });
+
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
@@ -220,6 +281,21 @@ describe('authored layout acceptance', () => {
     const result = buildRegistry([...base, { source: 'layout-test.json', data }]);
     expect(result.issues.map((issue) => `${issue.path}: ${issue.message}`)).toContain(
       'templates[0].palette["X"].furniture: no furniture "no_such_furniture"',
+    );
+  });
+  it('validates optional windows on authored shambler markers', () => {
+    const timed = {
+      ...layout,
+      shamblers: [{ ...layout.shamblers[0]!, window: { from: 'dusk', to: 'dawn' } }],
+    };
+    expect(load(timed).issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+    invalid(
+      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { from: 'sunset' } }] },
+      'expected a named game time or HH:MM',
+    );
+    invalid(
+      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { from: 'dusk', to: 'dusk' } }] },
+      'from and to must differ',
     );
   });
   it('rejects an unknown shambler type', () => {

@@ -663,6 +663,16 @@ reused across types: `grab`, `leap`, `scream`, `explode`, `acidSpit`,
 | 3 | Incandescent hulk | A brute running a fever of a thousand degrees: glows, sets fires, warps glass. Seen from far away at night |
 | 3 | Lantern | Bioluminescent lure that draws you in, and others |
 
+### Spawning
+
+BR ruled (2026-10-06, d102):
+
+> let's do it as - (a) Time-windowed spawn markers, as a general rule. A marker in the map or a template can carry a time window, such as "from dusk". It spawns once its chunk is loaded ...
+>
+> but we will want scriptability in future, but not for jump-scares necessarily, but e.g. a computer panel opening up some door or other dynamic events
+
+A spawn marker's optional clock window delays its one-time spawn; it is checked when its column loads and while that column stays loaded. Windowless markers keep chunk-load behavior. Bounded windows recur daily, so a marker that missed one can spawn at the next opening; an open-ended `from` remains eligible after it first opens. Once spawned, its saved ledger entry prevents it returning when the window closes or after it is killed. `src/core/zombieSpawns.ts`, `ZombieSpawner`, owns this system rule. This timing serves authored beats without scripting a player action. Scriptable dynamic events, such as a computer opening a door, remain future work in #313.
+
 ### Evolution
 
 A zombie can change into a tougher type after enough game days. Where it lives

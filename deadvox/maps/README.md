@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're authoring or validating Tiled site maps
+  - you're authoring time-windowed Tiled spawn markers
+---
+
 # Authored-site spike (d35)
 
 Sources: `lone-house.tmj` and `hunting_cabins.tmj`, readable Tiled object-layer JSON.
@@ -45,7 +51,7 @@ world x/z; elevation is world y. Map properties: `id` (lowercase content ID) and
 | --- | --- | --- |
 | `building` | rectangle | required `template`; optional `storeys` (1–8, default 1), `elevation` (default snapped profile at rotated lot centre) |
 | `player_spawn` | point, exactly one | optional `bearing` (clockwise degrees from north, default 0), `elevation` (default voxel standing surface) |
-| `shambler` | point | required `zombie`; optional `chance` (0–1, default 1), `elevation` (default voxel standing surface) |
+| `shambler` | point | required `zombie`; optional `chance` (0–1, default 1), `elevation` (default voxel standing surface), `window_from` and optional `window_to` |
 | `woodland` | polygon | required `density` (0–1 multiplier on the seeded 2.13 field) |
 | `track` | polyline | required `width` (>0 m); optional `surface` (`dirt` or `asphalt`, default dirt) |
 | `ridge` | polyline | required positive `rise` above base, positive `width` (crest-to-zero falloff distance, not full ridge width) |
@@ -87,7 +93,15 @@ cannot contribute site IDs or prevent built-in sites from starting.
 and `TreeIndex`. The analytic profile replaces flat site ground; lots flatten to
 surface foundations and blend into that profile. Site boundaries retain the
 16 m blend into seeded natural terrain. Tracks paint the resulting surface;
-authored and template spawn markers roll once.
+authored and template spawn markers roll once. A Tiled shambler can set
+`window_from` and optionally `window_to`; `extensions/deadvox.mjs`, `exportLayout`,
+writes these as its spawn `window`. Use a named game-clock boundary from
+`src/core/clock.ts`, `SPAWN_TIMES`, or an `HH:MM` value. Bounded windows recur
+daily, including ranges that cross midnight; an unspawned marker missed outside
+its window can spawn at the next opening. With no `window_to`, eligibility stays
+open after `window_from` first arrives. Markers only wait while their column
+remains loaded, and a shambler that has spawned stays gone after death or a
+closed window; `src/core/zombieSpawns.ts`, `ZombieSpawner`, owns these rules.
 Lot ownership is resolved before blending: a containing footprint wins,
 otherwise the nearest footprint by block-cell rectangle distance wins. Equal
 distances use the lexicographic key `template:position.join(','):rotation`,

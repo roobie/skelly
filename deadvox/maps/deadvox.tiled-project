@@ -84,6 +84,16 @@
           "name": "chance",
           "type": "float",
           "value": 1
+        },
+        {
+          "name": "window_from",
+          "type": "string",
+          "value": ""
+        },
+        {
+          "name": "window_to",
+          "type": "string",
+          "value": ""
         }
       ],
       "type": "class",

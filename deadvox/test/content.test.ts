@@ -796,6 +796,32 @@ describe('templates', () => {
     expect(buildRegistry([...base, doors, t]).issues).toEqual([]);
   });
 
+  it('validates optional windows on template spawn markers', () => {
+    const valid = template(
+      [['Z..', '...']],
+      { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: '06:30' } } },
+      [3, 1, 2],
+    );
+    expect(check(valid)).toEqual([]);
+    expect(
+      check(
+        template([['Z..', '...']], { '.': 'air', Z: { spawn: 'shambler', window: { from: 'sunset' } } }, [3, 1, 2]),
+      ),
+    ).toEqual(expect.arrayContaining([expect.stringContaining('expected a named game time or HH:MM')]));
+    expect(
+      check(
+        template(
+          [['Z..', '...']],
+          { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: 'dusk' } } },
+          [3, 1, 2],
+        ),
+      ),
+    ).toEqual(expect.arrayContaining([expect.stringContaining('from and to must differ')]));
+    expect(
+      check(template([['F..', '...']], { '.': 'air', F: { furniture: 'crate', window: { from: 'dusk' } } }, [3, 1, 2])),
+    ).toEqual(expect.arrayContaining([expect.stringContaining('window" only goes with "spawn')]));
+  });
+
   it('checks layer sizes and that characters are in the palette', () => {
     expect(check(template([['###', '#?#'], ['##']], { '#': 'brick' }))).toEqual([
       'templates[0].layers[0][1]: "?" is not in the palette',

@@ -6,6 +6,7 @@
 import { rectDistance as cellDistance } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
+import type { SpawnTimeWindow } from './clock.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { type Rolled, rollLoot } from './loot.ts';
@@ -38,6 +39,7 @@ export interface ZombieSpawn {
   type: string;
   /** Feet position in world blocks. */
   pos: Vec3;
+  "window"?: SpawnTimeWindow;
 }
 
 export interface Site {

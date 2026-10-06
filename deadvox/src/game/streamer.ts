@@ -70,6 +70,8 @@ export class Streamer {
   private center: [number, number] = [Number.NaN, Number.NaN];
   /** Called after a column is generated, to add what stands in it (furniture). */
   onColumn: (cx: number, cz: number) => void = () => undefined;
+  /** Called when a generated column leaves the streaming set. */
+  onColumnUnload: (cx: number, cz: number) => void = () => undefined;
   /** Every added/unloaded data chunk, including all-air chunks that never get meshed. */
   onDataChange?: (origin: Vec3) => void;
   /** Handles a deterministic generation failure such as an unreadable restored chunk diff. */
@@ -210,6 +212,7 @@ export class Streamer {
         }
       }
       this.generated.delete(col);
+      this.onColumnUnload(cx, cz);
     }
   }
 

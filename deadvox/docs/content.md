@@ -5,6 +5,7 @@ read_if:
   - you change content references, static reachability, or disassembly-output contracts
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
+  - you author or validate time-windowed template spawns
 ---
 
 # Content sections and recipes
@@ -44,6 +45,17 @@ uses exact integer multiplication and reports the count when refusing a file.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
+
+Template spawn palette entries may carry `window: {from, to?}`. Times use a
+game-clock name from `src/core/clock.ts`, `SPAWN_TIMES`, or `HH:MM`; `to` is
+optional. `src/core/schema.ts`, `PaletteThingSchema`, validates the entry, and
+`src/core/templates.ts`, `compileTemplate`, carries it to placed spawns. A
+windowless marker keeps chunk-load spawning. A closed bounded window is tried
+again at its next daily opening, while an open-ended `from` remains eligible
+after its first opening. Once spawned, the marker remains in the saved spawn
+ledger even if its window closes or the shambler dies. This lets authored
+templates delay their first threat without adding a scripted event;
+`src/core/zombieSpawns.ts`, `ZombieSpawner`, owns eligibility and de-duplication.
 
 The initial torch, candle and repair-kit recipes consume whole solid items only.
 There are **no millilitre components, partial liquid use, pouring/mixing, new item
