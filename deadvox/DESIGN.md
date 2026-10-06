@@ -737,8 +737,8 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 
 ## Vehicles
 
-**The goal, decided (BR, 2026-10-06).** Asked what the vehicle system is for, BR said
-(17:01): “But let's first agree on what the goal is: darker_yet's vision is more or less
+**The goal, decided (BR, 2026-10-06).** BR set the goal at 17:01, while agreeing to a
+design review of the vehicle spike: “But let's first agree on what the goal is: darker_yet's vision is more or less
 what we're after. We want as much modularity as possible in the end, and the vehicle aspect
 of the game shall be very deep - maybe not 'my summer car'-deep, but very flexible and
 customisable”. On the lead's draft of the points below (17:13): “yes, your take on the
@@ -754,7 +754,10 @@ spike tests the part model against this goal, and its reasons are in
 1. **A car builder, not a car customizer.** Parts attach by capability, not by sockets a
    designer laid out in advance: a wing mirror needs a mountable vertical face, and a
    door, a halfboard or a plate the player welded on can all provide one. Players can
-   then build things the designers didn't foresee.
+   then build things the designers didn't foresee. For that, the spike's vehicles own
+   their fittings rather than switching a designer's list on and off (BR, 2026-10-06
+   18:07; see [docs/vehicle-spike.md](docs/vehicle-spike.md), "Catalogue, blueprints and
+   vehicles"): `src/debug/vehicles/model.ts`, `VehicleInstance`.
 2. **Fitting answers four separate questions:** what may go here (slot and layer); what
    holds it up (a set of supports, which also decides what can be removed); by what
    (skill, tools, materials and time to install, remove and repair, because building and
@@ -763,20 +766,25 @@ spike tests the part model against this goal, and its reasons are in
 3. **Two layers.** A part type is immutable content that mods can extend. A fitting is
    that part on this vehicle, with its own state: condition (intact, damaged, badly
    damaged, broken) and attachment (attached or ripped off). Collisions damage the parts
-   that hit something. See `model.ts`, `PartType` and `Fitting`.
+   that hit something. The spike's layers: `model.ts`, `PartType`, and `VehicleInstance`,
+   whose own fittings are where that state goes.
 4. **Networks at the fidelity play needs.** Steering is a per-part property. Drive is a
    per-axle driven flag, so front, rear or all-wheel drive is a build choice. Power and
    fuel are vehicle-wide pools: is there a charged battery, is there a tank with gas. The
-   fuel tank is a liquid container; the battery is part of the electricity system. A
-   real connection graph is used only where the routing itself is gameplay.
+   fuel tank is a liquid container, and the battery is part of the electricity system,
+   which is a graph with batteries as nodes at base scale (see
+   [Base building and electricity](#base-building-and-electricity)) and one pool inside a
+   vehicle. A real connection graph is used only where the routing itself is gameplay.
 5. **Behaviour comes from the build:** mass, centre of mass, noise and handling, then
-   fuel use, protection and storage. Vehicles make noise, and driving is fast and loud;
-   the engine is the main source and the hull damps it (BR, 2026-10-06, in
-   [docs/vehicle-spike.md](docs/vehicle-spike.md), "Noise comes from the build"). See
-   `model.ts`, `measure` and `noiseRadius`.
+   fuel use, protection and storage. Vehicles make noise, and driving is fast and loud.
+   BR (2026-10-06 16:28): noise is “mainly a property of the engine, but the chassis/hull
+   can factor in too”; the spike reads that as the engine being the source and the hull
+   damping it ([docs/vehicle-spike.md](docs/vehicle-spike.md), "Noise comes from the
+   build"). See `model.ts`, `measure` and `noiseRadius`.
 6. **Parts are items.** A removed part becomes an item carrying its type and condition
    (the `vehiclePart` component, see [The item model](#the-item-model)): salvage it,
-   carry it, refit it. A vehicle can be pieced together from wrecks.
+   carry it, refit it. A vehicle can be pieced together from wrecks. So a part type's id
+   names one type across all vehicles: `src/debug/vehicles/catalogue.ts`, `CATALOGUE`.
 7. **Data-driven and moddable.** Part types and vehicles live in schema-validated content
    (see [Content and modding](#content-and-modding)), and a mod adds parts without code.
    The spike keeps its part types content-shaped for that: `src/debug/vehicles/voxels.ts`,
