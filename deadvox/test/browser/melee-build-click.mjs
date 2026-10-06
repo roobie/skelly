@@ -7,6 +7,7 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
@@ -69,7 +70,7 @@ try {
     globalThis.d7Observed.starts = [];
     globalThis.d7Observed.buildStaminaBefore = globalThis.d7Review.session.sim.needs.stamina;
   });
-  await page.keyboard.press('KeyB');
+  await pressAction(page, 'debug.build-toggle');
   assert.equal(await page.evaluate(() => globalThis.d7Review.debugTools.buildOn), true);
   await page.mouse.click(640, 360);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
@@ -89,7 +90,7 @@ try {
     assert.equal(build.staminaAfter, build.staminaBefore);
   });
 
-  await page.keyboard.press('KeyB');
+  await pressAction(page, 'debug.build-toggle');
   assert.equal(await page.evaluate(() => globalThis.d7Review.debugTools.buildOn), false);
   const meleeAdded = await page.evaluate(() => {
     const { inventory } = globalThis.d7Review;
@@ -120,13 +121,13 @@ try {
   await page.evaluate(() => {
     globalThis.d7Observed.starts = [];
   });
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'ui.inventory-toggle');
   assert.equal(
     await page.evaluate(() => globalThis.d7Review.input.menuPointer && !document.querySelector('#inventory').hidden),
     true,
   );
   await page.mouse.click(640, 360);
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'ui.inventory-toggle');
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
   const menu = await page.evaluate(() => ({
     locked: globalThis.d7Review.input.locked,

@@ -59,7 +59,7 @@ const screen = new InventoryScreen(document.querySelector('#inventory'), invento
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
 });
 screen.open();
-screen.onKey(new KeyboardEvent('keydown', { code: 'ArrowDown' }));
+screen.onAction('inventory.next');
 screen.update();
 const inputState = { locked: false, menuPointer: false };
 const input = {

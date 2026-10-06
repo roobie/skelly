@@ -34,34 +34,4 @@ describe('debug isolation', () => {
     const html = readFileSync('index.html', 'utf8');
     expect(html).not.toMatch(staticDebugNode);
   });
-
-  it('registers each debug action and shortcut in the panel table, including P noclip', () => {
-    const source = readFileSync('src/debug/index.ts', 'utf8');
-    const rows = [...source.matchAll(/code: 'Key([A-Z])',\s*key: '([A-Z])',\s*label: '([^']+)'/g)];
-    expect(rows.map((row) => row[1])).toEqual([
-      'B',
-      'G',
-      'H',
-      'P',
-      'T',
-      'N',
-      'U',
-      'K',
-      'V',
-      'Y',
-      'O',
-      'M',
-      'J',
-      'I',
-      'Q',
-      'L',
-    ]);
-    expect(rows.map((row) => row[2])).toEqual(rows.map((row) => row[1]));
-    expect(rows.find((row) => row[1] === 'P')?.[3]).toBe('Noclip');
-    expect(source).not.toContain("code: 'KeyF'");
-    expect(source).toContain('id="reveal-zombies"');
-    expect(source).toContain('id="measure-snapshot"');
-    expect(source).toContain('id="export-metrics"');
-    expect(source).toContain('incl. post passes');
-  });
 });

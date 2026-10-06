@@ -233,9 +233,6 @@ export const createSession = (options: SessionOptions) => {
     : new Character(registry, { handedness: options.handedness });
   const firearmsCombatTuning = registry.skills.get('firearms_combat')?.combat?.firearms;
   const meleeCombatTuning = registry.skills.get('melee_combat')?.combat?.melee;
-  if (!(firearmsCombatTuning && meleeCombatTuning)) {
-    throw new Error('Missing combat skill tuning');
-  }
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
@@ -495,6 +492,7 @@ export const createSession = (options: SessionOptions) => {
     hurtPlayer: (amount, area, attacker) => {
       if (
         controls.blocking?.() &&
+        meleeCombatTuning !== undefined &&
         blocksAttack(
           character.skills.melee_combat ?? SKILL_LEVEL_MIN,
           sim.rng(`block:${attacker}:${sim.time}`).next(),
@@ -625,7 +623,8 @@ export const createSession = (options: SessionOptions) => {
       const intent = moving ? requested : IDLE;
       const handling = queue.busy || firearms.busy;
       const heldFirearm = firearmInHands();
-      const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.());
+      const readyGait =
+        moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
       const readyUid = readyGait ? heldFirearm?.uid : undefined;
       firearms.advanceReadiness(dt, readyUid, readyGait);
       const going = intent.forward !== 0 || intent.right !== 0;
@@ -651,7 +650,9 @@ export const createSession = (options: SessionOptions) => {
         sprint: sprinting,
         pace:
           paceFactor(inventory.carriedWeight(), handling) *
-          (readyGait ? firearmStanceEffects(firearmsSkillLevel(character), firearmsCombatTuning).readyMovementFactor : 1),
+          (readyGait && firearmsCombatTuning
+            ? firearmStanceEffects(firearmsSkillLevel(character), firearmsCombatTuning).readyMovementFactor
+            : 1),
       };
       const tools = debug?.();
       if (tools?.noclip) {

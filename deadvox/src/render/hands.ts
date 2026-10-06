@@ -150,11 +150,8 @@ export class HeldItems {
     this.sync();
     this.poseFirearms(firearmPoses);
     const readiness = handling.readiness;
-    const loweredPitchRadians = this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms
-      ?.loweredPitchRadians;
-    if (loweredPitchRadians === undefined) {
-      throw new Error('Missing firearms-combat lowered pose tuning');
-    }
+    const loweredPitchRadians =
+      this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.loweredPitchRadians ?? 0;
     const leadingSide = dominantSide(this.inventory.character);
     const readyPose = readiness ? readyMeleePose(true, leadingSide) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;

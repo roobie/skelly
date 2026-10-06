@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Simulation } from '../src/core/sim.ts';
-import { controlsCardRows, labelForCode, PLAYER_CONTROL_BINDINGS } from '../src/game/controls.ts';
+import { controlsCardRows } from '../src/game/controls.ts';
+import { BindingRegistry } from '../src/game/inputBindings.ts';
 import {
   loadMetrics,
   measureSnapshots,
@@ -308,27 +309,22 @@ describe('debug time control', () => {
 });
 
 describe('controls card', () => {
-  it('retains every declared world action and groups all declared inventory actions', () => {
-    const rows = controlsCardRows();
-    const world = PLAYER_CONTROL_BINDINGS.filter(
-      (binding) => !('context' in binding && binding.context === 'inventory'),
-    );
-    const inventory = PLAYER_CONTROL_BINDINGS.filter(
-      (binding) => 'context' in binding && binding.context === 'inventory',
-    );
-    expect(world.length).toBeGreaterThan(0);
-    expect(inventory.length).toBeGreaterThan(0);
-    expect(rows.slice(0, -1).map(({ action }) => action)).toEqual(world.map(({ action }) => action));
-    const grouped = rows.at(-1)!;
-    for (const binding of inventory) {
-      const keys = [...new Set(binding.codes.map(labelForCode))].join(' / ');
-      expect(grouped.action).toContain(`${keys}: ${binding.action}`);
-      expect(grouped.keys).toContain(keys);
-    }
-  });
-
-  it('uses supplied binding codes rather than a stale display label', () => {
-    const rows = controlsCardRows([{ codes: ['KeyJ'], keys: 'Old fixture label', action: 'Fixture action' }]);
-    expect(rows[0]).toEqual({ keys: 'J', action: 'Fixture action' });
+  it('derives visible actions and labels from the effective registry rather than a copied key table', () => {
+    const registry = new BindingRegistry([
+      {
+        id: 'fixture.action',
+        description: 'Fixture action',
+        contexts: ['inventory'],
+        commands: [{ id: 'fixture.action', kind: 'press' }],
+        defaults: [{ code: 'KeyJ' }],
+      },
+    ]);
+    const [row] = controlsCardRows(registry);
+    expect(row?.id).toBe('fixture.action');
+    expect(row?.keys).toContain('J');
+    expect(row?.action).toContain('Fixture action');
+    expect(row?.action).toContain('inventory');
+    expect(registry.rebind('fixture.action', [{ code: 'KeyK' }])).toBeUndefined();
+    expect(controlsCardRows(registry)[0]?.keys).toBe('K');
   });
 });

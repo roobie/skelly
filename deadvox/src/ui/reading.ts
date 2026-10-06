@@ -1,34 +1,32 @@
-// A held-paper/sign reading surface, not a HUD readout. Lit renders authored text as text nodes.
+// A held-paper/sign reading surface. Authored text remains escaped Lit text nodes.
 import { html, render } from 'lit-html';
 import type { Readable } from '../core/readable.ts';
+import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 
-const scrollText = (text: HTMLElement, code: string): boolean => {
-  switch (code) {
-    case 'Home':
+const scrollText = (text: HTMLElement, action: string): void => {
+  switch (action) {
+    case 'reading.first':
       text.scrollTop = 0;
       break;
-    case 'End':
+    case 'reading.last':
       text.scrollTop = text.scrollHeight;
       break;
-    case 'ArrowUp':
+    case 'reading.line-up':
       text.scrollTop -= 40;
       break;
-    case 'ArrowDown':
+    case 'reading.line-down':
       text.scrollTop += 40;
       break;
-    case 'PageUp':
+    case 'reading.page-up':
       text.scrollTop -= text.clientHeight * 0.8;
       break;
-    case 'PageDown':
-    case 'Space':
+    case 'reading.page-down':
       text.scrollTop += text.clientHeight * 0.8;
       break;
     default:
-      return false;
+      break;
   }
-  return true;
 };
-
 export const mountReading = (host: HTMLElement, changed: () => void) => {
   let current: Readonly<Readable> | undefined;
   let previousFocus: HTMLElement | undefined;
@@ -43,6 +41,21 @@ export const mountReading = (host: HTMLElement, changed: () => void) => {
     previousFocus = undefined;
     changed();
   };
+  const draw = () => {
+    if (!current) {
+      return;
+    }
+    render(
+      html`
+      <article class="reading-paper" role="dialog" aria-modal="true" aria-labelledby="reading-title" tabindex="-1">
+        <header><h1 class="reading-title" id="reading-title">${current.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
+        <div class="reading-text" tabindex="0" aria-label="Text">${current.text}</div>
+        <footer>${labelForAction('reading.close')} to put away · The world keeps moving</footer>
+      </article>`,
+      host,
+    );
+  };
+  inputBindings.subscribe(draw);
   return {
     get isOpen() {
       return current !== undefined;
@@ -53,31 +66,19 @@ export const mountReading = (host: HTMLElement, changed: () => void) => {
       }
       current = readable;
       host.hidden = false;
-      render(
-        html`
-        <article class="reading-paper" role="dialog" aria-modal="true" aria-labelledby="reading-title" tabindex="-1">
-          <header><h1 class="reading-title" id="reading-title">${readable.title}</h1><button class="reading-dismiss" type="button" @click=${close} aria-label="Put away reading">Put away</button></header>
-          <div class="reading-text" tabindex="0" aria-label="Text">${readable.text}</div>
-          <footer>Esc or Tab to put away · The world keeps moving</footer>
-        </article>`,
-        host,
-      );
+      draw();
       host.querySelector<HTMLElement>('article')!.focus({ preventScroll: true });
       changed();
     },
     close,
-    /** Own all keys while open: gameplay/quickbar/inventory must not also receive them. */
-    onKey(event: KeyboardEvent) {
+    onAction(action: string) {
       if (!current) {
         return false;
       }
-      if (event.code === 'Escape' || event.code === 'Tab') {
-        event.preventDefault();
-        if (!event.repeat) {
-          close();
-        }
-      } else if (scrollText(host.querySelector<HTMLElement>('.reading-text')!, event.code)) {
-        event.preventDefault();
+      if (action === 'reading.close') {
+        close();
+      } else {
+        scrollText(host.querySelector<HTMLElement>('.reading-text')!, action);
       }
       return true;
     },

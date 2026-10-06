@@ -57,7 +57,7 @@ const { registry, issues } = buildRegistry([
   {
     source: 'hand-action-fixture',
     data: {
-      skills: [{ id: 'crafting', name: 'Crafting' }],
+      skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 2 } }],
       furniture: [
         { id: 'fixture_door', name: 'Fixture door', size: [1, 1, 1], color: '#666666', door: { handling: 0 } },
       ],

@@ -5,7 +5,7 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Registry } from '../core/content.ts';
 import { WORK_IN_PROGRESS } from '../core/inventory.ts';
-import { installSearchInputKeyboardBoundary } from './searchInputKeyboard.ts';
+import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 
 const WHITESPACE = /\s+/;
 
@@ -46,9 +46,9 @@ interface SpawnMenuActions {
 }
 
 const spawnMenuTemplate = (vm: SpawnMenuViewModel, actions: SpawnMenuActions): TemplateResult => html`
-  <div class="card">
+  <div class="card" data-debug-controls>
     <h2>Spawn an item</h2>
-    <p>Drops it at your feet. Press Tab to close.</p>
+    <p>Drops it at your feet. ${labelForAction('spawn.dismiss')}: close · ${labelForAction('spawn.confirm')}: spawn.</p>
     <input
       type="search"
       placeholder="Filter by name, id or category"
@@ -95,7 +95,12 @@ export class SpawnMenu {
     this.registry = registry;
     this.spawn = spawn;
     this.drawTemplate = drawTemplate;
-    installSearchInputKeyboardBoundary((target) => this.opened && target === this.root?.querySelector('input'));
+    inputBindings.subscribe(() => {
+      this.drawn = '';
+      if (this.opened) {
+        this.render();
+      }
+    });
   }
 
   get isOpen(): boolean {
@@ -137,17 +142,15 @@ export class SpawnMenu {
   }
 
   /** Keyboard commands are handled here; other open-menu keys remain available to the search field. */
-  handleKey(event: KeyboardEvent): boolean {
-    if (event.key === 'Tab') {
-      event.preventDefault();
+  handleAction(action: string): boolean {
+    if (action === 'spawn.dismiss') {
       this.close();
       return true;
     }
-    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-      event.preventDefault();
+    if (action === 'spawn.next' || action === 'spawn.previous') {
       const { items, selectedIndex } = this.viewModel;
       if (items.length > 0) {
-        const direction = event.key === 'ArrowDown' ? 1 : -1;
+        const direction = action === 'spawn.next' ? 1 : -1;
         this.selectedIndex = Math.max(0, Math.min(items.length - 1, selectedIndex + direction));
         this.render();
         [...(this.root?.querySelectorAll<HTMLButtonElement>('[data-spawn-item]') ?? [])]
@@ -156,8 +159,7 @@ export class SpawnMenu {
       }
       return true;
     }
-    if (event.key === 'Enter') {
-      event.preventDefault();
+    if (action === 'spawn.confirm') {
       const { items, selectedIndex } = this.viewModel;
       const selected = items[selectedIndex];
       if (selected) {

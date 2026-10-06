@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
 
@@ -85,6 +86,54 @@ try {
     timeout: 20_000,
   });
   assert.doesNotMatch(await page.locator('#hud').textContent(), /paused/);
+  const gateCode = await page.evaluate(
+    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+  );
+  await page.evaluate((code) => {
+    globalThis.firefoxGateEvents = [];
+    document.addEventListener('keydown', (event) => {
+      if (event.code === code) {
+        globalThis.firefoxGateEvents.push({
+          type: 'keydown',
+          trusted: event.isTrusted,
+          prevented: event.defaultPrevented,
+        });
+      }
+    });
+    document.addEventListener('keyup', (event) => {
+      if (event.code === code) {
+        globalThis.firefoxGateEvents.push({
+          type: 'keyup',
+          trusted: event.isTrusted,
+          prevented: event.defaultPrevented,
+        });
+      }
+    });
+  }, gateCode);
+  const godBefore = await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode);
+  await pressAction(page, 'debug.god-toggle', { includeGate: false });
+  assert.equal(
+    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode),
+    godBefore,
+    'plain debug key cannot author',
+  );
+  await pressAction(page, 'debug.god-toggle');
+  assert.equal(
+    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode),
+    !godBefore,
+    'F2-gated action runs once',
+  );
+  await pressAction(page, 'debug.god-toggle', { includeGate: false });
+  assert.equal(
+    await page.evaluate(() => globalThis.firefoxUiTest.session.sim.godMode),
+    !godBefore,
+    'gate release cannot latch',
+  );
+  const gateEvents = await page.evaluate(() => globalThis.firefoxGateEvents);
+  assert.equal(gateEvents.length, 2);
+  assert.ok(gateEvents.every((event) => event.trusted));
+  assert.ok(gateEvents.some((event) => event.type === 'keydown' && event.prevented));
+  assert.equal(page.context().pages().length, 1, 'no Help page or window');
   // Register after startup: Input and play must handle this window event before we read cancellation.
   await page.evaluate(() => {
     globalThis.addEventListener('keydown', (event) => {
@@ -96,7 +145,7 @@ try {
   await page.keyboard.press('F10');
   assert.equal(await page.locator('#overlay').evaluate((panel) => panel.hidden), true);
   assert.equal(await page.evaluate(() => globalThis.firefoxF10Prevented), false);
-  await page.keyboard.press('F9');
+  await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(
     () => !document.querySelector('#overlay').hidden && globalThis.firefoxUiTest.session.sim.paused,
     null,
@@ -114,7 +163,7 @@ try {
     paused.time,
     'paused frames do not advance simulation time',
   );
-  await page.keyboard.press('F9');
+  await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(
     () => document.querySelector('#overlay').hidden && document.pointerLockElement === document.querySelector('#view'),
     null,
@@ -152,13 +201,13 @@ try {
       document.querySelector('#view').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })),
     );
   };
-  await page.keyboard.press('g');
+  await pressAction(page, 'debug.spawn-menu-toggle');
   await page.locator('#spawn input').fill('bandage');
   await clickGameElement('#spawn .spawn-list button');
   assert.match((await page.locator('#spawn .spawn-status').textContent()) ?? '', /is at your feet/);
   await page.locator('#spawn input').evaluate((input) => input.blur());
-  await page.keyboard.press('g');
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'debug.spawn-menu-toggle');
+  await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {
     await page.evaluate(
@@ -189,9 +238,9 @@ try {
     await dispatchPointer('pointerup', -1, 0);
   };
   const finishMove = async () => {
-    await page.keyboard.press('Tab');
+    await pressAction(page, 'ui.inventory-toggle');
     await page.waitForFunction(() => globalThis.firefoxUiTest.session.queue.jobs.length === 0, null, { timeout: 5000 });
-    await page.keyboard.press('Tab');
+    await pressAction(page, 'ui.inventory-toggle');
   };
   const floorItem = page.locator('#inventory .inv-grid[data-target^="pile:"] .inv-item').filter({ hasText: 'Bandage' });
   assert.equal(await floorItem.count(), 1, 'spawned bandage is in the floor pile');
@@ -223,7 +272,7 @@ try {
   assert.deepEqual(pageErrors, []);
   assert.deepEqual(consoleErrors, []);
   process.stdout.write(
-    'Firefox synthetic-lock UI passed: time advance/pause/resume, F10/F9, audio controls, debug spawn, floor pickup and pocket transfer. Native acquisition is NOT tested.\n',
+    'Firefox UI passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, floor pickup and pocket transfer. Native lock acquisition is NOT tested.\n',
   );
 } finally {
   await browser?.close();

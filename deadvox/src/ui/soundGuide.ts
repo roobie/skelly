@@ -47,7 +47,7 @@ const TRIGGER_ENTRIES = [
     'player_landing_hard',
     {
       trigger: 'Land after dropping at least 2.5 m.',
-      debugHint: '?debug=1: Backquote opens the debug panel; P enables noclip for reaching a ledge.',
+      debugHint: "?debug=1: Use the debug panel's Noclip action to reach a ledge.",
       note: 'Stand-in: the curated source is a generic jump/landing recording.',
     },
   ],
@@ -55,7 +55,7 @@ const TRIGGER_ENTRIES = [
     'shambler_idle',
     {
       trigger: 'Wait within hearing range while a shambler idles or strolls; it occasionally groans.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
     },
   ],
   [
@@ -63,7 +63,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'Listen near a shambler on grass: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
       note: 'MVP stand-in: player grass/sand CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
     },
   ],
@@ -72,7 +72,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'Listen near a shambler on dirt or mud: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
       note: 'MVP stand-in: player mud CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
     },
   ],
@@ -81,7 +81,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'Listen near a shambler on sand: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
       note: 'MVP stand-in: player grass/sand CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
     },
   ],
@@ -90,7 +90,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'Listen near a shambler on hard ground: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
       note: 'MVP stand-in: player stone CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
     },
   ],
@@ -99,7 +99,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'Listen near a shambler on planks: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
       note: 'MVP stand-in: player wood CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
     },
   ],
@@ -108,7 +108,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger:
         'Listen near a shambler on fabric or carpet: grounded travel drives the uneven steps, faster in a chase; only the nearest 3 moving shamblers are voiced.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
       note: 'MVP stand-in: player leaves CC0 clips pitched down to sound heavier; bespoke shambler foley is future work.',
     },
   ],
@@ -116,21 +116,21 @@ const TRIGGER_ENTRIES = [
     'shambler_alert',
     {
       trigger: 'A shambler notices you and starts investigating.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
     },
   ],
   [
     'shambler_attack',
     {
       trigger: 'Let a shambler reach you and attack.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
     },
   ],
   [
     'shambler_hurt',
     {
       trigger: 'Hit a shambler with a melee attack.',
-      debugHint: '?debug=1: Backquote → V spawns shamblers nearby.',
+      debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
     },
   ],
   ['player_hurt_light', { trigger: 'Take 1–14 points of damage.' }],
@@ -139,7 +139,7 @@ const TRIGGER_ENTRIES = [
     'player_hurt_heavy',
     {
       trigger: 'Take 15 or more points of damage.',
-      debugHint: '?debug=1: Backquote → K applies 25 damage.',
+      debugHint: "?debug=1: Use the debug panel's damage action to apply damage.",
     },
   ],
   ['melee_swing', { trigger: 'Click the primary mouse button to swing while able to attack.' }],
@@ -158,7 +158,7 @@ const TRIGGER_ENTRIES = [
     {
       trigger: 'Fire a chambered pump shotgun with LMB; rack manually before the next shot.',
       debugHint:
-        '?debug=1&loadout=pump: wield and activate the sealed box to unpack; wield the pump, hold R to load loose shells, double-R to rack.',
+        '?debug=1&loadout=pump: wield and activate the sealed box to unpack; wield the pump, then use the generated reload binding to load loose shells and rack.',
       note: 'Winchester Model 12 near shots from BR’s CC0 library. Approved as-is with #209 by BR (2026-10-04); further improvements deferred. Hearing radius remains a gameplay estimate.',
     },
   ],
