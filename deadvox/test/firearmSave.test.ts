@@ -21,12 +21,11 @@ import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const base = 'src/content/base';
-const { registry } = buildRegistry(
-  readdirSync(base)
-    .filter((file) => file.endsWith('.json'))
-    .sort()
-    .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
-);
+const baseFiles = readdirSync(base)
+  .filter((file) => file.endsWith('.json'))
+  .sort()
+  .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
+const { registry } = buildRegistry(baseFiles);
 const version: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
@@ -74,10 +73,11 @@ const session = (
     readonly adjustPitch?: boolean;
     readonly readyHeld?: boolean | (() => boolean);
     readonly active?: boolean;
+    readonly registry?: typeof registry;
   } = {},
 ) =>
   createSession({
-    registry,
+    registry: options.registry ?? registry,
     world: new World(),
     isSolid: (_x, y) => y < 0,
     isOpaque: () => false,
@@ -118,7 +118,7 @@ it('runtime firearm skill sliders tune the held gun and reset when its save is l
   if (!original.inventory.add(rifle, { kind: 'hand', side: 'right' })) {
     throw new Error('could not put the test rifle in the right hand');
   }
-  const contentTuning = registry.items.get('debug_rifle_assault')!.firearm!.skillZeroHandling!;
+  const contentTuning = structuredClone(registry.items.get('debug_rifle_assault')!.firearm!.skillZeroHandling!);
   const changed = {
     ...original.firearmsSkillZeroHandling,
     automaticFollowup: {
@@ -126,13 +126,69 @@ it('runtime firearm skill sliders tune the held gun and reset when its save is l
       recoilKickScale: original.firearmsSkillZeroHandling.automaticFollowup.recoilKickScale + 1,
     },
   };
-  expect(original.firearmsSkillZeroTarget).toBe('Assault rifle (debug)');
+  expect(original.firearmsSkillZeroTarget).toBe(registry.items.get('debug_rifle_assault')!.name);
   original.setFirearmsSkillZeroHandling(changed);
   expect(original.firearmsSkillZeroHandling).toEqual(changed);
   expect(registry.items.get('debug_rifle_assault')!.firearm!.skillZeroHandling).toEqual(contentTuning);
   const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
   expect(JSON.stringify(saved)).not.toContain('skillZeroHandling');
   expect(session([], saved).firearmsSkillZeroHandling).toEqual(contentTuning);
+});
+
+it('committed shots use the held firearm skill-zero recoil factors', () => {
+  const sourceGun = registry.items.get('debug_rifle_assault')!;
+  const makeFixture = (id: string, weight: number, recoilKickScale: number) => {
+    const firearm = structuredClone(sourceGun.firearm!);
+    const skillZeroHandling = firearm.skillZeroHandling!;
+    return {
+      ...structuredClone(sourceGun),
+      id,
+      name: id,
+      weight,
+      firearm: {
+        ...firearm,
+        skillZeroHandling: {
+          ...skillZeroHandling,
+          singleShot: { ...skillZeroHandling.singleShot, recoilKickScale },
+        },
+      },
+    };
+  };
+  const fixtureBuild = buildRegistry([
+    ...baseFiles,
+    {
+      source: 'firearm-session-fixtures.json',
+      data: {
+        items: [makeFixture('fixture_light_firearm', 1000, 2), makeFixture('fixture_heavy_firearm', 8000, 8)],
+      },
+    },
+  ]);
+  expect(fixtureBuild.issues).toEqual([]);
+
+  const recoilScales = ['fixture_light_firearm', 'fixture_heavy_firearm'].map((type) => {
+    const runtime = session([], undefined, undefined, { registry: fixtureBuild.registry });
+    const firearm = runtime.inventory.create(type);
+    expect(runtime.inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
+    const didFire = runtime.firearms.fire({
+      debugMode: true,
+      item: firearm,
+      seed: 71,
+      simTime: 0,
+      feet: [0, 0, 0],
+      eye: [0, PLAYER.eye / 0.5, 0],
+      yaw: 0,
+      pitch: 0,
+      aimFrame: runtime.aim.frame,
+      blockSize: 0.5,
+      ready: true,
+      sprinting: false,
+    });
+    expect(didFire).toBe(true);
+    const baseKick = firearmHandlingFor(firearm, fixtureBuild.registry).recoilKickRadians!;
+    return runtime.aim.snapshotState().recoilPitch / baseKick;
+  });
+
+  expect(recoilScales[0]).not.toBe(recoilScales[1]);
 });
 
 it('a codec save restores the immediate aim frame, recoil and next pellet rays', async () => {

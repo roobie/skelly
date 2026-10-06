@@ -580,7 +580,9 @@ plain box in your hands. Files are small, and follow
   interpolates them toward the same expert endpoint. The provisional per-gun starting values
   follow base recoil and await BR's slider review for d112. The MP5 comparison has no matching
   in-game SMG item; d112 adds factors to existing firearms, not a new gun. `src/debug/index.ts`,
-  `firearmsSkillEffectSlider`, tunes the firearm in hand and copies its content-shaped values.
+  `firearmsSkillEffectSlider`, renders the tuning controls; `attachDebugTools`,
+  `changeFirearmsSkillZeroEffect`, applies them at runtime, and `copyFirearmsSkillZeroHandling`
+  copies the current gun's values.
   The controls are runtime-only, reset on reload, and do not alter saves. The shared skill
   effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
   per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
