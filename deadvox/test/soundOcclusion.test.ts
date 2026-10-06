@@ -6,15 +6,24 @@ const listener: Vec3 = [0.5, 1.5, 0.5];
 const source: Vec3 = [5.5, 1.5, 0.5];
 
 describe('positional sound occlusion', () => {
-  it('muffles a sound by solid-run count, not wall thickness', () => {
+  it('applies one coarse muffling step for any solid on the source ray', () => {
     const clear = soundOcclusion(listener, source, () => false);
-    const oneWall = soundOcclusion(listener, source, (x, y) => x >= 2 && x <= 3 && y === 1);
+    const thinWall = soundOcclusion(listener, source, (x, y) => x === 2 && y === 1);
+    const thickWall = soundOcclusion(listener, source, (x, y) => x >= 2 && x <= 3 && y === 1);
+    const separatedWalls = soundOcclusion(listener, source, (x, y) => (x === 1 || x === 3) && y === 1);
 
-    expect(clear.wallRuns).toBe(0);
-    expect(oneWall.wallRuns).toBe(1);
-    expect(oneWall.gain).toBeLessThan(clear.gain);
-    expect(oneWall.gain).toBeGreaterThan(0.2);
-    expect(oneWall.cutoffHz).toBeLessThan(clear.cutoffHz);
-    expect(oneWall.cutoffHz).toBeGreaterThan(1000);
+    expect(clear.occluded).toBe(false);
+    expect(thinWall.occluded).toBe(true);
+    expect(thinWall).toEqual(thickWall);
+    expect(thinWall).toEqual(separatedWalls);
+    expect(thinWall.gain).toBeLessThan(clear.gain);
+    expect(thinWall.cutoffHz).toBeLessThan(clear.cutoffHz);
+  });
+
+  it('does not muffle around a doorway or window gap outside the source ray', () => {
+    const openGap = soundOcclusion(listener, source, (_x, y) => y === 2);
+
+    expect(openGap.occluded).toBe(false);
+    expect(openGap.gain).toBe(1);
   });
 });

@@ -3,6 +3,7 @@
 import type { Body, PhysicsParams } from '../core/physics.ts';
 import type { Scale } from '../core/scale.ts';
 import { freezeSnapshot } from '../core/snapshotData.ts';
+import { CROUCH_TUNING } from '../core/stealth.ts';
 
 /** Player constants in metres and metres per second (DESIGN.md, "Scale and units"). */
 export const PLAYER = {
@@ -12,6 +13,7 @@ export const PLAYER = {
   walk: 1.8,
   jog: 4.3,
   sprint: 6.5,
+  crouch: CROUCH_TUNING.speedMetresPerSecond,
   /** Take-off speed; with GRAVITY it clears about 1.1 m. */
   jump: 7.9,
   reach: 4,
@@ -76,6 +78,8 @@ export interface MoveIntent {
   sprint: boolean;
   /** Walk instead of jog. Sprinting wins over walking. */
   walk: boolean;
+  /** Held crouch overrides walking and sprinting pace. */
+  crouch?: boolean | undefined;
   /** Edge-triggered dominant-hand use; the player tick consumes this once. */
   useDominant?: boolean;
   /** Held dominant trigger; only debug firearms repeat, not other item actions. */
@@ -104,8 +108,14 @@ export const steer = (body: Body, scale: Scale, yaw: number, intent: MoveIntent)
     forward /= len;
     right /= len;
   }
-  const pace = intent.walk ? PLAYER.walk : PLAYER.jog;
-  const speed = ((intent.sprint ? PLAYER.sprint : pace) * (intent.pace ?? 1)) / scale.blockSize;
+  let pace: number = PLAYER.jog;
+  if (intent.walk) {
+    pace = PLAYER.walk;
+  }
+  if (intent.crouch) {
+    pace = PLAYER.crouch;
+  }
+  const speed = ((intent.sprint && !intent.crouch ? PLAYER.sprint : pace) * (intent.pace ?? 1)) / scale.blockSize;
   const sin = Math.sin(yaw);
   const cos = Math.cos(yaw);
   // yaw 0 looks down -z; +x is to the right.

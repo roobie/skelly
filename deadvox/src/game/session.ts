@@ -385,10 +385,15 @@ export const createSession = (options: SessionOptions) => {
   let footstepClock = initialFootstepClock();
   let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
+  const currentIntent = (): MoveIntent => (controls.active() && !compression.locksInput ? controls.intent() : IDLE);
+  const playerCrouching = (): boolean => Boolean(currentIntent().crouch);
   const playerMovement = (): PlayerMovement => {
-    const moving = controls.active() && !compression.locksInput ? controls.intent() : IDLE;
+    const moving = currentIntent();
     if (moving.forward === 0 && moving.right === 0) {
       return 'still';
+    }
+    if (moving.crouch) {
+      return 'walking';
     }
     if (sprinting) {
       return 'sprinting';
@@ -442,6 +447,7 @@ export const createSession = (options: SessionOptions) => {
       body: debug?.()?.noclip ? undefined : body,
       facing: [-Math.sin(yaw), 0, -Math.cos(yaw)] as Vec3,
       movement: playerMovement(),
+      crouching: playerCrouching(),
       vocalNoise:
         playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
       lit: survival.lit?.on === true,
@@ -594,7 +600,7 @@ export const createSession = (options: SessionOptions) => {
       }
       const handling = queue.busy || firearms.busy;
       const going = intent.forward !== 0 || intent.right !== 0;
-      sprinting = intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
+      sprinting = !intent.crouch && intent.sprint && going && !handling && canSprint(sim.needs, sprinting);
       survival.setSprinting(sprinting);
       stepStamina(sim.needs, dt, sprinting);
       const pacedIntent = {

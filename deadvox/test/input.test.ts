@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  CONTROL_CODES,
   Input,
   isMenuOpeningKey,
   KEY_BINDINGS,
@@ -13,6 +14,46 @@ describe('menu input', () => {
     expect(restKindForControl('KeyR')).toBeUndefined();
     expect(restKindForControl('$')).toBeUndefined();
     expect(restKindForControl('KeyL')).toBe('sleep');
+  });
+
+  it('holds crouch on C and reserves Enter for continuing an interrupted action', () => {
+    const descriptors = ['document', 'addEventListener'].map(
+      (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
+    );
+    const listeners = new Map<string, (event: KeyboardEvent) => void>();
+    const target = { addEventListener: () => undefined } as unknown as HTMLElement;
+    Object.defineProperty(globalThis, 'addEventListener', {
+      configurable: true,
+      value: (type: string, listener: (event: KeyboardEvent) => void) => listeners.set(type, listener),
+    });
+    Object.defineProperty(globalThis, 'document', {
+      configurable: true,
+      value: { pointerLockElement: target, addEventListener: () => undefined },
+    });
+    try {
+      const input = new Input(target);
+      expect(CONTROL_CODES.crouch).toBe('KeyC');
+      expect(CONTROL_CODES.continue).toBe('Enter');
+      listeners.get('keydown')!({ code: CONTROL_CODES.crouch, repeat: false } as KeyboardEvent);
+      expect(input.intent().crouch).toBe(true);
+      listeners.get('keyup')!({ code: CONTROL_CODES.crouch } as KeyboardEvent);
+      expect(input.intent().crouch).toBe(false);
+      const preventDefault = vi.fn();
+      listeners.get('keydown')!({
+        code: CONTROL_CODES.continue,
+        repeat: false,
+        preventDefault,
+      } as unknown as KeyboardEvent);
+      expect(preventDefault).toHaveBeenCalledOnce();
+    } finally {
+      for (const [key, descriptor] of descriptors) {
+        if (descriptor) {
+          Object.defineProperty(globalThis, key, descriptor);
+        } else {
+          Reflect.deleteProperty(globalThis, key);
+        }
+      }
+    }
   });
 
   it('Backspace suppresses browser navigation in locked play but keeps menu text editing', () => {

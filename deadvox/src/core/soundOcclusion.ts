@@ -1,23 +1,28 @@
 import type { Vec3 } from './coords.ts';
-import { countSolidRuns, type SolidAt } from './raycast.ts';
+import { raycast, type SolidAt } from './raycast.ts';
 
-const GAIN_PER_SOLID_RUN = 0.55;
-const CUTOFF_PER_SOLID_RUN = 0.4;
-const MIN_CUTOFF_HZ = 650;
+export const WALL_HEARING_RANGE_FACTOR = 0.5;
+
+const CLEAR_GAIN = 1;
+const WALL_GAIN = 0.55;
 const CLEAR_CUTOFF_HZ = 18_000;
+const WALL_CUTOFF_HZ = 1800;
 
 export interface SoundOcclusion {
-  wallRuns: number;
+  occluded: boolean;
   gain: number;
   cutoffHz: number;
 }
 
-/** The player's positional sound follows the hearing ray's solid-run count. */
+/** One solid hit on the direct source-listener ray selects the same coarse step for every sense. */
 export const soundOcclusion = (listener: Vec3, source: Vec3, isSolid: SolidAt): SoundOcclusion => {
-  const wallRuns = countSolidRuns(listener, source, isSolid);
+  const delta: Vec3 = [source[0] - listener[0], source[1] - listener[1], source[2] - listener[2]];
+  const distance = Math.hypot(...delta);
+  const direction: Vec3 = distance > 0 ? [delta[0] / distance, delta[1] / distance, delta[2] / distance] : [0, 0, 0];
+  const occluded = raycast(listener, direction, distance, isSolid) !== undefined;
   return {
-    wallRuns,
-    gain: GAIN_PER_SOLID_RUN ** wallRuns,
-    cutoffHz: Math.max(MIN_CUTOFF_HZ, CLEAR_CUTOFF_HZ * CUTOFF_PER_SOLID_RUN ** wallRuns),
+    occluded,
+    gain: occluded ? WALL_GAIN : CLEAR_GAIN,
+    cutoffHz: occluded ? WALL_CUTOFF_HZ : CLEAR_CUTOFF_HZ,
   };
 };

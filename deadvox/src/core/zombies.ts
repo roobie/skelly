@@ -5,9 +5,11 @@ import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { type Body, CONTACT_SKIN, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
 import { Rng, type RngState } from './random.ts';
-import { countSolidRuns, raycast, type SolidAt } from './raycast.ts';
+import { raycast, type SolidAt } from './raycast.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
+import { soundOcclusion, WALL_HEARING_RANGE_FACTOR } from './soundOcclusion.ts';
+import { CROUCH_TUNING } from './stealth.ts';
 import { updateStepOffset } from './stepOffset.ts';
 import type { PlayerHitArea } from './wear.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
@@ -219,6 +221,7 @@ export interface PlayerSense {
   /** Direction the player faces, in the x/z plane. */
   facing: Vec3;
   movement: PlayerMovement;
+  crouching?: boolean | undefined;
   lit: boolean;
   lightSeenFrom: number;
   vocalNoise?: VocalNoise | undefined;
@@ -592,7 +595,7 @@ const hearingTier = ({
   blockSize,
   isSolid,
 }: Omit<HearingInput, 'rng'>): HearingTier | undefined => {
-  const range = hearingRange(zombie, player.movement);
+  const range = hearingRange(zombie, player.movement) * (player.crouching ? CROUCH_TUNING.hearingRangeScale : 1);
   if (range <= 0) {
     return undefined;
   }
@@ -600,12 +603,12 @@ const hearingTier = ({
   const earOffset = 1.3 / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [player.pos[0], player.pos[1] + earOffset, player.pos[2]];
-  const crossings = countSolidRuns(origin, source, isSolid);
-  const apparentDistance = distance + crossings * zombie.hearingModel.wallRunCostMetres;
-  if (apparentDistance <= range) {
+  const wallScale = soundOcclusion(origin, source, isSolid).occluded ? WALL_HEARING_RANGE_FACTOR : 1;
+  const effectiveRange = range * wallScale;
+  if (distance <= effectiveRange) {
     return 'near';
   }
-  if (apparentDistance <= range * zombie.hearingModel.farMultiplier) {
+  if (distance <= effectiveRange * zombie.hearingModel.farMultiplier) {
     return 'far';
   }
   return undefined;
@@ -653,7 +656,7 @@ export interface VocalNoiseInput {
   rng: Rng;
 }
 
-/** Applies the same solid-run wall cost and two-tier bearing model to a player sound. */
+/** Applies the shared coarse wall step and two-tier bearing model to a player sound. */
 export const hearVocalNoise = ({
   zombie,
   from,
@@ -670,13 +673,12 @@ export const hearVocalNoise = ({
   const earOffset = 1.3 / blockSize;
   const origin: Vec3 = [from[0], from[1] + earOffset, from[2]];
   const source: Vec3 = [noise.pos[0], noise.pos[1] + earOffset, noise.pos[2]];
-  const crossings = countSolidRuns(origin, source, isSolid);
-  const apparentDistance = distance + crossings * zombie.hearingModel.wallRunCostMetres;
-  const hearingRadius = noise.radiusMetres * zombie.hearing;
-  if (apparentDistance <= hearingRadius) {
+  const wallScale = soundOcclusion(origin, source, isSolid).occluded ? WALL_HEARING_RANGE_FACTOR : 1;
+  const hearingRadius = noise.radiusMetres * zombie.hearing * wallScale;
+  if (distance <= hearingRadius) {
     return { tier: 'near', target: copy(noise.pos) };
   }
-  if (apparentDistance <= hearingRadius * zombie.hearingModel.farMultiplier) {
+  if (distance <= hearingRadius * zombie.hearingModel.farMultiplier) {
     return {
       tier: 'far',
       target: farBearingTarget({ zombie, from, source: noise.pos, blockSize, rng }),
@@ -704,6 +706,9 @@ const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid }: 
   let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
   if (lit && player.lit) {
     sightRange = player.lightSeenFrom;
+  }
+  if (player.crouching) {
+    sightRange *= CROUCH_TUNING.sightRangeScale;
   }
   return clear && metres <= sightRange;
 };

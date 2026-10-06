@@ -110,7 +110,7 @@ acting").
   Inventory R still rotates. **Rest and sleep have no dedicated key** (BR,
   2026-10-04 12:15): F starts them on targeted furniture. BR (2026-10-05 20:09)
   ruled: "long actions disable all actions". F on the anchor or X cancels rest,
-  but neither stops sleep; an interrupt wakes the sleeper and frees input. C
+  but neither stops sleep; an interrupt wakes the sleeper and frees input. Enter
   resumes an interrupted rest only while the same piece remains reachable. L
   remains a legacy way to start sleep until d44 removes it; it cannot stop sleep.
 - **Sealed ammunition boxes (BR, 2026-10-04):** wield with H in inventory, then
@@ -175,7 +175,7 @@ What the player can do, and when it arrives. "Now" means in the game today.
 | Ready a weapon, block | Slice 3 (ruled) | stance |
 | Hip / sights toggle, shoot | Slice 3 (ruled) | stance, noise |
 | Reload, check magazine | Slice 3 | long |
-| Crouch | Slice 3 (sight and noise when crouching) | stance |
+| Crouch | Slice 3.5 (held stance; quieter, harder to see) | stance |
 | Throw (flare, glowstick, lure) | Slice 3 | instant, noise |
 | Put the held item away (stow) | now (tap its quickbar slot) | handling |
 | Use off-hand primary action | implemented; see `src/game/input.ts`, `KEY_BINDINGS` | instant |
@@ -198,7 +198,8 @@ below). Implemented hand activation is not duplicated in this proposal; see
 | Shift | sprint | toggle hip / sights | — | — | — |
 | Space | jump | jump | — | — | — |
 | Z | walk / jog toggle | — | — | — | — |
-| C | crouch toggle (Slice 3) | crouch toggle | — | — | continue |
+| C (hold) | crouch | crouch | — | — | — |
+| Enter | — | — | — | — | continue after interruption |
 | F | interact with what's outlined; start rest/sleep; F on the anchor cancels rest, not sleep | interact | — | ignored during long actions except rest cancellation | — |
 | R | reload held pump: hold loads, double-press racks, tap does nothing | same | rotate while dragging | release cancels partial insertion | — |
 | L | legacy sleep action on targeted sleepable furniture, until d44 removes it | — | — | cannot stop sleep | — |
@@ -224,12 +225,11 @@ Notes on the proposal:
   target. BR (2026-10-05 20:09) ruled that "long actions disable all actions";
   movement and action input are ignored during a long action. F on the anchor or
   X cancels rest, neither stops sleep, and an interrupt wakes the sleeper. C
-  resumes rest after an interruption only while the same piece remains
+  Enter resumes rest after an interruption only while the same piece remains
   reachable. L remains a legacy way to start sleep until d44 removes it; it
   cannot stop sleep.
-- **C is overloaded**: crouch in play, continue on an interruption card. The card
-  is on screen when C means continue, which satisfies principle 1, but it's the
-  weakest overload in the map. Open question 5.
+- **C is crouch; Enter continues** an interrupted action. d98 assigns separate
+  inputs so holding the stealth stance cannot also resume work.
 - **Crouch on C, not Ctrl**, whatever the Ctrl verification finds, because of
   the Ctrl + W risk.
 - **Activation must not invent a second action owner:** capability admission
@@ -288,9 +288,9 @@ editing retains native key behaviour.
    **Answered (BR, 2026-10-04):** R only reloads, and rest has no key.
    Pump: hold loads, double-press racks, single tap does nothing. See
    `src/game/reloadInput.ts`, `RELOAD_GESTURE_MS`, for gesture thresholds.
-5. **Continue after an interruption:** keep C (crouch elsewhere), or make the
+5. ~~**Continue after an interruption:** keep C (crouch elsewhere), or make the
    interruption card a two-button choice clicked with the drawn cursor, freeing
-   C? Recommendation: the clickable choice, per INTERFACE.md's interruption row.
+   C?~~ **Answered (d98):** Enter continues, leaving C available as held crouch.
 6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
    2026-10-04):** behind a held F1. BR moved the modifier to F2 on 2026-10-05
   (see "What's already ruled").

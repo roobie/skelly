@@ -38,6 +38,7 @@ export const CONTROL_CODES = {
   sprintLeft: 'ShiftLeft',
   sprintRight: 'ShiftRight',
   walkToggle: 'KeyZ',
+  crouch: 'KeyC',
   jump: 'Space',
   interact: 'KeyF',
   reload: 'KeyR',
@@ -56,7 +57,7 @@ export const CONTROL_CODES = {
   menu: KEY_BINDINGS.mainMenu.code,
   previous: 'ArrowUp',
   next: 'ArrowDown',
-  continue: 'KeyC',
+  continue: 'Enter',
   spawnMenu: 'KeyG',
 } as const;
 
@@ -140,7 +141,7 @@ export class Input {
     globalThis.addEventListener('keydown', (e) => {
       if (
         e.code === CONTROL_CODES.inventory ||
-        (e.code === CONTROL_CODES.descend && this.locked && !this.menuPointer)
+        ((e.code === CONTROL_CODES.descend || e.code === CONTROL_CODES.continue) && this.locked && !this.menuPointer)
       ) {
         e.preventDefault(); // Backspace must not navigate back; menus retain text editing.
       }
@@ -235,6 +236,7 @@ export class Input {
       jump: this.held.has(CONTROL_CODES.jump),
       sprint: this.held.has(CONTROL_CODES.sprintLeft) || this.held.has(CONTROL_CODES.sprintRight),
       walk: this.walking,
+      crouch: this.held.has(CONTROL_CODES.crouch),
       useDominant: this.dominantUsePressed,
       useDominantHeld: this.dominantUseDown,
       useOff: this.offUsePressed,

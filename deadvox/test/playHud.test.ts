@@ -105,6 +105,7 @@ it('omits expired notices and the duplicated rest interruption but retains the s
     noticeUntil: 10,
     interactionHint: 'F: search the cupboard',
     interruption: 'Hurt',
+    continueLabel: 'Enter',
     resting: true,
   });
   const restingPrompt = playPromptText(state, visible);
@@ -112,7 +113,7 @@ it('omits expired notices and the duplicated rest interruption but retains the s
   expect(restingPrompt).not.toContain(state.interruption);
   const interruptedPrompt = playPromptText({ ...state, resting: false }, visible);
   expect(interruptedPrompt).toContain(state.interactionHint);
-  expect(interruptedPrompt).toContain(state.interruption);
+  expect(interruptedPrompt).toContain(`${state.interruption}.   Enter: continue`);
 });
 
 it('shows a refusal reason only when the messages option is on', () => {
@@ -123,6 +124,7 @@ it('shows a refusal reason only when the messages option is on', () => {
     noticeUntil: 2,
     interactionHint: undefined,
     interruption: undefined,
+    continueLabel: 'Enter',
     resting: false,
   });
   expect(playPromptText(state, DEFAULT_HUD_OPTIONS)).toBe('');

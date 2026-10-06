@@ -1,10 +1,15 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { Rng } from '../src/core/random.ts';
+import type { SolidAt } from '../src/core/raycast.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
+import { WALL_HEARING_RANGE_FACTOR } from '../src/core/soundOcclusion.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
+import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { firearmShotSound, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 
@@ -30,7 +35,7 @@ class FakeAudioContext {
   listener = { setPosition: vi.fn(), setOrientation: vi.fn() };
   sources: ReturnType<typeof makeSource>[] = [];
   gainNodes: ReturnType<typeof makeGain>[] = [];
-  panners: ReturnType<typeof makeNode>[] = [];
+  panners: Array<ReturnType<typeof makeNode> & { setPosition: (x: number, y: number, z: number) => unknown }> = [];
   peakConnectedSources = 0;
   decodeAudioData = vi.fn((data: ArrayBuffer) => {
     const { heartbeatFile } = data as ArrayBuffer & { heartbeatFile?: string };
@@ -80,7 +85,7 @@ class FakeAudioContext {
   }
 }
 
-const setup = () => {
+const setup = (solidAt: SolidAt = () => false) => {
   vi.stubGlobal('AudioContext', FakeAudioContext);
   const fetchBuffer = vi.fn((url: string) => {
     const data = new ArrayBuffer(8) as ArrayBuffer & { heartbeatFile?: string };
@@ -96,7 +101,7 @@ const setup = () => {
   if (issues.length > 0) {
     throw new Error(`Invalid sound fixture: ${JSON.stringify(issues)}`);
   }
-  const isSolid = vi.fn(() => false);
+  const isSolid = vi.fn(solidAt);
   const audio = new GameAudio({ registry, blockSize: 1, isSolid, report: vi.fn() });
   audios.push(audio);
   const picker = new SoundPicker(53, registry.sounds);
@@ -278,7 +283,7 @@ describe('game audio playback', () => {
     await flush();
     expect(context.panners).toHaveLength(0);
     expect(isSolid).not.toHaveBeenCalled();
-    expect(audio.heardSounds[0]).toMatchObject({ distanceMetres: 0, wallRuns: 0, lowpassHz: null });
+    expect(audio.heardSounds[0]).toMatchObject({ distanceMetres: 0, occluded: false, lowpassHz: null });
     audio.updateListener([30, 0, 0], [0, 0, 1]);
     expect(context.panners).toHaveLength(0);
 
@@ -287,5 +292,53 @@ describe('game audio playback', () => {
     await flush();
     expect(context.panners).toHaveLength(1);
     expect(audio.heardSounds[1]).toMatchObject({ sourceLabel: 'other actor', distanceMetres: 30 });
+  });
+
+  it('uses the same one-step wall decision for zombie hearing and positional sound', async () => {
+    const base = 'src/content/base';
+    const { registry: worldRegistry, issues } = buildRegistry(
+      readdirSync(base)
+        .filter((file) => file.endsWith('.json'))
+        .sort()
+        .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown })),
+    );
+    expect(issues).toEqual([]);
+    const shambler = worldRegistry.zombies.get('shambler')!;
+    let blocked = false;
+    const solidAt: SolidAt = (x, y, z) => blocked && x === 4 && y === 2 && z === 0;
+    const { audio, play, context, isSolid } = setup(solidAt);
+    const zombie: Vec3 = [0.5, 1.5, 0.5];
+    const listener: Vec3 = [zombie[0], zombie[1] + 1.3, zombie[2]];
+    const radiusMetres = 12;
+    const distanceMetres = (radiusMetres * shambler.hearing * (1 + WALL_HEARING_RANGE_FACTOR)) / 2;
+    const source: Vec3 = [listener[0] + distanceMetres, listener[1], listener[2]];
+    const noise = { id: 1, pos: [source[0], zombie[1], source[2]] as Vec3, radiusMetres, expiresAt: 2 };
+    const hear = (seed: number) =>
+      hearVocalNoise({
+        zombie: shambler,
+        from: zombie,
+        noise,
+        time: 1,
+        blockSize: 1,
+        isSolid: isSolid as SolidAt,
+        rng: Rng.stream(seed, 'shared-wall-test'),
+      });
+
+    audio.updateListener(listener, [0, 0, -1]);
+    const clearHearing = hear(1);
+    play('gunshot', source, 1);
+    await flush();
+    blocked = true;
+    const muffledHearing = hear(2);
+    play('gunshot', source, 2);
+    await flush();
+
+    expect(clearHearing?.tier).toBe('near');
+    expect(muffledHearing?.tier).toBe('far');
+    expect(audio.heardSounds.map(({ occluded }) => occluded)).toEqual([false, true]);
+    expect(audio.heardSounds[1]?.lowpassHz).toBeLessThan(audio.heardSounds[0]!.lowpassHz!);
+    expect(isSolid).toHaveBeenCalled();
+    expect(context.panners[0]?.setPosition).toHaveBeenCalledWith(...source);
+    expect(context.panners[1]?.setPosition).toHaveBeenCalledWith(...source);
   });
 });

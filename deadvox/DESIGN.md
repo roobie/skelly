@@ -776,7 +776,9 @@ something in play, not only decorate it.
   - **Cover (BR, 2026-10-03):** leaves and hedges are passable but opaque to
     zombie sight, player aim and LOS. Trunks/branches are solid and opaque.
     Movement rules apply to player, zombies and physical bodies alike. A hedge
-    hides you without trapping you; richer crouching/light rules remain Slice 3.
+    hides you without trapping you. For d98, passive cover stays separate from
+    held crouch; `src/core/zombies.ts`, `seesPlayer` and `hearingTier`, own the
+    stance's visibility and hearing effects.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
     moving faster. Leaf litter changes footsteps (`footstep_leaves`). Lead

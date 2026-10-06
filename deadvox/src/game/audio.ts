@@ -78,7 +78,7 @@ export interface HeardSound {
   readonly file: string;
   readonly sourceLabel: string | null;
   readonly distanceMetres: number;
-  readonly wallRuns: number;
+  readonly occluded: boolean;
   readonly lowpassHz: number | null;
   /** Combined sample, occlusion, saved master/category settings, and inverse-distance gain. */
   readonly gain: number;
@@ -497,7 +497,7 @@ export class GameAudio {
     const sourceBlocks: Vec3 = positionMetres.map((v) => v / this.blockSize) as Vec3;
     const headLocked = listenerRelative || sound.category === 'ui';
     const occlusion = headLocked
-      ? { wallRuns: 0, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
+      ? { occluded: false, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
       : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid);
     const distanceMetres = headLocked
       ? 0
@@ -570,7 +570,7 @@ export class GameAudio {
       file: pick.file,
       sourceLabel,
       distanceMetres,
-      wallRuns: occlusion.wallRuns,
+      occluded: occlusion.occluded,
       lowpassHz: headLocked ? null : occlusion.cutoffHz,
       gain: pick.gain * occlusion.gain * this.volumes.master * this.volumes[sound.category] * distanceGain,
       emittedAsNoise,

@@ -687,7 +687,7 @@ export const startPlay = (
     }
   };
 
-  /** C continues; X stops only actions whose owner permits cancellation. */
+  /** Enter continues; X stops only actions whose owner permits cancellation. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
       return false;
@@ -1246,6 +1246,7 @@ export const startPlay = (
         noticeUntil,
         interactionHint: entity ? useText(entity) : undefined,
         interruption: compression.interruption,
+        continueLabel: labelForCode(CONTROL_CODES.continue),
         resting: rest.action !== undefined,
       },
       visible,

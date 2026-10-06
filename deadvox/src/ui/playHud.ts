@@ -96,6 +96,7 @@ export interface PlayPromptState {
   readonly noticeUntil: number;
   readonly interactionHint: string | undefined;
   readonly interruption: string | undefined;
+  readonly continueLabel: string;
   readonly resting: boolean;
 }
 
@@ -107,7 +108,7 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {
-    lines.push(`${interruption}.   C: continue   X: stop`);
+    lines.push(`${interruption}.   ${state.continueLabel}: continue   X: stop`);
   }
   return lines.join('\n');
 };

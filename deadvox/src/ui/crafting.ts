@@ -1,5 +1,7 @@
 // Lit view of completed projections. Commands and preferences arrive as explicit callbacks.
 import { html, nothing, render } from 'lit-html';
+import { labelForCode } from '../game/controls.ts';
+import { CONTROL_CODES } from '../game/input.ts';
 import type { CraftRow, CraftStatus } from './craftReadout.ts';
 
 const REPAIR_PREFIX = /^Repair: /;
@@ -49,7 +51,7 @@ export const renderCraftStatus = (
       ? html`<strong>${status.name}</strong><div>${status.progress} · ${status.percent}% ${status.stopped ? '· stopped' : ''}</div>
     <progress max="100" value=${status.percent} aria-label="Craft progress"></progress>
     ${status.reason ? html`<div class="craft-gap">${status.reason}</div>` : nothing}
-    ${status.stopped ? html`<button type="button" @click=${actions.continue}>Continue (C)</button>` : nothing}
+    ${status.stopped ? html`<button type="button" @click=${actions.continue}>Continue (${labelForCode(CONTROL_CODES.continue)})</button>` : nothing}
     <button type="button" @click=${actions.stop}>Stop (X)</button>`
       : nothing,
     root,

@@ -13,6 +13,8 @@ import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { WALL_HEARING_RANGE_FACTOR } from '../src/core/soundOcclusion.ts';
+import { CROUCH_TUNING } from '../src/core/stealth.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
   FIGURE_BOXES,
@@ -48,12 +50,14 @@ const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const PHYSICS = physicsFor(SCALE);
 const FLOOR: SolidAt = (_x, y) => y === 0;
+// biome-ignore lint/complexity/useMaxParams: compact shared fixture maps independent player-sense fields.
 const player = (
   pos: Vec3,
   facing: Vec3 = [-1, 0, 0],
   movement: PlayerSense['movement'] = 'still',
   lit = false,
-): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40 });
+  crouching = false,
+): PlayerSense => ({ pos, facing, movement, lit, lightSeenFrom: 40, crouching });
 const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
@@ -317,7 +321,7 @@ describe('melee hit sounds', () => {
 });
 
 describe('shambler perception', () => {
-  it('uses configured day/night/light/cone/ray bounds and jogging/sprinting hearing bounds', () => {
+  it('uses configured day/night/light/cone/ray bounds and movement hearing bounds', () => {
     // biome-ignore lint/complexity/useMaxParams: compact table-driven test inputs vary independent perception dimensions.
     const sees = (
       at: Vec3,
@@ -351,8 +355,10 @@ describe('shambler perception', () => {
     expect(sees([10, 2, 0], 12, false, (x, y, z) => x === 4 && y === 4 && z === 0)).toBe(false);
     const opaque = (x: number, y: number, _z: number) => x === 4 && y === 4;
     const muffledHearingEdge = (movement: 'jog' | 'sprint') =>
-      (SHAMBLER.hearingRange[movement] * SHAMBLER.hearing * SHAMBLER.hearingModel.farMultiplier -
-        SHAMBLER.hearingModel.wallRunCostMetres) /
+      (SHAMBLER.hearingRange[movement] *
+        SHAMBLER.hearing *
+        SHAMBLER.hearingModel.farMultiplier *
+        WALL_HEARING_RANGE_FACTOR) /
       BLOCK_SIZE;
     expect(sees([10, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
     expect(sees([muffledHearingEdge('jog') - 1, 2, 0], 12, false, opaque, 'jogging')).toBe(true);
@@ -376,6 +382,61 @@ describe('shambler perception', () => {
     expect(hears([walkingFarEdge - 1, 2, 0], 'walking')).toBe(true);
     expect(hears([walkingFarEdge + 1, 2, 0], 'walking')).toBe(false);
     expect(hears([5, 2, 0], 'still')).toBe(false);
+  });
+
+  it('makes a moving crouching player harder to hear and see', () => {
+    const from: Vec3 = [0, 2, 0];
+    const perceives = ({
+      distanceMetres,
+      hour,
+      crouching,
+      movement,
+      zombie = SHAMBLER,
+    }: {
+      distanceMetres: number;
+      hour: number;
+      crouching: boolean;
+      movement: PlayerSense['movement'];
+      zombie?: typeof SHAMBLER;
+    }) =>
+      perceivePlayer({
+        zombie,
+        from,
+        facing: [1, 0, 0],
+        player: player([distanceMetres / BLOCK_SIZE, 2, 0], [-1, 0, 0], movement, false, crouching),
+        hour,
+        blockSize: BLOCK_SIZE,
+        isSolid: FLOOR,
+      });
+    const sightDistance = (SHAMBLER.sight * (1 + CROUCH_TUNING.sightRangeScale)) / 2;
+    const hearingDistance =
+      (SHAMBLER.hearingRange.walk *
+        SHAMBLER.hearing *
+        SHAMBLER.hearingModel.farMultiplier *
+        (1 + CROUCH_TUNING.hearingRangeScale)) /
+      2;
+
+    expect(perceives({ distanceMetres: sightDistance, hour: 12, crouching: false, movement: 'still' })).toBe(true);
+    expect(perceives({ distanceMetres: sightDistance, hour: 12, crouching: true, movement: 'still' })).toBe(false);
+    const hearingOnly = { ...SHAMBLER, sight: 0.01, nightSight: 0.01 };
+    expect(
+      perceives({
+        distanceMetres: hearingDistance,
+        hour: 12,
+        crouching: false,
+        movement: 'walking',
+        zombie: hearingOnly,
+      }),
+    ).toBe(true);
+    expect(
+      perceives({
+        distanceMetres: hearingDistance,
+        hour: 12,
+        crouching: true,
+        movement: 'walking',
+        zombie: hearingOnly,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -2088,7 +2149,7 @@ describe('two-tier shambler hearing', () => {
     expect(second.lastPerceived).toBeUndefined();
   });
 
-  it('counts each solid run once and lets a wall demote a near noise to far', () => {
+  it('applies one coarse wall step that demotes a near noise to far', () => {
     const from: Vec3 = [0, 1, 0];
     const source = player([28, 1, 0], [-1, 0, 0], 'sprinting');
     const clear = hearing(4, from, source);
