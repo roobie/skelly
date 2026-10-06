@@ -317,6 +317,31 @@ describe('input replay', () => {
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 1 })).toBe(true);
   });
 
+  it('rejects an invalid inventory payload while decoding a replay', async () => {
+    const start = capture(createRuntime());
+    const artifact = await encodeInputReplay(
+      start,
+      {
+        frames: [[0, 0, 0, 0, 1, 1]],
+        actions: [
+          {
+            tick: 0,
+            action: 'inventory.assign',
+            phase: 'down',
+            context: 'inventory',
+            payload: { kind: 'inventory.assign', slot: 0, itemUid: 0 },
+          },
+        ],
+      },
+      formatWorldOptions,
+      start,
+    );
+
+    await expect(decodeInputReplay(artifact, { contentLookup })).rejects.toThrow(
+      'Invalid or out-of-order replay action 0',
+    );
+  });
+
   it('records controls and dispatches semantic actions at their player tick in order', async () => {
     const runtime = createRuntime();
     const start: Readonly<SaveSnapshot> = capture(runtime);
@@ -479,22 +504,37 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(capture(source)));
   });
 
-  it('refuses export while debug firearm handling differs from content and allows the content tuning', () => {
-    const content = createRuntime().session.firearmsSkillZeroHandling;
-    const overridden = {
-      ...content,
-      singleShot: { ...content.singleShot, variance: content.singleShot.variance + 1 },
-    };
+  it('refuses export when the session reports firearm-handling overrides', () => {
+    const { session } = createRuntime();
+    const content = session.firearmsSkillZeroHandling;
     let encoded = false;
-    const exportReplay = (active: typeof content) =>
-      withReplayExportGuard(content, active, () => {
+    const exportReplay = () =>
+      withReplayExportGuard(session.hasFirearmHandlingOverrides(), () => {
         encoded = true;
         return new Uint8Array([1]);
       });
 
-    expect(() => exportReplay(overridden)).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
+    expect(session.hasFirearmHandlingOverrides()).toBe(false);
+    expect(exportReplay()).toEqual(new Uint8Array([1]));
+    encoded = false;
+    const overridden = {
+      ...content,
+      singleShot: { ...content.singleShot, variance: content.singleShot.variance + 1 },
+    };
+    session.setFirearmsSkillZeroHandling(overridden);
+    expect(session.hasFirearmHandlingOverrides()).toBe(true);
+    expect(() => exportReplay()).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
+    const futureField = {
+      ...content,
+      singleShot: { ...content.singleShot, perGunFactor: 2 },
+    } as typeof content;
+    session.setFirearmsSkillZeroHandling(futureField);
+    expect(session.hasFirearmHandlingOverrides()).toBe(true);
+    expect(() => exportReplay()).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
     expect(encoded).toBe(false);
-    expect(exportReplay(content)).toEqual(new Uint8Array([1]));
+    session.setFirearmsSkillZeroHandling(content);
+    expect(session.hasFirearmHandlingOverrides()).toBe(false);
+    expect(exportReplay()).toEqual(new Uint8Array([1]));
     expect(encoded).toBe(true);
   });
 

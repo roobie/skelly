@@ -1,6 +1,5 @@
 import { canonicalJsonBytes } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
-import { type FirearmsSkillZeroHandling, sameFirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { INPUT_BINDINGS, type InputContext, POINTER_ACTIONS } from './inputBindings.ts';
@@ -11,12 +10,8 @@ import { PHYSICS_RATE } from './session.ts';
 
 const INPUT_REPLAY_SCHEMA_VERSION = 5;
 
-export const withReplayExportGuard = <T>(
-  contentHandling: FirearmsSkillZeroHandling,
-  activeHandling: FirearmsSkillZeroHandling,
-  exportReplay: () => T,
-): T => {
-  if (!sameFirearmsSkillZeroHandling(contentHandling, activeHandling)) {
+export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
+  if (hasOverrides) {
     throw new Error('Replay export is unavailable while debug firearm-handling overrides differ from content');
   }
   return exportReplay();

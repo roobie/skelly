@@ -24,6 +24,7 @@ import {
   type FirearmsSkillZeroHandling,
   firearmStanceEffects,
   firearmsSkillEffects,
+  sameFirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
@@ -1073,6 +1074,11 @@ export const createSession = (options: SessionOptions) => {
     get firearmsSkillZeroHandling() {
       return currentFirearmsCombatTuning().skillZeroHandling;
     },
+    hasFirearmHandlingOverrides: () =>
+      !sameFirearmsSkillZeroHandling(
+        firearmsCombatTuning.skillZeroHandling,
+        currentFirearmsCombatTuning().skillZeroHandling,
+      ),
     setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling): void => {
       firearmsSkillZeroHandling = structuredClone(value);
     },

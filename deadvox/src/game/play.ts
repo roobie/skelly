@@ -755,21 +755,18 @@ export const startPlay = (
         verificationTick: replayVerificationTick,
       }),
     export: () =>
-      withReplayExportGuard(
-        registry.skills.get('firearms_combat')!.combat!.firearms!.skillZeroHandling,
-        session.firearmsSkillZeroHandling,
-        () =>
-          encodeRecentInputReplay(
-            previousInputRecorder,
-            inputRecorder,
-            {
-              blockSize: s,
-              site: config.site,
-              storeys: config.storeys,
-              density: config.density,
-            },
-            captureSnapshot(),
-          ),
+      withReplayExportGuard(session.hasFirearmHandlingOverrides(), () =>
+        encodeRecentInputReplay(
+          previousInputRecorder,
+          inputRecorder,
+          {
+            blockSize: s,
+            site: config.site,
+            storeys: config.storeys,
+            density: config.density,
+          },
+          captureSnapshot(),
+        ),
       ),
     import: importReplay,
   };

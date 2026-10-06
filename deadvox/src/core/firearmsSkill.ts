@@ -1,3 +1,4 @@
+import { canonicalJson } from './canonicalJson.ts';
 import {
   SKILL_LEVEL_LEGENDARY,
   SKILL_LEVEL_MAX,
@@ -22,12 +23,7 @@ export type FirearmsSkillShotKind = keyof FirearmsSkillZeroHandling;
 export const sameFirearmsSkillZeroHandling = (
   left: FirearmsSkillZeroHandling,
   right: FirearmsSkillZeroHandling,
-): boolean =>
-  (['singleShot', 'automaticFollowup'] as const).every((shot) =>
-    (['variance', 'recoilKickScale', 'recoilRecoveryScale'] as const).every(
-      (field) => left[shot][field] === right[shot][field],
-    ),
-  );
+): boolean => canonicalJson(left) === canonicalJson(right);
 
 export interface FirearmsCombatTuning {
   readonly raiseMinimumSeconds: number;
