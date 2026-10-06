@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
+import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import {
   advance,
@@ -48,6 +50,35 @@ describe('hamlet save/load continuation', () => {
     advance(loaded, 240);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
+  });
+
+  it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {
+    const start = SPAWN_TIMES.dusk - 60;
+    const [cx, cz] = fixtureZombieColumn;
+    const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
+    const marker = { type: 'shambler', pos, window: { from: 'dusk' } };
+    const timedSite = {
+      surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
+      spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
+      stamp: () => undefined,
+      furnitureIn: () => [],
+      zombiesIn: () => [marker],
+    } as Site;
+    const original = createRuntime(undefined, false, [fixtureZombieColumn], { start });
+    original.session.onColumn(cx, cz, timedSite);
+    const key = `shambler:${pos.join(',')}`;
+    expect(original.spawner.snapshotState()).not.toContain(key);
+
+    const loaded = createRuntime(capture(original), false, [fixtureZombieColumn], { start });
+    loaded.session.onColumn(cx, cz, timedSite);
+    const atHome = () =>
+      [...loaded.zombies.store.entries()].filter(([, zombie]) => zombie.home.every((v, i) => v === pos[i]));
+    expect(atHome()).toHaveLength(0);
+    advance(loaded, 456);
+    expect(loaded.sim.calendar).toBeGreaterThan(SPAWN_TIMES.dusk);
+    expect(atHome()).toHaveLength(1);
+    expect(atHome()[0]?.[1].tier).toBe('background');
+    expect(loaded.spawner.snapshotState()).toContain(key);
   });
 
   it('continues active compressed rest through the first 1 Hz tick after load', () => {

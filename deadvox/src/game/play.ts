@@ -320,6 +320,7 @@ export const startPlay = (
       inventory.furnish(spec, loot);
     }
   };
+  streamer.onColumnUnload = (cx, cz) => session.onColumnUnload(cx, cz);
   const view = createPlayView(engine, inventory, (message) => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');

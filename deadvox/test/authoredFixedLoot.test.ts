@@ -531,6 +531,9 @@ describe('authored fixed loot', () => {
         polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
     );
     expect(roadsideThreats).toHaveLength(2);
+    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) => spawn.window?.from === 'dusk';
+    expect(roadsideThreats.filter(hasDuskWindow)).toHaveLength(1);
+    expect(treelineThreats.filter(hasDuskWindow)).toHaveLength(1);
     expect(layout.startTime).toBe('16:00');
   });
 
