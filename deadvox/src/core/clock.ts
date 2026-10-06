@@ -12,7 +12,7 @@ export const SPAWN_TIMES = {
   dusk: 18 * SECONDS_PER_HOUR,
 } as const;
 
-import type { GameTimeOfDay } from './time.ts';
+import { type GameTimeOfDay, simTimestamp, simToGameTimestamp } from './time.ts';
 
 export interface SpawnTimeWindow {
   fromGameTimeOfDay: GameTimeOfDay;
@@ -36,7 +36,8 @@ export interface ClockSettings {
 export const defaultClock: ClockSettings = { ratio: CLOCK_RATIO, start: SPAWN_TIME };
 
 /** Calendar seconds at a simulation time. */
-export const calendarAt = (clock: ClockSettings, simSeconds: number): number => clock.start + simSeconds * clock.ratio;
+export const calendarAt = (clock: ClockSettings, simTime: number): number =>
+  simToGameTimestamp(clock, simTimestamp(simTime));
 
 /** Simulation seconds in one game hour. */
 export const simSecondsPerHour = (clock: ClockSettings): number => SECONDS_PER_HOUR / clock.ratio;

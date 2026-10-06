@@ -1,5 +1,5 @@
-export type TemporalClock = 'Sim' | 'Game' | 'Real';
-export type TemporalUnit =
+type TemporalClock = 'Sim' | 'Game' | 'Real';
+type TemporalUnit =
   | 'Milliseconds'
   | 'Seconds'
   | 'Minutes'
@@ -9,7 +9,7 @@ export type TemporalUnit =
   | 'PerMinute'
   | 'PerHour'
   | 'PerSecondSquared';
-export type TemporalDimension = 'duration' | 'instant' | 'timeOfDay' | 'rate' | 'acceleration';
+type TemporalDimension = 'duration' | 'instant' | 'timeOfDay' | 'rate' | 'acceleration';
 
 export interface TemporalField {
   readonly path: string;

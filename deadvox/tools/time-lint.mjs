@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, extname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { TEMPORAL_FIELDS } from '../src/core/temporalFields.ts';
 import ts from './lit-check/node_modules/typescript/lib/typescript.js';
 
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
@@ -237,16 +238,8 @@ const collectAuthoredFields = (value, path, file, state) => {
   }
 };
 
-const temporalCatalogueFindings = (contentFiles, catalogueFile) => {
-  const catalogueSource = sourceAst(catalogueFile, readFileSync(catalogueFile, 'utf8'));
-  const known = new Set();
-  const findPaths = (node) => {
-    if (ts.isPropertyAssignment(node) && propertyName(node.name) === 'path' && ts.isStringLiteral(node.initializer)) {
-      known.add(normalizedPath(node.initializer.text));
-    }
-    visitChildren(node, findPaths);
-  };
-  findPaths(catalogueSource);
+const temporalCatalogueFindings = (contentFiles) => {
+  const known = new Set(TEMPORAL_FIELDS.map(({ path }) => normalizedPath(path)));
   const state = { known, findings: [] };
   for (const file of contentFiles) {
     collectAuthoredFields(JSON.parse(readFileSync(file, 'utf8')), '', file, state);
@@ -297,7 +290,7 @@ const authoredTemporalFindings = () => {
   for (const file of temporalFiles) {
     findings.push(...temporalNameFindings(file, readFileSync(file, 'utf8'), temporalFileMode(file)));
   }
-  findings.push(...temporalCatalogueFindings(contentFiles, catalogueFile));
+  findings.push(...temporalCatalogueFindings(contentFiles));
   return findings;
 };
 

@@ -1,7 +1,7 @@
 import { simSeconds } from './time.ts';
 
 /** The owner-specific ramp profiles are applied only by the outer Real-time frame driver. */
-export type CompressionRamp = 'normal' | 'skip';
+type CompressionRamp = 'normal' | 'skip';
 
 /** A per-start override of simulation-side compression limits. */
 export interface CompressionLimits {
