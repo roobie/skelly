@@ -2,15 +2,18 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { setImmediate } from 'node:timers/promises';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
+import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Rng } from '../src/core/random.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
+import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/core/soundPicker.ts';
+import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
 import { firearmShotSound, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
+import { createSession, IDLE } from '../src/game/session.ts';
 
 const audios: GameAudio[] = [];
 const senseTuning = {
@@ -90,7 +93,7 @@ class FakeAudioContext {
   }
 }
 
-const setup = (solidAt: SolidAt = () => false) => {
+const setup = (solidAt: SolidAt = () => false, registryOverride?: Registry) => {
   vi.stubGlobal('AudioContext', FakeAudioContext);
   const fetchBuffer = vi.fn((url: string) => {
     const data = new ArrayBuffer(8) as ArrayBuffer & { heartbeatFile?: string };
@@ -102,7 +105,9 @@ const setup = (solidAt: SolidAt = () => false) => {
   });
   vi.stubGlobal('fetch', fetchBuffer);
   const soundData = JSON.parse(readFileSync('src/content/base/sounds.json', 'utf8')) as unknown;
-  const { registry, issues } = buildRegistry([{ source: '../content/base/sounds.json', data: soundData }]);
+  const { registry, issues } = registryOverride
+    ? { registry: registryOverride, issues: [] }
+    : buildRegistry([{ source: '../content/base/sounds.json', data: soundData }]);
   if (issues.length > 0) {
     throw new Error(`Invalid sound fixture: ${JSON.stringify(issues)}`);
   }
@@ -279,24 +284,90 @@ describe('game audio playback', () => {
     expect(context.peakConnectedSources).toBe(64);
   });
 
-  it('head-locks the player shot through listener translation and rotation while retaining world-shot routing', async () => {
-    const { audio, play, context, isSolid } = setup();
-    const cue = firearmShotSound('debug_rifle_assault');
-    audio.updateListener([10, 0, 0], [0, 0, -1]);
-    play(cue.event, [0, 0, 0], 0, cue);
-    audio.updateListener([20, 0, 0], [1, 0, 0]);
+  it('head-locks default player sounds while world sounds retain their source position', async () => {
+    const base = 'src/content/base';
+    const { registry, issues } = buildRegistry(
+      readdirSync(base)
+        .filter((file) => file.endsWith('.json'))
+        .sort()
+        .map((file) => ({
+          source: `../content/base/${file}`,
+          data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown,
+        })),
+    );
+    expect(issues).toEqual([]);
+    const { audio, context, isSolid } = setup(() => false, registry);
+    const scale = makeScale(0.5);
+    const session = createSession({
+      registry,
+      world: new World(),
+      isSolid: () => false,
+      isOpaque: () => false,
+      scale,
+      seed: 73,
+      start: 43_200,
+      spawn: [6, 8, 10],
+      ready: () => false,
+      controls: {
+        active: () => true,
+        intent: () => IDLE,
+        yaw: () => 0,
+        pitch: () => 0,
+        walking: () => false,
+        descending: () => false,
+      },
+      audio: { play: (sound) => audio.play(sound, sound.position.map((v) => v * scale.blockSize) as Vec3) },
+      notice: () => undefined,
+      onRead: () => {
+        throw new Error('Unexpected reading in audio fixture');
+      },
+    });
+    const eventsReader = session.sim.events.reader();
+    const playerOrigin = session.chest();
+    const listenerAtStart = playerOrigin.map((value) => value * scale.blockSize) as Vec3;
+    audio.updateListener(listenerAtStart, [0, 0, -1]);
+    session.playPlayerSound('player_strain');
+    const shot = firearmShotSound('debug_rifle_assault');
+    session.playPlayerSound(shot.event, session.sim.time, shot);
+    audio.updateListener([listenerAtStart[0] + 3, listenerAtStart[1], listenerAtStart[2]], [1, 0, 0]);
     await flush();
+
     expect(context.panners).toHaveLength(0);
     expect(isSolid).not.toHaveBeenCalled();
-    expect(audio.heardSounds[0]).toMatchObject({ distanceMetres: 0, occluded: false, lowpassHz: null });
-    audio.updateListener([30, 0, 0], [0, 0, 1]);
-    expect(context.panners).toHaveLength(0);
+    expect(audio.heardSounds.find(({ event }) => event === 'player_strain')).toMatchObject({
+      distanceMetres: 0,
+      occluded: false,
+      lowpassHz: null,
+    });
+    expect(audio.heardSounds.find(({ sourceLabel }) => sourceLabel === shot.sourceLabel)).toMatchObject({
+      distanceMetres: 0,
+      occluded: false,
+      lowpassHz: null,
+    });
 
-    // Other actors retain the default positional API and world-volume category.
-    play('gunshot', [0, 0, 0], 1, { sourceLabel: 'other actor' });
+    const worldOrigin: Vec3 = [playerOrigin[0] + 20, playerOrigin[1], playerOrigin[2]];
+    session.playWorldSound('gunshot', worldOrigin, session.sim.time);
+    const worldOriginMetres = worldOrigin.map((value) => value * scale.blockSize) as Vec3;
     await flush();
     expect(context.panners).toHaveLength(1);
-    expect(audio.heardSounds[1]).toMatchObject({ sourceLabel: 'other actor', distanceMetres: 30 });
+    expect(context.panners[0]?.setPosition).toHaveBeenCalledWith(...worldOriginMetres);
+    expect(isSolid).toHaveBeenCalled();
+    expect(
+      audio.heardSounds.find(({ event, sourceLabel }) => event === 'gunshot' && sourceLabel === null)?.distanceMetres,
+    ).toBeGreaterThan(0);
+
+    const events = eventsReader.read();
+    expect(events.find((event) => event.kind === 'sound' && event.event === 'player_strain')).toMatchObject({
+      position: playerOrigin,
+      emittedAsNoise: true,
+      listenerRelative: true,
+    });
+    expect(events.find((event) => event.kind === 'noise' && event.event === 'player_strain')).toMatchObject({
+      position: playerOrigin,
+    });
+    expect(
+      events.find((event) => event.kind === 'sound' && event.event === 'gunshot' && !event.emittedAsNoise),
+    ).toMatchObject({ position: worldOrigin, listenerRelative: false });
   });
 
   it('uses the same one-step wall decision for zombie hearing and positional sound', async () => {

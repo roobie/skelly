@@ -567,6 +567,13 @@ plain box in your hands. Files are small, and follow
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
   (see the screamer below). Stealth is a matter of managing noise and staying
   out of sight.
+- **Player-owned sound playback (d111-1):** BR: “their position in the world is
+  the player, and the player is a mobile thing, so”. Character- and held-item
+  sounds have the player as their source; listener-relative playback makes them
+  move with the player, who is the listener. Simulation sound/noise events keep
+  their source positions for zombie hearing, while independent world sources
+  remain positional. See `src/game/session.ts`, `playPlayerSound` and
+  `playWorldSound`, and `src/game/audio.ts`, `GameAudio.startSource`.
 
 ## Damage, destruction and dismemberment
 
@@ -954,10 +961,11 @@ Sound is the main way threat arrives, so it's part of the simulation, not
 decoration.
 
 - **The player should be able to judge a threat by sound:** where it is, how
-  many there are, and what they're doing. Sounds are positional and walls muffle
-  them, so the player can hear danger before seeing it. Noise events (see
-  [Combat and noise](#combat-and-noise)) also play as positional sounds, with
-  occlusion shared by the player's hearing and zombie hearing.
+  many there are, and what they're doing. Sounds come from their source; walls
+  muffle sound travelling through the world, so the player can hear danger
+  before seeing it. A player's own source moves with them. Noise events (see
+  [Combat and noise](#combat-and-noise)) keep that source position for zombie
+  hearing and the shared occlusion model.
 - **A shambler's presence should be audible even when it stands still.** It
   should sometimes moan or groan so the player can hear that one is there.
   `shambler_idle` provides an occasional groan while idling or strolling. Each
