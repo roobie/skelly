@@ -67,9 +67,7 @@ describe.each(VEHICLES)('$vehicle.id built from parts', ({ vehicle, builds }) =>
   });
 
   it('keeps every fitting above the ground it stands on', () => {
-    const below = vehicle.fittings
-      .filter((fitting) => library.placed(fitting).bounds.min[1] < 0)
-      .map(({ id }) => id);
+    const below = vehicle.fittings.filter((fitting) => library.placed(fitting).bounds.min[1] < 0).map(({ id }) => id);
     expect(below).toEqual([]);
   });
 
