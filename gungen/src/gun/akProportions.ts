@@ -46,10 +46,21 @@ export const AK_PROPORTIONS = {
   sightLineU: 4.25,
   rearSightX: -2.5,
   lower: { magazineX: -7.5, gripX: -18.5, triggerX: -15 },
-  barrel: {
-    lengthU: barrelLengthU,
-    /** The slant brake: its top lip ends `topLipU` past the barrel, the cut falls forward at 45°. */
-    brake: { lengthU: 2, flatRadiusU: 0.75, topLipU: 0.75 },
+  barrel: { lengthU: barrelLengthU },
+  /** The muzzle devices threaded on the barrel's end (BR 22:51), each measured forward from it. */
+  muzzleDevice: {
+    /** The AKM's slant brake: its top lip ends `topLipU` past the barrel, the cut falls forward at 45°. */
+    slant: { lengthU: 2, flatRadiusU: 0.75, topLipU: 0.75 },
+    /**
+     * The AK-74's brake, from BR's reference screenshot (2026-10-06) scaled by v2's front sight ears: a
+     * body with a window through it near its front, then a narrower nose. Full widths are on the grid.
+     */
+    ak74: {
+      flatRadiusU: 1.125,
+      bodyLengthU: 6.75,
+      window: { x: [5.25, 6], bottomU: -0.5, topU: 0.75 },
+      nose: { flatRadiusU: 0.75, lengthU: 0.75 },
+    },
   },
   gas: {
     axisU: gasAxisU,

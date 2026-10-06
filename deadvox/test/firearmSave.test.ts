@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { type AimStep, assertAimState } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { pelletShot } from '../src/core/pellets.ts';
 import {
   decodeSave,
@@ -111,6 +112,23 @@ const session = (
     ...(restore ? { restore } : {}),
   });
 
+it('runtime firearm skill slider tuning changes this session but is not carried by its save', () => {
+  const original = session([]);
+  const contentTuning = registry.skills.get('firearms_combat')!.combat!.firearms!.skillZeroHandling;
+  const changed = {
+    ...original.firearmsSkillZeroHandling,
+    automaticFollowup: {
+      ...original.firearmsSkillZeroHandling.automaticFollowup,
+      recoilKickScale: original.firearmsSkillZeroHandling.automaticFollowup.recoilKickScale + 1,
+    },
+  };
+  original.setFirearmsSkillZeroHandling(changed);
+  expect(original.firearmsSkillZeroHandling).toEqual(changed);
+  const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
+  expect(JSON.stringify(saved)).not.toContain('skillZeroHandling');
+  expect(session([], saved).firearmsSkillZeroHandling).toEqual(contentTuning);
+});
+
 it('a codec save restores the immediate aim frame, recoil and next pellet rays', async () => {
   const original = session([]);
   const prior: AimStep = {
@@ -148,8 +166,13 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
 
 it('keeps headless session recoil valid when held fire has no view-pitch control', () => {
   const headless = session([], undefined, { pitch: LOOK_PITCH_LIMIT }, { firing: true, adjustPitch: false });
+  const followup = firearmsSkillEffects(
+    0,
+    registry.skills.get('firearms_combat')!.combat!.firearms!,
+    'automaticFollowup',
+  );
   for (let shot = 0; shot < 80; shot++) {
-    headless.aim.recordShot(shot, 0.035);
+    headless.aim.recordShot(shot, 0.035, followup.recoilKickScale);
     headless.frame(1 / 60);
     assertAimState(headless.aim.snapshotState());
   }

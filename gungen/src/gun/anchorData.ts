@@ -77,6 +77,12 @@ const gripHoldPoint = (s: Solid): Vec3 => {
 
 const frameAt = (position: Vec3, forward: Vec3 = X, up: Vec3 = Y): AnchorFrame => ({ position, forward, up });
 
+/** A barrel's or muzzle device's muzzle: its `muzzle` port, facing out of the bore. */
+const muzzlePortAnchor = (_params: Readonly<Record<string, string>>, part: PartDef): GunPartAnchors => {
+  const muzzle = part.ports.find((port) => port.id === 'muzzle');
+  return muzzle ? { muzzle: frameAt(muzzle.pos, muzzle.normal, muzzle.up) } : {};
+};
+
 const ejectionAnchor = (_params: Readonly<Record<string, string>>, part: PartDef): GunPartAnchors => {
   const point = localEjectionPoint(part);
   return point ? { ejection: frameAt(point) } : {};
@@ -117,12 +123,7 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
     holdRank: 'grip',
     anchors: gripHold(['grip-core'], revolverGripAxes),
   },
-  'revolver-barrel': {
-    anchors: (_params, part) => {
-      const muzzle = part.ports.find((port) => port.id === 'muzzle');
-      return muzzle ? { muzzle: frameAt(muzzle.pos, muzzle.normal, muzzle.up) } : {};
-    },
-  },
+  'revolver-barrel': { anchors: muzzlePortAnchor },
   // Integrated pistol grip: the grip was rotated into the frame's coordinates; its magazine port carries
   // that rotation (grip local -Y is the port normal, grip local X is the port up).
   frame: {
@@ -158,12 +159,9 @@ export const GUN_ANCHORS: GunAnchorDeclarations = {
       return magazine ? { magwell: frameAt(magazine.pos) } : {};
     },
   },
-  barrel: {
-    anchors: (_params, part) => {
-      const muzzle = part.ports.find((p) => p.id === 'muzzle');
-      return muzzle ? { muzzle: frameAt(muzzle.pos, muzzle.normal, muzzle.up) } : {};
-    },
-  },
+  barrel: { anchors: muzzlePortAnchor },
+  'ak-muzzle-device': { anchors: muzzlePortAnchor },
+  'muzzle-brake': { anchors: muzzlePortAnchor },
   receiver: {
     anchors: (params, part) => {
       const mouth = params.feed === 'tube' && part.keepOuts.find((volume) => volume.id === 'loading-port');
