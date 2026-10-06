@@ -124,7 +124,7 @@
       "category": "ammo",
       "weight": 117,
       "size": [1, 2],
-      "description": "A 30-round 5.56×45 box magazine for AR-pattern rifles, from gungen's stanag-30 prefab. Wield it and hold R to load carried loose 5.56×45 cartridges one at a time; double-press R to strip the top round. Empty mass 117 g is a gameplay estimate.",
+      "description": "A 30-round 5.56×45 box magazine for AR-pattern rifles, from gungen's stanag-30 prefab. Wield it and hold R to load carried loose 5.56×45 cartridges one at a time; click to strip the top round. Empty mass 117 g is a gameplay estimate.",
       "model": "magazine_stanag_30"
     },
     {
@@ -133,7 +133,7 @@
       "category": "ammo",
       "weight": 330,
       "size": [1, 2],
-      "description": "A 30-round 7.62×39 steel box magazine for AK-pattern rifles, from gungen's akm-30 prefab. Wield it and hold R to load carried loose 7.62×39 cartridges one at a time; double-press R to strip the top round. Empty mass 330 g is a gameplay estimate.",
+      "description": "A 30-round 7.62×39 steel box magazine for AK-pattern rifles, from gungen's akm-30 prefab. Wield it and hold R to load carried loose 7.62×39 cartridges one at a time; click to strip the top round. Empty mass 330 g is a gameplay estimate.",
       "model": "magazine_akm_30"
     }
   ]

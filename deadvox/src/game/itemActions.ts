@@ -3,13 +3,18 @@ import { BODY_REGIONS, type BodyRegion, type BodyTreatment, type BodyWounds } fr
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { defOf } from '../core/items.ts';
+import { magazineSpec } from '../core/magazine.ts';
 
 export interface ItemAction {
   readonly id: string;
   readonly label: string;
   readonly priority?: Readonly<{ bleeding: boolean; damage: number }>;
   readonly treatment?: Readonly<{ region: BodyRegion; kind: BodyTreatment }>;
+  /** Unloading a held magazine: R only loads (CONTROLS.md, "Reload only"), so stripping is an item action. */
+  readonly magazine?: 'strip';
 }
+
+const STRIP_ROUND: ItemAction = { id: 'magazine:strip', label: 'Strip a round', magazine: 'strip' };
 
 const regionName = (region: BodyRegion): string =>
   region.replace(/([A-Z])/g, ' $1').replace(/\b\w/g, (letter) => letter.toUpperCase());
@@ -17,6 +22,9 @@ const woundDescription = (wound: NonNullable<BodyWounds[BodyRegion]>, treatment:
   treatment === 'bandage' || treatment === 'rag' ? 'bleeding' : `${wound.infection} infection`;
 
 export const itemActionsFor = (item: Item, inventory: Inventory, body: Body): readonly ItemAction[] => {
+  if (magazineSpec(inventory.registry, item.type)) {
+    return (item.cartridges?.length ?? 0) > 0 ? [STRIP_ROUND] : [];
+  }
   const { treatment } = defOf(inventory.registry, item.type);
   if (!treatment) {
     return [];

@@ -906,7 +906,7 @@ export const startPlay = (
         cancelLoad: () => firearms.cancelLoad(gun),
       };
     }
-    // A wielded magazine: hold R loads it round by round, a double press strips the top round.
+    // A wielded magazine: hold R loads it round by round. R only loads, so stripping is an item action.
     const magazine = magazines.reloadableUid();
     if (magazine === undefined) {
       return;
@@ -915,7 +915,7 @@ export const startPlay = (
       uid: magazine,
       busy: () => queue.busy || firearms.busy,
       load: () => refuse(magazines.loadNext(magazine, sim.time)),
-      rack: () => refuse(magazines.strip(magazine, sim.time)),
+      rack: () => refuse('Only a held firearm racks'),
       cancelLoad: () => magazines.cancelLoad(magazine),
     };
   };
@@ -1489,6 +1489,13 @@ export const startPlay = (
         return;
       case 'firearm':
         fireHeldItem(action.item);
+        return;
+      case 'magazine':
+        refusalReason(
+          survival.selectedItemAction(action.item)?.magazine === 'strip'
+            ? magazines.strip(action.item.uid, sim.time)
+            : 'Magazine is empty',
+        );
         return;
       case 'fists':
         swing(action.hand);

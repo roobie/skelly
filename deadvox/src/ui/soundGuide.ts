@@ -209,7 +209,7 @@ const TRIGGER_ENTRIES = [
   [
     'magazine_round_strip',
     {
-      trigger: 'Double-press R with a loaded magazine in hand to strip its top round.',
+      trigger: "Use a loaded magazine in hand (its 'Strip a round' item action) to strip its top round.",
       note: 'Stand-in: the pump-insert recordings, pitched higher still; a magazine-specific click is future work (d114).',
     },
   ],

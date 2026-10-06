@@ -1,15 +1,19 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { Body } from '../src/core/body.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
+import { itemActionsFor } from '../src/game/itemActions.ts';
 import { MagazineHandling, ROUND_LOAD_SIM_SECONDS, ROUND_STRIP_SIM_SECONDS } from '../src/game/magazineHandling.ts';
+import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const base = 'src/content/base';
 const { registry, issues } = buildRegistry(
@@ -117,6 +121,15 @@ describe('magazines loaded round by round', () => {
     expect(wrong.magazine.cartridges).toEqual([]);
   });
 
+  it('offers stripping as the held magazine’s item action, only while it holds a round', () => {
+    const f = fixture(MARKED_THEN_PLAIN);
+    const body = new Body(BODY_TUNING_FIXTURE);
+    expect(selectPrimaryAction(f.inventory, 'right')).toMatchObject({ kind: 'magazine', item: f.magazine });
+    expect(itemActionsFor(f.magazine, f.inventory, body)).toEqual([]);
+    f.load();
+    expect(itemActionsFor(f.magazine, f.inventory, body).map(({ magazine }) => magazine)).toEqual(['strip']);
+  });
+
   it('R release cancels a partial load without losing a round', () => {
     const f = fixture(MARKED_THEN_PLAIN);
     const input = new ReloadInput();
@@ -124,13 +137,14 @@ describe('magazines loaded round by round', () => {
       uid: f.magazine.uid,
       busy: () => f.queue.busy,
       load: () => f.handling.loadNext(f.magazine.uid, 0.25) === undefined,
-      rack: () => f.handling.strip(f.magazine.uid, 0.25),
+      rack: () => undefined,
       cancelLoad: () => f.handling.cancelLoad(f.magazine.uid),
     };
     const rounds = f.rounds();
     input.keyDown(0, binding);
     input.advance(RELOAD_GESTURE_MS.hold, binding);
     f.queue.tick(ROUND_LOAD_SIM_SECONDS / 2);
+    expect(f.queue.jobs).toHaveLength(1);
     input.keyUp(750);
     input.advance(1000, binding);
     expect(f.magazine.cartridges).toEqual([]);

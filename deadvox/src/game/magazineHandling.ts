@@ -44,7 +44,7 @@ export class MagazineHandling {
     queue.registerAction(STRIP_ACTION, (params) => this.completeStrip(params.uid));
   }
 
-  /** A wielded magazine, which R loads and strips. */
+  /** A wielded magazine, which R loads; its strip item action unloads it. */
   reloadableUid(): number | undefined {
     return Object.values(this.inventory.hands).find((item) => item && magazineSpec(this.inventory.registry, item.type))
       ?.uid;

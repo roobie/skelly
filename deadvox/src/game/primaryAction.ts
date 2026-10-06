@@ -4,12 +4,27 @@
 import { dominantSide, offSide } from '../core/character.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { magazineSpec } from '../core/magazine.ts';
 import type { ItemDef } from '../core/schema.ts';
 
-type PrimaryItemAction = 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use' | 'none';
+type PrimaryItemAction =
+  | 'melee'
+  | 'light'
+  | 'ignite'
+  | 'firearm'
+  | 'key'
+  | 'unpack'
+  | 'read'
+  | 'use'
+  | 'magazine'
+  | 'none';
 
 export type PrimaryActionSelection =
-  | { kind: 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use'; hand: HandSide; item: Item }
+  | {
+      kind: 'melee' | 'light' | 'ignite' | 'firearm' | 'key' | 'unpack' | 'read' | 'use' | 'magazine';
+      hand: HandSide;
+      item: Item;
+    }
   | { kind: 'fists'; hand?: HandSide }
   | { kind: 'none'; item: Item }
   | { kind: 'noop' };
@@ -66,7 +81,8 @@ export const selectPrimaryAction = (
   }
 
   const definition = defOf(registry, item.type);
-  const kind = primaryActionForDefinition(definition);
+  // A magazine's capacity lives in its model, so its item actions are found through the registry.
+  const kind = magazineSpec(registry, item.type) ? 'magazine' : primaryActionForDefinition(definition);
   if (kind === 'melee' && item.condition <= 0) {
     return { kind: 'none', item };
   }
