@@ -466,6 +466,15 @@ const ModelSchema = pipe(
 
 // ---- furniture ----
 
+const DoorPryingSchema = strictObject({
+  /** Minimum tool quality needed to force the door's lock. */
+  quality: QualityLevel,
+  /** Simulated seconds of work. */
+  time: Positive,
+  /** Simulated seconds between noisy strikes. */
+  strikeInterval: Positive,
+});
+
 const FurnitureSchema = strictObject({
   id: Id,
   name: Name,
@@ -480,7 +489,7 @@ const FurnitureSchema = strictObject({
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
   /** It opens and closes, taking this many seconds. */
-  door: optional(strictObject({ handling: NonNegative })),
+  door: optional(strictObject({ handling: NonNegative, prying: optional(DoorPryingSchema) })),
   /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
   rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
   /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
@@ -524,7 +533,6 @@ const LootTableSchema = strictObject({
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
 const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
-
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
 const PaletteThingSchema = pipe(
   strictObject({
@@ -839,6 +847,7 @@ export type StairDef = InferOutput<typeof StairSchema>;
 export type TemplateAccess = InferOutput<typeof TemplateAccessSchema>;
 export type SiteLayoutDef = InferOutput<typeof SiteLayoutSchema>;
 export type DoorLockDef = InferOutput<typeof DoorLockSchema>;
+export type DoorPryingDef = InferOutput<typeof DoorPryingSchema>;
 export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;

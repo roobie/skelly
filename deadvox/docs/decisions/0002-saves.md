@@ -361,7 +361,9 @@ systems now.
 | 7 — Cordon and labs | Tier 2/3 sites, underground labs, special zombies/evolution, hazard zones, lore | Revisit at Slice 7: generated sites remain version-bound world data; discovered lore belongs to the character and mutable hazards/evolution to world-region state. Exact fields wait for the systems. |
 | 8 — Version 1 | Migration and compatibility hardening | The version picker/migration decision is a hard fork. EPIC's “Old saves migrate” exit criterion remains a version 1 obligation, not a 1.9 feature; resolve the strict-version interim policy before the v1 exit. |
 
-**2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `deadvox/src/core/saveState.ts`, `SaveSnapshot`, and `deadvox/src/core/longAction.ts`, `LongActions`.
+**2026-10-05 amendment (d55-1):** Character progression and resumable reading extend the exact-version save contract without retaining an older decoder or migrating saves; see `src/core/saveState.ts`, `SaveSnapshot`, and `src/core/longAction.ts`, `LongActions`.
+
+**d105-1 amendment:** Interrupted prying must resume against the same door and tool, and a completed pry must preserve the missing lock; both affect future play, not presentation. Keep action progress in `LongActions` and the lock outcome in `BlockEntities`; because the descriptor changes saved shape, advance the exact-version schema beyond concurrent save changes rather than migrate old saves. See `src/core/longAction.ts`, `LongActions`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 
 ### Storage, browsers, and recovery
 

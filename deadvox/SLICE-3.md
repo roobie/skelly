@@ -3,6 +3,7 @@ read_if:
   - you're planning or implementing a Slice 3 milestone
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - you're preparing the end-of-slice playtest or its authored map
+  - you're detailing the military site's armoury access and its noisy fallback
 ---
 
 # Slice 3 — Flesh and noise
@@ -304,6 +305,7 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. BR's 2026-10-05 answer confirms the 2026-10-03 ruling: the medical site's virus-sampling research is lore, not a player mission.
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books (BR, 2026-10-03; confirmed 2026-10-05).
 - **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
+- **Armoury access:** the camp must remain reachable if the clinic key stays on the dead officer. Keep the key as the quiet route and the crowbar as the costly, noisy fallback that draws the camp's dead. `lock_test` is a first-look fixture, not the authored military site. The current lock-destruction default is awaiting BR's choice; reuse would need its own lock-item lifecycle.
 - **Proposed tester prompt:** “find the military camp” (BR, 2026-10-05 22:17: “Instead it could be: "find the military camp", maybe?”); confirm with BR when detailing beats 4–6.
 
 The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. Beats 4–6 still need their own BR detail in #181; this milestone and the map come last.

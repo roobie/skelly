@@ -9,6 +9,7 @@ read_if:
   - you review BR's control rulings or unresolved input questions
   - you change input ownership, binding preferences or their labels
   - you add a pointer, click or wheel action
+  - you change how a locked door advertises its crowbar fallback
 ---
 
 # Controls and input ownership
@@ -67,6 +68,11 @@ controls remain proposals until their issue is implemented.
   - you wield the box and activante it in oder to unpack”. A key acts on the
   door from a hand; an ammunition box is wielded and activated to unpack. See
   `src/game/primaryAction.ts`, `selectPrimaryAction`.
+- **One world-interaction route for prying:** F is still the only door action; on
+  a locked door that supports prying it advertises the carried tool behind the
+  interaction-hints toggle. This avoids adding a modifier or a second binding;
+  the matching key stays on its existing activate action. See
+  `src/game/play.ts`, `startPlay`, and `src/game/inputBindings.ts`, `world.interact`.
 - **No inventory U action (2026-10-05 13:16):** “U shouldn't be a thing - where
   does this false knowledge still stand?” Use items through their wielded or
   quickbar action instead; `INPUT_BINDINGS` in `src/game/inputBindings.ts` has no

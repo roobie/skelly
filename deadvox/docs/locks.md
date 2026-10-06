@@ -1,3 +1,9 @@
+---
+read_if:
+  - you change door-lock content, interaction or save ownership
+  - you inspect the lock_test first-look fixture
+---
+
 # Minimal door locks
 
 A template palette entry can give one door an initial lock state:
@@ -36,9 +42,16 @@ Use distinct palette characters and ids for independently keyed doors.
   checks reach, key and state at enqueue and completion. Locking/unlocking is silent.
 
 The authored `lock_test` site has a locked shed with its key in the small box
-beside the front step. Use `?site=lock_test&debug=1` for a preview. The key is
-intentionally not part of the hamlet's found-material closure.
+beside the front step. Use `?site=lock_test&debug=1` for a preview. The debug
+loadout includes the crowbar; the key remains outside the hamlet's found-material
+closure.
 
-Picking, prying, breaking, shambler bashing, and the hunting-cabin map placement
-remain outside this minimal pull-forward. Save identity changes normally;
-there is no old-save migration or compatibility path.
+The crowbar is a costly fallback so a key left on a corpse does not strand the
+player; its strikes use the existing sound and zombie-hearing path. The first
+look destroys the padlock rather than adding a reusable lock item and its door
+lifecycle. BR's choice about reuse remains open. See `src/core/prying.ts`,
+`pryPlan`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
+
+Picking, shambler bashing, and the hunting-cabin map placement remain outside
+this minimal pull-forward. Save identity changes normally; there is no old-save
+migration or compatibility path.

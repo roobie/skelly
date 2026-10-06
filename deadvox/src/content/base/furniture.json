@@ -178,7 +178,8 @@
       "size": [2, 4, 1],
       "color": "#7a5534",
       "door": {
-        "handling": 0.6
+        "handling": 0.6,
+        "prying": { "quality": 3, "time": 60, "strikeInterval": 2 }
       }
     }
   ]

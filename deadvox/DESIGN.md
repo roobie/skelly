@@ -11,6 +11,7 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're changing the quiet-key and noisy-prying alternatives for locked doors
 ---
 
 # deadvox — design
@@ -720,7 +721,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** Doors can be barricaded; locks can be picked or pried. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
+- **Doors and locks.** The armoury needs a fallback if its key stays on the clinic corpse; the crowbar trades time for noise, while the matching key remains quiet. That makes entry itself part of the camp's cost rather than a second lock system. The first-look implementation destroys the padlock because retaining reusable lock state would need another item and door lifecycle; this remains BR's open choice. See `src/core/prying.ts`, `pryPlan`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `src/core/zombies.ts`, `ZombieSystem.tick`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,

@@ -32,6 +32,7 @@ import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
+import { pryPlan } from '../core/prying.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import { bindReach, pileDistance as distanceToPile, furnitureDistance, INVENTORY_CHEST } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
@@ -696,6 +697,25 @@ export const createSession = (options: SessionOptions) => {
     others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
     playWorldSound: (event, position) => playWorldSound(event, position),
   });
+  sim.actions.prying = {
+    validate: (entityUid, toolUid) => {
+      const entity = entities.byUid(entityUid);
+      if (!entity) {
+        return 'The door is no longer there';
+      }
+      const plan = pryPlan(inventory, entity, toolUid);
+      return plan.ok ? undefined : plan.reason;
+    },
+    strike: (_entityUid, _toolUid, time) => playPlayerSound('lock_pry', time, { sourceLabel: 'prying padlock' }),
+    finish: (entityUid, toolUid) => {
+      const entity = entities.byUid(entityUid);
+      if (!entity) {
+        return 'The door is no longer there';
+      }
+      const plan = pryPlan(inventory, entity, toolUid);
+      return plan.ok ? entities.breakLock(entity) : plan.reason;
+    },
+  };
 
   if (restored) {
     world.restoreDiffs(restored.world.diffs, (id) => {
@@ -727,6 +747,10 @@ export const createSession = (options: SessionOptions) => {
     quickbar,
     character,
     planCraft: (recipe: RecipeDef, prefer?: CraftPreference) => planCraft(recipe, reach(), character, prefer),
+    pryDoor: (entity: BlockEntity, toolUid?: number) => {
+      const plan = pryPlan(inventory, entity, toolUid);
+      return plan.ok ? sim.actions.beginPrying(entity.uid, plan.tool.uid, plan.time, plan.strikeInterval) : plan.reason;
+    },
     crafting: new CraftCommands({ inventory, character, sim, queue, reach }),
     survival,
     rest,

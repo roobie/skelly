@@ -17,6 +17,7 @@ import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan } from '../core/options.ts';
+import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
@@ -382,6 +383,19 @@ export const startPlay = (
   // ---- furniture: searching and doors ----
 
   const toggleDoor = (entity: BlockEntity) => {
+    if (entity.lock?.locked && entities.defOf(entity).door?.prying) {
+      const plan = pryPlan(inventory, entity);
+      if (!plan.ok) {
+        showRefusal(plan.reason, sim.time);
+        return;
+      }
+      queue.cancel();
+      const reason = session.pryDoor(entity, plan.tool.uid);
+      if (reason) {
+        showRefusal(reason, sim.time);
+      }
+      return;
+    }
     const option = doorOptions(inventory, entity)[0]!;
     if (!option.plan.ok) {
       showRefusal(option.plan.reason, sim.time);
@@ -661,7 +675,7 @@ export const startPlay = (
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);
       }
-    } else if (rest.action || sim.actions.job?.jobType === 'reading') {
+    } else if (rest.action || sim.actions.job?.jobType === 'reading' || sim.actions.job?.jobType === 'pry') {
       const reason = rest.action ? rest.resume() : sim.actions.resume();
       if (reason) {
         showRefusal(`Can't continue: ${reason}`, sim.time);
@@ -676,7 +690,11 @@ export const startPlay = (
     if (rest.action && !rest.canStop) {
       return;
     }
-    if (sim.actions.job?.jobType === 'craft' || sim.actions.job?.jobType === 'reading') {
+    if (
+      sim.actions.job?.jobType === 'craft' ||
+      sim.actions.job?.jobType === 'reading' ||
+      sim.actions.job?.jobType === 'pry'
+    ) {
       sim.actions.stop();
     } else if (rest.action) {
       rest.stop();
@@ -968,12 +986,27 @@ export const startPlay = (
     return `${operation === 'lock' ? 'Lock' : 'Unlock'}${plan.ok ? '' : ` — ${plan.reason}`}`;
   };
 
+  const pryHint = (entity: BlockEntity): string | undefined => {
+    if (!(entity.lock?.locked && entities.defOf(entity).door?.prying)) {
+      return undefined;
+    }
+    const plan = pryPlan(inventory, entity);
+    if (plan.ok) {
+      return `with the ${inventory.name(plan.tool).toLowerCase()}`;
+    }
+    const tools = plan.toolNames.map((name) => name.toLowerCase()).join(' or ') || 'a suitable tool';
+    return `with ${tools} — ${plan.reason}`;
+  };
+
   /** Describes the displayed action for the selected target. */
   const useText = (entity: BlockEntity): string => {
     const door = entities.defOf(entity).door ? doorOptions(inventory, entity)[0] : undefined;
+    const prying = pryHint(entity);
+    const doorReason = !prying && door?.plan.ok === false ? door.plan.reason : undefined;
     return playInteractionText({
-      doorReason: door?.plan.ok === false ? door.plan.reason : undefined,
+      doorReason,
       lock: keyLockHint(entity),
+      prying,
       door: Boolean(entities.defOf(entity).door),
       open: entity.open,
       container: Boolean(entity.pockets),

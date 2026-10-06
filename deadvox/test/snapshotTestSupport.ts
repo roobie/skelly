@@ -108,6 +108,7 @@ export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
+  spawnOverride?: Vec3,
 ) {
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
@@ -128,7 +129,7 @@ export function createRuntime(
   // Where the player is looking: the game reads this from its input, here it is plain state.
   const view = { yaw: hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
-  const spawn: Vec3 = [sx! + awayFromShamblers, sy! + 400, sz!];
+  const spawn: Vec3 = spawnOverride ?? [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
   if (restFixture) {
     const sleepable = [...registry.furniture.values()].find((def) => def.rest?.sleep);

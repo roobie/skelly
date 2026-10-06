@@ -31,7 +31,7 @@ const observationPlugin = {
       `
   const proof = {
     input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions,
-    selectPrimaryAction, ignitionTargetForHand,
+    selectPrimaryAction, ignitionTargetForHand, useTarget, useText,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
     clearNotice: () => showNotice(''),
@@ -739,9 +739,30 @@ try {
     undefined,
     { timeout: 10_000 },
   );
+  const pryPreview = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.session.sim.actions.cancel();
+    const definition = r.inventory.registry.furniture.get('wood_door');
+    const pos = r.feet();
+    const door = r.inventory.furnish({
+      type: definition.id,
+      pos,
+      size: definition.size,
+      facing: 'n',
+      lock: { id: 'test_shed', locked: true },
+    });
+    if (!door) {
+      throw new Error('Could not place the first-look prying door');
+    }
+    const hint = r.useText(door);
+    r.useTarget(door);
+    return { hint, job: r.session.sim.actions.job };
+  });
+  assert.ok(pryPreview.hint.toLowerCase().includes('crowbar'), 'the interaction hint names its carried prying tool');
+  assert.equal(pryPreview.job?.jobType, 'pry', 'the door interaction starts the owned prying action');
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold and held-book reading.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold, held-book reading and the crowbar door route.\n',
   );
 } finally {
   await browser?.close();

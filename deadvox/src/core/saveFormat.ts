@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 24;
+export const SAVE_SCHEMA_VERSION = 26;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -362,13 +362,17 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft', 'reading']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'pry']),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),
       workUid: opt(positiveInt),
       bookUid: opt(positiveInt),
+      entityUid: opt(positiveInt),
+      toolUid: opt(positiveInt),
       duration: opt(positive),
+      strikeInterval: opt(positive),
+      nextStrike: opt(positive),
       rest: opt(
         obj({
           kind: enumeration(['rest', 'sleep']),
@@ -1157,6 +1161,9 @@ function ownsLongActionItem(
   if (job?.jobType === 'reading') {
     return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
   }
+  if (job?.jobType === 'pry') {
+    return tree.some(({ item }) => item.uid === job.toolUid && item.type !== WORK_IN_PROGRESS);
+  }
   return true;
 }
 
@@ -1167,7 +1174,19 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
   if (!ownsLongActionItem(job, tree)) {
-    throw new Error(job?.jobType === 'reading' ? 'Missing reading book' : 'Missing craft work item');
+    let reason = 'Missing craft work item';
+    if (job?.jobType === 'reading') {
+      reason = 'Missing reading book';
+    } else if (job?.jobType === 'pry') {
+      reason = 'Missing prying tool';
+    }
+    throw new Error(reason);
+  }
+  if (
+    job?.jobType === 'pry' &&
+    !snapshot.character.inventory.entities.entities.some(({ uid }) => uid === job.entityUid)
+  ) {
+    throw new Error('Missing prying target');
   }
 }
 

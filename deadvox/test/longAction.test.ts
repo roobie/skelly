@@ -123,6 +123,65 @@ describe('core long actions', () => {
     expect(runtime.inv.hands.right?.type).toBe('torch');
     expect(runtime.sim.actions.job).toBeUndefined();
   });
+  it('stopped prying resumes elapsed work without counting its pause', () => {
+    const runtime = make();
+    const { sim } = runtime;
+    const { ratio } = sim.clock;
+    const strikes: number[] = [];
+    let finished = false;
+    sim.actions.prying = {
+      validate: () => undefined,
+      strike: (_entityUid, _toolUid, time) => strikes.push(time),
+      finish: () => {
+        finished = true;
+      },
+    };
+    const duration = 100;
+    const strikeInterval = 50;
+    expect(sim.actions.beginPrying(7, 11, duration, strikeInterval)).toBeUndefined();
+    sim.scheduler.advance(10 / ratio);
+    sim.actions.stop();
+    const { job } = sim.actions;
+    const elapsed = job?.jobType === 'pry' ? job.elapsed : 0;
+    expect(elapsed).toBeGreaterThan(0);
+    expect(elapsed).toBeLessThan(strikeInterval);
+    sim.scheduler.advance(200);
+    expect(sim.actions.job).toMatchObject({ jobType: 'pry', stopped: true, elapsed });
+    expect(strikes).toEqual([]);
+
+    expect(sim.actions.resume()).toBeUndefined();
+    sim.scheduler.advance(10 / ratio);
+    const resumed = sim.actions.job;
+    if (resumed?.jobType !== 'pry') {
+      throw new Error('The resumed action was lost');
+    }
+    expect(resumed.elapsed).toBeGreaterThan(elapsed);
+    expect(strikes).toEqual([]);
+    expect(finished).toBe(false);
+    sim.scheduler.advance(duration / ratio + 2);
+    expect(sim.actions.job).toBeUndefined();
+    expect(strikes).toHaveLength(2);
+    expect(finished).toBe(true);
+  });
+  it('re-interacting with the same door resumes prying at its saved strike cursor', () => {
+    const { sim } = make();
+    sim.actions.prying = {
+      validate: () => undefined,
+      strike: () => undefined,
+      finish: () => undefined,
+    };
+    const { ratio } = sim.clock;
+    expect(sim.actions.beginPrying(7, 11, 100, 50)).toBeUndefined();
+    sim.scheduler.advance(10 / ratio);
+    sim.actions.stop();
+    const stopped = sim.actions.job;
+    if (stopped?.jobType !== 'pry') {
+      throw new Error('The stopped pry was lost');
+    }
+    const { elapsed, nextStrike } = stopped;
+    expect(sim.actions.beginPrying(7, 11, 100, 50)).toBeUndefined();
+    expect(sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed, nextStrike });
+  });
   it('Read resumes the same interrupted book from its saved progress', () => {
     const runtime = make();
     const book = runtime.inv.create('field_manual');

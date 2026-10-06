@@ -38,6 +38,7 @@ export const SOUND_EVENT_IDS = [
   'door_open',
   'door_close',
   'door_blocked_close',
+  'lock_pry',
 ] as const;
 
 export type SoundEventId = (typeof SOUND_EVENT_IDS)[number];

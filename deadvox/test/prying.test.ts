@@ -1,0 +1,214 @@
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { expect, it } from 'vitest';
+import { buildRegistry } from '../src/core/content.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { doorOptions } from '../src/core/options.ts';
+import { pryPlan } from '../src/core/prying.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
+import { DOOR_ACTION } from '../src/game/doorAction.ts';
+import {
+  capture,
+  contentLookup,
+  createRuntime,
+  encodeFixture,
+  formatVersion,
+  registry,
+} from './snapshotTestSupport.ts';
+
+const baseContent = readdirSync('src/content/base')
+  .filter((file) => file.endsWith('.json'))
+  .sort()
+  .map((file) => ({
+    source: file,
+    data: JSON.parse(readFileSync(join('src/content/base', file), 'utf8')) as unknown,
+  }));
+const doorDef = registry.furniture.get('wood_door')!;
+const makeDoor = (runtime: ReturnType<typeof createRuntime>) => {
+  const door = runtime.inventory.furnish({
+    type: doorDef.id,
+    pos: [0, 1, 1],
+    size: doorDef.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  });
+  if (!door) {
+    throw new Error('Could not place the prying fixture door');
+  }
+  return door;
+};
+const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => {
+  const light = runtime.inventory.hands.left;
+  if (!(light && runtime.inventory.consume(light))) {
+    throw new Error('Could not free a hand for the fixture crowbar');
+  }
+  const crowbar = runtime.inventory.create('crowbar');
+  if (!runtime.inventory.add(crowbar, { kind: 'hand', side: 'left' })) {
+    throw new Error('Could not hold the fixture crowbar');
+  }
+  return crowbar;
+};
+const nearSpawn: [number, number, number] = [0, 1, 0];
+const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0]) => {
+  const runtime = createRuntime(snapshot, false, undefined, nearSpawn);
+  const floor = registry.blockIds.get('planks')!;
+  for (let x = -1; x <= 1; x++) {
+    for (let z = 0; z <= 6; z++) {
+      runtime.world.setBlock(x, 0, z, floor);
+    }
+  }
+  return runtime;
+};
+
+it('requires a carried tool meeting the door quality and takes its time from content', () => {
+  const inventory = new Inventory(registry);
+  const door = inventory.furnish({
+    type: doorDef.id,
+    pos: [0, 1, 1],
+    size: doorDef.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  })!;
+  const tuning = doorDef.door?.prying;
+  if (!tuning) {
+    throw new Error('Fixture door has no prying tuning');
+  }
+  const missing = pryPlan(inventory, door);
+  expect(missing.ok).toBe(false);
+  if (missing.ok) {
+    throw new Error('Prying started without a carried tool');
+  }
+  expect(missing.reason.toLowerCase()).toContain('quality');
+
+  const backpack = inventory.create('hiking_backpack');
+  const crowbar = inventory.create('crowbar');
+  expect(inventory.add(backpack, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(inventory.add(crowbar, { kind: 'pocket', owner: backpack, pocket: 0 })).toBe(true);
+  const plan = pryPlan(inventory, door);
+  expect(plan.ok).toBe(true);
+  if (!plan.ok) {
+    throw new Error(plan.reason);
+  }
+  expect(plan.tool.uid).toBe(crowbar.uid);
+  expect(plan.time).toBe(tuning.time);
+  expect(plan.strikeInterval).toBe(tuning.strikeInterval);
+});
+
+it('the matching key still unlocks a pryable door silently', () => {
+  const runtime = makePryRuntime();
+  const door = makeDoor(runtime);
+  const light = runtime.inventory.hands.left;
+  if (!(light && runtime.inventory.consume(light))) {
+    throw new Error('Could not free a hand for the fixture key');
+  }
+  if (!runtime.inventory.add(runtime.inventory.create('shed_key'), { kind: 'hand', side: 'left' })) {
+    throw new Error('Could not hold the fixture key');
+  }
+  const unlock = doorOptions(runtime.inventory, door)[1]!;
+  if (!unlock.plan.ok) {
+    throw new Error(unlock.plan.reason);
+  }
+  runtime.session.queue.enqueueAction(DOOR_ACTION, unlock.label, unlock.plan.time, {
+    entityUid: door.uid,
+    locked: false,
+  });
+  expect(runtime.session.queue.tick(unlock.plan.time).failed).toEqual([]);
+  expect(door.lock).toEqual({ id: 'test_shed', locked: false });
+  expect(runtime.heardSounds).toEqual([]);
+});
+
+it('refuses a carried tool below the content quality threshold', () => {
+  const { quality } = doorDef.door!.prying!;
+  const { registry: weakRegistry, issues } = buildRegistry([
+    ...baseContent,
+    {
+      source: 'weak-prying-tool.json',
+      data: {
+        items: [
+          {
+            id: 'weak_crowbar',
+            name: 'Weak crowbar',
+            category: 'tool',
+            weight: 1,
+            size: [1, 1],
+            tool: { qualities: { prying: quality - 1 } },
+          },
+        ],
+      },
+    },
+  ]);
+  expect(issues).toEqual([]);
+  const inventory = new Inventory(weakRegistry);
+  const weakDoor = inventory.furnish({
+    type: doorDef.id,
+    pos: [0, 1, 1],
+    size: doorDef.size,
+    facing: 'n',
+    lock: { id: 'test_shed', locked: true },
+  })!;
+  const weakTool = inventory.create('weak_crowbar');
+  expect(inventory.add(weakTool, { kind: 'hand', side: 'right' })).toBe(true);
+  const plan = pryPlan(inventory, weakDoor);
+  expect(plan.ok).toBe(false);
+  if (plan.ok) {
+    throw new Error('An under-quality tool began prying');
+  }
+  expect(plan.reason.toLowerCase()).toContain('quality');
+});
+
+it('a prying strike travels through the sound-hearing path and draws a shambler', () => {
+  const runtime = makePryRuntime();
+  const door = makeDoor(runtime);
+  const crowbar = carryCrowbar(runtime);
+  const shamblerType = registry.zombies.get('shambler')!;
+  const id = runtime.zombies.add({ ...shamblerType, sight: 0, nightSight: 0 }, [0, 1, 5], [1, 0, 0]);
+  const shambler = runtime.zombies.store.get(id)!;
+  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+
+  const { strikeInterval } = doorDef.door!.prying!;
+  runtime.sim.scheduler.advance(strikeInterval / runtime.sim.clock.ratio + 2);
+
+  const action = runtime.sim.actions.job;
+  if (action?.jobType !== 'pry') {
+    throw new Error('The short prying observation unexpectedly finished its action');
+  }
+  expect(runtime.heardSounds.filter(({ event }) => event === 'lock_pry')).toHaveLength(
+    Math.floor(action.elapsed / strikeInterval),
+  );
+  expect(shambler.mode).toBe('investigate');
+});
+
+it('a stopped part-done pry and a destroyed lock round-trip through save and load', async () => {
+  const runtime = makePryRuntime();
+  const door = makeDoor(runtime);
+  const crowbar = carryCrowbar(runtime);
+  const tuning = doorDef.door!.prying!;
+  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+
+  runtime.sim.scheduler.advance(tuning.strikeInterval / 2 / runtime.sim.clock.ratio);
+  runtime.sim.actions.stop();
+  const elapsed = runtime.sim.actions.job?.jobType === 'pry' ? runtime.sim.actions.job.elapsed : 0;
+  expect(elapsed).toBeGreaterThan(0);
+  const bytes = await encodeFixture(capture(runtime));
+  const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+  const loaded = makePryRuntime(decoded.snapshot);
+  expect(loaded.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: true, elapsed });
+  expect(loaded.sim.actions.resume()).toBeUndefined();
+  loaded.sim.scheduler.advance((tuning.time - elapsed) / loaded.sim.clock.ratio + 2);
+
+  const loadedDoor = [...loaded.entities.all].find(
+    (entity) => entity.type === doorDef.id && entity.pos.every((coordinate, axis) => coordinate === door.pos[axis]),
+  );
+  expect(loadedDoor).toBeDefined();
+  expect(loadedDoor!.lock).toBeUndefined();
+  expect(loaded.entities.setOpen(loadedDoor!, true)).toBeUndefined();
+
+  const finalBytes = await encodeFixture(capture(loaded));
+  const finalDecoded = await decodeSave(finalBytes, { version: formatVersion, contentLookup });
+  const final = makePryRuntime(finalDecoded.snapshot);
+  const finalDoor = [...final.entities.all].find(
+    (entity) => entity.type === doorDef.id && entity.pos.every((coordinate, axis) => coordinate === door.pos[axis]),
+  );
+  expect(finalDoor).toMatchObject({ open: true });
+  expect(finalDoor!.lock).toBeUndefined();
+});
