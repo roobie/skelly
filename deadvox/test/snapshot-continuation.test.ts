@@ -47,8 +47,9 @@ describe('hamlet save/load continuation', () => {
 
     const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot, false, oneColumn, { start, spawn: playerSpawn });
-    advance(source, 240);
-    advance(loaded, 240);
+    const continuationFrames = BACKGROUND_ZOMBIE_SLICE_COUNT + 1;
+    advance(source, continuationFrames);
+    advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
   });
