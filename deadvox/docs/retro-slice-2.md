@@ -9,32 +9,32 @@ read_if:
 [[THIS is_grounded_by: ../SLICE-2.md]]
 [[THIS is_grounded_by: ../../../docs/PROCESS.md]]
 
-**Status:** draft for BR, for issue #157. The Slice 2 plan, merged PRs, open PRs, issue #157, agent-work review records, and BR's dated transcript messages ground this retrospective. The checklist remains stale; the lead will update it at closure.
+**Status:** BR approved it on 2026-10-06 (#285), for issue #157. The Slice 2 plan, merged PRs, open PRs, issue #157, agent-work review records, and BR's dated transcript messages ground this retrospective. The checklist remains stale; the lead will update it at closure.
 
 ## BR's view
 
 BR approved the plan's scope and steered its visual and playtest gates as the slice progressed. On 2026-10-03 at 13:04, after the tree first look, BR said: “Overall: happy with the trees, looks good.” At 17:03, on the forest run's foliage feel, BR said: “I'd say it's good enough!” On 2026-10-04 at 15:31, BR described the crafting panel as something “we're gonna need many iterations on it, but for now, I'll approve it”. On 2026-10-05 at 20:09, BR ruled “long actions disable all actions” and chose “fast forward” for time near shamblers. BR approved the hardware store and garage on 2026-10-05 after the window fixes.
 
-The slice delivered its crafting, repair, salvage, lighting, building, sound, and tree systems, but its checklist, test-budget item, carried-forward links, and this retrospective still need closure work. BR's in-game approvals were useful gates, not a substitute for implementation review or CI.
+The slice delivered its crafting, repair, salvage, lighting, building, sound, and tree systems, but its checklist, test-budget item and carried-forward links still need closure work. BR's in-game approvals were useful gates, not a substitute for implementation review or CI.
 
 ## Closure status
 
 Status of the Definition of done in `deadvox/SLICE-2.md`:
 
-- **Milestones:** 2.0–2.9, 2.12 and 2.13 are merged. Milestones 2.10 and 2.11 have completed implementation and reached SHIP review verdicts, but their PRs remain open: #241 (2.10) and stacked #258 (2.11). CI was pending during the GitHub Actions incident; neither open PR counts as merged or green.
-- **Frame budget and per-frame measurements:** the made-light benchmark passed on BR's reference laptop, as recorded in Results. BR's Firefox reference runs for the approved tree workload met the gate; the separate software-renderer observations are explicitly not treated as a pass. Reach rebuilds and crafting-panel planning have no reference-laptop measurement recorded in `deadvox/SLICE-2.md`, "Results", so that done-when item is still open. The default-test budget remains open: after two d87 rounds, the run is still over budget. The `snapshot.test.ts` split waits for #241 and #274; d87 must bring the run within budget or document why it exceeds it.
+- **Milestones:** 2.0–2.13 are merged. 2.10 (#241) and 2.11 (#258, stacked on #241) merged last: their CI was held up by the GitHub Actions incident, and they merged only after fresh green runs.
+- **Frame budget and per-frame measurements:** the made-light benchmark passed on BR's reference laptop, as recorded in Results. BR's Firefox reference runs for the approved tree workload met the gate; the separate software-renderer observations are explicitly not treated as a pass. Reach rebuilds and crafting-panel planning have no reference-laptop measurement recorded in `deadvox/SLICE-2.md`, "Results", so that done-when item is still open. The default-test budget remains open: d87 (#289) split `snapshot.test.ts`, but the run is still over budget. BR chose to accept named cuts rather than raise the budget (2026-10-06, option "B"). d92 owns the cuts.
 - **Reachability and sound:** the content validator's reachability checks and the noise-to-positional-sound scenario are delivered in #184, #177 and #250.
 - **Playtest questions:** met. EPIC.md's playtest plan includes the questions SLICE-2.md adds.
 - **BR's in-game approvals:** the crafting panel (#211), made lights (#252), and trees and hedges (#189) were approved.
 - **Checklist:** issue #157 is still open and stale; its milestone boxes have not been updated for later delivery. The lead will update and close it with acceptance evidence and links to carried-forward work.
 - **Carried-forward links:** still need to be listed on the checklist issue.
-- **Retrospective:** this document is the remaining written deliverable; it still needs BR's review before closure.
+- **Retrospective:** this document. BR approved it on 2026-10-06 (#285).
 
 ## 1. Planned against delivered
 
 | Milestone | Planned outcome | Delivery and status |
 | --- | --- | --- |
-| 2.0 Before code starts | Plan, host and default-test budgets, playtest questions, and checklist | Plan #156 and setup #166 merged. The checklist #157 was opened but not kept current. Its default-test budget is the subject of d87. |
+| 2.0 Before code starts | Plan, host and default-test budgets, playtest questions, and checklist | Plan #156 and setup #166 merged. The checklist #157 was opened but not kept current. Its default-test budget is the subject of d87 and d92. |
 | 2.1 Reach and options | Shared reach/options core and quick move | #173 merged. Quick move was pulled into this milestone with BR's approval; the interaction remained one ordinary timed move, not batch actions. |
 | 2.2 Recipes as content | Validated recipe, skill, tool-quality and workstation references | #176 merged, including the F8 content-section descriptor. |
 | 2.3 Reachability | World-grounded closure for ingredients and recipe prerequisites | #184 merged. Reachable teaching books, practice, qualities, and placed workstations became hard sources through later milestones. |
@@ -44,8 +44,8 @@ Status of the Definition of done in `deadvox/SLICE-2.md`:
 | 2.7 Disassembly and salvage | Declared yields, salvage lists, saved progress, and reachability | #234 merged. Salvage uses explicit content rather than reversing every recipe. |
 | 2.8 Workbenches | Placed workstation qualities and craft-time effects | #239 merged, with a shed bench; the garage and hardware-store benches followed in 2.10. |
 | 2.9 Light you make | Crafted lights, burn state, point-light pool, and reference workload | #252 merged and BR approved the in-game result and reference-laptop workload. Zombies sensing light and fire spread remained out of scope. |
-| 2.10 Hardware store and garage | Two hamlet templates with benches and reachable stock | #241 is open after BR's look and review. The buildings gained window openings in response to the first look; #241 awaits CI and merge. |
-| 2.11 Content | About 80 obtainable item types and reachable recipes | #258 is open, stacked on #241. Its validation report records that the planned content threshold and reachability checks pass, with no validation issues. It awaits CI and merge. |
+| 2.10 Hardware store and garage | Two hamlet templates with benches and reachable stock | #241 merged after BR's look and review. The buildings gained window openings in response to the first look. |
+| 2.11 Content | About 80 obtainable item types and reachable recipes | #258 merged, stacked on #241. Its validation report records that the planned content threshold and reachability checks pass, with no validation issues. |
 | 2.12 Every noise is heard | Scenario proof in both directions between noise and positional sound | #177 and #250 merged; simulation-owned sound admission and its scenario test close the gate. |
 | 2.13 Trees, a sneak peek | Trees and hedges, passable opaque foliage, rustle, and forest performance | #189 merged. Trees were pulled forward from Slice 4 at BR's request; the approved reference workload met its gate. |
 
@@ -72,8 +72,8 @@ The boundary with Slice 3 was porous during development. Aim sway and firearms s
 | 2.7 | 3 | 1 |
 | 2.8 | 2 | 1 |
 | 2.9 | 8 | 4 |
-| 2.10 | 4 submitted; PR awaits CI | 1 |
-| 2.11 | 4 | 2 |
+| 2.10 | 5 | 1 |
+| 2.11 | 5 | 2 |
 | 2.12 | 3 (one on #177, two on #250) | 1 |
 | 2.13 | 3 | 1 |
 
@@ -84,7 +84,7 @@ The review rounds improved both code and evidence: examples include the non-vacu
 - **The checklist drifted from delivery.** Issue #157 was opened with the plan, but later milestone boxes and carried-forward links were not maintained. By closure, the issue no longer described the shipped state, so the team had to reconstruct status from PRs and work records.
 - **Some milestones became long review chains.** The planner, books, lights, and final content had several FIX rounds. The underlying causes were not one class: persistence ownership and UI interactions, test hygiene, first-look defects, and integration each needed different corrections. A reviewer finding a test that passes vacuously or writes state outside its owner is preventing false confidence, not asking for more tests.
 - **Parallel branches created integration and sequencing work.** #258 depended on #241, and both needed mainline integration. Their stacked relationship delayed Slice 2 closure and made review/CI state harder to interpret. Earlier base checks helped, but did not remove the need to merge and verify each current tip.
-- **The measured default-test budget became a real constraint.** The 2.0 budget was explicit, while the latest run remains over it after two d87 rounds. The `snapshot.test.ts` split waits for #241 and #274. Test-bar audits also removed vacuous or drifting assertions and fixed nondeterministic browser and unit cases; those are distinct from the budget work.
+- **The measured default-test budget became a real constraint.** The 2.0 budget was explicit, and the run stayed over it even after d87's `snapshot.test.ts` split (#289). BR chose named cuts (d92) over a higher budget. Test-bar audits also removed vacuous or drifting assertions and fixed nondeterministic browser and unit cases; those are distinct from the budget work.
 - **Coders sometimes stopped after receiving an answer.** The lead's wake prompt did not consistently make the next action explicit. Agent-kit #33/#34 changed the wake instruction to require priming, reading new mail, acting on it, and continuing the active item. This addresses the coordination mechanism rather than relying on repeated manual nudges.
 - **Issue closure was missing from the merge steps.** BR found #134 still open on 2026-10-05 at 22:20. PR #175 cited it without a closing directive, and the lead closed #134, #183, #185 and #193. Treating issue closure as an explicit merge check would avoid leaving completed work attached to open issues.
 - **A late review still found a player-trapping defect.** `cr-d73-1` returned FIX because a sleeper hit by an interrupt remained locked in sleep; d73-3 ended the sleep, cleared the interruption and restored input. `cr-d84-1` also returned FIX on beeline pursuit, which d84-2 corrected. These playtest-driven rounds are separate from the Slice 2 milestone counts.
