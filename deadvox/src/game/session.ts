@@ -423,7 +423,7 @@ export const createSession = (options: SessionOptions) => {
     meta: SoundEmissionMeta & { body?: MobBody } = {},
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
-    admitSound(event, chest(), time, { ...meta, player: true });
+    admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
   const queue = new HandlingQueue(
     inventory,
     (move) =>
@@ -462,10 +462,10 @@ export const createSession = (options: SessionOptions) => {
         const training = skillActivityPractice(registry, 'firearms_combat', 'hit');
         character.awardPractice('firearms_combat', training.practice, training.tier);
       }
-      playPlayerSound('shotgun_blast', time, { listenerRelative: true, sourceLabel: 'pump shotgun' });
+      playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
     },
     onSound: (event, position, time) =>
-      position ? playWorldSound(event, position, time) : playPlayerSound(event, time, { listenerRelative: true }),
+      position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
   });
 
   const survival = new Survival(sim, inventory, queue, {
@@ -629,13 +629,18 @@ export const createSession = (options: SessionOptions) => {
           : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
       sim.hit(amount, 'a shambler', region, { bleeding: true, blunt: true });
     },
-    onSound: (event, position, zombie) =>
+    onSound: (event, position, zombie) => {
+      if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {
+        playWorldSound(event, position, sim.time, { listenerRelative: true, sourceLabel: 'player melee' });
+        return;
+      }
       playWorldSound(
         event,
         position,
         sim.time,
         zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {},
-      ),
+      );
+    },
     onFootstep: (position, id, mode, zombie) => {
       const event = shamblerFootstepEventAt(position, (x, y, z) => {
         const block = world.getBlock(x, y, z);
@@ -744,7 +749,11 @@ export const createSession = (options: SessionOptions) => {
     });
     rustleClock = rustle.clock;
     if (rustle.sound) {
-      admitSound(rustle.sound.event, rustle.sound.position, time, { player: true, sourceLabel: 'brushing foliage' });
+      admitSound(rustle.sound.event, rustle.sound.position, time, {
+        player: true,
+        listenerRelative: true,
+        sourceLabel: 'brushing foliage',
+      });
     }
   };
 
