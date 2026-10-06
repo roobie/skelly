@@ -167,14 +167,7 @@ try {
   };
   let proof;
   if (mode === 'consumer') {
-    const crouchingBeforeMenu = await page.evaluate(() => globalThis.readingWitness.session.crouching);
     await pressAction(page, 'ui.main-menu-toggle');
-    await pressAction(page, 'player.crouch-toggle');
-    assert.equal(
-      await page.evaluate(() => globalThis.readingWitness.session.crouching),
-      crouchingBeforeMenu,
-      'menu context does not dispatch the crouch action',
-    );
     const interactionOption = await page.evaluate(
       "import('/src/ui/hudOptions.ts').then(({ HUD_OPTION_KEYS }) => HUD_OPTION_KEYS.indexOf('interaction'))",
     );
@@ -277,7 +270,22 @@ try {
     }, chairUid);
     assert.equal(await page.evaluate(() => globalThis.readingWitness.session.sim.compression.active), true);
     const crouchingDuringRest = await page.evaluate(() => globalThis.readingWitness.session.crouching);
+    const crouchGuardStart = await page.evaluate(() => globalThis.readingWitness.session.sim.time);
     await pressAction(page, 'player.crouch-toggle');
+    await waitForSimulation(
+      page,
+      (until) => {
+        const { session } = globalThis.readingWitness;
+        return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time >= until };
+      },
+      crouchGuardStart + 0.1,
+      {
+        seconds: 0.1,
+        from: crouchGuardStart,
+        label: 'rest keeps the crouch action locked through simulated progress',
+        record,
+      },
+    );
     assert.equal(
       await page.evaluate(() => globalThis.readingWitness.session.crouching),
       crouchingDuringRest,

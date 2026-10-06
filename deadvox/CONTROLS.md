@@ -103,9 +103,9 @@ controls remain proposals until their issue is implemented.
 - **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
   continues both after an interruption and a stopped craft. See
   `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.
-- **Crouch (d98):** BR ruled “let's make crouch a toggle”. For menus, BR said
-  “i lean 'no' because if you're in a menu, you're not 'moving'”; the existing
-  long-action ruling is “long actions disable all actions”. Crouch is therefore
+- **Crouch (d98):** BR ruled “let's make crouch a toggle”. On 2026-10-06
+  12:25, BR said “i lean 'no' because if you're in a menu, you're not 'moving'”;
+  the 2026-10-05 20:09 ruling is “long actions disable all actions”. Crouch is therefore
   available only in moving contexts, not menus or noclip, and a long action
   leaves the stance unchanged. Context ownership keeps the same physical input
   distinct from noclip descent; see `src/game/inputBindings.ts`, `INPUT_BINDINGS`.
