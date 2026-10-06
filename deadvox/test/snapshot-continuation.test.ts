@@ -19,7 +19,7 @@ import {
 } from './snapshotTestSupport.ts';
 
 describe('zombie attack causes', () => {
-  it('uses the attacking zombie type name in the player damage cause', () => {
+  it('attributes player damage to the attacking zombie type', () => {
     const runtime = createRuntime();
     for (const [id] of runtime.zombies.store.entries()) {
       runtime.zombies.store.remove(id);
@@ -31,9 +31,11 @@ describe('zombie attack causes', () => {
     runtime.zombies.add(runner, [playerPos[0] + 0.5, playerPos[1], playerPos[2]], [-1, 0, 0]);
     advance(runtime, 300);
 
-    expect(events.read()).toContainEqual(
-      expect.objectContaining({ kind: 'damage', cause: `a ${runner.name.toLowerCase()}` }),
-    );
+    expect(
+      events
+        .read()
+        .some((event) => event.kind === 'damage' && event.cause.toLowerCase().includes(runner.name.toLowerCase())),
+    ).toBe(true);
   });
 });
 

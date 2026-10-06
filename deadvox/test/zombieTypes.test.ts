@@ -26,9 +26,10 @@ const figureForModel = (model: string) =>
   }).figure;
 
 describe('runner and crawler type content', () => {
-  it('poses each zombie with the model selected by its type data', () => {
-    const runner = zombies.find(({ id }) => id === 'runner')!;
-    expect(figureForModel(runner.model).genome.template).toBe(runner.model);
+  it('poses every zombie with the model selected by its type data', () => {
+    for (const zombie of zombies) {
+      expect(figureForModel(zombie.model).genome.template).toBe(zombie.model);
+    }
   });
 
   it('authors the runner as rarer than the shambler', () => {
