@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
+import type { SizeClass } from '../src/core/conventions.ts';
 import { boundsOfPoints, obbPolyhedron, worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, type Transform, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { PortDef, Solid } from '../src/core/schema.ts';
+import { AK_PROPORTIONS } from '../src/gun/akProportions.ts';
 import { gunDomain } from '../src/gun/domain.ts';
+import { FAMILIES } from '../src/gun/parts.ts';
 import { loadCorpus } from './helpers.ts';
 
 const akCorpus = loadCorpus().filter(({ assembly }) =>
@@ -47,6 +50,29 @@ describe('AK stock mating alignment', () => {
       const [wholeMin, wholeMax] = boundsOfPoints(worldVertices(stock.solids, stockPlaced));
       expect(wholeMin[2], `${label}: no wider than the receiver`).toBeGreaterThanOrEqual(rearMin[2] - 1e-9);
       expect(wholeMax[2], `${label}: no wider than the receiver`).toBeLessThanOrEqual(rearMax[2] + 1e-9);
+    }
+  });
+
+  // BR 23:19: the bottom is one straight line from the receiver to the toe, with no belly.
+  it('runs the stock’s bottom edge straight from its front face to the toe at every length', () => {
+    const lengths = FAMILIES.stock!.params.length!.values;
+    expect(lengths.length).toBeGreaterThan(1);
+    for (const length of lengths) {
+      const toeStart = -AK_PROPORTIONS.stock.lengthU[length as SizeClass] + AK_PROPORTIONS.stock.toeRoundU;
+      // A wood cell's profile starts with its bottom edge, back corner then front corner.
+      const bottom = FAMILIES.stock!.build({ length, style: 'ak-buttstock' })
+        .solids.filter((solid) => solid.kind === 'extruded-polygon' && solid.slot === 'furniture')
+        .flatMap((solid) => (solid.kind === 'extruded-polygon' ? solid.profile.slice(0, 2) : []))
+        .filter(([x]) => x >= toeStart - 1e-9);
+      const front = bottom.find(([x]) => Math.abs(x) < 1e-9);
+      const toe = bottom.find(([x]) => Math.abs(x - toeStart) < 1e-9);
+      expect(front, `${length}: front corner`).toBeDefined();
+      expect(toe, `${length}: toe corner`).toBeDefined();
+      expect(new Set(bottom.map(([x]) => x)).size, `${length}: points between`).toBeGreaterThan(2);
+      const slope = (toe![1] - front![1]) / (toe![0] - front![0]);
+      for (const [x, y] of bottom) {
+        expect(y, `${length}: bottom at x ${x}`).toBeCloseTo(front![1] + slope * x, 9);
+      }
     }
   });
 });

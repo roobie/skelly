@@ -75,8 +75,8 @@ export const AK_PROPORTIONS = {
   },
   /**
    * The wooden buttstock, measured back from the receiver's rear face, whose height its front takes. The
-   * comb drops gently; underneath, the neck curves down from the receiver's bottom into a straight belly
-   * that rounds off into the toe.
+   * top dips into a saddle and runs on as a level comb; underneath, the bottom runs straight from the
+   * receiver's bottom and rounds off into the toe.
    */
   stock: {
     lengthU: { S: 13.25, M: 16.25, L: 19.25 },
@@ -84,8 +84,8 @@ export const AK_PROPORTIONS = {
     comb: { x: -8, topU: -0.25 },
     /** The neck's top dips into a saddle behind the receiver's tang, then rises to the comb (BR 22:42). */
     saddle: { x: -5, topU: -0.75, frontSlope: 0.15 },
-    neck: { x: -2, dropU: 1.5, frontSlope: 1.25 },
-    bellySlope: 0.29,
+    /** The bottom's fall per u back, with no belly (BR 23:19); it puts the L stock's toe on the golden photo's. */
+    bottomSlope: 0.34,
     toeRoundU: 2.25,
     /** About 60% of the receiver-wide stock BR saw (22:42), each full width on the grid. */
     halfWidthU: { front: 1.25, butt: 1.375 },

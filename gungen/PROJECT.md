@@ -695,7 +695,9 @@ explicitly named `battle-rifle`.
   wrist or grip. Its front is as tall as the receiver's rear face and centred on
   it, but narrower than the receiver. Behind the receiver, its top dips into a
   slim neck's saddle and rises to a level comb, which carries the cheek datum.
-  It widens slightly toward a steel buttplate (`src/gun/akButtstock.ts`). It builds on the wood
+  Its bottom runs straight from the receiver's bottom to the toe, with no
+  belly (BR 23:19). It widens slightly toward a steel buttplate
+  (`src/gun/akButtstock.ts`). It builds on the wood
   helpers it shares with the tapered stock (`src/gun/stockWood.ts`), and it
   replaces the former ak-dropped style.
 - A passing fixture and a missing-gas-cylinder fixture exercise the layout. At
@@ -736,7 +738,15 @@ The rulings v2 carries, verbatim:
   of the buttstock should be less - i propose ~60% of current width". The neck's
   saddle is measured on the golden photo, like the rest of v2. The width is
   about 60% of the earlier receiver-wide stock, snapped so each full width
-  stays on the grid (`AK_PROPORTIONS`, `stock`).
+  stays on the grid (`AK_PROPORTIONS`, `stock`). On the next look, BR 23:19:
+  "overall #330 looks really good - the only thing I'm feeling nitpicky about
+  is the bottom of the buttstock Screenshot_2026-10-06_23-17-24.png / Our
+  current model has a little extra dip (red line) whereas i think it should be
+  more "straight" like the blue line)". The photo's stock is a wedge with a
+  straight bottom, but the photo reads the receiver's rear bottom lower than
+  the model's level receiver, so a bottom fitted to the photo had to bend up
+  into the receiver. The bottom now runs straight from the receiver's bottom
+  corner to the photo's toe, a little above the photo's wood near the receiver.
 
 Why v2's proportions are what they are: every proportion in
 `src/gun/akProportions.ts`, `AK_PROPORTIONS`, is measured part by part on an
