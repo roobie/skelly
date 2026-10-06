@@ -365,7 +365,7 @@ The lengths below remain abstract units on the existing grid. Optic reference so
   the fixed AR handguard ends at the rear face of the A2 collar. AK handguards
   end at the gas block. The AR front sight is at the standard gas-port station; its
   muzzle distances are 6.25/9.25/12u for S/M/L. The AK post stands just behind
-  the barrel's end, ahead of the slant brake (`src/gun/parts.ts`,
+  the barrel's end, behind the slant brake (`src/gun/parts.ts`,
   `frontSightPosition`). The AK's barrel, handguard and stock lengths are mapped
   from its golden photo (see "AK" under Milestone 2.3). Tilted magazine seating is declared per lower layout: conventional
   and AR layouts support the standard magazine profile; bullpup, AK, and trigger
@@ -674,7 +674,7 @@ explicitly named `battle-rifle`.
   barrel at the gas-port station, and its riser spans from the barrel to the
   cylinder. The gas piston rides on the cylinder's axis, and the cylinder's axis
   is checked parallel to the bore. The AK front sight uses its own style, its
-  post just behind the barrel's end and ahead of the slant brake.
+  post just behind the barrel's end and behind the slant brake.
 - Sight alignment takes its vertical datum from the notch's upper edge, not the
   block seat, so the front-post tip sits at that edge in ADS (d97-6); see
   `src/gun/parts.ts`, `akRearSight`, and `src/gun/exportGlb.ts`, `sightMetadata`.
@@ -716,8 +716,8 @@ The rulings v2 carries, verbatim:
   without being lifted on a pin".
 - Gas cylinder, BR 20:27: "the spacing between barrel and gas cylinder must
   expand (and as such, the gas block will extend too)". On the amount, BR 20:39:
-  "(b) but also fix the piston block to accomodate", where (b) was "raise it by
-  the full receiver lift, 2u".
+  "(b) but also fix the piston block to accomodate", where the lead's option (b)
+  was "Raise it by the full receiver lift, 2u (23 mm)".
 - Handguard, BR 20:27: "the handguard must adjust accordingly, among other
   things the prism acting as the bottom of the handguard must become as thin as
   the other walls of the handguard". BR 20:39: "well, the handguard bottom
