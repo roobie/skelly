@@ -847,12 +847,22 @@ export const createSession = (options: SessionOptions) => {
 
   const advancePlayerReadiness = (dt: number, intent: MoveIntent, moving: boolean): boolean => {
     const heldFirearm = firearmInHands();
-    const readyGait = moving && !queue.busy && Boolean(heldFirearm && controls.readyHeld?.());
-    const readyUid = readyGait ? heldFirearm?.uid : undefined;
-    firearms.advanceReadiness(dt, readyUid, readyGait);
+    const readyInput = moving && Boolean(heldFirearm && controls.readyHeld?.() && firearmsCombatTuning);
+    const readyGait = readyInput && !queue.busy;
+    const [activeJob] = queue.jobs;
+    const preservingReady =
+      readyInput &&
+      queue.busy &&
+      activeJob !== undefined &&
+      isFirearmTrainingAction(activeJob) &&
+      heldFirearm !== undefined &&
+      firearms.isReady(heldFirearm.uid);
+    const readyUid = readyGait || preservingReady ? heldFirearm?.uid : undefined;
+    const readinessHeld = readyUid !== undefined;
+    firearms.advanceReadiness(dt, readyUid, readinessHeld);
     const going = intent.forward !== 0 || intent.right !== 0;
     firearmReadyWalking = readyGait && going;
-    if (readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
+    if (readyGait && readyUid !== undefined && (!firearms.isReady(readyUid) || going)) {
       const training = skillActivityPracticeRate(registry, 'firearms_combat', 'readying');
       character.awardPractice('firearms_combat', dt * training.practicePerSecond, training.tier);
     }

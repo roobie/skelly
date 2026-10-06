@@ -52,12 +52,14 @@ jobs:
             package-lock.json
             gungen/package-lock.json
             deadvox/package-lock.json
+            deadvox/tools/lit-check/package-lock.json
             mobgen/package-lock.json
       - name: Lint (repo-wide)
         run: |
           npm ci
           npm ci --prefix gungen
           npm ci --prefix deadvox
+          npm ci --prefix deadvox/tools/lit-check
           npm ci --prefix mobgen
           npm run ci
           npm run test:site
