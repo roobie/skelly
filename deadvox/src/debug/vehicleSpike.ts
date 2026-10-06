@@ -1,5 +1,3 @@
-// biome-ignore lint/correctness/noUndeclaredDependencies: Deadvox reuses Mobgen's template through its existing source alias.
-import { shambler } from '@mobgen/mob/templates.ts';
 import {
   BoxGeometry,
   BufferAttribute,
@@ -11,6 +9,8 @@ import {
   HemisphereLight,
   Mesh,
   MeshLambertMaterial,
+  MeshPhongMaterial,
+  type Object3D,
   PerspectiveCamera,
   PlaneGeometry,
   Scene,
@@ -29,6 +29,27 @@ import { BUNDLED_CONTENT } from '../game/bundledContent.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
+import { HATCHBACK } from './vehicles/hatchback.ts';
+import {
+  dependentsOf,
+  type Fitting,
+  fittingById,
+  initialFittings,
+  isClearMaterial,
+  latticeVoxels,
+  measure,
+  missingSupports,
+  PART_CELL,
+  PART_LAYERS,
+  type PartLayer,
+  PartLibrary,
+  partTypeOf,
+  type Vehicle,
+  VOXEL,
+  VOXELS_PER_CELL,
+} from './vehicles/model.ts';
+import { RANGE_ROVER, STRIPPED_REMOVED } from './vehicles/rangeRover.ts';
+import { type MeshBuffers, meshGrid, type Rgb } from './vehicles/voxels.ts';
 
 const required = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -47,794 +68,479 @@ if (!schematicContext) {
 }
 const partsList = required<HTMLElement>('#parts-list');
 const stats = required<HTMLElement>('#stats');
+const notice = required<HTMLElement>('#notice');
+const perf = required<HTMLElement>('#perf');
 const layerButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-layer]')];
 const buildButtons = [...document.querySelectorAll<HTMLButtonElement>('[data-build]')];
+const viewButtons = required<HTMLElement>('#views');
 const spinWheels = required<HTMLInputElement>('#spin-wheels');
+const openDoors = required<HTMLInputElement>('#open-doors');
 const viewLabel = required<HTMLElement>('#vehicle-label');
 const grainNote = required<HTMLElement>('#grain-note');
 
-const PART_CELLS_PER_BLOCK = 4;
-const PART_CELL = BLOCK_SIZE / PART_CELLS_PER_BLOCK;
-const VOXEL_EDGE = shambler.voxelSize * 0.75;
-const VOXELS_PER_PART_CELL = Math.round(PART_CELL / VOXEL_EDGE);
-const CAR_CELLS = { x: 36, z: 16 } as const;
-const VIEW_LAYERS = ['frame', 'under', 'interior', 'body', 'roof'] as const;
-type PartLayer = (typeof VIEW_LAYERS)[number];
-interface Voxel {
-  readonly x: number;
-  readonly y: number;
-  readonly z: number;
-  readonly color: string;
+/** A removed fitting shown as an item on the workshop floor, in world metres and radians. */
+interface LooseItem {
+  readonly fitting: string;
+  readonly position: Vec3;
+  readonly rotation: Vec3;
 }
-type VoxelBox = readonly [x: number, y: number, z: number, width: number, height: number, depth: number, color: string];
-type Cell = readonly [x: number, z: number];
-type Footprint = readonly [x: number, z: number];
-interface PartInstance {
-  readonly id: string;
-  readonly type: PartId;
-  readonly cell: Cell;
-  readonly installed?: boolean;
-  readonly elevation?: number;
-}
-interface PartDefinition {
-  readonly id: string;
+interface BuildSpec {
   readonly label: string;
-  readonly short: string;
-  readonly footprint: Footprint;
-  readonly layer: PartLayer;
-  readonly massKg: number;
-  readonly elevation: number;
-  readonly voxels: readonly Voxel[];
-  readonly axlePivot?: boolean;
+  readonly vehicle: Vehicle;
+  readonly removed: readonly string[];
+  readonly lift?: true;
+  readonly loose?: readonly LooseItem[];
 }
 
-const isBoxSurface = (point: Vec3, origin: Vec3, size: Vec3): boolean => {
-  const [x, y, z] = point;
-  const [x0, y0, z0] = origin;
-  const [width, height, depth] = size;
-  return x === x0 || x === x0 + width - 1 || y === y0 || y === y0 + height - 1 || z === z0 || z === z0 + depth - 1;
-};
+const WHEEL_THICKNESS = 7 * VOXEL;
+const wheelStack = (ids: readonly string[]): LooseItem[] =>
+  ids.map((fitting, k) => ({
+    fitting,
+    position: [-3.1 + 0.02 * k, k * WHEEL_THICKNESS, 2.3],
+    rotation: [-Math.PI / 2, 0, 0],
+  }));
 
-const voxelBoxes = (...boxes: readonly VoxelBox[]): readonly Voxel[] => {
-  const points = new Map<string, Voxel>();
-  for (const [x0, y0, z0, width, height, depth, color] of boxes) {
-    for (let x = x0; x < x0 + width; x += 1) {
-      for (let y = y0; y < y0 + height; y += 1) {
-        for (let z = z0; z < z0 + depth; z += 1) {
-          if (!isBoxSurface([x, y, z], [x0, y0, z0], [width, height, depth])) {
-            continue;
-          }
-          const voxel = { x, y, z, color };
-          points.set(`${x},${y},${z}`, voxel);
-        }
-      }
-    }
-  }
-  return [...points.values()];
-};
-
-const wheelColor = (radius: number): string | undefined => {
-  if (radius >= 8.5 && radius <= 11.5) {
-    return '#292e31';
-  }
-  if (radius >= 5 && radius < 8.5) {
-    return '#9b9d91';
-  }
-  if (radius < 2.5) {
-    return '#555b5b';
-  }
-  return undefined;
-};
-
-const wheelVoxels = (): readonly Voxel[] => {
-  const points: Voxel[] = [];
-  for (let x = 0; x < 24; x += 1) {
-    for (let y = 0; y < 24; y += 1) {
-      const radius = Math.hypot(x + 0.5 - 12, y + 0.5 - 12);
-      const color = wheelColor(radius);
-      if (!color) {
-        continue;
-      }
-      for (let z = 0; z < 8; z += 1) {
-        points.push({ x, y, z, color });
-      }
-    }
-  }
-  return points;
-};
-
-// Part models are local voxel data; build records below only place these fittings.
-const PART_TYPES = {
-  'frame-rail': {
-    id: 'frame-rail',
-    label: 'Frame rail',
-    short: 'rail',
-    footprint: [4, 1],
-    layer: 'frame',
-    massKg: 10,
-    elevation: 0,
-    voxels: voxelBoxes([0, 0, 0, 16, 3, 4, '#596263'], [2, 3, 0, 12, 2, 4, '#747d78']),
-  },
-  crossmember: {
-    id: 'crossmember',
-    label: 'Crossmember',
-    short: 'cross',
-    footprint: [2, 10],
-    layer: 'frame',
-    massKg: 14,
-    elevation: 0,
-    voxels: voxelBoxes([0, 0, 0, 8, 4, 40, '#68716d'], [0, 4, 12, 8, 2, 16, '#859087']),
-  },
-  'floor-section': {
-    id: 'floor-section',
-    label: 'Floor section',
-    short: 'floor',
-    footprint: [4, 10],
-    layer: 'under',
-    massKg: 15,
-    elevation: 4,
-    voxels: voxelBoxes([0, 0, 0, 16, 2, 40, '#626a67']),
-  },
-  suspension: {
-    id: 'suspension',
-    label: 'Suspension mount',
-    short: 'susp',
-    footprint: [2, 2],
-    layer: 'under',
-    massKg: 9,
-    elevation: 2,
-    voxels: voxelBoxes([0, 0, 0, 8, 4, 8, '#6b706a'], [2, 4, 2, 4, 4, 4, '#8d8776']),
-  },
-  wheel: {
-    id: 'wheel',
-    label: 'Wheel and axle',
-    short: 'wheel',
-    footprint: [6, 2],
-    layer: 'under',
-    massKg: 19,
-    elevation: 0,
-    voxels: wheelVoxels(),
-    axlePivot: true,
-  },
-  engine: {
-    id: 'engine',
-    label: 'Engine',
-    short: 'engine',
-    footprint: [6, 6],
-    layer: 'under',
-    massKg: 145,
-    elevation: 6,
-    voxels: voxelBoxes(
-      [0, 0, 0, 24, 12, 24, '#5b6260'],
-      [4, 12, 3, 16, 7, 18, '#8a765c'],
-      [7, 19, 7, 10, 3, 10, '#474c4a'],
-    ),
-  },
-  transmission: {
-    id: 'transmission',
-    label: 'Transmission',
-    short: 'gear',
-    footprint: [4, 4],
-    layer: 'under',
-    massKg: 34,
-    elevation: 4,
-    voxels: voxelBoxes([0, 0, 0, 16, 9, 16, '#68685f'], [4, 9, 4, 8, 4, 8, '#898576']),
-  },
-  'fuel-tank': {
-    id: 'fuel-tank',
-    label: 'Fuel tank',
-    short: 'tank',
-    footprint: [6, 5],
-    layer: 'under',
-    massKg: 48,
-    elevation: 4,
-    voxels: voxelBoxes([0, 0, 0, 24, 9, 20, '#405d4b'], [3, 9, 3, 18, 3, 14, '#586e56']),
-  },
-  seat: {
-    id: 'seat',
-    label: 'Seat',
-    short: 'seat',
-    footprint: [3, 3],
-    layer: 'interior',
-    massKg: 16,
-    elevation: 18,
-    voxels: voxelBoxes(
-      [0, 0, 0, 12, 4, 12, '#907859'],
-      [4, 4, 1, 4, 18, 10, '#a48b67'],
-      [5, 22, 2, 2, 3, 8, '#5d5142'],
-    ),
-  },
-  dashboard: {
-    id: 'dashboard',
-    label: 'Dashboard',
-    short: 'dash',
-    footprint: [4, 12],
-    layer: 'interior',
-    massKg: 18,
-    elevation: 20,
-    voxels: voxelBoxes([0, 0, 0, 16, 9, 48, '#343a3a'], [2, 9, 4, 12, 4, 40, '#676c63']),
-  },
-  steering: {
-    id: 'steering',
-    label: 'Steering wheel',
-    short: 'steer',
-    footprint: [2, 2],
-    layer: 'interior',
-    massKg: 4,
-    elevation: 24,
-    voxels: voxelBoxes([2, 0, 2, 4, 15, 4, '#77786e'], [0, 12, 2, 8, 2, 4, '#b4aa90'], [2, 10, 0, 4, 5, 8, '#8b8d82']),
-  },
-  door: {
-    id: 'door',
-    label: 'Door',
-    short: 'door',
-    footprint: [10, 1],
-    layer: 'body',
-    massKg: 31,
-    elevation: 17,
-    voxels: voxelBoxes(
-      [0, 0, 0, 40, 11, 4, '#68726f'],
-      [5, 11, 0, 30, 9, 4, '#78939a'],
-      [0, 20, 0, 40, 2, 4, '#727c77'],
-    ),
-  },
-  hood: {
-    id: 'hood',
-    label: 'Hood',
-    short: 'hood',
-    footprint: [8, 12],
-    layer: 'body',
-    massKg: 37,
-    elevation: 22,
-    voxels: voxelBoxes([0, 0, 0, 32, 4, 48, '#68726f'], [5, 4, 5, 22, 2, 38, '#7c8580']),
-  },
-  tailgate: {
-    id: 'tailgate',
-    label: 'Tailgate',
-    short: 'tail',
-    footprint: [5, 12],
-    layer: 'body',
-    massKg: 29,
-    elevation: 6,
-    voxels: voxelBoxes([0, 0, 0, 20, 22, 4, '#69736e'], [4, 13, 0, 12, 7, 4, '#78939a']),
-  },
-  windshield: {
-    id: 'windshield',
-    label: 'Windshield',
-    short: 'glass',
-    footprint: [1, 12],
-    layer: 'body',
-    massKg: 11,
-    elevation: 24,
-    voxels: voxelBoxes([0, 0, 0, 4, 20, 48, '#8aabb0']),
-  },
-  'roof-panel': {
-    id: 'roof-panel',
-    label: 'Roof panel',
-    short: 'roof',
-    footprint: [16, 12],
-    layer: 'roof',
-    massKg: 42,
-    elevation: 43,
-    voxels: voxelBoxes([0, 0, 0, 64, 3, 48, '#626b66'], [3, 3, 3, 58, 2, 42, '#778078']),
-  },
-  'roof-rack': {
-    id: 'roof-rack',
-    label: 'Roof rack',
-    short: 'rack',
-    footprint: [8, 8],
-    layer: 'roof',
-    massKg: 24,
-    elevation: 48,
-    voxels: voxelBoxes(
-      [0, 0, 0, 32, 2, 3, '#6e716a'],
-      [0, 0, 29, 32, 2, 3, '#6e716a'],
-      [0, 0, 0, 3, 2, 32, '#8a8c7e'],
-      [29, 0, 0, 3, 2, 32, '#8a8c7e'],
-    ),
-  },
-  'armour-plate': {
-    id: 'armour-plate',
-    label: 'Armour plate',
-    short: 'armour',
-    footprint: [4, 12],
-    layer: 'body',
-    massKg: 58,
-    elevation: 16,
-    voxels: voxelBoxes([0, 0, 0, 16, 19, 4, '#565c56'], [3, 19, 0, 10, 3, 4, '#858a7b']),
-  },
-  bumper: {
-    id: 'bumper',
-    label: 'Bumper',
-    short: 'bumper',
-    footprint: [2, 14],
-    layer: 'body',
-    massKg: 22,
-    elevation: 3,
-    voxels: voxelBoxes([0, 0, 0, 8, 5, 56, '#74796f'], [1, 5, 4, 6, 2, 48, '#484e4c']),
-  },
-  'roof-support': {
-    id: 'roof-support',
-    label: 'Roof support',
-    short: 'post',
-    footprint: [1, 1],
-    layer: 'body',
-    massKg: 8,
-    elevation: 18,
-    voxels: voxelBoxes([0, 0, 0, 4, 25, 4, '#65706c']),
-  },
-} as const satisfies Record<string, PartDefinition>;
-type PartId = keyof typeof PART_TYPES;
-
-const part = (
-  id: string,
-  type: PartId,
-  cell: Cell,
-  options: { readonly installed?: boolean; readonly elevation?: number } = {},
-): PartInstance => ({ id, type, cell, ...options });
-
-const CHASSIS: readonly PartInstance[] = [
-  part('rail-near-0', 'frame-rail', [0, 2]),
-  part('rail-near-1', 'frame-rail', [4, 2]),
-  part('rail-near-2', 'frame-rail', [8, 2]),
-  part('rail-near-3', 'frame-rail', [12, 2]),
-  part('rail-near-4', 'frame-rail', [16, 2]),
-  part('rail-near-5', 'frame-rail', [20, 2]),
-  part('rail-near-6', 'frame-rail', [24, 2]),
-  part('rail-near-7', 'frame-rail', [28, 2]),
-  part('rail-near-8', 'frame-rail', [32, 2]),
-  part('rail-far-0', 'frame-rail', [0, 13]),
-  part('rail-far-1', 'frame-rail', [4, 13]),
-  part('rail-far-2', 'frame-rail', [8, 13]),
-  part('rail-far-3', 'frame-rail', [12, 13]),
-  part('rail-far-4', 'frame-rail', [16, 13]),
-  part('rail-far-5', 'frame-rail', [20, 13]),
-  part('rail-far-6', 'frame-rail', [24, 13]),
-  part('rail-far-7', 'frame-rail', [28, 13]),
-  part('rail-far-8', 'frame-rail', [32, 13]),
-  part('cross-rear', 'crossmember', [2, 3]),
-  part('cross-rear-seat', 'crossmember', [8, 3]),
-  part('cross-front-seat', 'crossmember', [17, 3]),
-  part('cross-front', 'crossmember', [28, 3]),
-  part('floor-rear-0', 'floor-section', [0, 3]),
-  part('floor-rear-1', 'floor-section', [4, 3]),
-  part('floor-mid-0', 'floor-section', [8, 3]),
-  part('floor-mid-1', 'floor-section', [12, 3]),
-  part('floor-mid-2', 'floor-section', [16, 3]),
-  part('floor-mid-3', 'floor-section', [20, 3]),
-  part('floor-front-0', 'floor-section', [24, 3]),
-];
-
-const RUNNING_GEAR: readonly PartInstance[] = [
-  part('suspension-rear-near', 'suspension', [4, 1]),
-  part('suspension-rear-far', 'suspension', [4, 13]),
-  part('suspension-front-near', 'suspension', [27, 1]),
-  part('suspension-front-far', 'suspension', [27, 13]),
-  part('wheel-rear-near', 'wheel', [3, 0]),
-  part('wheel-rear-far', 'wheel', [3, 14]),
-  part('wheel-front-near', 'wheel', [27, 0]),
-  part('wheel-front-far', 'wheel', [27, 14]),
-  part('transmission', 'transmission', [21, 6]),
-  part('engine', 'engine', [28, 5]),
-  part('fuel-tank', 'fuel-tank', [3, 5]),
-];
-
-const CABIN: readonly PartInstance[] = [
-  part('seat-driver', 'seat', [19, 4]),
-  part('seat-passenger', 'seat', [19, 9]),
-  part('seat-rear-near', 'seat', [10, 4]),
-  part('seat-rear-far', 'seat', [10, 9]),
-  part('dashboard', 'dashboard', [26, 2]),
-  part('steering-wheel', 'steering', [29, 5]),
-];
-
-const HATCHBACK_PARTS: readonly PartInstance[] = [
-  ...CHASSIS,
-  ...RUNNING_GEAR,
-  ...CABIN,
-  part('hatch-hood', 'hood', [28, 2]),
-  part('hatch-windshield', 'windshield', [27, 2]),
-  part('hatch-tailgate', 'tailgate', [1, 2]),
-  part('hatch-door-near', 'door', [13, 15], { installed: false, elevation: 17 }),
-  part('hatch-door-far', 'door', [13, 0], { elevation: 17 }),
-  part('hatch-roof', 'roof-panel', [11, 2]),
-  part('hatch-roof-rack', 'roof-rack', [15, 4], { installed: false }),
-  part('hatch-armour', 'armour-plate', [17, 0], { installed: false }),
-  part('hatch-front-bumper', 'bumper', [34, 1]),
-  part('hatch-rear-bumper', 'bumper', [0, 1]),
-];
-
-const RANGE_ROVER_PARTS: readonly PartInstance[] = [
-  ...CHASSIS,
-  ...RUNNING_GEAR,
-  ...CABIN,
-  part('rover-hood', 'hood', [28, 2]),
-  part('rover-windshield', 'windshield', [27, 2]),
-  part('rover-tailgate', 'tailgate', [1, 2]),
-  part('rover-door-front-near', 'door', [13, 15], { elevation: 17 }),
-  part('rover-door-front-far', 'door', [13, 0], { elevation: 17 }),
-  part('rover-door-rear-near', 'door', [21, 15], { elevation: 17 }),
-  part('rover-door-rear-far', 'door', [21, 0], { elevation: 17 }),
-  part('rover-roof-front', 'roof-panel', [4, 2], { elevation: 43 }),
-  part('rover-roof-rear', 'roof-panel', [20, 2], { elevation: 43 }),
-  part('rover-roof-rack', 'roof-rack', [17, 4]),
-  part('rover-armour-front-near', 'armour-plate', [28, 0]),
-  part('rover-armour-front-far', 'armour-plate', [28, 4]),
-  part('rover-armour-rear-near', 'armour-plate', [3, 0]),
-  part('rover-armour-rear-far', 'armour-plate', [3, 4]),
-  part('rover-front-post-near', 'roof-support', [27, 1]),
-  part('rover-front-post-far', 'roof-support', [27, 14]),
-  part('rover-rear-post-near', 'roof-support', [10, 1]),
-  part('rover-rear-post-far', 'roof-support', [10, 14]),
-  part('rover-front-bumper', 'bumper', [34, 1]),
-  part('rover-rear-bumper', 'bumper', [0, 1]),
-];
-
-const VEHICLES = {
-  hatchback: { id: 'hatchback', label: 'Hatchback · cutaway', parts: HATCHBACK_PARTS, removed: [] },
-  rover: { id: 'rover', label: 'Boxy 4×4', parts: RANGE_ROVER_PARTS, removed: [] },
+const BUILDS = {
+  hatchback: { label: 'Hatchback · cutaway (round 3)', vehicle: HATCHBACK, removed: [] },
+  rover: { label: 'Range Rover-type 4×4', vehicle: RANGE_ROVER, removed: [] },
   stripped: {
-    id: 'stripped',
-    label: 'Same 4×4 · stripped on lift',
-    base: 'rover',
-    removed: [
-      'rover-hood',
-      'rover-windshield',
-      'rover-tailgate',
-      'rover-door-front-near',
-      'rover-door-front-far',
-      'rover-door-rear-near',
-      'rover-door-rear-far',
-      'rover-roof-front',
-      'rover-roof-rear',
-      'rover-roof-rack',
-      'rover-armour-front-near',
-      'rover-armour-front-far',
-      'rover-armour-rear-near',
-      'rover-armour-rear-far',
-      'rover-front-post-near',
-      'rover-front-post-far',
-      'rover-rear-post-near',
-      'rover-rear-post-far',
-      'rover-front-bumper',
-      'rover-rear-bumper',
-    ],
+    label: 'Same 4×4 · stripped on the lift',
+    vehicle: RANGE_ROVER,
+    removed: STRIPPED_REMOVED,
+    lift: true,
+    loose: wheelStack(['wheel-front-near', 'wheel-front-far', 'wheel-rear-near', 'wheel-rear-far']),
   },
-} as const;
-type VehicleId = keyof typeof VEHICLES;
+} as const satisfies Record<string, BuildSpec>;
+type BuildId = keyof typeof BUILDS;
+const isBuildId = (id: string | null | undefined): id is BuildId => id !== null && id !== undefined && id in BUILDS;
 
-const fittingsFor = (vehicle: VehicleId): readonly PartInstance[] => {
-  const spec = VEHICLES[vehicle];
-  return 'base' in spec ? VEHICLES[spec.base].parts : spec.parts;
+/** Camera presets in world metres around the vehicle's origin; a lifted car raises them with it. */
+interface ViewPreset {
+  readonly label: string;
+  readonly key: string;
+  readonly position: Vec3;
+  readonly target: Vec3;
+  readonly fov: number;
+  readonly doors?: true;
+}
+const VIEWS = {
+  front34: { label: 'Front ¾', key: '1', position: [5.6, 1.75, 4.6], target: [0.25, 0.8, 0], fov: 38 },
+  side: { label: 'Side', key: '2', position: [0.2, 0.95, 12.5], target: [0.2, 0.9, 0], fov: 26 },
+  rear34: { label: 'Rear ¾', key: '3', position: [-5.6, 1.85, 4.4], target: [-0.25, 0.8, 0], fov: 38 },
+  top: { label: 'Top', key: '4', position: [0.2, 13, 0.01], target: [0.2, 0, 0], fov: 26 },
+  far: { label: '20 m', key: '5', position: [14.5, 2.2, 13.6], target: [0, 0.9, 0], fov: 38 },
+  interior: {
+    label: 'Interior',
+    key: '6',
+    position: [-0.7, 1.6, 2.4],
+    target: [0.2, 0.95, 0.15],
+    fov: 50,
+    doors: true,
+  },
+  front: { label: 'Front', key: '7', position: [12.5, 0.95, 0], target: [0, 0.9, 0], fov: 26 },
+} as const satisfies Record<string, ViewPreset>;
+type ViewId = keyof typeof VIEWS;
+const isViewId = (id: string | null | undefined): id is ViewId => id !== null && id !== undefined && id in VIEWS;
+
+const LIFT_HEIGHT = 1;
+const DOOR_OPEN = (65 * Math.PI) / 180;
+const WHEEL_SPIN = 1.8;
+
+const params = new URLSearchParams(globalThis.location.search);
+const buildParam = params.get('build');
+let activeBuild: BuildId = isBuildId(buildParam) ? buildParam : 'rover';
+const layerParam = params.get('layer') as PartLayer | null;
+let activeLayer: PartLayer = layerParam && PART_LAYERS.includes(layerParam) ? layerParam : 'body';
+const viewParam = params.get('view');
+let activeView: ViewId = isViewId(viewParam) ? viewParam : 'front34';
+openDoors.checked = params.get('doors') === 'open';
+spinWheels.checked = params.get('spin') === '1';
+
+const libraries = new Map<Vehicle, PartLibrary>();
+const libraryFor = (vehicle: Vehicle): PartLibrary => {
+  let library = libraries.get(vehicle);
+  if (!library) {
+    library = new PartLibrary(vehicle);
+    libraries.set(vehicle, library);
+  }
+  return library;
 };
 
-const colorFor = (type: PartId): string => PART_TYPES[type].voxels[0]?.color ?? '#777777';
-const geometryCache = new Map<PartId, BufferGeometry>();
-const voxelMaterial = new MeshLambertMaterial({ vertexColors: true });
-const buildStates = new Map<VehicleId, Set<string>>();
-let activeBuild: VehicleId = 'hatchback';
-let activeLayer: PartLayer = 'body';
-let vehicleGroup = new Group();
-let wheelPivots: Group[] = [];
-let liftGroup: Group | undefined;
-
-const initialState = (vehicle: VehicleId): Set<string> => {
-  const spec = VEHICLES[vehicle];
-  const removed = new Set<string>(spec.removed);
-  return new Set(
-    fittingsFor(vehicle)
-      .filter((fitting) => fitting.installed !== false && !removed.has(fitting.id))
-      .map((fitting) => fitting.id),
-  );
-};
-
-const getBuildState = (vehicle: VehicleId): Set<string> => {
-  let state = buildStates.get(vehicle);
+const buildStates = new Map<BuildId, Set<string>>();
+const installedFor = (id: BuildId): Set<string> => {
+  let state = buildStates.get(id);
   if (!state) {
-    state = initialState(vehicle);
-    buildStates.set(vehicle, state);
+    const spec: BuildSpec = BUILDS[id];
+    state = initialFittings(spec.vehicle, spec.removed);
+    buildStates.set(id, state);
   }
   return state;
 };
 
-const occupiedVoxels = (voxels: readonly Voxel[]): Map<string, string> => {
-  const map = new Map<string, string>();
-  for (const voxel of voxels) {
-    map.set(`${voxel.x},${voxel.y},${voxel.z}`, voxel.color);
+const rgbCache = new Map<string, Rgb>();
+const rgbOf = (vehicle: Vehicle, mat: string): Rgb => {
+  const hex = vehicle.palette[mat] ?? mat;
+  let rgb = rgbCache.get(hex);
+  if (!rgb) {
+    const color = new Color(hex);
+    rgb = [color.r, color.g, color.b];
+    rgbCache.set(hex, rgb);
   }
-  return map;
+  return rgb;
 };
 
-const faceCorners: readonly { readonly neighbor: Vec3; readonly normal: Vec3; readonly corners: readonly Vec3[] }[] = [
-  {
-    neighbor: [1, 0, 0],
-    normal: [1, 0, 0],
-    corners: [
-      [1, 0, 0],
-      [1, 1, 0],
-      [1, 1, 1],
-      [1, 0, 1],
-    ],
-  },
-  {
-    neighbor: [-1, 0, 0],
-    normal: [-1, 0, 0],
-    corners: [
-      [0, 0, 1],
-      [0, 1, 1],
-      [0, 1, 0],
-      [0, 0, 0],
-    ],
-  },
-  {
-    neighbor: [0, 1, 0],
-    normal: [0, 1, 0],
-    corners: [
-      [0, 1, 1],
-      [1, 1, 1],
-      [1, 1, 0],
-      [0, 1, 0],
-    ],
-  },
-  {
-    neighbor: [0, -1, 0],
-    normal: [0, -1, 0],
-    corners: [
-      [0, 0, 0],
-      [1, 0, 0],
-      [1, 0, 1],
-      [0, 0, 1],
-    ],
-  },
-  {
-    neighbor: [0, 0, 1],
-    normal: [0, 0, 1],
-    corners: [
-      [1, 0, 1],
-      [1, 1, 1],
-      [0, 1, 1],
-      [0, 0, 1],
-    ],
-  },
-  {
-    neighbor: [0, 0, -1],
-    normal: [0, 0, -1],
-    corners: [
-      [0, 0, 0],
-      [0, 1, 0],
-      [1, 1, 0],
-      [1, 0, 0],
-    ],
-  },
-];
-
-const buildPartGeometry = (type: PartId): BufferGeometry => {
-  const cached = geometryCache.get(type);
-  if (cached) {
-    return cached;
-  }
-  const points = occupiedVoxels(PART_TYPES[type].voxels);
-  const positions: number[] = [];
-  const normals: number[] = [];
-  const colors: number[] = [];
-  for (const [key, color] of points) {
-    const [x, y, z] = key.split(',').map(Number) as [number, number, number];
-    const tint = new Color(color);
-    for (const face of faceCorners) {
-      const [nx, ny, nz] = face.neighbor;
-      if (points.has(`${x + nx},${y + ny},${z + nz}`)) {
-        continue;
-      }
-      const corners = [
-        face.corners[0]!,
-        face.corners[1]!,
-        face.corners[2]!,
-        face.corners[0]!,
-        face.corners[2]!,
-        face.corners[3]!,
-      ];
-      for (const corner of corners) {
-        const [cx, cy, cz] = corner;
-        positions.push((x + cx) * VOXEL_EDGE, (y + cy) * VOXEL_EDGE, (z + cz) * VOXEL_EDGE);
-        normals.push(...face.normal);
-        colors.push(tint.r, tint.g, tint.b);
-      }
-    }
+const toGeometry = (buffers: MeshBuffers): BufferGeometry | undefined => {
+  if (buffers.quads === 0) {
+    return undefined;
   }
   const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new BufferAttribute(new Float32Array(positions), 3));
-  geometry.setAttribute('normal', new BufferAttribute(new Float32Array(normals), 3));
-  geometry.setAttribute('color', new BufferAttribute(new Float32Array(colors), 3));
+  geometry.setAttribute('position', new BufferAttribute(buffers.positions, 3));
+  geometry.setAttribute('normal', new BufferAttribute(buffers.normals, 3));
+  geometry.setAttribute('color', new BufferAttribute(buffers.colors, 3));
+  geometry.setIndex(new BufferAttribute(buffers.indices, 1));
+  geometry.scale(VOXEL, VOXEL, VOXEL);
   geometry.computeBoundingSphere();
-  geometryCache.set(type, geometry);
   return geometry;
 };
 
-const installedInstances = (): readonly PartInstance[] => {
-  const state = getBuildState(activeBuild);
-  return fittingsFor(activeBuild).filter((fitting) => state.has(fitting.id));
-};
-
-const measureVehicle = (installed: readonly PartInstance[]): { mass: number; comX: number; comZ: number } => {
-  let mass = 0;
-  let weightedX = 0;
-  let weightedZ = 0;
-  for (const fitting of installed) {
-    const definition = PART_TYPES[fitting.type];
-    const x = (fitting.cell[0] + definition.footprint[0] / 2 - CAR_CELLS.x / 2) * PART_CELL;
-    const z = (fitting.cell[1] + definition.footprint[1] / 2 - CAR_CELLS.z / 2) * PART_CELL;
-    mass += definition.massKg;
-    weightedX += x * definition.massKg;
-    weightedZ += z * definition.massKg;
+interface PartMeshes {
+  readonly solid: BufferGeometry | undefined;
+  readonly clear: BufferGeometry | undefined;
+}
+const meshCache = new Map<string, PartMeshes>();
+const meshCost = { types: 0, ms: 0 };
+const partMeshes = (vehicle: Vehicle, typeId: string, mirror: boolean): PartMeshes => {
+  const key = `${vehicle.id}:${typeId}:${mirror}`;
+  let meshes = meshCache.get(key);
+  if (!meshes) {
+    const started = performance.now();
+    const grid = libraryFor(vehicle).grid(typeId, mirror);
+    const { solid, clear } = meshGrid(grid, (mat) => rgbOf(vehicle, mat), isClearMaterial);
+    meshes = { solid: toGeometry(solid), clear: toGeometry(clear) };
+    meshCache.set(key, meshes);
+    meshCost.types += 1;
+    meshCost.ms += performance.now() - started;
   }
-  return { mass, comX: mass ? weightedX / mass : 0, comZ: mass ? weightedZ / mass : 0 };
+  return meshes;
 };
 
-const addLift = (): Group => {
+const solidMaterial = new MeshLambertMaterial({ vertexColors: true });
+const glassMaterial = new MeshPhongMaterial({
+  vertexColors: true,
+  transparent: true,
+  opacity: 0.36,
+  shininess: 80,
+  specular: 0x9a_aa_b4,
+  depthWrite: false,
+});
+
+const partObject = (vehicle: Vehicle, fitting: Fitting): Group => {
+  const { solid, clear } = partMeshes(vehicle, fitting.type, fitting.mirror === true);
+  const holder = new Group();
+  if (solid) {
+    const mesh = new Mesh(solid, solidMaterial);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    holder.add(mesh);
+  }
+  if (clear) {
+    const mesh = new Mesh(clear, glassMaterial);
+    mesh.receiveShadow = true;
+    mesh.renderOrder = 1;
+    holder.add(mesh);
+  }
+  return holder;
+};
+
+const voxelToWorld = (vehicle: Vehicle, [x, y, z]: readonly number[]): Vector3 => {
+  const [lx, , lz] = latticeVoxels(vehicle);
+  return new Vector3((x! - lx / 2) * VOXEL, y! * VOXEL, (z! - lz / 2) * VOXEL);
+};
+
+const scene = new Scene();
+let vehicleGroup = new Group();
+let liftGroup: Group | undefined;
+let wheelPivots: Group[] = [];
+let doorPivots: { readonly pivot: Group; readonly sign: number }[] = [];
+
+/** A fitting in vehicle space: wheels spin about their axle and doors swing about their hinge line. */
+const placeFitting = (vehicle: Vehicle, fitting: Fitting): Object3D => {
+  const library = libraryFor(vehicle);
+  const holder = partObject(vehicle, fitting);
+  const origin = voxelToWorld(vehicle, library.origin(fitting));
+  const type = partTypeOf(vehicle, fitting);
+  if (!(fitting.motion && type.pivot)) {
+    holder.position.copy(origin);
+    return holder;
+  }
+  const [px, py, pz] = type.pivot;
+  const local = new Vector3(px, py, fitting.mirror ? -pz : pz).multiplyScalar(VOXEL);
+  const pivot = new Group();
+  pivot.position.copy(origin).add(local);
+  holder.position.copy(local).negate();
+  pivot.add(holder);
+  if (fitting.motion === 'spin') {
+    wheelPivots.push(pivot);
+  } else {
+    const sign = fitting.mirror ? -1 : 1;
+    pivot.rotation.y = openDoors.checked ? sign * DOOR_OPEN : 0;
+    doorPivots.push({ pivot, sign });
+  }
+  return pivot;
+};
+
+const looseObject = (vehicle: Vehicle, item: LooseItem): Object3D | undefined => {
+  const fitting = fittingById(vehicle).get(item.fitting);
+  if (!fitting) {
+    return undefined;
+  }
+  const holder = partObject(vehicle, fitting);
+  holder.position.set(...item.position);
+  holder.rotation.set(...item.rotation);
+  return holder;
+};
+
+const liftMaterials = {
+  column: new MeshLambertMaterial({ color: '#2f5b86' }),
+  arm: new MeshLambertMaterial({ color: '#c9a640' }),
+  pad: new MeshLambertMaterial({ color: '#202426' }),
+  plate: new MeshLambertMaterial({ color: '#5d6163' }),
+};
+
+/** In line with the 4×4's B-pillars, so the columns hide a pillar rather than a door opening. */
+const LIFT_COLUMN_X = -0.33;
+/** The arm pads, under the 4×4's sills just ahead of the rear arch and behind the front one. */
+const LIFT_PADS_X = [-0.55, 0.78] as const;
+const SILL_UNDERSIDE = 12 * VOXEL;
+
+/** A two-post lift: columns beside the car, arms under the sills, a beam across the top. */
+const buildLift = (vehicle: Vehicle): Group => {
   const group = new Group();
-  const steel = new MeshLambertMaterial({ color: '#6c706a' });
-  const yellow = new MeshLambertMaterial({ color: '#b3985d' });
-  const add = (size: Vec3, at: Vec3, material: MeshLambertMaterial): void => {
+  const add = (size: Vec3, at: Vec3, material: MeshLambertMaterial, yaw = 0): void => {
     const mesh = new Mesh(new BoxGeometry(...size), material);
     mesh.position.set(...at);
+    mesh.rotation.y = yaw;
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     group.add(mesh);
   };
-  for (const x of [-1.7, 1.7]) {
-    for (const z of [-0.8, 0.8]) {
-      add([0.12, 1.35, 0.12], [x, 0.68, z], steel);
+  const [, , lz] = latticeVoxels(vehicle);
+  const halfWidth = (lz / 2 - 4) * VOXEL;
+  const columnZ = halfWidth + 0.38;
+  const columnX = LIFT_COLUMN_X;
+  const sillUnderside = LIFT_HEIGHT + SILL_UNDERSIDE;
+  for (const side of [-1, 1]) {
+    const z = side * columnZ;
+    add([0.26, 2.95, 0.26], [columnX, 1.475, z], liftMaterials.column);
+    add([0.56, 0.04, 0.5], [columnX, 0.02, z], liftMaterials.plate);
+    add([0.34, 0.4, 0.3], [columnX, sillUnderside - 0.12, z - side * 0.26], liftMaterials.arm);
+    for (const padX of LIFT_PADS_X) {
+      const padZ = side * (halfWidth - 0.06);
+      const fromX = columnX;
+      const fromZ = z - side * 0.26;
+      const length = Math.hypot(padX - fromX, padZ - fromZ);
+      const yaw = -Math.atan2(padZ - fromZ, padX - fromX);
+      add([length, 0.09, 0.14], [(padX + fromX) / 2, sillUnderside - 0.1, (padZ + fromZ) / 2], liftMaterials.arm, yaw);
+      add([0.16, 0.07, 0.16], [padX, sillUnderside - 0.035, padZ], liftMaterials.pad);
     }
-    add([0.18, 0.12, 2.0], [x, 1.32, 0], yellow);
   }
+  add([0.22, 0.2, columnZ * 2 + 0.26], [columnX, 2.95, 0], liftMaterials.column);
   return group;
 };
 
-const clearGroup = (group: Group): void => {
-  for (const child of [...group.children]) {
-    group.remove(child);
-  }
-};
+const renderer = new WebGLRenderer({ antialias: true });
+const camera = new PerspectiveCamera(38, 1, 0.05, 96);
 
 const renderVehicle = (): void => {
+  const started = performance.now();
+  const spec: BuildSpec = BUILDS[activeBuild];
+  const { vehicle } = spec;
+  const installed = installedFor(activeBuild);
   if (liftGroup) {
     scene.remove(liftGroup);
     liftGroup = undefined;
   }
   scene.remove(vehicleGroup);
-  clearGroup(vehicleGroup);
-  wheelPivots = [];
   vehicleGroup = new Group();
-  const installed = installedInstances();
-  for (const fitting of installed) {
-    const definition = PART_TYPES[fitting.type];
-    const startX = fitting.cell[0] * PART_CELL - (CAR_CELLS.x * PART_CELL) / 2;
-    const startZ = fitting.cell[1] * PART_CELL - (CAR_CELLS.z * PART_CELL) / 2;
-    const geometry = buildPartGeometry(fitting.type);
-    if ('axlePivot' in definition && definition.axlePivot) {
-      const pivot = new Group();
-      const width = definition.footprint[0] * PART_CELL;
-      const depth = definition.footprint[1] * PART_CELL;
-      pivot.position.set(
-        startX + width / 2,
-        (fitting.elevation ?? definition.elevation) * VOXEL_EDGE + 12 * VOXEL_EDGE,
-        startZ + depth / 2,
-      );
-      const mesh = new Mesh(geometry, voxelMaterial);
-      mesh.position.set(-width / 2, -12 * VOXEL_EDGE, -depth / 2);
-      pivot.add(mesh);
-      vehicleGroup.add(pivot);
-      wheelPivots.push(pivot);
-    } else {
-      const mesh = new Mesh(geometry, voxelMaterial);
-      mesh.position.set(startX, (fitting.elevation ?? definition.elevation) * VOXEL_EDGE, startZ);
-      vehicleGroup.add(mesh);
+  wheelPivots = [];
+  doorPivots = [];
+  for (const fitting of vehicle.fittings) {
+    if (installed.has(fitting.id)) {
+      vehicleGroup.add(placeFitting(vehicle, fitting));
     }
   }
-  if (activeBuild === 'stripped') {
-    liftGroup = addLift();
+  if (spec.lift) {
+    liftGroup = buildLift(vehicle);
+    for (const item of spec.loose ?? []) {
+      const loose = looseObject(vehicle, item);
+      if (loose && !installed.has(item.fitting)) {
+        liftGroup.add(loose);
+      }
+    }
     scene.add(liftGroup);
-    vehicleGroup.position.y = 1.35;
+    vehicleGroup.position.y = LIFT_HEIGHT;
   }
   scene.add(vehicleGroup);
-  const { mass, comX, comZ } = measureVehicle(installed);
-  stats.textContent = `${installed.length} installed fittings · ${mass.toLocaleString()} kg · centre of mass ${comX >= 0 ? '+' : ''}${comX.toFixed(2)} m forward, ${comZ >= 0 ? '+' : ''}${comZ.toFixed(2)} m passenger-side`;
-  viewLabel.textContent = VEHICLES[activeBuild].label;
+  const assemblyMs = performance.now() - started;
+  const { massKg, centre } = measure(libraryFor(vehicle), installed);
+  const signed = (value: number): string => `${value >= 0 ? '+' : ''}${value.toFixed(2)}`;
+  stats.textContent = `${installed.size} fittings · ${Math.round(massKg).toLocaleString('en')} kg · centre of mass ${signed(centre[0])} m forward, ${centre[1].toFixed(2)} m up, ${signed(centre[2])} m toward the near side`;
+  viewLabel.textContent = spec.label;
   for (const button of buildButtons) {
     button.setAttribute('aria-pressed', String(button.dataset.build === activeBuild));
   }
   drawSchematic();
   drawPartsList();
-  scheduleRender();
+  renderScene();
+  perf.textContent = `${renderer.info.render.calls} draw calls · ${renderer.info.render.triangles.toLocaleString('en')} triangles · ${meshCost.types} part meshes built in ${meshCost.ms.toFixed(0)} ms · assembly ${assemblyMs.toFixed(1)} ms`;
 };
 
+interface CellRect {
+  readonly x0: number;
+  readonly z0: number;
+  readonly x1: number;
+  readonly z1: number;
+}
+const fittingCells = (vehicle: Vehicle, fitting: Fitting): CellRect => {
+  const { min, max } = libraryFor(vehicle).placed(fitting).bounds;
+  return {
+    x0: Math.floor(min[0] / VOXELS_PER_CELL),
+    z0: Math.floor(min[2] / VOXELS_PER_CELL),
+    x1: Math.floor(max[0] / VOXELS_PER_CELL) + 1,
+    z1: Math.floor(max[2] / VOXELS_PER_CELL) + 1,
+  };
+};
+
+const schematicLayout = (vehicle: Vehicle): { readonly cell: number; readonly left: number; readonly top: number } => {
+  const [cx, , cz] = vehicle.lattice;
+  const cell = Math.min((schematic.width - 100) / cx, (schematic.height - 40) / cz);
+  return {
+    cell,
+    left: Math.round((schematic.width - cell * cx) / 2),
+    top: Math.round((schematic.height - cell * cz) / 2),
+  };
+};
+
+const layerFittings = (vehicle: Vehicle): readonly Fitting[] =>
+  vehicle.fittings.filter((fitting) => partTypeOf(vehicle, fitting).layer === activeLayer);
+
+const drawGrid = (
+  ctx: CanvasRenderingContext2D,
+  vehicle: Vehicle,
+  layout: ReturnType<typeof schematicLayout>,
+): void => {
+  const [cx, , cz] = vehicle.lattice;
+  const { cell, left, top } = layout;
+  ctx.fillStyle = '#d9cda8';
+  ctx.fillText('REAR', left - 28, top + (cell * cz) / 2);
+  ctx.fillText('FRONT →', left + cell * cx + 40, top + (cell * cz) / 2);
+  ctx.strokeStyle = '#343b42';
+  ctx.lineWidth = 1;
+  for (let x = 0; x <= cx; x += 1) {
+    ctx.beginPath();
+    ctx.moveTo(left + x * cell, top);
+    ctx.lineTo(left + x * cell, top + cz * cell);
+    ctx.stroke();
+  }
+  for (let z = 0; z <= cz; z += 1) {
+    ctx.beginPath();
+    ctx.moveTo(left, top + z * cell);
+    ctx.lineTo(left + cx * cell, top + z * cell);
+    ctx.stroke();
+  }
+};
+
+const fittingColor = (vehicle: Vehicle, fitting: Fitting): string => {
+  const [first] = partTypeOf(vehicle, fitting).shape;
+  return first ? (vehicle.palette[first.mat] ?? first.mat) : '#777777';
+};
+
+/** Top-down lattice: each fitting of the selected layer as the cells its voxels cover; z grows downward. */
 const drawSchematic = (): void => {
   const ctx = schematicContext;
-  const { width, height } = schematic;
-  ctx.clearRect(0, 0, width, height);
+  const { vehicle } = BUILDS[activeBuild];
+  const [, , cz] = vehicle.lattice;
+  const layout = schematicLayout(vehicle);
+  const { cell, left, top } = layout;
   ctx.fillStyle = '#171b20';
-  ctx.fillRect(0, 0, width, height);
-  const cell = Math.min((width - 100) / CAR_CELLS.x, (height - 72) / CAR_CELLS.z);
-  const x0 = Math.round((width - cell * CAR_CELLS.x) / 2);
-  const z0 = Math.round((height - cell * CAR_CELLS.z) / 2) + 8;
+  ctx.fillRect(0, 0, schematic.width, schematic.height);
   ctx.font = `${Math.max(10, cell * 0.75)}px system-ui, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillStyle = '#d9cda8';
-  ctx.fillText('REAR', x0 - 28, z0 + (cell * CAR_CELLS.z) / 2);
-  ctx.fillText('FRONT →', x0 + cell * CAR_CELLS.x + 40, z0 + (cell * CAR_CELLS.z) / 2);
-  ctx.strokeStyle = '#343b42';
-  ctx.lineWidth = 1;
-  for (let x = 0; x <= CAR_CELLS.x; x += 1) {
-    ctx.beginPath();
-    ctx.moveTo(x0 + x * cell, z0);
-    ctx.lineTo(x0 + x * cell, z0 + CAR_CELLS.z * cell);
-    ctx.stroke();
-  }
-  for (let z = 0; z <= CAR_CELLS.z; z += 1) {
-    ctx.beginPath();
-    ctx.moveTo(x0, z0 + z * cell);
-    ctx.lineTo(x0 + CAR_CELLS.x * cell, z0 + z * cell);
-    ctx.stroke();
-  }
-  const state = getBuildState(activeBuild);
-  const visible = fittingsFor(activeBuild).filter((fitting) => PART_TYPES[fitting.type].layer === activeLayer);
-  for (const fitting of visible) {
-    const definition = PART_TYPES[fitting.type];
-    const [x, z] = fitting.cell;
-    const [footX, footZ] = definition.footprint;
-    const left = x0 + x * cell;
-    const top = z0 + z * cell;
-    const present = state.has(fitting.id);
-    ctx.fillStyle = present ? colorFor(fitting.type) : '#252a2d';
-    ctx.globalAlpha = present ? 0.82 : 0.35;
-    ctx.fillRect(left + 1, top + 1, footX * cell - 2, footZ * cell - 2);
+  drawGrid(ctx, vehicle, layout);
+  const installed = installedFor(activeBuild);
+  for (const fitting of layerFittings(vehicle)) {
+    const rect = fittingCells(vehicle, fitting);
+    const x = left + rect.x0 * cell;
+    const y = top + (cz - rect.z1) * cell;
+    const width = (rect.x1 - rect.x0) * cell;
+    const height = (rect.z1 - rect.z0) * cell;
+    const present = installed.has(fitting.id);
+    ctx.globalAlpha = present ? 0.75 : 0.3;
+    ctx.fillStyle = present ? fittingColor(vehicle, fitting) : '#252a2d';
+    ctx.fillRect(x + 1, y + 1, width - 2, height - 2);
     ctx.globalAlpha = 1;
-    ctx.strokeStyle = present ? '#d9ddcf' : colorFor(fitting.type);
+    ctx.strokeStyle = present ? '#d9ddcf' : '#8a8f88';
     ctx.setLineDash(present ? [] : [4, 3]);
-    ctx.strokeRect(left + 1, top + 1, footX * cell - 2, footZ * cell - 2);
+    ctx.strokeRect(x + 1, y + 1, width - 2, height - 2);
     ctx.setLineDash([]);
-    if (footX * cell > 34 && footZ * cell > 16) {
-      ctx.fillStyle = '#101416';
-      ctx.fillText(definition.short, left + (footX * cell) / 2, top + (footZ * cell) / 2);
-    }
   }
-  const { mass, comX, comZ } = measureVehicle(installedInstances());
-  if (mass) {
-    const cx = x0 + (CAR_CELLS.x / 2 + comX / PART_CELL) * cell;
-    const cz = z0 + (CAR_CELLS.z / 2 + comZ / PART_CELL) * cell;
+  const { massKg, centre } = measure(libraryFor(vehicle), installed);
+  if (massKg > 0) {
+    const [lx, , lz] = latticeVoxels(vehicle);
+    const comX = left + (centre[0] / PART_CELL + lx / VOXELS_PER_CELL / 2) * cell;
+    const comY = top + (cz - (centre[2] / PART_CELL + lz / VOXELS_PER_CELL / 2)) * cell;
     ctx.strokeStyle = '#ffcf67';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(cx - 7, cz);
-    ctx.lineTo(cx + 7, cz);
-    ctx.moveTo(cx, cz - 7);
-    ctx.lineTo(cx, cz + 7);
+    ctx.moveTo(comX - 7, comY);
+    ctx.lineTo(comX + 7, comY);
+    ctx.moveTo(comX, comY - 7);
+    ctx.lineTo(comX, comY + 7);
     ctx.stroke();
     ctx.fillStyle = '#ffcf67';
-    ctx.fillText('COM', cx, cz - 10);
+    ctx.fillText('COM', comX, comY - 11);
   }
 };
 
+const labelOf = (vehicle: Vehicle, id: string): string => {
+  const fitting = fittingById(vehicle).get(id);
+  return fitting ? `${partTypeOf(vehicle, fitting).label.toLowerCase()} (${id})` : id;
+};
+
+/** Fits or removes a fitting, refusing a removal something still rests on and a fit whose supports are off. */
 const togglePart = (id: string): void => {
-  const state = getBuildState(activeBuild);
-  if (state.has(id)) {
-    state.delete(id);
+  const { vehicle } = BUILDS[activeBuild];
+  const installed = installedFor(activeBuild);
+  if (installed.has(id)) {
+    const blockers = dependentsOf(vehicle, installed, id);
+    if (blockers.length > 0) {
+      notice.textContent = `Can't take off ${labelOf(vehicle, id)}: ${blockers.map((f) => labelOf(vehicle, f.id)).join(', ')} rest on it.`;
+      return;
+    }
+    installed.delete(id);
   } else {
-    state.add(id);
+    const missing = missingSupports(vehicle, installed, id);
+    if (missing.length > 0) {
+      notice.textContent = `Can't fit ${labelOf(vehicle, id)}: it rests on ${missing.map((m) => labelOf(vehicle, m)).join(', ')}.`;
+      return;
+    }
+    installed.add(id);
   }
+  notice.textContent = '';
   renderVehicle();
 };
 
 const drawPartsList = (): void => {
   partsList.replaceChildren();
-  const state = getBuildState(activeBuild);
-  const visible = fittingsFor(activeBuild).filter((fitting) => PART_TYPES[fitting.type].layer === activeLayer);
-  for (const fitting of visible) {
-    const definition = PART_TYPES[fitting.type];
+  const { vehicle } = BUILDS[activeBuild];
+  const installed = installedFor(activeBuild);
+  for (const fitting of layerFittings(vehicle)) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'part-toggle';
-    button.setAttribute('aria-pressed', String(state.has(fitting.id)));
-    button.textContent = `${state.has(fitting.id) ? '●' : '○'} ${definition.label} · ${fitting.id}`;
+    button.setAttribute('aria-pressed', String(installed.has(fitting.id)));
+    button.textContent = `${installed.has(fitting.id) ? '●' : '○'} ${partTypeOf(vehicle, fitting).label} · ${fitting.id}`;
     button.addEventListener('click', () => togglePart(fitting.id));
     partsList.append(button);
   }
@@ -843,23 +549,20 @@ const drawPartsList = (): void => {
   }
 };
 
-const setBuild = (id: VehicleId): void => {
-  activeBuild = id;
-  renderVehicle();
-};
-
 for (const button of buildButtons) {
   button.addEventListener('click', () => {
-    const id = button.dataset.build as VehicleId | undefined;
-    if (id && id in VEHICLES) {
-      setBuild(id);
+    if (isBuildId(button.dataset.build)) {
+      activeBuild = button.dataset.build;
+      notice.textContent = '';
+      renderVehicle();
+      applyView(activeView);
     }
   });
 }
 for (const button of layerButtons) {
   button.addEventListener('click', () => {
     const layer = button.dataset.layer as PartLayer | undefined;
-    if (layer && VIEW_LAYERS.includes(layer)) {
+    if (layer && PART_LAYERS.includes(layer)) {
       activeLayer = layer;
       drawSchematic();
       drawPartsList();
@@ -868,51 +571,57 @@ for (const button of layerButtons) {
 }
 
 schematic.addEventListener('pointerdown', (event) => {
+  const { vehicle } = BUILDS[activeBuild];
+  const [cx, , cz] = vehicle.lattice;
   const bounds = schematic.getBoundingClientRect();
-  const px = (event.clientX - bounds.left) * (schematic.width / bounds.width);
-  const py = (event.clientY - bounds.top) * (schematic.height / bounds.height);
-  const cell = Math.min((schematic.width - 100) / CAR_CELLS.x, (schematic.height - 72) / CAR_CELLS.z);
-  const x0 = Math.round((schematic.width - cell * CAR_CELLS.x) / 2);
-  const z0 = Math.round((schematic.height - cell * CAR_CELLS.z) / 2) + 8;
-  const x = Math.floor((px - x0) / cell);
-  const z = Math.floor((py - z0) / cell);
-  if (x < 0 || z < 0 || x >= CAR_CELLS.x || z >= CAR_CELLS.z) {
+  const { cell, left, top } = schematicLayout(vehicle);
+  const x = Math.floor(((event.clientX - bounds.left) * (schematic.width / bounds.width) - left) / cell);
+  const z = cz - 1 - Math.floor(((event.clientY - bounds.top) * (schematic.height / bounds.height) - top) / cell);
+  if (x < 0 || z < 0 || x >= cx || z >= cz) {
     return;
   }
-  const visible = fittingsFor(activeBuild).filter((fitting) => PART_TYPES[fitting.type].layer === activeLayer);
-  const hit = [...visible].reverse().find(({ type, cell: [left, top] }) => {
-    const [width, depth] = PART_TYPES[type].footprint;
-    return x >= left && x < left + width && z >= top && z < top + depth;
-  });
+  const hits = layerFittings(vehicle)
+    .map((fitting) => ({ fitting, rect: fittingCells(vehicle, fitting) }))
+    .filter(({ rect }) => x >= rect.x0 && x < rect.x1 && z >= rect.z0 && z < rect.z1)
+    .sort(
+      (a, b) => (a.rect.x1 - a.rect.x0) * (a.rect.z1 - a.rect.z0) - (b.rect.x1 - b.rect.x0) * (b.rect.z1 - b.rect.z0),
+    );
+  const [hit] = hits;
   if (hit) {
-    togglePart(hit.id);
+    togglePart(hit.fitting.id);
   }
 });
 
-const scene = new Scene();
-const camera = new PerspectiveCamera(42, 1, 0.05, 96);
-camera.position.set(5.8, 4.7, 7.2);
-camera.lookAt(0, 0.7, 0);
 camera.layers.enable(PLAYER_FIGURE_LAYER);
-const renderer = new WebGLRenderer({ antialias: true });
 renderer.setPixelRatio(Math.min(globalThis.devicePixelRatio, 1));
 renderer.outputColorSpace = SRGBColorSpace;
+renderer.shadowMap.enabled = true;
 renderer.setSize(stage.clientWidth, stage.clientHeight);
 stage.appendChild(renderer.domElement);
 const sunlight = new DirectionalLight();
 const ambient = new HemisphereLight();
 scene.add(sunlight, sunlight.target, ambient);
 applySky({ scene, light: sunlight, ambient, camera, radiusM: 96 }, DAY_SKY);
+sunlight.position.normalize().multiplyScalar(20);
+sunlight.castShadow = true;
+sunlight.shadow.mapSize.set(2048, 2048);
+sunlight.shadow.camera.left = -6;
+sunlight.shadow.camera.right = 6;
+sunlight.shadow.camera.top = 6;
+sunlight.shadow.camera.bottom = -6;
+sunlight.shadow.camera.near = 1;
+sunlight.shadow.camera.far = 45;
+sunlight.shadow.bias = -0.0004;
+sunlight.shadow.normalBias = 0.02;
 const ground = new Mesh(new PlaneGeometry(500, 500), new MeshLambertMaterial({ color: 0x66_66_5e }));
 ground.rotation.x = -Math.PI / 2;
-ground.position.y = -0.04;
+ground.receiveShadow = true;
 scene.add(ground);
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0.7, 0);
 controls.enableDamping = false;
-controls.minDistance = 5;
-controls.maxDistance = 18;
-controls.maxPolarAngle = Math.PI * 0.48;
+controls.minDistance = 0.3;
+controls.maxDistance = 40;
+controls.maxPolarAngle = Math.PI * 0.495;
 
 const renderScene = (): void => {
   controls.update();
@@ -929,11 +638,55 @@ const scheduleRender = (): void => {
   });
 };
 
+const setDoors = (open: boolean): void => {
+  openDoors.checked = open;
+  for (const { pivot, sign } of doorPivots) {
+    pivot.rotation.y = open ? sign * DOOR_OPEN : 0;
+  }
+  scheduleRender();
+};
+
+const applyView = (id: ViewId): void => {
+  activeView = id;
+  const view: ViewPreset = VIEWS[id];
+  const spec: BuildSpec = BUILDS[activeBuild];
+  const lift = spec.lift ? LIFT_HEIGHT : 0;
+  camera.position.set(view.position[0], view.position[1] + lift, view.position[2]);
+  controls.target.set(view.target[0], view.target[1] + lift, view.target[2]);
+  camera.fov = view.fov;
+  camera.updateProjectionMatrix();
+  for (const button of viewButtons.querySelectorAll<HTMLButtonElement>('button')) {
+    button.setAttribute('aria-pressed', String(button.dataset.view === id));
+  }
+  if (view.doors) {
+    setDoors(true);
+  }
+  scheduleRender();
+};
+
+for (const [id, view] of Object.entries(VIEWS)) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.dataset.view = id;
+  button.title = `Key ${view.key}`;
+  button.textContent = `${view.key} · ${view.label}`;
+  button.addEventListener('click', () => applyView(id as ViewId));
+  viewButtons.append(button);
+}
+
 const panDirection = new Vector3();
 const panRight = new Vector3();
 const panUp = new Vector3(0, 1, 0);
+const viewForKey = (key: string): ViewId | undefined =>
+  (Object.entries(VIEWS) as [ViewId, ViewPreset][]).find(([, view]) => view.key === key)?.[0];
 globalThis.addEventListener('keydown', (event) => {
-  if (event.ctrlKey || event.metaKey || event.altKey || document.activeElement === spinWheels) {
+  if (event.ctrlKey || event.metaKey || event.altKey || event.target instanceof HTMLInputElement) {
+    return;
+  }
+  const view = viewForKey(event.key);
+  if (view) {
+    event.preventDefault();
+    applyView(view);
     return;
   }
   camera.getWorldDirection(panDirection);
@@ -953,8 +706,8 @@ globalThis.addEventListener('keydown', (event) => {
     return;
   }
   event.preventDefault();
-  camera.position.addScaledVector(movement, 0.8);
-  controls.target.addScaledVector(movement, 0.8);
+  camera.position.addScaledVector(movement, 0.4);
+  controls.target.addScaledVector(movement, 0.4);
   scheduleRender();
 });
 
@@ -985,9 +738,9 @@ const animateWheels = (time: number): void => {
   const delta = previousWheelFrame === 0 ? 0 : Math.min((time - previousWheelFrame) / 1000, 0.1);
   previousWheelFrame = time;
   for (const pivot of wheelPivots) {
-    pivot.rotation.z -= delta * 1.8;
+    pivot.rotation.z -= delta * WHEEL_SPIN;
   }
-  if (time - previousWheelRender >= 120) {
+  if (time - previousWheelRender >= 60) {
     previousWheelRender = time;
     scheduleRender();
   }
@@ -995,18 +748,23 @@ const animateWheels = (time: number): void => {
     wheelFrame = requestAnimationFrame(animateWheels);
   }
 };
+const startWheels = (): void => {
+  previousWheelFrame = 0;
+  previousWheelRender = 0;
+  wheelFrame = requestAnimationFrame(animateWheels);
+};
 spinWheels.addEventListener('change', () => {
   if (spinWheels.checked) {
-    previousWheelFrame = 0;
-    previousWheelRender = 0;
-    wheelFrame = requestAnimationFrame(animateWheels);
+    startWheels();
   } else {
     cancelAnimationFrame(wheelFrame);
-    previousWheelFrame = 0;
-    previousWheelRender = 0;
     scheduleRender();
   }
 });
+openDoors.addEventListener('change', () => setDoors(openDoors.checked));
+
+/** Behind the car's far rear corner: in the side view for scale, out of the three-quarter views. */
+const PLAYER_AT = [-3.4, 0, -1.9] as const;
 
 const addPlayer = (): void => {
   const player = BUNDLED_CONTENT.registry.figures.get('player');
@@ -1014,9 +772,10 @@ const addPlayer = (): void => {
     throw new Error('The bundled player figure is missing');
   }
   const person = new PlayerMeshes(BLOCK_SIZE, player.palette);
+  const [px, , pz] = PLAYER_AT;
   person.sync({
     body: {
-      pos: [-3.25 / BLOCK_SIZE, 0, 1.2 / BLOCK_SIZE],
+      pos: [px / BLOCK_SIZE, 0, pz / BLOCK_SIZE],
       vel: [0, 0, 0],
       halfWidth: 0.3,
       height: 1.8,
@@ -1029,8 +788,11 @@ const addPlayer = (): void => {
   });
   const headBox = FIGURE_BOXES.head;
   const head = new Mesh(new BoxGeometry(...headBox.size), new MeshLambertMaterial({ color: player.palette.skin }));
-  head.position.set(-3.25, headBox.at[1], 1.2 + headBox.at[2]);
+  head.position.set(px, headBox.at[1], pz + headBox.at[2]);
   person.group.add(head);
+  person.group.traverse((object) => {
+    object.castShadow = true;
+  });
   scene.add(person.group);
 };
 
@@ -1054,14 +816,18 @@ const addTitleSprite = (): void => {
   ctx.fillText('1.8 m PLAYER', canvas.width / 2, canvas.height / 2);
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
-  const sprite = new Sprite(new SpriteMaterial({ map: texture, transparent: true, depthTest: false }));
-  sprite.position.set(-3.25, 2.1, 1.2);
+  const sprite = new Sprite(new SpriteMaterial({ map: texture, transparent: true }));
+  sprite.position.set(PLAYER_AT[0], 2.1, PLAYER_AT[2]);
   sprite.scale.set(1.7, 0.32, 1);
   scene.add(sprite);
 };
 
 addPlayer();
 addTitleSprite();
-grainNote.textContent = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel edge ${(VOXEL_EDGE * 100).toFixed(2)} cm (${VOXELS_PER_PART_CELL} voxels per lattice cell); exposed voxel faces merge into one geometry per fitting.`;
+grainNote.textContent = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel ${(VOXEL * 100).toFixed(3)} cm (${VOXELS_PER_CELL} per cell, ${VOXELS_PER_CELL * (BLOCK_SIZE / PART_CELL)} per block). Each part type is greedy-meshed once and every fitting of it reuses that geometry.`;
 renderVehicle();
-renderScene();
+applyView(activeView);
+if (spinWheels.checked) {
+  startWheels();
+}
+document.body.dataset.ready = 'true';

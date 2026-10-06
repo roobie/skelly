@@ -28,8 +28,9 @@
       #schematic { display: block; width: 100%; height: auto; border: 1px solid #9da49f; background: #171b20; touch-action: manipulation; cursor: crosshair; }
       #parts-list { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; max-height: 150px; overflow: auto; margin-top: 7px; }
       .part-toggle { overflow: hidden; text-align: left; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; padding: 5px; }
-      #spin-toggle { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 12px; }
-      #grain-note { color: #404d4c; font-size: 11px; }
+      .toggle { display: inline-flex; align-items: center; gap: 5px; margin: 6px 10px 0 0; font-size: 12px; }
+      #notice { min-height: 1em; color: #8a3b12; }
+      #grain-note, #perf { color: #404d4c; font-size: 11px; }
       #error { position: fixed; z-index: 4; left: 12px; bottom: 54px; color: #a20d19; font-weight: 700; }
       @media (max-width: 950px) {
         body { overflow: auto; }
@@ -44,18 +45,25 @@
     <main id="workspace">
       <section id="stage" aria-label="Assembled voxel vehicle">
         <div id="vehicle-label"></div>
-        <div id="hint">Drag to orbit · wheel to zoom · arrow keys to pan</div>
+        <div id="hint">Drag to orbit · wheel to zoom · arrow keys to pan · 1–7 for views</div>
       </section>
       <aside id="controls">
         <h1>Vehicles from parts</h1>
-        <p class="quiet">Each fitting reuses a small voxel part model at a vehicle-local lattice position. Select a build, inspect a top-down layer, then click a fitting to add or remove it from the 3D assembly.</p>
+        <p class="quiet">Each fitting places one voxel part type on the vehicle and rests on the fittings that hold it up. Pick a build and a view, then click a fitting in the schematic or the list to take it off or fit it.</p>
         <h2>Build</h2>
         <div class="row">
-          <button type="button" data-build="hatchback">Hatchback</button>
           <button type="button" data-build="rover">4×4</button>
-          <button type="button" data-build="stripped">Same 4×4 · stripped / lift</button>
+          <button type="button" data-build="stripped">Same 4×4 · stripped on the lift</button>
+          <button type="button" data-build="hatchback">Hatchback (round 3)</button>
         </div>
         <p id="stats" aria-live="polite"></p>
+        <p id="notice" role="status"></p>
+        <h2>View · keys 1–7</h2>
+        <div class="row" id="views"></div>
+        <div class="row">
+          <label class="toggle"><input id="spin-wheels" type="checkbox" /> Spin wheels</label>
+          <label class="toggle"><input id="open-doors" type="checkbox" /> Open doors</label>
+        </div>
         <h2>Part schematic · top-down</h2>
         <div class="row">
           <button type="button" data-layer="frame">Frame</button>
@@ -65,11 +73,11 @@
           <button type="button" data-layer="roof">Roof</button>
         </div>
         <canvas id="schematic" width="720" height="320" role="img" aria-label="Top-down vehicle part lattice; click a fitting to toggle it"></canvas>
-        <p class="quiet">Solid = installed; dashed outline = absent. The amber cross is the computed centre of mass. The selected layer controls which fitting a cell click toggles.</p>
+        <p class="quiet">Solid = fitted; dashed = off. The amber cross is the computed centre of mass. A cell click toggles the smallest fitting of the selected layer under it.</p>
         <h2>Fittings in selected layer</h2>
         <div id="parts-list"></div>
-        <label id="spin-toggle"><input id="spin-wheels" type="checkbox" /> Spin wheel parts</label>
-        <p id="grain-note">A 4×4 sub-tile part lattice and finer voxel grain keep the interior legible. Parts are meshed by fitting, not drawn as a whole-vehicle mesh.</p>
+        <p id="grain-note"></p>
+        <p id="perf"></p>
         <div id="error" role="status"></div>
       </aside>
     </main>
