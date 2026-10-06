@@ -50,7 +50,7 @@ const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => {
 };
 const nearSpawn: [number, number, number] = [0, 1, 0];
 const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0]) => {
-  const runtime = createRuntime(snapshot, false, undefined, nearSpawn);
+  const runtime = createRuntime(snapshot, false, undefined, { spawn: nearSpawn });
   const floor = registry.blockIds.get('planks')!;
   for (let x = -1; x <= 1; x++) {
     for (let z = 0; z <= 6; z++) {
