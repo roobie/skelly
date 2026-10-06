@@ -479,6 +479,92 @@ export interface HearingInput {
   isSolid: SolidAt;
   rng: Rng;
 }
+interface ZombieTickScratch {
+  dt: number;
+  time: number;
+  player: PlayerSense;
+  hour: number;
+  blockSize: number;
+  isSolid: SolidAt;
+  isOpaque: SolidAt;
+  groundedAtTickStart: Map<Zombie, boolean>;
+  id: EntityId;
+  zombie: Zombie;
+  type: ZombieDef;
+  rng: Rng;
+  pos: Vec3;
+  perception: PerceptionInput;
+  hearingInput: HearingInput;
+  sees: boolean;
+  vocal?: HeardNoise | undefined;
+  tier?: HearingTier | undefined;
+  wasAware: boolean;
+  target: Vec3;
+  direction: Vec3;
+  aimDirection?: Vec3 | undefined;
+  desiredSpeed: number;
+  returnArrived: boolean;
+  obstacleDirection?: Vec3 | undefined;
+  stroll: boolean;
+  wanderingAtTickStart: boolean;
+  metresToTarget: number;
+  seeking: boolean;
+  inReach: boolean;
+  moving: boolean;
+  jumpAttempted: boolean;
+  beforeStep: Vec3;
+  travelled: number;
+  wallAhead: boolean;
+  dx: number;
+  dz: number;
+  forward: number;
+  obstacleContact: boolean;
+  wasObstacleContact: boolean;
+  stepHeightMetres: number;
+}
+const createZombieTickScratch = (): ZombieTickScratch => ({
+  dt: 0,
+  time: 0,
+  player: undefined as unknown as PlayerSense,
+  hour: 0,
+  blockSize: 0,
+  isSolid: undefined as unknown as SolidAt,
+  isOpaque: undefined as unknown as SolidAt,
+  groundedAtTickStart: undefined as unknown as Map<Zombie, boolean>,
+  id: 0,
+  zombie: undefined as unknown as Zombie,
+  type: undefined as unknown as ZombieDef,
+  rng: undefined as unknown as Rng,
+  pos: [0, 0, 0],
+  perception: {} as PerceptionInput,
+  hearingInput: {} as HearingInput,
+  sees: false,
+  vocal: undefined,
+  tier: undefined,
+  wasAware: false,
+  target: [0, 0, 0],
+  direction: [0, 0, 0],
+  aimDirection: undefined,
+  desiredSpeed: 0,
+  returnArrived: false,
+  obstacleDirection: undefined,
+  stroll: false,
+  wanderingAtTickStart: false,
+  metresToTarget: 0,
+  seeking: false,
+  inReach: false,
+  moving: false,
+  jumpAttempted: false,
+  beforeStep: [0, 0, 0],
+  travelled: 0,
+  wallAhead: false,
+  dx: 0,
+  dz: 0,
+  forward: 0,
+  obstacleContact: false,
+  wasObstacleContact: false,
+  stepHeightMetres: 0,
+});
 export interface HeardNoise {
   tier: HearingTier;
   target: Vec3;
@@ -627,6 +713,7 @@ export const perceivePlayer = (input: PerceptionInput): boolean =>
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
+  private readonly tickScratch = createZombieTickScratch();
   private frozen = false;
 
   constructor(options: ZombieSystemOptions) {
@@ -1021,409 +1108,500 @@ export class ZombieSystem {
     return id;
   }
 
-  /** Advances every zombie at a fixed caller-supplied simulation dt. */
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: per-entity AI update is one cohesive ordered simulation pass.
-  tick(dt: number, time = 0, _hands?: { right: number | null; left: number | null }): void {
-    if (dt <= 0) {
-      return;
-    }
-    if (this.frozen) {
-      for (const [, zombie] of this.store.entries()) {
-        this.captureRenderPrevious(zombie);
-        if (!zombie.incapacitated) {
-          continue;
-        }
-        zombie.horizontalSpeed = 0;
-        zombie.attackWait = 0;
-        zombie.attackWindup = 0;
-        zombie.body.vel[0] = 0;
-        zombie.body.vel[2] = 0;
-        stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
-      }
-      return;
-    }
-    const player = this.options.player();
-    const hour = this.options.hour();
-    const { blockSize, isSolid } = this.options;
-    const entries = [...this.store.entries()];
-    const groundedAtTickStart = new Map<Zombie, boolean>();
-    for (const [id, zombie] of entries) {
-      groundedAtTickStart.set(zombie, zombie.body.onGround);
+  private tickFrozen(dt: number): void {
+    for (const [, zombie] of this.store.entries()) {
       this.captureRenderPrevious(zombie);
-      if (zombie.incapacitated) {
-        zombie.horizontalSpeed = 0;
-        zombie.attackWait = 0;
-        zombie.attackWindup = 0;
-        zombie.body.vel[0] = 0;
-        zombie.body.vel[2] = 0;
-        stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
+      if (!zombie.incapacitated) {
         continue;
       }
-      if (zombie.hitFlinchTime !== undefined) {
-        const nextFlinchTime = zombie.hitFlinchTime + dt;
-        zombie.hitFlinchTime = nextFlinchTime > HIT_FLINCH_DURATION ? undefined : nextFlinchTime;
-      }
-      zombie.attackWait = Math.max(0, zombie.attackWait - dt);
-      // attackWindup is decremented further below, alongside the reach/LOS check it gates — see
-      // withinAttackReach and its two call sites (attack start and attack resolve).
-      const { pos } = zombie.body;
-      const { type, behaviorRng: rng } = zombie;
-      const perception = {
+      this.tickIncapacitated(zombie, dt);
+    }
+  }
+
+  private tickIncapacitated(zombie: Zombie, dt: number): void {
+    zombie.horizontalSpeed = 0;
+    zombie.attackWait = 0;
+    zombie.attackWindup = 0;
+    zombie.body.vel[0] = 0;
+    zombie.body.vel[2] = 0;
+    stepBody(zombie.body, dt, this.options.isSolid, { ...this.options.physics, obstacles: [] });
+  }
+
+  private updateZombieTimers(): void {
+    const { zombie, dt } = this.tickScratch;
+    if (zombie.hitFlinchTime !== undefined) {
+      const nextFlinchTime = zombie.hitFlinchTime + dt;
+      zombie.hitFlinchTime = nextFlinchTime > HIT_FLINCH_DURATION ? undefined : nextFlinchTime;
+    }
+    zombie.attackWait = Math.max(0, zombie.attackWait - dt);
+    const scratch = this.tickScratch;
+    scratch.pos = zombie.body.pos;
+    scratch.type = zombie.type;
+    scratch.rng = zombie.behaviorRng;
+  }
+
+  private updatePerception(): void {
+    const scratch = this.tickScratch;
+    const { zombie, type, pos, player, hour, blockSize, isOpaque, isSolid, time, rng, perception } = scratch;
+    perception.zombie = type;
+    perception.from = pos;
+    perception.facing = zombie.facing;
+    perception.player = player;
+    perception.hour = hour;
+    perception.blockSize = blockSize;
+    perception.isSolid = isOpaque;
+    scratch.sees = seesPlayer(perception);
+    if (scratch.sees && zombie.obstacleWanderRemaining > 0) {
+      zombie.obstacleWanderRemaining = 0;
+      zombie.obstacleWanderHeading = undefined;
+    }
+    const hearing = scratch.hearingInput;
+    hearing.zombie = type;
+    hearing.from = pos;
+    hearing.player = player;
+    hearing.blockSize = blockSize;
+    hearing.isSolid = isSolid;
+    hearing.rng = rng;
+    scratch.vocal = undefined;
+    if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
+      zombie.lastVocalNoiseId = player.vocalNoise.id;
+      scratch.vocal = hearVocalNoise({
         zombie: type,
         from: pos,
-        facing: zombie.facing,
-        player,
-        hour,
+        noise: player.vocalNoise,
+        time,
         blockSize,
-        isSolid: this.options.isOpaque,
-      };
-      const sees = seesPlayer(perception);
-      if (sees && zombie.obstacleWanderRemaining > 0) {
-        zombie.obstacleWanderRemaining = 0;
-        zombie.obstacleWanderHeading = undefined;
-      }
-      const hearingInput = { zombie: type, from: pos, player, blockSize, isSolid };
-      let vocal: HeardNoise | undefined;
-      if (player.vocalNoise && zombie.lastVocalNoiseId !== player.vocalNoise.id) {
-        zombie.lastVocalNoiseId = player.vocalNoise.id;
-        vocal = hearVocalNoise({
-          zombie: type,
-          from: pos,
-          noise: player.vocalNoise,
-          time,
-          blockSize,
-          isSolid,
-          rng,
-        });
-      }
-      const tier = sees ? undefined : (vocal?.tier ?? hearingTier(hearingInput));
-      const wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
-      if ((sees || tier) && !wasAware) {
-        this.options.onSound?.('shambler_alert', copy(pos), zombie);
-      }
-      if (sees) {
-        zombie.mode = 'chase';
-        zombie.investigationTier = undefined;
-        zombie.searchAnchor = undefined;
-        zombie.searchTimer = 0;
-        zombie.searchStrolling = false;
-        zombie.lastPerceived = copy(player.pos);
-      } else if (tier === 'near') {
-        zombie.mode = 'investigate';
-        zombie.investigationTier = 'near';
-        zombie.searchAnchor = undefined;
-        zombie.searchTimer = 0;
-        zombie.searchStrolling = false;
-        zombie.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
-      } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
-        zombie.mode = 'investigate';
-        zombie.investigationTier = 'far';
-        zombie.searchAnchor = undefined;
-        zombie.searchTimer = 0;
-        zombie.searchStrolling = false;
-        zombie.lastPerceived =
-          vocal?.tier === 'far' ? vocal.target : farBearingTarget({ ...hearingInput, source: player.pos, rng });
-        const { terrainFloor } = this.options;
-        if (terrainFloor && onTerrainFloor(pos, terrainFloor, zombie.body.halfWidth)) {
-          zombie.lastPerceived[1] = terrainStance(
-            zombie.lastPerceived[0],
-            zombie.lastPerceived[2],
-            zombie.body.halfWidth,
-            terrainFloor,
-          );
-        }
-      } else if (zombie.mode === 'chase') {
-        zombie.mode = 'investigate';
-        zombie.investigationTier = 'near';
-      }
+        isSolid,
+        rng,
+      });
+    }
+    scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
+    scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
+    if ((scratch.sees || scratch.tier) && !scratch.wasAware) {
+      this.options.onSound?.('shambler_alert', copy(pos), zombie);
+    }
+  }
 
-      if (zombie.mode === 'investigate') {
-        const investigationTarget = zombie.lastPerceived ?? zombie.home;
-        if (
-          Math.hypot(...sub(investigationTarget, pos)) * blockSize <= 1 &&
-          sameInvestigationFloor(pos, investigationTarget, this.options.terrainFloor, zombie.body.halfWidth)
-        ) {
-          this.beginSearch(zombie);
-        }
+  private updateAttention(): void {
+    const scratch = this.tickScratch;
+    const { zombie, player, pos, tier, sees, vocal, blockSize } = scratch;
+    if (sees) {
+      zombie.mode = 'chase';
+      zombie.investigationTier = undefined;
+      zombie.searchAnchor = undefined;
+      zombie.searchTimer = 0;
+      zombie.searchStrolling = false;
+      zombie.lastPerceived = copy(player.pos);
+    } else if (tier === 'near') {
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'near';
+      zombie.searchAnchor = undefined;
+      zombie.searchTimer = 0;
+      zombie.searchStrolling = false;
+      zombie.lastPerceived = copy(vocal?.tier === 'near' ? vocal.target : player.pos);
+    } else if (tier === 'far' && (zombie.mode === 'idle' || zombie.mode === 'stroll' || zombie.mode === 'search')) {
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'far';
+      zombie.searchAnchor = undefined;
+      zombie.searchTimer = 0;
+      zombie.searchStrolling = false;
+      zombie.lastPerceived =
+        vocal?.tier === 'far'
+          ? vocal.target
+          : farBearingTarget({ zombie: zombie.type, from: pos, source: player.pos, rng: scratch.rng, blockSize });
+      const { terrainFloor } = this.options;
+      if (terrainFloor && onTerrainFloor(pos, terrainFloor, zombie.body.halfWidth)) {
+        zombie.lastPerceived[1] = terrainStance(
+          zombie.lastPerceived[0],
+          zombie.lastPerceived[2],
+          zombie.body.halfWidth,
+          terrainFloor,
+        );
       }
+    } else if (zombie.mode === 'chase') {
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'near';
+    }
+  }
 
-      let target: Vec3 = zombie.home;
-      let direction: Vec3 = [0, 0, 0];
-      let aimDirection: Vec3 | undefined;
-      let desiredSpeed = 0;
-      let returnArrived = false;
-      const obstacleDirection = zombie.obstacleWanderRemaining > 0 ? zombie.obstacleWanderHeading : undefined;
-      const stroll = zombie.mode === 'stroll';
-      const wanderingAtTickStart = zombie.obstacleWanderRemaining > 0;
-      if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
-        zombie.idleSoundTimer -= dt;
-        if (zombie.idleSoundTimer <= 0) {
-          this.options.onSound?.('shambler_idle', copy(pos), zombie);
-          zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
-        }
-      }
-      if (zombie.mode === 'idle') {
-        zombie.modeTimer -= dt;
+  private checkInvestigationArrival(): void {
+    const scratch = this.tickScratch;
+    const { zombie, pos } = scratch;
+    if (zombie.mode !== 'investigate') {
+      return;
+    }
+    const target = zombie.lastPerceived ?? zombie.home;
+    if (
+      Math.hypot(...sub(target, pos)) * scratch.blockSize <= 1 &&
+      sameInvestigationFloor(pos, target, this.options.terrainFloor, zombie.body.halfWidth)
+    ) {
+      this.beginSearch(zombie);
+    }
+  }
+
+  private updateIdleSound(): void {
+    const scratch = this.tickScratch;
+    const { zombie, dt, pos } = scratch;
+    if (zombie.mode !== 'idle' && zombie.mode !== 'stroll') {
+      return;
+    }
+    zombie.idleSoundTimer -= dt;
+    if (zombie.idleSoundTimer <= 0) {
+      this.options.onSound?.('shambler_idle', copy(pos), zombie);
+      zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
+    }
+  }
+
+  private selectMovementIntent(): void {
+    const scratch = this.tickScratch;
+    const { zombie } = scratch;
+    scratch.target = zombie.home;
+    scratch.direction = [0, 0, 0];
+    scratch.aimDirection = undefined;
+    scratch.desiredSpeed = 0;
+    scratch.returnArrived = false;
+    scratch.obstacleDirection = zombie.obstacleWanderRemaining > 0 ? zombie.obstacleWanderHeading : undefined;
+    scratch.stroll = zombie.mode === 'stroll';
+    scratch.wanderingAtTickStart = zombie.obstacleWanderRemaining > 0;
+    this.updateIdleSound();
+    switch (zombie.mode) {
+      case 'idle':
+        this.selectIdleIntent();
+        return;
+      case 'stroll':
+        this.selectStrollIntent();
+        return;
+      case 'search':
+        this.selectSearchIntent();
+        return;
+      default:
+        this.selectTravelIntent();
+    }
+  }
+
+  private selectIdleIntent(): void {
+    const { zombie, dt } = this.tickScratch;
+    zombie.modeTimer -= dt;
+    this.tickLookAround(zombie, dt);
+    if (zombie.modeTimer <= 0) {
+      this.beginStroll(zombie);
+    }
+  }
+
+  private selectStrollIntent(): void {
+    const scratch = this.tickScratch;
+    const { zombie, type, dt, obstacleDirection } = scratch;
+    zombie.modeTimer -= dt;
+    scratch.direction = obstacleDirection ?? zombie.strollHeading;
+    scratch.aimDirection = scratch.direction;
+    scratch.desiredSpeed = obstacleDirection || zombie.modeTimer > 0 ? type.speed.wander : 0;
+    zombie.facing = turnToward(
+      zombie.facing,
+      scratch.direction,
+      (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
+    );
+    scratch.direction = zombie.facing;
+    zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180);
+  }
+
+  private selectSearchIntent(): void {
+    const scratch = this.tickScratch;
+    const { zombie, type, dt, obstacleDirection, pos } = scratch;
+    zombie.searchTimer -= dt;
+    if (zombie.searchTimer <= 0) {
+      zombie.mode = 'return';
+      zombie.searchAnchor = undefined;
+      zombie.searchStrolling = false;
+      scratch.target = zombie.home;
+      scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
+      scratch.aimDirection = scratch.direction;
+      zombie.facing = turnToward(
+        zombie.facing,
+        scratch.direction,
+        (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
+      );
+      scratch.direction = zombie.facing;
+      scratch.desiredSpeed = type.speed.wander;
+    } else if (zombie.searchStrolling) {
+      zombie.modeTimer -= dt;
+      if (zombie.modeTimer <= 0) {
+        zombie.searchStrolling = false;
+        zombie.modeTimer = inRange(scratch.rng, type.wander.idleSeconds);
         this.tickLookAround(zombie, dt);
-        if (zombie.modeTimer <= 0) {
-          this.beginStroll(zombie);
-        }
-      } else if (zombie.mode === 'stroll') {
-        zombie.modeTimer -= dt;
-        direction = obstacleDirection ?? zombie.strollHeading;
-        aimDirection = direction;
-        desiredSpeed = obstacleDirection || zombie.modeTimer > 0 ? type.speed.wander : 0;
+      } else {
+        scratch.direction = obstacleDirection ?? zombie.searchHeading;
+        scratch.aimDirection = scratch.direction;
+        scratch.desiredSpeed = type.speed.wander;
         zombie.facing = turnToward(
           zombie.facing,
-          direction,
+          scratch.direction,
           (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
         );
-        direction = zombie.facing;
-        zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180);
-      } else if (zombie.mode === 'search') {
-        zombie.searchTimer -= dt;
-        if (zombie.searchTimer <= 0) {
-          zombie.mode = 'return';
-          zombie.searchAnchor = undefined;
-          zombie.searchStrolling = false;
-          target = zombie.home;
-          direction = obstacleDirection ?? unit([target[0] - pos[0], 0, target[2] - pos[2]]);
-          aimDirection = direction;
-          zombie.facing = turnToward(
-            zombie.facing,
-            direction,
-            (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
-          );
-          direction = zombie.facing;
-          desiredSpeed = type.speed.wander;
-        } else if (zombie.searchStrolling) {
-          zombie.modeTimer -= dt;
-          if (zombie.modeTimer <= 0) {
-            zombie.searchStrolling = false;
-            zombie.modeTimer = inRange(rng, type.wander.idleSeconds);
-            this.tickLookAround(zombie, dt);
-          } else {
-            direction = obstacleDirection ?? zombie.searchHeading;
-            aimDirection = direction;
-            desiredSpeed = type.speed.wander;
-            zombie.facing = turnToward(
-              zombie.facing,
-              direction,
-              (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180,
-            );
-            direction = zombie.facing;
-            zombie.headYaw = approachAngle(
-              zombie.headYaw,
-              0,
-              (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180,
-            );
-          }
-        } else {
-          zombie.modeTimer -= dt;
-          this.tickLookAround(zombie, dt);
-          if (zombie.modeTimer <= 0) {
-            this.beginSearchStroll(zombie);
-          }
-        }
-      } else {
-        if (zombie.mode === 'chase') {
-          target = player.pos;
-        } else if (zombie.mode === 'investigate') {
-          target = zombie.lastPerceived ?? zombie.home;
-        }
-        const metresToTarget = horizontalDistance(target, pos) * blockSize;
-        returnArrived = zombie.mode === 'return' && metresToTarget < 0.4;
-        const seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
-        const inReach =
-          zombie.mode === 'chase' && withinAttackReach({ zombiePos: pos, playerPos: target, type, blockSize, isSolid });
-        direction = obstacleDirection ?? unit([target[0] - pos[0], 0, target[2] - pos[2]]);
-        const moving = seeking ? !inReach : returnArrived || metresToTarget > 0.25;
-        if (moving) {
-          aimDirection = direction;
-          if (seeking) {
-            const motion = this.stepChaseMotion(zombie, dt);
-            direction = headingAt(angleOf(direction) + motion.sway);
-            desiredSpeed = type.speed.chase * motion.speedFactor;
-          } else if (!returnArrived) {
-            desiredSpeed = type.speed.wander;
-          }
-          const turnRadians = (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180;
-          zombie.facing = turnToward(zombie.facing, direction, turnRadians);
-          direction = zombie.facing;
-        } else {
-          direction = [0, 0, 0];
-        }
+        scratch.direction = zombie.facing;
         zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180);
       }
+    } else {
+      zombie.modeTimer -= dt;
+      this.tickLookAround(zombie, dt);
+      if (zombie.modeTimer <= 0) {
+        this.beginSearchStroll(zombie);
+      }
+    }
+  }
 
-      // A stroll remains a stroll while it gently brakes at the end of its interval.
-      if (zombie.regions.leftLeg <= 0 && zombie.regions.rightLeg <= 0) {
-        // Without either leg the shambler stays in place; head and arm attacks still work.
-        desiredSpeed = 0;
-        direction = [0, 0, 0];
-        aimDirection = undefined;
-        zombie.horizontalSpeed = 0;
+  private selectTravelIntent(): void {
+    const scratch = this.tickScratch;
+    const { zombie, type, player, blockSize, isSolid, pos, obstacleDirection, dt } = scratch;
+    if (zombie.mode === 'chase') {
+      scratch.target = player.pos;
+    } else if (zombie.mode === 'investigate') {
+      scratch.target = zombie.lastPerceived ?? zombie.home;
+    }
+    scratch.metresToTarget = horizontalDistance(scratch.target, pos) * blockSize;
+    scratch.returnArrived = zombie.mode === 'return' && scratch.metresToTarget < 0.4;
+    scratch.seeking = zombie.mode === 'chase' || zombie.mode === 'investigate';
+    scratch.inReach =
+      zombie.mode === 'chase' &&
+      withinAttackReach({ zombiePos: pos, playerPos: scratch.target, type, blockSize, isSolid });
+    scratch.direction = obstacleDirection ?? unit([scratch.target[0] - pos[0], 0, scratch.target[2] - pos[2]]);
+    scratch.moving = scratch.seeking ? !scratch.inReach : scratch.returnArrived || scratch.metresToTarget > 0.25;
+    if (scratch.moving) {
+      scratch.aimDirection = scratch.direction;
+      if (scratch.seeking) {
+        const motion = this.stepChaseMotion(zombie, dt);
+        scratch.direction = headingAt(angleOf(scratch.direction) + motion.sway);
+        scratch.desiredSpeed = type.speed.chase * motion.speedFactor;
+      } else if (!scratch.returnArrived) {
+        scratch.desiredSpeed = type.speed.wander;
       }
-      const acceleration =
-        zombie.stumbleFactor < 1 && zombie.horizontalSpeed > desiredSpeed
-          ? type.chaseMotion.stumbleDeceleration
-          : type.wander.movementAcceleration;
-      zombie.horizontalSpeed = approach(zombie.horizontalSpeed, desiredSpeed, acceleration * dt);
-      if (zombie.mode === 'search' && zombie.searchStrolling && zombie.searchAnchor) {
-        const radius = horizontalDistance(pos, zombie.searchAnchor) * blockSize;
-        const away = unit([pos[0] - zombie.searchAnchor[0], 0, pos[2] - zombie.searchAnchor[2]]);
-        const outward = zombie.facing[0] * away[0] + zombie.facing[2] * away[2];
-        if (outward > 0) {
-          const remaining = Math.max(0, type.hearingModel.searchRadiusMetres - radius);
-          zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, remaining / (dt * outward));
-        }
-      }
-      if (!wanderingAtTickStart && zombie.obstacleContact && zombie.obstacleSlideSide !== 0 && aimDirection) {
-        direction = headingAt(angleOf(aimDirection) + (zombie.obstacleSlideSide * Math.PI) / 2);
-      }
-      zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
-      zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
-      const jumpAttempted =
-        zombie.horizontalSpeed > 0.01 &&
-        zombie.body.onGround &&
-        canJumpObstacle({
-          body: zombie.body,
-          direction,
-          isSolid,
-          physics: this.options.physics,
-          jumpSpeed: this.options.jumpSpeed,
-          blockSize,
-        });
-      if (jumpAttempted) {
-        zombie.body.vel[1] = this.options.jumpSpeed / blockSize;
-      }
-      const beforeStep = copy(pos);
-      const obstacles = player.body ? [player.body] : [];
-      stepBody(zombie.body, dt, isSolid, {
-        ...this.options.physics,
-        stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
-        obstacles,
+      const turnRadians = (type.wander.bodyTurnDegreesPerSecond * Math.PI * dt) / 180;
+      zombie.facing = turnToward(zombie.facing, scratch.direction, turnRadians);
+      scratch.direction = zombie.facing;
+    } else {
+      scratch.direction = [0, 0, 0];
+    }
+    zombie.headYaw = approachAngle(zombie.headYaw, 0, (type.wander.headTurnDegreesPerSecond * Math.PI * dt) / 180);
+  }
+
+  private updateMovementSpeed(): void {
+    const scratch = this.tickScratch;
+    const { zombie, type, dt } = scratch;
+    if (zombie.regions.leftLeg <= 0 && zombie.regions.rightLeg <= 0) {
+      scratch.desiredSpeed = 0;
+      scratch.direction = [0, 0, 0];
+      scratch.aimDirection = undefined;
+      zombie.horizontalSpeed = 0;
+    }
+    const acceleration =
+      zombie.stumbleFactor < 1 && zombie.horizontalSpeed > scratch.desiredSpeed
+        ? type.chaseMotion.stumbleDeceleration
+        : type.wander.movementAcceleration;
+    zombie.horizontalSpeed = approach(zombie.horizontalSpeed, scratch.desiredSpeed, acceleration * dt);
+    if (zombie.mode !== 'search' || !zombie.searchStrolling || !zombie.searchAnchor) {
+      return;
+    }
+    const radius = horizontalDistance(scratch.pos, zombie.searchAnchor) * scratch.blockSize;
+    const away = unit([scratch.pos[0] - zombie.searchAnchor[0], 0, scratch.pos[2] - zombie.searchAnchor[2]]);
+    const outward = zombie.facing[0] * away[0] + zombie.facing[2] * away[2];
+    if (outward > 0) {
+      const remaining = Math.max(0, type.hearingModel.searchRadiusMetres - radius);
+      zombie.horizontalSpeed = Math.min(zombie.horizontalSpeed, remaining / (dt * outward));
+    }
+  }
+
+  private applyObstacleSlide(): void {
+    const scratch = this.tickScratch;
+    const { zombie, aimDirection, wanderingAtTickStart } = scratch;
+    if (!wanderingAtTickStart && zombie.obstacleContact && zombie.obstacleSlideSide !== 0 && aimDirection) {
+      scratch.direction = headingAt(angleOf(aimDirection) + (zombie.obstacleSlideSide * Math.PI) / 2);
+    }
+  }
+
+  private stepZombieBody(): void {
+    const scratch = this.tickScratch;
+    const { zombie, direction, blockSize, dt, isSolid, player, aimDirection } = scratch;
+    zombie.body.vel[0] = (direction[0] * zombie.horizontalSpeed) / blockSize;
+    zombie.body.vel[2] = (direction[2] * zombie.horizontalSpeed) / blockSize;
+    scratch.jumpAttempted =
+      zombie.horizontalSpeed > 0.01 &&
+      zombie.body.onGround &&
+      canJumpObstacle({
+        body: zombie.body,
+        direction,
+        isSolid,
+        physics: this.options.physics,
+        jumpSpeed: this.options.jumpSpeed,
+        blockSize,
       });
-      const travelled = horizontalDistance(beforeStep, zombie.body.pos) * blockSize;
-      const wallAhead =
-        aimDirection !== undefined &&
-        raycast(
-          [beforeStep[0], beforeStep[1] + 0.1 / blockSize, beforeStep[2]],
-          aimDirection,
-          0.7 / blockSize,
-          isSolid,
-        ) !== undefined;
-      const dx = zombie.body.pos[0] - beforeStep[0];
-      const dz = zombie.body.pos[2] - beforeStep[2];
-      const forward = aimDirection ? (dx * aimDirection[0] + dz * aimDirection[2]) * blockSize : 0;
-      const obstacleContact =
-        wallAhead && !jumpAttempted && zombie.horizontalSpeed > 0.01 && forward < zombie.horizontalSpeed * dt * 0.1;
-      const wasObstacleContact = zombie.obstacleContact;
-      if (wanderingAtTickStart) {
-        if (obstacleContact) {
-          zombie.obstacleWanderRemaining = 0;
+    if (scratch.jumpAttempted) {
+      zombie.body.vel[1] = this.options.jumpSpeed / blockSize;
+    }
+    scratch.beforeStep = copy(scratch.pos);
+    const obstacles = player.body ? [player.body] : [];
+    stepBody(zombie.body, dt, isSolid, {
+      ...this.options.physics,
+      stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2,
+      obstacles,
+    });
+    scratch.travelled = horizontalDistance(scratch.beforeStep, zombie.body.pos) * blockSize;
+    scratch.wallAhead =
+      aimDirection !== undefined &&
+      raycast(
+        [scratch.beforeStep[0], scratch.beforeStep[1] + 0.1 / blockSize, scratch.beforeStep[2]],
+        aimDirection,
+        0.7 / blockSize,
+        isSolid,
+      ) !== undefined;
+    scratch.dx = zombie.body.pos[0] - scratch.beforeStep[0];
+    scratch.dz = zombie.body.pos[2] - scratch.beforeStep[2];
+    scratch.forward = aimDirection ? (scratch.dx * aimDirection[0] + scratch.dz * aimDirection[2]) * blockSize : 0;
+    scratch.obstacleContact =
+      scratch.wallAhead &&
+      !scratch.jumpAttempted &&
+      zombie.horizontalSpeed > 0.01 &&
+      scratch.forward < zombie.horizontalSpeed * dt * 0.1;
+  }
+
+  private startObstacleWander(): void {
+    const scratch = this.tickScratch;
+    const { zombie, sees, wanderingAtTickStart, obstacleContact, wasObstacleContact, aimDirection, rng } = scratch;
+    if (
+      !(sees || wanderingAtTickStart) &&
+      obstacleContact &&
+      !wasObstacleContact &&
+      aimDirection &&
+      rng.chance(zombie.type.wander.obstacleWanderChance)
+    ) {
+      const physics = { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 };
+      const headings = openWanderHeadings({
+        body: zombie.body,
+        intent: aimDirection,
+        isSolid: scratch.isSolid,
+        physics,
+        blockSize: scratch.blockSize,
+      });
+      if (headings.length > 0) {
+        zombie.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
+        zombie.obstacleWanderRemaining = zombie.type.wander.obstacleWanderDistanceMetres;
+      }
+    }
+  }
+
+  private updateObstacleSlideSide(): void {
+    const scratch = this.tickScratch;
+    const { zombie, obstacleContact, wasObstacleContact, aimDirection, jumpAttempted, travelled, rng } = scratch;
+    if (!obstacleContact) {
+      zombie.obstacleSlideSide = 0;
+    } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
+      zombie.obstacleSlideSide = rng.int(0, 1) === 0 ? -1 : 1;
+    } else if (zombie.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
+      zombie.obstacleSlideSide = zombie.obstacleSlideSide === -1 ? 1 : -1;
+    }
+  }
+
+  private updateObstacleContact(): void {
+    const scratch = this.tickScratch;
+    const { zombie, obstacleContact, travelled, wanderingAtTickStart } = scratch;
+    scratch.wasObstacleContact = zombie.obstacleContact;
+    if (wanderingAtTickStart) {
+      if (obstacleContact) {
+        zombie.obstacleWanderRemaining = 0;
+        zombie.obstacleWanderHeading = undefined;
+      } else {
+        zombie.obstacleWanderRemaining = Math.max(0, zombie.obstacleWanderRemaining - travelled);
+        if (zombie.obstacleWanderRemaining === 0) {
           zombie.obstacleWanderHeading = undefined;
-        } else {
-          zombie.obstacleWanderRemaining = Math.max(0, zombie.obstacleWanderRemaining - travelled);
-          if (zombie.obstacleWanderRemaining === 0) {
-            zombie.obstacleWanderHeading = undefined;
-          }
         }
       }
-      if (!obstacleContact) {
-        zombie.obstacleSlideSide = 0;
-      } else if (!wasObstacleContact && aimDirection && !jumpAttempted) {
-        zombie.obstacleSlideSide = rng.int(0, 1) === 0 ? -1 : 1;
-      } else if (zombie.obstacleSlideSide !== 0 && !jumpAttempted && travelled < 0.0001) {
-        zombie.obstacleSlideSide = zombie.obstacleSlideSide === -1 ? 1 : -1;
-      }
-      if (
-        !(sees || wanderingAtTickStart) &&
-        obstacleContact &&
-        !wasObstacleContact &&
-        aimDirection &&
-        rng.chance(type.wander.obstacleWanderChance)
-      ) {
-        const physics = { ...this.options.physics, stepHeight: this.options.physics.stepHeight + CONTACT_SKIN * 2 };
-        const headings = openWanderHeadings({
-          body: zombie.body,
-          intent: aimDirection,
-          isSolid,
-          physics,
-          blockSize,
-        });
-        if (headings.length > 0) {
-          zombie.obstacleWanderHeading = headings[rng.int(0, headings.length - 1)]!;
-          zombie.obstacleWanderRemaining = type.wander.obstacleWanderDistanceMetres;
-        }
-      }
-      zombie.obstacleContact = obstacleContact;
-      const stepHeightMetres = this.options.physics.stepHeight * blockSize;
-      const stepOffsetState = updateStepOffset(
-        {
-          offset: zombie.stepOffset ?? 0,
-          previous: {
-            position: beforeStep.map((coordinate) => coordinate * blockSize) as Vec3,
-            grounded: groundedAtTickStart.get(zombie) ?? false,
-          },
+    }
+    this.updateObstacleSlideSide();
+    this.startObstacleWander();
+    zombie.obstacleContact = obstacleContact;
+  }
+
+  private updateMovementAfterStep(): void {
+    const scratch = this.tickScratch;
+    const { zombie, blockSize, dt, travelled, beforeStep, groundedAtTickStart, stroll } = scratch;
+    scratch.stepHeightMetres = this.options.physics.stepHeight * blockSize;
+    const stepOffsetState = updateStepOffset(
+      {
+        offset: zombie.stepOffset ?? 0,
+        previous: {
+          position: beforeStep.map((coordinate) => coordinate * blockSize) as Vec3,
+          grounded: groundedAtTickStart.get(zombie) ?? false,
         },
-        {
-          position: zombie.body.pos.map((coordinate) => coordinate * blockSize) as Vec3,
-          grounded: zombie.body.onGround,
-          dt,
-          stepHeightMetres,
-        },
-      );
-      zombie.stepOffset = stepOffsetState.offset;
-      zombie.gaitPhase += (travelled / type.stepLength) * Math.PI;
-      if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
-        zombie.wanderClock += dt;
-      }
-      if (stroll && zombie.mode === 'stroll' && zombie.horizontalSpeed > 0.01) {
-        const requested = zombie.horizontalSpeed * dt;
-        if (travelled + 1e-4 < requested * 0.1) {
-          this.beginIdle(zombie);
-        }
-      }
-      if (stroll && zombie.mode === 'stroll' && zombie.modeTimer <= 0 && zombie.horizontalSpeed <= 0.01) {
+      },
+      {
+        position: zombie.body.pos.map((coordinate) => coordinate * blockSize) as Vec3,
+        grounded: zombie.body.onGround,
+        dt,
+        stepHeightMetres: scratch.stepHeightMetres,
+      },
+    );
+    zombie.stepOffset = stepOffsetState.offset;
+    zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;
+    if (zombie.mode === 'idle' || zombie.mode === 'stroll') {
+      zombie.wanderClock += dt;
+    }
+    if (stroll && zombie.mode === 'stroll' && zombie.horizontalSpeed > 0.01) {
+      const requested = zombie.horizontalSpeed * dt;
+      if (travelled + 1e-4 < requested * 0.1) {
         this.beginIdle(zombie);
       }
-      if (zombie.mode === 'search' && zombie.searchStrolling && zombie.horizontalSpeed > 0.01) {
-        const requested = zombie.horizontalSpeed * dt;
-        if (travelled + 1e-4 < requested * 0.1) {
-          zombie.searchStrolling = false;
-          zombie.modeTimer = inRange(rng, type.wander.idleSeconds);
-        }
+    }
+    if (stroll && zombie.mode === 'stroll' && zombie.modeTimer <= 0 && zombie.horizontalSpeed <= 0.01) {
+      this.beginIdle(zombie);
+    }
+    if (zombie.mode === 'search' && zombie.searchStrolling && zombie.horizontalSpeed > 0.01) {
+      const requested = zombie.horizontalSpeed * dt;
+      if (travelled + 1e-4 < requested * 0.1) {
+        zombie.searchStrolling = false;
+        zombie.modeTimer = inRange(scratch.rng, zombie.type.wander.idleSeconds);
       }
+    }
+  }
 
-      if (zombie.attackWindup > 0) {
-        // Resolve regardless of mode — the zombie may have lost the chase mid-windup; only whether the
-        // target is still in reach/LOS right now decides a hit versus a miss.
-        zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
-        const reach = { zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid };
-        if (zombie.attackWindup <= 0 && withinAttackReach(reach)) {
-          this.options.hurtPlayer(type.attack.damage, 'torso');
-        }
-      } else if (
-        zombie.mode === 'chase' &&
-        zombie.attackWait <= 0 &&
-        canStillAttack(zombie.severed) &&
+  private resolveZombieAttack(): void {
+    const scratch = this.tickScratch;
+    const { zombie, dt, player, blockSize, type, pos, isSolid } = scratch;
+    if (zombie.attackWindup > 0) {
+      zombie.attackWindup = Math.max(0, zombie.attackWindup - dt);
+      if (
+        zombie.attackWindup <= 0 &&
         withinAttackReach({ zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid })
       ) {
-        // Telegraph: sound and the visible windup start together; the cooldown starts now too (from
-        // windup start, not from the hit), so it also gates re-starting an attack during this one's windup.
-        this.options.onSound?.('shambler_attack', copy(pos), zombie);
-        zombie.attackWindup = type.attack.windup;
-        zombie.attackWait = type.attack.cooldown;
+        this.options.hurtPlayer(type.attack.damage, 'torso');
       }
-      if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
-        this.beginIdle(zombie);
-        zombie.lastPerceived = undefined;
-      }
-      const poseInput = zombiePoseInputFor(zombie, id, blockSize);
-      const stanceTarget = targetStanceWeight(poseInput);
-      zombie.stanceWeight = advanceStanceWeight(zombie.stanceWeight ?? stanceTarget, stanceTarget, dt);
+    } else if (
+      zombie.mode === 'chase' &&
+      zombie.attackWait <= 0 &&
+      canStillAttack(zombie.severed) &&
+      withinAttackReach({ zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid })
+    ) {
+      this.options.onSound?.('shambler_attack', copy(pos), zombie);
+      zombie.attackWindup = type.attack.windup;
+      zombie.attackWait = type.attack.cooldown;
     }
+  }
+
+  private finishZombieTick(): void {
+    const scratch = this.tickScratch;
+    const { zombie, returnArrived, blockSize, dt, id } = scratch;
+    if (zombie.mode === 'return' && returnArrived && zombie.horizontalSpeed <= 0.01) {
+      this.beginIdle(zombie);
+      zombie.lastPerceived = undefined;
+    }
+    const poseInput = zombiePoseInputFor(zombie, id, blockSize);
+    const stanceTarget = targetStanceWeight(poseInput);
+    zombie.stanceWeight = advanceStanceWeight(zombie.stanceWeight ?? stanceTarget, stanceTarget, dt);
+  }
+
+  private separateZombieBodies(
+    entries: readonly (readonly [EntityId, Zombie])[],
+    dt: number,
+    player: PlayerSense,
+  ): void {
+    const { blockSize, isSolid } = this.tickScratch;
     separateBodies({
       bodies: entries.filter(([, zombie]) => !zombie.incapacitated).map(([, zombie]) => zombie.body),
       dt,
@@ -1431,14 +1609,22 @@ export class ZombieSystem {
       blockSize,
       obstacles: player.body ? [player.body] : [],
     });
-    if (player.body) {
-      for (const [, zombie] of entries) {
-        if (zombie.incapacitated) {
-          continue;
-        }
+    if (!player.body) {
+      return;
+    }
+    for (const [, zombie] of entries) {
+      if (!zombie.incapacitated) {
         separateBodyPair({ first: player.body, second: zombie.body, dt, isSolid, blockSize });
       }
     }
+  }
+
+  private emitFootsteps(
+    entries: readonly (readonly [EntityId, Zombie])[],
+    groundedAtTickStart: Map<Zombie, boolean>,
+    player: PlayerSense,
+    blockSize: number,
+  ): void {
     const footfallCandidates = entries.flatMap(([id, zombie]) => {
       if (
         zombie.type.id !== 'shambler' ||
@@ -1471,6 +1657,59 @@ export class ZombieSystem {
         this.options.onFootstep?.(copy(zombie.body.pos), id, zombie.mode, zombie);
       }
     }
+  }
+
+  /** Advances every zombie at a fixed caller-supplied simulation dt. */
+  tick(dt: number, time = 0, _hands?: { right: number | null; left: number | null }): void {
+    if (dt <= 0) {
+      return;
+    }
+    if (this.frozen) {
+      this.tickFrozen(dt);
+      return;
+    }
+    const player = this.options.player();
+    const hour = this.options.hour();
+    const { blockSize, isSolid } = this.options;
+    const entries = [...this.store.entries()];
+    const groundedAtTickStart = new Map<Zombie, boolean>();
+    const scratch = this.tickScratch;
+    scratch.dt = dt;
+    scratch.time = time;
+    scratch.player = player;
+    scratch.hour = hour;
+    scratch.blockSize = blockSize;
+    scratch.isSolid = isSolid;
+    scratch.isOpaque = this.options.isOpaque;
+    scratch.groundedAtTickStart = groundedAtTickStart;
+    for (const [id, zombie] of entries) {
+      groundedAtTickStart.set(zombie, zombie.body.onGround);
+      this.captureRenderPrevious(zombie);
+      if (zombie.incapacitated) {
+        this.tickIncapacitated(zombie, dt);
+        continue;
+      }
+      scratch.id = id;
+      scratch.zombie = zombie;
+      this.updateZombieTimers();
+      scratch.isOpaque = this.options.isOpaque;
+      this.updatePerception();
+      this.updateAttention();
+
+      this.checkInvestigationArrival();
+
+      this.selectMovementIntent();
+
+      this.updateMovementSpeed();
+      this.applyObstacleSlide();
+      this.stepZombieBody();
+      this.updateObstacleContact();
+      this.updateMovementAfterStep();
+      this.resolveZombieAttack();
+      this.finishZombieTick();
+    }
+    this.separateZombieBodies(entries, dt, player);
+    this.emitFootsteps(entries, groundedAtTickStart, player, blockSize);
   }
 
   unsafeReason(playerPos = this.options.player().pos): string | undefined {

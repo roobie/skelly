@@ -21,7 +21,9 @@ const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
-const baseRegistry = buildRegistry(base).registry;
+const baseBuild = buildRegistry(base);
+const baseRegistry = baseBuild.registry;
+const missingSoundsRegistry = buildRegistry(base.filter(({ source }) => source !== 'sounds.json')).registry;
 
 interface WindowFrameRun {
   y: number;
@@ -66,7 +68,7 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 
 describe('content', () => {
   it('base content has no issues', () => {
-    const { registry, issues } = buildRegistry(base);
+    const { registry, issues } = baseBuild;
     expect(issues).toEqual([]);
     expect(registry.blocks[0]!.id).toBe('air');
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
@@ -342,16 +344,14 @@ describe('content', () => {
   });
 
   it('fails when the sounds.json content file is missing required events', () => {
-    const { registry } = buildRegistry(base.filter(({ source }) => source !== 'sounds.json'));
-    const missingLight = requiredSoundIssues(registry).some(
+    const missingLight = requiredSoundIssues(missingSoundsRegistry).some(
       (issue) => issue.message === 'missing required sound event "player_hurt_light"',
     );
     expect(missingLight).toBe(true);
   });
 
   it('requires the blocked door-close sound event', () => {
-    const { registry } = buildRegistry(base.filter(({ source }) => source !== 'sounds.json'));
-    expect(requiredSoundIssues(registry).map((issue) => issue.message)).toContain(
+    expect(requiredSoundIssues(missingSoundsRegistry).map((issue) => issue.message)).toContain(
       'missing required sound event "door_blocked_close"',
     );
   });
@@ -406,7 +406,7 @@ describe('content', () => {
         lewt: [],
       },
     };
-    const { registry, issues } = buildRegistry([...base, bad]);
+    const { registry, issues } = buildRegistry([bad]);
     expect(issues.map((i) => i.path).sort()).toEqual([
       'blocks[0].color',
       'blocks[0].hardnes',
@@ -440,7 +440,7 @@ describe('content', () => {
         ],
       },
     };
-    expect(buildRegistry([...base, missingCone]).issues.map((issue) => issue.path)).toContain('zombies[0].sightCone');
+    expect(validateContent(missingCone).map((issue) => issue.path)).toContain('zombies[0].sightCone');
   });
 
   it('requires stepLength on every zombie type', () => {
@@ -465,9 +465,7 @@ describe('content', () => {
         ],
       },
     };
-    expect(buildRegistry([...base, missingStepLength]).issues.map((issue) => issue.path)).toContain(
-      'zombies[0].stepLength',
-    );
+    expect(validateContent(missingStepLength).map((issue) => issue.path)).toContain('zombies[0].stepLength');
   });
 
   it('reports a duplicate id within a file', () => {
@@ -741,8 +739,7 @@ describe('templates', () => {
     buildRegistry([...base, t]).issues.map((i) => `${i.path}: ${i.message}`);
 
   it('leaves an open air cell beside every window-frame run', () => {
-    const { registry } = buildRegistry(base);
-    const frameRuns = [...registry.templates.values()].flatMap((definition) => {
+    const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {
       const frame = Object.entries(definition.palette).find(([, value]) => value === 'window_frame')?.[0];
       if (frame === undefined) {
         return [];
