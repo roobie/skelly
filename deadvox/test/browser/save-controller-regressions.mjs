@@ -295,7 +295,7 @@ try {
       });
       const latestSnapshot = () => {
         const snapshot = structuredClone(sourceSnapshot());
-        snapshot.character.simulation.needs.health = health;
+        snapshot.character.simulation.body.health = health;
         return snapshot;
       };
       controller.bindSession(latestSnapshot, () => time, controller.worldOptions);
@@ -324,7 +324,7 @@ try {
       health = 30;
       time = 2;
       controller.beforeSleep();
-      const queuedBeforeRetry = controller.queued.snapshot.character.simulation.needs.health;
+      const queuedBeforeRetry = controller.queued.snapshot.character.simulation.body.health;
       globalThis.deadvoxRetryRace = { releaseSecond };
       return { queuedBeforeRetry };
     });
@@ -335,7 +335,7 @@ try {
     await page.click('#save-retry');
     const retryState = await page.evaluate(() => ({
       failure: deadvoxSaveTest.controller.failure,
-      queuedHealth: deadvoxSaveTest.controller.queued.snapshot.character.simulation.needs.health,
+      queuedHealth: deadvoxSaveTest.controller.queued.snapshot.character.simulation.body.health,
     }));
     assert.equal(retryState.failure, '');
     assert.equal(retryState.queuedHealth, 30);
@@ -361,7 +361,7 @@ try {
       contentLookup: () => true,
     });
     assert.equal(race.queuedBeforeRetry, 30);
-    assert.equal(decoded.snapshot.character.simulation.needs.health, 30);
+    assert.equal(decoded.snapshot.character.simulation.body.health, 30);
     assert.deepEqual(pageErrors, []);
     await context.close();
   });

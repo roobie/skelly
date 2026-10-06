@@ -5,8 +5,8 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { drainBurnLight, toggleLight } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { Simulation } from '../src/core/sim.ts';
 import { Survival } from '../src/game/survival.ts';
+import { Simulation } from './simulationFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const { registry } = buildRegistry(

@@ -48,17 +48,23 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
     surface: { height: () => 20, top: () => undefined },
   });
   const events: number[][] = [];
+  const loaded: string[] = [];
+  const unloaded: string[] = [];
+  streamer.onColumn = (cx, cz) => loaded.push(`${cx},${cz}`);
+  streamer.onColumnUnload = (cx, cz) => unloaded.push(`${cx},${cz}`);
   streamer.onDataChange = (origin) => {
     events.push(origin);
     sky.chunkChanged(origin);
   };
   streamer.update(0, 0);
+  expect(loaded).toContain('0,0');
   expect(world.getChunk(0, 1, 0)?.isEmpty()).toBe(true);
   update();
   expect(sky.at([2, 14.5, 2])).toBe(1);
   expect(events).toContainEqual([0, 32, 0]);
   events.length = 0;
   streamer.update(20 * CHUNK, 20 * CHUNK);
+  expect(unloaded).toContain('0,0');
   expect(world.getChunk(0, 1, 0)).toBeUndefined();
   expect(events).toContainEqual([0, 32, 0]);
   update();

@@ -309,6 +309,14 @@
           "weight": 1
         },
         {
+          "item": "antiseptic",
+          "weight": 1
+        },
+        {
+          "item": "antibiotics",
+          "weight": 1
+        },
+        {
           "item": "chocolate_bar",
           "weight": 1
         },

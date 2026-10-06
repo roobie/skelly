@@ -1,5 +1,6 @@
 import { type AimState, assertAimState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
+import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
   canonicalJsonAt as canonicalStringify,
@@ -135,7 +136,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 24;
+export const SAVE_SCHEMA_VERSION = 25;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -221,13 +222,45 @@ const progression = obj({
 });
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
+const bodyRegionValues = BODY_REGIONS;
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),
   fatigue: num({ min: 0, max: 100 }),
-  health: num({ min: 0, max: 100 }),
   stamina: num({ min: 0, max: 100 }),
+});
+const bodyRegionDamage = obj({
+  head: num({ min: 0, max: 100 }),
+  torso: num({ min: 0, max: 100 }),
+  leftArm: num({ min: 0, max: 100 }),
+  rightArm: num({ min: 0, max: 100 }),
+  leftLeg: num({ min: 0, max: 100 }),
+  rightLeg: num({ min: 0, max: 100 }),
+});
+const bodyWound = nullable(
+  obj({
+    bleeding: bool,
+    infection: enumeration(['none', 'early', 'advanced', 'resolved']),
+    infectionGameSeconds: nonNegative,
+    infectionAtRisk: bool,
+  }),
+);
+const bodyWounds = obj({
+  head: bodyWound,
+  torso: bodyWound,
+  leftArm: bodyWound,
+  rightArm: bodyWound,
+  leftLeg: bodyWound,
+  rightLeg: bodyWound,
+});
+const bodyState = obj({
+  health: num({ min: 0, max: 100 }),
+  blood: num({ min: 0, max: 100 }),
+  shock: num({ min: 0, max: 100 }),
+  knockoutElapsed: nonNegative,
+  regionDamage: bodyRegionDamage,
+  wounds: bodyWounds,
 });
 const scheduler = obj({
   time: nonNegative,
@@ -238,6 +271,7 @@ const simulationFields = {
   time: nonNegative,
   scheduler,
   needs,
+  body: bodyState,
   compression: obj({ c: num({ min: 1, max: 30 }), active: bool, interruption: opt(str()) }),
   pendingInterrupt: opt(str()),
   dead: opt(obj({ cause: str({ nonEmpty: true }), time: nonNegative })),
@@ -362,12 +396,15 @@ const inventory = obj({
 const longAction = obj({
   job: nullable(
     obj({
-      jobType: enumeration(['rest', 'sleep', 'craft', 'reading']),
+      jobType: enumeration(['rest', 'sleep', 'craft', 'reading', 'treatment']),
       stopped: bool,
       last: nonNegative,
       elapsed: opt(nonNegative),
       workUid: opt(positiveInt),
       bookUid: opt(positiveInt),
+      region: opt(enumeration(bodyRegionValues)),
+      itemUid: opt(positiveInt),
+      treatment: opt(enumeration(BODY_TREATMENTS)),
       duration: opt(positive),
       rest: opt(
         obj({
@@ -864,6 +901,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         time: snapshot.character.simulation.time,
         scheduler: snapshot.character.simulation.scheduler,
         needs: snapshot.character.simulation.needs,
+        body: snapshot.character.simulation.body,
         compression: snapshot.character.simulation.compression,
         ...(snapshot.character.simulation.pendingInterrupt === undefined
           ? {}
@@ -1157,6 +1195,9 @@ function ownsLongActionItem(
   if (job?.jobType === 'reading') {
     return tree.some(({ item }) => item.uid === job.bookUid && item.type !== WORK_IN_PROGRESS);
   }
+  if (job?.jobType === 'treatment') {
+    return tree.some(({ item }) => item.uid === job.itemUid && item.type === job.treatment);
+  }
   return true;
 }
 
@@ -1167,7 +1208,13 @@ function validateActionReferences(snapshot: SaveSnapshot): void {
   const itemsByUid = new Map(tree.map(({ item }) => [item.uid, item]));
   validateWorkItems(tree, itemsByUid);
   if (!ownsLongActionItem(job, tree)) {
-    throw new Error(job?.jobType === 'reading' ? 'Missing reading book' : 'Missing craft work item');
+    let message = 'Missing craft work item';
+    if (job?.jobType === 'reading') {
+      message = 'Missing reading book';
+    } else if (job?.jobType === 'treatment') {
+      message = 'Missing treatment item';
+    }
+    throw new Error(message);
   }
 }
 

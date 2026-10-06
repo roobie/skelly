@@ -29,6 +29,7 @@ import {
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
+import { parseSpawnTime } from './clock.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
@@ -299,6 +300,8 @@ const ItemSchema = strictObject({
   container: optional(ContainerSchema),
   wearable: optional(WearableSchema),
   food: optional(FoodSchema),
+  /** An item that applies a named treatment to one body wound. */
+  treatment: optional(picklist(['bandage', 'rag', 'antiseptic', 'antibiotics'])),
   tool: optional(ToolSchema),
   weapon: optional(WeaponSchema),
   firearm: optional(FirearmSchema),
@@ -524,6 +527,14 @@ const LootTableSchema = strictObject({
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
 const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
+const SpawnTime = pipe(
+  string(),
+  check((value) => parseSpawnTime(value) !== undefined, 'expected a named game time or HH:MM'),
+);
+const SpawnWindowSchema = pipe(
+  strictObject({ from: SpawnTime, to: optional(SpawnTime) }),
+  check(({ from, to }) => to === undefined || parseSpawnTime(from) !== parseSpawnTime(to), 'from and to must differ'),
+);
 
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
 const PaletteThingSchema = pipe(
@@ -537,8 +548,11 @@ const PaletteThingSchema = pipe(
     /** A zombie type that may stand here; the cell itself is air. */
     spawn: optional(Id),
     chance: optional(Fraction),
+    /** Daily game-clock window; omitted markers spawn when their column loads. */
+    window: optional(SpawnWindowSchema),
   }),
   check((e) => (e.furniture === undefined) !== (e.spawn === undefined), 'needs exactly one of "furniture" or "spawn"'),
+  check((e) => e.spawn !== undefined || e.window === undefined, '"window" only goes with "spawn"'),
   check(
     (e) => e.furniture !== undefined || (e.loot === undefined && e.facing === undefined && e.lock === undefined),
     '"loot", "facing" and "lock" only go with "furniture"',
@@ -649,7 +663,14 @@ const SiteLayoutSchema = strictObject({
     /** Clockwise degrees from WORLD_NORTH; converted to camera yaw only at startup. */
     bearing: Degrees,
   }),
-  shamblers: array(strictObject({ type: Id, position: MetrePosition, chance: optional(Fraction) })),
+  shamblers: array(
+    strictObject({
+      type: Id,
+      position: MetrePosition,
+      chance: optional(Fraction),
+      window: optional(SpawnWindowSchema),
+    }),
+  ),
   woodlands: array(strictObject({ polygon: pipe(array(LayoutPoint), minLength(3)), density: Fraction })),
   tracks: array(
     strictObject({
@@ -808,6 +829,47 @@ const SenseSchema = strictObject({
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
+const BodyTuningSchema = strictObject({
+  id: Id,
+  /** Game hours after a bleeding wound before an at-risk infection becomes early. */
+  infectionOnsetGameHours: Positive,
+  /** Game hours the early infection stage remains treatable with antiseptic. */
+  antisepticWindowGameHours: Positive,
+  infectionChance: Fraction,
+  /** Simulation seconds that the player remains unconscious. */
+  knockoutSeconds: Positive,
+  /** Player eye height in metres while unconscious and prone. */
+  proneEyeHeightMetres: Positive,
+  /** Blunt-force shock damage per point of health damage. */
+  bluntShockPerDamage: Positive,
+  /** Simulation seconds required to apply wound treatment. */
+  treatmentSeconds: Positive,
+  /** Shock restored when the player wakes, on a 0–100 scale. */
+  wakeShock: pipe(
+    Positive,
+    check((value) => value < 100, 'must be below 100'),
+  ),
+  /** Blood lost per simulation second while a wound bleeds. */
+  bloodLossPerSecond: Positive,
+  /** Blood recovered per simulation second when no wound bleeds. */
+  bloodRecoveryPerSecond: Positive,
+  /** Shock recovered per simulation second outside a knockout. */
+  shockRecoveryPerSecond: Positive,
+  /** Health lost per simulation second while infection is advanced. */
+  advancedInfectionHealthLossPerSecond: Positive,
+  /** Aim sway added per point of torso damage. */
+  aimSwayPerDamage: Positive,
+  /** Swing slowdown added per point of arm damage. */
+  swingSlowdownPerDamage: Positive,
+  /** Movement slowdown added per point of leg damage. */
+  movementSlowdownPerDamage: Positive,
+  /** Lowest movement-speed multiplier caused by leg damage. */
+  minimumMovementSpeed: pipe(
+    Positive,
+    check((value) => value <= 1, 'must not exceed 1'),
+  ),
+});
+
 const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
@@ -838,7 +900,8 @@ const SECTION_DESCRIPTOR = {
   skills: { schema: optional(array(SkillSchema)), label: 'skills', order: 9 },
   recipes: { schema: optional(array(RecipeSchema)), label: 'recipes', order: 10 },
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
-  senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 12 },
+  body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
+  senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -865,6 +928,7 @@ export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
