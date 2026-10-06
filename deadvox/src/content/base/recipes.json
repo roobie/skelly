@@ -43,6 +43,7 @@
       "category": "material",
       "weight": 80,
       "size": [1, 2],
+      "model": "wire_spool",
       "disassembly": {
         "time": 8,
         "skill": "mechanics",

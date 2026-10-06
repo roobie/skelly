@@ -17,6 +17,25 @@ export interface PelletShot {
 export const BUCK_HALF_ANGLE = (2 * Math.PI) / 180;
 export const BUCK_RANGE_METRES = 50;
 
+/** Uniform area sample in a forward cone's tangent-plane disk. */
+export const coneDirection = (basis: ReturnType<typeof aimBasis>, halfAngleRadians: number, rng: Rng): Vec3 => {
+  if (!Number.isFinite(halfAngleRadians) || halfAngleRadians < 0 || halfAngleRadians >= Math.PI / 2) {
+    throw new Error('Invalid dispersion cone');
+  }
+  if (halfAngleRadians === 0) {
+    return [...basis.forward];
+  }
+  const radius = Math.sqrt(rng.next()) * Math.tan(halfAngleRadians);
+  const angle = rng.next() * Math.PI * 2;
+  const x = radius * Math.cos(angle);
+  const y = radius * Math.sin(angle);
+  const vector: Vec3 = basis.forward.map(
+    (value, index) => value + basis.right[index]! * x + basis.up[index]! * y,
+  ) as Vec3;
+  const length = Math.hypot(...vector);
+  return vector.map((value) => value / length) as Vec3;
+};
+
 export const pelletShot = ({
   ammo,
   origin,
@@ -36,15 +55,8 @@ export const pelletShot = ({
 }): PelletShot => {
   const rng = Rng.stream(seed, `buckshot:${key}`);
   const { forward, right, up } = aimBasis(yaw, pitch, aimFrame);
-  const directions = Array.from({ length: ammo.pellets }, (): Vec3 => {
-    const radius = Math.sqrt(rng.next()) * Math.tan(BUCK_HALF_ANGLE);
-    const angle = rng.next() * Math.PI * 2;
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-    const vector: Vec3 = forward.map((value, index) => value + right[index]! * x + up[index]! * y) as Vec3;
-    const length = Math.hypot(...vector);
-    return vector.map((value) => value / length) as Vec3;
-  });
+  const basis = { forward, right, up };
+  const directions = Array.from({ length: ammo.pellets }, (): Vec3 => coneDirection(basis, BUCK_HALF_ANGLE, rng));
   return {
     origin: [...origin],
     directions,

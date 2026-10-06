@@ -3,7 +3,13 @@
 // handling time is up (handling.ts). DESIGN.md, "Items and inventory" and "Hands".
 
 import { BlockEntities, type BlockEntity } from './blockEntities.ts';
-import { DEFAULT_HANDED_CHARACTER, dominantSide, type HandedCharacter } from './character.ts';
+import {
+  DEFAULT_HANDED_CHARACTER,
+  dominantSide,
+  type HandedCharacter,
+  SKILL_LEVEL_LEGENDARY,
+  SKILL_LEVEL_MIN,
+} from './character.ts';
 import type { ItemDef, Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { WorkPlan } from './crafting.ts';
@@ -590,7 +596,8 @@ export class Inventory {
       plan.source.work ||
       !isEmpty(plan.source) ||
       !Number.isSafeInteger(plan.skillLevel) ||
-      plan.skillLevel < 0 ||
+      plan.skillLevel < SKILL_LEVEL_MIN ||
+      plan.skillLevel > SKILL_LEVEL_LEGENDARY ||
       !Number.isFinite(plan.gather) ||
       plan.gather < 0 ||
       !Number.isFinite(plan.duration) ||
@@ -1172,7 +1179,8 @@ const validateDisassemblyWorkItem = (
     work.gather < 0 ||
     work.duration !== work.gather + duration ||
     !Number.isSafeInteger(work.skillLevel) ||
-    work.skillLevel < 0 ||
+    work.skillLevel < SKILL_LEVEL_MIN ||
+    work.skillLevel > SKILL_LEVEL_LEGENDARY ||
     !validDisassemblyComponents(work) ||
     !validDisassemblySnapshot(registry, source, work)
   ) {

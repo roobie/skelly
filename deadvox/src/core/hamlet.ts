@@ -57,8 +57,8 @@ export const HAMLET = {
 } as const;
 
 /** Buildings north of the road (their fronts face south, onto it), then south of it. */
-const NORTH_SIDE = ['small_house', 'bungalow', 'corner_store'] as const;
-const SOUTH_SIDE = ['gas_station', 'shed'] as const;
+const NORTH_SIDE = ['small_house', 'bungalow', 'corner_store', 'hardware_store'] as const;
+const SOUTH_SIDE = ['gas_station', 'shed', 'garage'] as const;
 /** Every template the hamlet uses. */
 export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE];
 

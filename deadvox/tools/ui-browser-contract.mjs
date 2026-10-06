@@ -15,9 +15,9 @@ import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
 } from '../test/browser/menu-pointer.mjs';
-import { browserStageArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
+import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
 
-const graphicsArgument = /^--(?:use-gl|use-angle|enable-unsafe-swiftshader)/;
+const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
 const resolveExecutable = (command) => {
   if (isAbsolute(command) || command.includes('/')) {
@@ -42,6 +42,7 @@ const chromeVersion =
   chromeVersionProbe.status === 0
     ? chromeVersionProbe.stdout.trim()
     : `unavailable: ${chromeVersionProbe.error?.message ?? chromeVersionProbe.stderr.trim()}`;
+const renderMode = browserStageMode('ui-browser-contract');
 const launchArgs = browserStageArgs('ui-browser-contract', [
   '--disable-extensions',
   '--password-store=basic',
@@ -120,6 +121,17 @@ try {
   });
   const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   page = await context.newPage();
+  await page.addInitScript(() => {
+    globalThis.__webglContextRequests = [];
+    const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) {
+        globalThis.__webglContextRequests.push(type);
+        return null;
+      }
+      return nativeGetContext.call(this, type, ...args);
+    };
+  });
   page.setDefaultTimeout(30_000);
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('console', (message) => {
@@ -222,12 +234,17 @@ try {
     });
   })()`);
   await evaluate(`(() => {
-    const canvas = document.querySelector('canvas');
+    // The render-free engine uses #view as its input target instead of creating a renderer canvas.
+    const inputSurface = document.querySelector('canvas') ?? document.querySelector('#view');
     let locked = false;
+    window.__inputSurface = inputSurface;
     window.__pointerCalls = { request: 0, exit: 0 };
     window.__rejectNextPointerLock = false;
-    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked ? canvas : null });
-    canvas.requestPointerLock = () => {
+    Object.defineProperty(document, 'pointerLockElement', {
+      configurable: true,
+      get: () => locked ? inputSurface : null,
+    });
+    inputSurface.requestPointerLock = () => {
       window.__pointerCalls.request++;
       if (window.__rejectNextPointerLock) {
         window.__rejectNextPointerLock = false;
@@ -260,7 +277,7 @@ try {
       return target;
     };
     document.addEventListener('click', (event) => {
-      if (event.target !== canvas) {
+      if (event.target !== inputSurface) {
         window.__lastForwardedClick = {
           x: event.clientX,
           y: event.clientY,
@@ -275,20 +292,11 @@ try {
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
   })()`);
-  await waitFor(
-    () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
-    'post-acceptance debug UI mount',
-  );
-  graphics = await evaluate(`(() => {
-    const canvas = document.querySelector('canvas');
-    const gl = canvas?.getContext('webgl2') ?? canvas?.getContext('webgl');
-    if (!gl) return { renderer: null, vendor: null };
-    const extension = gl.getExtension('WEBGL_debug_renderer_info');
-    return {
-      renderer: extension ? gl.getParameter(extension.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
-      vendor: extension ? gl.getParameter(extension.UNMASKED_VENDOR_WEBGL) : gl.getParameter(gl.VENDOR),
-    };
-  })()`);
+  await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
+  graphics = await evaluate(`({
+    renderMode: ${JSON.stringify(renderMode)},
+    webglContextRequests: window.__webglContextRequests.slice(),
+  })`);
   process.stdout.write(
     `UI_BROWSER_GRAPHICS ${JSON.stringify({
       launcher: 'playwright-cdp-pipe',
@@ -391,7 +399,7 @@ try {
     await delay(120);
   };
   const dispatchPointerAt = async (type, button, buttons, position) =>
-    evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
+    evaluate(`window.__inputSurface.dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
       bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true,
       button: ${button}, buttons: ${buttons}, clientX: ${position.x}, clientY: ${position.y},
     }))`);
@@ -453,7 +461,7 @@ try {
   })()`);
   await moveCursorTo(menuCenter);
   await evaluate(
-    "document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 500 }))",
+    "window.__inputSurface.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 500 }))",
   );
   assert.ok(
     await evaluate("document.querySelector('#overlay .card').scrollTop > 0"),
@@ -531,7 +539,7 @@ try {
   assert.match(arrowTip.mask, /cursor\.png/, 'cursor sprite is used as a silhouette mask');
   assert.equal(arrowTip.background, 'rgb(255, 255, 255)', 'cursor mask is filled white');
   assert.equal(arrowTip.blend, 'difference', 'the cursor is difference-blended');
-  assert.equal(arrowTip.rootBlend, 'difference', 'the cursor layer blends over the canvas');
+  assert.equal(arrowTip.rootBlend, 'difference', 'cursor root uses difference blending');
   assert.equal(arrowTip.hitGo, true, 'elementFromPoint at the arrow tip targets the known button edge');
   assert.ok(Math.abs(arrowTip.x - cursor.x) < 0.1, 'standard arrow tip is at cursor x');
   assert.ok(Math.abs(arrowTip.y - cursor.y) < 0.1, 'standard arrow tip is at cursor y');
@@ -578,7 +586,7 @@ try {
   })()`);
   assert.ok(debugScroll.scroll > debugScroll.height, 'expanded authored debug panel actually overflows');
   await moveCursorTo(debugScroll);
-  await evaluate(`document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', {
+  await evaluate(`window.__inputSurface.dispatchEvent(new WheelEvent('wheel', {
     bubbles: true, cancelable: true, deltaY: 3, deltaMode: 1,
   }))`);
   assert.equal(
@@ -909,9 +917,7 @@ try {
     'unlock event does not call lock APIs',
   );
 
-  await evaluate(
-    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
     await clickAt('#go');
@@ -919,21 +925,19 @@ try {
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
-    'canvas or locked-card click resumes after pointer unlock',
+    'input-surface or locked-card click resumes after pointer unlock',
   );
 
   await press('Tab', 'Tab', 9);
   await evaluate('window.__setPointerLocked(false)');
   await delay(100);
   assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'unlock closes an open inventory');
-  await evaluate(
-    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
-    'canvas click resumes after inventory unlock',
+    'input-surface click resumes after inventory unlock',
   );
 
   await press('Backquote', '`', 192);
@@ -944,14 +948,12 @@ try {
     true,
     'unlock closes an open debug panel',
   );
-  await evaluate(
-    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
-    'canvas click resumes after debug-panel unlock',
+    'input-surface click resumes after debug-panel unlock',
   );
 
   await pressBinding(keyBindings.mainMenu);
@@ -982,6 +984,11 @@ try {
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
     'a fresh resume click closes the menu',
+  );
+  assert.deepEqual(
+    await evaluate('window.__webglContextRequests'),
+    [],
+    'UI contract remains independent of WebGL rendering',
   );
   process.stdout.write(
     'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',

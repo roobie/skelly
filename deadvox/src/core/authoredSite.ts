@@ -10,7 +10,7 @@ import { Rng } from './random.ts';
 import type { Scale } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import { furnitureOf, grow, type Rect, type Site, type ZombieSpawn } from './site.ts';
-import { footprint, type Placement, placedFlights, placedSpawns, stampPlacement } from './templates.ts';
+import { footprint, type Placement, placedSpawns, stampPlacement } from './templates.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -25,7 +25,6 @@ export class AuthoredSite implements Site {
   readonly spawn: Site['spawn'];
   readonly surface: Surface;
   readonly placements: readonly Placement[];
-  readonly stairFlights: NonNullable<Site['stairFlights']>;
   readonly skyBounds: NonNullable<Site['skyBounds']>;
   readonly trees: readonly TreePlacement[];
   private readonly spawns: readonly ZombieSpawn[];
@@ -47,7 +46,6 @@ export class AuthoredSite implements Site {
       return { ...lotOf(building, rect), apron: grow(rectBlocks(rect), LOT_APRON_M / s) };
     });
     this.placements = layout.buildings.map((building) => placementOf(registry, building));
-    this.stairFlights = this.placements.flatMap(placedFlights);
     this.skyBounds = this.placements
       .filter((placement) => (placement.template.groundLayer ?? 0) > 0)
       .map((placement) => {

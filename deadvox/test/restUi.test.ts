@@ -10,14 +10,14 @@ import { restViewModel } from '../src/ui/rest.ts';
 describe('restViewModel', () => {
   it('is invisible with no action running', () => {
     const sim = new Simulation({ seed: 1 });
-    expect(restViewModel(undefined, sim, false).visible).toBe(false);
+    expect(restViewModel(undefined, false, sim, false).visible).toBe(false);
   });
 
   it('shows the label, clock and progress, with no prompt while not interrupted', () => {
     const sim = new Simulation({ seed: 1 });
     const action: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 50 };
     sim.needs.fatigue = 25;
-    const vm = restViewModel(action, sim, false);
+    const vm = restViewModel(action, false, sim, false);
     expect(vm.visible).toBe(true);
     expect(vm.label).toBe(action.label);
     expect(vm.percent).toBe(50);
@@ -25,16 +25,19 @@ describe('restViewModel', () => {
     expect(vm.clock).toBe(formatClock(sim.calendar));
   });
 
-  it('shows how to stop it, by kind', () => {
+  it('offers cancellation for rest but not sleep', () => {
     const sim = new Simulation({ seed: 1 });
     const rest: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
-    const stopKey = labelForCode(CONTROL_CODES.cancel);
-    const sleepKey = labelForCode(CONTROL_CODES.sleep);
-    expect(restViewModel(rest, sim, false).stopHint).toContain(stopKey);
-    expect(restViewModel(rest, sim, false).stopHint).not.toContain(sleepKey);
+    const interactKey = labelForCode(CONTROL_CODES.interact);
+    const cancelKey = labelForCode(CONTROL_CODES.cancel);
+    const restVm = restViewModel(rest, true, sim, false);
+    expect(restVm.stopHint).toContain(interactKey);
+    expect(restVm.stopHint).toContain(cancelKey);
+    expect(restVm.canStop).toBe(true);
     const sleep: RestAction = { kind: 'sleep', furnitureUid: 1, label: 'Sleeping', rate: -30, startFatigue: 40 };
-    expect(restViewModel(sleep, sim, false).stopHint).toContain(stopKey);
-    expect(restViewModel(sleep, sim, false).stopHint).toContain(sleepKey);
+    const sleepVm = restViewModel(sleep, false, sim, false);
+    expect(sleepVm.stopHint).toBe('');
+    expect(sleepVm.canStop).toBe(false);
   });
 
   it('shows a live interruption reason only when messages are visible', () => {
@@ -48,8 +51,13 @@ describe('restViewModel', () => {
     expect(sim.compression.interruption).toBe(reason);
 
     const action: RestAction = { kind: 'rest', furnitureUid: 1, label: 'Resting', rate: -15, startFatigue: 40 };
-    const hidden = restViewModel(action, sim, hudVisibility(DEFAULT_HUD_OPTIONS).messages);
-    const visible = restViewModel(action, sim, hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }).messages);
+    const hidden = restViewModel(action, true, sim, hudVisibility(DEFAULT_HUD_OPTIONS).messages);
+    const visible = restViewModel(
+      action,
+      true,
+      sim,
+      hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true }).messages,
+    );
     expect(hidden.prompt).toBeUndefined();
     expect(visible.prompt).toBe(reason);
   });

@@ -9,7 +9,7 @@ read_if:
 
 ## Gate actions when the input edge is captured (2026-10-04)
 
-**What happened.** `Input` latched a primary click on canvas `mousedown`, but build-mode exclusion was checked only when the later fixed-step player tick consumed it. If B toggled build mode off first, an editor click could start melee and spend stamina; the next click could then be rejected as busy. That mechanism is consistent with the positive-control failure on PR #223 (run 37234915439), but the CI trace did not capture the prior input/tick order, so attribution remains open in #224.
+**What happened.** `Input` latched a primary click on canvas `mousedown`, but build-mode exclusion was checked only when the later fixed-step player tick consumed it. If B toggled build mode off first, an editor click could start melee and spend stamina; the next click could then be rejected as busy. That mechanism is consistent with the positive-control failure on PR #223 (run 37234915439), though the CI trace did not capture the prior input/tick order. The separate first-load and Firefox OPFS failures remain under investigation in #224.
 
 **What to do.** Apply mode-specific suppression at the input edge, using the mode at `mousedown`; keep the tick-time guard as defense in depth. A rendering frame is not proof that the fixed-step simulation consumed a latched input.
 
@@ -20,6 +20,14 @@ area again. A sidecar to [CHALLENGES.md](CHALLENGES.md): challenges are the prob
 ahead; lessons are what past problems taught us. Newest first. Each entry says what
 happened, why, and what to do differently.
 
+## Browser stages assert app readiness, not full-resource load (#224)
+
+**What happened.** `melee-build-click` waited for Playwright's default `load` event before checking the app's `#go` readiness. `deadvox/index.html` also loads optional analytics from an external origin, so that unrelated request can delay the event. The #224 failure had no request trace, so the exact stalled resource is unknown.
+
+**What to do.** Use `DOMContentLoaded` and the app-specific readiness check in `test/browser/melee-build-click.mjs`; don't make the input contract wait for optional third-party resources. Keep the stage quarantined if its app readiness or input assertions fail.
+
+**Proof.** The stage passed locally after changing `page.goto` to wait for `DOMContentLoaded` while retaining the explicit `#go` readiness check. #224's historical trace still does not identify which resource delayed `load`.
+
 ## Isolate browser-test profiles from the desktop keyring (2026-10-03)
 
 **What happened.** Custom Chromium launches let Chrome select the OS password store.
@@ -29,12 +37,14 @@ until the key loaded. First navigation then took 28 seconds or crossed its uncha
 30-second bound (#190). A late response `Date` header did not mean Vite was slow:
 its first curl response took 8 ms, and its browser-request handler took 4–15 ms.
 
-**What to do.** Use shared `browserStageLaunchArgs` from
-`test/browser/stage-mode.mjs` for the throwaway profiles in
-`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs`. It owns the common
-headless, isolation, graphics-mode and window-size flags; each caller supplies only its
-profile, remote-debugging port and URL. This is test-profile isolation, not a setting
-for players' browsers. Do not warm up a request, retry or raise the timeout.
+**What to do.** Keep throwaway Chromium launches on Playwright's managed launch path;
+`test/browser/save-storage.mjs` and `tools/ui-browser-contract.mjs` use that boundary.
+Retain test-profile isolation because #190 showed that desktop password-store
+initialization can delay the first navigation. Issue #287 established that save-storage's
+separate TCP DevTools discovery is another pre-test failure boundary; do not restore a
+custom Chrome spawn, hand-allocated debug port or `/json/version` polling there. This is
+test-profile isolation, not a setting for players' browsers. Do not warm up a request,
+retry or raise the timeout.
 
 **Proof.** Three fresh-profile launches without the flag took 27.76–28.89 seconds;
 three with it took 2.87–2.91 seconds. Cookie-key loading fell from 25.16–25.20 seconds

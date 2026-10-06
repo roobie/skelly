@@ -2,7 +2,7 @@
 // use this for both URL opt-in and Chromium graphics flags, so mode and launch cannot silently diverge.
 const modes = Object.freeze({
   'inventory-scroll': 'render-free',
-  'ui-browser-contract': 'pixel',
+  'ui-browser-contract': 'render-free',
   'melee-build-click': 'render-free',
   'primary-action': 'render-free',
   'pump-handling': 'render-free',
@@ -45,20 +45,6 @@ export const browserStageArgs = (stage, extra, override) => {
     ...additionalArgs,
   ];
 };
-
-// Custom spawns share Playwright's isolation defaults; only profile, port, and URL stay per caller.
-const customChromiumLaunch = Object.freeze({
-  headless: '--headless=new',
-  isolation: Object.freeze(['--disable-extensions', '--password-store=basic']),
-  viewport: '--window-size=1280,900',
-});
-
-export const browserStageLaunchArgs = (stage, extra, override) => [
-  customChromiumLaunch.headless,
-  ...browserStageArgs(stage, customChromiumLaunch.isolation, override),
-  customChromiumLaunch.viewport,
-  ...(extra ?? []),
-];
 
 export const browserStageUrl = (stage, address, override) => {
   const url = new URL(address);
