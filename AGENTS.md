@@ -117,7 +117,7 @@ npm ci
 npm ci --prefix gungen
 npm ci --prefix deadvox
 npm ci --prefix mobgen
-npm ci --prefix deadvox/tools/lit-check   # for deadvox's lint:lit
+npm ci --prefix deadvox/tools/lit-check   # deadvox lint:lit and input-literal AST guard; root Knip
 ```
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.

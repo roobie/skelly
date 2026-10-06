@@ -2,6 +2,7 @@
 import { render } from 'lit-html';
 import { formatClock } from '../core/clock.ts';
 import type { Needs } from '../core/needs.ts';
+import { labelForAction } from '../game/inputBindings.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
 import type { HudOptionsState } from './hudOptions.ts';
 
@@ -96,7 +97,6 @@ export interface PlayPromptState {
   readonly noticeUntil: number;
   readonly interactionHint: string | undefined;
   readonly interruption: string | undefined;
-  readonly continueLabel: string;
   readonly resting: boolean;
 }
 
@@ -108,7 +108,9 @@ export const playPromptText = (state: PlayPromptState, visible: Readonly<HudOpti
   }
   // Rest has its own Continue/Stop prompt; don't duplicate it in the world prompt.
   if (visible.messages && interruption !== undefined && !resting) {
-    lines.push(`${interruption}.   ${state.continueLabel}: continue   X: stop`);
+    lines.push(
+      `${interruption}.   ${labelForAction('compression.continue')}: continue   ${labelForAction('handling.stop')}: stop`,
+    );
   }
   return lines.join('\n');
 };
@@ -121,7 +123,6 @@ export interface InteractionHint {
   readonly container: boolean;
   readonly readable: boolean;
   readonly restAction: 'rest' | 'sleep' | undefined;
-  readonly interactLabel: string;
   readonly searched: boolean;
   readonly name: string;
   readonly fullName: string;
@@ -136,22 +137,21 @@ export const playInteractionText = ({
   container,
   readable,
   restAction,
-  interactLabel,
   searched,
   name,
   fullName,
 }: InteractionHint): string => {
   if (door) {
-    return `${interactLabel}: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
+    return `${labelForAction('world.interact')}: ${open ? 'close' : 'open'} the ${name}${doorReason ? ` — ${doorReason}` : ''}${lock ? `   Activate: ${lock}` : ''}`;
   }
   if (readable) {
-    return `${interactLabel}: read the ${name}`;
+    return `${labelForAction('world.interact')}: read the ${name}`;
   }
   if (restAction) {
-    return `${interactLabel}: ${restAction === 'sleep' ? 'Sleep' : 'Rest'} on the ${name}`;
+    return `${labelForAction('world.interact')}: ${restAction === 'sleep' ? 'Sleep' : 'Rest'} on the ${name}`;
   }
   if (container) {
-    return `${interactLabel}: ${searched ? 'look in' : 'search'} the ${name}`;
+    return `${labelForAction('world.interact')}: ${searched ? 'look in' : 'search'} the ${name}`;
   }
   return fullName;
 };

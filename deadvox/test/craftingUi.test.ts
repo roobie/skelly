@@ -8,6 +8,7 @@ import { planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Simulation } from '../src/core/sim.ts';
+import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import type { Session } from '../src/game/session.ts';
 import { craftRows, craftStatus } from '../src/ui/craftReadout.ts';
 
@@ -121,7 +122,7 @@ describe('crafting read-only presentation', () => {
     expect(root.textContent).toContain(reason);
   });
 
-  it('renders command callbacks and stopped owned progress rather than advancing it', () => {
+  it('renders the rebound continue label and command callbacks without advancing stopped work', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
     const recipeSeconds = registry.recipes.get('torch')!.time * 60;
@@ -137,9 +138,16 @@ describe('crafting read-only presentation', () => {
     const root = document.createElement('section');
     const resume = vi.fn();
     const stop = vi.fn();
-    renderCraftStatus(root, status, { continue: resume, stop });
-    (root.querySelector('button') as HTMLButtonElement).click();
-    expect(resume).toHaveBeenCalledOnce();
+    expect(inputBindings.rebind('craft.continue', [{ code: 'KeyJ' }])).toBeUndefined();
+    try {
+      renderCraftStatus(root, status, { continue: resume, stop });
+      expect(root.querySelector('button')?.textContent).toContain(labelForAction('craft.continue'));
+      expect(root.querySelector('button')?.textContent).not.toContain('Continue (C)');
+      (root.querySelector('button') as HTMLButtonElement).click();
+      expect(resume).toHaveBeenCalledOnce();
+    } finally {
+      inputBindings.reset();
+    }
     const buttons = root.querySelectorAll('button');
     expect(buttons).toHaveLength(2);
     (buttons[1] as HTMLButtonElement).click();

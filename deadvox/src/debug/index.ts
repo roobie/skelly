@@ -6,7 +6,7 @@ import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
-import { KEY_BINDINGS } from '../game/input.ts';
+import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
@@ -60,8 +60,7 @@ const snapshotMeasurementStatus = (result: SnapshotMeasurement): string => {
 };
 
 export interface Action extends GroupedAction {
-  readonly code: string;
-  readonly modifier?: string;
+  readonly id: string;
   readonly state?: () => boolean;
   /** Current value, appended to the label in the panel. */
   readonly detail?: () => string;
@@ -69,6 +68,7 @@ export interface Action extends GroupedAction {
 }
 
 interface ActionView {
+  readonly id: string;
   readonly key: string;
   readonly label: string;
   readonly state: string;
@@ -194,7 +194,7 @@ const soundLogTemplate = (readout: DebugReadout): TemplateResult => html`
 `;
 
 const actionButton = (action: ActionView): TemplateResult => html`
-  <button type="button" @click=${action.run}>
+  <button type="button" data-debug-action=${action.id} @click=${action.run}>
     ${action.label} (${action.key})${action.state ? ` · ${action.state}` : ''}
   </button>
 `;
@@ -308,13 +308,13 @@ const panelTemplate = ({
   };
   return html`
   <div id="debug-ui-root">
-    <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · Backquote</div>
-    <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · M</div>
+    <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
+    <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
     <div id="debug-look-readout" class="debug-aim-readout"></div>
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
-    <section class="debug-panel" ?hidden=${!open}>
-    <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (Backquote)</button></header>
+    <section class="debug-panel" data-debug-controls ?hidden=${!open}>
+    <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (${labelForAction('debug.panel-toggle')})</button></header>
     <p>F4 toggles the performance overlay.</p>
     <div class="debug-snapshot-result-row">
       <p id="snapshot-measurement-result" class="debug-snapshot-result" aria-live="polite" tabindex="0">${snapshotStatus || 'No snapshot measurement yet.'}</p>
@@ -327,7 +327,7 @@ const panelTemplate = ({
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
     <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
     <div id="debug-sound-log-root"></div>
-    <p>Keys are listed in each group's header. Noclip: Space rises, R descends. While building (B): 1–9 select blocks, the wheel cycles them. Panel: Backquote. The wheel scrolls this panel.</p>
+    <p>Keys are listed in each group's header. Noclip: ${labelForAction('noclip.ascend')} rises, ${labelForAction('noclip.descend')} descends. While building (${labelForAction('debug.build-toggle')}): ${Array.from({ length: 9 }, (_, i) => labelForAction(`debug.build-slot.${i + 1}`)).join(' / ')} select blocks; the wheel cycles them. Panel: ${labelForAction('debug.panel-toggle')}. The wheel scrolls this panel.</p>
     </section>
     <div id="debug-axis-gizmo-root"></div>
     <div id="hotbar" hidden></div>
@@ -403,320 +403,310 @@ export const createDebugActions = ({
   toggleGameFrozen,
   impactLaser,
   look,
-}: ActionContext): Action[] => [
-  { code: 'KeyB', key: 'B', label: 'Build tools', group: 'tools', state: () => build.on, run: () => build.toggle() },
-  {
-    code: 'KeyL',
-    key: `${KEY_BINDINGS.debugModifier.label}+L`,
-    modifier: KEY_BINDINGS.debugModifier.code,
-    label: 'Impact laser',
-    group: 'tools',
-    state: impactLaser.enabled,
-    run: impactLaser.toggle,
-  },
-  { code: 'KeyG', key: 'G', label: 'Spawn item menu', group: 'tools', state: () => spawnMenu.isOpen, run: toggleSpawn },
-  {
-    code: 'KeyH',
-    key: 'H',
-    label: 'God mode',
-    group: 'survival',
-    state: () => hooks.sim.godMode,
-    run: () => {
-      hooks.sim.godMode = !hooks.sim.godMode;
+}: ActionContext): Action[] =>
+  (
+    [
+      {
+        id: 'debug.build-toggle',
+        label: 'Build tools',
+        group: 'tools',
+        state: () => build.on,
+        run: () => build.toggle(),
+      },
+      {
+        id: 'debug.impact-laser',
+        label: 'Impact laser',
+        group: 'tools',
+        state: impactLaser.enabled,
+        run: impactLaser.toggle,
+      },
+      {
+        id: 'debug.spawn-menu-toggle',
+        label: 'Spawn item menu',
+        group: 'tools',
+        state: () => spawnMenu.isOpen,
+        run: toggleSpawn,
+      },
+      {
+        id: 'debug.god-toggle',
+        label: 'God mode',
+        group: 'survival',
+        state: () => hooks.sim.godMode,
+        run: () => {
+          hooks.sim.godMode = !hooks.sim.godMode;
+        },
+      },
+      { id: 'debug.noclip-toggle', label: 'Noclip', group: 'tools', state: isNoclip, run: toggleNoclip },
+      {
+        id: 'debug.compression-test',
+        label: 'Compress / rest',
+        group: 'survival',
+        state: () => hooks.sim.compression.active,
+        run: () => {
+          if (hooks.sim.compression.active) {
+            hooks.sim.compression.stop();
+          } else {
+            hooks.compress();
+          }
+        },
+      },
+      {
+        id: 'debug.interruption-test',
+        label: 'Emit noise',
+        group: 'survival',
+        run: () => hooks.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' }),
+      },
+      { id: 'debug.danger-test', label: 'Danger test', group: 'survival', state: isDanger, run: toggleDanger },
+      {
+        id: 'debug.hurt',
+        label: 'Take 25 damage',
+        group: 'survival',
+        run: () => hooks.sim.hurt(25, 'a debug key'),
+      },
+      {
+        id: 'debug.spawn-shamblers',
+        label: 'Spawn shamblers',
+        group: 'shamblers',
+        run: () => spawnShambler(shamblerCount()),
+      },
+      {
+        id: 'debug.melee-aim-toggle',
+        label: 'Melee aim boxes',
+        group: 'shamblers',
+        state: isAimEnabled,
+        run: toggleAim,
+      },
+      {
+        id: 'debug.freeze-shamblers',
+        label: 'Freeze shamblers',
+        group: 'shamblers',
+        state: isFrozen,
+        run: toggleFrozen,
+      },
+      {
+        id: 'debug.freeze-game',
+        label: 'Freeze game',
+        group: 'time',
+        param: 'freeze=1',
+        state: isGameFrozen,
+        run: toggleGameFrozen,
+      },
+      {
+        id: 'debug.tone-cycle',
+        label: 'Tone mapping',
+        group: 'look',
+        param: 'tone=auto/neutral/aces/agx/none',
+        detail: () => look.toneMappingName,
+        run: () => look.cycleToneMapping(),
+      },
+      {
+        id: 'debug.exposure-decrease',
+        label: 'Exposure −',
+        group: 'look',
+        param: 'exposure=0.2..3',
+        detail: () => look.exposure.toFixed(1),
+        run: () => look.stepExposure(-1),
+      },
+      {
+        id: 'debug.exposure-increase',
+        label: 'Exposure +',
+        group: 'look',
+        param: 'exposure=0.2..3',
+        detail: () => look.exposure.toFixed(1),
+        run: () => look.stepExposure(1),
+      },
+      {
+        id: 'debug.linear-colours-toggle',
+        label: 'sRGB block colours',
+        group: 'look',
+        param: 'srgb=0',
+        state: () => look.linearColors,
+        run: () => look.toggleLinearColors(),
+      },
+      {
+        id: 'debug.patterns-toggle',
+        label: 'Surface patterns',
+        group: 'look',
+        param: 'patterns=0',
+        state: () => look.patterns,
+        run: () => look.togglePatterns(),
+      },
+      {
+        id: 'debug.ambient-occlusion-toggle',
+        label: 'Wide ambient occlusion',
+        group: 'lighting',
+        param: 'vao=0',
+        state: () => look.occlusion,
+        run: () => look.toggleOcclusion(),
+      },
+      {
+        id: 'debug.post-toggle',
+        label: 'Mood post-processing (all)',
+        group: 'post',
+        param: 'post=0',
+        state: () => look.moodState.post,
+        run: () => look.togglePost(),
+      },
+      {
+        id: 'debug.bloom-toggle',
+        label: 'Bloom',
+        group: 'post',
+        param: 'bloom=0',
+        state: () => look.moodState.bloom,
+        run: () => look.toggleBloom(),
+      },
+      // Bloom starts where the picture reaches this post-exposure value (core/mood.ts BLOOM_CLIP_BY_TONE); higher blooms less.
+      // Insert / Delete are the navigation-cluster keys nothing binds (CONTROLS.md); arrows would steal inventory navigation.
+      {
+        id: 'debug.bloom-clip-decrease',
+        label: 'Bloom clip −',
+        group: 'post',
+        param: 'bloomclip=1..8',
+        detail: () => bloomClipDetail(look),
+        run: () => look.stepBloomClip(-1),
+      },
+      {
+        id: 'debug.bloom-clip-increase',
+        label: 'Bloom clip +',
+        group: 'post',
+        param: 'bloomclip=1..8',
+        detail: () => bloomClipDetail(look),
+        run: () => look.stepBloomClip(1),
+      },
+      // The flashlight's intensity multiplier, in steps of x1.25. The numpad's own - and + are free in play and debug.
+      {
+        id: 'debug.torch-decrease',
+        label: 'Flashlight strength −',
+        group: 'lighting',
+        param: 'torch=0.1..16',
+        detail: () => `×${look.torch}`,
+        run: () => look.stepTorch(-1),
+      },
+      {
+        id: 'debug.torch-increase',
+        label: 'Flashlight strength +',
+        group: 'lighting',
+        param: 'torch=0.1..16',
+        detail: () => `×${look.torch}`,
+        run: () => look.stepTorch(1),
+      },
+      {
+        id: 'debug.film-toggle',
+        label: 'Film (vignette, grain)',
+        group: 'post',
+        param: 'film=0',
+        state: () => look.moodState.film,
+        run: () => look.toggleFilm(),
+      },
+      // Shadows (render/shadows.ts). Every letter is taken or planned (CONTROLS.md), so these use 0 and the navigation
+      // cluster, which nothing else binds. Toggling a light's shadows rebuilds shader programs once: expect a hitch.
+      {
+        id: 'debug.sun-shadow-toggle',
+        label: 'Sun shadows',
+        group: 'lighting',
+        param: 'sunshadow=0',
+        state: () => look.shadowState.sun,
+        run: () => look.toggleSunShadows(),
+      },
+      {
+        id: 'debug.torch-shadow-toggle',
+        label: 'Flashlight shadows',
+        group: 'lighting',
+        param: 'torchshadow=0',
+        state: () => look.shadowState.torch,
+        run: () => look.toggleTorchShadows(),
+      },
+      {
+        id: 'debug.shadow-distance-cycle',
+        label: 'Sun shadow distance',
+        group: 'lighting',
+        param: 'shadowdist=16..96',
+        detail: () => `${look.shadowState.distance} m`,
+        run: () => look.stepShadowDistance(),
+      },
+      // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
+      // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
+      {
+        id: 'debug.crack-check-toggle',
+        label: 'Crack check (magenta background)',
+        group: 'diagnostics',
+        param: 'crackcheck=1',
+        state: () => look.crackCheck,
+        run: () => look.toggleCrackCheck(),
+      },
+      {
+        id: 'debug.hot-pixel-check-toggle',
+        label: 'Hot-pixel check (coloured)',
+        group: 'diagnostics',
+        param: 'hotcheck=1',
+        state: () => look.hotCheck,
+        run: () => look.toggleHotCheck(),
+      },
+      // Fogginess is weather, not mood; a weather system will drive it. 0 is clear (no height fog either).
+      {
+        id: 'debug.fog-decrease',
+        label: 'Fogginess −',
+        group: 'atmosphere',
+        param: 'fog=0..1',
+        detail: () => look.fogginess.toFixed(1),
+        run: () => look.stepFogginess(-1),
+      },
+      {
+        id: 'debug.fog-increase',
+        label: 'Fogginess +',
+        group: 'atmosphere',
+        param: 'fog=0..1',
+        detail: () => look.fogginess.toFixed(1),
+        run: () => look.stepFogginess(1),
+      },
+      {
+        id: 'debug.grade-decrease',
+        label: 'Grade −',
+        group: 'post',
+        param: 'grade=0..1',
+        detail: () => look.moodState.grade.toFixed(1),
+        run: () => look.stepGrade(-1),
+      },
+      {
+        id: 'debug.grade-increase',
+        label: 'Grade +',
+        group: 'post',
+        param: 'grade=0..1',
+        detail: () => look.moodState.grade.toFixed(1),
+        run: () => look.stepGrade(1),
+      },
+      // The real clock only runs forward (saves pin it), so "an hour earlier" is 23 h on, tomorrow.
+      {
+        id: 'debug.skip-long',
+        label: 'Skip +23 h (−1 h tomorrow)',
+        group: 'time',
+        detail: () => formatClock(hooks.sim.calendar),
+        run: () => hooks.skipGameHours(SKIP_LONG_HOURS),
+      },
+      {
+        id: 'debug.skip-hour',
+        label: 'Skip +1 h',
+        group: 'time',
+        detail: () => formatClock(hooks.sim.calendar),
+        run: () => hooks.skipGameHours(SKIP_SHORT_HOURS),
+      },
+    ] satisfies Omit<Action, 'key'>[]
+  ).map((action) => ({
+    ...action,
+    get key() {
+      return labelForAction(action.id);
     },
-  },
-  { code: 'KeyP', key: 'P', label: 'Noclip', group: 'tools', state: isNoclip, run: toggleNoclip },
-  {
-    code: 'KeyT',
-    key: 'T',
-    label: 'Compress / rest',
-    group: 'survival',
-    state: () => hooks.sim.compression.active,
-    run: () => {
-      if (hooks.sim.compression.active) {
-        hooks.sim.compression.stop();
-      } else {
-        hooks.compress();
-      }
-    },
-  },
-  {
-    code: 'KeyN',
-    key: 'N',
-    label: 'Emit noise',
-    group: 'survival',
-    run: () => hooks.sim.emit({ kind: 'interrupt', reason: 'You hear something outside' }),
-  },
-  { code: 'KeyU', key: 'U', label: 'Danger test', group: 'survival', state: isDanger, run: toggleDanger },
-  {
-    code: 'KeyK',
-    key: 'K',
-    label: 'Take 25 damage',
-    group: 'survival',
-    run: () => hooks.sim.hurt(25, 'a debug key'),
-  },
-  { code: 'KeyV', key: 'V', label: 'Spawn shamblers', group: 'shamblers', run: () => spawnShambler(shamblerCount()) },
-  { code: 'KeyY', key: 'Y', label: 'Melee aim boxes', group: 'shamblers', state: isAimEnabled, run: toggleAim },
-  { code: 'KeyO', key: 'O', label: 'Freeze shamblers', group: 'shamblers', state: isFrozen, run: toggleFrozen },
-  {
-    code: 'KeyM',
-    key: 'M',
-    label: 'Freeze game',
-    group: 'time',
-    param: 'freeze=1',
-    state: isGameFrozen,
-    run: toggleGameFrozen,
-  },
-  {
-    code: 'KeyJ',
-    key: 'J',
-    label: 'Tone mapping',
-    group: 'look',
-    param: 'tone=auto/neutral/aces/agx/none',
-    detail: () => look.toneMappingName,
-    run: () => look.cycleToneMapping(),
-  },
-  {
-    code: 'Minus',
-    key: '-',
-    label: 'Exposure −',
-    group: 'look',
-    param: 'exposure=0.2..3',
-    detail: () => look.exposure.toFixed(1),
-    run: () => look.stepExposure(-1),
-  },
-  {
-    code: 'Equal',
-    key: '=',
-    label: 'Exposure +',
-    group: 'look',
-    param: 'exposure=0.2..3',
-    detail: () => look.exposure.toFixed(1),
-    run: () => look.stepExposure(1),
-  },
-  {
-    code: 'KeyI',
-    key: 'I',
-    label: 'sRGB block colours',
-    group: 'look',
-    param: 'srgb=0',
-    state: () => look.linearColors,
-    run: () => look.toggleLinearColors(),
-  },
-  {
-    code: 'Semicolon',
-    key: ';',
-    label: 'Surface patterns',
-    group: 'look',
-    param: 'patterns=0',
-    state: () => look.patterns,
-    run: () => look.togglePatterns(),
-  },
-  // 9: the number row beyond the quickbar's 1-5, next to 0 (sun shadows); no letter is free (CONTROLS.md).
-  {
-    code: 'Digit9',
-    key: '9',
-    label: 'Wide ambient occlusion',
-    group: 'lighting',
-    param: 'vao=0',
-    state: () => look.occlusion,
-    run: () => look.toggleOcclusion(),
-  },
-  // The mood pass. Q is the A/B master; the rest keep their own state under it.
-  {
-    code: 'KeyQ',
-    key: 'Q',
-    label: 'Mood post-processing (all)',
-    group: 'post',
-    param: 'post=0',
-    state: () => look.moodState.post,
-    run: () => look.togglePost(),
-  },
-  {
-    code: 'Quote',
-    key: "'",
-    label: 'Bloom',
-    group: 'post',
-    param: 'bloom=0',
-    state: () => look.moodState.bloom,
-    run: () => look.toggleBloom(),
-  },
-  // Bloom starts where the picture reaches this post-exposure value (core/mood.ts BLOOM_CLIP_BY_TONE); higher blooms less.
-  // Insert / Delete are the navigation-cluster keys nothing binds (CONTROLS.md); arrows would steal inventory navigation.
-  {
-    code: 'Delete',
-    key: 'Del',
-    label: 'Bloom clip −',
-    group: 'post',
-    param: 'bloomclip=1..8',
-    detail: () => bloomClipDetail(look),
-    run: () => look.stepBloomClip(-1),
-  },
-  {
-    code: 'Insert',
-    key: 'Ins',
-    label: 'Bloom clip +',
-    group: 'post',
-    param: 'bloomclip=1..8',
-    detail: () => bloomClipDetail(look),
-    run: () => look.stepBloomClip(1),
-  },
-  // The flashlight's intensity multiplier, in steps of x1.25. The numpad's own - and + are free in play and debug.
-  {
-    code: 'NumpadSubtract',
-    key: 'Num -',
-    label: 'Flashlight strength −',
-    group: 'lighting',
-    param: 'torch=0.1..16',
-    detail: () => `×${look.torch}`,
-    run: () => look.stepTorch(-1),
-  },
-  {
-    code: 'NumpadAdd',
-    key: 'Num +',
-    label: 'Flashlight strength +',
-    group: 'lighting',
-    param: 'torch=0.1..16',
-    detail: () => `×${look.torch}`,
-    run: () => look.stepTorch(1),
-  },
-  {
-    code: 'Backslash',
-    key: '\\',
-    label: 'Film (vignette, grain)',
-    group: 'post',
-    param: 'film=0',
-    state: () => look.moodState.film,
-    run: () => look.toggleFilm(),
-  },
-  // Shadows (render/shadows.ts). Every letter is taken or planned (CONTROLS.md), so these use 0 and the navigation
-  // cluster, which nothing else binds. Toggling a light's shadows rebuilds shader programs once: expect a hitch.
-  {
-    code: 'Digit0',
-    key: '0',
-    label: 'Sun shadows',
-    group: 'lighting',
-    param: 'sunshadow=0',
-    state: () => look.shadowState.sun,
-    run: () => look.toggleSunShadows(),
-  },
-  {
-    code: 'Home',
-    key: 'Home',
-    label: 'Flashlight shadows',
-    group: 'lighting',
-    param: 'torchshadow=0',
-    state: () => look.shadowState.torch,
-    run: () => look.toggleTorchShadows(),
-  },
-  {
-    code: 'PageUp',
-    key: 'PgUp',
-    label: 'Sun shadow distance',
-    group: 'lighting',
-    param: 'shadowdist=16..96',
-    detail: () => `${look.shadowState.distance} m`,
-    run: () => look.stepShadowDistance(),
-  },
-  // Diagnostics for a stray bright pixel (see render/hotCheck.ts and Mood.render): End paints the background
-  // magenta without touching the fog on geometry; PageDown paints NaN / negative / over-bright fragments in a per-material colour.
-  {
-    code: 'End',
-    key: 'End',
-    label: 'Crack check (magenta background)',
-    group: 'diagnostics',
-    param: 'crackcheck=1',
-    state: () => look.crackCheck,
-    run: () => look.toggleCrackCheck(),
-  },
-  {
-    code: 'PageDown',
-    key: 'PgDn',
-    label: 'Hot-pixel check (coloured)',
-    group: 'diagnostics',
-    param: 'hotcheck=1',
-    state: () => look.hotCheck,
-    run: () => look.toggleHotCheck(),
-  },
-  // Fogginess is weather, not mood; a weather system will drive it. 0 is clear (no height fog either).
-  {
-    code: 'KeyL',
-    key: 'L',
-    label: 'Fogginess −',
-    group: 'atmosphere',
-    param: 'fog=0..1',
-    detail: () => look.fogginess.toFixed(1),
-    run: () => look.stepFogginess(-1),
-  },
-  {
-    code: 'Slash',
-    key: '/',
-    label: 'Fogginess +',
-    group: 'atmosphere',
-    param: 'fog=0..1',
-    detail: () => look.fogginess.toFixed(1),
-    run: () => look.stepFogginess(1),
-  },
-  {
-    code: 'BracketLeft',
-    key: '[',
-    label: 'Grade −',
-    group: 'post',
-    param: 'grade=0..1',
-    detail: () => look.moodState.grade.toFixed(1),
-    run: () => look.stepGrade(-1),
-  },
-  {
-    code: 'BracketRight',
-    key: ']',
-    label: 'Grade +',
-    group: 'post',
-    param: 'grade=0..1',
-    detail: () => look.moodState.grade.toFixed(1),
-    run: () => look.stepGrade(1),
-  },
-  // The real clock only runs forward (saves pin it), so "an hour earlier" is 23 h on, tomorrow.
-  {
-    code: 'Comma',
-    key: ',',
-    label: 'Skip +23 h (−1 h tomorrow)',
-    group: 'time',
-    detail: () => formatClock(hooks.sim.calendar),
-    run: () => hooks.skipGameHours(SKIP_LONG_HOURS),
-  },
-  {
-    code: 'Period',
-    key: '.',
-    label: 'Skip +1 h',
-    group: 'time',
-    detail: () => formatClock(hooks.sim.calendar),
-    run: () => hooks.skipGameHours(SKIP_SHORT_HOURS),
-  },
-];
+  }));
 
 /** The effective bloom clip, marked while it follows the tone mapper rather than an override. */
 const bloomClipDetail = (look: LookControls): string =>
   `${look.bloomClip.toFixed(1)}${look.bloomClipIsDefault ? ' (tone mapper)' : ''}`;
 
-/** A debug key the browser shouldn't also act on: '/' and "'" open Firefox's quick find when nothing is focused. */
-const keepFromBrowser = (e: KeyboardEvent): void => {
-  if (!(e.ctrlKey || e.metaKey || e.altKey)) {
-    e.preventDefault();
-  }
-};
-
 export const SKIP_SHORT_HOURS = 1;
 export const SKIP_LONG_HOURS = 23;
 
-export const dispatchDebugAction = (
-  actions: readonly Action[],
-  code: string,
-  repeat = false,
-  debugModifierHeld = false,
-): boolean => {
-  const action = actions.find(
-    (candidate) => candidate.code === code && (candidate.modifier !== undefined) === debugModifierHeld,
-  );
+export const dispatchDebugAction = (actions: readonly Action[], id: string, repeat = false): boolean => {
+  const action = actions.find((candidate) => candidate.id === id);
   if (!action) {
     return false;
   }
@@ -906,6 +896,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   // MenuPointer routes the wheel to the pane under the cursor, including this panel.
   const actions = createDebugActions({
     hooks,
+    impactLaser: hooks.impactLaser,
     look,
     build,
     spawnMenu,
@@ -938,7 +929,6 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
     },
-    impactLaser: hooks.impactLaser,
     spawnShambler: (count) => {
       const zombies = hooks.zombies();
       const placed = zombies ? spawnShamblers(hooks.engine, hooks.body, zombies, count) : 0;
@@ -956,9 +946,10 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   }
   function actionViews(): ActionView[] {
     return actions.map((action) => ({
+      id: action.id,
       key: action.key,
       label:
-        (action.code === 'KeyV' ? `Spawn ${shamblerCount} shamblers` : action.label) +
+        (action.id === 'debug.spawn-shamblers' ? `Spawn ${shamblerCount} shamblers` : action.label) +
         (action.detail ? `: ${action.detail()}` : ''),
       state: viewState(action),
       run: () => {
@@ -1216,51 +1207,36 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     drawShell();
   }
-  const toggleOnShortcut = (e: KeyboardEvent, code: string, run: () => void): boolean => {
-    if (e.code !== code) {
+  function handleAction(action: string): boolean {
+    if (action === 'debug.performance-toggle') {
+      f3Open = !f3Open;
+      drawShell();
+      return true;
+    }
+    if (action === 'debug.panel-toggle') {
+      togglePanel();
+      return true;
+    }
+    if (action.startsWith('spawn.')) {
+      spawnMenu.handleAction(action);
+      drawShell();
+      return true;
+    }
+    if (action.startsWith('debug.build-slot.')) {
+      return build.selectSlot(Number(action.slice('debug.build-slot.'.length)) - 1);
+    }
+    if (!dispatchDebugAction(actions, action)) {
       return false;
     }
-    if (!e.repeat) {
-      run();
-    }
-    return true;
-  };
-  function handleKey(e: KeyboardEvent): boolean {
-    if (
-      toggleOnShortcut(e, KEY_BINDINGS.performanceOverlay.code, () => {
-        f3Open = !f3Open;
-        drawShell();
-      })
-    ) {
-      e.preventDefault();
-      return true;
-    }
-    if (toggleOnShortcut(e, 'Backquote', togglePanel)) {
-      return true;
-    }
-    if (e.code === KEY_BINDINGS.debugModifier.code) {
-      e.preventDefault();
-      return true;
-    }
-    if (spawnMenu.isOpen) {
-      if (e.code === 'KeyG' && !(e.target instanceof HTMLInputElement) && !e.repeat) {
-        toggleSpawn();
-      } else {
-        spawnMenu.handleKey(e);
-      }
-      return true;
-    }
-    if (!dispatchDebugAction(actions, e.code, e.repeat, hooks.debugModifierHeld())) {
-      return panelOpen;
-    }
-    keepFromBrowser(e);
-    if (!e.repeat) {
-      syncLookUrl();
-      shellKey = '';
-      drawShell();
-    }
+    syncLookUrl();
+    shellKey = '';
+    drawShell();
     return true;
   }
+  inputBindings.subscribe(() => {
+    shellKey = '';
+    drawShell();
+  });
   const runtime: DebugRuntime = {
     get aimEnabled() {
       return aimEnabled;
@@ -1329,7 +1305,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return revealZombies;
     },
     dangerReason: () => (danger ? 'Something is close' : undefined),
-    handleKey,
+    handleAction,
     closeMenus() {
       panelOpen = false;
       spawnMenu.close();

@@ -3,6 +3,7 @@
 import { html, render, type TemplateResult } from 'lit-html';
 import type { Inventory, Location } from '../core/inventory.ts';
 import { cellCount, defOf, type Item } from '../core/items.ts';
+import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { Quickbar } from '../game/quickbar.ts';
 
 /** Where a quickbar item is, and how long it takes to get it in hand. */
@@ -40,11 +41,11 @@ export const quickbarViewModel = (bar: Quickbar, inv: Inventory): QuickbarViewMo
   slots: bar.slots.map((_, i) => {
     const item = bar.resolve(i, inv);
     if (!item) {
-      return { key: String(i + 1), filled: false, name: 'empty', where: '' };
+      return { key: labelForAction(`quickbar.use.${i + 1}`), filled: false, name: 'empty', where: '' };
     }
     const at = inv.locate(item);
     return {
-      key: String(i + 1),
+      key: labelForAction(`quickbar.use.${i + 1}`),
       filled: true,
       name: `${inv.name(item)}${item.count > 1 ? ` ×${item.count}` : ''}`,
       where: whereText(inv, item, at),
@@ -70,7 +71,7 @@ export const renderQuickbar = (root: HTMLElement, bar: Quickbar, inv: Inventory)
 
 /** Changes when the inventory or a slot's item does; the redraw contract's key. */
 export const quickbarKey = (bar: Quickbar, inv: Inventory): string =>
-  `${inv.version}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
+  `${inputBindings.revision}|${inv.version}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
 
 export interface HandlingViewModel {
   readonly visible: boolean;

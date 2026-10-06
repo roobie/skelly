@@ -1,6 +1,4 @@
-// Build mode (B, only with ?debug=1), a development tool: break blocks with the left button, place the
-// chosen block with the right, and pick it with 1–9 or the wheel. Outside build
-// mode, those keys belong to the quickbar.
+// Debug block editing. Gated semantic slot selection and the wheel share the same selected block.
 
 import { html, render } from 'lit-html';
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments } from 'three';
@@ -9,14 +7,13 @@ import type { Vec3 } from '../core/coords.ts';
 import { type Body, bodyOverlapsBlock } from '../core/physics.ts';
 import { raycast } from '../core/raycast.ts';
 import type { Engine } from '../game/engine.ts';
-
-const DIGIT_KEY = /^Digit([1-9])$/;
+import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 
 const hotbarTemplate = (blocks: readonly { color: string; name: string }[], selected: number) => html`
   ${blocks.slice(0, 9).map(
     (block, i) => html`
     <div class=${i === selected ? 'selected' : ''}>
-      <span style=${`background: ${block.color}`}></span>${i + 1} ${block.name}
+      <span style=${`background: ${block.color}`}></span>${labelForAction(`debug.build-slot.${i + 1}`)} ${block.name}
     </div>
   `,
   )}
@@ -33,6 +30,7 @@ export class BuildMode {
 
   constructor(engine: Engine, body: Body, reachBlocks: number) {
     this.engine = engine;
+    inputBindings.subscribe(() => this.draw());
     this.body = body;
     this.reach = reachBlocks;
     const s = engine.config.scale.blockSize;
@@ -59,13 +57,11 @@ export class BuildMode {
     this.draw();
   }
 
-  /** 1–9 choose a block. Returns true if the key was used. */
-  key(code: string): boolean {
-    const digit = DIGIT_KEY.exec(code);
-    if (!(this.on && digit) || Number(digit[1]) > Math.min(9, this.placeable.length)) {
+  selectSlot(slot: number): boolean {
+    if (!(this.on && Number.isInteger(slot)) || slot < 0 || slot >= Math.min(9, this.placeable.length)) {
       return false;
     }
-    this.selected = Number(digit[1]) - 1;
+    this.selected = slot;
     this.draw();
     return true;
   }

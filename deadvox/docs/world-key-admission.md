@@ -15,6 +15,7 @@ Menu and debug handlers can have legitimate work to perform while the menu is
 open. Their precedence must not imply permission for an otherwise unhandled key
 to reach gameplay.
 
-See `deadvox/src/game/play.ts`, `handleGameplayKey`, for this admission boundary.
+See `src/game/inputBindings.ts`, `KeyboardInput.press`, and
+`src/game/play.ts`, `startPlay`, for contextual resolution before gameplay dispatch.
 When changing that routing, verify world-action refusal with the main menu open,
 not only that the menu itself appears.

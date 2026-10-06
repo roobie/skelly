@@ -444,7 +444,14 @@ describe('shambler perception', () => {
   });
 
   it('keeps crouched light reach in the open but lets a half-wall block the lowered light', () => {
-    const isSolid: SolidAt = (x, y) => x === 9 && y === 0;
+    const lightSeenFrom = player([0, 0, 0], [-1, 0, 0], 'still', true).lightSeenFrom;
+    const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
+    const distanceMetres = (crouchSightRange + lightSeenFrom) / 2;
+    const distanceBlocks = distanceMetres / BLOCK_SIZE;
+    const crouchedEye = PLAYER.eye - SENSE_TUNING.crouch.eyeDropMetres;
+    const wallFraction = (1.3 - 0.9) / (1.3 - crouchedEye);
+    const wallX = Math.floor(distanceBlocks * wallFraction);
+    const isSolid: SolidAt = (x, y) => x === wallX && y >= 0 && y < 2;
     const visible = (crouching: boolean, blocked: boolean) => {
       const eyeHeightMetres = PLAYER.eye - (crouching ? SENSE_TUNING.crouch.eyeDropMetres : 0);
       return perceivePlayer({
@@ -452,20 +459,22 @@ describe('shambler perception', () => {
         from: [0, 0, 0],
         facing: [1, 0, 0],
         player: {
-          ...player([10, 0, 0], [-1, 0, 0], 'still', true, crouching),
+          ...player([distanceBlocks, 0, 0], [-1, 0, 0], 'still', true, crouching),
           eyeHeightMetres,
           lightHeightMetres: eyeHeightMetres,
         },
         hour: 12,
-        blockSize: 1,
+        blockSize: BLOCK_SIZE,
         isSolid: blocked ? isSolid : () => false,
         tuning: SENSE_TUNING,
       });
     };
-    const lowRay: Vec3 = [10, PLAYER.eye - SENSE_TUNING.crouch.eyeDropMetres - 1.3, 0];
+    const lowRay: Vec3 = [distanceBlocks, crouchedEye - 1.3, 0];
     expect(raycast([0, 1.3, 0], normalized(lowRay), Math.hypot(...lowRay), isSolid)).toBeDefined();
-    expect(visible(false, false)).toBe(true);
+    expect(distanceMetres).toBeGreaterThan(crouchSightRange);
+    expect(distanceMetres).toBeLessThan(lightSeenFrom);
     expect(visible(true, false)).toBe(true);
+    expect(visible(false, true)).toBe(true);
     expect(visible(true, true)).toBe(false);
   });
 });
@@ -2621,27 +2630,48 @@ describe('attack windup', () => {
     expect(restored.store.get(id)!.hitFlinchTime).toBeUndefined();
   });
 
-  it('resumes noise investigation and search without replaying an expired pulse after restore', () => {
-    const noise = { id: 1, pos: [6.5, 1, 0] as Vec3, radiusMetres: 10, expiresAt: 0.1 };
+  it('does not replay a live far vocal pulse after a searching zombie is restored', () => {
+    const farMultiplier = SHAMBLER.hearingModel.farMultiplier;
+    const hearingRadius = (4 * SHAMBLER.hearingModel.investigationDistanceMetres) / (farMultiplier - 1);
+    const radiusMetres = hearingRadius / SHAMBLER.hearing;
+    const farHearingRadius = hearingRadius * farMultiplier;
+    const distanceMetres = (hearingRadius + farHearingRadius) / 2;
+    const noise = {
+      id: 1,
+      pos: [0.5 + distanceMetres / BLOCK_SIZE, 1, 0] as Vec3,
+      radiusMetres,
+      expiresAt: 30,
+    };
     const makeSystem = () => new ZombieSystem(senses(() => ({ ...player([100, 2, 0]), vocalNoise: noise }), FLOOR));
     const uninterrupted = makeSystem();
     const id = uninterrupted.add(SHAMBLER, [0.5, 1, 0]);
     const dt = 1 / 60;
-    uninterrupted.tick(dt, 0);
-    uninterrupted.tick(dt, dt);
+    let frame = 0;
+    uninterrupted.tick(dt, frame * dt);
     expect(uninterrupted.store.get(id)!.mode).toBe('investigate');
-    expect(uninterrupted.store.get(id)!.lastPerceived).toEqual(noise.pos);
+    expect(uninterrupted.store.get(id)!.investigationTier).toBe('far');
+    expect(uninterrupted.store.get(id)!.lastVocalNoiseId).toBe(noise.id);
 
+    while (uninterrupted.store.get(id)!.mode !== 'search' && frame < 1800) {
+      frame += 1;
+      uninterrupted.tick(dt, frame * dt);
+    }
+    expect(uninterrupted.store.get(id)!.mode).toBe('search');
+    expect(frame * dt).toBeLessThan(noise.expiresAt);
+
+    const searchFrame = frame;
     const restored = makeSystem();
     restored.restoreState(uninterrupted.snapshotState(), (typeId) => registry.zombies.get(typeId));
-    for (let frame = 2; frame < 600; frame++) {
-      uninterrupted.tick(dt, frame * dt);
-      restored.tick(dt, frame * dt);
+    const firstAfterRestore = searchFrame + 1;
+    uninterrupted.tick(dt, firstAfterRestore * dt);
+    restored.tick(dt, firstAfterRestore * dt);
+    expect(uninterrupted.store.get(id)!.mode).toBe('search');
+    expect(restored.store.get(id)!.mode).toBe('search');
+    for (let nextFrame = firstAfterRestore + 1; nextFrame <= searchFrame + 600; nextFrame += 1) {
+      uninterrupted.tick(dt, nextFrame * dt);
+      restored.tick(dt, nextFrame * dt);
     }
 
-    const resumedZombie = restored.store.get(id)!;
-    expect(resumedZombie.mode).toBe('search');
-    expect(resumedZombie.searchAnchor).toEqual(noise.pos);
     expect(restored.snapshotState()).toEqual(uninterrupted.snapshotState());
   });
 

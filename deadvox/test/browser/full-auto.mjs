@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { pressAction } from './input-actions.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -146,25 +147,28 @@ try {
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
-  await page.evaluate(() => {
+  const debugGateCode = await page.evaluate(
+    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0].code)`,
+  );
+  await page.evaluate((code) => {
     globalThis.fullAutoProbe.titleF1DefaultPrevented = false;
     globalThis.fullAutoProbe.titleF2DefaultPrevented = false;
     globalThis.addEventListener('keydown', (event) => {
       if (event.code === 'F1') {
         globalThis.fullAutoProbe.titleF1DefaultPrevented = event.defaultPrevented;
       }
-      if (event.code === 'F2') {
+      if (event.code === code) {
         globalThis.fullAutoProbe.titleF2DefaultPrevented = event.defaultPrevented;
       }
     });
-  });
+  }, debugGateCode);
   await page.keyboard.press('F1');
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.titleF1DefaultPrevented),
     false,
     'F1 is not cancelled on the title screen',
   );
-  await page.keyboard.press('F2');
+  await pressAction(page, 'debug.gate');
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.titleF2DefaultPrevented),
     true,
@@ -189,25 +193,25 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
-  await page.evaluate(() => {
+  await page.evaluate((code) => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
     globalThis.fullAutoProbe.f2DefaultPrevented = false;
     globalThis.addEventListener('keydown', (event) => {
       if (event.code === 'F1') {
         globalThis.fullAutoProbe.f1DefaultPrevented = event.defaultPrevented;
       }
-      if (event.code === 'F2') {
+      if (event.code === code) {
         globalThis.fullAutoProbe.f2DefaultPrevented = event.defaultPrevented;
       }
     });
-  });
+  }, debugGateCode);
   await page.keyboard.press('F1');
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.f1DefaultPrevented),
     false,
     'F1 is not cancelled in gameplay',
   );
-  await page.keyboard.press('F2');
+  await pressAction(page, 'debug.gate');
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.f2DefaultPrevented),
     true,
