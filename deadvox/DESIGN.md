@@ -114,7 +114,7 @@ Simulation time advances only by a Sim-seconds step. The outer frame driver conv
 
 The conversion is `SimSeconds = RealSeconds × compression`, followed by `GameSeconds = SimSeconds × CLOCK_RATIO`. `src/core/time.ts` owns the named conversions: minutes normalize by multiplying by 60, hours by 3,600, and rates per minute or hour normalize by dividing by the same factors. Timestamp conversion also includes the Game-clock origin; duration conversion does not. This distinction prevents adding an origin to an elapsed span.
 
-Authored temporal field names include their clock and unit. The content schemas convert those numeric inputs to branded canonical seconds or rates at parse time, so systems do not repeat unit arithmetic. Sim, Game and Real brands keep unlike clock values out of accidental arithmetic; time-of-day has its own type. Save-state field names follow the same rule, and the save schema changes when those names change.
+Authored temporal field names include their clock and unit. The content schemas convert those numeric inputs to branded canonical seconds or rates at parse time, so systems do not repeat unit arithmetic. Sim, Game and Real brands keep unlike clock values out of accidental arithmetic; time-of-day has its own type. The r44-2 time linter ratchets existing runtime/save names in `tools/time-lint-baseline.json`, so additions fail while those fields await migration. The r44-3 item renames the owner-boundary fields in `src/core/sim.ts`, `Simulation`, `src/core/scheduler.ts`, `Scheduler`, and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, after overlapping Deadvox changes settle; persisted-name changes require a new save schema because old saves are rejected.
 
 ### Long actions
 

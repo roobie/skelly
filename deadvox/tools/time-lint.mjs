@@ -9,11 +9,12 @@ import ts from './lit-check/node_modules/typescript/lib/typescript.js';
 const DEADVOX = resolve(dirname(new URL(import.meta.url).pathname), '..');
 const SOURCE = join(DEADVOX, 'src');
 const CONTENT = join(SOURCE, 'content', 'base');
+const RUNTIME_BASELINE = join(DEADVOX, 'tools', 'time-lint-baseline.json');
 const ALLOW_REAL = new Set([join(SOURCE, 'game', 'frameDriver.ts')]);
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const REAL_NAMES = new Set(['Date', 'performance', 'requestAnimationFrame', 'setTimeout', 'setInterval', 'timeStamp']);
 const TEMPORAL_NAME =
-  /(?:Time|Duration|Interval|Cooldown|Windup|BurnTime|BurnRemaining|RotsAfter|Per(?:Sim|Game|Real)(?:Second|Minute|Hour)|Timestamp)/i;
+  /(?:Time|Duration|Elapsed|Interval|Cooldown|Windup|BurnTime|BurnRemaining|RotsAfter|LastPlayedAt|StartedAt|ExpiresAt|LitAt|Per(?:Sim|Game|Real)(?:Second|Minute|Hour)|Timestamp)/i;
 const CLOCK_UNIT = /(?:Sim|Game|Real)(?:Milliseconds?|Seconds?(?:Squared)?|Minutes?|Hours?|TimeOfDay|Timestamp|Rate)/;
 const BRANDED_CLOCK = /^(sim|game|real)(?:Seconds|Timestamp|Rate|TimeOfDay)$/;
 const BRANDED_TYPE = /^(Sim|Game|Real)(?:Seconds|Timestamp|Rate|TimeOfDay)$/;
@@ -218,6 +219,85 @@ export const mixedArithmeticFindings = (file, text) => {
 
 const normalizedPath = (path) => path.replaceAll('[]', '');
 
+const ambiguousTemporalProperty = (node) => {
+  if (!(ts.isPropertyAssignment(node) || ts.isPropertySignature(node) || ts.isPropertyDeclaration(node))) {
+    return;
+  }
+  const name = propertyName(node.name);
+  return name && name !== 'workTimeBonus' && TEMPORAL_NAME.test(name) && !CLOCK_UNIT.test(name) ? name : undefined;
+};
+
+export const runtimeTemporalCounts = (files, read = readFileSync) => {
+  const counts = new Map();
+  for (const file of files) {
+    const source = sourceAst(file, read(file, 'utf8'));
+    const visit = (node) => {
+      const name = ambiguousTemporalProperty(node);
+      if (name) {
+        const relativeFile = file.startsWith(SOURCE) ? file.slice(SOURCE.length + 1) : file;
+        const key = `${relativeFile}\\0${name}`;
+        counts.set(key, (counts.get(key) ?? 0) + 1);
+      }
+      visitChildren(node, visit);
+    };
+    visit(source);
+  }
+  return [...counts]
+    .map(([key, count]) => {
+      const [file, name] = key.split('\\0');
+      return { file, name, count };
+    })
+    .sort((a, b) => a.file.localeCompare(b.file) || a.name.localeCompare(b.name));
+};
+
+export const compareRuntimeTemporalCounts = (observed, baseline) => {
+  const keyOf = ({ file, name }) => `${file}\\0${name}`;
+  const actual = new Map(observed.map((entry) => [keyOf(entry), entry.count]));
+  const expected = new Map(baseline.map((entry) => [keyOf(entry), entry.count]));
+  const differences = [];
+  for (const [key, count] of actual) {
+    const allowed = expected.get(key) ?? 0;
+    if (count > allowed) {
+      const [file, name] = key.split('\\0');
+      differences.push({ kind: 'new', file, name, count: count - allowed });
+    }
+  }
+  for (const [key, count] of expected) {
+    const found = actual.get(key) ?? 0;
+    if (count > found) {
+      const [file, name] = key.split('\\0');
+      differences.push({ kind: 'stale', file, name, count: count - found });
+    }
+  }
+  return differences.sort(
+    (a, b) => a.kind.localeCompare(b.kind) || a.file.localeCompare(b.file) || a.name.localeCompare(b.name),
+  );
+};
+
+const runtimeSourceFiles = () =>
+  walkFiles(SOURCE, (path) => CODE_EXTENSIONS.has(extname(path))).filter(
+    (path) => path !== join(SOURCE, 'core', 'schema.ts') && path !== join(SOURCE, 'core', 'temporalFields.ts'),
+  );
+
+const runtimeTemporalFindings = () => {
+  const files = runtimeSourceFiles();
+  const baseline = JSON.parse(readFileSync(RUNTIME_BASELINE, 'utf8'));
+  if (
+    baseline.version !== 1 ||
+    !baseline.fields ||
+    typeof baseline.fields !== 'object' ||
+    Array.isArray(baseline.fields)
+  ) {
+    throw new Error('time-lint-baseline.json must have version 1 and a fields object');
+  }
+  const baselineFields = Object.entries(baseline.fields).flatMap(([file, names]) =>
+    Object.entries(names).map(([name, count]) => ({ file, name, count })),
+  );
+  return compareRuntimeTemporalCounts(runtimeTemporalCounts(files), baselineFields).map(
+    ({ kind, file, name, count }) => `${kind} runtime temporal name ${file}:${name} (${count})`,
+  );
+};
+
 const collectAuthoredFields = (value, path, file, state) => {
   if (Array.isArray(value)) {
     for (const item of value) {
@@ -296,7 +376,7 @@ const authoredTemporalFindings = () => {
 
 export const lint = () => {
   const modules = simulationDependencies();
-  const findings = [...analyzeFiles(modules), ...authoredTemporalFindings()];
+  const findings = [...analyzeFiles(modules), ...authoredTemporalFindings(), ...runtimeTemporalFindings()];
   if (findings.length > 0) {
     process.stderr.write(`${findings.join('\n')}\n`);
     return false;
@@ -307,6 +387,15 @@ export const lint = () => {
   return true;
 };
 
-if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url) && !lint()) {
-  process.exitCode = 1;
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  if (process.argv.includes('--emit-runtime-baseline')) {
+    const fields = {};
+    for (const { file, name, count } of runtimeTemporalCounts(runtimeSourceFiles())) {
+      fields[file] ??= {};
+      fields[file][name] = count;
+    }
+    process.stdout.write(`${JSON.stringify({ version: 1, fields }, null, 2)}\n`);
+  } else if (!lint()) {
+    process.exitCode = 1;
+  }
 }
