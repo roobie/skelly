@@ -168,7 +168,7 @@ const worldSources = (registry: Registry) => {
     }
     markers.set(id, template.spawns);
   }
-  for (const id of possibleHamletZombies(markers)) {
+  for (const id of possibleHamletZombies(markers, (type) => registry.zombies.get(type)?.spawnWeight ?? 1)) {
     const loot = registry.zombies.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);

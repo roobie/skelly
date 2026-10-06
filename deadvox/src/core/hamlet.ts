@@ -68,13 +68,17 @@ const ZOMBIE_COUNT = [6, 10] as const;
 
 /** Possible types before seed rolls: north rows may shuffle; south rows keep their order.
  * Certain earlier markers can consume all spawn slots; wanderers only fill remaining slots. */
-export const possibleHamletZombies = (templates: ReadonlyMap<string, readonly SpawnMarker[]>): Set<string> => {
+export const possibleHamletZombies = (
+  templates: ReadonlyMap<string, readonly SpawnMarker[]>,
+  spawnWeight: (type: string) => number = () => 1,
+): Set<string> => {
   const types = new Set<string>();
-  const certain = (id: string) => (templates.get(id) ?? []).filter((marker) => marker.chance === 1).length;
+  const chance = (marker: SpawnMarker) => marker.chance * spawnWeight(marker.zombie);
+  const certain = (id: string) => (templates.get(id) ?? []).filter((marker) => chance(marker) === 1).length;
   const scan = (id: string, prior: number) => {
     let used = prior;
     for (const marker of templates.get(id) ?? []) {
-      if (marker.chance > 0 && used < ZOMBIE_COUNT[1]) {
+      if (chance(marker) > 0 && used < ZOMBIE_COUNT[1]) {
         types.add(marker.zombie);
       }
       if (marker.chance === 1) {
@@ -102,9 +106,10 @@ export const hamletZombieSpawns = (
   road: Rect,
   markers: readonly SpawnMarker[],
   roadHeightAt: (x: number) => number,
+  spawnWeight: (type: string) => number = () => 1,
 ): ZombieSpawn[] => {
   const rng = Rng.stream(seed, 'hamlet-zombies');
-  const selected = markers.filter((spawn) => rng.chance(spawn.chance));
+  const selected = markers.filter((spawn) => rng.chance(spawn.chance * spawnWeight(spawn.zombie)));
   const count = rng.int(...ZOMBIE_COUNT);
   const spawns = selected.slice(0, count).map(({ zombie, pos }) => ({ type: zombie, pos }));
   const wanderers = count - spawns.length;
@@ -287,7 +292,15 @@ export class Hamlet implements Site {
 
   private makeZombieSpawns(): void {
     const markers = this.lots.flatMap(({ placement }) => placedSpawns(placement));
-    this.zombieSpawns.push(...hamletZombieSpawns(this.seed, this.road, markers, (x) => this.roadHeightAt(x)));
+    this.zombieSpawns.push(
+      ...hamletZombieSpawns(
+        this.seed,
+        this.road,
+        markers,
+        (x) => this.roadHeightAt(x),
+        (type) => this.registry.zombies.get(type)?.spawnWeight ?? 1,
+      ),
+    );
   }
 
   // ---- internals ----

@@ -686,6 +686,14 @@ const ZombieSchema = strictObject({
     leftLeg: Positive,
     rightLeg: Positive,
   }),
+  /** Relative chance that a marker naming this type produces it; 1 is the common baseline. */
+  spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
+  sounds: strictObject({
+    idle: picklist(SOUND_EVENT_IDS),
+    alert: picklist(SOUND_EVENT_IDS),
+    attack: picklist(SOUND_EVENT_IDS),
+    hurt: picklist(SOUND_EVENT_IDS),
+  }),
   /** Metres per second. */
   speed: strictObject({ wander: Positive, chase: Positive }),
   /** Metres advanced by one half-cycle of the leg gait. */
@@ -761,7 +769,13 @@ const ZombieSchema = strictObject({
     ),
   ),
   attack: pipe(
-    strictObject({ damage: Positive, reach: Positive, cooldown: Positive, windup: Positive }),
+    strictObject({
+      damage: Positive,
+      reach: Positive,
+      cooldown: Positive,
+      windup: Positive,
+      hitRegion: optional(picklist(['torso', 'legs'])),
+    }),
     check((attack) => attack.windup < attack.cooldown, 'windup must be less than cooldown'),
   ),
   /** Per-hit chance of severing a random not-yet-severed arm part (src/core/zombies.ts's swing); a
