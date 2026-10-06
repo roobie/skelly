@@ -95,9 +95,9 @@ interface BuildSpec {
 }
 type ViewOverride = Pick<ViewPreset, 'position' | 'target'> & { readonly label?: string };
 
-/** Metres from a seated rider's hips to their eyes, and to the road just ahead, so the tank and bars are in view. */
+/** Metres from a seated rider's hips to their eyes, and to the road ahead, low enough to keep the bars in view. */
 const RIDER_EYE = [0.05, 0.8, 0] as const;
-const RIDER_LOOK = [2.05, -0.4, 0] as const;
+const RIDER_LOOK = [2.05, 0, 0] as const;
 
 /** The view from the saddle, above the seat's rider anchor: a vehicle with no cabin to look into. */
 const riderView = (vehicle: Vehicle): ViewOverride => {

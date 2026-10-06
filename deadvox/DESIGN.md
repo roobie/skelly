@@ -11,6 +11,7 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you change what vehicles are for, or how their parts fit, come off and behave
 ---
 
 # deadvox — design
@@ -736,18 +737,64 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 
 ## Vehicles
 
-- **A vehicle is a grid of parts** on the 0.5 m grid: frame, wheels, engine,
-  seats, fuel tank, battery, storage, lights, armour. Each part is an item with
-  the `vehiclePart` component and its own condition.
-- **Building and repair are crafting.** A vehicle can be pieced together from
-  wrecks. The fuel tank is a liquid container; the battery is part of the
-  electricity system.
-- **Physics:** a rigid body with a box collider for each part, and ray-cast
-  wheels with suspension. Collisions damage the parts that hit something.
-  Arcade handling first. Rapier (a WebAssembly physics engine) is the candidate;
-  see [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels) for driving over
-  terrain that rises in 0.5 m steps.
-- **Vehicles make noise.** Driving is fast and loud.
+**The goal, decided (BR, 2026-10-06).** Asked what the vehicle system is for, BR said
+(17:01): “But let's first agree on what the goal is: darker_yet's vision is more or less
+what we're after. We want as much modularity as possible in the end, and the vehicle aspect
+of the game shall be very deep - maybe not 'my summer car'-deep, but very flexible and
+customisable”. On the lead's draft of the points below (17:13): “yes, your take on the
+vehicle goal is good; draft approved”. The draft draws on the darker_yet fitting seed, the
+darker_yet crafting seed and darker_yet spike 005.
+
+Vehicles are built, not picked. A vehicle is a set of typed parts fitted on a
+vehicle-local grid. How it looks, holds together, runs, handles, sounds, breaks and gets
+repaired all comes from which parts are fitted, where, and in what state. The vehicle
+spike tests the part model against this goal, and its reasons are in
+[docs/vehicle-spike.md](docs/vehicle-spike.md).
+
+1. **A car builder, not a car customizer.** Parts attach by capability, not by sockets a
+   designer laid out in advance: a wing mirror needs a mountable vertical face, and a
+   door, a halfboard or a plate the player welded on can all provide one. Players can
+   then build things the designers didn't foresee.
+2. **Fitting answers four separate questions:** what may go here (slot and layer); what
+   holds it up (a set of supports, which also decides what can be removed); by what
+   (skill, tools, materials and time to install, remove and repair, because building and
+   repair are crafting); and what it's for (the capabilities it provides). The spike's
+   supports are `src/debug/vehicles/model.ts`, `Fitting.supportedBy`.
+3. **Two layers.** A part type is immutable content that mods can extend. A fitting is
+   that part on this vehicle, with its own state: condition (intact, damaged, badly
+   damaged, broken) and attachment (attached or ripped off). Collisions damage the parts
+   that hit something. See `model.ts`, `PartType` and `Fitting`.
+4. **Networks at the fidelity play needs.** Steering is a per-part property. Drive is a
+   per-axle driven flag, so front, rear or all-wheel drive is a build choice. Power and
+   fuel are vehicle-wide pools: is there a charged battery, is there a tank with gas. The
+   fuel tank is a liquid container; the battery is part of the electricity system. A
+   real connection graph is used only where the routing itself is gameplay.
+5. **Behaviour comes from the build:** mass, centre of mass, noise and handling, then
+   fuel use, protection and storage. Vehicles make noise, and driving is fast and loud;
+   the engine is the main source and the hull damps it (BR, 2026-10-06, in
+   [docs/vehicle-spike.md](docs/vehicle-spike.md), "Noise comes from the build"). See
+   `model.ts`, `measure` and `noiseRadius`.
+6. **Parts are items.** A removed part becomes an item carrying its type and condition
+   (the `vehiclePart` component, see [The item model](#the-item-model)): salvage it,
+   carry it, refit it. A vehicle can be pieced together from wrecks.
+7. **Data-driven and moddable.** Part types and vehicles live in schema-validated content
+   (see [Content and modding](#content-and-modding)), and a mod adds parts without code.
+   The spike keeps its part types content-shaped for that: `src/debug/vehicles/voxels.ts`,
+   `ShapeOp`.
+8. **The grain is "a part a player would name and swap":** wheel, door, engine, battery,
+   seat, bull bar. No bolts, wire runs or plumbing as separate things.
+9. **Cheap at scale.** A street of parked cars costs little to draw, and editing works
+   part by part.
+
+**Open, deliberately (not part of the goal yet):**
+
+- **Driving-physics fidelity.** The plan so far: a rigid body with a box collider for
+  each part, ray-cast wheels with suspension, and arcade handling first. Rapier (a
+  WebAssembly physics engine) is the candidate; see
+  [CHALLENGES.md](CHALLENGES.md#8-vehicles-on-voxels) for driving over terrain that rises
+  in 0.5 m steps.
+- **Whether vehicles are voxel-destructible.**
+- **Vehicles as an enclosure** (gas-tight, a shelter).
 
 ## Content and modding
 
