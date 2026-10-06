@@ -3,6 +3,7 @@ import { describe, it } from 'node:test';
 import { milestonesFromPrBody, tickMilestone } from '../tools/slice-checklist.mjs';
 
 const missingMilestone = /Checklist milestone 3\.4 was not found/;
+const duplicateMilestone = /Multiple checklist entries/;
 
 describe('slice milestone PR declarations', () => {
   it('reads multiple ids on a line and across lines', () => {
@@ -29,6 +30,10 @@ describe('slice checklist updates', () => {
 
   it('reports a missing milestone entry', () => {
     assert.throws(() => tickMilestone('- [ ] 3.5', '3.4', 294), missingMilestone);
+  });
+
+  it('rejects duplicate checklist entries for one milestone', () => {
+    assert.throws(() => tickMilestone('- [ ] 3.4\n- [x] 3.4', '3.4', 294), duplicateMilestone);
   });
 
   it('matches 3.1 without ticking 3.10 or 3.11', () => {

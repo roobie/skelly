@@ -64,7 +64,7 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
 
 After checklist drift recorded in `deadvox/docs/retro-slice-2.md`, “What hurt,” BR accepted proposal 1, “Keep the checklist live” (2026-10-06 06:54): “accept”. BR approved option A, a merge-time action (2026-10-06 06:56): “yes, queue A”.
 
-For checklist issue #293, milestone PRs carry a `Slice-Milestone: <id>` line. On merge, `.github/workflows/slice-checklist.yml` uses `tools/slice-checklist.mjs`, `milestonesFromPrBody` and `tickMilestone` to tick the checklist. The lead adds evidence and carried-forward links by hand. The workflow uses `pull_request`, not `pull_request_target`; GitHub withholds issue-write permission for fork PRs, so the lead ticks the checklist manually after those merges.
+For the open issue labelled `slice-checklist` (Slice 3: #293), milestone PRs carry a `Slice-Milestone: <id>` line. `.github/workflows/slice-checklist.yml` ticks it only for merges into the repository's default branch and serializes the issue update through `tools/slice-checklist.mjs`, `milestonesFromPrBody` and `tickMilestone`. The lead adds evidence and carried-forward links by hand. A burst of three merges can leave the middle run visibly `cancelled`; the lead ticks that milestone manually. The workflow uses `pull_request`, not `pull_request_target`; GitHub withholds issue-write permission for fork PRs, so the lead also handles those merges manually.
 
 ## Done, per subproject
 
