@@ -392,6 +392,13 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
         played.some(({ sound }) => sound.event === event),
       );
     }
+    for (const event of ['melee_swing', 'melee_hit_fist']) {
+      observe(
+        scenario,
+        `player melee ${event} follows the listener`,
+        played.some(({ sound }) => sound.event === event && sound.listenerRelative),
+      );
+    }
     const from = played.length;
     state.intent = { ...IDLE, forward: -1 };
     advance(120);
