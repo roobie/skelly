@@ -132,9 +132,9 @@ const VIEWS = {
   interior: {
     label: 'Interior',
     key: '6',
-    position: [-0.7, 1.6, 2.4],
-    target: [0.2, 0.95, 0.15],
-    fov: 50,
+    position: [0.15, 1.7, 1.9],
+    target: [0.65, 0.95, -0.35],
+    fov: 55,
     doors: true,
   },
   front: { label: 'Front', key: '7', position: [12.5, 0.95, 0], target: [0, 0.9, 0], fov: 26 },
