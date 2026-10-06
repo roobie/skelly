@@ -25,6 +25,8 @@ export interface PanelModel {
   readonly notice: string;
   readonly spin: boolean;
   readonly doors: boolean;
+  /** Paint wear in percent. */
+  readonly wear: number;
   readonly fittings: readonly PanelFitting[];
   readonly grain: string;
   readonly perf: string;
@@ -37,6 +39,7 @@ export interface PanelActions {
   readonly onLayer: (id: string) => void;
   readonly onSpin: (on: boolean) => void;
   readonly onDoors: (open: boolean) => void;
+  readonly onWear: (percent: number) => void;
   readonly onFitting: (id: string) => void;
   readonly onSchematic: (event: PointerEvent) => void;
 }
@@ -82,6 +85,18 @@ export const panelTemplate = (vm: PanelModel, actions: PanelActions): TemplateRe
     <label class="toggle">
       <input type="checkbox" .checked=${vm.doors} @change=${(event: Event) => actions.onDoors(checked(event))} />
       Open doors
+    </label>
+    <label class="toggle">
+      Paint wear
+      <input
+        type="range"
+        min="0"
+        max="100"
+        step="5"
+        .value=${String(vm.wear)}
+        @change=${(event: Event) => actions.onWear(Number((event.target as HTMLInputElement).value))}
+      />
+      ${vm.wear}%
     </label>
   </div>
   <h2>Part schematic · top-down</h2>

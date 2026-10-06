@@ -53,7 +53,8 @@ import {
   VOXELS_PER_CELL,
 } from './vehicles/model.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from './vehicles/rangeRover.ts';
-import { gridBounds, type MeshBuffers, meshGrid, type Rgb } from './vehicles/voxels.ts';
+import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from './vehicles/voxels.ts';
+import { fittingWear, type WearSite, wearGrid, wearPalette } from './vehicles/wear.ts';
 
 const required = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -144,6 +145,7 @@ type ViewId = keyof typeof VIEWS;
 const isViewId = (id: string | null | undefined): id is ViewId => id !== null && id !== undefined && id in VIEWS;
 
 const LIFT_HEIGHT = 1;
+const DEFAULT_WEAR = 0.4;
 const DOOR_OPEN = (65 * Math.PI) / 180;
 const WHEEL_SPIN = 1.8;
 
@@ -155,6 +157,9 @@ let activeLayer: PartLayer = layerParam && PART_LAYERS.includes(layerParam) ? la
 const viewParam = params.get('view');
 let activeView: ViewId = isViewId(viewParam) ? viewParam : 'front34';
 let doorsOpen = params.get('doors') === 'open';
+const wearParam = Number.parseInt(params.get('wear') ?? '', 10);
+/** The vehicle's paint wear, 0 to 1; each fitting wears around it (`fittingWear`). */
+let wearLevel = Number.isFinite(wearParam) ? Math.min(Math.max(wearParam, 0), 100) / 100 : DEFAULT_WEAR;
 let wheelsSpinning = params.get('spin') === '1';
 let notice = '';
 let statsText = '';
@@ -183,9 +188,20 @@ const installedFor = (id: BuildId): Set<string> => {
   return state;
 };
 
+const wearColours = new Map<Vehicle, Readonly<Record<string, string>>>();
+/** A material's colour: the vehicle's palette, then wear shades derived from its paint, else the name is a colour. */
+const hexOf = (vehicle: Vehicle, mat: string): string => {
+  let wear = wearColours.get(vehicle);
+  if (!wear) {
+    wear = wearPalette(vehicle.palette.paint ?? '#888888');
+    wearColours.set(vehicle, wear);
+  }
+  return vehicle.palette[mat] ?? wear[mat] ?? mat;
+};
+
 const rgbCache = new Map<string, Rgb>();
 const rgbOf = (vehicle: Vehicle, mat: string): Rgb => {
-  const hex = vehicle.palette[mat] ?? mat;
+  const hex = hexOf(vehicle, mat);
   let rgb = rgbCache.get(hex);
   if (!rgb) {
     const color = new Color(hex);
@@ -215,19 +231,69 @@ interface PartMeshes {
 }
 const meshCache = new Map<string, PartMeshes>();
 const meshCost = { types: 0, ms: 0 };
-const partMeshes = (vehicle: Vehicle, typeId: string, mirror: boolean): PartMeshes => {
-  const key = `${vehicle.id}:${typeId}:${mirror}`;
+const cachedMeshes = (vehicle: Vehicle, key: string, gridOf: () => VoxelGrid): PartMeshes => {
   let meshes = meshCache.get(key);
   if (!meshes) {
     const started = performance.now();
-    const grid = libraryFor(vehicle).grid(typeId, mirror);
-    const { solid, clear } = meshGrid(grid, (mat) => rgbOf(vehicle, mat), isClearMaterial);
+    const { solid, clear } = meshGrid(gridOf(), (mat) => rgbOf(vehicle, mat), isClearMaterial);
     meshes = { solid: toGeometry(solid), clear: toGeometry(clear) };
     meshCache.set(key, meshes);
     meshCost.types += 1;
     meshCost.ms += performance.now() - started;
   }
   return meshes;
+};
+
+/** One geometry per part type and side while its paint is unworn. */
+const partMeshes = (vehicle: Vehicle, typeId: string, mirror: boolean): PartMeshes =>
+  cachedMeshes(vehicle, `${vehicle.id}:${typeId}:${mirror}`, () => libraryFor(vehicle).grid(typeId, mirror));
+
+const paintedTypes = new Map<string, boolean>();
+const isPainted = (vehicle: Vehicle, fitting: Fitting): boolean => {
+  const key = `${vehicle.id}:${fitting.type}`;
+  let painted = paintedTypes.get(key);
+  if (painted === undefined) {
+    painted = [...libraryFor(vehicle).grid(fitting.type, false).values()].some(
+      (mat) => mat === 'paint' || mat === 'seam',
+    );
+    paintedTypes.set(key, painted);
+  }
+  return painted;
+};
+
+const wheelCentres = new Map<Vehicle, WearSite['wheels']>();
+/** Where the vehicle's wheels turn, in vehicle voxels: dirt gathers around them whether they're fitted or not. */
+const wheelsOf = (vehicle: Vehicle): WearSite['wheels'] => {
+  let wheels = wheelCentres.get(vehicle);
+  if (!wheels) {
+    const library = libraryFor(vehicle);
+    wheels = vehicle.fittings.flatMap((fitting) => {
+      const { pivot } = partTypeOf(vehicle, fitting);
+      if (fitting.motion !== 'spin' || !pivot) {
+        return [];
+      }
+      const [x, y] = library.origin(fitting);
+      return [[x + pivot[0], y + pivot[1], pivot[1]] as const];
+    });
+    wheelCentres.set(vehicle, wheels);
+  }
+  return wheels;
+};
+
+/** A painted fitting's own geometry once its paint wears; anything else shares its type's. */
+const fittingMeshes = (vehicle: Vehicle, fitting: Fitting): PartMeshes => {
+  const mirror = fitting.mirror === true;
+  const amount = fittingWear(fitting.id, wearLevel);
+  if (amount <= 0 || !isPainted(vehicle, fitting)) {
+    return partMeshes(vehicle, fitting.type, mirror);
+  }
+  const library = libraryFor(vehicle);
+  return cachedMeshes(vehicle, `${vehicle.id}:${fitting.id}:wear ${amount}`, () =>
+    wearGrid(library.grid(fitting.type, mirror), fitting.id, amount, {
+      origin: library.origin(fitting),
+      wheels: wheelsOf(vehicle),
+    }),
+  );
 };
 
 const solidMaterial = new MeshLambertMaterial({ vertexColors: true });
@@ -241,7 +307,7 @@ const glassMaterial = new MeshPhongMaterial({
 });
 
 const partObject = (vehicle: Vehicle, fitting: Fitting): Group => {
-  const { solid, clear } = partMeshes(vehicle, fitting.type, fitting.mirror === true);
+  const { solid, clear } = fittingMeshes(vehicle, fitting);
   const holder = new Group();
   if (solid) {
     const mesh = new Mesh(solid, solidMaterial);
@@ -836,6 +902,7 @@ const panelModel = (): PanelModel => {
     notice,
     spin: wheelsSpinning,
     doors: doorsOpen,
+    wear: Math.round(wearLevel * 100),
     fittings: layerFittings(vehicle).map((fitting) => ({
       id: fitting.id,
       label: partTypeOf(vehicle, fitting).label,
@@ -857,6 +924,10 @@ const panelActions: PanelActions = {
   onLayer: selectLayer,
   onSpin: setSpin,
   onDoors: setDoors,
+  onWear: (percent) => {
+    wearLevel = percent / 100;
+    renderVehicle();
+  },
   onFitting: togglePart,
   onSchematic: pickSchematic,
 };

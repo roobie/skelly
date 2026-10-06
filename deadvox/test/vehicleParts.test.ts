@@ -20,6 +20,7 @@ import {
   type VoxelGrid,
   voxelKey,
 } from '../src/debug/vehicles/voxels.ts';
+import { WEAR_MATERIALS, wearGrid } from '../src/debug/vehicles/wear.ts';
 
 const FACES = [
   [1, 0, 0],
@@ -77,6 +78,30 @@ describe('the 4×4 built from parts', () => {
       }
     }
     expect(Object.fromEntries(clashes)).toEqual({});
+  });
+});
+
+describe('paint wear', () => {
+  const library = new PartLibrary(RANGE_ROVER);
+  const site = { origin: [0, 0, 0] as const, wheels: [[39, 12, 12] as const] };
+
+  it('only recolours paint and seams into wear shades, never changing a part’s shape', () => {
+    let changed = 0;
+    for (const fitting of RANGE_ROVER.fittings) {
+      const grid = library.grid(fitting.type, fitting.mirror === true);
+      const worn = wearGrid(grid, fitting.id, 1, site);
+      expect([...worn.keys()].sort(), fitting.id).toEqual([...grid.keys()].sort());
+      for (const [key, mat] of worn) {
+        const before = grid.get(key)!;
+        if (mat !== before) {
+          changed += 1;
+          expect(['paint', 'seam'], fitting.id).toContain(before);
+          expect(WEAR_MATERIALS, fitting.id).toContain(mat);
+        }
+      }
+      expect(wearGrid(grid, fitting.id, 0, site), fitting.id).toEqual(grid);
+    }
+    expect(changed).toBeGreaterThan(0);
   });
 });
 
