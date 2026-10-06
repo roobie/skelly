@@ -15,4 +15,10 @@ export const TEST_SENSE_TUNING: SenseDef = {
     clearGain: 1,
     clearCutoffHz: 18_000,
   },
+  light: {
+    playerDaySightScale: 0,
+    lureRangeScale: 0.5,
+    throwMaxDistanceMetres: 8,
+    throwChargeSeconds: 1.25,
+  },
 };

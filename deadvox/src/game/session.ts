@@ -12,7 +12,7 @@ import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
@@ -28,6 +28,7 @@ import {
 } from '../core/footsteps.ts';
 import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
+import { lightSenseSourceFor, sunExposedAt } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
@@ -236,6 +237,8 @@ const playerSenseTuning = (registry: Registry) => {
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
+  const skyTop = (scale.maxCy + 1) * CHUNK - 1;
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean => sunExposedAt(pos, hour, skyTop, options.isOpaque);
   const physics = physicsFor(scale);
   const restored = options.restore;
 
@@ -477,6 +480,26 @@ export const createSession = (options: SessionOptions) => {
   };
   const playerSense = () => {
     const { yaw } = sampledInput();
+    const eyeHeightMetres = playerEyeHeightMetres();
+    const hour = hourOfDay(sim.calendar);
+    const lightSources = [...inventory.items()]
+      .map(({ item, location, path }) =>
+        lightSenseSourceFor({
+          registry,
+          item,
+          location,
+          path,
+          playerPosition: body.pos,
+          eyeHeightMetres,
+        }),
+      )
+      .filter((source) => source !== undefined)
+      .map((source) => ({
+        ...source,
+        sunlit: isSunExposedAt([source.pos[0], source.pos[1] + source.heightMetres / s, source.pos[2]], hour),
+      }));
+    const playerLightHeight: Vec3 = [body.pos[0], body.pos[1] + eyeHeightMetres / s, body.pos[2]];
+    const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);
     return {
       pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
       body: debug?.()?.noclip ? undefined : body,
@@ -485,10 +508,12 @@ export const createSession = (options: SessionOptions) => {
       crouching: playerCrouching(),
       vocalNoise:
         playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
-      lit: survival.lit?.on === true,
-      lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
-      eyeHeightMetres: playerEyeHeightMetres(),
-      lightHeightMetres: playerEyeHeightMetres(),
+      lit: carriedLight !== undefined,
+      lightSeenFrom: carriedLight?.seenFrom ?? 40,
+      eyeHeightMetres,
+      lightHeightMetres: eyeHeightMetres,
+      sunlit: isSunExposedAt(playerLightHeight, hour),
+      lightSources,
     };
   };
   const heldItemUids = () => ({
@@ -508,6 +533,7 @@ export const createSession = (options: SessionOptions) => {
     tuning: senseTuning,
     player: playerSense,
     hour: () => hourOfDay(sim.calendar),
+    isSunExposedAt,
     hurtPlayer: (amount, area) => {
       wearOnPlayerHit(inventory, area);
       sim.hurt(amount, 'a shambler');

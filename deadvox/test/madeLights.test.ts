@@ -40,6 +40,20 @@ const setup = () => {
 };
 
 describe('made light burn state', () => {
+  it('keeps a worn headlamp switchable and lit through the light tick', () => {
+    const { sim, inventory, survival } = setup();
+    const headlamp = inventory.create('headlamp');
+    expect(inventory.add(headlamp, { kind: 'worn' })).toBe(true);
+    expect(survival.use(headlamp)).toBeUndefined();
+    expect(headlamp.on).toBe(true);
+
+    sim.scheduler.advance(1);
+    expect(headlamp.on).toBe(true);
+    expect(survival.lit).toBe(headlamp);
+    expect(survival.use(headlamp)).toBeUndefined();
+    expect(headlamp.on).toBe(false);
+  });
+
   it('burns a torch out at the same time in one step or one-second steps', () => {
     const torch = registry.items.get('torch')!.light!;
     const duration = torch.burnTime! * 3600;

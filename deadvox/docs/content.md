@@ -5,6 +5,7 @@ read_if:
   - you change content references, static reachability, or disassembly-output contracts
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
+  - you're authoring or changing playtest fixed loot
 ---
 
 # Content sections and recipes
@@ -64,6 +65,12 @@ loot. Nested tables contribute only with positive possible rolls/item counts
 (weights are already strictly positive by schema). Zombie loot comes from
 positive-chance markers that can fit the population cap, accounting for shuffled
 north templates, and roadside wanderers only when a slot can remain.
+
+For #311, a globally reachable item type does not prove that its authored
+container can be looted. `test/authoredFixedLoot.test.ts` uses
+`templateReachableStandingPositions` with `templateSpatialIssues` to check the
+playtest's containers against the same standing traversal as template validation,
+not a second test-owned walker.
 
 For 2.10, store and garage stock stays in template palette loot overrides rather
 than position-specific runtime code. `worldSources()` in

@@ -6,11 +6,110 @@
 
 import { offSide } from './character.ts';
 import type { Registry } from './content.ts';
-import type { Inventory, Target } from './inventory.ts';
+import type { Vec3 } from './coords.ts';
+import type { Inventory, Location, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
+import { raycast, type SolidAt } from './raycast.ts';
+import type { SenseDef } from './schema.ts';
+import { sunDirection } from './sky.ts';
 
 /** Seconds to swap the battery in a light. */
 export const BATTERY_SWAP = 2;
+/** Lift ground-light emitters so the near-field falloff reaches nearby surfaces, rather than only grazing the floor. */
+export const WORLD_LIGHT_HEIGHT_METRES = 0.4;
+
+export type LightExposure = 'carried' | 'world';
+
+export interface LightSenseSource {
+  pos: Vec3;
+  seenFrom: number;
+  heightMetres: number;
+  carried: boolean;
+}
+
+/** The light owner shared by the renderer and senses: only lit, exposed items illuminate the world. */
+export const lightExposureFor = (
+  registry: Registry,
+  item: Item,
+  location: Location,
+  path: string,
+): LightExposure | undefined => {
+  const definition = registry.items.get(item.type);
+  if (!(item.on && definition?.light)) {
+    return undefined;
+  }
+  if (location.kind === 'hand' || location.kind === 'worn') {
+    return 'carried';
+  }
+  if (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))) {
+    return 'carried';
+  }
+  if (location.kind === 'pile' && definition.light.burning?.drop === 'stay') {
+    return 'world';
+  }
+  return undefined;
+};
+
+export const lightSenseSourceFor = ({
+  registry,
+  item,
+  location,
+  path,
+  playerPosition,
+  eyeHeightMetres,
+}: {
+  registry: Registry;
+  item: Item;
+  location: Location;
+  path: string;
+  playerPosition: Vec3;
+  eyeHeightMetres: number;
+}): LightSenseSource | undefined => {
+  const light = registry.items.get(item.type)?.light;
+  const exposure = lightExposureFor(registry, item, location, path);
+  if (!(light && exposure)) {
+    return undefined;
+  }
+  if (exposure === 'carried') {
+    return { pos: [...playerPosition], seenFrom: light.seenFrom, heightMetres: eyeHeightMetres, carried: true };
+  }
+  if (location.kind === 'pile') {
+    const [x, y, z] = location.pile.pos;
+    return {
+      pos: [x + 0.5, y + 0.15, z + 0.5],
+      seenFrom: light.seenFrom,
+      heightMetres: 0,
+      carried: false,
+    };
+  }
+  return undefined;
+};
+
+/** A daylight sky-exposure test for simulation senses; authored renderer skylight is not authoritative here. */
+export const sunExposedAt = (
+  position: readonly [number, number, number],
+  hour: number,
+  skyTop: number,
+  isOpaque: SolidAt,
+): boolean => {
+  if (sunDirection(hour)[1] <= 0) {
+    return false;
+  }
+  const distance = skyTop - position[1];
+  if (distance <= 0) {
+    return false;
+  }
+  const origin: [number, number, number] = [position[0], position[1] + 1e-4, position[2]];
+  return raycast(origin, [0, 1, 0], distance, isOpaque) === undefined;
+};
+
+/** Shared gate for carried player signatures and independent light lures. */
+export const lightSenseRangeScale = (exposure: LightExposure, sunlit: boolean, tuning: SenseDef['light']): number => {
+  if (exposure === 'carried') {
+    return sunlit ? tuning.playerDaySightScale : 1;
+  }
+  return sunlit ? 0 : tuning.lureRangeScale;
+};
 
 /** A battery's charge when full, from its type. */
 const capacityOf = (registry: Registry, batteryType: string): number =>
