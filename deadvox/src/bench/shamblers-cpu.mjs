@@ -4,7 +4,11 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry } from '../core/content.ts';
-import { ZombieSystem } from '../core/zombies.ts';
+import {
+  BACKGROUND_ZOMBIE_RATE,
+  BACKGROUND_ZOMBIE_SLICE_COUNT,
+  ZombieSystem,
+} from '../core/zombies.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
 import { findShamblerBenchPlayer } from './shamblerPlacement.ts';
@@ -109,37 +113,36 @@ for (const count of counts) {
     });
   }
 
-  const runSteps = (ticks, collect) => {
+  const runSteps = (activeTicks, collect) => {
     let simTime = 0;
     const activeSamples = [];
     const backgroundSamples = [];
-    for (let tick = 0; tick < ticks; tick++) {
-      simTime += 1 / 20;
-      let start = process.hrtime.bigint();
-      system.tickActive(1 / 20, simTime);
-      if (collect) {
-        activeSamples.push(Number(process.hrtime.bigint() - start) / 1e6);
+    const frameSamples = [];
+    const frames = activeTicks * 3;
+    for (let frame = 0; frame < frames; frame++) {
+      simTime += 1 / 60;
+      const frameStart = process.hrtime.bigint();
+      if ((frame + 1) % 3 === 0) {
+        const start = process.hrtime.bigint();
+        system.tickActive(1 / 20, simTime);
+        if (collect) activeSamples.push(Number(process.hrtime.bigint() - start) / 1e6);
       }
-      if ((tick + 1) % 10 === 0) {
-        start = process.hrtime.bigint();
-        system.tickBackground(0.5, simTime);
-        if (collect) {
-          backgroundSamples.push(Number(process.hrtime.bigint() - start) / 1e6);
-        }
+      const backgroundStart = process.hrtime.bigint();
+      system.tickBackground(1 / BACKGROUND_ZOMBIE_RATE, simTime, frame % BACKGROUND_ZOMBIE_SLICE_COUNT, BACKGROUND_ZOMBIE_SLICE_COUNT);
+      if (collect) {
+        backgroundSamples.push(Number(process.hrtime.bigint() - backgroundStart) / 1e6);
+        frameSamples.push(Number(process.hrtime.bigint() - frameStart) / 1e6);
       }
     }
-    return { activeSamples, backgroundSamples };
+    return { activeSamples, backgroundSamples, frameSamples };
   };
   runSteps(60, false);
-  const { activeSamples, backgroundSamples } = runSteps(300, true);
+  const { activeSamples, backgroundSamples, frameSamples } = runSteps(300, true);
   const summarize = (samples) => {
     const mean = samples.reduce((sum, ms) => sum + ms, 0) / samples.length;
-    return `mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)}`;
+    return `mean=${mean.toFixed(3)} p50=${percentile(samples, 0.5).toFixed(3)} p95=${percentile(samples, 0.95).toFixed(3)} max=${Math.max(...samples).toFixed(3)}`;
   };
-  const activeMean = activeSamples.reduce((sum, ms) => sum + ms, 0) / activeSamples.length;
-  const backgroundMean = backgroundSamples.reduce((sum, ms) => sum + ms, 0) / backgroundSamples.length;
-  const simulationMsPerFrame = (activeMean * 20 + backgroundMean * 2) / 60;
   console.log(
-    `N=${count} (${activeCount} active, ${backgroundCount} background): active tick ms ${summarize(activeSamples)}; background tick ms ${summarize(backgroundSamples)}; simulation mean=${simulationMsPerFrame.toFixed(3)} ms/frame at 60 fps (${activeSamples.length}/${backgroundSamples.length} samples; seed=${seed}, hour=23.5, ${engine.loadedChunks} chunks/${engine.loadedColumns} columns loaded)`,
+    `N=${count} (${activeCount} active, ${backgroundCount} background): active tick ms ${summarize(activeSamples)}; background slice ms ${summarize(backgroundSamples)}; simulation frame ms ${summarize(frameSamples)} at 60 fps (${frameSamples.length} frames; seed=${seed}, hour=23.5, ${engine.loadedChunks} chunks/${engine.loadedColumns} columns loaded)`,
   );
 }

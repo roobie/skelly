@@ -709,6 +709,8 @@ worse the world gets.
 - **Simulation structure (BR, 2026-10-06 06:14; d93-1):** “Start with a refactoring trial on the worst offender”. The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background movement (BR, 2026-10-05 21:32):** “yes”: background zombies beeline in big, cheap steps.
+- **Distant attention and noise persistence (d104-4):** Daylight changes a horde's roaming choice, not its response to a heard event; a daytime home preference cannot replace a noise target before arrival. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
+- **Background cadence persistence (d104-4):** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `src/game/session.ts`, `zombie-background`.
 
 - **Level of detail:**
 

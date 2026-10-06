@@ -35,6 +35,8 @@ export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
 export type ZombieTier = 'active' | 'background' | 'unloaded';
 export const ACTIVE_ZOMBIE_RADIUS_METRES = 40;
 export const BACKGROUND_ZOMBIE_RATE = 2;
+export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
+export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
 const BACKGROUND_STEP_CAP_METRES = 1;
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
@@ -162,7 +164,7 @@ export interface Zombie {
   stumbleElapsed: number;
   stumbleDuration: number;
   /** Previous fixed-step pose used only by rendering interpolation. */
-  renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number };
+  renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number; time?: number };
   regions: ZombieRegions;
   /** Exact mobgen shambler seed shared with the renderer and persisted as simulation state. */
   figureSeed: number;
@@ -908,12 +910,13 @@ export class ZombieSystem {
     }
   }
 
-  private captureRenderPrevious(zombie: Zombie): void {
+  private captureRenderPrevious(zombie: Zombie, time?: number): void {
     zombie.renderPrevious = {
       pos: copy(zombie.body.pos),
       facing: copy(zombie.facing),
       headYaw: zombie.headYaw,
       gaitPhase: zombie.gaitPhase,
+      ...(time === undefined ? {} : { time }),
     };
   }
 
@@ -1456,11 +1459,11 @@ export class ZombieSystem {
         horde.mode = night ? 'roam' : 'home';
         horde.roamTimer = 0;
       }
-      if (!night) {
+      if (!night && horde.mode !== 'noise') {
         horde.mode = 'home';
         horde.target = copy(horde.home);
         horde.roamTimer = 0;
-      } else if (horde.mode !== 'noise') {
+      } else if (night && horde.mode !== 'noise') {
         horde.roamTimer -= dt;
         if (horde.mode !== 'roam' || horde.roamTimer <= 0 || arrived) {
           const angle = rng.range(-Math.PI, Math.PI);
@@ -1473,16 +1476,18 @@ export class ZombieSystem {
     }
   }
 
-  /** Advances distant loaded actors at the background rate with collision-resolved beeline steps. */
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Preserve the deterministic order of background tiering, attention, and movement for each actor.
-  tickBackground(dt: number, time: number): void {
+  /** Advances one deterministic slice of distant actors; scheduler ticks every slice, each actor every half-second. */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep per-actor perception, target selection, and bounded collision step together.
+  tickBackground(dt: number, time: number, sliceIndex = 0, sliceCount = 1): void {
     if (dt <= 0 || this.frozen) {
       return;
     }
     const player = this.options.player();
-    const entries = this.classifyTiers(player).filter(([, zombie]) => zombie.tier === 'background');
-    this.updateHordes(dt, time, player);
+    if (sliceIndex === 0) {
+      this.updateHordes(dt, time, player);
+    }
     const { blockSize, isSolid } = this.options;
+    const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [] };
     const scratch = this.tickScratch;
     scratch.dt = dt;
     scratch.time = time;
@@ -1491,8 +1496,11 @@ export class ZombieSystem {
     scratch.blockSize = blockSize;
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
-    for (const [id, zombie] of entries) {
-      this.captureRenderPrevious(zombie);
+    for (const [id, zombie] of this.store.entries()) {
+      if (zombie.tier !== 'background' || id % sliceCount !== sliceIndex) {
+        continue;
+      }
+      this.captureRenderPrevious(zombie, time);
       if (zombie.incapacitated) {
         this.tickIncapacitated(zombie, dt);
         continue;
@@ -1502,25 +1510,33 @@ export class ZombieSystem {
       scratch.pos = zombie.body.pos;
       scratch.type = zombie.type;
       scratch.rng = zombie.behaviorRng;
+      this.updateZombieTimers();
       this.updatePerception();
       this.updateAttention();
-      let target = this.hordeTarget(zombie) ?? zombie.lastPerceived ?? player.pos;
+      let target = this.hordeTarget(zombie) ?? zombie.lastPerceived;
       if (scratch.sees) {
         target = player.pos;
-      } else if (scratch.tier) {
-        target = zombie.lastPerceived ?? target;
       }
-      const offset = sub(target, zombie.body.pos);
-      const distance = Math.hypot(offset[0], offset[2]) * blockSize;
-      const direction: Vec3 = distance > 0 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
-      const speed =
-        distance > 0.5 ? Math.min(zombie.type.speed.chase, BACKGROUND_STEP_CAP_METRES / dt, distance / dt) : 0;
-      zombie.facing = direction[0] === 0 && direction[2] === 0 ? zombie.facing : copy(direction);
+      let direction: Vec3;
+      let speed: number;
+      if (target) {
+        const offset = sub(target, zombie.body.pos);
+        const distance = Math.hypot(offset[0], offset[2]) * blockSize;
+        direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
+        speed =
+          distance > 0.5 ? Math.min(zombie.type.speed.chase, BACKGROUND_STEP_CAP_METRES / dt, distance / dt) : 0;
+        if (direction[0] !== 0 || direction[2] !== 0) {
+          zombie.facing = copy(direction);
+        }
+      } else {
+        this.selectMovementIntent();
+        direction = scratch.direction;
+        speed = scratch.desiredSpeed;
+      }
       zombie.horizontalSpeed = speed;
       zombie.body.vel[0] = (direction[0] * speed) / blockSize;
       zombie.body.vel[2] = (direction[2] * speed) / blockSize;
       const before = copy(zombie.body.pos);
-      const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [] };
       if (zombie.body.onGround) {
         stepBodyHorizontal(zombie.body, {
           dx: zombie.body.vel[0] * dt,
@@ -1533,6 +1549,9 @@ export class ZombieSystem {
       }
       const travelled = horizontalDistance(before, zombie.body.pos) * blockSize;
       zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;
+      if (zombie.mode === 'stroll' && zombie.modeTimer <= 0 && zombie.horizontalSpeed <= 0.01) {
+        this.beginIdle(zombie);
+      }
     }
   }
 
@@ -2141,7 +2160,7 @@ export class ZombieSystem {
     scratch.groundedAtTickStart = groundedAtTickStart;
     for (const [id, zombie] of entries) {
       groundedAtTickStart.set(zombie, zombie.body.onGround);
-      this.captureRenderPrevious(zombie);
+      this.captureRenderPrevious(zombie, time);
       if (zombie.incapacitated) {
         this.tickIncapacitated(zombie, dt);
         continue;

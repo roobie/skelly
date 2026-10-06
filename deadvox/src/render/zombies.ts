@@ -2,7 +2,7 @@ import { BoxGeometry, DynamicDrawUsage, Group, InstancedMesh, MeshLambertMateria
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import { FIGURE_BOXES, FIGURE_PARTS, type FigurePart, type ZombieRegion } from '../core/zombieRegions.ts';
-import type { Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ZOMBIE_RATE, type Zombie } from '../core/zombies.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { StepOffset } from './stepOffset.ts';
@@ -120,12 +120,29 @@ export class ZombieMeshes {
   }
 
   // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with existing direct callers.
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, freezeLiving = false, backgroundAlpha = alpha): void {
+  sync(
+    store: EntityStore<Zombie>,
+    realDt = 0,
+    alpha = 1,
+    freezeLiving = false,
+    backgroundAlpha = alpha,
+    simulationTime?: number,
+  ): void {
     const blend = Math.max(0, Math.min(1, alpha));
     const backgroundBlend = Math.max(0, Math.min(1, backgroundAlpha));
-    const zombies = [...store.entries()].map(([id, zombie]) =>
-      this.renderPose(id, zombie, zombie.tier === 'background' ? backgroundBlend : blend, freezeLiving ? 0 : realDt),
-    );
+    const zombies = [...store.entries()].map(([id, zombie]) => {
+      const previousTime = zombie.renderPrevious.time;
+      const actorBackgroundBlend =
+        simulationTime !== undefined && previousTime !== undefined
+          ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ZOMBIE_RATE))
+          : backgroundBlend;
+      return this.renderPose(
+        id,
+        zombie,
+        zombie.tier === 'background' ? actorBackgroundBlend : blend,
+        freezeLiving ? 0 : realDt,
+      );
+    });
     this.discardMissingOffsets(new Set(zombies.map(({ id }) => id)));
     for (const part of PARTS) {
       this.syncPart(part, zombies);

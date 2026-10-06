@@ -174,7 +174,7 @@ export const createPlayView = (
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
       zombieMeshes.setCamera?.(camera);
-      zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha);
+      zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);
       return { hour, sky };
     },
     prepareLighting: (sky: ReturnType<typeof skyInWeather>) => {

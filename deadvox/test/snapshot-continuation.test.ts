@@ -3,6 +3,7 @@ import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
+import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import {
@@ -34,12 +35,12 @@ describe('hamlet save/load continuation', () => {
     const playerSpawn: [number, number, number] = [center[0] - 180, center[1], center[2]];
     const start = 23 * 3600;
     const source = createRuntime(undefined, false, oneColumn, { start, spawn: playerSpawn });
-    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, 3);
+    source.zombies.addHorde('save-fixture', registry.zombies.get('shambler')!, center, BACKGROUND_ZOMBIE_SLICE_COUNT);
     expect(source.zombies.snapshotState().hordes.length).toBeGreaterThan(0);
     advance(source, 60);
     expect(source.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
     source.emitPlayerSound('shotgun_blast', source.sim.time);
-    advance(source, 90);
+    advance(source, 97);
     const state = source.zombies.snapshotState();
     expect(state.hordes[0]?.mode).toBe('noise');
     expect(state.hordes[0]?.lastNoiseId).toBeGreaterThan(0);

@@ -117,7 +117,7 @@ import {
 } from '../core/rigidBody.ts';
 import { type PosedShambler, posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 
-import type { HitImpulse, Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -135,6 +135,7 @@ export interface ZombieRenderer {
     alpha?: number,
     freezeLiving?: boolean,
     backgroundAlpha?: number,
+    simulationTime?: number,
   ) => void;
   dispose?: () => void;
   setCamera?: (camera: Camera) => void;
@@ -1342,7 +1343,14 @@ export class MobActorMeshes implements ZombieRenderer {
   }
 
   // biome-ignore lint/complexity/useMaxParams: Keep the renderer interface aligned with its base implementation.
-  sync(store: EntityStore<Zombie>, realDt = 0, alpha = 1, _freezeLiving = false, backgroundAlpha = alpha): void {
+  sync(
+    store: EntityStore<Zombie>,
+    realDt = 0,
+    alpha = 1,
+    _freezeLiving = false,
+    backgroundAlpha = alpha,
+    simulationTime?: number,
+  ): void {
     this.frameCounter += 1;
     if (this.camera) {
       this.frustumMatrix.multiplyMatrices(this.camera.projectionMatrix, this.camera.matrixWorldInverse);
@@ -1356,7 +1364,12 @@ export class MobActorMeshes implements ZombieRenderer {
     const present = new Set<EntityId>();
     for (const [id, zombie] of store.entries()) {
       present.add(id);
-      this.renderBlend = zombie.tier === 'background' ? this.backgroundBlend : this.activeBlend;
+      const previousTime = zombie.renderPrevious.time;
+      const actorBackgroundBlend =
+        simulationTime !== undefined && previousTime !== undefined
+          ? Math.max(0, Math.min(1, (simulationTime - previousTime) * BACKGROUND_ZOMBIE_RATE))
+          : this.backgroundBlend;
+      this.renderBlend = zombie.tier === 'background' ? actorBackgroundBlend : this.activeBlend;
       anyDirty = this.syncZombie({ id, zombie }) || anyDirty;
     }
     for (const [id, state] of this.states) {

@@ -2714,18 +2714,40 @@ describe('background zombie tier', () => {
     }
   });
 
-  it('takes reduced-rate beeline steps without crossing a wall', () => {
-    const wall: SolidAt = (x, y) => y === 0 || (x === 50 && y > 0 && y < 5);
-    const system = new ZombieSystem({ ...senses(() => player([0, 1, 0]), wall), isLoaded: () => true });
-    const id = system.add(SHAMBLER, [100, 1, 0]);
+  it('takes reduced-rate beeline steps toward a heard shot without crossing a wall', () => {
+    const wall: SolidAt = (x, y) => y === 0 || (x === 100 && y > 0 && y < 5);
+    const noise = { id: 1, pos: [0, 1, 0] as Vec3, radiusMetres: 300, expiresAt: 60 };
+    const target = { ...player([0, 1, 0]), vocalNoise: noise };
+    const system = new ZombieSystem({ ...senses(() => target, wall), isLoaded: () => true });
+    const id = system.add(SHAMBLER, [200, 1, 0]);
     const zombie = system.store.get(id)!;
-    system.tickBackground(0.5, 0);
+    system.tickBackground(0.5, 0.5);
     expect(zombie.tier).toBe('background');
+    expect(zombie.lastVocalNoiseId).toBe(noise.id);
+    const startDistance = metres(zombie.body.pos, target.pos);
     for (let step = 1; step < 60; step++) {
-      system.tickBackground(0.5, step * 0.5);
+      system.tickBackground(0.5, (step + 1) * 0.5);
     }
-    expect(zombie.body.pos[0]).toBeLessThan(100);
-    expect(zombie.body.pos[0]).toBeGreaterThan(50);
+    expect(metres(zombie.body.pos, target.pos)).toBeLessThan(startDistance);
+    expect(zombie.body.pos[0]).toBeGreaterThan(100);
+  });
+
+  it('does not turn an unalerted background actor into a player-seeking beeline', () => {
+    const opaqueScreen: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 100 && y > 0 && y < 5);
+    const system = new ZombieSystem({
+      ...senses(() => player([0, 1, 0]), FLOOR),
+      isOpaque: opaqueScreen,
+      isLoaded: () => true,
+    });
+    const id = system.add(SHAMBLER, [200, 1, 0]);
+    const zombie = system.store.get(id)!;
+    const startDistance = metres(zombie.body.pos, [0, 1, 0]);
+    for (let step = 0; step < 40; step++) {
+      system.tickBackground(0.5, (step + 1) * 0.5);
+    }
+    expect(['idle', 'stroll']).toContain(zombie.mode);
+    expect(zombie.lastPerceived).toBeUndefined();
+    expect(metres(zombie.body.pos, [0, 1, 0])).toBeGreaterThan(startDistance * 0.75);
   });
 
   it('pauses an active actor as soon as its column unloads', () => {

@@ -354,7 +354,15 @@ export const inspect = (runtime: Runtime): unknown => {
       nextId: (runtime.zombies.store as MapEntityStore<unknown>).nextId,
       hordes: runtime.zombies.snapshotState().hordes,
       entries: [...runtime.zombies.store.entries()].map(([id, zombie]) => {
-        const { type, behaviorRng, soundRng, footstepClock: _footstepClock, renderPrevious, ...fields } = zombie;
+        const {
+          type,
+          behaviorRng,
+          soundRng,
+          footstepClock: _footstepClock,
+          renderPrevious: _renderPrevious,
+          tier: _tier,
+          ...fields
+        } = zombie;
         return [
           id,
           {
@@ -362,7 +370,6 @@ export const inspect = (runtime: Runtime): unknown => {
             type: type.id,
             behaviorRng: behaviorRng.state(),
             soundRng: soundRng.state(),
-            renderPrevious,
           },
         ];
       }),

@@ -50,6 +50,8 @@ import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {
   BACKGROUND_ZOMBIE_RATE,
+  BACKGROUND_ZOMBIE_SLICE_COUNT,
+  BACKGROUND_ZOMBIE_SLICE_RATE,
   type HitImpulse,
   type MeleeResult,
   type PlayerMovement,
@@ -635,6 +637,7 @@ export const createSession = (options: SessionOptions) => {
   const playerCombat = new PlayerCombat(zombieSystem, (uid) => wearMeleeWeaponOnHit(inventory, uid), character);
   let lastZombieStep = 0;
   let lastBackgroundStep = 0;
+  let backgroundSliceIndex = 0;
   let lastPlayerStep = 0;
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
     controls.heldDominantUse?.(
@@ -663,10 +666,14 @@ export const createSession = (options: SessionOptions) => {
   });
   sim.scheduler.register({
     id: 'zombie-background',
-    rate: BACKGROUND_ZOMBIE_RATE,
-    tick: (dt, time) => {
-      zombieSystem.tickBackground(dt, time);
-      lastBackgroundStep = time;
+    rate: BACKGROUND_ZOMBIE_SLICE_RATE,
+    tick: (_dt, time) => {
+      const sliceIndex = backgroundSliceIndex;
+      backgroundSliceIndex = (backgroundSliceIndex + 1) % BACKGROUND_ZOMBIE_SLICE_COUNT;
+      zombieSystem.tickBackground(1 / BACKGROUND_ZOMBIE_RATE, time, sliceIndex, BACKGROUND_ZOMBIE_SLICE_COUNT);
+      if (sliceIndex === 0) {
+        lastBackgroundStep = time;
+      }
     },
   });
 
@@ -825,7 +832,9 @@ export const createSession = (options: SessionOptions) => {
     sim.restoreState(restored.character.simulation);
     const schedulerState = sim.scheduler.snapshotState();
     lastZombieStep = schedulerState.systems.find(({ id }) => id === 'zombies')?.done ?? sim.time;
-    lastBackgroundStep = schedulerState.systems.find(({ id }) => id === 'zombie-background')?.done ?? sim.time;
+    const backgroundState = schedulerState.systems.find(({ id }) => id === 'zombie-background');
+    lastBackgroundStep = backgroundState?.done ?? sim.time;
+    backgroundSliceIndex = (backgroundState?.ticks ?? 0) % BACKGROUND_ZOMBIE_SLICE_COUNT;
     lastPlayerStep = schedulerState.systems.find(({ id }) => id === 'player')?.done ?? sim.time;
     sim.actions.restoreState(restored.character.longAction);
     survival.restoreState(restored.character.lightUid === null ? {} : { litUid: restored.character.lightUid });
