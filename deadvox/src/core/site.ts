@@ -41,6 +41,14 @@ export type ZombieSpawn = {
   pos: Vec3;
 } & SpawnTimeWindowField;
 
+export interface HordeSpawn {
+  id: string;
+  type: string;
+  /** Feet position in world blocks. */
+  pos: Vec3;
+  members: number;
+}
+
 export interface Site {
   /** Bounded authored cellar interiors needing voxel sky visibility instead of unoccluded hemisphere light. */
   readonly skyBounds?: readonly SkyBounds[];
@@ -54,6 +62,8 @@ export interface Site {
   furnitureIn: (cx: number, cz: number) => FurnitureSpawn[];
   /** Zombie spawns anchored in the column, deterministic for the site seed. */
   zombiesIn: (cx: number, cz: number) => ZombieSpawn[];
+  /** Optional group spawns anchored in a single column, deterministic for the site seed. */
+  hordesIn?: ((cx: number, cz: number) => HordeSpawn[]) | undefined;
 }
 
 /**

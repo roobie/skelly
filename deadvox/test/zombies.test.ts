@@ -29,6 +29,7 @@ import {
 } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';
 import {
+  ACTIVE_ZOMBIE_RADIUS_METRES,
   FISTS_MELEE,
   type HitImpulse,
   hearPlayer,
@@ -1815,6 +1816,30 @@ describe('shambler scenarios', () => {
     expect(ordinaryRun.health).toBeLessThan(100);
   });
 
+  it('loads the hamlet horde once with its group membership intact', () => {
+    const site = new Hamlet(7, registry, SCALE);
+    let column: [number, number] | undefined;
+    for (let cz = -20; cz <= 20 && !column; cz++) {
+      for (let cx = -20; cx <= 20 && !column; cx++) {
+        if (site.hordesIn(cx, cz).length > 0) {
+          column = [cx, cz];
+        }
+      }
+    }
+    expect(column).toBeDefined();
+    const spawner = new ZombieSpawner();
+    const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
+    const state = system.snapshotState();
+    const id = state.hordes[0]?.id;
+    expect(id).toBeDefined();
+    expect([...system.store.entries()].some(([, zombie]) => zombie.hordeId === id)).toBe(true);
+    const { size } = system.store;
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
+    expect(system.store.size).toBe(size);
+    expect(system.snapshotState()).toEqual(state);
+  });
+
   it('G: a killed hamlet shambler stays gone when its column reloads', () => {
     const site = new Hamlet(7, registry, SCALE);
     let column: [number, number] | undefined;
@@ -2750,6 +2775,96 @@ describe('two-tier shambler hearing', () => {
       finishSearch(system, zombie, type.hearingModel.searchSeconds.max * 20 + 5, type.hearingModel.searchRadiusMetres),
     ).toBe(true);
     expect(advanceToMode(system, zombie, 'idle', 20 * 20)).toBe(true);
+  });
+});
+
+describe('background zombie tier', () => {
+  it('routes firearm reports into the long-range player-noise channel', () => {
+    for (const id of ['gunshot', 'gunshot_pbs1_reference', 'shotgun_blast']) {
+      const noise = registry.sounds.get(id)?.noise;
+      expect(noise?.enabled).toBe(true);
+      expect(noise?.radiusMetres).toBeGreaterThan(ACTIVE_ZOMBIE_RADIUS_METRES);
+    }
+  });
+
+  it('takes reduced-rate beeline steps toward a heard shot without crossing a wall', () => {
+    const wall: SolidAt = (x, y) => y === 0 || (x === 100 && y > 0 && y < 5);
+    const noise = { id: 1, pos: [0, 1, 0] as Vec3, radiusMetres: 300, expiresAt: 60 };
+    const target = { ...player([0, 1, 0]), vocalNoise: noise };
+    const system = new ZombieSystem({ ...senses(() => target, wall), isLoaded: () => true });
+    const id = system.add(SHAMBLER, [200, 1, 0]);
+    const zombie = system.store.get(id)!;
+    system.tickBackground(0.5, 0.5);
+    expect(zombie.tier).toBe('background');
+    expect(zombie.lastVocalNoiseId).toBe(noise.id);
+    const startDistance = metres(zombie.body.pos, target.pos);
+    for (let step = 1; step < 60; step++) {
+      system.tickBackground(0.5, (step + 1) * 0.5);
+    }
+    expect(metres(zombie.body.pos, target.pos)).toBeLessThan(startDistance);
+    expect(zombie.body.pos[0]).toBeGreaterThan(100);
+  });
+
+  it('does not turn an unalerted background actor into a player-seeking beeline', () => {
+    const opaqueScreen: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 100 && y > 0 && y < 5);
+    const system = new ZombieSystem({
+      ...senses(() => player([0, 1, 0]), FLOOR),
+      isOpaque: opaqueScreen,
+      isLoaded: () => true,
+    });
+    const id = system.add(SHAMBLER, [200, 1, 0]);
+    const zombie = system.store.get(id)!;
+    const startDistance = metres(zombie.body.pos, [0, 1, 0]);
+    for (let step = 0; step < 40; step++) {
+      system.tickBackground(0.5, (step + 1) * 0.5);
+    }
+    expect(['idle', 'stroll']).toContain(zombie.mode);
+    expect(zombie.lastPerceived).toBeUndefined();
+    expect(metres(zombie.body.pos, [0, 1, 0])).toBeGreaterThan(startDistance * 0.75);
+  });
+
+  it('pauses an active actor as soon as its column unloads', () => {
+    let loaded = true;
+    const system = new ZombieSystem({ ...senses(() => player([0, 1, 0])), isLoaded: () => loaded });
+    const zombie = system.store.get(system.add(SHAMBLER, [2, 1, 0]))!;
+    loaded = false;
+    const before = [...zombie.body.pos];
+    system.tickActive(1 / 20, 0);
+    expect(zombie.tier).toBe('unloaded');
+    expect(zombie.body.pos).toEqual(before);
+  });
+
+  it('hears a distant gunshot through the existing player-noise stimulus', () => {
+    const noise = { id: 1, pos: [0, 1, 0] as Vec3, radiusMetres: 80, expiresAt: 0.5 };
+    const target = { ...player([0, 1, 0]), vocalNoise: noise };
+    const system = new ZombieSystem({ ...senses(() => target), isLoaded: () => true });
+    const id = system.add(SHAMBLER, [100, 1, 0]);
+    system.tickBackground(0.5, 0.5);
+    expect(system.store.get(id)?.tier).toBe('background');
+    expect(system.store.get(id)?.lastVocalNoiseId).toBe(noise.id);
+    expect(system.store.get(id)?.lastPerceived).toBeDefined();
+  });
+
+  it('uses the active visible-light sense for distant background actors', () => {
+    const lightTarget: Vec3 = [75, 1, 0];
+    const target: PlayerSense = {
+      ...player([0, 1, 0]),
+      lightSources: [{ pos: lightTarget, seenFrom: 100, carried: false }],
+    };
+    const system = new ZombieSystem({
+      ...senses(
+        () => target,
+        FLOOR,
+        () => 23,
+      ),
+      isLoaded: () => true,
+    });
+    const id = system.add(SHAMBLER, [100, 1, 0], [-1, 0, 0]);
+    system.tickBackground(0.5, 0.5);
+    const zombie = system.store.get(id)!;
+    expect(zombie.tier).toBe('background');
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.lastPerceived).toEqual(lightTarget);
   });
 });
 
