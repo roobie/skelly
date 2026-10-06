@@ -2,11 +2,12 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { aimDirection } from '../src/core/aim.ts';
+import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import {
@@ -28,6 +29,14 @@ const base = readdirSync(BASE)
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
 const { registry } = buildRegistry(base);
 const caseType = spentCaseItemId('5.56x45');
+const worldVector = (vector: readonly number[], yaw: number, pitch: number): [number, number, number] => {
+  const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
+  return [0, 1, 2].map((axis) => right[axis]! * vector[0]! + up[axis]! * vector[1]! - forward[axis]! * vector[2]!) as [
+    number,
+    number,
+    number,
+  ];
+};
 
 const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Inventory['create']> } => {
   const inventory = new Inventory(registry);
@@ -45,6 +54,8 @@ const pose = {
   pitch: 0,
   aimFrame: { yaw: 0, pitch: 0 },
   blockSize: 0.5,
+  ready: true,
+  sprinting: false,
 } as const;
 const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simTime = 1) => {
   const effects: FirearmShotEffect[] = [];
@@ -71,6 +82,90 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
 };
 
 describe('debug firearm handling', () => {
+  it('fires from the same ready-pose muzzle used by the held model', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const { model } = firearmHandlingFor(rifle, registry);
+    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const common = {
+      model,
+      side: 'right' as const,
+      leadingSide: 'right' as const,
+      twoHanded: Boolean(registry.items.get(rifle.type)!.twoHanded),
+      aimingDownSights: false,
+      aimFrame: NEUTRAL_AIM,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+    };
+    const lowered = heldFirearmTransform({ ...common, progress: 0 });
+    const raised = heldFirearmTransform({ ...common, progress: 1 });
+    const poseOrigin = (heldPose: typeof raised) =>
+      heldPose.rootOffset.map((value, axis) => value + heldPose.muzzleOffset[axis]!);
+    expect(poseOrigin(raised)).not.toEqual(poseOrigin(lowered));
+
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+      onEjection: () => undefined,
+      onTrajectory: (trajectoryShot) => {
+        trajectory = trajectoryShot;
+      },
+    });
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        item: rifle,
+        seed: 19,
+        simTime: 1,
+        debugMode: true,
+        aimingDownSights: false,
+      }),
+    ).toBe(true);
+    if (!trajectory) {
+      throw new Error('Ready shot did not publish a trajectory');
+    }
+    const cameraOffset = worldVector(poseOrigin(raised), pose.yaw, pose.pitch);
+    const expectedMuzzle = pose.eye.map((value, axis) => value + cameraOffset[axis]! / pose.blockSize);
+    expect(trajectory.muzzle[0]).toBeCloseTo(expectedMuzzle[0]!);
+    expect(trajectory.muzzle[1]).toBeCloseTo(expectedMuzzle[1]!);
+    expect(trajectory.muzzle[2]).toBeCloseTo(expectedMuzzle[2]!);
+  });
+
+  it('requires a completed ready stance, rejects sprinting and cancels released readying', () => {
+    const { inventory, rifle } = inventoryWithRifle();
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+      onEjection: () => undefined,
+    });
+    const beforeRejectedShots = inventory.snapshotState();
+    const shotInput = {
+      ...pose,
+      feet: [...pose.feet] as [number, number, number],
+      eye: [...pose.eye] as [number, number, number],
+      debugMode: true,
+      item: rifle,
+      seed: 71,
+      simTime: 1,
+    };
+    expect(mechanics.fire({ ...shotInput, ready: false })).toBe(false);
+    expect(mechanics.fire({ ...shotInput, ready: true, sprinting: true })).toBe(false);
+    expect(inventory.snapshotState()).toEqual(beforeRejectedShots);
+
+    mechanics.advanceReadiness(0, rifle.uid, true);
+    const progress = rifle.firearm?.readying;
+    expect(progress).toBeDefined();
+    mechanics.advanceReadiness(progress!.duration / 2, rifle.uid, true);
+    expect(mechanics.isReady(rifle.uid)).toBe(false);
+    mechanics.advanceReadiness(0, undefined, false);
+    expect(rifle.firearm?.readying).toBeUndefined();
+
+    mechanics.advanceReadiness(progress!.duration, rifle.uid, true);
+    expect(mechanics.isReady(rifle.uid)).toBe(true);
+    expect(mechanics.fire({ ...shotInput, ready: true, sprinting: false })).toBe(true);
+  });
+
   it('emits fixture firearm dispersion independently of firearms skill', () => {
     const definition = registry.items.get('debug_rifle_assault')!;
     const fixtureBuild = buildRegistry([
@@ -132,7 +227,30 @@ describe('debug firearm handling', () => {
     const novice = publish(0);
     const experienced = publish(SKILL_LEVEL_MAX);
     const direction = novice.directions[0]!;
-    const baseDirection = aimDirection(yaw, pitch, aimFrame);
+    const model = fixtureRegistry.models.get('rifle_assault')!;
+    const tuning = fixtureRegistry.skills.get('firearms_combat')!.combat!.firearms!;
+    const heldPose = heldFirearmTransform({
+      model,
+      side: 'right',
+      leadingSide: 'right',
+      twoHanded: true,
+      progress: 1,
+      aimingDownSights: false,
+      aimFrame,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+    });
+    const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
+    const baseDirection = [
+      right[0] * heldPose.muzzleDirection[0] +
+        up[0] * heldPose.muzzleDirection[1] -
+        forward[0] * heldPose.muzzleDirection[2],
+      right[1] * heldPose.muzzleDirection[0] +
+        up[1] * heldPose.muzzleDirection[1] -
+        forward[1] * heldPose.muzzleDirection[2],
+      right[2] * heldPose.muzzleDirection[0] +
+        up[2] * heldPose.muzzleDirection[1] -
+        forward[2] * heldPose.muzzleDirection[2],
+    ];
     const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
     const cone = firearmHandlingFor(fixtureItem, fixtureRegistry).dispersionRadians!;
     const angle = Math.acos(
@@ -377,6 +495,8 @@ describe('debug firearm handling', () => {
       seed: 71,
       simTime: 1,
       blockSize: 0.5,
+      ready: true,
+      sprinting: false,
     });
     expect(result).toBe(false);
     expect(rifle.firearm).toBeUndefined();

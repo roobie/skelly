@@ -116,7 +116,7 @@ it('higher mechanics skill shortens prying and preserves its strike count', () =
   const tuning = definition.door!.prying!;
   expect(slow.time).toBe(tuning.time);
   while (character.skills.mechanics! < SKILL_LEVEL_MAX) {
-    character.awardPractice('mechanics', practiceForNextLevel(character.skills.mechanics!));
+    character.awardPractice('mechanics', practiceForNextLevel(character.skills.mechanics!), SKILL_LEVEL_MAX);
   }
   const fast = pryPlan(inventory, door, crowbar.uid, character);
   if (!fast.ok) {

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Input, nextMenuCursor } from '../src/game/input.ts';
+import { keyboardInput } from '../src/game/inputBindings.ts';
 
 const fixture = (allowed: () => boolean = () => true) => {
   const targetListeners = new Map<string, (event: MouseEvent) => void>();
@@ -19,10 +20,43 @@ const fixture = (allowed: () => boolean = () => true) => {
   vi.stubGlobal('addEventListener', (type: string, listener: (event: MouseEvent) => void) =>
     windowListeners.set(type, listener),
   );
-  const input = new Input(target, allowed);
+  keyboardInput.cancel();
+  keyboardInput.context = () => ({ context: 'play', debug: false });
+  let input: Input;
+  keyboardInput.command = ({ action, phase }) => {
+    if (action === 'stance.ready') {
+      input.rightMouseHeld = phase === 'down';
+      if (phase === 'up') {
+        input.aimingDownSights = false;
+      }
+    } else if (action === 'aim.ads-toggle' && phase === 'down') {
+      input.toggleAimingDownSights();
+    }
+  };
+  input = new Input(target, allowed);
+  keyboardInput.cancelled = (preservePointer) => input.cancel(preservePointer);
   return { input, target, document, targetListeners, windowListeners };
 };
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  keyboardInput.cancel();
+  for (let button = 0; button <= 4; button++) {
+    keyboardInput.releasePointer(button, 0);
+  }
+  keyboardInput.release({
+    code: 'F2',
+    shiftKey: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    repeat: false,
+    isComposing: false,
+    timeStamp: 0,
+  });
+  keyboardInput.context = () => ({ context: 'title', debug: false });
+  keyboardInput.command = () => undefined;
+  keyboardInput.cancelled = () => undefined;
+  vi.unstubAllGlobals();
+});
 
 describe('pointer input', () => {
   it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
@@ -73,15 +107,77 @@ describe('pointer input', () => {
     windowListeners.get('blur')!(new Event('blur') as MouseEvent);
     expect(input.intent().useDominantHeld).toBe(false);
   });
-  it('suppresses a right-click that cancels a charged action until the button is released', () => {
+  it('suppresses ready and aim actions from the right-click that cancels a glowstick charge', () => {
     const { input, targetListeners, windowListeners } = fixture();
-    targetListeners.get('mousedown')!({ button: 2 } as MouseEvent);
+    targetListeners.get('mousedown')!({ button: 2, timeStamp: 1 } as MouseEvent);
     expect(input.rightMouseActionHeld).toBe(true);
     expect(input.consumeRightMousePressed()).toBe(true);
     input.suppressRightMouseUntilRelease();
+    expect(input.rightMouseHeld).toBe(true);
     expect(input.rightMouseActionHeld).toBe(false);
-    windowListeners.get('mouseup')!({ button: 2 } as MouseEvent);
+    expect(input.consumeRightMousePressed()).toBe(false);
+    windowListeners.get('mouseup')!({ button: 2, timeStamp: 2 } as MouseEvent);
     expect(input.rightMouseActionHeld).toBe(false);
+    targetListeners.get('mousedown')!({ button: 2, timeStamp: 3 } as MouseEvent);
+    expect(input.rightMouseActionHeld).toBe(true);
+  });
+  it('toggles sight alignment only while the ready stance is held', () => {
+    const { input, targetListeners, windowListeners } = fixture();
+    const down = targetListeners.get('mousedown')!;
+    const up = windowListeners.get('mouseup')!;
+    down({ button: 1 } as MouseEvent);
+    expect(input.aimingDownSights).toBe(false);
+    up({ button: 1 } as MouseEvent);
+    down({ button: 2 } as MouseEvent);
+    down({ button: 1 } as MouseEvent);
+    expect(input.aimingDownSights).toBe(true);
+    up({ button: 1 } as MouseEvent);
+    down({ button: 1 } as MouseEvent);
+    expect(input.aimingDownSights).toBe(false);
+    up({ button: 1 } as MouseEvent);
+    input.setAimingDownSightsAllowed(() => false);
+    down({ button: 1 } as MouseEvent);
+    expect(input.aimingDownSights).toBe(false);
+    up({ button: 1 } as MouseEvent);
+    up({ button: 2 } as MouseEvent);
+    expect(input.aimingDownSights).toBe(false);
+  });
+  it('keeps ready and ADS active when F2 enables debug controls', () => {
+    const { input, targetListeners, windowListeners } = fixture();
+    keyboardInput.context = () => ({ context: 'play', debug: true });
+    const down = targetListeners.get('mousedown')!;
+    down({ button: 2, timeStamp: 1 } as MouseEvent);
+    down({ button: 1, timeStamp: 2 } as MouseEvent);
+    windowListeners.get('mouseup')!({ button: 1, timeStamp: 3 } as MouseEvent);
+    expect([input.rightMouseHeld, input.aimingDownSights]).toEqual([true, true]);
+
+    keyboardInput.press({
+      code: 'F2',
+      shiftKey: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      repeat: false,
+      isComposing: false,
+      timeStamp: 4,
+    });
+    expect([input.rightMouseHeld, input.aimingDownSights, keyboardInput.held('stance.ready')]).toEqual([
+      true,
+      true,
+      true,
+    ]);
+    keyboardInput.release({
+      code: 'F2',
+      shiftKey: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      repeat: false,
+      isComposing: false,
+      timeStamp: 5,
+    });
+    windowListeners.get('mouseup')!({ button: 2, timeStamp: 6 } as MouseEvent);
+    expect([input.rightMouseHeld, input.aimingDownSights]).toEqual([false, false]);
   });
   it('delivers a crouch-toggle request once to the simulation consumer', () => {
     const { input } = fixture();

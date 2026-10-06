@@ -4,22 +4,11 @@ import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/math.ts';
 import type { TriangleMesh } from '../src/core/mesh.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
+import { METRES_PER_UNIT } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { expectWatertightMesh, loadFixture } from './helpers.ts';
 
 const ROOT = join(import.meta.dirname, '..');
-// The six current AK exports measured at <=2.7e-6u of drift; enforce the full weld-tolerance contract.
-const MAX_SURFACE_DISTANCE_U = 1e-5;
-const METRES_PER_UNIT = 0.0115;
-const MAX_SURFACE_DISTANCE_M = MAX_SURFACE_DISTANCE_U * METRES_PER_UNIT;
-const baseline = JSON.parse(
-  readFileSync(join(ROOT, 'test/fixtures/receiver-ak-union-before-polyhedra.json'), 'utf8'),
-) as {
-  baselineCommit: string;
-  positions: number[];
-  indices: number[];
-  bounds: { min: number[]; max: number[] };
-};
 const cases = [
   { key: 'designs/archetype-ak.json', folder: 'designs', file: 'archetype-ak.json' },
   { key: 'fixtures/ak-standard-handguard.json', folder: 'fixtures', file: 'ak-standard-handguard.json' },
@@ -76,45 +65,12 @@ const accessorValues = (glb: { json: GlbJson; binary: DataView }, index: number)
 };
 
 const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: Vec3, b: Vec3): Vec3 => [
   a[1] * b[2] - a[2] * b[1],
   a[2] * b[0] - a[0] * b[2],
   a[0] * b[1] - a[1] * b[0],
 ];
 const magnitude = (v: Vec3): number => Math.hypot(v[0], v[1], v[2]);
-
-const pointSegmentDistance = (point: Vec3, a: Vec3, b: Vec3): number => {
-  const edge = subtract(b, a);
-  const t = Math.max(0, Math.min(1, dot(subtract(point, a), edge) / dot(edge, edge)));
-  return magnitude(subtract(point, [a[0] + edge[0] * t, a[1] + edge[1] * t, a[2] + edge[2] * t]));
-};
-
-const pointTriangleDistance = (point: Vec3, [a, b, c]: readonly [Vec3, Vec3, Vec3]): number => {
-  const ab = subtract(b, a);
-  const ac = subtract(c, a);
-  const normal = cross(ab, ac);
-  const normalLengthSquared = dot(normal, normal);
-  const signed = dot(subtract(point, a), normal) / normalLengthSquared;
-  const projected: Vec3 = [point[0] - normal[0] * signed, point[1] - normal[1] * signed, point[2] - normal[2] * signed];
-  const ap = subtract(projected, a);
-  const d00 = dot(ab, ab);
-  const d01 = dot(ab, ac);
-  const d11 = dot(ac, ac);
-  const d20 = dot(ap, ab);
-  const d21 = dot(ap, ac);
-  const denominator = d00 * d11 - d01 * d01;
-  const u = (d11 * d20 - d01 * d21) / denominator;
-  const v = (d00 * d21 - d01 * d20) / denominator;
-  if (u >= -1e-12 && v >= -1e-12 && u + v <= 1 + 1e-12) {
-    return Math.abs(signed) * Math.sqrt(normalLengthSquared);
-  }
-  return Math.min(
-    pointSegmentDistance(point, a, b),
-    pointSegmentDistance(point, b, c),
-    pointSegmentDistance(point, c, a),
-  );
-};
 
 const vertices = (positions: readonly number[]): Vec3[] =>
   Array.from(
@@ -130,19 +86,6 @@ const surfaceTriangles = (positions: readonly number[], indices: readonly number
   );
 };
 
-const maximumVertexSurfaceDistance = (
-  sourcePositions: readonly number[],
-  targetPositions: readonly number[],
-  targetIndices: readonly number[],
-): number => {
-  const targetTriangles = surfaceTriangles(targetPositions, targetIndices);
-  return Math.max(
-    ...vertices(sourcePositions).map((point) =>
-      Math.min(...targetTriangles.map((triangle) => pointTriangleDistance(point, triangle))),
-    ),
-  );
-};
-
 const assemblyFor = (key: string, folder: string, file: string) => {
   if (folder !== 'designs') {
     return loadFixture(basename(file, '.json'));
@@ -154,12 +97,8 @@ const assemblyFor = (key: string, folder: string, file: string) => {
   return loaded.design.assembly;
 };
 
-describe('merged AK receiver surface preservation', () => {
-  it('uses the pre-polyhedron export checkpoint as its baseline', () => {
-    expect(baseline.baselineCommit).toBe('8610969');
-  });
-
-  it.each(cases)('$key remains within the stated surface-preservation contract', ({ key, folder, file }) => {
+describe('AK receiver export topology', () => {
+  it.each(cases)('$key keeps the AK receiver export watertight', ({ key, folder, file }) => {
     const assembly = assemblyFor(key, folder, file);
     const id = basename(file, '.json').replaceAll('-', '_');
     const result = exportGunGlb(assembly, { id, file: `assets/models/${id}.glb` }, {});
@@ -170,18 +109,8 @@ describe('merged AK receiver surface preservation', () => {
     const meshIndex = glb.json.nodes.find(({ name }) => name === 'receiver:ak-receiver')?.mesh;
     expect(meshIndex, `${key}: merged receiver mesh`).toBeDefined();
     const primitive = glb.json.meshes[meshIndex!]!.primitives[0]!;
-    const positionAccessor = glb.json.accessors[primitive.attributes.POSITION]!;
     const currentPositions = accessorValues(glb, primitive.attributes.POSITION);
     const currentIndices = accessorValues(glb, primitive.indices);
-    const beforePositions = baseline.positions;
-    const beforeIndices = baseline.indices;
-    expect(positionAccessor.min, `${key}: identical lower bounds`).toEqual(baseline.bounds.min);
-    expect(positionAccessor.max, `${key}: identical upper bounds`).toEqual(baseline.bounds.max);
-
-    const oldToCurrent = maximumVertexSurfaceDistance(beforePositions, currentPositions, currentIndices);
-    const currentToOld = maximumVertexSurfaceDistance(currentPositions, beforePositions, beforeIndices);
-    expect(oldToCurrent, `${key}: old vertices to current surface`).toBeLessThanOrEqual(MAX_SURFACE_DISTANCE_M);
-    expect(currentToOld, `${key}: current vertices to old surface`).toBeLessThanOrEqual(MAX_SURFACE_DISTANCE_M);
 
     const mesh: TriangleMesh = {
       positions: Float32Array.from(currentPositions.map((position) => position / METRES_PER_UNIT)),

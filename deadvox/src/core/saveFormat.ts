@@ -305,6 +305,7 @@ itemSchema = obj({
           seed: num({ integer: true, safe: true, min: 0, max: 0xff_ff_ff_ff }),
         }),
       ),
+      readying: opt(obj({ elapsed: nonNegative, duration: positive })),
       cycle: opt(
         obj({
           mode: enumeration(['fire', 'hand']),

@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import { Character, practiceForNextLevel } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry, type RecipeDef, type Registry } from '../src/core/content.ts';
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -430,10 +430,11 @@ describe('pure craft planner', () => {
     expect(snapshot.entries).toHaveLength(200);
     const actor = new Character(benchmarkRegistry);
     actor.learnRecipes([...benchmarkRegistry.recipes.keys()]); // Isolate planning cost from reachable knowledge admission.
-    actor.awardPractice('crafting', practiceForNextLevel(actor.skills.crafting!));
+    actor.awardPractice('crafting', practiceForNextLevel(actor.skills.crafting!), SKILL_LEVEL_LEGENDARY);
     actor.awardPractice(
       'mechanics',
       practiceForNextLevel(actor.skills.mechanics!) + practiceForNextLevel(actor.skills.mechanics! + 1),
+      SKILL_LEVEL_LEGENDARY,
     ); // Timings exercise successful plans, including skill-gated recipes.
     const started = performance.now();
     const index = indexCraftReach(snapshot);

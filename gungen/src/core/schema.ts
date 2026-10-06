@@ -133,6 +133,7 @@ interface Axis {
   readonly kind: string;
   readonly origin: Vec3;
   readonly dir: Vec3;
+  readonly eyeReliefU?: number;
 }
 
 export interface PartMotion {
