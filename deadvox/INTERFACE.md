@@ -203,7 +203,7 @@ success; see [SLICE-3.md](SLICE-3.md), 3.1.
 - **Hand activation follows actor roles (BR, 2026-10-04):** dominance is
   identity, not a remapping of physical inventory slots. A held item cannot
   become an unarmed attack, and a two-handed hold's support must not activate
-  the other hand's item. See `src/game/input.ts`, `KEY_BINDINGS`, and
+  the other hand's item. See `src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`, and
   `src/game/primaryAction.ts`, `selectPrimaryAction`, for bindings and admission.
   The native creation choice precedes gameplay construction; Continue restores
   identity rather than consulting creation preferences. See

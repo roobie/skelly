@@ -1,6 +1,6 @@
 name: deadvox
 
-# TROUBLESHOOTING's generated key table remains a checked build input.
+# Keep troubleshooting changes checked with browser contracts because it documents their stage modes.
 on:
   push:
     branches: [main]

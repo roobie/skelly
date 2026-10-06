@@ -1,45 +1,35 @@
-import { describe, expect, it, vi } from 'vitest';
-import {
-  Input,
-  isMenuOpeningKey,
-  KEY_BINDINGS,
-  nextMenuCursor,
-  restKindForControl,
-  worldActionForKey,
-} from '../src/game/input.ts';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { Input, nextMenuCursor } from '../src/game/input.ts';
 
-describe('menu input', () => {
-  it('keyboard controls expose sleep but no rest binding for R or dollar', () => {
-    expect(restKindForControl('KeyR')).toBeUndefined();
-    expect(restKindForControl('$')).toBeUndefined();
-    expect(restKindForControl('KeyL')).toBe('sleep');
-  });
+const fixture = (allowed: () => boolean = () => true) => {
+  const targetListeners = new Map<string, (event: MouseEvent) => void>();
+  const windowListeners = new Map<string, (event: MouseEvent) => void>();
+  const target = {
+    addEventListener: (type: string, listener: (event: MouseEvent) => void) => targetListeners.set(type, listener),
+    requestPointerLock: vi.fn<() => Promise<void>>(),
+  } as unknown as HTMLElement;
+  const document = {
+    pointerLockElement: target as HTMLElement | null,
+    addEventListener: vi.fn(),
+    exitPointerLock: vi.fn(),
+  };
+  vi.stubGlobal('document', document);
+  vi.stubGlobal('innerWidth', 640);
+  vi.stubGlobal('innerHeight', 480);
+  vi.stubGlobal('addEventListener', (type: string, listener: (event: MouseEvent) => void) =>
+    windowListeners.set(type, listener),
+  );
+  const input = new Input(target, allowed);
+  return { input, target, document, targetListeners, windowListeners };
+};
+afterEach(() => vi.unstubAllGlobals());
 
-  it('Backspace suppresses browser navigation in locked play but keeps menu text editing', () => {
-    const listeners = new Map<string, (event: KeyboardEvent) => void>();
-    const target = { addEventListener: () => undefined } as unknown as HTMLElement;
-    vi.stubGlobal('addEventListener', (type: string, listener: (event: KeyboardEvent) => void) =>
-      listeners.set(type, listener),
-    );
-    vi.stubGlobal('document', { pointerLockElement: target, addEventListener: () => undefined });
-    try {
-      const input = new Input(target);
-      const preventDefault = vi.fn();
-      const event = { code: 'Backspace', repeat: false, preventDefault } as unknown as KeyboardEvent;
-      listeners.get('keydown')!(event);
-      expect(preventDefault).toHaveBeenCalledTimes(1);
-      input.menuPointer = true;
-      listeners.get('keydown')!(event);
-      expect(preventDefault).toHaveBeenCalledTimes(1);
-    } finally {
-      vi.unstubAllGlobals();
-    }
-  });
-  it('surfaces a native pointer-lock promise rejection without an unhandled rejection', async () => {
-    const error = new Error('The browser failed to lock the pointer');
+describe('pointer input', () => {
+  it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
+    const { input, target } = fixture();
+    const error = new Error('Pointer lock refused');
+    vi.mocked(target.requestPointerLock).mockRejectedValue(error);
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const input = Object.create(Input.prototype) as Input;
-    Object.assign(input, { target: { requestPointerLock: () => Promise.reject(error) } });
     try {
       input.lock();
       await Promise.resolve();
@@ -48,200 +38,46 @@ describe('menu input', () => {
       warn.mockRestore();
     }
   });
-
-  it('identifies G as the opening key so its text default can be cancelled', () => {
-    expect(isMenuOpeningKey('KeyG', true, false)).toBe(true);
-    expect(isMenuOpeningKey('KeyG', true, true)).toBe(false);
-    expect(isMenuOpeningKey('KeyG', false, false)).toBe(false);
-    expect(isMenuOpeningKey(KEY_BINDINGS.mainMenu.code, true, false)).toBe(false);
-    expect(isMenuOpeningKey(KEY_BINDINGS.browserMenuBar.code, true, false)).toBe(false);
+  it('does not retain a dominant press refused by the active owner', () => {
+    let allowed = false;
+    const { input, targetListeners } = fixture(() => allowed);
+    targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
+    expect(input.intent().useDominantHeld).toBe(false);
+    allowed = true;
+    expect(input.intent().useDominant).toBe(false);
+    targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
+    expect(input.intent().useDominant).toBe(true);
   });
-
-  it('binds world interaction to F and leaves Q and E unbound', () => {
-    expect(worldActionForKey('KeyF')).toBe('interact');
-    expect(worldActionForKey('KeyQ')).toBeUndefined();
-    expect(worldActionForKey('KeyE')).toBeUndefined();
+  it('admits hand uses only in locked play and clears presses, holds and ready stance on cancellation', () => {
+    const { input, document, target, targetListeners, windowListeners } = fixture();
+    document.pointerLockElement = null;
+    input.useOff();
+    targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
+    expect(input.intent().useOff).toBe(false);
+    expect(input.intent().useDominant).toBe(false);
+    document.pointerLockElement = target;
+    input.menuPointer = true;
+    input.useOff();
+    expect(input.intent().useOff).toBe(false);
+    input.menuPointer = false;
+    input.useOff();
+    targetListeners.get('mousedown')!({ button: 0 } as MouseEvent);
+    targetListeners.get('mousedown')!({ button: 2 } as MouseEvent);
+    expect(input.intent()).toMatchObject({ useOff: true, useDominant: true, useDominantHeld: true });
+    expect(input.rightMouseHeld).toBe(true);
+    input.consumeOffUse();
+    input.consumeDominantUse();
+    expect(input.intent()).toMatchObject({ useOff: false, useDominant: false, useDominantHeld: true });
+    windowListeners.get('mouseup')!({ button: 2 } as MouseEvent);
+    expect(input.rightMouseHeld).toBe(false);
+    windowListeners.get('blur')!(new Event('blur') as MouseEvent);
+    expect(input.intent().useDominantHeld).toBe(false);
   });
-
-  it('moves only the menu cursor while pointer lock is held', () => {
-    const descriptors = ['document', 'innerWidth', 'innerHeight', 'addEventListener'].map(
-      (key) => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const,
-    );
-    const target = { addEventListener: () => undefined } as unknown as HTMLElement;
-    let mousemove: ((event: MouseEvent) => void) | undefined;
-    const documentStub = {
-      pointerLockElement: target,
-      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
-        if (type === 'mousemove') {
-          mousemove = listener as (event: MouseEvent) => void;
-        }
-      },
-    } as unknown as Document;
-    Object.defineProperty(globalThis, 'document', { configurable: true, value: documentStub });
-    Object.defineProperty(globalThis, 'innerWidth', { configurable: true, value: 640 });
-    Object.defineProperty(globalThis, 'innerHeight', { configurable: true, value: 480 });
-    Object.defineProperty(globalThis, 'addEventListener', { configurable: true, value: () => undefined });
-    try {
-      const input = new Input(target);
-      input.menuPointer = true;
-      input.yaw = 0.7;
-      input.pitch = -0.3;
-      input.moveMenuCursor(24, -12);
-      const mouseEvent = new Event('mousemove') as MouseEvent;
-      Object.defineProperties(mouseEvent, { movementX: { value: 24 }, movementY: { value: -12 } });
-      mousemove?.(mouseEvent);
-      expect({ x: input.cursorX, y: input.cursorY }).toEqual({ x: 344, y: 228 });
-      expect({ yaw: input.yaw, pitch: input.pitch }).toEqual({ yaw: 0.7, pitch: -0.3 });
-    } finally {
-      for (const [key, descriptor] of descriptors) {
-        if (descriptor) {
-          Object.defineProperty(globalThis, key, descriptor);
-        } else {
-          Reflect.deleteProperty(globalThis, key);
-        }
-      }
-    }
-  });
-
-  it('does not queue primary clicks rejected at press time', () => {
-    const original = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener');
-    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
-    const targetListeners = new Map<string, EventListener>();
-    const target = {
-      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
-        if (typeof listener === 'function') {
-          targetListeners.set(type, listener);
-        }
-      },
-    } as unknown as HTMLElement;
-    Object.defineProperty(globalThis, 'addEventListener', {
-      configurable: true,
-      value: () => undefined,
-    });
-    Object.defineProperty(globalThis, 'document', {
-      configurable: true,
-      value: { pointerLockElement: target, addEventListener: () => undefined },
-    });
-    let primaryActionAllowed = false;
-    try {
-      const input = new Input(target, () => primaryActionAllowed);
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(false);
-      expect(input.intent().useDominantHeld).toBe(false);
-      primaryActionAllowed = true;
-      expect(input.intent().useDominant).toBe(false);
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(true);
-    } finally {
-      if (original) {
-        Object.defineProperty(globalThis, 'addEventListener', original);
-      } else {
-        Reflect.deleteProperty(globalThis, 'addEventListener');
-      }
-      if (originalDocument) {
-        Object.defineProperty(globalThis, 'document', originalDocument);
-      } else {
-        Reflect.deleteProperty(globalThis, 'document');
-      }
-    }
-  });
-
-  it('tracks held right mouse for the ready stance and clears it on release or blur', () => {
-    const original = Object.getOwnPropertyDescriptor(globalThis, 'addEventListener');
-    const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
-    const windowListeners = new Map<string, EventListener>();
-    const targetListeners = new Map<string, EventListener>();
-    const target = {
-      addEventListener: (type: string, listener: EventListenerOrEventListenerObject) => {
-        if (typeof listener === 'function') {
-          targetListeners.set(type, listener);
-        }
-      },
-    } as unknown as HTMLElement;
-    Object.defineProperty(globalThis, 'addEventListener', {
-      configurable: true,
-      value: (type: string, listener: EventListenerOrEventListenerObject) => {
-        if (typeof listener === 'function') {
-          windowListeners.set(type, listener);
-        }
-      },
-    });
-    const documentStub: { addEventListener: () => undefined; pointerLockElement: HTMLElement | null } = {
-      addEventListener: () => undefined,
-      pointerLockElement: target,
-    };
-    Object.defineProperty(globalThis, 'document', {
-      configurable: true,
-      value: documentStub,
-    });
-    try {
-      const input = new Input(target);
-      documentStub.pointerLockElement = null;
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(false);
-      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.useOff.code, repeat: false } as KeyboardEvent);
-      expect(input.intent().useOff).toBe(false);
-      windowListeners.get('keyup')?.({ code: KEY_BINDINGS.useOff.code } as KeyboardEvent);
-      windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
-      documentStub.pointerLockElement = target;
-      input.menuPointer = true;
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(false);
-      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.useOff.code, repeat: false } as KeyboardEvent);
-      expect(input.intent().useOff).toBe(false);
-      windowListeners.get('keyup')?.({ code: KEY_BINDINGS.useOff.code } as KeyboardEvent);
-      windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
-      input.menuPointer = false;
-      targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
-      expect(input.rightMouseHeld).toBe(true);
-      windowListeners.get('mouseup')?.({ button: 2 } as MouseEvent);
-      expect(input.rightMouseHeld).toBe(false);
-      targetListeners.get('mousedown')?.({ button: 2 } as MouseEvent);
-      windowListeners.get('blur')?.(new Event('blur'));
-      expect(input.rightMouseHeld).toBe(false);
-      input.menuPointer = true;
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(false);
-      windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
-      input.menuPointer = false;
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(true);
-      input.consumeDominantUse();
-      expect(input.intent().useDominant).toBe(false);
-      expect(input.intent().useDominantHeld).toBe(true);
-      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.useOff.code, repeat: false } as KeyboardEvent);
-      expect(input.intent().useOff).toBe(true);
-      input.consumeOffUse();
-      expect(input.intent().useOff).toBe(false);
-      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.useOff.code, repeat: true } as KeyboardEvent);
-      expect(input.intent().useOff).toBe(false);
-      windowListeners.get('keyup')?.({ code: KEY_BINDINGS.useOff.code } as KeyboardEvent);
-      windowListeners.get('keydown')?.({ code: KEY_BINDINGS.useOff.code, repeat: false } as KeyboardEvent);
-      expect(input.intent().useOff).toBe(true);
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(false);
-      windowListeners.get('mouseup')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominantHeld).toBe(false);
-      targetListeners.get('mousedown')?.({ button: 0 } as MouseEvent);
-      expect(input.intent().useDominant).toBe(true);
-      windowListeners.get('blur')?.(new Event('blur'));
-      expect(input.intent().useDominantHeld).toBe(false);
-    } finally {
-      if (original) {
-        Object.defineProperty(globalThis, 'addEventListener', original);
-      } else {
-        Reflect.deleteProperty(globalThis, 'addEventListener');
-      }
-      if (originalDocument) {
-        Object.defineProperty(globalThis, 'document', originalDocument);
-      } else {
-        Reflect.deleteProperty(globalThis, 'document');
-      }
-    }
-  });
-
-  it('moves the menu cursor and clamps it to the viewport', () => {
-    expect(nextMenuCursor({ x: 20, y: 30 }, { x: 5, y: -8 }, { width: 100, height: 80 })).toEqual({ x: 25, y: 22 });
+  it('clamps the virtual menu cursor to its viewport', () => {
+    const { input } = fixture();
+    input.menuPointer = true;
+    input.moveMenuCursor(24, -12);
+    expect([input.cursorX, input.cursorY]).toEqual([344, 228]);
     expect(nextMenuCursor({ x: 99, y: 79 }, { x: 10, y: 10 }, { width: 100, height: 80 })).toEqual({ x: 99, y: 79 });
     expect(nextMenuCursor({ x: 0, y: 0 }, { x: -10, y: -10 }, { width: 100, height: 80 })).toEqual({ x: 0, y: 0 });
   });

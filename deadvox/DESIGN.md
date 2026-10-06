@@ -357,7 +357,7 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   with the thing you're holding." Activation follows the character's dominant
   and off-hand roles, not a fixed physical side. A held item must never turn
   into an unarmed attack, and a reserved support hand must not redirect an
-  action. See `src/game/input.ts`, `KEY_BINDINGS`, for inputs;
+  action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`, for inputs;
   `src/game/primaryAction.ts`, `selectPrimaryAction`, for capability admission;
   and `src/core/playerCombat.ts`, `PlayerCombat`, for the saved physical fist
   sequence. Continue preserves that sequence rather than reseeding it.

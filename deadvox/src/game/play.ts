@@ -63,23 +63,15 @@ import {
   handlingMoveCompleteCue,
   handlingMoveStartCue,
 } from './audioPresentation.ts';
-import { labelForCode } from './controls.ts';
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
-import {
-  CONTROL_CODES,
-  Input,
-  isMenuOpeningKey,
-  KEY_BINDINGS,
-  quickbarSlotForKey,
-  worldActionForKey,
-} from './input.ts';
+import { Input } from './input.ts';
+import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
-import { handlePlayMenuKey } from './menuKeys.ts';
 import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
@@ -89,6 +81,7 @@ import {
   persistMetrics,
   SessionMetrics,
 } from './playtestTools.ts';
+import { PressHoldInput } from './pressHoldInput.ts';
 import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
@@ -233,7 +226,7 @@ export const startPlay = (
       yaw: () => input.yaw,
       pitch: () => input.pitch,
       walking: () => input.walking,
-      descending: () => input.held.has(CONTROL_CODES.descend),
+      descending: () => keyboardInput.held('noclip.descend'),
     },
     // The session works in blocks; playback is in metres.
     audio: {
@@ -501,7 +494,7 @@ export const startPlay = (
     newGame: options.restore === undefined,
     sim,
     input,
-    debugModifierHeld: () => input.held.has(KEY_BINDINGS.debugModifier.code),
+    debugModifierHeld: () => keyboardInput.held('debug.gate'),
     impactLaser: {
       enabled: () => debugLaserEnabled,
       toggle: () => {
@@ -557,6 +550,7 @@ export const startPlay = (
       debugTools?.closeMenus();
     }
     input.menuPointer = state.menuPointer;
+    keyboardInput.sync();
     overlay.hidden = state.overlayHidden;
     if (options.saveController) {
       options.saveController.setGoLabel(state.goLabel);
@@ -687,16 +681,15 @@ export const startPlay = (
     }
   };
 
-  /** C continues; X stops only actions whose owner permits cancellation. */
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
       return false;
     }
-    if (code === CONTROL_CODES.continue) {
+    if (code === 'compression.continue') {
       continueAction();
       return true;
     }
-    if (code === CONTROL_CODES.cancel) {
+    if (code === 'handling.stop') {
       stopAction();
       return true;
     }
@@ -738,76 +731,21 @@ export const startPlay = (
     quickbarActions.hold(item);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
-  globalThis.addEventListener('blur', () => quickbarInput.cancel());
-
-  /** L remains until d44 removes the legacy binding; F starts actions through furniture. */
-  const longActionKeys = new Map<string, () => void>([
-    [
-      CONTROL_CODES.sleep,
-      () => {
-        const entity = lookedAt();
-        if (entity && restKindForFurniture(entities.defOf(entity)) === 'sleep') {
-          toggleRest('sleep', entity);
-        }
-      },
-    ],
-    [CONTROL_CODES.continue, () => session.crafting.currentUid !== undefined && continueAction()],
-  ]);
-
-  const playKeys = (code: string) => {
-    const restAction = longActionKeys.get(code);
-    if (restAction) {
-      restAction();
-      return;
-    }
-    const action = worldActionForKey(code);
-    if (action === 'interact' && (!compression.locksInput || rest.action !== undefined)) {
-      use();
-    } else if (action === 'cancel') {
-      input.reload.cancel();
-      queue.cancel();
-      if (sim.actions.job) {
-        stopAction();
+  const hintToggleInput = new PressHoldInput<string>({
+    holdDuration: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
+    tap: () => undefined,
+    hold: (action) => {
+      if (action === 'hud.toggle-interaction-hints') {
+        hudOptions.interaction = !hudOptions.interaction;
+        writeHudOptions(hudOptions);
+        drawHudOptions();
       }
-    }
-  };
-
-  const handleMainMenuKey = (e: KeyboardEvent): boolean => {
-    if (e.code !== KEY_BINDINGS.mainMenu.code) {
-      return false;
-    }
-    e.preventDefault();
-    if (!(e.repeat || sim.dead)) {
-      quickbarInput.cancel();
-      mainMenuOpen = !mainMenuOpen;
-      syncMenuState();
-    }
-    return true;
-  };
-
-  const handleTitleKey = (event: KeyboardEvent): boolean => {
-    if (!options.saveController || options.saveController.isEntered) {
-      return false;
-    }
-    if (event.code === KEY_BINDINGS.performanceOverlay.code || event.code === 'Backquote') {
-      debugTools?.handleKey(event);
-      syncMenuState();
-      return true;
-    }
-    if (event.code === 'Tab' || event.code === KEY_BINDINGS.mainMenu.code) {
-      event.preventDefault();
-    }
-    return true;
-  };
-
-  const handleMenuKey = (e: KeyboardEvent): boolean =>
-    handlePlayMenuKey(e, {
-      inventory: screen,
-      debug: debugTools,
-      locksInput: compression.locksInput,
-      toggleInventory,
-      syncMenuState,
-    });
+    },
+  });
+  globalThis.addEventListener('blur', () => {
+    quickbarInput.cancel();
+    hintToggleInput.cancel();
+  });
 
   /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
   const reloadBinding = (): ReloadBinding | undefined => {
@@ -838,48 +776,136 @@ export const startPlay = (
     };
   };
 
-  const prepareGameplayKey = (e: KeyboardEvent): boolean => {
-    if (handleMainMenuKey(e)) {
-      return false;
+  const playContext = (): InputContext => {
+    if (mainMenuOpen || sim.dead) {
+      return 'menu';
     }
-    // Prevent an opening key from becoming text in the newly focused menu.
-    if (
-      e.code === CONTROL_CODES.inventory ||
-      (!e.repeat && isMenuOpeningKey(e.code, debugTools !== undefined, debugTools?.spawnOpen ?? false))
-    ) {
-      e.preventDefault();
+    if (reading.isOpen) {
+      return 'reading';
     }
-    return !(e.repeat || sim.dead);
+    if (screen.isOpen) {
+      return 'inventory';
+    }
+    if (compression.interruption !== undefined) {
+      return 'interrupted';
+    }
+    if (debugTools?.buildOn) {
+      return 'build';
+    }
+    return debugTools?.noclip ? 'noclip' : 'play';
   };
-
-  const handleGameplayKey = (e: KeyboardEvent): void => {
-    if (!prepareGameplayKey(e) || handleMenuKey(e) || mainMenuOpen || timeKeys(e.code)) {
-      return;
+  const inputContext = (): InputContext => {
+    if (options.saveController && !options.saveController.isEntered) {
+      return 'title';
     }
-    if (e.code === CONTROL_CODES.reload) {
-      e.preventDefault();
-      input.reload.keyDown(e.timeStamp, reloadBinding());
-      return;
+    if (debugTools?.spawnOpen) {
+      return 'spawn';
     }
-    if (quickbarSlotForKey(e.code) !== undefined) {
-      e.preventDefault();
+    if (debugTools?.menuOpen) {
+      return 'debug-panel';
+    }
+    return playContext();
+  };
+  keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
+  keyboardInput.cancelled = () => {
+    input.cancel();
+    quickbarInput.cancel();
+    hintToggleInput.cancel();
+  };
+  keyboardInput.escape = () => reading.close();
+  const modalCommand = (action: string): boolean => {
+    if (action === 'ui.main-menu-toggle') {
+      mainMenuOpen = !mainMenuOpen;
+      syncMenuState();
+      return true;
+    }
+    if (reading.isOpen) {
+      reading.onAction(action);
+      return true;
+    }
+    if (action === 'ui.inventory-toggle') {
       if (!compression.locksInput) {
-        quickbarInput.keyDown(e.code, e.timeStamp);
+        toggleInventory();
+      }
+      return true;
+    }
+    if (screen.isOpen) {
+      screen.onAction(action);
+      return true;
+    }
+    return mainMenuOpen || timeKeys(action);
+  };
+  const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
+    switch (action) {
+      case 'movement.walk-toggle':
+        input.walking = !input.walking;
+        break;
+      case 'hand.use-off':
+        input.useOff();
+        break;
+      case 'firearm.reload':
+        input.reload.keyDown(at, reloadBinding());
+        break;
+      case 'world.interact':
+        if (!compression.locksInput) {
+          use();
+        }
+        break;
+      case 'craft.continue':
+        if (session.crafting.currentUid !== undefined) {
+          continueAction();
+        }
+        break;
+      case 'handling.stop':
+        input.reload.cancel();
+        queue.cancel();
+        if (sim.actions.job || rest.action || compression.active) {
+          stopAction();
+        }
+        break;
+      default:
+        break;
+    }
+    if (slot !== undefined && !compression.locksInput) {
+      quickbarInput.keyDown(slot, at);
+    }
+  };
+  const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
+    if (action === 'firearm.reload') {
+      input.reload.keyUp(at);
+    }
+    if (slot !== undefined) {
+      quickbarInput.keyUp(slot, at);
+    }
+  };
+  keyboardInput.command = ({ action, phase, at }: InputCommand) => {
+    const slot = action.startsWith('quickbar.use.') ? Number(action.slice('quickbar.use.'.length)) - 1 : undefined;
+    if (action === 'hud.toggle-interaction-hints') {
+      if (phase === 'up') {
+        hintToggleInput.keyUp(action, at);
+      } else {
+        hintToggleInput.keyDown(action, at);
       }
       return;
     }
-    playKeys(e.code);
+    if (phase === 'up') {
+      releaseCommand(action, at, slot);
+      return;
+    }
+    if (action.startsWith('debug.') || action.startsWith('spawn.')) {
+      debugTools?.handleAction(action);
+      syncMenuState();
+      return;
+    }
+    if (sim.dead) {
+      return;
+    }
+    if (!modalCommand(action)) {
+      gameplayCommand(action, at, slot);
+    }
   };
-
-  globalThis.addEventListener('keydown', (event) => {
-    if (handleTitleKey(event)) {
-      return;
-    }
-    if (event.code !== KEY_BINDINGS.mainMenu.code && reading.onKey(event)) {
-      return;
-    }
-    handleGameplayKey(event);
-  });
+  keyboardInput.install();
+  keyboardInput.sync();
   globalThis.addEventListener(
     'wheel',
     (e) => {
@@ -892,11 +918,6 @@ export const startPlay = (
     },
     { passive: false },
   );
-
-  globalThis.addEventListener('keyup', (event) => {
-    const e = event as KeyboardEvent;
-    quickbarInput.keyUp(e.code, e.timeStamp);
-  });
 
   const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
@@ -942,7 +963,6 @@ export const startPlay = (
       container: Boolean(entity.pockets),
       readable: Boolean(entities.defOf(entity).readable),
       restAction: restKindForFurniture(entities.defOf(entity)),
-      interactLabel: labelForCode(CONTROL_CODES.interact),
       searched: entity.searched,
       name: nameOf(entity),
       fullName: entities.defOf(entity).name,
@@ -1351,7 +1371,7 @@ export const startPlay = (
       yaw: input.yaw,
       pitch: input.pitch,
       intent: input.intent(),
-      descend: input.held.has(CONTROL_CODES.descend),
+      descend: keyboardInput.held('noclip.descend'),
       dt,
     });
   };
@@ -1398,6 +1418,7 @@ export const startPlay = (
     } else {
       quickbarInput.update(now);
     }
+    hintToggleInput.update(now);
     playtestObserver?.beforeFrame(queue, inventory);
     mark = performance.now();
     const gameFrozen = stepSimulation(dt, menuState.paused);
