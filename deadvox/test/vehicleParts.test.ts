@@ -10,6 +10,7 @@ import {
   supportProblems,
   type Vehicle,
 } from '../src/debug/vehicles/model.ts';
+import { PICKUP } from '../src/debug/vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/debug/vehicles/rangeRover.ts';
 import {
   GLASS,
@@ -37,17 +38,24 @@ const touches = (part: VoxelGrid, support: VoxelGrid): boolean =>
     return FACES.some(([dx, dy, dz]) => support.has(voxelKey(x + dx, y + dy, z + dz)));
   });
 
-describe('the 4×4 built from parts', () => {
-  const library = new PartLibrary(RANGE_ROVER);
-  const byId = new Map(RANGE_ROVER.fittings.map((fitting) => [fitting.id, fitting]));
+/** Every vehicle built from parts, with the fittings each of its builds leaves off. */
+const VEHICLES: readonly { readonly vehicle: Vehicle; readonly builds: readonly (readonly string[])[] }[] = [
+  { vehicle: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
+  { vehicle: PICKUP, builds: [[]] },
+];
+
+describe.each(VEHICLES)('$vehicle.id built from parts', ({ vehicle, builds }) => {
+  const library = new PartLibrary(vehicle);
+  const byId = new Map(vehicle.fittings.map((fitting) => [fitting.id, fitting]));
 
   it('starts every build with each fitted part resting only on fitted parts, and no support cycles', () => {
-    expect(supportProblems(RANGE_ROVER, initialFittings(RANGE_ROVER, []))).toEqual([]);
-    expect(supportProblems(RANGE_ROVER, initialFittings(RANGE_ROVER, STRIPPED_REMOVED))).toEqual([]);
+    for (const removed of builds) {
+      expect(supportProblems(vehicle, initialFittings(vehicle, removed))).toEqual([]);
+    }
   });
 
   it('has every fitting touch each fitting it rests on, so no panel floats', () => {
-    const floating = RANGE_ROVER.fittings.flatMap((fitting) =>
+    const floating = vehicle.fittings.flatMap((fitting) =>
       fitting.supportedBy
         .filter((id) => {
           const support = byId.get(id);
@@ -59,7 +67,7 @@ describe('the 4×4 built from parts', () => {
   });
 
   it('keeps every fitting above the ground it stands on', () => {
-    const below = RANGE_ROVER.fittings
+    const below = vehicle.fittings
       .filter((fitting) => library.placed(fitting).bounds.min[1] < 0)
       .map(({ id }) => id);
     expect(below).toEqual([]);
@@ -68,7 +76,7 @@ describe('the 4×4 built from parts', () => {
   it('places no two fittings in the same voxel', () => {
     const owner = new Map<number, string>();
     const clashes = new Map<string, string>();
-    for (const fitting of RANGE_ROVER.fittings) {
+    for (const fitting of vehicle.fittings) {
       for (const key of library.placed(fitting).grid.keys()) {
         const other = owner.get(key);
         if (other && !clashes.has(`${other} / ${fitting.id}`)) {
@@ -106,7 +114,7 @@ describe('paint wear', () => {
 });
 
 describe('engine noise from installed fittings', () => {
-  const vehicles = [RANGE_ROVER];
+  const vehicles = VEHICLES.map(({ vehicle }) => vehicle);
   const isSource = (vehicle: Vehicle, fitting: Fitting): boolean =>
     (partTypeOf(vehicle, fitting).noise?.radiusMetres ?? 0) > 0;
   const allOf = (vehicle: Vehicle): Set<string> => new Set(vehicle.fittings.map(({ id }) => id));

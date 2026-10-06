@@ -162,7 +162,8 @@ const wornMaterial = (grid: VoxelGrid, { key, mat, seed, amount, site, streaks }
   if (open.has(2) && onStreak(streaks, x, y)) {
     return 'scratch';
   }
-  if (open.size >= 2 && hash(seed, x, y, z) < amount * 0.45) {
+  // Edge chips come in two-voxel clumps rather than single-voxel speckle.
+  if (open.size >= 2 && hash(seed ^ 0x2c_9f, x >> 1, y >> 1, z >> 1) < amount * 0.3) {
     return 'paint-worn';
   }
   return mat;

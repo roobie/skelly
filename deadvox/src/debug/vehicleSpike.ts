@@ -52,6 +52,7 @@ import {
   VOXEL,
   VOXELS_PER_CELL,
 } from './vehicles/model.ts';
+import { PICKUP } from './vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from './vehicles/rangeRover.ts';
 import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from './vehicles/voxels.ts';
 import { fittingWear, type WearSite, wearGrid, wearPalette } from './vehicles/wear.ts';
@@ -86,6 +87,10 @@ interface BuildSpec {
   readonly removed: readonly string[];
   readonly lift?: true;
   readonly loose?: readonly LooseItem[];
+  /** Scales the camera presets about the vehicle's centre (not the 20 m view's distance), for its size. */
+  readonly viewScale?: number;
+  /** A preset this vehicle frames differently, such as its own way into the cabin. */
+  readonly views?: Partial<Record<ViewId, Pick<ViewPreset, 'position' | 'target'>>>;
 }
 
 const WHEEL_THICKNESS = 7 * VOXEL;
@@ -105,6 +110,14 @@ const BUILDS = {
     removed: STRIPPED_REMOVED,
     lift: true,
     loose: wheelStack(['wheel-front-near', 'wheel-front-far', 'wheel-rear-near', 'wheel-rear-far']),
+  },
+  pickup: {
+    label: 'Hilux-type pickup',
+    button: 'Pickup',
+    vehicle: PICKUP,
+    removed: [],
+    viewScale: 1.06,
+    views: { interior: { position: [0.45, 1.7, 1.9], target: [0.85, 0.95, -0.35] } },
   },
   hatchback: {
     label: 'Hatchback · cutaway (round 3)',
@@ -716,8 +729,12 @@ const applyView = (id: ViewId): void => {
   const view: ViewPreset = VIEWS[id];
   const spec: BuildSpec = BUILDS[activeBuild];
   const lift = spec.lift ? LIFT_HEIGHT : 0;
-  camera.position.set(view.position[0], view.position[1] + lift, view.position[2]);
-  controls.target.set(view.target[0], view.target[1] + lift, view.target[2]);
+  const scale = spec.viewScale ?? 1;
+  const override = spec.views?.[id];
+  const position = override?.position ?? (id === 'far' ? view.position : view.position.map((v) => v * scale));
+  const target = override?.target ?? view.target.map((v) => v * scale);
+  camera.position.set(position[0]!, position[1]! + lift, position[2]!);
+  controls.target.set(target[0]!, target[1]! + lift, target[2]!);
   camera.fov = view.fov;
   camera.updateProjectionMatrix();
   if (view.doors) {
