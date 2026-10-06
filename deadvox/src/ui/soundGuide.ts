@@ -221,7 +221,7 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ['footstep_grass', 'Approved by BR (2026-10-02).'],
   [
     'footstep_mud',
-    'Pending BR listening for d110: three wet-step variants replace the prior rubberduck clips BR found too intense for a muddy trail.',
+    'Approved by BR (2026-10-06): “mud steps: much better”. Replaces rubberduck clips BR found too intense for a muddy trail.',
   ],
   ['footstep_sand', 'Approved by BR (2026-10-02); currently shares its grass/sand recording set with footstep_grass.'],
   ['footstep_stone', 'To replace as stone: BR heard gravel; keep current clips for a future gravel surface.'],
@@ -236,7 +236,7 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ],
   [
     'shambler_step_mud',
-    'Pending BR listening for d110: its pitched-down player mud-footstep stand-in uses the replacement wet-step variants; the prior clips were too intense for a muddy trail.',
+    'Uses the approved player mud-step set pitched down as an MVP stand-in; bespoke shambler foley remains future work.',
   ],
   ['shambler_step_sand', 'Approved by BR (2026-10-02); current clips remain MVP stand-ins for bespoke shambler foley.'],
   ['shambler_step_stone', 'To replace as stone: BR heard gravel; keep current clips for a future gravel surface.'],
