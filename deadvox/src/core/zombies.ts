@@ -171,6 +171,7 @@ export interface Zombie {
   /** A destroyed torso leaves an inert, gravity-bound entity that may be revived by a later system. */
   incapacitated: boolean;
   lastPerceived?: Vec3 | undefined;
+  stimulusAt?: number | undefined;
   attackWait: number;
   /** Seconds left in the current attack's telegraph windup; 0 = not winding up. Set to
    * type.attack.windup when an attack starts (alongside attackWait), counts down to exactly 0, then the
@@ -225,6 +226,7 @@ const validObstacleWanderState = (zombie: ZombieState): boolean =>
 const validZombieEventState = (zombie: ZombieState): boolean =>
   (zombie.lastVocalNoiseId === null ||
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
+  (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
   Array.isArray(zombie.severed) &&
   zombie.severed.every((part) => typeof part === 'string');
 const validHordeMemberState = (zombie: ZombieState): boolean =>
@@ -242,6 +244,7 @@ export interface HordeState {
   target: Vec3;
   mode: 'home' | 'roam' | 'noise';
   roamTimer: number;
+  stimulusAt?: number | undefined;
   lastNoiseId: number;
   rng: RngState;
 }
@@ -1076,6 +1079,7 @@ export class ZombieSystem {
         horde.roamTimer < 0 ||
         !Number.isSafeInteger(horde.lastNoiseId) ||
         horde.lastNoiseId < 0 ||
+        (horde.stimulusAt !== undefined && (!Number.isFinite(horde.stimulusAt) || horde.stimulusAt < 0)) ||
         !Array.isArray(horde.rng) ||
         horde.rng.length !== 4 ||
         horde.rng.some((word) => !Number.isSafeInteger(word))
@@ -1090,6 +1094,7 @@ export class ZombieSystem {
           target: [...horde.target],
           mode: horde.mode,
           roamTimer: horde.roamTimer,
+          ...(horde.stimulusAt === undefined ? {} : { stimulusAt: horde.stimulusAt }),
           lastNoiseId: horde.lastNoiseId,
         },
         rng: new Rng(horde.rng),
@@ -1451,12 +1456,23 @@ export class ZombieSystem {
         if (heard) {
           horde.target = copy(heard.target);
           horde.mode = 'noise';
+          horde.stimulusAt = time;
         }
       }
       const night = this.options.hour() >= 20 || this.options.hour() < 6;
       const arrived = horizontalDistance(center, horde.target) * blockSize <= 3;
+      if (
+        horde.mode === 'noise' &&
+        horde.stimulusAt !== undefined &&
+        time - horde.stimulusAt >= member.type.stimulusMemorySeconds
+      ) {
+        horde.mode = night ? 'roam' : 'home';
+        horde.stimulusAt = undefined;
+        horde.roamTimer = 0;
+      }
       if (horde.mode === 'noise' && arrived) {
         horde.mode = night ? 'roam' : 'home';
+        horde.stimulusAt = undefined;
         horde.roamTimer = 0;
       }
       if (!night && horde.mode !== 'noise') {
@@ -1513,6 +1529,7 @@ export class ZombieSystem {
       this.updateZombieTimers();
       this.updatePerception();
       this.updateAttention();
+      this.forgetIndividualStimulus(zombie, time);
       let target = this.hordeTarget(zombie) ?? zombie.lastPerceived;
       if (scratch.sees) {
         target = player.pos;
@@ -1684,6 +1701,9 @@ export class ZombieSystem {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'near';
     }
+    if (sees || tier || lightTarget) {
+      zombie.stimulusAt = scratch.time;
+    }
     const groupTarget = sees || tier ? undefined : this.hordeTarget(zombie);
     if (groupTarget) {
       zombie.mode = 'investigate';
@@ -1693,6 +1713,24 @@ export class ZombieSystem {
       zombie.searchStrolling = false;
       zombie.lastPerceived = groupTarget;
     }
+  }
+
+  private forgetIndividualStimulus(zombie: Zombie, time: number): void {
+    if (
+      zombie.hordeId !== undefined ||
+      zombie.mode !== 'investigate' ||
+      zombie.stimulusAt === undefined ||
+      time - zombie.stimulusAt < zombie.type.stimulusMemorySeconds
+    ) {
+      return;
+    }
+    zombie.stimulusAt = undefined;
+    zombie.lastPerceived = undefined;
+    zombie.investigationTier = undefined;
+    zombie.searchAnchor = undefined;
+    zombie.searchTimer = 0;
+    zombie.searchStrolling = false;
+    zombie.mode = 'return';
   }
 
   private checkInvestigationArrival(): void {
@@ -2173,6 +2211,7 @@ export class ZombieSystem {
       this.updateZombieTimers();
       this.updatePerception();
       this.updateAttention();
+      this.forgetIndividualStimulus(zombie, time);
 
       this.checkInvestigationArrival();
 

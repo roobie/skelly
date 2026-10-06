@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 27;
+export const SAVE_SCHEMA_VERSION = 28;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -443,6 +443,7 @@ const horde = obj({
   target: vec3,
   mode: enumeration(['home', 'roam', 'noise']),
   roamTimer: nonNegative,
+  stimulusAt: opt(nonNegative),
   lastNoiseId: nonNegativeInt,
   rng: tuple(safeInt, safeInt, safeInt, safeInt),
 });
@@ -499,6 +500,7 @@ const zombie = obj({
     rightLeg: nonNegative,
   }),
   lastPerceived: opt(vec3),
+  stimulusAt: opt(nonNegative),
   attackWait: finite,
   attackWindup: finite,
   gaitPhase: finite,

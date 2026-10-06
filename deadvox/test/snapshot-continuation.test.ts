@@ -44,6 +44,10 @@ describe('hamlet save/load continuation', () => {
     const state = source.zombies.snapshotState();
     expect(state.hordes[0]?.mode).toBe('noise');
     expect(state.hordes[0]?.lastNoiseId).toBeGreaterThan(0);
+    const stimulusAt = state.hordes[0]?.stimulusAt;
+    if (stimulusAt === undefined) {
+      throw new Error('Horde save fixture did not record the sound time');
+    }
 
     const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
     const loaded = createRuntime(decoded.snapshot, false, oneColumn, { start, spawn: playerSpawn });
@@ -52,6 +56,11 @@ describe('hamlet save/load continuation', () => {
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
+    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySeconds;
+    loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
+    loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
+    expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
   });
 
   it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {
