@@ -530,16 +530,18 @@ plain box in your hands. Files are small, and follow
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling
   separates firearm quality's dispersion from skill-controlled handling.
-  Until #267 lands, aim-sway look comparisons use the current movement rules;
-  afterward a firearm only fires while ready and not sprinting, so moving-fire
-  comparisons use the skill-dependent duck-walk speed. The skill that controls
-  duck-walk speed and block success remains open in #267; BR leans toward a
-  generic "warfare" skill. d62 leaves practice unawarded until its source is
-  ruled. The d62 reading of BR's "swing" is look-turn rate; BR's answer to the
+  The #267 ruling makes ready stance gate firearm fire, prohibits firing while
+  sprinting, assigns duck-walk speed to firearms combat and block success to
+  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. Until
+  3.1 lands, aim-sway look comparisons use the current movement rules;
+  afterward, moving-fire comparisons use the skill-dependent duck-walk speed.
+  d62 leaves practice unawarded until its source is ruled; #275 sets tiered
+  training, while tiers for existing sources and above-tier practice remain
+  open. The d62 reading of BR's "swing" is look-turn rate; BR's answer to the
   d62 questions triggers reinterpretation. The d62 reading of BR's "reload
   time" is per-shell insertion, not magazine reload; BR's answer to the d62
   questions triggers expansion.
-- **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. Whether rifle rounds damage shamblers or consume ammunition, and whether shamblers receive visible marks, remain open.
+- **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. BR's firearm ruling, planned in [SLICE-3.md](SLICE-3.md), settles real ammunition and magazine loading plus body-region damage by calibre. Visible shambler marks are desired ("ideally, yes") and await the 3.2 first look.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
@@ -679,6 +681,19 @@ worse the world gets.
 - **Seen prey (BR, 2026-10-05 21:52–21:53; #281):** “well, when i stood there high on the slope, the shamblers tracked and pursued, but since it's steep, they'd stop and wander off for a bit, even though they'd reasonably would "see" me (given that there were no obstacles, other than the steep climb)”; “i'd lean (A) because it feels most reasonable for the shambler mentality that if they _see_ their prey, they just go after it straight”; “but still sliding”. For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background movement (BR, 2026-10-05 21:32):** “yes”: background zombies beeline in big, cheap steps.
+
+- **Level of detail:**
+
+  | Tier | Where | Simulation |
+  | --- | --- | --- |
+  | Active | Nearby actors | Detailed AI, body physics and beeline movement (implemented) |
+  | Background | Distant actors in loaded chunks | Reduced-rate, large-step beeline toward the shared attention target (planned) |
+  | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
+
+  The background tier and first horde are Slice 3 work; abstract hordes remain
+  Slice 4 work. Shared flow fields and crowd navigation are dropped from the
+  Slice 3 plan. d84's beeline brain replaces the route follow-up in
+  [#244](https://github.com/roobie/skelly/issues/244).
 
 BR said “defer the bashing” (2026-10-05 20:36). For #273, bashing waits until mob and obstacle strength exist; closed doors remain obstacles like walls. If #273 supplies those strengths, the bash decision belongs at `obstacleContact` in `ZombieSystem.tick`. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
 
