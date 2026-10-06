@@ -498,7 +498,7 @@ export class GameAudio {
     const headLocked = listenerRelative || sound.category === 'ui';
     const occlusion = headLocked
       ? { occluded: false, gain: 1, cutoffHz: Number.POSITIVE_INFINITY }
-      : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid);
+      : soundOcclusion(listenerBlocks, sourceBlocks, this.isSolid, sound.wall);
     const distanceMetres = headLocked
       ? 0
       : Math.hypot(

@@ -333,6 +333,26 @@ describe('content', () => {
     }
   });
 
+  it('validates optional per-sound wall tuning', () => {
+    const sound = {
+      id: 'fixture_wall_tuning',
+      variants: ['assets/audio/fixture.ogg'],
+      gain: 0.7,
+      pitchJitter: [1, 1],
+      gainJitter: [1, 1],
+      minIntervalSeconds: 0,
+      category: 'world',
+      noise: { enabled: false, radiusMetres: 1 },
+      wall: { gain: 0.3, cutoffHz: 900 },
+    };
+    expect(validateContent({ source: 'fixture.json', data: { sounds: [sound] } })).toEqual([]);
+    const invalid = validateContent({
+      source: 'fixture.json',
+      data: { sounds: [{ ...sound, wall: { gain: 1.1, cutoffHz: 0 } }] },
+    });
+    expect(invalid.map(({ path }) => path).sort()).toEqual(['sounds[0].wall.cutoffHz', 'sounds[0].wall.gain']);
+  });
+
   it('validates the shambler search-duration range', () => {
     const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
     const data = structuredClone(zombiePack.data) as {

@@ -350,6 +350,12 @@ const SoundSchema = strictObject({
   minIntervalSeconds: NonNegative,
   category: picklist(['world', 'body', 'ui']),
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
+  wall: optional(
+    strictObject({
+      gain: pipe(NonNegative, maxValue(1, 'must be at most 1')),
+      cutoffHz: Positive,
+    }),
+  ),
 });
 
 const UnitVector = pipe(
