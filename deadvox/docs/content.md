@@ -65,6 +65,12 @@ loot. Nested tables contribute only with positive possible rolls/item counts
 positive-chance markers that can fit the population cap, accounting for shuffled
 north templates, and roadside wanderers only when a slot can remain.
 
+For #311, a globally reachable item type does not prove that its authored
+container can be looted. `authoredFixedLoot.test.ts` uses
+`templateReachableStandingPositions` with `templateSpatialIssues` to check the
+playtest's containers against the same standing traversal as template validation,
+not a second test-owned walker.
+
 For 2.10, store and garage stock stays in template palette loot overrides rather
 than position-specific runtime code. `worldSources()` in
 `src/core/reachability.ts` follows compiled pieces from `HAMLET_TEMPLATES` in

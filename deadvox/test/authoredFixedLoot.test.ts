@@ -3,14 +3,16 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
-import { buildRegistry, type Registry } from '../src/core/content.ts';
+import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { rollLoot } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { compileTemplate, footprint, placedPieces } from '../src/core/templates.ts';
+import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
+import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
+import { type CompiledTemplate, compileTemplate, footprint, placedPieces } from '../src/core/templates.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -60,6 +62,72 @@ const furnitureAt = ({ building, override }: OverridePlacement): string | undefi
     compileTemplate(result.registry, template).pieces.find((piece) => piece.pos.join(',') === override.at.join(','))
       ?.furniture
   );
+};
+
+const withTestEntrance = (template: CompiledTemplate, target: readonly [number, number, number]): CompiledTemplate => {
+  if (template.access) {
+    return template;
+  }
+  const [sx, , sz] = template.size;
+  const doors = template.pieces.filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
+  const edgeDistance = (piece: (typeof doors)[number]): number =>
+    Math.min(piece.pos[0], piece.pos[2], sx - piece.pos[0] - piece.size[0], sz - piece.pos[2] - piece.size[2]);
+  const targetDistance = (piece: (typeof doors)[number]): number =>
+    Math.abs(piece.pos[0] + piece.size[0] / 2 - target[0]) + Math.abs(piece.pos[2] + piece.size[2] / 2 - target[2]);
+  const [door] = [...doors].sort((a, b) => edgeDistance(a) - edgeDistance(b) || targetDistance(a) - targetDistance(b));
+  if (!door) {
+    throw new Error(`${template.id} has fixed loot but no door from outside`);
+  }
+  const centerX = door.pos[0] + door.size[0] / 2;
+  const centerZ = door.pos[2] + door.size[2] / 2;
+  const facesZ = door.size[0] > door.size[2];
+  const direction = Math.sign(target[facesZ ? 2 : 0] - (facesZ ? centerZ : centerX)) || 1;
+  const entrance: [number, number, number] = facesZ
+    ? [centerX, target[1], centerZ + direction * (door.size[2] / 2 + 0.5)]
+    : [centerX + direction * (door.size[0] / 2 + 0.5), target[1], centerZ];
+  return {
+    ...template,
+    access: { ground: 'ground', entrance, storeys: [{ id: 'ground', floor: target[1] }], stairs: [] },
+  };
+};
+
+const partitionRowBefore = (template: CompiledTemplate, targetZ: number): number => {
+  const [sx, , sz] = template.size;
+  const blockedAt = (x: number, z: number): boolean => {
+    const block = template.blocks[x + sx * (z + sz)];
+    if (result.registry.blocks[block!]?.solid) {
+      return true;
+    }
+    return template.pieces.some((piece) => {
+      const def = result.registry.furniture.get(piece.furniture)!;
+      return (
+        !def.door &&
+        def.solid !== false &&
+        x >= piece.pos[0] &&
+        x < piece.pos[0] + piece.size[0] &&
+        piece.pos[1] <= 1 &&
+        piece.pos[1] + piece.size[1] > 1 &&
+        z >= piece.pos[2] &&
+        z < piece.pos[2] + piece.size[2]
+      );
+    });
+  };
+  const rows = Array.from({ length: Math.min(targetZ, sz) - 1 }, (_, index) => index + 1);
+  const partitions = rows.filter((z) => {
+    const cells = Array.from({ length: sx }, (_, x) => blockedAt(x, z));
+    let opening = 0;
+    let widestOpening = 0;
+    for (const blocked of cells) {
+      opening = blocked ? 0 : opening + 1;
+      widestOpening = Math.max(widestOpening, opening);
+    }
+    return cells.filter(Boolean).length > sx / 2 && widestOpening >= 2;
+  });
+  const partition = Math.max(...partitions);
+  if (!Number.isFinite(partition)) {
+    throw new Error(`${template.id} fixed loot has no room partition before z=${targetZ}`);
+  }
+  return partition;
 };
 
 const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
@@ -147,20 +215,6 @@ const seededFillerCounts = (
       .filter((candidate) => candidate.type === item.type && candidate.condition === item.condition)
       .reduce((sum, candidate) => sum + candidate.count, 0),
   }));
-};
-
-const storefrontDoorSolids = (registry: Registry): boolean[] => {
-  const store = compileTemplate(registry, registry.templates.get('corner_store')!);
-  const door = store.pieces.find((piece) => piece.furniture === 'wood_door' && piece.pos[2] === 0)!;
-  const [sx, , sz] = store.size;
-  const solids: boolean[] = [];
-  for (let x = 0; x < door.size[0]; x += 1) {
-    for (let y = 0; y < door.size[1]; y += 1) {
-      const block = store.blocks[door.pos[0] + x + sx * (door.pos[2] + 1 + sz * (door.pos[1] + y))]!;
-      solids.push(registry.blocks[block]?.solid === true);
-    }
-  }
-  return solids;
 };
 
 const gapToBounds = (x: number, z: number, rect: Bounds): number =>
@@ -251,7 +305,7 @@ describe('authored fixed loot', () => {
   it('places each beat’s key loot in its agreed buildings and containers', () => {
     const overrides = placedOverrides(layout);
     const templates = new Set(layout.buildings.map(({ template }) => template));
-    for (const template of ['small_house', 'bungalow', 'corner_store', 'gas_station', 'shed']) {
+    for (const template of ['small_house', 'bungalow', 'playtest_store', 'playtest_gas_station', 'shed']) {
       expect(templates.has(template), template).toBe(true);
     }
     expect(templates.has('hardware_store')).toBe(false);
@@ -260,12 +314,15 @@ describe('authored fixed loot', () => {
     const opener = overrideFor(house, 'playtest_house', 'can_opener');
     const flashlight = overrideFor(house, 'playtest_house', 'flashlight');
     const battery = overrideFor(house, 'playtest_house', 'aa_battery');
+    const matches = overrideFor(house, 'playtest_house', 'matches');
     expect(beans).toBeDefined();
     expect(opener).toBeDefined();
     expect(opener).not.toBe(beans);
     expect(flashlight).toBeDefined();
     expect(battery).toBeDefined();
     expect(battery).not.toBe(flashlight);
+    expect(matches).toBeDefined();
+    expect(matches).not.toBe(flashlight);
 
     const houseCounts = new Map<string, number>();
     for (const { override } of house) {
@@ -295,29 +352,60 @@ describe('authored fixed loot', () => {
     expect(fixedCount(overrides, 'bungalow', 'rag')).toBeGreaterThanOrEqual(2);
     expect(fixedCount(overrides, 'bungalow', 'wax')).toBeGreaterThan(0);
     expect(fixedCount(overrides, 'bungalow', 'jacket')).toBeGreaterThan(0);
-    expect(fixedCount(overrides, 'gas_station', 'scrap_metal')).toBeGreaterThan(0);
-    const scrap = overrideFor(overrides, 'gas_station', 'scrap_metal');
+    expect(fixedCount(overrides, 'playtest_gas_station', 'scrap_metal')).toBeGreaterThan(0);
+    const scrap = overrideFor(overrides, 'playtest_gas_station', 'scrap_metal');
     expect(scrap).toBeDefined();
     expect(furnitureAt(scrap!)).toBe('crate');
-    expect(fixedCount(overrides, 'corner_store', 'duct_tape')).toBeGreaterThan(0);
+    expect(fixedCount(overrides, 'playtest_store', 'duct_tape')).toBeGreaterThan(0);
     for (const item of ['canned_soup', 'crackers', 'soda_can', 'painkillers', 'bandage']) {
-      expect(fixedCount(overrides, 'corner_store', item), item).toBeGreaterThan(0);
+      expect(fixedCount(overrides, 'playtest_store', item), item).toBeGreaterThan(0);
     }
-    const medicine = overrideFor(overrides, 'corner_store', 'painkillers');
+    const medicine = overrideFor(overrides, 'playtest_store', 'painkillers');
     expect(medicine).toBeDefined();
     expect(furnitureAt(medicine!)).toBe('kitchen_cupboard');
-    const kiosk = overrideFor(overrides, 'gas_station', 'portable_radio');
+    const kiosk = overrideFor(overrides, 'playtest_gas_station', 'portable_radio');
     const radio = kiosk?.override.items.find(({ item }) => item === 'portable_radio');
     expect(radio?.condition).toBeLessThan(1);
     expect(kiosk?.override.items.some(({ item }) => item === 'compass')).toBe(true);
     expect(furnitureAt(kiosk!)).toBe('counter');
-    expect(fixedCount(overrides, 'gas_station', 'compass')).toBeGreaterThan(0);
+    expect(fixedCount(overrides, 'playtest_gas_station', 'compass')).toBeGreaterThan(0);
 
     const cellar = overrideFor(overrides, 'playtest_dads_cabin', 'shotshell_box');
     const cabin = result.registry.templates.get('playtest_dads_cabin');
     expect(cellar).toBeDefined();
     expect(cellar!.override.at[1]).toBe(cabin?.access?.storeys.find(({ id }) => id === 'cellar')?.floor);
     expect(fixedCount(overrides, 'playtest_dads_cabin', 'pump_shotgun')).toBeGreaterThan(0);
+  });
+
+  it('keeps every fixed-loot container reachable from outside at standing height', () => {
+    const buildings = layout.buildings.filter((building) => (building.fixedLoot?.length ?? 0) > 0);
+    expect(buildings.length).toBeGreaterThan(0);
+    for (const building of buildings) {
+      const definition = result.registry.templates.get(building.template)!;
+      const compiled = compileTemplate(result.registry, definition);
+      const walking = withTestEntrance(compiled, building.fixedLoot![0]!.at);
+      expect(
+        templateSpatialIssues(result.registry, walking),
+        `${building.template}: ${walking.access?.entrance}`,
+      ).toEqual([]);
+      const reachable = templateReachableStandingPositions(result.registry, walking);
+      expect(reachable.length, building.template).toBeGreaterThan(0);
+      for (const override of building.fixedLoot!) {
+        const container = compiled.pieces.find((piece) => piece.pos.join(',') === override.at.join(','));
+        expect(container, `${building.template} at ${override.at.join(',')}`).toBeDefined();
+        const [x, , z] = container!.pos;
+        const [width, , depth] = container!.size;
+        const nearContainer = reachable.some(([px, feet, pz]) => {
+          if (feet !== override.at[1]) {
+            return false;
+          }
+          const dx = Math.max(x - px, 0, px - (x + width));
+          const dz = Math.max(z - pz, 0, pz - (z + depth));
+          return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
+        });
+        expect(nearContainer, `${building.template} at ${override.at.join(',')}`).toBe(true);
+      }
+    }
   });
 
   it('places the agreed shambler threats by beat and keeps the seeded wanderer', () => {
@@ -343,10 +431,26 @@ describe('authored fixed loot', () => {
         spawn.position[2] <= rect.z1
       );
     };
-    const storeThreats = layout.shamblers.filter((spawn) => spawn.type === 'shambler' && inside('corner_store', spawn));
-    const garageThreats = layout.shamblers.filter((spawn) => spawn.type === 'shambler' && inside('gas_station', spawn));
+    const storeThreats = layout.shamblers.filter(
+      (spawn) => spawn.type === 'shambler' && inside('playtest_store', spawn),
+    );
+    const garageThreats = layout.shamblers.filter(
+      (spawn) => spawn.type === 'shambler' && inside('playtest_gas_station', spawn),
+    );
     expect(storeThreats).toHaveLength(1);
     expect(garageThreats).toHaveLength(1);
+    for (const [templateId, item, spawn] of [
+      ['playtest_store', 'duct_tape', storeThreats[0]!],
+      ['playtest_gas_station', 'scrap_metal', garageThreats[0]!],
+    ] as const) {
+      const building = layout.buildings.find(({ template }) => template === templateId)!;
+      const buildingTemplate = compileTemplate(result.registry, result.registry.templates.get(templateId)!);
+      const container = overrideFor(placedOverrides(layout), templateId, item)!;
+      const partition = partitionRowBefore(buildingTemplate, container.override.at[2]);
+      const localZ = (spawn.position[2] - building.position[2]) / scale.blockSize;
+      expect(localZ).toBeGreaterThan(partition);
+      expect(localZ).toBeLessThan(buildingTemplate.size[2] - 1);
+    }
 
     const isInsideWoodland = (x: number, z: number, polygon: Point[]): boolean => {
       let contains = false;
@@ -399,9 +503,9 @@ describe('authored fixed loot', () => {
     expect(nearHouse.distance).toBeLessThanOrEqual(track.width * 2);
     const nearStores = nearestAreaDistance(fixture, rects, route.samples, [
       'bungalow',
-      'corner_store',
+      'playtest_store',
       'small_house',
-      'gas_station',
+      'playtest_gas_station',
       'shed',
     ]);
     expect(nearStores.count).toBeGreaterThan(0);
@@ -413,8 +517,5 @@ describe('authored fixed loot', () => {
     ]);
     expect(nearCabins.count).toBeGreaterThan(0);
     expect(nearCabins.distance).toBeLessThanOrEqual(track.width * 2);
-    const doorSolids = storefrontDoorSolids(result.registry);
-    expect(doorSolids.length).toBeGreaterThan(0);
-    expect(doorSolids.every(Boolean)).toBe(true);
   });
 });

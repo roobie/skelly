@@ -42,6 +42,10 @@
                   "count": 1
                 },
                 {
+                  "item": "matches",
+                  "count": 1
+                },
+                {
                   "item": "stick",
                   "count": 1
                 },
@@ -76,10 +80,6 @@
                 },
                 {
                   "item": "flashlight",
-                  "count": 1
-                },
-                {
-                  "item": "matches",
                   "count": 1
                 },
                 {
@@ -161,7 +161,7 @@
           ]
         },
         {
-          "template": "corner_store",
+          "template": "playtest_store",
           "position": [198, 21, 63],
           "rotation": 0,
           "storeys": 1,
@@ -176,7 +176,7 @@
               ]
             },
             {
-              "at": [8, 1, 13],
+              "at": [8, 1, 12],
               "items": [
                 {
                   "item": "painkillers",
@@ -214,7 +214,7 @@
           "storeys": 1
         },
         {
-          "template": "gas_station",
+          "template": "playtest_gas_station",
           "position": [208, 21, 90],
           "rotation": 0,
           "storeys": 1,
@@ -359,12 +359,12 @@
         },
         {
           "type": "shambler",
-          "position": [203, 21.5, 69],
+          "position": [200.5, 21.5, 68.5],
           "chance": 1
         },
         {
           "type": "shambler",
-          "position": [212, 21.5, 101],
+          "position": [210, 21.5, 101],
           "chance": 1
         },
         {

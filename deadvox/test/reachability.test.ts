@@ -28,35 +28,6 @@ const fresh = () => ({
 const marker = (zombie: string, chance = 1): SpawnMarker => ({ zombie, chance, pos: [0, 0, 0] });
 
 describe('static reachability', () => {
-  it('finds the key loot from each playtest beat', () => {
-    const result = checkReachability(baseline);
-    expect(result.issues).toEqual([]);
-    for (const item of [
-      'canned_beans',
-      'can_opener',
-      'aa_battery',
-      'flashlight',
-      'crowbar',
-      'home_repair_book',
-      'rag',
-      'wax',
-      'jacket',
-      'scrap_metal',
-      'duct_tape',
-      'canned_soup',
-      'crackers',
-      'soda_can',
-      'painkillers',
-      'bandage',
-      'portable_radio',
-      'compass',
-      'pump_shotgun',
-      'shotshell_box',
-    ]) {
-      expect(result.found.has(item), item).toBe(true);
-    }
-  });
-
   it('hard-checks workstation placement and lets its quality ground the recipe', () => {
     const registry = fresh();
     registry.recipes.clear();

@@ -61,7 +61,7 @@
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[12,1,2],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"aa_battery\",\"count\":1},{\"item\":\"stick\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"kitchen_knife\",\"count\":1},{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[12,1,7],\"items\":[{\"item\":\"can_opener\",\"count\":1},{\"item\":\"evacuation_note\",\"count\":1},{\"item\":\"flashlight\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[12,9,11],\"items\":[{\"item\":\"school_backpack\",\"count\":1},{\"item\":\"baseball_cap\",\"count\":1}]}]"
+              "value": "[{\"at\":[12,1,2],\"items\":[{\"item\":\"canned_beans\",\"count\":1},{\"item\":\"aa_battery\",\"count\":1},{\"item\":\"matches\",\"count\":1},{\"item\":\"stick\",\"count\":1},{\"item\":\"water_bottle\",\"count\":1},{\"item\":\"kitchen_knife\",\"count\":1},{\"item\":\"rag\",\"count\":2},{\"item\":\"wax\",\"count\":1}]},{\"at\":[12,1,7],\"items\":[{\"item\":\"can_opener\",\"count\":1},{\"item\":\"evacuation_note\",\"count\":1},{\"item\":\"flashlight\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[12,9,11],\"items\":[{\"item\":\"school_backpack\",\"count\":1},{\"item\":\"baseball_cap\",\"count\":1}]}]"
             }
           ]
         },
@@ -176,12 +176,12 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "corner_store"
+              "value": "playtest_store"
             },
             {
               "name": "fixed_loot",
               "type": "string",
-              "value": "[{\"at\":[1,1,13],\"items\":[{\"item\":\"duct_tape\",\"count\":1}]},{\"at\":[8,1,13],\"items\":[{\"item\":\"painkillers\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[14,1,13],\"items\":[{\"item\":\"canned_soup\",\"count\":1},{\"item\":\"crackers\",\"count\":1},{\"item\":\"soda_can\",\"count\":1}]}]"
+              "value": "[{\"at\":[1,1,13],\"items\":[{\"item\":\"duct_tape\",\"count\":1}]},{\"at\":[8,1,12],\"items\":[{\"item\":\"painkillers\",\"count\":1},{\"item\":\"bandage\",\"count\":1}]},{\"at\":[14,1,13],\"items\":[{\"item\":\"canned_soup\",\"count\":1},{\"item\":\"crackers\",\"count\":1},{\"item\":\"soda_can\",\"count\":1}]}]"
             }
           ]
         },
@@ -224,7 +224,7 @@
               "name": "template",
               "type": "string",
               "propertytype": "template_id",
-              "value": "gas_station"
+              "value": "playtest_gas_station"
             },
             {
               "name": "fixed_loot",
@@ -387,8 +387,8 @@
           "name": "Shambler in corner-store back room",
           "type": "shambler",
           "point": true,
-          "x": 203,
-          "y": 69,
+          "x": 200.5,
+          "y": 68.5,
           "width": 0,
           "height": 0,
           "rotation": 0,
@@ -407,7 +407,7 @@
           "name": "Shambler in gas-station garage",
           "type": "shambler",
           "point": true,
-          "x": 212,
+          "x": 210,
           "y": 101,
           "width": 0,
           "height": 0,
