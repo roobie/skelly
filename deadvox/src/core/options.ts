@@ -263,7 +263,7 @@ export const options = (item: Item, view: ReachSnapshot): Option[] => {
   return out.filter((o) => o.plan.ok || !OBVIOUS.has(o.plan.reason));
 };
 
-export const quickbarHand = (inv: Inventory, item: Item): HandSide => {
+const quickbarHand = (inv: Inventory, item: Item): HandSide => {
   const def = defOf(inv.registry, item.type);
   return def.light && !def.twoHanded ? offSide(inv.character) : dominantSide(inv.character);
 };

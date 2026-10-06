@@ -54,10 +54,10 @@ export const furnitureDistance = (player: ReachPlayer, entity: BlockEntity): num
     player.position[2],
   ]) * player.blockSize;
 
-export const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
+const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
   pileDistance(player.position, position, player.blockSize) <= INVENTORY_REACH;
 
-export const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
+const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
   furnitureDistance(player, entity) <= INVENTORY_REACH;
 
 /** Generic spatial collection, including the debug 20m case query: not inventory admission. */

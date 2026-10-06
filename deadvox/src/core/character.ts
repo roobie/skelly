@@ -22,7 +22,7 @@ export interface CharacterState {
 export const SKILL_LEVEL_MIN = 0;
 export const SKILL_LEVEL_MAX = 10;
 export const SKILL_LEVEL_LEGENDARY = SKILL_LEVEL_MAX + 1;
-export const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
+const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
 
 /** BR ruled legendary is mostly vanity; its effects match ordinary level 10. */
 export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
@@ -45,7 +45,7 @@ const validSkillPractice = (level: number, practice: number | undefined): practi
   (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(level));
 
 /** Explicit starting source, shared with CLI reachability in the next hand-off. */
-export const STARTING_RECIPES = ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank'] as const;
+const STARTING_RECIPES = ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank'] as const;
 export const startingKnownRecipes = (registry: Registry): string[] =>
   STARTING_RECIPES.filter((id) => registry.recipes.has(id));
 

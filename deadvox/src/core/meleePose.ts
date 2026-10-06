@@ -5,8 +5,8 @@ export type MeleeProfile = 'blunt' | 'cut' | 'pierce' | 'fists';
 export type MeleeHand = 'right' | 'left';
 
 /** Contact is quick for heavy weapons too; recovery still fills the item's full cooldown. */
-export const MELEE_WINDUP_FRACTION = 0.4;
-export const MELEE_WINDUP_CAP_SECONDS = 0.25;
+const MELEE_WINDUP_FRACTION = 0.4;
+const MELEE_WINDUP_CAP_SECONDS = 0.25;
 export const meleeContactTime = (cooldown: number): number =>
   Math.min(MELEE_WINDUP_FRACTION * cooldown, MELEE_WINDUP_CAP_SECONDS);
 

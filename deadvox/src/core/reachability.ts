@@ -7,7 +7,7 @@ import { WORK_IN_PROGRESS } from './inventory.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
-export const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
+const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
   WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
   'debug_rifle_assault',

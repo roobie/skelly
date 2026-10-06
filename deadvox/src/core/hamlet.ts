@@ -63,7 +63,7 @@ const SOUTH_SIDE = ['gas_station', 'shed', 'garage'] as const;
 export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE];
 
 /** Also seeded by the static reachability check: roadside wanderers spawn independently of markers. */
-export const HAMLET_WANDERER = 'shambler';
+const HAMLET_WANDERER = 'shambler';
 const ZOMBIE_COUNT = [6, 10] as const;
 
 /** Possible types before seed rolls: north rows may shuffle; south rows keep their order.

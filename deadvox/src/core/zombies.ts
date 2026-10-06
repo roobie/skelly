@@ -95,7 +95,7 @@ export interface HitImpulse {
   readonly impulse: number;
 }
 /** At most these three nearest moving shamblers emit footsteps in a simulation tick. */
-export const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
+const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
 export interface Zombie {
   type: ZombieDef;
@@ -454,10 +454,10 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
 };
 
 /** Daylight follows the sky's 06:30 dawn and 19:30 dusk keys. */
-export const isDaylight = (hour: number): boolean => hour >= 6.5 && hour < 19.5;
+const isDaylight = (hour: number): boolean => hour >= 6.5 && hour < 19.5;
 
 /** The seam for later voxel light: currently daylight or the player's own lit flashlight. */
-export const isLit = (_isSolid: SolidAt, _position: Vec3, hour: number, flashlightLit: boolean): boolean =>
+const isLit = (_isSolid: SolidAt, _position: Vec3, hour: number, flashlightLit: boolean): boolean =>
   isDaylight(hour) || flashlightLit;
 
 export interface PerceptionInput {

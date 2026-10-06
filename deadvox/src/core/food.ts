@@ -19,7 +19,7 @@ export const isRotten = (def: ItemDef, item: Item, calendar: number): boolean =>
   (spoilage(def, item, calendar) ?? 0) >= 1;
 
 /** Past this share of its shelf life, food is going off. */
-export const GOING_OFF = 0.5;
+const GOING_OFF = 0.5;
 
 /** "fresh", "going off" or "rotten"; undefined for food that keeps. */
 export const freshnessWord = (def: ItemDef, item: Item, calendar: number): string | undefined => {

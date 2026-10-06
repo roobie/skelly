@@ -1,6 +1,6 @@
 import type { Vec3 } from './coords.ts';
 
-export interface StepOffsetSample {
+interface StepOffsetSample {
   readonly position: Vec3;
   readonly grounded: boolean;
 }

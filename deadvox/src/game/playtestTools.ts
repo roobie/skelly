@@ -9,8 +9,8 @@ export interface DeathMetric {
   readonly survivedSeconds: number;
 }
 
-export const METRICS_HISTORY_LIMIT = 512;
-export const POCKET_KEY_LIMIT = 128;
+const METRICS_HISTORY_LIMIT = 512;
+const POCKET_KEY_LIMIT = 128;
 
 export interface SessionMetricsV1 {
   readonly schemaVersion: 1;
@@ -226,7 +226,7 @@ export interface SnapshotMeasurement {
   readonly netStateUnchanged: boolean;
 }
 
-export interface SnapshotHistoryEntry {
+interface SnapshotHistoryEntry {
   readonly at: number;
   readonly durationMs: number;
 }
@@ -280,7 +280,7 @@ const equalProperties = (left: object, right: object, seen: WeakMap<object, Weak
   );
 };
 
-export const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean => {
+const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean => {
   if (Object.is(a, b)) {
     return true;
   }

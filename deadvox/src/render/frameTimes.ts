@@ -10,7 +10,7 @@ export interface FrameSummary {
 }
 
 /** The window the readout summarises, in milliseconds. */
-export const FRAME_WINDOW_MS = 2000;
+const FRAME_WINDOW_MS = 2000;
 
 export class FrameTimes {
   private readonly samples: { at: number; ms: number }[] = [];

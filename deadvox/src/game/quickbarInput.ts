@@ -1,7 +1,7 @@
 import { quickbarSlotForKey } from './input.ts';
 
 /** Presentation estimate separating a tap from a deliberate quickbar hold. */
-export const QUICKBAR_HOLD_ESTIMATE_MS = 250;
+const QUICKBAR_HOLD_ESTIMATE_MS = 250;
 
 interface Press {
   startedAt: number;

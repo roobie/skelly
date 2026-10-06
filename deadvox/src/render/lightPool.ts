@@ -3,8 +3,8 @@ import type { Inventory, Location } from '../core/inventory.ts';
 import type { HeldItems } from './hands.ts';
 
 /** Fixed shader-light budget: carried sources and dropped sources have stable partitions. */
-export const CARRIED_POINT_LIGHTS = 4;
-export const DROPPED_POINT_LIGHTS = 4;
+const CARRIED_POINT_LIGHTS = 4;
+const DROPPED_POINT_LIGHTS = 4;
 export const POINT_LIGHT_POOL_SIZE = CARRIED_POINT_LIGHTS + DROPPED_POINT_LIGHTS;
 
 interface LightPoolContext {

@@ -35,7 +35,7 @@ import { SOUND_EVENT_IDS } from './soundEvents.ts';
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 
-export const Id = pipe(string(), regex(ID_PATTERN, 'must be lowercase letters, digits and _'));
+const Id = pipe(string(), regex(ID_PATTERN, 'must be lowercase letters, digits and _'));
 const CalibreId = pipe(string(), regex(CALIBRE_ID_PATTERN, 'must be a cartridge-data id'));
 const Name = pipe(string(), nonEmpty('must not be empty'));
 const Color = pipe(string(), regex(/^#[0-9a-fA-F]{6}$/, 'expected "#rrggbb"'));
@@ -85,9 +85,7 @@ export const BLOCK_PATTERNS = [
   'noise',
 ] as const;
 
-export type BlockPattern = (typeof BLOCK_PATTERNS)[number];
-
-export const BlockSchema = strictObject({
+const BlockSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
@@ -103,7 +101,7 @@ export const BlockSchema = strictObject({
 
 // ---- items ----
 
-export const ITEM_CATEGORIES = [
+const ITEM_CATEGORIES = [
   'food',
   'drink',
   'medical',
@@ -119,7 +117,7 @@ export const ITEM_CATEGORIES = [
   'misc',
 ] as const;
 
-export const WEAR_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
+const WEAR_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 
 export type WearSlot = (typeof WEAR_SLOTS)[number];
 
@@ -246,7 +244,7 @@ const readableText = (limit: number) =>
     check(isReadablePlainText, 'must be plain text without markup or control characters'),
     maxLength(limit, `must be at most ${limit} characters`),
   );
-export const ReadableSchema = strictObject({
+const ReadableSchema = strictObject({
   title: readableText(READABLE_TITLE_LIMIT),
   text: readableText(READABLE_TEXT_LIMIT),
 });
@@ -286,7 +284,7 @@ const DisassemblySchema = strictObject({
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
 
-export const ItemSchema = strictObject({
+const ItemSchema = strictObject({
   id: Id,
   name: Name,
   category: picklist(ITEM_CATEGORIES),
@@ -335,7 +333,7 @@ const Point = tuple([number(), number(), number()]);
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
  * along x (DESIGN.md, "Item models"). The entry adds what the file can't say.
  */
-export const SoundMultipliers = pipe(
+const SoundMultipliers = pipe(
   tuple([Positive, Positive]),
   check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
 );
@@ -462,7 +460,7 @@ const ModelSchema = pipe(
 
 // ---- furniture ----
 
-export const FurnitureSchema = strictObject({
+const FurnitureSchema = strictObject({
   id: Id,
   name: Name,
   /** Cells, in blocks: [x, y, z]. It's anchored at its lowest corner. */
@@ -508,7 +506,7 @@ const LootEntrySchema = pipe(
   ),
 );
 
-export const LootTableSchema = strictObject({
+const LootTableSchema = strictObject({
   id: Id,
   /** How many times to roll, inclusive. */
   rolls: range(Count),
@@ -519,7 +517,7 @@ export const LootTableSchema = strictObject({
 
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
-export const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
+const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
 
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
 const PaletteThingSchema = pipe(
@@ -563,7 +561,7 @@ const TemplateAccessSchema = strictObject({
   stairs: array(StairSchema),
 });
 
-export const TemplateSchema = strictObject({
+const TemplateSchema = strictObject({
   id: Id,
   /** Blocks: [x, y, z]. */
   size: Size,
@@ -617,7 +615,7 @@ const LayoutBuilding = strictObject({
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
 });
 
-export const SiteLayoutSchema = strictObject({
+const SiteLayoutSchema = strictObject({
   id: Id,
   bounds: pipe(
     strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
@@ -645,7 +643,7 @@ export const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
-export const ZOMBIE_ABILITIES = [
+const ZOMBIE_ABILITIES = [
   'grab',
   'leap',
   'scream',
@@ -658,7 +656,7 @@ export const ZOMBIE_ABILITIES = [
   'burrow',
 ] as const;
 
-export const ZombieSchema = strictObject({
+const ZombieSchema = strictObject({
   id: Id,
   name: Name,
   regions: strictObject({
@@ -758,18 +756,18 @@ export const ZombieSchema = strictObject({
 });
 
 /** Actor palettes are content so appearance doesn't live in renderer code. */
-export const FigureSchema = strictObject({
+const FigureSchema = strictObject({
   id: Id,
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
 });
 
 // ---- skills and recipes ----
 
-export const SkillSchema = strictObject({ id: Id, name: Name });
+const SkillSchema = strictObject({ id: Id, name: Name });
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
-export const RecipeSchema = strictObject({
+const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
@@ -812,7 +810,7 @@ export const ContentFileSchema = strictObject(sectionSchemas);
 export type BlockDef = InferOutput<typeof BlockSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
-export type LootTable = InferOutput<typeof LootTableSchema>;
+type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type StairDef = InferOutput<typeof StairSchema>;
@@ -823,9 +821,7 @@ export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
-export type SkillDef = InferOutput<typeof SkillSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
-export type BookDef = InferOutput<typeof BookSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

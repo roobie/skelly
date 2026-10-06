@@ -7,7 +7,7 @@
 import { wheelPane, wheelPixels } from './wheel.ts';
 
 /** The input state the cursor needs; `Input` satisfies it. */
-export interface MenuPointerInput {
+interface MenuPointerInput {
   readonly locked: boolean;
   readonly menuPointer: boolean;
   readonly cursorX: number;

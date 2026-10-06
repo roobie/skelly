@@ -15,7 +15,7 @@ export interface RigidBody {
   quietTime: number;
   asleep: boolean;
 }
-export type SolidQuery = (x: number, y: number, z: number) => boolean;
+type SolidQuery = (x: number, y: number, z: number) => boolean;
 export interface RigidWorld {
   isSolid: SolidQuery;
   blockSize: number;

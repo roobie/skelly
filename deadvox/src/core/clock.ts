@@ -43,7 +43,7 @@ export const nextTimeOfDay = (calendar: number, timeOfDay: number): number => {
 };
 
 /** Day number, starting at 1. */
-export const dayOf = (calendar: number): number => Math.floor(calendar / SECONDS_PER_DAY) + 1;
+const dayOf = (calendar: number): number => Math.floor(calendar / SECONDS_PER_DAY) + 1;
 
 /** "Day 1, 19:30". */
 export const formatClock = (calendar: number): string => {
