@@ -3,6 +3,7 @@ import {
   type Binding,
   BindingRegistry,
   bindingConflict,
+  type Chord,
   capturedChord,
   chordIssue,
   INPUT_BINDINGS,
@@ -110,13 +111,44 @@ describe('keyboard registry', () => {
       }
     }
   });
-  it('keeps both continue paths on Enter in their separate owners', () => {
+  it('dispatches the crouch action in play but not in menus or text entry', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    expect(bindings.rebind('player.crouch-toggle', [{ code: 'KeyY' }])).toBeUndefined();
+    const keyboard = new KeyboardInput(bindings);
+    let context: InputContext = 'play';
+    keyboard.context = () => ({ context, debug: false });
+    const commands: InputCommand[] = [];
+    keyboard.command = (command) => commands.push(command);
+
+    expect(keyboard.press(event('KeyY'))).toBe(true);
+    expect(commands).toEqual([{ action: 'player.crouch-toggle', phase: 'down', at: 0 }]);
+    keyboard.release(event('KeyY'));
+    commands.length = 0;
+    expect(keyboard.press(event('KeyY'), true)).toBe(false);
+    expect(commands).toEqual([]);
+    let captured: Chord | string | undefined;
+    keyboard.capture = (chord) => {
+      captured = chord;
+    };
+    expect(keyboard.press(event('KeyY'))).toBe(true);
+    expect(captured).toEqual({ code: 'KeyY' });
+    expect(commands).toEqual([]);
+    keyboard.release(event('KeyY'));
+    keyboard.capture = undefined;
+
+    context = 'menu';
+    keyboard.sync();
+    expect(keyboard.press(event('KeyY'))).toBe(false);
+    context = 'noclip';
+    keyboard.sync();
+    expect(keyboard.press(event('KeyY'))).toBe(false);
+    expect(commands).toEqual([]);
+  });
+  it('keeps both continue paths in their separate owners', () => {
     const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
     const craft = bindings.binding('craft.continue')!;
     const interruption = bindings.binding('compression.continue')!;
-    expect(craft.defaults.map(({ code }) => code)).toEqual(['Enter']);
     expect(craft.contexts).toEqual(['play']);
-    expect(interruption.defaults.map(({ code }) => code)).toEqual(['Enter']);
     expect(interruption.contexts).toEqual(['interrupted']);
   });
   it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {

@@ -11,6 +11,7 @@ import { World } from '../src/core/world.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 import { Survival } from '../src/game/survival.ts';
 import { computeMenuState } from '../src/ui/menuState.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const readable = { title: 'Placeholder', text: 'PLAIN\tPLACEHOLDER\r\n\nSecond paragraph.' };
 const admit = (value: Readable) =>
@@ -20,6 +21,7 @@ const admit = (value: Readable) =>
       data: {
         items: [{ id: 'note', name: 'Note', category: 'book', weight: 5, size: [1, 1], readable: value }],
         furniture: [{ id: 'sign', name: 'Sign', size: [2, 2, 1], color: '#99794c', readable: value }],
+        senses: [TEST_SENSE_TUNING],
       },
     },
   ]);

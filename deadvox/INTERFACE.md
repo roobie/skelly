@@ -135,7 +135,7 @@ Text on screen falls into four classes, and only three of them ship:
    is the refusal cue; see
    `src/game/play.ts`, `showRefusal`.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
-   ("press R", "open the inventory", "C: continue"). **Development only.**
+   ("press R", "open the inventory", "Enter: continue"). **Development only.**
 
 ### How it's encoded
 

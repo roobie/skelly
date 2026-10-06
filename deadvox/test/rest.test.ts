@@ -13,6 +13,7 @@ import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock);
 const BASE = 'src/content/base';
@@ -52,6 +53,7 @@ const zombieHooks = (player: PlayerSense, hour = 23) => ({
   blockSize: BLOCK_SIZE,
   physics: PHYSICS,
   jumpSpeed: PLAYER.jump,
+  tuning: TEST_SENSE_TUNING,
   player: () => player,
   hour: () => hour,
   hurtPlayer: () => undefined,

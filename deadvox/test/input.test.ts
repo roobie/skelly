@@ -73,6 +73,15 @@ describe('pointer input', () => {
     windowListeners.get('blur')!(new Event('blur') as MouseEvent);
     expect(input.intent().useDominantHeld).toBe(false);
   });
+  it('delivers a crouch-toggle request once to the simulation consumer', () => {
+    const { input } = fixture();
+    input.requestCrouchToggle();
+    expect(input.consumeCrouchToggle()).toBe(true);
+    expect(input.consumeCrouchToggle()).toBe(false);
+    input.requestCrouchToggle();
+    input.cancel();
+    expect(input.consumeCrouchToggle()).toBe(false);
+  });
   it('clamps the virtual menu cursor to its viewport', () => {
     const { input } = fixture();
     input.menuPointer = true;

@@ -74,6 +74,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('movement.right', 'Move right', moving, ['KeyD'], 'held-state'),
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
+  row('player.crouch-toggle', 'Toggle crouch', ['play', 'build'], ['KeyC']),
   row('movement.jump', 'Jump', ['play', 'build'], ['Space'], 'held-state'),
   row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state'),
   row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
