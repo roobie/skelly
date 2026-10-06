@@ -5,6 +5,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { possibleHamletZombies } from '../src/core/hamlet.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
+import { gameMinutes, simSeconds } from '../src/core/time.ts';
 
 const BASE = 'src/content/base';
 const sources = readdirSync(BASE)
@@ -34,7 +35,7 @@ describe('static reachability', () => {
     registry.recipes.set('fixture_recipe', {
       id: 'fixture_recipe',
       result: { item: 'wooden_plank', count: 1 },
-      time: 1,
+      timeGameMinutes: gameMinutes(1),
       components: [[{ item: 'stick', count: 1 }]],
       qualities: Object.fromEntries([['fixture_sawing', 1]]),
       skills: { crafting: 0 },
@@ -69,7 +70,7 @@ describe('static reachability', () => {
     registry.recipes.set('fixture_practice', {
       id: 'fixture_practice',
       result: { item: 'wooden_plank', count: 1 },
-      time: 1,
+      timeGameMinutes: gameMinutes(1),
       components: [[{ item: 'stick', count: 1 }]],
       qualities: {},
       skills: { crafting: 1 },
@@ -96,7 +97,7 @@ describe('static reachability', () => {
     const supplier = {
       id: 'unlearned',
       result: { item: 'unlearned_tool', count: 1 },
-      time: 1,
+      timeGameMinutes: gameMinutes(1),
       skills: {},
       qualities: {},
       components: [[{ item: 'rag', count: 1 }]],
@@ -137,14 +138,14 @@ describe('static reachability', () => {
     registry.recipes.set('learned_from_book', {
       id: 'learned_from_book',
       result: { item: 'torch', count: 1 },
-      time: 1,
+      timeGameMinutes: gameMinutes(1),
       skills: {},
       qualities: {},
       components: [[{ item: 'rag', count: 1 }]],
     });
     registry.items.set('field_manual', {
       ...registry.items.get('field_manual')!,
-      book: { title: 'Field Manual', recipes: ['learned_from_book'], readingTime: 5 },
+      book: { title: 'Field Manual', recipes: ['learned_from_book'], readingGameMinutes: gameMinutes(5) }
     });
     const withBook = checkReachability(registry);
     expect(withBook.found.has('field_manual')).toBe(true);
@@ -210,7 +211,7 @@ describe('static reachability', () => {
       color: '#000000',
       solid: false,
       loot: 'default',
-      container: { pockets: [{ grid: [1, 1], handling: 1 }] },
+      container: { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] },
       workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workTimeBonus: 0.2 },
     });
     const shambler = registry.zombies.get('shambler')!;
@@ -257,7 +258,7 @@ describe('static reachability', () => {
     registry.items.set('fixture_yield_source', {
       ...registry.items.get('fixture_yield_source')!,
       disassembly: {
-        time: 1,
+        timeGameMinutes: gameMinutes(1),
         skill: 'crafting',
         yields: [{ item: 'fixture_yield_output', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
       },
@@ -295,7 +296,7 @@ describe('static reachability', () => {
       weight: 1,
       size: [1, 1],
       disassembly: {
-        time: 1,
+        timeGameMinutes: gameMinutes(1),
         skill: 'crafting',
         yields: [{ item: output, count: 1, fractions: [0.9], rounding: 'floor' }],
       },
@@ -335,7 +336,7 @@ describe('static reachability', () => {
     registry.recipes.set('candle', {
       id: 'candle',
       result: { item: 'hammer', count: 1 },
-      time: 1,
+      timeGameMinutes: gameMinutes(1),
       skills: {},
       qualities: { hammering: 3 },
       components: [[{ item: 'rag', count: 1 }]],
@@ -367,7 +368,7 @@ describe('static reachability', () => {
     const recipe = (id: string, product: string, input: string, quality?: string) => ({
       id,
       result: { item: product, count: 1 },
-      time: 1,
+      timeGameMinutes: gameMinutes(1),
       skills: {},
       qualities: quality ? Object.fromEntries([[quality, 2]]) : {},
       components: [[{ item: input, count: 1 }]],

@@ -315,7 +315,7 @@ const restoreSessionAudio = (restored: Readonly<SaveSnapshot> | undefined, sound
         saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] as Vec3 },
     },
     footstepClock: saved.footstepClock,
-    rustleClock: { cells: new Set(saved.rustleClock.cells), nextTime: saved.rustleClock.nextTime },
+    rustleClock: { cells: new Set(saved.rustleClock.cells), nextSimTimestamp: saved.rustleClock.nextSimTimestamp },
     airbornePeakY: saved.airbornePeakY ?? undefined,
   };
 };
@@ -844,7 +844,7 @@ export const createSession = (options: SessionOptions) => {
         handling,
         readyMovementFactor,
         movementSpeed: sim.body.consequences.movementSpeed,
-        crouchSpeed: senseTuning.crouch.speedMetresPerSecond,
+        crouchSpeed: senseTuning.crouch.speedMetresPerSimSecond,
       },
     );
     const tools = debug?.();

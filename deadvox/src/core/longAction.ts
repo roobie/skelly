@@ -569,7 +569,7 @@ export class LongActions {
       const previous = job.elapsed;
       job.elapsed = Math.min(job.duration, previous + seconds);
       while (job.nextStrike <= job.elapsed) {
-        const time = fromTime + (job.nextStrike - previous) / this.sim.clock.ratio;
+        const time = fromTime + (job.nextStrike - previous);
         this.prying!.strike(job.entityUid, job.toolUid, time);
         job.nextStrike += job.strikeInterval;
       }
@@ -638,9 +638,13 @@ export class LongActions {
       return;
     }
     const fromTime = job.last;
-    const seconds = Math.max(0, time - fromTime) * this.sim.clock.ratio;
+    const simSecondsElapsed = Math.max(0, time - fromTime);
+    const elapsed =
+      job.jobType === 'pry' || job.jobType === 'treatment'
+        ? simSecondsElapsed
+        : simSecondsElapsed * this.sim.clock.ratio;
     job.last = time;
-    if (!this.advanceJob(job, seconds, fromTime)) {
+    if (!this.advanceJob(job, elapsed, fromTime)) {
       return;
     }
     this.current = undefined;

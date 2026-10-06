@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
+import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
@@ -531,10 +532,22 @@ describe('authored fixed loot', () => {
         polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
     );
     expect(roadsideThreats).toHaveLength(2);
-    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) => spawn.window?.from === 'dusk';
-    expect(roadsideThreats.filter(hasDuskWindow)).toHaveLength(1);
-    expect(treelineThreats.filter(hasDuskWindow)).toHaveLength(1);
-    expect(layout.startTime).toBe('16:00');
+    const parsedLayout = result.registry.layouts.get(layout.id)!;
+    const parsedThreats = parsedLayout.shamblers;
+    const parsedRoadsideThreats = parsedThreats.filter(
+      (spawn) =>
+        spawn.type === 'shambler' &&
+        !treelineThreats.some(({ position }) => position.every((coordinate, axis) => coordinate === spawn.position[axis])) &&
+        polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
+    );
+    const parsedTreelineThreats = parsedThreats.filter(({ position }) =>
+      treelineThreats.some((spawn) => position.every((coordinate, axis) => coordinate === spawn.position[axis])),
+    );
+    const hasDuskWindow = (spawn: SiteLayoutDef['shamblers'][number]) =>
+      spawn.window?.fromGameTimeOfDay === SPAWN_TIMES.dusk;
+    expect(parsedRoadsideThreats.filter(hasDuskWindow)).toHaveLength(1);
+    expect(parsedTreelineThreats.filter(hasDuskWindow)).toHaveLength(1);
+    expect(parsedLayout.startTimeGameTimeOfDay).toBe(16 * 3_600);
   });
 
   it('keeps the authored route near progression areas, clear of buildings and walkable over terrain', () => {

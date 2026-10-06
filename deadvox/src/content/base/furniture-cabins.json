@@ -5,7 +5,7 @@
       "name": "Dad's cabin front door",
       "size": [2, 4, 1],
       "color": "#7a5534",
-      "door": { "handling": 0.6 }
+      "door": { "handlingSimSeconds": 0.6 }
     },
     {
       "id": "gun_cabinet",
@@ -16,7 +16,7 @@
         "pockets": [
           {
             "grid": [4, 12],
-            "handling": 1.2
+            "handlingSimSeconds": 1.2
           }
         ]
       }

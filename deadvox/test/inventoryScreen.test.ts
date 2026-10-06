@@ -153,7 +153,7 @@ describe('inventory screen Lit rendering', () => {
     expect(queue.jobs).toHaveLength(0);
     expect(refusals).toHaveLength(2);
 
-    body.advance(body.tuning.knockoutSeconds);
+    body.advance(body.tuning.knockoutSimSeconds);
     expect(screen.onAction('inventory.drop')).toBe(true);
     expect(queue.jobs.length).toBeGreaterThan(0);
   });

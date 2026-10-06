@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { BODY_REGIONS, Body, type BodyTreatment, bodyRegionForHitArea } from '../src/core/body.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
+import { simSeconds } from '../src/core/time.ts';
 
 describe('player body', () => {
   it('applies each approved region consequence to the struck body region', () => {
@@ -31,11 +32,11 @@ describe('player body', () => {
     expect(body.health).toBeGreaterThan(0);
     expect(body.unconscious).toBe(true);
     expect(body.actionRefusal).toBeDefined();
-    body.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+    body.advance(BODY_TUNING_FIXTURE.knockoutSimSeconds);
     expect(
       () =>
         new Body(
-          { ...BODY_TUNING_FIXTURE, knockoutSeconds: BODY_TUNING_FIXTURE.knockoutSeconds / 2 },
+          { ...BODY_TUNING_FIXTURE, knockoutSimSeconds: simSeconds(BODY_TUNING_FIXTURE.knockoutSimSeconds / 2) },
           body.snapshotState(),
         ),
     ).not.toThrow();
@@ -62,12 +63,12 @@ describe('player body', () => {
   it('requires antibiotics only after infection progresses', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     body.impact(1, 'rightArm', { bleeding: true, infectionAtRisk: true });
-    body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours * 3600, true);
+    body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours, true);
     expect(body.wounds.rightArm?.infection).toBe('early');
     expect(body.canTreat('rightArm', 'antiseptic')).toBe(true);
     expect(body.canTreat('rightArm', 'antibiotics')).toBe(false);
 
-    body.advance(BODY_TUNING_FIXTURE.antisepticWindowGameHours * 3600, true);
+    body.advance(BODY_TUNING_FIXTURE.antisepticWindowGameHours, true);
     expect(body.wounds.rightArm?.infection).toBe('advanced');
     expect(body.canTreat('rightArm', 'antiseptic')).toBe(false);
     expect(body.canTreat('rightArm', 'antibiotics')).toBe(true);
@@ -79,7 +80,7 @@ describe('player body', () => {
   it('keeps an antiseptic-treated infection resolved through later body advances', () => {
     const body = new Body(BODY_TUNING_FIXTURE);
     body.impact(1, 'head', { bleeding: true, infectionAtRisk: true });
-    body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours * 3600, true);
+    body.advance(BODY_TUNING_FIXTURE.infectionOnsetGameHours, true);
     expect(body.canTreat('head', 'antiseptic')).toBe(true);
     expect(body.treat('head', 'antiseptic')).toBe(true);
     body.advance(1, true);

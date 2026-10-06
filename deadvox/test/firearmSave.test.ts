@@ -213,7 +213,7 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
   if (!action.fire) {
     throw new Error('AR knockout fixture needs exported automatic action data');
   }
-  const cycleSeconds = action.fire.durationSeconds;
+  const cycleSeconds = action.fire.durationSimSeconds;
   const frameSeconds = 1 / 60;
   expect(
     runtime.firearms.fire({
@@ -247,7 +247,7 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
   expect(pausedCycle!.elapsed).toBeGreaterThan(0);
   expect(pausedCycle!.elapsed).toBeLessThan(cycleSeconds);
 
-  runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSeconds);
+  runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSimSeconds);
   expect(runtime.sim.body.unconscious).toBe(false);
   const remainingSeconds = cycleSeconds - pausedCycle!.elapsed;
   const remainingFrames = Math.ceil((remainingSeconds + frameSeconds) / frameSeconds);
@@ -285,20 +285,20 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
         sprinting: false,
       }),
     ).toBe(true);
-    const framesBeforeKnockout = Math.max(1, Math.floor(action.fire.durationSeconds / 2 / frameSeconds));
+    const framesBeforeKnockout = Math.max(1, Math.floor(action.fire.durationSimSeconds / 2 / frameSeconds));
     for (let frame = 0; frame < framesBeforeKnockout; frame += 1) {
       runtime.frame(frameSeconds);
     }
     runtime.sim.body.impact(0, 'torso', { shockDamage: runtime.sim.body.shock });
     const framesIntoKnockout = Math.min(
       30,
-      Math.max(1, Math.floor((runtime.sim.body.tuning.knockoutSeconds * 60) / 2)),
+      Math.max(1, Math.floor((runtime.sim.body.tuning.knockoutSimSeconds * 60) / 2)),
     );
     for (let frame = 0; frame < framesIntoKnockout; frame += 1) {
       runtime.frame(frameSeconds);
     }
     expect(runtime.sim.body.unconscious).toBe(true);
-    return { runtime, rifle, cycleSeconds: action.fire.durationSeconds };
+    return { runtime, rifle, cycleSeconds: action.fire.durationSimSeconds };
   };
   const continuous = prepare([]);
   const saved = prepare([]);
@@ -316,7 +316,7 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
   expect(continuousCycle!.elapsed).toBe(resumedCycle!.elapsed);
 
   const framesUntilCycleEnds = (runtime: ReturnType<typeof session>): number => {
-    runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSeconds);
+    runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSimSeconds);
     runtime.sim.paused = false;
     expect(runtime.sim.body.unconscious).toBe(false);
     let frames = 0;
@@ -341,8 +341,8 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
   if (!action.fire) {
     throw new Error('AR save fixture needs exported automatic action data');
   }
-  const ejectTime = action.fire.rearwardSeconds * action.ejectAt;
-  const cycleTime = action.fire.durationSeconds;
+  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  const cycleTime = action.fire.durationSimSeconds
   expect(
     original.firearms.fire({
       debugMode: true,

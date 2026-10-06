@@ -3,7 +3,7 @@
     {
       "id": "fixture_too_many_combinations",
       "result": { "item": "rag", "count": 1 },
-      "time": 1,
+      "timeGameMinutes": 1,
       "skills": {},
       "qualities": {},
       "components": [

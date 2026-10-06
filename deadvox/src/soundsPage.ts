@@ -82,7 +82,7 @@ const sheet = html`
             <div><dt>Gain</dt><dd>${event.gain}</dd></div>
             <div><dt>Pitch jitter</dt><dd>${event.pitchJitter[0]}–${event.pitchJitter[1]}</dd></div>
             <div><dt>Gain jitter</dt><dd>${event.gainJitter[0]}–${event.gainJitter[1]}</dd></div>
-            <div><dt>Minimum interval</dt><dd>${event.minIntervalSeconds} s</dd></div>
+            <div><dt>Minimum interval</dt><dd>${event.minIntervalSimSeconds} s</dd></div>
             <div><dt>Noise radius</dt><dd>${event.noiseRadiusMetres === null ? 'not emitted as noise' : `${event.noiseRadiusMetres} m`}</dd></div>
           </dl>
           ${event.note ? html`<p class="sound-note"><strong>BR status:</strong> ${event.note}</p>` : ''}

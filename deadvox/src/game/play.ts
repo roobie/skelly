@@ -121,7 +121,7 @@ const createPlayRefusalPresenter = (
   return createRefusalPresenter(
     showNotice,
     () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
-    nope?.minIntervalSeconds ?? 0,
+    nope?.minIntervalSimSeconds ?? 0,
   );
 };
 
@@ -157,7 +157,7 @@ export const startPlay = (
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
   }
-  const { throwMaxDistanceMetres, throwChargeSeconds } = playerSenseTuning.light;
+  const { throwMaxDistanceMetres, throwChargeSimSeconds: throwChargeSeconds } = playerSenseTuning.light;
   let glowstickChargeStartedAt: number | undefined;
   let glowstickChargeItemUid: number | undefined;
   const audio = new GameAudio({
@@ -1326,7 +1326,7 @@ export const startPlay = (
       const weapon = item && registry.items.get(item.type)?.weapon?.melee;
       if (item && weapon) {
         return {
-          weapon,
+          weapon: { ...weapon, cooldown: weapon.cooldownSimSeconds },
           profile: weapon.type,
           hand,
           twoHanded: registry.items.get(item.type)?.twoHanded ?? false,
@@ -1406,8 +1406,8 @@ export const startPlay = (
       }
       return;
     }
-    const { rpm } = firearmHandlingFor(weapon, registry);
-    return rpm === undefined ? undefined : { uid: weapon.uid, rpm };
+    const { roundsPerSimSecond } = firearmHandlingFor(weapon, registry);
+    return roundsPerSimSecond === undefined ? undefined : { uid: weapon.uid, roundsPerSimSecond };
   };
 
   const refusalReason = (reason: string | undefined): void => {

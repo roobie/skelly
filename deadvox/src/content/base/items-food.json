@@ -43,7 +43,7 @@
       "food": {
         "calories": 95,
         "water": 150,
-        "rotsAfter": 240
+        "rotsAfterGameHours": 240
       }
     },
     {

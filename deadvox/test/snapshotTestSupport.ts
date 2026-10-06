@@ -288,7 +288,7 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   condition: item.condition,
   charges: item.charges,
   on: item.on,
-  made: item.made,
+  madeAtGameTimestamp: item.madeAtGameTimestamp,
   pockets: item.pockets?.map((grid) =>
     grid.map((placed) => ({ x: placed.x, y: placed.y, rotated: placed.rotated, item: inspectItem(placed.item) })),
   ),

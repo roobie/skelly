@@ -125,7 +125,7 @@ describe('crafting read-only presentation', () => {
   it('renders the rebound continue label and command callbacks without advancing stopped work', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
-    const recipeSeconds = registry.recipes.get('torch')!.time * 60;
+    const recipeSeconds = registry.recipes.get('torch')!.timeGameMinutes;
     item.work = { kind: 'craft', recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
     inventory.add(item, { kind: 'hand', side: 'right' });
     const status = craftStatus(
@@ -160,7 +160,7 @@ describe('crafting read-only presentation', () => {
   it('hides held-work status while inventory is open and restores it when closed', () => {
     const inventory = new Inventory(registry);
     const item = inventory.create('work_in_progress');
-    const recipeSeconds = registry.recipes.get('torch')!.time * 60;
+    const recipeSeconds = registry.recipes.get('torch')!.timeGameMinutes;
     item.work = { kind: 'craft', recipe: 'torch', elapsed: recipeSeconds, duration: recipeSeconds * 2, components: [] };
     inventory.add(item, { kind: 'hand', side: 'right' });
     const character = new Character(registry);

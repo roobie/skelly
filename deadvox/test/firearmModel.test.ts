@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
 import type { ModelDef } from '../src/core/content.ts';
+import { simPerMinute, simSeconds } from '../src/core/time.ts';
 import { heldEjectionPose, heldGripOffset } from '../src/core/heldPose.ts';
 import {
   actionPartPaths,
@@ -66,8 +67,13 @@ describe('exported firearm presentation', () => {
   });
 
   it('caps fire at the rpm period while retaining rearward, dwell and return proportions', () => {
-    const cycle = { durationSeconds: 0.4, rearwardSeconds: 0.1, dwellSeconds: 0.1, forwardSeconds: 0.2 };
-    const action = { ...ar.action!, fire: cycle, hand: cycle, rpm: 600 } satisfies FirearmAction;
+    const cycle = {
+      durationSimSeconds: simSeconds(0.4),
+      rearwardSimSeconds: simSeconds(0.1),
+      dwellSimSeconds: simSeconds(0.1),
+      forwardSimSeconds: simSeconds(0.2),
+    };
+    const action = { ...ar.action!, fire: cycle, hand: cycle, roundsPerSimMinute: simPerMinute(600) } satisfies FirearmAction;
     for (const [time, stroke] of [
       [0, 0],
       [0.0125, 0.5],
@@ -85,8 +91,8 @@ describe('exported firearm presentation', () => {
   });
 
   it('samples a hand-only action without inventing an automatic pose', () => {
-    const { fire: _fire, rpm: _rpm, ...handOnly } = ar.action!;
-    const rearward = handOnly.hand.rearwardSeconds;
+    const { fire: _fire, roundsPerSimMinute: _rate, ...handOnly } = ar.action!;
+    const rearward = handOnly.hand.rearwardSimSeconds;
     expect(sampleActionStroke(handOnly, 'fire', rearward / 2)).toBe(0);
     expect(sampleActionStroke(handOnly, 'hand', rearward / 2)).toBeCloseTo(0.5);
     expect(sampleActionStroke(handOnly, 'hand', rearward)).toBe(1);

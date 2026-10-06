@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Body } from '../src/core/body.ts';
 import { defaultClock, SECONDS_PER_HOUR, simSecondsPerHour } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
+import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
@@ -120,7 +121,7 @@ describe('food', () => {
   });
 
   it('counts from when it was made, and canned food keeps', () => {
-    const picked = { uid: 1, type: 'apple', count: 1, condition: 1, made: 100 * SECONDS_PER_HOUR };
+    const picked = { uid: 1, type: 'apple', count: 1, condition: 1, madeAtGameTimestamp: 100 * SECONDS_PER_HOUR };
     expect(spoilage(apple, picked, 220 * SECONDS_PER_HOUR)).toBeCloseTo(0.5, 9);
     expect(spoilage(beans, { uid: 2, type: 'canned_beans', count: 1, condition: 1 }, 1e9)).toBeUndefined();
   });
@@ -146,14 +147,14 @@ describe('flashlight', () => {
     const caught = lit().light;
     const live = lit().light;
     expect([caught.on, live.on]).toEqual([true, true]);
-    expect(drainLight(registry, caught, 3)).toBeUndefined();
+    expect(drainLight(registry, caught, gameHours(3))).toBeUndefined();
     for (let i = 0; i < 3 * HOUR; i++) {
-      drainLight(registry, live, 1 / HOUR);
+      drainLight(registry, live, gameSeconds(defaultClock.ratio));
     }
     expect(chargeOf(registry, caught)).toBeCloseTo(0.25, 9);
     expect(chargeOf(registry, live)).toBeCloseTo(0.25, 6);
 
-    expect(drainLight(registry, caught, 5)).toBeCloseTo(1, 9); // ran out an hour in
+    expect(drainLight(registry, caught, gameHours(5))).toBeCloseTo(gameHours(1), 9); // ran out an hour in
     expect(caught.on).toBe(false);
     expect(chargeOf(registry, caught)).toBe(0);
     expect(toggleLight(registry, caught)).toBe('The battery is dead');
@@ -161,7 +162,7 @@ describe('flashlight', () => {
 
   it('takes a fresh battery from a stack, and gives back the old one if it had charge left', () => {
     const { inventory, light } = lit();
-    drainLight(registry, light, 2); // half left
+    drainLight(registry, light, gameHours(2)); // half left
     const batteries = inventory.create('aa_battery', 3);
     inventory.add(batteries, { kind: 'hand', side: 'left' });
     const feet: Target = { kind: 'pile', pos: [0, 0, 0] };
@@ -171,7 +172,7 @@ describe('flashlight', () => {
     const spent = inventory.pileAt([0, 0, 0])!.items[0]!.item;
     expect([spent.type, chargeOf(registry, spent)]).toEqual(['aa_battery', 0.5]);
 
-    drainLight(registry, light, 10); // dead
+    drainLight(registry, light, gameHours(10)); // dead
     expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
     expect(inventory.pileAt([0, 0, 0])!.items).toHaveLength(1); // the dead one is thrown away
     expect(swapBattery(inventory, light, light, feet)).toBe("It doesn't take that battery");

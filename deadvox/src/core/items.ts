@@ -34,15 +34,15 @@ export interface ItemFields<Node> {
   charges?: number;
   /** A light that's switched on. */
   on?: boolean;
-  /** Remaining consumable-light burn, in game hours; absent until first ignition. */
-  burnRemaining?: number;
-  /** Calendar seconds at the last burn-state update; present only while lit. */
-  litAt?: number | undefined;
+  /** Remaining consumable-light burn in Game seconds; absent until first ignition. */
+  burnRemainingGameSeconds?: number;
+  /** Game-clock timestamp at the last burn-state update; present only while lit. */
+  litAtGameTimestamp?: number | undefined;
   /**
-   * Calendar seconds when it was made; absent means before the world began (day 1,
+   * Game-clock timestamp when it was made; absent means before the world began (day 1,
    * 00:00). Food rots from then (core/food.ts).
    */
-  made?: number;
+  madeAtGameTimestamp?: number;
   /** One grid per pocket of the type's container, in the type's pocket order. */
   pockets?: PlacedItem<Node>[][];
   /** Chamber contents and in-flight mechanical action; separate from handling jobs. */
@@ -81,9 +81,9 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     condition: item.condition,
     ...(item.charges === undefined ? {} : { charges: item.charges }),
     ...(item.on === undefined ? {} : { on: item.on }),
-    ...(item.burnRemaining === undefined ? {} : { burnRemaining: item.burnRemaining }),
-    ...(item.litAt === undefined ? {} : { litAt: item.litAt }),
-    ...(item.made === undefined ? {} : { made: item.made }),
+    ...(item.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: item.burnRemainingGameSeconds }),
+    ...(item.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: item.litAtGameTimestamp }),
+    ...(item.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: item.madeAtGameTimestamp }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
     ...(item.work === undefined
@@ -106,14 +106,14 @@ export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<Placed
   freezeSnapshot({ item: snapshotItem(item) as ItemState, x, y, rotated });
 
 const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
-  const burnTime = def.light?.burnTime;
+  const burnTime = def.light?.burnTimeGameHours;
   const invalidRemaining =
-    state.burnRemaining !== undefined &&
-    (burnTime === undefined || state.burnRemaining > burnTime || !Number.isFinite(state.burnRemaining));
+    state.burnRemainingGameSeconds !== undefined &&
+    (burnTime === undefined || state.burnRemainingGameSeconds > burnTime || !Number.isFinite(state.burnRemainingGameSeconds));
   const missingActiveState =
-    state.litAt !== undefined && (burnTime === undefined || state.on !== true || state.burnRemaining === undefined);
+    state.litAtGameTimestamp !== undefined && (burnTime === undefined || state.on !== true || state.burnRemainingGameSeconds === undefined);
   const litWithoutBurnState =
-    burnTime !== undefined && state.on === true && (state.burnRemaining === undefined || state.litAt === undefined);
+    burnTime !== undefined && state.on === true && (state.burnRemainingGameSeconds === undefined || state.litAtGameTimestamp === undefined);
   if (invalidRemaining || missingActiveState || litWithoutBurnState) {
     throw new Error('Invalid saved light burn state');
   }
@@ -157,9 +157,9 @@ export const restoreItem = (registry: Registry, state: ItemState): Item => {
     condition: state.condition,
     ...(state.charges === undefined ? {} : { charges: state.charges }),
     ...(state.on === undefined ? {} : { on: state.on }),
-    ...(state.burnRemaining === undefined ? {} : { burnRemaining: state.burnRemaining }),
-    ...(state.litAt === undefined ? {} : { litAt: state.litAt }),
-    ...(state.made === undefined ? {} : { made: state.made }),
+    ...(state.burnRemainingGameSeconds === undefined ? {} : { burnRemainingGameSeconds: state.burnRemainingGameSeconds }),
+    ...(state.litAtGameTimestamp === undefined ? {} : { litAtGameTimestamp: state.litAtGameTimestamp }),
+    ...(state.madeAtGameTimestamp === undefined ? {} : { madeAtGameTimestamp: state.madeAtGameTimestamp }),
     ...(firearm === undefined ? {} : { firearm }),
     ...(state.pockets === undefined
       ? {}
@@ -234,14 +234,14 @@ export class ItemFactory {
     if (item.charges !== undefined) {
       part.charges = item.charges;
     }
-    if (item.made !== undefined) {
-      part.made = item.made;
+    if (item.madeAtGameTimestamp !== undefined) {
+      part.madeAtGameTimestamp = item.madeAtGameTimestamp;
     }
-    if (item.burnRemaining !== undefined) {
-      part.burnRemaining = item.burnRemaining;
+    if (item.burnRemainingGameSeconds !== undefined) {
+      part.burnRemainingGameSeconds = item.burnRemainingGameSeconds;
     }
-    if (item.litAt !== undefined) {
-      part.litAt = item.litAt;
+    if (item.litAtGameTimestamp !== undefined) {
+      part.litAtGameTimestamp = item.litAtGameTimestamp;
     }
     return part;
   }
@@ -309,7 +309,7 @@ export const stackRoom = (registry: Registry, onto: Item, item: Item): number =>
     onto.type === item.type &&
     onto.condition === item.condition &&
     onto.charges === item.charges &&
-    onto.made === item.made &&
+    onto.madeAtGameTimestamp === item.madeAtGameTimestamp &&
     onto.firearm === undefined &&
     item.firearm === undefined &&
     isEmpty(onto) &&

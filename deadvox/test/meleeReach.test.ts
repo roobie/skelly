@@ -22,11 +22,17 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
+const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
+  ...weapon,
+  cooldown: weapon.cooldownSimSeconds,
+});
 const BLOCK_SIZE = makeScale(0.5).blockSize;
 const FLOOR = (_x: number, y: number) => y === 0;
 const FIGURE_SEEDS = [1, 2, 3, 4, 5, 6, 7, 8] as const;
 const weapons = [
-  ...[...registry.items.values()].flatMap((item) => (item.weapon ? [{ name: item.id, ...item.weapon.melee }] : [])),
+  ...[...registry.items.values()].flatMap((item) =>
+    item.weapon?.melee ? [{ name: item.id, ...runtimeWeapon(item.weapon.melee) }] : [],
+  ),
   { name: 'fists', ...FISTS_MELEE },
 ].sort((a, b) => a.reach - b.reach || a.name.localeCompare(b.name));
 const poses = [
@@ -62,7 +68,7 @@ const makeSystem = (seed: number, pose: (typeof poses)[number], distanceMetres: 
   zombie.gaitPhase = pose.gaitPhase;
   zombie.attackWindup = pose.attackWindup;
   zombie.attackWait =
-    pose.attackWindup > 0 ? zombie.type.attack.cooldown - (zombie.type.attack.windup - pose.attackWindup) : 0;
+    pose.attackWindup > 0 ? zombie.type.attack.cooldownSimSeconds - (zombie.type.attack.windupSimSeconds - pose.attackWindup) : 0;
   return { system, id, zombie };
 };
 
@@ -175,7 +181,7 @@ const swingAtReachDistance = (
 
 describe('player melee reach at shambler attack distance', () => {
   it('provides a pure aim query that agrees with swing for the posed head, chest, arm, and above-head rays', () => {
-    const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const weapon = runtimeWeapon(registry.items.get('baseball_bat')!.weapon!.melee!);
     const rays = [
       { name: 'head', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => regionCentroid(zombie, 'head') },
       { name: 'chest', target: (zombie: ReturnType<typeof makeSystem>['zombie']) => visibleTorsoVoxel(zombie)! },
@@ -217,7 +223,7 @@ describe('player melee reach at shambler attack distance', () => {
   });
 
   it('reports the nearest visible posed region beyond reach without changing state', () => {
-    const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const weapon = runtimeWeapon(registry.items.get('baseball_bat')!.weapon!.melee!);
     const { system, zombie } = makeSystem(1, poses[0]!, 3.5);
     const target = regionCentroid(zombie, 'head');
     const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;

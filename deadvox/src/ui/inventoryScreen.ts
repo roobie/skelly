@@ -680,7 +680,7 @@ export class InventoryScreen {
         ? (def.container?.pockets ?? []).map((spec, i) => ({
             label:
               def.container!.pockets.length > 1 || spec.name
-                ? `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handling)}`
+                ? `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handlingSimSeconds)}`
                 : undefined,
             grid: this.gridViewModel(
               { w: spec.grid[0], h: spec.grid[1] },
@@ -713,7 +713,7 @@ export class InventoryScreen {
   private pocketsViewModel(owner: Item): PocketViewModel[] {
     const specs = defOf(this.inv.registry, owner.type).container?.pockets ?? [];
     return specs.map((spec, i) => ({
-      label: `${spec.name ?? 'pocket'} · ${secs(spec.handling)}`,
+      label: `${spec.name ?? 'pocket'} · ${secs(spec.handlingSimSeconds)}`,
       grid: this.gridViewModel(
         { w: spec.grid[0], h: spec.grid[1] },
         owner.pockets?.[i] ?? [],
@@ -823,7 +823,7 @@ export class InventoryScreen {
     }
     if (def.weapon) {
       const m = def.weapon.melee;
-      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m beyond hand · ${m.cooldown} s a swing`);
+      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m beyond hand · ${m.cooldownSimSeconds} s a swing`);
     }
     if (def.light) {
       lines.push(`Lights ${def.light.radius} m · seen from ${def.light.seenFrom} m`);

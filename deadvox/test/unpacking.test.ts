@@ -8,6 +8,7 @@ import { options, toHands } from '../src/core/options.ts';
 import { reach } from '../src/core/reach.ts';
 import { selectPrimaryAction } from '../src/game/primaryAction.ts';
 import { BOX_UNPACK_SECONDS, Unpacking } from '../src/game/unpacking.ts';
+import { simSeconds } from '../src/core/time.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
@@ -36,7 +37,7 @@ const fixture = (small = false, held = true) => {
         ...packageRegistry,
         items: new Map(packageRegistry.items).set(bagDef.id, {
           ...bagDef,
-          container: { pockets: [{ name: 'Small test pocket', grid: [1, 1] as [number, number], handling: 0 }] },
+          container: { pockets: [{ name: 'Small test pocket', grid: [1, 1] as [number, number], handlingSimSeconds: simSeconds(0) }] },
         }),
       }
     : packageRegistry;

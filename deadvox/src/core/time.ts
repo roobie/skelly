@@ -10,6 +10,7 @@ export type RealTimestamp = number & { readonly [timeBrand]: 'RealTimestamp' };
 export type SimRate = number & { readonly [timeBrand]: 'SimRate' };
 export type GameRate = number & { readonly [timeBrand]: 'GameRate' };
 export type RealRate = number & { readonly [timeBrand]: 'RealRate' };
+export type SimAcceleration = number & { readonly [timeBrand]: 'SimAcceleration' };
 export type GameTimeOfDay = number & { readonly [timeBrand]: 'GameTimeOfDay' };
 
 const finiteNonNegative = (value: number, label: string): number => {
@@ -29,6 +30,8 @@ export const realTimestamp = (value: number): RealTimestamp => finiteNonNegative
 export const simRate = (value: number): SimRate => finiteNonNegative(value, 'SimRate') as SimRate;
 export const gameRate = (value: number): GameRate => finiteNonNegative(value, 'GameRate') as GameRate;
 export const realRate = (value: number): RealRate => finiteNonNegative(value, 'RealRate') as RealRate;
+export const simAcceleration = (value: number): SimAcceleration =>
+  finiteNonNegative(value, 'SimAcceleration') as SimAcceleration;
 export const gameTimeOfDay = (value: number): GameTimeOfDay => {
   if (!Number.isFinite(value) || value < 0 || value >= 86_400) {
     throw new RangeError('GameTimeOfDay must be in [0, 86400)');
@@ -46,6 +49,9 @@ export const gameHours = (value: number): GameSeconds => gameSeconds(finiteNonNe
 export const realMilliseconds = (value: number): RealSeconds => realSeconds(finiteNonNegative(value, 'RealMilliseconds') / 1_000);
 export const realMinutes = (value: number): RealSeconds => realSeconds(finiteNonNegative(value, 'RealMinutes') * 60);
 export const realHours = (value: number): RealSeconds => realSeconds(finiteNonNegative(value, 'RealHours') * 3_600);
+export const simPerMinute = (value: number): SimRate => simRate(finiteNonNegative(value, 'SimPerMinute') / 60);
+export const gamePerHour = (value: number): GameRate => gameRate(finiteNonNegative(value, 'GamePerHour') / 3_600);
+export const realPerMinute = (value: number): RealRate => realRate(finiteNonNegative(value, 'RealPerMinute') / 60);
 
 export interface ClockConversion {
   /** Game seconds per simulation second. */

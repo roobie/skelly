@@ -12,9 +12,11 @@ export const SPAWN_TIMES = {
   dusk: 18 * SECONDS_PER_HOUR,
 } as const;
 
+import type { GameTimeOfDay } from './time.ts';
+
 export interface SpawnTimeWindow {
-  from: string;
-  to?: string | undefined;
+  fromGameTimeOfDay: GameTimeOfDay;
+  toGameTimeOfDay?: GameTimeOfDay | undefined;
 }
 
 export type SpawnTimeWindowField = { [Property in 'window']?: SpawnTimeWindow };
@@ -89,9 +91,9 @@ export const parseSpawnTime = (text: string): number | undefined =>
 
 /** Time-of-day windows recur daily; an open-ended window stays eligible after its first start. */
 export const spawnWindowOpen = (calendar: number, timeWindow: SpawnTimeWindow): boolean => {
-  const from = parseSpawnTime(timeWindow.from);
-  const to = timeWindow.to === undefined ? undefined : parseSpawnTime(timeWindow.to);
-  if (from === undefined || (timeWindow.to !== undefined && to === undefined)) {
+  const from = timeWindow.fromGameTimeOfDay;
+  const to = timeWindow.toGameTimeOfDay;
+  if (from === undefined || to !== undefined && !Number.isFinite(to)) {
     return false;
   }
   if (to === undefined) {

@@ -59,6 +59,7 @@ const NON_RUNTIME_SOURCE_RULES: Record<string, string> = {
     'Presentation-only development render selection; does not alter simulation or save identity.',
   'src/core/rigidBody.ts': 'Presentation-only debris physics, excluded with the renderer from save identity.',
   'src/core/soundOcclusion.ts': 'Presentation-only filtering, reached only through the excluded WebAudio adapter.',
+  'src/core/temporalFields.ts': 'Authored-field catalogue used by the time linter, not game runtime.'
 };
 
 async function sourceFilesUnder(directory: string): Promise<string[]> {
@@ -232,8 +233,8 @@ describe('simulation source fingerprint', () => {
     const sharedFirearmTiming = await mutateSimulationSource(
       host,
       'src/core/firearmAction.ts',
-      '60 / action.rpm',
-      '61 / action.rpm',
+      '1 / action.roundsPerSimMinute',
+      '2 / action.roundsPerSimMinute',
     );
     expect(sharedFirearmTiming.included).toBe(true);
     expect(sharedFirearmTiming.value).not.toBe(original);
@@ -243,8 +244,8 @@ describe('simulation source fingerprint', () => {
     const cadence = await mutateSimulationSource(
       host,
       'src/game/firearmTrigger.ts',
-      'const interval = 60 / weapon.rpm;',
-      'const interval = 61 / weapon.rpm;',
+      'const interval = 1 / weapon.roundsPerSimSecond;',
+      'const interval = 2 / weapon.roundsPerSimSecond;',
     );
     expect(cadence.included).toBe(true);
     expect(cadence.value).not.toBe(original);

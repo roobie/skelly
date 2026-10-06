@@ -4,6 +4,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
+  - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
@@ -107,20 +108,13 @@ voxel model.
 
 ## Time
 
-### Two scales
+### Three clocks and canonical units
 
-- The **clock ratio** `r` is how many calendar seconds pass per simulation
-  second. The starting value is `r = 8` (written 1:8), so a game day is 3 real
-  hours. Content rates are written per
-  game hour (for example "thirst +1 per hour"), so tuning `r` doesn't touch
-  content.
-- **Compression** `c` speeds up the whole simulation. It is 1 during normal
-  play. During a long action it ramps up to a cap: start at 30, which makes
-  1 real second about 4 game minutes. Physics, AI, needs and fires all run `c`×
-  faster, and the player's own inputs are locked.
+Simulation time advances only by a Sim-seconds step. The outer frame driver converts elapsed Real seconds and the active compression factor into that step; replay supplies its own Sim step. The core therefore does not read a wall clock. Game time advances from Sim time through the clock ratio, while Real time is reserved for presentation and input boundaries. `src/game/frameDriver.ts`, `advanceLiveFrame`, owns the live conversion, and `src/core/sim.ts`, `Simulation.frame`, accepts only Sim seconds.
 
-Real frame time × `c` gives simulation seconds; simulation seconds × `r` give
-calendar seconds.
+The conversion is `SimSeconds = RealSeconds × compression`, followed by `GameSeconds = SimSeconds × CLOCK_RATIO`. `src/core/time.ts` owns the named conversions: minutes normalize by multiplying by 60, hours by 3,600, and rates per minute or hour normalize by dividing by the same factors. Timestamp conversion also includes the Game-clock origin; duration conversion does not. This distinction prevents adding an origin to an elapsed span.
+
+Authored temporal field names include their clock and unit. The content schemas convert those numeric inputs to branded canonical seconds or rates at parse time, so systems do not repeat unit arithmetic. Sim, Game and Real brands keep unlike clock values out of accidental arithmetic; time-of-day has its own type. Save-state field names follow the same rule, and the save schema changes when those names change.
 
 ### Long actions
 

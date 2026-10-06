@@ -7,7 +7,7 @@
       "name": "Firearms Combat (FC)",
       "training": {
         "activities": {
-          "readying": { "practicePerSecond": 0.1, "tier": 1 },
+          "readying": { "practicePerSimSecond": 0.1, "tier": 1 },
           "handling": { "practice": 1, "tier": 3 },
           "shot": { "practice": 1, "tier": 3 },
           "hit": { "practice": 1, "tier": 5 }
@@ -15,8 +15,8 @@
       },
       "combat": {
         "firearms": {
-          "raiseMinimumSeconds": 0.28,
-          "raiseRangeSeconds": 0.42,
+          "raiseMinimumSimSeconds": 0.28,
+          "raiseRangeSimSeconds": 0.42,
           "raiseHalfLifeLevels": 5,
           "readyMovementMinimum": 0.45,
           "readyMovementRange": 0.35,
@@ -49,7 +49,7 @@
       "weight": 500,
       "size": [2, 4],
       "disassembly": {
-        "time": 4,
+        "timeGameMinutes": 4,
         "skill": "crafting",
         "yields": [{ "item": "stick", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" }]
       }
@@ -62,7 +62,7 @@
       "size": [2, 2],
       "description": "Metal patches, tape and rags for a makeshift repair.",
       "disassembly": {
-        "time": 15,
+        "timeGameMinutes": 15,
         "skill": "crafting",
         "yields": [
           { "item": "scrap_metal", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
@@ -80,7 +80,7 @@
       "size": [1, 2],
       "model": "wire_spool",
       "disassembly": {
-        "time": 8,
+        "timeGameMinutes": 8,
         "skill": "mechanics",
         "yields": [{ "item": "scrap_metal", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       }
@@ -92,7 +92,7 @@
       "weight": 120,
       "size": [1, 2],
       "disassembly": {
-        "time": 12,
+        "timeGameMinutes": 12,
         "skill": "mechanics",
         "yields": [
           { "item": "copper_wire", "count": 1, "fractions": [0.5, 1], "rounding": "floor" },
@@ -105,7 +105,7 @@
     {
       "id": "torch",
       "result": { "item": "torch", "count": 1 },
-      "time": 20,
+      "timeGameMinutes": 20,
       "skills": { "crafting": 0 },
       "qualities": { "cutting": 1 },
       "components": [
@@ -117,7 +117,7 @@
     {
       "id": "candle",
       "result": { "item": "candle", "count": 1 },
-      "time": 10,
+      "timeGameMinutes": 10,
       "skills": { "crafting": 0 },
       "qualities": { "cutting": 1 },
       "components": [[{ "item": "wax", "count": 2 }], [{ "item": "rag", "count": 1 }]],
@@ -126,7 +126,7 @@
     {
       "id": "repair_kit",
       "result": { "item": "repair_kit", "count": 1 },
-      "time": 30,
+      "timeGameMinutes": 30,
       "skills": { "crafting": 1 },
       "qualities": { "hammering": 1 },
       "components": [
@@ -138,7 +138,7 @@
     {
       "id": "strip_wire",
       "result": { "item": "copper_wire", "count": 1 },
-      "time": 8,
+      "timeGameMinutes": 8,
       "skills": { "mechanics": 0 },
       "qualities": { "cutting": 1 },
       "components": [[{ "item": "scrap_metal", "count": 1 }]]
@@ -146,7 +146,7 @@
     {
       "id": "field_patch",
       "result": { "item": "field_patch", "count": 1 },
-      "time": 12,
+      "timeGameMinutes": 12,
       "skills": { "mechanics": 2 },
       "qualities": {},
       "components": [[{ "item": "copper_wire", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
@@ -156,7 +156,7 @@
       "kind": "repair",
       "result": { "item": "crowbar", "count": 1 },
       "repair": { "skill": "crafting", "amount": 0.2, "perSkill": 0.1 },
-      "time": 15,
+      "timeGameMinutes": 15,
       "skills": { "crafting": 0 },
       "qualities": { "repairing": 1 },
       "components": [[{ "item": "scrap_metal", "count": 1 }], [{ "item": "duct_tape", "count": 1 }]]
@@ -164,7 +164,7 @@
     {
       "id": "sawn_plank",
       "result": { "item": "wooden_plank", "count": 1 },
-      "time": 4,
+      "timeGameMinutes": 4,
       "skills": { "crafting": 0 },
       "qualities": { "sawing": 1 },
       "components": [[{ "item": "stick", "count": 2 }]],

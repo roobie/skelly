@@ -14,6 +14,7 @@ import {
 } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import { compassBearing, toChunk } from '../src/core/coords.ts';
+import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
@@ -174,7 +175,10 @@ describe('authored layout acceptance', () => {
     templateFile.templates[templateIndex] = {
       ...definition,
       layers,
-      palette: { ...definition.palette, [markerChar!]: { spawn: 'shambler', window: { from: 'dusk' } } },
+      palette: {
+        ...definition.palette,
+        [markerChar!]: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk' } },
+      } as unknown as TemplateDef['palette'],
     };
     const files = base.map((file) =>
       file.source === templateSource.source ? { source: file.source, data: templateFile } : file,
@@ -183,17 +187,17 @@ describe('authored layout acceptance', () => {
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     const admitted = result.registry.layouts.get(layout.id)!;
     const placement = placementOf(result.registry, admitted.buildings[0]!);
-    const expected = placedSpawns(placement).find(({ window }) => window?.from === 'dusk')!;
-    expect(expected.window).toEqual({ from: 'dusk' });
+    const expected = placedSpawns(placement).find(({ window }) => window?.fromGameTimeOfDay === SPAWN_TIMES.dusk)!;
+    expect(expected.window).toEqual({ fromGameTimeOfDay: SPAWN_TIMES.dusk });
     const site = new AuthoredSite(1, result.registry, scale, admitted);
     expect(site.zombiesIn(toChunk(expected.pos[0]), toChunk(expected.pos[2]))).toContainEqual({
       type: 'shambler',
       pos: expected.pos,
-      window: { from: 'dusk' },
+      window: { fromGameTimeOfDay: SPAWN_TIMES.dusk },
     });
   });
   it('carries a spawn window from an authored marker into its world column', () => {
-    const marker = { ...layout.shamblers[0]!, chance: 1, window: { from: 'dusk' } };
+    const marker = { ...layout.shamblers[0]!, chance: 1, window: { fromGameTimeOfDay: 'dusk' } };
     const timedLayout = { ...layout, shamblers: [marker] };
     const result = load(timedLayout);
     expect(result.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
@@ -204,14 +208,14 @@ describe('authored layout acceptance', () => {
     expect(site.zombiesIn(toChunk(x), toChunk(z))).toContainEqual({
       type: marker.type,
       pos: [x, marker.position[1] / scale.blockSize, z],
-      window: marker.window,
+      window: { fromGameTimeOfDay: SPAWN_TIMES.dusk },
     });
   });
 
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
-    expect(BUNDLED_CONTENT.registry.layouts.get('playtest')?.startTime).toBe('16:00');
+    expect(BUNDLED_CONTENT.registry.layouts.get('playtest')?.startTimeGameTimeOfDay).toBe(16 * 3_600);
     expect(configFromUrl(new URLSearchParams('site=playtest')).site).toBe('playtest');
     expect(configFromUrl(new URLSearchParams('site=playtest')).start).toBe(16 * 60 * 60);
     expect(configFromUrl(new URLSearchParams('site=playtest&time=18:30')).start).toBe(18.5 * 60 * 60);
@@ -310,15 +314,15 @@ describe('authored layout acceptance', () => {
   it('validates optional windows on authored shambler markers', () => {
     const timed = {
       ...layout,
-      shamblers: [{ ...layout.shamblers[0]!, window: { from: 'dusk', to: 'dawn' } }],
+      shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dawn' } }],
     };
     expect(load(timed).issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
     invalid(
-      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { from: 'sunset' } }] },
+      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'sunset' } }] },
       'expected a named game time or HH:MM',
     );
     invalid(
-      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { from: 'dusk', to: 'dusk' } }] },
+      { ...layout, shamblers: [{ ...layout.shamblers[0]!, window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } }] },
       'from and to must differ',
     );
   });

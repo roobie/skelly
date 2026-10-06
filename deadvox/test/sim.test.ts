@@ -14,6 +14,7 @@ import { COMPRESSION, SKIP_COMPRESSION } from '../src/core/compression.ts';
 import { NEED_RATES, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { realSeconds } from '../src/core/time.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
+import { gameSeconds, gameToSimSeconds } from '../src/core/time.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const FRAME = 1 / 60;
@@ -132,7 +133,7 @@ describe('Simulation', () => {
   it('resolves prompt antiseptic through the scheduler but requires antibiotics after its window', () => {
     const onsetSimulation = new Simulation({ seed: 1 });
     onsetSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
-    const onsetSimSeconds = (BODY_TUNING_FIXTURE.infectionOnsetGameHours * 3600) / onsetSimulation.clock.ratio;
+    const onsetSimSeconds = gameToSimSeconds(onsetSimulation.clock, BODY_TUNING_FIXTURE.infectionOnsetGameHours);
     onsetSimulation.scheduler.advance(onsetSimSeconds + 1);
     expect(onsetSimulation.body.canTreat('head', 'antiseptic')).toBe(true);
     onsetSimulation.actions.treatment = {
@@ -142,17 +143,18 @@ describe('Simulation', () => {
         onsetSimulation.body.treat(region, treatment) ? true : 'Treatment no longer applies',
     };
     expect(
-      onsetSimulation.actions.beginTreatment('head', 1, 'antiseptic', onsetSimulation.clock.ratio),
+      onsetSimulation.actions.beginTreatment('head', 1, 'antiseptic', BODY_TUNING_FIXTURE.treatmentSimSeconds),
     ).toBeUndefined();
-    onsetSimulation.scheduler.advance(onsetSimulation.clock.ratio);
+    onsetSimulation.scheduler.advance(BODY_TUNING_FIXTURE.treatmentSimSeconds + 1);
     expect(onsetSimulation.body.wounds.head?.infection).toBe('resolved');
     expect(onsetSimulation.actions.job).toBeUndefined();
 
     const lateSimulation = new Simulation({ seed: 1 });
     lateSimulation.hit(1, 'a bite', 'head', { bleeding: true, infectionAtRisk: true });
-    const infectionCutoffGameSeconds =
-      (BODY_TUNING_FIXTURE.infectionOnsetGameHours + BODY_TUNING_FIXTURE.antisepticWindowGameHours) * 3600;
-    lateSimulation.scheduler.advance(infectionCutoffGameSeconds / lateSimulation.clock.ratio + 1);
+    const infectionCutoffGameSeconds = gameSeconds(
+      BODY_TUNING_FIXTURE.infectionOnsetGameHours + BODY_TUNING_FIXTURE.antisepticWindowGameHours,
+    );
+    lateSimulation.scheduler.advance(gameToSimSeconds(lateSimulation.clock, infectionCutoffGameSeconds) + 1);
     expect(lateSimulation.body.canTreat('head', 'antiseptic')).toBe(false);
     expect(lateSimulation.body.canTreat('head', 'antibiotics')).toBe(true);
   });

@@ -39,7 +39,7 @@
         "melee": {
           "damage": 14,
           "reach": 0.6,
-          "cooldown": 1.1,
+          "cooldownSimSeconds": 1.1,
           "stamina": 8,
           "impulse": 8,
           "wearPerHit": 0.015,
@@ -63,7 +63,7 @@
         "melee": {
           "damage": 10,
           "reach": 0.4,
-          "cooldown": 0.8,
+          "cooldownSimSeconds": 0.8,
           "stamina": 5,
           "impulse": 6,
           "wearPerHit": 0.012,
@@ -87,7 +87,7 @@
         "melee": {
           "damage": 8,
           "reach": 0.25,
-          "cooldown": 0.5,
+          "cooldownSimSeconds": 0.5,
           "stamina": 3,
           "impulse": 3.5,
           "wearPerHit": 0.025,
@@ -111,7 +111,7 @@
         "melee": {
           "damage": 9,
           "reach": 0.3,
-          "cooldown": 0.55,
+          "cooldownSimSeconds": 0.55,
           "stamina": 3.5,
           "impulse": 4,
           "wearPerHit": 0.025,
@@ -135,7 +135,7 @@
         "melee": {
           "damage": 11,
           "reach": 0.45,
-          "cooldown": 0.75,
+          "cooldownSimSeconds": 0.75,
           "stamina": 5,
           "impulse": 4.5,
           "wearPerHit": 0.02,
@@ -167,7 +167,7 @@
         "melee": {
           "damage": 15,
           "reach": 0.8,
-          "cooldown": 1.2,
+          "cooldownSimSeconds": 1.2,
           "stamina": 9,
           "impulse": 10,
           "wearPerHit": 0.01,
@@ -185,7 +185,7 @@
         "melee": {
           "damage": 13,
           "reach": 0.6,
-          "cooldown": 1.2,
+          "cooldownSimSeconds": 1.2,
           "stamina": 9,
           "impulse": 8,
           "wearPerHit": 0.015,
@@ -210,7 +210,7 @@
         "beam": 30,
         "power": {
           "battery": "aa_battery",
-          "perHour": 0.25
+          "chargePerGameHour": 0.25
         }
       }
     },
@@ -230,7 +230,7 @@
         "beam": 24,
         "power": {
           "battery": "aa_battery",
-          "perHour": 0.2
+          "chargePerGameHour": 0.2
         }
       }
     },
@@ -242,7 +242,7 @@
       "size": [1, 4],
       "description": "Rags and wax wrapped tightly around a stick.",
       "disassembly": {
-        "time": 10,
+        "timeGameMinutes": 10,
         "skill": "crafting",
         "yields": [
           { "item": "stick", "count": 1, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
@@ -255,7 +255,7 @@
         "seenFrom": 60,
         "color": "#ffb36b",
         "intensity": 5,
-        "burnTime": 4,
+        "burnTimeGameHours": 4,
         "burning": {
           "ignition": "firestarter",
           "douse": true,
@@ -274,7 +274,7 @@
       "size": [1, 1],
       "description": "A wax candle with a rag wick.",
       "disassembly": {
-        "time": 5,
+        "timeGameMinutes": 5,
         "skill": "crafting",
         "yields": [
           { "item": "wax", "count": 2, "fractions": [0.5, 0.6, 0.7, 0.8, 0.9, 1], "rounding": "floor" },
@@ -286,7 +286,7 @@
         "seenFrom": 15,
         "color": "#ffd28a",
         "intensity": 1,
-        "burnTime": 6,
+        "burnTimeGameHours": 6,
         "burning": {
           "ignition": "firestarter",
           "douse": true,
@@ -310,7 +310,7 @@
         "color": "#62ff81",
         "intensity": 0.5,
         "emissive": 0.12,
-        "burnTime": 8,
+        "burnTimeGameHours": 8,
         "burning": {
           "ignition": "snap",
           "douse": false,
@@ -332,7 +332,7 @@
         "seenFrom": 10,
         "color": "#ffd28a",
         "intensity": 0.7,
-        "fuelPerHour": 10
+        "fuelPerGameHour": 10
       },
       "igniter": { "capacity": 100, "perIgnition": 1 }
     },

@@ -292,7 +292,7 @@ const craftPlan = (
     SKILL_LEVEL_MIN,
     ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
   );
-  const work = (recipe.time * 60 * (1 - (workstation?.workTimeBonus ?? 0))) / (1 + skillLevel * 0.1);
+  const work = (recipe.timeGameMinutes * (1 - (workstation?.workTimeBonus ?? 0))) / (1 + skillLevel * 0.1);
   return {
     kind: 'craft',
     recipe: recipe.id,

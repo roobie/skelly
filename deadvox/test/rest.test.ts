@@ -384,7 +384,7 @@ describe('Session long-action input lock', () => {
     const job = session.queue.enqueueAction('test.knockout-handling', 'Fixture action', 0.01);
     session.sim.body.impact(0, 'torso', { shockDamage: session.sim.body.shock });
 
-    const maxFrames = Math.ceil(session.sim.body.tuning.knockoutSeconds * 60) + 2;
+    const maxFrames = Math.ceil(session.sim.body.tuning.knockoutSimSeconds * 60) + 2;
     for (let frame = 0; frame < maxFrames && session.sim.body.unconscious; frame += 1) {
       session.frame(simSeconds(1 / 60));
     }

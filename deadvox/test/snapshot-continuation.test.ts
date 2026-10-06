@@ -9,6 +9,8 @@ import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
+import { gameTimeOfDay, realSeconds } from '../src/core/time.ts';
+import { planRealFrame } from '../src/game/frameDriver.ts';
 import { IDLE } from '../src/game/session.ts';
 import {
   advance,
@@ -61,7 +63,7 @@ describe('hamlet save/load continuation', () => {
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
-    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySeconds;
+    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySimSeconds;
     loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
     loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
@@ -72,7 +74,7 @@ describe('hamlet save/load continuation', () => {
     const start = SPAWN_TIMES.dusk - 60;
     const [cx, cz] = fixtureZombieColumn;
     const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
-    const marker = { type: 'shambler', pos, window: { from: 'dusk' } };
+    const marker = { type: 'shambler', pos, window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } };
     const timedSite = {
       surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
       spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
@@ -213,9 +215,15 @@ describe('hamlet save/load continuation', () => {
   });
 
   it('continues active compressed rest through the first 1 Hz tick after load', () => {
+    const advanceReal = (runtime: ReturnType<typeof createRuntime>, frames: number) => {
+      runtime.sim.paused = false;
+      for (let frame = 0; frame < frames; frame++) {
+        runtime.session.frame(planRealFrame(runtime.sim.compression, realSeconds(1 / 60)));
+      }
+    };
     const source = createRuntime(undefined, true, oneColumn);
     expect(startRest(source, 'sleep')).toBeUndefined();
-    advance(source, 120);
+    advanceReal(source, 120);
     expect(source.sim.compression.active).toBe(true);
     expect(source.sim.compression.c).toBeGreaterThan(1);
     expect(source.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
@@ -229,8 +237,8 @@ describe('hamlet save/load continuation', () => {
 
     const schedulerSystems = ['needs', 'lights', 'long-action'] as const;
     const savedTicks = new Map(snapshot.character.simulation.scheduler.systems.map(({ id, ticks }) => [id, ticks]));
-    advance(source, 4);
-    advance(loaded, 4);
+    advanceReal(source, 4);
+    advanceReal(loaded, 4);
 
     for (const id of schedulerSystems) {
       const saved = savedTicks.get(id);

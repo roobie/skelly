@@ -12,15 +12,16 @@ import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../src/
 import { World } from '../src/core/world.ts';
 import { hearVocalNoise } from '../src/core/zombies.ts';
 import { GameAudio } from '../src/game/audio.ts';
+import { simRate, simSeconds } from '../src/core/time.ts';
 import { firearmShotSound, HEARTBEAT_FILES, heartbeatForStamina } from '../src/game/audioPresentation.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const audios: GameAudio[] = [];
 const senseTuning = {
   id: 'fixture_player',
-  crouch: { speedMetresPerSecond: 0.8, hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
+  crouch: { speedMetresPerSimSecond: simRate(0.8), hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
   wall: { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 },
-  light: { playerDaySightScale: 0, lureRangeScale: 0, throwMaxDistanceMetres: 8, throwChargeSeconds: 1.25 },
+  light: { playerDaySightScale: 0, lureRangeScale: 0, throwMaxDistanceMetres: 8, throwChargeSimSeconds: simSeconds(1.25) },
 } as const;
 
 const makeNode = () => ({ connect: vi.fn(), disconnect: vi.fn() });

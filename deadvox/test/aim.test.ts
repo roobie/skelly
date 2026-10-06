@@ -3,10 +3,11 @@ import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
+import { simSeconds } from '../src/core/time.ts';
 
 const stanceTuning = {
-  raiseMinimumSeconds: 0.25,
-  raiseRangeSeconds: 0.4,
+  raiseMinimumSimSeconds: simSeconds(0.25),
+  raiseRangeSimSeconds: simSeconds(0.4),
   raiseHalfLifeLevels: 5,
   readyMovementMinimum: 0.4,
   readyMovementRange: 0.35,

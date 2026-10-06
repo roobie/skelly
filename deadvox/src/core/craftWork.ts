@@ -101,7 +101,7 @@ export const craftActionHooks = (
             if (offset === undefined) {
               throw new Error('Missing crafting practice tier offset');
             }
-            return { skill, amount: recipe.time, tier: craftingActivityTier(level, offset) };
+            return { skill, amount: recipe.timeGameMinutes / 3_600, tier: craftingActivityTier(level, offset) };
           })
         : [];
       inventory.releaseWork(item, true, feet());

@@ -45,7 +45,7 @@ export const craftStatus = (
   }
   const { elapsed, duration } = itemWork;
   const work =
-    itemWork.kind === 'craft' ? inventory.registry.recipes.get(itemWork.recipe)!.time * 60 : duration - itemWork.gather;
+    itemWork.kind === 'craft' ? inventory.registry.recipes.get(itemWork.recipe)!.timeGameMinutes : duration - itemWork.gather;
   const gather = itemWork.kind === 'craft' ? duration - work : itemWork.gather;
   return {
     uid: item.uid,
@@ -119,7 +119,7 @@ export const craftRows = ({
       id,
       name: `${recipe.kind === 'repair' ? 'Repair: ' : ''}${registry.items.get(recipe.result.item)!.name}`,
       kind: recipe.kind === 'repair' ? 'repair' : 'craft',
-      time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.time * 60),
+      time: craftTime('plan' in result ? result.plan.gather + result.plan.work : recipe.timeGameMinutes),
       reason: recipeStartReason(recipe, result, reach, startReason),
       components: status.components.map(({ alternatives, group }) => ({
         group,

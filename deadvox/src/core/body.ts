@@ -84,7 +84,7 @@ export class Body {
   }
 
   get unconscious(): boolean {
-    return this.state.shock <= 0 && this.state.knockoutElapsed < this.tuning.knockoutSeconds;
+    return this.state.shock <= 0 && this.state.knockoutElapsed < this.tuning.knockoutSimSeconds;
   }
 
   get actionRefusal(): string | undefined {
@@ -131,7 +131,7 @@ export class Body {
         Number.isFinite(state.knockoutElapsed)
       ) ||
       state.knockoutElapsed < 0 ||
-      state.knockoutElapsed > this.tuning.knockoutSeconds
+      state.knockoutElapsed > this.tuning.knockoutSimSeconds
     ) {
       throw new Error('Invalid body vitals');
     }
@@ -196,16 +196,16 @@ export class Body {
     }
     let shockRecoverySeconds = seconds;
     if (this.unconscious) {
-      const remaining = this.tuning.knockoutSeconds - this.state.knockoutElapsed;
+      const remaining = this.tuning.knockoutSimSeconds - this.state.knockoutElapsed;
       const unconsciousStep = Math.min(seconds, remaining);
       this.state.knockoutElapsed += unconsciousStep;
       shockRecoverySeconds -= unconsciousStep;
-      if (this.state.knockoutElapsed >= this.tuning.knockoutSeconds) {
+      if (this.state.knockoutElapsed >= this.tuning.knockoutSimSeconds) {
         this.state.knockoutElapsed = 0;
         this.state.shock = this.tuning.wakeShock;
       }
     }
-    this.state.shock = clamp(this.state.shock + this.tuning.shockRecoveryPerSecond * shockRecoverySeconds);
+    this.state.shock = clamp(this.state.shock + this.tuning.shockRecoveryPerSimSecond * shockRecoverySeconds);
     let bleedingRegions = 0;
     for (const region of BODY_REGIONS) {
       const wound = this.state.wounds[region];
@@ -219,7 +219,7 @@ export class Body {
         bleedingRegions += 1;
       }
       if (!damageImmune && infection === 'advanced') {
-        this.state.health = Math.max(0, this.state.health - this.tuning.advancedInfectionHealthLossPerSecond * seconds);
+        this.state.health = Math.max(0, this.state.health - this.tuning.advancedInfectionHealthLossPerSimSecond * seconds);
       }
     }
     if (!damageImmune) {
@@ -281,10 +281,10 @@ const advanceInfection = (wound: BodyWound, gameSeconds: number, tuning: BodyTun
     return wound;
   }
   const infectionGameSeconds = wound.infectionGameSeconds + gameSeconds;
-  const onset = tuning.infectionOnsetGameHours * 3600;
+  const onset = tuning.infectionOnsetGameHours;
   let infection: BodyWound['infection'] = 'none';
   if (infectionGameSeconds >= onset) {
-    infection = infectionGameSeconds >= onset + tuning.antisepticWindowGameHours * 3600 ? 'advanced' : 'early';
+    infection = infectionGameSeconds >= onset + tuning.antisepticWindowGameHours ? 'advanced' : 'early';
   }
   return { ...wound, infection, infectionGameSeconds };
 };
@@ -292,8 +292,8 @@ const advanceInfection = (wound: BodyWound, gameSeconds: number, tuning: BodyTun
 const advanceBlood = (blood: number, bleedingRegions: number, seconds: number, tuning: BodyTuningDef): number => {
   const change =
     bleedingRegions > 0
-      ? -tuning.bloodLossPerSecond * bleedingRegions * seconds
-      : tuning.bloodRecoveryPerSecond * seconds;
+      ? -tuning.bloodLossPerSimSecond * bleedingRegions * seconds
+      : tuning.bloodRecoveryPerSimSecond * seconds;
   return clamp(blood + change);
 };
 

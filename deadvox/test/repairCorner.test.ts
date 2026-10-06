@@ -9,6 +9,7 @@ import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { startingLoadout } from '../src/game/loadout.ts';
 import { populateTestHouseRepairCorner } from '../src/game/testHouse.ts';
+import { gameMinutes } from '../src/core/time.ts';
 
 const { registry: baseRegistry } = buildRegistry(
   readdirSync('src/content/base')
@@ -32,7 +33,7 @@ const fixtureRecipe = (): RecipeDef => {
     kind: 'repair',
     result: { item: target.id, count: 1 },
     repair: { skill, amount: 0.2, perSkill: 0 },
-    time: 1,
+    timeGameMinutes: gameMinutes(1),
     skills: { [skill]: 1 },
     qualities: { [quality]: level },
     components: [[{ item: component.id, count: 1 }]],
