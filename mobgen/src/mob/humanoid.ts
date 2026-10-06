@@ -805,6 +805,74 @@ const buildHumanoid = (genome: Genome): Body => {
   return { bones, features, palette: buildPalette(p) };
 };
 
+/** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
+const amputateCrawlerLegs = (body: Body): Body => {
+  const cutBySide = new Map<string, Vec3>();
+  const bones = body.bones.flatMap((bone) => {
+    if (/^(shin|foot)\./.test(bone.id)) {
+      return [];
+    }
+    if (!bone.id.startsWith('thigh.')) {
+      return [bone];
+    }
+    const cut: Vec3 = [
+      bone.head[0] + (bone.tail[0] - bone.head[0]) * 0.55,
+      bone.head[1] + (bone.tail[1] - bone.head[1]) * 0.55,
+      bone.head[2] + (bone.tail[2] - bone.head[2]) * 0.55,
+    ];
+    cutBySide.set(bone.id, cut);
+    return [{ ...bone, tail: cut }];
+  });
+  const features: Feature[] = [];
+  for (const feature of body.features) {
+    const cut = cutBySide.get(feature.bone);
+    if (!cut) {
+      if (!/^(shin|foot)\./.test(feature.bone)) {
+        features.push(feature);
+      }
+      continue;
+    }
+    if (feature.op === 'paint') {
+      continue;
+    }
+    if (feature.shape.kind === 'ellipsoid') {
+      const thigh = body.bones.find((bone) => bone.id === feature.bone)!;
+      const d = sub(feature.shape.center, thigh.head);
+      if (length(d) > 0.08) {
+        continue;
+      }
+      features.push(feature);
+      continue;
+    }
+    if (feature.shape.kind === 'capsule') {
+      const direction = sub(feature.shape.b, feature.shape.a);
+      const lengthSquared = dot(direction, direction);
+      const t = lengthSquared > 0 ? dot(sub(cut, feature.shape.a), direction) / lengthSquared : 1;
+      if (t > 0 && t < 1) {
+        const radius = feature.shape.ra + (feature.shape.rb - feature.shape.ra) * t;
+        features.push({
+          ...feature,
+          shape: { ...feature.shape, b: cut, rb: radius },
+        });
+      } else {
+        features.push(feature);
+      }
+      continue;
+    }
+    features.push(feature);
+  }
+  for (const [bone, center] of cutBySide) {
+    features.push({
+      bone,
+      op: 'paint',
+      shape: { kind: 'ellipsoid', center, radii: [0.045, 0.035, 0.045] },
+      material: 'gore',
+      onto: ['skin'],
+    });
+  }
+  return { ...body, bones, features };
+};
+
 const sampleWounds = (rng: Rng, count: number): Wound[] => {
   const n = Math.max(0, Math.round(count));
   const wounds: Wound[] = [];
@@ -828,6 +896,13 @@ const sampleHumanoid: BodyPlanDef['sample'] = (rng: Rng, template: Template) => 
 registerBodyPlan('humanoid', {
   sample: sampleHumanoid,
   build: (genome) => buildHumanoid(genome),
+  paramOrder: HUMANOID_PARAM_ORDER,
+  woundBones: WOUNDABLE_BONES,
+});
+
+registerBodyPlan('crawler', {
+  sample: sampleHumanoid,
+  build: (genome) => amputateCrawlerLegs(buildHumanoid(genome)),
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
 });

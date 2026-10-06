@@ -20,6 +20,7 @@ import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
+import { crawlerPose } from '../mob/crawler.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
@@ -136,7 +137,7 @@ interface Loaded {
   readonly params: HumanoidParams;
   readonly extents: ReturnType<typeof footRestExtents>;
   readonly bodyExtents: ReturnType<typeof bodyRestExtents>;
-  readonly legGeometry: LegGeometry;
+  readonly legGeometry: LegGeometry | undefined;
   /** Built once per load so its GaitCache stays warm across frames (a per-frame literal would not). */
   readonly walkActor: WalkActor;
 }
@@ -202,6 +203,12 @@ const playDeath = (): void => {
     return;
   }
   const actor = current.walkActor;
+  if (current.genome.template === 'crawler') {
+    deathBasePose = crawlerPose(current.realized);
+    deathDirection = dieBackward.checked ? -1 : 1;
+    deathTime = 0;
+    return;
+  }
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   const idle = idlePose(actor, currentStance(), idleTime);
@@ -327,7 +334,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   scene.add(actor.root);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
   const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-  const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
+  const legGeometry = genome.template === 'crawler' ? undefined : legGeometryFor(realized.body.bones, extents, 'L');
   const params = genome.params as HumanoidParams;
   const walkActor: WalkActor = {
     bones: realized.body.bones,
@@ -338,7 +345,9 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   };
   // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
   // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
-  actor.applyPose(idlePose(walkActor, currentStance(), idleTime));
+  actor.applyPose(
+    genome.template === 'crawler' ? crawlerPose(realized) : idlePose(walkActor, currentStance(), idleTime),
+  );
   current = { genome, realized, actor, params, extents, bodyExtents, legGeometry, walkActor };
   clock = INITIAL_CLOCK;
   gridZ = 0;
@@ -532,7 +541,7 @@ renderer.render(scene, camera);
 
 /** Advances the walk clock/gridZ if walking — keeps advancing through an attack too. */
 const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
-  if (!(walking && speed > 0 && current)) {
+  if (!(walking && speed > 0 && current) || !current.legGeometry) {
     return;
   }
   clock = advanceClock(clock, speed * dt, {
@@ -577,6 +586,10 @@ const advanceHit = (dt: number): void => {
 /** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
  * standing), optionally attacked, optionally flinched on top. */
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
+  if (loaded.genome.template === 'crawler') {
+    loaded.actor.applyPose(crawlerPose(loaded.realized));
+    return;
+  }
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   advanceWalk(dt, walking, speed);

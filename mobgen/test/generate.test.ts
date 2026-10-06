@@ -3,7 +3,7 @@ import { generate, generateValid, realize, realizeLod, recommendedProfileFor } f
 import type { Genome } from '../src/core/template.ts';
 import { worldPosition } from '../src/core/voxelize.ts';
 import { HUMANOID_PARAM_ORDER } from '../src/mob/humanoid.ts';
-import { TEMPLATES } from '../src/mob/templates.ts';
+import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SEEDS = 100;
@@ -135,8 +135,8 @@ describe('coarser voxel sizes', () => {
     }
   });
 
-  it('every template passes all rules at 1/6-block voxels for fixed seeds', () => {
-    for (const template of TEMPLATES) {
+  it('every humanoid template passes all rules at 1/6-block voxels for fixed seeds', () => {
+    for (const template of HUMANOID_TEMPLATES) {
       for (const seed of [7, 42]) {
         const genome = { ...generate(template, seed), voxelSize: 0.5 / 6 };
         const { report } = realize(genome);
@@ -150,7 +150,7 @@ describe('coarser voxel sizes', () => {
     for (const seed of [7, 42]) {
       expect(realize({ ...generate(brute, seed), voxelSize: 0.5 / 4 }).report.ok).toBe(true);
     }
-    for (const template of TEMPLATES.filter((candidate) => candidate.name !== 'brute')) {
+    for (const template of HUMANOID_TEMPLATES.filter((candidate) => candidate.name !== 'brute')) {
       for (const seed of [7, 42]) {
         const { report } = realize({ ...generate(template, seed), voxelSize: 0.5 / 4 });
         expect(report.ok, `${template.name} seed ${seed}`).toBe(false);
@@ -277,8 +277,8 @@ describe('validation profiles', () => {
     expect(realize(genome).profile).toBe('full');
   });
 
-  it('derives all three far sizes from an already full-valid genome', () => {
-    for (const template of TEMPLATES) {
+  it('derives all three far sizes from an already full-valid humanoid genome', () => {
+    for (const template of HUMANOID_TEMPLATES) {
       const source = generateValid(template, 7)!;
       for (const voxelSize of LOD_SIZES) {
         const lod = realizeLod(source, voxelSize);
@@ -305,12 +305,12 @@ describe('validation profiles', () => {
 
   sweepGroup('far LOD silhouette validation', () => {
     it('passes for every full-valid genome in 100 seeds per template at 1/6, 1/4 and 1/2 block', () => {
-      const results = TEMPLATES.map((template) => validateFarLodSeeds(template));
+      const results = HUMANOID_TEMPLATES.map((template) => validateFarLodSeeds(template));
       const insufficientSources = results.flatMap((result, index) =>
-        result.validSources < 80 ? [`${TEMPLATES[index]!.name}: ${result.validSources}`] : [],
+        result.validSources < 80 ? [`${HUMANOID_TEMPLATES[index]!.name}: ${result.validSources}`] : [],
       );
       const failures = results.flatMap((result, index) =>
-        result.failures.map((failure) => `${TEMPLATES[index]!.name}: ${failure}`),
+        result.failures.map((failure) => `${HUMANOID_TEMPLATES[index]!.name}: ${failure}`),
       );
       expect(insufficientSources, 'templates with too few full-valid sources').toEqual([]);
       expect(failures, 'far LOD budget/silhouette failures').toEqual([]);
@@ -319,7 +319,7 @@ describe('validation profiles', () => {
 });
 
 describe('templates', () => {
-  for (const t of TEMPLATES) {
+  for (const t of HUMANOID_TEMPLATES) {
     describe(t.name, () => {
       it(`is valid at least 80% of the time (${SEEDS} seeds)`, () => {
         let valid = 0;

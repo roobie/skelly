@@ -20,7 +20,7 @@ import {
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { idleBasePose } from '../src/mob/idle.ts';
 import { type StepStyle, stepPlanFor } from '../src/mob/steps.ts';
-import { TEMPLATES } from '../src/mob/templates.ts';
+import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
 const SPEEDS = [0.8, 2.8]; // deadvox shamblers: wander / chase (PROJECT.md)
 

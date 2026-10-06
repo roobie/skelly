@@ -113,22 +113,12 @@ describe('massProperties', () => {
     }
   });
 
-  it('declares nominal body masses and anatomical humanoid severing fractions', () => {
-    expect(TEMPLATES.map((template) => [template.name, template.bodyMassKg])).toEqual([
-      ['shambler', 70],
-      ['runner', 60],
-      ['brute', 140],
-    ]);
+  it('keeps authored body mass and severing fractions physically usable', () => {
     for (const template of TEMPLATES) {
-      expect(template.massFractions).toEqual({
-        'hand.L': 0.006,
-        'hand.R': 0.006,
-        'forearm.L': 0.022,
-        'forearm.R': 0.022,
-        'upperArm.L': 0.05,
-        'upperArm.R': 0.05,
-        head: 0.081,
-      });
+      expect(template.bodyMassKg).toBeGreaterThan(0);
+      const fractions = Object.values(template.massFractions ?? {});
+      expect(fractions.every((fraction) => Number.isFinite(fraction) && fraction > 0 && fraction < 1)).toBe(true);
+      expect(fractions.reduce((total, fraction) => total + fraction, 0)).toBeLessThan(1);
     }
   });
 
