@@ -270,9 +270,9 @@ Paperwork; no game code.
   option from the core `options()`: `quickMove(item, reach)` returns the move it
   would make, or the reason it can't. The default UI binding is **hold T and
   click**, as BR ruled on 2026-10-04 ("hold T+click on item does the quick action
-  (auto move)"), under his rule of no Ctrl or Cmd, ever (`CONTROLS.md`). See
-  `src/game/inputBindings.ts`, `INPUT_BINDINGS`, for its rebindable gate. Shift-click stays
-  free for splitting a stack later.
+  (auto move)"), under BR's rule that Ctrl, Cmd and Meta never invoke a game action
+  (`CONTROLS.md`). See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, for its
+  rebindable gate. Shift-click stays free for splitting a stack later.
   - **An item you carry** (in hands, worn, in a pocket or a container) drops to
     the ground pile at your feet. A worn container drops with its contents.
     Taking it off costs its usual handling time.
@@ -289,8 +289,8 @@ Paperwork; no game code.
     and goes through the handling queue, so it saves clicks, not game time.
   - **Tests:** one case per rule: carried to the floor, wielded with and without
     room, floor to the backpack, falling through to a pocket, no room giving the
-    hint, a floor backpack worn with its contents, and a whole stack. Plus the
-    platform key mapping.
+    hint, a floor backpack worn with its contents, a whole stack, and the
+    property that browser-owned modifiers cannot bind to game actions.
 
 **Saves:** none; queries hold no state.
 **Tests:** an item in a pile or a backpack lying just inside 2 m is in reach,
@@ -442,11 +442,15 @@ teaching books in recipe knowledge; see `src/core/reachability.ts`,
 accepted only when an eligible activity is reachable.
 
 - Progression on 2.4's character state: finishing a craft gives practice in the
-  recipe's skills; levels never go down. A skill shortens work time and gates
-  recipes that need it.
+  recipe's skills; ordinary levels are bounded by `src/core/character.ts`,
+  `SKILL_LEVEL_MIN` and `SKILL_LEVEL_MAX`, with `SKILL_LEVEL_LEGENDARY` as the
+  single exceptional level. A skill shortens work time and gates recipes that
+  need it.
 - A `book` component (title, recipes taught, reading time). Reading is a long
   action with the book in your hands, under 2.4's contract; finishing it
-  teaches its recipes. The `paperback` stays inert.
+  teaches its recipes. One reading teaches the recipes for Slice 2; deeper
+  learning is a later-slice direction (BR, 2026-10-05; see EPIC.md). The
+  `paperback` stays inert.
 - 4 books.
 
 **Saves:** skill practice, added to 2.4's state; a reading in progress as a long
@@ -522,8 +526,8 @@ refused out of reach; the bonus shortens work time by its amount.
 
   | Light | Ignite | Douse | Sprint | Stow in a pocket | Drop | Relight |
   | --- | --- | --- | --- | --- | --- | --- |
-  | Torch | needs a lighter or matches in reach | yes, as an action | stays lit | not while lit | goes out | yes, while it has burn time left |
-  | Candle | needs a lighter or matches in reach | yes (blow out) | goes out | goes out | goes out | yes, while it has burn time left |
+  | Torch | needs a lighter or matches in the other hand | yes, as an action | stays lit | not while lit | goes out | yes, while it has burn time left |
+  | Candle | needs a lighter or matches in the other hand | yes (blow out) | goes out | goes out | goes out | yes, while it has burn time left |
   | Glowstick | snap once; it can't be reused | no | stays lit | stays lit | keeps glowing **and lights the area around it** (BR) | no |
 
 - Remaining burn time is kept when a light goes out and is relit, and across
@@ -735,6 +739,68 @@ The *Later* notes are recorded in EPIC.md, under "Later, after the game is more
 playable".
 
 ## Results
+
+### Made lights: d64-1 planned workload
+
+The approved workload supports four concurrently lit carried sources. The four
+are a torch in one hand, a candle in the other, and two lit glowsticks in
+pockets. Twelve more lit glowsticks are dropped, four on an inner 3 m ring and
+eight on an outer 6 m ring. The workload therefore starts with 16 active
+sources and has 15 after the candle goes out during sprint. Use the content's
+plan-default light settings: a warm all-around torch at 5 cd with a 6 m
+lighting radius and 60 m seen-from distance; a warm all-around candle at 1 cd,
+3 m and 15 m; and a green all-around glowstick at 0.25 cd, 2 m and 15 m. All
+made lights use decay 1 and cast no shadows.
+
+The fixed pool has eight shadowless point-light slots. It represents the four
+carried sources and the nearest four dropped glowsticks; the other dropped
+sticks remain emissive. If more than four carried sources are lit, prioritize
+hands first and then pockets in stable inventory order; further carried lights
+remain lit but get no point-light slot. The four dropped slots are not lent to
+a fifth dropped glowstick when a carried slot is idle. The pool never grows. The
+dropped-light selection and carried-source limit are part of the workload, not
+content-ID special cases.
+
+Run the full phases from `src/bench/run.ts`, `startBench`, with
+`?bench=1&plan=0.5:96&seed=73&time=23:30&post=1&shamblers=60`, then repeat with
+`shamblers=0` to isolate lighting cost. No quick mode. On the reference laptop in
+Firefox, require 60 fps, at most 1% of frames over 18 ms in every phase, and no
+holes at sprint speed. The report records the workload shape, active source
+counts before and after sprint, pool size, and light settings read from content.
+BR may overrule the plan-default light settings at d64-1's first look; if so,
+update the workload before measuring the production preview. Tests read the
+light settings from content rather than pinning their tuning values.
+
+The final production build was run once per workload in Chromium with
+SwiftShader, a software renderer (7 reported cores, 1280 × 720, DPR 1). Both
+runs used content defaults and completed every full phase without interruption.
+This single comparison is diagnostic only: it cannot establish the
+Firefox/reference-laptop gate, and its small frame samples are not tuning
+evidence.
+
+| Phase | 60 detailed shamblers + lights | Lights only |
+| --- | --- | --- |
+| Load | 105.3 s | 99.1 s |
+| Look | 1.08 fps; frame p95 1083.3 ms; work p95 31.7 ms | 1.05 fps; frame p95 1816.6 ms; work p95 16.8 ms |
+| Blocking render p95 | 1048.9 ms | 923.9 ms |
+| Jog | 0.97 fps; frame p95 2299.9 ms; work p95 65.4 ms; max holes 18 | 1.35 fps; frame p95 800 ms; work p95 15.4 ms; max holes 15 |
+| Sprint | 1.02 fps; frame p95 1366.6 ms; work p95 64 ms; max holes 64 | 1.44 fps; frame p95 783.3 ms; work p95 10.4 ms; max holes 50 |
+
+All phases exceeded 18 ms in every sampled frame, and neither run met the
+no-holes sprint condition. In this pair, the detailed shamblers coincide with
+higher blocking-render cost and jog/sprint movement cost; the look-frame tails
+vary and the sample is too small to tune from. These software-renderer
+results do not establish the reference-machine gate.
+BR's reference-laptop run for the same workload passed the gate; see below.
+
+#### BR reference-laptop result (2026-10-05)
+
+BR ran the full 0.5 m / 96 m workload with 16 active lights and 60 detailed
+shamblers in Firefox 153 on an integrated Intel HD-class GPU with 8 CPU
+threads. Look measured 60 fps, 17.2 ms frame p95 and 0% of frames over 18 ms;
+jog measured 17.2 ms p95, 0% over 18 ms and 0 holes; sprint measured 17.2 ms
+p95, 0% over 18 ms and 0 holes. The specified gate (60 fps, at most 1% of
+frames over 18 ms in every phase, and no sprint holes) **passed**.
 
 ### Trees: d24-2, 2026-10-03 — CPU lookup fixed
 

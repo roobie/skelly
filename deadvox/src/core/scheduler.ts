@@ -16,7 +16,7 @@ export interface SystemSpec {
   readonly tick: (dt: number, time: number) => void;
 }
 
-export interface SchedulerCursor {
+interface SchedulerCursor {
   id: string;
   done: number;
   ticks: number;

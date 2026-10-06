@@ -15,7 +15,7 @@ export interface SimulationFingerprintOptions {
   exclude?: readonly string[];
 }
 
-export interface ExcludedSimulationImport {
+interface ExcludedSimulationImport {
   importer: string;
   excluded: string;
 }
@@ -76,9 +76,10 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/skylight.ts',
   'src/core/shell.ts',
   'src/core/pileLayout.ts',
-  // WebAudio output/voice allocation is presentation; session admission and saved SoundPicker remain fingerprinted.
+  // WebAudio output/voice allocation and body-sized pitch law are presentation; admission and saved SoundPicker stay fingerprinted.
   'src/game/audio.ts',
   'src/game/audioPresentation.ts',
+  'src/game/shamblerAudio.ts',
   'src/game/damageFeedback.ts',
   'src/game/engine.ts',
   'src/game/saveStorage.ts',

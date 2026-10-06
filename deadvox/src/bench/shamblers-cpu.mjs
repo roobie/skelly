@@ -76,6 +76,7 @@ const hour = hourOfDay(startTime);
 for (const count of counts) {
   const system = new ZombieSystem({
     isSolid: engine.isSolid,
+    isOpaque: engine.isOpaque,
     blockSize: engine.config.scale.blockSize,
     physics: physicsFor(engine.config.scale),
     jumpSpeed: PLAYER.jump,

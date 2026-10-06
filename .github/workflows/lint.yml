@@ -45,6 +45,7 @@ jobs:
       - run: npm ci --prefix deadvox
       - run: npm ci --prefix deadvox/tools/lit-check
       - run: npm ci --prefix mobgen
+      - run: npm run knip
       # The npm script runs the lockfile's @biomejs/biome and fails if it isn't installed;
       # `npx biome` could fall back to the unrelated `biome` package, which checks nothing.
       - run: npm run ci -- --reporter=github

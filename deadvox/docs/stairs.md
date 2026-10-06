@@ -2,7 +2,7 @@
 read_if:
   - you're authoring multi-storey templates, stairs or root cellars
   - you're changing stair traversal, floor-opening validation or cellar lighting
-  - you're routing shamblers across authored flights or maintaining the following proof
+  - you're changing shambler responses to stairs or targets on another floor
 ---
 
 # Explicit storeys, stairs and root cellars
@@ -47,7 +47,7 @@ body, 0.3 m half-width and existing raise-then-move step-up sweep along a half-c
 route. Standing requires four clear cells; overlap with future treads can require
 six at the opening edge, not over a flat landing. An ordinary 2.5 m room keeps its
 roof intact. A conflicting authored block is rejected with its cell coordinate.
-The 1.7 m shambler fits the same clearance, but fitting is not route discovery.
+The 1.7 m shambler fits the same clearance; that physical fit does not give it stair-navigation behavior.
 Do not put furniture or doors inside this clearance volume.
 
 City stress tests still use `stackTemplate` to repeat an unannotated storey. An
@@ -67,11 +67,7 @@ stamping and regeneration produce the same void, even across horizontal/vertical
 chunk seams and quarter turns. Surrounding soil, foundation, upper floor and roof
 stay solid. A placement cannot put its lowest layer below the world's -48 m floor.
 
-`placedFlights(placement)` exposes joined floor ids and rotated **world-block**
-landing coordinates. Navigation consumes the same placement transform so a rotated
-flight cannot disagree with its physical treads; see `deadvox/src/core/authoredSite.ts`,
-`AuthoredSite`, and `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
-Door actions remain separate from connectivity.
+`compileTemplate`, in `deadvox/src/core/templates.ts`, constructs the authored treads in compiled block data; `AuthoredSite.stamp`, in `deadvox/src/core/authoredSite.ts`, writes those blocks through `stampPlacement`. d84-2 removes `placedFlights` and `Site.stairFlights`: shambler route planning was their only consumer, and the flight-rotation assertions are no longer part of `test/stairs.test.ts`. The cellar test still exercises quarter-turned placement and chunk stamping. Door actions remain separate from static floor-space connectivity.
 
 ## Spatial validation
 
@@ -176,23 +172,9 @@ override exist only in the lighting test's Vite plugin, not the demo or build. B
 stages keep the existing outer cap; neither retries to green. Traversal witnesses
 actual floor following; screenshots are secondary to its simulation observations.
 
-Matching x/z projections does not establish arrival on another storey. Authored
-flights supply connectivity, but closed doors remain blockers until the player
-opens them. See `deadvox/src/core/zombies.ts`, `sameRouteFloor` and `routeWaypoint`,
-and `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
+Shamblers do not traverse authored flights or otherwise navigate between storeys. BR's ruling is to “beeline towards whatever grabs their attention,” move horizontally toward it, let collision physics slide along obstacles, and prefer jumping low obstacles; some obstacle hits trigger an open-direction wander before pursuit resumes. A target on another floor does not give the shambler stair knowledge. Closed doors block it like walls; BR deferred bashing for #273 until mob and obstacle strength exist. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`, and `deadvox/DESIGN.md`, “Senses and AI.”
 
-An exact stimulus during descent may refer to an intermediate tread, not the final
-floor. A following proof must establish its intended target before timing arrival;
-see `deadvox/test/browser/stairs.mjs`, `residentBeforeDescent`.
-A body also straddles adjacent treads: steering must release a passed waypoint
-without mistaking that temporary support height for storey arrival. See
-`deadvox/src/core/zombies.ts`, `routeWaypointReached`.
-Perception can change again while a shambler stands on a tread. Replanning must
-retain that authored flight rather than strand the body between landing floors;
-see `deadvox/src/core/shamblerRoutes.ts`, `flightRemainder`.
-Verified-leg translation is independent of gradual visual body turning: a
-facing-driven corner arc can miss a tread. Physics still owns movement and
-collision; see `deadvox/src/core/zombies.ts`, `ZombieSystem`.
+The browser stage checks player traversal, not shambler navigation.
 
 Horizontal arrival and landing are separate native-input observations. Release
 forward input before waiting for support, otherwise a walker can pass the target

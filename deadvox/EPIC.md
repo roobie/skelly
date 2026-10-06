@@ -2,6 +2,7 @@
 read_if:
   - you're planning a version 1 slice, milestone or playtest
   - you're deciding which features belong in deadvox version 1
+  - you're changing firearm handling or combat design for version 1
 ---
 
 # deadvox — the road to version 1
@@ -131,23 +132,25 @@ as this slice's first step, was done in Slice 1 (#105), which completed
 The first real playtest is at this slice's end (BR, 2026-10-02), before Slice 4
 starts. BR chose this timing because the base game will be in place. It combines
 the questions below with those added by Slice 2 in [SLICE-2.md](SLICE-2.md) and
-by this slice.
+by this slice. Slice 3's milestone plan, BR rulings, dependencies, open questions
+and completion gates are in [SLICE-3.md](SLICE-3.md); BR's process rule is to
+deal with one milestone per turn.
 
 #### Playtest plan
 
 Use the authored map specified in
-[#181](https://github.com/roobie/skelly/issues/181). Test at least three people,
-including someone new to both CDDA and DayZ, in a 45-minute session on Pages. Give only this prompt: “Survive until morning. Loot
-what you think you need.” Do not teach the systems first.
+[#181](https://github.com/roobie/skelly/issues/181) and detailed in
+[SLICE-3.md](SLICE-3.md). Test at least three people, including someone new to
+both CDDA and DayZ, in a 45-minute session on Pages. BR's proposed prompt,
+pending confirmation during 3.11, is “find the military camp” (BR's hedged
+suggestion, 2026-10-05 22:17: “Instead it could be: "find the military camp", maybe?”). Do not teach the systems first.
 
-Run: open the Pages build, read the controls card and start at dusk. Walk the
-road between houses; search kitchen cupboards, move food into pockets, then put
-on a backpack and rearrange items. While in the inventory, have a shambler reach
-the door they left open; drop what they are holding, take the crowbar from the
-pile, and fight or evade it. Eat, drink and use the flashlight; listen for
-something outside at night and decide whether to switch the light off. Close the
-door, sleep, respond to the 03:40 interruption, then continue to morning. Close the tab and return with Continue; on a later death,
-review the death screen and start a new world.
+Run: open the Pages build, read the controls card and start at dusk at the lone
+house. Follow the authored progression through the first night near the hunting
+cabins and the second night at the medical site; do not script zombie behavior.
+Observe inventory choices, combat, noise, light and wound decisions without
+coaching. Close the tab and return with Continue; on a later death, review the
+death screen and start a new world.
 
 Ask each player:
 
@@ -164,8 +167,8 @@ Ask each player:
    in mind ([DESIGN.md](DESIGN.md#light)).
 7. Does the 1:8 clock ratio let a 45-minute session show enough of the world?
 8. Do non-respawning shamblers make the second night too safe?
-9. Is combat readable? Do noise and wounds change what the player does? Do they
-   listen before moving?
+9. Is combat readable and visceral? Do noise and wounds change what the player
+   does? Do they listen before moving?
 
 Watch how long people spend in the inventory screen, pocket choices, reactions
 to unseen sounds and interruptions, and any point where players stall or
@@ -177,35 +180,9 @@ the findings before planning Slice 4.
 The death/new-run contract is still open for version 1: should a new run in the
 same world preserve piles left by the previous character?
 
-- An authored playtest map for that playtest (BR, 2026-10-03;
-  [#181](https://github.com/roobie/skelly/issues/181)). BR provides a simple
-  schematic. Aim for two in-game days, with fixed key loot and seeded filler.
-- The body model: parts, wounds, bleeding, infection, fractures, and first aid.
-- Melee depth (weapon types, stamina, knockback) and blocking.
-- Firearms from gungen assemblies: ammo, magazines, reloading as handling,
-  noise and recoil.
-- **Aim sway and the firearms skill (BR, 2026-10-05):** "we should add a aiming
-  variance based on movement, swing and recoil (this should show in game via a
-  sway on the weapon)". The firearms skill "will: 1) mitigate the aim variance
-  2) quicken reload time 3) quicken rack time (shotgun)". It starts as one
-  skill, "which we will expand to separate firearm archetypes later, like
-  skill:smgs, skill:shotguns etc".
-- Modular weapons: the player fits mods (optics first, then suppressors and
-  other muzzle devices, foregrips, tactical flashlights and lasers, magazines,
-  stocks and so on) found as loot or crafted, through the mount points a gun
-  offers. Mods change the gun in play (a suppressor's noise, a flashlight's
-  light as a sense, a grip's handling). Fitting and removing a mod is
-  handling. A found gun comes with the generator's default mods (BR,
-  2026-10-01; the gungen side is gungen.2 in `gungen/PROJECT.md`).
-- The noise system (sources, reduction by walls), sight at night and when
-  crouching, and a smell trail.
-- Light as a sense: zombies see light sources from far away and see you when
-  you're lit. Flares and thrown lights as lures, and the headlamp.
-- Positional sound for every noise event, muffled by walls like the noise
-  itself, and distinct sounds for each zombie type.
-- Zombies: crawler, runner, screamer, bloater. Flow fields and the background
-  tier; the first hordes.
-- Input recording and replay for bug reports.
+Slice 3's scope and milestone-by-milestone plan are in [SLICE-3.md](SLICE-3.md).
+The body model, melee and firearm work, ready stance, senses, light, weapon mods,
+zombie types, hordes, input replay and authored playtest map are planned there.
 
 ### 4. The region
 
@@ -312,6 +289,7 @@ later notes (2026-09-27):
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition affects how an item performs, not only whether it's ruined.
 - Books may also speed up skill practice, not only teach recipes.
+- **Learning from books, later (BR, 2026-10-05):** “at this point it's ok to just 'learn' the recipes, but we will transition to a more in-depth leaning system in future - i.e. you don't just learn the recipe by reading it once, but rather you det to know it, and then you can use the book as reference while performing it, until learned fully”.
 - Condition may lower salvage yield.
 
 **Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”

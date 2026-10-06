@@ -9,6 +9,7 @@ import {
   type InputCommand,
   type InputContext,
   KeyboardInput,
+  REFUSED_MODIFIERS,
 } from '../src/game/inputBindings.ts';
 
 const fixture: readonly Binding[] = [
@@ -38,7 +39,7 @@ const fixture: readonly Binding[] = [
     description: 'Fixture gate',
     contexts: ['play', 'inventory'],
     commands: [{ id: 'debug.gate', kind: 'held-state' }],
-    defaults: [{ code: 'F1' }],
+    defaults: [{ code: 'F3' }],
     debug: true,
   },
   {
@@ -94,6 +95,11 @@ describe('keyboard registry', () => {
   it('declares conflict-free defaults with valid physical keys and unique semantic commands', () => {
     expect(INPUT_BINDINGS.length).toBeGreaterThan(0);
     expect(bindingConflict(INPUT_BINDINGS, new Map())).toBeUndefined();
+    expect(
+      INPUT_BINDINGS.filter((binding) => binding.debug && binding.id !== 'debug.gate').every(
+        (binding) => binding.gate === 'debug.gate',
+      ),
+    ).toBe(true);
     const commands = INPUT_BINDINGS.flatMap((binding) => binding.commands.map(({ id }) => id));
     expect(new Set(commands).size).toBe(commands.length);
     for (const binding of INPUT_BINDINGS) {
@@ -103,6 +109,30 @@ describe('keyboard registry', () => {
         expect(chordIssue(chord)).toBeUndefined();
       }
     }
+  });
+  it('rejects every browser-owned modifier for a game binding', () => {
+    const bindings = new BindingRegistry(fixture, storage());
+    for (const modifier of REFUSED_MODIFIERS) {
+      expect(bindings.rebind('fixture.interact', [{ code: 'KeyJ', modifier }])).toEqual(expect.any(String));
+    }
+  });
+  it('rejects an ungated debug action sharing a game action chord', () => {
+    const game: Binding = {
+      id: 'fixture.game',
+      description: 'Fixture game action',
+      contexts: ['play'],
+      commands: [{ id: 'fixture.game', kind: 'press' }],
+      defaults: [{ code: 'KeyJ' }],
+    };
+    const debug: Binding = {
+      id: 'fixture.ungated-debug',
+      description: 'Fixture ungated debug action',
+      contexts: ['play'],
+      commands: [{ id: 'fixture.ungated-debug', kind: 'press' }],
+      defaults: [{ code: 'KeyJ' }],
+      debug: true,
+    };
+    expect(bindingConflict([game, debug], new Map())).toEqual(expect.any(String));
   });
   it('persists accepted rebinds, refuses overlapping modifiers atomically, drops invalid preferences and resets labels', () => {
     const prefs = storage();
@@ -114,7 +144,7 @@ describe('keyboard registry', () => {
     const restored = new BindingRegistry(fixture, prefs);
     expect(restored.label('fixture.interact')).toBe('J');
     expect(restored.rebind('debug.gate', [{ code: 'KeyF' }])).toBeDefined();
-    expect(restored.label('fixture.debug')).toBe('F1 + F');
+    expect(restored.label('fixture.debug')).toBe('F3 + F');
     expect(restored.rebind('fixture.quick', [{ code: 'ShiftLeft' }])).toBeDefined();
     expect(restored.rebind('fixture.quick', [{ code: 'KeyJ', modifier: 'alt' }])).toBeDefined();
     expect(restored.label('fixture.quick')).toBe('T');
@@ -166,8 +196,8 @@ describe('keyboard registry', () => {
     expect(keyboard.held('fixture.move')).toBe(true);
     keyboard.release(event('KeyW'));
     keyboard.release(event('ShiftLeft'));
-    keyboard.press(event('F1'));
-    expect(keyboard.press(event('F1', { repeat: true }))).toBe(true);
+    keyboard.press(event('F3'));
+    expect(keyboard.press(event('F3', { repeat: true }))).toBe(true);
     expect(keyboard.held('debug.gate')).toBe(true);
     commands.length = 0;
     keyboard.press(event('KeyF'));
@@ -177,7 +207,7 @@ describe('keyboard registry', () => {
     keyboard.sync();
     expect(keyboard.press(event('KeyF', { repeat: true }))).toBe(false);
     keyboard.release(event('KeyF'));
-    keyboard.release(event('F1'));
+    keyboard.release(event('F3'));
     commands.length = 0;
     keyboard.press(event('KeyF'));
     expect(commands[0]?.action).toBe('fixture.inventory');
@@ -190,8 +220,8 @@ describe('keyboard registry', () => {
     keyboard.release(event('KeyF'));
     expect(keyboard.registry.rebind('debug.gate', [{ code: 'F2' }])).toBeUndefined();
     expect(keyboard.registry.label('fixture.debug')).toBe('F2 + F');
-    expect(keyboard.press(event('F1'))).toBe(false);
-    keyboard.release(event('F1'));
+    expect(keyboard.press(event('F3'))).toBe(false);
+    keyboard.release(event('F3'));
     expect(keyboard.press(event('F2'))).toBe(true);
     commands.length = 0;
     keyboard.press(event('KeyF'));

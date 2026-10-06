@@ -72,7 +72,7 @@ describe('live craft commands', () => {
     expect(r.commands.start('torch')).toBeUndefined();
     r.sim.actions.stop();
     expect(r.commands.currentUid).toBe(r.inventory.hands.right!.uid);
-    expect(r.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    expect(r.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
     expect(r.commands.currentUid).toBeUndefined();
   });
   it('a stopped sleep releases Continue to the held work', () => {
@@ -80,7 +80,7 @@ describe('live craft commands', () => {
     expect(r.commands.start('torch')).toBeUndefined();
     r.sim.actions.stop();
     const workUid = r.inventory.hands.right!.uid;
-    expect(r.sim.actions.startRest('sleep', -10)).toBeUndefined();
+    expect(r.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
     r.sim.actions.stop();
     expect(r.commands.currentUid).toBe(workUid);
   });
@@ -158,13 +158,13 @@ describe('live craft commands', () => {
     expect(r.sim.actions.cancelCraft(work.uid)).toBeDefined();
     expect(r.inventory.snapshotState()).toEqual(before);
   });
-  it('unsafe start refuses before escrowing inputs or allocating a work UID', () => {
+  it('starts crafting despite an unsafe compression reason', () => {
     const refusal = 'test-owned unsafe reason';
     const r = make(() => refusal);
-    const before = r.inventory.snapshotState();
-    expect(r.commands.start('torch')).toBe(refusal);
-    expect(r.inventory.snapshotState()).toEqual(before);
-    expect(r.sim.actions.job).toBeUndefined();
+    expect(r.commands.start('torch')).toBeUndefined();
+    expect(r.sim.actions.job?.jobType).toBe('craft');
+    expect(r.sim.compression.active).toBe(true);
+    expect(r.sim.compression.interruption).toBeUndefined();
   });
   it('refuses occupied hands without creating work or moving any inputs', () => {
     const r = make();

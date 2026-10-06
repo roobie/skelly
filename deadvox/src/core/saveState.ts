@@ -3,7 +3,7 @@
 
 import type { PlayerState } from '../game/player.ts';
 import type { Survival } from '../game/survival.ts';
-import type { BlockEntitiesState } from './blockEntities.ts';
+import type { AimState } from './aim.ts';
 import type { Character, CharacterState } from './character.ts';
 import type { HandlingQueue, HandlingQueueState } from './handling.ts';
 import type { Inventory, InventoryState } from './inventory.ts';
@@ -28,6 +28,7 @@ export interface SaveSnapshot {
     progression: CharacterState;
     simulation: SimulationState;
     player: PlayerState;
+    aim: AimState;
     inventory: InventoryState;
     longAction: LongActionState;
     playerCombat: PlayerCombatState;
@@ -54,6 +55,7 @@ export interface SnapshotSessionInput {
   character: Character;
   simulation: Simulation;
   player: PlayerState;
+  aim: { snapshotState: () => Readonly<AimState> };
   survival: Survival;
   quickbar: readonly (number | null)[];
   zombies: ZombieSystem;
@@ -75,6 +77,7 @@ export const snapshotSession = ({
   character,
   simulation,
   player,
+  aim,
   survival,
   quickbar,
   zombies,
@@ -104,6 +107,7 @@ export const snapshotSession = ({
       progression: character.snapshotState(),
       simulation: simulation.snapshotState() as SimulationState,
       player: structuredClone(player),
+      aim: structuredClone(aim.snapshotState()) as AimState,
       inventory: inventory.snapshotState() as InventoryState,
       longAction: simulation.actions.snapshotState(),
       playerCombat: playerCombat.snapshotState(),
@@ -165,10 +169,3 @@ export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<Pl
     soundPicker: structuredClone(state.soundPicker),
   });
 };
-
-/** Content-addressed base chunks are regenerated first; this overlays only changed cells. */
-export const restoreWorldDiffs = (world: World, snapshot: SaveSnapshot, blockId: (contentId: string) => number): void =>
-  world.restoreDiffs(snapshot.world.diffs, blockId);
-
-/** Expose block-entity state by its own type without duplicating it in the envelope. */
-export type SavedBlockEntities = BlockEntitiesState;

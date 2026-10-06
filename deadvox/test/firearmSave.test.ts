@@ -1,7 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
+import { type AimStep, assertAimState } from '../src/core/aim.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { pelletShot } from '../src/core/pellets.ts';
 import {
   decodeSave,
   encodeSave,
@@ -13,6 +15,7 @@ import type { SaveSnapshot } from '../src/core/saveState.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { type FirearmShotEffect, firearmHandlingFor, spentCaseItemId } from '../src/game/firearmHandling.ts';
+import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
@@ -51,7 +54,12 @@ const contentLookup = (kind: SaveContentKind, id: string): boolean => {
       throw new Error(`Unknown content kind ${kind}`);
   }
 };
-const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>) =>
+const session = (
+  effects: FirearmShotEffect[],
+  restore?: Readonly<SaveSnapshot>,
+  look: { pitch: number } = { pitch: restore?.character.player.pitch ?? 0 },
+  options: { readonly firing?: boolean; readonly adjustPitch?: boolean } = {},
+) =>
   createSession({
     registry,
     world: new World(),
@@ -63,10 +71,20 @@ const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>)
     spawn: [0, 0, 0],
     ready: () => true,
     controls: {
-      active: () => false,
+      active: () => options.firing ?? false,
+      automaticFireHeld: () => options.firing ?? false,
       intent: () => IDLE,
       yaw: () => 0,
-      pitch: () => 0,
+      pitch: () => look.pitch,
+      ...(options.adjustPitch === false
+        ? {}
+        : {
+            adjustPitch: (delta) => {
+              const adjusted = adjustLookPitch(look.pitch, delta);
+              look.pitch = adjusted.pitch;
+              return adjusted.applied;
+            },
+          }),
       walking: () => false,
       descending: () => false,
     },
@@ -76,6 +94,68 @@ const session = (effects: FirearmShotEffect[], restore?: Readonly<SaveSnapshot>)
     onFirearmEjection: (effect) => effects.push(effect),
     ...(restore ? { restore } : {}),
   });
+
+it('a codec save restores the immediate aim frame, recoil and next pellet rays', async () => {
+  const original = session([]);
+  const prior: AimStep = {
+    dt: 1 / 60,
+    velocity: [1.2, 0, -0.4],
+    blockSize: 0.5,
+    yaw: Math.PI - 0.02,
+    pitch: 0.1,
+    variance: 1,
+    firing: false,
+    recoilRecoveryRate: 1,
+  };
+  original.aim.advance(prior);
+  original.aim.recordShot(129, 0.02);
+  const snapshot = original.snapshot({ worldId: 'world', characterId: 'character' });
+  const bytes = await encodeSave(snapshot, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup });
+  const resumed = session([], decoded.snapshot);
+  expect(resumed.aim.frame).toEqual(original.aim.frame);
+  const next: AimStep = { ...prior, yaw: -Math.PI + 0.03, pitch: 0.12 };
+  const originalFrame = original.aim.advance(next);
+  const resumedFrame = resumed.aim.advance(next);
+  expect(resumedFrame).toEqual(originalFrame);
+  const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+  expect(
+    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: resumedFrame, seed: 83, key: 'resume' }),
+  ).toEqual(
+    pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: originalFrame, seed: 83, key: 'resume' }),
+  );
+});
+
+it('keeps headless session recoil valid when held fire has no view-pitch control', () => {
+  const headless = session([], undefined, { pitch: LOOK_PITCH_LIMIT }, { firing: true, adjustPitch: false });
+  for (let shot = 0; shot < 80; shot++) {
+    headless.aim.recordShot(shot, 0.035);
+    headless.frame(1 / 60);
+    assertAimState(headless.aim.snapshotState());
+  }
+});
+
+it('a codec save preserves the session-shifted view pitch after over-limit recoil', async () => {
+  const look = { pitch: 0 };
+  const original = session([], undefined, look);
+  original.aim.recordShot(1, 0.3);
+  original.frame(0.1);
+  expect(look.pitch).toBeGreaterThan(0);
+  const saved = original.snapshot({ worldId: 'world', characterId: 'character' });
+  const bytes = await encodeSave(saved, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'testHouse', storeys: 1, density: 0.75 },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup });
+  const resumed = session([], decoded.snapshot);
+  expect(decoded.snapshot.character.player.pitch).toBeCloseTo(look.pitch, 8);
+  expect(resumed.restoredLook?.pitch).toBeCloseTo(look.pitch, 8);
+});
 
 it('a codec save before ejectAt restores one pending case and ejects it exactly once', async () => {
   const originalEffects: FirearmShotEffect[] = [];
@@ -99,6 +179,7 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
       eye: [0, PLAYER.eye / 0.5, 0],
       yaw: 0,
       pitch: 0,
+      aimFrame: { yaw: 0, pitch: 0 },
       blockSize: 0.5,
     }),
   ).toBe(true);

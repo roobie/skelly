@@ -28,19 +28,26 @@ import {
   boolean as vBoolean,
 } from 'valibot';
 import { hasSegment } from './authoredTerrain.mjs';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 
-export const Id = pipe(string(), regex(ID_PATTERN, 'must be lowercase letters, digits and _'));
+const Id = pipe(string(), regex(ID_PATTERN, 'must be lowercase letters, digits and _'));
 const CalibreId = pipe(string(), regex(CALIBRE_ID_PATTERN, 'must be a cartridge-data id'));
 const Name = pipe(string(), nonEmpty('must not be empty'));
 const Color = pipe(string(), regex(/^#[0-9a-fA-F]{6}$/, 'expected "#rrggbb"'));
 const NonNegative = pipe(number(), minValue(0, 'must be 0 or more'));
 const Positive = pipe(number(), minValue(Number.MIN_VALUE, 'must be more than 0'));
 const Count = pipe(number(), integer('must be a whole number'), minValue(0, 'must be 0 or more'));
+const SkillLevel = pipe(
+  number(),
+  integer('must be a whole number'),
+  minValue(SKILL_LEVEL_MIN, `must be at least ${SKILL_LEVEL_MIN}`),
+  maxValue(SKILL_LEVEL_MAX, `must be at most ${SKILL_LEVEL_MAX}`),
+);
 const Fraction = pipe(number(), minValue(0, 'must be 0 to 1'), maxValue(1, 'must be 0 to 1'));
 const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 
@@ -78,9 +85,7 @@ export const BLOCK_PATTERNS = [
   'noise',
 ] as const;
 
-export type BlockPattern = (typeof BLOCK_PATTERNS)[number];
-
-export const BlockSchema = strictObject({
+const BlockSchema = strictObject({
   id: Id,
   name: Name,
   color: Color,
@@ -96,7 +101,7 @@ export const BlockSchema = strictObject({
 
 // ---- items ----
 
-export const ITEM_CATEGORIES = [
+const ITEM_CATEGORIES = [
   'food',
   'drink',
   'medical',
@@ -112,7 +117,7 @@ export const ITEM_CATEGORIES = [
   'misc',
 ] as const;
 
-export const WEAR_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
+const WEAR_SLOTS = ['head', 'torso', 'legs', 'back', 'waist', 'hands', 'feet'] as const;
 
 export type WearSlot = (typeof WEAR_SLOTS)[number];
 
@@ -170,7 +175,13 @@ const WeaponSchema = strictObject({
 });
 
 // Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
-const FirearmSchema = strictObject({ pump: optional(vBoolean()) });
+const FirearmSchema = strictObject({
+  pump: optional(vBoolean()),
+  /** Camera-local aim kick per committed shot, scaled by firearms control. */
+  recoilKickRadians: Positive,
+  /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
+  dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
+});
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
@@ -182,11 +193,32 @@ const LightSchema = strictObject({
   radius: Positive,
   /** Metres from which others can see it (DESIGN.md, "Light"). */
   seenFrom: Positive,
+  /** Point-light colour and candela; both are presentation-owned content. */
+  color: Color,
+  intensity: Positive,
+  /** Material glow for sources that remain visible when outside the point-light pool. */
+  emissive: optional(NonNegative),
+  /** Total burn in game hours for a consumable flame/light. */
+  burnTime: optional(Positive),
+  /** Fuel units consumed per game hour, for self-fueled sources such as a lighter. */
+  fuelPerHour: optional(Positive),
   /** A cone of this many degrees; absent means light all around. */
   beam: optional(pipe(Positive, maxValue(180, 'must be at most 180'))),
+  burning: optional(
+    strictObject({
+      ignition: picklist(['manual', 'firestarter', 'snap']),
+      douse: vBoolean(),
+      sprint: picklist(['stay', 'douse']),
+      stow: picklist(['refuse', 'douse', 'stay']),
+      drop: picklist(['douse', 'stay']),
+      relight: vBoolean(),
+    }),
+  ),
   /** What powers it: an item with a battery component, and charge used per game hour. */
   power: optional(strictObject({ battery: Id, perHour: Positive })),
 });
+
+const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
@@ -212,7 +244,7 @@ const readableText = (limit: number) =>
     check(isReadablePlainText, 'must be plain text without markup or control characters'),
     maxLength(limit, `must be at most ${limit} characters`),
   );
-export const ReadableSchema = strictObject({
+const ReadableSchema = strictObject({
   title: readableText(READABLE_TITLE_LIMIT),
   text: readableText(READABLE_TEXT_LIMIT),
 });
@@ -221,7 +253,8 @@ const ItemCountSchema = strictObject({ item: Id, count: pipe(Count, minValue(1, 
 const YieldRounding = picklist(['floor', 'round', 'ceil']);
 const SkillFractions = pipe(
   array(Fraction),
-  minLength(2, 'needs a skill-0 and top-skill fraction'),
+  minLength(2, `needs a skill-${SKILL_LEVEL_MIN} and top-skill fraction`),
+  maxLength(SKILL_LEVEL_MAX - SKILL_LEVEL_MIN + 1, 'extends beyond the maximum skill level'),
   check((fractions) => fractions.every((fraction, i) => i === 0 || fraction >= fractions[i - 1]!), 'must not decrease'),
   check((fractions) => fractions.at(-1)! > fractions[0]!, 'must increase with skill'),
 );
@@ -251,7 +284,7 @@ const DisassemblySchema = strictObject({
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
 
-export const ItemSchema = strictObject({
+const ItemSchema = strictObject({
   id: Id,
   name: Name,
   category: picklist(ITEM_CATEGORIES),
@@ -277,6 +310,7 @@ export const ItemSchema = strictObject({
   /** Fixed outputs for found items with no recipe. */
   salvage: optional(pipe(array(ItemCountSchema), nonEmpty('needs at least one salvage output'))),
   light: optional(LightSchema),
+  igniter: optional(IgniterSchema),
   readable: optional(ReadableSchema),
   /** Display capability shown in first person; later devices can share this rendering seam. */
   heldDisplay: optional(picklist(HELD_DISPLAY_KINDS)),
@@ -299,7 +333,7 @@ const Point = tuple([number(), number(), number()]);
  * A glTF binary in the pack, in metres, lying at rest on the ground with its long side
  * along x (DESIGN.md, "Item models"). The entry adds what the file can't say.
  */
-export const SoundMultipliers = pipe(
+const SoundMultipliers = pipe(
   tuple([Positive, Positive]),
   check(([min, max]) => min <= max, 'minimum must not exceed maximum'),
 );
@@ -426,21 +460,23 @@ const ModelSchema = pipe(
 
 // ---- furniture ----
 
-export const FurnitureSchema = strictObject({
+const FurnitureSchema = strictObject({
   id: Id,
   name: Name,
   /** Cells, in blocks: [x, y, z]. It's anchored at its lowest corner. */
   size: Size,
   color: Color,
   solid: optional(vBoolean()),
+  /** A debug practice surface; hits may receive a profile-specific presentation ping. */
+  shotTarget: optional(literal(true)),
   readable: optional(ReadableSchema),
   container: optional(ContainerSchema),
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
   /** It opens and closes, taking this many seconds. */
   door: optional(strictObject({ handling: NonNegative })),
-  /** You can sleep on it; 1 is a good bed. */
-  bed: optional(strictObject({ quality: Fraction })),
+  /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
+  rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
   /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
   workstation: optional(
     strictObject({
@@ -470,7 +506,7 @@ const LootEntrySchema = pipe(
   ),
 );
 
-export const LootTableSchema = strictObject({
+const LootTableSchema = strictObject({
   id: Id,
   /** How many times to roll, inclusive. */
   rolls: range(Count),
@@ -481,7 +517,7 @@ export const LootTableSchema = strictObject({
 
 const Char = pipe(string(), regex(/^.$/u, 'palette keys are single characters'));
 
-export const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
+const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
 
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
 const PaletteThingSchema = pipe(
@@ -525,7 +561,7 @@ const TemplateAccessSchema = strictObject({
   stairs: array(StairSchema),
 });
 
-export const TemplateSchema = strictObject({
+const TemplateSchema = strictObject({
   id: Id,
   /** Blocks: [x, y, z]. */
   size: Size,
@@ -579,7 +615,7 @@ const LayoutBuilding = strictObject({
   storeys: optional(pipe(Count, minValue(1), maxValue(8))),
 });
 
-export const SiteLayoutSchema = strictObject({
+const SiteLayoutSchema = strictObject({
   id: Id,
   bounds: pipe(
     strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
@@ -607,7 +643,7 @@ export const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
-export const ZOMBIE_ABILITIES = [
+const ZOMBIE_ABILITIES = [
   'grab',
   'leap',
   'scream',
@@ -620,7 +656,7 @@ export const ZOMBIE_ABILITIES = [
   'burrow',
 ] as const;
 
-export const ZombieSchema = strictObject({
+const ZombieSchema = strictObject({
   id: Id,
   name: Name,
   regions: strictObject({
@@ -643,6 +679,8 @@ export const ZombieSchema = strictObject({
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** Idle/stroll timing, home leash and eased look controls. */
   wander: strictObject({
+    obstacleWanderChance: Fraction,
+    obstacleWanderDistanceMetres: Positive,
     idleSeconds: strictObject({ min: Positive, max: Positive }),
     strollSeconds: strictObject({ min: Positive, max: Positive }),
     leashMetres: Positive,
@@ -718,18 +756,18 @@ export const ZombieSchema = strictObject({
 });
 
 /** Actor palettes are content so appearance doesn't live in renderer code. */
-export const FigureSchema = strictObject({
+const FigureSchema = strictObject({
   id: Id,
   palette: strictObject({ skin: Color, shirt: Color, trousers: Color }),
 });
 
 // ---- skills and recipes ----
 
-export const SkillSchema = strictObject({ id: Id, name: Name });
+const SkillSchema = strictObject({ id: Id, name: Name });
 const RecipeItemSchema = ItemCountSchema;
 
 /** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
-export const RecipeSchema = strictObject({
+const RecipeSchema = strictObject({
   id: Id,
   result: RecipeItemSchema,
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
@@ -737,7 +775,7 @@ export const RecipeSchema = strictObject({
   repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
   /** Game minutes, not simulation seconds. */
   time: Positive,
-  skills: record(Id, Count),
+  skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),
   workstation: optional(nullable(Id)),
@@ -772,7 +810,7 @@ export const ContentFileSchema = strictObject(sectionSchemas);
 export type BlockDef = InferOutput<typeof BlockSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
 export type FurnitureDef = InferOutput<typeof FurnitureSchema>;
-export type LootTable = InferOutput<typeof LootTableSchema>;
+type LootTable = InferOutput<typeof LootTableSchema>;
 export type LootEntry = LootTable['entries'][number];
 export type TemplateDef = InferOutput<typeof TemplateSchema>;
 export type StairDef = InferOutput<typeof StairSchema>;
@@ -783,9 +821,7 @@ export type ZombieDef = InferOutput<typeof ZombieSchema>;
 export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
-export type SkillDef = InferOutput<typeof SkillSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
-export type BookDef = InferOutput<typeof BookSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;
 

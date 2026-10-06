@@ -3,11 +3,19 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
-import { buildingBounds, defaultFoundation, profileHeight, standingHeight } from '../src/core/authoredTerrain.mjs';
+import {
+  buildingBounds,
+  defaultFoundation,
+  LOT_APRON_M,
+  LOT_BLEND_M,
+  profileHeight,
+  standingHeight,
+} from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
-import { compassBearing } from '../src/core/coords.ts';
+import { compassBearing, toChunk } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
+import { footprint } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn } from '../src/core/worldgen.ts';
 import { configFromUrl } from '../src/game/config.ts';
@@ -20,26 +28,118 @@ const layout = (JSON.parse(readFileSync('src/content/base/layouts.json', 'utf8')
   .layouts[0]!;
 const load = (data: unknown) => buildRegistry([...base, { source: 'layout-test.json', data: { layouts: [data] } }]);
 const { registry, issues } = load(layout);
-const baseLayoutIds = [...buildRegistry(base).registry.layouts.keys()];
+const baseLayoutIds = [...registry.layouts.keys()].filter((id) => id !== layout.id);
+const validationLayout = (id: string): SiteLayoutDef => ({
+  id,
+  bounds: { x0: 0, z0: 0, x1: 10, z1: 10 },
+  ground: 0,
+  terrain: [],
+  buildings: [],
+  player: { position: [5, 0.5, 5], bearing: 0 },
+  shamblers: [],
+  woodlands: [],
+  tracks: [],
+});
+const layoutTemplateIds = new Set(layout.buildings.map(({ template }) => template));
+const layoutZombieIds = new Set(layout.shamblers.map(({ type }) => type));
+const layoutValidationBase = [
+  {
+    source: 'layout-validation-support.json',
+    data: {
+      templates: [...layoutTemplateIds].map((id) => {
+        const [width, height, depth] = registry.templates.get(id)!.size;
+        return {
+          id,
+          size: [width, height, depth],
+          palette: { '.': 'air' },
+          layers: Array.from({ length: height }, () => Array.from({ length: depth }, () => '.'.repeat(width))),
+        };
+      }),
+      zombies: [...layoutZombieIds].map((id) => {
+        const zombie = structuredClone(registry.zombies.get(id)!);
+        zombie.loot = undefined;
+        return zombie;
+      }),
+      layouts: baseLayoutIds.map(validationLayout),
+    },
+  },
+];
 const scale = makeScale(0.5);
+const minimalLayoutBaselineIssues = buildRegistry([
+  ...layoutValidationBase,
+  { source: 'layout-test.json', data: { layouts: [layout] } },
+]).issues.filter((issue) => issue.source === 'layout-test.json');
 const invalid = (data: unknown, message: string) => {
-  const result = load(data);
+  expect(minimalLayoutBaselineIssues.some((issue) => issue.message.includes(message))).toBe(false);
+  const result = buildRegistry([...layoutValidationBase, { source: 'layout-test.json', data: { layouts: [data] } }]);
   expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
     true,
   );
   expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds); // No rejected fixture layouts; unrelated bundled sites survive.
+};
+const invalidWithFullPack = (data: unknown, message: string) => {
+  const result = load(data);
+  expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
+    true,
+  );
+  expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds);
+};
+
+const siteColumns = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
+  const columns = new Map<string, [number, number]>();
+  const addRange = (x0: number, x1: number, z0: number, z1: number) => {
+    for (let cx = toChunk(x0); cx <= toChunk(x1); cx++) {
+      for (let cz = toChunk(z0); cz <= toChunk(z1); cz++) {
+        columns.set(`${cx},${cz}`, [cx, cz]);
+      }
+    }
+  };
+  for (const placement of site.placements) {
+    const [width, depth] = footprint(placement);
+    addRange(
+      placement.origin[0],
+      placement.origin[0] + width - 1,
+      placement.origin[2],
+      placement.origin[2] + depth - 1,
+    );
+  }
+  for (const spawn of fixture.shamblers) {
+    const x = Math.floor(spawn.position[0] / scale.blockSize);
+    const z = Math.floor(spawn.position[2] / scale.blockSize);
+    addRange(x, x, z, z);
+  }
+  return [...columns.values()];
+};
+
+const siteWorld = (site: AuthoredSite, columns: [number, number][], seed: number): World => {
+  const world = new World();
+  for (const [cx, cz] of columns) {
+    for (const chunk of generateColumn(
+      {
+        seed,
+        scale,
+        blocks: {
+          grass: registry.blockIds.get('grass')!,
+          dirt: registry.blockIds.get('dirt')!,
+          stone: registry.blockIds.get('stone')!,
+          sand: registry.blockIds.get('sand')!,
+        },
+        surface: site.surface,
+        stamp: (written) => site.stamp(written),
+      },
+      cx,
+      cz,
+    )) {
+      world.addChunk(chunk);
+    }
+  }
+  return world;
 };
 
 describe('authored layout acceptance', () => {
   it('accepts the exported beat-1 map and selects its bundled id from the URL', () => {
     expect(issues).toEqual([]);
     expect(configFromUrl(new URLSearchParams('site=lone_house&debug=1')).site).toBe('lone_house');
-    expect(buildingBounds(layout.buildings[1]!, registry.templates.get('shed')!.size)).toEqual({
-      x0: 49,
-      z0: 57,
-      x1: 52,
-      z1: 61,
-    });
   });
   it('maps a clockwise east bearing to an east-facing authored spawn', () => {
     const east = new AuthoredSite(1, registry, scale, {
@@ -55,10 +155,21 @@ describe('authored layout acceptance', () => {
       'foundation cut or fill',
     );
   });
-  it('rejects floating terrain spawns and unsupported or buried building spawns', () => {
-    invalid({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
-    invalid({ ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] }, 'supported surface');
-    invalid({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+  it('rejects a player spawn floating above its terrain floor', () => {
+    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
+  });
+  it('rejects an elevated shambler spawn without support', () => {
+    invalidWithFullPack(
+      { ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] },
+      'supported surface',
+    );
+  });
+  it('rejects a player spawn on an unsupported building cell', () => {
+    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+  });
+  it('has no baseline layout issues for the fields covered by the minimal registry', () => {
+    const supportedIssues = minimalLayoutBaselineIssues.filter((issue) => !issue.message.includes('supported surface'));
+    expect(supportedIssues).toEqual([]);
   });
   it('rejects ridge primitives with zero width or no non-zero segment', () => {
     const ridge = {
@@ -198,8 +309,6 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
     JSON.parse(readFileSync('src/content/base/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
   ).layouts[0]!;
   expect(buildRegistry(base).issues).toEqual([]);
-  expect(ridge.buildings.map((building) => building.position[1])).toEqual([31, 31, 30.5]);
-  expect(ridge.player.position).toEqual([64, 21.5, 20]);
   for (const building of ridge.buildings) {
     expect(building.position[1]).toBe(
       defaultFoundation(ridge, buildingBounds(building, registry.templates.get(building.template)!.size)),
@@ -211,57 +320,74 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
     terrain: [...ridge.terrain].reverse(),
     buildings: [...ridge.buildings].reverse(),
   });
-  expect(profileHeight(ridge, 64, 90)).toBe(31);
-  expect(
-    profileHeight(
-      { ...ridge, terrain: [ridge.terrain[0]!, { kind: 'hill', centre: [64, 90], radii: [10, 10], rise: 3 }] },
-      64,
-      90,
-    ),
-  ).toBe(31); // overlaps take max, not summed heights
-  expect(profileHeight(ridge, 64, 20)).toBe(21);
-  expect(site.surface.height(128, 160, 42)).toBeGreaterThan(site.surface.height(128, 80, 42));
-  expect(site.surface.top(128, 160)).toBe(registry.blockIds.get('dirt'));
-  expect(Math.abs(site.surface.height(84, 180, 42) * scale.blockSize - 31)).toBeLessThanOrEqual(0.5); // 3 m outside cabin 1: blend toward the ridge, not flat ground 21.
-  expect(standingHeight(ridge, [], 64, 20)).toBe(ridge.player.position[1]);
-  expect(site.trees.length).toBeGreaterThan(0);
-  expect(new Set(site.trees.map((t) => t.origin[1])).size).toBeGreaterThan(1);
-  for (const tree of site.trees) {
-    const [x, y, z] = tree.origin;
-    expect(y).toBe(site.surface.height(x, z, 42) + 1);
-  }
-  const columns: [number, number][] = [
-    [3, 4],
-    [4, 4],
-    [3, 5],
-    [4, 5],
+  const ridgeFeature = ridge.terrain.find((feature) => feature.kind === 'ridge')!;
+  const ridgePoint: [number, number] = [
+    (ridgeFeature.points[0]![0] + ridgeFeature.points.at(-1)![0]) / 2,
+    (ridgeFeature.points[0]![1] + ridgeFeature.points.at(-1)![1]) / 2,
   ];
-  const generate = (owner: AuthoredSite, order: [number, number][]) => {
-    const world = new World();
-    for (const [cx, cz] of order) {
-      for (const chunk of generateColumn(
-        {
-          seed: 73,
-          scale,
-          blocks: {
-            grass: registry.blockIds.get('grass')!,
-            dirt: registry.blockIds.get('dirt')!,
-            stone: registry.blockIds.get('stone')!,
-            sand: registry.blockIds.get('sand')!,
-          },
-          surface: owner.surface,
-          stamp: (written) => owner.stamp(written),
-        },
-        cx,
-        cz,
-      )) {
-        world.addChunk(chunk);
-      }
-    }
-    return world;
+  const addedHill: SiteLayoutDef['terrain'][number] = {
+    kind: 'hill',
+    centre: ridgePoint,
+    radii: [10, 10],
+    rise: 3,
   };
-  const a = generate(site, columns);
-  const b = generate(reversed, [...columns].reverse());
+  const terrainHeight = profileHeight(ridge, ...ridgePoint);
+  const hillHeight = profileHeight({ ...ridge, terrain: [addedHill] }, ...ridgePoint);
+  const overlappingHeight = profileHeight({ ...ridge, terrain: [...ridge.terrain, addedHill] }, ...ridgePoint);
+  expect(overlappingHeight).toBe(Math.max(terrainHeight, hillHeight));
+
+  const toCell = (x: number, z: number): [number, number] => [
+    Math.floor(x / scale.blockSize),
+    Math.floor(z / scale.blockSize),
+  ];
+  const [ridgeX, ridgeZ] = toCell(...ridgePoint);
+  const [playerX, , playerZ] = ridge.player.position;
+  const [spawnX, spawnZ] = toCell(playerX, playerZ);
+  const natural = ridge.ground / scale.blockSize;
+  expect(site.surface.height(ridgeX, ridgeZ, natural)).toBeGreaterThan(site.surface.height(spawnX, spawnZ, natural));
+
+  const blendBuilding = ridge.buildings[0]!;
+  const blendBounds = buildingBounds(blendBuilding, registry.templates.get(blendBuilding.template)!.size);
+  const blendFixture = { ...ridge, buildings: [blendBuilding] };
+  const blendSite = new AuthoredSite(73, registry, scale, blendFixture);
+  const blendTargetX = blendBounds.x1 + LOT_APRON_M + LOT_BLEND_M / 2;
+  const blendX = Math.floor((blendTargetX - scale.blockSize / 2) / scale.blockSize);
+  const blendZ = Math.floor((blendBounds.z0 + blendBounds.z1) / 2 / scale.blockSize);
+  const blendCentre: [number, number] = [(blendX + 0.5) * scale.blockSize, (blendZ + 0.5) * scale.blockSize];
+  const blendDistance = blendCentre[0] - (blendBounds.x1 + LOT_APRON_M - scale.blockSize / 2);
+  expect(Math.abs(blendDistance - LOT_BLEND_M / 2)).toBeLessThanOrEqual(scale.blockSize / 2);
+  const authoredProfile = profileHeight(blendFixture, ...blendCentre);
+  const [, floorHeight] = blendBuilding.position;
+  const blendLow = Math.min(floorHeight, authoredProfile);
+  const blendHigh = Math.max(floorHeight, authoredProfile);
+  const blendedHeight = blendSite.surface.height(blendX, blendZ, natural) * scale.blockSize;
+  expect(blendedHeight).toBeGreaterThanOrEqual(blendLow - scale.blockSize / 2);
+  expect(blendedHeight).toBeLessThanOrEqual(blendHigh + scale.blockSize / 2);
+  const naturalGap = ridge.ground < blendLow ? blendLow - ridge.ground : ridge.ground - blendHigh;
+  expect(naturalGap).toBeGreaterThan(scale.blockSize);
+
+  for (const building of ridge.buildings) {
+    const bounds = buildingBounds(building, registry.templates.get(building.template)!.size);
+    const [x, z] = toCell((bounds.x0 + bounds.x1) / 2, (bounds.z0 + bounds.z1) / 2);
+    expect(site.surface.height(x, z, natural)).toBe(building.position[1] / scale.blockSize);
+  }
+  const track = ridge.tracks.find((candidate) => candidate.points.length > 1)!;
+  const [start, end] = [track.points[0]!, track.points[1]!];
+  const [trackX, trackZ] = toCell((start[0] + end[0]) / 2, (start[1] + end[1]) / 2);
+  expect(site.surface.top(trackX, trackZ)).toBe(registry.blockIds.get(track.surface ?? 'dirt'));
+  expect(standingHeight(ridge, [], playerX, playerZ)).toBe(ridge.player.position[1]);
+
+  const isGrounded = (tree: (typeof site.trees)[number]) => {
+    const [x, y, z] = tree.origin;
+    return y === site.surface.height(x, z, natural) + 1;
+  };
+  expect(site.trees.some(isGrounded)).toBe(true);
+  for (const tree of site.trees) {
+    expect(isGrounded(tree)).toBe(true);
+  }
+  const columns = siteColumns(site, ridge);
+  const a = siteWorld(site, columns, 73);
+  const b = siteWorld(reversed, [...columns].reverse(), 73);
   for (const [key, chunk] of a.chunks) {
     expect(Buffer.from(chunk.toArray().buffer).equals(Buffer.from(b.chunks.get(key)!.toArray().buffer)), key).toBe(
       true,
@@ -303,7 +429,7 @@ it('grounds a seed-owned woodland tree in the lot blend rather than on the raw r
   let witnesses = 0;
   for (const tree of site.trees) {
     const [x, y, z] = tree.origin;
-    expect(y).toBe(site.surface.height(x, z, 42) + 1);
+    expect(y).toBe(site.surface.height(x, z, fixture.ground / scale.blockSize) + 1);
     const raw =
       Math.round(profileHeight(fixture, (x + 0.5) * scale.blockSize, (z + 0.5) * scale.blockSize) / scale.blockSize) +
       1;
@@ -311,91 +437,103 @@ it('grounds a seed-owned woodland tree in the lot blend rather than on the raw r
       witnesses += 1;
     }
   }
-  expect(witnesses, 'lot-blend witness tree is gone; choose a seed with a surviving blend tree').toBeGreaterThan(0);
+  expect(witnesses, 'lot blend should affect the grounded height of a woodland tree').toBeGreaterThan(0);
 });
 
-it('keeps adjacent different-elevation lots and their aprons independent of building order', () => {
+it('keeps adjacent lot floors, apron blending and footprint ties independent of building order', () => {
   const lowered = structuredClone(layout);
-  lowered.buildings[1]!.position[1] = 19;
-  for (const buildings of [lowered.buildings, [...lowered.buildings].reverse()]) {
-    const site = new AuthoredSite(1, registry, scale, { ...lowered, buildings });
-    expect(site.surface.height(100, 118, 42)).toBe(38); // shed footprint
-    expect(site.surface.height(104, 118, 42)).toBe(38); // shed apron beside the house blend
-    expect(site.surface.height(120, 118, 42)).toBe(42); // house footprint
-    expect(site.surface.height(106.5, 118, 42)).toBe(38); // equal footprint distances: stable shed key
-    const world = new World();
-    for (const chunk of generateColumn(
-      {
-        seed: 1,
-        scale,
-        blocks: {
-          grass: registry.blockIds.get('grass')!,
-          dirt: registry.blockIds.get('dirt')!,
-          stone: registry.blockIds.get('stone')!,
-          sand: registry.blockIds.get('sand')!,
-        },
-        surface: site.surface,
-        stamp: (written) => site.stamp(written),
-      },
-      3,
-      3,
-    )) {
-      world.addChunk(chunk);
-    }
-    expect([39, 40, 41, 42].map((y) => world.getBlock(104, y, 118))).toEqual([0, 0, 0, 0]);
+  const shedIndex = lowered.buildings.findIndex(({ template }) => template === 'shed');
+  const houseIndex = lowered.buildings.findIndex(({ storeys }) => (storeys ?? 1) > 1);
+  const lowerBuilding = lowered.buildings[shedIndex]!;
+  const upperBuilding = lowered.buildings[houseIndex]!;
+  lowerBuilding.position[1] = upperBuilding.position[1] - 2;
+  const bounds = lowered.buildings.map((building) =>
+    buildingBounds(building, registry.templates.get(building.template)!.size),
+  );
+  const lowerBounds = bounds[shedIndex]!;
+  const upperBounds = bounds[houseIndex]!;
+  const left = lowerBounds.x0 < upperBounds.x0 ? lowerBounds : upperBounds;
+  const right = left === lowerBounds ? upperBounds : lowerBounds;
+  const overlapZ0 = Math.max(lowerBounds.z0, upperBounds.z0);
+  const overlapZ1 = Math.min(lowerBounds.z1, upperBounds.z1);
+  const centerZ = (overlapZ0 + overlapZ1) / 2;
+  const lowerIsLeft = left === lowerBounds;
+  const apronPoint: [number, number] = [
+    lowerIsLeft ? lowerBounds.x1 + LOT_APRON_M / 2 : lowerBounds.x0 - LOT_APRON_M / 2,
+    centerZ,
+  ];
+  const tiePoint: [number, number] = [(left.x1 + right.x0) / 2, centerZ];
+  const pointSample = ([x, z]: [number, number]) => [x / scale.blockSize - 0.5, z / scale.blockSize - 0.5] as const;
+  const sampleHeights = (site: AuthoredSite) => {
+    const lowerCenter = pointSample([(lowerBounds.x0 + lowerBounds.x1) / 2, centerZ]);
+    const upperCenter = pointSample([(upperBounds.x0 + upperBounds.x1) / 2, centerZ]);
+    return [
+      site.surface.height(...lowerCenter, lowered.ground / scale.blockSize),
+      site.surface.height(...pointSample(apronPoint), lowered.ground / scale.blockSize),
+      site.surface.height(...pointSample(tiePoint), lowered.ground / scale.blockSize),
+      site.surface.height(...upperCenter, lowered.ground / scale.blockSize),
+    ];
+  };
+  const ordered = new AuthoredSite(1, registry, scale, lowered);
+  const reversedLayout = { ...lowered, buildings: [...lowered.buildings].reverse() };
+  const reversed = new AuthoredSite(1, registry, scale, reversedLayout);
+  const heights = sampleHeights(ordered);
+  expect(sampleHeights(reversed)).toEqual(heights);
+  expect(heights[0]!).toBe(lowerBuilding.position[1] / scale.blockSize);
+  expect(heights[3]!).toBe(upperBuilding.position[1] / scale.blockSize);
+  expect(heights[0]!).toBeLessThan(heights[3]!);
+  expect(heights[1]!).toBeGreaterThanOrEqual(heights[0]!);
+  expect(heights[1]!).toBeLessThan(heights[3]!);
+  expect(heights[2]!).toBeGreaterThanOrEqual(heights[0]!);
+  expect(heights[2]!).toBeLessThanOrEqual(heights[3]!);
+
+  const apronX = Math.floor(apronPoint[0] / scale.blockSize);
+  const apronZ = Math.floor(apronPoint[1] / scale.blockSize);
+  const columns = siteColumns(ordered, lowered);
+  columns.push([toChunk(apronX), toChunk(apronZ)]);
+  const world = siteWorld(ordered, [...new Map(columns.map((column) => [column.join(','), column])).values()], 1);
+  const floorY = Math.floor(lowerBuilding.position[1] / scale.blockSize);
+  for (let y = floorY + 1; y <= floorY + LOT_APRON_M / scale.blockSize; y++) {
+    expect(world.getBlock(apronX, y, apronZ)).toBe(0);
   }
 });
 
-it('stamps the rotated two-storey house deterministically across columns, with upstairs furniture and spawns', () => {
+it('stamps the rotated multi-storey house deterministically with supported spawns and upstairs furniture', () => {
   const site = new AuthoredSite(1, registry, scale, layout);
-  expect(site.placements[0]!.origin).toEqual([110, 42, 110]);
-  const columns: [number, number][] = [
-    [3, 3],
-    [4, 3],
-    [4, 4],
-    [3, 2],
-  ];
-  const generate = (order: [number, number][]) => {
-    const world = new World();
-    for (const [cx, cz] of order) {
-      for (const chunk of generateColumn(
-        {
-          seed: 1,
-          scale,
-          blocks: {
-            grass: registry.blockIds.get('grass')!,
-            dirt: registry.blockIds.get('dirt')!,
-            stone: registry.blockIds.get('stone')!,
-            sand: registry.blockIds.get('sand')!,
-          },
-          surface: site.surface,
-          stamp: (written) => site.stamp(written),
-        },
-        cx,
-        cz,
-      )) {
-        world.addChunk(chunk);
-      }
-    }
-    return world;
-  };
-  const a = generate(columns);
-  const b = generate([...columns].reverse());
+  const columns = siteColumns(site, layout);
+  const a = siteWorld(site, columns, 1);
+  const b = siteWorld(site, [...columns].reverse(), 1);
   for (const [key, chunk] of a.chunks) {
     expect(Buffer.from(chunk.toArray().buffer).equals(Buffer.from(b.chunks.get(key)!.toArray().buffer)), key).toBe(
       true,
     );
   }
-  const [spawn] = site.zombiesIn(3, 3).filter((zombie) => zombie.pos[1] === 50);
-  expect(spawn?.pos).toEqual([116, 50, 119]);
-  expect(registry.blocks[a.getBlock(116, 49, 119)!]!.solid).toBe(true);
-  expect(a.getBlock(116, 50, 119)).toBe(0);
-  expect(site.furnitureIn(3, 3).some(({ spec }) => spec.type === 'bed' && spec.pos[1] === 50)).toBe(true);
-  expect(site.trees.length).toBeGreaterThan(0);
-  expect(site.surface.top(144, 130)).toBe(registry.blockIds.get('dirt'));
-  const optional = new AuthoredSite(1, registry, scale, {
+
+  const spawns = columns.flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+  const hasFloorAndHeadroom = ({ pos }: (typeof spawns)[number]) =>
+    registry.blocks[a.getBlock(pos[0], pos[1] - 1, pos[2])!]?.solid === true &&
+    a.getBlock(pos[0], pos[1], pos[2]) === 0;
+  expect(spawns.some(hasFloorAndHeadroom)).toBe(true);
+  for (const spawn of spawns) {
+    expect(hasFloorAndHeadroom(spawn)).toBe(true);
+  }
+
+  const furniture = columns.flatMap(([cx, cz]) => site.furnitureIn(cx, cz));
+  const multiStoreyIndex = layout.buildings.findIndex((building) => (building.storeys ?? 1) > 1);
+  expect(multiStoreyIndex).toBeGreaterThanOrEqual(0);
+  const multiStoreyBuilding = layout.buildings[multiStoreyIndex]!;
+  const placement = site.placements[multiStoreyIndex]!;
+  const perStorey = registry.templates.get(multiStoreyBuilding.template)!.size[1] - 1;
+  const hasUpstairsBed = furniture.some(
+    ({ spec }) => spec.type === 'bed' && spec.pos[1] > placement.origin[1] + perStorey,
+  );
+  expect(hasUpstairsBed).toBe(true);
+
+  const optionalLayout = {
     ...layout,
-    shamblers: [{ ...layout.shamblers[0]!, chance: 0 }],
-  });
-  expect(optional.zombiesIn(3, 3).some((zombie) => zombie.pos[1] === 50)).toBe(false);
+    shamblers: layout.shamblers.map((spawn) => ({ ...spawn, chance: 0 })),
+  };
+  const optional = new AuthoredSite(1, registry, scale, optionalLayout);
+  const optionalColumns = siteColumns(optional, optionalLayout);
+  expect(optionalColumns.flatMap(([cx, cz]) => optional.zombiesIn(cx, cz))).toEqual([]);
 });

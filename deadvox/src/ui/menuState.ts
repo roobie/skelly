@@ -1,4 +1,4 @@
-export type SaveMenuAction = 'title' | 'continue' | 'new-world' | 'error';
+type SaveMenuAction = 'title' | 'continue' | 'new-world' | 'error';
 
 export interface SaveMenuInput {
   action: SaveMenuAction;
@@ -59,6 +59,9 @@ export interface MenuState {
 const saveState = (input: MenuStateInput): Pick<MenuState, 'saveMenu'> =>
   input.saveMenu ? { saveMenu: computeSaveMenuState(input.saveMenu) } : {};
 
+const mainMenuHasConflict = (input: MenuStateInput): boolean =>
+  !input.dead && input.mainMenuOpen && Boolean(input.inventoryOpen || input.readingOpen || input.debugMenuOpen);
+
 const titleMenuState = (input: MenuStateInput): MenuState => ({
   started: false,
   mainMenuOpen: true,
@@ -76,8 +79,8 @@ const activeMenuState = (input: MenuStateInput): MenuState => {
   const started = input.started || input.pointerLocked;
   const pointerUnlocked = Boolean(input.pointerLockChanged && started && !input.pointerLocked && !input.dead);
   const resumed = Boolean(input.pointerLocked && input.resumeRequested && !input.dead);
-  const closeOtherMenus = pointerUnlocked || resumed;
   const { mainMenuOpen: requestedMainMenuOpen } = input;
+  const closeOtherMenus = pointerUnlocked || resumed || mainMenuHasConflict(input);
   let mainMenuOpen = requestedMainMenuOpen;
   if (pointerUnlocked) {
     mainMenuOpen = true;

@@ -14,7 +14,7 @@ interface WorkProgress<Node> {
   repairTargetUid?: number;
   repairAmount?: number;
 }
-export type CraftWork<Node> =
+type CraftWork<Node> =
   | (WorkProgress<Node> & { kind: 'craft'; recipe: string })
   | (WorkProgress<Node> & {
       kind: 'disassembly';
@@ -34,6 +34,10 @@ export interface ItemFields<Node> {
   charges?: number;
   /** A light that's switched on. */
   on?: boolean;
+  /** Remaining consumable-light burn, in game hours; absent until first ignition. */
+  burnRemaining?: number;
+  /** Calendar seconds at the last burn-state update; present only while lit. */
+  litAt?: number | undefined;
   /**
    * Calendar seconds when it was made; absent means before the world began (day 1,
    * 00:00). Food rots from then (core/food.ts).
@@ -77,6 +81,8 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
     condition: item.condition,
     ...(item.charges === undefined ? {} : { charges: item.charges }),
     ...(item.on === undefined ? {} : { on: item.on }),
+    ...(item.burnRemaining === undefined ? {} : { burnRemaining: item.burnRemaining }),
+    ...(item.litAt === undefined ? {} : { litAt: item.litAt }),
     ...(item.made === undefined ? {} : { made: item.made }),
     ...(item.firearm === undefined ? {} : { firearm: snapshotFirearm(item.firearm) }),
     ...(item.pockets === undefined ? {} : { pockets: item.pockets.map((grid) => grid.map(snapshotPlaced)) }),
@@ -99,44 +105,67 @@ export const snapshotItem = (item: Item): Readonly<ItemState> =>
 export const snapshotPlaced = ({ item, x, y, rotated }: Placed): Readonly<PlacedState> =>
   freezeSnapshot({ item: snapshotItem(item) as ItemState, x, y, rotated });
 
+const assertSavedBurnState = (def: ItemDef, state: ItemState): void => {
+  const burnTime = def.light?.burnTime;
+  const invalidRemaining =
+    state.burnRemaining !== undefined &&
+    (burnTime === undefined || state.burnRemaining > burnTime || !Number.isFinite(state.burnRemaining));
+  const missingActiveState =
+    state.litAt !== undefined && (burnTime === undefined || state.on !== true || state.burnRemaining === undefined);
+  const litWithoutBurnState =
+    burnTime !== undefined && state.on === true && (state.burnRemaining === undefined || state.litAt === undefined);
+  if (invalidRemaining || missingActiveState || litWithoutBurnState) {
+    throw new Error('Invalid saved light burn state');
+  }
+};
+
+const restoreFirearmState = (registry: Registry, def: ItemDef, state: ItemState): FirearmState | undefined => {
+  const { firearm } = state;
+  if (firearm === undefined) {
+    return undefined;
+  }
+  if (!def.firearm || state.count !== 1) {
+    throw new Error('Mechanical firearm state needs one firearm');
+  }
+  assertFirearmState(firearm);
+  assertPumpAmmunition(registry, state.type, firearm);
+  if (firearm.roundType !== undefined) {
+    defOf(registry, firearm.roundType);
+  }
+  return structuredClone(firearm);
+};
+
+const restoreWork = (registry: Registry, work: NonNullable<ItemState['work']>): NonNullable<Item['work']> => ({
+  ...work,
+  ...(work.kind === 'disassembly'
+    ? {
+        outputs: work.outputs.map((output) => ({ ...output })),
+        toolLevels: { ...work.toolLevels },
+      }
+    : {}),
+  components: work.components.map((component) => restoreItem(registry, component)),
+});
+
 export const restoreItem = (registry: Registry, state: ItemState): Item => {
   const def = defOf(registry, state.type);
-  if (state.firearm !== undefined) {
-    if (!def.firearm || state.count !== 1) {
-      throw new Error('Mechanical firearm state needs one firearm');
-    }
-    assertFirearmState(state.firearm);
-    assertPumpAmmunition(registry, state.type, state.firearm);
-    if (state.firearm.roundType !== undefined) {
-      defOf(registry, state.firearm.roundType);
-    }
-  }
-  const item: Item = {
+  assertSavedBurnState(def, state);
+  const firearm = restoreFirearmState(registry, def, state);
+  return {
     uid: state.uid,
     type: state.type,
     count: state.count,
     condition: state.condition,
     ...(state.charges === undefined ? {} : { charges: state.charges }),
     ...(state.on === undefined ? {} : { on: state.on }),
+    ...(state.burnRemaining === undefined ? {} : { burnRemaining: state.burnRemaining }),
+    ...(state.litAt === undefined ? {} : { litAt: state.litAt }),
     ...(state.made === undefined ? {} : { made: state.made }),
-    ...(state.firearm === undefined ? {} : { firearm: structuredClone(state.firearm) }),
+    ...(firearm === undefined ? {} : { firearm }),
     ...(state.pockets === undefined
       ? {}
       : { pockets: state.pockets.map((grid) => grid.map((p) => restorePlaced(registry, p))) }),
+    ...(state.work === undefined ? {} : { work: restoreWork(registry, state.work) }),
   };
-  if (state.work) {
-    item.work = {
-      ...state.work,
-      ...(state.work.kind === 'disassembly'
-        ? {
-            outputs: state.work.outputs.map((output) => ({ ...output })),
-            toolLevels: { ...state.work.toolLevels },
-          }
-        : {}),
-      components: state.work.components.map((component) => restoreItem(registry, component)),
-    };
-  }
-  return item;
 };
 
 export const restorePlaced = (registry: Registry, state: PlacedState): Placed => ({
@@ -188,6 +217,9 @@ export class ItemFactory {
     if (def.firearm?.pump) {
       item.firearm = { chamber: 'empty', tube: [] };
     }
+    if (def.igniter) {
+      item.charges = def.igniter.capacity;
+    }
     return item;
   }
 
@@ -205,6 +237,12 @@ export class ItemFactory {
     if (item.made !== undefined) {
       part.made = item.made;
     }
+    if (item.burnRemaining !== undefined) {
+      part.burnRemaining = item.burnRemaining;
+    }
+    if (item.litAt !== undefined) {
+      part.litAt = item.litAt;
+    }
     return part;
   }
 }
@@ -218,7 +256,7 @@ export const defOf = (registry: Registry, type: string): ItemDef => {
 };
 
 /** Content-coupled constraints checked when rebuilding items from a decoded snapshot. */
-export const assertPumpAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
+const assertPumpAmmunition = (registry: Registry, type: string, state: FirearmState): void => {
   const def = defOf(registry, type);
   if (!def.firearm?.pump) {
     if (state.tube !== undefined || state.landing !== undefined) {

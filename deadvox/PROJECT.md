@@ -19,10 +19,10 @@ This file describes the code as it is. The game's design and roadmap are in
 - `?radius=N` sets the view distance in metres (default 96; the start card offers
   64, 96 and 128).
 - `?time=HH:MM` sets the time of day at the start (default 19:30).
-- `?debug=1` enables debug authoring tools. Keyboard authoring requires the
-  rebindable debug gate; noclip flight and spawn navigation/dismissal are the
-  explicit exceptions. Effective chords are generated in settings and the
-  debug panel from `src/game/inputBindings.ts`, `INPUT_BINDINGS`; see
+- `?debug=1` enables debug authoring tools. Debug actions, including noclip
+  flight, require the rebindable F2 gate; spawn-menu navigation and dismissal
+  remain ordinary modal controls. Effective chords are generated in settings and
+  the debug panel from `src/game/inputBindings.ts`, `INPUT_BINDINGS`; see
   `CONTROLS.md` for why text editing stays native rather than becoming a second
   input platform.
 - `?bench=1` runs the benchmark; `?bench=report` shows its last results (the
@@ -78,12 +78,12 @@ This file describes the code as it is. The game's design and roadmap are in
 | Templates | ASCII layers in half-metre blocks (`core/templates.ts`). A template is compiled once against the registry: each cell gets a block id, and furniture marks become pieces anchored at their lowest corner. A placement turns it by quarter turns and stamps whatever part falls inside a chunk |
 | The hamlet | `core/hamlet.ts`, the game's world near spawn (the benchmark keeps the test house): an asphalt road with five buildings on lots beside it, on the flattest site within 160 m of the origin. Lots and the road are flattened and blended into the ground by a `Surface` that worldgen applies per column; buildings are stamped per chunk; furniture comes with its column, with loot rolled from a stream keyed by its position (`core/loot.ts`). All of it is a pure function of the seed and position, so chunks can generate in any order |
 | Stress-test city | `core/city.ts`: a flat grid of streets around the origin, each city block holding two back-to-back rows of the hamlet's templates, stacked to 1–N storeys (`stackTemplate` in `core/templates.ts`). Buildings are indexed by the chunk columns they overlap, so stamping and furniture look only at their own column. The hamlet and the city share the `Site` interface (`core/site.ts`) |
-| Block entities | `core/blockEntities.ts`: furniture and doors, each anchored at its lowest corner with every cell pointing back at it. Closed doors and solid furniture count as solid for physics and ray casts. A container shows its contents once searched (1–3 s by size); `core/inventory.ts` treats its pockets as another place items can be, within 2 m. They're drawn as boxes in their colour, and doors as panels that swing inward (`render/furniture.ts`). F opens and closes the door or searches the container in the crosshair; searching and doors are timed actions in the handling queue. Entities stay in memory once added, so a column that generates again doesn't duplicate them |
+| Block entities | `core/blockEntities.ts`: furniture and doors, each anchored at its lowest corner with every cell pointing back at it. Closed doors and solid furniture count as solid for physics and ray casts. A container shows its contents once searched (1–3 s by size); `core/inventory.ts` treats its pockets as another place items can be, within 2 m. They're drawn as boxes in their colour, and doors as panels that swing inward (`render/furniture.ts`). F interacts with the targeted furniture; restable pieces start or stop fatigue recovery through `src/game/rest.ts`, `RestController`, and the saved anchor in `src/core/longAction.ts`, `RestAction`, keeps Continue tied to that same piece. Searching and doors are timed actions in the handling queue. Entities stay in memory once added, so a column that generates again doesn't duplicate them |
 | Streaming | A chunk is meshed only when all 8 neighbouring columns exist, so borders never need a second pass |
 | Assets and credits | `content/base/assets/manifest.json` lists where each asset file came from; `core/assets.ts` checks it (CC0 and CC BY only, and CC BY needs an author and a link, each file listed once) and, given the pack's files, that every file under `assets/` comes from a listed source and every listed file exists. The start and pause card's Credits link shows `ui/credits.ts`, drawn from it. `npm run validate` checks the base manifest, and any `manifest.json` passed to it, against the files in its pack |
 | Item models | glTF binaries in the pack, named by a `models` entry (file, `grip`, `anchors`) that an item points at with `model`. The validator checks the id, and that the file exists next to the content file that names it. `render/models.ts` loads them with `GLTFLoader` and prepares each twice: lying on the ground, and held at its grip pointing forward. In piles (`render/piles.ts`) an item with a model lies at its place in the pile's grid, turned as it lies there (`core/pileLayout.ts`); the rest form the bundle. In your hands (`render/hands.ts`) items are drawn after the world in their own scene with the depth cleared, so they never clip into walls, with lights copied from the sky; an item without a model is a plain box sized from its cells. A model that hasn't loaded, or can't, falls back the same way and is reported with the content errors |
 | Content | JSON in `src/content/base`; the exhaustive section descriptor in `core/schema.ts` supplies native Valibot schemas/types, registry maps, diagnostic iteration and validator counts. Format and recipe rules: [content contract](docs/content.md). `core/content.ts` merges files in order and checks references. An override keeps the block's runtime id. A file with any issue, including a broken reference, is skipped whole |
-| Units | Weight in grams, volume in millilitres, item length in millimetres. Distances: core APIs take blocks; constants and content are in metres, converted at the boundary (`toBlocks`, `toMetres` in `core/scale.ts`) |
+| Units | Weight in grams, volume in millilitres, item length in millimetres. Distances: core APIs take blocks; constants and content are in metres, converted at the boundary by `Scale.blockSize` (`src/core/scale.ts`, `Scale`) |
 | Saves | A save records a hash of the simulation's source (`tools/simulationFingerprint.ts`), and loading refuses a save whose hash differs. It hashes every module reachable from `SIMULATION_ENTRIES`, except those in `SIMULATION_EXCLUSIONS` (`src/render`, `src/debug`, and listed presentation modules such as `ui/hud.ts` and `game/engine.ts`); `test/simulationFingerprint.test.ts` pins the exclusions and classifies every `src/core` and `src/game` module. So an edit to any fingerprinted module, `game/play.ts` included, changes save identity: put presentation code (HUD, pointer handling, drawing) in an excluded module. See [ADR 0002](docs/decisions/0002-saves.md) |
 | Tests | Vitest, on the core, plus the render code that has logic of its own (culling, model forms) |
 | Lint/format | Biome, repo-wide (`biome.jsonc`): every stable rule on. See the static-analysis pillar in the root README |
@@ -121,15 +121,18 @@ npm test
 npm run validate   # base content; add paths to validate a mod on top
 ```
 
+`npm run bench:shamblers` compares headless `ZombieSystem` tick cost. Because it runs
+outside Vite, the Node resolver (`tools/register-mobgen-alias.mjs`, `registerHooks`)
+keeps mobgen source imports available; its obstruction predicate must match play
+(`src/game/session.ts`, `isOpaque`).
+
 ## Known limits of the scaffold
 
 - All blocks render as opaque cubes. `solid: false` only affects collision.
   Transparent blocks (water, glass, leaves) need a second mesh pass.
 - Terrain is generated on the main thread. It costs about one frame hitch per
   column. Move it to the workers when worldgen grows (towns, a region map).
-- Rest has no dedicated key; restable furniture interaction arrives in d45.
-- Rest/sleep mechanics recover fatigue, but neither has an initiation key;
-  furniture initiation is d45. Their status is a HUD readout.
+- Rest and sleep start on eligible furniture through the rebindable world-interaction action; neither has a dedicated key. Furniture comfort and sleepability are content-owned in `src/core/schema.ts`, `FurnitureSchema`, and the authored furniture definitions. Their HUD status is a readout, not a second control path.
 - A light that's switched on shines only from your hands; put away, it goes off.
 - The death screen's "time survived" is game time; its looting summary counts
   items taken out of furniture, not ones picked up from the ground.

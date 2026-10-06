@@ -44,7 +44,7 @@ const CARRIER_MASS_KG = 0.52;
 const NET_FORCE_AT_BATTERY_N = 20;
 const NET_FORCE_AT_REAR_N = 40;
 
-export interface SpringReturn {
+interface SpringReturn {
   readonly durationSeconds: number;
   /** Remaining stroke fraction (1 at the rear, 0 at battery) after `seconds`. */
   readonly remaining: (seconds: number) => number;
@@ -52,7 +52,7 @@ export interface SpringReturn {
 }
 
 /** Closed-form return for a linear spring/drag estimate; every force and mass here is a tuning estimate. */
-export const springReturn = (strokeMetres: number): SpringReturn => {
+const springReturn = (strokeMetres: number): SpringReturn => {
   if (!(Number.isFinite(strokeMetres) && strokeMetres > 0)) {
     throw new RangeError('strokeMetres must be a finite positive number');
   }
@@ -139,7 +139,7 @@ const handPosition = ({ time, rearwardSeconds, dwellSeconds, mechanicalSeconds, 
   return 0;
 };
 
-export const buildCycleTimeline = (action: GunAction, mode: CycleMode, strokeMetres: number): CycleTimeline => {
+const buildCycleTimeline = (action: GunAction, mode: CycleMode, strokeMetres: number): CycleTimeline => {
   const profile = ACTION_CYCLE_PROFILES[action];
   const spring = springReturn(strokeMetres);
   const rearwardSeconds = mode === 'fire' ? strokeMetres / profile.rearwardSpeedMetresPerSecond : 0.65;
@@ -187,7 +187,7 @@ export interface AutomaticCycleMotion extends CycleMotion {
 }
 
 /** Manual pump tuning estimates: both legs are hand-driven, not a gas stroke or spring return. */
-export const PUMP_HAND_TIMING = { rearwardSeconds: 0.5, dwellSeconds: 0.15, forwardSeconds: 0.5, restSeconds: 0.35 };
+const PUMP_HAND_TIMING = { rearwardSeconds: 0.5, dwellSeconds: 0.15, forwardSeconds: 0.5, restSeconds: 0.35 };
 
 export const pumpCycleMotion = (motion: PartMotion, metresPerUnit: number): CycleMotion => {
   const strokeUnits = length(sub(motion.end, motion.start));

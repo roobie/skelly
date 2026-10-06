@@ -1,9 +1,11 @@
+import { type AimState, assertAimState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import {
   canonicalJsonBytes as canonicalBytes,
   canonicalJsonAt as canonicalStringify,
   decodeCanonicalNumbers as decodeNumberTags,
 } from './canonicalJson.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MIN } from './character.ts';
 import { CHUNK, CHUNK_VOLUME } from './coords.ts';
 import { assertFirearmState } from './firearmState.ts';
 import { type InventoryState, WORK_IN_PROGRESS } from './inventory.ts';
@@ -13,7 +15,7 @@ import { validateLongJob } from './longAction.ts';
 import type { PlayerCombatState } from './playerCombat.ts';
 import type { SaveSnapshot } from './saveState.ts';
 import { freezeSnapshot } from './snapshotData.ts';
-import type { ZombieRouteState, ZombieState } from './zombies.ts';
+import type { ZombieState } from './zombies.ts';
 
 /** Disk-format API. The implementation is data-only and safe to use in Node, workers, and browsers. */
 export interface SaveVersionComponents {
@@ -43,7 +45,7 @@ export interface SaveWorldIdentity extends SaveWorldOptions {
 }
 
 export type SaveContentKind = 'block' | 'item' | 'furniture' | 'zombie' | 'sound' | 'scheduler' | 'skill' | 'recipe';
-export type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
+type SaveContentLookup = (kind: SaveContentKind, id: string) => boolean;
 
 export interface EncodeSaveOptions {
   /** Slot owner supplies a strictly increasing safe-integer generation; the codec has no storage state. */
@@ -101,9 +103,6 @@ interface WirePayload {
     options: SaveWorldIdentity;
     regions: Record<string, Region>;
     zombieSystem: {
-      routeSearchCursor: number;
-      routeClock: number;
-      routes: { id: number; route: ZombieRouteState }[];
       nextEntityId: number;
     };
     blockEntitiesNextUid: number;
@@ -113,6 +112,7 @@ interface WirePayload {
     id: string;
     simulation: Omit<SaveSnapshot['character']['simulation'], 'seed' | 'clock'>;
     player: SaveSnapshot['character']['player'];
+    aim: AimState;
     inventory: Omit<InventoryState, 'piles' | 'entities'>;
     progression: SaveSnapshot['character']['progression'];
     longAction: SaveSnapshot['character']['longAction'];
@@ -135,7 +135,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 17;
+export const SAVE_SCHEMA_VERSION = 23;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -211,29 +211,17 @@ const finite = num();
 const safeInt = num({ integer: true, safe: true });
 const positiveInt = num({ integer: true, safe: true, min: 1 });
 const nonNegativeInt = num({ integer: true, safe: true, min: 0 });
+const skillLevel = num({ integer: true, safe: true, min: SKILL_LEVEL_MIN, max: SKILL_LEVEL_LEGENDARY });
 const nonNegative = num({ min: 0 });
 const progression = obj({
   handedness: enumeration(['right', 'left']),
-  skills: record(nonNegativeInt),
+  skills: record(skillLevel),
   practice: record(nonNegative),
   knownRecipes: arr(str({ nonEmpty: true })),
 });
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
-const zombieRoutes = arr(
-  obj({
-    id: positiveInt,
-    route: obj({
-      goalKey: str(),
-      goal: vec3,
-      waypoints: arr(vec3),
-      next: nonNegativeInt,
-      pending: bool,
-      retryAt: nonNegative,
-    }),
-  }),
-);
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),
@@ -265,6 +253,8 @@ itemSchema = obj({
   condition: num({ min: 0, max: 1 }),
   charges: opt(nonNegative),
   on: opt(bool),
+  burnRemaining: opt(nonNegative),
+  litAt: opt(nonNegative),
   made: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   firearm: opt(
@@ -286,6 +276,7 @@ itemSchema = obj({
           mode: enumeration(['fire', 'hand']),
           startedAt: nonNegative,
           elapsed: nonNegative,
+          duration: opt(positive),
           ejected: bool,
           feedRound: bool,
           forwardSounded: opt(bool),
@@ -310,7 +301,7 @@ itemSchema = obj({
       obj({
         kind: enumeration(['disassembly']),
         source: str({ id: true }),
-        skillLevel: nonNegativeInt,
+        skillLevel,
         toolLevels: record(num({ integer: true, safe: true, min: 0, max: 5 })),
         outputs: arr(obj({ item: str({ id: true }), count: positiveInt })),
         gather: nonNegative,
@@ -381,6 +372,7 @@ const longAction = obj({
       rest: opt(
         obj({
           kind: enumeration(['rest', 'sleep']),
+          furnitureUid: positiveInt,
           label: str({ nonEmpty: true }),
           rate: finite,
           startFatigue: num({ min: 0, max: 100 }),
@@ -424,6 +416,10 @@ const zombie = obj({
   searchHeading: vec3,
   strollHeading: vec3,
   horizontalSpeed: finite,
+  obstacleWanderHeading: opt(vec3),
+  obstacleWanderRemaining: nonNegative,
+  obstacleContact: bool,
+  obstacleSlideSide: enumeration([-1, 0, 1]),
   bodyLookTarget: finite,
   headYaw: finite,
   headYawTarget: finite,
@@ -496,6 +492,17 @@ const playerCombat = obj({
   meleeAction,
   nextFistHand: enumeration(['right', 'left']),
 });
+const aim = obj({
+  gaitPhase: finite,
+  lookYaw: finite,
+  lookPitch: finite,
+  recoilYaw: finite,
+  recoilPitch: finite,
+  lastYaw: finite,
+  lastPitch: finite,
+  hasLookSample: bool,
+  frame: obj({ yaw: finite, pitch: finite }),
+});
 const playerStateInventory = obj({
   ...inventoryCore.fields,
 });
@@ -535,9 +542,6 @@ const wirePayloadSchema = obj({
       }),
     ),
     zombieSystem: obj({
-      routeSearchCursor: nonNegativeInt,
-      routeClock: nonNegative,
-      routes: zombieRoutes,
       nextEntityId: positiveInt,
     }),
     blockEntitiesNextUid: positiveInt,
@@ -548,6 +552,7 @@ const wirePayloadSchema = obj({
     progression,
     simulation: simulationWithoutWorldIdentity,
     player,
+    aim,
     inventory: playerStateInventory,
     longAction,
     playerCombat,
@@ -847,16 +852,6 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
       },
       regions: Object.fromEntries(regions),
       zombieSystem: {
-        routeSearchCursor: snapshot.world.zombies.routeSearchCursor,
-        routeClock: snapshot.world.zombies.routeClock,
-        routes: snapshot.world.zombies.routes.map(({ id, route }) => ({
-          id,
-          route: {
-            ...route,
-            goal: [...route.goal],
-            waypoints: route.waypoints.map((point) => [...point]),
-          },
-        })),
         nextEntityId: snapshot.world.zombies.nextEntityId,
       },
       blockEntitiesNextUid: savedInventory.entities.nextUid,
@@ -876,6 +871,7 @@ function makeWirePayload(snapshot: SaveSnapshot, worldOptions: SaveWorldOptions)
         ...(snapshot.character.simulation.dead === undefined ? {} : { dead: snapshot.character.simulation.dead }),
       },
       player: snapshot.character.player,
+      aim: snapshot.character.aim,
       inventory: {
         nextItemUid: savedInventory.nextItemUid,
         hands: savedInventory.hands,
@@ -1259,9 +1255,6 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
           ),
         }),
         zombies: obj({
-          routeSearchCursor: nonNegativeInt,
-          routeClock: nonNegative,
-          routes: zombieRoutes,
           nextEntityId: positiveInt,
           zombies: arr(obj({ id: positiveInt, zombie })),
         }),
@@ -1272,6 +1265,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
         progression,
         simulation,
         player: playerState,
+        aim,
         inventory,
         longAction,
         playerCombat,
@@ -1284,6 +1278,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     snapshot,
     'snapshot',
   );
+  assertAimState(snapshot.character.aim);
   validateActionReferences(snapshot);
   const blockEntities = snapshot.character.inventory.entities;
   if (blockEntities.nextUid <= Math.max(0, ...blockEntities.entities.map(({ uid }) => uid))) {

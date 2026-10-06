@@ -19,7 +19,7 @@ export const PLAYER = {
 } as const;
 
 /** m/s². Heavier than Earth's; it makes jumps feel snappy. */
-export const GRAVITY = 28;
+const GRAVITY = 28;
 
 export const physicsFor = (scale: Scale): PhysicsParams => ({
   gravity: GRAVITY / scale.blockSize,
@@ -87,7 +87,7 @@ export interface MoveIntent {
 }
 
 /** Grams: carrying more than `light` slows you, down to `slowest` at `heavy`. */
-export const LOAD = { light: 20_000, heavy: 40_000, slowest: 0.6 } as const;
+const LOAD = { light: 20_000, heavy: 40_000, slowest: 0.6 } as const;
 
 /** Handling an item halves your pace (DESIGN.md, "Handling time"). */
 export const paceFactor = (grams: number, handling: boolean): number => {

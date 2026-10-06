@@ -9,9 +9,7 @@ import type { Vec3 } from './math.ts';
  *   +Z  right, from the point of view of someone holding the assembly
  * The root part is placed at the origin with an identity rotation.
  */
-export const FORWARD: Vec3 = [1, 0, 0];
-export const UP: Vec3 = [0, 1, 0];
-export const RIGHT: Vec3 = [0, 0, 1];
+const FORWARD: Vec3 = [1, 0, 0];
 
 /**
  * The main axis: the line through the origin along +X. Domains name it; for

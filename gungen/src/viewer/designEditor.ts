@@ -18,7 +18,7 @@ export interface DesignEditorState {
   readonly chosenParams: Readonly<Record<string, readonly string[]>>;
 }
 
-export type DesignEditorError = 'missing-template' | 'missing-part' | 'family-not-allowed';
+type DesignEditorError = 'missing-template' | 'missing-part' | 'family-not-allowed';
 export type DesignEditorResult =
   | { readonly ok: true; readonly state: DesignEditorState }
   | {

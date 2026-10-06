@@ -10,7 +10,7 @@ import { type FurnitureSpawn, grow, type Rect, rectDistance } from './site.ts';
 import type { Facing } from './templates.ts';
 import { terrainHeight } from './worldgen.ts';
 
-export const HANDLING_RANGE = {
+const HANDLING_RANGE = {
   gap: 8,
   blend: 8,
   length: 82,

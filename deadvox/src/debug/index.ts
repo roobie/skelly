@@ -324,7 +324,7 @@ const panelTemplate = ({
     ${groups.map((group) => groupTemplate(group, extras[group.id] ?? nothing))}
     <a id="debug-download" hidden href=${download?.url ?? ''} download=${download?.name ?? ''}></a>
     <div id="debug-sound-log-root"></div>
-    <p>Keys are listed in each group's header. Noclip: Space rises, R descends. While building (B): 1–9 select blocks, the wheel cycles them. Panel: Backquote. The wheel scrolls this panel.</p>
+    <p>Keys are listed in each group's header. Noclip: ${labelForAction('noclip.ascend')} rises, ${labelForAction('noclip.descend')} descends. While building (${labelForAction('debug.build-toggle')}): ${Array.from({ length: 9 }, (_, i) => labelForAction(`debug.build-slot.${i + 1}`)).join(' / ')} select blocks; the wheel cycles them. Panel: ${labelForAction('debug.panel-toggle')}. The wheel scrolls this panel.</p>
     </section>
     <div id="debug-axis-gizmo-root"></div>
     <div id="hotbar" hidden></div>
@@ -377,6 +377,7 @@ interface ActionContext {
   toggleFrozen: () => void;
   isGameFrozen: () => boolean;
   toggleGameFrozen: () => void;
+  impactLaser: DebugHooks['impactLaser'];
   look: LookControls;
 }
 
@@ -397,6 +398,7 @@ export const createDebugActions = ({
   toggleFrozen,
   isGameFrozen,
   toggleGameFrozen,
+  impactLaser,
   look,
 }: ActionContext): Action[] =>
   (
@@ -407,6 +409,13 @@ export const createDebugActions = ({
         group: 'tools',
         state: () => build.on,
         run: () => build.toggle(),
+      },
+      {
+        id: 'debug.impact-laser',
+        label: 'Impact laser',
+        group: 'tools',
+        state: impactLaser.enabled,
+        run: impactLaser.toggle,
       },
       {
         id: 'debug.spawn-menu-toggle',
@@ -882,6 +891,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   // MenuPointer routes the wheel to the pane under the cursor, including this panel.
   const actions = createDebugActions({
     hooks,
+    impactLaser: hooks.impactLaser,
     look,
     build,
     spawnMenu,

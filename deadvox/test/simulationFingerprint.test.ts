@@ -73,26 +73,32 @@ async function sourceFilesUnder(directory: string): Promise<string[]> {
   return [...direct, ...nested.flat()].sort();
 }
 
-async function actualSimulationHost(): Promise<SimulationModuleGraphHost> {
-  const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
-  const viteResolve = config.createResolver();
-  return {
-    resolve(specifier, importer) {
-      if (specifier.startsWith('@mobgen/')) {
-        return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-      }
-      return Promise.resolve(viteResolve(specifier, importer));
-    },
-    readFile(path) {
-      return readFile(path, 'utf8');
-    },
-  };
-}
+let actualHost: Promise<SimulationModuleGraphHost> | undefined;
+const actualSimulationHost = (): Promise<SimulationModuleGraphHost> => {
+  actualHost ??= (async () => {
+    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
+    const viteResolve = config.createResolver();
+    return {
+      resolve(specifier, importer) {
+        if (specifier.startsWith('@mobgen/')) {
+          return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
+        }
+        return Promise.resolve(viteResolve(specifier, importer));
+      },
+      readFile(path) {
+        return readFile(path, 'utf8');
+      },
+    };
+  })();
+  return actualHost;
+};
 
-async function actualSimulationGraph() {
-  return collectSimulationSourceGraph(SIMULATION_ENTRIES, projectRoot, await actualSimulationHost(), {
-    exclude: SIMULATION_EXCLUSIONS,
-  });
+let actualGraph: ReturnType<typeof collectSimulationSourceGraph> | undefined;
+function actualSimulationGraph() {
+  actualGraph ??= actualSimulationHost().then((host) =>
+    collectSimulationSourceGraph(SIMULATION_ENTRIES, projectRoot, host, { exclude: SIMULATION_EXCLUSIONS }),
+  );
+  return actualGraph;
 }
 
 async function mutateSimulationSource(
@@ -133,13 +139,16 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/worker/mesh.worker.ts')).toBe(false);
     expect(graph.sources.has('src/game/engine.ts')).toBe(false);
     expect(graph.sources.has('src/game/playtestObserver.ts')).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('src/ui/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
-    expect([...graph.sources.keys()].some((path) => path.startsWith('node_modules/three/'))).toBe(false);
+    const paths = [...graph.sources.keys()];
+    expect(paths.some((path) => path.startsWith('src/ui/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('src/render/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/lit-html/'))).toBe(false);
+    expect(paths.some((path) => path.startsWith('node_modules/three/'))).toBe(false);
     expect(graph.sources.size).toBeGreaterThan(0);
     expect(graph.excludedImports.length).toBeGreaterThan(0);
-    for (const { excluded } of graph.excludedImports) {
-      expect(graph.sources.has(excluded)).toBe(false);
+    for (const { importer, excluded } of graph.excludedImports) {
+      expect(paths).toContain(importer);
+      expect(paths).not.toContain(excluded);
     }
   });
 
@@ -187,6 +196,9 @@ describe('simulation source fingerprint', () => {
     const host = await actualSimulationHost();
     const options = { exclude: SIMULATION_EXCLUSIONS };
     const before = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, options);
+    const voice = await mutateSimulationSource(host, 'src/game/shamblerAudio.ts');
+    expect(voice.reads).toBe(0);
+    expect(voice.value).toBe(before);
     const changed = await mutateSimulationSource(host, 'src/game/audioPresentation.ts');
     expect(changed.reads).toBe(0);
     expect(changed.value).toBe(before);
@@ -269,21 +281,15 @@ describe('simulation source fingerprint', () => {
   });
 
   it('keeps metrics-only observer label mutations outside the actual fingerprint', async () => {
-    const config = await resolveConfig({ configFile: false, root: projectRoot, logLevel: 'silent' }, 'build');
-    const viteResolve = config.createResolver();
+    const host = await actualSimulationHost();
     const hashWith = (edited: boolean) =>
       fingerprintSimulationSources(
         SIMULATION_ENTRIES,
         projectRoot,
         {
-          resolve(specifier, importer) {
-            if (specifier.startsWith('@mobgen/')) {
-              return Promise.resolve(resolve(projectRoot, '../mobgen/src', specifier.slice('@mobgen/'.length)));
-            }
-            return Promise.resolve(viteResolve(specifier, importer));
-          },
+          ...host,
           async readFile(path) {
-            const source = await readFile(path, 'utf8');
+            const source = await host.readFile(path);
             return edited && path.endsWith('/src/game/playtestObserver.ts')
               ? source.replaceAll(pocketLabel, compartmentLabel)
               : source;

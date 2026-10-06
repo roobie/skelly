@@ -161,6 +161,7 @@ const makeActions = (
   let aimEnabled = false;
   let frozen = false;
   let gameFrozen = false;
+  let laserEnabled = true;
   const spawnCounts: number[] = [];
   const actions = createDebugActions({
     hooks,
@@ -193,6 +194,12 @@ const makeActions = (
     isGameFrozen: () => gameFrozen,
     toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
+    },
+    impactLaser: {
+      enabled: () => laserEnabled,
+      toggle: () => {
+        laserEnabled = !laserEnabled;
+      },
     },
   });
   return { actions, spawnCounts, skips, look };

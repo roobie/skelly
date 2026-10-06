@@ -26,7 +26,7 @@ const whereText = (inv: Inventory, item: Item, at: Location | undefined): string
   }
 };
 
-export interface QuickbarSlotViewModel {
+interface QuickbarSlotViewModel {
   readonly key: string;
   readonly filled: boolean;
   readonly name: string;

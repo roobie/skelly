@@ -17,7 +17,7 @@ export type GroupId =
   | 'share';
 
 /** A control or readout in a group that is not a key action: documented in the catalogue only. */
-export interface GroupNote {
+interface GroupNote {
   readonly label: string;
   /** Shown in the key column; absent for something with no key. */
   readonly key?: string;

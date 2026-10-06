@@ -22,7 +22,7 @@ export const OCCLUSION_LEVELS = 6;
 /** Ambient factor at full occlusion. Never fully black: a closed room still has some bounce light. */
 export const OCCLUSION_FLOOR = 0.35;
 /** Exponent on openness (1 - solid fraction); above 1 darkens partly-enclosed spots more, below 1 less. */
-export const OCCLUSION_GAMMA = 1;
+const OCCLUSION_GAMMA = 1;
 
 /** Cells in a query box: R along the normal, 2R across each tangent axis. */
 export const BOX_VOLUME = OCCLUSION_RADIUS * (2 * OCCLUSION_RADIUS) ** 2;

@@ -12,7 +12,7 @@ export type InputContext =
   | 'noclip'
   | 'play'
   | 'interrupted';
-export type PressKind = 'press' | 'held-state' | 'hold' | 'double-press';
+type PressKind = 'press' | 'held-state' | 'hold' | 'double-press';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
   readonly code: string;
@@ -29,6 +29,7 @@ export interface Binding {
   readonly repeat?: boolean;
   readonly text?: boolean;
   readonly plainKey?: boolean;
+  readonly holdMs?: number;
 }
 const world: readonly InputContext[] = ['play', 'noclip'];
 const moving: readonly InputContext[] = [...world, 'build'];
@@ -42,6 +43,7 @@ const entered: readonly InputContext[] = [
   'interrupted',
 ];
 const all: readonly InputContext[] = ['title', ...entered];
+export const HUD_HINTS_HOLD_MS = 1000;
 // biome-ignore lint/complexity/useMaxParams: compact declarations keep alternative keys and gesture metadata in one catalogue.
 const row = (
   id: string,
@@ -73,8 +75,14 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
   row('movement.jump', 'Jump', ['play', 'build'], ['Space'], 'held-state'),
-  row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state', { debug: true }),
-  row('noclip.descend', 'Descend while flying', ['noclip'], ['Backspace'], 'held-state', { debug: true }),
+  row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state', {
+    debug: true,
+    gate: 'debug.gate',
+  }),
+  row('noclip.descend', 'Descend while flying', ['noclip'], ['Backspace'], 'held-state', {
+    debug: true,
+    gate: 'debug.gate',
+  }),
   row('hand.use-off', 'Use off hand', world, ['Equal']),
   row('world.interact', 'Interact with the world', world, ['KeyF']),
   row('firearm.reload', 'Hold to load; double-press to rack; tap does nothing', world, ['KeyR'], 'hold', {
@@ -85,6 +93,9 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   }),
   row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory'], ['Tab']),
   row('ui.main-menu-toggle', 'Main menu', entered, ['F9'], 'press', { text: true }),
+  row('hud.toggle-interaction-hints', 'Hold to toggle interaction hints', entered, ['Backquote'], 'hold', {
+    holdMs: HUD_HINTS_HOLD_MS,
+  }),
   row('handling.stop', 'Stop handling or a long action', [...moving, 'inventory', 'interrupted'], ['KeyX']),
   row('compression.continue', 'Continue after an interruption', ['interrupted'], ['KeyC']),
   ...Array.from({ length: 5 }, (_, i) =>
@@ -132,10 +143,11 @@ export const INPUT_BINDINGS: readonly Binding[] = [
     debug: true,
     text: true,
   }),
-  row('debug.gate', 'Hold for debug commands', all, ['F1'], 'held-state', { debug: true, text: true }),
+  row('debug.gate', 'Hold for debug commands', all, ['F2'], 'held-state', { debug: true, text: true }),
   debugRow('debug.panel-toggle', 'Debug panel', 'Backquote', all),
   debugRow('debug.performance-toggle', 'Performance overlay', 'F4', all),
   debugRow('debug.build-toggle', 'Build tools', 'KeyB'),
+  debugRow('debug.impact-laser', 'Impact laser', 'KeyC'),
   debugRow('debug.spawn-menu-toggle', 'Spawn item menu', 'KeyG'),
   debugRow('debug.god-toggle', 'God mode', 'KeyH'),
   debugRow('debug.noclip-toggle', 'Noclip', 'KeyP'),
@@ -188,7 +200,7 @@ export const NATIVE_INPUTS = [
   { code: 'F12', description: 'Browser developer tools' },
 ] as const;
 export const NATIVE_EDITING =
-  'Text entry, composition, selection, clipboard, focus traversal and ordinary form activation use native browser controls. Ctrl/Cmd browser shortcuts are fixed, not game bindings.';
+  'Text entry, composition, selection, clipboard, focus traversal and ordinary form activation use native browser controls. Ctrl/Cmd/Meta browser shortcuts are fixed, not game bindings.';
 export const REFUSED_MODIFIERS: readonly Modifier[] = ['ctrl', 'meta'];
 const modifierName: Readonly<Record<Modifier, string>> = { ctrl: 'Ctrl', meta: 'Cmd/Meta', alt: 'Alt', shift: 'Shift' };
 const modifierRefusal = (modifier: Modifier): string =>
@@ -310,7 +322,8 @@ export const bindingConflict = (bindings: readonly Binding[], overrides: Binding
         continue;
       }
       const gateKeyConflict = gateKeyOverlap(a, b);
-      if (a.gate !== b.gate && !gateKeyConflict) {
+      const ungatedDebugOverlap = (a.debug && !a.gate) || (b.debug && !b.gate);
+      if (a.gate !== b.gate && !gateKeyConflict && !ungatedDebugOverlap) {
         continue;
       }
       const overlap = ac.some((x) =>
@@ -573,10 +586,9 @@ export const capturedChord = (event: KeyEvent): Chord | string => {
   const chord: Chord = { code: event.code, ...(active[0] ? { modifier: active[0] } : {}) };
   return chordIssue(chord) ?? chord;
 };
-export const browserEscape = (event: Pick<KeyboardEvent, 'code'>): boolean => event.code === 'Escape';
-export const nativeActivation = (event: Pick<KeyboardEvent, 'code'>): boolean =>
+const browserEscape = (event: Pick<KeyboardEvent, 'code'>): boolean => event.code === 'Escape';
+const nativeActivation = (event: Pick<KeyboardEvent, 'code'>): boolean =>
   event.code === 'Enter' || event.code === 'Space';
-export const nativeKeyLabel = (code: (typeof NATIVE_INPUTS)[number]['code']): string => codeLabel(code);
 const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&

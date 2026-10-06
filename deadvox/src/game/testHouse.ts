@@ -6,7 +6,7 @@
 // Colour variety for telling materials apart: painted siding on the north wall and a
 // small shed with a galvanized roof, a mossy cobblestone wall cap, dressed stone on the
 // chimney and doorstep, and a little hazard yellow on the gate posts. Furniture (a crate, a
-// kitchen cupboard, a fridge and a wardrobe) stands in and around it for comparing objects with structure.
+// chair, a kitchen cupboard, a fridge and a wardrobe) stands in and around it for comparing objects with structure.
 
 import type { EntitySpec } from '../core/blockEntities.ts';
 import type { RecipeDef, Registry } from '../core/content.ts';
@@ -139,7 +139,8 @@ const HOUSE_FURNITURE: readonly { type: string; at: Vec3; facing: Facing; loot?:
   // Kitchen: a fridge in the south-west corner, a cupboard against the south wall.
   { type: 'fridge', at: [1, 0, 5.5], facing: 'n' },
   { type: 'kitchen_cupboard', at: [3, 0, 6], facing: 'n' },
-  // Bedroom: a wardrobe against the east wall, clear of the window and the stairs.
+  // Bedroom: a chair in the open centre, and a wardrobe against the east wall clear of the window and stairs.
+  { type: 'chair', at: [6, 0, 3], facing: 'n' },
   { type: 'wardrobe', at: [9, 0, 1.5], facing: 'w' },
 ];
 
@@ -163,7 +164,7 @@ export const testHouseFurniture = (
   }));
 
 /** #231 can provide book item IDs here once content records which recipes each book teaches. */
-export type RepairBookHook = (registry: Registry, recipes: readonly RecipeDef[]) => readonly string[];
+type RepairBookHook = (registry: Registry, recipes: readonly RecipeDef[]) => readonly string[];
 
 interface TestHouseRepairCornerOptions {
   inventory: Inventory;
@@ -285,6 +286,7 @@ export const populateTestHouseRepairCorner = ({
   const stock = repairCornerStock(registry, recipes);
   const tools = repairCornerToolTypes(registry, recipes, stock.qualities, repairBooks);
   const pilePositions = repairCornerPilePositions(spawn, blockSize);
+  const pileIndexes = pilePositions.map((_, index) => index);
   recipes.forEach((recipe, index) => {
     const condition = 0.25 + (0.5 * (index + 1)) / (recipes.length + 1);
     placeRepairCornerItem({
@@ -294,11 +296,11 @@ export const populateTestHouseRepairCorner = ({
       type: recipe.result.item,
       count: 1,
       condition,
-      pileIndexes: [0, 1],
+      pileIndexes,
     });
   });
   for (const type of [...tools].sort()) {
-    placeRepairCornerItem({ inventory, registry, pilePositions, type, count: 1, condition: 1, pileIndexes: [0, 1] });
+    placeRepairCornerItem({ inventory, registry, pilePositions, type, count: 1, condition: 1, pileIndexes });
   }
   for (const [type, count] of [...stock.components].sort(([a], [b]) => a.localeCompare(b))) {
     placeRepairCornerItem({
@@ -308,7 +310,7 @@ export const populateTestHouseRepairCorner = ({
       type,
       count,
       condition: 1,
-      pileIndexes: [2, 3, 4, 5, 6, 7, 8],
+      pileIndexes,
     });
   }
 };

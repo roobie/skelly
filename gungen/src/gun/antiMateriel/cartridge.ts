@@ -6,8 +6,7 @@ import { METRES_PER_UNIT } from '../exportFrame.ts';
 
 const MM_PER_INCH = 25.4;
 const MM_PER_U = METRES_PER_UNIT * 1000;
-export const inchesToU = (inches: number): number => (inches * MM_PER_INCH) / MM_PER_U;
-export const mmToU = (mm: number): number => mm / MM_PER_U;
+const inchesToU = (inches: number): number => (inches * MM_PER_INCH) / MM_PER_U;
 
 /**
  * .50 BMG (12.7x99mm NATO), English Wikipedia infobox ".50 BMG", fields `length` (5.450 in, overall

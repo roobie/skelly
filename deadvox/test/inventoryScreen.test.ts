@@ -219,7 +219,7 @@ describe('inventory screen Lit rendering', () => {
 
   it.each([
     {
-      name: 'browser modifiers alone do not quick-move',
+      name: 'browser modifiers are not forwarded into inventory actions',
       ctrlKey: true,
       metaKey: true,
       shiftKey: true,
@@ -227,7 +227,7 @@ describe('inventory screen Lit rendering', () => {
       quick: false,
     },
     { name: 'held quick gate auto-moves', ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, quick: true },
-  ])('$name through the locked-menu adapter, which preserves native flags', (binding) => {
+  ])('$name through the locked-menu adapter', (binding) => {
     const t = setup();
     const node = t.root.querySelector<HTMLElement>(`[data-uid="${t.beans.uid}"]`)!;
     const canvas = document.createElement('canvas');
@@ -249,7 +249,12 @@ describe('inventory screen Lit rendering', () => {
     try {
       // The locked canvas receives the original event; only the production adapter can deliver it to the item.
       canvas.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, pointerId: 1, ...modifiers }));
-      expect(received).toEqual(modifiers);
+      expect(received).toEqual({
+        ctrlKey: false,
+        metaKey: false,
+        shiftKey: modifiers.shiftKey,
+        altKey: modifiers.altKey,
+      });
       expect(t.screen.selected).toBe(t.beans);
       expect(t.inv.hands.right).toBe(t.beans);
       expect(t.queue.jobs).toHaveLength(binding.quick ? 1 : 0);

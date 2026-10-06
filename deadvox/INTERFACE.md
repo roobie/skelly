@@ -4,6 +4,7 @@ description: Design for what the game's interface may show and say to the player
 read_if:
   - you're deciding what the interface may tell the player and in what voice
   - you're changing player-facing prompts, feedback, or HUD language
+  - you're changing debug-profile hit feedback, shot-trajectory tools, or target-range readouts
 tags: [deadvox, design, ui, ux, diegesis, hud]
 created: 2026-09-27
 status: active
@@ -75,8 +76,8 @@ The rules for a cue:
   living with it.
 - **It's short and it fades.** Like the vignette: a moment, then gone. A cue that
   stays on screen is a HUD element.
-- **Sound cues are the character's own sounds,** positioned at the player, and
-  follow DESIGN.md's "Audio": part of the simulation, not decoration.
+- **Sound cues are the character's own sounds,** positioned at the player.
+  Whether one also emits a simulation noise event is a separate hearing policy.
 - **It never spams.** Each cue has a minimum interval that shrinks with severity,
   and two cues don't start in the same second.
 - **It's tunable data** (thresholds, intervals, strengths) in the content pack,
@@ -94,15 +95,17 @@ Cues per state (a starting set; BR's list is the sound column):
 | Injured leg (BR: "limping too!") | a limp: an uneven head bob, one step short and dipping, at a slower pace | uneven footsteps, a hiss on the bad step |
 | Low stamina | a pulse of narrowed view after a sprint | panting, heavy breathing |
 | Illness (food poisoning) | a nauseous drift of the view | coughing, retching |
+| Refusal or interruption | reason text on the world prompt, rest card and craft status box only when messages are on | the avatar's “nope” sound for refusals, regardless of messages/hints; not heard by shamblers |
+
+BR's 2026-10-05 11:31 direction: “i've added nope1_clean.wav / it's the diegetic sound (the avatar makes a nope sound) for when something doesn't work (when UI is off, and any hints are hidden)”. BR's 11:32 answer was “i recorded it myself 10 minutes ago / yes, CC0” and “no, this one is not heard by shamblers (but if it were a multiplayer game, it'd be heard by other players)”. The 11:46 ruling quoted under class 3 requires the sound regardless of whether messages/hints are on. See `src/game/play.ts`, `showRefusal`, and `src/game/audioPresentation.ts`, `createRefusalPresenter`: the cue is player-only presentation and does not emit a simulation noise event.
 
 The limp is also movement, not only a look: the pace really drops, so it belongs
 with the body model. Wounds per body part come in Slice 3 ([EPIC.md](EPIC.md#3-flesh-and-noise));
 until then a limp can follow low health.
 
-**The game has no audio yet** (nothing in `src` creates a Web Audio context). The
-sound half needs a small player-sound system first: Web Audio started by the
-first click, as DESIGN.md says, sounds as content ids in the pack, and CC0 sources
-recorded in the asset manifest like the models.
+Web Audio starts on the first click, as DESIGN.md says. Sounds are content ids
+in the pack, validated and credited in the asset manifest. The refusal cue is a
+player-only exception to simulation noise: it does not alert shamblers.
 
 ## Afford, don't instruct
 
@@ -119,7 +122,18 @@ Text on screen falls into four classes, and only three of them ship:
    heft it. Ships, on the meta surfaces that need them (the inventory).
 3. **The character's voice, when something is refused or noticed:** "You're not
    tired", "Something's in the way", "You hear something outside". Short, first
-   person, about the world, never about keys or menus. Ships.
+   person, about the world, never about keys or menus. Ships. BR ruled on
+   2026-10-05: "our overarching goal is: diegesis / which means 0 synthetic UI
+   elements / this cannot hold for exactly 100% of the time / but it does mean /
+   if the checkbox for messages/hints is off ,then no messages or hints should
+   come from a syntheitic UI element / but the 'nope' sound shall play regardless
+   of UI hints being on or off". Class-3 reason text on the world prompt, rest
+   card and craft status box follows the same `hudVisibility` projection from
+   `src/ui/hudOptions.ts`; it appears only when the `messages` option is on. See
+   `src/ui/playHud.ts`, `playPromptText`, `src/ui/rest.ts`, `restViewModel`, and
+   `src/ui/craftReadout.ts`, `craftStatus`. With it off, the avatar's nope sound
+   is the refusal cue; see
+   `src/game/play.ts`, `showRefusal`.
 4. **Instructions:** anything naming a key, a click, a menu or a procedure
    ("press R", "open the inventory", "C: continue"). **Development only.**
 
@@ -146,23 +160,46 @@ so class 4 is made mechanical:
 - **Review asks one question:** could the player learn this from the world or
   their hands? If yes, the text goes.
 
-## Readying before acting (BR, 2026-09-27)
+## Readying before acting (BR, 2026-09-27; refined by #267)
 
 **Combat is modal, as in DayZ.** Holding a weapon is not the same as being ready
-to use it:
+to use it. BR's 2026-10-05 direction for #267 was:
 
-- **Holding the right mouse button readies:** it raises a melee weapon, or brings
-  a firearm up to fire from the hip. Readying is a stance the body shows (the
-  weapon comes up), not a HUD mode; releasing the button lowers it.
+> "well, at some point, we should make it like dayz in that you don't run around ready to fire by default. Instead it's modal such that gun ready is e.g. press-and-hold rightbutton, and only then can you fire/attack"
+>
+> "and by that, I mean that you never fire while sprinting, but instead when holding right mouse, you 'duck walk' (which also can be a skill-dependent thing in that you duck walk faster with higher skill)"
+
+When #267 lands, firearms fire only while ready and never while sprinting;
+ready movement is a skill-dependent duck walk, a separate gait from C crouch
+and mainly a speed factor. BR described it as an "own gait, but mainly it's
+simply a speed factor" and said its governing skill is "not defined yet -
+maybe a generic 'warfare' skill". BR later settled it in #267 (2026-10-05
+20:52): "The FC affects stuff like duck walking, whereas MC affects blocking".
+So firearms combat governs duck-walk speed and melee combat governs block
+success; see [SLICE-3.md](SLICE-3.md), 3.1.
+
+- **Right mouse sets the combat stance:** holding it raises a melee weapon into
+  en-garde, and releasing it lowers the weapon. When #267 lands, holding it will
+  also ready a firearm, bringing it up to fire from the hip; releasing it will
+  lower the firearm. When #267 lands, the held firearm pose will show readiness;
+  there will be no HUD indicator. BR described the pose direction on 2026-10-05:
+  "the UI must show unreadied vs readied / unreadied does not have muzzle
+  forward - rather downward". When #267 lands, an unreadied firearm's muzzle
+  points down; readying brings it up and forward.
 - **Aiming down the sights is a toggle within the ready stance,** for firearms
   only: while right-click is held, a middle click or Shift switches between hip
   and sights (the view narrows through the sights). Input interpretation belongs
   to `src/game/input.ts`, `Input`, rather than a parallel interface map.
-- **Ready is slow.** While ready you don't jog or sprint; the top speed is a
-  hurried march, faster than a walk and slower than a jog. That is deliberate:
-  readiness trades mobility for being able to fight.
-- **Blocking is a ready-only move:** holding right-click and backing off (S)
-  blocks incoming melee. Unreadied, S is only a step back.
+- **Melee also requires readiness:** BR said, "yeah, melee needs 'en-garde' on
+  right-mouse-hold, which also enables blocking incoming melee (based on skill)".
+  When #267 lands, an unready left-click does not swing.
+- **Blocking:** When #267 lands, holding right mouse and S blocks incoming
+  melee; en-garde alone does not, and whether the block succeeds depends on
+  the melee combat skill. BR answered #267's question 1a on 2026-10-05: "1a. yes S is required
+  to actually block from en-garde".
+- **Unready firearm left-click is an exception to refusal:** BR's answer for an
+  unreadied firearm was "nothing". When #267 lands, it produces no shot and no
+  nope sound; this deliberate no-op does not use the ordinary refusal cue.
 - **Hand activation follows actor roles (BR, 2026-10-04):** dominance is
   identity, not a remapping of physical inventory slots. A held item cannot
   become an unarmed attack, and a two-handed hold's support must not activate
@@ -172,13 +209,23 @@ to use it:
   identity rather than consulting creation preferences. See
   `docs/character-handedness.md` for the accepted-launch and physical-pose
   boundaries.
-- Lowered, a held item may block part of the view (as held models do today);
-  readying is what brings it to where it's used.
+- Lowered, a held item may block part of the view (as held models do today).
+  When #267 lands, readying a firearm brings its held pose forward.
 
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in
-  `src/debug` and load only there (ui.2's split). They can say anything.
+  `src/debug` and load only there (ui.2's split). They can say anything. BR said on
+  2026-10-05: "and the paper target with debug mode that 'pings' to make it real
+  obvious where it was hit / maybe if we can make a debug-laser pointer too - ie.
+  a magenta line from the muzzle that marks the trajectory exactly". The target
+  ping and F2+L laser are debug-profile tools; see `src/game/worldSetup.ts`,
+  `DebugTestHouseSite`, `src/debug/index.ts`, `createDebugActions`, and
+  `src/render/impactEffects.ts`, `ImpactEffects`. BR also said on 2026-10-05:
+  "also: in debug mode we should render the rage to target down by the direction
+  gizmo so that i can say which range i'm at". The readout uses
+  `src/debug/shotTargetRange.ts`, `rangeToNearestShotTargetMetres`, beside the
+  gizmo in `src/debug/index.ts`, `attachDebugTools`.
 - **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
   a build) shows the hint channel and nothing from `src/debug`, so a tester sees
   the game close to how it ships, with the instructions it still needs.
@@ -195,8 +242,8 @@ to use it:
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
 | Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
-| Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; "R or X to stop" becomes a hint |
-| Interruption prompt ("C: continue X: stop") | meta, instruction | meta, choice | a two-button choice drawn as such, with the key names from the hint channel |
+| Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
+| Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; key names come from the hint channel |
 | Main menu (F9) | meta | meta | fine; settings and help live here |
 | Inventory screen | meta | meta | grids stay; numbers per DESIGN.md "numbers are there when you look" |
 | Notices ("Quickbar 1 is empty: open the inventory…") | mixed | voice | keep the voice part, move the procedure to the hint channel |

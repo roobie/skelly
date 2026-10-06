@@ -57,13 +57,13 @@ export const HAMLET = {
 } as const;
 
 /** Buildings north of the road (their fronts face south, onto it), then south of it. */
-const NORTH_SIDE = ['small_house', 'bungalow', 'corner_store'] as const;
-const SOUTH_SIDE = ['gas_station', 'shed'] as const;
+const NORTH_SIDE = ['small_house', 'bungalow', 'corner_store', 'hardware_store'] as const;
+const SOUTH_SIDE = ['gas_station', 'shed', 'garage'] as const;
 /** Every template the hamlet uses. */
 export const HAMLET_TEMPLATES: readonly string[] = [...NORTH_SIDE, ...SOUTH_SIDE];
 
 /** Also seeded by the static reachability check: roadside wanderers spawn independently of markers. */
-export const HAMLET_WANDERER = 'shambler';
+const HAMLET_WANDERER = 'shambler';
 const ZOMBIE_COUNT = [6, 10] as const;
 
 /** Possible types before seed rolls: north rows may shuffle; south rows keep their order.

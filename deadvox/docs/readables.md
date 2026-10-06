@@ -2,6 +2,7 @@
 read_if:
   - you're authoring or changing readable item or furniture content
   - you're changing how authored readings enter play
+  - you're changing movement or action input while a readable is open
 ---
 
 # Authored notes and signs
@@ -48,15 +49,17 @@ ordinary inventory access. The shared block does not change door ownership.
 
 ## Player flow and time
 
-Select a note in inventory and take it into a hand, then choose **Read** (or U /
-hold its assigned quickbar key). A quickbar tap only takes or puts away; holding
-its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
-`QuickbarActions.hold`). `src/core/options.ts`, `useOption`, describes the
-capability; `src/game/survival.ts`, `Survival.use`, revalidates hand ownership and
-owns the read effect. There is no consumption, inventory change
-or queued handling job. Reading has **zero command time**, rather than an arbitrary
-handling cost: opening paper is presentation, while time spent actually reading
-already passes in the live world.
+Take a readable-only note into a hand and hold its assigned quickbar slot. An
+item with a book component also supports its held primary action; see
+`src/game/primaryAction.ts`, `primaryActionForDefinition`. The inventory Read command was removed under BR's
+interaction ruling in `CONTROLS.md`. A quickbar tap only takes or puts away;
+holding its slot uses the note while it is in hand (`src/game/quickbarActions.ts`,
+`QuickbarActions.hold`).
+`src/core/options.ts`, `useOption`, describes the capability;
+`src/game/survival.ts`, `Survival.use`, revalidates hand ownership and owns the
+read effect. Reading a readable-only note neither consumes nor changes the item
+and admits no handling job. Opening paper has **zero command time**; time spent
+actually reading already passes in the live world.
 
 Look at a sign and press F. Normal furniture picking includes gaze/occlusion and
 Search's reach; the session command rechecks the live entity identity and reach.
@@ -68,12 +71,23 @@ uses the existing scroll-pane/menu-pointer implementation. **Esc, Tab or Put awa
 close it and restore previous focus. F9 opens the main menu and puts it away;
 pointer-lock loss and death also close it. Other gameplay, inventory, quickbar and
 primary-action keys do not leak through. The world **keeps moving**, just as with
-inventory; movement/action input is inactive. Main-menu/pointer-loss pause rules
-are unchanged. This does not add or enable the HUD: existing HUD preferences and
-compass/watch item plans remain unchanged.
+inventory; movement/action input is inactive. BR's d73-2 long-action ruling is "long
+actions disable all actions"; `src/core/longAction.ts`, `LongActions`, owns the
+timed book action that may continue while its separate paper surface is open.
+`src/ui/reading.ts`, `mountReading`, retains the surface's close and scroll keys.
+Main-menu/pointer-loss pause rules are unchanged. This does not add or enable the
+HUD: existing HUD preferences and compass/watch item plans remain unchanged.
+
+A book may define both `book` and `readable`. `book` supplies the timed
+recipe-learning action; `readable` supplies authored prose for the paper surface.
+`Survival.use` starts the book action and then opens that text, so the visible
+handbook text is not an action-progress view. Closing the surface dismisses only
+the presentation; the long-action owner remains responsible for the book job and
+its progress.
 
 The maintained browser contract exercises the real sample pickup/search/handling/
-Read path, sign F interaction, input ownership, focus, scrolling and dismissal.
+quickbar-held Read path, sign F interaction, input ownership, focus, scrolling and
+dismissal.
 It also checks maximum title/body sizes at 360×640 and 800×600 (20 px body text,
 no horizontal overflow, footer/button visible).
 

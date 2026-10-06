@@ -19,11 +19,33 @@ export interface CharacterState {
   knownRecipes: string[];
 }
 
+export const SKILL_LEVEL_MIN = 0;
+export const SKILL_LEVEL_MAX = 10;
+export const SKILL_LEVEL_LEGENDARY = SKILL_LEVEL_MAX + 1;
+const LEGENDARY_LEVEL_PRACTICE = 1_000_000;
+
+/** BR ruled legendary is mostly vanity; its effects match ordinary level 10. */
+export const skillEffectLevel = (level: number): number => Math.min(level, SKILL_LEVEL_MAX);
+
 /** Practice required for the next level grows with the level already reached. */
-export const practiceForNextLevel = (level: number): number => 10 * (level + 1);
+export const practiceForNextLevel = (level: number): number => {
+  if (level === SKILL_LEVEL_LEGENDARY) {
+    return Number.POSITIVE_INFINITY;
+  }
+  if (level === SKILL_LEVEL_MAX) {
+    return LEGENDARY_LEVEL_PRACTICE;
+  }
+  return 10 * (level + 1);
+};
+
+const validSkillPractice = (level: number, practice: number | undefined): practice is number =>
+  practice !== undefined &&
+  Number.isFinite(practice) &&
+  practice >= 0 &&
+  (level === SKILL_LEVEL_LEGENDARY ? practice === 0 : practice < practiceForNextLevel(level));
 
 /** Explicit starting source, shared with CLI reachability in the next hand-off. */
-export const STARTING_RECIPES = ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank'] as const;
+const STARTING_RECIPES = ['torch', 'candle', 'repair_kit', 'repair_crowbar', 'sawn_plank'] as const;
 export const startingKnownRecipes = (registry: Registry): string[] =>
   STARTING_RECIPES.filter((id) => registry.recipes.has(id));
 
@@ -43,7 +65,7 @@ export class Character implements HandedCharacter {
       throw new Error('Invalid character handedness');
     }
     this.side = side;
-    this.skills = Object.fromEntries([...registry.skills.keys()].map((id) => [id, 0]));
+    this.skills = Object.fromEntries([...registry.skills.keys()].map((id) => [id, SKILL_LEVEL_MIN]));
     this.practice = Object.fromEntries([...registry.skills.keys()].map((id) => [id, 0]));
     this.knownRecipes = new Set(startingKnownRecipes(registry));
   }
@@ -64,12 +86,12 @@ export class Character implements HandedCharacter {
     }
     let remaining = this.practice[skill]! + amount;
     let level = this.skills[skill]!;
-    while (remaining >= practiceForNextLevel(level)) {
+    while (level < SKILL_LEVEL_LEGENDARY && remaining >= practiceForNextLevel(level)) {
       remaining -= practiceForNextLevel(level);
       level += 1;
     }
     this.skills[skill] = level;
-    this.practice[skill] = remaining;
+    this.practice[skill] = level === SKILL_LEVEL_LEGENDARY ? 0 : remaining;
   }
 
   learnRecipes(recipes: readonly string[]): void {
@@ -96,17 +118,12 @@ export class Character implements HandedCharacter {
       throw new Error('Saved skills do not match the character skill definitions');
     }
     for (const [id, level] of Object.entries(state.skills)) {
-      if (!Number.isSafeInteger(level) || level < 0) {
+      if (!Number.isSafeInteger(level) || level < SKILL_LEVEL_MIN || level > SKILL_LEVEL_LEGENDARY) {
         throw new Error(`Invalid skill level for ${id}`);
       }
       character.skills[id] = level;
       const practice = state.practice[id];
-      if (
-        practice === undefined ||
-        !Number.isFinite(practice) ||
-        practice < 0 ||
-        practice >= practiceForNextLevel(level)
-      ) {
+      if (!validSkillPractice(level, practice)) {
         throw new Error(`Invalid skill practice for ${id}`);
       }
       character.practice[id] = practice;

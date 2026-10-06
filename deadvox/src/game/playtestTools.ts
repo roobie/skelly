@@ -9,8 +9,8 @@ export interface DeathMetric {
   readonly survivedSeconds: number;
 }
 
-export const METRICS_HISTORY_LIMIT = 512;
-export const POCKET_KEY_LIMIT = 128;
+const METRICS_HISTORY_LIMIT = 512;
+const POCKET_KEY_LIMIT = 128;
 
 export interface SessionMetricsV1 {
   readonly schemaVersion: 1;
@@ -226,7 +226,7 @@ export interface SnapshotMeasurement {
   readonly netStateUnchanged: boolean;
 }
 
-export interface SnapshotHistoryEntry {
+interface SnapshotHistoryEntry {
   readonly at: number;
   readonly durationMs: number;
 }
@@ -280,7 +280,7 @@ const equalProperties = (left: object, right: object, seen: WeakMap<object, Weak
   );
 };
 
-export const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean => {
+const exactStateEqual = (a: unknown, b: unknown, seen = new WeakMap<object, WeakSet<object>>()): boolean => {
   if (Object.is(a, b)) {
     return true;
   }
@@ -314,12 +314,14 @@ const MAX_SNAPSHOT_BATCH_SIZE = 65_536;
 const MAX_INDIVIDUAL_CAPTURE_SAMPLES = 8192;
 const MAX_TIMER_PROBE_READS = 100_000;
 const MIN_TIMER_PROBE_TICKS = 8;
+const NANOSECONDS_PER_MILLISECOND = 1_000_000;
 
+// Differences of performance.now() readings can exceed an ulp-scaled tolerance; whole nanoseconds remain far below browser quanta.
 const observedTickFitsQuantum = (observedTickMs: number | null, quantumMs: number): boolean =>
   observedTickMs !== null &&
   Number.isFinite(quantumMs) &&
   quantumMs > 0 &&
-  observedTickMs <= quantumMs * (1 + Number.EPSILON * 8);
+  Math.round(observedTickMs * NANOSECONDS_PER_MILLISECOND) <= quantumMs * NANOSECONDS_PER_MILLISECOND;
 
 const detectMinimumTimerTickMs = (now: () => number): number | null => {
   let previous = now();

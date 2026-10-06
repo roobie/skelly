@@ -80,7 +80,7 @@ export const worldGroundAt = ({
 };
 
 /** Top block heights for a chunk column, CHUNK×CHUNK, indexed x + CHUNK * z. */
-export const columnHeights = (seed: number, scale: Scale, cx: number, cz: number): Int32Array => {
+const columnHeights = (seed: number, scale: Scale, cx: number, cz: number): Int32Array => {
   const out = new Int32Array(CHUNK * CHUNK);
   for (let lz = 0; lz < CHUNK; lz++) {
     for (let lx = 0; lx < CHUNK; lx++) {
@@ -91,7 +91,7 @@ export const columnHeights = (seed: number, scale: Scale, cx: number, cz: number
 };
 
 /** A column's heights with the surface's changes applied. */
-export const columnSurface = ({ seed, scale, surface }: Terrain, cx: number, cz: number): ColumnSurface => {
+const columnSurface = ({ seed, scale, surface }: Terrain, cx: number, cz: number): ColumnSurface => {
   const heights = columnHeights(seed, scale, cx, cz);
   const tops = new Int32Array(CHUNK * CHUNK).fill(-1);
   if (surface) {

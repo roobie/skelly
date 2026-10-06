@@ -14,7 +14,17 @@ const sources = readdirSync(BASE)
     source,
     data: JSON.parse(readFileSync(join(BASE, source), 'utf8')) as unknown,
   }));
-const fresh = () => buildRegistry(sources).registry;
+const baseline = buildRegistry(sources).registry;
+const mutableSections = ['items', 'furniture', 'loot', 'zombies', 'templates', 'recipes'] as const;
+const fresh = () => ({
+  ...baseline,
+  ...Object.fromEntries(
+    mutableSections.map((section) => [
+      section,
+      new Map([...baseline[section]].map(([id, definition]) => [id, structuredClone(definition)])),
+    ]),
+  ),
+});
 const marker = (zombie: string, chance = 1): SpawnMarker => ({ zombie, chance, pos: [0, 0, 0] });
 
 describe('static reachability', () => {

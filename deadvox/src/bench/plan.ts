@@ -1,6 +1,7 @@
 // Which configurations the benchmark runs, and where results are kept between the
 // page reloads that separate runs (each run starts from a fresh page and GPU state).
 
+import type { ItemDef } from '../core/content.ts';
 import type { StorageStats } from '../core/storage.ts';
 import type { ActorRenderer } from '../game/config.ts';
 import type { FrameStats, SampleStats } from './stats.ts';
@@ -14,7 +15,7 @@ export interface BenchConfig {
 export const DEFAULT_PLAN: readonly BenchConfig[] = [64, 96, 128].map((radiusM) => ({ blockSize: 0.5, radiusM }));
 
 export const DEFAULT_SHAMBLER_COUNTS = [10, 25, 50, 100] as const;
-export const MAX_SHAMBLER_COUNT = 500;
+const MAX_SHAMBLER_COUNT = 500;
 const SHAMBLER_COUNTS_PATTERN = /^\d+(,\d+)*$/;
 
 export const parseShamblerCounts = (text: string): number[] | undefined => {
@@ -53,7 +54,7 @@ export const formatPlan = (plan: readonly BenchConfig[]): string =>
   plan.map(({ blockSize, radiusM }) => `${blockSize}:${radiusM}`).join(',');
 
 /** CPU milliseconds per frame spent streaming, simulating and submitting the render (not GPU time). */
-export interface WorkStats {
+interface WorkStats {
   work: SampleStats;
 }
 
@@ -146,6 +147,20 @@ export interface BenchRecord {
   time?: string;
   /** Drawn through the mood pass with the default look (`&post=1`, bench/post.ts); records from before it existed, and runs without it, drew plain. */
   post?: boolean;
+  /** Made-light and detailed-shambler population that shared the full-phase scene. */
+  lightWorkload?: {
+    active: number;
+    activeAfterSprint?: number;
+    carried: number;
+    dropped: number;
+    pointLightSlots: number;
+    shamblers: number;
+    actors: ActorRenderer;
+    settings: Record<
+      string,
+      Pick<NonNullable<ItemDef['light']>, 'color' | 'emissive' | 'intensity' | 'radius' | 'seenFrom' | 'burnTime'>
+    >;
+  };
   env?: Environment;
   runs: RunResult[];
   shamblers?: ShamblerRunResult[];

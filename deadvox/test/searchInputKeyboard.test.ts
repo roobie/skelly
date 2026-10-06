@@ -57,7 +57,7 @@ it('gates native debug-checkbox activation but leaves text editing native', () =
           id: 'debug.gate',
           description: 'Fixture debug gate',
           contexts: ['debug-panel'],
-          defaults: [{ code: 'F1' }],
+          defaults: [{ code: 'F2' }],
           commands: [{ id: 'debug.gate', kind: 'held-state' }],
           debug: true,
         },
@@ -84,11 +84,11 @@ it('gates native debug-checkbox activation but leaves text editing native', () =
     key(checkbox, 'Space', 'keyup');
     expect(key(text, 'Space').defaultPrevented).toBe(false);
     key(text, 'Space', 'keyup');
-    expect(key(panel, 'F1').defaultPrevented).toBe(true);
+    expect(key(panel, 'F2').defaultPrevented).toBe(true);
     expect(keyboard.held('debug.gate')).toBe(true);
     expect(key(checkbox, 'Space').defaultPrevented).toBe(false);
     key(checkbox, 'Space', 'keyup');
-    key(panel, 'F1', 'keyup');
+    key(panel, 'F2', 'keyup');
     expect(key(checkbox, 'Space').defaultPrevented).toBe(true);
   } finally {
     remove();

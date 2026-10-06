@@ -5,16 +5,12 @@
 // biome-ignore-all lint/style/noProcessEnv: environment selects a browser-contract subset
 // biome-ignore-all lint/complexity/useSimplifiedLogicExpression: readable browser status checks
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { rm } from 'node:fs/promises';
-import { createServer as createNetServer } from 'node:net';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { createServer, build as viteBuild, preview as vitePreview } from 'vite';
-import { createBrowserProfile } from '../../tools/browser-profile.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
-import { browserStageLaunchArgs, browserStageUrl } from './stage-mode.mjs';
+import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
@@ -39,6 +35,11 @@ if (requestedAutosaveBackend && !['opfs', 'indexeddb'].includes(requestedAutosav
 }
 if (!['chromium', 'firefox'].includes(browserName)) {
   throw new Error(`Expected browser name chromium or firefox, got ${browserName}`);
+}
+if (browserName === 'chromium') {
+  const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
+  debugChannels.add('pw:browser');
+  process.env.DEBUG = [...debugChannels].join(',');
 }
 const { chromium, firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -65,33 +66,6 @@ const startWebServer = async () => {
   await vite.listen();
   return vite.httpServer.address();
 };
-const freePort = async () =>
-  new Promise((resolve, reject) => {
-    const server = createNetServer();
-    server.once('error', reject);
-    server.listen(0, '127.0.0.1', () => {
-      const address = server.address();
-      server.close((error) => (error ? reject(error) : resolve(address.port)));
-    });
-  });
-const waitForCdp = async (cdpUrl, childProcess, startupError) => {
-  const until = Date.now() + STAGE_TIMEOUT_MS;
-  while (Date.now() < until) {
-    if (startupError.error || childProcess.exitCode !== null) {
-      throw new Error(`System Chromium failed to start: ${startupError.error?.message ?? childProcess.exitCode}`);
-    }
-    try {
-      const response = await fetch(`${cdpUrl}/json/version`);
-      if (response.ok) {
-        return;
-      }
-    } catch {
-      // The CDP listener isn't ready yet.
-    }
-    await delay(100);
-  }
-  throw new Error(`System Chromium CDP endpoint timed out: ${cdpUrl}`);
-};
 const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -104,10 +78,7 @@ const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
   }
 };
 let browser;
-let chromeProcess;
 let firefoxServer;
-let chromeExitPromise;
-let profile;
 try {
   const address = await withTimeout('Vite startup', startWebServer());
   assert(address && typeof address !== 'string');
@@ -116,34 +87,20 @@ try {
     : `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
   let context;
   if (browserName === 'chromium') {
-    const cdpPort = await freePort();
-    profile = createBrowserProfile();
-    const startupError = { error: undefined };
-    chromeProcess = spawn(
-      process.env.CHROME_BIN ?? 'google-chrome',
-      browserStageLaunchArgs(stageId, [
-        `--remote-debugging-port=${cdpPort}`,
-        `--user-data-dir=${profile}`,
-        autosaveOnly ? 'about:blank' : testUrl,
-      ]),
-      { stdio: 'ignore' },
-    );
-    chromeExitPromise = new Promise((resolve) => chromeProcess.once('exit', resolve));
-    chromeProcess.on('error', (error) => {
-      startupError.error = error;
+    browser = await chromium.launch({
+      executablePath: process.env.CHROME_BIN ?? 'google-chrome',
+      headless: true,
+      args: browserStageArgs(stageId, ['--disable-extensions', '--password-store=basic', '--window-size=1280,900']),
+      timeout: STAGE_TIMEOUT_MS,
     });
-    const cdpUrl = `http://127.0.0.1:${cdpPort}`;
-    await withTimeout('system Chromium startup', waitForCdp(cdpUrl, chromeProcess, startupError));
-    browser = await withTimeout('Chromium CDP connection', chromium.connectOverCDP(cdpUrl));
-    [context] = browser.contexts();
-    assert(context);
+    context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   } else {
     // The managed server exposes public child-process diagnostics without reaching into Playwright internals.
     firefoxServer = await withTimeout('Playwright Firefox launch', firefox.launchServer({ headless: false }));
     browser = await withTimeout('Playwright Firefox connection', firefox.connect(firefoxServer.wsEndpoint()));
     context = await browser.newContext();
   }
-  await observeFailures(context, browser, chromeProcess ?? firefoxServer?.process());
+  await observeFailures(context, browser, firefoxServer?.process());
   if (busyLockOnly) {
     await context.addInitScript(() => {
       let locked = null;
@@ -161,16 +118,8 @@ try {
   }
   let page = await withTimeout('initial page creation', context.newPage());
   const pageErrors = [];
-  const optionalTelemetryRequests = new Set([
-    'https://scripts.simpleanalyticscdn.com/latest.js',
-    'https://queue.simpleanalyticscdn.com/append',
-  ]);
   const recordRequestFailure = (request) => {
-    const url = new URL(request.url());
-    url.search = '';
-    if (!optionalTelemetryRequests.has(url.href)) {
-      pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`);
-    }
+    pageErrors.push(`${request.url()} failed: ${request.failure()?.errorText}`);
   };
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('requestfailed', recordRequestFailure);
@@ -804,15 +753,6 @@ try {
   await withTimeout('Firefox server shutdown', firefoxServer?.close() ?? Promise.resolve(), 5000).catch((error) => {
     process.stderr.write(`Cleanup warning: ${String(error)}\n`);
   });
-  if (chromeProcess && chromeProcess.exitCode === null && chromeProcess.signalCode === null) {
-    chromeProcess.kill('SIGTERM');
-    await withTimeout('system Chromium shutdown', chromeExitPromise, 5000).catch((error) => {
-      process.stderr.write(`Cleanup warning: ${String(error)}\n`);
-    });
-  }
-  if (profile) {
-    await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
-  }
   if (vite) {
     await withTimeout('Vite shutdown', vite.close(), 5000).catch((error) => {
       process.stderr.write(`Cleanup warning: ${String(error)}\n`);

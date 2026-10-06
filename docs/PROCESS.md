@@ -1,9 +1,11 @@
 ---
 read_if:
   - you dispatch, build, review or merge a change and need its steps
+  - you maintain the slice checklist when milestone PRs merge
   - you record a decision by BR and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you hit a working rule's situation (shared host, test pool, run bounds, units, CI cost)
+  - you apply BR's standing rules for visual work, playtest discoveries, review causes, test budgets or hosted-CI outages
 ---
 
 # How work gets done in skelly
@@ -59,6 +61,12 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
 7. **Clean up after the merge:** remove the worktree, stop its dev server, and delete the remote
    branch.
 
+## Slice checklist
+
+After checklist drift recorded in `deadvox/docs/retro-slice-2.md`, “What hurt,” BR accepted proposal 1, “Keep the checklist live” (2026-10-06 06:54): “accept”. BR approved option A, a merge-time action (2026-10-06 06:56): “yes, queue A”.
+
+For the open issue labelled `slice-checklist` (Slice 3: #293), milestone PRs carry a `Slice-Milestone: <id>` line. `.github/workflows/slice-checklist.yml` ticks it only for merges into the repository's default branch and serializes the issue update through `tools/slice-checklist.mjs`, `milestonesFromPrBody` and `tickMilestone`. The lead adds evidence and carried-forward links by hand. A burst of three merges can leave the middle run visibly `cancelled`; the lead ticks that milestone manually. The workflow uses `pull_request`, not `pull_request_target`; GitHub withholds issue-write permission for fork PRs, so the lead also handles those merges manually.
+
 ## Done, per subproject
 
 A change is done when its subproject's CI checks pass locally, the root checks pass, and BR has
@@ -77,14 +85,22 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 
 ## Reviews by eye and by play
 
-- **Links use the host's LAN address,** never `localhost`, and dev servers are bound with
-  `--host`. BR reviews from another machine. The address is in the host notes (AGENTS.md,
-  "No host-specific information in tracked files").
-- **gungen:** give a link per design with a `camera=` view (side, rear, rear-¾), from a stable
+- **Review references use page paths, never LAN addresses.** BR reviews from another machine; the team supplies the review origin outside tracked work items.
+- **gungen:** give a page path per design with a `camera=` view (side, rear, rear-¾), from a stable
   review server pinned to the reviewed commit, not a coder's live worktree.
-- **deadvox:** `?seed=<n>&debug=1`. Anything that saves needs HTTPS (a secure context); the host notes say where
+- **deadvox:** `/?seed=<n>&debug=1`. Anything that saves needs HTTPS (a secure context); the host notes say where
   it's served.
 - **Relay what BR said, in BR's words.** A verdict on one item never counts for another.
+
+## Slice decision rules
+
+- **Visual work.** BR, 2026-10-06 06:56: “as for #2 -> yes tiny visual spike first”. A tiny visual spike gets BR's first look before the full engineering round. Once BR approves a look, record its preview page path, seed and camera with the work item. Use a page path, never a LAN address.
+- **Playtest discoveries.** BR, 2026-10-06 07:01: “i agree on the refinements, but the labels themselves - are they well-designed? I mean, we could use just 'blocker' and 'not-blocker' and tag also with a slice or version tag”; BR, 2026-10-06 07:02: “yes, do so”. File every discovery as its own issue with exactly one of the `blocker` or `not-blocker` labels. A blocker also needs a `gate:*` label. When it is a prerequisite, name the milestone it blocks (for example, “blocks 3.x”). A slice cannot close while an open issue carries both `blocker` and that slice's gate.
+- **FIX causes.** BR, 2026-10-06 07:04: “accept”. Every FIX verdict carries its `Cause:` line immediately after the `VERDICT:` line, using one or more of behavior, persistence, test hygiene, visual feedback and integration; SHIP verdicts carry no `Cause:` line. Tally causes at the retrospective.
+- **Test-budget overruns.** BR, 2026-10-06 07:06: “p5 accept”. Profile the suite, make named cuts that each say what coverage they protected and which test still catches it, and record the result before closure. Measure with alternating back-to-back baseline and candidate runs. Raising a budget is BR's call.
+- **Hosted-CI outages.** BR, 2026-10-06 07:09: “p6: accept”. Keep affected PRs open and report them as “blocked on hosted CI”. Checklist and milestone status stay open; nothing merges on local checks alone.
+
+The live-checklist mechanism for proposal 1 is documented in the [Slice checklist](#slice-checklist) section.
 
 ## Recording decisions
 

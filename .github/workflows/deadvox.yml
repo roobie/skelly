@@ -1,7 +1,7 @@
 name: deadvox
 
-# Keep troubleshooting changes checked with browser contracts because they describe stage modes.
-# Later patterns override earlier ones.
+# Keep troubleshooting changes checked with browser contracts: it describes stage modes,
+# and its generated key table is a build input.
 on:
   push:
     branches: [main]
@@ -11,7 +11,9 @@ on:
       - 'testPool.ts'
       - '!**/*.md'
       - 'deadvox/TROUBLESHOOTING.md'
-      - '.github/workflows/deadvox.yml'
+      - '.github/workflows/deadvox*.yml'
+      - 'tools/browser-ci*.mjs'
+      - 'test/browser-ci*.mjs'
   pull_request:
     paths:
       - 'deadvox/**'
@@ -19,16 +21,27 @@ on:
       - 'testPool.ts'
       - '!**/*.md'
       - 'deadvox/TROUBLESHOOTING.md'
-      - '.github/workflows/deadvox.yml'
-  workflow_dispatch: {}
+      - '.github/workflows/deadvox*.yml'
+      - 'tools/browser-ci*.mjs'
+      - 'test/browser-ci*.mjs'
+  workflow_dispatch:
+    inputs:
+      layout:
+        type: choice
+        default: sharded
+        options: [sharded, control]
 
-# PR updates replace this PR's checks; main/manual groups always remain unique.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
-  check:
+  fast:
+    if: ${{ github.event.inputs.layout != 'control' }}
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -40,110 +53,18 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: |
+            package-lock.json
             deadvox/package-lock.json
             deadvox/tools/lit-check/package-lock.json
+      - run: npm ci --prefix ..
+      - name: Browser partition manifest
+        run: node ../test/browser-ci-manifest.mjs
       - run: npm ci
       - run: npm ci --prefix tools/lit-check
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run typecheck
       - name: Full test suite (includes the save budget fixture once)
         run: timeout 300 npm test -- --maxWorkers=2
-      - name: Browser UI contract (Chromium)
-        timeout-minutes: 9
-        run: node tools/ui-browser-contract.mjs
-      # Quarantined (no-flaky rule): CI reports a positive-control failure and a first-load timeout;
-      # root-cause work remains open at https://github.com/roobie/skelly/issues/224.
-      # Local invocation: `npm run test:browser:melee-build-click`. Restore after the issue is resolved.
-      - name: Primary-action browser contract
-        timeout-minutes: 2
-        run: node test/browser/primary-action.mjs
-      - name: Save-controller browser regressions
-        timeout-minutes: 4
-        run: node test/browser/save-controller-regressions.mjs
-      - name: Save-storage browser contract (Chromium)
-        timeout-minutes: 1
-        run: node test/browser/save-storage.mjs chromium
-      - name: Save autosave — OPFS Continue (Chromium)
-        timeout-minutes: 4
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: opfs
-          SAVE_AUTOSAVE_SCENARIO: continue
-        run: node test/browser/save-storage.mjs chromium
-      - name: Save autosave — OPFS replacement (Chromium)
-        timeout-minutes: 8
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: opfs
-          SAVE_AUTOSAVE_SCENARIO: replacement
-        run: node test/browser/save-storage.mjs chromium
-      - name: Save autosave — IndexedDB Continue (Chromium)
-        timeout-minutes: 4
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: continue
-        run: node test/browser/save-storage.mjs chromium
-      - name: Save autosave — IndexedDB replacement (Chromium)
-        timeout-minutes: 8
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: replacement
-        run: node test/browser/save-storage.mjs chromium
-      - name: Save busy-lock relaunch (Chromium; independent of Continue)
-        timeout-minutes: 2
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: busy-lock
-        run: node test/browser/save-storage.mjs chromium
-      - name: Insecure-context browser contract
-        timeout-minutes: 1
-        run: node test/browser/insecure-saves.mjs
-      - name: Install headed Firefox and system dependencies
-        run: npx playwright install --with-deps firefox
-      # Quarantined (BR's no-flaky rule): Firefox refuses the pointer lock with NotSupportedError
-      # under a real user activation, intermittently. Root cause, coverage lost and the proof
-      # needed to reinstate this step: https://github.com/roobie/skelly/issues/168
-      # Local investigation: `npm run test:browser:firefox:native`. To reinstate, restore this step:
-      #   - name: Firefox first-click browser contract
-      #     timeout-minutes: 2
-      #     run: xvfb-run -a node test/browser/firefox-first-click.mjs
-      - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
-        timeout-minutes: 2
-        run: xvfb-run -a node test/browser/firefox-ui.mjs
-      # Quarantined (no-flaky rule): Firefox OPFS capability probe timed out in CI; root cause remains open at
-      # https://github.com/roobie/skelly/issues/224. Local invocation: `npm run test:browser:firefox:save-storage`.
-      - name: Firefox inventory-scroll browser contract
-        timeout-minutes: 1
-        run: xvfb-run -a node test/browser/inventory-scroll.mjs firefox
-      # Quarantined (BR's no-flaky rule): after Continue, the wait for a visible #view canvas
-      # intermittently times out; cause unknown. The d20 busy-lock regression is independent below.
-      # Coverage lost and the proof needed to reinstate this step:
-      # https://github.com/roobie/skelly/issues/170
-      # Local investigation: `npm run test:browser:firefox:continue`. To reinstate, restore this step:
-      #   - name: Firefox autosave — IndexedDB Continue
-      #     timeout-minutes: 1
-      #     env:
-      #       SAVE_AUTOSAVE_ONLY: '1'
-      #       SAVE_AUTOSAVE_BACKEND: indexeddb
-      #       SAVE_AUTOSAVE_SCENARIO: continue
-      #     run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - name: Firefox busy-lock relaunch (independent of quarantined Continue)
-        timeout-minutes: 2
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: busy-lock
-        run: xvfb-run -a node test/browser/save-storage.mjs firefox
-      - name: Firefox autosave — IndexedDB replacement
-        timeout-minutes: 1
-        env:
-          SAVE_AUTOSAVE_ONLY: '1'
-          SAVE_AUTOSAVE_BACKEND: indexeddb
-          SAVE_AUTOSAVE_SCENARIO: replacement
-        run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - run: timeout 300 npm run validate
       - run: timeout 300 npx vite build
       - run: timeout 300 node tools/check-favicon.mjs
@@ -151,58 +72,81 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: deadvox-check-test-results
+          name: deadvox-fast-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: deadvox/test-results/
           if-no-files-found: ignore
 
-  # The Chromium stages of `npm run test:ui-browser` that `check` does not run, in parallel with it so the
-  # PR's time-to-green stays at `check`'s. test/deadvox-browser-ci.test.mjs (root `npm run ci`) fails when a
-  # stage of a browser script has no step in this file. Chromium is the runner image's Chrome, which the
-  # scripts find through the image's CHROME_BIN, exactly as in `check`; each script starts its own Vite server.
-  browser-stages:
+  browser:
+    needs: fast
+    if: ${{ github.event.inputs.layout != 'control' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [input, stages, save-other, opfs, indexeddb, firefox]
+    uses: ./.github/workflows/deadvox-browser.yml
+    with:
+      shard: ${{ matrix.shard }}
+
+  # These start independently, reproducing the check/browser-stages jobs #255 replaced (main badb55e), with their step order.
+  control-check:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control' }}
+    uses: ./.github/workflows/deadvox-browser.yml
+    with:
+      shard: control-check
+
+  control-stages:
+    if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.layout == 'control' }}
+    uses: ./.github/workflows/deadvox-browser.yml
+    with:
+      shard: control-stages
+
+  check:
+    needs: [fast, browser, control-check, control-stages]
+    if: always()
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: deadvox
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/github-script@v7
+        env:
+          LAYOUT: ${{ github.event.inputs.layout || 'sharded' }}
+          NEEDS_JSON: ${{ toJSON(needs) }}
         with:
-          node-version: 22
-          cache: npm
-          # Same lockfiles as `check`, so both jobs share one npm cache entry.
-          cache-dependency-path: |
-            deadvox/package-lock.json
-            deadvox/tools/lit-check/package-lock.json
-      - run: npm ci
-      - name: Inventory scroll browser contract (Chromium)
-        timeout-minutes: 1
-        run: node test/browser/inventory-scroll.mjs chromium
-      - name: Full-auto fire browser contract
-        timeout-minutes: 1
-        run: node test/browser/full-auto.mjs
-      - name: Case visual pool browser contract
-        timeout-minutes: 1
-        run: node test/browser/case-visual-pool.mjs
-      - name: Pump handling browser contract (Chromium)
-        timeout-minutes: 5
-        run: timeout 300 node test/browser/pump-handling.mjs
-      - name: Stairs traversal browser contract
-        timeout-minutes: 3
-        run: node test/browser/stairs.mjs traversal
-      - name: Stairs lighting browser contract
-        timeout-minutes: 5
-        run: node test/browser/stairs.mjs lighting
-      - name: Reading consumer browser contract
-        timeout-minutes: 3
-        run: node test/browser/reading.mjs consumer
-      - name: Reading lifecycle browser contract
-        timeout-minutes: 3
-        run: node test/browser/reading.mjs lifecycle
-      - name: Upload browser-stage artifacts on failure
-        if: failure()
-        uses: actions/upload-artifact@v4
+          script: |
+            const { checkBrowserWorkflow } = await import(`${process.env.GITHUB_WORKSPACE}/tools/browser-ci-result.mjs`);
+            await checkBrowserWorkflow({
+              env: process.env,
+              lookupAttempt: async (attempt) => {
+                const { data } = await github.rest.actions.getWorkflowRunAttempt({
+                  ...context.repo, run_id: context.runId, attempt_number: attempt
+                });
+                return { conclusion: data.conclusion, url: data.html_url };
+              }
+            });
+      - name: Report earlier same-SHA runs
+        if: always()
+        continue-on-error: true
+        uses: actions/github-script@v7
         with:
-          name: deadvox-browser-stages-test-results
-          path: deadvox/test-results/
-          if-no-files-found: ignore
+          script: |
+            const { reportEarlierRuns } = await import(`${process.env.GITHUB_WORKSPACE}/tools/browser-ci-result.mjs`);
+            const headSha = context.payload.pull_request?.head?.sha ?? context.sha;
+            await reportEarlierRuns({
+              currentRunId: context.runId,
+              listRuns: async () => {
+                const runs = await github.paginate(github.rest.actions.listWorkflowRuns, {
+                  ...context.repo, workflow_id: 'deadvox.yml', head_sha: headSha, per_page: 100
+                });
+                return runs.map(({ id, status, run_attempt }) => ({ id, status, attemptCount: run_attempt }));
+              },
+              lookupAttempt: async (runId, attempt) => {
+                const { data } = await github.rest.actions.getWorkflowRunAttempt({
+                  ...context.repo, run_id: runId, attempt_number: attempt
+                });
+                return { conclusion: data.conclusion ?? 'unknown', url: data.html_url };
+              },
+              warn: (message) => core.warning(message),
+              writeNote: (message) => core.summary
+                .addHeading('Earlier runs at this head SHA')
+                .addRaw(message, true)
+                .write(),
+            });

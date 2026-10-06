@@ -5,7 +5,7 @@
 import type { Mat3, Vec3 } from './math.ts';
 import { mulMV, sub, transpose } from './math.ts';
 
-export interface Capsule {
+interface Capsule {
   readonly kind: 'capsule';
   readonly a: Vec3;
   readonly b: Vec3;
@@ -13,14 +13,14 @@ export interface Capsule {
   readonly rb: number;
 }
 
-export interface Ellipsoid {
+interface Ellipsoid {
   readonly kind: 'ellipsoid';
   readonly center: Vec3;
   readonly radii: Vec3;
   readonly rot?: Mat3;
 }
 
-export interface RoundBox {
+interface RoundBox {
   readonly kind: 'box';
   readonly center: Vec3;
   readonly half: Vec3;

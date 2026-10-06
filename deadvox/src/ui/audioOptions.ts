@@ -1,6 +1,6 @@
 import { html, render, type TemplateResult } from 'lit-html';
 
-export const AUDIO_VOLUME_CATEGORIES = ['master', 'world', 'body', 'ui'] as const;
+const AUDIO_VOLUME_CATEGORIES = ['master', 'world', 'body', 'ui'] as const;
 export type AudioVolumeCategory = (typeof AUDIO_VOLUME_CATEGORIES)[number];
 export type AudioVolumes = Readonly<Record<AudioVolumeCategory, number>>;
 

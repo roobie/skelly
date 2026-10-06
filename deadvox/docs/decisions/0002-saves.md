@@ -99,7 +99,7 @@ references:
 | Version and world identity | Exact `versionIdentity` plus its components: simulation-source fingerprint; save schema version; deterministic generator versions (worldgen and, once firearms are introduced, gungen); ordered pack IDs/versions/canonical content hashes; diagnostic Git build revision; seed; clock ratio/start; site and generation options | `versionIdentity` is SHA-256 of the canonical tuple of the simulation fingerprint, schema, generator map and ordered pack identities. The Git build revision is stored alongside as diagnostic metadata, outside the digest and compatibility check. Require exact identity equality before content lookup or restore; refuse mismatches with the save's identity and leave the record untouched. These select the same generation rules and registry mapping. View radius is a user setting, not world identity. |
 | Clock/simulation | Simulation time, clock settings, needs, death cause/time, compression `c`/active/interruption, and each scheduler system's stable ID, `done` time and tick count | Preserve time, exact scheduler ordering and active rest behavior; do not save or restore god mode/noclip/build toggles (force them off on load). Debug interventions already made to the world remain in its saved state. Reject unknown system IDs rather than silently resetting their phase. |
 | Player | Full body `pos`, `vel`, dimensions and `onGround`; yaw/pitch and walk toggle; needs; `Survival.lit` item UID (or absence); quickbar item UIDs and their held-item return targets | Position and velocity are saved even in mid-air. Input held keys, pointer lock, menu/cursor/focus are dropped; Continue always opens paused with inputs released. The return target persists because a quickbar tap must still put a drawn item back where it came from after Continue. |
-| Items | Recursive items including UID, type ID, count, condition, charges/on/made, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and lights. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
+| Items | Recursive items including UID, type ID, count, condition, charges/on/made, consumable-light burn state, pockets and grid placement; hands, worn slots, quickbar bindings, piles and looted totals; `ItemFactory.next` | Restore all items exactly, including empty bags, rotten-food timestamps and remaining light fuel. Preserve monotonic UID allocation even when the highest-UID item was consumed. |
 | Furniture/block entities | Anchor, type ID, size/facing, open/searched state and container pocket trees; `BlockEntities.nextUid` | Address entities by world anchor/type, not load-order-dependent object identity. Restore saved overrides when deterministic worldgen creates an anchor. |
 | World edits | Only changed chunks, each with chunk coordinates, a palette of stable block content IDs, and RLE runs for changed cell offsets/IDs versus the versioned generated base | At the first write to a cell, journal its generated base ID; later writes update or remove the delta if the cell returns to base. Runtime block numbers are registry-order dependent. Store string IDs. Regenerate the base chunk, apply the diff, then rebuild meshes. Preserve explicit air edits. |
 | Shamblers and spawn ledger | Every live entity ID and all future-affecting zombie fields (body, mode/timers/targets, health/cooldowns, motion and behavior RNG words), including each zombie's `dismemberRng` words (the severing rolls' own stream), `attackWindup` (seconds left in an in-flight attack's telegraph, 0 when not attacking) and `severed` (part names dismembered so far, e.g. `["upperArm.L"]` — cumulative, never shrinks); `ZombieSystem.playerAttackWait`; entity-store next ID; generated spawn keys already attempted, including killed shamblers; each zombie's `soundRng`, `idleSoundTimer`, and `lastVocalNoiseId` | Recreate current threats and prevent dead or previously considered site spawns from coming back. Sound RNG/timer preserve the ambient audio sequence; `lastVocalNoiseId` is required for exact hearing behavior. `attackWindup` must resume exactly so a save/load mid-windup neither skips nor replays the hit resolution. `severed` is the renderer's only source of truth for which limbs to hide (mobgen's `severedBoneSet` expands it) — a corpse's or debris's own render-only lifecycle state is never saved, only which parts were severed while the zombie was still alive. Reinitialize `renderPrevious` from current pose; it is interpolation only. |
@@ -117,9 +117,13 @@ and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`. Its schema and source
 fingerprint change together because the return behavior must survive a restore.
 The synchronous snapshot barrier checks that every emitted quickbar/light UID is
 still owned. Restore refuses a dangling saved UID rather than silently repairing
-it. Full consumption, including a container subtree, and whole-stack merging end
-an item's lifetime; transfers and partial consumption do not. Future crafting and
-take-apart actions must consume through this same inventory ownership boundary.
+it. Consumable-light fuel and its last ignition time belong to each item, rather
+than only to the selected beam-light UID, so dousing and restoring cannot refill
+burn time; see `src/core/items.ts`, `snapshotItem` and `restoreItem`, and
+`src/core/saveFormat.ts`, `itemSchema`. Full consumption, including a container
+subtree, and whole-stack merging end an item's lifetime; transfers and partial
+consumption do not. Future crafting and take-apart actions must consume through
+this same inventory ownership boundary.
 
 A future system that adds a persistent counter, RNG stream, or state machine
 must declare its save representation in the same change; “not currently in the
@@ -208,7 +212,7 @@ game and the snapshot tests share: simulation, shamblers, player, inventory, res
 survival, handling queue and `snapshot()`), and `src/game/play.ts` (gameplay
 wiring/actions).
 `play.ts` reaches `worldSetup.ts` at runtime for the spawn-to-body conversion,
-and reaches `src/game/aim.ts` for furniture and melee targeting independently
+and reaches `src/core/aim.ts` for furniture and melee targeting independently
 of camera feedback roll. Vite recomputes the fingerprint for source create,
 update, and delete events and reloads when it changes. Base content remains
 separately identified by its canonical content-pack hash.
@@ -240,7 +244,7 @@ excluded subtrees are justified here as well:
   Include daylight/weather and save their state when they become simulation inputs.
 - `src/game/damageFeedback.ts`, now used within `src/render/playView.ts`: vignette
   and camera-roll animation only. Gameplay targeting still uses fingerprinted
-  `src/game/aim.ts` with input pitch/yaw, never the feedback-rolled camera.
+  `src/core/aim.ts` with input pitch/yaw, never the feedback-rolled camera.
 - `src/game/engine.ts`: WebGL renderer, camera, lights, `ChunkMeshes`, and resize
   setup only. Its `Engine` interface extends `WorldSetup`, but gameplay imports
   that contract type-only; `engine.ts` is not a simulation entry, so Three.js and

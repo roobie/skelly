@@ -18,7 +18,7 @@ import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindi
 import { craftTime, workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
-export const CELL = 32;
+const CELL = 32;
 
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];

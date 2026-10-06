@@ -16,7 +16,7 @@ How to look at the game and narrow down a problem. Lessons from past problems ar
 
 ## Debug parameters
 
-`?debug=1` enables debug tools. Hold the rebindable debug gate for keyboard
+`?debug=1` enables debug tools. Hold the rebindable F2 gate for keyboard
 authoring commands; see `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and the
 generated keyboard settings for the effective chords. Plain gameplay keys never
 invoke debug tools. With it, the look and
@@ -31,8 +31,8 @@ rebind is visible without a second key table. See `src/debug/index.ts`,
 Default bindings are generated from the registry; this document does not freeze
 a copy that would disagree with browser preferences.
 
-Noclip flight and spawn navigation/dismissal are the explicit ungated
-exceptions, for two-handed flight and ordinary modal navigation. Keyboard spawn
+Noclip movement uses the same held F2 gate as other debug actions; spawn-menu
+navigation and dismissal are ordinary modal controls. Keyboard spawn
 confirmation and native activation of debug buttons remain gated. Native text
 editing/focus stays with the browser; see `CONTROLS.md`, “Native browser boundary
 and exceptions”. A desktop OS can intercept a key before the browser receives
@@ -43,6 +43,8 @@ In a fresh `?debug=1` game, the player wears a hiking backpack loaded with every
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
+- `voicePitch=<factor>` and `voicePitchLarge=<factor>` on `?site=voice_size&debug=1` tune figure pitch anchors. `src/game/shamblerAudio.ts`, `debugVoicePitch`, ignores them on other sites or without debug mode.
+- `firearmsSkill=<level>` on a fresh debug world sets the authored firearms skill range. See `src/core/character.ts`, `SKILL_LEVEL_MIN`, `SKILL_LEVEL_MAX` and `SKILL_LEVEL_LEGENDARY`, and `src/debug/debugFirearmsSkill.ts`, `setDebugFirearmsSkill`.
 - `hotcheck=1`: world fragments whose colour is NaN, infinite, negative or
   above 8 are painted by material (legend in the debug panel); full / half / checker fill =
   NaN / Inf-or->8 / negative. It runs after fog.

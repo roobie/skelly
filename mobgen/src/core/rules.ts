@@ -8,7 +8,7 @@ import type { BoneMesh } from './mesh.ts';
 import { cellIndex, type Voxels, worldPosition } from './voxelize.ts';
 
 /** Voxel-count range for a named group of bones (e.g. "head" = head + jaw). */
-export interface BudgetRange {
+interface BudgetRange {
   readonly min: number;
   readonly max: number;
 }
@@ -124,7 +124,7 @@ const floodFillCount = (voxels: Voxels, first: number): number => {
 };
 
 /** All filled voxels form one 6-neighbour-connected piece. */
-export const floaters: Rule = {
+const floaters: Rule = {
   id: 'floaters',
   check({ voxels }) {
     const { first, filledCount } = countFilled(voxels);
@@ -140,7 +140,7 @@ export const floaters: Rule = {
 };
 
 /** Every bone owns at least one voxel, touching a voxel of its parent. */
-export const attached: Rule = {
+const attached: Rule = {
   id: 'attached',
   check({ body, voxels }) {
     const issues: Issue[] = [];
@@ -184,7 +184,7 @@ export const attached: Rule = {
 };
 
 /** The lowest filled layer is on the ground (y = 0) and belongs to feet. */
-export const grounded: Rule = {
+const grounded: Rule = {
   id: 'grounded',
   check({ body, voxels, feet }) {
     let minJ = Number.POSITIVE_INFINITY;
@@ -222,7 +222,7 @@ export const grounded: Rule = {
 };
 
 /** The centre of mass, seen from above, falls within the ground footprint (+ 1 voxel). */
-export const balance: Rule = {
+const balance: Rule = {
   id: 'balance',
   check({ voxels }) {
     let minJ = Number.POSITIVE_INFINITY;
@@ -269,7 +269,7 @@ export const balance: Rule = {
 };
 
 /** Lowest occupied layer touches the ground plane; bone ownership is intentionally ignored. */
-export const silhouetteGrounded: Rule = {
+const silhouetteGrounded: Rule = {
   id: 'grounded',
   check({ voxels }) {
     let minJ = Number.POSITIVE_INFINITY;
@@ -303,7 +303,7 @@ const triangleBudgetIssues = (meshes: ReadonlyMap<number, BoneMesh>, budgets: Ru
 };
 
 /** Far LOD draw cost: total triangles only, with no voxel or group budget. */
-export const triangleBudget: Rule = {
+const triangleBudget: Rule = {
   id: 'budget',
   check({ meshes, budgets }) {
     return triangleBudgetIssues(meshes, budgets);
@@ -311,7 +311,7 @@ export const triangleBudget: Rule = {
 };
 
 /** Total voxels, total triangles and per-group voxel counts stay within the template's budgets. */
-export const budget: Rule = {
+const budget: Rule = {
   id: 'budget',
   check({ body, voxels, meshes, budgets }) {
     const issues: Issue[] = [];
@@ -365,7 +365,7 @@ export const silhouetteSize = (voxels: Voxels): SilhouetteSize => {
 };
 
 /** Coarse X width and Y height stay within one coarse cell, plus one reference-cell quantization allowance. */
-export const silhouette: Rule = {
+const silhouette: Rule = {
   id: 'silhouette',
   check({ voxels, referenceSilhouette, referenceVoxelSize }) {
     if (!referenceSilhouette || referenceVoxelSize === undefined) {
@@ -389,5 +389,3 @@ export const silhouette: Rule = {
 
 export const FULL_RULES: readonly Rule[] = [floaters, attached, grounded, balance, budget];
 export const SILHOUETTE_RULES: readonly Rule[] = [floaters, silhouetteGrounded, balance, triangleBudget, silhouette];
-/** Backward-compatible alias for callers that inspect the default rule set. */
-export const RULES = FULL_RULES;

@@ -1,3 +1,4 @@
+import { type AimFrame, aimBasis } from './aim.ts';
 import type { Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { ItemDef } from './schema.ts';
@@ -14,13 +15,33 @@ export interface PelletShot {
 
 /** Gameplay estimates, not measured choke patterns or physical wound/energy models. */
 export const BUCK_HALF_ANGLE = (2 * Math.PI) / 180;
-export const BUCK_RANGE_METRES = 50;
+const BUCK_RANGE_METRES = 50;
+
+/** Uniform area sample in a forward cone's tangent-plane disk. */
+export const coneDirection = (basis: ReturnType<typeof aimBasis>, halfAngleRadians: number, rng: Rng): Vec3 => {
+  if (!Number.isFinite(halfAngleRadians) || halfAngleRadians < 0 || halfAngleRadians >= Math.PI / 2) {
+    throw new Error('Invalid dispersion cone');
+  }
+  if (halfAngleRadians === 0) {
+    return [...basis.forward];
+  }
+  const radius = Math.sqrt(rng.next()) * Math.tan(halfAngleRadians);
+  const angle = rng.next() * Math.PI * 2;
+  const x = radius * Math.cos(angle);
+  const y = radius * Math.sin(angle);
+  const vector: Vec3 = basis.forward.map(
+    (value, index) => value + basis.right[index]! * x + basis.up[index]! * y,
+  ) as Vec3;
+  const length = Math.hypot(...vector);
+  return vector.map((value) => value / length) as Vec3;
+};
 
 export const pelletShot = ({
   ammo,
   origin,
   yaw,
   pitch,
+  aimFrame,
   seed,
   key,
 }: {
@@ -28,22 +49,14 @@ export const pelletShot = ({
   origin: Vec3;
   yaw: number;
   pitch: number;
+  aimFrame: AimFrame;
   seed: number;
   key: string;
 }): PelletShot => {
   const rng = Rng.stream(seed, `buckshot:${key}`);
-  const forward: Vec3 = [-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), -Math.cos(yaw) * Math.cos(pitch)];
-  const right: Vec3 = [Math.cos(yaw), 0, -Math.sin(yaw)];
-  const up: Vec3 = [Math.sin(yaw) * Math.sin(pitch), Math.cos(pitch), Math.cos(yaw) * Math.sin(pitch)];
-  const directions = Array.from({ length: ammo.pellets }, (): Vec3 => {
-    const radius = Math.sqrt(rng.next()) * Math.tan(BUCK_HALF_ANGLE);
-    const angle = rng.next() * Math.PI * 2;
-    const x = radius * Math.cos(angle);
-    const y = radius * Math.sin(angle);
-    const vector: Vec3 = forward.map((value, index) => value + right[index]! * x + up[index]! * y) as Vec3;
-    const length = Math.hypot(...vector);
-    return vector.map((value) => value / length) as Vec3;
-  });
+  const { forward, right, up } = aimBasis(yaw, pitch, aimFrame);
+  const basis = { forward, right, up };
+  const directions = Array.from({ length: ammo.pellets }, (): Vec3 => coneDirection(basis, BUCK_HALF_ANGLE, rng));
   return {
     origin: [...origin],
     directions,

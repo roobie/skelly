@@ -48,7 +48,9 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(browserStageUrl('melee-build-click', `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=16`));
+  await page.goto(browserStageUrl('melee-build-click', `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=16`), {
+    waitUntil: 'domcontentloaded',
+  });
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
   await page.locator('#go').click();
   await page.waitForFunction(() => Boolean(globalThis.d7Review));

@@ -2,7 +2,17 @@
 // the pile's grid (core/pileLayout.ts); everything else is one low bundle per pile,
 // taller the more it holds.
 
-import { BoxGeometry, Group, InstancedMesh, Matrix4, Mesh, MeshLambertMaterial, Object3D } from 'three';
+import {
+  BoxGeometry,
+  Color,
+  Group,
+  InstancedMesh,
+  Matrix4,
+  Mesh,
+  MeshBasicMaterial,
+  MeshLambertMaterial,
+  Object3D,
+} from 'three';
 import { type Inventory, PILE_GRID, type Pile } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
 import { pileLayout } from '../core/pileLayout.ts';
@@ -34,6 +44,9 @@ export class PileMeshes {
   readonly group = new Group();
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly material = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
+  private readonly glowstickGeometry: BoxGeometry;
+  private readonly glowstickMaterial = new MeshBasicMaterial({ color: 0xff_ff_ff, vertexColors: true });
+  private glowsticks: InstancedMesh;
   private readonly blockSize: number;
   private readonly models: ModelLibrary | undefined;
   private readonly seed: number;
@@ -44,6 +57,8 @@ export class PileMeshes {
     this.blockSize = blockSize;
     this.models = models;
     this.seed = seed;
+    this.glowstickGeometry = new BoxGeometry(blockSize * 0.36, blockSize * 0.06, blockSize * 0.06);
+    this.glowsticks = new InstancedMesh(this.glowstickGeometry, this.glowstickMaterial, 1);
   }
 
   /** Rebuilds ordinary pile meshes when inventory or models changed; case scatter stays instanced. */
@@ -61,6 +76,10 @@ export class PileMeshes {
     const visibleCaseVisuals = new Set<string>();
     for (const plan of casePlans.values()) {
       this.drawCasePlan(plan, visibleCaseVisuals);
+    }
+    this.drawEmissiveLights(inventory);
+    if (this.glowsticks.count > 0) {
+      this.group.add(this.glowsticks);
     }
     for (const [key, visual] of this.caseVisuals) {
       if (visibleCaseVisuals.has(key)) {
@@ -80,6 +99,8 @@ export class PileMeshes {
     this.group.clear();
     this.geometry.dispose();
     this.material.dispose();
+    this.glowstickGeometry.dispose();
+    this.glowstickMaterial.dispose();
     this.drawn = '';
   }
 
@@ -208,6 +229,37 @@ export class PileMeshes {
   private releaseCaseVisual(visual: CaseVisual): void {
     for (const mesh of visual.meshes) {
       mesh.dispose();
+    }
+  }
+
+  private drawEmissiveLights(inventory: Inventory): void {
+    const sources = [...inventory.piles.values()].flatMap((pile) =>
+      pile.items.flatMap(({ item }) => {
+        const { light } = defOf(inventory.registry, item.type);
+        return item.on && light?.emissive !== undefined && light.burning?.drop === 'stay' ? [{ pile, light }] : [];
+      }),
+    );
+    if (sources.length > this.glowsticks.count) {
+      this.glowsticks.dispose();
+      this.glowsticks = new InstancedMesh(this.glowstickGeometry, this.glowstickMaterial, sources.length);
+    }
+    this.glowsticks.count = sources.length;
+    const transform = new Object3D();
+    for (const [index, { pile, light }] of sources.entries()) {
+      transform.position.set(
+        (pile.pos[0] + 0.5) * this.blockSize,
+        (pile.pos[1] + 0.15) * this.blockSize,
+        (pile.pos[2] + 0.5) * this.blockSize,
+      );
+      transform.rotation.set(0, (index * Math.PI) / 4, 0);
+      transform.updateMatrix();
+      this.glowsticks.setMatrixAt(index, transform.matrix);
+      const color = new Color(light.color).multiplyScalar(light.emissive!);
+      this.glowsticks.setColorAt(index, color);
+    }
+    this.glowsticks.instanceMatrix.needsUpdate = true;
+    if (this.glowsticks.instanceColor) {
+      this.glowsticks.instanceColor.needsUpdate = true;
     }
   }
 

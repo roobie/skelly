@@ -17,6 +17,8 @@
       },
       "stepLength": 0.6,
       "wander": {
+        "obstacleWanderChance": 0.25,
+        "obstacleWanderDistanceMetres": 10,
         "idleSeconds": { "min": 3, "max": 10 },
         "strollSeconds": { "min": 3, "max": 12 },
         "leashMetres": 12,

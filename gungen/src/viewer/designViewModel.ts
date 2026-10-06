@@ -1,13 +1,13 @@
 import type { DesignLoadResult } from '../core/design.ts';
 import { GUN_PREFABS, type PrefabCatalogue } from '../gun/prefabs.ts';
 
-export interface DesignIssueView {
+interface DesignIssueView {
   readonly code: string;
   readonly message: string;
   readonly parts: readonly string[];
 }
 
-export interface DesignPrefabView {
+interface DesignPrefabView {
   readonly label: string;
   readonly fixedParams: Readonly<Record<string, string>>;
   /** Uses the design loader's prefab-values-mismatch issues, not a second value comparison. */

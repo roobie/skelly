@@ -4,162 +4,147 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative CDP contract assertions
 
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { rm } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { accessSync, constants } from 'node:fs';
+import { delimiter, isAbsolute, resolve } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
+import { createServer } from 'vite';
 import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
   dispatchMenuPointerMoveExpression,
 } from '../test/browser/menu-pointer.mjs';
-import { browserStageLaunchArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
-import { reserveDistinctPorts } from './browser-ports.mjs';
-import { createBrowserProfile } from './browser-profile.mjs';
+import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/browser/stage-mode.mjs';
 
+const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
-const profile = createBrowserProfile();
-const ports = await reserveDistinctPorts({
-  port: Number(process.env.UI_TEST_PORT ?? 0),
-  cdpPort: Number(process.env.UI_TEST_CDP_PORT ?? 0),
-});
-const { port, cdpPort } = ports;
-await ports.release();
-const vite = spawn(
-  process.execPath,
-  ['node_modules/vite/bin/vite.js', '--host', '127.0.0.1', '--port', `${port}`, '--strictPort'],
-  {
-    cwd,
-    stdio: ['ignore', 'pipe', 'pipe'],
-  },
-);
-const stageUrl = browserStageUrl(
-  'ui-browser-contract',
-  `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
-);
-const chrome = spawn(
-  process.env.CHROME_BIN ?? 'google-chrome',
-  browserStageLaunchArgs('ui-browser-contract', [
-    `--remote-debugging-port=${cdpPort}`,
-    `--user-data-dir=${profile}`,
-    stageUrl,
-  ]),
-  { stdio: ['ignore', 'pipe', 'pipe'] },
-);
-const startupAbort = new AbortController();
-const children = [
-  ['Vite', vite],
-  ['Chrome', chrome],
-].map(([name, child]) => {
-  const state = { name, child, stdout: '', stderr: '', spawnError: undefined };
-  for (const stream of ['stdout', 'stderr']) {
-    child[stream].on('data', (chunk) => {
-      state[stream] = (state[stream] + chunk.toString()).slice(-16_384);
-    });
+const resolveExecutable = (command) => {
+  if (isAbsolute(command) || command.includes('/')) {
+    return resolve(command);
   }
-  child.on('error', (error) => {
-    state.spawnError = error.message;
-    startupAbort.abort(new Error(`${name} failed to start: ${error.message}`));
-  });
-  child.on('exit', (code, signal) => startupAbort.abort(new Error(`${name} failed to start: ${signal ?? code}`)));
-  return state;
-});
-const checkChildren = () => {
-  for (const { name, child, spawnError } of children) {
-    if (spawnError || child.exitCode !== null || child.signalCode !== null) {
-      throw new Error(`${name} failed to start: ${spawnError ?? child.signalCode ?? child.exitCode}`);
+  for (const directory of (process.env.PATH ?? '').split(delimiter)) {
+    const candidate = resolve(directory, command);
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch (error) {
+      if (!['EACCES', 'ENOENT', 'ENOTDIR'].includes(error.code)) {
+        throw error;
+      }
     }
   }
+  return command;
 };
-const discovery = { phase: 'Vite server', lastHttpStatus: undefined, lastError: undefined, targets: [] };
+const chromeExecutable = resolveExecutable(process.env.CHROME_BIN ?? 'google-chrome');
+const chromeVersionProbe = spawnSync(chromeExecutable, ['--version'], { encoding: 'utf8' });
+const chromeVersion =
+  chromeVersionProbe.status === 0
+    ? chromeVersionProbe.stdout.trim()
+    : `unavailable: ${chromeVersionProbe.error?.message ?? chromeVersionProbe.stderr.trim()}`;
+const renderMode = browserStageMode('ui-browser-contract');
+const launchArgs = browserStageArgs('ui-browser-contract', [
+  '--disable-extensions',
+  '--password-store=basic',
+  '--window-size=1280,900',
+]);
+const graphicsArgs = launchArgs.filter((arg) => graphicsArgument.test(arg));
+const discovery = { phase: 'Vite server', lastHttpStatus: undefined, lastError: undefined };
+const viteDiagnostics = { state: 'not-started', port: undefined, error: undefined };
+const pageErrors = [];
+let vite;
+let browser;
+let browserCdp;
+let page;
+let stageUrl;
+let graphics;
+const cleanup = async (name, action) => {
+  try {
+    await action?.();
+  } catch (error) {
+    process.stderr.write(`UI_CLEANUP_WARNING ${name}: ${String(error)}\n`);
+  }
+};
 const waitFor = async (test, message, timeout = 30_000) => {
   const until = Date.now() + timeout;
   while (Date.now() < until) {
-    if (await test(until)) {
+    if (await test()) {
       return;
     }
     await delay(Math.min(100, Math.max(0, until - Date.now())));
   }
   throw new Error(`Timed out: ${message}; last discovery error: ${discovery.lastError ?? 'none'}`);
 };
-const fetchBeforeDeadline = async (url, until, json = false) => {
-  const remaining = until - Date.now();
-  if (remaining <= 0) {
-    throw new Error(`Startup deadline expired fetching ${url}`);
-  }
-  const response = await fetch(url, {
-    signal: AbortSignal.any([startupAbort.signal, AbortSignal.timeout(remaining)]),
-  });
-  discovery.lastHttpStatus = { url, status: response.status };
-  if (!response.ok) {
-    throw new Error(`Discovery HTTP ${response.status}: ${url}`);
-  }
-  // The fetch signal also bounds a JSON body that never completes.
-  return json ? response.json() : response;
-};
-const getPage = async (until) => {
-  const pages = await fetchBeforeDeadline(`http://127.0.0.1:${cdpPort}/json`, until, true);
-  discovery.targets = pages.map(({ id, type, url }) => ({ id, type, url }));
-  return pages.find((page) => page.type === 'page' && page.url.includes(`127.0.0.1:${port}`));
-};
 
-let ws;
 try {
-  await waitFor(async (until) => {
-    checkChildren();
-    try {
-      return Boolean(await fetchBeforeDeadline(`http://127.0.0.1:${port}/`, until));
-    } catch (error) {
-      discovery.lastError = inspect(error, { depth: 3 }).slice(-4096);
-      checkChildren();
-      return false;
-    }
-  }, 'Vite server');
-  discovery.phase = 'Chrome page';
-  let discoveryDeadline;
-  await waitFor(async (until) => {
-    discoveryDeadline = until;
-    checkChildren();
-    try {
-      return Boolean(await getPage(until));
-    } catch (error) {
-      discovery.lastError = inspect(error, { depth: 3 }).slice(-4096);
-      checkChildren();
-      return false;
-    }
-  }, 'Chrome page');
-  const page = await getPage(discoveryDeadline);
-  if (!page) {
-    throw new Error('Chrome page disappeared after startup');
-  }
-  ws = new WebSocket(page.webSocketDebuggerUrl);
-  await new Promise((resolve, reject) => {
-    ws.addEventListener('open', resolve, { once: true });
-    ws.addEventListener('error', reject, { once: true });
+  vite = await createServer({
+    root: cwd,
+    logLevel: 'error',
+    server: { host: '127.0.0.1', port: 0 },
   });
-  let id = 0;
-  const pending = new Map();
-  ws.addEventListener('message', ({ data }) => {
-    const message = JSON.parse(data);
-    if (!(message.id && pending.has(message.id))) {
-      return;
-    }
-    const { resolve, reject } = pending.get(message.id);
-    pending.delete(message.id);
-    if (message.error) {
-      reject(new Error(message.error.message));
-    } else {
-      resolve(message.result);
+  await vite.listen();
+  const address = vite.httpServer.address();
+  assert(address && typeof address !== 'string', 'Vite listens on a TCP port');
+  const { port } = address;
+  viteDiagnostics.state = 'listening';
+  viteDiagnostics.port = port;
+  stageUrl = browserStageUrl(
+    'ui-browser-contract',
+    `http://127.0.0.1:${port}/?debug=1&post=0&sunshadow=0&torchshadow=0`,
+  );
+  discovery.phase = 'Vite ready';
+  const viteResponse = await fetch(`http://127.0.0.1:${port}/`, { signal: AbortSignal.timeout(30_000) });
+  discovery.lastHttpStatus = { url: viteResponse.url, status: viteResponse.status };
+  assert(viteResponse.ok, `Vite root responds with HTTP ${viteResponse.status}`);
+  await viteResponse.body?.cancel();
+  process.stdout.write(
+    `UI_BROWSER_LAUNCH ${JSON.stringify({
+      launcher: 'playwright-cdp-pipe',
+      chromeVersion,
+      graphicsArgs,
+      windowSize: '1280,900',
+      stageUrl,
+    })}\n`,
+  );
+  const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
+  debugChannels.add('pw:browser');
+  process.env.DEBUG = [...debugChannels].join(',');
+  const { chromium } = await import('playwright');
+  browser = await chromium.launch({
+    executablePath: chromeExecutable,
+    headless: true,
+    args: launchArgs,
+    timeout: 30_000,
+  });
+  browser.on('disconnected', () => {
+    discovery.lastError = 'Chromium disconnected';
+  });
+  const context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  page = await context.newPage();
+  await page.addInitScript(() => {
+    globalThis.__webglContextRequests = [];
+    const nativeGetContext = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (type, ...args) {
+      if (['webgl', 'webgl2', 'experimental-webgl'].includes(type)) {
+        globalThis.__webglContextRequests.push(type);
+        return null;
+      }
+      return nativeGetContext.call(this, type, ...args);
+    };
+  });
+  page.setDefaultTimeout(30_000);
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') {
+      pageErrors.push(message.text());
     }
   });
-  const send = (method, params = {}) =>
-    new Promise((resolve, reject) => {
-      id += 1;
-      const requestId = id;
-      pending.set(requestId, { resolve, reject });
-      ws.send(JSON.stringify({ id: requestId, method, params }));
-    });
+  browserCdp = await context.newCDPSession(page);
+  discovery.phase = 'Page navigation';
+  await page.goto(stageUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 });
+  discovery.phase = 'Page ready';
+  const send = (method, params = {}) => browserCdp.send(method, params);
   const evaluate = async (expression) => {
     let result;
     try {
@@ -188,6 +173,7 @@ try {
     () => evaluate("document.querySelector('#go')?.getAttribute('aria-disabled') === 'false'"),
     'accepted-launch readiness',
   );
+  discovery.phase = 'UI assertions';
   const keyBindings = await evaluate(`import('/src/game/inputBindings.ts').then(({ inputBindings, NATIVE_INPUTS }) => ({
     mainMenu: { code: inputBindings.chords('ui.main-menu-toggle')[0].code, label: inputBindings.label('ui.main-menu-toggle') },
     browserMenuBar: NATIVE_INPUTS.find((native) => native.code === 'F10'),
@@ -200,6 +186,7 @@ try {
     await pressCdpAction(evaluate, send, actionId);
     await delay(80);
   };
+
   const saveNote = 'Saves are kept in this browser. When two tabs play the same world, the last one to save wins.';
   const assertSaveNote = async (screen) =>
     assert.equal(
@@ -259,12 +246,17 @@ try {
     });
   })()`);
   await evaluate(`(() => {
-    const canvas = document.querySelector('canvas');
+    // The render-free engine uses #view as its input target instead of creating a renderer canvas.
+    const inputSurface = document.querySelector('canvas') ?? document.querySelector('#view');
     let locked = false;
+    window.__inputSurface = inputSurface;
     window.__pointerCalls = { request: 0, exit: 0 };
     window.__rejectNextPointerLock = false;
-    Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked ? canvas : null });
-    canvas.requestPointerLock = () => {
+    Object.defineProperty(document, 'pointerLockElement', {
+      configurable: true,
+      get: () => locked ? inputSurface : null,
+    });
+    inputSurface.requestPointerLock = () => {
       window.__pointerCalls.request++;
       if (window.__rejectNextPointerLock) {
         window.__rejectNextPointerLock = false;
@@ -297,7 +289,7 @@ try {
       return target;
     };
     document.addEventListener('click', (event) => {
-      if (event.target !== canvas) {
+      if (event.target !== inputSurface) {
         window.__lastForwardedClick = {
           x: event.clientX,
           y: event.clientY,
@@ -312,9 +304,19 @@ try {
     document.querySelector('#go').click();
     window.__pointerCalls.request = 0;
   })()`);
-  await waitFor(
-    () => evaluate("Boolean(document.querySelector('#debug-ui-root') && document.querySelector('canvas'))"),
-    'post-acceptance debug UI mount',
+  await waitFor(() => evaluate("Boolean(document.querySelector('#debug-ui-root'))"), 'post-acceptance debug UI mount');
+  graphics = await evaluate(`({
+    renderMode: ${JSON.stringify(renderMode)},
+    webglContextRequests: window.__webglContextRequests.slice(),
+  })`);
+  process.stdout.write(
+    `UI_BROWSER_GRAPHICS ${JSON.stringify({
+      launcher: 'playwright-cdp-pipe',
+      chromeVersion,
+      browserVersion: browser.version(),
+      graphicsArgs,
+      graphics,
+    })}\n`,
   );
   await pressBinding(keyBindings.mainMenu);
   await evaluate('document.exitPointerLock()');
@@ -415,7 +417,7 @@ try {
     await delay(120);
   };
   const dispatchPointerAt = async (type, button, buttons, position) =>
-    evaluate(`document.querySelector('canvas').dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
+    evaluate(`window.__inputSurface.dispatchEvent(new PointerEvent(${JSON.stringify(type)}, {
       bubbles: true, cancelable: true, pointerId: 1, pointerType: 'mouse', isPrimary: true,
       button: ${button}, buttons: ${buttons}, clientX: ${position.x}, clientY: ${position.y},
     }))`);
@@ -475,7 +477,7 @@ try {
   })()`);
   await moveCursorTo(menuCenter);
   await evaluate(
-    "document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 500 }))",
+    "window.__inputSurface.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 500 }))",
   );
   assert.ok(
     await evaluate("document.querySelector('#overlay .card').scrollTop > 0"),
@@ -553,7 +555,7 @@ try {
   assert.match(arrowTip.mask, /cursor\.png/, 'cursor sprite is used as a silhouette mask');
   assert.equal(arrowTip.background, 'rgb(255, 255, 255)', 'cursor mask is filled white');
   assert.equal(arrowTip.blend, 'difference', 'the cursor is difference-blended');
-  assert.equal(arrowTip.rootBlend, 'difference', 'the cursor layer blends over the canvas');
+  assert.equal(arrowTip.rootBlend, 'difference', 'cursor root uses difference blending');
   assert.equal(arrowTip.hitGo, true, 'elementFromPoint at the arrow tip targets the known button edge');
   assert.ok(Math.abs(arrowTip.x - cursor.x) < 0.1, 'standard arrow tip is at cursor x');
   assert.ok(Math.abs(arrowTip.y - cursor.y) < 0.1, 'standard arrow tip is at cursor y');
@@ -604,7 +606,7 @@ try {
   })()`);
   assert.ok(debugScroll.scroll > debugScroll.height, 'expanded authored debug panel actually overflows');
   await moveCursorTo(debugScroll);
-  await evaluate(`document.querySelector('canvas').dispatchEvent(new WheelEvent('wheel', {
+  await evaluate(`window.__inputSurface.dispatchEvent(new WheelEvent('wheel', {
     bubbles: true, cancelable: true, deltaY: 3, deltaMode: 1,
   }))`);
   assert.equal(
@@ -943,9 +945,7 @@ try {
     'unlock event does not call lock APIs',
   );
 
-  await evaluate(
-    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   if (!(await evaluate("document.querySelector('#overlay').hidden"))) {
     await clickAt('#go');
@@ -953,21 +953,19 @@ try {
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
-    'canvas or locked-card click resumes after pointer unlock',
+    'input-surface or locked-card click resumes after pointer unlock',
   );
 
   await press('Tab', 'Tab', 9);
   await evaluate('window.__setPointerLocked(false)');
   await delay(100);
   assert.equal(await evaluate("document.querySelector('#inventory').hidden"), true, 'unlock closes an open inventory');
-  await evaluate(
-    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
-    'canvas click resumes after inventory unlock',
+    'input-surface click resumes after inventory unlock',
   );
 
   await action('debug.panel-toggle');
@@ -978,14 +976,12 @@ try {
     true,
     'unlock closes an open debug panel',
   );
-  await evaluate(
-    `document.querySelector('canvas').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`,
-  );
+  await evaluate(`window.__inputSurface.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }))`);
   await delay(100);
   assert.equal(
     await evaluate("document.querySelector('#overlay').hidden"),
     true,
-    'canvas click resumes after debug-panel unlock',
+    'input-surface click resumes after debug-panel unlock',
   );
 
   await pressBinding(keyBindings.mainMenu);
@@ -1017,35 +1013,41 @@ try {
     true,
     'a fresh resume click closes the menu',
   );
+  assert.deepEqual(
+    await evaluate('window.__webglContextRequests'),
+    [],
+    'UI contract remains independent of WebGL rendering',
+  );
   process.stdout.write(
     'UI browser contract passed: container drag/drop, pointer-locked menus, cursor clicks/focus, spawn count, V status, audio volume persistence, unlock, menu/browser keys, inventory stats.\n',
   );
 } catch (error) {
+  if (viteDiagnostics.state !== 'listening') {
+    viteDiagnostics.error = inspect(error, { depth: 3 });
+  }
   process.stderr.write(
     `UI_LAUNCH_FAILURE ${JSON.stringify({
-      error: String(error),
-      ports: { vite: port, cdp: cdpPort },
+      error: inspect(error, { depth: 5 }),
+      launcher: 'playwright-cdp-pipe',
+      chromeVersion,
+      browserVersion: browser?.version(),
+      graphicsArgs,
+      graphics,
+      stageUrl,
       discovery,
-      children: children.map(({ name, child, stdout, stderr, spawnError }) => ({
-        name,
-        executable: child.spawnfile,
-        args: child.spawnargs,
-        pid: child.pid,
-        exitCode: child.exitCode,
-        signalCode: child.signalCode,
-        spawnError,
-        stdout,
-        stderr,
-      })),
+      vite: viteDiagnostics,
+      browser: {
+        connected: browser?.isConnected(),
+        version: browser?.version(),
+        requestedExecutable: chromeExecutable,
+        requestedArgs: launchArgs,
+      },
+      page: { url: page?.url(), errors: pageErrors },
     })}\n`,
   );
   throw error;
 } finally {
-  ws?.close();
-  chrome.kill('SIGTERM');
-  vite.kill('SIGTERM');
-  if (chrome.exitCode === null && chrome.signalCode === null) {
-    await Promise.race([new Promise((resolve) => chrome.once('exit', resolve)), delay(5000)]);
-  }
-  await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  await cleanup('CDP session', () => browserCdp?.detach());
+  await cleanup('Chromium', () => browser?.close());
+  await cleanup('Vite', () => vite?.close());
 }

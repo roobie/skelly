@@ -26,7 +26,6 @@ try {
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.route('https://scripts.simpleanalyticscdn.com/**', (r) => r.abort());
   await page.goto(`${url}/?fixture=archetype-ar`);
   await page.waitForSelector('#param-panel .param-part');
 

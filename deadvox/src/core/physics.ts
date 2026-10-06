@@ -59,7 +59,7 @@ const overlapsTerrain = (body: Body, isSolid: SolidAt): boolean => {
   return false;
 };
 
-export const overlapsBody = (body: Body, other: Body): boolean =>
+const overlapsBody = (body: Body, other: Body): boolean =>
   body.pos[0] - body.halfWidth < other.pos[0] + other.halfWidth &&
   body.pos[0] + body.halfWidth > other.pos[0] - other.halfWidth &&
   body.pos[1] < other.pos[1] + other.height &&

@@ -58,7 +58,7 @@ export interface EntitySpec {
 }
 
 /** Search time in seconds: 1 s for a small container up to 3 s for a wardrobe (DESIGN.md, "Handling time"). */
-export const SEARCH = { min: 1, max: 3, cellsForMax: 48 } as const;
+const SEARCH = { min: 1, max: 3, cellsForMax: 48 } as const;
 const DOOR_PANEL_THICKNESS = 0.06;
 const DOOR_OPEN_TURN = { n: -Math.PI / 2, s: Math.PI / 2, e: -Math.PI / 2, w: Math.PI / 2 } as const;
 
@@ -352,11 +352,5 @@ export class BlockEntities {
       return v < lo ? lo - v : Math.max(0, v - hi);
     });
     return Math.hypot(...d);
-  }
-
-  bedNear(point: Vec3, radius: number): BlockEntity | undefined {
-    return [...this.byAnchor.values()]
-      .filter((e) => this.defOf(e).bed !== undefined && this.distance(e, point) <= radius)
-      .sort((a, b) => this.distance(a, point) - this.distance(b, point))[0];
   }
 }

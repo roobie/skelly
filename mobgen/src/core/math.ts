@@ -12,9 +12,8 @@ export interface Transform {
   readonly t: Vec3;
 }
 
-export const ZERO: Vec3 = [0, 0, 0];
+const ZERO: Vec3 = [0, 0, 0];
 export const IDENTITY_M: Mat3 = [1, 0, 0, 0, 1, 0, 0, 0, 1];
-export const IDENTITY: Transform = { r: IDENTITY_M, t: ZERO };
 
 export const add = (a: Vec3, b: Vec3): Vec3 => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
 export const sub = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
@@ -106,11 +105,6 @@ export const compose = (a: Transform, b: Transform): Transform => ({
   r: mulMM(a.r, b.r),
   t: add(mulMV(a.r, b.t), a.t),
 });
-
-export const invert = (a: Transform): Transform => {
-  const rt = transpose(a.r);
-  return { r: rt, t: scale(mulMV(rt, a.t), -1) };
-};
 
 export const applyPoint = (a: Transform, p: Vec3): Vec3 => add(mulMV(a.r, p), a.t);
 export const applyDir = (a: Transform, d: Vec3): Vec3 => mulMV(a.r, d);

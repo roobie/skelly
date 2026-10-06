@@ -1,11 +1,15 @@
 ---
 read_if:
+  - you decide how sunlight and shadows should read in play
+  - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
-  - you change shambler navigation or floor-transition behavior
+  - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you change the game's design, especially held-item feedback or hand ownership
   - you reconcile BR's rulings with player interaction and presentation
+  - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
+  - you're changing firearm recoil, dispersion or aim control
 ---
 
 # deadvox — design
@@ -119,11 +123,18 @@ Crafting, reading, building, disassembly, repair, searching and sleeping are
 **long actions**. A long action has a duration in game time. It runs with
 compression on and shows a progress bar and the game time passing.
 
-- **Compression is only allowed when it's safe:** no hostile is aware of the
-  player, and none is within a safe radius (start at 30 m).
-- **Interruptions:** a hostile noticing you, a loud noise, damage, fire, or a
-  need hitting a threshold. The game drops back to real time and asks
-  *Continue* or *Stop*. The progress made so far is kept.
+- **Starting an action:** a nearby or aware hostile does not block a long
+  action, and time still fast-forwards. BR (2026-10-05 20:09) answered
+  "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording for
+  B was "No: only a hit or another real event (hunger, thirst...) wakes you".
+  BR said "it's up to the player to make the area safe for them to do the long
+  action. We're not holding hands".
+- **Interruptions:** emitted events such as a hit, loud noise, fire, or a need
+  hitting a threshold stop the action. A shambler noticing the player does not
+  interrupt it. `src/core/sim.ts`, `Simulation.checkInterruptions`, admits
+  emitted events; `src/core/longAction.ts`, `LongActions.syncInterruption`,
+  wakes a sleeper, clears the interruption and frees input. Other actions drop
+  back to real time and ask *Continue* or *Stop*. Progress made so far is kept.
 - **Short handling** (moving an item, reloading, wielding) is not compressed.
   It takes real seconds while the world runs at 1× (see
   [Items](#items-and-inventory)).
@@ -315,8 +326,9 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   BR approved on 2026-10-04 at 23:55: "very nice; rummaging approved".
   On stowing: "putting away the shotgun from being wielded also plays rummaging
   anim - i think it kinda fits". The longer-term direction is "over time, we'll
-  maybe add more specific anims."; shell-loading feedback is d53.
-  Approval does not pin `RUMMAGE_POSE` tuning: see
+  maybe add more specific anims." The shell-loading animation is in #248; BR
+  approved it on 2026-10-05: "approved". Approval does not pin `RUMMAGE_POSE`
+  tuning: see
   `../docs/deferred-assertions.md`.
   Following #213's merge (d50-3), compass handling must not introduce a second
   rest-pose owner: `HeldItems.handBases` retains the raised inspection grip for
@@ -334,7 +346,12 @@ The inventory is diegetic, as in DayZ, with one exception for long actions.
   its handling time; using it is a separate action. A two-handed item takes both
   hands.
 - What you hold shows in first person, what you drop lies on the floor as a
-  pile, and furniture holds what its grid shows.
+  pile, and furniture holds what its grid shows. For #252, a burning carried
+  light needs its world point light and a self-lit held presentation: a visible
+  flame for firestarter lights and a self-lit body. `HeldItems.render` draws the
+  hands in a separate scene, so the world light cannot illuminate that model. See
+  `src/render/hands.ts`, `HeldItems.shape`,
+  and `src/render/lightPool.ts`, `LightPool.update`.
 - **Primary action (BR, 2026-09-26, issue #27):** "Left click does the thing
   with the thing you're holding." Activation follows the character's dominant
   and off-hand roles, not a fixed physical side. A held item must never turn
@@ -488,7 +505,43 @@ plain box in your hands. Files are small, and follow
   blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
   items animate both arms. Confirmed hits add only clamped first-person recoil.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
-  capacity, handling and noise. Ammo and magazines are items with pockets.
+  capacity, handling and noise. Ammo and magazines are items with pockets. The
+  simulation's `AimController` publishes the same offset to shot resolution and
+  held-firearm presentation, so the weapon does not visibly aim somewhere other
+  than its shot ray. Aim state is saved because it can change hit outcomes. BR's
+  2026-10-05 look at the range found that "the gun on screen is climbing (and
+  plateauing)" and ruled, "at the ~7° screen limit -> start scrolling the screen
+  with it / no plateauing." While an automatic trigger is held, recoil does not
+  recover; over-limit pitch shifts the saved view pitch. The shifted view stays
+  after release while the on-screen weapon offset recovers, so mouse look can
+  counter the climb. BR also clarified that "dispersion is not a skill issue,
+  but control is": firearm-owned `dispersionRadians` is sampled per round, while
+  `firearmsSkillEffects` controls sway, kick per shot and recoil recovery,
+  with legendary progression granting no control beyond ordinary expert per
+  BR's ruling. The pump keeps its pellet spread and adds no firearm cone. This
+  reuses the already saved player pitch, so no aim-state field or save-schema
+  change is needed. See
+  `src/game/firearmHandling.ts`, `FirearmMechanics.fire` and
+  `firearmHandlingFor`, `src/core/pellets.ts`, `coneDirection`,
+  `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
+  `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
+  `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,
+  `SAVE_SCHEMA_VERSION`. BR's earlier 2026-10-05 report on the skill scale
+  before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
+  led to d62-4 (#262); the later ruling
+  separates firearm quality's dispersion from skill-controlled handling.
+  The #267 ruling makes ready stance gate firearm fire, prohibits firing while
+  sprinting, assigns duck-walk speed to firearms combat and block success to
+  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. Until
+  3.1 lands, aim-sway look comparisons use the current movement rules;
+  afterward, moving-fire comparisons use the skill-dependent duck-walk speed.
+  d62 leaves practice unawarded until its source is ruled; #275 sets tiered
+  training, while tiers for existing sources and above-tier practice remain
+  open. The d62 reading of BR's "swing" is look-turn rate; BR's answer to the
+  d62 questions triggers reinterpretation. The d62 reading of BR's "reload
+  time" is per-shell insertion, not magazine reload; BR's answer to the d62
+  questions triggers expansion.
+- **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. BR's firearm ruling, planned in [SLICE-3.md](SLICE-3.md), settles real ammunition and magazine loading plus body-region damage by calibre. Visible shambler marks are desired ("ideally, yes") and await the 3.2 first look.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
@@ -544,24 +597,30 @@ them see you.
 Interiors need voxel light to become darker than the outdoors. Until that
 arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
-block light. The zombie light check keeps sky visibility separate from carried
-light, so adding voxel sky light won't change the carried-light rule. Keep time
-of day in the sky/fog renderer, not baked into chunks; voxel sunlight can then
-join AO in vertex colour. See `src/render/flashlight.ts`, `Flashlight.update`,
-`src/core/zombies.ts`, `isLit`, `src/render/sky.ts`, `applySky`, and
-`src/core/mesher.ts`, `buildMesh`.
+block light. All-around carried and dropped sources use a fixed pool of
+shadowless point lights; unused slots stay at zero intensity, and surplus
+emissive glowsticks remain visible without lighting the world. An emissive marker
+is not a substitute for the pool: tune item light content against the ground and
+walls under the shared near-field falloff. Source colour, intensity, radius and
+burn rules belong to item content. The zombie light check keeps sky visibility
+separate from carried light, so adding voxel sky light
+won't change the carried-light rule. Keep time of day in the sky/fog renderer,
+not baked into chunks; voxel sunlight can then join AO in vertex colour. See
+`src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
+`LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,
+`applySky`, and `src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
 
   | Source | Light | Seen from | The catch |
   | --- | --- | --- | --- |
-  | Matches, lighter | A small circle | 10 m | Matches last seconds; takes a hand |
-  | Candle | Small and steady | 15 m | Blows out if you move fast |
-  | Glowstick | Dim, green | 15 m | Used once; can be thrown |
+  | Matches, lighter | A small circle | 10 m | Their own fuel is finite; takes a hand |
+  | Candle | Small and steady | 15 m | Blows out if you sprint; can be doused and relit |
+  | Glowstick | Dim, green | 15 m | Used once; stays lit when stowed or dropped |
   | Headlamp | A weak beam | 30 m | Batteries; leaves both hands free |
   | Flashlight | A beam, instant on and off | 40 m along the beam | Batteries; takes a hand |
   | Lantern | Bright, all around | 50 m | Bulky; can be set down |
-  | Torch | Bright, all around | 60 m | Can't be switched off, only dropped or doused; burns out; sets things alight |
+  | Torch | Bright, all around | 60 m | Needs a firestarter; can be doused and relit while fuel remains |
   | Road flare | Very bright, red | 80 m | Used once; can be thrown |
 
 - **Being seen.** Zombies see a light in their view cone from much further than
@@ -614,80 +673,40 @@ worse the world gets.
 
 - **Senses:** sight (a view cone and range, worse at night and when you
   crouch), hearing (noise events) and smell (a trail the player leaves, which
-  rain washes out).
-- **Navigation rationale:** Collision-aware routing prevents false progress
-  through blockers, while bounded work protects the shared simulation tick.
-  Keeping route planning separate from physics preserves collision ownership.
-  See `deadvox/src/core/zombies.ts`, `ZombieSystem`, and
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
-  Explore landing connections only from the reached frontier, trying the goal
-  before optional detours. Exhausting effort on an unrelated closed approach must
-  not discard a complete route already found. See
-  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs`.
-  A grid-expansion limit alone hides flight validation, graph preparation and
-  compression work. Account for world probes and metadata/graph work against the
-  request allowance; the expansion cap also bounds local path structures.
-  Finish at most one request beyond the dispatch slice and rotate the remaining
-  queue deterministically. The allowance is logical work, not a wall-clock deadline; see
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`, and
-  `deadvox/src/core/zombies.ts`, `serviceRouteSearches`.
-  This is a bounded pilot, not a completeness guarantee: when no route is found,
-  the shambler waits for a retry instead of steering directly through blockers.
-  Crowd navigation and cheaper tiers belong to Slice 3
-  ([#244](https://github.com/roobie/skelly/issues/244)), not larger pilot caps.
-  Persist route progress, retry time and dispatch order so loading does not
-  silently restart pursuit or change which actor receives the next search.
-  See `deadvox/src/core/zombies.ts`, `snapshotState` and `restoreState`, and
-  `deadvox/src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`.
-  Request-local native maps avoid repeated world lookups without retaining stale
-  collision across requests. Continuous swept clearance prevents a short corner
-  overlap from creating an unsafe route and endless replanning; see
-  `deadvox/src/core/shamblerRoutes.ts`, `horizontalSweepClear`.
-  Live movement checks stay local even while gravity settles a descent; checking
-  the whole future leg during that transient hides unbounded per-actor work.
-  Descending endpoints are still checked for newly blocked landings. See
-  `deadvox/src/core/zombies.ts`, `liveRouteClearance` and `routeWaypoint`.
-  Preserve height changes when compressing a terrain detour: a raised sweep is
-  not proof that the body can hover over intervening obstacles. See
-  `deadvox/src/core/shamblerRoutes.ts`, `compressFlatPath`.
-  Distant goals use successive local horizons. A verified stair exit may be the
-  useful prefix when backtracking to its landing puts that horizon outside the
-  next leg's window; this is not straight steering through a failed route. See
-  `deadvox/src/core/shamblerRoutes.ts`, `searchRouteLegs` and `planRoute`.
-- **Storeys:** Matching horizontal projections could connect disconnected
-  floors and falsely complete an unreachable goal. Absolute feet height also
-  cannot identify a storey on graded terrain: world ground height distinguishes
-  that surface from an authored floor above it. Terrain legs follow that supplied
-  surface; constructed storey transitions still require authored flights. See
-  `deadvox/src/core/shamblerRoutes.ts`, `terrainForLeg` and `onTerrainFloor`.
-  Far-hearing direction must not manufacture source-storey knowledge. A grounded
-  listener projects the uncertain bearing onto known terrain, not the source's
-  height; a listener above ground retains its own level. See `deadvox/src/core/zombies.ts`,
-  `sameRouteFloor` and `farBearingTarget`, and
-  `deadvox/src/core/shamblerRoutes.ts`, `planShamblerRoute`.
-- **Level of detail:** Only the active tier is implemented, using bounded routes;
-  see `deadvox/src/core/zombies.ts`, `ZombieSystem`. The tiers remain planned design:
+  rain washes out). Terrain height alone should not end a clear pursuit; sight
+  over a rise is bounded by occlusion, not by spending range on vertical distance.
+  See `src/core/zombies.ts`, `seesPlayer`.
+- **Movement (BR, 2026-10-05 20:27–20:33):** “also, it's still the case that the shamblers are stalling when the player moves”; “i think we should greatly simplify how the shamblers brains work”; “they aren't smart creatures”; “they beeline towards whatever grabs their attention”; and at 20:33, “yes, I think we should make them primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over / but they should have some randomness in that even if they normally beeline, when they hit an obstacle they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example) / but if something bashable is in the way, they would tend to bash it (e.g. doors) / (what is bashable is depending on the strength of the mob - but we haven't modelled this, right? I mean a 2nd evolution brute might breach a brick wall, for example)”. A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.json`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
+- **Height (BR, 2026-10-05 20:29):** “but yeah, heightwise (Y axis) it may be a bit difficult. Maybe we should just let them wander at some point, rather than intelligently traverse Y-levels”. Shamblers do not gain stair knowledge from an attention target on another floor.
+- **Seen prey (BR, 2026-10-05 21:52–21:53; #281):** “well, when i stood there high on the slope, the shamblers tracked and pursued, but since it's steep, they'd stop and wander off for a bit, even though they'd reasonably would "see" me (given that there were no obstacles, other than the steep climb)”; “i'd lean (A) because it feels most reasonable for the shambler mentality that if they _see_ their prey, they just go after it straight”; “but still sliding”. For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
+- **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
+- **Background movement (BR, 2026-10-05 21:32):** “yes”: background zombies beeline in big, cheap steps.
+
+- **Level of detail:**
 
   | Tier | Where | Simulation |
   | --- | --- | --- |
-  | Active | Nearby actors | Detailed AI, body physics and bounded routes (implemented) |
-  | Background | Distant actors in loaded chunks | Reduced-rate steering along a shared flow field (planned) |
+  | Active | Nearby actors | Detailed AI, body physics and beeline movement (implemented) |
+  | Background | Distant actors in loaded chunks | Reduced-rate, large-step beeline toward the shared attention target (planned) |
   | Abstract | Actors in unloaded chunks | Hordes moving as groups on the region map (planned) |
 
-  Background and abstract tiers, the flow field and crowd navigation are
-  Slice 3 work ([#244](https://github.com/roobie/skelly/issues/244)), not built behavior.
+  The background tier and first horde are Slice 3 work; abstract hordes remain
+  Slice 4 work. Shared flow fields and crowd navigation are dropped from the
+  Slice 3 plan. d84's beeline brain replaces the route follow-up in
+  [#244](https://github.com/roobie/skelly/issues/244).
 
-**Decided (BR, 2026-10-04):**
+BR said “defer the bashing” (2026-10-05 20:36). For #273, bashing waits until mob and obstacle strength exist; closed doors remain obstacles like walls. If #273 supplies those strengths, the bash decision belongs at `obstacleContact` in `ZombieSystem.tick`. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
 
-- "At some point we will make everything destructible. Door, walls, appliances,
+**Decided (BR, 2026-10-04; background to #273):**
+
+- “At some point we will make everything destructible. Door, walls, appliances,
   furniture et[c] and yes, normal doors should be possible to breach by an
   ordinary shambler, given enough time. But the overarching idea is to keep it
-  pretty aligned with how CDDA works"
-- "to answer the question here and now: no, let's not make shamblers breach
-  doors"
+  pretty aligned with how CDDA works”
+- “to answer the question here and now: no, let's not make shamblers breach
+  doors”
 
-A destructive-door mechanic needs its own gameplay contract, so navigation
-must not add one implicitly. See `deadvox/src/core/zombies.ts`, `ZombieSystem`.
+Destructive-door behavior awaits a gameplay contract and modeled mob/obstacle strength; it is not implied by movement. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
 
 ### Models
 
@@ -699,8 +718,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** Doors have strength; zombies bash them (brutes faster)
-  and you can barricade them. Locks can be picked or pried.
+- **Doors and locks.** Doors can be barricaded; locks can be picked or pried. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `deadvox/src/core/zombies.ts`, `ZombieSystem.tick`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,
@@ -825,6 +843,11 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Entities** are drawn with instanced meshes; zombie limbs are instanced
   boxes.
+- **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
+  is still a little jaggedness. But we won't pursue this more right now, so I'll
+  approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
+  Favor a stable edge near the player over sharp shadows far beyond them; see
+  `src/render/shadows.ts`, `sunShadowTexelSize` and `Shadows.update`.
 
 ## Audio
 
@@ -837,19 +860,28 @@ decoration.
   [Combat and noise](#combat-and-noise)) also play as positional sounds, with
   occlusion shared by the player's hearing and zombie hearing.
 - **A shambler's presence should be audible even when it stands still.** It
-  should sometimes moan or groan so the player can hear that one is there. Today
-  `shambler_idle` provides an occasional groan while idling or strolling (three
-  variants). A richer idle-presence set—more variants, breathing, shuffling in
-  place, and rate/loudness shaped by state—is future work, not part of the
-  current footsteps change.
+  should sometimes moan or groan so the player can hear that one is there.
+  `shambler_idle` provides an occasional groan while idling or strolling. Each
+  shambler's vocals and body-made sounds shift lower with its realized body
+  height, so larger figures sound heavier and the runner/brute templates inherit
+  the same law. `src/game/shamblerAudio.ts`, `shamblerBodyPitch`, interpolates one
+  power curve between the pool's smallest and tallest realized bodies. The
+  smallest anchor is 1.2 times the prior square-root law at that body's height;
+  the tallest remains at the prior law. BR approved d52-4's `voicePitchLarge` on
+  2026-10-05 with “lgtm”. The clamp spans 0.5 to 1.3 times the prior law at the
+  smallest height. BR's tuning note was, “voicePitch 0.5 to 1.3 sounds good ,but
+  for different purposes / for the tiny shambler, 1.2 is good”. Debug URL
+  multipliers tune the two endpoints for the `voice_size` comparison site. This
+  changes playback only, never hearing or simulation.
 - **Shambler movement is audible:** surface-specific, heavy, dragging footsteps
   follow actual ground travel; a chase is faster than a stroll. Only the nearest
   three moving shamblers emit footsteps at once. The MVP reuses pitched-down
-  player footstep recordings as an explicit stand-in. Other shambler cues can
-  follow later; the current change adds footsteps only.
+  player footstep recordings as an explicit stand-in; body size also shifts
+  their playback pitch.
 - **Your own sounds:** footsteps by surface and speed, doors, the inventory
   (zips, cans), and heavy breathing when stamina is low. You hear how much
   noise you're making.
+- **Heartbeat (#193; d37-4; BR, 2026-10-05):** BR: "not hearing any hearbeats. / but the way it should work is a linear increase starting at around 85% stamina: / @85% -> start at 1Hz and 'normal intensity' (loudness) / @0%  -> 3Hz and very high intensity". It is silent above 85%, then rate and loudness rise linearly to zero stamina. The normal and very-high loudness anchors in `HEARTBEAT_TUNING` are provisional; BR tunes them by ear relative to other body sounds. This remains a presentation cue, not a noise event, so shamblers do not hear it and it does not alter simulation/save identity. Fear/danger and low-health responses remain open for BR's ruling on #193. See `src/game/audioPresentation.ts`, `HEARTBEAT_TUNING` and `heartbeatForStamina`, and `src/game/audio.ts`, `GameAudio.updateHeartbeat`.
 - **Ambience by time and place:** wind, rain, a building settling. The
   distant sounds (a gunshot, a scream, a helicopter over the cordon, a
   generator) come from things happening in the simulation, not from a random

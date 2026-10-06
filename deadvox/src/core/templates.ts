@@ -18,7 +18,7 @@ export type Turn = 0 | 1 | 2 | 3;
 
 const FACINGS: readonly Facing[] = ['n', 'e', 's', 'w'];
 
-export const turnFacing = (facing: Facing, turn: Turn): Facing => FACINGS[(FACINGS.indexOf(facing) + turn) % 4]!;
+const turnFacing = (facing: Facing, turn: Turn): Facing => FACINGS[(FACINGS.indexOf(facing) + turn) % 4]!;
 
 /** A piece's cells as [x, y, z], seen from the template: east- and west-facing pieces lie along z. */
 export const pieceSize = (size: readonly [number, number, number], facing: Facing): Vec3 =>
@@ -36,7 +36,7 @@ export function* cellsOf([sx, sy, sz]: readonly [number, number, number]): Gener
 }
 
 /** The character at a template cell, or undefined outside the layers. */
-export const charAt = (template: TemplateDef, x: number, y: number, z: number): string | undefined =>
+const charAt = (template: TemplateDef, x: number, y: number, z: number): string | undefined =>
   [...(template.layers[y]?.[z] ?? '')][x];
 
 /**
@@ -89,7 +89,7 @@ export const templateLockIds = (registry: Registry, template: TemplateDef): stri
   });
 
 /** A piece of furniture in a template, in template coordinates. */
-export interface Piece {
+interface Piece {
   lock?: DoorLockDef;
   furniture: string;
   /** The palette's loot table, or the furniture's own. */
@@ -191,7 +191,7 @@ export const footprint = ({ template, turn }: Placement): [number, number] =>
   turn % 2 === 0 ? [template.size[0], template.size[2]] : [template.size[2], template.size[0]];
 
 /** Where a template cell's (x, z) lands, relative to the origin. */
-export const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {
+const turned = (size: Vec3, turn: Turn, x: number, z: number): [number, number] => {
   const [sx, , sz] = size;
   switch (turn) {
     case 1:
@@ -280,23 +280,6 @@ export const placedPoint = ({ template, origin, turn }: Placement, [x, y, z]: Ve
   const [u, v] = turned(template.size, turn, x - 0.5, z - 0.5);
   return [origin[0] + u + 0.5, origin[1] + y, origin[2] + v + 0.5];
 };
-
-export interface PlacedFlight {
-  readonly from: string;
-  readonly to: string;
-  readonly lower: Vec3;
-  readonly upper: Vec3;
-  readonly width: number;
-}
-
-export const placedFlights = (placement: Placement): PlacedFlight[] =>
-  (placement.template.access?.stairs ?? []).map((stair) => ({
-    from: stair.from,
-    to: stair.to,
-    lower: placedPoint(placement, stair.lower),
-    upper: placedPoint(placement, stair.upper),
-    width: stair.width,
-  }));
 
 export const placedSpawns = ({ template, origin, turn }: Placement): SpawnMarker[] =>
   template.spawns.map((spawn) => {

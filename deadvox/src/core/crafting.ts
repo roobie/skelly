@@ -1,6 +1,6 @@
 // Pure craft planning: no removal, effect, timer or world mutation.
 import type { BlockEntity } from './blockEntities.ts';
-import type { CraftCharacter } from './character.ts';
+import { type CraftCharacter, SKILL_LEVEL_MIN, skillEffectLevel } from './character.ts';
 import { CLOCK_RATIO } from './clock.ts';
 import type { RecipeDef } from './content.ts';
 import type { DisassemblyPlan } from './disassembly.ts';
@@ -8,12 +8,12 @@ import type { Location } from './inventory.ts';
 import { type Item, isEmpty } from './items.ts';
 import type { ReachEntry, ReachSnapshot } from './reach.ts';
 
-export interface CraftComponent {
+interface CraftComponent {
   item: Item;
   count: number;
   from: Location;
 }
-export interface CraftPlan {
+interface CraftPlan {
   kind: 'craft';
   recipe: string;
   components: CraftComponent[];
@@ -24,7 +24,7 @@ export interface CraftPlan {
   work: number;
 }
 export type WorkPlan = CraftPlan | DisassemblyPlan;
-export interface CraftMissing {
+interface CraftMissing {
   reason: string;
   knowledge: boolean;
   skills: { skill: string; required: number; available: number }[];
@@ -155,7 +155,7 @@ export const requirementStatus = (
     skills: Object.entries(recipe.skills).map(([skill, required]) => ({
       skill,
       required,
-      available: character.skills[skill] ?? 0,
+      available: skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN),
     })),
     qualities: Object.entries(recipe.qualities).map(([quality, required]) => ({
       quality,
@@ -288,7 +288,10 @@ const craftPlan = (
         .filter((station) => stationMatches(recipe, station))
         .sort((a, b) => b.workTimeBonus - a.workTimeBonus || a.entity.uid - b.entity.uid)[0]
     : undefined;
-  const skillLevel = Math.max(0, ...Object.keys(recipe.skills).map((skill) => character.skills[skill] ?? 0));
+  const skillLevel = Math.max(
+    SKILL_LEVEL_MIN,
+    ...Object.keys(recipe.skills).map((skill) => skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)),
+  );
   const work = (recipe.time * 60 * (1 - (workstation?.workTimeBonus ?? 0))) / (1 + skillLevel * 0.1);
   return {
     kind: 'craft',
@@ -344,7 +347,7 @@ export const admissionRefusal = (
   character: CraftCharacter,
 ): string | undefined => refusalReason(recipe, {}, requirementStatus(recipe, snapshot, character));
 
-export const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
+const stationMatches = (recipe: RecipeDef, station: ReachSnapshot['workstations'][number]): boolean =>
   Boolean(recipe.workstation) && station.id === recipe.workstation;
 
 /** Native recipe validator caps alternative combinations at 1,024. */
@@ -371,7 +374,7 @@ export const planCraft = (
   const cache = cachedPlans(snapshot, recipe);
   const skillKey = Object.keys(recipe.skills)
     .sort()
-    .map((skill) => [skill, character.skills[skill] ?? 0]);
+    .map((skill) => [skill, skillEffectLevel(character.skills[skill] ?? SKILL_LEVEL_MIN)]);
   const key = JSON.stringify([Object.entries(prefer).sort(([a], [b]) => Number(a) - Number(b)), skillKey]);
   const componentReason = componentRefusal(snapshot, status, prefer);
   const cached = cache.get(key);

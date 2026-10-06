@@ -12,11 +12,12 @@ import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const anchors = new Map([
   ['src/game/play.ts', '  const onForwardPress = (e: MouseEvent) => {'],
-  ['src/game/audio.ts', '    const source = context.createBufferSource();'],
+  ['src/game/audio.ts', '    this.stealOldestVoice(event, context);\n    const source = context.createBufferSource();'],
 ]);
 const requireAnchor = (code, file, marker) => {
-  if (!code.includes(marker)) {
-    throw new Error(`Full-auto observation anchor missing in ${file}: ${JSON.stringify(marker)}`);
+  const matches = code.split(marker).length - 1;
+  if (matches !== 1) {
+    throw new Error(`Full-auto observation anchor in ${file} must match exactly once; found ${matches}`);
   }
 };
 // Vite reports transform failures asynchronously. Validate before starting it or a browser,
@@ -40,13 +41,16 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
           const marker = anchors.get('src/game/audio.ts');
           requireAnchor(code, 'src/game/audio.ts', marker);
-          return code.replace(marker, `    globalThis.fullAutoProbe.event = event;\n${marker}`);
+          return code.replace(
+            marker,
+            '    this.stealOldestVoice(event, context);\n    globalThis.fullAutoProbe.event = event;\n    const source = context.createBufferSource();\n    globalThis.fullAutoProbe.event = undefined;',
+          );
         }
       },
     },
@@ -66,7 +70,7 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.addInitScript(() => {
-    const probe = { shots: [], sources: [], peak: 0, released: false };
+    const probe = { shots: [], sources: [], peak: 0, released: false, laserVisibleAfterFire: false };
     globalThis.fullAutoProbe = probe;
     const gun = (record) => record.event === 'gunshot';
     const makeSource = AudioContext.prototype.createBufferSource;
@@ -138,10 +142,34 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,0.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+  await page.evaluate(() => {
+    globalThis.fullAutoProbe.titleF1DefaultPrevented = false;
+    globalThis.fullAutoProbe.titleF2DefaultPrevented = false;
+    globalThis.addEventListener('keydown', (event) => {
+      if (event.code === 'F1') {
+        globalThis.fullAutoProbe.titleF1DefaultPrevented = event.defaultPrevented;
+      }
+      if (event.code === 'F2') {
+        globalThis.fullAutoProbe.titleF2DefaultPrevented = event.defaultPrevented;
+      }
+    });
+  });
+  await page.keyboard.press('F1');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.titleF1DefaultPrevented),
+    false,
+    'F1 is not cancelled on the title screen',
+  );
+  await page.keyboard.press('F2');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.titleF2DefaultPrevented),
+    true,
+    'the debug modifier cancels F2 on the title screen',
+  );
   // Observe the public admission result instead of an implementation-specific source snippet.
   await page.evaluate(async () => {
     const moduleUrl = '/src/game/firearmHandling.ts';
@@ -161,6 +189,40 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  await page.evaluate(() => {
+    globalThis.fullAutoProbe.f1DefaultPrevented = false;
+    globalThis.fullAutoProbe.f2DefaultPrevented = false;
+    globalThis.addEventListener('keydown', (event) => {
+      if (event.code === 'F1') {
+        globalThis.fullAutoProbe.f1DefaultPrevented = event.defaultPrevented;
+      }
+      if (event.code === 'F2') {
+        globalThis.fullAutoProbe.f2DefaultPrevented = event.defaultPrevented;
+      }
+    });
+  });
+  await page.keyboard.press('F1');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.f1DefaultPrevented),
+    false,
+    'F1 is not cancelled in gameplay',
+  );
+  await page.keyboard.press('F2');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.f2DefaultPrevented),
+    true,
+    'the debug modifier prevents the browser default for F2 in gameplay',
+  );
+  await page.evaluate(() => {
+    const { impactEffects } = globalThis.fullAutoRuntime.view;
+    const fire = impactEffects.fire.bind(impactEffects);
+    globalThis.fullAutoProbe.trajectories = 0;
+    impactEffects.fire = (trajectory, debugLaser) => {
+      globalThis.fullAutoProbe.trajectories += trajectory.directions.length;
+      fire(trajectory, debugLaser);
+      globalThis.fullAutoProbe.laserVisibleAfterFire ||= impactEffects.laser.visible;
+    };
+  });
   // Reproduce the review's same-quantum cold load with actual sample decoding/nodes.
   await page.evaluate(() => {
     const { session } = globalThis.fullAutoRuntime;
@@ -230,6 +292,16 @@ try {
   await page.mouse.down();
   await page.waitForFunction(() => globalThis.fullAutoProbe.released);
   await page.mouse.up();
+  const impactPresentation = await page.evaluate(() => ({
+    marks: globalThis.fullAutoRuntime.view.impactEffects.activeMarks,
+    laserSegments: globalThis.fullAutoRuntime.view.impactEffects.laser.geometry.drawRange.count,
+    laserVisibleAfterFire: globalThis.fullAutoProbe.laserVisibleAfterFire,
+  }));
+  assert.ok(impactPresentation.marks > 0, 'committed rounds that meet world geometry create impact marks');
+  assert.ok(
+    impactPresentation.laserSegments > 0 && impactPresentation.laserVisibleAfterFire,
+    'debug trajectory segments are visible in the renderer',
+  );
   const cadence = await page.evaluate(() => ({
     shots: globalThis.fullAutoProbe.shots,
     cases:
@@ -244,6 +316,11 @@ try {
     'holding AR primary fires 27 shots in the half-open two-second burst at 800 rpm',
   );
   assert.equal(cadence.cases, 27, 'every automatic shot records a persistent case');
+  assert.equal(
+    await page.evaluate(() => globalThis.fullAutoProbe.trajectories),
+    cadence.shots.length,
+    'each committed virtual rifle round reaches the shared world-impact presentation',
+  );
   cadence.shots.forEach((time, index) => {
     assert.ok(
       Math.abs(time - cadence.shots[0] - index * 0.075) < 1e-8,

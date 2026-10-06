@@ -13,8 +13,8 @@ read_if:
 # Controls and input ownership
 
 Read with [INTERFACE.md](INTERFACE.md), especially “Afford, don't instruct” and
-“Readying before acting”. Combat proposals below are not implemented merely by
-appearing in this document.
+“Readying before acting”. Settled controls are recorded here as rationale; future
+controls remain proposals until their issue is implemented.
 
 ## BR's rulings
 
@@ -28,18 +28,18 @@ appearing in this document.
   input; layout affects only its displayed label. This avoids moving movement
   positions on another keyboard layout. See `BindingRegistry.loadLayout` and
   `labelForAction` in `src/game/inputBindings.ts`.
-- **No Ctrl or Cmd, ever (2026-10-04):** “due to the browser being the browser,
-  we cannot use Ctrl or Cmd for anything, ever.” Game bindings refuse these
-  modifiers; native text editing and browser shortcuts remain native.
+- **No Ctrl, Cmd or Meta, ever (2026-10-04):** “due to the browser being the
+  browser, we cannot use Ctrl or Cmd for anything, ever.” Game bindings refuse
+  these modifiers; native text editing and browser shortcuts remain native.
 - **Quick actions (2026-10-04):** “hold T+click on item does the quick action
   (auto move)”. The held quick-action gate is rebindable. It saves clicks, not
   handling time, and never invokes an item's use action. See
   `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, and
   `src/core/options.ts`, `quickMove`.
-- **Debug gate (2026-10-04):** “gating them all behind e.g. holding down F1 then
-  pressing the debug key? Unless some special circumstance for a key need it
-  readily available”. The gate is itself a binding, not a native OS modifier.
-  A consumed debug chord cannot also execute its ordinary gameplay command.
+- **Debug gate (2026-10-05):** every debug action uses a held F2 gate to avoid
+  the browser's Help shortcut. The gate is itself a binding, not a native OS
+  modifier. A consumed debug chord cannot also execute its ordinary gameplay
+  command. See `src/game/inputBindings.ts`, `debug.gate`.
 - **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.
@@ -52,9 +52,9 @@ appearing in this document.
   `ReloadInput`; ammunition work belongs to its existing handling owner.
   Inventory rotation is a different visible context, not another reload gesture.
 - **No rest or sleep keys (2026-10-04):** rest uses restable furniture and
-  sleep uses sleepable furniture. Neither has a registry entry. Furniture
-  initiation belongs to d45 through ordinary world interaction; stopping and
-  continuing owned work retain their semantic controls.
+  sleep uses sleepable furniture. Neither has a registry entry. After d45,
+  eligible furniture starts these actions through the world-interaction binding;
+  stopping and continuing owned work retain their semantic controls.
 - **Wield, then activate (2026-10-04):** “diegesis: wield item->activate”. A key
   acts on the door from a hand; an ammunition box is wielded and activated to
   unpack. No inventory shortcut replaces those mechanics.
@@ -68,6 +68,11 @@ appearing in this document.
   hand or puts it away; a hold uses an available action. See
   `src/game/quickbarInput.ts`, `QuickbarInput`, and
   `src/game/quickbarActions.ts`, `QuickbarActions`.
+- **Interaction hints (2026-10-06):** hold the rebindable tilde-position key to
+  toggle the existing HUD interaction-hints option. Debug panel access remains
+  a gated chord. `PressHoldInput` in `src/game/quickbarInput.ts` owns the
+  elapsed-time gesture; `HUD_HINTS_HOLD_MS` in `src/game/inputBindings.ts` owns
+  its threshold.
 
 ## Why there is one keyboard owner
 
@@ -125,21 +130,24 @@ resolved deterministically, and defaults remain usable. A storage refusal leaves
 the session's accepted rebind usable and reports a nonfatal preference notice.
 Reset clears overrides and transient input. No save-format field changes.
 
-## Combat proposals and open questions
+## Readiness and melee (2026-10-05, #267)
 
-BR ruled on 2026-09-27 that holding the right mouse button readies a weapon;
-firearms shoot only while ready. A middle click or Shift would toggle hip/sights
-within readiness, ready caps speed at a hurried march, and backing off while
-ready blocks melee. These proposals must not be inferred from the registry or
-silently added while porting inputs.
+Firearms fire only while ready and never while sprinting. Ready movement is a
+skill-scaled duck-walk, not crouch. En-garde melee uses right-mouse hold; blocking
+also requires S and succeeds according to melee skill. An unready firearm click
+does nothing, including no refusal sound. BR settled the skill split: “The FC
+affects stuff like duck walking, whereas MC affects blocking”. See
+[SLICE-3.md](SLICE-3.md), 3.1, `src/game/firearmHandling.ts`, `fireReason`, and
+`src/game/melee.ts`, `shouldEnterMeleeReady`; the registry owns keyboard
+bindings, not these mouse actions.
 
-1. Dominant/off activation bindings remain open to revision after play; anatomy
-   is not a binding policy.
-2. Press-and-hold for all long uses remains a direction from 2026-09-28, not a
-   universal cancellation rule. Do not redesign mouse use as part of rebinding.
-3. Continue on the interruption card versus future crouch is a visible-state
+## Remaining questions
+
+1. Press-and-hold for every long use remains a direction, not a universal
+   cancellation rule. Do not redesign mouse use as part of rebinding.
+2. Continue on the interruption card versus future crouch is a visible-state
    overload to settle before crouch lands. A clickable choice could remove it.
-4. Best-pocket's default remains BR's decision; its entry is authoritative in
+3. Best-pocket's default remains BR's decision; its entry is authoritative in
    the registry, not duplicated here.
-5. Future ready/sights, crouch, throw, lean, craft and magazine-check inputs are
-   added only when their mechanic lands, against the whole conflict model.
+4. Future crouch, throw, lean, craft and magazine-check inputs are added only
+   when their mechanics land, against the whole conflict model.

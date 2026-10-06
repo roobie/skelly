@@ -206,8 +206,8 @@
       "size": [2, 8],
       "twoHanded": true,
       "model": "shotgun_pump",
-      "firearm": { "pump": true },
-      "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Hold R to load loose shells; double-press R or Use the held gun to rack; a single tap does nothing. Wield and activate a sealed shell box to unpack it first. LMB fires once; rack before the next shot. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling."
+      "firearm": { "pump": true, "recoilKickRadians": 0.035, "dispersionRadians": 0 },
+      "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Hold R to load loose shells; double-press R to rack; a single tap does nothing. Wield and activate a sealed shell box to unpack it first. LMB fires once; rack before the next shot. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling."
     },
     {
       "id": "debug_shotgun_pump",
@@ -226,8 +226,8 @@
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A curated gungen AR with exported carrier and charging-handle cycles. Debug fire uses virtual rounds, without hits or ammunition consumption; use a held rifle to cock it.",
-      "firearm": {},
+      "description": "A curated gungen AR with exported carrier and charging-handle cycles. Debug fire uses virtual rounds, without hits or ammunition consumption.",
+      "firearm": { "recoilKickRadians": 0.006, "dispersionRadians": 0.012 },
       "model": "rifle_assault"
     },
     {
@@ -238,7 +238,7 @@
       "size": [1, 5],
       "twoHanded": true,
       "description": "A curated gungen AK with its handle on the carrier. Debug fire uses virtual rounds, without hits or ammunition consumption. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
-      "firearm": {},
+      "firearm": { "recoilKickRadians": 0.012, "dispersionRadians": 0.018 },
       "model": "rifle_ak"
     }
   ]

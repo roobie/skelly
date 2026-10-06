@@ -5,6 +5,15 @@ import type { MoveIntent } from './player.ts';
 import { ReloadInput } from './reloadInput.ts';
 
 const SENSITIVITY = 0.0022;
+export const LOOK_PITCH_LIMIT = 1.55;
+
+export const adjustLookPitch = (pitch: number, delta: number): { pitch: number; applied: number } => {
+  if (![pitch, delta].every(Number.isFinite)) {
+    throw new Error('Invalid pitch adjustment');
+  }
+  const next = Math.max(-LOOK_PITCH_LIMIT, Math.min(LOOK_PITCH_LIMIT, pitch + delta));
+  return { pitch: next, applied: next - pitch };
+};
 export const nextMenuCursor = (
   position: { x: number; y: number },
   movement: { x: number; y: number },
@@ -61,7 +70,7 @@ export class Input {
         return;
       }
       this.yaw -= event.movementX * SENSITIVITY;
-      this.pitch = Math.max(-1.55, Math.min(1.55, this.pitch - event.movementY * SENSITIVITY));
+      this.pitch = adjustLookPitch(this.pitch, -event.movementY * SENSITIVITY).pitch;
     });
   }
   cancel(): void {
@@ -78,6 +87,19 @@ export class Input {
   }
   get locked(): boolean {
     return document.pointerLockElement === this.target;
+  }
+
+  get dominantUseHeld(): boolean {
+    return this.dominantUseDown;
+  }
+
+  adjustPitch(delta: number): number {
+    if (!Number.isFinite(delta)) {
+      throw new Error('Invalid pitch adjustment');
+    }
+    const adjusted = adjustLookPitch(this.pitch, delta);
+    this.pitch = adjusted.pitch;
+    return adjusted.applied;
   }
   moveMenuCursor(movementX: number, movementY: number): void {
     if (!(this.locked && this.menuPointer)) {

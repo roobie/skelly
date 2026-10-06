@@ -15,12 +15,12 @@ const choiceValues = <T>(c: Choice<T>): readonly T[] => (Array.isArray(c) ? (c a
 // ---- Listing ----
 
 /** Where a param's current value came from, for display. */
-export type ParamState =
+type ParamState =
   | { readonly kind: 'seed' }
   | { readonly kind: 'user' }
   | { readonly kind: 'inherited'; readonly from: string };
 
-export interface ParamValueInfo {
+interface ParamValueInfo {
   readonly value: string;
   /** Whether the current template's slot allows this value. `undefined` when there's no template (a fixture). */
   readonly permitted: boolean | undefined;
@@ -34,7 +34,7 @@ export interface PanelParam {
   readonly state: ParamState;
 }
 
-export interface PanelPrefab {
+interface PanelPrefab {
   readonly label: string;
   readonly fixedParams: Readonly<Record<string, string>>;
   readonly stale: boolean;

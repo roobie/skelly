@@ -122,6 +122,7 @@ export interface InteractionHint {
   readonly open: boolean;
   readonly container: boolean;
   readonly readable: boolean;
+  readonly restAction: 'rest' | 'sleep' | undefined;
   readonly searched: boolean;
   readonly name: string;
   readonly fullName: string;
@@ -135,6 +136,7 @@ export const playInteractionText = ({
   lock,
   container,
   readable,
+  restAction,
   searched,
   name,
   fullName,
@@ -144,6 +146,9 @@ export const playInteractionText = ({
   }
   if (readable) {
     return `${labelForAction('world.interact')}: read the ${name}`;
+  }
+  if (restAction) {
+    return `${labelForAction('world.interact')}: ${restAction === 'sleep' ? 'Sleep' : 'Rest'} on the ${name}`;
   }
   if (container) {
     return `${labelForAction('world.interact')}: ${searched ? 'look in' : 'search'} the ${name}`;

@@ -1,7 +1,7 @@
 // Pure ES6 shared by Tiled 1.11/Qt and the runtime. Metres throughout; no host/editor APIs.
 export const LOT_APRON_M = 2;
 export const LOT_BLEND_M = 4;
-export const SITE_BLEND_M = 16;
+const SITE_BLEND_M = 16;
 export const smoothstep = (t) => t * t * (3 - 2 * t);
 // Coordinates are cell centres; rectangle bounds are exclusive, in the same units.
 export const rectDistance = (r, x, z, cellSize = 0.5) => {

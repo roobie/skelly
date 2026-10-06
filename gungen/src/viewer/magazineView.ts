@@ -1,9 +1,8 @@
-import { DoubleSide, Group, InstancedMesh, type Material, Matrix4, Mesh, type Object3D } from 'three';
+import { DoubleSide, Group, InstancedMesh, type Material, Matrix4, Mesh } from 'three';
 import type { MetallicCartridge } from '../ammo/cartridge.ts';
 import type { Report } from '../core/validate.ts';
-import { MAGAZINE_WALL_U, magazineRoundColumn } from '../gun/magazineGeometry.ts';
+import { magazineRoundColumn } from '../gun/magazineGeometry.ts';
 import type { AmmoMeshes } from './ammoLayer.ts';
-import { disposeGroup } from './scene.ts';
 
 const DETACH_OFFSET_Z_U = 12;
 const matrixOf = (t: { readonly r: readonly number[]; readonly t: readonly number[] }): Matrix4 =>
@@ -96,8 +95,3 @@ export const buildDetachedMagazine = (
   group.add(shell, rounds);
   return { group, capacity: column.capacity };
 };
-
-export const disposeDetachedMagazine = (group: Object3D): void => disposeGroup(group);
-
-/** Exposed for tests and the viewer's data attribute. */
-export const magazineWallAllowance = MAGAZINE_WALL_U;

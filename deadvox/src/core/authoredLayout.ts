@@ -11,11 +11,11 @@ import { type Placement, placedBlockAt, templateLockIds, templateResolves } from
 import { rectsOverlap } from './vegetation.ts';
 
 export type LayoutPoint = readonly [number, number];
-export const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
+const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
   x >= bounds.x0 + inset && z >= bounds.z0 + inset && x <= bounds.x1 - inset && z <= bounds.z1 - inset;
 
 /** Maximum intentional levelling of the raw profile at any half-metre footprint cell. */
-export const FOUNDATION_TOLERANCE = 1;
+const FOUNDATION_TOLERANCE = 1;
 const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['buildings'][number], rect: Rect): boolean => {
   for (let z = rect.z0 + 0.25; z < rect.z1; z += 0.5) {
     for (let x = rect.x0 + 0.25; x < rect.x1; x += 0.5) {

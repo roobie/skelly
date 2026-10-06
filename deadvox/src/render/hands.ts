@@ -1,18 +1,21 @@
 // What you hold, in first person (DESIGN.md, "Hands: what you see is what's there"):
 // the right hand, the left hand, or both for a two-handed item. Held items are drawn
 // after the world, in their own scene with the depth buffer cleared, so they never
-// clip into walls. Their lights copy the sky's, so they're dark at night. An item
+// clip into walls. World point lights cannot illuminate this scene; burning fallback
+// models need their own flame or self-lit material to stay visible at night. An item
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
 import {
   BoxGeometry,
   type BufferGeometry,
+  ConeGeometry,
   DirectionalLight,
   Euler,
   Group,
   HemisphereLight,
   type Material,
   Mesh,
+  MeshBasicMaterial,
   MeshLambertMaterial,
   Object3D,
   PerspectiveCamera,
@@ -21,6 +24,7 @@ import {
   Vector3,
   type WebGLRenderer,
 } from 'three';
+import type { AimFrame } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -42,6 +46,7 @@ import {
 import { LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
+import { shellLoadPose } from './shellLoadPose.ts';
 import type { SkyTargets } from './sky.ts';
 
 /** Metres per grid cell for the stand-in box. */
@@ -58,6 +63,7 @@ export interface HeldFirearmPose {
 
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
+  readonly aim?: AimFrame;
   readonly job?: Readonly<Job> | undefined;
 }
 
@@ -71,7 +77,10 @@ export class HeldItems {
   private readonly light = new DirectionalLight();
   private readonly ambient = new HemisphereLight();
   private readonly geometry = new BoxGeometry(1, 1, 1);
+  private readonly flameGeometry = new ConeGeometry(1, 1, 6);
   private readonly material = new MeshLambertMaterial({ color: 0x6b_66_60 });
+  private readonly lightMaterials = new Map<string, MeshBasicMaterial | MeshLambertMaterial>();
+  private readonly flameMaterials = new Map<string, MeshBasicMaterial>();
   private readonly inventory: Inventory;
   private readonly models: ModelLibrary | undefined;
   private drawn = '';
@@ -90,6 +99,7 @@ export class HeldItems {
   private readonly poseRotation = new Quaternion();
   private readonly recoilRotation = new Quaternion();
   private readonly rackRotation = new Quaternion();
+  private readonly aimRotation = new Quaternion();
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
@@ -144,6 +154,7 @@ export class HeldItems {
       const model = item && this.pumpModels.get(item.uid);
       const frame = item && firearmPoses.find((entry) => entry.uid === item.uid);
       const cant = rackCant(model, side, frame, { x: transform.offset[0], y: transform.offset[1] });
+      this.poseAim(item, handling.aim);
       this.rackRotation.setFromEuler(this.poseEuler.set(0, 0, cant, 'YXZ'));
       this.poseRotation.multiply(this.rackRotation);
       const strength = Math.max(0, Math.min(1, recoil));
@@ -214,11 +225,19 @@ export class HeldItems {
     }
   }
 
+  private poseAim(item: Item | undefined, aim: AimFrame | undefined): void {
+    if (!(item && aim && defOf(this.inventory.registry, item.type).firearm)) {
+      return;
+    }
+    this.aimRotation.setFromEuler(this.poseEuler.set(aim.pitch, aim.yaw, 0, 'YXZ'));
+    this.poseRotation.premultiply(this.aimRotation);
+  }
+
   private poseFirearms(frames: readonly HeldFirearmPose[]): void {
     for (const [uid, { action, parts }] of this.firearmParts) {
       const frame = frames.find((entry) => entry.uid === uid);
       const mode = frame?.mode === 'load' ? undefined : frame?.mode;
-      const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed) : 0;
+      const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed, frame.duration) : 0;
       poseActionParts(parts, mode, stroke);
       this.updatePump(uid, frame, stroke);
     }
@@ -234,18 +253,37 @@ export class HeldItems {
     const arm = this.arms.get(side);
     const base = this.handBases.get(side);
     const part = model.action?.parts.forend;
-    if (arm && base && part) {
-      const travel = modelToView(model, part.axis.map((value) => value * part.strokeMetres) as Vec3);
-      arm.position.set(...base).addScaledVector(new Vector3(...travel), stroke);
+    if (arm && base) {
+      arm.position.set(...base);
+      if (part) {
+        const travel = modelToView(model, part.axis.map((value) => value * part.strokeMetres) as Vec3);
+        arm.position.addScaledVector(new Vector3(...travel), stroke);
+      }
     }
-    if (frame?.mode !== 'load') {
+    const feed =
+      frame?.mode === 'load' && arm && base
+        ? shellLoadPose(base, heldAnchorOffset(model, 'loading_port'), side, frame)
+        : undefined;
+    if (feed) {
+      arm?.position.set(...feed.wrist);
+    }
+    this.poseLoadingShell(uid, held, frame?.roundType, feed);
+  }
+
+  private poseLoadingShell(
+    uid: number,
+    held: Object3D,
+    roundType: string | undefined,
+    feed: ReturnType<typeof shellLoadPose>,
+  ): void {
+    if (!feed) {
       this.loadingShells.get(uid)?.removeFromParent();
       this.loadingShells.delete(uid);
       return;
     }
     let shell = this.loadingShells.get(uid);
-    if (!shell && frame.roundType) {
-      const id = defOf(this.inventory.registry, frame.roundType).model;
+    if (!shell && roundType) {
+      const id = defOf(this.inventory.registry, roundType).model;
       shell = id ? this.models?.held(id)?.root : undefined;
       if (shell) {
         held.add(shell);
@@ -253,11 +291,9 @@ export class HeldItems {
       }
     }
     if (shell) {
-      const progress = Math.min(1, frame.elapsed / frame.duration!);
-      const port = heldAnchorOffset(model, 'loading_port');
-      shell.position.set(port[0], port[1] - 0.12 * (1 - progress), port[2]);
-      // Shell approaches the actual underside port; the short path is a presentation estimate.
-      shell.visible = progress < 0.98;
+      // The round follows the feeding wrist until seated, without becoming a second inventory item.
+      shell.position.set(...feed.shell);
+      shell.visible = feed.visible;
     }
   }
 
@@ -328,6 +364,19 @@ export class HeldItems {
     return true;
   }
 
+  /** World position for a held light without a model-specific lens anchor. */
+  lightPositionOf(item: Item, main: PerspectiveCamera, out: Vector3): boolean {
+    const visual = this.shown.get(item.uid);
+    if (!visual) {
+      return false;
+    }
+    if (this.lensOf(item, main, out)) {
+      return true;
+    }
+    visual.getWorldPosition(out).add(main.position);
+    return true;
+  }
+
   /** Draws what's in your hands over the frame the main camera just rendered. */
   render(renderer: WebGLRenderer, main: PerspectiveCamera, sky: SkyTargets): void {
     if (this.view.children.length === 0) {
@@ -387,6 +436,15 @@ export class HeldItems {
   dispose(): void {
     this.disposeCompasses();
     this.clearArms();
+    for (const material of this.lightMaterials.values()) {
+      material.dispose();
+    }
+    this.lightMaterials.clear();
+    for (const material of this.flameMaterials.values()) {
+      material.dispose();
+    }
+    this.flameMaterials.clear();
+    this.flameGeometry.dispose();
     this.view.clear();
     this.shown.clear();
     this.heldByHand.clear();
@@ -537,15 +595,45 @@ export class HeldItems {
       }
       return model.root;
     }
+    return this.fallbackShape(item, def);
+  }
+
+  private fallbackShape(item: Item, def: ReturnType<typeof defOf>): Object3D {
     // Long side forward, short side across, and flatter than it is wide.
     const long = Math.max(...def.size) * CELL;
     const short = Math.min(...def.size) * CELL;
-    const box = new Mesh(this.geometry, this.material);
+    const materialKey = `${item.type}:${item.on ? 'lit' : 'unlit'}`;
+    let material = def.light ? this.lightMaterials.get(materialKey) : undefined;
+    if (def.light && !material) {
+      material = item.on
+        ? new MeshBasicMaterial({ color: def.light.color, toneMapped: false })
+        : new MeshLambertMaterial({ color: def.light.color });
+      this.lightMaterials.set(materialKey, material);
+    }
+    const box = new Mesh(this.geometry, material ?? this.material);
+    if (item.on && def.light) {
+      box.name = 'held-light-body';
+    }
     box.scale.set(short, short * 0.6, long);
     box.position.z = -long / 2 + short / 2; // the hand holds its near end
     const lens = new Object3D();
     lens.name = LENS;
     lens.position.z = -long + short / 2;
-    return new Group().add(box, lens);
+    const shape = new Group().add(box, lens);
+    if (item.on && def.light?.burning?.ignition === 'firestarter') {
+      const flameMaterial =
+        this.flameMaterials.get(def.light.color) ??
+        new MeshBasicMaterial({
+          color: def.light.color,
+          toneMapped: false,
+        });
+      this.flameMaterials.set(def.light.color, flameMaterial);
+      const flame = new Mesh(this.flameGeometry, flameMaterial);
+      flame.name = 'held-light-flame';
+      flame.scale.set(short * 0.5, short * 1.5, short * 0.5);
+      flame.position.set(0, short * 1.05, lens.position.z);
+      shape.add(flame);
+    }
+    return shape;
   }
 }

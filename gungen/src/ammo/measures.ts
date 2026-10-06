@@ -5,7 +5,7 @@
 import type { Cartridge, Citation, Measure, MetallicCartridge, Shotshell, Sourced } from './cartridge.ts';
 
 /** What a measure counts. `count` is a positive integer, `gauge`-like numbers included. */
-export type Unit = 'mm' | 'deg' | 'grains' | 'count';
+type Unit = 'mm' | 'deg' | 'grains' | 'count';
 
 export interface MeasureRef {
   readonly path: string;
@@ -14,7 +14,7 @@ export interface MeasureRef {
 }
 
 /** A non-numeric sourced value (material, primer type, colour…). */
-export interface TextRef {
+interface TextRef {
   readonly path: string;
   readonly node: Sourced<string>;
 }
