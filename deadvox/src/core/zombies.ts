@@ -4,7 +4,15 @@ import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { lightSenseRangeScale } from './lights.ts';
-import { type Body, CONTACT_SKIN, type PhysicsParams, separateBodies, separateBodyPair, stepBody } from './physics.ts';
+import {
+  type Body,
+  CONTACT_SKIN,
+  type PhysicsParams,
+  separateBodies,
+  separateBodyPair,
+  stepBody,
+  stepBodyHorizontal,
+} from './physics.ts';
 import { Rng, type RngState } from './random.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
@@ -24,6 +32,12 @@ import {
 } from './zombieRegions.ts';
 
 export type PlayerMovement = 'walking' | 'jogging' | 'sprinting' | 'still';
+export type ZombieTier = 'active' | 'background' | 'unloaded';
+export const ACTIVE_ZOMBIE_RADIUS_METRES = 40;
+export const BACKGROUND_ZOMBIE_RATE = 2;
+export const BACKGROUND_ZOMBIE_SLICE_COUNT = 30;
+export const BACKGROUND_ZOMBIE_SLICE_RATE = BACKGROUND_ZOMBIE_RATE * BACKGROUND_ZOMBIE_SLICE_COUNT;
+const BACKGROUND_STEP_CAP_METRES = 1;
 export type ZombieMode = 'idle' | 'stroll' | 'search' | 'chase' | 'investigate' | 'return';
 
 /** Effective eye-to-hand reach in metres, including leaning into a swing; weapon reach extends beyond it. */
@@ -102,6 +116,10 @@ const SHAMBLER_FOOTSTEP_VOICE_CAP = 3;
 
 export interface Zombie {
   type: ZombieDef;
+  /** Derived tier; a single entity moves between update schedules without duplicating ownership. */
+  tier?: ZombieTier | undefined;
+  hordeId?: string | undefined;
+  hordeOffset?: Vec3 | undefined;
   body: Body;
   facing: Vec3;
   home: Vec3;
@@ -146,13 +164,14 @@ export interface Zombie {
   stumbleElapsed: number;
   stumbleDuration: number;
   /** Previous fixed-step pose used only by rendering interpolation. */
-  renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number };
+  renderPrevious: { pos: Vec3; facing: Vec3; headYaw: number; gaitPhase: number; time?: number };
   regions: ZombieRegions;
   /** Exact mobgen shambler seed shared with the renderer and persisted as simulation state. */
   figureSeed: number;
   /** A destroyed torso leaves an inert, gravity-bound entity that may be revived by a later system. */
   incapacitated: boolean;
   lastPerceived?: Vec3 | undefined;
+  stimulusAt?: number | undefined;
   attackWait: number;
   /** Seconds left in the current attack's telegraph windup; 0 = not winding up. Set to
    * type.attack.windup when an attack starts (alongside attackWait), counts down to exactly 0, then the
@@ -178,7 +197,14 @@ export interface Zombie {
 
 export type ZombieState = Omit<
   Zombie,
-  'type' | 'behaviorRng' | 'soundRng' | 'dismemberRng' | 'renderPrevious' | 'footstepClock' | 'lastVocalNoiseId'
+  | 'type'
+  | 'tier'
+  | 'behaviorRng'
+  | 'soundRng'
+  | 'dismemberRng'
+  | 'renderPrevious'
+  | 'footstepClock'
+  | 'lastVocalNoiseId'
 > & {
   type: string;
   behaviorRng: RngState;
@@ -187,6 +213,8 @@ export type ZombieState = Omit<
   lastVocalNoiseId: number | null;
 };
 
+const validRngState = (state: unknown): state is RngState =>
+  Array.isArray(state) && state.length === 4 && state.every((word) => Number.isSafeInteger(word));
 const validObstacleWanderState = (zombie: ZombieState): boolean =>
   Number.isFinite(zombie.obstacleWanderRemaining) &&
   zombie.obstacleWanderRemaining >= 0 &&
@@ -200,12 +228,53 @@ const validObstacleWanderState = (zombie: ZombieState): boolean =>
 const validZombieEventState = (zombie: ZombieState): boolean =>
   (zombie.lastVocalNoiseId === null ||
     (Number.isSafeInteger(zombie.lastVocalNoiseId) && zombie.lastVocalNoiseId >= 0)) &&
+  (zombie.stimulusAt === undefined || (Number.isFinite(zombie.stimulusAt) && zombie.stimulusAt >= 0)) &&
   Array.isArray(zombie.severed) &&
   zombie.severed.every((part) => typeof part === 'string');
+const validHordeMemberState = (zombie: ZombieState): boolean =>
+  (zombie.hordeId === undefined && zombie.hordeOffset === undefined) ||
+  (typeof zombie.hordeId === 'string' &&
+    zombie.hordeId.length > 0 &&
+    Array.isArray(zombie.hordeOffset) &&
+    zombie.hordeOffset.length === 3 &&
+    zombie.hordeOffset.every(Number.isFinite));
+
+export interface HordeState {
+  id: string;
+  type: string;
+  home: Vec3;
+  target: Vec3;
+  mode: 'home' | 'roam' | 'noise';
+  roamTimer: number;
+  stimulusAt?: number | undefined;
+  lastNoiseId: number;
+  rng: RngState;
+}
+
+const validVec3State = (value: unknown): boolean =>
+  Array.isArray(value) && value.length === 3 && value.every(Number.isFinite);
+const validHordeSnapshotState = (
+  horde: HordeState,
+  hasHorde: boolean,
+  resolveType: (id: string) => ZombieDef | undefined,
+): boolean =>
+  horde.id.length > 0 &&
+  !hasHorde &&
+  resolveType(horde.type) !== undefined &&
+  validVec3State(horde.home) &&
+  validVec3State(horde.target) &&
+  ['home', 'roam', 'noise'].includes(horde.mode) &&
+  Number.isFinite(horde.roamTimer) &&
+  horde.roamTimer >= 0 &&
+  Number.isSafeInteger(horde.lastNoiseId) &&
+  horde.lastNoiseId >= 0 &&
+  (horde.stimulusAt === undefined || (Number.isFinite(horde.stimulusAt) && horde.stimulusAt >= 0)) &&
+  validRngState(horde.rng);
 
 export interface ZombieSystemState {
   nextEntityId: number;
   zombies: { id: number; zombie: ZombieState }[];
+  hordes: HordeState[];
 }
 
 export interface VocalNoise {
@@ -249,6 +318,8 @@ export interface ZombieSystemOptions {
   seed?: number;
   /** Movement, attacks and hearing use the body's blockers. */
   isSolid: SolidAt;
+  /** True only while terrain at the actor's position is loaded; unloaded actors wait for Slice 4 catch-up. */
+  isLoaded?: ((x: number, z: number) => boolean) | undefined;
   /** Visibility alone uses sight opacity. */
   isOpaque: SolidAt;
   blockSize: number;
@@ -836,6 +907,7 @@ export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
   private readonly options: ZombieSystemOptions;
   private readonly tickScratch = createZombieTickScratch();
+  private readonly hordes = new Map<string, { state: Omit<HordeState, 'rng'>; rng: Rng }>();
   private frozen = false;
 
   constructor(options: ZombieSystemOptions) {
@@ -863,12 +935,13 @@ export class ZombieSystem {
     }
   }
 
-  private captureRenderPrevious(zombie: Zombie): void {
+  private captureRenderPrevious(zombie: Zombie, time?: number): void {
     zombie.renderPrevious = {
       pos: copy(zombie.body.pos),
       facing: copy(zombie.facing),
       headYaw: zombie.headYaw,
       gaitPhase: zombie.gaitPhase,
+      ...(time === undefined ? {} : { time }),
     };
   }
 
@@ -881,6 +954,7 @@ export class ZombieSystem {
           behaviorRng,
           soundRng,
           dismemberRng,
+          tier: _tier,
           renderPrevious: _renderPrevious,
           footstepClock: _footstepClock,
           searchAnchor,
@@ -914,10 +988,17 @@ export class ZombieSystem {
             ...(obstacleWanderHeading === undefined
               ? {}
               : { obstacleWanderHeading: [...obstacleWanderHeading] as Vec3 }),
+            ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
             severed: [...zombie.severed],
           },
         };
       }),
+      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => ({
+        ...horde,
+        home: [...horde.home],
+        target: [...horde.target],
+        rng: [...rng.state()] as RngState,
+      })),
     });
   }
 
@@ -925,78 +1006,105 @@ export class ZombieSystem {
     if (this.store.size > 0) {
       throw new Error('Zombie state restores only into an empty entity store');
     }
-    const entries = state.zombies.map(({ id, zombie }) => {
-      if (
-        !Number.isSafeInteger(id) ||
-        id < 1 ||
-        !Array.isArray(zombie.behaviorRng) ||
-        zombie.behaviorRng.length !== 4 ||
-        zombie.behaviorRng.some((word) => !Number.isSafeInteger(word)) ||
-        !Array.isArray(zombie.soundRng) ||
-        zombie.soundRng.length !== 4 ||
-        zombie.soundRng.some((word) => !Number.isSafeInteger(word)) ||
-        !Array.isArray(zombie.dismemberRng) ||
-        zombie.dismemberRng.length !== 4 ||
-        zombie.dismemberRng.some((word) => !Number.isSafeInteger(word)) ||
-        !Number.isFinite(zombie.idleSoundTimer) ||
-        zombie.idleSoundTimer < 0 ||
-        !validZombieEventState(zombie) ||
-        !Number.isSafeInteger(zombie.figureSeed) ||
-        !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
-        !validHitFlinchTime(zombie.hitFlinchTime) ||
-        !validStanceWeight(zombie.stanceWeight) ||
-        !validStepOffset(zombie.stepOffset) ||
-        !validObstacleWanderState(zombie) ||
-        typeof zombie.incapacitated !== 'boolean'
-      ) {
-        throw new Error(`Invalid zombie state for entity ${id}`);
-      }
-      const type = resolveType(zombie.type);
-      if (!type) {
-        throw new Error(`Missing zombie type ${zombie.type}`);
-      }
-      if (
-        !zombie.regions ||
-        ZOMBIE_REGION_NAMES.some(
-          (region) =>
-            !Number.isFinite(zombie.regions[region]) ||
-            zombie.regions[region] < (region === 'head' ? Number.MIN_VALUE : 0) ||
-            zombie.regions[region] > type.regions[region],
-        )
-      ) {
-        throw new Error(`Invalid zombie regions for entity ${id}`);
-      }
-      const { type: _type, behaviorRng, soundRng, dismemberRng, lastVocalNoiseId, ...fields } = zombie;
-      const restored: Zombie = {
-        ...fields,
-        type,
-        regions: { ...zombie.regions },
-        behaviorRng: new Rng(behaviorRng),
-        soundRng: new Rng(soundRng),
-        dismemberRng: new Rng(dismemberRng),
-        lastVocalNoiseId: lastVocalNoiseId ?? undefined,
-        footstepClock: initialShamblerFootstepClock(type.stepLength),
-        body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
-        facing: [...zombie.facing],
-        home: [...zombie.home],
-        ...(zombie.searchAnchor === undefined ? {} : { searchAnchor: [...zombie.searchAnchor] }),
-        searchHeading: [...zombie.searchHeading],
-        strollHeading: [...zombie.strollHeading],
-        ...(zombie.obstacleWanderHeading === undefined
-          ? {}
-          : { obstacleWanderHeading: [...zombie.obstacleWanderHeading] as Vec3 }),
-        ...(zombie.lastPerceived === undefined ? {} : { lastPerceived: [...zombie.lastPerceived] }),
-        renderPrevious: {
-          pos: [...zombie.body.pos],
+    const entries = state.zombies.map(
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Validate every persisted zombie invariant before mutating the entity store.
+      ({ id, zombie }) => {
+        if (
+          !Number.isSafeInteger(id) ||
+          id < 1 ||
+          !validRngState(zombie.behaviorRng) ||
+          !validRngState(zombie.soundRng) ||
+          !validRngState(zombie.dismemberRng) ||
+          !Number.isFinite(zombie.idleSoundTimer) ||
+          zombie.idleSoundTimer < 0 ||
+          !validZombieEventState(zombie) ||
+          !validHordeMemberState(zombie) ||
+          !Number.isSafeInteger(zombie.figureSeed) ||
+          !(SHAMBLER_FIGURE_SEEDS as readonly number[]).includes(zombie.figureSeed) ||
+          !validHitFlinchTime(zombie.hitFlinchTime) ||
+          !validStanceWeight(zombie.stanceWeight) ||
+          !validStepOffset(zombie.stepOffset) ||
+          !validObstacleWanderState(zombie) ||
+          typeof zombie.incapacitated !== 'boolean'
+        ) {
+          throw new Error(`Invalid zombie state for entity ${id}`);
+        }
+        const type = resolveType(zombie.type);
+        if (!type) {
+          throw new Error(`Missing zombie type ${zombie.type}`);
+        }
+        if (
+          !zombie.regions ||
+          ZOMBIE_REGION_NAMES.some(
+            (region) =>
+              !Number.isFinite(zombie.regions[region]) ||
+              zombie.regions[region] < (region === 'head' ? Number.MIN_VALUE : 0) ||
+              zombie.regions[region] > type.regions[region],
+          )
+        ) {
+          throw new Error(`Invalid zombie regions for entity ${id}`);
+        }
+        const { type: _type, behaviorRng, soundRng, dismemberRng, lastVocalNoiseId, ...fields } = zombie;
+        const restored: Zombie = {
+          ...fields,
+          type,
+          regions: { ...zombie.regions },
+          behaviorRng: new Rng(behaviorRng),
+          soundRng: new Rng(soundRng),
+          dismemberRng: new Rng(dismemberRng),
+          lastVocalNoiseId: lastVocalNoiseId ?? undefined,
+          footstepClock: initialShamblerFootstepClock(type.stepLength),
+          body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
           facing: [...zombie.facing],
-          headYaw: zombie.headYaw,
-          gaitPhase: zombie.gaitPhase,
-        },
-        severed: [...zombie.severed],
-      };
-      return [id, restored] as const;
-    });
+          home: [...zombie.home],
+          ...(zombie.searchAnchor === undefined ? {} : { searchAnchor: [...zombie.searchAnchor] }),
+          searchHeading: [...zombie.searchHeading],
+          strollHeading: [...zombie.strollHeading],
+          ...(zombie.obstacleWanderHeading === undefined
+            ? {}
+            : { obstacleWanderHeading: [...zombie.obstacleWanderHeading] as Vec3 }),
+          ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
+          ...(zombie.lastPerceived === undefined ? {} : { lastPerceived: [...zombie.lastPerceived] }),
+          tier: this.tierAt(zombie.body.pos, this.options.player()),
+          renderPrevious: {
+            pos: [...zombie.body.pos],
+            facing: [...zombie.facing],
+            headYaw: zombie.headYaw,
+            gaitPhase: zombie.gaitPhase,
+          },
+          severed: [...zombie.severed],
+        };
+        return [id, restored] as const;
+      },
+    );
     this.store.restore(entries, state.nextEntityId);
+    this.hordes.clear();
+    for (const horde of state.hordes ?? []) {
+      if (!validHordeSnapshotState(horde, this.hordes.has(horde.id), resolveType)) {
+        throw new Error(`Invalid horde state ${horde.id}`);
+      }
+      this.hordes.set(horde.id, {
+        state: {
+          id: horde.id,
+          type: horde.type,
+          home: [...horde.home],
+          target: [...horde.target],
+          mode: horde.mode,
+          roamTimer: horde.roamTimer,
+          ...(horde.stimulusAt === undefined ? {} : { stimulusAt: horde.stimulusAt }),
+          lastNoiseId: horde.lastNoiseId,
+        },
+        rng: new Rng(horde.rng),
+      });
+    }
+    for (const [, zombie] of this.store.entries()) {
+      if (zombie.hordeId !== undefined) {
+        const horde = this.hordes.get(zombie.hordeId)?.state;
+        if (!horde || horde.type !== zombie.type.id) {
+          throw new Error(`Missing or mismatched horde ${zombie.hordeId} for zombie`);
+        }
+      }
+    }
   }
 
   private tickLookAround(zombie: Zombie, dt: number): void {
@@ -1160,6 +1268,7 @@ export class ZombieSystem {
     const direction = unit(facing);
     const zombie: Zombie = {
       type,
+      tier: this.tierAt(position, this.options.player()),
       body: {
         pos: copy(position),
         vel: [0, 0, 0],
@@ -1230,13 +1339,233 @@ export class ZombieSystem {
     return id;
   }
 
-  private tickFrozen(dt: number): void {
-    for (const [, zombie] of this.store.entries()) {
+  addHorde(id: string, type: ZombieDef, center: Vec3, count: number): void {
+    if (!id || this.hordes.has(id) || !Number.isSafeInteger(count) || count < 1 || !center.every(Number.isFinite)) {
+      throw new Error(`Invalid or duplicate horde ${id}`);
+    }
+    const state = {
+      id,
+      type: type.id,
+      home: copy(center),
+      target: copy(center),
+      mode: 'home' as const,
+      roamTimer: 0,
+      lastNoiseId: 0,
+    };
+    const rng = Rng.stream(this.options.seed ?? 0, `horde:${id}`);
+    this.hordes.set(id, { state, rng });
+    for (let index = 0; index < count; index++) {
+      const angle = index * Math.PI * (3 - Math.sqrt(5));
+      const radiusMetres = 0.35 + 0.38 * Math.sqrt(index);
+      const offset: Vec3 = [
+        (Math.cos(angle) * radiusMetres) / this.options.blockSize,
+        0,
+        (Math.sin(angle) * radiusMetres) / this.options.blockSize,
+      ];
+      const position: Vec3 = [center[0] + offset[0], center[1], center[2] + offset[2]];
+      const member = this.store.get(this.add(type, position, [center[0] - position[0], 0, center[2] - position[2]]))!;
+      member.hordeId = id;
+      member.hordeOffset = offset;
+      member.home = copy(position);
+      member.body.onGround = true;
+    }
+  }
+
+  private tickFrozen(dt: number, entries: readonly (readonly [EntityId, Zombie])[] = [...this.store.entries()]): void {
+    for (const [, zombie] of entries) {
       this.captureRenderPrevious(zombie);
       if (!zombie.incapacitated) {
         continue;
       }
       this.tickIncapacitated(zombie, dt);
+    }
+  }
+
+  private tierAt(position: Vec3, player: PlayerSense): ZombieTier {
+    const loaded = this.options.isLoaded?.(position[0], position[2]) ?? true;
+    if (!loaded) {
+      return 'unloaded';
+    }
+    return horizontalDistance(position, player.pos) * this.options.blockSize <= ACTIVE_ZOMBIE_RADIUS_METRES
+      ? 'active'
+      : 'background';
+  }
+
+  private classifyTiers(player: PlayerSense): readonly (readonly [EntityId, Zombie])[] {
+    const entries = [...this.store.entries()];
+    for (const [, zombie] of entries) {
+      zombie.tier = this.tierAt(zombie.body.pos, player);
+    }
+    return entries;
+  }
+
+  private hordeCenter(id: string): Vec3 | undefined {
+    const members = [...this.store.entries()].flatMap(([, zombie]) => (zombie.hordeId === id ? [zombie] : []));
+    if (members.length === 0) {
+      return undefined;
+    }
+    return members.reduce<Vec3>(
+      (sum, zombie) => [
+        sum[0] + zombie.body.pos[0] / members.length,
+        sum[1] + zombie.body.pos[1] / members.length,
+        sum[2] + zombie.body.pos[2] / members.length,
+      ],
+      [0, 0, 0],
+    );
+  }
+
+  private hordeTarget(zombie: Zombie): Vec3 | undefined {
+    if (zombie.hordeId === undefined || zombie.hordeOffset === undefined) {
+      return undefined;
+    }
+    const horde = this.hordes.get(zombie.hordeId)?.state;
+    return horde
+      ? [
+          horde.target[0] + zombie.hordeOffset[0],
+          horde.target[1] + zombie.hordeOffset[1],
+          horde.target[2] + zombie.hordeOffset[2],
+        ]
+      : undefined;
+  }
+
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
+  private updateHordes(dt: number, time: number, player: PlayerSense): void {
+    const { blockSize, isSolid } = this.options;
+    for (const { state: horde, rng } of this.hordes.values()) {
+      const center = this.hordeCenter(horde.id);
+      const member = [...this.store.entries()].find(([, zombie]) => zombie.hordeId === horde.id)?.[1];
+      if (!(center && member)) {
+        continue;
+      }
+      const noise = player.vocalNoise;
+      if (noise && noise.id !== horde.lastNoiseId) {
+        horde.lastNoiseId = noise.id;
+        const heard = hearVocalNoise({
+          zombie: member.type,
+          from: center,
+          noise,
+          time,
+          blockSize,
+          isSolid,
+          rng,
+          tuning: this.options.tuning,
+        });
+        if (heard) {
+          horde.target = copy(heard.target);
+          horde.mode = 'noise';
+          horde.stimulusAt = time;
+        }
+      }
+      const night = this.options.hour() >= 20 || this.options.hour() < 6;
+      const arrived = horizontalDistance(center, horde.target) * blockSize <= 3;
+      if (
+        horde.mode === 'noise' &&
+        horde.stimulusAt !== undefined &&
+        time - horde.stimulusAt >= member.type.stimulusMemorySeconds
+      ) {
+        horde.mode = night ? 'roam' : 'home';
+        horde.stimulusAt = undefined;
+        horde.roamTimer = 0;
+      }
+      if (horde.mode === 'noise' && arrived) {
+        horde.mode = night ? 'roam' : 'home';
+        horde.stimulusAt = undefined;
+        horde.roamTimer = 0;
+      }
+      if (!night && horde.mode !== 'noise') {
+        horde.mode = 'home';
+        horde.target = copy(horde.home);
+        horde.roamTimer = 0;
+      } else if (night && horde.mode !== 'noise') {
+        horde.roamTimer -= dt;
+        if (horde.mode !== 'roam' || horde.roamTimer <= 0 || arrived) {
+          const angle = rng.range(-Math.PI, Math.PI);
+          const distance = rng.range(12, 20) / blockSize;
+          horde.target = [center[0] + Math.cos(angle) * distance, center[1], center[2] + Math.sin(angle) * distance];
+          horde.mode = 'roam';
+          horde.roamTimer = rng.range(16, 28);
+        }
+      }
+    }
+  }
+
+  /** Advances one deterministic slice of distant actors; scheduler ticks every slice, each actor every half-second. */
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep per-actor perception, target selection, and bounded collision step together.
+  tickBackground(dt: number, time: number, sliceIndex = 0, sliceCount = 1): void {
+    if (dt <= 0 || this.frozen) {
+      return;
+    }
+    const player = this.options.player();
+    if (sliceIndex === 0) {
+      this.updateHordes(dt, time, player);
+    }
+    const { blockSize, isSolid } = this.options;
+    const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [] };
+    const scratch = this.tickScratch;
+    scratch.dt = dt;
+    scratch.time = time;
+    scratch.player = player;
+    scratch.hour = this.options.hour();
+    scratch.blockSize = blockSize;
+    scratch.isSolid = isSolid;
+    scratch.isOpaque = this.options.isOpaque;
+    for (const [id, zombie] of this.store.entries()) {
+      if (zombie.tier !== 'background' || id % sliceCount !== sliceIndex) {
+        continue;
+      }
+      this.captureRenderPrevious(zombie, time);
+      if (zombie.incapacitated) {
+        this.tickIncapacitated(zombie, dt);
+        continue;
+      }
+      scratch.id = id;
+      scratch.zombie = zombie;
+      scratch.pos = zombie.body.pos;
+      scratch.type = zombie.type;
+      scratch.rng = zombie.behaviorRng;
+      this.updateZombieTimers();
+      this.updatePerception();
+      this.updateAttention();
+      this.forgetIndividualStimulus(zombie, time);
+      let target = this.hordeTarget(zombie) ?? zombie.lastPerceived;
+      if (scratch.sees) {
+        target = player.pos;
+      }
+      let direction: Vec3;
+      let speed: number;
+      if (target) {
+        const offset = sub(target, zombie.body.pos);
+        const distance = Math.hypot(offset[0], offset[2]) * blockSize;
+        direction = distance > 0.5 ? unit([offset[0], 0, offset[2]]) : [0, 0, 0];
+        speed = distance > 0.5 ? Math.min(zombie.type.speed.chase, BACKGROUND_STEP_CAP_METRES / dt, distance / dt) : 0;
+        if (direction[0] !== 0 || direction[2] !== 0) {
+          zombie.facing = copy(direction);
+        }
+      } else {
+        this.selectMovementIntent();
+        const { direction: movementDirection, desiredSpeed } = scratch;
+        direction = movementDirection;
+        speed = desiredSpeed;
+      }
+      zombie.horizontalSpeed = speed;
+      zombie.body.vel[0] = (direction[0] * speed) / blockSize;
+      zombie.body.vel[2] = (direction[2] * speed) / blockSize;
+      const before = copy(zombie.body.pos);
+      if (zombie.body.onGround) {
+        stepBodyHorizontal(zombie.body, {
+          dx: zombie.body.vel[0] * dt,
+          dz: zombie.body.vel[2] * dt,
+          isSolid,
+          params: physics,
+        });
+      } else {
+        stepBody(zombie.body, dt, isSolid, physics);
+      }
+      const travelled = horizontalDistance(before, zombie.body.pos) * blockSize;
+      zombie.gaitPhase += (travelled / zombie.type.stepLength) * Math.PI;
+      if (zombie.mode === 'stroll' && zombie.modeTimer <= 0 && zombie.horizontalSpeed <= 0.01) {
+        this.beginIdle(zombie);
+      }
     }
   }
 
@@ -1321,6 +1650,7 @@ export class ZombieSystem {
     }
   }
 
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Preserve precedence between sight, near/far noise, prior chase, and horde attention.
   private updateAttention(): void {
     const scratch = this.tickScratch;
     const { zombie, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
@@ -1368,6 +1698,36 @@ export class ZombieSystem {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'near';
     }
+    if (sees || tier || lightTarget) {
+      zombie.stimulusAt = scratch.time;
+    }
+    const groupTarget = sees || tier ? undefined : this.hordeTarget(zombie);
+    if (groupTarget) {
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'far';
+      zombie.searchAnchor = undefined;
+      zombie.searchTimer = 0;
+      zombie.searchStrolling = false;
+      zombie.lastPerceived = groupTarget;
+    }
+  }
+
+  private forgetIndividualStimulus(zombie: Zombie, time: number): void {
+    if (
+      zombie.hordeId !== undefined ||
+      zombie.mode !== 'investigate' ||
+      zombie.stimulusAt === undefined ||
+      time - zombie.stimulusAt < zombie.type.stimulusMemorySeconds
+    ) {
+      return;
+    }
+    zombie.stimulusAt = undefined;
+    zombie.lastPerceived = undefined;
+    zombie.investigationTier = undefined;
+    zombie.searchAnchor = undefined;
+    zombie.searchTimer = 0;
+    zombie.searchStrolling = false;
+    zombie.mode = 'return';
   }
 
   private checkInvestigationArrival(): void {
@@ -1804,19 +2164,25 @@ export class ZombieSystem {
     }
   }
 
-  /** Advances every zombie at a fixed caller-supplied simulation dt. */
-  tick(dt: number, time = 0, _hands?: { right: number | null; left: number | null }): void {
+  /** Advances every selected zombie at a fixed caller-supplied simulation dt. */
+  tick(
+    dt: number,
+    time = 0,
+    _hands?: { right: number | null; left: number | null },
+    selection: 'all' | 'active' = 'all',
+  ): void {
     if (dt <= 0) {
       return;
     }
+    const player = this.options.player();
+    const classified = this.classifyTiers(player);
+    const entries = selection === 'active' ? classified.filter(([, zombie]) => zombie.tier === 'active') : classified;
     if (this.frozen) {
-      this.tickFrozen(dt);
+      this.tickFrozen(dt, entries);
       return;
     }
-    const player = this.options.player();
     const hour = this.options.hour();
     const { blockSize, isSolid } = this.options;
-    const entries = [...this.store.entries()];
     const groundedAtTickStart = new Map<Zombie, boolean>();
     const scratch = this.tickScratch;
     scratch.dt = dt;
@@ -1829,7 +2195,7 @@ export class ZombieSystem {
     scratch.groundedAtTickStart = groundedAtTickStart;
     for (const [id, zombie] of entries) {
       groundedAtTickStart.set(zombie, zombie.body.onGround);
-      this.captureRenderPrevious(zombie);
+      this.captureRenderPrevious(zombie, time);
       if (zombie.incapacitated) {
         this.tickIncapacitated(zombie, dt);
         continue;
@@ -1842,6 +2208,7 @@ export class ZombieSystem {
       this.updateZombieTimers();
       this.updatePerception();
       this.updateAttention();
+      this.forgetIndividualStimulus(zombie, time);
 
       this.checkInvestigationArrival();
 
@@ -1857,6 +2224,10 @@ export class ZombieSystem {
     }
     this.separateZombieBodies(entries, dt, player);
     this.emitFootsteps(entries, groundedAtTickStart, player, blockSize);
+  }
+
+  tickActive(dt: number, time = 0, hands?: { right: number | null; left: number | null }): void {
+    this.tick(dt, time, hands, 'active');
   }
 
   unsafeReason(playerPos = this.options.player().pos): string | undefined {
