@@ -2,6 +2,7 @@
 
 import { BODY_REGIONS, BODY_TREATMENTS, type BodyRegion, type BodyTreatment } from './body.ts';
 import type { WorkPlan } from './crafting.ts';
+import { SCHEDULER_TIME_EPSILON } from './scheduler.ts';
 import type { Simulation } from './sim.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -146,7 +147,13 @@ export const validateLongJob = (job: LongJob | null, time: number): void => {
   if (job === null) {
     return;
   }
-  if (!Number.isFinite(job.last) || job.last < 0 || job.last > time || typeof job.stopped !== 'boolean') {
+  // A due scheduler tick may run within its float slack just beyond the frame target.
+  if (
+    !Number.isFinite(job.last) ||
+    job.last < 0 ||
+    job.last > time + SCHEDULER_TIME_EPSILON ||
+    typeof job.stopped !== 'boolean'
+  ) {
     throw new Error('Invalid long action cursor');
   }
   switch (job.jobType) {

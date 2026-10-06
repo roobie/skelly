@@ -9,6 +9,7 @@ import { pryPlan } from '../src/core/prying.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
 import {
+  advance,
   capture,
   contentLookup,
   createRuntime,
@@ -254,6 +255,51 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
     Math.floor(action.elapsed / strikeInterval),
   );
   expect(shambler.mode).toBe('investigate');
+});
+
+it('saves a running pry just before a long-action tick and completes on the same frame after load', async () => {
+  const framesBeforeSave = 300;
+  const uninterrupted = makePryRuntime();
+  const split = makePryRuntime();
+  const uninterruptedDoor = makeDoor(uninterrupted);
+  const splitDoor = makeDoor(split);
+  const uninterruptedCrowbar = carryCrowbar(uninterrupted);
+  const splitCrowbar = carryCrowbar(split);
+  expect(uninterrupted.session.pryDoor(uninterruptedDoor, uninterruptedCrowbar.uid)).toBeUndefined();
+  expect(split.session.pryDoor(splitDoor, splitCrowbar.uid)).toBeUndefined();
+
+  advance(uninterrupted, framesBeforeSave);
+  advance(split, framesBeforeSave);
+  const savedJob = split.sim.actions.job;
+  if (savedJob?.jobType !== 'pry') {
+    throw new Error('The pry ended before its continuation save');
+  }
+  expect(savedJob.last).toBeGreaterThan(split.sim.time);
+
+  const bytes = await encodeFixture(capture(split));
+  const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+  const loaded = makePryRuntime(decoded.snapshot);
+  const loadedDoor = [...loaded.entities.all].find((entity) => entity.uid === splitDoor.uid);
+  if (!loadedDoor) {
+    throw new Error('The saved door was not restored');
+  }
+  expect(loaded.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed: savedJob.elapsed });
+
+  const frameLimit = Math.ceil(((savedJob.duration - savedJob.elapsed) / split.sim.clock.ratio) * 60) + 60;
+  let completionFrame: number | undefined;
+  for (let frame = 1; frame <= frameLimit; frame++) {
+    advance(uninterrupted, 1);
+    advance(loaded, 1);
+    if (uninterruptedDoor.lock === undefined || loadedDoor.lock === undefined) {
+      expect(uninterruptedDoor.lock).toBeUndefined();
+      expect(loadedDoor.lock).toBeUndefined();
+      completionFrame = frame;
+      break;
+    }
+  }
+  expect(completionFrame).toBeDefined();
+  expect(uninterrupted.sim.actions.job).toBeUndefined();
+  expect(loaded.sim.actions.job).toBeUndefined();
 });
 
 it('a stopped part-done pry and a destroyed lock round-trip through save and load', async () => {

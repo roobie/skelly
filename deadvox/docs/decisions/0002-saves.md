@@ -159,7 +159,10 @@ inspection/export APIs rather than letting the save serializer define what the
 test considers “full state.” Use `assert.deepStrictEqual` (with explicit
 number handling), not only a checksum. Save at a scheduler/frame barrier; record
 all per-system cursors because recreating them from global time changes tick
-ordering.
+ordering. For d105-5, a scheduler tick admitted within its floating-point slack
+may leave a long-action cursor slightly ahead of frame time. `Scheduler.advance`
+and `validateLongJob` share that tolerance so a save preserves the tick that
+actually ran instead of rejecting or rewriting its cursor.
 
 The exact version identity binds simulation code, worldgen, gungen and content
 rules to the save. Worldgen determinism is required under that source fingerprint
