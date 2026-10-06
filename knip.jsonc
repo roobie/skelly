@@ -36,11 +36,7 @@
       "project": ["src/**/*.{js,mjs,ts,tsx}!", "test/**/*.{js,mjs,ts,tsx}"]
     },
     "mobgen": {
-      "entry": [
-        "index.html!",
-        "stress.html!",
-        "src/viewer/stress.ts!"
-      ],
+      "entry": ["index.html!", "stress.html!", "src/viewer/stress.ts!"],
       "paths": {
         "@mobgen/*": ["src/*"]
       },
