@@ -177,11 +177,11 @@ describe('the hamlet', () => {
 
   it('spawns six to ten deterministic shamblers across twenty seeds', () => {
     const road = { x0: 0, z0: 0, x1: 64, z1: 12 };
-    for (let seed = 1; seed <= 20; seed++) {
-      const spawns = hamletZombieSpawns(seed, road, [], () => 10);
-      expect(spawns.length, `seed ${seed}`).toBeGreaterThanOrEqual(6);
-      expect(spawns.length, `seed ${seed}`).toBeLessThanOrEqual(10);
-      expect(hamletZombieSpawns(seed, road, [], () => 10)).toEqual(spawns);
+    for (let spawnSeed = 1; spawnSeed <= 20; spawnSeed++) {
+      const spawns = hamletZombieSpawns(spawnSeed, road, [], () => 10);
+      expect(spawns.length, `seed ${spawnSeed}`).toBeGreaterThanOrEqual(6);
+      expect(spawns.length, `seed ${spawnSeed}`).toBeLessThanOrEqual(10);
+      expect(hamletZombieSpawns(spawnSeed, road, [], () => 10)).toEqual(spawns);
     }
   });
 
