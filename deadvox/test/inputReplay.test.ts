@@ -11,7 +11,7 @@ import {
   type ReplayInputData,
   replayStateFingerprint,
 } from '../src/game/inputReplay.ts';
-import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
+import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import { capture, contentLookup, createRuntime, formatVersion, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const INCOMPATIBLE_SAVE = /incompatible|version|identity/i;
@@ -58,10 +58,9 @@ const dispatchWalkToggle = (
 };
 
 const recordActiveSession = (start: Readonly<SaveSnapshot>, recorder: InputReplayRecorder) => {
-  const source = createRuntime(start, false, undefined, (tick, live, _time, compression) => {
-    const sample = { ...live, yaw: tick / 100 };
-    recorder.recordTick(sample, compression);
-    return sample;
+  const source = createRuntime(start, false, undefined, (_tick, live, _time, compression) => {
+    recorder.recordTick(live, compression);
+    return live;
   });
   source.sim.paused = false;
   source.view.intent.forward = 1;
@@ -77,6 +76,8 @@ const recordActiveSession = (start: Readonly<SaveSnapshot>, recorder: InputRepla
       dispatchWalkToggle(source, 'up', recorder);
       sentUp = true;
     }
+    source.view.yaw += 0.007;
+    source.view.pitch += 0.001;
     source.session.frame(frameDts[frame % frameDts.length]!);
     if (frame > 400) {
       throw new Error('Source session did not reach the recorded tick window');
@@ -88,7 +89,11 @@ const recordActiveSession = (start: Readonly<SaveSnapshot>, recorder: InputRepla
 const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData) => {
   let replay!: ReturnType<typeof createRuntime>;
   const player = new InputReplayPlayer(inputs, (action) => dispatchWalkToggle(replay, action.phase));
-  replay = createRuntime(start, false, undefined, () => player.next()!);
+  replay = createRuntime(start, false, undefined, () => {
+    const sample = player.next()!;
+    applyReplayLook(replay.view, sample);
+    return sample;
+  });
   replay.sim.paused = false;
   for (let frame = 0; !player.finished; frame += 1) {
     replay.sim.compression.c = player.peek()?.compression ?? replay.sim.compression.c;
@@ -172,8 +177,37 @@ describe('input replay', () => {
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, sourceEnd);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     expect(decoded.endStateFingerprint).toBe(await replayStateFingerprint(sourceEnd));
+    expect(source.view.yaw).not.toBe(start.character.player.yaw);
+    expect(source.view.pitch).not.toBe(start.character.player.pitch);
     const replay = playSession(start, decoded.inputs);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('preserves end state when a multi-tick frame crosses the recording window seam', async () => {
+    const start = capture(createRuntime());
+    const ticksPerWindow = 121;
+    let recorder = new InputReplayRecorder(start, ticksPerWindow);
+    let previous: ReplayInputData | undefined;
+    const source = createRuntime(start, false, undefined, (_tick, live, _time, compression) => {
+      recorder.recordTick(live, compression);
+      return live;
+    });
+    source.sim.paused = false;
+    source.view.intent.forward = 1;
+    for (let frame = 0; frame < 100; frame += 1) {
+      source.session.frame(1 / 30);
+      if (frame === 59) {
+        dispatchWalkToggle(source, 'down', recorder);
+      }
+      if (recorder.full) {
+        previous = recorder.copyInputs();
+        recorder = new InputReplayRecorder(capture(source), ticksPerWindow);
+      }
+    }
+
+    const inputs = joinInputReplayWindows(previous, recorder.copyInputs());
+    const replay = playSession(start, inputs);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(capture(source)));
   });
 
   it('rejects a replay whose embedded start save has an incompatible simulation identity', async () => {

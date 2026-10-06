@@ -1,6 +1,14 @@
 import type { ReplayAction, ReplayControlSample, ReplayInputData } from './inputReplay.ts';
 import { sampleFromReplayFrame } from './inputReplay.ts';
 
+export const applyReplayLook = (
+  look: { yaw: number; pitch: number },
+  sample: Pick<ReplayControlSample, 'yaw' | 'pitch'>,
+): void => {
+  look.yaw = sample.yaw;
+  look.pitch = sample.pitch;
+};
+
 export class InputReplayPlayer {
   private tickIndex = 0;
   private actionIndex = 0;

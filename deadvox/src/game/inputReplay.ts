@@ -1,13 +1,17 @@
 import { canonicalJsonBytes } from '../core/canonicalJson.ts';
+import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { INPUT_BINDINGS, type InputContext, POINTER_ACTIONS } from './inputBindings.ts';
 import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
+import { PHYSICS_RATE } from './session.ts';
 
 const INPUT_REPLAY_SCHEMA_VERSION = 2;
 const INPUT_REPLAY_TICKS_PER_WINDOW = 60 * 60 * 2;
-const INPUT_REPLAY_MAX_TICKS = INPUT_REPLAY_TICKS_PER_WINDOW * 2;
+// Keep each render frame's bounded compressed ticks available so rollover cannot cut it in half.
+const INPUT_REPLAY_TICKS_PER_FRAME = Math.ceil(SKIP_COMPRESSION.maxSimPerFrame * PHYSICS_RATE);
+const INPUT_REPLAY_MAX_TICKS = INPUT_REPLAY_TICKS_PER_WINDOW * 2 + INPUT_REPLAY_TICKS_PER_FRAME;
 const INPUT_REPLAY_ACTIONS_PER_WINDOW = 8192;
 const INPUT_REPLAY_MAX_ACTIONS = INPUT_REPLAY_ACTIONS_PER_WINDOW * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
@@ -165,10 +169,12 @@ export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample =
 };
 
 export class InputReplayRecorder {
-  private readonly yawPitch = new Float64Array(INPUT_REPLAY_TICKS_PER_WINDOW * 2);
-  private readonly compression = new Float64Array(INPUT_REPLAY_TICKS_PER_WINDOW);
-  private readonly movement = new Int8Array(INPUT_REPLAY_TICKS_PER_WINDOW * 2);
-  private readonly flags = new Uint16Array(INPUT_REPLAY_TICKS_PER_WINDOW);
+  private readonly yawPitch: Float64Array;
+  private readonly compression: Float64Array;
+  private readonly movement: Int8Array;
+  private readonly flags: Uint16Array;
+  private readonly bufferTicks: number;
+  private readonly ticksPerWindow: number;
   private readonly actionTicks = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionIds = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
@@ -182,7 +188,16 @@ export class InputReplayRecorder {
   private completedBatches = 0;
   readonly startSnapshot: Readonly<SaveSnapshot>;
 
-  constructor(startSnapshot: Readonly<SaveSnapshot>) {
+  constructor(startSnapshot: Readonly<SaveSnapshot>, ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW) {
+    this.ticksPerWindow = ticksPerWindow;
+    if (!Number.isSafeInteger(ticksPerWindow) || ticksPerWindow < 1 || ticksPerWindow > INPUT_REPLAY_TICKS_PER_WINDOW) {
+      throw new Error('Invalid input replay window size');
+    }
+    this.bufferTicks = ticksPerWindow + INPUT_REPLAY_TICKS_PER_FRAME;
+    this.yawPitch = new Float64Array(this.bufferTicks * 2);
+    this.compression = new Float64Array(this.bufferTicks);
+    this.movement = new Int8Array(this.bufferTicks * 2);
+    this.flags = new Uint16Array(this.bufferTicks);
     this.startSnapshot = structuredClone(startSnapshot);
   }
 
@@ -192,7 +207,7 @@ export class InputReplayRecorder {
 
   get full(): boolean {
     return (
-      this.frameCount >= INPUT_REPLAY_TICKS_PER_WINDOW ||
+      this.frameCount >= this.ticksPerWindow ||
       this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
     );
   }
@@ -213,7 +228,10 @@ export class InputReplayRecorder {
   }
 
   queueAction(action: string, phase: 'down' | 'up', context: InputContext, value?: number): void {
-    if (this.full) {
+    if (
+      this.frameCount >= this.bufferTicks ||
+      this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
+    ) {
       return;
     }
     if (
@@ -228,7 +246,7 @@ export class InputReplayRecorder {
   }
 
   recordTick(sample: Omit<ReplayControlSample, 'compression'>, compression = 1): void {
-    if (this.frameCount >= INPUT_REPLAY_TICKS_PER_WINDOW) {
+    if (this.frameCount >= this.bufferTicks) {
       return;
     }
     if (this.frameCount % 60 === 0) {

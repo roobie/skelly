@@ -246,6 +246,114 @@ ${marker}`,
     );
   },
 };
+const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
+  const context = await browserInstance.newContext({ viewport: { width: 1280, height: 720 } });
+  try {
+    const page = await context.newPage();
+    const pageErrors = [];
+    page.on('pageerror', (error) => pageErrors.push(error.message));
+    await page.addInitScript(() => {
+      let locked = false;
+      Object.defineProperty(document, 'pointerLockElement', {
+        configurable: true,
+        get: () => (locked ? (document.querySelector('#view canvas') ?? document.querySelector('#view')) : null),
+      });
+      Element.prototype.requestPointerLock = () => {
+        locked = true;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = false;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'primary-action',
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        renderOverride,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
+    await page.locator('#go').click();
+    await page.waitForFunction(
+      () => globalThis.primaryActionTest && document.querySelector('#overlay')?.hidden && document.pointerLockElement,
+    );
+    const start = await page.evaluate(() => {
+      const { input, session } = globalThis.primaryActionTest;
+      return {
+        yaw: input.yaw,
+        pitch: input.pitch,
+        position: [...session.body.pos],
+        frame: globalThis.primaryActionTest.frames,
+      };
+    });
+    await page.mouse.move(640, 360);
+    await page.mouse.move(760, 410);
+    await page.keyboard.down('w');
+    await page.waitForFunction((frame) => globalThis.primaryActionTest.frames >= frame + 40, start.frame);
+    await page.keyboard.up('w');
+    const moved = await page.evaluate(() => {
+      const { input, session } = globalThis.primaryActionTest;
+      return { yaw: input.yaw, pitch: input.pitch, position: [...session.body.pos] };
+    });
+    assert.notEqual(moved.yaw, start.yaw, 'the recording includes real mouse yaw');
+    assert.notEqual(moved.pitch, start.pitch, 'the recording includes real mouse pitch');
+    assert.notDeepEqual(moved.position, start.position, 'the recording includes player movement');
+    const command = async (action) =>
+      page.evaluate(
+        async ({ id, moduleUrl }) => {
+          const { keyboardInput } = await import(moduleUrl);
+          keyboardInput.command({ action: id, phase: 'down', at: performance.now() });
+        },
+        { id: action, moduleUrl: inputBindingsModule },
+      );
+    await command('debug.panel-toggle');
+    await command('debug.input-replay-export');
+    await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
+    const replayText = await page.evaluate(() => {
+      const link = document.querySelector('#replay-download');
+      if (!link?.href.startsWith('blob:')) {
+        throw new Error('Clean replay export did not create a downloadable artifact');
+      }
+      return fetch(link.href).then((response) => response.text());
+    });
+    const cleanArtifact = JSON.parse(replayText);
+    process.stdout.write(
+      `Clean replay samples: ${JSON.stringify({ frames: cleanArtifact.frames.length, movementTicks: cleanArtifact.frames.filter((frame) => frame[2] !== 0 || frame[3] !== 0).length, activeTicks: cleanArtifact.frames.filter((frame) => frame[4] & 1).length, lookChangedTicks: cleanArtifact.frames.filter((frame) => frame[0] !== start.yaw).length })}\n`,
+    );
+    const lastFrame = cleanArtifact.frames.at(-1);
+    assert(lastFrame, 'the clean recording contains player ticks');
+    assert.notEqual(lastFrame[0], start.yaw, 'the final replay sample contains the recorded yaw');
+    assert.notEqual(lastFrame[1], start.pitch, 'the final replay sample contains the recorded pitch');
+    const replayNavigation = page.waitForNavigation();
+    await command('debug.input-replay-import');
+    await page.locator('#input-replay-file').setInputFiles({
+      name: 'clean-look-replay.json',
+      mimeType: 'application/json',
+      buffer: Buffer.from(replayText),
+    });
+    await replayNavigation;
+    await page.waitForFunction(() => document.querySelector('#input-replay-status'));
+    await page.waitForFunction(
+      () =>
+        ['verified', 'diverged', 'unavailable'].includes(document.querySelector('#input-replay-status')?.dataset.state),
+      undefined,
+      { timeout: 20_000 },
+    );
+    const replayLook = await page.evaluate(() => {
+      const { input } = globalThis.primaryActionTest;
+      return { yaw: input.yaw, pitch: input.pitch };
+    });
+    assert.equal(replayLook.yaw, lastFrame[0], 'playback drives the camera yaw from its final recorded sample');
+    assert.equal(replayLook.pitch, lastFrame[1], 'playback drives the camera pitch from its final recorded sample');
+    assert.deepEqual(pageErrors, []);
+  } finally {
+    await context.close();
+  }
+};
+
 const vite = await createServer({
   configFile: resolve(projectRoot, 'vite.config.ts'),
   root: projectRoot,
@@ -1175,11 +1283,12 @@ try {
   assert.equal(await page.locator('#input-replay-status').getAttribute('data-state'), 'diverged');
 
   assert.deepEqual(pageErrors, []);
+  await verifyCleanLookReplay(browser, address.port, renderOverride);
   await browser.close();
   browser = undefined;
   await checkDroppedGlowstickPixel(address.port);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, thrown-glowstick arc, refusals, firearm emission, quickbar hold and held-book reading.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, thrown-glowstick arc, refusals, firearm emission, quickbar hold, held-book reading and clean mouse-look sample playback.\n',
   );
 } finally {
   await browser?.close();

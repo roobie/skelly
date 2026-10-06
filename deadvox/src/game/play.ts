@@ -81,7 +81,7 @@ import {
   replayStateFingerprint,
   stashInputReplay,
 } from './inputReplay.ts';
-import { InputReplayPlayer } from './inputReplayPlayer.ts';
+import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
@@ -280,6 +280,7 @@ export const startPlay = (
     replaySample = replayPlayer.next();
     if (replaySample) {
       sim.compression.c = replaySample.compression;
+      applyReplayLook(input, replaySample);
       return replaySample;
     }
     return {
@@ -367,6 +368,7 @@ export const startPlay = (
         }
         const adjusted = adjustLookPitch(replaySample.pitch, delta);
         replaySample = { ...replaySample, pitch: adjusted.pitch };
+        applyReplayLook(input, replaySample);
         return adjusted.applied;
       },
       useOff: () => {

@@ -74,7 +74,7 @@ import { RestController } from './rest.ts';
 import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { Survival } from './survival.ts';
 
-const PHYSICS_RATE = 60;
+export const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
 export const HANDLING_RATE = 20;
 /** Seconds a player's noise stays audible to shamblers. */

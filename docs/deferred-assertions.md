@@ -7,6 +7,7 @@ status: active
 read_if:
   - you're writing a test and want to assert a value that can drift during development
   - you remove or defer an assertion of mutable development data
+  - you're implementing input recording and replay
   - you're deciding whether to pin a deferred value, or its pin-when trigger has come
   - a review flags a test for pinning drifting data
 ---
@@ -53,6 +54,8 @@ move its row to the bottom section with the PR that pinned it.
 | Shipped melee weapon reach order | `deadvox/test/meleeReach.test.ts` | Compare `reach` in `deadvox/src/content/base/items-tools.json` against the intended feel, and `FISTS_MELEE` in `deadvox/src/core/zombies.ts` | content freeze, v1.0 beta, or once BR rules an order |
 | Hamlet furniture and loot totals | `deadvox/test/hamlet.test.ts`; `deadvox/src/core/hamlet.ts`, `Hamlet.furnitureIn` | Inspect placed lot pieces and generated loot; verify collision-free furniture, range-furniture placement, and same-place loot determinism | content freeze, v1.0 beta |
 | Representative ten-hour save workload measurements | `deadvox/test/snapshot-format.test.ts`, `applyBudgetWorldEdits`, `applyBudgetPiles`, and `touchBudgetFurnitureAndZombies` | Run the save-budget test, inspect its metrics, and verify round-trip capture parity and the `TEN_HOUR_SAVE_BUDGET_BYTES` / `TEN_HOUR_LOAD_BUDGET_MS` constraints | content freeze, v1.0 beta |
+| Compressed replay ending at a render-frame boundary | `deadvox/test/inputReplay.test.ts`, `playSession` | Record through the end of a compressed frame, then compare the source and replay end-state fingerprints; inspect `InputReplayPlayer.next` in `deadvox/src/game/inputReplayPlayer.ts` and `Simulation.frameReplay` in `deadvox/src/core/sim.ts` to check which sample the remaining ticks consume | when BR requests this case for d101-4 or a filed issue reports false divergence at a compressed ending |
+| Fresh-world browser replay end-state fingerprint | `deadvox/test/browser/primary-action.mjs`, `verifyCleanLookReplay` | Capture physical movement and look in a clean browser run, then compare the source and replay end-state fingerprints shown by `#input-replay-status`; inspect `stepSimulation` in `deadvox/src/game/play.ts` and `Streamer.isReady` in `deadvox/src/game/streamer.ts` when replay advances through incomplete world streaming | when BR requests full browser end-state verification for d101-4 or a filed issue reports this fresh-world divergence |
 
 ## Pinned since
 
