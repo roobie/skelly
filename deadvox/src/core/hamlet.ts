@@ -328,7 +328,7 @@ export class Hamlet implements Site {
     const markers = this.lots.flatMap(({ placement }) => placedSpawns(placement));
     this.zombieSpawns.push(
       ...hamletZombieSpawns(this.seed, this.road, markers, {
-        roadHeightAt: (x) => this.roadHeightAt(x),
+        roadHeightAt: (worldX) => this.roadHeightAt(worldX),
         spawnWeights: new Map([...this.registry.zombies].map(([type, zombie]) => [type, zombie.spawnWeight])),
       }),
     );
