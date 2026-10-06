@@ -130,6 +130,7 @@ Paperwork; no game code.
 
 > the AK still had the rear sight on top of a post
 > this is not how it should be - compare a standard AKM's rear sight
+>
 > i wanted the received as a whole lifted so that the bore in relation to the receiver goes down by a margin great enough for the rear sight to align with the front without being lifted on a pin
 
 `gungen/src/gun/parts.ts`, `akRearSight`, uses a finer sight-only grain because the shared gun grid cannot represent a 2 mm notch. The rear sight's broad block seats on the receiver; its notch datum and front-post aim line remain aligned while the receiver-mounted furniture follows the raised receiver. The barrel, bore axis, handguard and front sight remain fixed.

@@ -106,13 +106,20 @@ export const movementPace = (
     grams,
     handling,
     readyMovementFactor,
+    movementSpeed,
     crouchSpeed,
-  }: { grams: number; handling: boolean; readyMovementFactor: number; crouchSpeed: number },
+  }: {
+    grams: number;
+    handling: boolean;
+    readyMovementFactor: number;
+    movementSpeed: number;
+    crouchSpeed: number;
+  },
 ): MoveIntent => ({
   ...intent,
   crouch: intent.crouch,
   crouchSpeed,
-  pace: paceFactor(grams, handling) * readyMovementFactor,
+  pace: paceFactor(grams, handling) * movementSpeed * readyMovementFactor,
 });
 
 /** Sets the body's horizontal velocity from the intent and view yaw; starts a jump if grounded. */

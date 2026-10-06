@@ -764,6 +764,7 @@ export const createSession = (options: SessionOptions) => {
     { intent, handling, readyGait }: ReturnType<typeof preparePlayerStep>,
   ): void => {
     sprinting =
+      !crouching &&
       intent.sprint &&
       (intent.forward !== 0 || intent.right !== 0) &&
       !handling &&
@@ -781,6 +782,7 @@ export const createSession = (options: SessionOptions) => {
         grams: inventory.carriedWeight(),
         handling,
         readyMovementFactor,
+        movementSpeed: sim.body.consequences.movementSpeed,
         crouchSpeed: senseTuning.crouch.speedMetresPerSecond,
       },
     );

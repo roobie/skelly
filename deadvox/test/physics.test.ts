@@ -179,23 +179,17 @@ describe('steer', () => {
     expect(speed({ sprint: true, walk: true })).toBeCloseTo(PLAYER.sprint);
   });
 
-  it('stacks crouch pace and ready movement factor', () => {
+  it('stacks crouch, injury and ready movement factors', () => {
     const readyFactor = 0.6;
     const crouchSpeed = 0.8;
     const intent = { forward: 1, right: 0, jump: false, sprint: false, walk: false, crouch: true };
+    const paceOptions = { grams: 0, handling: false, movementSpeed: 1, crouchSpeed };
     const speeds = [
-      movementPace({ ...intent, crouch: false }, { grams: 0, handling: false, readyMovementFactor: 1, crouchSpeed }),
-      movementPace(
-        { ...intent, crouch: false },
-        {
-          grams: 0,
-          handling: false,
-          readyMovementFactor: readyFactor,
-          crouchSpeed,
-        },
-      ),
-      movementPace(intent, { grams: 0, handling: false, readyMovementFactor: 1, crouchSpeed }),
-      movementPace(intent, { grams: 0, handling: false, readyMovementFactor: readyFactor, crouchSpeed }),
+      movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: 1 }),
+      movementPace({ ...intent, crouch: false }, { ...paceOptions, readyMovementFactor: readyFactor }),
+      movementPace(intent, { ...paceOptions, readyMovementFactor: 1 }),
+      movementPace(intent, { ...paceOptions, readyMovementFactor: readyFactor }),
+      movementPace(intent, { ...paceOptions, movementSpeed: 0.5, readyMovementFactor: readyFactor }),
     ].map((paced) => {
       const body = createPlayerBody(half, 0, 0, 0);
       steer(body, half, 0, paced);
@@ -204,6 +198,7 @@ describe('steer', () => {
     expect(speeds[3]).toBeCloseTo(crouchSpeed * readyFactor);
     expect(speeds[3]).toBeLessThan(speeds[1]!);
     expect(speeds[3]).toBeLessThan(speeds[2]!);
+    expect(speeds[4]).toBeCloseTo(speeds[3]! * 0.5);
   });
 
   it('slows the same sprint intent while crouching', () => {
