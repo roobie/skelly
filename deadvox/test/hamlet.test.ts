@@ -73,6 +73,8 @@ const shuffled = <T>(items: T[], seed: number): T[] => {
 
 describe('the hamlet', () => {
   const seed = 1;
+  // Explicit cap above Vitest's default: a heavy property test that can exceed it under
+  // full-suite parallelism (#29); sized to its reduced work.
   it(`generates the same in any chunk order (seed ${seed})`, () => {
     const columns = columnsOf(new Hamlet(seed, registry, scale));
     // A fresh Hamlet for each run: nothing may carry over between them.

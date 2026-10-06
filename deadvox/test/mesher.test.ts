@@ -56,6 +56,8 @@ describe('buildMesh', () => {
   });
 
   // Keep a spread of occupancy levels while checking the full face-equivalence property.
+  // Explicit cap above Vitest's default: a heavy property test that can exceed it under
+  // full-suite parallelism (#29); sized to its reduced work.
   it('draws the same faces as plain face culling (random chunks)', () => {
     for (const seed of [1, 8]) {
       const p = new Uint16Array(PADDED ** 3);
