@@ -72,29 +72,28 @@ const shuffled = <T>(items: T[], seed: number): T[] => {
 };
 
 describe('the hamlet', () => {
-  for (const seed of [1]) {
-    it(`generates the same in any chunk order (seed ${seed})`, () => {
-      const columns = columnsOf(new Hamlet(seed, registry, scale));
-      // A fresh Hamlet for each run: nothing may carry over between them.
-      const a = generate(new Hamlet(seed, registry, scale), seed, columns);
-      const b = generate(new Hamlet(seed, registry, scale), seed, shuffled(columns, seed));
-      expect(b.world.chunks.size).toBe(a.world.chunks.size);
-      expect(differing(a.world, b.world)).toEqual([]);
-      expect(b.furniture).toEqual(a.furniture);
-      const canopy = new Hamlet(seed, registry, scale).trees.find(
-        (tree) => toChunk(tree.bounds.x0) !== toChunk(tree.bounds.x1 - 1),
-      );
-      expect(canopy, 'seeded tree canopy must cross a chunk boundary').toBeDefined();
-      const cut = (toChunk(canopy!.bounds.x0) + 1) * CHUNK;
-      const leaf = id('leaves');
-      for (const x of [cut - 1, cut]) {
-        const containsLeaf = canopy!.boxes
-          .filter((box) => box.block === leaf && box.min[0] <= x && box.max[0] > x)
-          .some((box) => a.world.getBlock(x, box.min[1], box.min[2]) === leaf);
-        expect(containsLeaf, `leaf voxels on boundary side x=${x}`).toBe(true);
-      }
-    }, 30_000);
-  }
+  const seed = 1;
+  it(`generates the same in any chunk order (seed ${seed})`, () => {
+    const columns = columnsOf(new Hamlet(seed, registry, scale));
+    // A fresh Hamlet for each run: nothing may carry over between them.
+    const a = generate(new Hamlet(seed, registry, scale), seed, columns);
+    const b = generate(new Hamlet(seed, registry, scale), seed, shuffled(columns, seed));
+    expect(b.world.chunks.size).toBe(a.world.chunks.size);
+    expect(differing(a.world, b.world)).toEqual([]);
+    expect(b.furniture).toEqual(a.furniture);
+    const canopy = new Hamlet(seed, registry, scale).trees.find(
+      (tree) => toChunk(tree.bounds.x0) !== toChunk(tree.bounds.x1 - 1),
+    );
+    expect(canopy, 'seeded tree canopy must cross a chunk boundary').toBeDefined();
+    const cut = (toChunk(canopy!.bounds.x0) + 1) * CHUNK;
+    const leaf = id('leaves');
+    for (const x of [cut - 1, cut]) {
+      const containsLeaf = canopy!.boxes
+        .filter((box) => box.block === leaf && box.min[0] <= x && box.max[0] > x)
+        .some((box) => a.world.getBlock(x, box.min[1], box.min[2]) === leaf);
+      expect(containsLeaf, `leaf voxels on boundary side x=${x}`).toBe(true);
+    }
+  }, 10_000);
 
   it('places every hamlet template on a flat lot beside an asphalt road', () => {
     const hamlet = new Hamlet(3, registry, scale);

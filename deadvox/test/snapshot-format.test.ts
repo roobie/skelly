@@ -443,6 +443,7 @@ describe('canonical save format', () => {
     const interruptedBytes = await encodeFixture(interruptedSnapshot);
     const interruptedDecoded = await decodeSave(interruptedBytes, { version: formatVersion, contentLookup });
     expect(interruptedDecoded.snapshot.character.simulation.pendingInterrupt).toBe('format round-trip');
+    expect(interruptedDecoded.snapshot).toEqual(interruptedSnapshot);
     const interruptedLoaded = createRuntime(interruptedDecoded.snapshot, true);
     expect(capture(interruptedLoaded).character.simulation.pendingInterrupt).toBe('format round-trip');
 
