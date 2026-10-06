@@ -38,6 +38,8 @@ export interface PartType {
   readonly panel?: Axis;
   /** The point a fitting turns about, in the part's frame: a wheel's axle, a door's hinge line. */
   readonly pivot?: readonly [x: number, y: number, z: number];
+  /** Where a rider's hips sit on this part, in its frame: the saddle of a bike with no cabin to sit in. */
+  readonly rider?: readonly [x: number, y: number, z: number];
   readonly noise?: PartNoise;
 }
 

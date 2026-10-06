@@ -26,6 +26,27 @@ export const prism = (axis: Axis, profile: readonly Point[], [from, to]: Point, 
   to,
   mat,
 });
+/** A straight bar between two points of the side view, `width` voxels across, through z `[from, to)`: a frame tube. */
+export const tube = (
+  [[x0, y0], [x1, y1]]: readonly [Point, Point],
+  width: number,
+  span: Point,
+  mat: string,
+): ShapeOp => {
+  const half = width / 2 / Math.hypot(x1 - x0, y1 - y0);
+  const [nx, ny] = [(y0 - y1) * half, (x1 - x0) * half];
+  return prism(
+    'z',
+    [
+      [x0 + nx, y0 + ny],
+      [x1 + nx, y1 + ny],
+      [x1 - nx, y1 - ny],
+      [x0 - nx, y0 - ny],
+    ],
+    span,
+    mat,
+  );
+};
 export const disc = (axis: Axis, [u, v, radius, inner]: Circle, [from, to]: Point, look: string | Look): ShapeOp => ({
   op: 'cylinder',
   axis,
@@ -45,6 +66,8 @@ export interface PartMeta {
   readonly panel?: Axis;
   /** In vehicle voxels, like the shape. */
   readonly pivot?: Vec3i;
+  /** In vehicle voxels, like the shape. */
+  readonly rider?: Vec3i;
   readonly noise?: PartNoise;
 }
 export const meta = (id: string, label: string, layer: PartLayer, massKg: number): PartMeta => ({
@@ -60,17 +83,19 @@ export interface Authored {
 }
 
 /** A part drawn in vehicle voxels; its type holds the shape relative to the lattice cell it starts in. */
-export const authored = ({ pivot, ...rest }: PartMeta, shape: readonly ShapeOp[]): Authored => {
+export const authored = ({ pivot, rider, ...rest }: PartMeta, shape: readonly ShapeOp[]): Authored => {
   const [x, y, z] = opsMinimum(shape).map((v) => Math.floor(v / VOXELS_PER_CELL) * VOXELS_PER_CELL) as [
     number,
     number,
     number,
   ];
   const at: Vec3i = [x, y, z];
+  const inPart = (point: Vec3i): readonly [number, number, number] => [point[0] - x, point[1] - y, point[2] - z];
   const type: PartType = {
     ...rest,
     shape: shape.map((op) => translateOp(op, at)),
-    ...(pivot ? { pivot: [pivot[0] - x, pivot[1] - y, pivot[2] - z] as const } : {}),
+    ...(pivot ? { pivot: inPart(pivot) } : {}),
+    ...(rider ? { rider: inPart(rider) } : {}),
   };
   return { type, at };
 };

@@ -10,6 +10,7 @@ import {
   supportProblems,
   type Vehicle,
 } from '../src/debug/vehicles/model.ts';
+import { MOTORBIKE } from '../src/debug/vehicles/motorbike.ts';
 import { PICKUP } from '../src/debug/vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/debug/vehicles/rangeRover.ts';
 import {
@@ -42,6 +43,7 @@ const touches = (part: VoxelGrid, support: VoxelGrid): boolean =>
 const VEHICLES: readonly { readonly vehicle: Vehicle; readonly builds: readonly (readonly string[])[] }[] = [
   { vehicle: RANGE_ROVER, builds: [[], STRIPPED_REMOVED] },
   { vehicle: PICKUP, builds: [[]] },
+  { vehicle: MOTORBIKE, builds: [[]] },
 ];
 
 describe.each(VEHICLES)('$vehicle.id built from parts', ({ vehicle, builds }) => {
@@ -52,6 +54,12 @@ describe.each(VEHICLES)('$vehicle.id built from parts', ({ vehicle, builds }) =>
     for (const removed of builds) {
       expect(supportProblems(vehicle, initialFittings(vehicle, removed))).toEqual([]);
     }
+  });
+
+  it('rests every fitting, through its supports, on a frame part that stands on nothing', () => {
+    const roots = vehicle.fittings.filter((fitting) => fitting.supportedBy.length === 0);
+    expect(roots.length).toBeGreaterThan(0);
+    expect(roots.filter((fitting) => partTypeOf(vehicle, fitting).layer !== 'frame').map(({ id }) => id)).toEqual([]);
   });
 
   it('has every fitting touch each fitting it rests on, so no panel floats', () => {

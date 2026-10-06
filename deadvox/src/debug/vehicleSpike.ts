@@ -52,6 +52,7 @@ import {
   VOXEL,
   VOXELS_PER_CELL,
 } from './vehicles/model.ts';
+import { MOTORBIKE } from './vehicles/motorbike.ts';
 import { PICKUP } from './vehicles/pickup.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from './vehicles/rangeRover.ts';
 import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from './vehicles/voxels.ts';
@@ -90,8 +91,28 @@ interface BuildSpec {
   /** Scales the camera presets about the vehicle's centre (not the 20 m view's distance), for its size. */
   readonly viewScale?: number;
   /** A preset this vehicle frames differently, such as its own way into the cabin. */
-  readonly views?: Partial<Record<ViewId, Pick<ViewPreset, 'position' | 'target'>>>;
+  readonly views?: Partial<Record<ViewId, ViewOverride>>;
 }
+type ViewOverride = Pick<ViewPreset, 'position' | 'target'> & { readonly label?: string };
+
+/** Metres from a seated rider's hips to their eyes, and to the road just ahead, so the tank and bars are in view. */
+const RIDER_EYE = [0.05, 0.8, 0] as const;
+const RIDER_LOOK = [2.05, -0.4, 0] as const;
+
+/** The view from the saddle, above the seat's rider anchor: a vehicle with no cabin to look into. */
+const riderView = (vehicle: Vehicle): ViewOverride => {
+  const [hips] = vehicle.fittings.flatMap((fitting) => {
+    const { rider } = partTypeOf(vehicle, fitting);
+    return rider ? [[fitting.at[0] + rider[0], fitting.at[1] + rider[1], fitting.at[2] + rider[2]] as const] : [];
+  });
+  if (!hips) {
+    throw new Error(`${vehicle.id} has no rider position`);
+  }
+  const [lx, , lz] = latticeVoxels(vehicle);
+  const [x, y, z] = [(hips[0] - lx / 2) * VOXEL, hips[1] * VOXEL, (hips[2] - lz / 2) * VOXEL];
+  const from = ([dx, dy, dz]: readonly [number, number, number]): Vec3 => [x + dx, y + dy, z + dz];
+  return { label: 'Rider', position: from(RIDER_EYE), target: from(RIDER_LOOK) };
+};
 
 const WHEEL_THICKNESS = 7 * VOXEL;
 const wheelStack = (ids: readonly string[]): LooseItem[] =>
@@ -118,6 +139,14 @@ const BUILDS = {
     removed: [],
     viewScale: 1.06,
     views: { interior: { position: [0.45, 1.7, 1.9], target: [0.85, 0.95, -0.35] } },
+  },
+  motorbike: {
+    label: 'CG125-type motorbike',
+    button: 'Motorbike',
+    vehicle: MOTORBIKE,
+    removed: [],
+    viewScale: 0.5,
+    views: { interior: riderView(MOTORBIKE) },
   },
   hatchback: {
     label: 'Hatchback · cutaway (round 3)',
@@ -472,6 +501,8 @@ const renderVehicle = (): void => {
     vehicleGroup.position.y = LIFT_HEIGHT;
   }
   scene.add(vehicleGroup);
+  const shift = (spec.viewScale ?? 1) - 1;
+  playerGroup.position.set(PLAYER_AT[0] * shift, 0, PLAYER_AT[2] * shift);
   const assemblyMs = performance.now() - started;
   massReport = measure(libraryFor(vehicle), installed);
   const { massKg, centre } = massReport;
@@ -835,8 +866,11 @@ const setSpin = (on: boolean): void => {
   renderPanel();
 };
 
-/** Behind the car's far rear corner: in the side view for scale, out of the three-quarter views. */
+/** Behind the far rear corner: in the side view for scale; a car hides it from the three-quarter views, a bike doesn't. */
 const PLAYER_AT = [-3.4, 0, -1.9] as const;
+/** Holds the player and its label, moved with the build's view scale so they keep their place beside it. */
+const playerGroup = new Group();
+scene.add(playerGroup);
 
 const addPlayer = (): void => {
   const player = BUNDLED_CONTENT.registry.figures.get('player');
@@ -865,7 +899,7 @@ const addPlayer = (): void => {
   person.group.traverse((object) => {
     object.castShadow = true;
   });
-  scene.add(person.group);
+  playerGroup.add(person.group);
 };
 
 const addTitleSprite = (): void => {
@@ -889,7 +923,7 @@ const addTitleSprite = (): void => {
   const sprite = new Sprite(new SpriteMaterial({ map: texture, transparent: true }));
   sprite.position.set(PLAYER_AT[0], 2.1, PLAYER_AT[2]);
   sprite.scale.set(1.7, 0.32, 1);
-  scene.add(sprite);
+  playerGroup.add(sprite);
 };
 
 const GRAIN_NOTE = `Part cell ${(PART_CELL * 100).toFixed(1)} cm · voxel ${(VOXEL * 100).toFixed(3)} cm (${VOXELS_PER_CELL} per cell, ${VOXELS_PER_CELL * (BLOCK_SIZE / PART_CELL)} per block). Each part type is greedy-meshed once and every fitting of it reuses that geometry.`;
@@ -902,14 +936,15 @@ const LAYER_LABELS: Readonly<Record<PartLayer, string>> = {
 };
 
 const panelModel = (): PanelModel => {
-  const { vehicle } = BUILDS[activeBuild];
+  const active: BuildSpec = BUILDS[activeBuild];
+  const { vehicle } = active;
   const installed = installedFor(activeBuild);
   return {
     builds: (Object.entries(BUILDS) as [BuildId, BuildSpec][]).map(([id, spec]) => ({ id, label: spec.button })),
     build: activeBuild,
     views: (Object.entries(VIEWS) as [ViewId, ViewPreset][]).map(([id, view]) => ({
       id,
-      label: `${view.key} · ${view.label}`,
+      label: `${view.key} · ${active.views?.[id]?.label ?? view.label}`,
       title: `Key ${view.key}`,
     })),
     view: activeView,
