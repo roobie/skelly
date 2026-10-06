@@ -121,13 +121,13 @@ try {
   await page.evaluate(() => {
     globalThis.d7Observed.starts = [];
   });
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'ui.inventory-toggle');
   assert.equal(
     await page.evaluate(() => globalThis.d7Review.input.menuPointer && !document.querySelector('#inventory').hidden),
     true,
   );
   await page.mouse.click(640, 360);
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'ui.inventory-toggle');
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
   const menu = await page.evaluate(() => ({
     locked: globalThis.d7Review.input.locked,

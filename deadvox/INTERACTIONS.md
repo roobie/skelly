@@ -369,8 +369,8 @@ values), known recipes and skill levels. Two consequences for 1.9:
    than cancelling resting)". `RestController.canStop` owns sleep
    cancellability, which `src/ui/rest.ts`, `restViewModel`, uses for its hint.
    An interrupt wakes the sleeper and clears its action. BR (2026-10-05 20:14)
-   added "as for crafting: same as reading". The legacy L binding starts sleep
-   until d44 removes it; it cannot stop sleep.
+   added "as for crafting: same as reading". Sleep starts by interacting with
+   sleepable furniture; there is no dedicated sleep key.
 3. **1.9, saves:** long actions and item state as plain data, as above.
 4. **Slice 2:** the inventory screen already moved to lit-html in Slice 1
    (#105), which completed ADR 0001. Slice 2 starts with the reach query and `options`, then recipes in the schema and the
@@ -385,16 +385,16 @@ BR (2026-10-05 20:09) ruled: "long actions disable all actions". Movement and
 gameplay action input are ignored while reading, resting, sleeping or crafting.
 Each kind keeps its own close, cancel or wake behavior:
 
-- Reading: the paper surface keeps its own close keys; the world continues to
-  move. `src/game/play.ts`, `handleGameplayKey`, preserves the readable lock.
+- Reading: `src/game/inputBindings.ts`, `KeyboardInput`, routes reading controls
+  separately from world input; the world continues to move while the page is open.
 - Rest: BR (2026-10-05 20:13): "resting is the same as reading -> no actions are
   allowed (other than cancelling resting)". F on the anchor and X cancel it;
   movement does not.
 - Sleep: BR (2026-10-05 20:13): "as for sleeping: that's not something you
-  actively stop - you wake up for reasons (whatever they may be)". Movement and
-  F/X do not stop it. An interrupt wakes the player, clears sleep and frees
-  input. Existing wake triggers remain. L is a legacy way to start sleep until
-  d44 removes it; it does not stop sleep.
+  actively stop - you wake up for reasons (whatever they may be)". Movement and X
+  do not stop it. An interrupt wakes the player, clears sleep and frees
+  input. Existing wake triggers remain. Interacting with sleepable furniture starts
+  sleep; there is no dedicated sleep key.
 - Craft: BR (2026-10-05 20:14): "as for crafting: same as reading". Movement does
   not stop it; its cancel key and interrupt events still do. C resumes after an
   interruption.

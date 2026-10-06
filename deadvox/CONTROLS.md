@@ -8,6 +8,7 @@ read_if:
   - you plan or change player or debug input bindings
   - you review BR's control rulings or unresolved input questions
   - you change input ownership, binding preferences or their labels
+  - you add a pointer, click or wheel action
 ---
 
 # Controls and input ownership
@@ -63,7 +64,11 @@ controls remain proposals until their issue is implemented.
   `dominantSide` and `offSide`; `src/game/primaryAction.ts`,
   `selectPrimaryAction`; and [character-handedness.md](docs/character-handedness.md).
   Pointer action identities are in `src/game/inputBindings.ts`, `POINTER_ACTIONS`;
-  keyboard rebinding does not add mouse-rebinding UI.
+  keyboard rebinding does not add mouse-rebinding UI. For d94, wielded-item wheel
+  selection belongs to a pointer-specific owner, not `BindingRegistry`: a directional
+  wheel event is not a keyboard chord. See `src/game/input.ts`, `Input`, and
+  `src/game/play.ts`, `startPlay`; `src/ui/menuPointer.ts`, `mountMenuPointer`, keeps
+  menu scrolling in its separate route.
 - **Quickbar (2026-10-05):** a tap takes an item into its capability-directed
   hand or puts it away; a hold uses an available action. See
   `src/game/quickbarInput.ts`, `QuickbarInput`, and

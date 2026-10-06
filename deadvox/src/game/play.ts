@@ -860,7 +860,7 @@ export const startPlay = (
       case 'handling.stop':
         input.reload.cancel();
         queue.cancel();
-        if (sim.actions.job) {
+        if (sim.actions.job || rest.action || compression.active) {
           stopAction();
         }
         break;

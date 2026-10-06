@@ -308,6 +308,27 @@ const ownBindingIssue = (a: Binding, bindings: readonly Binding[], overrides: Bi
 };
 const gateKeyOverlap = (a: Binding, b: Binding): boolean =>
   a.id === b.gate || b.id === a.gate || a.id === 'debug.gate' || b.id === 'debug.gate';
+const pairBindingIssue = (a: Binding, b: Binding, overrides: BindingMap): string | undefined => {
+  const contexts = a.contexts.filter((context) => b.contexts.includes(context));
+  if (contexts.length === 0) {
+    return;
+  }
+  const gateKeyConflict = gateKeyOverlap(a, b);
+  const ungatedDebugOverlap = (a.debug && !a.gate) || (b.debug && !b.gate);
+  if (a.gate !== b.gate && !gateKeyConflict && !ungatedDebugOverlap) {
+    return;
+  }
+  const overlap = chordsFor(a, overrides).some((x) =>
+    chordsFor(b, overrides).some(
+      (y) =>
+        sameChord(x, y) ||
+        (gateKeyConflict && x.code === y.code) ||
+        (isHeld(a) && modifierCodes[x.code] === y.modifier && y.modifier !== undefined) ||
+        (isHeld(b) && modifierCodes[y.code] === x.modifier && x.modifier !== undefined),
+    ),
+  );
+  return overlap ? `${a.description} conflicts with ${b.description} in ${contexts.join(', ')}` : undefined;
+};
 export const bindingConflict = (bindings: readonly Binding[], overrides: BindingMap): string | undefined => {
   for (let i = 0; i < bindings.length; i++) {
     const a = bindings[i]!;
@@ -315,28 +336,10 @@ export const bindingConflict = (bindings: readonly Binding[], overrides: Binding
     if (issue) {
       return issue;
     }
-    const ac = chordsFor(a, overrides);
     for (const b of bindings.slice(i + 1)) {
-      const contexts = a.contexts.filter((context) => b.contexts.includes(context));
-      if (contexts.length === 0) {
-        continue;
-      }
-      const gateKeyConflict = gateKeyOverlap(a, b);
-      const ungatedDebugOverlap = (a.debug && !a.gate) || (b.debug && !b.gate);
-      if (a.gate !== b.gate && !gateKeyConflict && !ungatedDebugOverlap) {
-        continue;
-      }
-      const overlap = ac.some((x) =>
-        chordsFor(b, overrides).some(
-          (y) =>
-            sameChord(x, y) ||
-            (gateKeyConflict && x.code === y.code) ||
-            (isHeld(a) && modifierCodes[x.code] === y.modifier && y.modifier !== undefined) ||
-            (isHeld(b) && modifierCodes[y.code] === x.modifier && x.modifier !== undefined),
-        ),
-      );
-      if (overlap) {
-        return `${a.description} conflicts with ${b.description} in ${contexts.join(', ')}`;
+      const conflict = pairBindingIssue(a, b, overrides);
+      if (conflict) {
+        return conflict;
       }
     }
   }

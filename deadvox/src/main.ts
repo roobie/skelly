@@ -40,6 +40,7 @@ if (bench === 'report') {
   keyboardInput.install();
   inputBindings.loadLayout();
   let config = configFromUrl(params);
+  keyboardInput.context = () => ({ context: 'title', debug: config.debug });
   const saveBackend = params.get('save-backend');
   const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
   const saveController = new SaveController(backend);

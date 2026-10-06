@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 const { chromium } = await import('playwright');
 
 import { createServer } from 'vite';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
@@ -130,13 +130,13 @@ try {
     await page.waitForFunction(() => Boolean(document.pointerLockElement));
     const verifyGate = async (locked) => {
       const before = await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode);
-      const { primary, gate } = await page.evaluate(
-        `import('/src/game/inputBindings.ts').then(({ inputBindings }) => ({ primary: inputBindings.chords('debug.god-toggle')[0], gate: inputBindings.chords('debug.gate')[0] }))`,
+      const gate = await page.evaluate(
+        `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('debug.gate')[0])`,
       );
       await page.evaluate(() => {
         globalThis.nativeGateEvents.length = 0;
       });
-      await page.keyboard.press(primary.code);
+      await pressAction(page, 'debug.god-toggle', { includeGate: false });
       assert.equal(
         await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
         before,
@@ -148,7 +148,7 @@ try {
         !before,
         'held gate toggles the public owner exactly once',
       );
-      await page.keyboard.press(primary.code);
+      await pressAction(page, 'debug.god-toggle', { includeGate: false });
       assert.equal(
         await page.evaluate(() => globalThis.stairsWitness.session.sim.godMode),
         !before,
@@ -311,10 +311,10 @@ try {
     return value;
   };
   const shot = (label) => page.screenshot({ path: resolve(artifacts, `${label}.png`) });
-  const walk = async (key, targetX, ascending, targetFeet) => {
+  const walk = async (actionId, targetX, ascending, targetFeet) => {
+    const release = await holdAction(page, actionId);
     try {
       const keyDownTime = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-      await page.keyboard.down(key);
       await waitForSimulation(
         page,
         ({ x, increasing }) => {
@@ -329,9 +329,9 @@ try {
         {
           seconds: 10,
           from: keyDownTime,
-          label: `arrival ${key} x=${targetX}`,
+          label: `arrival ${actionId} x=${targetX}`,
           record: state,
-          stop: () => page.keyboard.up(key),
+          stop: release,
         },
       );
       const start = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
@@ -345,12 +345,14 @@ try {
           return { time: session.sim.time, paused: session.sim.paused, reached: supported, supported };
         },
         targetFeet,
-        { seconds: 3, from: start, label: `settle ${key} x=${targetX} feet=${targetFeet}`, record: state },
+        { seconds: 3, from: start, label: `settle ${actionId} x=${targetX} feet=${targetFeet}`, record: state },
       );
     } catch (error) {
-      await page.keyboard.up(key);
-      await state(`walk/settle failure ${key} x=${targetX} feet=${targetFeet}: ${error}`);
+      await release();
+      await state(`walk/settle failure ${actionId} x=${targetX} feet=${targetFeet}: ${error}`);
       throw error;
+    } finally {
+      await release();
     }
   };
   const openResidentDoor = async (residentId) => {
@@ -396,7 +398,7 @@ try {
       input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, approach.uid);
     const started = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-    await page.keyboard.press('KeyF');
+    await pressAction(page, 'world.interact');
     const result = await page.waitForFunction(
       ({ targetUid, until }) => {
         const { session, entities } = globalThis.stairsWitness;
@@ -406,7 +408,7 @@ try {
       { targetUid: approach.uid, until: started + 3 },
       { timeout: 0, polling: 50 },
     );
-    assert.equal((await result.jsonValue()).open, true, "F opens the resident's ordinary closed door");
+    assert.equal((await result.jsonValue()).open, true, "world interaction opens the resident's ordinary closed door");
   };
   const walkTo = async (target, label) => {
     const start = await page.evaluate((destination) => {
@@ -415,20 +417,24 @@ try {
       input.pitch = 0;
       return session.sim.time;
     }, target);
-    await page.keyboard.down('KeyW');
-    await waitForSimulation(
-      page,
-      (destination) => {
-        const { body, session, input } = globalThis.stairsWitness;
-        const dx = destination[0] - body.pos[0];
-        const dz = destination[2] - body.pos[2];
-        input.yaw = Math.atan2(-dx, -dz);
-        const distance = Math.hypot(dx, dz);
-        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 0.5, distance };
-      },
-      target,
-      { seconds: 12, from: start, label, record: state, stop: () => page.keyboard.up('KeyW') },
-    );
+    const releaseForward = await holdAction(page, 'movement.forward');
+    try {
+      await waitForSimulation(
+        page,
+        (destination) => {
+          const { body, session, input } = globalThis.stairsWitness;
+          const dx = destination[0] - body.pos[0];
+          const dz = destination[2] - body.pos[2];
+          input.yaw = Math.atan2(-dx, -dz);
+          const distance = Math.hypot(dx, dz);
+          return { time: session.sim.time, paused: session.sim.paused, reached: distance < 0.5, distance };
+        },
+        target,
+        { seconds: 12, from: start, label, record: state, stop: releaseForward },
+      );
+    } finally {
+      await releaseForward();
+    }
     await waitForSimulation(
       page,
       (destination) => {
@@ -477,10 +483,13 @@ try {
       input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
       return door.uid;
     });
-    await page.keyboard.down('ShiftLeft');
-    assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.intent().sprint), true);
-    await page.keyboard.press('KeyF');
-    await page.keyboard.up('ShiftLeft');
+    const releaseSprint = await holdAction(page, 'movement.sprint');
+    try {
+      assert.equal(await page.evaluate(() => globalThis.stairsWitness.input.intent().sprint), true);
+      await pressAction(page, 'world.interact');
+    } finally {
+      await releaseSprint();
+    }
     const sprintStarted = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     const sprintResult = await page.waitForFunction(
       ({ uid, until }) => {
@@ -493,7 +502,7 @@ try {
       { uid: sprintDoor, until: sprintStarted + 3 },
       { timeout: 0, polling: 50 },
     );
-    assert.equal((await sprintResult.jsonValue()).open, true, 'F opens an ordinary door while ShiftLeft is held');
+    assert.equal((await sprintResult.jsonValue()).open, true, 'world interaction opens a door while sprinting');
     await page.evaluate((uid) => {
       const { body, input, entities, doorPanel } = globalThis.stairsWitness;
       const door = entities.byUid(uid);
@@ -506,7 +515,7 @@ try {
       input.yaw = Math.atan2(-dx, -dz);
       input.pitch = Math.atan2(dy, Math.hypot(dx, dz));
     }, sprintDoor);
-    await page.keyboard.press('KeyF');
+    await pressAction(page, 'world.interact');
     const doorValue = async (propertyName, expectedValue) => {
       const deadline = (await page.evaluate(() => globalThis.stairsWitness.session.sim.time)) + 3;
       const result = await page.waitForFunction(
@@ -521,7 +530,7 @@ try {
       );
       return (await result.jsonValue()).currentValue;
     };
-    assert.equal(await doorValue('open', false), false, 'plain F closes the same door');
+    assert.equal(await doorValue('open', false), false, 'world interaction closes the same door');
     await page.evaluate((uid) => {
       const { entities, session } = globalThis.stairsWitness;
       const fixture = structuredClone(entities.snapshotState());
@@ -565,39 +574,43 @@ try {
     const houseLower = await state('house lower landing');
     const residentId = houseLower.zombies[0]?.id;
     assert.ok(Number.isSafeInteger(residentId), 'stairs_house streams its authored resident');
-    await walk('w', 121, true, 51);
+    await walk('movement.forward', 121, true, 51);
     const houseUpper = await state('house upstairs walked');
     const residentAtUpper = houseUpper.zombies.find(({ id }) => id === residentId);
     assert.ok(residentAtUpper && residentAtUpper.pos[1] > houseLower.position[1]);
     await openResidentDoor(residentId);
     const approachStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
-    await page.keyboard.down('KeyW');
-    await waitForSimulation(
-      page,
-      (id) => {
-        const { body, session } = globalThis.stairsWitness;
-        const target = session.zombieStore.get(id)?.lastPerceived;
-        const distance = target
-          ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
-          : Number.POSITIVE_INFINITY;
-        return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
-      },
-      residentId,
-      {
-        seconds: 8,
-        from: approachStart,
-        label: 'resident hears the player at the open doorway',
-        record: state,
-        stop: () => page.keyboard.up('KeyW'),
-      },
-    );
+    const releaseForward = await holdAction(page, 'movement.forward');
+    try {
+      await waitForSimulation(
+        page,
+        (id) => {
+          const { body, session } = globalThis.stairsWitness;
+          const target = session.zombieStore.get(id)?.lastPerceived;
+          const distance = target
+            ? Math.hypot(target[0] - body.pos[0], target[1] - body.pos[1], target[2] - body.pos[2])
+            : Number.POSITIVE_INFINITY;
+          return { time: session.sim.time, paused: session.sim.paused, reached: distance < 1, distance };
+        },
+        residentId,
+        {
+          seconds: 8,
+          from: approachStart,
+          label: 'resident hears the player at the open doorway',
+          record: state,
+          stop: releaseForward,
+        },
+      );
+    } finally {
+      await releaseForward();
+    }
     await walkTo([117, 51, 116], 'return through the open door to the stair hall');
     await walkTo([121, 51, 115], 'return to upper stair landing');
     await page.evaluate(() => {
       globalThis.stairsWitness.input.yaw = -Math.PI / 2;
       globalThis.stairsWitness.input.pitch = 0;
     });
-    await walk('s', 112, false, 43);
+    await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');
     const groundProjection = await page.evaluate((id) => {
       const { body, session } = globalThis.stairsWitness;
@@ -607,11 +620,11 @@ try {
       }
       return [resident.body.pos[0], body.pos[1], resident.body.pos[2]];
     }, residentId);
-    await page.keyboard.down('ShiftLeft');
+    const releaseResidentSprint = await holdAction(page, 'movement.sprint');
     try {
       await walkTo(groundProjection, 'sprint below resident on the lower floor');
     } finally {
-      await page.keyboard.up('ShiftLeft');
+      await releaseResidentSprint();
     }
     const settleStart = await page.evaluate(() => globalThis.stairsWitness.session.sim.time);
     await waitForSimulation(
@@ -636,10 +649,10 @@ try {
     await state('player rests under the upstairs resident');
 
     await stage([143, 43.0001, 115]);
-    await walk('s', 134, false, 35);
+    await walk('movement.back', 134, false, 35);
     assert.ok(Math.abs((await state('cellar lower landing walked')).position[1] - 35) < 0.01);
 
-    await walk('w', 143, true, 43);
+    await walk('movement.forward', 143, true, 43);
     assert.ok(Math.abs((await state('cabin ground landing walked back')).position[1] - 43) < 0.01);
   } else {
     await stage([134, 35.0001, 115]);

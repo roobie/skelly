@@ -110,10 +110,19 @@ describe('keyboard registry', () => {
       }
     }
   });
-  it('rejects every browser-owned modifier for a game binding', () => {
-    const bindings = new BindingRegistry(fixture, storage());
-    for (const modifier of REFUSED_MODIFIERS) {
-      expect(bindings.rebind('fixture.interact', [{ code: 'KeyJ', modifier }])).toEqual(expect.any(String));
+  it('keeps debug behind F2 and allows rebinding the Backquote interaction-hints hold', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    expect(bindings.binding('debug.gate')?.defaults[0]?.code).toBe('F2');
+    expect(bindings.binding('hud.toggle-interaction-hints')?.defaults[0]?.code).toBe('Backquote');
+    expect(bindings.rebind('hud.toggle-interaction-hints', [{ code: 'KeyJ' }])).toBeUndefined();
+    expect(bindings.label('hud.toggle-interaction-hints')).toBe('J');
+  });
+  it('rejects browser-owned modifiers for every game binding', () => {
+    const bindings = new BindingRegistry(INPUT_BINDINGS, storage());
+    for (const binding of INPUT_BINDINGS) {
+      for (const modifier of REFUSED_MODIFIERS) {
+        expect(bindings.rebind(binding.id, [{ code: 'KeyJ', modifier }])).toEqual(expect.any(String));
+      }
     }
   });
   it('rejects an ungated debug action sharing a game action chord', () => {

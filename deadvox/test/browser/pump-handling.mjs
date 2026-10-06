@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { handlingWaitMilliseconds } from './handling-budget.ts';
-import { pressAction } from './input-actions.mjs';
+import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const { chromium } = await import('playwright');
@@ -71,12 +71,6 @@ try {
       }
       return Reflect.apply(nativeGetContext, this, [type, ...args]);
     };
-    addEventListener('keydown', (event) => {
-      if (event.code === 'KeyR' && !event.repeat) {
-        globalThis.pumpRDownAt = event.timeStamp;
-        globalThis.pumpRDowns.push(event.timeStamp);
-      }
-    });
     const { start } = AudioBufferSourceNode.prototype;
     AudioBufferSourceNode.prototype.start = function (...args) {
       globalThis.pumpDecoded.push({
@@ -100,6 +94,17 @@ try {
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.pumpHandlingTest && document.querySelector('#debug-ui-root'));
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  const reloadCode = await page.evaluate(
+    `import('/src/game/inputBindings.ts').then(({ inputBindings }) => inputBindings.chords('firearm.reload')[0].code)`,
+  );
+  await page.evaluate((code) => {
+    addEventListener('keydown', (event) => {
+      if (event.code === code && !event.repeat) {
+        globalThis.pumpRDownAt = event.timeStamp;
+        globalThis.pumpRDowns.push(event.timeStamp);
+      }
+    });
+  }, reloadCode);
   assert.deepEqual(
     await page.evaluate(() => globalThis.pumpWebGLRequests),
     [],
@@ -169,7 +174,7 @@ try {
       const previous = await page.evaluate(
         () => document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null,
       );
-      await page.keyboard.press('ArrowDown');
+      await pressAction(page, 'inventory.next');
       // Serialize key input with the selection's next-frame DOM update.
       try {
         await page.waitForFunction(
@@ -243,16 +248,16 @@ try {
         sounds: globalThis.pumpHandlingTest.audio.heardSounds,
       };
     }, ids);
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'ui.inventory-toggle');
   await select(ids.box);
-  await page.keyboard.press('KeyH');
+  await pressAction(page, 'inventory.hands');
   await waitForHands(ids.box);
-  await page.keyboard.press('Tab');
+  await pressAction(page, 'ui.inventory-toggle');
   await page.mouse.click(640, 450);
   await page.waitForFunction(() =>
     globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'item.unpack'),
   );
-  await page.keyboard.press('KeyX');
+  await pressAction(page, 'handling.stop');
   const cancelled = await observe();
   assert.equal(cancelled.box, true);
   assert.equal(cancelled.loose, 0);
@@ -266,18 +271,18 @@ try {
   const unpacked = await observe();
   assert.equal(unpacked.loose, ids.payload);
   assert.equal(unpacked.hand, null);
-  await page.keyboard.press('KeyR');
+  await pressAction(page, 'firearm.reload');
   await page.waitForFunction(
     (window) => performance.now() - globalThis.pumpRDownAt >= window,
     RELOAD_GESTURE_MS.doublePress,
   );
-  assert.equal((await observe()).rest, null, 'R with no reloadable item does not rest');
-  await page.keyboard.press('Tab');
+  assert.equal((await observe()).rest, null, 'tapping reload with no reloadable item does not rest');
+  await pressAction(page, 'ui.inventory-toggle');
   await select(ids.gun);
-  await page.keyboard.press('KeyH');
+  await pressAction(page, 'inventory.hands');
   await waitForHands(ids.gun);
-  await page.keyboard.press('Tab');
-  await page.keyboard.press('KeyR');
+  await pressAction(page, 'ui.inventory-toggle');
+  await pressAction(page, 'firearm.reload');
   await page.waitForFunction(
     (window) => performance.now() - globalThis.pumpRDownAt >= window,
     RELOAD_GESTURE_MS.doublePress,
@@ -287,56 +292,56 @@ try {
   assert.equal(tapped.loose, ids.payload);
   assert.deepEqual(tapped.gun.tube, []);
   assert.equal(tapped.rest, null);
-  await page.keyboard.down('KeyR');
-  await page.waitForFunction(() =>
-    globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'firearm.load'),
-  );
-  await page.keyboard.up('KeyR');
+  const releaseReloadWithoutAmmo = await holdAction(page, 'firearm.reload');
+  try {
+    await page.waitForFunction(() =>
+      globalThis.pumpHandlingTest.session.queue.jobs.some((job) => job.jobType === 'firearm.load'),
+    );
+  } finally {
+    await releaseReloadWithoutAmmo();
+  }
   const released = await observe();
   assert.equal(released.loose, ids.payload);
   assert.equal(released.jobs, 0);
   assert.deepEqual(released.gun.tube, []);
-  await page.keyboard.down('KeyR');
-  await page.waitForFunction((uid) => {
-    const s = globalThis.pumpHandlingTest.session;
-    return (
-      s.inventory.itemByUid(uid).firearm.tube.length > 0 || s.queue.jobs.some((job) => job.jobType === 'firearm.load')
+  const releaseReload = await holdAction(page, 'firearm.reload');
+  try {
+    await page.waitForFunction((uid) => {
+      const s = globalThis.pumpHandlingTest.session;
+      return (
+        s.inventory.itemByUid(uid).firearm.tube.length > 0 || s.queue.jobs.some((job) => job.jobType === 'firearm.load')
+      );
+    }, ids.gun);
+    // One completed insertion is enough for native gesture/rack/fire integration.
+    // Full-tube repeat/conservation stays in pumpShotgun.test.ts and reloadInput.test.ts;
+    // do not spend a tuning-derived full magazine of simulation work in the smoke.
+    await waitForWork(
+      (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.tube.length > 0,
+      ids.gun,
     );
-  }, ids.gun);
-  // One completed insertion is enough for native gesture/rack/fire integration.
-  // Full-tube repeat/conservation stays in pumpShotgun.test.ts and reloadInput.test.ts;
-  // do not spend a tuning-derived full magazine of simulation work in the smoke.
-  await waitForWork(
-    (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.tube.length > 0,
-    ids.gun,
-  );
-  await page.keyboard.up('KeyR');
+  } finally {
+    await releaseReload();
+  }
   const loaded = await observe();
   assert.ok(loaded.gun.tube.length > 0 && loaded.gun.tube.length <= ids.capacity);
   assert.equal(loaded.loose, ids.payload - loaded.gun.tube.length);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
-  // Submit the native key sequence in one protocol burst so renderer pacing cannot split the double tap.
+  // Submit the effective reload binding in one protocol burst so renderer pacing cannot split the double tap.
   // No timestamp is supplied or fabricated; verify Chrome's actual event timestamps.
   const keys = await page.context().newCDPSession(page);
-  await Promise.all(
-    ['keyDown', 'keyUp', 'keyDown', 'keyUp'].map((type) =>
-      keys.send('Input.dispatchKeyEvent', {
-        type,
-        code: 'KeyR',
-        key: 'r',
-        windowsVirtualKeyCode: 82,
-        nativeVirtualKeyCode: 82,
-        autoRepeat: false,
-      }),
-    ),
+  await pressCdpActionBurst(
+    (expression) => page.evaluate(expression),
+    (method, params) => keys.send(method, params),
+    'firearm.reload',
+    2,
   );
   await keys.detach();
   const doublePress = await page.evaluate(() => globalThis.pumpRDowns.slice(-2));
   assert.equal(doublePress.length, 2);
   assert.ok(
     doublePress[1] - doublePress[0] < RELOAD_GESTURE_MS.doublePress,
-    'native double R arrives within its actual gesture window',
+    'two reload-binding presses arrive within their actual gesture window',
   );
   await page.waitForFunction(
     (uid) => globalThis.pumpHandlingTest.session.inventory.itemByUid(uid).firearm.cycle?.mode === 'hand',

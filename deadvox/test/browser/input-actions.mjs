@@ -7,27 +7,45 @@ export const actionSnapshotExpression = (id) => `import('/src/game/inputBindings
   return { primary: inputBindings.chords(binding.id)[0], gate: binding.gate ? inputBindings.chords(binding.gate)[0] : null };
 })`;
 const modifierKey = { shift: 'ShiftLeft', alt: 'AltLeft', ctrl: 'ControlLeft', meta: 'MetaLeft' };
-export const pressAction = async (page, id) => {
-  const { primary, gate } = await page.evaluate(actionSnapshotExpression(id));
+export const holdAction = async (page, id, { includeGate = true } = {}) => {
+  const { primary, gate: effectiveGate } = await page.evaluate(actionSnapshotExpression(id));
+  const gate = includeGate ? effectiveGate : null;
   const held = [
     ...new Set(
       [
         gate?.modifier && modifierKey[gate.modifier],
         gate?.code,
         primary.modifier && modifierKey[primary.modifier],
+        primary.code,
       ].filter(Boolean),
     ),
   ];
+  const pressed = [];
   try {
     for (const code of held) {
       await page.keyboard.down(code);
+      pressed.push(code);
     }
-    await page.keyboard.press(primary.code);
-  } finally {
-    for (const code of held.reverse()) {
+  } catch (error) {
+    for (const code of pressed.reverse()) {
       await page.keyboard.up(code);
     }
+    throw error;
   }
+  let released = false;
+  return async () => {
+    if (released) {
+      return;
+    }
+    released = true;
+    for (const code of pressed.reverse()) {
+      await page.keyboard.up(code);
+    }
+  };
+};
+export const pressAction = async (page, id, options) => {
+  const release = await holdAction(page, id, options);
+  await release();
 };
 
 // CDP needs native virtual-key metadata for browser default actions; this is a platform adapter,
@@ -89,4 +107,39 @@ export const pressCdpAction = async (evaluate, send, id) => {
       await send('Input.dispatchKeyEvent', { type: 'keyUp', ...cdpKey(code) });
     }
   }
+};
+export const pressCdpActionBurst = async (evaluate, send, id, count) => {
+  const { primary, gate } = await evaluate(actionSnapshotExpression(id));
+  const held = [
+    ...new Set(
+      [
+        gate?.modifier && modifierKey[gate.modifier],
+        gate?.code,
+        primary.modifier && modifierKey[primary.modifier],
+      ].filter(Boolean),
+    ),
+  ];
+  const modifierBits = { alt: 1, ctrl: 2, meta: 4, shift: 8 };
+  const modifiers =
+    (gate?.modifier ? modifierBits[gate.modifier] : 0) | (primary.modifier ? modifierBits[primary.modifier] : 0);
+  const events = [
+    ...held.map((code) => ({ type: 'keyDown', code })),
+    ...Array.from({ length: count }, () => [
+      { type: 'keyDown', code: primary.code },
+      { type: 'keyUp', code: primary.code },
+    ]).flat(),
+    ...held.reverse().map((code) => ({ type: 'keyUp', code })),
+  ];
+  await Promise.all(
+    events.map(({ type, code }) => {
+      const key = cdpKey(code);
+      return send('Input.dispatchKeyEvent', {
+        type,
+        ...key,
+        nativeVirtualKeyCode: key.windowsVirtualKeyCode,
+        modifiers,
+        autoRepeat: false,
+      });
+    }),
+  );
 };

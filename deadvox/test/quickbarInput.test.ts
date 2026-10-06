@@ -27,9 +27,10 @@ describe('quickbar gesture admission', () => {
     expect(taps).toEqual([]);
     expect(holds).toEqual([1]);
   });
-  it('toggles interaction hints only after the registry hold duration using simulated timestamps', () => {
+  it('toggles interaction hints only after one second of the registry hold using simulated timestamps', () => {
     const action = 'hud.toggle-interaction-hints';
     const binding = INPUT_BINDINGS.find(({ id }) => id === action);
+    expect(HUD_HINTS_HOLD_MS).toBe(1000);
     expect(binding?.holdMs).toBe(HUD_HINTS_HOLD_MS);
     const toggles: string[] = [];
     const input = new PressHoldInput<string>({
