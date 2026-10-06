@@ -4,6 +4,7 @@ import process from 'node:process';
 import { Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
+import { parseSpawnTime, SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -15,6 +16,7 @@ import { raycast, type SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
+import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
@@ -107,6 +109,13 @@ const normalized = (v: Vec3): Vec3 => {
   const magnitude = Math.hypot(...v);
   return magnitude ? [v[0] / magnitude, v[1] / magnitude, v[2] / magnitude] : [0, 0, 0];
 };
+const spawnSite = (spawn: ZombieSpawn): Site => ({
+  surface: { height: (_x, _z, natural) => natural, top: () => undefined },
+  spawn: { pos: [0, 0, 0], yaw: 0 },
+  stamp: () => undefined,
+  furnitureIn: () => [],
+  zombiesIn: () => [spawn],
+});
 const nearestRegionDistance = (zombie: import('../src/core/zombies.ts').Zombie, origin: Vec3, direction: Vec3) => {
   let nearest = Number.POSITIVE_INFINITY;
   const posed = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, 1, BLOCK_SIZE));
@@ -1746,7 +1755,7 @@ describe('shambler scenarios', () => {
     expect(column).toBeDefined();
     const spawner = new ZombieSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
     const initial = [...system.store.entries()];
     expect(initial.length).toBeGreaterThan(0);
     const [id, zombie] = initial[0]!;
@@ -1756,9 +1765,104 @@ describe('shambler scenarios', () => {
       run(system, FISTS_MELEE.cooldown);
     }
     const survivors = system.store.size;
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
     expect(system.store.get(id)).toBeUndefined();
     expect(system.store.size).toBe(survivors);
+  });
+
+  it('waits for the game clock to enter a loaded spawn marker window', () => {
+    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk' } };
+    const site = spawnSite(spawn);
+    const spawner = new ZombieSpawner();
+    const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
+    const load = (calendar: number) => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system, calendar });
+
+    load(SPAWN_TIMES.dusk - 1);
+    expect(system.store.size).toBe(0);
+    spawner.advance({ calendar: SPAWN_TIMES.dusk - 1, registry, zombies: system });
+    expect(system.store.size).toBe(0);
+    spawner.advance({ calendar: SPAWN_TIMES.dusk, registry, zombies: system });
+    expect(system.store.size).toBe(1);
+    expect(spawner.snapshotState()).toContain('shambler:0,1,0');
+  });
+
+  it('spawns same-tick pending markers in stable order regardless of column load order', () => {
+    const markers: ZombieSpawn[] = [
+      { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk' } },
+      { type: 'shambler', pos: [32, 1, 0], window: { from: 'dusk' } },
+    ];
+    const spawnOrder = (order: readonly ZombieSpawn[]) => {
+      const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
+      const spawner = new ZombieSpawner();
+      order.forEach((spawn, cx) => {
+        spawner.onColumn({
+          cx,
+          cz: 0,
+          site: spawnSite(spawn),
+          registry,
+          zombies: system,
+          calendar: SPAWN_TIMES.dusk - 1,
+        });
+      });
+      spawner.advance({ calendar: SPAWN_TIMES.dusk, registry, zombies: system });
+      return [...system.store.entries()].map(([id, zombie]) => ({ id, home: zombie.home }));
+    };
+
+    const first = spawnOrder(markers);
+    expect(first.map(({ home }) => home)).toEqual([
+      [0, 1, 0],
+      [32, 1, 0],
+    ]);
+    expect(first).toEqual(spawnOrder([...markers].reverse()));
+  });
+
+  it('spawns a marker when its column first loads inside the window', () => {
+    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk', to: '20:00' } };
+    const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
+    new ZombieSpawner().onColumn({
+      cx: 0,
+      cz: 0,
+      site: spawnSite(spawn),
+      registry,
+      zombies: system,
+      calendar: SPAWN_TIMES.dusk + 1,
+    });
+    expect(system.store.size).toBe(1);
+  });
+
+  it('drops pending markers on unload and retries a missed bounded window the next day', () => {
+    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk', to: '20:00' } };
+    const site = spawnSite(spawn);
+    const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
+    const spawner = new ZombieSpawner();
+    const load = (calendar: number) => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system, calendar });
+    load(parseSpawnTime('20:00')!);
+    spawner.unloadColumn(0, 0);
+    spawner.advance({ calendar: SPAWN_TIMES.dusk + SECONDS_PER_DAY, registry, zombies: system });
+    expect(system.store.size).toBe(0);
+
+    load(parseSpawnTime('20:00')!);
+    spawner.advance({ calendar: SPAWN_TIMES.dusk + SECONDS_PER_DAY, registry, zombies: system });
+    expect(system.store.size).toBe(1);
+    const [id] = system.store.entries().next().value!;
+    system.store.remove(id);
+    load(SPAWN_TIMES.dusk + 2 * SECONDS_PER_DAY);
+    spawner.advance({ calendar: SPAWN_TIMES.dusk + 2 * SECONDS_PER_DAY, registry, zombies: system });
+    expect(system.store.size).toBe(0);
+    expect(spawner.snapshotState()).toContain('shambler:0,1,0');
+
+    const restored = new ZombieSpawner();
+    restored.restoreState(spawner.snapshotState());
+    const afterRestore = new ZombieSystem(senses(() => player([1000, 2, 1000])));
+    restored.onColumn({
+      cx: 0,
+      cz: 0,
+      site,
+      registry,
+      zombies: afterRestore,
+      calendar: SPAWN_TIMES.dusk + 3 * SECONDS_PER_DAY,
+    });
+    expect(afterRestore.store.size).toBe(0);
   });
 
   it('gait phase tracks travelled distance during wander, chase and obstacle response', () => {

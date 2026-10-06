@@ -5,6 +5,7 @@ read_if:
   - you change content references, static reachability, or disassembly-output contracts
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
+  - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
 ---
 
@@ -45,6 +46,11 @@ uses exact integer multiplication and reports the count when refusing a file.
 - Result, every alternative item, skill, quality and workstation references are
   checked after ordered merging. Broken files are removed whole, including their
   skills/recipes/items, and references are checked again as before.
+
+Template spawn palette entries can specify `window: {from, to?}`.
+`src/core/schema.ts`, `PaletteThingSchema`, validates the field; named game-clock
+boundaries live in `src/core/clock.ts`, `SPAWN_TIMES`. See `DESIGN.md`,
+"Spawning", for the rule and its reason.
 
 The initial torch, candle and repair-kit recipes consume whole solid items only.
 There are **no millilitre components, partial liquid use, pouring/mixing, new item
