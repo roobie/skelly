@@ -228,10 +228,10 @@ Notes on the proposal:
   Enter resumes rest after an interruption only while the same piece remains
   reachable. L remains a legacy way to start sleep until d44 removes it; it
   cannot stop sleep.
-- **C toggles crouch.** For d98, Enter is the interim continuation key after an
-  interruption or for a stopped craft: C already continued a stopped craft in
-  play, so d98 moved continuation to keep crouch from also resuming work. This
-  assignment awaits BR's answer to open question 5.
+- **C toggles crouch; Enter continues.** BR (2026-10-06 11:28): "2. let's make
+  crouch a toggle" and, for where continuation goes, "1. enter". C used to
+  continue a stopped craft in play, so continuation, after an interruption and
+  for a stopped craft, moved to Enter.
 - **Crouch on C, not Ctrl**, whatever the Ctrl verification finds, because of
   the Ctrl + W risk.
 - **Activation must not invent a second action owner:** capability admission
@@ -290,10 +290,10 @@ editing retains native key behaviour.
    **Answered (BR, 2026-10-04):** R only reloads, and rest has no key.
    Pump: hold loads, double-press racks, single tap does nothing. See
    `src/game/reloadInput.ts`, `RELOAD_GESTURE_MS`, for gesture thresholds.
-5. **Continue after an interruption:** should the interruption card keep a
+5. ~~**Continue after an interruption:** should the interruption card keep a
    keyboard continuation key, use a two-button choice clicked with the drawn
-   cursor, or use another control? Enter is d98's interim assignment; it also
-   continues a stopped craft while BR's answer is pending.
+   cursor, or use another control?~~ **Answered (BR, 2026-10-06 11:28):**
+   "1. enter". Enter also continues a stopped craft.
 6. ~~**Debug keys:** panel-only shortcuts, or a prefix?~~ **Answered (BR,
    2026-10-04):** behind a held F1. BR moved the modifier to F2 on 2026-10-05
   (see "What's already ruled").
