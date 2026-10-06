@@ -10,6 +10,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { DebugAimOverlay } from '../src/debug/aimOverlay.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -37,6 +38,7 @@ const standing = (position: Vec3, facing: Vec3) => {
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
     hurtPlayer: () => undefined,
   });
   const id = system.add(registry.zombies.get('shambler')!, position, facing);

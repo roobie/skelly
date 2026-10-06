@@ -32,6 +32,7 @@ export class Input {
   private dominantUsePressed = false;
   private dominantUseDown = false;
   private offUsePressed = false;
+  private crouchTogglePressed = false;
   cursorX = globalThis.innerWidth / 2;
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
@@ -79,6 +80,7 @@ export class Input {
     this.dominantUseDown = false;
     this.dominantUsePressed = false;
     this.offUsePressed = false;
+    this.crouchTogglePressed = false;
   }
   useOff(): void {
     if (this.locked && !this.menuPointer) {
@@ -143,5 +145,13 @@ export class Input {
   }
   consumeOffUse(): void {
     this.offUsePressed = false;
+  }
+  requestCrouchToggle(): void {
+    this.crouchTogglePressed = true;
+  }
+  consumeCrouchToggle(): boolean {
+    const pressed = this.crouchTogglePressed;
+    this.crouchTogglePressed = false;
+    return pressed;
   }
 }

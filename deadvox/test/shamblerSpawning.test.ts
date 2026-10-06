@@ -8,6 +8,7 @@ import { ZombieSystem } from '../src/core/zombies.ts';
 import { spawnShamblers } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -36,6 +37,7 @@ const zombiesFor = (body: ReturnType<typeof player>, isSolid: (x: number, y: num
     blockSize: SCALE.blockSize,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
     player: () => ({
       pos: body.pos,
       body,

@@ -396,8 +396,8 @@ Each kind keeps its own close, cancel or wake behavior:
   input. Existing wake triggers remain. Interacting with sleepable furniture starts
   sleep; there is no dedicated sleep key.
 - Craft: BR (2026-10-05 20:14): "as for crafting: same as reading". Movement does
-  not stop it; its cancel key and interrupt events still do. C resumes after an
-  interruption.
+  not stop it; its cancel key and interrupt events still do. Enter resumes
+  after an interruption.
 
 BR (2026-10-05 morning playtest) said "if the player wants to do a long running
 op with shamblers close, that's OK". BR (2026-10-05 20:09) answered "fast

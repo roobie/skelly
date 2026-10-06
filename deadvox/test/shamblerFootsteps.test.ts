@@ -15,6 +15,7 @@ import { makeScale } from '../src/core/scale.ts';
 import type { PlayerSense, Zombie } from '../src/core/zombies.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -47,6 +48,7 @@ const makeWorld = (player: PlayerSense, isSolid = FLOOR) => {
     blockSize: BLOCK_SIZE,
     physics: PHYSICS,
     jumpSpeed: PLAYER.jump,
+    tuning: TEST_SENSE_TUNING,
     player: () => player,
     hour: () => 12,
     hurtPlayer: () => undefined,

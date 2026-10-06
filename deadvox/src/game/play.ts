@@ -72,7 +72,6 @@ import { Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
 import { startingLoadout } from './loadout.ts';
 import { shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
-import { PLAYER } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -133,17 +132,21 @@ export const startPlay = (
   }
   const { scale } = config;
   const s = scale.blockSize;
-  const eyeHeight = PLAYER.eye / s;
 
   const playerStart = playerStartFromWorld(engine, scale);
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
+  const playerSenseTuning = registry.senses.get('player');
+  if (!playerSenseTuning) {
+    throw new Error('Missing player sense tuning');
+  }
   const audio = new GameAudio({
     registry,
     blockSize: s,
     isSolid: engine.isSolid,
+    tuning: playerSenseTuning,
     report: (message) => {
       const errors = $('errors');
       errors.textContent = [errors.textContent, message].filter(Boolean).join('\n');
@@ -177,6 +180,7 @@ export const startPlay = (
       intent: () => input.intent(),
       consumeDominantUse: () => input.consumeDominantUse(),
       consumeOffUse: () => input.consumeOffUse(),
+      consumeCrouchToggle: () => input.consumeCrouchToggle(),
       useDominant: () => {
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(inventory);
@@ -835,10 +839,30 @@ export const startPlay = (
     }
     return mainMenuOpen || timeKeys(action);
   };
+  const withUnlockedInput = (action: () => void): void => {
+    if (!compression.locksInput) {
+      action();
+    }
+  };
+  const stopHandling = (): void => {
+    input.reload.cancel();
+    queue.cancel();
+    if (sim.actions.job || rest.action || compression.active) {
+      stopAction();
+    }
+  };
+  const assignQuickbarIfUnlocked = (slot: number | undefined, at: number): void => {
+    if (slot !== undefined && !compression.locksInput) {
+      quickbarInput.keyDown(slot, at);
+    }
+  };
   const gameplayCommand = (action: string, at: number, slot: number | undefined): void => {
     switch (action) {
       case 'movement.walk-toggle':
         input.walking = !input.walking;
+        break;
+      case 'player.crouch-toggle':
+        withUnlockedInput(() => input.requestCrouchToggle());
         break;
       case 'hand.use-off':
         input.useOff();
@@ -847,9 +871,7 @@ export const startPlay = (
         input.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
-        if (!compression.locksInput) {
-          use();
-        }
+        withUnlockedInput(use);
         break;
       case 'craft.continue':
         if (session.crafting.currentUid !== undefined) {
@@ -857,18 +879,12 @@ export const startPlay = (
         }
         break;
       case 'handling.stop':
-        input.reload.cancel();
-        queue.cancel();
-        if (sim.actions.job || rest.action || compression.active) {
-          stopAction();
-        }
+        stopHandling();
         break;
       default:
         break;
     }
-    if (slot !== undefined && !compression.locksInput) {
-      quickbarInput.keyDown(slot, at);
-    }
+    assignQuickbarIfUnlocked(slot, at);
   };
   const releaseCommand = (action: string, at: number, slot: number | undefined): void => {
     if (action === 'firearm.reload') {
@@ -920,7 +936,7 @@ export const startPlay = (
   );
 
   const lookDir = (): Vec3 => aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
-  const eye = (): Vec3 => [body.pos[0], body.pos[1] + eyeHeight, body.pos[2]];
+  const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
   const lookedAt = (): BlockEntity | undefined =>
