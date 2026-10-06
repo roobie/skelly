@@ -80,6 +80,7 @@ for (const count of counts) {
     blockSize: engine.config.scale.blockSize,
     physics: physicsFor(engine.config.scale),
     jumpSpeed: PLAYER.jump,
+    tuning: registry.senses.get('player'),
     player: () => player,
     hour: () => hour,
     hurtPlayer: () => undefined,
