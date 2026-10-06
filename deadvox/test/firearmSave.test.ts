@@ -240,7 +240,7 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
     runtime.sim.body.impact(0, 'torso', { shockDamage: runtime.sim.body.shock });
     const framesIntoKnockout = Math.min(
       30,
-      Math.max(1, Math.floor(runtime.sim.body.tuning.knockoutSeconds * 60 / 2)),
+      Math.max(1, Math.floor((runtime.sim.body.tuning.knockoutSeconds * 60) / 2)),
     );
     for (let frame = 0; frame < framesIntoKnockout; frame += 1) {
       runtime.frame(frameSeconds);
