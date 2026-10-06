@@ -409,7 +409,11 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       recordedStartPosition,
       'the replay session starts from the recording snapshot before its first player tick',
     );
-    assert.equal(replayState, 'verified', 'a clean look, movement and inventory recording reproduces its end state');
+    assert.equal(
+      replayState,
+      'verified',
+      'a clean look, movement, inventory and crafting recording reproduces its end state',
+    );
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();
