@@ -9,10 +9,10 @@ read_if:
 
 A debug page for judging how vehicles look and come apart before any of them reach the
 game. It is not in Deadvox's default entry point and the game loads none of it. Open
-`/vehicle-spike.html` on the dev server; `?build=stripped&view=front34` picks a build and
-a camera preset, and the page lists the rest. The page is `vehicle-spike.html`, its
-renderer and controls are `src/debug/vehicleSpike.ts`, and the model is under
-`src/debug/vehicles/`.
+`/vehicle-spike.html` on the dev server. URL parameters pick the build and the camera
+preset; see `src/debug/vehicleSpike.ts`, `BUILDS` and `VIEWS`. That file holds the scene
+and the page state, `src/debug/vehicleSpikePanel.ts` the lit-html control panel (ADR 0001),
+and `src/debug/vehicles/` the model.
 
 ## Parts, fittings and builds
 
@@ -36,28 +36,25 @@ something rests on it, and can't go on before all its supports are on
 placed parts freely, with no relation between a roof panel and the posts under it, and
 its roof panels read as floating slabs.
 
-`test/vehicleParts.test.ts` keeps the 4×4 honest: each fitting touches every part it rests
-on, no two fittings share a voxel, nothing reaches below the ground, and the support graph
-has no cycle or missing support in either build. Those are properties, so the test needs
-no update when a part is reshaped.
+`test/vehicleParts.test.ts` checks the builds against these rules and against physical
+sense (contact, overlap, ground). Those are properties, so the test needs no update when a
+part is reshaped.
 
 ## Grain
 
 Two grids, see `model.ts`, `PART_CELL` and `VOXELS_PER_CELL`:
 
-- **Part cells** keep the darker_yet fitting spike's 4×4 addressing per world block. The
-  schematic and the cell bounds a fitting snaps to use this grid.
+- **Part cells** keep the darker_yet fitting spike's 4×4 addressing per world block; the
+  schematic draws on this grid.
 - **Voxels** subdivide each cell, so pillars, the gap around a wheel inside its arch,
-  and round lamps can be thinner than a cell while every part still snaps to the cell
-  grid. r43-3 chose this grain over Mobgen's coarser voxel so that seats, the steering
-  wheel and the dashboard read inside the shell. In r43-2 a finer grain, drawn one voxel
-  at a time, made the software-rendered preview unresponsive. r43-5 kept the grain and
-  built the 4×4's thinnest parts a few voxels thick.
+  and round lamps can be thinner than a cell. r43-3 chose this grain over Mobgen's
+  coarser voxel so that seats, the steering wheel and the dashboard read inside the
+  shell. r43-5 kept it and built the 4×4's thinnest parts a few voxels thick.
 
-Cost stays per part type, not per voxel: `meshGrid` in `voxels.ts` greedy-meshes each
-type's grid once per side into one geometry, with glass in a separate transparent pass,
-and every fitting of that type reuses it. The page's `#perf` line reports draw calls,
-triangles and mesh build time for the build on screen.
+Cost is per part type, not per voxel: each type is meshed once per side and every
+fitting of it reuses that geometry (`voxels.ts`, `meshGrid`; `vehicleSpike.ts`,
+`partMeshes`). In r43-2, drawing one voxel at a time made the software-rendered preview
+unresponsive at a finer grain.
 
 ## Proportions
 
@@ -65,9 +62,9 @@ The 4×4 follows the published dimensions of the Range Rover Classic four-door:
 length, width, height, wheelbase, track, wheel diameter, overhangs, and the waist and
 glass lines (sources: <https://en.wikipedia.org/wiki/Range_Rover_Classic> and the 1981
 four-door blueprint at
-<https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints>). Each is rounded to whole voxels; the named
-constants at the top of `rangeRover.ts` carry them. The hatchback is round 3's model
-ported to the part model as it was, kept as a comparison.
+<https://getoutlines.com/blueprints/26562/1981-land-rover-range-rover-3.5-v8-4-door-suv-blueprints>),
+each rounded to whole voxels in the shapes and fittings of `rangeRover.ts`. The hatchback
+is round 3's model ported to the part model as it was, kept as a comparison.
 
 ## Where the deferred model parts attach
 
