@@ -180,6 +180,10 @@ const observationPlugin = {
     scale,
     performHandUse,
     quickbarActions,
+    quickbar,
+    screen,
+    dispatchScreenCommand,
+    get inputRecorder() { return inputRecorder; },
     hudOptions,
     beginGlowstickCharge,
     selectPrimaryAction,
@@ -314,6 +318,29 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
         },
         { id: action, moduleUrl: inputBindingsModule },
       );
+    await command('ui.inventory-toggle');
+    await page.locator('#inventory .inv-item').first().waitFor();
+    await command('inventory.next');
+    const assignedUid = await page.evaluate(() => globalThis.primaryActionTest.screen.selected?.uid);
+    assert(Number.isSafeInteger(assignedUid), 'the inventory command selects an item for quickbar assignment');
+    await command('quickbar.assign.2');
+    await command('ui.inventory-toggle');
+    await page.waitForFunction((uid) => globalThis.primaryActionTest.quickbar.slots[1] === uid, assignedUid);
+    const craftRecipeId = await page.evaluate(
+      () => globalThis.primaryActionTest.session.inventory.registry.recipes.values().next().value?.id,
+    );
+    assert.equal(typeof craftRecipeId, 'string', 'the loaded content supplies a craft recipe');
+    await page.evaluate(
+      (recipeId) => globalThis.primaryActionTest.dispatchScreenCommand({ kind: 'craft.start', recipeId }),
+      craftRecipeId,
+    );
+    await page.waitForFunction(
+      (recipeId) =>
+        globalThis.primaryActionTest.inputRecorder
+          .copyInputs()
+          .actions.some(({ payload }) => payload?.kind === 'craft.start' && payload.recipeId === recipeId),
+      craftRecipeId,
+    );
     await command('debug.panel-toggle');
     await command('debug.input-replay-export');
     await page.waitForFunction(() => document.querySelector('#replay-download')?.hidden === false);
@@ -325,6 +352,19 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       return fetch(link.href).then((response) => response.text());
     });
     const cleanArtifact = JSON.parse(replayText);
+    assert(
+      cleanArtifact.actions.some(
+        ({ action, payload }) =>
+          action === 'inventory.assign' && payload?.itemUid === assignedUid && payload.slot === 1,
+      ),
+      'the clean recording includes the selected item’s UID-based quickbar assignment',
+    );
+    assert(
+      cleanArtifact.actions.some(
+        ({ action, payload }) => action === 'craft.start' && payload?.recipeId === craftRecipeId,
+      ),
+      'the clean recording includes the dispatched craft-start payload',
+    );
     process.stdout.write(
       `Clean replay samples: ${JSON.stringify({ frames: cleanArtifact.frames.length, movementTicks: cleanArtifact.frames.filter((frame) => frame[2] !== 0 || frame[3] !== 0).length, activeTicks: cleanArtifact.frames.filter((frame) => frame[4] & 1).length, lookChangedTicks: cleanArtifact.frames.filter((frame) => frame[0] !== start.yaw).length })}\n`,
     );
@@ -369,7 +409,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       recordedStartPosition,
       'the replay session starts from the recording snapshot before its first player tick',
     );
-    assert.equal(replayState, 'verified', 'a clean look-and-movement recording reproduces its end state');
+    assert.equal(replayState, 'verified', 'a clean look, movement and inventory recording reproduces its end state');
     assert.deepEqual(pageErrors, []);
   } finally {
     await context.close();

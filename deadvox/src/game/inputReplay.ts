@@ -1,13 +1,26 @@
 import { canonicalJsonBytes } from '../core/canonicalJson.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
+import { type FirearmsSkillZeroHandling, sameFirearmsSkillZeroHandling } from '../core/firearmsSkill.ts';
 import { decodeSave, encodeSave, type SaveContentKind, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { INPUT_BINDINGS, type InputContext, POINTER_ACTIONS } from './inputBindings.ts';
 import type { MoveIntent } from './player.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
+import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 4;
+const INPUT_REPLAY_SCHEMA_VERSION = 5;
+
+export const withReplayExportGuard = <T>(
+  contentHandling: FirearmsSkillZeroHandling,
+  activeHandling: FirearmsSkillZeroHandling,
+  exportReplay: () => T,
+): T => {
+  if (!sameFirearmsSkillZeroHandling(contentHandling, activeHandling)) {
+    throw new Error('Replay export is unavailable while debug firearm-handling overrides differ from content');
+  }
+  return exportReplay();
+};
 const INPUT_REPLAY_TICKS_PER_WINDOW = 60 * 60 * 2;
 // Keep each render frame's bounded compressed ticks available so rollover cannot cut it in half.
 const INPUT_REPLAY_TICKS_PER_FRAME = Math.ceil(SKIP_COMPRESSION.maxSimPerFrame * PHYSICS_RATE);
@@ -15,13 +28,35 @@ const INPUT_REPLAY_MAX_TICKS = INPUT_REPLAY_TICKS_PER_WINDOW * 2 + INPUT_REPLAY_
 const INPUT_REPLAY_ACTIONS_PER_WINDOW = 8192;
 const INPUT_REPLAY_MAX_ACTIONS = INPUT_REPLAY_ACTIONS_PER_WINDOW * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
+const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
 const MAGIC = 'DEADVOX_REPLAY';
 const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;
 const PENDING_REPLAY_KEY = 'deadvox.pending-replay';
+const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
+  'inventory.move',
+  'inventory.to-hands',
+  'inventory.search',
+  'inventory.work',
+  'inventory.assign',
+  'inventory.cancel-handling',
+  'craft.start',
+  'craft.continue',
+  'craft.stop',
+  'glowstick.cancel',
+]);
 const REPLAY_SEMANTIC_ACTIONS = [
   'glowstick.throw',
   'glowstick.cancel',
+  'inventory.move',
+  'inventory.to-hands',
+  'inventory.search',
+  'inventory.work',
+  'inventory.assign',
+  'inventory.cancel-handling',
+  'craft.start',
+  'craft.continue',
+  'craft.stop',
   ...Array.from({ length: QUICKBAR_SLOTS }, (_, index) => [
     `quickbar.tap.${index + 1}`,
     `quickbar.hold.${index + 1}`,
@@ -79,6 +114,7 @@ export interface ReplayAction {
   readonly phase: 'down' | 'up';
   readonly context: InputContext;
   readonly value?: number;
+  readonly payload?: ReplayActionPayload;
 }
 
 export type ReplayFrame = readonly [
@@ -138,6 +174,71 @@ const decodeBase64 = (value: string): Uint8Array => {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
+const isValidQueuedAction = (
+  action: string,
+  context: InputContext,
+  value: number | undefined,
+  payload: ReplayActionPayload | undefined,
+): boolean => {
+  if (!(ACTION_INDEX.has(action) && CONTEXT_INDEX.has(context))) {
+    return false;
+  }
+  const validValue =
+    action === 'glowstick.throw'
+      ? typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 10_000
+      : value === undefined;
+  const validPayload = REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) ? payload !== undefined : true;
+  return (
+    validValue && validPayload && (payload === undefined || (isReplayActionPayload(payload) && payload.kind === action))
+  );
+};
+
+type ReplayActionRecord = Record<string, unknown> & {
+  tick: number;
+  action: string;
+  phase: 'down' | 'up';
+  context: InputContext;
+};
+
+const hasValidActionValue = (action: string, candidate: Record<string, unknown>): boolean =>
+  action === 'glowstick.throw'
+    ? typeof candidate.value === 'number' &&
+      Number.isFinite(candidate.value) &&
+      candidate.value >= 0 &&
+      candidate.value <= 10_000
+    : !Object.hasOwn(candidate, 'value');
+
+const hasValidActionPayload = (action: string, candidate: Record<string, unknown>): boolean => {
+  const hasPayload = Object.hasOwn(candidate, 'payload');
+  if (REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) && !hasPayload) {
+    return false;
+  }
+  return !hasPayload || (isReplayActionPayload(candidate.payload) && candidate.payload.kind === action);
+};
+
+const isReplayActionRecord = (
+  candidate: unknown,
+  lastTick: number,
+  frameCount: number,
+): candidate is ReplayActionRecord => {
+  if (!(isRecord(candidate) && Number.isSafeInteger(candidate.tick) && typeof candidate.action === 'string')) {
+    return false;
+  }
+  const tick = candidate.tick as number;
+  const { action } = candidate;
+  return (
+    tick >= 0 &&
+    tick < frameCount &&
+    tick >= lastTick &&
+    ACTION_INDEX.has(action) &&
+    (candidate.phase === 'down' || candidate.phase === 'up') &&
+    typeof candidate.context === 'string' &&
+    CONTEXT_INDEX.has(candidate.context as InputContext) &&
+    hasValidActionValue(action, candidate) &&
+    hasValidActionPayload(action, candidate)
+  );
+};
+
 const flagOf = (sample: Omit<ReplayControlSample, 'compression'>): number =>
   (sample.active ? FRAME_FLAGS.active : 0) |
   (sample.inputLocked ? FRAME_FLAGS.inputLocked : 0) |
@@ -186,7 +287,15 @@ export class InputReplayRecorder {
   private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionContexts = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionValues = new Float64Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
-  private pending: { action: string; phase: 'down' | 'up'; context: InputContext; value?: number }[] = [];
+  private readonly actionPayloads: (string | undefined)[] = new Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
+  private pending: {
+    action: string;
+    phase: 'down' | 'up';
+    context: InputContext;
+    value?: number;
+    payload?: string;
+  }[] = [];
+  private actionPayloadBytes = 0;
   private frameCount = 0;
   private actionCount = 0;
   private batchStartedAt = 0;
@@ -229,26 +338,41 @@ export class InputReplayRecorder {
       this.actionPhases.byteLength +
       this.actionContexts.byteLength +
       this.actionValues.byteLength +
+      this.actionPayloadBytes * 2 +
       this.batchCosts.byteLength
     );
   }
 
-  queueAction(action: string, phase: 'down' | 'up', context: InputContext, value?: number): void {
+  queueAction(
+    action: string,
+    phase: 'down' | 'up',
+    context: InputContext,
+    valueOrPayload?: number | ReplayActionPayload,
+  ): void {
     if (
       this.frameCount >= this.bufferTicks ||
       this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
     ) {
       return;
     }
-    if (
-      !(ACTION_INDEX.has(action) && CONTEXT_INDEX.has(context)) ||
-      (action === 'glowstick.throw'
-        ? typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 10_000
-        : value !== undefined)
-    ) {
+    const value = typeof valueOrPayload === 'number' ? valueOrPayload : undefined;
+    const payload = typeof valueOrPayload === 'object' ? valueOrPayload : undefined;
+    if (!isValidQueuedAction(action, context, value, payload)) {
       throw new Error(`Input replay cannot encode ${action} in ${context}`);
     }
-    this.pending.push({ action, phase, context, ...(value === undefined ? {} : { value }) });
+    const payloadText = payload === undefined ? undefined : new TextDecoder().decode(canonicalJsonBytes(payload));
+    const payloadBytes = payloadText === undefined ? 0 : new TextEncoder().encode(payloadText).byteLength;
+    if (payloadBytes + this.actionPayloadBytes > INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES) {
+      throw new Error('Input replay action payloads exceed the supported size');
+    }
+    this.actionPayloadBytes += payloadBytes;
+    this.pending.push({
+      action,
+      phase,
+      context,
+      ...(value === undefined ? {} : { value }),
+      ...(payloadText === undefined ? {} : { payload: payloadText }),
+    });
   }
 
   recordTick(sample: Omit<ReplayControlSample, 'compression'>, compression = 1): void {
@@ -267,6 +391,9 @@ export class InputReplayRecorder {
       this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
       if (pending.value !== undefined) {
         this.actionValues[index] = pending.value;
+      }
+      if (pending.payload !== undefined) {
+        this.actionPayloads[index] = pending.payload;
       }
     }
     this.pending = [];
@@ -299,6 +426,9 @@ export class InputReplayRecorder {
       phase: this.actionPhases[index] === 0 ? 'down' : 'up',
       context: CONTEXTS[this.actionContexts[index]!]!,
       ...(ACTION_IDS[this.actionIds[index]!] === 'glowstick.throw' ? { value: this.actionValues[index]! } : {}),
+      ...(this.actionPayloads[index] === undefined
+        ? {}
+        : { payload: JSON.parse(this.actionPayloads[index]!) as ReplayActionPayload }),
     }));
     return { frames, actions };
   }
@@ -483,33 +613,25 @@ export async function decodeInputReplay(
     ];
   });
   let lastTick = -1;
+  let actionPayloadBytes = 0;
   const actions: ReplayAction[] = value.actions.map((candidate, index) => {
-    if (
-      !(isRecord(candidate) && Number.isSafeInteger(candidate.tick)) ||
-      (candidate.tick as number) < 0 ||
-      (candidate.tick as number) >= frames.length ||
-      (candidate.tick as number) < lastTick ||
-      typeof candidate.action !== 'string' ||
-      !ACTION_INDEX.has(candidate.action) ||
-      (candidate.action === 'glowstick.throw'
-        ? typeof candidate.value !== 'number' ||
-          !Number.isFinite(candidate.value) ||
-          candidate.value < 0 ||
-          candidate.value > 10_000
-        : Object.hasOwn(candidate, 'value')) ||
-      (candidate.phase !== 'down' && candidate.phase !== 'up') ||
-      typeof candidate.context !== 'string' ||
-      !CONTEXT_INDEX.has(candidate.context as InputContext)
-    ) {
+    if (!isReplayActionRecord(candidate, lastTick, frames.length)) {
       throw new Error(`Invalid or out-of-order replay action ${index}`);
     }
-    lastTick = candidate.tick as number;
+    if (Object.hasOwn(candidate, 'payload')) {
+      actionPayloadBytes += canonicalJsonBytes(candidate.payload).byteLength;
+      if (actionPayloadBytes > INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES) {
+        throw new Error('Replay action payloads exceed the supported size');
+      }
+    }
+    lastTick = candidate.tick;
     return {
-      tick: candidate.tick as number,
+      tick: candidate.tick,
       action: candidate.action,
       phase: candidate.phase,
-      context: candidate.context as InputContext,
+      context: candidate.context,
       ...(candidate.action === 'glowstick.throw' ? { value: candidate.value as number } : {}),
+      ...(Object.hasOwn(candidate, 'payload') ? { payload: candidate.payload as ReplayActionPayload } : {}),
     };
   });
   const saveBytes = decodeBase64(value.startSave);

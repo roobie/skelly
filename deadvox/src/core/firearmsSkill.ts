@@ -19,6 +19,16 @@ export interface FirearmsSkillZeroHandling {
 
 export type FirearmsSkillShotKind = keyof FirearmsSkillZeroHandling;
 
+export const sameFirearmsSkillZeroHandling = (
+  left: FirearmsSkillZeroHandling,
+  right: FirearmsSkillZeroHandling,
+): boolean =>
+  (['singleShot', 'automaticFollowup'] as const).every((shot) =>
+    (['variance', 'recoilKickScale', 'recoilRecoveryScale'] as const).every(
+      (field) => left[shot][field] === right[shot][field],
+    ),
+  );
+
 export interface FirearmsCombatTuning {
   readonly raiseMinimumSeconds: number;
   readonly raiseRangeSeconds: number;

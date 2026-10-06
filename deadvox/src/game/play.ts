@@ -17,7 +17,7 @@ import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan } from '../core/options.ts';
+import { doorOptions, doorPlan, toHands } from '../core/options.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
@@ -81,6 +81,7 @@ import {
   type ReplayInputData,
   replayStateFingerprint,
   stashInputReplay,
+  withReplayExportGuard,
 } from './inputReplay.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
@@ -99,6 +100,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
 import type { ReloadBinding } from './reloadInput.ts';
+import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
 import { populateTestHouseRepairCorner } from './testHouse.ts';
@@ -276,6 +278,7 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
+  let pendingScreenCommands: ReplayActionPayload[] = [];
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
   let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
@@ -292,6 +295,14 @@ export const startPlay = (
   ): PlayerInputSample => {
     if (!replayPlayer) {
       inputRecorder?.recordTick(live, compressionAtTick);
+      const commands = pendingScreenCommands;
+      pendingScreenCommands = [];
+      for (const payload of commands) {
+        const reason = applyScreenCommand(payload);
+        if (reason) {
+          showRefusal(reason, sim.time);
+        }
+      }
       return live;
     }
     replaySample = replayPlayer.next();
@@ -654,32 +665,20 @@ export const startPlay = (
     distance: (pile: Pile) => pileDistance(pile.pos),
     containers: () => session.reach().furniture,
     entityDistance,
-    search: (entity) => {
-      playtestObserver?.beginSearch(entity, nameOf(entity));
-      return search(entity);
-    },
+    dispatch: dispatchScreenCommand,
+
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
     describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
-    work: (uid, operation) => actOnWork(uid, operation),
     body: () => sim.body.snapshotState(),
     actionRefusal: () => sim.body.actionRefusal,
-    assign: (slot, item) => {
-      quickbar.assign(slot, item);
-      showNotice(`${inventory.name(item)} on quickbar ${slot + 1}`);
-    },
   });
 
   const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
     notice: (text) => showRefusal(text, sim.time),
-    started: () => {
-      closeInventoryScreen();
-      syncMenuState();
-    },
-    continue: () => continueAction(),
-    stop: () => stopAction(),
+    dispatch: dispatchScreenCommand,
   });
 
   let revealZombies = false;
@@ -756,16 +755,21 @@ export const startPlay = (
         verificationTick: replayVerificationTick,
       }),
     export: () =>
-      encodeRecentInputReplay(
-        previousInputRecorder,
-        inputRecorder,
-        {
-          blockSize: s,
-          site: config.site,
-          storeys: config.storeys,
-          density: config.density,
-        },
-        captureSnapshot(),
+      withReplayExportGuard(
+        registry.skills.get('firearms_combat')!.combat!.firearms!.skillZeroHandling,
+        session.firearmsSkillZeroHandling,
+        () =>
+          encodeRecentInputReplay(
+            previousInputRecorder,
+            inputRecorder,
+            {
+              blockSize: s,
+              site: config.site,
+              storeys: config.storeys,
+              density: config.density,
+            },
+            captureSnapshot(),
+          ),
       ),
     import: importReplay,
   };
@@ -990,6 +994,60 @@ export const startPlay = (
       compression.stop();
     }
   };
+
+  const replayCommandOwners: ReplayCommandOwners = {
+    inventory,
+    queue,
+    quickbar,
+    search: (uid) => {
+      const entity = entities.byUid(uid);
+      if (!entity) {
+        return 'The container is no longer available';
+      }
+      playtestObserver?.beginSearch(entity, nameOf(entity));
+      return search(entity);
+    },
+    work: actOnWork,
+    toHands: (uid, feetPosition) => {
+      const item = inventory.itemByUid(uid);
+      return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';
+    },
+    craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
+    craftContinue: () => {
+      continueAction();
+    },
+    craftStop: () => {
+      stopAction();
+    },
+    cancelGlowstick: cancelGlowstickCharge,
+  };
+  const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
+    const reason = applyReplayActionPayload(payload, replayCommandOwners);
+    if (reason) {
+      return reason;
+    }
+    if (payload.kind === 'inventory.assign') {
+      const item = inventory.itemByUid(payload.itemUid);
+      if (item) {
+        showNotice(`${inventory.name(item)} on quickbar ${payload.slot + 1}`);
+      }
+    } else if (payload.kind === 'craft.start') {
+      closeInventoryScreen();
+      syncMenuState();
+    }
+    return undefined;
+  };
+  function dispatchScreenCommand(payload: ReplayActionPayload): string | undefined {
+    if (replayPlayer) {
+      return undefined;
+    }
+    if (!inputRecorder) {
+      return applyScreenCommand(payload);
+    }
+    inputRecorder.queueAction(payload.kind, 'down', inputContext(), payload);
+    pendingScreenCommands.push(payload);
+    return undefined;
+  }
 
   const timeKeys = (code: string): boolean => {
     if (compression.interruption === undefined) {
@@ -1219,7 +1277,7 @@ export const startPlay = (
         break;
       case 'craft.continue':
         if (session.crafting.currentUid !== undefined) {
-          continueAction();
+          dispatchScreenCommand({ kind: 'craft.continue' });
         }
         break;
       case 'handling.stop':
@@ -1314,8 +1372,15 @@ export const startPlay = (
     if (replayPlayer && !fromReplay) {
       return;
     }
-    if (!(fromReplay || isGestureAction(action))) {
-      inputRecorder?.queueAction(action, phase, inputContext());
+    const context = inputContext();
+    const payloadBackedScreenAction =
+      (context === 'inventory' &&
+        ((action.startsWith('inventory.') && !['inventory.previous', 'inventory.next'].includes(action)) ||
+          action.startsWith('quickbar.assign.') ||
+          action === 'handling.stop')) ||
+      action === 'craft.continue';
+    if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction)) {
+      inputRecorder?.queueAction(action, phase, context);
     }
     const slot = quickbarSlotFor(action);
     if (phase === 'up') {
@@ -1361,6 +1426,13 @@ export const startPlay = (
   };
   dispatchReplayAction = (action, sample) => {
     replaySample = sample;
+    if (action.payload) {
+      const reason = applyScreenCommand(action.payload);
+      if (reason) {
+        showRefusal(reason, sim.time);
+      }
+      return;
+    }
     if (dispatchReplayGesture(action)) {
       return;
     }
@@ -1497,9 +1569,7 @@ export const startPlay = (
     const uid = glowstickChargeItemUid;
     cancelGlowstickCharge();
     if (input.consumeRightMousePressed() || input.rightMouseHeld) {
-      if (!replayPlayer) {
-        inputRecorder?.queueAction('glowstick.cancel', 'down', inputContext());
-      }
+      dispatchScreenCommand({ kind: 'glowstick.cancel' });
       input.suppressRightMouseUntilRelease();
       return;
     }
@@ -2039,8 +2109,7 @@ export const startPlay = (
       return;
     }
     if (!replayPlayer && input.consumeRightMousePressed() && glowstickChargeStartedAt !== undefined) {
-      inputRecorder?.queueAction('glowstick.cancel', 'down', inputContext());
-      cancelGlowstickCharge();
+      dispatchScreenCommand({ kind: 'glowstick.cancel' });
       input.suppressRightMouseUntilRelease();
     }
   };
