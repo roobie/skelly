@@ -134,6 +134,20 @@ const addWorkstationSource = (
   }
 };
 
+const authoredFixedLootItems = (registry: Registry): Set<string> => {
+  const items = new Set<string>();
+  for (const layout of registry.layouts.values()) {
+    for (const building of layout.buildings) {
+      for (const override of building.fixedLoot ?? []) {
+        for (const fixed of override.items) {
+          items.add(fixed.item);
+        }
+      }
+    }
+  }
+  return items;
+};
+
 const worldSources = (registry: Registry) => {
   const roots = new Set<string>();
   const workstations = new Set<string>();
@@ -160,7 +174,11 @@ const worldSources = (registry: Registry) => {
       roots.add(loot);
     }
   }
-  return { found: addLoot(registry, roots), workstations, workstationQualities };
+  const found = addLoot(registry, roots);
+  for (const item of authoredFixedLootItems(registry)) {
+    found.add(item);
+  }
+  return { found, workstations, workstationQualities };
 };
 
 interface RecipeDiagnosticContext {

@@ -141,9 +141,8 @@ deal with one milestone per turn.
 Use the authored map specified in
 [#181](https://github.com/roobie/skelly/issues/181) and detailed in
 [SLICE-3.md](SLICE-3.md). Test at least three people, including someone new to
-both CDDA and DayZ, in a 45-minute session on Pages. BR's proposed prompt,
-pending confirmation during 3.11, is “find the military camp” (BR's hedged
-suggestion, 2026-10-05 22:17: “Instead it could be: "find the military camp", maybe?”). Do not teach the systems first.
+both CDDA and DayZ, in a 45-minute session on Pages. BR confirmed the prompt
+“find the military camp” in #181 on 2026-10-06. Do not teach the systems first.
 
 Run: open the Pages build, read the controls card and start at dusk at the lone
 house. Follow the authored progression through the first night near the hunting
