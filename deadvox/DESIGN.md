@@ -559,6 +559,13 @@ plain box in your hands. Files are small, and follow
   them. A follow-up is a committed shot from the same firearm within its burst window; see
   `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
   stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
+  BR (d117-1, 2026-10-07 00:30): “but a note: having skill=10 should be even faster at loading and racking - likely 2x as fast”. The shared reload and rack curves now live beside
+  `skillZeroHandling` in `src/content/base/recipes.json`, with bounds in
+  `src/core/schema.ts`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, applies
+  them without changing skill-zero time. `src/game/firearmHandling.ts`,
+  `FirearmMechanics.load` and `FirearmMechanics.cock`, multiply their existing base
+  durations by these shared curves rather than tuning them per firearm. At skill 10,
+  each is about half the previous curve's duration; legendary remains clamped to skill 10.
   The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
   and four times for follow-ups. BR approved those values and ruled that guns need different
   factors: “oh yeah! Now we're talking. #324 approved as such / but it's important to note

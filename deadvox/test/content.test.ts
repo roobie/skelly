@@ -101,6 +101,19 @@ describe('content', () => {
     ).toBe(true);
   });
 
+  it('rejects out-of-range or non-positive firearm duration curve parameters', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+    };
+    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    firearms.reloadDurationFloor = 1.1;
+    firearms.rackDurationHalfLifeLevels = 0;
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.reloadDurationFloor'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackDurationHalfLifeLevels'))).toBe(true);
+  });
+
   it('rejects incomplete per-firearm skill-zero factors', () => {
     const issues = validateContent({
       source: 'fixture-firearm.json',
