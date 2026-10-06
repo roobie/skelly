@@ -123,6 +123,11 @@ npm test
 npm run validate   # base content; add paths to validate a mod on top
 ```
 
+`npm run bench:shamblers` compares headless `ZombieSystem` tick cost. Because it runs
+outside Vite, the Node resolver (`tools/register-mobgen-alias.mjs`, `registerHooks`)
+keeps mobgen source imports available; its obstruction predicate must match play
+(`src/game/session.ts`, `isOpaque`).
+
 ## Known limits of the scaffold
 
 - All blocks render as opaque cubes. `solid: false` only affects collision.
