@@ -628,6 +628,7 @@ export const createSession = (options: SessionOptions) => {
     id: 'zombies',
     rate: ZOMBIE_RATE,
     tick: (dt, time) => {
+      spawner.advance({ calendar: sim.calendar, registry, zombies: zombieSystem });
       zombieSystem.tick(dt, time, heldItemUids());
       lastZombieStep = time;
     },
@@ -879,9 +880,10 @@ export const createSession = (options: SessionOptions) => {
         inventory.furnish(spec, loot);
       }
       if (site) {
-        spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem });
+        spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem, calendar: sim.calendar });
       }
     },
+    onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
     /** Queues a search of a container, unless one is queued or done. */
     search: (entity: BlockEntity): string | undefined => {
       if (entity.searched || searching.has(entity)) {

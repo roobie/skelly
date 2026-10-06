@@ -370,12 +370,14 @@
         {
           "type": "shambler",
           "position": [181, 21.5, 74],
-          "chance": 1
+          "chance": 1,
+          "window": { "from": "dusk" }
         },
         {
           "type": "shambler",
           "position": [304, 30.5, 134],
-          "chance": 1
+          "chance": 1,
+          "window": { "from": "dusk" }
         }
       ],
       "woodlands": [

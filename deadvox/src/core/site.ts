@@ -6,6 +6,7 @@
 import { rectDistance as cellDistance } from './authoredTerrain.mjs';
 import type { EntitySpec } from './blockEntities.ts';
 import type { Chunk } from './chunk.ts';
+import type { SpawnTimeWindowField } from './clock.ts';
 import type { Registry } from './content.ts';
 import { toChunk, type Vec3 } from './coords.ts';
 import { type Rolled, rollLoot } from './loot.ts';
@@ -34,11 +35,11 @@ export interface FurnitureSpawn {
   loot: Rolled[];
 }
 
-export interface ZombieSpawn {
+export type ZombieSpawn = {
   type: string;
   /** Feet position in world blocks. */
   pos: Vec3;
-}
+} & SpawnTimeWindowField;
 
 export interface Site {
   /** Bounded authored cellar interiors needing voxel sky visibility instead of unoccluded hemisphere light. */

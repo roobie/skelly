@@ -62,6 +62,16 @@ function finite(value, name) {
   }
   return value;
 }
+function optionalString(object, name) {
+  const value = object.property(name);
+  if (value === null || value === undefined || value === '') {
+    return;
+  }
+  if (typeof value !== 'string') {
+    throw new Error(`${object.name}: expected string property ${name}`);
+  }
+  return value;
+}
 function pointInside(layout, [x, z], name, inset = 0) {
   const b = layout.bounds;
   if (x < b.x0 + inset || z < b.z0 + inset || x > b.x1 - inset || z > b.z1 - inset) {
@@ -181,7 +191,13 @@ function addSpawn(object, info, context) {
   if (chance < 0 || chance > 1) {
     throw new Error(`${name}: chance must be 0..1`);
   }
-  layout.shamblers.push({ type, position, chance });
+  const from = optionalString(object, 'window_from');
+  const to = optionalString(object, 'window_to');
+  if (to !== undefined && from === undefined) {
+    throw new Error(`${name}: window_to requires window_from`);
+  }
+  const window = from === undefined ? undefined : { from, ...(to === undefined ? {} : { to }) };
+  layout.shamblers.push({ type, position, chance, ...(window ? { window } : {}) });
 }
 function areaPoints(object, info) {
   const { name, x, z, cls } = info;
@@ -349,7 +365,15 @@ export function generatePropertyTypes() {
       ],
     },
     { name: 'player_spawn', members: [member('bearing', 'float', 0)] },
-    { name: 'shambler', members: [member('zombie', 'string', '', 'zombie_type'), member('chance', 'float', 1)] },
+    {
+      name: 'shambler',
+      members: [
+        member('zombie', 'string', '', 'zombie_type'),
+        member('chance', 'float', 1),
+        member('window_from', 'string', ''),
+        member('window_to', 'string', ''),
+      ],
+    },
     { name: 'woodland', members: [member('density', 'float', 1)] },
     { name: 'track', members: [member('width', 'float', 3), member('surface', 'string', 'dirt')] },
     { name: 'ridge', members: [member('rise', 'float', 10), member('width', 'float', 40)] },
