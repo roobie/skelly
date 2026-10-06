@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { Group, type Object3D, Vector3 } from 'three';
+import { Box3, Group, type Object3D, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import firearmContent from '../src/content/base/models-firearms.json' with { type: 'json' };
@@ -15,12 +15,30 @@ import {
 import { prepareModel } from '../src/render/models.ts';
 
 const ar = firearmContent.models.find((model) => model.id === 'rifle_assault') as ModelDef;
-const load = () => {
-  const bytes = readFileSync(`src/content/base/${ar.file}`);
+const ak = firearmContent.models.find((model) => model.id === 'rifle_ak') as ModelDef;
+const load = (model: ModelDef = ar) => {
+  const bytes = readFileSync(`src/content/base/${model.file}`);
   return new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
 };
 
 describe('exported firearm presentation', () => {
+  it('uses the actual AK rear-notch top as the ADS sight datum', async () => {
+    const gltf = await load(ak);
+    gltf.scene.updateMatrixWorld(true);
+    const nodes = gltf.parser.json.nodes as { extras?: { family?: string } }[];
+    const rearIndex = nodes.findIndex((node) => node.extras?.family === 'ak-rear-sight');
+    expect(rearIndex).toBeGreaterThanOrEqual(0);
+    let rearSight: Object3D | undefined;
+    gltf.scene.traverse((node) => {
+      if (gltf.parser.associations.get(node)?.nodes === rearIndex) {
+        rearSight = node;
+      }
+    });
+    expect(rearSight).toBeDefined();
+    const bounds = new Box3().setFromObject(rearSight!);
+    expect(ak.sight?.eye[1]).toBeCloseTo(bounds.max.y, 7);
+  });
+
   it('binds the real colon-named export by glTF index even when every Object3D name is changed', async () => {
     const gltf = await load();
     gltf.scene.traverse((node) => {

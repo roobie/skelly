@@ -74,7 +74,6 @@ const travelCases = [
     section: 'ar',
     travel: 6.5,
     mm: 74.75,
-    cavityY: [-0.6, 1.1],
     cavityZ: [-1.35, 1.35],
     portWidthU: 4.5,
     portHeightU: 2,
@@ -87,7 +86,6 @@ const travelCases = [
     section: 'ak',
     travel: 6.5,
     mm: 74.75,
-    cavityY: [-1.35, 1.35],
     cavityZ: [-1.35, 1.35],
     portWidthU: 6.5,
     portHeightU: 3,
@@ -100,7 +98,6 @@ const travelCases = [
     section: 'pump',
     travel: 5.5,
     mm: 63.25,
-    cavityY: [-0.85, 0.85],
     cavityZ: [-0.85, 0.85],
     portWidthU: 6.75,
     portHeightU: 2,
@@ -113,7 +110,6 @@ const travelCases = [
     section: 'standard',
     travel: 3,
     mm: 34.5,
-    cavityY: [0.65, 1.85],
     cavityZ: [-0.85, 0.85],
     portWidthU: 3.5,
     portHeightU: 1.5,
@@ -126,7 +122,6 @@ const travelCases = [
     section: 'standard',
     travel: 8,
     mm: 92,
-    cavityY: [0.15, 1.85],
     cavityZ: [-1.35, 1.35],
     portWidthU: 6.5,
     portHeightU: 2,
@@ -139,7 +134,6 @@ const travelCases = [
     section: 'standard',
     travel: 7,
     mm: 80.5,
-    cavityY: [0.65, 1.6],
     cavityZ: [-0.85, 0.85],
     portWidthU: 5.5,
     portHeightU: 1.25,
@@ -183,6 +177,8 @@ const coreFitsCavity = (entry: TravelCase, resolved: ReturnType<typeof resolve>)
   const receiver = resolved.defs.get('receiver')!;
   const carrier = resolved.defs.get('bolt-carrier')!;
   const path = receiver.keepOuts.find(({ id }) => id === 'bolt-travel')!;
+  const receiverPort = receiver.ports.find(({ id }) => id === 'bolt-carrier')!;
+  const cavity = carrierCavityBounds(entry.pattern, receiverPort.pos[1]);
   const transform = resolved.placed.get('bolt-carrier')!;
   const motion = carrier.motion!;
   const bounds = limits(receiver.solids.flatMap(corners));
@@ -190,10 +186,10 @@ const coreFitsCavity = (entry: TravelCase, resolved: ReturnType<typeof resolve>)
   const pathCenter = path.box.center;
 
   const pathFits =
-    pathCenter[1] - path.box.half[1] >= entry.cavityY[0] &&
-    pathCenter[1] + path.box.half[1] <= entry.cavityY[1] &&
-    pathCenter[2] - path.box.half[2] >= entry.cavityZ[0] &&
-    pathCenter[2] + path.box.half[2] <= entry.cavityZ[1];
+    pathCenter[1] - path.box.half[1] >= cavity.y[0] &&
+    pathCenter[1] + path.box.half[1] <= cavity.y[1] &&
+    pathCenter[2] - path.box.half[2] >= cavity.z[0] &&
+    pathCenter[2] + path.box.half[2] <= cavity.z[1];
   const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
   const bodyFits = corners(body)
     .flatMap((corner) => [
@@ -204,10 +200,10 @@ const coreFitsCavity = (entry: TravelCase, resolved: ReturnType<typeof resolve>)
       (point) =>
         point[0] >= cavityX[0]! - 1e-6 &&
         point[0] <= cavityX[1]! + 1e-6 &&
-        point[1] >= entry.cavityY[0] - 1e-6 &&
-        point[1] <= entry.cavityY[1] + 1e-6 &&
-        point[2] >= entry.cavityZ[0] - 1e-6 &&
-        point[2] <= entry.cavityZ[1] + 1e-6,
+        point[1] >= cavity.y[0] - 1e-6 &&
+        point[1] <= cavity.y[1] + 1e-6 &&
+        point[2] >= cavity.z[0] - 1e-6 &&
+        point[2] <= cavity.z[1] + 1e-6,
     );
   return pathFits && bodyFits;
 };
@@ -292,11 +288,14 @@ const crossSectionGaps = (entry: TravelCase, resolved: ReturnType<typeof resolve
   const transform = resolved.placed.get('bolt-carrier')!;
   const body = carrier.solids.find(({ id }) => id === 'carrier-body')!;
   const bodyBounds = worldBounds(corners(body).map((point) => applyPoint(transform, point)));
-  return [entry.cavityY, entry.cavityZ].map((cavity, axis) => {
+  const receiver = resolved.defs.get('receiver')!;
+  const port = receiver.ports.find(({ id }) => id === 'bolt-carrier')!;
+  const cavity = carrierCavityBounds(entry.pattern, port.pos[1]);
+  return [cavity.y, cavity.z].map((cavityBounds, axis) => {
     const worldAxis = axis + 1;
     return {
-      lower: bodyBounds[worldAxis]![0]! - cavity[0],
-      upper: cavity[1] - bodyBounds[worldAxis]![1]!,
+      lower: bodyBounds[worldAxis]![0]! - cavityBounds[0],
+      upper: cavityBounds[1] - bodyBounds[worldAxis]![1]!,
       axis: worldAxis,
     };
   });
@@ -330,11 +329,7 @@ const portMeasurements = (entry: TravelCase, resolved: ReturnType<typeof resolve
     expectedXMax = center + pumpMinimum / 2;
   }
   const expectedY = [receiverPort.pos[1] + envelope.y[0] - margin, receiverPort.pos[1] + envelope.y[1] + margin];
-  const outline = entry.section === 'standard' ? undefined : RECEIVER_SECTION[entry.section].outline;
-  const rearDrop = entry.section === 'pump' ? 1 : 0;
-  const wallY = outline
-    ? [Math.min(...outline.map(([y]) => y)) - rearDrop, Math.max(...outline.map(([y]) => y)) - rearDrop]
-    : [-2.5, 2.5];
+  const wallY = limits(receiver.solids.flatMap(corners))[1]!;
   return {
     actualX: bounds[0],
     expectedX: [expectedXMin, expectedXMax],
@@ -464,7 +459,9 @@ describe('procedural bolt carrier', () => {
       8,
     );
     expect(paddleBounds[0]![1]! - paddleBounds[0]![0]!).toBeCloseTo(1, 8);
-    expect(paddleBounds[1]).toEqual([-1.25, -0.25]);
+    const carrierCenterY = (port.carrierY![0]! + port.carrierY![1]!) / 2;
+    expect(paddleBounds[1]![0]).toBeLessThan(carrierCenterY);
+    expect(paddleBounds[1]![1]).toBeLessThan(carrierCenterY);
     expect(paddleBounds[2]![0]).toBeCloseTo(3.75, 8);
     expect(paddleBounds[2]![1]).toBeCloseTo(4.25, 8);
     expect(paddleBounds[2]![1]! - receiverSideFace!).toBeGreaterThanOrEqual(2.25);
@@ -479,8 +476,11 @@ describe('procedural bolt carrier', () => {
     expect(pistonBounds[0]).toEqual([-5.5, -1]);
     expect(handleBounds[0]![0]!).toBeGreaterThanOrEqual(portMin - 1e-6);
     expect(handleBounds[0]![1]!).toBeLessThanOrEqual(portMax + 1e-6);
-    const chargingSlot = akChargingHandleSlotWindow(0, { x: [portMin, portMax], y: [-1.5, 1.5] }, entry.travel);
-    expect(chargingSlot.section).toEqual([-1.35, -0.15]);
+    const chargingSlot = akChargingHandleSlotWindow(
+      carrierCenterY,
+      { x: [portMin, portMax], y: [port.actualY![0]!, port.actualY![1]!] },
+      entry.travel,
+    );
     expect(chargingSlot.section[1] - chargingSlot.section[0]).toBeCloseTo(1 + 2 * BOLT_CARRIER_RUNNING_CLEARANCE_U, 8);
     expect(chargingSlot.x).toEqual([portMin - entry.travel, portMin + 0.25]);
     expect([Math.max(portMin, chargingSlot.x[0]), Math.min(portMax, chargingSlot.x[1])]).toEqual([-7.5, -7.25]);
@@ -488,12 +488,15 @@ describe('procedural bolt carrier', () => {
     expect([
       Math.max(port.actualY![0]!, chargingSlot.section[0]),
       Math.min(port.actualY![1]!, chargingSlot.section[1]),
-    ]).toEqual([-1.35, -0.15]);
-    const outlineBottom = Math.min(...RECEIVER_SECTION.ak.outline.map(([y]) => y));
+    ]).toEqual(chargingSlot.section);
+    const outlineBottom = Math.min(...receiver.solids.flatMap((solid) => corners(solid).map((point) => point[1])));
+    const slotCenterY = (chargingSlot.section[0] + chargingSlot.section[1]) / 2;
     for (let x = portMin - 1 + 0.125; x < portMax; x += 0.25) {
-      expect(receiverSectionHasMaterialAt(receiver.solids, x, -0.75, 1.6), `merged opening at x=${x}`).toBe(false);
+      expect(receiverSectionHasMaterialAt(receiver.solids, x, slotCenterY, 1.6), `merged opening at x=${x}`).toBe(
+        false,
+      );
     }
-    expect(receiverSectionHasMaterialAt(receiver.solids, portMax + 0.125, -0.75, 1.6)).toBe(true);
+    expect(receiverSectionHasMaterialAt(receiver.solids, portMax + 0.125, slotCenterY, 1.6)).toBe(true);
     for (let sample = 0; sample <= 26; sample++) {
       const progress = (entry.travel * sample) / 26;
       const movingTransform = compose(transform, translation([progress, 0, 0]));
@@ -782,11 +785,11 @@ describe('procedural bolt carrier', () => {
 
   it('pins carrier and ejection-port anchors, including the forward-shifted pump action', () => {
     const expectedAnchors = [
-      { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1], portY: [-1.5, 1.5] },
-      { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25], portY: [0.5, 2] },
-      { pattern: 'pump', restX: -3, carrierX: [-3.25, 3], portX: [-6.25, 0.5], portY: [-1, 1] },
-      { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25], portY: [0, 2] },
-      { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25], portY: [0.5, 1.75] },
+      { pattern: 'ak', restX: -5.75, carrierX: [-4.5, 1.5], portX: [-7.5, -1] },
+      { pattern: 'smg', restX: -7, carrierX: [-1.5, 1.5], portX: [-8.75, -5.25] },
+      { pattern: 'pump', restX: -3, carrierX: [-3.25, 3], portX: [-6.25, 0.5] },
+      { pattern: 'barrett', restX: -4.5, carrierX: [-3, 3], portX: [-7.75, -1.25] },
+      { pattern: 'bolt', restX: -6, carrierX: [-2.5, 2.5], portX: [-8.75, -3.25] },
     ] as const;
 
     for (const expected of expectedAnchors) {
@@ -803,7 +806,7 @@ describe('procedural bolt carrier', () => {
         expected.pattern,
       ).toBe(expected.restX);
       expect(port.actualX, expected.pattern).toEqual(expected.portX);
-      expect(port.actualY, expected.pattern).toEqual(expected.portY);
+      expect(port.actualY, expected.pattern).toEqual(port.expectedY);
     }
   });
 

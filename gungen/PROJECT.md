@@ -1,3 +1,10 @@
+---
+read_if:
+  - you change firearm part geometry precision or sight dimensions
+  - you change the AK ADS sight alignment
+  - you change optic eye-relief validation
+  - you change the AK receiver's position relative to its centered bore
+
 # gungen — low-poly firearm designer
 
 The first skelly subproject. It builds super-low-poly 3D firearms by working
@@ -111,7 +118,10 @@ cheaply.
   to it.
 - Conventions to fix before writing code: the up axis, handedness, units.
 - **Size classes, not exact numbers**: S/M/L with snapping. This fits low-poly
-  and keeps us within the Level 2 boundary.
+  and keeps us within the Level 2 boundary. Sights alone use a finer sub-grid
+  where small notches and posts must remain legible at their authored dimensions.
+- Optic cheek-datum validation applies to long-eye-relief optics. Compact optics
+  can be mounted on stockless firearms; a handgun has no shoulder cheek datum.
 
 ### 5. The person holding it
 
@@ -666,6 +676,17 @@ explicitly named `battle-rifle`.
   cylinder axis is checked parallel to the bore. The AK front sight uses its
   own style with the post 2.5u behind the muzzle, consistent with the gas-block
   position.
+- The [Wikimedia Commons AKM side profile](https://commons.wikimedia.org/wiki/File:03_akm_noBG.png)
+  is the reference for the receiver cover, bore, rear-sight block and the
+  receiver-mounted lower, stock, grip and magazine. Their relative vertical
+  placement is checked against the preserved notch datum, the receiver's
+  original roof and the seated block height in `src/gun/parts.ts`, `AK_RECEIVER_LIFT_U`.
+  The rear-sight block seats directly on the raised receiver. For d97-6, sight
+  alignment takes its vertical datum from the notch's upper edge, not the block
+  seat, so the front-post tip sits at that edge in ADS; see `src/gun/parts.ts`,
+  `akRearSight`, and `src/gun/exportGlb.ts`, `sightMetadata`. The receiver-mounted
+  assembly follows the receiver; the barrel, bore, handguard, gas system and front
+  sight remain in their original frame.
 - Added an `ak` lower layout with a flat face seat and no magazine-well walls.
   The curved AK magazine has seat kind `face` and zero insertion depth; its
   conservative rock-in keep-out starts at the front hook point. This swept box

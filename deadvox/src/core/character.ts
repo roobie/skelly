@@ -83,19 +83,28 @@ export class Character implements HandedCharacter {
     });
   }
 
-  /** Any activity may award practice; callers identify only a skill and an amount. */
-  awardPractice(skill: string, amount: number): void {
-    if (!(Object.hasOwn(this.skills, skill) && Number.isFinite(amount)) || amount < 0) {
+  /** The awarding activity supplies its own tier; practice beyond that ceiling is discarded. */
+  awardPractice(skill: string, amount: number, tier: number): void {
+    if (
+      !(Object.hasOwn(this.skills, skill) && Number.isFinite(amount)) ||
+      amount < 0 ||
+      !Number.isSafeInteger(tier) ||
+      tier < SKILL_LEVEL_MIN ||
+      tier > SKILL_LEVEL_LEGENDARY
+    ) {
       throw new Error(`Invalid practice award for ${skill}`);
     }
-    let remaining = this.practice[skill]! + amount;
     let level = this.skills[skill]!;
-    while (level < SKILL_LEVEL_LEGENDARY && remaining >= practiceForNextLevel(level)) {
+    if (level >= tier || amount === 0) {
+      return;
+    }
+    let remaining = this.practice[skill]! + amount;
+    while (level < tier && remaining >= practiceForNextLevel(level)) {
       remaining -= practiceForNextLevel(level);
       level += 1;
     }
     this.skills[skill] = level;
-    this.practice[skill] = level === SKILL_LEVEL_LEGENDARY ? 0 : remaining;
+    this.practice[skill] = level >= tier ? 0 : remaining;
   }
 
   learnRecipes(recipes: readonly string[]): void {

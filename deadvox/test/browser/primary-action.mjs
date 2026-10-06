@@ -1012,7 +1012,20 @@ try {
         .reduce((sum, { item }) => sum + item.count, 0),
     };
   });
+  await page.mouse.down({ button: 'right' });
+  const raiseDuration = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    r.session.frame(1 / 60);
+    return r.inventory.itemByUid(uid).firearm.readying.duration;
+  }, firearm.uid);
+  await page.evaluate((duration) => globalThis.primaryActionTest.session.frame(duration), raiseDuration);
+  assert.equal(
+    await page.evaluate((uid) => globalThis.primaryActionTest.session.firearms.isReady(uid), firearm.uid),
+    true,
+    'fixture firearm is ready before firing',
+  );
   await page.mouse.click(640, 450);
+  await page.evaluate(() => globalThis.primaryActionTest.session.frame(0.1));
   await page.waitForFunction(({ uid, cases }) => {
     const r = globalThis.primaryActionTest;
     const count = [...r.inventory.piles.values()]
@@ -1037,6 +1050,7 @@ try {
   assert.equal(emission.shot?.distanceMetres, 0);
   assert.equal(emission.shot?.lowpassHz, null);
   await page.waitForFunction(() => !globalThis.primaryActionTest.inventory.hands.left.firearm?.cycle);
+  await page.mouse.up({ button: 'right' });
   const food = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     const item = [...r.inventory.items()].find(

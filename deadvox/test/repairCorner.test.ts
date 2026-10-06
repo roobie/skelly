@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { Character, practiceForNextLevel } from '../src/core/character.ts';
+import { Character, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { buildRegistry, type RecipeDef, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { planCraft } from '../src/core/crafting.ts';
@@ -84,7 +84,7 @@ const repairCharacter = (): Character => {
   for (const recipe of repairRecipes) {
     for (const [skill, required] of Object.entries(recipe.skills)) {
       while ((character.skills[skill] ?? 0) < required) {
-        character.awardPractice(skill, practiceForNextLevel(character.skills[skill] ?? 0));
+        character.awardPractice(skill, practiceForNextLevel(character.skills[skill] ?? 0), SKILL_LEVEL_LEGENDARY);
       }
     }
   }
