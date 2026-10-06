@@ -543,8 +543,7 @@ plain box in your hands. Files are small, and follow
   note that a firearm skill level zero (=0) is way too good at controlling
   automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
   BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”.
-  BR agreed that novice handling should lean into that difficulty (“yes, lean”),
-  choosing four times what they felt at `7a8c72db` as the comparison (“1: a”). They wanted
+  BR chose four times what they felt at `7a8c72db` as the comparison (“1: a”). They wanted
   kick, shot-to-shot dispersion and recovery all worsened (“2: all”), mostly for automatic
   follow-ups but for singles too (“3: mostly full auto, but singles too”). BR approved
   moving the values into moddable content with live debug controls: “yes, make them content
@@ -555,8 +554,11 @@ plain box in your hands. Files are small, and follow
   `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
   stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
   The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
-  and four times for follow-ups; the values remain provisional until BR settles them with the
-  sliders (d107). `src/debug/index.ts`, `firearmsSkillEffectSlider`, places the controls in
+  and four times for follow-ups. BR approved those values: “oh yeah! Now we're talking.
+  #324 approved as such / but it's important to note that we need different factors for
+  different guns - e.g. a MP5 style SMG does not have the same kick as a AK/M pattern gun”.
+  Until d112 gives each firearm its own factors, skill-zero handling is shared across firearms.
+  `src/debug/index.ts`, `firearmsSkillEffectSlider`, places the controls in
   the debug panel's Tools group, applies them to the running session, and can copy the
   values. The tuning is runtime-only and resets on reload; saves carry no slider state. The
   shared skill effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
