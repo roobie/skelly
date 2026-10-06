@@ -25,11 +25,18 @@ BR's words (2026-10-06):
 - 11:18: “what if we used purescript for the game's actual content?” and “if we simply preclude the use of i/o in purescript, we have data and pure functions as mods”
 - 11:23: “jsonnet seems like the best fit for us”; “but we still have to come up with a seialization format for pure funcs”; “like how CDDA and their jmath”
 - 11:32: “and, just to be clear, the aim is to define all content and tunables via mods - even the _core game_”
-- 11:34: “yeah, let's do it now” — new tuning values go in the base content pack rather than new TypeScript constants.
+- 11:34: “yeah, let's do it now” — this answers the lead's question: should new tuning values go into the base pack now, as schema-validated JSON, so no new constants are added in code?
 - 11:38: “as for the serializable functions (jmath thing) / it'll need one or two design passes before we set it in stone”
 - 11:45: ‘in a sense, it shows us what the core mod needs too - i mean "custom" state and events are required for the core game too’; “events are really the protocol between engine and mod, right?”
 
-The goal is that the core game itself is a mod: today's base pack under `src/content/base` is the core mod, and all content and tunables ultimately come from mods. TypeScript systems hold logic, not a second copy of tuning values. New tuning values belong in the core mod immediately. Existing TypeScript constants predating that ruling stay in place until the post-Slice-3 spike or a follow-up item moves them; for example, `src/core/soundOcclusion.ts`, `GAIN_PER_SOLID_RUN`, remains an existing tuning source until that work is dispatched. This ADR does not move existing constants or add content fields.
+BR's answers to the protocol questions (2026-10-06, 11:52):
+
+- **Catalogue and vocabulary:** “as for the catalogue and vocabulary, I think we can send a coder to scan the game as-is and report findings (which won't conver exactly everything, but it's a start)” The [dated as-is survey](https://github.com/roobie/skelly/blob/docs/event-effect-survey/deadvox/docs/reviews/2026-10-06-event-effect-survey.md) on the pushed r42 branch is the starting input to pass 2.
+- **How rules read state:** “as for how rules read state: needs thoughtful consideration”. This remains open; this ADR does not propose an answer.
+- **Ordering and conflicts:** “module ordering and conflict policy should be kept simple but useful. We won't try to be clever here. For one thing, I think we can allow mods to declare 'dependencies:Mod[]' at least, but maybe not much more than that?” This remains a question, not a decision.
+- **Migration:** “migration will have to be incremental, but I think we should do it in a low number of big steps”. The steps remain for pass 2.
+
+The goal is that the core game itself is a mod: today's base pack under `src/content/base` is the core mod, and all content and tunables ultimately come from mods. TypeScript systems hold logic, not a second copy of tuning values. New tuning values belong in the core mod immediately. Existing TypeScript constants predating that ruling stay in place until the post-Slice-3 spike or a follow-up item moves them; for example, `src/core/needs.ts`, `NEED_RATES`, remains an existing tuning source until that work is dispatched. This ADR does not move existing constants or add content fields.
 
 ## Benchmark: Mind Over Matter
 
@@ -37,7 +44,7 @@ BR's words (2026-10-06, 11:42): “the golden standard (type of mod) we should a
 
 A first survey suggests its breadth goes beyond pure functions:
 
-- **Mod-owned state:** psionic focus, Nether attunement, known powers, cooldowns, and practice are represented with vitamins and `u_val` variables. For Deadvox, the corresponding format must declare mod-owned state that is saved, fingerprinted and hashed, with one clear owner.
+- **Mod-owned state:** Nether attunement and counters for power learning or maintained powers are vitamins. Focus is the character's own stat, read and written through `u_val('focus')` in math; known powers and levels use the engine's spell list (`SPELL`, `u_spell_level`); cooldowns are spell fields, often math expressions; and practice uses `practice` recipes. Much of MoM's state therefore lives in engine-provided systems such as spells and focus. The engine/mod split for that state is a pass-2 question, not a settled ownership rule.
 - **Event- and condition-triggered rules:** `effect_on_condition` combines events, recurring timers, conditions with math expressions, and effect lists. The engine–mod protocol below is one candidate for expressing such behavior without giving mods direct mutation.
 - **Abilities:** powers describe targeting, area, cost and effects, and are learned and improved through practice. This overlaps the tiered training work in #275.
 - **Modifiers:** enchantments compose and stack changes to stats.
@@ -67,11 +74,11 @@ Use Jsonnet for authoring and composing mods at build time. A selected Jsonnet i
 
 The current loader's file ordering and override behavior are implementation details, not a ruling on mod composition. The engine-owned policy for mod load order, how overrides and extensions combine, and how conflicts are diagnosed or resolved remains open for BR.
 
-BR's immediate rule applies to new tuning values as well as authored content: put each new value in the base/core mod's domain content file, or a new domain file when none fits; add the schema field and type/range validation; have systems read it from the composed registry. Do not add a TypeScript default or duplicate. Tests provide their own fixture registry and values, not imported shipped tuning numbers. Existing TypeScript tunables move only after the spike, through a specifically scoped follow-up item.
+BR's immediate rule applies to new tuning values as well as authored content: put each new value in the base/core mod's domain content file, or a new domain file when none fits; add the schema field and type/range validation; have systems read it from the composed registry. Do not add a TypeScript default or duplicate. Existing TypeScript tunables move only after the spike, through a specifically scoped follow-up item.
 
 ### Runtime expression functions — design pass 1
 
-This section is a candidate design, not a format decision. BR said the serializable functions “will need one or two design passes before we set it in stone.” Jsonnet functions that generate the corpus are build-time authoring helpers; they are not runtime functions and are not serialized as callable values.
+This section is a candidate design, not a format decision. BR said the serializable functions “it'll need one or two design passes before we set it in stone”. Jsonnet functions that generate the corpus are build-time authoring helpers; they are not runtime functions and are not serialized as callable values.
 
 One candidate, following CDDA's `jmath_function`, is to represent a runtime pure function as a content entry with an ID, arguments, and a `return` expression string. The arguments might be named; numeric content might refer to an expression inline or by function ID. The exact encoding and call form remain open.
 
@@ -101,9 +108,9 @@ This is a protocol sketch for the second design pass, not a settled contract. BR
 2. **Events, engine to mod:** events describe coarse-grained facts that happened, such as a wound, elapsed time, item use, heard noise or finished action. A rule receives the event and a read-only view of its declared state. Events should be coarse-grained (for example, on-hit, on-wound or every N seconds), never emitted per frame per entity.
 3. **Effects, mod to engine:** a rule returns effects as data—intents such as damage a region, set a variable, add a status, spawn, emit a noise or award practice. The engine validates and applies them in a defined order; mods do not mutate game state.
 
-The candidate rule boundary is `(event, state) → effects`. The core mod uses the same protocol as add-on mods. Use the infection rule from #303 as a worked example: a wound or elapsed-time event reaches the core-mod rule; its onset/chance logic returns intents to set the infection stage and shock. That rule belongs to the core mod, not engine code. Mind Over Matter uses the same pattern across many more rules.
+The candidate rule boundary is `(event, state) → effects`. The core mod uses the same protocol as add-on mods. Use the infection rule from #303 as a worked example: a wound or elapsed-time event reaches the core-mod rule; its onset/chance logic returns intents to set the infection stage and shock. In this pass-1 candidate, that rule would belong to the core mod rather than engine code; pass 2 must decide the boundary. Mind Over Matter uses the same pattern across many more rules.
 
-The engine keeps hot-path, exactness-critical mechanics such as movement, collision, ray tests, scheduling, saves, rendering and audio mixing. Mods own rules and every tuning number. The engine owns ordering and conflict policy between mods; their precise rules remain open for the second pass.
+This pass-1 candidate keeps hot-path, exactness-critical mechanics such as movement, collision, ray tests, scheduling, saves, rendering and audio mixing in the engine, with rules and tuning values authored by mods. Ownership and precise rules for ordering and conflicts remain open for the second pass.
 
 ### Core mod and identity
 
@@ -111,7 +118,7 @@ The core mod is the current base pack, not a special source of built-in defaults
 
 ## Consequences
 
-- A Jsonnet build step is required. Candidate implementations for the spike are Google's C++ Jsonnet CLI and Go's `go-jsonnet`; neither is selected or installed by this ADR. Any dependency must meet `AGENTS.md`'s dependency-age rule when the spike selects it.
+- A Jsonnet build step is required. Candidate implementations for the spike include Google's C++ Jsonnet CLI, Go's `go-jsonnet`, go-jsonnet's WebAssembly build, and an npm-packaged binding; none is selected or installed by this ADR. Any dependency must meet `AGENTS.md`'s dependency-age rule when the spike selects it.
 - Biome and Knip do not lint Jsonnet. `jsonnetfmt` checks Jsonnet formatting; evaluate the generated JSON and run it through `npm run validate`, whose schema and reference checks remain the content contract. The spike must decide whether a separate Jsonnet linter adds useful checks beyond formatting and validation.
 - The project owns the runtime expression parser, compiler, evaluator, validation and tests. Runtime call cost, build time, CI cost and authoring fluency are measured in the spike, not assumed here.
 - Adding a function, tuning value or mod changes the composed corpus and its identity. The hash includes the core even when its contents are unchanged by an add-on mod.
@@ -127,9 +134,11 @@ The second design pass must resolve, or deliberately leave for the spike, these 
 - Which expression errors are found by `npm run validate`, and how are they reported with source and path?
 - How do mods override or extend a function definition, and how does that interact with the still-open mod load order and conflict policy?
 
-For the engine–mod protocol, what is the event catalogue, including the boundary between events and condition checks? What effect vocabulary may rules return, and what ordering and conflict policy does the engine apply? How may rules read state beyond their own declared state? How are mod-owned state schemas, defaults, save ownership and ability progress declared? Which abilities need to be represented, including targeting, costs, effects and practice? How do existing TypeScript rules migrate into the core mod?
+For the engine–mod protocol, what is the event catalogue, including the boundary between events and condition checks? What effect vocabulary may rules return? How may rules read state beyond their own declared state? BR said this “needs thoughtful consideration”; this survey does not propose an answer. BR wants ordering and conflict policy to be “simple but useful”, not clever, and offered `dependencies: Mod[]` as a possibility, asking “maybe not much more than that?” What, if anything, beyond dependencies is needed? How are mod-owned state schemas, defaults, save ownership and ability progress declared? Which abilities need to be represented, including targeting, costs, effects and practice? How do existing TypeScript rules migrate into the core mod?
 
-The engine owns mod ordering and conflict policy, but what are their exact rules? How do overrides differ from extensions, and how are conflicting definitions diagnosed? One option for the core is a privileged but replaceable slot with no special privilege in composition: loading the same core mod through an ordinary non-core slot should produce identical composed output. Is that the intended boundary? Which content area should the spike port first?
+BR's 11:52 direction is that migration should be incremental but use a low number of big steps. Which steps, and their boundaries, remain for pass 2. For the event catalogue and vocabulary, the as-is survey linked above is the starting input to pass 2.
+
+What is the simplest useful ordering and conflict policy? How do overrides differ from extensions, and how are conflicting definitions diagnosed? One option for the core is a privileged but replaceable slot with no special privilege in composition: loading the same core mod through an ordinary non-core slot should produce identical composed output. Is that the intended boundary? Which content area should the spike port first?
 
 ## When
 
