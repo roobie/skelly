@@ -28,6 +28,7 @@ import {
 } from '../core/footsteps.ts';
 import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
+import type { Item } from '../core/items.ts';
 import { rollLoot } from '../core/loot.ts';
 import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
@@ -52,6 +53,7 @@ import {
   type PlayerMovement,
   type VocalNoise,
   type Zombie,
+  type ZombieLightSource,
   ZombieSystem,
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
@@ -219,6 +221,41 @@ const playerSenseTuning = (registry: Registry) => {
     throw new Error('Missing player sense tuning');
   }
   return tuning;
+};
+
+const lightSenseFor = ({
+  registry,
+  item,
+  location,
+  playerPosition,
+  eyeHeightMetres,
+}: {
+  registry: Registry;
+  item: Item;
+  location: Location;
+  playerPosition: Vec3;
+  eyeHeightMetres: number;
+}): ZombieLightSource | undefined => {
+  const light = item.on ? registry.items.get(item.type)?.light : undefined;
+  if (!light) {
+    return undefined;
+  }
+  if (location.kind === 'hand' || location.kind === 'worn') {
+    return { pos: [...playerPosition], seenFrom: light.seenFrom, heightMetres: eyeHeightMetres, carried: true };
+  }
+  if (location.kind === 'pile') {
+    const [x, y, z] = location.pile.pos;
+    return { pos: [x + 0.5, y + 0.15, z + 0.5], seenFrom: light.seenFrom, carried: false };
+  }
+  if (location.kind === 'furniture') {
+    const { entity } = location;
+    return {
+      pos: [entity.pos[0] + entity.size[0] / 2, entity.pos[1] + entity.size[1] / 2, entity.pos[2] + entity.size[2] / 2],
+      seenFrom: light.seenFrom,
+      carried: false,
+    };
+  }
+  return undefined;
 };
 
 export const createSession = (options: SessionOptions) => {
@@ -462,6 +499,13 @@ export const createSession = (options: SessionOptions) => {
   };
   const playerSense = () => {
     const yaw = controls.yaw();
+    const eyeHeightMetres = playerEyeHeightMetres();
+    const lightSources = [...inventory.items()]
+      .map(({ item, location }) =>
+        lightSenseFor({ registry, item, location, playerPosition: body.pos, eyeHeightMetres }),
+      )
+      .filter((source): source is ZombieLightSource => source !== undefined);
+    const [carriedLight] = lightSources.filter((source) => source.carried).sort((a, b) => b.seenFrom - a.seenFrom);
     return {
       pos: [body.pos[0], body.pos[1], body.pos[2]] as Vec3,
       body: debug?.()?.noclip ? undefined : body,
@@ -470,10 +514,11 @@ export const createSession = (options: SessionOptions) => {
       crouching: playerCrouching(),
       vocalNoise:
         playerAudio.vocalNoise && sim.time <= playerAudio.vocalNoise.expiresAt ? playerAudio.vocalNoise : undefined,
-      lit: survival.lit?.on === true,
-      lightSeenFrom: registry.items.get(survival.lit?.type ?? '')?.light?.seenFrom ?? 40,
-      eyeHeightMetres: playerEyeHeightMetres(),
-      lightHeightMetres: playerEyeHeightMetres(),
+      lit: carriedLight !== undefined,
+      lightSeenFrom: carriedLight?.seenFrom ?? 40,
+      eyeHeightMetres,
+      lightHeightMetres: eyeHeightMetres,
+      lightSources,
     };
   };
   const heldItemUids = () => ({

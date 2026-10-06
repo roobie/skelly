@@ -45,6 +45,7 @@ const senseTuning = {
   id: 'fixture_player',
   crouch: { speedMetresPerSecond: 0.8, hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
   wall: soundTuning,
+  light: { playerDaySightScale: 0, lureRangeScale: 0, throwDistanceMetres: 8 },
 };
 
 const verticalBrushSession = (spawnY: number) => {

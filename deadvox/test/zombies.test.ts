@@ -443,6 +443,28 @@ describe('shambler perception', () => {
     ).toBe(false);
   });
 
+  it('player light expands detection only when darkness makes it plausible', () => {
+    const source = player([0, 0, 0], [-1, 0, 0], 'still', true);
+    const baseline = Math.max(SHAMBLER.sight, SHAMBLER.nightSight);
+    const distanceMetres = (baseline + source.lightSeenFrom) / 2;
+    expect(distanceMetres).toBeGreaterThan(baseline);
+    expect(distanceMetres).toBeLessThan(source.lightSeenFrom);
+    const visibleAt = (hour: number) =>
+      perceivePlayer({
+        zombie: SHAMBLER,
+        from: [0, 0, 0],
+        facing: [1, 0, 0],
+        player: { ...source, pos: [distanceMetres / BLOCK_SIZE, 0, 0] },
+        hour,
+        blockSize: BLOCK_SIZE,
+        isSolid: FLOOR,
+        tuning: SENSE_TUNING,
+      });
+
+    expect(visibleAt(0)).toBe(true);
+    expect(visibleAt(12)).toBe(false);
+  });
+
   it('keeps crouched light reach in the open but lets a half-wall block the lowered light', () => {
     const { lightSeenFrom } = player([0, 0, 0], [-1, 0, 0], 'still', true);
     const crouchSightRange = lightSeenFrom * SENSE_TUNING.crouch.sightRangeScale;
@@ -463,7 +485,7 @@ describe('shambler perception', () => {
           eyeHeightMetres,
           lightHeightMetres: eyeHeightMetres,
         },
-        hour: 12,
+        hour: 0,
         blockSize: BLOCK_SIZE,
         isSolid: blocked ? isSolid : () => false,
         tuning: SENSE_TUNING,
@@ -480,6 +502,31 @@ describe('shambler perception', () => {
 });
 
 describe('shambler scenarios', () => {
+  it('beelines to visible lights using the existing investigation target and respects occlusion', () => {
+    const sourceRange = 20;
+    const targetDistanceMetres = (sourceRange * SENSE_TUNING.light.lureRangeScale) / 2;
+    const target: Vec3 = [targetDistanceMetres / BLOCK_SIZE, 1, 0];
+    const sensedPlayer = (): PlayerSense => ({
+      ...player([100, 1, 100]),
+      lightSources: [{ pos: target, seenFrom: sourceRange, carried: false }],
+    });
+    const open = new ZombieSystem(senses(sensedPlayer));
+    const id = open.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    open.tick(1 / 60);
+    const zombie = open.store.get(id)!;
+    expect(zombie.mode).toBe('investigate');
+    expect(zombie.lastPerceived).toEqual(target);
+    const startingDistance = metres(zombie.body.pos, target);
+    run(open, 1);
+    expect(metres(zombie.body.pos, target)).toBeLessThan(startingDistance);
+
+    const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === Math.floor(target[0] / 2) && y > 0 && y < 4);
+    const blocked = new ZombieSystem(senses(sensedPlayer, wall));
+    const blockedId = blocked.add(SHAMBLER, [0, 1, 0], [1, 0, 0]);
+    blocked.tick(1 / 60);
+    expect(blocked.store.get(blockedId)!.mode).toBe('idle');
+  });
+
   it('refuses to close a real door on the player or a shambler, then closes with a 1 m clearance', () => {
     const { entities, door } = makeDoorWorld();
     const body = (pos: Vec3) => ({ pos, vel: [0, 0, 0] as Vec3, halfWidth: 0.56, height: 3.4, onGround: true });

@@ -226,7 +226,16 @@ export interface PlayerSense {
   lightSeenFrom: number;
   eyeHeightMetres?: number | undefined;
   lightHeightMetres?: number | undefined;
+  lightSources?: readonly ZombieLightSource[] | undefined;
   vocalNoise?: VocalNoise | undefined;
+}
+
+export interface ZombieLightSource {
+  pos: Vec3;
+  seenFrom: number;
+  heightMetres?: number | undefined;
+  /** Player-carried light uses the darkness gate; independent sources use lure tuning. */
+  carried: boolean;
 }
 
 export interface ZombieSystemOptions {
@@ -462,10 +471,6 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
 /** Daylight follows the sky's 06:30 dawn and 19:30 dusk keys. */
 const isDaylight = (hour: number): boolean => hour >= 6.5 && hour < 19.5;
 
-/** The seam for later voxel light: currently daylight or the player's own lit flashlight. */
-const isLit = (_isSolid: SolidAt, _position: Vec3, hour: number, flashlightLit: boolean): boolean =>
-  isDaylight(hour) || flashlightLit;
-
 export interface PerceptionInput {
   zombie: ZombieDef;
   from: Vec3;
@@ -506,6 +511,7 @@ interface ZombieTickScratch {
   perception: PerceptionInput;
   hearingInput: HearingInput;
   sees: boolean;
+  lightTarget?: Vec3 | undefined;
   vocal?: HeardNoise | undefined;
   tier?: HearingTier | undefined;
   wasAware: boolean;
@@ -549,6 +555,7 @@ const createZombieTickScratch = (): ZombieTickScratch => ({
   perception: {} as PerceptionInput,
   hearingInput: {} as HearingInput,
   sees: false,
+  lightTarget: undefined,
   vocal: undefined,
   tier: undefined,
   wasAware: false,
@@ -719,15 +726,89 @@ const seesPlayer = ({ zombie, from, facing, player, hour, blockSize, isSolid, tu
   };
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
-  const lit = isLit(isSolid, player.pos, hour, player.lit);
-  const lightVisible = lit && player.lit && lightClear;
   let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
-  if (lightVisible) {
-    sightRange = player.lightSeenFrom;
+  const playerLightScale = isDaylight(hour) ? tuning.light.playerDaySightScale : 1;
+  if (player.lit && lightClear && playerLightScale > 0) {
+    sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
   } else if (player.crouching) {
     sightRange *= tuning.crouch.sightRangeScale;
   }
   return clear && metres <= sightRange;
+};
+
+const lightRangeScale = (source: ZombieLightSource, hour: number, tuning: SenseDef): number => {
+  if (!source.carried) {
+    return tuning.light.lureRangeScale;
+  }
+  return isDaylight(hour) ? tuning.light.playerDaySightScale : 1;
+};
+
+const canSeeLight = ({
+  zombie,
+  from,
+  look,
+  source,
+  hour,
+  blockSize,
+  isOpaque,
+  tuning,
+}: {
+  zombie: ZombieDef;
+  from: Vec3;
+  look: Vec3;
+  source: ZombieLightSource;
+  hour: number;
+  blockSize: number;
+  isOpaque: SolidAt;
+  tuning: SenseDef;
+}): number | undefined => {
+  const delta = sub(source.pos, from);
+  const distance = Math.hypot(delta[0], delta[2]) * blockSize;
+  if (distance <= 0 || distance > source.seenFrom * lightRangeScale(source, hour, tuning)) {
+    return undefined;
+  }
+  const direction = unit(delta);
+  const dot = Math.max(-1, Math.min(1, look[0] * direction[0] + look[2] * direction[2]));
+  if (dot < Math.cos((zombie.sightCone * Math.PI) / 180)) {
+    return undefined;
+  }
+  const origin: Vec3 = [from[0], from[1] + 1.3 / blockSize, from[2]];
+  const height = source.heightMetres ?? 0.15;
+  const target: Vec3 = [source.pos[0], source.pos[1] + height / blockSize, source.pos[2]];
+  const ray = sub(target, origin);
+  return raycast(origin, unit(ray), Math.hypot(...ray), isOpaque) === undefined ? distance : undefined;
+};
+
+const visibleLightTarget = ({
+  zombie,
+  from,
+  facing,
+  player,
+  hour,
+  blockSize,
+  isOpaque,
+  tuning,
+}: {
+  zombie: ZombieDef;
+  from: Vec3;
+  facing: Vec3;
+  player: PlayerSense;
+  hour: number;
+  blockSize: number;
+  isOpaque: SolidAt;
+  tuning: SenseDef;
+}): Vec3 | undefined => {
+  const look = unit(facing);
+  let nearest: ZombieLightSource | undefined;
+  let nearestDistance = Number.POSITIVE_INFINITY;
+  for (const source of player.lightSources ?? []) {
+    const distance = canSeeLight({ zombie, from, look, source, hour, blockSize, isOpaque, tuning });
+    if (distance !== undefined && distance < nearestDistance) {
+      nearest = source;
+      nearestDistance = distance;
+    }
+  }
+  return nearest ? copy(nearest.pos) : undefined;
 };
 
 /** Returns true for sight or either audible tier, using metres for distances and angles. */
@@ -1172,6 +1253,16 @@ export class ZombieSystem {
     perception.isSolid = isOpaque;
     perception.tuning = this.options.tuning;
     scratch.sees = seesPlayer(perception);
+    scratch.lightTarget = visibleLightTarget({
+      zombie: type,
+      from: pos,
+      facing: zombie.facing,
+      player,
+      hour,
+      blockSize,
+      isOpaque,
+      tuning: this.options.tuning,
+    });
     if (scratch.sees && zombie.obstacleWanderRemaining > 0) {
       zombie.obstacleWanderRemaining = 0;
       zombie.obstacleWanderHeading = undefined;
@@ -1200,14 +1291,14 @@ export class ZombieSystem {
     }
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
     scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
-    if ((scratch.sees || scratch.tier) && !scratch.wasAware) {
+    if ((scratch.sees || scratch.tier || scratch.lightTarget) && !scratch.wasAware) {
       this.options.onSound?.('shambler_alert', copy(pos), zombie);
     }
   }
 
   private updateAttention(): void {
     const scratch = this.tickScratch;
-    const { zombie, player, pos, tier, sees, vocal, blockSize } = scratch;
+    const { zombie, player, pos, tier, sees, vocal, blockSize, lightTarget } = scratch;
     if (sees) {
       zombie.mode = 'chase';
       zombie.investigationTier = undefined;
@@ -1215,6 +1306,13 @@ export class ZombieSystem {
       zombie.searchTimer = 0;
       zombie.searchStrolling = false;
       zombie.lastPerceived = copy(player.pos);
+    } else if (lightTarget) {
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'near';
+      zombie.searchAnchor = undefined;
+      zombie.searchTimer = 0;
+      zombie.searchStrolling = false;
+      zombie.lastPerceived = copy(lightTarget);
     } else if (tier === 'near') {
       zombie.mode = 'investigate';
       zombie.investigationTier = 'near';

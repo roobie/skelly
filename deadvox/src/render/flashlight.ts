@@ -3,6 +3,7 @@
 
 import { MathUtils, type PerspectiveCamera, type Scene, SpotLight, Vector3 } from 'three';
 import type { Registry } from '../core/content.ts';
+import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { DEFAULT_TORCH } from '../core/mood.ts';
 import type { Sky } from '../core/sky.ts';
@@ -113,12 +114,30 @@ export class Flashlight {
   shadowsAllowed = false;
 
   /** Points the beam of the light that's on, or turns it off. Call after `held.update`. */
-  update(registry: Registry, lit: Item | undefined, held: HeldItems, camera: PerspectiveCamera): void {
+  update({
+    registry,
+    lit,
+    held,
+    camera,
+    inventory,
+  }: {
+    registry: Registry;
+    lit: Item | undefined;
+    held: HeldItems;
+    camera: PerspectiveCamera;
+    inventory: Inventory;
+  }): void {
     const def = lit && defOf(registry, lit.type).light;
-    if (!(lit?.on && def?.beam !== undefined && held.lensOf(lit, camera, this.at))) {
+    const hasHeldLens = lit ? held.lensOf(lit, camera, this.at) : false;
+    const location = lit ? inventory.locate(lit) : undefined;
+    const headMounted = location?.kind === 'worn' && location.slot === 'head';
+    if (!(lit?.on && def?.beam !== undefined && (hasHeldLens || headMounted))) {
       this.light.intensity = 0;
       this.light.castShadow = false;
       return;
+    }
+    if (!hasHeldLens) {
+      this.at.copy(camera.position);
     }
     this.light.color.set(def.color);
     this.light.intensity = def.intensity * this.daylightScale * this.strength;

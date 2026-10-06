@@ -784,6 +784,14 @@ const SenseSchema = strictObject({
     clearGain: Fraction,
     clearCutoffHz: Positive,
   }),
+  light: strictObject({
+    /** Fraction of normal light-based player detection retained in daylight. */
+    playerDaySightScale: Fraction,
+    /** Reduce how far shamblers investigate non-player light sources. */
+    lureRangeScale: Fraction,
+    /** Horizontal distance for the glowstick throw action. */
+    throwDistanceMetres: Positive,
+  }),
 });
 const RecipeItemSchema = ItemCountSchema;
 

@@ -12,7 +12,7 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
-import type { HandSide, Pile } from '../core/inventory.ts';
+import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { RestKind } from '../core/longAction.ts';
@@ -142,6 +142,7 @@ export const startPlay = (
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
   }
+  const { throwDistanceMetres } = playerSenseTuning.light;
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -320,7 +321,7 @@ export const startPlay = (
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
-  const { weather, caseEffects, impactEffects, flashlight, zombieMeshes } = view;
+  const { weather, caseEffects, glowstickThrows, impactEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -864,6 +865,9 @@ export const startPlay = (
       case 'player.crouch-toggle':
         withUnlockedInput(() => input.requestCrouchToggle());
         break;
+      case 'player.throw-glowstick':
+        withUnlockedInput(throwGlowstick);
+        break;
       case 'hand.use-off':
         input.useOff();
         break;
@@ -992,6 +996,63 @@ export const startPlay = (
       return;
     }
     useTarget(entity);
+  }
+
+  function throwGlowstick(): void {
+    if (refusePrimaryUseWhileHandling()) {
+      return;
+    }
+    const item = [
+      inventory.hands[dominantSide(inventory.character)],
+      inventory.hands[offSide(inventory.character)],
+    ].find((held) => held?.type === 'glowstick');
+    if (!item) {
+      showRefusal('Hold a glowstick to throw it', sim.time);
+      return;
+    }
+    throwHeldGlowstick(item);
+  }
+
+  function throwHeldGlowstick(item: Item): void {
+    if (!item.on) {
+      showRefusal('Light the glowstick first', sim.time);
+      return;
+    }
+    const target = glowstickLandingTarget();
+    if (!target) {
+      showRefusal('Aim away from straight up to throw', sim.time);
+      return;
+    }
+    const placement = inventory.planAdd(item, target);
+    if (!placement.ok) {
+      showRefusal(`Can't throw it there: ${placement.reason}`, sim.time);
+      return;
+    }
+    const location = inventory.locate(item);
+    if (location?.kind !== 'hand' || !inventory.consume(item)) {
+      return;
+    }
+    if (!inventory.add(item, target)) {
+      inventory.add(item, { kind: 'hand', side: location.side });
+      showRefusal("Couldn't land the glowstick there", sim.time);
+      return;
+    }
+    const origin: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
+    const landing: Vec3 = [(target.pos[0] + 0.5) * s, (target.pos[1] + 0.15) * s, (target.pos[2] + 0.5) * s];
+    glowstickThrows.spawn(origin, landing, registry.items.get(item.type)?.light?.color ?? '#b8ff64');
+  }
+
+  function glowstickLandingTarget(): Extract<Target, { kind: 'pile' }> | undefined {
+    const direction = lookDir();
+    const horizontal = Math.hypot(direction[0], direction[2]);
+    if (horizontal === 0) {
+      return undefined;
+    }
+    const distance = throwDistanceMetres / s / horizontal;
+    const x = body.pos[0] + direction[0] * distance;
+    const z = body.pos[2] + direction[2] * distance;
+    const pos: Vec3 = [Math.floor(x), Math.floor(engine.groundAt(x * s, z * s) / s), Math.floor(z)];
+    return { kind: 'pile', pos };
   }
 
   function toggleRestFromTarget(kind: RestKind, entity: BlockEntity): void {

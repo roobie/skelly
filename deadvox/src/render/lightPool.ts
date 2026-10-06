@@ -47,6 +47,7 @@ export class LightPool {
       .filter(
         ({ path, location }) =>
           location.kind === 'hand' ||
+          location.kind === 'worn' ||
           (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))),
       )
       .sort((a, b) => handPriority(a.location) - handPriority(b.location) || a.order - b.order)

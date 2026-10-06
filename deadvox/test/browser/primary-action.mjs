@@ -30,7 +30,7 @@ const observationPlugin = {
       marker,
       `
   const proof = {
-    input, inventory, session, survival, debugTools, engine, caseEffects, audio, feet, performHandUse, quickbarActions,
+    input, inventory, session, survival, debugTools, engine, caseEffects, glowstickThrows, audio, feet, scale, performHandUse, quickbarActions,
     selectPrimaryAction, ignitionTargetForHand,
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     getNotice: () => notice,
@@ -567,6 +567,48 @@ try {
   assert.equal(roundTrip.restoredOn, true);
   assert.equal(roundTrip.restoredHand, 'left');
   await toggleLight('hand.use-off', false);
+  const throwFixture = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    const glowstick = r.inventory.create('glowstick');
+    r.setHand(r.off, glowstick);
+    const reason = r.survival.use(glowstick);
+    if (reason) {
+      throw new Error(`Could not light throw fixture: ${reason}`);
+    }
+    return {
+      uid: glowstick.uid,
+      start: [...r.session.body.pos],
+      blockSize: r.scale.blockSize,
+      distance: r.inventory.registry.senses.get('player').light.throwDistanceMetres,
+    };
+  });
+  await pressAction(page, 'player.throw-glowstick');
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    throwFixture.uid,
+  );
+  const thrown = await page.evaluate(({ uid, start, blockSize }) => {
+    const r = globalThis.primaryActionTest;
+    const location = r.inventory.locate(r.inventory.itemByUid(uid));
+    if (location?.kind !== 'pile') {
+      throw new Error('Thrown glowstick did not land in a pile');
+    }
+    const [x, , z] = location.pile.pos;
+    return Math.hypot(x + 0.5 - start[0], z + 0.5 - start[2]) * blockSize;
+  }, throwFixture);
+  const landingTolerance = throwFixture.blockSize * 2;
+  assert.ok(
+    await page.evaluate(() => globalThis.primaryActionTest.glowstickThrows.activeCount > 0),
+    'throw presents a visible arc to the landing point',
+  );
+  assert.ok(thrown >= throwFixture.distance - landingTolerance, 'throw reaches its tuned landing range');
+  assert.ok(thrown <= throwFixture.distance + landingTolerance, 'throw uses the tuned landing range');
+  await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
+  });
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.create(r.types.tool));
@@ -741,7 +783,7 @@ try {
   );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, refusals, firearm emission, quickbar hold and held-book reading.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, thrown-glowstick arc, refusals, firearm emission, quickbar hold and held-book reading.\n',
   );
 } finally {
   await browser?.close();
