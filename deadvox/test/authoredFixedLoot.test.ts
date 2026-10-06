@@ -10,7 +10,7 @@ import { rollLoot } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
+import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileTemplate, footprint, placedPieces } from '../src/core/templates.ts';
 
@@ -128,6 +128,44 @@ const partitionRowBefore = (template: CompiledTemplate, targetZ: number): number
     throw new Error(`${template.id} fixed loot has no room partition before z=${targetZ}`);
   }
   return partition;
+};
+
+const insideTemplate = (template: CompiledTemplate, x: number, y: number, z: number): boolean => {
+  const [sx, sy, sz] = template.size;
+  return x >= 0 && x < sx && y >= 0 && y < sy && z >= 0 && z < sz;
+};
+
+const solidPieceAt = (template: CompiledTemplate, x: number, y: number, z: number): boolean =>
+  template.pieces.some((piece) => {
+    const def = result.registry.furniture.get(piece.furniture)!;
+    return (
+      def.solid !== false &&
+      x >= piece.pos[0] &&
+      x < piece.pos[0] + piece.size[0] &&
+      y >= piece.pos[1] &&
+      y < piece.pos[1] + piece.size[1] &&
+      z >= piece.pos[2] &&
+      z < piece.pos[2] + piece.size[2]
+    );
+  });
+
+const solidCellAt = (template: CompiledTemplate, x: number, y: number, z: number): boolean => {
+  const [sx, , sz] = template.size;
+  const block = template.blocks[x + sx * (z + sz * y)]!;
+  return result.registry.blocks[block]?.solid === true || solidPieceAt(template, x, y, z);
+};
+
+const bodyClearOfSolids = (template: CompiledTemplate, [x, feet, z]: readonly [number, number, number]): boolean => {
+  for (let y = Math.floor(feet); y < Math.ceil(feet + STAIR_BODY_HEIGHT); y += 1) {
+    for (let bz = Math.floor(z - STAIR_BODY_HALF_WIDTH); bz < Math.ceil(z + STAIR_BODY_HALF_WIDTH); bz += 1) {
+      for (let bx = Math.floor(x - STAIR_BODY_HALF_WIDTH); bx < Math.ceil(x + STAIR_BODY_HALF_WIDTH); bx += 1) {
+        if (!insideTemplate(template, bx, y, bz) || solidCellAt(template, bx, y, bz)) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
 };
 
 const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number][] => {
@@ -447,9 +485,23 @@ describe('authored fixed loot', () => {
       const buildingTemplate = compileTemplate(result.registry, result.registry.templates.get(templateId)!);
       const container = overrideFor(placedOverrides(layout), templateId, item)!;
       const partition = partitionRowBefore(buildingTemplate, container.override.at[2]);
-      const localZ = (spawn.position[2] - building.position[2]) / scale.blockSize;
-      expect(localZ).toBeGreaterThan(partition);
-      expect(localZ).toBeLessThan(buildingTemplate.size[2] - 1);
+      const walking = withTestEntrance(buildingTemplate, container.override.at);
+      expect(templateSpatialIssues(result.registry, walking), templateId).toEqual([]);
+      const reachable = templateReachableStandingPositions(result.registry, walking);
+      const local: [number, number, number] = spawn.position.map(
+        (coordinate, axis) => (coordinate - building.position[axis]!) / scale.blockSize,
+      ) as [number, number, number];
+      expect(reachable, `${templateId} threat at ${local.join(',')} is reachable at standing height`).toContainEqual(
+        local,
+      );
+      expect(bodyClearOfSolids(buildingTemplate, local), `${templateId} threat body is clear of closed solids`).toBe(
+        true,
+      );
+      expect(
+        local[2] - STAIR_BODY_HALF_WIDTH,
+        `${templateId} threat stands beyond partition ${partition}`,
+      ).toBeGreaterThanOrEqual(partition + 1);
+      expect(local[2] + STAIR_BODY_HALF_WIDTH).toBeLessThan(buildingTemplate.size[2]);
     }
 
     const isInsideWoodland = (x: number, z: number, polygon: Point[]): boolean => {

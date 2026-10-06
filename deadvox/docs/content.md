@@ -5,6 +5,7 @@ read_if:
   - you change content references, static reachability, or disassembly-output contracts
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
+  - you're authoring or changing playtest fixed loot
 ---
 
 # Content sections and recipes
@@ -66,7 +67,7 @@ positive-chance markers that can fit the population cap, accounting for shuffled
 north templates, and roadside wanderers only when a slot can remain.
 
 For #311, a globally reachable item type does not prove that its authored
-container can be looted. `authoredFixedLoot.test.ts` uses
+container can be looted. `test/authoredFixedLoot.test.ts` uses
 `templateReachableStandingPositions` with `templateSpatialIssues` to check the
 playtest's containers against the same standing traversal as template validation,
 not a second test-owned walker.
