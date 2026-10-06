@@ -124,6 +124,7 @@ export class GameAudio {
   private heartbeatLoading = false;
   private heartbeatUnavailable = false;
   private disposed = false;
+  private outputMuted = false;
 
   constructor({ registry, blockSize, isSolid, tuning, report }: GameAudioOptions) {
     this.registry = registry;
@@ -139,6 +140,10 @@ export class GameAudio {
 
   get settings(): AudioVolumes {
     return { ...this.volumes };
+  }
+
+  get isOutputMuted(): boolean {
+    return this.outputMuted;
   }
 
   get heardSounds(): readonly HeardSound[] {
@@ -164,6 +169,14 @@ export class GameAudio {
     if (this.context.state !== 'running') {
       this.context.resume().catch((error: unknown) => this.report(`audio context did not resume: ${String(error)}`));
     }
+  }
+
+  setOutputMuted(muted: boolean): void {
+    if (this.outputMuted === muted) {
+      return;
+    }
+    this.outputMuted = muted;
+    this.applyVolumes();
   }
 
   setVolume(category: keyof AudioVolumes, value: number): void {
@@ -354,7 +367,7 @@ export class GameAudio {
     if (!this.nodes) {
       return;
     }
-    this.nodes.master.gain.value = this.volumes.master;
+    this.nodes.master.gain.value = this.outputMuted ? 0 : this.volumes.master;
     for (const category of CATEGORIES) {
       this.nodes.categories.get(category)!.gain.value = this.volumes[category];
     }

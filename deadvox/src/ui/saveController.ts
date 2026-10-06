@@ -23,6 +23,7 @@ import { computeMenuState } from './menuState.ts';
 
 const SCHEDULER_IDS = new Set([
   'needs',
+  'body',
   'long-action',
   'lights',
   'zombies',

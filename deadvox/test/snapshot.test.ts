@@ -6,10 +6,10 @@ import { disassemblyOutputs, SALVAGE_DURATION } from '../src/core/disassembly.ts
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
-import { Simulation } from '../src/core/sim.ts';
 import type { Site } from '../src/core/site.ts';
 import { World } from '../src/core/world.ts';
 import { QuickbarActions } from '../src/game/quickbarActions.ts';
+import { Simulation } from './simulationFixture.ts';
 import {
   blockId,
   blockName,
@@ -81,6 +81,57 @@ describe('snapshot state components', () => {
     actor.awardPractice('crafting', threshold / 2);
     expect(actor.skills.crafting).toBe(1);
     expect(actor.practice.crafting).toBe(0);
+  });
+
+  it('round-trips body wounds and a stopped treatment action with its item uid and progress', async () => {
+    const runtime = createRuntime();
+    const feet = runtime.player.body.pos.map(Math.floor) as import('../src/core/coords.ts').Vec3;
+    for (const item of [runtime.inventory.hands.right, runtime.inventory.hands.left]) {
+      if (item) {
+        expect(runtime.inventory.move(item, { kind: 'pile', pos: feet }).ok).toBe(true);
+      }
+    }
+    const rag = runtime.inventory.create('rag');
+    expect(runtime.inventory.add(rag, { kind: 'hand', side: 'right' })).toBe(true);
+    runtime.sim.body.impact(1, 'leftArm', { bleeding: true });
+    expect(runtime.survival.use(rag)).toBeUndefined();
+    expect(runtime.sim.actions.job).toMatchObject({ jobType: 'treatment', region: 'leftArm', itemUid: rag.uid });
+    const treatmentJob = runtime.sim.actions.job;
+    if (treatmentJob?.jobType !== 'treatment') {
+      throw new Error('Treatment action was not started');
+    }
+    runtime.sim.scheduler.advance(treatmentJob.duration / (runtime.sim.clock.ratio * 2));
+    runtime.sim.actions.stop();
+
+    const snapshot = capture(runtime);
+    expect(snapshot.character.longAction.job).toMatchObject({
+      jobType: 'treatment',
+      stopped: true,
+      region: 'leftArm',
+      itemUid: rag.uid,
+      treatment: 'rag',
+    });
+    const decoded = await decodeSave(await encodeFixture(snapshot), { version: formatVersion, contentLookup });
+    const loaded = createRuntime(decoded.snapshot);
+    expect(loaded.sim.body.snapshotState()).toEqual(runtime.sim.body.snapshotState());
+    expect(loaded.sim.actions.job).toMatchObject({
+      jobType: 'treatment',
+      stopped: true,
+      region: 'leftArm',
+      itemUid: rag.uid,
+      treatment: 'rag',
+      elapsed: (snapshot.character.longAction.job as { elapsed: number }).elapsed,
+    });
+    expect(loaded.sim.actions.resume()).toBeUndefined();
+    const resumedJob = loaded.sim.actions.job;
+    if (resumedJob?.jobType !== 'treatment') {
+      throw new Error('Treatment action did not resume');
+    }
+    const remainingGameSeconds = resumedJob.duration - resumedJob.elapsed;
+    loaded.sim.scheduler.advance(remainingGameSeconds / loaded.sim.clock.ratio);
+    expect(loaded.sim.actions.job).toBeUndefined();
+    expect(loaded.inventory.itemByUid(rag.uid)).toBeUndefined();
+    expect(loaded.sim.body.wounds.leftArm?.bleeding).toBe(false);
   });
 
   it('round-trips a worn, active headlamp as the selected light', async () => {

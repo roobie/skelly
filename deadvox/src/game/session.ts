@@ -8,6 +8,7 @@ import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
+import { bodyRegionForHitArea } from '../core/body.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
 import { Character, SKILL_LEVEL_MIN, skillEffectLevel } from '../core/character.ts';
 import { CLOCK_RATIO, hourOfDay } from '../core/clock.ts';
@@ -76,7 +77,7 @@ import { Survival } from './survival.ts';
 
 const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
-const HANDLING_RATE = 20;
+export const HANDLING_RATE = 20;
 /** Seconds a player's noise stays audible to shamblers. */
 const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
@@ -208,12 +209,42 @@ const firearmsSkillLevel = (character: Character): number =>
 const nextCrouchState = (togglePressed: boolean, noclip: boolean, crouching: boolean): boolean =>
   togglePressed && !noclip ? !crouching : crouching;
 
+const resolvePlayerEyeHeight = (
+  unconscious: boolean,
+  proneHeight: number,
+  crouching: boolean,
+  crouchDrop: number,
+): number => (unconscious ? proneHeight : PLAYER.eye - (crouching ? crouchDrop : 0));
+
+const movementIntent = (refusal: string | undefined, intent: MoveIntent): MoveIntent => (refusal ? IDLE : intent);
+
+const playerMovementForIntent = (moving: MoveIntent, crouching: boolean, sprinting: boolean): PlayerMovement => {
+  if (moving.forward === 0 && moving.right === 0) {
+    return 'still';
+  }
+  if (crouching) {
+    return 'walking';
+  }
+  if (sprinting) {
+    return 'sprinting';
+  }
+  return moving.walk ? 'walking' : 'jogging';
+};
+
 const createSessionCharacter = (
   registry: Registry,
   handedness: SessionOptions['handedness'],
   restored: Readonly<SaveSnapshot> | undefined,
 ): Character =>
   restored ? Character.restoreState(registry, restored.character.progression) : new Character(registry, { handedness });
+
+const playerBodyTuning = (registry: Registry) => {
+  const tuning = registry.body.get('player');
+  if (!tuning) {
+    throw new Error('Missing player body tuning');
+  }
+  return tuning;
+};
 
 const playerSenseTuning = (registry: Registry) => {
   const tuning = registry.senses.get('player');
@@ -224,6 +255,34 @@ const playerSenseTuning = (registry: Registry) => {
 };
 
 // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep session ownership and dependency wiring centralized at the construction boundary.
+const playerTreatmentHooks = (
+  inventory: Inventory,
+  sim: Simulation,
+): NonNullable<Simulation['actions']['treatment']> => ({
+  validate: (region, itemUid, treatment) => {
+    const item = inventory.itemByUid(itemUid);
+    if (!item || item.type !== treatment) {
+      return 'Treatment item is unavailable';
+    }
+    return sim.body.canTreat(region, treatment) ? undefined : 'That treatment does not apply';
+  },
+  finish: (region, itemUid, treatment) => {
+    const item = inventory.itemByUid(itemUid);
+    if (!item || item.type !== treatment) {
+      return 'Treatment item is no longer available';
+    }
+    if (!sim.body.canTreat(region, treatment)) {
+      return 'That treatment no longer applies';
+    }
+    if (!inventory.consume(item)) {
+      return 'Treatment item is no longer available';
+    }
+    if (!sim.body.treat(region, treatment)) {
+      throw new Error('Body treatment changed during completion');
+    }
+    return true;
+  },
+});
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
@@ -267,8 +326,10 @@ export const createSession = (options: SessionOptions) => {
   const chest = (): Vec3 => [body.pos[0], body.pos[1] + INVENTORY_CHEST / s, body.pos[2]];
   const entityDistance = (entity: BlockEntity) => furnitureDistance(reachPlayer, entity);
 
+  const bodyTuning = playerBodyTuning(registry);
   const sim = new Simulation({
     seed,
+    bodyTuning,
     clock: { ratio: CLOCK_RATIO, start: options.start },
     unsafe: () => debug?.()?.dangerReason() ?? zombieSystem.unsafeReason(),
     restRate: () => sim.actions.restRate,
@@ -392,6 +453,7 @@ export const createSession = (options: SessionOptions) => {
   });
   sim.actions.craft = craftActionHooks(inventory, character, reach, feet);
   sim.actions.reading = bookReadingHooks(inventory, character);
+  sim.actions.treatment = playerTreatmentHooks(inventory, sim);
   const rest = new RestController(sim, {
     furniture: (uid) => {
       const entity = entities.byUid(uid);
@@ -406,25 +468,20 @@ export const createSession = (options: SessionOptions) => {
   });
 
   let sprinting = false;
-  const playerEyeHeightMetres = (): number => PLAYER.eye - (crouching ? senseTuning.crouch.eyeDropMetres : 0);
+  const playerEyeHeightMetres = (): number =>
+    resolvePlayerEyeHeight(
+      sim.body.unconscious,
+      sim.body.tuning.proneEyeHeightMetres,
+      crouching,
+      senseTuning.crouch.eyeDropMetres,
+    );
   let footstepClock = initialFootstepClock();
   let rustleClock = initialRustleClock();
   let airbornePeakY: number | undefined;
   const currentIntent = (): MoveIntent => (controls.active() && !compression.locksInput ? controls.intent() : IDLE);
   const playerCrouching = (): boolean => crouching;
-  const playerMovement = (): PlayerMovement => {
-    const moving = currentIntent();
-    if (moving.forward === 0 && moving.right === 0) {
-      return 'still';
-    }
-    if (crouching) {
-      return 'walking';
-    }
-    if (sprinting) {
-      return 'sprinting';
-    }
-    return moving.walk ? 'walking' : 'jogging';
-  };
+  const playerMovement = (): PlayerMovement =>
+    playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
   const updateAim = (dt: number, firing: boolean): void => {
     const skill = firearmsSkillEffects(firearmsSkillLevel(character));
     aim.advance({
@@ -433,7 +490,7 @@ export const createSession = (options: SessionOptions) => {
       blockSize: s,
       yaw: controls.yaw(),
       pitch: controls.pitch(),
-      variance: skill.variance,
+      variance: skill.variance * sim.body.consequences.aimSway,
       firing,
       recoilRecoveryRate: skill.recoilRecoveryRate,
     });
@@ -524,7 +581,12 @@ export const createSession = (options: SessionOptions) => {
     isSunExposedAt,
     hurtPlayer: (amount, area) => {
       wearOnPlayerHit(inventory, area);
-      sim.hurt(amount, 'a shambler');
+      const legSide = sim.rng(`player-leg-hit:${sim.time}`).int(0, 1) === 0 ? 'leftLeg' : 'rightLeg';
+      const region =
+        area === 'legs'
+          ? bodyRegionForHitArea('legs', legSide)
+          : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
+      sim.hit(amount, 'a shambler', region, { bleeding: true, blunt: true });
     },
     onSound: (event, position, zombie) =>
       playWorldSound(
@@ -649,7 +711,7 @@ export const createSession = (options: SessionOptions) => {
     tick: (dt, time) => {
       lastPlayerStep = time;
       const requested = controls.active() ? controls.intent() : IDLE;
-      const moving = controls.active() && !compression.locksInput;
+      const moving = controls.active() && !compression.locksInput && !sim.body.actionRefusal;
       const intent = moving ? requested : IDLE;
       controls.consumeDominantUse?.();
       controls.consumeOffUse?.();
@@ -668,7 +730,7 @@ export const createSession = (options: SessionOptions) => {
       const pacedIntent = {
         ...intent,
         sprint: sprinting,
-        pace: paceFactor(inventory.carriedWeight(), handling),
+        pace: paceFactor(inventory.carriedWeight(), handling) * sim.body.consequences.movementSpeed,
         crouch: crouching,
         crouchSpeed: senseTuning.crouch.speedMetresPerSecond,
       };
@@ -691,23 +753,36 @@ export const createSession = (options: SessionOptions) => {
     },
   });
 
+  let handlingPausedForKnockout = false;
+  const tickHandling = (dt: number) => {
+    // Handling happens in real time; compressed time belongs to long actions.
+    if (sim.body.actionRefusal) {
+      handlingPausedForKnockout = true;
+      return;
+    }
+    if (compression.c > 1 || handlingPausedForKnockout) {
+      handlingPausedForKnockout = false;
+      return;
+    }
+    const result = queue.tick(dt);
+    options.onHandlingOutcomes?.(result);
+    for (const { job, reason } of result.failed) {
+      (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);
+    }
+  };
+  sim.scheduler.register({ id: 'handling', rate: HANDLING_RATE, tick: tickHandling });
+
   sim.scheduler.register({
-    id: 'handling',
-    rate: HANDLING_RATE,
-    tick: (dt) => {
-      // Handling happens in real time; compressed time belongs to long actions.
-      if (compression.c > 1) {
-        return;
-      }
-      const result = queue.tick(dt);
-      options.onHandlingOutcomes?.(result);
-      for (const { job, reason } of result.failed) {
-        (options.refusal ?? options.notice)(`${job.label}: ${reason.toLowerCase()}`);
+    id: 'firearms',
+    rate: PHYSICS_RATE,
+    tick: (_dt, time) => {
+      if (sim.body.actionRefusal) {
+        firearms.pauseTo(time);
+      } else {
+        firearms.advanceTo(time);
       }
     },
   });
-
-  sim.scheduler.register({ id: 'firearms', rate: PHYSICS_RATE, tick: (_dt, time) => firearms.advanceTo(time) });
 
   /** Containers with a search queued, so pressing again doesn't queue another. */
   const searching = new Set<BlockEntity>();

@@ -485,7 +485,7 @@ export const contentLookup = (kind: SaveContentKind, id: string): boolean => {
   if (kind === 'recipe') {
     return registry.recipes.has(id);
   }
-  return ['needs', 'long-action', 'player', 'zombies', 'zombie-background', 'handling', 'lights', 'firearms'].includes(
+  return ['needs', 'body', 'long-action', 'player', 'zombies', 'zombie-background', 'handling', 'lights', 'firearms'].includes(
     id,
   );
 };
