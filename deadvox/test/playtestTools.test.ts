@@ -319,7 +319,7 @@ describe('controls card', () => {
         defaults: [{ code: 'KeyJ' }],
       },
     ]);
-    const row = controlsCardRows(registry)[0];
+    const [row] = controlsCardRows(registry);
     expect(row?.id).toBe('fixture.action');
     expect(row?.keys).toContain('J');
     expect(row?.action).toContain('Fixture action');

@@ -698,19 +698,19 @@ export class InventoryScreen {
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),
       ].map(
-          (option): OptionViewModel =>
-            option.plan.ok
-              ? {
-                  label: option.label,
-                  button: true,
-                  time:
-                    'duration' in option && option.duration !== undefined
-                      ? craftTime(option.duration)
-                      : secs(option.plan.time),
-                  ...optionAction(option),
-                }
-              : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
-        ),
+        (option): OptionViewModel =>
+          option.plan.ok
+            ? {
+                label: option.label,
+                button: true,
+                time:
+                  'duration' in option && option.duration !== undefined
+                    ? craftTime(option.duration)
+                    : secs(option.plan.time),
+                ...optionAction(option),
+              }
+            : { label: option.label, button: false, reason: option.plan.reason.toLowerCase() },
+      ),
     };
   }
 

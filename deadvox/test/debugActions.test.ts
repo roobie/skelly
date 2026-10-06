@@ -5,10 +5,10 @@ import { DEFAULT_FOGGINESS, type Weather } from '../src/core/weather.ts';
 import { actionsByGroup, DEBUG_GROUPS, paramName } from '../src/debug/groups.ts';
 import { type Action, createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
-import { TONE_MODES } from '../src/render/look.ts';
 import { LOOK_PARAMS } from '../src/debug/lookUrl.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
 import { inputBindings } from '../src/game/inputBindings.ts';
+import { TONE_MODES } from '../src/render/look.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
 
@@ -53,7 +53,9 @@ describe('debug action dispatch', () => {
 
     const shadowStart = SHADOW_DISTANCES.indexOf(look.shadowState.distance);
     expect(shadowStart).toBeGreaterThanOrEqual(0);
-    const distances = SHADOW_DISTANCES.map((_, index) => SHADOW_DISTANCES[(shadowStart + index + 1) % SHADOW_DISTANCES.length]);
+    const distances = SHADOW_DISTANCES.map(
+      (_, index) => SHADOW_DISTANCES[(shadowStart + index + 1) % SHADOW_DISTANCES.length],
+    );
     for (const distance of distances) {
       expect(dispatchDebugAction(actions, 'debug.shadow-distance-cycle')).toBe(true);
       expect(look.shadowState.distance).toBe(distance);
