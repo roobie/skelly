@@ -13,6 +13,7 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
 ---
@@ -530,6 +531,14 @@ plain box in your hands. Files are small, and follow
   `src/game/player.ts`, `movementPace`. First-person motions use shared blunt-arc,
   cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
   animate both arms. Confirmed hits add only clamped first-person recoil.
+
+  BR's 2026-10-07 ruling:
+
+  > blunt: lower variance, greater head damage, generally slower weapons
+  > edged: severs limbs more easily, medium variance, medium speed
+  > stabbing (piercing): in many cases faster, big damage variance
+
+  These class differences make weapon choice matter at contact instead of making every hit a fixed subtraction. The class defaults and per-weapon overrides are provisional content tuning so BR can adjust how those tradeoffs feel. `src/core/schema.ts`, `MeleeClassSchema` and `WeaponSchema`, validate the authored defaults and overrides; `src/game/melee.ts`, `resolvePlayerMeleeWeapon`, resolves them with the swing-time body slowdown into the saved active action, and `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, applies the contact effects. Damage variation uses one draw from `Zombie.dismemberRng` per class-weapon hit, before dismemberment checks and even at zero spread. Keeping draw order independent of spread prevents later dismemberment rolls from shifting when tuning moves to or from zero. Zero stamina refuses a swing, and the authored stamina-recovery wait is saved as remaining simulation time so Continue does not restart or skip that delay; see `src/core/needs.ts`, `spendStamina` and `stepStamina`, and `src/core/sim.ts`, `Simulation.restoreState`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
@@ -630,7 +639,14 @@ plain box in your hands. Files are small, and follow
 ## Damage, destruction and dismemberment
 
 Direction set by BR on 2026-09-28. The aim is an **interesting** damage
-system, not just bigger numbers.
+system, not just bigger numbers. BR's future direction is: “then at some point
+we'll model armor, and different armors have different resistances, like
+chainmail vs platemail vs ballistic vest (example only)”. Armour is outside
+3.3; its later resistances should enter through per-region, per-type damage
+application rather than weapon-class special cases. The neutral per-region,
+per-type data slot in `src/core/schema.ts`, `ZombieSchema`, and
+`src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, keeps that handoff open
+without modeling armour now.
 
 - **Damage comes in types.** Every hit deals a mix of types, and every target
   resists each type differently. The melee types above (blunt, cut, pierce) are
@@ -644,7 +660,7 @@ system, not just bigger numbers.
   steel, each with durability and a resistance per damage type, as content-pack
   data (today a block has only an id and `solid`). A destroyed block is removed
   with `World.setBlock`. Saves already store changed cells as an overlay on the
-  regenerated base chunks (`src/core/saveState.ts:153`), so destruction
+  regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
   persists without new save machinery; saves grow with the damage done.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.

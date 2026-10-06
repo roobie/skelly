@@ -378,6 +378,8 @@ concurrent save changes rather than migrate old saves. See
 `src/core/longAction.ts`, `LongActions`, and `src/core/blockEntities.ts`,
 `BlockEntities.breakLock`.
 
+**d115-1 amendment:** The remaining stamina-regeneration delay is simulation state: save it with `Needs` so recovery continues from the same point after load. An active melee action saves its resolved weapon: contact uses that action's captured content-derived values, its cooldown retains the swing-time body slowdown that cannot be re-derived after body state changes, and its `damageVariance` ensures restored contact consumes the draw that keeps later dismemberment rolls aligned. `Zombie.dismemberRng` owns the per-zombie contact stream; damage spread consumes one draw per class-weapon hit before dismemberment rolls, including zero spread. See `src/core/needs.ts`, `Needs`, `src/core/playerCombat.ts`, `MeleeActionState`, `src/core/zombies.ts`, `Zombie.dismemberRng`, and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`. The exact-version schema changes with these saved fields; old saves are refused rather than migrated.
+
 ### Storage, browsers, and recovery
 
 Use an origin-private file system (OPFS) dedicated worker and
