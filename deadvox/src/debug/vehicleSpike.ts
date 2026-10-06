@@ -49,7 +49,7 @@ import {
   VOXELS_PER_CELL,
 } from './vehicles/model.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from './vehicles/rangeRover.ts';
-import { type MeshBuffers, meshGrid, type Rgb } from './vehicles/voxels.ts';
+import { gridBounds, type MeshBuffers, meshGrid, type Rgb } from './vehicles/voxels.ts';
 
 const required = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);
@@ -96,7 +96,7 @@ const WHEEL_THICKNESS = 7 * VOXEL;
 const wheelStack = (ids: readonly string[]): LooseItem[] =>
   ids.map((fitting, k) => ({
     fitting,
-    position: [-3.1 + 0.02 * k, k * WHEEL_THICKNESS, 2.3],
+    position: [1.2 + 0.02 * k, (k + 0.5) * WHEEL_THICKNESS, -2.3],
     rotation: [-Math.PI / 2, 0, 0],
   }));
 
@@ -289,12 +289,18 @@ const placeFitting = (vehicle: Vehicle, fitting: Fitting): Object3D => {
   return pivot;
 };
 
+/** A removed part on the floor, its voxels centred on the item's position: a far-side part's grid is mirrored. */
 const looseObject = (vehicle: Vehicle, item: LooseItem): Object3D | undefined => {
   const fitting = fittingById(vehicle).get(item.fitting);
   if (!fitting) {
     return undefined;
   }
-  const holder = partObject(vehicle, fitting);
+  const { min, max } = gridBounds(libraryFor(vehicle).grid(fitting.type, fitting.mirror === true));
+  const centre = new Vector3(min[0] + max[0] + 1, min[1] + max[1] + 1, min[2] + max[2] + 1).multiplyScalar(VOXEL / 2);
+  const part = partObject(vehicle, fitting);
+  part.position.copy(centre).negate();
+  const holder = new Group();
+  holder.add(part);
   holder.position.set(...item.position);
   holder.rotation.set(...item.rotation);
   return holder;

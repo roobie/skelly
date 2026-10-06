@@ -225,7 +225,7 @@ const rearQuarter = authored(
     box([3, 19, 52], [5, 22, SIDE], 'paint'),
     rearArch,
     disc('z', [AXLE_REAR, WHEEL_Y, 15, ARCH_R], [52, 57], 'chassis'),
-    box([20, 0, 52], [60, 18, 58], 'air'),
+    box([20, -4, 52], [60, 18, 58], 'air'),
     box([39, WAIST, 57], [42, ROOF_Y, SIDE], 'paint'),
     prism(
       'z',

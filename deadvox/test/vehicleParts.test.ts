@@ -47,6 +47,13 @@ describe('the 4×4 built from parts', () => {
     expect(floating).toEqual([]);
   });
 
+  it('keeps every fitting above the ground it stands on', () => {
+    const below = RANGE_ROVER.fittings
+      .filter((fitting) => library.placed(fitting).bounds.min[1] < 0)
+      .map(({ id }) => id);
+    expect(below).toEqual([]);
+  });
+
   it('places no two fittings in the same voxel', () => {
     const owner = new Map<number, string>();
     const clashes = new Map<string, string>();
