@@ -9,7 +9,15 @@ import {
   type Vehicle,
 } from '../src/debug/vehicles/model.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/debug/vehicles/rangeRover.ts';
-import { GLASS, keyVoxel, meshGrid, rasterize, type VoxelGrid, voxelKey } from '../src/debug/vehicles/voxels.ts';
+import {
+  GLASS,
+  keyVoxel,
+  type MeshBuffers,
+  meshGrid,
+  rasterize,
+  type VoxelGrid,
+  voxelKey,
+} from '../src/debug/vehicles/voxels.ts';
 
 const FACES = [
   [1, 0, 0],
@@ -94,6 +102,25 @@ describe('fitting and removing parts', () => {
     expect(dependentsOf(vehicle, new Set(['post-a', 'post-b']), 'post-a')).toEqual([]);
     expect(missingSupports(vehicle, new Set(['post-a']), 'roof')).toEqual(['post-b']);
   });
+
+  it('reports a part fitted without its support, an unknown support and a support cycle', () => {
+    const broken: Vehicle = {
+      ...vehicle,
+      fittings: [
+        ...vehicle.fittings,
+        fitting('beam', ['ghost']),
+        fitting('left', ['right']),
+        fitting('right', ['left']),
+      ],
+    };
+    const problems = supportProblems(broken, new Set(['post-a', 'roof']));
+    const naming = (...ids: string[]): readonly string[] =>
+      problems.filter((problem) => ids.every((id) => problem.includes(id)));
+    expect(naming('roof', 'post-b')).toHaveLength(1);
+    expect(naming('beam', 'ghost')).toHaveLength(1);
+    expect(naming('left', 'right')).toHaveLength(1);
+    expect(problems).toHaveLength(3);
+  });
 });
 
 describe('greedy voxel meshing', () => {
@@ -131,51 +158,63 @@ describe('greedy voxel meshing', () => {
   const hidden = (neighbour: string | undefined, clear: boolean): boolean =>
     neighbour !== undefined && (clear || !isClear(neighbour));
 
-  /** Face area per material and direction, counted one voxel face at a time. */
-  const naiveFaces = (grid: VoxelGrid, clear: boolean): Map<string, number> => {
-    const counts = new Map<string, number>();
-    for (const [key, mat] of [...grid].filter(([, value]) => isClear(value) === clear)) {
-      const [x, y, z] = keyVoxel(key);
-      const exposed = FACES.filter(([fx, fy, fz]) => !hidden(grid.get(voxelKey(x + fx, y + fy, z + fz)), clear));
-      for (const [dx, dy, dz] of exposed) {
-        const id = `${mat} ${dx},${dy},${dz}`;
-        counts.set(id, (counts.get(id) ?? 0) + 1);
+  /** One unit face: its material, outward normal, the plane it lies in and its minimum corner in that plane. */
+  const unitFace = (mat: string | undefined, normal: readonly number[], corner: readonly number[]): string => {
+    const axis = normal.findIndex((component) => component !== 0);
+    const inPlane = [0, 1, 2].filter((k) => k !== axis).map((k) => corner[k]);
+    return `${mat} ${normal.join(',')} @${corner[axis]} ${inPlane.join(',')}`;
+  };
+
+  /** Every exposed face, one voxel face at a time. */
+  const naiveFaces = (grid: VoxelGrid, clear: boolean): string[] =>
+    [...grid]
+      .filter(([, mat]) => isClear(mat) === clear)
+      .flatMap(([key, mat]) => {
+        const voxel = keyVoxel(key);
+        const [x, y, z] = voxel;
+        return FACES.filter(([fx, fy, fz]) => !hidden(grid.get(voxelKey(x + fx, y + fy, z + fz)), clear)).map(
+          (normal) =>
+            unitFace(
+              mat,
+              normal,
+              voxel.map((v, k) => v + Math.max(normal[k]!, 0)),
+            ),
+        );
+      })
+      .sort();
+
+  /** The same list from a mesh: each quad split into the unit faces it covers, so a doubled or misplaced face shows. */
+  const meshedFaces = (buffers: MeshBuffers): string[] => {
+    const { positions, normals, colors, indices } = buffers;
+    const faces: string[] = [];
+    for (let q = 0; q < indices.length; q += 6) {
+      const corners = [indices[q]!, indices[q + 1]!, indices[q + 2]!, indices[q + 5]!].map((i) => [
+        positions[i * 3]!,
+        positions[i * 3 + 1]!,
+        positions[i * 3 + 2]!,
+      ]);
+      const min = [0, 1, 2].map((k) => Math.min(...corners.map((corner) => corner[k]!)));
+      const max = [0, 1, 2].map((k) => Math.max(...corners.map((corner) => corner[k]!)));
+      const first = indices[q]! * 3;
+      const normal = [normals[first]!, normals[first + 1]!, normals[first + 2]!];
+      const mat = matOf([colors[first]!, colors[first + 1]!, colors[first + 2]!]);
+      const [u, v] = [0, 1, 2].filter((k) => normal[k] === 0) as [number, number];
+      for (let a = min[u]!; a < max[u]!; a += 1) {
+        for (let b = min[v]!; b < max[v]!; b += 1) {
+          const corner = [...min];
+          corner[u] = a;
+          corner[v] = b;
+          faces.push(unitFace(mat, normal, corner));
+        }
       }
     }
-    return counts;
+    return faces.sort();
   };
 
-  /** The same tally from a mesh: each quad's area under its colour's material and its normal. */
-  const meshedFaces = (positions: Float32Array, normals: Float32Array, colors: Float32Array, indices: Uint32Array) => {
-    const counts = new Map<string, number>();
-    for (let q = 0; q < indices.length; q += 6) {
-      const [a, b, , d] = [indices[q]!, indices[q + 1]!, indices[q + 2]!, indices[q + 5]!];
-      const corner = (i: number): number[] => [positions[i * 3]!, positions[i * 3 + 1]!, positions[i * 3 + 2]!];
-      const edge1 = corner(b).map((value, k) => value - corner(a)[k]!);
-      const edge2 = corner(d).map((value, k) => value - corner(a)[k]!);
-      const area = Math.hypot(
-        edge1[1]! * edge2[2]! - edge1[2]! * edge2[1]!,
-        edge1[2]! * edge2[0]! - edge1[0]! * edge2[2]!,
-        edge1[0]! * edge2[1]! - edge1[1]! * edge2[0]!,
-      );
-      const mat = matOf([colors[a * 3]!, colors[a * 3 + 1]!, colors[a * 3 + 2]!]);
-      const id = `${mat} ${normals[a * 3]},${normals[a * 3 + 1]},${normals[a * 3 + 2]}`;
-      counts.set(id, (counts.get(id) ?? 0) + Math.round(area));
-    }
-    return counts;
-  };
-
-  it('covers exactly the exposed faces, per material and direction, in fewer quads', () => {
+  it('covers exactly the exposed faces, each once, in fewer quads', () => {
     const { solid, clear } = meshGrid(fixture, colorOf, isClear);
-    const sorted = (counts: Map<string, number>): [string, number][] =>
-      [...counts].sort(([a], [b]) => a.localeCompare(b));
-    expect(sorted(meshedFaces(solid.positions, solid.normals, solid.colors, solid.indices))).toEqual(
-      sorted(naiveFaces(fixture, false)),
-    );
-    expect(sorted(meshedFaces(clear.positions, clear.normals, clear.colors, clear.indices))).toEqual(
-      sorted(naiveFaces(fixture, true)),
-    );
-    const faces = [...naiveFaces(fixture, false).values()].reduce((sum, n) => sum + n, 0);
-    expect(solid.quads).toBeLessThan(faces);
+    expect(meshedFaces(solid)).toEqual(naiveFaces(fixture, false));
+    expect(meshedFaces(clear)).toEqual(naiveFaces(fixture, true));
+    expect(solid.quads).toBeLessThan(naiveFaces(fixture, false).length);
   });
 });
