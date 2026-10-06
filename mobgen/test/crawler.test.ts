@@ -40,18 +40,25 @@ describe('crawler', () => {
     expect(body.bones.some((bone) => LOWER_LEG_BONE.test(bone.id))).toBe(false);
   });
 
-  it('keeps both thigh stumps, both forearms or hands, and the torso close to the ground', () => {
+  it('grounds the thigh stump ends, forward arm ends, and torso from named rig geometry', () => {
     const realized = realize(generate(crawler, 1));
     const pose = crawlerPose(realized);
     const lowest = lowestSurfaceByBone(realized, pose);
+    const transforms = boneTransforms(realized.body.bones, pose);
+    const tailHeight = new Map(
+      realized.body.bones.map((bone) => [bone.id, applyPoint(transforms.get(bone.id)!, bone.tail)[1]]),
+    );
     const tolerance = 2 * realized.voxels.size;
 
     for (const bone of ['thigh.L', 'thigh.R']) {
+      expect(Math.abs(tailHeight.get(bone)!)).toBeLessThanOrEqual(tolerance);
       expect(Math.abs(lowest.get(bone)!)).toBeLessThanOrEqual(tolerance);
     }
     for (const side of ['L', 'R']) {
-      const armLowest = Math.min(lowest.get(`forearm.${side}`)!, lowest.get(`hand.${side}`)!);
-      expect(Math.abs(armLowest)).toBeLessThanOrEqual(tolerance);
+      const armTail = Math.min(tailHeight.get(`forearm.${side}`)!, tailHeight.get(`hand.${side}`)!);
+      const armSurface = Math.min(lowest.get(`forearm.${side}`)!, lowest.get(`hand.${side}`)!);
+      expect(Math.abs(armTail)).toBeLessThanOrEqual(tolerance);
+      expect(Math.abs(armSurface)).toBeLessThanOrEqual(tolerance);
     }
     const torsoLowest = Math.min(...['pelvis', 'spine', 'chest'].map((bone) => lowest.get(bone)!));
     expect(torsoLowest).toBeLessThanOrEqual(tolerance);

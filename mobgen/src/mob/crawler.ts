@@ -38,8 +38,10 @@ export const crawlerPose = (realized: Realized): Pose => {
     head: rotX(13),
     'upperArm.L': rotX(180),
     'upperArm.R': rotX(180),
-    'forearm.L': rotX(0),
-    'forearm.R': rotX(0),
+    'thigh.L': rotX(20),
+    'thigh.R': rotX(20),
+    'forearm.L': rotX(-15),
+    'forearm.R': rotX(-15),
   };
   return { root: [0, -lowestVoxelBottom(realized, rotations), 0], rotations };
 };
