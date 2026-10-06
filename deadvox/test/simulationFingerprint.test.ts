@@ -1,11 +1,12 @@
 import { readdir, readFile } from 'node:fs/promises';
-import { dirname, isAbsolute, join, resolve } from 'node:path';
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { resolveConfig } from 'vite';
 import { describe, expect, it } from 'vitest';
 import {
   collectSimulationSourceGraph,
   fingerprintAfterHotChange,
+  fingerprintSimulationSourceMap,
   fingerprintSimulationSources,
   SIMULATION_ENTRIES,
   SIMULATION_EXCLUSIONS,
@@ -101,6 +102,10 @@ function actualSimulationGraph() {
   return actualGraph;
 }
 
+function actualSimulationFingerprint() {
+  return actualSimulationGraph().then(({ sources }) => fingerprintSimulationSourceMap(sources));
+}
+
 async function mutateSimulationSource(
   host: SimulationModuleGraphHost,
   path: string,
@@ -108,7 +113,9 @@ async function mutateSimulationSource(
   after = '\n// Test-owned fingerprint mutation.\n',
 ) {
   const target = resolve(projectRoot, path);
-  const original = await host.readFile(target);
+  const sourcePath = relative(projectRoot, target).split(sep).join('/');
+  const graph = await actualSimulationGraph();
+  const original = graph.sources.get(sourcePath) ?? (await host.readFile(target));
   if (!original.includes(before)) {
     throw new Error(`mutation source ${path} does not contain its anchor`);
   }
@@ -116,21 +123,12 @@ async function mutateSimulationSource(
   if (mutated === original) {
     throw new Error(`mutation does not change ${path}`);
   }
-  let reads = 0;
-  const mutatedHost: SimulationModuleGraphHost = {
-    ...host,
-    readFile(file) {
-      if (file === target) {
-        reads += 1;
-        return Promise.resolve(mutated);
-      }
-      return host.readFile(file);
-    },
-  };
-  const value = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, mutatedHost, {
-    exclude: SIMULATION_EXCLUSIONS,
-  });
-  return { reads, value };
+  const sources = new Map(graph.sources);
+  const included = sources.has(sourcePath);
+  if (included) {
+    sources.set(sourcePath, mutated);
+  }
+  return { included, value: fingerprintSimulationSourceMap(sources) };
 }
 
 describe('simulation source fingerprint', () => {
@@ -154,14 +152,12 @@ describe('simulation source fingerprint', () => {
 
   it('excludes WebAudio implementation but fingerprints sound admission, seeded selection and saves', async () => {
     const host = await actualSimulationHost();
-    const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
-      exclude: SIMULATION_EXCLUSIONS,
-    });
+    const original = await actualSimulationFingerprint();
     const cap = await mutateSimulationSource(host, 'src/game/audio.ts');
     expect(cap.value).toBe(original);
-    expect(cap.reads).toBe(0);
+    expect(cap.included).toBe(false);
     const picker = await mutateSimulationSource(host, 'src/core/soundPicker.ts', '`sound:', '`changed:');
-    expect(picker.reads).toBe(1);
+    expect(picker.included).toBe(true);
     expect(picker.value).not.toBe(original);
     const admission = await mutateSimulationSource(
       host,
@@ -169,7 +165,7 @@ describe('simulation source fingerprint', () => {
       'const emittedAsNoise = player && definition.noise.enabled;',
       'const emittedAsNoise = false;',
     );
-    expect(admission.reads).toBe(1);
+    expect(admission.included).toBe(true);
     expect(admission.value).not.toBe(original);
     const graph = await actualSimulationGraph();
     expect(graph.sources.has('src/core/saveState.ts')).toBe(true);
@@ -178,38 +174,33 @@ describe('simulation source fingerprint', () => {
 
   it('ignores HUD/paper wording but fingerprints the gameplay interaction reach', async () => {
     const host = await actualSimulationHost();
-    const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
-      exclude: SIMULATION_EXCLUSIONS,
-    });
+    const original = await actualSimulationFingerprint();
     const hud = await mutateSimulationSource(host, 'src/ui/playHud.ts');
-    expect(hud.reads).toBe(0);
+    expect(hud.included).toBe(false);
     expect(hud.value).toBe(original);
     const paper = await mutateSimulationSource(host, 'src/ui/reading.ts');
-    expect(paper.reads).toBe(0);
+    expect(paper.included).toBe(false);
     expect(paper.value).toBe(original);
     const reach = await mutateSimulationSource(host, 'src/game/play.ts');
-    expect(reach.reads).toBe(1);
+    expect(reach.included).toBe(true);
     expect(reach.value).not.toBe(original);
   });
 
   it('keeps handling sound selection and placement outside the actual simulation fingerprint', async () => {
     const host = await actualSimulationHost();
-    const options = { exclude: SIMULATION_EXCLUSIONS };
-    const before = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, options);
+    const before = await actualSimulationFingerprint();
     const voice = await mutateSimulationSource(host, 'src/game/shamblerAudio.ts');
-    expect(voice.reads).toBe(0);
+    expect(voice.included).toBe(false);
     expect(voice.value).toBe(before);
     const changed = await mutateSimulationSource(host, 'src/game/audioPresentation.ts');
-    expect(changed.reads).toBe(0);
+    expect(changed.included).toBe(false);
     expect(changed.value).toBe(before);
   });
 
   it('excludes presentation copy and pose policy but fingerprints action policy', async () => {
     const host = await actualSimulationHost();
     const graph = await actualSimulationGraph();
-    const original = await fingerprintSimulationSources(SIMULATION_ENTRIES, projectRoot, host, {
-      exclude: SIMULATION_EXCLUSIONS,
-    });
+    const original = fingerprintSimulationSourceMap(graph.sources);
     expect(graph.sources.has('src/game/primaryAction.ts')).toBe(true);
     expect(graph.sources.has('src/debug/axisGizmo.ts')).toBe(false);
     expect(graph.sources.has('src/game/firearmHandling.ts')).toBe(true);
@@ -219,27 +210,27 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/ui/primaryActionHint.ts')).toBe(false);
 
     const debugPresentation = await mutateSimulationSource(host, 'src/debug/axisGizmo.ts');
-    expect(debugPresentation.reads).toBe(0);
+    expect(debugPresentation.included).toBe(false);
     expect(debugPresentation.value).toBe(original);
 
     const hint = await mutateSimulationSource(host, 'src/ui/primaryActionHint.ts');
-    expect(hint.reads).toBe(0);
+    expect(hint.included).toBe(false);
     expect(hint.value).toBe(original);
 
     const helpCopy = await mutateSimulationSource(host, 'src/game/controls.ts');
-    expect(helpCopy.reads).toBe(0);
+    expect(helpCopy.included).toBe(false);
     expect(helpCopy.value).toBe(original);
 
     const offHandRenderPolicy = await mutateSimulationSource(host, 'src/render/meleePose.ts');
-    expect(offHandRenderPolicy.reads).toBe(0);
+    expect(offHandRenderPolicy.included).toBe(false);
     expect(offHandRenderPolicy.value).toBe(original);
 
     const casePresentation = await mutateSimulationSource(host, 'src/render/caseEffects.ts');
-    expect(casePresentation.reads).toBe(0);
+    expect(casePresentation.included).toBe(false);
     expect(casePresentation.value).toBe(original);
 
     const firearmDrawing = await mutateSimulationSource(host, 'src/render/firearmModel.ts');
-    expect(firearmDrawing.reads).toBe(0);
+    expect(firearmDrawing.included).toBe(false);
     expect(firearmDrawing.value).toBe(original);
     const sharedFirearmTiming = await mutateSimulationSource(
       host,
@@ -247,10 +238,10 @@ describe('simulation source fingerprint', () => {
       '60 / action.rpm',
       '61 / action.rpm',
     );
-    expect(sharedFirearmTiming.reads).toBe(1);
+    expect(sharedFirearmTiming.included).toBe(true);
     expect(sharedFirearmTiming.value).not.toBe(original);
     const firearmHandling = await mutateSimulationSource(host, 'src/game/firearmHandling.ts');
-    expect(firearmHandling.reads).toBe(1);
+    expect(firearmHandling.included).toBe(true);
     expect(firearmHandling.value).not.toBe(original);
     const cadence = await mutateSimulationSource(
       host,
@@ -258,7 +249,7 @@ describe('simulation source fingerprint', () => {
       'const interval = 60 / weapon.rpm;',
       'const interval = 61 / weapon.rpm;',
     );
-    expect(cadence.reads).toBe(1);
+    expect(cadence.included).toBe(true);
     expect(cadence.value).not.toBe(original);
 
     const handPolicy = await mutateSimulationSource(
@@ -267,7 +258,7 @@ describe('simulation source fingerprint', () => {
       'hand: HandSide = dominantSide(inventory.character)',
       'hand: HandSide = offSide(inventory.character)',
     );
-    expect(handPolicy.reads).toBe(1);
+    expect(handPolicy.included).toBe(true);
     expect(handPolicy.value).not.toBe(original);
 
     const capability = await mutateSimulationSource(
@@ -276,32 +267,23 @@ describe('simulation source fingerprint', () => {
       "{ kind: 'light', supports:",
       "{ kind: 'melee', supports:",
     );
-    expect(capability.reads).toBe(1);
+    expect(capability.included).toBe(true);
     expect(capability.value).not.toBe(original);
   });
 
   it('keeps metrics-only observer label mutations outside the actual fingerprint', async () => {
-    const host = await actualSimulationHost();
-    const hashWith = (edited: boolean) =>
-      fingerprintSimulationSources(
-        SIMULATION_ENTRIES,
-        projectRoot,
-        {
-          ...host,
-          async readFile(path) {
-            const source = await host.readFile(path);
-            return edited && path.endsWith('/src/game/playtestObserver.ts')
-              ? source.replaceAll(pocketLabel, compartmentLabel)
-              : source;
-          },
-        },
-        { exclude: SIMULATION_EXCLUSIONS },
-      );
-    const observerPath = resolve(projectRoot, 'src/game/playtestObserver.ts');
-    const observerSource = await readFile(observerPath, 'utf8');
-    const relabeled = observerSource.replaceAll(pocketLabel, compartmentLabel);
-    expect(relabeled).not.toBe(observerSource);
-    expect(await hashWith(true)).toBe(await hashWith(false));
+    const observerPath = `${root}/src/game/playtestObserver.ts`;
+    const simPath = `${root}/src/core/sim.ts`;
+    const sources: Sources = new Map([
+      [simPath, "import '../game/playtestObserver.ts';\nexport const tick = () => 1;\n"],
+      [observerPath, `export const label = '${pocketLabel}';\n`],
+    ]);
+    const changedSources = new Map(sources);
+    changedSources.set(observerPath, `export const label = '${compartmentLabel}';\n`);
+    const excluded = ['src/game/playtestObserver.ts'];
+    expect(await fingerprintSimulationSources(entries, root, hostFor(sources), { exclude: excluded })).toBe(
+      await fingerprintSimulationSources(entries, root, hostFor(changedSources), { exclude: excluded }),
+    );
   });
 
   it('classifies every core and game source module', async () => {

@@ -12,14 +12,19 @@ const files = (directory: string): string[] =>
     }
     return sourceExtension.test(entry.name) ? [path] : [];
   });
-it('keeps physical literals and DOM keyboard interpretation in the single registry owner', () => {
-  const root = join(import.meta.dirname, '../src');
-  const scanned = files(root).filter((path) => relative(root, path) !== 'game/inputBindings.ts');
+const root = join(import.meta.dirname, '../src');
+const scanned = files(root).filter((path) => relative(root, path) !== 'game/inputBindings.ts');
+
+it('finds source files for the keyboard-literal guard', () => {
   expect(scanned.length).toBeGreaterThan(0);
-  const issues = scanned.flatMap((path) =>
-    keyboardViolations(readFileSync(path, 'utf8')).map((issue) => `${relative(root, path)}: ${issue}`),
-  );
+});
+
+it.each(scanned)('keeps keyboard literals out of %s', (path) => {
+  const issues = keyboardViolations(readFileSync(path, 'utf8')).map((issue) => `${relative(root, path)}: ${issue}`);
   expect(issues).toEqual([]);
+});
+
+it('detects forbidden physical-code and DOM event literal forms', () => {
   expect(
     keyboardViolations('function key(e: KeyboardEvent) { const { code: position } = e; return position === "KeyZ"; }')
       .length,

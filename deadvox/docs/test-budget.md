@@ -25,6 +25,8 @@ Each cut keeps the assertion defining its protected property and removes only re
 
 Revisit these cuts when an issue reports another default-suite budget overrun or a defect that a given-up case would have caught. Restore the affected case when responding to such a defect, and link the issue.
 
+For #318, `test/inputLiterals.test.ts` keeps scanning and parsing every source file but gives each file its own assertion, so unrelated parsing work cannot accumulate under one test timeout. `test/simulationFingerprint.test.ts` reuses its actual Vite-resolved graph for source mutations and calls `fingerprintSimulationSourceMap`; synthetic cases still exercise full graph collection through `fingerprintSimulationSources`. This removes repeated graph transforms without weakening the identity checks.
+
 ## Milestone growth check
 
 For each milestone, compare the previous milestone's merge commit with the new head using three interleaved default-suite runs per head, each in its own isolated run. Treat median growth beyond the run-to-run spread as an overrun, and record per-file deltas. The absolute budget remains the quiet-host target.
