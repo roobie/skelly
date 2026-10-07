@@ -44,6 +44,7 @@
         "ejection": [-0.048875, 0.002875, 0.023]
       },
       "calibre": "5.56x45",
+      "chargingHandleDegrees": 0,
       "action": {
         "parts": {
           "carrier": {
@@ -529,6 +530,7 @@
         "ejection": [-0.048875, 0.0115, 0.023]
       },
       "calibre": "7.62x39",
+      "chargingHandleDegrees": 90,
       "action": {
         "parts": {
           "carrier": {

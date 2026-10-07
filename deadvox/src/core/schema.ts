@@ -635,6 +635,12 @@ const ModelSchema = pipe(
     muzzleDirection: optional(UnitVector),
     /** Optional estimated action cycles and the named moving GLB nodes. */
     action: optional(ActionSchema),
+    /**
+     * Where the charging handle sits around the bore: degrees from the top of the receiver toward the gun's right
+     * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (DESIGN.md, "Rifles
+     * (3.2, d114)"). Hand-authored: the export does not carry it.
+     */
+    chargingHandleDegrees: optional(pipe(number(), minValue(-180), maxValue(180))),
   }),
   check(
     ({ calibre, capacity, rounds }) =>
