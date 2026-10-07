@@ -33,7 +33,11 @@
         "stairs_cabin",
         "stairs_house",
         "triage_tent",
-        "woodshed"
+        "woodshed",
+        "workshop_hall",
+        "workshop_office",
+        "workshop_parts_store",
+        "workshop_yard"
       ],
       "valuesAsFlags": false
     },
