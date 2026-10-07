@@ -101,7 +101,7 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
     if (refusal) {
       throw new Error(refusal);
     }
-    const duration = firearmHandlingFor(gun, inventory.registry).action.hand.durationSeconds;
+    const duration = firearmHandlingFor(gun, inventory.registry).action.hand.durationSimSeconds;
     finish(duration, time + duration);
   };
   const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time, debugMode: false });
@@ -157,7 +157,7 @@ describe('real pump ammunition', () => {
     probe.load(0);
     probe.rack(1);
     expect(probe.mechanics.cock(probe.gun.uid, 3)).toBeUndefined();
-    const duration = firearmHandlingFor(probe.gun, probe.inventory.registry).action.hand.durationSeconds;
+    const duration = firearmHandlingFor(probe.gun, probe.inventory.registry).action.hand.durationSimSeconds;
     probe.finish(duration, 3 + duration);
     const landing = [...probe.inventory.piles.values()][0]?.pos;
     expect(landing).toBeDefined();
@@ -409,7 +409,7 @@ describe('real pump ammunition', () => {
     f.rack(1);
     expect(f.mechanics.cock(f.gun.uid, 3)).toBeUndefined();
     const model = registry.models.get('shotgun_pump')!;
-    const at = model.action!.hand.rearwardSeconds * model.action!.ejectAt;
+    const at = model.action!.hand.rearwardSimSeconds * model.action!.ejectAt;
     f.finish(at - 1e-6, 3 + at - 1e-6);
     expect(f.effects).toEqual([]);
     f.finish(1e-6, 3 + at);
@@ -426,7 +426,7 @@ describe('real pump ammunition', () => {
     expect(f.gun.firearm?.chamber).toBe('empty');
     const ground = [...f.inventory.piles.values()].flatMap((pile) => pile.items.map(({ item }) => item));
     expect(ground.map((item) => [item.type, item.count])).toEqual([[shellType, 1]]);
-    const duration = model.action!.hand.durationSeconds;
+    const duration = model.action!.hand.durationSimSeconds;
     f.finish(duration - at, 3 + duration);
     expect(f.gun.firearm?.chamber).toBe('empty');
     expect(f.fire(5)).toBe(false);
@@ -582,7 +582,7 @@ describe('real pump ammunition', () => {
     s.queue.tick(SHELL_LOAD_SECONDS);
     s.firearms.advanceTo(SHELL_LOAD_SECONDS);
     expect(s.firearms.cock(gun.uid, SHELL_LOAD_SECONDS)).toBeUndefined();
-    const duration = firearmHandlingFor(gun, registry).action.hand.durationSeconds;
+    const duration = firearmHandlingFor(gun, registry).action.hand.durationSimSeconds;
     s.queue.tick(duration);
     const shotAt = SHELL_LOAD_SECONDS + duration + 1;
     s.firearms.advanceTo(shotAt);
@@ -606,7 +606,7 @@ describe('real pump ammunition', () => {
     expect(f.fire(3)).toBe(true);
     expect(f.mechanics.cock(f.gun.uid, 4)).toBeUndefined();
     const action = registry.models.get('shotgun_pump')!.action!;
-    const ejectAt = action.hand.rearwardSeconds * action.ejectAt;
+    const ejectAt = action.hand.rearwardSimSeconds * action.ejectAt;
     f.finish(ejectAt, 4 + ejectAt);
     const restored = Inventory.restoreState(f.inventory.registry, f.inventory.snapshotState());
     const cues: { event: SoundEventId; time: number }[] = [];
@@ -623,7 +623,7 @@ describe('real pump ammunition', () => {
     mechanics.advanceTo(landingAt);
     mechanics.advanceTo(landingAt + 1);
     expect(cues).toEqual([{ event: 'shotgun_hull_drop', time: landingAt }]);
-    const forwardAt = action.hand.rearwardSeconds + action.hand.dwellSeconds;
+    const forwardAt = action.hand.rearwardSimSeconds + action.hand.dwellSimSeconds;
     f.finish(forwardAt - ejectAt, 4 + forwardAt);
     expect(f.sounds.filter((cue) => cue.time >= 4)).toEqual([
       { event: 'shotgun_rack_back', time: 4 },

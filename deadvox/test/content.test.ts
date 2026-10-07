@@ -15,6 +15,7 @@ import {
 } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
+import { gameMinutes, simSeconds } from '../src/core/time.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -23,7 +24,7 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
-const missingSoundsRegistry = buildRegistry(base.filter(({ source }) => source !== 'sounds.json')).registry;
+const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
 
 interface WindowFrameRun {
   y: number;
@@ -152,7 +153,7 @@ describe('content', () => {
             {
               id: 'fixture_recipe',
               result: { item: 'rag', count: 1 },
-              time: 1,
+              timeGameMinutes: 1,
               skills: Object.fromEntries([['fixture_skill', level]]),
               qualities: {},
               components: [],
@@ -176,7 +177,7 @@ describe('content', () => {
             weight: 1,
             size: [1, 1],
             disassembly: {
-              time: 1,
+              timeGameMinutes: 1,
               skill: 'fixture_skill',
               yields: [
                 {
@@ -226,7 +227,7 @@ describe('content', () => {
           weight: 1,
           size: [1, 1],
           disassembly: {
-            time: 1,
+            timeGameMinutes: gameMinutes(1),
             skill: 'fixture_reclaiming',
             yields: [{ item: 'fixture_input', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
           },
@@ -271,7 +272,7 @@ describe('content', () => {
           category: 'book',
           weight: 1,
           size: [1, 1],
-          book: { title: 'Fixture manual', recipes: ['missing_recipe'], readingTime: 1 },
+          book: { title: 'Fixture manual', recipes: ['missing_recipe'], readingGameMinutes: gameMinutes(1) },
         },
       ],
     };
@@ -294,7 +295,7 @@ describe('content', () => {
     expect.soft(rejected.registry.items.has('review_only_item')).toBe(false);
     // Only the container changes: shape/references and actual marked placement stay identical.
     const control = structuredClone(data);
-    control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handling: 1 }] };
+    control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] };
     const { registry, issues } = buildRegistry([...base, { source, data: control }]);
     expect(issues).toEqual([]);
     expect(checkReachability(registry).found.has('review_only_item')).toBe(true);
@@ -323,7 +324,7 @@ describe('content', () => {
       size: [1, 4],
       model: 'machete',
       tool: { qualities: { cutting: 2 } },
-      weapon: { melee: { damage: 11, reach: 0.45, cooldown: 0.75, stamina: 5, impulse: 4.5, type: 'cut' } },
+      weapon: { melee: { damage: 11, reach: 0.45, cooldownSimSeconds: 0.75, stamina: 5, impulse: 4.5, type: 'cut' } },
     });
     expect(kabar).toMatchObject({
       name: 'Kabar',
@@ -332,7 +333,7 @@ describe('content', () => {
       size: [1, 3],
       model: 'kabar',
       tool: { qualities: { cutting: 2 } },
-      weapon: { melee: { damage: 9, reach: 0.3, cooldown: 0.55, stamina: 3.5, impulse: 4, type: 'cut' } },
+      weapon: { melee: { damage: 9, reach: 0.3, cooldownSimSeconds: 0.55, stamina: 3.5, impulse: 4, type: 'cut' } },
     });
     for (const id of ['machete', 'kabar']) {
       expect(registry.loot.get('shed_tools')?.entries).toContainEqual({
@@ -367,7 +368,7 @@ describe('content', () => {
       gain: 0.7,
       pitchJitter: [1, 1],
       gainJitter: [1, 1],
-      minIntervalSeconds: 0,
+      minIntervalSimSeconds: 0,
       category: 'world',
       noise: { enabled: false, radiusMetres: 1 },
       wall: { gain: 0.3, cutoffHz: 900 },
@@ -383,14 +384,14 @@ describe('content', () => {
   it('validates the shambler search-duration range', () => {
     const zombiePack = base.find(({ source }) => source === 'zombies.json')!;
     const data = structuredClone(zombiePack.data) as {
-      zombies: Array<{ hearingModel: { searchSeconds: { min: number; max: number } } }>;
+      zombies: Array<{ hearingModel: { searchSimSeconds: { min: number; max: number } } }>;
     };
-    data.zombies[0]!.hearingModel.searchSeconds = { min: 51, max: 50 };
+    data.zombies[0]!.hearingModel.searchSimSeconds = { min: 51, max: 50 };
     const issues = validateContent({ source: zombiePack.source, data });
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
-  it('fails when the sounds.json content file is missing required events', () => {
+  it('reports required sound events missing from the registry', () => {
     const missingLight = requiredSoundIssues(missingSoundsRegistry).some(
       (issue) => issue.message === 'missing required sound event "player_hurt_light"',
     );
@@ -404,24 +405,9 @@ describe('content', () => {
   });
 
   it('fails when a required sound event has no definition', () => {
-    const sounds = {
-      source: 'sounds.json',
-      data: {
-        sounds: [
-          {
-            id: 'player_hurt_light',
-            variants: ['assets/audio/player-hurt-light-01.ogg'],
-            gain: 0.8,
-            pitchJitter: [0.95, 1.05],
-            gainJitter: [0.9, 1.1],
-            minIntervalSeconds: 0.1,
-            category: 'body',
-            noise: { enabled: true, radiusMetres: 8 },
-          },
-        ],
-      },
-    };
-    const { registry } = buildRegistry([...base.filter(({ source }) => source !== 'sounds.json'), sounds]);
+    const registry = { ...baseRegistry, sounds: new Map(baseRegistry.sounds) };
+    registry.sounds.clear();
+    registry.sounds.set('player_hurt_light', baseRegistry.sounds.get('player_hurt_light')!);
     const missingHeavy = requiredSoundIssues(registry).some(
       (issue) => issue.message === 'missing required sound event "player_hurt_heavy"',
     );
@@ -474,13 +460,13 @@ describe('content', () => {
             id: 'missing_cone',
             name: 'Missing cone',
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wander: 0.8, chase: 2.5 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
             sight: 20,
             nightSight: 10,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            attack: { damage: 5, reach: 1, cooldown: 1.5, windup: 0.3 },
+            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
           },
@@ -499,13 +485,13 @@ describe('content', () => {
             id: 'missing_step_length',
             name: 'Missing step length',
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wander: 0.8, chase: 2.5 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             sight: 20,
             nightSight: 10,
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
-            attack: { damage: 5, reach: 1, cooldown: 1.5, windup: 0.3 },
+            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
           },
@@ -559,7 +545,7 @@ describe('content references', () => {
         size: [1, 1],
         tool: { qualities: Object.fromEntries([['custom_shaping', 1]]) },
         disassembly: {
-          time: 1,
+          timeGameMinutes: 1,
           skill: 'fixture_skill',
           yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
         },
@@ -578,7 +564,7 @@ describe('content references', () => {
             ['custom_shaping', 2],
             ['fixture_sawing', 1],
           ]),
-          workTimeBonus: 0.2,
+          workFactorBonus: 0.2,
         },
       },
       { id: 'fixture_plain_bench', name: 'Ordinary bench', size: [1, 1, 1], color: '#ffffff' },
@@ -587,7 +573,7 @@ describe('content references', () => {
       {
         id: 'fixture_recipe',
         result: { item: 'fixture_tool', count: 1 },
-        time: 2,
+        timeGameMinutes: 2,
         skills: Object.fromEntries([['fixture_skill', 0]]),
         qualities: Object.fromEntries([
           ['custom_shaping', 1],
@@ -624,7 +610,10 @@ describe('content references', () => {
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
     const { registry, issues } = buildRegistry([...base, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);
-    expect(registry.recipes.get('fixture_recipe')).toEqual(recipePack.recipes[0]);
+    expect(registry.recipes.get('fixture_recipe')).toEqual({
+      ...recipePack.recipes[0],
+      timeGameMinutes: gameMinutes(recipePack.recipes[0]!.timeGameMinutes),
+    });
     expect(registry.skills.get('fixture_skill')).toEqual(recipePack.skills[0]);
   });
 
@@ -725,8 +714,14 @@ describe('content references', () => {
             size: [1, 1, 1],
             color: '#333333',
             door: {
-              handling: 0.4,
-              prying: { quality: 1, skill: 'missing_skill', time: 2, fastestTime: 1, strikeInterval: 1 },
+              handlingSimSeconds: 0.4,
+              prying: {
+                quality: 1,
+                skill: 'missing_skill',
+                timeSimSeconds: 2,
+                fastestTimeSimSeconds: 1,
+                strikeIntervalSimSeconds: 1,
+              },
             },
           },
         ],
@@ -735,24 +730,24 @@ describe('content references', () => {
             id: 'clerk',
             name: 'Clerk',
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
-            speed: { wander: 0.8, chase: 2.5 },
+            speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
             wander: {
               obstacleWanderChance: 0.25,
               obstacleWanderDistanceMetres: 10,
-              idleSeconds: { min: 3, max: 10 },
-              strollSeconds: { min: 3, max: 12 },
+              idleSimSeconds: { min: 3, max: 10 },
+              strollSimSeconds: { min: 3, max: 12 },
               leashMetres: 12,
-              lookIntervalSeconds: { min: 0.8, max: 1.8 },
+              lookIntervalSimSeconds: { min: 0.8, max: 1.8 },
               bodyLookArcDegrees: 150,
               headLookArcDegrees: 100,
-              bodyTurnDegreesPerSecond: 90,
-              headTurnDegreesPerSecond: 120,
-              movementAcceleration: 4,
+              bodyTurnDegreesPerSimSecond: 90,
+              headTurnDegreesPerSimSecond: 120,
+              movementAccelerationMetresPerSimSecondSquared: 4,
             },
             sight: 20,
             nightSight: 10,
-            stimulusMemorySeconds: 1,
+            stimulusMemorySimSeconds: 1,
             sightCone: 60,
             hearing: 1,
             hearingRange: { walk: 3, jog: 8, sprint: 15 },
@@ -760,22 +755,22 @@ describe('content references', () => {
               farMultiplier: 2,
               bearingErrorRadians: 0.61,
               investigationDistanceMetres: 8,
-              searchSeconds: { min: 40, max: 50 },
+              searchSimSeconds: { min: 40, max: 50 },
               searchRadiusMetres: 4,
-              searchStrollSeconds: { min: 1, max: 3 },
+              searchStrollSimSeconds: { min: 1, max: 3 },
             },
             chaseMotion: {
               swayDegrees: 25,
-              swayIntervalSeconds: { min: 0.7, max: 1.1 },
+              swayIntervalSimSeconds: { min: 0.7, max: 1.1 },
               speedMultiplier: { min: 0.6, max: 1.2 },
-              lurchSeconds: 1,
-              stumbleChancePerSecond: 0.16,
-              stumbleDurationSeconds: { min: 0.55, max: 0.75 },
-              stumbleEaseSeconds: 0.2,
+              lurchSimSeconds: 1,
+              stumbleChancePerSimSecond: 0.16,
+              stumbleDurationSimSeconds: { min: 0.55, max: 0.75 },
+              stumbleEaseSimSeconds: 0.2,
               stumbleSpeedFraction: 0.04,
-              stumbleDeceleration: 14,
+              stumbleDecelerationMetresPerSimSecondSquared: 14,
             },
-            attack: { damage: 5, reach: 1, cooldown: 1.5, windup: 0.3 },
+            attack: { damage: 5, reach: 1, cooldownSimSeconds: 1.5, windupSimSeconds: 0.3 },
             dismember: { chance: 0.15, headOnKillChance: 0.25 },
             abilities: [],
             loot: 'till',
@@ -793,7 +788,7 @@ describe('content references', () => {
               seenFrom: 30,
               color: '#ffffff',
               intensity: 1,
-              power: { battery: 'bandage', perHour: 1 },
+              power: { battery: 'bandage', chargePerGameHour: 1 },
             },
           },
         ],
@@ -809,13 +804,46 @@ describe('content references', () => {
   });
 });
 
+const templateZombieFile = base.find(({ source }) => source === 'zombies.json')!;
+const templateShambler = Object.fromEntries(
+  Object.entries(
+    structuredClone(
+      (templateZombieFile.data as { zombies: { id: string }[] }).zombies.find(({ id }) => id === 'shambler')!,
+    ),
+  ).filter(([key]) => key !== 'loot'),
+);
+const templateShamblerSoundIds = new Set(
+  Object.values((templateShambler as { sounds?: Record<string, string> }).sounds ?? {}),
+);
+const templateSoundDefinitions = (
+  base.find(({ source }) => source === 'sounds.json')!.data as {
+    sounds: { id: string }[];
+  }
+).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
+const templateBase = [
+  { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
+  {
+    source: 'template-support.json',
+    data: {
+      furniture: [
+        { id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534' },
+        { id: 'crate', name: 'Crate', size: [2, 2, 2], color: '#7a5534' },
+      ],
+    },
+  },
+  ...(templateSoundDefinitions.length > 0
+    ? [{ source: 'template-sounds.json', data: { sounds: templateSoundDefinitions } }]
+    : []),
+  { source: 'template-zombies.json', data: { zombies: [templateShambler] } },
+];
+
 describe('templates', () => {
   const template = (layers: string[][], palette: Record<string, unknown>, size = [3, layers.length, 2]) => ({
     source: 'tpl.json',
     data: { templates: [{ id: 'hut', size, palette, layers }] },
   });
   const check = (t: { source: string; data: unknown }) =>
-    buildRegistry([...base, t]).issues.map((i) => `${i.path}: ${i.message}`);
+    buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
 
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {
@@ -850,7 +878,9 @@ describe('templates', () => {
     const doors = {
       source: 'doors.json',
       data: {
-        furniture: [{ id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534', door: { handling: 0.5 } }],
+        furniture: [
+          { id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534', door: { handlingSimSeconds: 0.5 } },
+        ],
       },
     };
     expect(buildRegistry([...base, doors, t]).issues).toEqual([]);
@@ -865,21 +895,21 @@ describe('templates', () => {
         ],
         {
           '.': 'air',
-          F: { furniture: 'crate', window: { from: 'dusk' } },
-          Z: { spawn: 'shambler', window: { from: 'dusk', to: '06:30' } },
-          A: { spawn: 'shambler', window: { from: 'sunset' } },
-          B: { spawn: 'shambler', window: { from: 'dusk', to: 'dusk' } },
+          F: { furniture: 'crate', window: { fromGameTimeOfDay: 'dusk' } },
+          Z: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: '06:30' } },
+          A: { spawn: 'shambler', window: { fromGameTimeOfDay: 'sunset' } },
+          B: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } },
         },
         [3, 2, 2],
       ),
     );
     expect(issues).toEqual(
       expect.arrayContaining([
-        expect.stringContaining('expected a named game time or HH:MM'),
         expect.stringContaining('from and to must differ'),
         expect.stringContaining('window" only goes with "spawn'),
       ]),
     );
+    expect(issues.some((issue) => issue.includes('palette["A"]'))).toBe(true);
     expect(issues.some((issue) => issue.includes('palette["Z"]'))).toBe(false);
   });
 

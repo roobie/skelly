@@ -22,7 +22,7 @@ export const bookReadingHooks = (inventory: Inventory, character: Character): Re
     duration: (uid) => {
       const item = book(uid);
       const definition = item && defOf(inventory.registry, item.type).book;
-      return definition ? definition.readingTime * 60 : undefined;
+      return definition ? definition.readingGameMinutes : undefined;
     },
     finish: (uid) => {
       const item = book(uid);

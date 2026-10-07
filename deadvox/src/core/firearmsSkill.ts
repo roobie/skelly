@@ -1,3 +1,4 @@
+import { canonicalJson } from './canonicalJson.ts';
 import {
   SKILL_LEVEL_LEGENDARY,
   SKILL_LEVEL_MAX,
@@ -19,9 +20,14 @@ export interface FirearmsSkillZeroHandling {
 
 export type FirearmsSkillShotKind = keyof FirearmsSkillZeroHandling;
 
+export const sameFirearmsSkillZeroHandling = (
+  left: FirearmsSkillZeroHandling,
+  right: FirearmsSkillZeroHandling,
+): boolean => canonicalJson(left) === canonicalJson(right);
+
 export interface FirearmsCombatTuning {
-  readonly raiseMinimumSeconds: number;
-  readonly raiseRangeSeconds: number;
+  readonly raiseMinimumSimSeconds: number;
+  readonly raiseRangeSimSeconds: number;
   readonly raiseHalfLifeLevels: number;
   readonly readyMovementMinimum: number;
   readonly readyMovementRange: number;
@@ -79,8 +85,8 @@ export const firearmStanceEffects = (level: number, tuning: FirearmsCombatTuning
   const effectLevel = effectLevelFor(level);
   return {
     raiseDuration:
-      tuning.raiseMinimumSeconds +
-      tuning.raiseRangeSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels),
+      tuning.raiseMinimumSimSeconds +
+      tuning.raiseRangeSimSeconds * skillSaturation(effectLevel, 0, tuning.raiseHalfLifeLevels),
     readyMovementFactor:
       tuning.readyMovementMinimum +
       tuning.readyMovementRange * (effectLevel / (effectLevel + tuning.readyMovementHalfLifeLevels)),

@@ -424,7 +424,7 @@ export class Inventory {
   }
 
   pocketHandling(owner: Item, pocket: number): number {
-    return defOf(this.registry, owner.type).container?.pockets[pocket]?.handling ?? 0;
+    return defOf(this.registry, owner.type).container?.pockets[pocket]?.handlingSimSeconds ?? 0;
   }
 
   /** Where an item is, searching hands, worn items, piles and every pocket inside them. */
@@ -820,7 +820,7 @@ export class Inventory {
   }
 
   furnitureHandling(entity: BlockEntity, pocket: number): number {
-    return this.entities.defOf(entity).container?.pockets[pocket]?.handling ?? 0;
+    return this.entities.defOf(entity).container?.pockets[pocket]?.handlingSimSeconds ?? 0;
   }
 
   // ---- internals ----
@@ -1126,7 +1126,7 @@ const validateCraftWorkItem = (
   const recipe = registry.recipes.get(work.recipe);
   if (
     !recipe ||
-    work.duration < recipe.time * 60 ||
+    work.duration < recipe.timeGameMinutes ||
     (recipe.kind === 'repair') !== (work.repairTargetUid !== undefined && work.repairAmount !== undefined) ||
     (work.repairTargetUid === undefined) !== (work.repairAmount === undefined) ||
     (work.repairTargetUid !== undefined && (!Number.isSafeInteger(work.repairTargetUid) || work.repairTargetUid < 1)) ||
@@ -1166,7 +1166,7 @@ const validateDisassemblyWorkItem = (
   if (!source) {
     throw new Error('Invalid disassembly work payload');
   }
-  const duration = source.disassembly ? source.disassembly.time * 60 : SALVAGE_DURATION;
+  const duration = source.disassembly ? source.disassembly.timeGameMinutes : SALVAGE_DURATION;
   const hasDisassembly = Boolean(source.disassembly || source.salvage);
   if (!hasDisassembly) {
     throw new Error('Invalid disassembly work payload');

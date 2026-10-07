@@ -31,7 +31,7 @@ export const skillActivityPractice = (registry: Registry, skillId: string, activ
 };
 
 export const skillActivityPracticeRate = (registry: Registry, skillId: string, activityId: string) => {
-  const { practicePerSecond, tier } = skillActivityTraining(registry, skillId, activityId);
+  const { practicePerSimSecond: practicePerSecond, tier } = skillActivityTraining(registry, skillId, activityId);
   if (practicePerSecond === undefined) {
     throw new Error(`Training activity ${skillId}.${activityId} has no practice rate`);
   }

@@ -17,6 +17,7 @@ import {
   KeyboardInput,
   keyboardInput,
 } from '../src/game/inputBindings.ts';
+import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/replayCommands.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -90,6 +91,7 @@ function setup() {
   });
   const notices: string[] = [];
   const refusals: string[] = [];
+  let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
     feet: () => [0, 0, 0] as [number, number, number],
@@ -97,28 +99,52 @@ function setup() {
     distance: () => 0,
     containers: () => [entity],
     entityDistance: () => 1,
-    search: (target: typeof entity): string | undefined => {
-      if (target.searched || searching.has(target)) {
-        return undefined;
-      }
-      searching.add(target);
-      queue.enqueueAction('furniture.search', 'Search furniture', 5);
-      return undefined;
-    },
+    dispatch: (payload: ReplayActionPayload) =>
+      applyReplayActionPayload(payload, {
+        inventory: inv,
+        queue,
+        quickbar: { assign: () => undefined },
+        search: (uid) => {
+          if (uid !== entity.uid || entity.searched || searching.has(entity)) {
+            return;
+          }
+          searching.add(entity);
+          queue.enqueueAction('furniture.search', 'Search furniture', 5);
+        },
+        work: (uid, operation) => workHandler(uid, operation),
+        toHands: () => undefined,
+        craftStart: () => undefined,
+        craftContinue: () => undefined,
+        craftStop: () => undefined,
+        cancelGlowstick: () => undefined,
+      }),
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
     refusal: (text: string) => refusals.push(text),
     describe: (_item: typeof beans) => ['test description'],
-    assign: (_slot: number, _item: typeof beans) => undefined,
     workOptions: (_uid: number): WorkOption[] => [],
-    work: (_uid: number, _operation: WorkOperation): string | undefined => undefined,
     body: () => body.snapshotState(),
     actionRefusal: () => body.actionRefusal,
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
   screen.open();
-  return { root, screen, inv, queue, entity, searching, beans, notices, refusals, hooks, body };
+  return {
+    root,
+    screen,
+    inv,
+    queue,
+    entity,
+    searching,
+    beans,
+    notices,
+    refusals,
+    hooks,
+    body,
+    setWorkHandler: (handler: typeof workHandler) => {
+      workHandler = handler;
+    },
+  };
 }
 
 const holdQuickGate = () => {
@@ -153,7 +179,7 @@ describe('inventory screen Lit rendering', () => {
     expect(queue.jobs).toHaveLength(0);
     expect(refusals).toHaveLength(2);
 
-    body.advance(body.tuning.knockoutSeconds);
+    body.advance(body.tuning.knockoutSimSeconds);
     expect(screen.onAction('inventory.drop')).toBe(true);
     expect(queue.jobs.length).toBeGreaterThan(0);
   });
@@ -186,7 +212,7 @@ describe('inventory screen Lit rendering', () => {
     }
   });
   it('shows the derived occupied hand without a second item UID and routes work options by UID', () => {
-    const { root, screen, inv, hooks } = setup();
+    const { root, screen, inv, hooks, setWorkHandler } = setup();
     expect(inv.move(inv.hands.right!, { kind: 'pile', pos: [0, 0, 0] }).ok).toBe(true);
     for (const [type, count] of [
       ['stick', 1],
@@ -206,9 +232,9 @@ describe('inventory screen Lit rendering', () => {
       { operation: 'continue', label: 'Continue: torch', plan: { ok: true, time: 0 } },
       { operation: 'apart', label: 'Take apart', plan: { ok: true, time: 0 } },
     ];
-    hooks.work = (uid, operation) => {
+    setWorkHandler((uid, operation) => {
       calls.push([uid, operation]);
-    };
+    });
     screen.selected = item;
     screen.update();
     expect(root.querySelectorAll(`.inv-hands [data-uid="${item.uid}"]`)).toHaveLength(1);

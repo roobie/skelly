@@ -4,6 +4,7 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
+  - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
@@ -108,20 +109,15 @@ voxel model.
 
 ## Time
 
-### Two scales
+### Three clocks and canonical units
 
-- The **clock ratio** `r` is how many calendar seconds pass per simulation
-  second. The starting value is `r = 8` (written 1:8), so a game day is 3 real
-  hours. Content rates are written per
-  game hour (for example "thirst +1 per hour"), so tuning `r` doesn't touch
-  content.
-- **Compression** `c` speeds up the whole simulation. It is 1 during normal
-  play. During a long action it ramps up to a cap: start at 30, which makes
-  1 real second about 4 game minutes. Physics, AI, needs and fires all run `c`×
-  faster, and the player's own inputs are locked.
+Three clocks are explicit throughout the simulation boundary. BR asked, 2026-10-06 21:41, “what is our standard overall? Like, for all temporal fields - do they use the one or the other or is it mixed?” At 21:44: “yes, but let's be even more explicit, so that we use  SimSeconds and GameSeconds” and “that would be the complete pair? Or, we might have use of RealSeconds too, that aren't sim-bound - i.e. wall clock time”. At 21:48: “as for time: I think we'd do best with (b) having support for different units _or_ even have a uniform TimeSpan kind of struct or string, which would allow for any resolution needed at any point”. BR chose numeric fields with a mandatory clock and unit, and the outer Real-to-Sim boundary: “1. (b)” / “2. (i) + a custom linter that tries to detect violations” (2026-10-06 22:25).
 
-Real frame time × `c` gives simulation seconds; simulation seconds × `r` give
-calendar seconds.
+Simulation time advances only by a Sim-seconds step. `src/game/frameDriver.ts`, `advanceLiveFrame`, processes between-frame interruptions before ramping compression and sizing the live step; `src/game/play.ts` routes live play through that driver. Replay remains a separate deterministic path: `Simulation.frameReplay` checks interruptions before applying recorded compression to its fixed Sim step. The core accepts Sim seconds and never samples a wall clock. Game time advances from Sim time through the saved clock ratio; Real time is reserved for the frame/input/presentation boundary.
+
+The conversion is `SimSeconds = RealSeconds × compression`, followed by `GameSeconds = SimSeconds × CLOCK_RATIO`. `src/core/time.ts` owns named conversions: minutes normalize by multiplying by 60, hours by 3,600, and rates per minute or hour normalize by dividing by those factors. Timestamp conversion also includes the Game-clock origin; duration conversion does not. Game-clock content rates are authored per Game hour, so tuning the clock ratio (`CLOCK_RATIO`) does not change content.
+
+Authored temporal field names include their clock and unit. Content schemas parse numeric values to branded canonical seconds or rates; `src/core/temporalFields.ts`, `TEMPORAL_FIELDS`, catalogs authored fields and dimensions. The brands prevent assignment where a different branded unit is required; they do not prevent arithmetic between unlike brands. `deadvox/tools/time-lint.mjs`, `lint:time`, checks the simulation dependency graph for Real-clock sources, temporal names without clock-and-unit, arithmetic mixing branded clocks using the TypeScript checker, and the runtime-name baseline. The type-based checks use the TypeScript program assembled by `typeProgram`; if a simulation `.mjs` module gains clock arithmetic, widen that program before relying on those checks there. The baseline holds owner-boundary names deferred to r46; its ratchet requires each such field to leave when renamed. Gungen's internal cycle estimates are outside deadvox `lint:time`; exported action metadata follows deadvox's clock-and-unit schema, guarded by the root gungen-to-deadvox contract test. Owner-field and save-format renames are r46 work; persisted-name changes require a save-schema bump because older saves are rejected.
 
 ### Long actions
 

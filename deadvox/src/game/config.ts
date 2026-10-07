@@ -104,8 +104,9 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
     radius >= MIN_RADIUS_M && radius <= MAX_RADIUS_M ? radius : DEFAULT_RADIUS_M,
   );
   Object.assign(config, siteFromUrl(params, 'hamlet'));
-  const layoutTime = BUNDLED_CONTENT.registry.layouts.get(config.site)?.startTime ?? '';
-  config.start = parseTimeOfDay(params.get('time') ?? layoutTime) ?? SPAWN_TIME;
+  const layoutTime = BUNDLED_CONTENT.registry.layouts.get(config.site)?.startTimeGameTimeOfDay;
+  const requestedTime = params.get('time');
+  config.start = requestedTime === null ? (layoutTime ?? SPAWN_TIME) : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
   config.debug = params.get('debug') === '1';
   if (config.debug && params.get('handedness') === 'left') {
     config.debugHandedness = 'left';

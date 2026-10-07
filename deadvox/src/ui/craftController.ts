@@ -1,5 +1,6 @@
 // UI preferences/control adapter; completed readouts and Lit views live on the F7 side.
-import type { CraftPreference } from '../core/crafting.ts';
+
+import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import type { Session } from '../game/session.ts';
 import { renderCrafting, renderCraftStatus } from './crafting.ts';
 import { craftRows, craftStatus } from './craftReadout.ts';
@@ -8,17 +9,22 @@ export const mountCraftPanel = (
   panel: HTMLElement,
   statusRoot: HTMLElement,
   session: Session,
-  controls: { notice: (text: string) => void; started: () => void; continue: () => void; stop: () => void },
+  controls: {
+    notice: (text: string) => void;
+    dispatch: (payload: ReplayActionPayload) => string | undefined;
+  },
 ) => {
-  const preferences: Record<string, CraftPreference> = {};
+  const preferences: Record<string, Readonly<Record<number, string>>> = {};
+  const dispatch = (payload: ReplayActionPayload): void => {
+    const reason = controls.dispatch(payload);
+    if (reason) {
+      controls.notice(reason);
+    }
+  };
   const actions = {
     start: (id: string) => {
-      const reason = session.crafting.start(id, preferences[id]);
-      if (reason) {
-        controls.notice(reason);
-      } else {
-        controls.started();
-      }
+      const preference = preferences[id];
+      dispatch({ kind: 'craft.start', recipeId: id, ...(preference ? { preference } : {}) });
     },
     prefer: (id: string, group: number, item: string) => {
       const next = { ...preferences[id] };
@@ -29,6 +35,10 @@ export const mountCraftPanel = (
       }
       preferences[id] = next;
     },
+  };
+  const statusActions = {
+    continue: () => dispatch({ kind: 'craft.continue' }),
+    stop: () => dispatch({ kind: 'craft.stop' }),
   };
   return {
     update: (open: boolean, messagesVisible: boolean) => {
@@ -55,7 +65,7 @@ export const mountCraftPanel = (
               reason: session.sim.compression.interruption,
               messagesVisible,
             }),
-        controls,
+        statusActions,
       );
     },
   };

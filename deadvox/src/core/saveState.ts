@@ -46,7 +46,7 @@ export interface PlayerAudioSnapshot {
   vocalNoise: VocalNoise | null;
   footstepClock: FootstepClock;
   airbornePeakY: number | null;
-  rustleClock: { cells: readonly string[]; nextTime: number };
+  rustleClock: { cells: readonly string[]; nextSimTimestamp: number };
   soundPicker: SoundPickerState;
 }
 
@@ -138,7 +138,7 @@ export const snapshotSession = ({
               },
         footstepClock: structuredClone(footstepClock),
         airbornePeakY: airbornePeakY ?? null,
-        rustleClock: { cells: [...rustleClock.cells].sort(), nextTime: rustleClock.nextTime },
+        rustleClock: { cells: [...rustleClock.cells].sort(), nextSimTimestamp: rustleClock.nextSimTimestamp },
         soundPicker: audio.snapshotState() as SoundPickerState,
       },
     },
@@ -159,7 +159,7 @@ export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<Pl
     !state.rustleClock ||
     !Array.isArray(state.rustleClock.cells) ||
     state.rustleClock.cells.some((cell) => typeof cell !== 'string') ||
-    !Number.isFinite(state.rustleClock.nextTime)
+    !Number.isFinite(state.rustleClock.nextSimTimestamp)
   ) {
     throw new Error('Invalid player audio state');
   }
@@ -191,7 +191,7 @@ export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<Pl
           },
     footstepClock: { ...state.footstepClock },
     airbornePeakY: state.airbornePeakY,
-    rustleClock: { cells: [...state.rustleClock.cells], nextTime: state.rustleClock.nextTime },
+    rustleClock: { cells: [...state.rustleClock.cells], nextSimTimestamp: state.rustleClock.nextSimTimestamp },
     soundPicker: structuredClone(state.soundPicker),
   });
 };

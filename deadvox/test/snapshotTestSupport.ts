@@ -20,7 +20,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { World } from '../src/core/world.ts';
 import { generateColumn, type Terrain } from '../src/core/worldgen.ts';
 import type { MoveIntent } from '../src/game/player.ts';
-import { createSession, IDLE } from '../src/game/session.ts';
+import { createSession, IDLE, type PlayerInputSample } from '../src/game/session.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -113,8 +113,22 @@ export function createRuntime(
   snapshot?: ReturnType<typeof snapshotSession>,
   fixture: boolean | 'right' | 'left' = false,
   columnsOverride?: readonly [number, number][],
-  options: { spawn?: Vec3; start?: number; yaw?: number; active?: boolean; intent?: () => MoveIntent } = {},
+  options: {
+    spawn?: Vec3;
+    start?: number;
+    yaw?: number;
+    active?: boolean;
+    intent?: () => MoveIntent;
+    ready?: (x: number, z: number) => boolean;
+    sampleAtPlayerTick?: (
+      tick: number,
+      live: PlayerInputSample,
+      time: number,
+      compression: number,
+    ) => PlayerInputSample;
+  } = {},
 ) {
+  const { sampleAtPlayerTick } = options;
   const restFixture = fixture === true;
   const handedness = typeof fixture === 'string' ? fixture : undefined;
   const hamlet = fixtureHamlet;
@@ -132,7 +146,13 @@ export function createRuntime(
   // Real wiring refuses to rest with a shambler within 30 m, so the player starts falling well clear of the hamlet.
   const awayFromShamblers = x1 - sx! + 200;
   // Where the player is looking: the game reads this from its input, here it is plain state.
-  const view = { yaw: options.yaw ?? hamlet.spawn.yaw, pitch: 0.03, walk: false, crouchToggle: false };
+  const view = {
+    yaw: options.yaw ?? hamlet.spawn.yaw,
+    pitch: 0.03,
+    walk: false,
+    crouchToggle: false,
+    intent: { ...IDLE },
+  };
   const heardSounds: { event: string; file: string; time: number; position: [number, number, number] }[] = [];
   const spawn: Vec3 = options.spawn ?? [sx! + awayFromShamblers, sy! + 400, sz!];
   const restFixturePos: Vec3 = [spawn[0] + 2, spawn[1], spawn[2]];
@@ -163,10 +183,11 @@ export function createRuntime(
     seed,
     start: options.start ?? defaultClock.start,
     spawn,
-    ready: () => true,
+    ready: options.ready ?? (() => true),
     controls: {
-      active: () => options.active ?? false,
-      intent: options.intent ?? (() => IDLE),
+      active: () => options.active ?? Boolean(sampleAtPlayerTick),
+      intent: options.intent ?? (() => view.intent),
+      ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
       consumeCrouchToggle: () => {
         const pressed = view.crouchToggle;
         view.crouchToggle = false;
@@ -253,6 +274,7 @@ export function createRuntime(
     world,
     sim,
     player,
+    view,
     inventory,
     entities,
     sharedEntities,
@@ -288,7 +310,7 @@ const inspectItem = (item: import('../src/core/items.ts').Item): unknown => ({
   condition: item.condition,
   charges: item.charges,
   on: item.on,
-  made: item.made,
+  madeAtGameTimestamp: item.madeAtGameTimestamp,
   pockets: item.pockets?.map((grid) =>
     grid.map((placed) => ({ x: placed.x, y: placed.y, rotated: placed.rotated, item: inspectItem(placed.item) })),
   ),

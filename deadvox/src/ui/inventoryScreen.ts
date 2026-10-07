@@ -13,10 +13,11 @@ import type { WorkOperation, WorkOption } from '../core/craftCommands.ts';
 import type { HandlingQueue } from '../core/handling.ts';
 import { type Inventory, PILE_GRID, type Pile, sameGrid, spotOf, type Target } from '../core/inventory.ts';
 import { conditionWord, defOf, footprint, type GridSize, type Item, type Placed, weightOf } from '../core/items.ts';
-import { bestPocket, dropTarget, type Option, options, quickMove, toHands } from '../core/options.ts';
+import { bestPocket, dropTarget, type Option, options, quickMove } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { WearSlot } from '../core/schema.ts';
 import { inputBindings, keyboardInput, labelForAction } from '../game/inputBindings.ts';
+import type { ReplayActionPayload } from '../game/replayCommands.ts';
 import { craftTime, workName } from './craftReadout.ts';
 
 /** Pixels per inventory cell. */
@@ -46,8 +47,8 @@ export interface ScreenHooks {
   containers: () => readonly BlockEntity[];
   /** Distance in metres from the player to a piece of furniture. */
   entityDistance: (entity: BlockEntity) => number;
-  /** Queues a search of a container; says why not, or undefined. */
-  search: (entity: BlockEntity) => string | undefined;
+  /** Every simulation-changing screen action goes through the replay dispatcher. */
+  dispatch: (payload: ReplayActionPayload) => string | undefined;
   /** Whether a search of it is queued. */
   searching: (entity: BlockEntity) => boolean;
   notice: (text: string) => void;
@@ -55,10 +56,7 @@ export interface ScreenHooks {
   refusal?: (text: string) => void;
   /** Extra lines for the details panel: freshness, charge. */
   describe: (item: Item) => string[];
-  /** Assigns a quickbar slot (0–4). */
-  assign: (slot: number, item: Item) => void;
   workOptions: (uid: number) => readonly WorkOption[];
-  work: (uid: number, operation: WorkOperation) => string | undefined;
   body: () => Readonly<BodyState>;
   actionRefusal?: () => string | undefined;
 }
@@ -164,7 +162,7 @@ interface InventoryScreenViewModel {
 
 const secs = (s: number) => `${s.toFixed(1)} s`;
 const kg = (g: number) => `${(g / 1000).toFixed(2)} kg`;
-const occupiedHand = (inv: Inventory, side: 'right' | 'left'): string | undefined => {
+const occupiedHand = (inv: Pick<Inventory, 'hands' | 'registry'>, side: 'right' | 'left'): string | undefined => {
   const other = inv.hands[side === 'right' ? 'left' : 'right'];
   return !inv.hands[side] && other && defOf(inv.registry, other.type).twoHanded
     ? workName(inv.registry, other)
@@ -347,7 +345,7 @@ const inventoryTemplate = (
   <footer class="inv-queue"></footer>
 `;
 
-const queueTemplate = (queue: HandlingQueue): TemplateResult => {
+const queueTemplate = (queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>): TemplateResult => {
   const rows = queue.jobs.map((job, i) => ({
     n: String(i + 1),
     label: job.label,
@@ -375,8 +373,22 @@ export class InventoryScreen {
   selected: Item | undefined;
   private readonly root: HTMLElement;
   private readonly dragRoot: HTMLElement;
-  private readonly inv: Inventory;
-  private readonly queue: HandlingQueue;
+  private readonly inv: Pick<
+    Inventory,
+    | 'carried'
+    | 'carriedWeight'
+    | 'entities'
+    | 'hands'
+    | 'locate'
+    | 'name'
+    | 'plan'
+    | 'planAdd'
+    | 'registry'
+    | 'targetState'
+    | 'version'
+    | 'worn'
+  >;
+  private readonly queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>;
   private readonly hooks: ScreenHooks;
   private readonly byUid = new Map<number, Item>();
   private readonly entityByUid = new Map<number, BlockEntity>();
@@ -384,7 +396,26 @@ export class InventoryScreen {
   private drawn = '';
   private drag: Drag | undefined;
 
-  constructor(root: HTMLElement, inv: Inventory, queue: HandlingQueue, hooks: ScreenHooks) {
+  constructor(
+    root: HTMLElement,
+    inv: Pick<
+      Inventory,
+      | 'carried'
+      | 'carriedWeight'
+      | 'entities'
+      | 'hands'
+      | 'locate'
+      | 'name'
+      | 'plan'
+      | 'planAdd'
+      | 'registry'
+      | 'targetState'
+      | 'version'
+      | 'worn'
+    >,
+    queue: Pick<HandlingQueue, 'jobs' | 'busy' | 'remaining'>,
+    hooks: ScreenHooks,
+  ) {
     this.root = root;
     this.dragRoot = root.ownerDocument.querySelector<HTMLElement>('#inventory-drag-root')!;
     this.inv = inv;
@@ -471,7 +502,7 @@ export class InventoryScreen {
     const digit = this.quickbarDigit(action);
     const item = this.selected;
     if (action === 'handling.stop') {
-      this.queue.cancel();
+      this.report(this.hooks.dispatch({ kind: 'inventory.cancel-handling' }));
       return true;
     }
     if (action === 'inventory.previous' || action === 'inventory.next') {
@@ -480,14 +511,16 @@ export class InventoryScreen {
     }
     if (action === 'inventory.search') {
       const next = this.hooks.containers().find((c) => !(c.searched || this.hooks.searching(c)));
-      this.report(next ? this.hooks.search(next) : 'Nothing here to search');
+      this.report(
+        next ? this.hooks.dispatch({ kind: 'inventory.search', entityUid: next.uid }) : 'Nothing here to search',
+      );
       return true;
     }
     if (!item) {
       return action.startsWith('inventory.') || digit !== undefined;
     }
     if (digit !== undefined) {
-      this.hooks.assign(digit, item);
+      this.report(this.hooks.dispatch({ kind: 'inventory.assign', slot: digit, itemUid: item.uid }));
       return true;
     }
     return this.selectedAction(action, item);
@@ -496,7 +529,7 @@ export class InventoryScreen {
   private selectedAction(action: string, item: Item): boolean {
     switch (action) {
       case 'inventory.hands':
-        this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));
+        this.report(this.hooks.dispatch({ kind: 'inventory.to-hands', itemUid: item.uid, feet: this.hooks.feet() }));
         return true;
       case 'inventory.wear':
         this.wearOrTakeOff(item);
@@ -527,8 +560,12 @@ export class InventoryScreen {
     if (refusal) {
       return refusal;
     }
-    const result = this.queue.enqueue(item, target, count);
-    return result.ok ? undefined : result.reason;
+    return this.hooks.dispatch({
+      kind: 'inventory.move',
+      itemUid: item.uid,
+      target: this.inv.targetState(target),
+      count,
+    });
   }
 
   private refuse(text: string): void {
@@ -543,7 +580,7 @@ export class InventoryScreen {
 
   private wearOrTakeOff(item: Item): void {
     if (this.inv.locate(item)?.kind === 'worn') {
-      this.report(toHands(this.inv, this.queue, item, this.hooks.feet()));
+      this.report(this.hooks.dispatch({ kind: 'inventory.to-hands', itemUid: item.uid, feet: this.hooks.feet() }));
       return;
     }
     this.report(this.tryQueue(item, { kind: 'worn' }));
@@ -575,7 +612,7 @@ export class InventoryScreen {
           continue;
         }
         const best = bestPocket(this.inv, other);
-        if (best && this.queue.enqueue(other, best.target).ok) {
+        if (best && this.tryQueue(other, best.target) === undefined) {
           queued += 1;
         }
       }
@@ -610,7 +647,7 @@ export class InventoryScreen {
           if (refusal) {
             this.refuse(refusal);
           } else if (operation) {
-            this.report(this.hooks.work(item.uid, operation));
+            this.report(this.hooks.dispatch({ kind: 'inventory.work', itemUid: item.uid, operation }));
           } else if (target) {
             this.report(this.tryQueue(item, target));
           }
@@ -621,7 +658,7 @@ export class InventoryScreen {
           if (refusal) {
             this.refuse(refusal);
           } else if (entity) {
-            this.report(this.hooks.search(entity));
+            this.report(this.hooks.dispatch({ kind: 'inventory.search', entityUid: entity.uid }));
           }
         },
       ),
@@ -680,7 +717,7 @@ export class InventoryScreen {
         ? (def.container?.pockets ?? []).map((spec, i) => ({
             label:
               def.container!.pockets.length > 1 || spec.name
-                ? `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handling)}`
+                ? `${spec.name ?? `pocket ${i + 1}`} · ${secs(spec.handlingSimSeconds)}`
                 : undefined,
             grid: this.gridViewModel(
               { w: spec.grid[0], h: spec.grid[1] },
@@ -713,7 +750,7 @@ export class InventoryScreen {
   private pocketsViewModel(owner: Item): PocketViewModel[] {
     const specs = defOf(this.inv.registry, owner.type).container?.pockets ?? [];
     return specs.map((spec, i) => ({
-      label: `${spec.name ?? 'pocket'} · ${secs(spec.handling)}`,
+      label: `${spec.name ?? 'pocket'} · ${secs(spec.handlingSimSeconds)}`,
       grid: this.gridViewModel(
         { w: spec.grid[0], h: spec.grid[1] },
         owner.pockets?.[i] ?? [],
@@ -823,7 +860,7 @@ export class InventoryScreen {
     }
     if (def.weapon) {
       const m = def.weapon.melee;
-      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m beyond hand · ${m.cooldown} s a swing`);
+      lines.push(`Melee ${m.damage} ${m.type} · reach ${m.reach} m beyond hand · ${m.cooldownSimSeconds} s a swing`);
     }
     if (def.light) {
       lines.push(`Lights ${def.light.radius} m · seen from ${def.light.seenFrom} m`);
