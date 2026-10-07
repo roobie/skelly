@@ -97,10 +97,12 @@ describe('keyboard registry', () => {
     expect(INPUT_BINDINGS.length).toBeGreaterThan(0);
     expect(bindingConflict(INPUT_BINDINGS, new Map())).toBeUndefined();
     expect(
-      INPUT_BINDINGS.filter((binding) => binding.debug && binding.id !== 'debug.gate').every(
+      INPUT_BINDINGS.filter((binding) => binding.debug && !['debug.gate', 'spawn.confirm'].includes(binding.id)).every(
         (binding) => binding.gate === 'debug.gate',
       ),
     ).toBe(true);
+    expect(INPUT_BINDINGS.find(({ id }) => id === 'spawn.confirm')?.debug).toBe(true);
+    expect(INPUT_BINDINGS.find(({ id }) => id === 'spawn.confirm')?.gate).toBeUndefined();
     const commands = INPUT_BINDINGS.flatMap((binding) => binding.commands.map(({ id }) => id));
     expect(new Set(commands).size).toBe(commands.length);
     for (const binding of INPUT_BINDINGS) {

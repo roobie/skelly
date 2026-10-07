@@ -92,7 +92,7 @@
         "up": [1.408171398987851e-32, 1, -1.2246467991473532e-16],
         "eyeReliefMetres": 0.253
       },
-      "muzzleDirection": [1, 0, 1.2246467991473532e-16],
+      "muzzleDirection": [1, 0, 2.4492935982947064e-16],
       "anchors": {
         "support": [0.09315, -0.020125, 0],
         "muzzle": [0.391, 0, 0],
@@ -186,6 +186,14 @@
         "at": [-0.215625, -0.037375, 0],
         "turn": [0, 0, 0]
       },
+      "sight": {
+        "kind": "iron",
+        "eye": [0.4485, 0.02875, 0],
+        "direction": [1, 0, 9.269426048794883e-17],
+        "up": [1.1351772940589751e-32, 1, -1.2246467991473532e-16],
+        "eyeReliefMetres": 0.520375
+      },
+      "muzzleDirection": [1, 0, 1.2246467991473532e-16],
       "anchors": {
         "support": [0.231438, -0.043051, 0.0276],
         "muzzle": [0.45425, 0, 0],
@@ -279,7 +287,11 @@
       "firearm": {
         "pump": true,
         "recoilKickRadians": 0.035,
-        "dispersionRadians": 0
+        "dispersionRadians": 0,
+        "skillZeroHandling": {
+          "singleShot": { "variance": 3, "recoilKickScale": 10, "recoilRecoveryScale": 0.35 },
+          "automaticFollowup": { "variance": 6, "recoilKickScale": 20, "recoilRecoveryScale": 0.18 }
+        }
       },
       "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Hold R to load loose shells; double-press R to rack; a single tap does nothing. Wield and activate a sealed shell box to unpack it first. LMB fires once; rack before the next shot. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling."
     },
@@ -303,7 +315,11 @@
       "description": "A curated gungen AR with exported carrier and charging-handle cycles. Debug fire uses virtual rounds, without hits or ammunition consumption.",
       "firearm": {
         "recoilKickRadians": 0.006,
-        "dispersionRadians": 0.012
+        "dispersionRadians": 0.012,
+        "skillZeroHandling": {
+          "singleShot": { "variance": 1.5, "recoilKickScale": 3, "recoilRecoveryScale": 0.75 },
+          "automaticFollowup": { "variance": 2.5, "recoilKickScale": 7, "recoilRecoveryScale": 0.4 }
+        }
       },
       "model": "rifle_assault"
     },
@@ -317,7 +333,11 @@
       "description": "A curated gungen AK with its handle on the carrier. Debug fire uses virtual rounds, without hits or ammunition consumption. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
       "firearm": {
         "recoilKickRadians": 0.012,
-        "dispersionRadians": 0.018
+        "dispersionRadians": 0.018,
+        "skillZeroHandling": {
+          "singleShot": { "variance": 2, "recoilKickScale": 6, "recoilRecoveryScale": 0.5 },
+          "automaticFollowup": { "variance": 4, "recoilKickScale": 12, "recoilRecoveryScale": 0.25 }
+        }
       },
       "model": "rifle_ak"
     }

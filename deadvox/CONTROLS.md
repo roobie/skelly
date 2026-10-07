@@ -45,10 +45,13 @@ controls remain proposals until their issue is implemented.
   `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`, and
   `src/core/options.ts`, `quickMove`.
 - **Debug gate (2026-10-05 19:52):** “debug modifier F2 to not collide with a builtin
-  hotkey”. Every debug action uses a held F2 gate. The gate is itself a binding,
+  hotkey”. Debug authoring actions use a held F2 gate. The gate is itself a binding,
   not a native OS modifier. A consumed debug chord cannot also execute its
   ordinary gameplay command; enabling the gate preserves a held pointer stance
-  and its ADS toggle. See `src/game/inputBindings.ts`, `KeyboardInput.cancel`.
+  and its ADS toggle. Spawn confirmation is a modal navigation exception: the menu
+  itself remains debug-only, while Enter acts normally once it is open. BR's ruling
+  is quoted in [TROUBLESHOOTING.md](TROUBLESHOOTING.md), “Debug parameters”. See
+  `src/game/inputBindings.ts`, `KeyboardInput.cancel`.
 - **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.
@@ -149,11 +152,11 @@ Noclip flight is the substantive debug exception: holding the debug gate for an
 entire flight would occupy a hand and interfere with viewing. Space/C flight
 controls are ungated only in the visible noclip context; entering/exiting it
 remains gated. BR's earlier exception clause was “Unless some special circumstance
-for a key need it readily available”. Spawn selection and dismissal are ordinary
-modal navigation, not authoring. Actual keyboard spawning and native activation
-of debug buttons still require the gate. Mouse authoring remains available
-without it. The debug menu's type-spawn actions support the 3.8 first look without
-adding player bindings; see `src/debug/index.ts`, `createDebugActions`.
+for a key need it readily available”. Spawn selection and dismissal are ordinary modal navigation, not authoring.
+Keyboard confirmation is available only while that debug-only menu owns input;
+native activation of debug buttons still requires the gate. Mouse authoring remains
+available without it. The debug menu's type-spawn actions support the 3.8 first
+look without adding player bindings; see `src/debug/index.ts`, `createDebugActions`.
 
 Alt is not refused pending BR's ruling. `REFUSED_MODIFIERS` in
 `src/game/inputBindings.ts` is the one place to extend refusal; it also drives
@@ -190,8 +193,9 @@ screen use. BR asked on 2026-10-06:
 Inventory and crafting screen actions therefore carry UID-based command payloads through
 the shared dispatcher; see `applyReplayActionPayload` in `src/game/replayCommands.ts`,
 `InventoryScreen` in `src/ui/inventoryScreen.ts`, and `startPlay` in `src/game/play.ts`.
-Replay export refuses debug firearm-handling values that differ from content; the slider
-values are not replay identity. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
+Replay export stays disabled after any firearm-handling slider is used in a session, even if
+set back to content values: using a slider means the session no longer uses content handling,
+and a reload clears the override. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
 The replay rationale remains in [SLICE-3.md](SLICE-3.md), 3.10. See `INPUT_BINDINGS` in
 `src/game/inputBindings.ts` for the debug export and import actions, `InputReplayRecorder`
 and `replayStateFingerprint` in `src/game/inputReplay.ts`.

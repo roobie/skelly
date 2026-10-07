@@ -31,6 +31,7 @@ import {
 import { hasSegment } from './authoredTerrain.mjs';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
+import { FIREARMS_SKILL_ZERO_RANGES } from './firearmsSkill.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
 import {
@@ -61,6 +62,17 @@ const SkillLevel = pipe(
   maxValue(SKILL_LEVEL_MAX, `must be at most ${SKILL_LEVEL_MAX}`),
 );
 const Fraction = pipe(number(), minValue(0, 'must be 0 to 1'), maxValue(1, 'must be 0 to 1'));
+const skillZeroFactor = ({ min, max }: { min: number; max: number }) =>
+  pipe(number(), minValue(min, `must be at least ${min}`), maxValue(max, `must be at most ${max}`));
+const FirearmsSkillZeroEffectSchema = strictObject({
+  variance: skillZeroFactor(FIREARMS_SKILL_ZERO_RANGES.variance),
+  recoilKickScale: skillZeroFactor(FIREARMS_SKILL_ZERO_RANGES.recoilKickScale),
+  recoilRecoveryScale: skillZeroFactor(FIREARMS_SKILL_ZERO_RANGES.recoilRecoveryScale),
+});
+const FirearmsSkillZeroHandlingSchema = strictObject({
+  singleShot: FirearmsSkillZeroEffectSchema,
+  automaticFollowup: FirearmsSkillZeroEffectSchema,
+});
 const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
 const SimSeconds = pipe(NonNegative, transform(simSeconds));
 const PositiveSimSeconds = pipe(Positive, transform(simSeconds));
@@ -229,6 +241,8 @@ const FirearmSchema = strictObject({
   recoilKickRadians: Positive,
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
   dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
+  /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
+  skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
 });
 const AmmoSchema = strictObject({
   calibre: CalibreId,
@@ -960,18 +974,11 @@ const SkillSchema = pipe(
             readyMovementHalfLifeLevels: Positive,
             loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
             adsApertureFill: pipe(Positive, maxValue(0.95)),
-            skillZeroHandling: strictObject({
-              singleShot: strictObject({
-                variance: Positive,
-                recoilKickScale: Positive,
-                recoilRecoveryScale: Positive,
-              }),
-              automaticFollowup: strictObject({
-                variance: Positive,
-                recoilKickScale: Positive,
-                recoilRecoveryScale: Positive,
-              }),
-            }),
+            skillZeroHandling: FirearmsSkillZeroHandlingSchema,
+            reloadFactorFloor: Fraction,
+            reloadFactorHalfLifeLevels: Positive,
+            rackFactorFloor: Fraction,
+            rackFactorHalfLifeLevels: Positive,
           }),
         ),
         melee: optional(
