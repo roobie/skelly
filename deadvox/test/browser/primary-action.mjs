@@ -784,7 +784,7 @@ try {
       return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
     });
     const outcome = await page.evaluate(
-      ({ primarySide, reservationSide, forwardButton }) => {
+      ({ primarySide, reservationSide, forwardButton, tryThrow: throwRequested }) => {
         const r = globalThis.primaryActionTest;
         const ensure = (condition, message) => {
           if (!condition) {
@@ -811,7 +811,7 @@ try {
         const expectedReason = r.getNotice();
         r.clearNotice();
         let throwAttempt;
-        if (tryThrow) {
+        if (throwRequested) {
           r.beginItemThrow();
           throwAttempt = { charging: r.isChargingItemThrow(), notice: r.getNotice() };
           r.clearNotice();
@@ -846,7 +846,7 @@ try {
         }
         return result;
       },
-      { primarySide: actionSide, reservationSide: reservedHand, forwardButton: useMouse5 },
+      { primarySide: actionSide, reservationSide: reservedHand, forwardButton: useMouse5, tryThrow },
     );
     await page.waitForFunction(() => {
       const combat = globalThis.primaryActionTest.session.playerCombat;
