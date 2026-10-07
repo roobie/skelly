@@ -409,6 +409,22 @@
       ]
     },
     {
+      "id": "military_armoury",
+      "military": true,
+      "rolls": [1, 2],
+      "entries": [
+        { "item": "rifle_assault", "weight": 1, "condition": [0.5, 1] },
+        { "item": "rifle_ak", "weight": 1, "condition": [0.5, 1] },
+        { "item": "magazine_stanag_30", "weight": 2 },
+        { "item": "magazine_akm_30", "weight": 2 },
+        { "item": "cartridge_box_5_d_56x45", "weight": 3 },
+        { "item": "cartridge_box_7_d_62x39", "weight": 3 },
+        { "item": "cartridge_5_d_56x45", "weight": 2, "count": [5, 15] },
+        { "item": "cartridge_7_d_62x39", "weight": 2, "count": [5, 15] },
+        { "nothing": true, "weight": 2 }
+      ]
+    },
+    {
       "id": "medical_filler",
       "rolls": [1, 2],
       "entries": [

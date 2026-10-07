@@ -4,7 +4,9 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
+import type { Registry } from '../src/core/content.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
 import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
@@ -12,19 +14,22 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import type { Item } from '../src/core/items.ts';
+import type { PelletShot } from '../src/core/pellets.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
-  type DebugFirearmShotInput,
   FirearmMechanics,
   type FirearmShotEffect,
+  type FirearmShotInput,
   type FirearmTrajectory,
   firearmHandlingFor,
   spentCaseItemId,
 } from '../src/game/firearmHandling.ts';
-import { DebugFirearmTrigger } from '../src/game/firearmTrigger.ts';
+import { FirearmTrigger } from '../src/game/firearmTrigger.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
+import { chargedRifle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -90,15 +95,6 @@ const worldVector = (vector: readonly number[], yaw: number, pitch: number): [nu
   ];
 };
 
-const inventoryWithRifle = (): { inventory: Inventory; rifle: ReturnType<Inventory['create']> } => {
-  const inventory = new Inventory(registry);
-  const rifle = inventory.create('debug_rifle_assault');
-  if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
-    throw new Error('could not put the test rifle in the right hand');
-  }
-  return { inventory, rifle };
-};
-
 const pose = {
   feet: [0, 1, 0],
   eye: [0, 4, 0],
@@ -109,31 +105,39 @@ const pose = {
   ready: true,
   sprinting: false,
 } as const;
-const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simTime = 1) => {
-  const effects: FirearmShotEffect[] = [];
-  const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+const fixturePose = () => ({ ...pose, feet: [...pose.feet] as Vec3, eye: [...pose.eye] as Vec3 });
+type MechanicsOptions = ConstructorParameters<typeof FirearmMechanics>[2];
+
+/** A charged rifle in the right hand, with mechanics built from `options` over the default held pose. */
+const armed = (
+  options: Partial<MechanicsOptions> = {},
+  { content = registry, type }: { content?: Registry; type?: string } = {},
+) => {
+  const inventory = new Inventory(content);
+  const queue = new HandlingQueue(inventory);
+  const mechanics = new FirearmMechanics(inventory, queue, {
     blockSize: 0.5,
-    pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
-    onEjection: (effect) => effects.push(effect),
+    pose: fixturePose,
+    onEjection: () => undefined,
+    ...options,
   });
-  if (
-    !mechanics.fire({
-      ...pose,
-      feet: [...pose.feet],
-      eye: [...pose.eye],
-      debugMode: true,
-      item: rifle,
-      seed: 71,
-      simTime,
-    })
-  ) {
+  const { rifle } = chargedRifle(inventory, queue, mechanics, type ? { type } : {});
+  return { inventory, queue, mechanics, rifle };
+};
+const shotInput = (item: Item, simTime: number): FirearmShotInput => ({ ...fixturePose(), item, seed: 71, simTime });
+
+const shot = (simTime = 1, prepare: (inventory: Inventory) => void = () => undefined) => {
+  const effects: FirearmShotEffect[] = [];
+  const { inventory, mechanics, rifle } = armed({ onEjection: (effect) => effects.push(effect) });
+  prepare(inventory);
+  if (!mechanics.fire(shotInput(rifle, simTime))) {
     throw new Error('Test shot was refused');
   }
   mechanics.advanceTo(simTime + 0.02);
-  return effects[0];
+  return { effect: effects[0], inventory, rifle };
 };
 
-describe('debug firearm handling', () => {
+describe('rifle firearm handling', () => {
   it('uses per-gun skill-zero factors, shared fallback and the common expert endpoint', () => {
     const inventory = new Inventory(skillZeroRegistry);
     const light = inventory.create('fixture_light_gun');
@@ -168,7 +172,12 @@ describe('debug firearm handling', () => {
   });
 
   it('fires from the same ready-pose muzzle used by the held model', () => {
-    const { inventory, rifle } = inventoryWithRifle();
+    let trajectory: FirearmTrajectory | undefined;
+    const { mechanics, rifle } = armed({
+      onTrajectory: (trajectoryShot) => {
+        trajectory = trajectoryShot;
+      },
+    });
     const { model } = firearmHandlingFor(rifle, registry);
     const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
     const common = {
@@ -186,27 +195,7 @@ describe('debug firearm handling', () => {
       heldPose.rootOffset.map((value, axis) => value + heldPose.muzzleOffset[axis]!);
     expect(poseOrigin(raised)).not.toEqual(poseOrigin(lowered));
 
-    let trajectory: FirearmTrajectory | undefined;
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 0.5,
-      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
-      onEjection: () => undefined,
-      onTrajectory: (trajectoryShot) => {
-        trajectory = trajectoryShot;
-      },
-    });
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        item: rifle,
-        seed: 19,
-        simTime: 1,
-        debugMode: true,
-        aimingDownSights: false,
-      }),
-    ).toBe(true);
+    expect(mechanics.fire({ ...shotInput(rifle, 1), seed: 19, aimingDownSights: false })).toBe(true);
     if (!trajectory) {
       throw new Error('Ready shot did not publish a trajectory');
     }
@@ -248,7 +237,7 @@ describe('debug firearm handling', () => {
   });
 
   it('fires along the bore and places the crosshair point on that same line', () => {
-    const definition = registry.items.get('debug_rifle_ak')!;
+    const definition = registry.items.get('rifle_ak')!;
     const fixtureBuild = buildRegistry([
       ...base,
       {
@@ -266,21 +255,18 @@ describe('debug firearm handling', () => {
       },
     ]);
     expect(fixtureBuild.issues).toEqual([]);
-    const inventory = new Inventory(fixtureBuild.registry);
-    const rifle = inventory.create('fixture_bore_rifle');
-    expect(inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
-    const input = {
-      ...pose,
-      feet: [...pose.feet] as [number, number, number],
-      eye: [...pose.eye] as [number, number, number],
-      yaw: 0.3,
-      pitch: -0.2,
-      aimFrame: { yaw: 0.04, pitch: -0.03 },
-      debugMode: true,
-      item: rifle,
-      seed: 71,
-      simTime: 1,
-    };
+    const view = { yaw: 0.3, pitch: -0.2 };
+    let trajectory: FirearmTrajectory | undefined;
+    const { mechanics, rifle } = armed(
+      {
+        pose: () => ({ ...fixturePose(), ...view }),
+        onTrajectory: (published) => {
+          trajectory = published;
+        },
+      },
+      { content: fixtureBuild.registry, type: 'fixture_bore_rifle' },
+    );
+    const input = { ...shotInput(rifle, 1), ...view, aimFrame: { yaw: 0.04, pitch: -0.03 } };
     const tuning = fixtureBuild.registry.skills.get('firearms_combat')!.combat!.firearms!;
     const bore = firearmBoreRay({
       model: firearmHandlingFor(rifle, fixtureBuild.registry).model,
@@ -294,15 +280,6 @@ describe('debug firearm handling', () => {
       aimFrame: input.aimFrame,
       loweredPitchRadians: tuning.loweredPitchRadians,
       isSolid: () => false,
-    });
-    let trajectory: FirearmTrajectory | undefined;
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: pose.blockSize,
-      pose: () => ({ ...pose, feet: [...input.feet], eye: [...input.eye], yaw: input.yaw, pitch: input.pitch }),
-      onEjection: () => undefined,
-      onTrajectory: (published) => {
-        trajectory = published;
-      },
     });
     expect(mechanics.fire(input)).toBe(true);
     if (!trajectory) {
@@ -328,56 +305,32 @@ describe('debug firearm handling', () => {
   });
 
   it('traces from the eye when solid geometry blocks the eye-to-muzzle path', () => {
-    const inventory = new Inventory(registry);
-    const rifle = inventory.create('debug_rifle_ak');
-    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
-      throw new Error('Could not hold the debug rifle');
-    }
     let trajectory: FirearmTrajectory | undefined;
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: pose.blockSize,
-      isSolid: (_x, _y, z) => z === -1,
-      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
-      onEjection: () => undefined,
-      onTrajectory: (published) => {
-        trajectory = published;
+    let hit: PelletShot | undefined;
+    const { mechanics, rifle } = armed(
+      {
+        isSolid: (_x, _y, z) => z === -1,
+        onTrajectory: (published) => {
+          trajectory = published;
+        },
+        onShot: (published) => {
+          hit = published;
+        },
+        firearmsSkillLevel: () => SKILL_LEVEL_MAX,
       },
-      firearmsSkillLevel: () => SKILL_LEVEL_MAX,
-    });
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        aimFrame: NEUTRAL_AIM,
-        debugMode: true,
-        item: rifle,
-        seed: 71,
-        simTime: 1,
-      }),
-    ).toBe(true);
+      { type: 'rifle_ak' },
+    );
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     expect(trajectory?.origin).toEqual(pose.eye);
+    expect(hit?.origin).toEqual(trajectory?.origin); // The hit starts where the marks do, not past the wall.
   });
 
   it('requires a completed ready stance, rejects sprinting and cancels released readying', () => {
-    const { inventory, rifle } = inventoryWithRifle();
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 0.5,
-      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
-      onEjection: () => undefined,
-    });
+    const { inventory, mechanics, rifle } = armed();
     const beforeRejectedShots = inventory.snapshotState();
-    const shotInput = {
-      ...pose,
-      feet: [...pose.feet] as [number, number, number],
-      eye: [...pose.eye] as [number, number, number],
-      debugMode: true,
-      item: rifle,
-      seed: 71,
-      simTime: 1,
-    };
-    expect(mechanics.fire({ ...shotInput, ready: false })).toBe(false);
-    expect(mechanics.fire({ ...shotInput, ready: true, sprinting: true })).toBe(false);
+    const input = shotInput(rifle, 1);
+    expect(mechanics.fire({ ...input, ready: false })).toBe(false);
+    expect(mechanics.fire({ ...input, ready: true, sprinting: true })).toBe(false);
     expect(inventory.snapshotState()).toEqual(beforeRejectedShots);
 
     mechanics.advanceReadiness(0, rifle.uid, true);
@@ -390,11 +343,11 @@ describe('debug firearm handling', () => {
 
     mechanics.advanceReadiness(progress!.duration, rifle.uid, true);
     expect(mechanics.isReady(rifle.uid)).toBe(true);
-    expect(mechanics.fire({ ...shotInput, ready: true, sprinting: false })).toBe(true);
+    expect(mechanics.fire({ ...input, ready: true, sprinting: false })).toBe(true);
   });
 
   it('emits fixture firearm dispersion independently of firearms skill', () => {
-    const definition = registry.items.get('debug_rifle_assault')!;
+    const definition = registry.items.get('rifle_assault')!;
     const fixtureBuild = buildRegistry([
       ...base,
       {
@@ -417,35 +370,17 @@ describe('debug firearm handling', () => {
     const yaw = 0.3;
     const pitch = -0.2;
     const publish = (skill: number): FirearmTrajectory => {
-      const inventory = new Inventory(fixtureRegistry);
-      const rifle = inventory.create('fixture_skill_rifle');
-      if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
-        throw new Error('Could not hold the skill fixture firearm');
-      }
       let trajectory: FirearmTrajectory | undefined;
-      const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-        blockSize: 0.5,
-        pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
-        onEjection: () => undefined,
-        onTrajectory: (published) => {
-          trajectory = published;
+      const { mechanics, rifle } = armed(
+        {
+          onTrajectory: (published) => {
+            trajectory = published;
+          },
+          firearmsSkillLevel: () => skill,
         },
-        firearmsSkillLevel: () => skill,
-      });
-      expect(
-        mechanics.fire({
-          ...pose,
-          feet: [...pose.feet],
-          eye: [...pose.eye],
-          yaw,
-          pitch,
-          aimFrame,
-          debugMode: true,
-          item: rifle,
-          seed: 71,
-          simTime: 1,
-        }),
-      ).toBe(true);
+        { content: fixtureRegistry, type: 'fixture_skill_rifle' },
+      );
+      expect(mechanics.fire({ ...shotInput(rifle, 1), yaw, pitch, aimFrame })).toBe(true);
       if (!trajectory) {
         throw new Error('Committed rifle shot did not publish a trajectory');
       }
@@ -486,8 +421,8 @@ describe('debug firearm handling', () => {
     [800, 27],
     [600, 20],
   ])('fires exact %i rpm deadlines independent of polling partitions', (rpm, count) => {
-    const regular = new DebugFirearmTrigger();
-    const coarse = new DebugFirearmTrigger();
+    const regular = new FirearmTrigger();
+    const coarse = new FirearmTrigger();
     const weapon = { uid: 1, roundsPerSimSecond: rpm / 60 };
     const shots: number[] = [];
     for (let tick = 0; tick < 120; tick++) {
@@ -506,7 +441,7 @@ describe('debug firearm handling', () => {
   });
 
   it('unlatches release and quick clicks, and resets cadence on a weapon change', () => {
-    const trigger = new DebugFirearmTrigger();
+    const trigger = new FirearmTrigger();
     const weapon = { uid: 1, roundsPerSimSecond: 800 / 60 };
     expect(trigger.advance(1, weapon, true, false)).toEqual([1]);
     expect(trigger.advance(1.1, weapon, false, false)).toEqual([]);
@@ -526,8 +461,8 @@ describe('debug firearm handling', () => {
   });
 
   it('reads rifle action and calibre from each item model and selects a matching exported case', () => {
-    const { inventory, rifle } = inventoryWithRifle();
-    for (const item of [rifle, inventory.create('debug_rifle_ak')]) {
+    const inventory = new Inventory(registry);
+    for (const item of [inventory.create('rifle_assault'), inventory.create('rifle_ak')]) {
       const model = registry.models.get(registry.items.get(item.type)!.model!)!;
       const data = firearmHandlingFor(item, registry);
       expect(data.model).toBe(model);
@@ -540,12 +475,8 @@ describe('debug firearm handling', () => {
   });
 
   it('uses the same weapon cadence window to classify automatic follow-up handling', () => {
-    const { inventory, rifle } = inventoryWithRifle();
     const shotKinds: string[] = [];
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 0.5,
-      pose: () => ({ feet: [...pose.feet], eye: [...pose.eye], yaw: pose.yaw, pitch: pose.pitch, blockSize: 0.5 }),
-      onEjection: () => undefined,
+    const { mechanics, rifle } = armed({
       onCommittedShot: (_seed, _recoilKickRadians, shotKind) => shotKinds.push(shotKind),
     });
     const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
@@ -556,29 +487,15 @@ describe('debug firearm handling', () => {
       throw new Error('Firing fixture needs firearm kick and cadence data');
     }
 
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        debugMode: true,
-        item: rifle,
-        seed: 71,
-        simTime: 1,
-      }),
-    ).toBe(true);
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     expect(shotKinds).toEqual(['singleShot']);
     expect(mechanics.handlingShotKind(rifle.uid, 1 + 1.5 / roundsPerSimSecond)).toBe('automaticFollowup');
     expect(mechanics.handlingShotKind(rifle.uid, 1 + 1.5 / roundsPerSimSecond + 1e-6)).toBe('singleShot');
   });
 
   it('passes the held firearm’s data-owned kick with each committed shot', () => {
-    const { inventory, rifle } = inventoryWithRifle();
     const kicks: number[] = [];
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 0.5,
-      pose: () => ({ feet: [...pose.feet], eye: [...pose.eye], yaw: pose.yaw, pitch: pose.pitch, blockSize: 0.5 }),
-      onEjection: () => undefined,
+    const { mechanics, rifle } = armed({
       onCommittedShot: (_seed, recoilKickRadians) => kicks.push(recoilKickRadians),
     });
     const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
@@ -587,17 +504,7 @@ describe('debug firearm handling', () => {
     if (configuredKick === undefined) {
       throw new Error('Firing fixture needs firearm kick data');
     }
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        debugMode: true,
-        item: rifle,
-        seed: 71,
-        simTime: 1,
-      }),
-    ).toBe(true);
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     expect(kicks).toEqual([configuredKick]);
   });
 
@@ -611,25 +518,8 @@ describe('debug firearm handling', () => {
     }
     const fixture = { ...registry, models: new Map(registry.models) };
     fixture.models.set(model.id, { ...model, action });
-    const inventory = new Inventory(fixture);
-    const rifle = inventory.create('debug_rifle_assault');
-    expect(inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 0.5,
-      pose: () => undefined,
-      onEjection: () => undefined,
-    });
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        debugMode: true,
-        item: rifle,
-        seed: 71,
-        simTime: 1,
-      }),
-    ).toBe(true);
+    const { inventory, mechanics, rifle } = armed({ pose: () => undefined }, { content: fixture });
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     const duration = 1 / action.roundsPerSimMinute!;
     const ejectAt = (fire.rearwardSimSeconds * action.ejectAt * duration) / fire.durationSimSeconds;
     expect(actionCycleSeconds(action, 'fire')).toBe(duration);
@@ -708,110 +598,41 @@ describe('debug firearm handling', () => {
     });
     const before = inventory.snapshotState();
     expect(mechanics.fireReason(gun.uid)).toBe('No exported action data for this gun');
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        debugMode: true,
-        item: gun,
-        seed: 1,
-        simTime: 0,
-      }),
-    ).toBe(false);
+    expect(mechanics.fire({ ...shotInput(gun, 0), seed: 1 })).toBe(false);
     expect(mechanics.cock(gun.uid, 0)).toBe('No exported action data for this gun');
     expect(queue.jobs).toEqual([]);
     expect(inventory.snapshotState()).toEqual(before);
   });
 
-  it('does not fire outside debug mode', () => {
-    const { inventory, rifle } = inventoryWithRifle();
-    const { version } = inventory;
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 0.5,
-      pose: () => undefined,
-      onEjection: () => undefined,
-    });
-    const result = mechanics.fire({
-      debugMode: false,
-      item: rifle,
-      feet: [0, 1, 0],
-      eye: [0, 4, 0],
-      yaw: 0,
-      pitch: 0,
-      aimFrame: { yaw: 0, pitch: 0 },
-      seed: 71,
-      simTime: 1,
-      blockSize: 0.5,
-      ready: true,
-      sprinting: false,
-    });
-    expect(result).toBe(false);
-    expect(rifle.firearm).toBeUndefined();
-    expect(inventory.version).toBe(version);
-    expect(inventory.piles.size).toBe(0);
-    expect(rifle.count).toBe(1);
-  });
-
-  it('refuses an empty chamber after cock cancellation past ejection while a fresh virtual round still fires', () => {
-    const { inventory, rifle } = inventoryWithRifle();
-    const queue = new HandlingQueue(inventory);
-    const mechanics = new FirearmMechanics(inventory, queue, {
-      blockSize: 0.5,
-      pose: () => undefined,
-      onEjection: () => undefined,
-    });
-    const input: DebugFirearmShotInput = {
-      ...pose,
-      feet: [...pose.feet],
-      eye: [...pose.eye],
-      debugMode: true,
-      item: rifle,
-      seed: 71,
-      simTime: 0,
-    };
-    // Control: the debug rifle starts with a virtual round, and the environment can fire it.
-    expect(mechanics.fire(input)).toBe(true);
-    mechanics.advanceTo(1);
+  it('ejects the live round when a charge passes ejection, then refuses the empty chamber until the next charge', () => {
+    const { inventory, queue, mechanics, rifle } = armed();
+    const loaded = rifle.slots!.magazine!.cartridges!.length;
+    const chambered = rifle.firearm!.roundType!;
     expect(mechanics.cock(rifle.uid, 1)).toBeUndefined();
     const elapsed = firearmHandlingFor(rifle, registry).action.hand.rearwardSimSeconds;
     queue.tick(elapsed);
     mechanics.advanceTo(1 + elapsed);
     queue.cancel();
     mechanics.advanceTo(1 + elapsed);
-    expect(rifle.firearm).toEqual({ chamber: 'empty', pendingCase: undefined, cycle: undefined });
+    expect(rifle.firearm).toMatchObject({ chamber: 'empty', cycle: undefined });
+    expect(rifle.slots!.magazine!.cartridges).toHaveLength(loaded);
+    expect([...inventory.piles.values()].flatMap(({ items }) => items.map(({ item }) => item.type))).toContain(
+      chambered,
+    );
     const before = inventory.snapshotState();
-    const reason = mechanics.fireReason(rifle.uid);
-    const admitted = mechanics.fire({ ...input, simTime: 1 + elapsed });
-    expect(reason).toBeDefined();
-    expect(admitted).toBe(false);
+    expect(mechanics.fireReason(rifle.uid)).toBeDefined();
+    expect(mechanics.fire(shotInput(rifle, 1 + elapsed))).toBe(false);
     expect(inventory.snapshotState()).toEqual(before);
   });
 
-  it('uses exported cock duration in the handling queue and prevents firing during the hand action', () => {
-    const { inventory, rifle } = inventoryWithRifle();
-    const queue = new HandlingQueue(inventory);
-    const mechanics = new FirearmMechanics(inventory, queue, {
-      blockSize: 0.5,
-      pose: () => undefined,
-      onEjection: () => undefined,
-    });
+  it('uses exported charge duration in the handling queue and prevents firing during the hand action', () => {
+    const { queue, mechanics, rifle } = armed();
     const duration = firearmHandlingFor(rifle, registry).action.hand.durationSimSeconds;
     expect(mechanics.cockReason(rifle.uid)).toBeUndefined();
     expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
     expect(mechanics.cockReason(rifle.uid)).toBeDefined();
     expect(queue.jobs[0]?.duration).toBe(duration);
-    expect(
-      mechanics.fire({
-        ...pose,
-        feet: [...pose.feet],
-        eye: [...pose.eye],
-        debugMode: true,
-        item: rifle,
-        seed: 71,
-        simTime: 10,
-      }),
-    ).toBe(false);
+    expect(mechanics.fire(shotInput(rifle, 10))).toBe(false);
     queue.tick(0.3);
     mechanics.advanceTo(10.3);
     expect(mechanics.frames()).toEqual([{ uid: rifle.uid, mode: 'hand', elapsed: 0.3, duration }]);
@@ -821,60 +642,41 @@ describe('debug firearm handling', () => {
     expect(rifle.firearm?.chamber).toBe('round');
   });
 
-  it('cancels only manual motion in a snapshot, retaining an unejected fired chamber', () => {
-    const { inventory, rifle } = inventoryWithRifle();
-    rifle.firearm = {
-      chamber: 'case',
-      pendingCase: { origin: [0, 2, 0], direction: [1, 0, 0], feet: [0, 1, 0], seed: 71 },
-    };
-    const queue = new HandlingQueue(inventory);
-    const mechanics = new FirearmMechanics(inventory, queue, {
-      blockSize: 0.5,
-      pose: () => undefined,
-      onEjection: () => undefined,
-    });
-    expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
-    queue.tick(0.2);
-    mechanics.advanceTo(10.2);
-    const saved = inventory.snapshotState();
-    expect(saved.hands.right?.firearm).toEqual({ chamber: 'case', pendingCase: rifle.firearm.pendingCase });
-    expect(rifle.firearm.cycle?.mode).toBe('hand');
-    const restored = Inventory.restoreState(registry, saved);
-    expect(restored.hands.right?.firearm?.pendingCase).toEqual(rifle.firearm.pendingCase);
-    queue.cancel();
-    mechanics.advanceTo(10.3);
-    expect(rifle.firearm.cycle).toBeUndefined();
-    expect(rifle.firearm.chamber).toBe('case');
-  });
+  it('drops each case in the pile of the block it lands on, never a case pile on a nearer block', () => {
+    // BR, 2026-10-07 11:27 (DESIGN.md, "Spent cases per block"): cases are saved per block.
+    const [landing] = [...shot(1).inventory.piles.values()].map((pile) => pile.pos);
+    const feet: Vec3 = [
+      Math.floor(pose.feet[0] / pose.blockSize),
+      pose.feet[1],
+      Math.floor(pose.feet[2] / pose.blockSize),
+    ];
+    expect(landing).toBeDefined();
+    expect(landing).not.toEqual(feet);
+    const cases = (ground: Inventory, pos: Vec3) =>
+      ground.pileAt(pos)?.items.find(({ item }) => item.type === caseType)?.item.count;
 
-  it('adds a case to the nearest matching pile and round-trips it through inventory save state', () => {
-    const { inventory, rifle } = inventoryWithRifle();
-    const nearestDifferent = inventory.create('nails', 2);
-    const nearestCases = inventory.create(caseType, 5);
-    const fartherCases = inventory.create(caseType, 11);
-    expect(inventory.add(nearestDifferent, { kind: 'pile', pos: [0, 1, 0] })).toBe(true);
-    expect(inventory.add(nearestCases, { kind: 'pile', pos: [2, 1, 0] })).toBe(true);
-    expect(inventory.add(fartherCases, { kind: 'pile', pos: [45, 1, 0] })).toBe(true);
+    const beside = shot(1, (prepared) => {
+      expect(prepared.add(prepared.create(caseType, 11), { kind: 'pile', pos: feet })).toBe(true);
+    }).inventory;
+    expect([cases(beside, feet), cases(beside, landing!)]).toEqual([11, 1]);
 
-    expect(shot(inventory, rifle)).toMatchObject({
-      speed: 3.5,
-      caseModelId: 'case_5_d_56x45',
+    const { effect, inventory, rifle } = shot(1, (prepared) => {
+      expect(prepared.add(prepared.create(caseType, 5), { kind: 'pile', pos: landing! })).toBe(true);
     });
-    expect(inventory.pileAt([0, 1, 0])?.items.find(({ item }) => item.type === 'nails')?.item.count).toBe(2);
-    expect(inventory.pileAt([2, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(6);
-    expect(inventory.pileAt([45, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(11);
+    const { caseModelId } = firearmHandlingFor(rifle, registry);
+    expect(caseModelId).toBeDefined();
+    expect(effect?.caseModelId).toBe(caseModelId);
+    expect(cases(inventory, landing!)).toBe(6);
 
     const saved = JSON.parse(JSON.stringify(inventory.snapshotState())) as InventoryState;
     const restored = Inventory.restoreState(registry, saved);
     expect(restored.snapshotState()).toEqual(saved);
   });
 
-  it('creates a deterministic case pile from the exported held pose when none is within 20 m', () => {
-    const first = inventoryWithRifle();
-    const second = inventoryWithRifle();
-    const firstEffect = shot(first.inventory, first.rifle, 2.5);
-    const secondEffect = shot(second.inventory, second.rifle, 2.5);
-    expect(firstEffect).toEqual(secondEffect);
+  it('creates a deterministic case pile from the exported held pose', () => {
+    const first = shot(2.5);
+    const second = shot(2.5);
+    expect(first.effect).toEqual(second.effect);
     expect(first.inventory.snapshotState()).toEqual(second.inventory.snapshotState());
     expect(first.inventory.piles.size).toBe(1);
     const [pile] = first.inventory.piles.values();

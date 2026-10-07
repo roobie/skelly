@@ -139,15 +139,22 @@ keeps mobgen source imports available; its obstruction predicate must match play
   bundle in piles and a box in your hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
-- `models-firearms.json` has eleven firearm models: eight from "CC0 Flat Guns West"
-  on OpenGameArt and three Gungen exports: the curated AR, AK and 12-gauge pump.
-  The three debug firearm items (no loot table; spawn through the gated debug menu under `?debug=1`)
-  exercise models in hands and piles. AR/AK use exported automatic and hand
-  cycles with virtual debug rounds. The playable pump uses real 00-buck shells,
+- `models-firearms.json` holds the firearm models: models from "CC0 Flat Guns West"
+  on OpenGameArt, and Gungen exports of the curated AR, AK and 12-gauge pump.
+  The AR and AK items (`rifle_assault`, `rifle_ak`) are real rifles: magazine-fed,
+  charged by hand, with exported automatic and hand cycles (DESIGN.md, "Rifles
+  (3.2, d114)"). Only a `military` loot table holds them (DESIGN.md, "Military loot
+  (3.2, d114)"), and no site rolls one until 3.11 places the military camp (#181,
+  beat 6); `?debug=1&loadout=ar|ak` starts with one in hand. The debug
+  pump item (no loot table; spawns through the gated debug menu under `?debug=1`)
+  exercises a model in hands and piles. The playable pump uses real 00-buck shells,
   a four-shell tube plus chamber, one-shell loading jobs and manual exported
   hand racking. Its ammunition, nine pellets and loud F4 hearing require no
   automatic action metadata. It has a fresh `?debug=1&loadout=pump` fixture,
-  but no loot placement yet. Sound/look/feel remain awaiting BR.
+  but no loot placement yet. BR, 2026-10-07 15:54 (d114-13): "let's update the
+  loadout=pump to have 20 loose shells in inventory too". So that loadout packs a
+  stack of loose shells beside the sealed box, and hold R loads from the stack
+  straight away (`src/debug/debugLoadout.ts`, `equipDebugFirearms`). Sound/look/feel remain awaiting BR.
   See [pump-shotgun.md](docs/pump-shotgun.md) for controls, estimates and provenance.
   Synthetic 5.56/600-rpm handling,
   calibre and case fallbacks are retired: unannotated models still validate,

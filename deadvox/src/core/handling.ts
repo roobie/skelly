@@ -236,6 +236,9 @@ export class HandlingQueue {
     if (from.kind === 'work') {
       return 'Inputs are held by the work item';
     }
+    if (from.kind === 'slot') {
+      return 'It is fitted to the firearm';
+    }
     const current = this.inventory.targetState(from.kind === 'pile' ? { kind: 'pile', pos: from.pile.pos } : from);
     // An automatic grid target means this container/pile; an explicit spot still permits rearranging it.
     if ('at' in job.target && job.target.at && 'placed' in from && current.kind !== 'hand' && current.kind !== 'worn') {

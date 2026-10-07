@@ -750,11 +750,20 @@ try {
   await press('Tab', 'Tab', 9);
 
   await action('debug.spawn-menu-toggle');
-  const spawnNames = await evaluate(`Array.from(document.querySelectorAll('#spawn .spawn-list button'))
-    .map((button, index) => ({ index, name: button.querySelector('span')?.textContent }))
-    .filter(({ name }) => name && name !== 'Can of beans')
-    .slice(0, 24)`);
+  // Bags first: their pockets make the nearby pane tall enough to scroll, and the one pile at the feet
+  // would otherwise fill with whichever small items sort first.
+  const spawnNames = await evaluate(`(() => {
+    const entries = Array.from(document.querySelectorAll('#spawn .spawn-list button'))
+      .map((button, index) => ({
+        index,
+        name: button.querySelector('span')?.textContent,
+        bag: button.querySelector('span:last-child')?.textContent.split(',')[0] === 'bag',
+      }))
+      .filter(({ name }) => name && name !== 'Can of beans');
+    return [...entries.filter(({ bag }) => bag), ...entries.filter(({ bag }) => !bag)].slice(0, 24);
+  })()`);
   assert.ok(spawnNames.length >= 20, 'debug spawn menu has enough distinct items for a scroll regression');
+  assert.ok(spawnNames[0].bag, 'debug spawn menu offers a bag');
   for (const { index } of spawnNames) {
     await evaluate(
       `document.querySelector('#spawn .spawn-list button:nth-child(${index + 1})').scrollIntoView({ block: 'center' })`,

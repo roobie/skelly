@@ -65,10 +65,15 @@ it('the physical support hand feeds a shell toward the port from the load job cl
     });
     const models = {
       version: 0,
-      held: (id: string) => {
+      held: () => {
         const root = new Group();
-        root.name = id === model.id ? 'load-gun-probe' : 'load-shell-probe';
+        root.name = 'load-shell-probe';
         return { root, parts: [] };
+      },
+      heldLook: () => {
+        const root = new Group();
+        root.name = 'load-gun-probe';
+        return { root, parts: [], slots: {} };
       },
     } as unknown as ModelLibrary;
     const held = new HeldItems(inventory, models, figure.palette);

@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, heldFirearmBore: () => heldFirearmBore() } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore() } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -143,7 +143,7 @@ try {
   await page.goto(
     browserStageUrl(
       'full-auto',
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&firearmsCombat=0&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&loadout=ar&firearmsCombat=0&radius=64&time=12:00&cam=43.50,33.00,0.00,-90.0,-20.0,0.0&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false');
@@ -192,8 +192,36 @@ try {
   });
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
-  const centreXBox = await page.locator('#debug-center-x').boundingBox();
+  const setHudOption = async (labelText, key, selector, visible) => {
+    await page.evaluate(
+      ({ label, nextVisibility }) => {
+        const option = [...document.querySelectorAll('#hud-options label')].find((candidate) =>
+          candidate.textContent.includes(label),
+        );
+        const checkbox = option?.querySelector('input');
+        if (!checkbox) {
+          throw new Error(`${label} HUD option is missing`);
+        }
+        checkbox.checked = nextVisibility;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      { label: labelText, nextVisibility: visible },
+    );
+    await page.waitForFunction(
+      ({ optionKey, optionSelector, nextVisibility }) =>
+        JSON.parse(localStorage.getItem('deadvox.hud-options'))[optionKey] === nextVisibility &&
+        document.querySelector(optionSelector).hidden === !nextVisibility,
+      { optionKey: key, optionSelector: selector, nextVisibility: visible },
+    );
+  };
+  const centreX = page.locator('#debug-center-x');
+  await setHudOption('Crosshair', 'crosshair', '#crosshair', false);
+  assert.equal(await centreX.isVisible(), false, 'debug centre X is hidden with the Crosshair option off');
+  await setHudOption('Crosshair', 'crosshair', '#crosshair', true);
+  assert.equal(await centreX.isVisible(), true, 'debug centre X appears when the Crosshair option is on');
+  const centreXBox = await centreX.boundingBox();
   const viewport = page.viewportSize();
   assert(centreXBox && viewport);
   assert.ok(
@@ -204,7 +232,102 @@ try {
     Math.abs(centreXBox.y + centreXBox.height / 2 - viewport.height / 2) < 0.5,
     'debug X is centred vertically',
   );
-  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  await setHudOption('Quickbar', 'quickbar', '#quickbar', true);
+  const shownReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateAim(undefined);
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    const quickbar = document.querySelector('#quickbar');
+    const bar = quickbar.getBoundingClientRect();
+    return {
+      text: document.querySelector('#debug-look-readout').textContent.trim(),
+      quickbarHidden: quickbar.hidden || getComputedStyle(quickbar).display === 'none',
+      readout: { top: readout.top, bottom: readout.bottom, left: readout.left, right: readout.right },
+      quickbarTop: bar.top,
+      middle: innerHeight / 2,
+      width: innerWidth,
+    };
+  });
+  assert.notEqual(shownReadout.text, '', 'looked-at block readout is populated');
+  assert.equal(shownReadout.quickbarHidden, false, 'quickbar is shown');
+  assert.ok(shownReadout.readout.top > shownReadout.middle, 'looked-at readout is below the screen middle');
+  assert.ok(shownReadout.readout.bottom <= shownReadout.quickbarTop, 'looked-at readout clears the quickbar');
+  assert.ok(centreXBox.y + centreXBox.height < shownReadout.readout.top, 'looked-at readout clears the centre X');
+  assert.ok(
+    shownReadout.quickbarTop - shownReadout.readout.bottom < shownReadout.readout.bottom - shownReadout.readout.top,
+    'looked-at readout sits just above the quickbar',
+  );
+  assert.equal(
+    shownReadout.readout.left + shownReadout.readout.right,
+    shownReadout.width,
+    'looked-at readout is horizontally centred',
+  );
+  const aimReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateAim({
+      id: 0,
+      region: 'torso',
+      distanceMetres: 1,
+      reachMetres: 1,
+      inReach: true,
+      health: 1,
+      maxHealth: 1,
+      boxes: [],
+    });
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const look = document.querySelector('#debug-look-readout');
+    return {
+      aim: document.querySelector('#debug-aim-readout').textContent,
+      look: look.textContent,
+      lookVisible: look.getClientRects().length > 0,
+    };
+  });
+  assert.notEqual(aimReadout.aim.trim(), '', 'shambler aim readout remains visible at the crosshair');
+  assert.equal(aimReadout.look, '', 'looked-at block readout yields while the aim readout is active');
+  assert.equal(aimReadout.lookVisible, false, 'the yielded readout has no box to overlap the aim readout');
+  await setHudOption('Quickbar', 'quickbar', '#quickbar', false);
+  const hiddenReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateAim(undefined);
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    return {
+      top: readout.top,
+      bottom: readout.bottom,
+      middle: innerHeight / 2,
+      height: innerHeight,
+      quickbarHidden: document.querySelector('#quickbar').hidden,
+    };
+  });
+  assert.equal(hiddenReadout.quickbarHidden, true, 'quickbar is hidden');
+  assert.ok(hiddenReadout.top > hiddenReadout.middle, 'hidden quickbar leaves the readout below the screen middle');
+  assert.ok(
+    hiddenReadout.height - hiddenReadout.bottom < hiddenReadout.top - hiddenReadout.middle,
+    'without a quickbar the readout stays near the bottom edge',
+  );
+  await pressAction(page, 'debug.build-toggle');
+  await page.waitForFunction(() => globalThis.fullAutoRuntime.debugTools.buildOn);
+  const buildReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    const hotbar = document.querySelector('#hotbar');
+    const palette = hotbar.getBoundingClientRect();
+    return {
+      text: document.querySelector('#debug-look-readout').textContent.trim(),
+      hidden: hotbar.hidden || getComputedStyle(hotbar).display === 'none',
+      readoutBottom: readout.bottom,
+      paletteTop: palette.top,
+      paletteHeight: palette.height,
+    };
+  });
+  assert.notEqual(buildReadout.text, '', 'build-mode block readout is populated');
+  assert.equal(buildReadout.hidden, false, 'build palette is shown');
+  assert.ok(buildReadout.paletteHeight > 0, 'build palette has visible bounds');
+  assert.ok(buildReadout.readoutBottom <= buildReadout.paletteTop, 'readout clears the build palette');
+  await pressAction(page, 'debug.build-toggle');
+  await page.waitForFunction(() => !globalThis.fullAutoRuntime.debugTools.buildOn);
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
     globalThis.fullAutoProbe.f2DefaultPrevented = false;
@@ -276,15 +399,20 @@ try {
 
   await page.evaluate(() => {
     const { inventory, session } = globalThis.fullAutoRuntime;
-    for (const side of ['left', 'right']) {
-      const held = inventory.hands[side];
-      if (held && !inventory.consume(held, held.count)) {
-        throw new Error(`Could not clear ${side} fixture hand`);
-      }
+    // ?loadout=ar holds the AR with a full magazine fitted; work the charging handle as a player would.
+    const rifle = inventory.hands.right;
+    if (rifle?.type !== 'rifle_assault' || !rifle.slots?.magazine) {
+      throw new Error('The AR loadout did not put a magazine-fed AR in the right hand');
     }
-    const rifle = inventory.create('debug_rifle_assault');
-    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
-      throw new Error('Could not place fixture rifle in hand');
+    const refusal = session.firearms.cock(rifle.uid, session.sim.time);
+    if (refusal) {
+      throw new Error(`Could not charge the fixture AR: ${refusal}`);
+    }
+    for (let step = 0; session.queue.busy; step += 1) {
+      if (step > 600) {
+        throw new Error('Charging the fixture AR did not finish');
+      }
+      session.frame(1 / 60);
     }
     const probe = globalThis.fullAutoProbe;
     probe.casesBefore = [...inventory.piles.values()]
@@ -355,7 +483,7 @@ try {
   assert.equal(
     await page.evaluate(() => globalThis.fullAutoProbe.trajectories),
     cadence.shots.length,
-    'each committed virtual rifle round reaches the shared world-impact presentation',
+    'each committed rifle round reaches the shared world-impact presentation',
   );
   cadence.shots.forEach((time, index) => {
     assert.ok(
@@ -385,6 +513,20 @@ try {
   });
   assert.ok(recoilState.finite, 'the skill-zero burst keeps aim state finite');
   assert.ok(Math.abs(recoilState.pitch) <= Math.PI / 2, 'recoil keeps camera pitch within its valid range');
+  await page.evaluate(() => {
+    // The burst left a few rounds: change to the loadout's spare full magazine, as a player would with R.
+    const { inventory, session } = globalThis.fullAutoRuntime;
+    const refusal = session.firearms.loadNext(inventory.hands.right.uid, session.sim.time);
+    if (refusal) {
+      throw new Error(`Could not change to the spare magazine: ${refusal}`);
+    }
+    for (let step = 0; session.queue.busy; step += 1) {
+      if (step > 600) {
+        throw new Error('Changing to the spare magazine did not finish');
+      }
+      session.frame(1 / 60);
+    }
+  });
 
   // Warm buffers are real decoded bundled samples. Seed 32 live tails so this burst must steal.
   await page.waitForFunction(() =>
