@@ -964,6 +964,8 @@ const ZombieSchema = strictObject({
   name: Name,
   /** Mobgen template selected for this type's silhouette and posed hit regions. */
   model: ZOMBIE_MODEL,
+  /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
+  bodyScale: optional(Positive),
   /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
   regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
   /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
@@ -1251,7 +1253,19 @@ const SECTION_DESCRIPTOR = {
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
-  zombies: { schema: optional(array(ZombieSchema)), label: 'zombie types', order: 6 },
+  zombies: {
+    schema: optional(
+      pipe(
+        array(ZombieSchema),
+        check(
+          (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.bodyScale !== undefined),
+          'amalgam must define bodyScale',
+        ),
+      ),
+    ),
+    label: 'zombie types',
+    order: 6,
+  },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },

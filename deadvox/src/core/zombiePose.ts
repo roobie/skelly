@@ -18,6 +18,8 @@ export interface ShamblerPoseInput {
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
+  /** Authored scale for amalgam's generated body. */
+  readonly bodyScale?: number;
   /** Simulation position in block units. */
   readonly position: Vec3;
   readonly facing: Vec3;
@@ -57,6 +59,7 @@ export const zombiePoseInputFor = (
     id,
     seed: zombie.figureSeed,
     model: zombie.type.model,
+    ...(zombie.type.bodyScale === undefined ? {} : { bodyScale: zombie.type.bodyScale }),
     position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? zombie.facing,
     headYaw: root?.headYaw ?? zombie.headYaw,
@@ -196,9 +199,15 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   const model = input.model ?? 'shambler';
   if (model === 'amalgam') {
-    const figure = amalgamFigure(input.seed);
+    if (input.bodyScale === undefined) {
+      throw new Error('Amalgam pose is missing its authored bodyScale');
+    }
+    const figure = amalgamFigure(input.seed, input.bodyScale);
     const { bones } = figure.realized.body;
-    const pose: Pose = { root: figure.originOffset, rotations: {} };
+    const pose: Pose = {
+      root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
+      rotations: {},
+    };
     const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
     const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
     return {

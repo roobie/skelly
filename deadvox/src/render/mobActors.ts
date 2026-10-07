@@ -283,6 +283,7 @@ interface Variant {
   readonly model: string;
   readonly lookAt: LookAtProfile;
   readonly figureSeed: number;
+  readonly bodyScale?: number;
   readonly realized: Realized;
   /** Shared bones/extents/params/seed; each zombie using this variant clones it with its own GaitCache
    * (mobgen/src/mob/gait.ts's GaitCache — per zombie, not per variant, since several zombies sharing a
@@ -458,12 +459,14 @@ interface Debris extends SlotHolder {
 export interface MobActorMeshesOptions {
   readonly poolSize?: number;
   readonly includeAmalgam?: boolean;
+  readonly amalgamScale?: number | undefined;
 }
 
 type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
 interface BuiltActorVariant {
   model: ActorModel;
   figureSeed: number;
+  bodyScale?: number;
   realized: Realized;
   walkActorTemplate: WalkActor;
   bodyExtents: ReadonlyMap<string, Extent>;
@@ -471,34 +474,73 @@ interface BuiltActorVariant {
   severedRoots: ReadonlyMap<string, string>;
 }
 
-const buildActorVariants = (modelIds: readonly ActorModel[], figureSeeds: readonly number[]): BuiltActorVariant[] => {
+const requireAmalgamScale = (scale: number | undefined): number => {
+  if (scale === undefined) {
+    throw new Error('Amalgam actor is missing its authored scale');
+  }
+  return scale;
+};
+
+const severedRootsFor = (model: ActorModel, seed: number, scale?: number): ReadonlyMap<string, string> => {
+  if (model !== 'amalgam') {
+    return new Map();
+  }
+  return new Map(
+    amalgamFigure(seed, requireAmalgamScale(scale))
+      .manifest.parts.filter((part) => part.severable)
+      .map((part) => [part.id, part.rootBone]),
+  );
+};
+
+const copyScaledTransform = (source: Transform, target: MutableTransform, scale?: number): void => {
+  for (let i = 0; i < 9; i++) {
+    target.r[i] = scale === undefined ? source.r[i]! : source.r[i]! * scale;
+  }
+  for (let i = 0; i < 3; i++) {
+    target.t[i] = scale === undefined ? source.t[i]! : source.t[i]! * scale;
+  }
+};
+
+const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?: number): void => {
+  if (scale === undefined) {
+    return;
+  }
+  for (const transform of transforms) {
+    for (let i = 0; i < 9; i++) {
+      transform.r[i] = transform.r[i]! * scale;
+    }
+    for (let i = 0; i < 3; i++) {
+      transform.t[i] = transform.t[i]! * scale;
+    }
+  }
+};
+
+const buildActorVariants = (
+  modelIds: readonly ActorModel[],
+  figureSeeds: readonly number[],
+  amalgamScale?: number,
+): BuiltActorVariant[] => {
   const built: BuiltActorVariant[] = [];
   for (const model of modelIds) {
     const modelSeeds = model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds;
     for (const seed of modelSeeds) {
-      const { genome, realized } = zombieFigure(model, seed);
+      const bodyScale = model === 'amalgam' ? requireAmalgamScale(amalgamScale) : undefined;
+      const { genome, realized } = zombieFigure(model, seed, bodyScale);
       const walkActorTemplate: WalkActor = {
         bones: realized.body.bones,
         extents: footRestExtents(realized.body.bones, realized.voxels),
         params: genome.params as HumanoidParams,
         seed: genome.seed,
       };
-      const severedRoots =
-        model === 'amalgam'
-          ? new Map(
-              amalgamFigure(seed)
-                .manifest.parts.filter((part) => part.severable)
-                .map((part) => [part.id, part.rootBone]),
-            )
-          : new Map<string, string>();
       built.push({
         model,
         figureSeed: seed,
+        ...(bodyScale === undefined ? {} : { bodyScale }),
         realized,
         walkActorTemplate,
         bodyExtents: bodyRestExtents(realized.body.bones, realized.voxels),
         lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model]!,
-        severedRoots,
+        severedRoots: severedRootsFor(model, seed, bodyScale),
       });
     }
   }
@@ -543,13 +585,16 @@ export class MobActorMeshes implements ZombieRenderer {
     this.blockSize = blockSize;
     this.capacity = capacity;
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
+    if (options.includeAmalgam && options.amalgamScale === undefined) {
+      throw new Error('MobActorMeshes requires amalgamScale when amalgam actors are enabled');
+    }
     const templatesByModel = new Map([...TEMPLATES, amalgamTemplate].map((template) => [template.name, template]));
     const modelIds: readonly ActorModel[] = options.includeAmalgam
       ? ['shambler', 'runner', 'crawler', 'amalgam']
       : ['shambler', 'runner', 'crawler'];
 
     const t0 = performance.now();
-    const built = buildActorVariants(modelIds, SHAMBLER_FIGURE_SEEDS.slice(0, poolSize));
+    const built = buildActorVariants(modelIds, SHAMBLER_FIGURE_SEEDS.slice(0, poolSize), options.amalgamScale);
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
@@ -665,6 +710,7 @@ export class MobActorMeshes implements ZombieRenderer {
         model: v.model,
         lookAt: v.lookAt,
         figureSeed: v.figureSeed,
+        ...(v.bodyScale === undefined ? {} : { bodyScale: v.bodyScale }),
         realized: v.realized,
         walkActorTemplate: v.walkActorTemplate,
         bodyExtents: v.bodyExtents,
@@ -1399,16 +1445,11 @@ export class MobActorMeshes implements ZombieRenderer {
     if (transforms) {
       for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
         const source = transforms.get(variant.realized.body.bones[bone]!.id)!;
-        const target = variant.scratch[bone]!;
-        for (let i = 0; i < 9; i++) {
-          target.r[i] = source.r[i]!;
-        }
-        for (let i = 0; i < 3; i++) {
-          target.t[i] = source.t[i]!;
-        }
+        copyScaledTransform(source, variant.scratch[bone]!, variant.bodyScale);
       }
     } else {
       boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
+      scaleTransformsInPlace(variant.scratch, variant.bodyScale);
     }
     for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
       if (severedIndices.has(bone)) {

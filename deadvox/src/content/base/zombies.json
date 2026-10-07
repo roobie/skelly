@@ -216,6 +216,7 @@
       "id": "amalgam",
       "name": "Amalgam",
       "model": "amalgam",
+      "bodyScale": 4,
       "spawnWeight": 1,
       "debugOnly": true,
       "sounds": {

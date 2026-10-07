@@ -767,7 +767,11 @@ describe('MobActorMeshes', () => {
   });
 
   it('renders visible actor meshes with bone transforms for every registered zombie type', () => {
-    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1, includeAmalgam: true });
+    const renderer = new MobActorMeshes(0.5, 2, {
+      poolSize: 1,
+      includeAmalgam: true,
+      amalgamScale: registry.zombies.get('amalgam')?.bodyScale,
+    });
     try {
       const store = new MapEntityStore<Zombie>();
       const entries = [...registry.zombies.values()].map((type, index) => ({
@@ -796,7 +800,11 @@ describe('MobActorMeshes', () => {
         const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
         expect(materials.length).toBeGreaterThan(0);
         expect(materials.every((material) => material.visible)).toBe(true);
-        expect(renderer.boneMatrix(id, type.model === 'amalgam' ? 'core' : 'pelvis'), type.id).toHaveLength(12);
+        const matrix = renderer.boneMatrix(id, type.model === 'amalgam' ? 'core' : 'pelvis');
+        expect(matrix, type.id).toHaveLength(12);
+        if (type.model === 'amalgam') {
+          expect(Math.hypot(matrix![0]!, matrix![4]!, matrix![8]!)).toBeCloseTo(type.bodyScale!);
+        }
       }
     } finally {
       renderer.dispose();

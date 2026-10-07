@@ -114,6 +114,7 @@ interface PoseBoxContext {
   readonly yaw: Mat3;
   readonly position: Vec3;
   readonly blockSize: number;
+  readonly geometryScale: number;
 }
 
 const makePosedBoneBox = (
@@ -128,11 +129,14 @@ const makePosedBoneBox = (
   if (!transform) {
     return undefined;
   }
-  const localCenter = applyR(transform.r, box.center);
+  const localCenter = applyR(
+    transform.r,
+    box.center.map((coordinate) => coordinate * context.geometryScale),
+  );
   const centered = [
-    transform.t[0] + localCenter[0],
-    transform.t[1] + localCenter[1],
-    transform.t[2] + localCenter[2],
+    transform.t[0] * context.geometryScale + localCenter[0],
+    transform.t[1] * context.geometryScale + localCenter[1],
+    transform.t[2] * context.geometryScale + localCenter[2],
   ] as const;
   const worldOffset = applyR(context.yaw, centered);
   let bottomY: number | undefined;
@@ -145,22 +149,27 @@ const makePosedBoneBox = (
   }
   for (const point of voxelCenters) {
     const posedPoint = applyR(transform.r, point);
-    const y = context.position[1] + (transform.t[1] + posedPoint[1]) / context.blockSize;
+    const y =
+      context.position[1] +
+      (transform.t[1] * context.geometryScale + posedPoint[1] * context.geometryScale) / context.blockSize;
     if (region === 'head' || region.endsWith('.head')) {
       bottomY = Math.min(bottomY!, y);
       topY = Math.max(topY!, y);
     }
   }
   if (region === 'head' || region.endsWith('.head')) {
-    const margin = (context.figure.realized.voxels.size / 2 + 0.001) / context.blockSize;
+    const margin = ((context.figure.realized.voxels.size / 2) * context.geometryScale) / context.blockSize;
     bottomY! -= margin;
     topY! += margin;
   }
-  const posedCentroid = applyR(transform.r, summary.centroid);
+  const posedCentroid = applyR(
+    transform.r,
+    summary.centroid.map((coordinate) => coordinate * context.geometryScale),
+  );
   const worldCentroid = applyR(context.yaw, [
-    transform.t[0] + posedCentroid[0],
-    transform.t[1] + posedCentroid[1],
-    transform.t[2] + posedCentroid[2],
+    transform.t[0] * context.geometryScale + posedCentroid[0],
+    transform.t[1] * context.geometryScale + posedCentroid[1],
+    transform.t[2] * context.geometryScale + posedCentroid[2],
   ]);
   const voxelCentroid: Vec3 = [
     context.position[0] + worldCentroid[0] / context.blockSize,
@@ -176,7 +185,7 @@ const makePosedBoneBox = (
       context.position[2] + worldOffset[2] / context.blockSize,
     ],
     rotation: mulMM(context.yaw, transform.r),
-    halfSize: [...box.halfSize] as Vec3,
+    halfSize: box.halfSize.map((extent) => extent * context.geometryScale) as Vec3,
     voxelCentroid,
     voxelCount: summary.count,
   };
@@ -192,6 +201,7 @@ const poseContextFor = (input: ShamblerPoseInput): PoseBoxContext => {
     yaw: posed.yaw,
     position: posed.position,
     blockSize: posed.blockSize,
+    geometryScale: 'scale' in posed.figure && typeof posed.figure.scale === 'number' ? posed.figure.scale : 1,
   };
 };
 
@@ -221,7 +231,10 @@ export const posedAmalgamRegionBoxes = (
     readonly severed: readonly string[];
   },
 ): Readonly<Record<string, readonly PosedBoneBox[]>> => {
-  const pose: Pose = { root: figure.originOffset, rotations: {} };
+  const pose: Pose = {
+    root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
+    rotations: {},
+  };
   const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
   const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
   const context: PoseBoxContext = {
@@ -232,6 +245,7 @@ export const posedAmalgamRegionBoxes = (
     yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
     position: input.position,
     blockSize: input.blockSize,
+    geometryScale: figure.scale,
   };
   const boxesByRegion = figure.boxes as Readonly<Record<string, readonly BoneVoxelBox[]>>;
   return Object.fromEntries(

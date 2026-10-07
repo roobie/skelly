@@ -10,12 +10,13 @@ type AmalgamManifest = ReturnType<typeof amalgamManifest>;
 
 export interface AmalgamFigure {
   readonly seed: number;
+  readonly scale: number;
   readonly genome: NonNullable<ReturnType<typeof generateValid>>['genome'];
   readonly realized: AmalgamRealized;
   readonly manifest: AmalgamManifest;
   readonly boxes: Readonly<Record<string, readonly BoneVoxelBox[]>>;
   readonly voxelCentersByBone: ReadonlyMap<string, readonly (readonly [number, number, number])[]>;
-  /** Rest-pose bounds include voxel faces, in the generated body's metre coordinates. */
+  /** Rest-pose bounds include voxel faces, in Deadvox metres after the authored body scale. */
   readonly bounds: { readonly min: readonly [number, number, number]; readonly max: readonly [number, number, number] };
   /** Moves the generated mesh to a ground-based origin centered on its horizontal bounds. */
   readonly originOffset: readonly [number, number, number];
@@ -28,7 +29,7 @@ interface Bounds {
 
 export const AMALGAM_FIGURE_SEED = 1;
 
-const cache = new Map<number, AmalgamFigure>();
+const cache = new Map<string, AmalgamFigure>();
 
 interface VoxelBounds {
   byBone: Map<string, Bounds>;
@@ -115,14 +116,18 @@ export const amalgamCollisionEnvelope = (figure: AmalgamFigure, blockSize: numbe
   };
 };
 
-/** Realizes and caches one gameplay amalgam from the persistent seed. */
-export const amalgamFigure = (seed: number): AmalgamFigure => {
-  const cached = cache.get(seed);
+/** Realizes and caches one gameplay amalgam from the persistent seed and authored body scale. */
+export const amalgamFigure = (seed: number, scale: number): AmalgamFigure => {
+  const key = `${seed}:${scale}`;
+  const cached = cache.get(key);
   if (cached) {
     return cached;
   }
   if (!Number.isSafeInteger(seed)) {
     throw new Error(`Invalid amalgam figure seed ${seed}`);
+  }
+  if (!(Number.isFinite(scale) && scale > 0)) {
+    throw new Error(`Invalid amalgam body scale ${scale}`);
   }
   const generated = generateValid(amalgamTemplate, seed);
   if (!generated) {
@@ -131,7 +136,7 @@ export const amalgamFigure = (seed: number): AmalgamFigure => {
   const { realized } = generated;
   const manifest = amalgamManifest(realized.body, realized.voxels);
   const { byBone, voxelCentersByBone, totalBounds } = collectVoxelBounds(realized);
-  const margin = realized.voxels.size / 2 + 0.001;
+  const margin = realized.voxels.size / 2;
   const boxes = Object.fromEntries(
     manifest.regions.map((region) => [
       region.id,
@@ -156,16 +161,31 @@ export const amalgamFigure = (seed: number): AmalgamFigure => {
   );
   const centerX = (totalBounds.min[0] + totalBounds.max[0]) / 2;
   const centerZ = (totalBounds.min[2] + totalBounds.max[2]) / 2;
+  const bounds = {
+    min: totalBounds.min.map((value) => value * scale) as [number, number, number],
+    max: totalBounds.max.map((value) => value * scale) as [number, number, number],
+  };
   const figure: AmalgamFigure = {
     seed,
+    scale,
     genome: generated.genome,
     realized,
     manifest,
     boxes,
     voxelCentersByBone,
-    bounds: { min: totalBounds.min, max: totalBounds.max },
-    originOffset: [-centerX, -totalBounds.min[1], -centerZ],
+    bounds,
+    originOffset: [-centerX * scale, -totalBounds.min[1] * scale, -centerZ * scale],
   };
-  cache.set(seed, figure);
+  cache.set(key, figure);
   return figure;
+};
+
+export const amalgamFigureForType = (
+  type: { readonly id: string; readonly bodyScale?: number | undefined },
+  seed: number,
+) => {
+  if (type.bodyScale === undefined) {
+    throw new Error(`Amalgam zombie type ${type.id} has no bodyScale`);
+  }
+  return amalgamFigure(seed, type.bodyScale);
 };

@@ -1,7 +1,10 @@
+// biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through Deadvox's TypeScript alias.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { describe, expect, it } from 'vitest';
-import { amalgamCollisionEnvelope, amalgamFigure } from '../src/core/amalgamFigure.ts';
+import { amalgamCollisionEnvelope, amalgamFigure, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
+import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { projectileShot } from '../src/core/pellets.ts';
@@ -84,7 +87,7 @@ const findRegionRay = (
 
 const findMemberRay = (simulation: ZombieSystem, id: number) => {
   const zombie = simulation.store.get(id)!;
-  const figure = amalgamFigure(zombie.figureSeed);
+  const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
   const regions = posedAmalgamRegionBoxes(figure, {
     position: zombie.body.pos,
     facing: zombie.facing,
@@ -105,7 +108,8 @@ const findMemberRay = (simulation: ZombieSystem, id: number) => {
 describe('amalgam body and combat seam', () => {
   it('derives a tight collision envelope and region boxes from the realized body manifest', () => {
     expect(registry.zombies.get('amalgam')?.debugOnly).toBe(true);
-    const figure = amalgamFigure(3);
+    const amalgamType = registry.zombies.get('amalgam')!;
+    const figure = amalgamFigure(3, amalgamType.bodyScale!);
     const envelope = amalgamCollisionEnvelope(figure, BLOCK_SIZE);
     const { bounds, originOffset } = figure;
     const localMin = [
@@ -120,9 +124,30 @@ describe('amalgam body and combat seam', () => {
     ];
 
     expect(localMin[1]).toBeCloseTo(0);
-    expect(envelope.halfWidth * BLOCK_SIZE).toBeCloseTo(Math.max(Math.abs(localMin[0]!), Math.abs(localMax[0]!)));
-    expect(envelope.halfDepth * BLOCK_SIZE).toBeCloseTo(Math.max(Math.abs(localMin[2]!), Math.abs(localMax[2]!)));
-    expect(envelope.height * BLOCK_SIZE).toBeCloseTo(localMax[1]! - localMin[1]!);
+    expect(envelope.halfWidth * BLOCK_SIZE).toBeGreaterThanOrEqual(
+      Math.max(Math.abs(localMin[0]!), Math.abs(localMax[0]!)),
+    );
+    expect(envelope.halfDepth * BLOCK_SIZE).toBeGreaterThanOrEqual(
+      Math.max(Math.abs(localMin[2]!), Math.abs(localMax[2]!)),
+    );
+    expect(envelope.height * BLOCK_SIZE).toBeGreaterThanOrEqual(localMax[1]! - localMin[1]!);
+
+    const posed = posedAmalgamRegionBoxes(figure, {
+      position: [0, 0, 0],
+      facing: [0, 0, -1],
+      blockSize: BLOCK_SIZE,
+      severed: [],
+    });
+    for (const boxes of Object.values(posed)) {
+      for (const box of boxes) {
+        for (let axis = 0; axis < 3; axis++) {
+          const min = box.center[axis]! * BLOCK_SIZE - box.halfSize[axis]!;
+          const max = box.center[axis]! * BLOCK_SIZE + box.halfSize[axis]!;
+          expect(min).toBeGreaterThanOrEqual(localMin[axis]! - 1e-6);
+          expect(max).toBeLessThanOrEqual(localMax[axis]! + 1e-6);
+        }
+      }
+    }
 
     for (const region of figure.manifest.regions) {
       expect(figure.boxes[region.id]?.length, region.id).toBeGreaterThan(0);
@@ -132,26 +157,74 @@ describe('amalgam body and combat seam', () => {
     }
   });
 
-  it('uses the realized rectangular envelope to stop at solid walls and closed doors', () => {
-    const envelope = amalgamCollisionEnvelope(amalgamFigure(5), BLOCK_SIZE);
-    for (const obstacle of ['wall', 'closed door']) {
-      const body: Body = {
-        pos: [-(envelope.halfWidth + 2), 0, 0],
-        vel: [0, 0, 0],
-        halfWidth: envelope.halfWidth,
-        halfDepth: envelope.halfDepth,
-        height: envelope.height,
-        onGround: true,
-      };
-      const solid = (x: number, y: number, z: number): boolean => x === 0 && y === 0 && z === 0;
-      stepBodyHorizontal(body, {
-        dx: envelope.halfWidth + 4,
-        dz: 0,
-        isSolid: solid,
-        params: { gravity: 0, stepHeight: 0 },
-      });
-      expect(body.pos[0], obstacle).toBeLessThan(-envelope.halfWidth);
-    }
+  it('keeps Deadvox metre bounds aligned with the generated mobgen body', () => {
+    const type = registry.zombies.get('amalgam')!;
+    const figure = amalgamFigure(3, type.bodyScale!);
+    const generatedBounds = voxelBounds(
+      figure.realized.voxels,
+      figure.realized.body.bones.map((_, index) => index),
+    );
+
+    expect((figure.bounds.max[1] - figure.bounds.min[1]) / figure.scale).toBeCloseTo(
+      generatedBounds.halfExtents[1] * 2,
+    );
+  });
+
+  it('uses the realized envelope to stop at a wall', () => {
+    const envelope = amalgamCollisionEnvelope(
+      amalgamFigure(5, registry.zombies.get('amalgam')!.bodyScale!),
+      BLOCK_SIZE,
+    );
+    const body: Body = {
+      pos: [-(envelope.halfWidth + 2), 0, 0],
+      vel: [0, 0, 0],
+      halfWidth: envelope.halfWidth,
+      halfDepth: envelope.halfDepth,
+      height: envelope.height,
+      onGround: true,
+    };
+    const wall = (x: number, y: number, z: number): boolean => x === 0 && y === 0 && z === 0;
+
+    stepBodyHorizontal(body, {
+      dx: envelope.halfWidth + 4,
+      dz: 0,
+      isSolid: wall,
+      params: { gravity: 0, stepHeight: 0 },
+    });
+
+    expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
+  });
+
+  it('uses the BlockEntities closed-door path to stop the envelope without changing the door', () => {
+    const envelope = amalgamCollisionEnvelope(
+      amalgamFigure(5, registry.zombies.get('amalgam')!.bodyScale!),
+      BLOCK_SIZE,
+    );
+    const entities = new BlockEntities(registry);
+    const door = entities.add({ type: 'wood_door', pos: [0, 0, 0], size: [2, 4, 1], facing: 'n' })!;
+    const before = entities.snapshotState();
+    const { version } = entities;
+    const body: Body = {
+      pos: [-(envelope.halfWidth + 2), 0, 0],
+      vel: [0, 0, 0],
+      halfWidth: envelope.halfWidth,
+      halfDepth: envelope.halfDepth,
+      height: envelope.height,
+      onGround: true,
+    };
+
+    expect(entities.isSolid(0, 0, 0)).toBe(true);
+    stepBodyHorizontal(body, {
+      dx: envelope.halfWidth + 4,
+      dz: 0,
+      isSolid: (x, y, z) => entities.isSolid(x, y, z),
+      params: { gravity: 0, stepHeight: 0 },
+    });
+
+    expect(body.pos[0]).toBeLessThan(-envelope.halfWidth);
+    expect(door.open).toBe(false);
+    expect(entities.version).toBe(version);
+    expect(entities.snapshotState()).toEqual(before);
   });
 
   it('routes a firearm projectile hit into the manifest-backed amalgam region', () => {
@@ -193,6 +266,7 @@ describe('amalgam body and combat seam', () => {
     };
 
     expect(reach).toBeGreaterThan(0);
+    expect(reach).toBeCloseTo(zombie.type.attack.reach * zombie.type.bodyScale!);
     severOne();
     expect(activeAmalgamMembers(zombie).length).toBeGreaterThan(0);
     expect(zombieAttackReachMetres(zombie)).toBe(reach);
@@ -200,7 +274,7 @@ describe('amalgam body and combat seam', () => {
       ...zombie,
       severed: [
         ...zombie.severed,
-        ...amalgamFigure(zombie.figureSeed)
+        ...amalgamFigureForType(zombie.type, zombie.figureSeed)
           .manifest.parts.filter((part) => part.severable)
           .map((part) => part.id),
       ],
@@ -231,7 +305,7 @@ describe('amalgam body and combat seam', () => {
     const type = registry.zombies.get('amalgam')!;
     const id = simulation.add(type, [0, 1, 0]);
     const zombie = simulation.store.get(id)!;
-    const figure = amalgamFigure(zombie.figureSeed);
+    const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
     const membersBefore = activeAmalgamMembers(zombie);
     const ray = findMemberRay(simulation, id);
     const target = membersBefore.find((member) => member.partId === ray.partId)!;

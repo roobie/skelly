@@ -126,7 +126,12 @@ export const createPlayView = (
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
   const zombieMeshes: ZombieRenderer =
-    config.actors === 'detailed' ? new MobActorMeshes(s, undefined, { includeAmalgam: true }) : new ZombieMeshes(s);
+    config.actors === 'detailed'
+      ? new MobActorMeshes(s, undefined, {
+          includeAmalgam: true,
+          amalgamScale: registry.zombies.get('amalgam')?.bodyScale,
+        })
+      : new ZombieMeshes(s);
   zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);

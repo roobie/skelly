@@ -1,5 +1,5 @@
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
-import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigure } from './amalgamFigure.ts';
+import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from './amalgamFigure.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
@@ -64,7 +64,7 @@ const zombieRegionsFor = (type: ZombieDef, seed: number): ZombieRegions => {
   if (type.model !== 'amalgam') {
     return Object.fromEntries(ZOMBIE_REGION_NAMES.map((region) => [region, type.regions[region]!])) as ZombieRegions;
   }
-  const figure = amalgamFigure(seed);
+  const figure = amalgamFigureForType(type, seed);
   return Object.fromEntries(
     figure.manifest.regions.map((region) => {
       const health = maxZombieRegionHealth(type, region.id as ZombieHitRegion);
@@ -265,14 +265,18 @@ export const activeAmalgamMembers = (
     return [];
   }
   const severed = new Set(zombie.severed);
-  return amalgamFigure(zombie.figureSeed)
+  return amalgamFigureForType(zombie.type, zombie.figureSeed)
     .manifest.parts.filter((part) => part.severable && !severed.has(part.id))
     .map((part) => ({ partId: part.id, rootBone: part.rootBone, regionIds: part.regionIds }));
 };
 
 /** Remaining manifest members share the authored attack reach; with none, the unseverable core cannot attack. */
-export const zombieAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSeed' | 'severed'>): number =>
-  zombie.type.model !== 'amalgam' || activeAmalgamMembers(zombie).length > 0 ? zombie.type.attack.reach : 0;
+export const zombieAttackReachMetres = (zombie: Pick<Zombie, 'type' | 'figureSeed' | 'severed'>): number => {
+  if (zombie.type.model !== 'amalgam' || activeAmalgamMembers(zombie).length === 0) {
+    return zombie.type.model === 'amalgam' ? 0 : zombie.type.attack.reach;
+  }
+  return zombie.type.attack.reach * amalgamFigureForType(zombie.type, zombie.figureSeed).scale;
+};
 
 export type ZombieState = Omit<
   Zombie,
@@ -466,7 +470,7 @@ const posedRegionsForZombie = ({
   }
   const posed =
     zombie.type.model === 'amalgam'
-      ? posedAmalgamRegionBoxes(amalgamFigure(zombie.figureSeed), {
+      ? posedAmalgamRegionBoxes(amalgamFigureForType(zombie.type, zombie.figureSeed), {
           position: [zombie.body.pos[0], zombie.body.pos[1] + (zombie.stepOffset ?? 0) / blockSize, zombie.body.pos[2]],
           facing: zombie.facing,
           blockSize,
@@ -1179,7 +1183,10 @@ export class ZombieSystem {
           throw new Error(`Invalid zombie regions for entity ${id}`);
         }
         if (type.model === 'amalgam') {
-          const envelope = amalgamCollisionEnvelope(amalgamFigure(zombie.figureSeed), this.options.blockSize);
+          const envelope = amalgamCollisionEnvelope(
+            amalgamFigureForType(type, zombie.figureSeed),
+            this.options.blockSize,
+          );
           if (
             zombie.body.halfWidth !== envelope.halfWidth ||
             zombie.body.halfDepth !== envelope.halfDepth ||
@@ -1188,7 +1195,7 @@ export class ZombieSystem {
             throw new Error(`Invalid amalgam collision envelope for entity ${id}`);
           }
           const validParts = new Set(
-            amalgamFigure(zombie.figureSeed)
+            amalgamFigureForType(type, zombie.figureSeed)
               .manifest.parts.filter((part) => part.severable)
               .map((part) => part.id),
           );
@@ -1432,7 +1439,7 @@ export class ZombieSystem {
           ]!;
     const dimensions: { halfWidth: number; halfDepth?: number; height: number } =
       type.model === 'amalgam'
-        ? amalgamCollisionEnvelope(amalgamFigure(figureSeed), this.options.blockSize)
+        ? amalgamCollisionEnvelope(amalgamFigureForType(type, figureSeed), this.options.blockSize)
         : { halfWidth: 0.28 / this.options.blockSize, height: 1.7 / this.options.blockSize };
     const zombie: Zombie = {
       type,
