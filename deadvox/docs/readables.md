@@ -103,11 +103,11 @@ fallback, not a bespoke paper mesh.
 
 The samples loudly say **PLACEHOLDER / NOT PLAYTEST LORE** and remain separate
 from the authored progression. `items-playtest.json` and `furniture-playtest.json`
-provide d99-1's evacuation note, the hunter's logbook, the medical sampling log
-and its wall notice. BR approved the evacuation and logbook texts as written on
-2026-10-06 at 14:43 (#181); the signs also have approved text. For #181, the
-medical log and notice explain the sampling site's purpose and military resupply
-as lore, not a player mission. `layouts-playtest.json` places these readings in
+provide d99-1's evacuation note, two signs and hunter's logbook. BR approved the
+note and logbook texts as written on 2026-10-06 at 14:43 (#181); those two signs
+also have approved text. The medical sampling log and wall notice are beat-5
+lore drafts and await BR's look; they explain the site's purpose and military
+resupply, not a player mission. `layouts-playtest.json` places these readings in
 their authored scenes.
 
 ## Reading in darkness: report-only

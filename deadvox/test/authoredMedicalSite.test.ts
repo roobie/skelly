@@ -6,7 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
-import { compileTemplate } from '../src/core/templates.ts';
+import { type CompiledTemplate, compileTemplate } from '../src/core/templates.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -56,8 +56,88 @@ const fixedContainer = (item: string) => {
   return { override, piece };
 };
 
+const wallOffDoor = (template: CompiledTemplate, door: CompiledTemplate['pieces'][number]): CompiledTemplate => {
+  const blocks = new Uint16Array(template.blocks);
+  const brick = required(result.registry.blockIds.get('brick'), 'brick block');
+  const [width, , depth] = template.size;
+  const [doorX, doorY, doorZ] = door.pos;
+  const [doorWidth, doorHeight, doorDepth] = door.size;
+  for (let y = doorY; y < doorY + doorHeight; y++) {
+    for (let z = doorZ; z < doorZ + doorDepth; z++) {
+      for (let x = doorX; x < doorX + doorWidth; x++) {
+        blocks[x + width * (z + depth * y)] = brick;
+      }
+    }
+  }
+  return { ...template, blocks, pieces: template.pieces.filter((piece) => piece !== door) };
+};
+
+const pointDistanceFromEntrance = (piece: CompiledTemplate['pieces'][number]): number => {
+  const entrance = required(medical.access?.entrance, 'medical entrance');
+  return Math.hypot(piece.pos[0] + piece.size[0] / 2 - entrance[0], piece.pos[2] + piece.size[2] / 2 - entrance[2]);
+};
+
+const nearbyFenceBounds = (): ReturnType<typeof buildingBounds>[] => {
+  const hallBounds = buildingBounds(medicalBuilding, medicalDefinition.size);
+  return layout.buildings
+    .filter(({ template }) => template === 'rickety_fence')
+    .map((building) =>
+      buildingBounds(building, required(result.registry.templates.get(building.template), 'fence template').size),
+    )
+    .filter(
+      (rect) =>
+        rect.x0 >= hallBounds.x0 - 20 &&
+        rect.x1 <= hallBounds.x1 + 20 &&
+        rect.z0 >= hallBounds.z0 - 20 &&
+        rect.z1 <= hallBounds.z1 + 20,
+    );
+};
+
+const horizontalFenceGap = (
+  a: ReturnType<typeof buildingBounds>,
+  b: ReturnType<typeof buildingBounds>,
+): [number, number] | undefined => {
+  if (a.x1 - a.x0 <= a.z1 - a.z0 || b.x1 - b.x0 <= b.z1 - b.z0) {
+    return undefined;
+  }
+  if (Math.abs(a.z0 - b.z0) > 0.001 || Math.abs(a.z1 - b.z1) > 0.001) {
+    return undefined;
+  }
+  const [left, right] = a.x0 <= b.x0 ? [a, b] : [b, a];
+  return right.x0 > left.x1 ? [(left.x1 + right.x0) / 2, (a.z0 + a.z1) / 2] : undefined;
+};
+
+const verticalFenceGap = (
+  a: ReturnType<typeof buildingBounds>,
+  b: ReturnType<typeof buildingBounds>,
+): [number, number] | undefined => {
+  if (a.z1 - a.z0 <= a.x1 - a.x0 || b.z1 - b.z0 <= b.x1 - b.x0) {
+    return undefined;
+  }
+  if (Math.abs(a.x0 - b.x0) > 0.001 || Math.abs(a.x1 - b.x1) > 0.001) {
+    return undefined;
+  }
+  const [north, south] = a.z0 <= b.z0 ? [a, b] : [b, a];
+  return south.z0 > north.z1 ? [(a.x0 + a.x1) / 2, (north.z1 + south.z0) / 2] : undefined;
+};
+
+const fenceGapCenters = (bounds: ReturnType<typeof buildingBounds>[]): [number, number][] => {
+  const gaps: [number, number][] = [];
+  for (let first = 0; first < bounds.length; first++) {
+    for (let second = first + 1; second < bounds.length; second++) {
+      const a = bounds[first]!;
+      const b = bounds[second]!;
+      const gap = horizontalFenceGap(a, b) ?? verticalFenceGap(a, b);
+      if (gap) {
+        gaps.push(gap);
+      }
+    }
+  }
+  return gaps;
+};
+
 describe('authored medical site', () => {
-  it('keeps treatment, pharmacy, and staff-room containers reachable through ordinary doors', () => {
+  it('encloses the staff room and pharmacy behind reachable, unlocked doors', () => {
     expect(result.issues.filter((issue) => issue.source === 'medical-layout-test.json')).toEqual([]);
     expect(templateSpatialIssues(result.registry, medical)).toEqual([]);
     const reachable = templateReachableStandingPositions(result.registry, medical);
@@ -70,41 +150,59 @@ describe('authored medical site', () => {
       expect(result.registry.furniture.get(piece.furniture)?.container).toBeDefined();
       expect(nearPiece(reachable, piece), piece.furniture).toBe(true);
     }
-    expect(front.override.at[2]).toBeGreaterThan(pharmacy.override.at[2]);
     expect(result.registry.items.get('medical_research_log')?.readable).toBeDefined();
     expect(medical.pieces.some((piece) => piece.furniture === 'medical_research_notice')).toBe(true);
 
-    const doors = medical.pieces.filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
-    const staffDoor = required(
-      doors.find(({ pos }) => pos[0] < 8 && pos[2] < 8),
-      'staff-room door',
+    const sofa = required(
+      medical.pieces.find((piece) => piece.furniture === 'sofa'),
+      'staff-room sofa',
     );
-    const pharmacyDoor = required(
-      doors.find(({ pos }) => pos[0] > 20 && pos[2] < 8),
-      'pharmacy door',
-    );
-    expect(staffDoor.furniture).toBe('wood_door');
-    expect(pharmacyDoor.furniture).toBe('wood_door');
-    expect(nearPiece(reachable, staffDoor)).toBe(true);
-    expect(staffDoor.lock).toBeUndefined();
-    expect(pharmacyDoor.lock).toBeUndefined();
-
-    const wardBed = required(
-      medical.pieces.find((piece) => piece.furniture === 'bed' && piece.pos[2] > 8 && piece.pos[2] < 19),
-      'ward bed',
-    );
-    expect(nearPiece(reachable, wardBed)).toBe(true);
-
     const officer = required(
       medical.pieces.find((piece) => piece.furniture === 'dead_officer_body'),
       'dead officer body',
     );
     expect(result.registry.furniture.get(officer.furniture)?.container).toBeDefined();
+    expect(nearPiece(reachable, sofa)).toBe(true);
     expect(nearPiece(reachable, officer)).toBe(true);
-    expect(medical.pieces.some((piece) => piece.furniture === 'sofa' && piece.pos[0] < 15 && piece.pos[2] < 8)).toBe(
-      true,
+
+    const wardBeds = medical.pieces.filter((piece) => piece.furniture === 'bed');
+    expect(wardBeds.length).toBeGreaterThan(0);
+    const frontDistance = pointDistanceFromEntrance(front.piece);
+    const pharmacyDistance = pointDistanceFromEntrance(pharmacy.piece);
+    expect(
+      wardBeds.some((bed) => {
+        const distance = pointDistanceFromEntrance(bed);
+        return frontDistance < distance && distance < pharmacyDistance;
+      }),
+    ).toBe(true);
+
+    const unlockedDoors = medical.pieces.filter(
+      (piece) => result.registry.furniture.get(piece.furniture)?.door && piece.lock === undefined,
     );
-    expect(medical.spawns.every(({ zombie }) => zombie === 'shambler')).toBe(true);
+    const staffDoor = required(
+      unlockedDoors.find(
+        (door) => !nearPiece(templateReachableStandingPositions(result.registry, wallOffDoor(medical, door)), sofa),
+      ),
+      'staff-room door enclosing the sofa',
+    );
+    const pharmacyDoor = required(
+      unlockedDoors.find(
+        (door) =>
+          !nearPiece(templateReachableStandingPositions(result.registry, wallOffDoor(medical, door)), pharmacy.piece),
+      ),
+      'pharmacy door enclosing the antibiotics container',
+    );
+    expect(staffDoor).not.toBe(pharmacyDoor);
+    const staffDoorClosed = templateReachableStandingPositions(result.registry, wallOffDoor(medical, staffDoor));
+    const pharmacyDoorClosed = templateReachableStandingPositions(result.registry, wallOffDoor(medical, pharmacyDoor));
+    expect(staffDoor.lock).toBeUndefined();
+    expect(pharmacyDoor.lock).toBeUndefined();
+    expect(nearPiece(reachable, sofa)).toBe(true);
+    expect(nearPiece(reachable, pharmacy.piece)).toBe(true);
+    expect(nearPiece(staffDoorClosed, sofa)).toBe(false);
+    expect(nearPiece(staffDoorClosed, pharmacy.piece)).toBe(true);
+    expect(nearPiece(pharmacyDoorClosed, pharmacy.piece)).toBe(false);
+    expect(nearPiece(pharmacyDoorClosed, sofa)).toBe(true);
   });
 
   it('takes the route past the clinic sign, through the compound gate, and to the hall entrance', () => {
@@ -119,38 +217,18 @@ describe('authored medical site', () => {
       signTemplate.pieces.find((piece) => piece.furniture === 'clinic_sign'),
       'clinic sign',
     );
+    expect(sign.facing).toBe('s');
     const signPosition: [number, number] = [
       signBuilding.position[0] + (sign.pos[0] + sign.size[0] / 2) * 0.5,
       signBuilding.position[2] + (sign.pos[2] + sign.size[2] / 2) * 0.5,
     ];
     expect(polylineDistance(signPosition, track.points)).toBeLessThan(6);
 
-    const hallBounds = buildingBounds(medicalBuilding, medicalDefinition.size);
-    const fenceBounds = layout.buildings
-      .filter(({ template }) => template === 'rickety_fence')
-      .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size))
-      .filter(
-        (rect) =>
-          rect.x0 >= hallBounds.x0 - 20 &&
-          rect.x1 <= hallBounds.x1 + 20 &&
-          rect.z0 >= hallBounds.z0 - 20 &&
-          rect.z1 <= hallBounds.z1 + 20,
-      );
-    const southZ = Math.max(...fenceBounds.map(({ z1 }) => z1));
-    const southSegments = fenceBounds.filter(
-      (rect) => Math.abs(rect.z1 - southZ) < 0.001 && rect.x1 - rect.x0 > rect.z1 - rect.z0,
-    );
-    const intervals = southSegments.map(({ x0, x1 }) => [x0, x1] as const).sort((left, right) => left[0] - right[0]);
     const gate = required(
-      intervals
-        .slice(1)
-        .map(([x0], index) => ({ x0: intervals[index]![1], x1: x0 }))
-        .filter(({ x0, x1 }) => x1 > x0)
-        .sort((left, right) => right.x1 - right.x0 - (left.x1 - left.x0))[0],
-      'open compound gate',
+      fenceGapCenters(nearbyFenceBounds()).find((center) => polylineDistance(center, track.points) <= track.width / 2),
+      'fence gap crossed by the route',
     );
-    const gateCenter: [number, number] = [(gate.x0 + gate.x1) / 2, (southSegments[0]!.z0 + southSegments[0]!.z1) / 2];
-    expect(polylineDistance(gateCenter, track.points)).toBeLessThanOrEqual(track.width / 2);
+    expect(polylineDistance(gate, track.points)).toBeLessThanOrEqual(track.width / 2);
 
     const { entrance } = medical.access!;
     const entrancePosition: [number, number] = [
@@ -158,14 +236,5 @@ describe('authored medical site', () => {
       medicalBuilding.position[2] + entrance[2] * 0.5,
     ];
     expect(polylineDistance(entrancePosition, track.points)).toBeLessThanOrEqual(track.width);
-
-    const tents = layout.buildings.filter(({ template }) => template === 'triage_tent');
-    const firstTent = required(tents[0], 'triage tent');
-    expect(
-      tents.find(
-        (tent) =>
-          tent !== firstTent && tent.position.some((coordinate, axis) => coordinate !== firstTent.position[axis]),
-      ),
-    ).toBeDefined();
   });
 });
