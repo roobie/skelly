@@ -53,7 +53,7 @@ export interface ComposedHeld extends HeldModel {
 }
 
 /** Hides the baked geometry of item-owned slots: an item's look draws what is really fitted there instead. */
-export const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof namedNodes>[1]): void => {
+const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof namedNodes>[1]): void => {
   const names = Object.values(def.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : []));
   for (const node of namedNodes(scene, parser, names)) {
     node.visible = false;

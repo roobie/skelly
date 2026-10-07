@@ -44,12 +44,13 @@ export const isFirearmTrainingAction = (job: Job): boolean =>
 /** Single-shell handling estimate, not an exported mechanical phase. */
 export const SHELL_LOAD_SECONDS = 0.9;
 /**
- * Gameplay handling estimates for the two halves of a magazine change, before the firearms skill's reload factor
- * (about a third at the top skill). Grounded in timed rifle reloads (Crate Club, "How Long Does It Take to Reload an
- * Assault Rifle?"): an average shooter changes an AR magazine in 3–5 s and an AK one in 4–6 s, a proficient one an AR
- * magazine in about 2 s, all dropping the old magazine. A change here stows it, which is slower, so skill 0 sits at
- * the slow end. Taking a magazine out and stowing it is one half, drawing one and seating it the other: a removal
- * or an insert into an empty gun takes only its half.
+ * Gameplay handling estimates for the two halves of a magazine change at skill 0, which the firearms skill's reload
+ * factor shortens. Grounded in timed rifle reloads (Crate Club, "How Long Does It Take to Reload an Assault Rifle?",
+ * https://crateclub.com/blogs/loadout/how-long-does-it-take-to-reload-an-assault-rifle): an average shooter changes
+ * an AR magazine in 3–5 s and an AK one in 4–6 s, a proficient one an AR magazine in about 2 s, all dropping the old
+ * magazine. A change here stows it, which is slower, so skill 0 sits at the slow end. Taking a magazine out and
+ * stowing it is one half, drawing one and seating it the other: a removal or an insert into an empty gun takes only
+ * its half (DESIGN.md, "Combat and noise", rifles).
  */
 const MAGAZINE_REMOVE_SIM_SECONDS = 3;
 const MAGAZINE_INSERT_SIM_SECONDS = 3;
@@ -942,29 +943,25 @@ export class FirearmMechanics {
           },
         ];
       }
-      const [job] = this.queue.jobs;
-      if (item && job?.kind === 'action' && job.jobType === MAGAZINE_ACTION && job.params.uid === uid) {
-        return [
-          {
-            uid,
-            mode: 'magazine',
-            elapsed: job.elapsed,
-            duration: job.duration,
-            magazine: this.magazineMotion(item, job.params.magazineUid),
-          },
-        ];
-      }
-      const ammo =
-        job?.kind === 'action' &&
-        job.jobType === LOAD_ACTION &&
-        job.params.uid === uid &&
-        typeof job.params.ammoUid === 'number'
-          ? this.inventory.itemByUid(job.params.ammoUid)
-          : undefined;
-      return ammo && job
-        ? [{ uid, mode: 'load', elapsed: job.elapsed, duration: job.duration, roundType: ammo.type }]
-        : [];
+      return item ? this.jobFrame(item) : [];
     });
+  }
+
+  /** A magazine job or a shell load queued first on the held `gun`, played from the job's own clock. */
+  private jobFrame(gun: Item): FirearmCycleFrame[] {
+    const [job] = this.queue.jobs;
+    if (!(job?.kind === 'action' && job.params.uid === gun.uid)) {
+      return [];
+    }
+    const clock = { uid: gun.uid, elapsed: job.elapsed, duration: job.duration };
+    if (job.jobType === MAGAZINE_ACTION) {
+      return [{ ...clock, mode: 'magazine', magazine: this.magazineMotion(gun, job.params.magazineUid) }];
+    }
+    const ammo =
+      job.jobType === LOAD_ACTION && typeof job.params.ammoUid === 'number'
+        ? this.inventory.itemByUid(job.params.ammoUid)
+        : undefined;
+    return ammo ? [{ ...clock, mode: 'load', roundType: ammo.type }] : [];
   }
 
   private advanceCycle(item: Item, elapsed: number): string | undefined {

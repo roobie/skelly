@@ -134,6 +134,21 @@ describe('magazine-fed rifles', () => {
     expect([fullest, lightest].map((magazine) => inventory.locate(magazine!)?.kind)).toEqual(['pocket', 'pocket']);
   });
 
+  it('takes a removal and an insertion each for their own part of a change, so a removal alone is quicker', () => {
+    const { queue, mechanics, rifle } = carrying([1, 2]);
+    const queued = (refusal: string | undefined): number => {
+      expect(refusal).toBeUndefined();
+      const { duration } = queue.jobs[0]!;
+      settle(queue);
+      return duration;
+    };
+    const insertion = queued(mechanics.loadNext(rifle.uid, 0));
+    const change = queued(mechanics.loadNext(rifle.uid, 0));
+    const removal = queued(mechanics.removeMagazine(rifle.uid, 0));
+    expect(change).toBeCloseTo(removal + insertion, 9);
+    expect(Math.max(removal, insertion)).toBeLessThan(change);
+  });
+
   it('removes the fitted magazine to a pocket or else the ground, and keeps it fitted with nowhere to put it', () => {
     const { inventory, queue, mechanics, world, pocket, rifle, loaded } = carrying([3]);
     const [magazine] = loaded;

@@ -285,7 +285,13 @@ chunks can generate in any order.
 
 - An **item** is an instance: `{ type, count?, condition?, charges?, contents?, state? }`.
   Identical, stateless items stack (ammo, nails, matches). Everything else is its
-  own instance.
+  own instance. BR, 2026-10-07 12:13: "let's think it through: in my world, the
+  item would be a unique instance, with its own properties and state, so it's not
+  a different item in the inventory and on the ground for example". BR, 12:19:
+  "yes: (a) Things with their own state are unique: guns, magazines with their
+  rounds, later anything that wears or breaks. Identical stateless things stay
+  counted stacks." A unique item looks like its own state wherever it is drawn
+  ("One item, one look" below).
 - An **item type** is data with **components**. Examples:
   - `container` (pockets, each a grid; below)
   - `wearable` (slot, warmth, protection, encumbrance)
@@ -422,8 +428,8 @@ HTML over the game view, and keyboard-first:
 ### Piles
 
 Items on the ground form **piles** at block positions, like CDDA. An item
-with a model lies at its place in the pile's grid; items without one make a
-generic bundle. For d59-2, spent cases read as loose debris rather than stacked
+with a model lies at its place in the pile's grid, drawn with its own look
+("One item, one look" below); items without one make a generic bundle. For d59-2, spent cases read as loose debris rather than stacked
 material, so their content-owned pile-display component selects scattering; see
 `src/core/schema.ts`, `PILE_DISPLAY_KIND`, and `src/render/piles.ts`,
 `PileMeshes.planSpentCases`.
@@ -432,10 +438,35 @@ material, so their content-owned pile-display component selects scattering; see
 
 Items have simple, low-poly models: glTF files in the content pack, named by id
 and checked by the validator, like sounds. A model says where the hand holds
-the item and names points such as a flashlight's lens. It's what you see in a
+the item, names points such as a flashlight's lens, and names the slots where
+fitted parts sit, such as a rifle's magazine. It's what you see in a
 pile and in your hands; an item without one is a bundle on the ground and a
 plain box in your hands. Files are small, and follow
 [Assets and credits](#assets-and-credits).
+
+### One item, one look
+
+BR, 2026-10-07 12:19, approved these three lines with "Good:":
+
+- "One function builds an item's model from that item's own state: the rifle
+  body, plus the fitted magazine's own model in the magazine well, plus
+  attachments later (#347's suppressors)."
+- "Every view uses it: in your hands, carried on the body, on the ground and in
+  the inventory preview. The same rifle looks the same everywhere."
+- "The ground renderer batches by what an item looks like, so an AK with a
+  magazine and one without draw differently."
+
+It answers BR's FIX on #337 at 12:09 (d114-11), "the model should reflect
+reality" ("Combat and noise", rifles). A firearm's model names its magazine
+slot, as #347's export contract does: the magazine node baked into the export
+and the frame a fitted magazine sits in. Every view hides the baked node and
+draws the fitted magazine's own model in that frame, so a rifle with its
+magazine out shows none, in the hands and on the ground alike. The validator
+requires the slot of every magazine-fed firearm. The hands and piles are the
+views that draw item models, and any later one (on the body, an inventory
+preview) builds the same look. See `src/core/itemLook.ts`, `itemLook`;
+`src/render/models.ts`, `ModelLibrary.heldLook` and `ModelLibrary.groundLook`;
+and `src/core/content.ts`, `checkItemFirearm`.
 
 ### Assets and credits
 
@@ -631,7 +662,7 @@ plain box in your hands. Files are small, and follow
   questions triggers expansion.
 - **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. BR's firearm ruling, planned in [SLICE-3.md](SLICE-3.md), settles real ammunition and magazine loading plus body-region damage by calibre. Visible shambler marks are desired ("ideally, yes") and await the 3.2 first look.
 - **Magazines (3.2, d114):** BR, 2026-10-05 21:04: "magazines are real, you load them one by one, like in dayz". A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (CONTROLS.md, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor, extending d62's per-shell reading to per-round handling. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
-- **Rifles (3.2, d114):** the AR and AK are real firearms that fire chambered cartridges in any mode; the debug rifles' virtual rounds are gone. A magazine-fed firearm owns a slot map, and the fitted magazine is its `magazine` entry. It is a whole item that saves inside the rifle, so the same magazine comes back out. The map leaves room for 3.7's attachments to add slot kinds without reshaping saves (SLICE-3.md, "3.7 Modular weapons"). Firing and working the charging handle feed the magazine's top round; with no magazine or an empty one, the chamber stays empty. A rifle round is one hitscan ray through the posed zombie regions, on the path pellets and melee already use, so it damages the region it actually crosses (d114-5). Damage, push, reach and a head multiplier come from the cartridge's `ammo` content and are gameplay estimates, so calibres differ by data alone; the shotgun shell's pellets read the same fields. BR, 2026-10-07 11:27, asked whether one headshot should kill, two torso hits down a shambler and one hit sever a limb: "depends on gun (or really mainly caliber and ammunition)". So no rule outside the cartridge's data sets how many hits a body takes. A region's pierce resistance applies as it does in melee, and a round draws no damage spread. The hit resolves before the trajectory reaches presentation, so impact marks can't change damage ("Shot impacts" above). See `src/core/pellets.ts`, `projectileShot`, and `src/core/zombies.ts`, `ZombieSystem.firePellets`. BR, 2026-10-07 11:20 (CONTROLS.md, "Reload, rack, remove"): "No, it should reload with the mag that is fullest in inventory, no matter what is loaded in gun"; double-pressing R works the charging handle, "yes, correct"; "Tap-then-press-and-hold R means remove mag". So hold R starts one magazine change that swaps in the fullest carried magazine that fits, even one with fewer rounds than the fitted one, and the swapped-out magazine goes to a pocket, or to the ground. With no fitting magazine carried, R refuses. A change is one motion, so it neither repeats while R is held nor cancels on release, unlike shell-by-shell loading. A tap, then a held press, removes the fitted magazine by the same destination rule, so a lone magazine can come out to be refilled. See `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`, `src/game/firearmHandling.ts`, `FirearmMechanics.loadNext`, `FirearmMechanics.removeMagazine` and `FirearmMechanics.cock`, and `src/game/reloadInput.ts`, `ReloadInput` and `ReloadBinding.oneAction`. Until the 3.2 first look (SLICE-3.md, 3.2), the gun model shows its baked magazine whether or not one is fitted.
+- **Rifles (3.2, d114):** the AR and AK are real firearms that fire chambered cartridges in any mode; the debug rifles' virtual rounds are gone. A magazine-fed firearm owns a slot map, and the fitted magazine is its `magazine` entry. It is a whole item that saves inside the rifle, so the same magazine comes back out. The map leaves room for 3.7's attachments to add slot kinds without reshaping saves (SLICE-3.md, "3.7 Modular weapons"). Firing and working the charging handle feed the magazine's top round; with no magazine or an empty one, the chamber stays empty. A rifle round is one hitscan ray through the posed zombie regions, on the path pellets and melee already use, so it damages the region it actually crosses (d114-5). Damage, push, reach and a head multiplier come from the cartridge's `ammo` content and are gameplay estimates, so calibres differ by data alone; the shotgun shell's pellets read the same fields. BR, 2026-10-07 11:27, asked whether one headshot should kill, two torso hits down a shambler and one hit sever a limb: "depends on gun (or really mainly caliber and ammunition)". So no rule outside the cartridge's data sets how many hits a body takes. A region's pierce resistance applies as it does in melee, and a round draws no damage spread. The hit resolves before the trajectory reaches presentation, so impact marks can't change damage ("Shot impacts" above). See `src/core/pellets.ts`, `projectileShot`, and `src/core/zombies.ts`, `ZombieSystem.firePellets`. BR, 2026-10-07 11:20 (CONTROLS.md, "Reload, rack, remove"): "No, it should reload with the mag that is fullest in inventory, no matter what is loaded in gun"; double-pressing R works the charging handle, "yes, correct"; "Tap-then-press-and-hold R means remove mag". So hold R starts one magazine change that swaps in the fullest carried magazine that fits, even one with fewer rounds than the fitted one, and the swapped-out magazine goes to a pocket, or to the ground. With no fitting magazine carried, R refuses. A change is one motion, so it neither repeats while R is held nor cancels on release, unlike shell-by-shell loading. A tap, then a held press, removes the fitted magazine by the same destination rule, so a lone magazine can come out to be refilled. See `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`, `src/game/firearmHandling.ts`, `FirearmMechanics.loadNext`, `FirearmMechanics.removeMagazine` and `FirearmMechanics.cock`, and `src/game/reloadInput.ts`, `ReloadInput` and `ReloadBinding.oneAction`. BR's FIX on #337, 2026-10-07 12:09 (d114-11): "#337: missing animation, too fast, and removing the magazine doesn't actually remove it: Screenshot_2026-10-07_12-09-28.png - i.e. the model should reflect reality"; and at 12:11: "to be clear: #337: missing animation for cocking the charging handle, and removing mag and inserting mag". So a gun is drawn with the magazine it has ("One item, one look" in "Items and inventory"), and each handling job plays on the held gun from the job's progress alone, adding no simulation, save or replay state. A removal draws the magazine out of the well, an insertion seats the new one, and a change plays one, then the other. Working the charging handle has the off hand take the handle, ride it back and let go. Meanwhile the rifle turns muzzle-in so the hands' work shows in first person. Removing and inserting each take their own time, so a removal alone is quicker than a change, and the firearms skill's reload factor shortens both; the times and their source are on `MAGAZINE_REMOVE_SIM_SECONDS` in `src/game/firearmHandling.ts`. See `src/render/firearmModel.ts`, `magazineMotion` and `rackGrip`; `src/render/hands.ts`, `HeldItems.poseMagazine`, `HeldItems.rackHandGrip` and `HeldItems.handlingPresentation`; and `docs/firearm-cycle-playback.md`.
 - **Military loot (3.2, d114):** BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2). Their magazines and cartridges, loose or boxed, follow them, so a hamlet find can't feed a rifle. Which items are military-only follows from content: the magazine-fed firearms, the magazines and cartridges of their calibres, and any package that unpacks into one of those, however deeply nested, so content order can't change the set. Validation enforces this as a property of authored content. Only a loot table marked `military` may hold such an item or nest another military table. No salvage, disassembly or crafting recipe may yield one. An authored site's fixed loot may place one only in a container that rolls a military table. The reachability report walks the buildings of authored sites not marked `demo` (#346, docs/content.md) as well as the hamlet's, so the rifles become reachable when 3.11 places the military camp (#181, beat 6) with a container that rolls the military table. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
 - **Spent cases per block (3.2, d114):** BR, 2026-10-07 11:27, asked whether to save spent cases per block with a deterministic scatter or each at its exact landing point: "keep it simple in code, so i guess per block?" A case joins the pile of the block it lands on, as a count of `spent_case_<calibre>` items that saves like any pile (BR, 2026-10-05 22:17: "they should be saved"). The pile draws its cases as a deterministic scatter ("Piles" above). This replaces ADR 0003's first counter per area of about 20 m (docs/decisions/0003-firearm-handling.md), which put a case in a same-calibre pile it hadn't landed in. See `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and `src/render/spentCaseScatter.ts`, `spentCaseScatter`.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
