@@ -55,6 +55,13 @@ export const TEMPORAL_FIELDS = [
   { path: 'skills.combat.firearms.raiseRangeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.crouch.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'senses.light.throwChargeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  { path: 'senses.light.throwMinimumHoldSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'senses.light.throwArmSpeedMetresPerRealSecond',
+    clock: 'Real',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
   { path: 'body.infectionOnsetGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.antisepticWindowGameHours', clock: 'Game', unit: 'Hours', dimension: 'duration' },
   { path: 'body.knockoutSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

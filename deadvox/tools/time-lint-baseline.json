@@ -323,8 +323,7 @@
     },
     "ui/hud.ts": {
       "duration": 1,
-      "elapsed": 1,
-      "time": 3
+      "elapsed": 1
     },
     "ui/inventoryScreen.ts": {
       "duration": 1,

@@ -1178,6 +1178,9 @@ const SenseSchema = strictObject({
     lureRangeScale: Fraction,
     throwMaxDistanceMetres: Positive,
     throwChargeSimSeconds: PositiveSimSeconds,
+    throwMinimumHoldSimSeconds: PositiveSimSeconds,
+    throwArmSpeedMetresPerRealSecond: Positive,
+    throwArmEnergyJoules: Positive,
   }),
 });
 const RecipeItemSchema = ItemCountSchema;

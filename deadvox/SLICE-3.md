@@ -287,12 +287,18 @@ The "=12" was on the skill scale before d83 (#274). BR's later ruling, "dispersi
 > 2. yes
 > 3. press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse
 
+**BR, 2026-10-07 14:27:**
+
+> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
+
+BR approved weight-limited range at 14:35; atmospheric drag follows its separate issue, #368. With no handling job active, charge begins on press; a throw pressed during a rack or magazine job starts charging when that job finishes. The minimum remains a release gate. See `src/game/inputBindings.ts`, `player.throw`, and `src/game/play.ts`, `finishItemThrow`.
+
 Daylight overwhelms portable light wherever the sky is open, including outdoor shade; a roof or cellar leaves light mattering at noon. Brighter glowsticks keep their existing sensing reach. A lure gets one investigation so it creates risk without holding a shambler indefinitely; a nearby sound takes priority. Charging makes throw distance a deliberate choice, and cancellation prevents a mistaken release.
 
 **In:** Lights affect detection through the existing zombie attention owner (`src/core/zombies.ts`, `ZombieSystem`). The player has a headlamp and a throwable glowstick; light sensing does not add a second pursuit system.
 **Saves:** Headlamp and glowstick state use their existing item/light owners. Any persistent zombie attention target belongs to the existing saved zombie state and fingerprint; light visibility is derived from active sources and surrounding conditions.
-**Tests:** a visible light can become the beeline target; an investigation searches and returns without re-alerting to the same lure, and near sound outranks a lure. Daylight sky exposure gates player light and world lures locally, including open noon, noon indoors, open night and outdoor shade. A dropped or thrown active glowstick appears in the renderer's fixed light set and is a zombie sense source; stored lights that do not shine into the world are excluded. A longer charge throws farther, maximum range is bounded by tuning, right-click cancels, and the world trace stops at walls and ceilings before settling on solid ground. Headlamp state survives the existing item save round trip. Do not pin tuning values, content counts or seeded positions.
-**Done when:** visible light sources affect zombie attention only where plausible, the headlamp and charged glowstick are useful without replacing sound or sight, and dropped light state remains consistent across simulation and rendering.
+**Tests:** a visible light can become the beeline target; an investigation searches and returns without re-alerting to the same lure, and near sound outranks a lure. Daylight sky exposure gates player light and world lures locally, including open noon, noon indoors, open night and outdoor shade. A dropped or thrown active glowstick appears in the renderer's fixed light set and is a zombie sense source; stored lights that do not shine into the world are excluded. A primary-hand item throws only after the minimum simulation-time hold; shorter releases leave it in hand, and the recorded throw preserves its range and item state. A longer charge throws farther, capped at full charge. Heavier items travel no farther than lighter ones at equal charge; charged range remains tuned for light items. Right-click cancels, and the world trace stops at walls and ceilings before settling on solid ground. Headlamp state survives the existing item save round trip. Do not pin tuning values, content counts or seeded positions.
+**Done when:** visible light sources affect zombie attention only where plausible, the headlamp and charged glowstick are useful without replacing sound or sight, and dropped light state remains consistent across simulation and rendering. Held-item throws retain their state, with glowstick light still shining after landing.
 
 ### 3.7 Modular weapons
 
