@@ -48,7 +48,7 @@
 // (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
 import type { Material } from '@mobgen/core/body.ts';
-import { generate, type Realized, realize } from '@mobgen/core/generate.ts';
+import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import {
   type Mat3,
@@ -63,7 +63,6 @@ import {
 } from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
-  boneTransforms,
   boneTransformsInto,
   indexBonesByParent,
   type MutableTransform,
@@ -72,7 +71,6 @@ import {
 } from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
-import { crawlerPose } from '@mobgen/mob/crawler.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
@@ -123,8 +121,9 @@ import {
   stepRigidBody,
 } from '../core/rigidBody.ts';
 import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
-
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
+import { PLAYER } from '../game/player.ts';
+import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -159,6 +158,7 @@ export interface ZombieRenderer {
 const DEFAULT_POOL_SIZE = SHAMBLER_FIGURE_SEEDS.length;
 const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
 
+/** Keeps severing-energy tests within the selected fixture seed instead of allocating every renderer variant. */
 export const mobFigurePoolSizeThrough = (figureSeed: number): number => {
   const index = SHAMBLER_FIGURE_SEEDS.indexOf(figureSeed as (typeof SHAMBLER_FIGURE_SEEDS)[number]);
   if (index < 0) {
@@ -337,14 +337,31 @@ export const HEARING_GAZE_JITTER = {
   cyclesPerSimSecond: 0.6,
 } as const;
 
-export type PerceptionLabel = 'sees you' | 'hears you' | 'remembers' | 'unaware';
+export type PerceptionLabel = 'sees you' | 'hears you' | 'notices something' | 'remembers' | 'unaware';
 
-export const perceptionLabelFor = (zombie: Zombie, recentNearStimulus: boolean): PerceptionLabel => {
+const perceivedAtPlayer = (target: Vec3, playerEye: Vec3 | undefined, blockSize: number): boolean => {
+  if (!playerEye) {
+    return false;
+  }
+  // The stored point and eye position differ vertically; horizontal equality identifies a player source without source state.
+  // Allow one maximum-speed step between attention samples and the next render frame.
+  const tolerance = Math.max(blockSize / 1000, PLAYER.sprint / ZOMBIE_RATE);
+  return Math.hypot(target[0] * blockSize - playerEye[0], target[2] * blockSize - playerEye[2]) <= tolerance;
+};
+
+export const perceptionLabelFor = (
+  zombie: Zombie,
+  recentNearStimulus: boolean,
+  playerEye: Vec3 | undefined,
+  blockSize: number,
+): PerceptionLabel => {
   if (zombie.mode === 'chase') {
     return 'sees you';
   }
   if (recentNearStimulus) {
-    return 'hears you';
+    return zombie.lastPerceived && perceivedAtPlayer(zombie.lastPerceived, playerEye, blockSize)
+      ? 'hears you'
+      : 'notices something';
   }
   if (zombie.lastPerceived !== undefined || zombie.mode === 'investigate' || zombie.mode === 'search') {
     return 'remembers';
@@ -472,11 +489,6 @@ export class MobActorMeshes implements ZombieRenderer {
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
     const modelIds = ['shambler', 'runner', 'crawler'] as const;
     const templatesByModel = new Map(TEMPLATES.map((template) => [template.name, template]));
-    for (const model of modelIds) {
-      if (!templatesByModel.has(model)) {
-        throw new Error(`MobActorMeshes: mobgen has no '${model}' template`);
-      }
-    }
 
     const t0 = performance.now();
     const built: {
@@ -490,13 +502,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const figureSeeds = SHAMBLER_FIGURE_SEEDS.slice(0, poolSize);
     for (const model of modelIds) {
       for (const seed of figureSeeds) {
-        const generated =
-          model === 'crawler'
-            ? (() => {
-                const genome = generate(templatesByModel.get(model)!, seed);
-                return { genome, realized: realize(genome) };
-              })()
-            : zombieFigure(model, seed);
+        const generated = zombieFigure(model, seed);
         const { genome, realized } = generated;
         const extents = footRestExtents(realized.body.bones, realized.voxels);
         const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
@@ -715,7 +721,12 @@ export class MobActorMeshes implements ZombieRenderer {
       perceptionLabelRoot.append(label);
       this.perceptionLabels.set(id, label);
     }
-    const perception = perceptionLabelFor(zombie, this.hasRecentNearStimulus(state, zombie));
+    const perception = perceptionLabelFor(
+      zombie,
+      this.hasRecentNearStimulus(state, zombie),
+      this.playerEyePosition,
+      this.blockSize,
+    );
     label.textContent = perception;
     label.dataset.perceptionLabel = perception;
     this.labelProjection.set(placement.worldPos[0], placement.worldPos[1] + 1.8, placement.worldPos[2]).project(camera);
@@ -1416,19 +1427,13 @@ export class MobActorMeshes implements ZombieRenderer {
     const { dt: gazeFrameDelta = 0, presentationSimSeconds = 0 } = gazeFrame;
     const { position, worldPos, yaw, headYaw } = placement;
     const variant = this.variants[state.variantIndex]!;
-    const posed =
-      variant.model === 'crawler'
-        ? (() => {
-            const pose = crawlerPose(variant.realized);
-            return { pose, transforms: boneTransforms(variant.realized.body.bones, pose) };
-          })()
-        : posedShambler(
-            zombiePoseInputFor(zombie, state.id, this.blockSize, {
-              position,
-              facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
-              headYaw,
-            }),
-          );
+    const posed = posedShambler(
+      zombiePoseInputFor(zombie, state.id, this.blockSize, {
+        position,
+        facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
+        headYaw,
+      }),
+    );
     let { pose, transforms }: { pose: Pose; transforms: ReadonlyMap<string, Transform> } = posed;
     const hasHead = zombie.regions.head > 0 && !zombie.severed.includes('head');
     if (hasHead) {

@@ -4,7 +4,7 @@ read_if:
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - "you're tracking #308's playtest 1 apex enemy scope and design questions"
   - you're interpreting BR's camera-directed gaze ruling for zombie models
-  - you're tracking d130 crawler gait, hit response or generation validation
+  - you're changing crawler gait, hit response or generation validation
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
   - you're changing or measuring input-replay capture and playback
@@ -355,7 +355,7 @@ After seeing the stumps, BR's question was whether they read correctly despite t
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
-BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). d106-13 wires that approved static crawler pose into detailed rendering and adds render-only gaze. The drag gait and in-game hit response remain d130 work, after #325 merges.
+BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). The crawler's arm-drag gait and runner/crawler flinches use existing simulation state, drive posed hitboxes, add no saved state, and change the simulation fingerprint so older replays do not carry over. Crawler hitboxes follow the prone body. Gameplay stagger, slowdown and knockdown remain open for BR. Mobgen validates crawler generation using voxel-derived ground contacts through `mobgen/src/core/generate.ts`, `resolveSupportBones`.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 
