@@ -56,7 +56,7 @@ describe('made light burn state', () => {
 
   it('burns a torch out at the same time in one step or one-second steps', () => {
     const torch = registry.items.get('torch')!.light!;
-    const duration = torch.burnTime! * 3600;
+    const duration = torch.burnTimeGameHours!;
     const caught = new Inventory(registry).create('torch');
     const live = new Inventory(registry).create('torch');
     expect(toggleLight(registry, caught, 0)).toBeUndefined();
@@ -68,7 +68,12 @@ describe('made light burn state', () => {
       expect(expired).toBe(second === duration);
       expect(live.on).toBe(second < duration);
     }
-    expect([caught.on, caught.burnRemaining, live.on, live.burnRemaining]).toEqual([false, 0, false, 0]);
+    expect([caught.on, caught.burnRemainingGameSeconds, live.on, live.burnRemainingGameSeconds]).toEqual([
+      false,
+      0,
+      false,
+      0,
+    ]);
   });
 
   it('keeps pile presentation stable while a glowstick burns, then invalidates it when it expires', () => {
@@ -82,7 +87,7 @@ describe('made light burn state', () => {
     expect(glowstick.on).toBe(true);
     expect(inventory.version).toBe(version);
 
-    const expiresAt = glowstick.litAt! + glowstick.burnRemaining! * 3600;
+    const expiresAt = glowstick.litAtGameTimestamp! + glowstick.burnRemainingGameSeconds!;
     sim.setDebugCalendarTime(expiresAt - 1.5 * sim.clock.ratio);
     sim.scheduler.advance(1);
     expect(glowstick.on).toBe(true);
@@ -93,19 +98,19 @@ describe('made light burn state', () => {
   });
 
   it('preserves the remaining time when a candle is doused and relit', () => {
-    const burnTime = registry.items.get('candle')!.light!.burnTime!;
-    const duration = burnTime * 3600;
+    const burnTime = registry.items.get('candle')!.light!.burnTimeGameHours!;
+    const duration = burnTime;
     const candle = new Inventory(registry).create('candle');
     expect(toggleLight(registry, candle, 0)).toBeUndefined();
     expect(drainBurnLight(candle, duration / 2)).toBe(false);
     expect(toggleLight(registry, candle, duration / 2)).toBeUndefined();
     expect(candle.on).toBe(false);
-    expect(candle.burnRemaining).toBeCloseTo(burnTime / 2, 9);
+    expect(candle.burnRemainingGameSeconds).toBeCloseTo(burnTime / 2, 9);
 
     expect(toggleLight(registry, candle, duration / 2)).toBeUndefined();
     expect(drainBurnLight(candle, duration)).toBe(true);
     expect(candle.on).toBe(false);
-    expect(candle.burnRemaining).toBe(0);
+    expect(candle.burnRemainingGameSeconds).toBe(0);
   });
 
   it('spends lighter fuel to ignite a torch and extinguishes a candle on sprint', () => {
@@ -125,7 +130,7 @@ describe('made light burn state', () => {
     expect(candle.on).toBe(true);
     survival.setSprinting(true);
     expect(candle.on).toBe(false);
-    expect(candle.burnRemaining).toBeGreaterThan(0);
+    expect(candle.burnRemainingGameSeconds).toBeGreaterThan(0);
   });
 
   it('requires the firestarter in the other hand, not merely within reach', () => {
@@ -152,7 +157,7 @@ describe('made light burn state', () => {
   });
 
   it('applies each burn light’s declared stow and sprint rules', () => {
-    const burnLights = [...registry.items.values()].filter(({ light }) => light?.burnTime !== undefined);
+    const burnLights = [...registry.items.values()].filter(({ light }) => light?.burnTimeGameHours !== undefined);
     expect(burnLights.length).toBeGreaterThan(0);
 
     for (const definition of burnLights) {
@@ -208,7 +213,7 @@ describe('made light burn state', () => {
     const glowstick = { uid: 1, type: 'glowstick', count: 1, condition: 1 };
     expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
     expect(toggleLight(registry, glowstick, 1)).toBe("It can't be doused");
-    expect(drainBurnLight(glowstick, spec.burnTime! * 3600)).toBe(true);
-    expect(toggleLight(registry, glowstick, spec.burnTime! * 3600)).toBe("It can't be lit again");
+    expect(drainBurnLight(glowstick, spec.burnTimeGameHours!)).toBe(true);
+    expect(toggleLight(registry, glowstick, spec.burnTimeGameHours!)).toBe("It can't be lit again");
   });
 });

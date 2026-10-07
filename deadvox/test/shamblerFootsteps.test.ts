@@ -65,7 +65,8 @@ const addWalker = (system: ZombieSystem, store: MapEntityStore<Zombie>, position
   zombie.modeTimer = 100;
   zombie.lastPerceived = [40, position[1], position[2]];
   zombie.strollHeading = [1, 0, 0];
-  zombie.horizontalSpeed = mode === 'stroll' ? SHAMBLER.speed.wander : SHAMBLER.speed.chase;
+  zombie.horizontalSpeed =
+    mode === 'stroll' ? SHAMBLER.speed.wanderMetresPerSimSecond : SHAMBLER.speed.chaseMetresPerSimSecond;
   zombie.lurchValue = 1;
   zombie.stumbleFactor = 1;
   return zombie;
@@ -97,7 +98,7 @@ describe('shambler footsteps', () => {
     walker.mode = 'stroll';
     walker.modeTimer = 100;
     walker.strollHeading = [1, 0, 0];
-    walker.horizontalSpeed = SHAMBLER.speed.wander;
+    walker.horizontalSpeed = SHAMBLER.speed.wanderMetresPerSimSecond;
     run(system, 2);
     const strollSteps = played.length;
     expect(strollSteps).toBeGreaterThan(0);

@@ -56,7 +56,7 @@ describe('using what you hold', () => {
     expect(t.survival.use(rag)).toBeDefined();
     expect(t.survival.useFromQuickbar(rag)).toBeDefined();
 
-    t.sim.body.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+    t.sim.body.advance(BODY_TUNING_FIXTURE.knockoutSimSeconds);
 
     expect(t.sim.body.unconscious).toBe(false);
     expect(t.survival.use(rag)).toBeUndefined();
@@ -97,7 +97,8 @@ describe('using what you hold', () => {
     const pocketed = inventory.create('chocolate_bar');
     expect(survival.use(pocketed)).toBe('Take the chocolate bar in your hands first');
     const apple = hold('apple');
-    apple.made = -300 * SECONDS_PER_HOUR; // picked long before the world began
+    apple.madeAtGameTimestamp = 0;
+    sim.setDebugCalendarTime(300 * SECONDS_PER_HOUR);
     survival.use(apple);
     queue.tick(EAT_TIME + 0.1);
     expect(sim.needs.calories).toBe(SPAWN_NEEDS.calories);

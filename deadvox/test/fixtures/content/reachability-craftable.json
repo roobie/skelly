@@ -3,7 +3,7 @@
     {
       "id": "candle",
       "result": { "item": "fixture_unfound", "count": 1 },
-      "time": 1,
+      "timeGameMinutes": 1,
       "skills": { "crafting": 0 },
       "qualities": {},
       "components": [[{ "item": "rag", "count": 1 }]]

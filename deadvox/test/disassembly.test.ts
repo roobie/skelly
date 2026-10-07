@@ -7,9 +7,10 @@ import { disassemblyOutputs, planDisassembly } from '../src/core/disassembly.ts'
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach } from '../src/core/reach.ts';
 import type { ItemDef } from '../src/core/schema.ts';
+import { gameMinutes } from '../src/core/time.ts';
 
 const definition = (yields: NonNullable<ItemDef['disassembly']>['yields']): ItemDef =>
-  ({ disassembly: { time: 1, skill: 'crafting', yields } }) as ItemDef;
+  ({ disassembly: { timeGameMinutes: gameMinutes(1), skill: 'crafting', yields } }) as ItemDef;
 
 describe('authored disassembly yields', () => {
   it('uses skill-0 and top-skill fractions with each yield’s declared integer rounding', () => {
@@ -47,7 +48,7 @@ describe('authored disassembly yields', () => {
       ...radio,
       salvage: undefined,
       disassembly: {
-        time: 1,
+        timeGameMinutes: gameMinutes(1),
         skill: 'crafting',
         yields: [
           {

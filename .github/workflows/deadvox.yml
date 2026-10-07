@@ -61,6 +61,7 @@ jobs:
       - run: npm ci
       - run: npm ci --prefix tools/lit-check
       - run: timeout 300 npm run lint:lit
+      - run: timeout 300 npm run lint:time
       - run: timeout 300 npm run typecheck
       - name: Full test suite (includes the save budget fixture once)
         run: timeout 300 npm test -- --maxWorkers=2

@@ -205,7 +205,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
                     intensity: light.intensity,
                     radius: light.radius,
                     seenFrom: light.seenFrom,
-                    burnTime: light.burnTime,
+                    burnTimeGameHours: light.burnTimeGameHours,
                   },
                 ];
               }),
