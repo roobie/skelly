@@ -119,7 +119,7 @@ const advanceSessionAim = ({
   tuning,
   skillLevel,
   firearmUid,
-  time,
+  timeSimSeconds,
   dt,
   velocity,
   blockSize,
@@ -133,7 +133,7 @@ const advanceSessionAim = ({
   tuning: FirearmsCombatTuning;
   skillLevel: number;
   firearmUid: number | undefined;
-  time: number;
+  timeSimSeconds: number;
   dt: number;
   velocity: Vec3;
   blockSize: number;
@@ -142,7 +142,7 @@ const advanceSessionAim = ({
   aimSway: number;
   firing: boolean;
 }): void => {
-  const shotKind = sessionFirearmsShotKind(firearms, firearmUid, time);
+  const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
   const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
   aim.advance({
     dt,
@@ -647,7 +647,7 @@ export const createSession = (options: SessionOptions) => {
       tuning: currentFirearmsCombatTuning(),
       skillLevel: firearmsSkillLevel(character),
       firearmUid: firearmInHands()?.uid,
-      time: sim.time,
+      timeSimSeconds: sim.time,
       dt,
       velocity: body.vel,
       blockSize: s,
