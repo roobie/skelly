@@ -26,17 +26,28 @@ const FOUNDATION_TOLERANCE = 1;
 type LayoutBuilding = SiteLayoutDef['buildings'][number];
 
 /** Why this item can't be fixed loot in a container rolling `loot`, or undefined when it can. */
-const fixedItemIssue = (registry: Registry, item: string, loot: string | undefined): string | undefined => {
+const fixedItemIssue = (
+  registry: Registry,
+  military: ReadonlySet<string>,
+  item: string,
+  loot: string | undefined,
+): string | undefined => {
   if (!registry.items.has(item)) {
     return `no item "${item}"`;
   }
-  return militaryLootItems(registry).has(item) && !registry.loot.get(loot ?? '')?.military
+  return military.has(item) && !registry.loot.get(loot ?? '')?.military
     ? `"${item}" is military loot only; place it where a "military" table rolls`
     : undefined;
 };
 
+interface LootContext {
+  readonly registry: Registry;
+  /** `militaryLootItems`, computed once per layout. */
+  readonly military: ReadonlySet<string>;
+}
+
 const fixedLootIssues = (
-  registry: Registry,
+  { registry, military }: LootContext,
   building: LayoutBuilding,
   index: number,
   compiled: CompiledTemplate,
@@ -62,7 +73,7 @@ const fixedLootIssues = (
       issues.push([`${path}.at`, `furniture at ${key} has no container`]);
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
-      const issue = fixedItemIssue(registry, fixed.item, piece.loot);
+      const issue = fixedItemIssue(registry, military, fixed.item, piece.loot);
       if (issue !== undefined) {
         issues.push([`${path}.items[${itemIndex}].item`, issue]);
       }
@@ -83,6 +94,7 @@ const foundationFits = (layout: SiteLayoutDef, building: SiteLayoutDef['building
 
 export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry): [string, string][] => {
   const issues: [string, string][] = [];
+  const loot: LootContext = { registry, military: militaryLootItems(registry) };
   if (['hamlet', 'city', 'forest'].includes(layout.id)) {
     issues.push(['.id', 'reserved built-in site id']);
   }
@@ -143,7 +155,7 @@ export const authoredLayoutIssues = (layout: SiteLayoutDef, registry: Registry):
       return; // checkTemplates reports the palette; the placement can't compile without it.
     }
     const placement = placementOf(registry, building);
-    issues.push(...fixedLootIssues(registry, building, i, placement.template));
+    issues.push(...fixedLootIssues(loot, building, i, placement.template));
     if (placement.origin[1] * HAMLET_BLOCK_SIZE < WORLD_BOTTOM_M) {
       issues.push([`.buildings[${i}].position`, 'cellar extends below the world floor']);
     }

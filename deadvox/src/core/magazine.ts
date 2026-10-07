@@ -33,8 +33,8 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
 };
 
 /**
- * Military loot only: the magazine-fed rifles, the magazines and cartridges of their calibres, and boxes of those
- * cartridges. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
+ * Military loot only: the magazine-fed rifles, the magazines and cartridges of their calibres, and packages that
+ * unpack into any of them, however deeply nested. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
  */
 export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
   const calibres = new Set<string>();
@@ -52,11 +52,16 @@ export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
       items.add(id);
     }
   }
-  for (const [id, def] of registry.items) {
-    if (def.unpack && items.has(def.unpack.item)) {
-      items.add(id);
+  // A box may hold another box; repeat until no package joins, so content order can't hide one.
+  let before: number;
+  do {
+    before = items.size;
+    for (const [id, def] of registry.items) {
+      if (def.unpack && items.has(def.unpack.item)) {
+        items.add(id);
+      }
     }
-  }
+  } while (items.size !== before);
   return items;
 };
 
