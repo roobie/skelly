@@ -306,6 +306,28 @@ try {
     hiddenReadout.height - hiddenReadout.bottom < hiddenReadout.top - hiddenReadout.middle,
     'without a quickbar the readout stays near the bottom edge',
   );
+  await pressAction(page, 'debug.build-toggle');
+  await page.waitForFunction(() => globalThis.fullAutoRuntime.debugTools.buildOn);
+  const buildReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    const hotbar = document.querySelector('#hotbar');
+    const palette = hotbar.getBoundingClientRect();
+    return {
+      text: document.querySelector('#debug-look-readout').textContent.trim(),
+      hidden: hotbar.hidden || getComputedStyle(hotbar).display === 'none',
+      readoutBottom: readout.bottom,
+      paletteTop: palette.top,
+      paletteHeight: palette.height,
+    };
+  });
+  assert.notEqual(buildReadout.text, '', 'build-mode block readout is populated');
+  assert.equal(buildReadout.hidden, false, 'build palette is shown');
+  assert.ok(buildReadout.paletteHeight > 0, 'build palette has visible bounds');
+  assert.ok(buildReadout.readoutBottom <= buildReadout.paletteTop, 'readout clears the build palette');
+  await pressAction(page, 'debug.build-toggle');
+  await page.waitForFunction(() => !globalThis.fullAutoRuntime.debugTools.buildOn);
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
     globalThis.fullAutoProbe.f2DefaultPrevented = false;
