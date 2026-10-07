@@ -1220,6 +1220,11 @@ try {
       'hand',
     throwFixture.uid,
   );
+  const throwsBeforeShortRelease = await page.evaluate(
+    () =>
+      globalThis.primaryActionTest.inputRecorder.copyInputs().actions.filter((action) => action.action === 'item.throw')
+        .length,
+  );
   const shortStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   const shortRelease = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
@@ -1241,10 +1246,13 @@ try {
   assert.equal(shortThrowResult.location?.kind, 'hand', 'a short throw release leaves the item held');
   assert.equal(shortThrowResult.location?.side, shortThrowResult.expectedSide, 'the primary-hand item stays held');
   assert.equal(
-    await page.evaluate(() =>
-      globalThis.primaryActionTest.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw'),
+    await page.evaluate(
+      () =>
+        globalThis.primaryActionTest.inputRecorder
+          .copyInputs()
+          .actions.filter((action) => action.action === 'item.throw').length,
     ),
-    false,
+    throwsBeforeShortRelease,
     'a short release records no throw',
   );
   const glowstickUseRefusal = await page.evaluate((uid) => {
