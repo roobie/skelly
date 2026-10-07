@@ -12,6 +12,7 @@ import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
 import type { MeleeResult, ZombieAim } from '../core/zombies.ts';
 import type { DebugHooks, DebugModule, DebugNoclipStep, DebugReadout, DebugRuntime } from '../game/debugInterface.ts';
+import { firearmAimTarget } from '../game/firearmAim.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
@@ -1076,21 +1077,33 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     nextShotTargetRangeUpdate = now + 400;
     const ray = crosshairRay;
     const { engine } = hooks;
-    const target =
-      ray?.active &&
-      crosshairTarget(
-        {
-          world: engine.world,
-          registry: engine.registry,
-          entities: engine.entities,
-          isSolid: engine.isSolid,
-          blockSize: engine.config.scale.blockSize,
-        },
-        ray.eye,
-        ray.dir,
-        SHOT_TRACE_RANGE_BLOCKS,
-      );
-    targetRangeText = target ? `Target range: ${target.distanceMetres.toFixed(1)} m` : '';
+    const target = ray?.active
+      ? crosshairTarget(
+          {
+            world: engine.world,
+            registry: engine.registry,
+            entities: engine.entities,
+            isSolid: engine.isSolid,
+            blockSize: engine.config.scale.blockSize,
+          },
+          ray.eye,
+          ray.dir,
+          SHOT_TRACE_RANGE_BLOCKS,
+        )
+      : undefined;
+    const zombies = hooks.zombies();
+    const aimTarget =
+      ray?.active && zombies
+        ? firearmAimTarget({
+            eye: ray.eye,
+            direction: ray.dir,
+            surface: target,
+            zombies,
+            blockSize: engine.config.scale.blockSize,
+          })
+        : undefined;
+    const distanceMetres = aimTarget?.distanceMetres ?? target?.distanceMetres;
+    targetRangeText = distanceMetres === undefined ? '' : `Target range: ${distanceMetres.toFixed(1)} m`;
   }
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell rendering keeps UI wiring and readout refresh together.
   function drawShell(): void {

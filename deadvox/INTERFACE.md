@@ -221,11 +221,18 @@ handling; melee combat governs block success. The tiered practice contract is in
   `src/render/impactEffects.ts`, `ImpactEffects`. BR also said on 2026-10-05:
   "also: in debug mode we should render the rage to target down by the direction
   gizmo so that i can say which range i'm at". The readout is beside the
-  gizmo in `src/debug/index.ts`, `attachDebugTools`. The range comes from
-  `src/core/crosshairTarget.ts`, `crosshairTarget`, so it follows the world
-  surface under the crosshair rather than measuring an authored target's
-  centre. Hip-fire converges on that point while retaining aim-frame sway and
-  firearm spread.
+  gizmo in `src/debug/index.ts`, `attachDebugTools`. BR reported, “Also,
+  "hipfire" is way off the mark (cross hair / center of screen) - i.e. when
+  simply readied the rifle and shooting one single round”, and said of the range
+  “the number on the screenshot should be a maximum of sub-1-meter”. The resting
+  muzzle-to-camera offset was systematic, separate from intended skill-0 spread.
+  Hip-fire converges on the nearer of the world surface and posed zombie region
+  under the crosshair without changing the reviewed ready pose; aim-frame sway
+  and firearm spread remain. The range readout uses that same target. The
+  looked-at tooltip also stops at solid geometry, matching shot occlusion;
+  `src/debug/lookedAt.ts`, `describeLookedAt`, uses the solid-world query.
+  `src/game/firearmHandling.ts`, `resolveShotAim`, leaves ADS on the muzzle line
+  until g42 supplies sight data.
 - **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
   a build) shows the hint channel and nothing from `src/debug`, so a tester sees
   the game close to how it ships, with the instructions it still needs.

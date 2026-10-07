@@ -23,6 +23,25 @@ export interface CrosshairTarget {
   readonly block?: Vec3;
 }
 
+export const crosshairAimPoint = (
+  origin: Vec3,
+  direction: Vec3,
+  target: CrosshairTarget | undefined,
+  nearerDistanceBlocks?: number,
+): Vec3 => {
+  const magnitude = Math.hypot(...direction);
+  const dir: Vec3 = magnitude > 0 ? (direction.map((component) => component / magnitude) as Vec3) : [0, 0, -1];
+  const candidates = [
+    target?.distanceBlocks ?? SHOT_TRACE_RANGE_BLOCKS,
+    nearerDistanceBlocks ?? SHOT_TRACE_RANGE_BLOCKS,
+  ];
+  const distance = Math.min(
+    SHOT_TRACE_RANGE_BLOCKS,
+    ...candidates.filter((value) => Number.isFinite(value) && value > 0),
+  );
+  return origin.map((value, axis) => value + dir[axis]! * distance) as Vec3;
+};
+
 export const crosshairTarget = (
   { world, registry, entities, isSolid, blockSize }: CrosshairTargetWorld,
   origin: Vec3,

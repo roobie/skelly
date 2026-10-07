@@ -543,7 +543,16 @@ plain box in your hands. Files are small, and follow
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
   held-firearm presentation, so the weapon does not visibly aim somewhere other
-  than its shot ray. Aim state is saved because it can change hit outcomes. BR's
+  than its shot ray. Aim state is saved because it can change hit outcomes. BR
+  reported, “Also, "hipfire" is way off the mark (cross hair / center of screen)
+  - i.e. when simply readied the rifle and shooting one single round”; of the
+  debug Target range, BR said “the number on the screenshot should be a maximum
+  of sub-1-meter”. The resting muzzle-to-camera offset was systematic, separate
+  from skill-0 spread. `resolveShotAim` converges hip-fire on the nearer of the
+  crosshair surface and the posed zombie region, without re-posing the gun and
+  changing its reviewed ready pose; `crosshairTarget` supplies the surface hit.
+  The debug Target range uses that same nearer target. ADS stays on the muzzle
+  line until g42 adds sight data. BR's
   2026-10-05 look at the range found that "the gun on screen is climbing (and
   plateauing)" and ruled, "at the ~7° screen limit -> start scrolling the screen
   with it / no plateauing." While an automatic trigger is held, recoil does not
@@ -580,8 +589,9 @@ plain box in your hands. Files are small, and follow
   per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
   spread and adds no firearm cone. This reuses the already saved player pitch, so no
   aim-state field or save-schema change is needed. See
-  `src/game/firearmHandling.ts`, `FirearmMechanics.fire` and
-  `firearmHandlingFor`, `src/core/pellets.ts`, `coneDirection`,
+  `src/game/firearmHandling.ts`, `resolveShotAim`, `src/core/crosshairTarget.ts`,
+  `crosshairTarget`, `src/core/zombies.ts`, `ZombieSystem.aimAt`,
+  `src/core/pellets.ts`, `coneDirection`,
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
   `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
   `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,

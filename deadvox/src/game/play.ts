@@ -11,7 +11,7 @@ import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
-import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
+import { crosshairTarget } from '../core/crosshairTarget.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickThrow.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
@@ -69,6 +69,7 @@ import {
 import type { DebugModule, DebugRuntime } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
+import { firearmAimTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import { Input } from './input.ts';
@@ -1389,8 +1390,13 @@ export const startPlay = (
       shotEye,
       centerDirection,
     );
-    const aimPoint =
-      target?.point ?? (shotEye.map((value, axis) => value + centerDirection[axis]! * SHOT_TRACE_RANGE_BLOCKS) as Vec3);
+    const aimPoint = firearmAimTarget({
+      eye: shotEye,
+      direction: centerDirection,
+      surface: target,
+      zombies: zombieSystem,
+      blockSize: s,
+    }).point;
     const fired = firearms.fire({
       aimFrame: aim.frame,
       aimPoint,

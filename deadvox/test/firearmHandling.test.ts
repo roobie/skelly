@@ -12,6 +12,8 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { posedRegionHitDistance } from '../src/core/zombieRegions.ts';
+import { firearmAimTarget } from '../src/game/firearmAim.ts';
 import {
   type DebugFirearmShotInput,
   FirearmMechanics,
@@ -23,6 +25,7 @@ import {
 import { DebugFirearmTrigger } from '../src/game/firearmTrigger.ts';
 import { actionPartPaths, cloneHeldModel, sampleActionStroke } from '../src/render/firearmModel.ts';
 import { prepareModel } from '../src/render/models.ts';
+import { farWallTarget, zombieAimFixture } from './zombieAimFixture.ts';
 
 const BASE = 'src/content/base';
 const base = readdirSync(BASE)
@@ -254,7 +257,6 @@ describe('debug firearm handling', () => {
       throw new Error('Hip-fire did not publish a trajectory');
     }
     const firedTrajectory = trajectory;
-    expect(firedTrajectory.origin).toEqual(eye);
     const direction = firedTrajectory.directions[0]!;
     const alongRay = target.point.reduce(
       (sum, value, axis) => sum + (value - firedTrajectory.origin[axis]!) * direction[axis]!,
@@ -264,6 +266,62 @@ describe('debug firearm handling', () => {
       ...firedTrajectory.origin.map((value, axis) => value + alongRay * direction[axis]! - target.point[axis]!),
     );
     expect(miss).toBeLessThan(0.05);
+  });
+
+  it('hip-fires through the posed zombie region under the crosshair before a far wall', () => {
+    const eye: [number, number, number] = [0, 4, 0];
+    const yaw = 0;
+    const pitch = -0.08;
+    const centerDirection = aimDirection(yaw, pitch, NEUTRAL_AIM);
+    const wall = farWallTarget(eye, centerDirection, pose.blockSize);
+    const { system: zombies, target: zombie } = zombieAimFixture(registry, eye, centerDirection, pose.blockSize);
+    expect(zombie.distanceMetres).toBeLessThan(wall.distanceMetres);
+    const aimTarget = firearmAimTarget({
+      eye,
+      direction: centerDirection,
+      surface: wall,
+      zombies,
+      blockSize: pose.blockSize,
+    });
+    expect(aimTarget.distanceMetres).toBeCloseTo(zombie.distanceMetres);
+    const aimPoint = aimTarget.point;
+    const inventory = new Inventory(registry);
+    const rifle = inventory.create('debug_rifle_ak');
+    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the test rifle');
+    }
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: pose.blockSize,
+      isSolid: () => false,
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...eye] }),
+      onEjection: () => undefined,
+      onTrajectory: (shotTrajectory) => {
+        trajectory = shotTrajectory;
+      },
+      firearmsSkillLevel: () => SKILL_LEVEL_MAX,
+    });
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye,
+        yaw,
+        pitch,
+        aimFrame: NEUTRAL_AIM,
+        aimPoint,
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    if (!trajectory) {
+      throw new Error('Hip-fire did not publish a trajectory');
+    }
+    expect(
+      posedRegionHitDistance(zombie.boxes, trajectory.origin, trajectory.directions[0]!, pose.blockSize),
+    ).toBeDefined();
   });
 
   it('traces from the eye when solid geometry blocks the eye-to-muzzle path', () => {

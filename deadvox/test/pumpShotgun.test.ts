@@ -15,6 +15,8 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
+import { posedRegionHitDistance } from '../src/core/zombieRegions.ts';
+import { firearmAimTarget } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -24,6 +26,7 @@ import {
 } from '../src/game/firearmHandling.ts';
 import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { farWallTarget, zombieAimFixture } from './zombieAimFixture.ts';
 
 const base = 'src/content/base';
 const { registry, issues } = buildRegistry(
@@ -512,6 +515,34 @@ describe('real pump ammunition', () => {
           Math.cos(BUCK_HALF_ANGLE) - 1e-9,
       ),
     ).toBe(true);
+  });
+
+  it('keeps the pump pellet centre on a zombie under the crosshair before a far wall', () => {
+    const f = fixture(registry, () => SKILL_LEVEL_MAX);
+    f.load(0);
+    f.rack(1);
+    const direction = aimDirection(pose.yaw, pose.pitch, pose.aimFrame);
+    const { system: zombies, target: zombie } = zombieAimFixture(registry, pose.eye, direction, pose.blockSize);
+    const wall = farWallTarget(pose.eye, direction, pose.blockSize);
+    expect(zombie.distanceMetres).toBeLessThan(wall.distanceMetres);
+    const target = firearmAimTarget({
+      eye: pose.eye,
+      direction,
+      surface: wall,
+      zombies,
+      blockSize: pose.blockSize,
+    });
+    expect(target.distanceMetres).toBeCloseTo(zombie.distanceMetres);
+    expect(
+      f.mechanics.fire({ ...pose, aimPoint: target.point, item: f.gun, seed: 71, simTime: 3, debugMode: false }),
+    ).toBe(true);
+    const shot = f.shots[0]!;
+    const centre = shot.directions.reduce((sum, ray) => sum.map((value, axis) => value + ray[axis]!) as Vec3, [
+      0, 0, 0,
+    ] as Vec3);
+    const centreLength = Math.hypot(...centre);
+    const centreDirection = centre.map((value) => value / centreLength) as Vec3;
+    expect(posedRegionHitDistance(zombie.boxes, shot.origin, centreDirection, pose.blockSize)).toBeDefined();
   });
 
   it('uses cartridge pellet count/diameter and a distinct deterministic shot stream', () => {
