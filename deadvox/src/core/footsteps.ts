@@ -83,7 +83,10 @@ export const advanceFootsteps = (clock: FootstepClock, gait: PlayerGait, travell
   const afterFirst = travelledMetres - remaining;
   const steps = 1 + Math.floor(afterFirst / stepDistance);
   const distanceUntilStep = stepDistance - (afterFirst % stepDistance);
-  return { clock: { gait, distanceUntilStep, stridePhase: normalizedStridePhase, stepIndex: clock.stepIndex + steps }, steps };
+  return {
+    clock: { gait, distanceUntilStep, stridePhase: normalizedStridePhase, stepIndex: clock.stepIndex + steps },
+    steps,
+  };
 };
 
 export interface ShamblerFootstepClock {

@@ -3,10 +3,10 @@ import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
-import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
-import { PLAYER } from '../src/game/player.ts';
 import { advanceFootsteps, initialFootstepClock, STEP_DISTANCE_METRES } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { PLAYER } from '../src/game/player.ts';
 
 const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;
 const pumpHandling = BUNDLED_CONTENT.registry.items.get('pump_shotgun')!.firearm!.skillZeroHandling!;
@@ -19,18 +19,17 @@ const createAim = (
   wobbleLimitRadians = stanceTuning.wobbleLimitRadians,
   jitterShare = stanceTuning.wobbleJitterShare,
 ) =>
-  new AimController(
+  new AimController({
     wobbleLimitRadians,
-    {
+    wobbleShape: {
       archPower: stanceTuning.wobbleLuneArchPower,
       phaseOffsetRadians: stanceTuning.wobbleLunePhaseOffsetRadians,
       jitterShare,
       jitterAmplitudeFraction: stanceTuning.wobbleJitterAmplitudeFraction,
     },
-    Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff),
-    undefined,
+    jitterSeed: Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff),
     variance,
-  );
+  });
 
 type AimStepOverrides = Partial<Parameters<AimController['advance']>[0]> & { stridePhase?: number };
 
@@ -305,7 +304,7 @@ const readiedWalkWobble = (level: number): number => {
   let clock = initialFootstepClock();
   let peak = 0;
   for (let tick = 0; tick < 240; tick++) {
-    clock = advanceFootsteps(clock, 'walking', speed / 60).clock;
+    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60));
     const frame = aim.advance(
       step({
         velocity: [0, 0, -speed / blockSize],
@@ -355,7 +354,7 @@ it('step-clock wobble forms an open, concave-down lune once per stride', () => {
 
 it('seeded jitter keeps the configured share of the walking path off the lune', () => {
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
-  const blockSize = step().blockSize;
+  const { blockSize } = step();
   const samplesPerStep = 16;
   const sampledSteps = 128;
   const sampleDistance = STEP_DISTANCE_METRES.walking / samplesPerStep;
@@ -366,7 +365,7 @@ it('seeded jitter keeps the configured share of the walking path off the lune', 
   let samples = 0;
   for (let stepIndex = 0; stepIndex < sampledSteps; stepIndex++) {
     for (let sample = 0; sample < samplesPerStep; sample++) {
-      clock = advanceFootsteps(clock, 'walking', sampleDistance).clock;
+      ({ clock } = advanceFootsteps(clock, 'walking', sampleDistance));
       const aimStep = step({
         velocity: [0, 0, -speed / blockSize],
         stridePhase: clock.stridePhase,
@@ -375,21 +374,21 @@ it('seeded jitter keeps the configured share of the walking path off the lune', 
       const withJitter = jittered.advance(aimStep);
       const onLune = lune.advance(aimStep);
       if (Math.hypot(withJitter.yaw - onLune.yaw, withJitter.pitch - onLune.pitch) > 1e-10) {
-        offLune++;
+        offLune += 1;
       }
-      samples++;
+      samples += 1;
     }
   }
   const observedShare = offLune / samples;
   const expectedShare = stanceTuning.wobbleJitterShare;
-  const samplingMargin =
-    1 / samplesPerStep + 3 * Math.sqrt((expectedShare * (1 - expectedShare)) / sampledSteps);
+  const samplingMargin = 1 / samplesPerStep + 3 * Math.sqrt((expectedShare * (1 - expectedShare)) / sampledSteps);
   expect(Math.abs(observedShare - expectedShare)).toBeLessThan(samplingMargin);
 });
 
 it('eases seeded jitter within the lune speed bound across footfalls', () => {
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const stepDistance = STEP_DISTANCE_METRES.walking;
+  const { blockSize } = step();
   const travelPerFrame = speed / 60;
   const jittered = createAim();
   const lune = createAim(1, stanceTuning.wobbleLimitRadians, 0);
@@ -398,9 +397,9 @@ it('eases seeded jitter within the lune speed bound across footfalls', () => {
   let previousLune: ReturnType<AimController['advance']> | undefined;
   let lunePeak = 0;
   for (let tick = 0; tick < 480; tick++) {
-    clock = advanceFootsteps(clock, 'walking', travelPerFrame).clock;
+    ({ clock } = advanceFootsteps(clock, 'walking', travelPerFrame));
     const aimStep = step({
-      velocity: [0, 0, -speed / step().blockSize],
+      velocity: [0, 0, -speed / blockSize],
       stridePhase: clock.stridePhase,
       stepIndex: clock.stepIndex,
     });
@@ -432,13 +431,14 @@ it('wobble can use its larger content bound without merging it into recoil', () 
   const { variance } = pumpSkillEffects(0);
   const aim = createAim(variance);
   const speed = 3;
+  const { blockSize } = step();
   let clock = initialFootstepClock();
   let peak = 0;
   for (let tick = 0; tick < 240; tick++) {
-    clock = advanceFootsteps(clock, 'walking', speed / 60).clock;
+    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60));
     const frame = aim.advance(
       step({
-        velocity: [0, 0, -speed / step().blockSize],
+        velocity: [0, 0, -speed / blockSize],
         variance,
         stridePhase: clock.stridePhase,
         stepIndex: clock.stepIndex,

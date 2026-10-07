@@ -337,16 +337,16 @@ const heldGun = async (type: string) => {
 it('keeps over-limit view pitch changes in ADS while the held pose takes the recoil frame', async () => {
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
   const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
-  const aim = new AimController(
-    tuning.wobbleLimitRadians,
-    {
+  const aim = new AimController({
+    wobbleLimitRadians: tuning.wobbleLimitRadians,
+    wobbleShape: {
       archPower: tuning.wobbleLuneArchPower,
       phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
       jitterShare: tuning.wobbleJitterShare,
       jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
     },
-    Rng.stream(73, 'rifle-view-tests').int(0, 0xff_ff_ff_ff),
-  );
+    jitterSeed: Rng.stream(73, 'rifle-view-tests').int(0, 0xff_ff_ff_ff),
+  });
   aim.recordShot(1, 0.3);
   aim.advance({
     dt: 1 / 60,

@@ -60,16 +60,27 @@ const boundVector = (yaw: number, pitch: number, limit: number): AimFrame => {
 };
 
 // Keep gait/look wobble separate so its larger content bound cannot enlarge recoil's view-pitch limit.
-const frameFromState = (
-  state: AimState,
-  speed: number,
-  variance: number,
-  wobbleLimitRadians: number,
-  shape: AimWobbleShape,
-  jitterSeed: number,
-  stridePhase: number,
-  stepIndex: number,
-): { frame: AimFrame; viewPitchShift: number } => {
+interface FrameFromStateOptions {
+  readonly state: AimState;
+  readonly speed: number;
+  readonly variance: number;
+  readonly wobbleLimitRadians: number;
+  readonly shape: AimWobbleShape;
+  readonly jitterSeed: number;
+  readonly stridePhase: number;
+  readonly stepIndex: number;
+}
+
+const frameFromState = ({
+  state,
+  speed,
+  variance,
+  wobbleLimitRadians,
+  shape,
+  jitterSeed,
+  stridePhase,
+  stepIndex,
+}: FrameFromStateOptions): { frame: AimFrame; viewPitchShift: number } => {
   const phase = stridePhase * TAU;
   const gait = Math.sin(phase);
   const archPhase = phase + shape.phaseOffsetRadians * Math.sin(2 * phase) ** 2;
@@ -78,10 +89,9 @@ const frameFromState = (
   const jitterEnvelope = Math.sin(Math.PI * stepProgress) ** 2;
   const carriesJitter = hash3(jitterSeed, stepIndex, 0, 0) < shape.jitterShare;
   const jitterAngle = hash3(jitterSeed, stepIndex, 1, 0) * TAU;
-  const jitterScale =
-    carriesJitter
-      ? shape.jitterAmplitudeFraction * (0.5 + hash3(jitterSeed, stepIndex, 2, 0) * 0.5) * jitterEnvelope
-      : 0;
+  const jitterScale = carriesJitter
+    ? shape.jitterAmplitudeFraction * (0.5 + hash3(jitterSeed, stepIndex, 2, 0) * 0.5) * jitterEnvelope
+    : 0;
   const wobble = boundVector(
     (state.lookYaw + (gait + Math.cos(jitterAngle) * jitterScale) * speed * MOVE_YAW_PER_SPEED) * variance,
     (state.lookPitch + (pitchArch + Math.sin(jitterAngle) * jitterScale) * speed * MOVE_PITCH_PER_SPEED) * variance,
@@ -105,6 +115,17 @@ const frameFromState = (
     viewPitchShift,
   };
 };
+
+const isValidWobbleShape = (shape: AimWobbleShape): boolean =>
+  Number.isFinite(shape.archPower) &&
+  shape.archPower > 0 &&
+  Number.isFinite(shape.phaseOffsetRadians) &&
+  Math.abs(shape.phaseOffsetRadians) < 0.5 &&
+  Number.isFinite(shape.jitterShare) &&
+  shape.jitterShare >= 0 &&
+  shape.jitterShare <= 1 &&
+  Number.isFinite(shape.jitterAmplitudeFraction) &&
+  shape.jitterAmplitudeFraction > 0;
 
 const initialAimState = (): AimState => ({
   lookYaw: 0,
@@ -144,6 +165,16 @@ export const assertAimState = (state: AimState): void => {
 };
 
 /** Mutable state owner; all time and input arrive on the fixed simulation step. */
+interface AimControllerOptions {
+  readonly wobbleLimitRadians: number;
+  readonly wobbleShape: AimWobbleShape;
+  readonly jitterSeed: number;
+  readonly state?: AimState;
+  readonly variance?: number;
+  readonly stridePhase?: number;
+  readonly stepIndex?: number;
+}
+
 export class AimController {
   private readonly state: AimState;
   private variance: number;
@@ -155,15 +186,15 @@ export class AimController {
   private stepIndex = 0;
   private viewPitchShift = 0;
 
-  constructor(
-    wobbleLimitRadians: number,
-    wobbleShape: AimWobbleShape,
-    jitterSeed: number,
-    state: AimState = initialAimState(),
+  constructor({
+    wobbleLimitRadians,
+    wobbleShape,
+    jitterSeed,
+    state = initialAimState(),
     variance = 1,
     stridePhase = 0,
     stepIndex = 0,
-  ) {
+  }: AimControllerOptions) {
     assertAimState(state);
     if (!(Number.isFinite(variance) && variance > 0)) {
       throw new Error('Invalid aim variance');
@@ -171,17 +202,20 @@ export class AimController {
     if (!(Number.isFinite(wobbleLimitRadians) && wobbleLimitRadians > 0)) {
       throw new Error('Invalid aim wobble limit');
     }
-    if (
-      !wobbleShape ||
-      !(Number.isFinite(wobbleShape.archPower) && wobbleShape.archPower > 0) ||
-      !(Number.isFinite(wobbleShape.phaseOffsetRadians) && Math.abs(wobbleShape.phaseOffsetRadians) < 0.5) ||
-      !(Number.isFinite(wobbleShape.jitterShare) && wobbleShape.jitterShare >= 0 && wobbleShape.jitterShare <= 1) ||
-      !(Number.isFinite(wobbleShape.jitterAmplitudeFraction) && wobbleShape.jitterAmplitudeFraction > 0) ||
-      !(Number.isSafeInteger(jitterSeed) && jitterSeed >= 0 && jitterSeed <= 0xff_ff_ff_ff) ||
-      !(Number.isFinite(stridePhase) && stridePhase >= 0 && stridePhase < 1) ||
-      !(Number.isSafeInteger(stepIndex) && stepIndex >= 0)
-    ) {
+    if (!wobbleShape) {
       throw new Error('Invalid aim wobble shape or stride phase');
+    }
+    if (!isValidWobbleShape(wobbleShape)) {
+      throw new Error('Invalid aim wobble shape or stride phase');
+    }
+    if (!Number.isSafeInteger(jitterSeed) || jitterSeed < 0 || jitterSeed > 0xff_ff_ff_ff) {
+      throw new Error('Invalid aim jitter seed');
+    }
+    if (!Number.isFinite(stridePhase) || stridePhase < 0 || stridePhase >= 1) {
+      throw new Error('Invalid aim stride phase');
+    }
+    if (!Number.isSafeInteger(stepIndex) || stepIndex < 0) {
+      throw new Error('Invalid aim step index');
     }
     this.wobbleShape = { ...wobbleShape };
     this.jitterSeed = jitterSeed;
@@ -217,16 +251,16 @@ export class AimController {
   }
 
   private recomputeFrame(): void {
-    const result = frameFromState(
-      this.state,
-      this.speed,
-      this.variance,
-      this.wobbleLimitRadians,
-      this.wobbleShape,
-      this.jitterSeed,
-      this.stridePhase,
-      this.stepIndex,
-    );
+    const result = frameFromState({
+      state: this.state,
+      speed: this.speed,
+      variance: this.variance,
+      wobbleLimitRadians: this.wobbleLimitRadians,
+      shape: this.wobbleShape,
+      jitterSeed: this.jitterSeed,
+      stridePhase: this.stridePhase,
+      stepIndex: this.stepIndex,
+    });
     this.state.frame = result.frame;
     this.viewPitchShift = result.viewPitchShift;
   }

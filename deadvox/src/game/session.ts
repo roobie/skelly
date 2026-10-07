@@ -7,7 +7,6 @@
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
-import { Rng } from '../core/random.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bodyRegionForHitArea } from '../core/body.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -44,6 +43,7 @@ import { canSprint, stepStamina } from '../core/needs.ts';
 import { type Body, CONTACT_SKIN, stepBody } from '../core/physics.ts';
 import { PlayerCombat } from '../core/playerCombat.ts';
 import { pryPlan } from '../core/prying.ts';
+import { Rng } from '../core/random.ts';
 import type { SolidAt } from '../core/raycast.ts';
 import { bindReach, pileDistance as distanceToPile, furnitureDistance, INVENTORY_CHEST } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
@@ -116,6 +116,35 @@ const sessionFirearmsShotKind = (
   firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, timeSimSeconds);
 const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
+const createSessionAim = ({
+  tuning,
+  seed,
+  restored,
+  character,
+}: {
+  tuning: FirearmsCombatTuning;
+  seed: number;
+  restored: SaveSnapshot | undefined;
+  character: Character;
+}): AimController => {
+  const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
+  const jitterSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
+  return new AimController({
+    wobbleLimitRadians: tuning.wobbleLimitRadians,
+    wobbleShape: {
+      archPower: tuning.wobbleLuneArchPower,
+      phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
+      jitterShare: tuning.wobbleJitterShare,
+      jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
+    },
+    jitterSeed,
+    ...(restored ? { state: restored.character.aim } : {}),
+    variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
+    stridePhase: footstepClock.stridePhase,
+    stepIndex: footstepClock.stepIndex,
+  });
+};
+
 const advanceSessionAim = ({
   aim,
   firearms,
@@ -457,23 +486,12 @@ export const createSession = (options: SessionOptions) => {
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
-  const tuning = currentFirearmsCombatTuning();
-  const restoredFootstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
-  const jitterSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
-  const aim = new AimController(
-    tuning.wobbleLimitRadians,
-    {
-      archPower: tuning.wobbleLuneArchPower,
-      phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
-      jitterShare: tuning.wobbleJitterShare,
-      jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
-    },
-    jitterSeed,
-    restored?.character.aim,
-    firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
-    restoredFootstepClock.stridePhase,
-    restoredFootstepClock.stepIndex,
-  );
+  const aim = createSessionAim({
+    tuning: currentFirearmsCombatTuning(),
+    seed,
+    restored,
+    character,
+  });
   const { entities } = inventory;
   const quickbar = new Quickbar();
   const spawner = new ZombieSpawner();

@@ -443,7 +443,7 @@ const playerAudio = obj({
   footstepClock: obj({
     gait: enumeration(['still', 'walking', 'jogging', 'sprinting']),
     distanceUntilStep: nonNegative,
-    stridePhase: num({ min: 0, max: 0.9999999999999999 }),
+    stridePhase: num({ min: 0, max: 0.999_999_999_999_999_9 }),
     stepIndex: nonNegativeInt,
   }),
   airbornePeakY: nullable(finite),
