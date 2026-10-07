@@ -24,8 +24,7 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
-const missingSoundsRegistry = { ...baseRegistry, sounds: new Map(baseRegistry.sounds) };
-missingSoundsRegistry.sounds.clear();
+const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
 
 interface WindowFrameRun {
   y: number;
@@ -392,7 +391,7 @@ describe('content', () => {
     expect(issues.map(({ message }) => message)).toContain('minimum search duration must not exceed maximum');
   });
 
-  it('fails when the sounds.json content file is missing required events', () => {
+  it('reports required sound events missing from the registry', () => {
     const missingLight = requiredSoundIssues(missingSoundsRegistry).some(
       (issue) => issue.message === 'missing required sound event "player_hurt_light"',
     );
@@ -813,6 +812,12 @@ const templateShambler = Object.fromEntries(
     ),
   ).filter(([key]) => key !== 'loot'),
 );
+const templateShamblerSoundIds = new Set(
+  Object.values((templateShambler as { sounds?: Record<string, string> }).sounds ?? {}),
+);
+const templateSoundDefinitions = (
+  (base.find(({ source }) => source === 'sounds.json')!.data as { sounds: { id: string }[] }).sounds
+).filter(({ id }) => templateShamblerSoundIds.has(id));
 const templateBase = [
   { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
   {
@@ -824,6 +829,9 @@ const templateBase = [
       ],
     },
   },
+  ...(templateSoundDefinitions.length > 0
+    ? [{ source: 'template-sounds.json', data: { sounds: templateSoundDefinitions } }]
+    : []),
   { source: 'template-zombies.json', data: { zombies: [templateShambler] } },
 ];
 
