@@ -2,6 +2,7 @@
   "layouts": [
     {
       "id": "stair_demo",
+      "demo": true,
       "bounds": {
         "x0": 32,
         "z0": 32,
