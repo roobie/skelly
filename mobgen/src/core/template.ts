@@ -10,7 +10,7 @@ export type ParamSpec =
   | { readonly min: number; readonly max: number }
   | { readonly choices: readonly number[] };
 
-export type BodyPlan = string;
+export type BodyPlan = 'humanoid' | 'amalgam';
 
 export interface Template {
   readonly name: string;

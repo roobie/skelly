@@ -21,6 +21,7 @@ import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome, Template } from '../core/template.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
+import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/bossTemplate.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
@@ -37,7 +38,6 @@ import {
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
-import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;

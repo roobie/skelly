@@ -4,7 +4,7 @@ import { meshBones } from '../src/core/mesh.ts';
 import { validate } from '../src/core/validate.ts';
 import { voxelize } from '../src/core/voxelize.ts';
 import { amalgamManifest, bodyWithoutAmalgamPart } from '../src/mob/amalgam.ts';
-import { boss } from '../src/mob/templates.ts';
+import { boss } from '../src/mob/bossTemplate.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SAMPLE_SEEDS = [1, 17, 42];
@@ -69,6 +69,15 @@ describe('amalgam body plan', () => {
         multipleHeadBonesResolve: true,
       });
     }
+  });
+
+  it('rejects a member root detached from the shared core when building the manifest', () => {
+    const realized = realize(generate(boss, SAMPLE_SEEDS[0]!));
+    const brokenBody = {
+      ...realized.body,
+      bones: realized.body.bones.map((bone) => (bone.parent === 'core' ? { ...bone, parent: null } : bone)),
+    };
+    expect(() => amalgamManifest(brokenBody, realized.voxels)).toThrow('core as its only root');
   });
 
   it('severing any member removes only its subtree and leaves a valid core-supported body', () => {

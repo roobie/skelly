@@ -196,6 +196,113 @@ const REGION_BONES: Readonly<Record<string, readonly string[]>> = {
   rightLeg: ['thigh.R', 'shin.R', 'foot.R'],
 };
 
+const assertPartHierarchy = (
+  part: AmalgamPart,
+  bonesById: ReadonlyMap<string, Body['bones'][number]>,
+  owned: Set<string>,
+): void => {
+  const root = bonesById.get(part.rootBone);
+  if (!(root && part.boneIds.includes(part.rootBone))) {
+    throw new Error(`amalgam part "${part.id}" has an unresolved root bone`);
+  }
+  if (part.severable && root.parent !== 'core') {
+    throw new Error(`severable amalgam part "${part.id}" must root under core`);
+  }
+  for (const boneId of part.boneIds) {
+    const bone = bonesById.get(boneId);
+    if (!bone) {
+      throw new Error(`amalgam part "${part.id}" references missing bone "${boneId}"`);
+    }
+    if (owned.has(boneId)) {
+      throw new Error(`amalgam bone "${boneId}" belongs to multiple parts`);
+    }
+    owned.add(boneId);
+    if (boneId !== part.rootBone && !part.boneIds.includes(bone.parent ?? '')) {
+      throw new Error(`amalgam bone "${boneId}" has a parent outside part "${part.id}"`);
+    }
+  }
+};
+
+const assertTreeRoot = (body: Body, manifest: AmalgamManifest): ReadonlyMap<string, Body['bones'][number]> => {
+  const bonesById = new Map(body.bones.map((bone) => [bone.id, bone]));
+  if (bonesById.size !== body.bones.length) {
+    throw new Error('amalgam manifest has duplicate bone ids');
+  }
+  const roots = body.bones.filter((bone) => bone.parent === null);
+  if (roots.length !== 1 || roots[0]?.id !== 'core') {
+    throw new Error('amalgam body must have core as its only root');
+  }
+  const partsById = new Map(manifest.parts.map((part) => [part.id, part]));
+  if (partsById.size !== manifest.parts.length) {
+    throw new Error('amalgam manifest has duplicate part ids');
+  }
+  const core = partsById.get('core');
+  if (!(core && !core.severable && core.rootBone === 'core' && core.boneIds.includes('core'))) {
+    throw new Error('amalgam core part must own the non-severable root');
+  }
+  return bonesById;
+};
+
+const assertPartOwnership = (
+  body: Body,
+  manifest: AmalgamManifest,
+  bonesById: ReadonlyMap<string, Body['bones'][number]>,
+): void => {
+  const owned = new Set<string>();
+  for (const part of manifest.parts) {
+    assertPartHierarchy(part, bonesById, owned);
+  }
+  if (owned.size !== body.bones.length || body.bones.some((bone) => !owned.has(bone.id))) {
+    throw new Error('amalgam parts must own every body bone exactly once');
+  }
+};
+
+const assertRegionReferences = (
+  region: AmalgamRegion,
+  partsById: ReadonlyMap<string, AmalgamPart>,
+  bonesById: ReadonlyMap<string, Body['bones'][number]>,
+): void => {
+  const part = partsById.get(region.partId);
+  if (!part?.regionIds.includes(region.id)) {
+    throw new Error(`amalgam region "${region.id}" has an unresolved part`);
+  }
+  for (const boneId of region.boneIds) {
+    if (!(bonesById.has(boneId) && part.boneIds.includes(boneId))) {
+      throw new Error(`amalgam region "${region.id}" references an unresolved bone`);
+    }
+  }
+};
+
+const assertManifestReferences = (body: Body, manifest: AmalgamManifest): void => {
+  const bonesById = new Map(body.bones.map((bone) => [bone.id, bone]));
+  const partsById = new Map(manifest.parts.map((part) => [part.id, part]));
+  const regionsById = new Map(manifest.regions.map((region) => [region.id, region]));
+  if (regionsById.size !== manifest.regions.length) {
+    throw new Error('amalgam manifest has duplicate region ids');
+  }
+  for (const region of manifest.regions) {
+    assertRegionReferences(region, partsById, bonesById);
+  }
+  for (const part of manifest.parts) {
+    for (const regionId of part.regionIds) {
+      if (regionsById.get(regionId)?.partId !== part.id) {
+        throw new Error(`amalgam part "${part.id}" has an unresolved region`);
+      }
+    }
+  }
+  for (const headBoneId of manifest.headBoneIds) {
+    if (!bonesById.has(headBoneId)) {
+      throw new Error('amalgam manifest has an unresolved head bone');
+    }
+  }
+};
+
+const assertManifestResolves = (body: Body, manifest: AmalgamManifest): void => {
+  const bonesById = assertTreeRoot(body, manifest);
+  assertPartOwnership(body, manifest, bonesById);
+  assertManifestReferences(body, manifest);
+};
+
 /** Builds the resolved part/region metadata from a realized amalgam, without gameplay tuning. */
 export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => {
   const regions: AmalgamRegion[] = [{ id: 'core.trunk', partId: 'core', boneIds: ['core'] }];
@@ -206,11 +313,18 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
     if (owner === 0) {
       continue;
     }
-    const { id } = body.bones[owner - 1]!;
+    const bone = body.bones[owner - 1];
+    if (!bone) {
+      throw new Error(`amalgam voxel references missing bone index ${owner}`);
+    }
+    const { id } = bone;
     const partId = id === 'core' ? 'core' : id.split('.').slice(0, 2).join('.');
     ownerCounts.set(partId, (ownerCounts.get(partId) ?? 0) + 1);
   }
   const totalOwned = [...ownerCounts.values()].reduce((sum, count) => sum + count, 0);
+  if (totalOwned === 0) {
+    throw new Error('amalgam manifest cannot resolve a body without owned voxels');
+  }
   const coreBones = body.bones.filter((bone) => bone.id === 'core').map((bone) => bone.id);
   parts.push({
     id: 'core',
@@ -249,7 +363,9 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
       capabilityIds: [`${partId}.support`, `${partId}.attacks`, `${partId}.reach`, `${partId}.health`],
     });
   }
-  return { parts, regions, headBoneIds };
+  const manifest = { parts, regions, headBoneIds };
+  assertManifestResolves(body, manifest);
+  return manifest;
 };
 
 /** Removes one member subtree, retaining the shared core and the other members. */
