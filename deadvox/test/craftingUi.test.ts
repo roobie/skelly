@@ -179,9 +179,7 @@ describe('crafting read-only presentation', () => {
     const status = document.createElement('section');
     const controller = mountCraftPanel(panel, status, session, {
       notice: vi.fn(),
-      started: vi.fn(),
-      continue: vi.fn(),
-      stop: vi.fn(),
+      dispatch: vi.fn(() => undefined),
     });
 
     controller.update(true, false);

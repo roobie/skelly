@@ -52,6 +52,22 @@ describe('clock', () => {
 });
 
 describe('Simulation', () => {
+  it('applies recorded compression to each fixed replay frame', () => {
+    const sim = new Simulation({ seed: 1 });
+    let ticks = 0;
+    sim.scheduler.register({
+      id: 'replay-clock',
+      rate: 60,
+      tick: () => {
+        ticks += 1;
+      },
+    });
+    sim.compression.c = 4;
+
+    expect(sim.frameReplay(FRAME)).toBe(4 * FRAME);
+    expect(ticks).toBe(4);
+  });
+
   it('rejects backward debug seeks and keeps existing absolute timestamps in the past', () => {
     const sim = new Simulation({ seed: 1 });
     let absoluteStartTime = -1;

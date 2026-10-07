@@ -78,7 +78,9 @@ const otherHand = (side: HandSide): HandSide => (side === 'right' ? 'left' : 'ri
 const OBVIOUS = new Set(["It can't go inside itself", "It's already in that hand", "You're already wearing it"]);
 
 /** Every pocket of what the player holds and wears, retaining ordinary move ordering. */
-export const playerPockets = (inv: Inventory): { owner: Item; pocket: number; label: string }[] =>
+export const playerPockets = (
+  inv: Pick<Inventory, 'carried' | 'registry' | 'name'>,
+): { owner: Item; pocket: number; label: string }[] =>
   inv.carried().flatMap((owner) =>
     (defOf(inv.registry, owner.type).container?.pockets ?? []).map((spec, pocket) => ({
       owner,
@@ -88,7 +90,11 @@ export const playerPockets = (inv: Inventory): { owner: Item; pocket: number; la
   );
 
 /** Ordinary drop finds room for either a carried move or a fresh emission. */
-export const dropTarget = (inv: Inventory, item: Item, feet: Vec3): { target: Target; plan: Plan } => {
+export const dropTarget = (
+  inv: Pick<Inventory, 'locate' | 'planAdd' | 'plan'>,
+  item: Item,
+  feet: Vec3,
+): { target: Target; plan: Plan } => {
   let first: { target: Target; plan: Plan } | undefined;
   const fresh = inv.locate(item) === undefined;
   for (const pos of dropSpots(feet)) {
@@ -112,7 +118,10 @@ export const stowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | und
 };
 
 /** Ordinary E key still picks the quickest pocket, not quick-move's backpack priority. */
-export const bestPocket = (inv: Inventory, item: Item): MoveOption | undefined =>
+export const bestPocket = (
+  inv: Pick<Inventory, 'carried' | 'registry' | 'name' | 'plan'>,
+  item: Item,
+): MoveOption | undefined =>
   playerPockets(inv)
     .map(({ owner, pocket, label }): MoveOption => {
       const target: Target = { kind: 'pocket', owner, pocket };
