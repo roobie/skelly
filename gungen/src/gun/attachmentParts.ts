@@ -33,8 +33,8 @@ const suppressor: PartFamily = {
   params: { type: { values: ['real-suppressor', 'improvised-suppressor'], default: 'real-suppressor' } },
   build(params): PartDef {
     const improvised = params.type === 'improvised-suppressor';
-    const length = improvised ? 4.5 : 6;
-    const radius = improvised ? 1.25 : 1;
+    const length = improvised ? 15 : 12;
+    const radius = improvised ? 1.75 : 1.25;
     return {
       family: 'suppressor',
       solids: [suppressorTube(length, radius)],

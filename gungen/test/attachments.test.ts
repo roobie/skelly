@@ -183,6 +183,21 @@ const railSpanExtent = (id: string) => {
 };
 
 describe('attachment parts and export metadata', () => {
+  it('makes the improvised suppressor longer and wider than the real one', () => {
+    const extent = (id: string) => {
+      const { part } = attachmentBuild(id);
+      const [low, high] = localSolidBounds(part.solids[0]!);
+      return {
+        length: high[0] - low[0],
+        radius: Math.max(Math.abs(low[1]), Math.abs(high[1]), Math.abs(low[2]), Math.abs(high[2])),
+      };
+    };
+    const real = extent('real-suppressor');
+    const improvised = extent('improvised-suppressor');
+    expect(improvised.length).toBeGreaterThan(real.length);
+    expect(improvised.radius).toBeGreaterThan(real.radius);
+  });
+
   it('exports each attachment as standalone glTF and metadata deadvox accepts', async () => {
     const models = await Promise.all(
       ATTACHMENT_IDS.map(async (id) => {
@@ -421,7 +436,7 @@ describe('attachment parts and export metadata', () => {
     expect(checked).toBeGreaterThan(0);
   });
 
-  it('exports rail spans that contain every attachment solid extent', () => {
+  it('exports tight rail spans that contain every attachment solid extent', () => {
     const spans = ATTACHMENT_IDS.flatMap((id) => {
       const span = railSpanExtent(id);
       return span ? [span] : [];
@@ -430,6 +445,8 @@ describe('attachment parts and export metadata', () => {
     for (const { id, span, extent } of spans) {
       expect(extent.min, `${id}: lower rail-cell edge`).toBeGreaterThanOrEqual(span.minOffset - 0.5 - 1e-9);
       expect(extent.max, `${id}: upper rail-cell edge`).toBeLessThanOrEqual(span.maxOffset + 0.5 + 1e-9);
+      expect(span.minOffset, `${id}: lowest intersected cell`).toBe(Math.floor(extent.min + 0.5));
+      expect(span.maxOffset, `${id}: highest intersected cell`).toBe(Math.ceil(extent.max + 0.5) - 1);
     }
   });
 

@@ -1423,6 +1423,8 @@ forward/upright orientation after the held transform.
 
 **Sight data for 3.7 optics.** BR, 2026-10-07 00:18: “2. the pump shotgun doesn't seem to work with ads (maybe it's missing iron sights? for the shotgun a simple pip at the muzzle would suffice) - when activaing ADS it simply pivots a little”
 
+BR, 2026-10-07 11:13, verbatim: “the shotgun bead is approved” (#345, after g42-5 seated it on its host).
+
 Every published firearm design exports sight metadata from its resolved sight
 parts, so ADS has a physical reference and a later optic can replace irons through
 the same `src/gun/exportGlb.ts`, `sightCandidate` path. The pump's `front-bead`
@@ -1573,7 +1575,9 @@ not part of the export's acceptance:
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
-- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid touches; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors because Deadvox hides the baked magazine when no item is fitted; see `deadvox/docs/decisions/0003-firearm-handling.md`.
+- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors because Deadvox hides the baked magazine when no item is fitted; see `deadvox/docs/decisions/0003-firearm-handling.md`.
+  For #347, BR, 2026-10-07 10:23, verbatim: “the supporessor should be approx 100% longer and have a 25% larger radius”; the improvised variant is larger in length and radius than the real one. The geometry is in `src/gun/attachmentParts.ts`; the exported suppressor properties do not derive mass, length, or balance from model size (`src/gun/attachments.ts`, `deadvox/src/core/schema.ts`, `AttachmentPropertiesSchema`).
+  BR, 2026-10-07 11:27, verbatim: “#347 let's stick to 7.62x39 for now” and “but we will add 5.45x39 at some point”; generated AKs stay 7.62x39-only, and 5.45x39 is follow-up #362.
 - **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
   but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
   and its curated design and fixtures live byte-identically under `designs/suspended/`
