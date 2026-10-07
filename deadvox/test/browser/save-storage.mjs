@@ -706,6 +706,29 @@ try {
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
+    await page.reload({ timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(
+      () =>
+        globalThis.deadvoxSaveTest?.controller.ready &&
+        globalThis.deadvoxSaveTest.controller.restored !== undefined &&
+        document.querySelector('#continue')?.disabled === false,
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    await page.click('#continue', { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
+    await page.waitForFunction(
+      async () => {
+        const { controller } = globalThis.deadvoxSaveTest;
+        const locks = await navigator.locks.query();
+        const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
+        return !controller.writing && controller.queued === undefined && !activeSaveLock;
+      },
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
     const beforeNavigation = await page.evaluate(async () => ({
       writing: globalThis.deadvoxSaveTest.controller.writing,
       locks: await navigator.locks.query(),
