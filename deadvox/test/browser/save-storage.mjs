@@ -339,7 +339,7 @@ try {
                   (error) => error.message,
                 ),
             );
-            if (!failure.includes('World is still open or saving in another tab') || encodedWhileBusy) {
+            if (!failure.includes('World is still open or saving in another page') || encodedWhileBusy) {
               throw new Error(`Queued writer did not fail safely at its deadline: ${failure}`);
             }
             const locks = await navigator.locks.query();
@@ -664,11 +664,11 @@ try {
   const autosaveResults = [];
   let appBackends = [];
   if (navigationOnly) {
-    const appUrl = browserStageUrl(
-      stageId,
-      `http://127.0.0.1:${address.port}/?seed=73&debug=1&save-backend=indexeddb&save-test=1`,
+    const appUrl = new URL(
+      browserStageUrl(stageId, `http://127.0.0.1:${address.port}/?seed=73&debug=1&save-backend=indexeddb&save-test=1`),
     );
-    await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    appUrl.searchParams.set('freeze', '1');
+    await page.goto(appUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
@@ -679,7 +679,6 @@ try {
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
-    await page.keyboard.press('m');
     await page.waitForFunction(
       () => {
         const marker = document.querySelector('.debug-frozen');
@@ -835,7 +834,7 @@ try {
       locks: await navigator.locks.query(),
       warnings: globalThis.__d144LockWarnings,
     }));
-    assert.match(hiddenFailure.status, /World is still open or saving in another tab/);
+    assert.match(hiddenFailure.status, /World is still open or saving in another page/);
     assert.equal(hiddenFailure.continueDisabled, true);
     const hiddenWarning = hiddenFailure.warnings.find(([message]) => message === 'Deadvox save lock request timed out');
     assert.ok(hiddenWarning);
@@ -955,7 +954,7 @@ try {
         locks: await navigator.locks.query(),
         warnings: globalThis.__d144LockWarnings,
       }));
-      assert.match(busy.status, /World is still open or saving in another tab/);
+      assert.match(busy.status, /World is still open or saving in another page/);
       assert.match(busy.newWorldLabel, /Play without saving/);
       assert.equal(busy.retryVisible, true);
       assert.equal(busy.continueDisabled, true);
