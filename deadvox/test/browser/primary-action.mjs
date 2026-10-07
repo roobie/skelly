@@ -193,6 +193,10 @@ const observationPlugin = {
     screen,
     dispatchScreenCommand,
     get inputRecorder() { return inputRecorder; },
+    startInputReplayRecording: () => {
+      previousInputRecorder = undefined;
+      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+    },
     hudOptions,
     beginItemThrow,
     selectPrimaryAction,
@@ -1007,6 +1011,7 @@ try {
   assert.equal(roundTrip.restoredOn, true);
   assert.equal(roundTrip.restoredHand, 'left');
   await toggleLight('hand.use-off', false);
+  await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
   const throwFixture = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
@@ -1939,6 +1944,8 @@ try {
   const replayArtifact = JSON.parse(replayText);
   assert.equal(replayArtifact.magic, 'DEADVOX_REPLAY');
   assert(replayArtifact.frames.length > 0, 'export includes captured player ticks');
+  assert(replayArtifact.actions.some((action) => action.action === 'throw.stance.toggle'));
+  assert(replayArtifact.actions.some((action) => action.action === 'item.drop'));
   assert.match(replayArtifact.endStateFingerprint, /^[0-9a-f]{64}$/);
   const replayNavigation = page.waitForNavigation();
   await command('debug.input-replay-import');
