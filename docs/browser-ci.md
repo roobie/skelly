@@ -16,6 +16,16 @@ full reusable workflow and enabled package scripts. Package aliases do not add
 extra executions. Quarantines remain explicit: repartitioning must not silently
 restore a flaky case or remove its reinstatement obligation.
 
+The launch-timeout scan for issue #287 found failures only in the IndexedDB
+shard; other failed browser jobs in the sample had different causes. The
+save-storage path overrode Playwright's bundled Chromium with the runner's system
+Chrome. `deadvox/test/browser/save-storage.mjs`, `chromium`, now uses
+Playwright's lockfile-matched browser, and the reusable workflow caches that
+browser by the Deadvox lockfile so its revision follows the installed Playwright
+package. `deadvox/test/browser/playwrightDebugBuffer.mjs`,
+`bufferPlaywrightDebugOutput`, keeps `pw:browser` output available for a launch
+failure without flooding successful runs.
+
 The required `check` in `.github/workflows/deadvox.yml` uses
 `tools/browser-ci-result.mjs`, `assertBrowserResult`. A selected layout's jobs
 must succeed; only the unselected layout's jobs may skip (the control jobs on a

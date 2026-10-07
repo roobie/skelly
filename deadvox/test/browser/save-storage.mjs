@@ -10,6 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { createServer, build as viteBuild, preview as vitePreview } from 'vite';
 import { observeFailures } from './failure-diagnostics.mjs';
+import { bufferPlaywrightDebugOutput } from './playwrightDebugBuffer.mjs';
 import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
@@ -36,6 +37,7 @@ if (requestedAutosaveBackend && !['opfs', 'indexeddb'].includes(requestedAutosav
 if (!['chromium', 'firefox'].includes(browserName)) {
   throw new Error(`Expected browser name chromium or firefox, got ${browserName}`);
 }
+const originalDebug = process.env.DEBUG;
 if (browserName === 'chromium') {
   const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
   debugChannels.add('pw:browser');
@@ -79,6 +81,8 @@ const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
 };
 let browser;
 let firefoxServer;
+let launchDebugBuffer;
+let originalStderrWrite;
 try {
   const address = await withTimeout('Vite startup', startWebServer());
   assert(address && typeof address !== 'string');
@@ -87,12 +91,22 @@ try {
     : `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
   let context;
   if (browserName === 'chromium') {
-    browser = await chromium.launch({
-      executablePath: process.env.CHROME_BIN ?? 'google-chrome',
-      headless: true,
-      args: browserStageArgs(stageId, ['--disable-extensions', '--password-store=basic', '--window-size=1280,900']),
-      timeout: STAGE_TIMEOUT_MS,
-    });
+    originalStderrWrite = process.stderr.write;
+    launchDebugBuffer = bufferPlaywrightDebugOutput((chunk, ...args) =>
+      originalStderrWrite.call(process.stderr, chunk, ...args),
+    );
+    process.stderr.write = launchDebugBuffer.write;
+    try {
+      browser = await chromium.launch({
+        headless: true,
+        args: browserStageArgs(stageId, ['--disable-extensions', '--password-store=basic', '--window-size=1280,900']),
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      launchDebugBuffer.discard();
+    } catch (error) {
+      launchDebugBuffer.flush();
+      throw error;
+    }
     context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   } else {
     // The managed server exposes public child-process diagnostics without reaching into Playwright internals.
@@ -757,5 +771,14 @@ try {
     await withTimeout('Vite shutdown', vite.close(), 5000).catch((error) => {
       process.stderr.write(`Cleanup warning: ${String(error)}\n`);
     });
+  }
+  launchDebugBuffer?.discard();
+  if (originalStderrWrite) {
+    process.stderr.write = originalStderrWrite;
+  }
+  if (originalDebug === undefined) {
+    delete process.env.DEBUG;
+  } else {
+    process.env.DEBUG = originalDebug;
   }
 }
