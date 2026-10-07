@@ -181,21 +181,14 @@ Two single-case quarantines remain; a fresh pass does not establish a fix:
 Neither is in the default Firefox command. No retries or increased bounds; record a
 fixed trial plan and before/after/restored-before evidence before reinstating a case.
 
-All Chromium browser stages use `test/browser/chromium.mjs`, `launchChromium`, which imports
-Playwright after enabling `pw:browser`, launches its managed Chromium and buffers browser logs
-until failure. A launch failure records the managed executable path and version together with
-`DBUS_SESSION_BUS_ADDRESS`; the buffered `pw:browser` lines contain Playwright's browser-process
-output. `tools/ui-browser-contract.mjs`, `ui-browser-contract`, starts Vite and waits for its root
-response before navigating; a page CDP session preserves raw input. The contract checks DOM,
-pointer and keyboard behavior, not pixels or WebGL output, so it uses render-free mode (`?render=0`
-and `--disable-gpu`) and asserts that no WebGL context is requested. This keeps the stage out of
-the SwiftShader initialization path reported in #256; pixel checks remain in visual stages.
-`UI_BROWSER_LAUNCH` records the managed launcher and graphics arguments, while
-`UI_BROWSER_GRAPHICS` records the browser version, render mode and WebGL requests. Issue #287
-tracks a Chromium launch timeout before page creation. The system-browser version gap and D-Bus
-messages are competing hypotheses, not a diagnosis; the branch-only comparison in
-`tools/chromium-launch-diagnostic.mjs` tests their effects, while a clean finite sample cannot rule
-out a rarer stall. See `docs/browser-ci.md` for the CI evidence boundary.
+**BR decision (br-43, 2026-10-07 22:44:58), verbatim:** “B”.
+
+The selected containment treats the system Chrome 154 + Playwright 1.63 pairing as
+unsupported: all observed launch failures used system Chrome, while managed Chromium
+had zero launch failures in the 91-run sample. The cause remains unproven; the 240-launch
+source × bus comparison did not establish one. Issue #287 stays open for the root cause.
+See `test/browser/chromium.mjs`, `launchChromium`, for the shared managed launch boundary,
+and `docs/browser-ci.md` for CI evidence.
 
 Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
 separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,
