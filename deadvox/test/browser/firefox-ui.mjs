@@ -20,7 +20,10 @@ const observation = {
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(marker, `  Object.assign(globalThis, { firefoxUiTest: { session, input } });\n${marker}`);
+    return code.replace(
+      marker,
+      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
+    );
   },
 };
 const vite = await createServer({
@@ -68,7 +71,7 @@ try {
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -210,6 +213,71 @@ try {
   assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
   await page.keyboard.press('Enter');
   assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
+  await pressAction(page, 'debug.spawn-runner');
+  await page.waitForFunction(
+    () =>
+      [...globalThis.firefoxUiTest.session.zombies.store.entries()].some(([, zombie]) => zombie.type.id === 'runner'),
+    null,
+    { timeout: 5000 },
+  );
+  await page.evaluate(() => {
+    const { registry, session } = globalThis.firefoxUiTest;
+    const runnerModel = registry.zombies.get('runner')?.model;
+    const runner = [...session.zombies.store.entries()].find(([, zombie]) => zombie.type.id === 'runner')?.[1];
+    if (!runnerModel || runner?.type.model !== runnerModel) {
+      throw new Error('debug runner spawn did not select the registered mobgen model');
+    }
+  });
+  await pressAction(page, 'debug.spawn-crawler');
+  await pressAction(page, 'debug.spawn-shamblers');
+  await page.waitForFunction(
+    () => {
+      const { session, view } = globalThis.firefoxUiTest;
+      const zombies = [...session.zombies.store.entries()];
+      const required = ['crawler', 'runner', 'shambler'];
+      return required.every((typeId) => {
+        const found = zombies.find(([, zombie]) => zombie.type.id === typeId);
+        if (!found) {
+          return false;
+        }
+        const state = view.zombieMeshes.states?.get(found[0]);
+        const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+        return variant?.model === found[1].type.model && variant.mesh.count > 0;
+      });
+    },
+    null,
+    { timeout: 10_000 },
+  );
+  const bodyBeforeSpectator = await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]);
+  await pressAction(page, 'debug.spectator-camera-toggle');
+  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), true);
+  const cameraBeforeSpectatorMove = await page.evaluate(() => globalThis.firefoxUiTest.camera.position.toArray());
+  await page.keyboard.down('w');
+  try {
+    await page.waitForFunction(
+      (before) => {
+        const after = globalThis.firefoxUiTest.camera.position.toArray();
+        return Math.hypot(after[0] - before[0], after[1] - before[1], after[2] - before[2]) > 0.01;
+      },
+      cameraBeforeSpectatorMove,
+      { timeout: 5000 },
+    );
+  } finally {
+    await page.keyboard.up('w');
+  }
+  assert.deepEqual(await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]), bodyBeforeSpectator);
+  await pressAction(page, 'debug.perception-labels-toggle');
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('.zombie-perception-label')].some((label) => label.style.display !== 'none'),
+    null,
+    { timeout: 5000 },
+  );
+  assert.ok(await page.locator('.zombie-perception-label[data-perception-label]').count());
+  await pressAction(page, 'debug.spectator-camera-toggle');
+  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), false);
+  await pressAction(page, 'debug.perception-labels-toggle');
+  assert.equal(await page.locator('.zombie-perception-label').count(), 0);
+
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {

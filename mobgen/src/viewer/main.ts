@@ -18,8 +18,9 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
-import type { Genome } from '../core/template.ts';
+import type { Genome, Template } from '../core/template.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
+import { crawlerPose } from '../mob/crawler.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
@@ -35,6 +36,8 @@ import {
 } from '../mob/gait.ts';
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { type IdleStance, idlePose } from '../mob/idle.ts';
+import { LOOK_AT_REST, type LookAtState, lookAtPose } from '../mob/lookAt.ts';
+import { LOOK_AT_PROFILES, type LookAtProfile } from '../mob/lookAtProfiles.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
 import { TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
@@ -131,12 +134,15 @@ new ResizeObserver(resize).observe(view);
 
 interface Loaded {
   readonly genome: Genome;
+  readonly template: Template;
+  readonly lookAt: LookAtProfile;
+  lookAtState: LookAtState;
   readonly realized: Realized;
   readonly actor: Actor;
   readonly params: HumanoidParams;
   readonly extents: ReturnType<typeof footRestExtents>;
   readonly bodyExtents: ReturnType<typeof bodyRestExtents>;
-  readonly legGeometry: LegGeometry;
+  readonly legGeometry: LegGeometry | undefined;
   /** Built once per load so its GaitCache stays warm across frames (a per-frame literal would not). */
   readonly walkActor: WalkActor;
 }
@@ -202,6 +208,12 @@ const playDeath = (): void => {
     return;
   }
   const actor = current.walkActor;
+  if (current.genome.template === 'crawler') {
+    deathBasePose = crawlerPose(current.realized);
+    deathDirection = dieBackward.checked ? -1 : 1;
+    deathTime = 0;
+    return;
+  }
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   const idle = idlePose(actor, currentStance(), idleTime);
@@ -319,6 +331,10 @@ const updateUrl = (): void => {
 };
 
 const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
+  const template = TEMPLATES.find((candidate) => candidate.name === genome.template);
+  if (!template) {
+    throw new Error(`No template registered for ${genome.template}`);
+  }
   if (current) {
     scene.remove(current.actor.root);
     disposeActor(current.actor);
@@ -327,7 +343,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   scene.add(actor.root);
   const extents = footRestExtents(realized.body.bones, realized.voxels);
   const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-  const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
+  const legGeometry = genome.template === 'crawler' ? undefined : legGeometryFor(realized.body.bones, extents, 'L');
   const params = genome.params as HumanoidParams;
   const walkActor: WalkActor = {
     bones: realized.body.bones,
@@ -338,8 +354,22 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   };
   // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
   // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
-  actor.applyPose(idlePose(walkActor, currentStance(), idleTime));
-  current = { genome, realized, actor, params, extents, bodyExtents, legGeometry, walkActor };
+  actor.applyPose(
+    genome.template === 'crawler' ? crawlerPose(realized) : idlePose(walkActor, currentStance(), idleTime),
+  );
+  current = {
+    genome,
+    template,
+    lookAt: LOOK_AT_PROFILES[template.name]!,
+    lookAtState: LOOK_AT_REST,
+    realized,
+    actor,
+    params,
+    extents,
+    bodyExtents,
+    legGeometry,
+    walkActor,
+  };
   clock = INITIAL_CLOCK;
   gridZ = 0;
   attackTime = undefined;
@@ -532,7 +562,7 @@ renderer.render(scene, camera);
 
 /** Advances the walk clock/gridZ if walking — keeps advancing through an attack too. */
 const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
-  if (!(walking && speed > 0 && current)) {
+  if (!walking || speed <= 0 || !current || !current.legGeometry) {
     return;
   }
   clock = advanceClock(clock, speed * dt, {
@@ -574,9 +604,28 @@ const advanceHit = (dt: number): void => {
   }
 }; // deliberately not gated on death: a fresh hit that lands mid-flinch is fine to just restart.
 
+const applyLookAt = (loaded: Loaded, pose: Pose, dt: number): void => {
+  loaded.actor.root.updateMatrixWorld(true);
+  const target = loaded.actor.root.worldToLocal(camera.position.clone());
+  const result = lookAtPose({
+    bones: loaded.realized.body.bones,
+    pose,
+    target: [target.x, target.y, target.z],
+    profile: loaded.lookAt,
+    state: loaded.lookAtState,
+    gazeFrameDelta: dt,
+  });
+  loaded.lookAtState = result.state;
+  loaded.actor.applyPose(result.pose);
+};
+
 /** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
  * standing), optionally attacked, optionally flinched on top. */
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
+  if (loaded.template.bodyPlan === 'crawler') {
+    applyLookAt(loaded, crawlerPose(loaded.realized), dt);
+    return;
+  }
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   advanceWalk(dt, walking, speed);
@@ -589,7 +638,7 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   const basePose: Pose = walkPose(actor, clock, speed, { idle });
   const attacked = attackTime === undefined ? basePose : attackPose(actor, clip, attackTime, basePose);
   const pose = hitTime === undefined ? attacked : flinchPose(actor, hitTime, attacked, { side: hitSide });
-  loaded.actor.applyPose(pose);
+  applyLookAt(loaded, pose, dt);
 };
 
 /** Advances and poses one frame while dead: deathTime free-runs (deathPose clamps internally), from the

@@ -14,7 +14,7 @@ import {
   walkPose,
 } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
-import { TEMPLATES } from '../src/mob/templates.ts';
+import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 
 const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;
@@ -64,7 +64,7 @@ const maxPoseDiff = (pose: Pose, walkBase: Pose): number => {
 };
 
 describe('attackPose', () => {
-  for (const name of TEMPLATES.map((t) => t.name)) {
+  for (const name of HUMANOID_TEMPLATES.map((t) => t.name)) {
     it(`${name}: pose at time 0 and at duration equals the base pose`, () => {
       const found = setup(name);
       const actor = actorOf(found);
@@ -134,7 +134,7 @@ describe('attackPose', () => {
     return worstDeltas(mats, rootYs);
   };
 
-  for (const name of TEMPLATES.map((t) => t.name)) {
+  for (const name of HUMANOID_TEMPLATES.map((t) => t.name)) {
     for (const speed of [0, 0.8, 2.8]) {
       it(`${name} at ${speed} m/s: the attack has no snaps over 400 frames`, () => {
         const { maxAngleDelta, maxRootYDelta, maxSecondDiff } = sampleAttackDeltas(setup(name), speed, 400);
@@ -168,7 +168,7 @@ describe('attackPose', () => {
     return lowest;
   };
 
-  for (const name of TEMPLATES.map((t) => t.name)) {
+  for (const name of HUMANOID_TEMPLATES.map((t) => t.name)) {
     it(`${name}: the lowest foot point stays within half a voxel of the ground throughout the attack`, () => {
       const found = setup(name);
       const { body, voxels, extents } = found;
@@ -184,7 +184,7 @@ describe('attackPose', () => {
     });
   }
 
-  for (const name of TEMPLATES.map((t) => t.name)) {
+  for (const name of HUMANOID_TEMPLATES.map((t) => t.name)) {
     for (const seed of [1, 2, 3]) {
       it(`${name} seed ${seed}: at hitTime, hands clasp in front of the chest near shoulder height`, () => {
         const found = setup(name, seed);

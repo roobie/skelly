@@ -782,6 +782,14 @@ describe('content references', () => {
           {
             id: 'clerk',
             name: 'Clerk',
+            model: 'shambler',
+            spawnWeight: 1,
+            sounds: {
+              idle: 'shambler_idle',
+              alert: 'shambler_alert',
+              attack: 'shambler_attack',
+              hurt: 'shambler_hurt',
+            },
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
@@ -853,6 +861,10 @@ describe('content references', () => {
       'furniture[1].door.prying.skill',
       'items[0].light.power.battery',
       'zombies[0].loot',
+      'zombies[0].sounds.alert',
+      'zombies[0].sounds.attack',
+      'zombies[0].sounds.hurt',
+      'zombies[0].sounds.idle',
     ]);
   });
 });

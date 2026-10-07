@@ -42,6 +42,10 @@ export interface DebugHooks {
   readonly revealZombies: (enabled: boolean) => void;
   readonly measureSnapshot: () => SnapshotMeasurement;
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
+  readonly spectatorCamera: { enabled: () => boolean; toggle: () => void };
+  readonly perceptionLabels: { enabled: () => boolean; toggle: () => void };
+  /** Emits the existing `player_hurt_light` sound and its player-noise event; this debug action changes simulation state. */
+  readonly emitTestNoise: () => boolean;
   readonly exportMetrics: () => void;
   readonly inputReplay: {
     readonly status: () => string;
@@ -101,6 +105,8 @@ export interface DebugRuntime {
   recordMeleeResult: (result: MeleeResult) => void;
   readonly buildOn: boolean;
   readonly noclip: boolean;
+  readonly spectatorCamera: boolean;
+  readonly perceptionLabels: boolean;
   /** The whole simulation is stopped (M): the game combines this with the pause menu's pause. */
   readonly frozen: boolean;
   readonly spawnOpen: boolean;

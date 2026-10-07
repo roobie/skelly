@@ -429,6 +429,120 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "runner_idle",
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ],
+      "gain": 0.42,
+      "pitchJitter": [1.18, 1.3],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0.1,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "runner_alert",
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ],
+      "gain": 0.72,
+      "pitchJitter": [1.15, 1.25],
+      "gainJitter": [0.9, 1.12],
+      "minIntervalSimSeconds": 0.25,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "runner_attack",
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ],
+      "gain": 0.8,
+      "pitchJitter": [1.12, 1.22],
+      "gainJitter": [0.9, 1.12],
+      "minIntervalSimSeconds": 0.25,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "runner_hurt",
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ],
+      "gain": 0.8,
+      "pitchJitter": [1.15, 1.25],
+      "gainJitter": [0.9, 1.12],
+      "minIntervalSimSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "crawler_idle",
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ],
+      "gain": 0.52,
+      "pitchJitter": [0.68, 0.78],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0.1,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "crawler_alert",
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ],
+      "gain": 0.62,
+      "pitchJitter": [0.7, 0.8],
+      "gainJitter": [0.9, 1.12],
+      "minIntervalSimSeconds": 0.25,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "crawler_attack",
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ],
+      "gain": 0.7,
+      "pitchJitter": [0.65, 0.75],
+      "gainJitter": [0.9, 1.12],
+      "minIntervalSimSeconds": 0.25,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "crawler_hurt",
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ],
+      "gain": 0.72,
+      "pitchJitter": [0.65, 0.75],
+      "gainJitter": [0.9, 1.12],
+      "minIntervalSimSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "lock_pry",
       "variants": ["assets/audio/door_blocked_close-01.ogg"],
       "gain": 0.8,

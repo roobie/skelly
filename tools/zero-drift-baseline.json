@@ -184,7 +184,6 @@
       "text": "missing YAML front matter",
       "count": 1
     },
-    { "path": "mobgen/PROJECT.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     { "path": "mobgen/reference/README.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 }
   ]
 }
