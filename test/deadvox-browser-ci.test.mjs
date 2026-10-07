@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { stringify } from 'yaml';
+import { parse, stringify } from 'yaml';
 import { reserveDistinctPorts } from '../deadvox/tools/browser-ports.mjs';
 import {
   browserManifest,
@@ -87,6 +87,25 @@ describe('browser port reservation', () => {
 });
 
 describe('deadvox browser CI coverage', () => {
+  it('keeps Playwright installs apt-free and bounds Deadvox CI jobs', () => {
+    const browserWorkflow = parse(
+      readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8'),
+    );
+    const deadvoxWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox.yml'), 'utf8'));
+    const installSteps = browserWorkflow.jobs.run.steps.filter(({ run = '' }) =>
+      /\bnpx playwright install(?:\s|$)/.test(run),
+    );
+
+    assert.ok(installSteps.length > 0, 'browser workflow declares Playwright browser installs');
+    for (const step of installSteps) {
+      assert.doesNotMatch(step.run, /--with-deps\b/, 'browser install must not run apt per shard');
+      assert.ok(Object.hasOwn(step, 'timeout-minutes'), 'browser install has a finite step bound');
+    }
+    assert.ok(Object.hasOwn(browserWorkflow.jobs.run, 'timeout-minutes'), 'browser shards have a finite job bound');
+    assert.ok(Object.hasOwn(deadvoxWorkflow.jobs.fast, 'timeout-minutes'), 'fast job has a finite job bound');
+    assert.ok(Object.hasOwn(deadvoxWorkflow.jobs.check, 'timeout-minutes'), 'aggregate check has a finite job bound');
+  });
+
   it('normalizes a leading ./ and stage wrappers', () => {
     assert.deepEqual(parseCommand('SAVE_AUTOSAVE_ONLY=1 xvfb-run -a timeout 300 node ./test/browser/x.mjs'), {
       env: { SAVE_AUTOSAVE_ONLY: '1' },

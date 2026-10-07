@@ -106,7 +106,7 @@ Bisect a visual bug by flipping one toggle at a time before theorising.
 
 ## Deadvox CI browser dependency stalls
 
-For #388, Playwright's `--with-deps` stalled while apt fetched and installed runner packages. A branch-only probe found fonts, X fonts and Firefox media-codec packages absent, but the enabled browser contracts and Xvfb stages passed without apt; CI therefore installs browser binaries only. The install steps and shard jobs have finite bounds, so a browser-download stall ends at those limits instead of occupying a runner indefinitely. See `.github/workflows/deadvox-browser.yml`, `jobs.run`, and `.github/workflows/deadvox.yml`, `jobs.fast`.
+For #388, Playwright's `--with-deps` stalled while apt fetched and installed runner packages. The enabled browser contracts and Xvfb stages passed without apt, so CI installs browser binaries only and bounds the install and job. If a stage starts asserting text glyphs or Firefox media, install the specific package that assertion needs rather than restoring `--with-deps`. See `.github/workflows/deadvox-browser.yml`, `jobs.run`, and `.github/workflows/deadvox.yml`, `jobs.fast` and `jobs.check`.
 
 ## Seeing the game without a display
 
