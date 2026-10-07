@@ -58,7 +58,7 @@ The eleven milestones are:
 - Shared flow fields: dropped by BR in the 3.9 ruling. Background zombies use the beeline in big, cheap steps instead; d84 (#279) is the carried-in attention brain. The remaining route follow-up in #244 is obsolete under that direction.
 - Legendary effects beyond vanity. BR's direction is “mostly vanity thing, but we might come up with something along the way” (2026-10-05 21:29).
 
-Beat details in #181 are settled one turn at a time before their dependent map rounds. For d122-2, the approved schematic v2 is the basis for the first medical-site pass. BR ruled on pharmacy access for d122-6, “to keep it simple, we'll go for 1:(b) , 2:front counter” (2026-10-07 11:13): use #309's existing key-or-crowbar door lock and put the pharmacy key in the front counter. Crawler markers stay deferred until #325 lands, and the military site follows its own map round.
+Beat details in #181 are settled one turn at a time before their dependent map rounds. The approved schematic v2 is the basis for the medical-site pass. BR ruled on pharmacy access for d122-6, “to keep it simple, we'll go for 1:(b) , 2:front counter” (2026-10-07 11:13): use #309's existing key-or-crowbar door lock and put the pharmacy key in the front counter. The military site follows its own map round.
 
 ## How this slice runs
 
@@ -339,7 +339,7 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
 **Done when:** runner, crawler and apex enemy are distinct playable threats and their persistent state round-trips.
-**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response after #325 merges); the apex enemy's size, silhouette and encounter read.
+**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response); the apex enemy's size, silhouette and encounter read.
 
 **Work split:** d106-1 implements the runner and crawler; #308 tracks playtest 1's apex enemy as a separate work item within 3.8.
 
@@ -361,7 +361,7 @@ After seeing the stumps, BR's question was whether they read correctly despite t
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
-BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). The crawler's arm-drag gait and runner/crawler flinches use existing simulation state, drive posed hitboxes, add no saved state, and change the simulation fingerprint so older replays do not carry over. Crawler hitboxes follow the prone body. Gameplay stagger, slowdown and knockdown remain open for BR. Mobgen validates crawler generation using voxel-derived ground contacts through `mobgen/src/core/generate.ts`, `resolveSupportBones`.
+BR's grounded prone form and perception-directed gaze make the crawler's shape and attention readable. Gaze stays presentation-only, while the drag gait and runner/crawler flinches affect hit geometry so attacks follow the visible pose; they add no saved state but change replay compatibility. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded form. See `mobgen/src/mob/crawler.ts`, `crawlerGaitPose`, `src/core/zombiePose.ts`, `posedShambler`, and `mobgen/src/core/generate.ts`, `resolveSupportBones`.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 
@@ -431,7 +431,7 @@ dependencies.
 - **Armoury access:** the camp must remain reachable if the clinic key stays on the dead officer. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads 15 seconds as real play time; keep prying out of compression so the crowbar's noise draws the dead at normal pace. The matching key remains the quiet route, and `lock_test` is a first-look fixture, not the authored military site. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making forced entry one-way. See `DESIGN.md`, “Base building and electricity”, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 - **Tester prompt:** “find the military camp” (BR, 2026-10-06 13:05: “yes, confirmed”; #181).
 
-The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. BR agreed beats 4–6 in #181; their map rounds follow the dependent 3.7 and 3.8 work for beat 4, 3.4 and 3.8 for beat 5, and 3.2, 3.8 and 3.9 for beat 6. Do not block beats 1–3 on those later rounds.
+The military area supplies the AR, AK and their ammunition from 3.2. Use the authored-site pipeline and fixed key loot with seeded filler. BR agreed beats 4–6 in #181. The dependency-independent workshop core is in d124-2: `src/content/base/templates-workshop.json` owns its reusable interiors, `maps/playtest.tmj` owns the site and route, and `src/content/base/layouts-playtest.json` is the committed export. Its optional door `openNoise` keeps the roller entry loud while the side door stays quiet (`src/core/schema.ts`, `FurnitureSchema`; `src/game/doorAction.ts`, `registerDoorAction`). Fixed promises and seed-owned filler remain separate; the radio is loot, not an implementation decision about whether it works. The workshop's authored `r` spawn markers use the existing runner type; no scripted spawns are used. Its static stripped 4×4 comes from the vehicle-spike blueprint in `src/vehicles/rangeRover.ts`, rendered by `src/render/workshopVehicle.ts`, while furniture retains collision ownership. The main hall roof is double height by BR's 2026-10-07 16:33 request: “we will likely want to raise the roof too in the workshop main hall to double height”. Quiet/light choice loot remains deferred to 3.7. The medical and military map rounds retain their dependencies on 3.4 and 3.8, and 3.2, 3.8 and 3.9 respectively. Do not block beats 1–3 on those later rounds.
 **Saves:** The authored layout, fixed placements and seeded loot regenerate from the site and seed. Dynamic changes and looted items use the existing world/inventory save; no separate map-progress state is added.
 **Tests:** authored content validates; site generation is deterministic across chunk order; required progression and routes remain traversable; fixed key loot and seeded filler follow their separate ownership without pinning exact coordinates or complete loot lists. The playtest records consented observation notes and local metrics without changing game state.
 **Done when:** the approved map supports the end-of-slice playtest, its two nights and progression are playable, the checklist links its evidence, and the playtest findings are recorded before Slice 4 planning.
@@ -444,7 +444,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 - 3.5 precedes 3.6 and 3.9.
 - 3.2 precedes 3.7.
 - 3.10 starts early enough for later milestones to use replays.
-- BR agreed beats 4–6 in #181; each later map round follows its dependencies: beat 4 after 3.7 and 3.8, beat 5 after 3.4 and 3.8, and beat 6 after 3.2, 3.8 and 3.9.
+- BR agreed beats 4–6 in #181. Beat 4's choice-critical attachments remain deferred to 3.7, and its authored `r` spawn markers use the existing runner type without scripted spawns. d124-2 supplies the independent workshop core. Beat 5 follows 3.4 and 3.8, and beat 6 follows 3.2, 3.8 and 3.9.
 
 ## Carried in
 
@@ -458,7 +458,7 @@ The military area supplies the AR, AK and their ammunition from 3.2. Use the aut
 Only questions BR left open; don't infer answers from implementation or old proposals.
 
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
-- **#181 beats 4–6:** detail the larger workshop, medical site and military site one beat per turn. BR's earlier answers settle the order and purpose, but not these beats' contents and layouts.
+- **#181 beat 4:** whether the radio works, and which quiet-or-light craft path fixed workshop loot should cover fully. d124-2 places the radio and defers both decisions; its attachment-dependent choice loot remains deferred to 3.7. The template's `r` spawn markers use the existing runner type without scripted spawns. Beats 5–6 retain their own dependent map rounds.
 - **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
 - **#308 — playtest 1 apex enemy:** the design questions remain open; see 3.8.
 
