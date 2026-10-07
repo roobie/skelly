@@ -603,6 +603,16 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "door_roller_open",
+      "variants": ["assets/audio/door-open-03.ogg"],
+      "gain": 0.65,
+      "pitchJitter": [0.96, 1.04],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": true, "radiusMetres": 60 }
+    },
+    {
       "id": "door_close",
       "variants": ["assets/audio/door_blocked_close-01.ogg"],
       "gain": 0.75,

@@ -660,6 +660,29 @@ button.inv-option.game-cursor-hover {
   border-radius: 3px;
   background: #262a30;
 }
+.hd-bar {
+  position: relative;
+}
+.hd-meter {
+  position: relative;
+  padding-bottom: 14px;
+}
+.hd-minimum {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
+  transform: translateX(-1px);
+  background: #f6c766;
+}
+.hd-meter-minimum {
+  position: absolute;
+  top: 8px;
+  transform: translateX(-50%);
+  color: #f6c766;
+  font-size: 10px;
+  white-space: nowrap;
+}
 .inv-bar-fill,
 .hd-fill {
   display: block;

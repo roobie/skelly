@@ -6,6 +6,7 @@ import { BoxGeometry, Group, Mesh, MeshLambertMaterial } from 'three';
 import { type BlockEntities, type BlockEntity, doorPanel } from '../core/blockEntities.ts';
 import { withHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
+import { workshopCar, workshopLift } from './workshopVehicle.ts';
 
 /** Boxes are a touch smaller than their cells so their faces don't fight with walls. */
 const INSET = 0.02;
@@ -32,7 +33,11 @@ export class FurnitureMeshes {
       const def = entities.defOf(entity);
       const material = this.material(def.color);
       let mesh: Group | Mesh;
-      if (def.door) {
+      if (def.id === 'workshop_lift') {
+        mesh = workshopLift(entity, this.blockSize);
+      } else if (def.id === 'workshop_stripped_car') {
+        mesh = workshopCar(entity, this.blockSize);
+      } else if (def.door) {
         mesh = this.door(entity, material);
       } else if (def.readable && def.solid === false) {
         mesh = this.wallBoard(entity, material);

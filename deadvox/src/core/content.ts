@@ -13,6 +13,7 @@ import {
   type ContentFile,
   ContentFileSchema,
   type ContentSection,
+  type FurnitureDef,
   type ItemDef,
   type RecipeDef,
   type TemplateDef,
@@ -406,6 +407,16 @@ const checkLoot = (registry: Registry, report: Report) => {
   }
 };
 
+const checkDoorOpenNoise = (registry: Registry, furniture: FurnitureDef, report: Report) => {
+  const openNoise = furniture.door?.openNoise;
+  const openingSound = openNoise && registry.sounds.get(openNoise.sound);
+  if (openNoise && !openingSound) {
+    report('furniture', furniture.id, '.door.openNoise.sound', `no sound event "${openNoise.sound}"`);
+  } else if (openNoise && openingSound && !openingSound.noise.enabled) {
+    report('furniture', furniture.id, '.door.openNoise.sound', 'opening sound must emit hearing noise');
+  }
+};
+
 const militaryOnly = (id: string) => `"${id}" is military loot only`;
 
 const checkMilitaryTables = (registry: Registry, military: ReadonlySet<string>, report: Report) => {
@@ -453,6 +464,7 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
 
 const checkFurniture = (registry: Registry, report: Report) => {
   for (const furniture of registry.furniture.values()) {
+    checkDoorOpenNoise(registry, furniture, report);
     if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
       report('furniture', furniture.id, '.door.prying.skill', `no skill "${furniture.door.prying.skill}"`);
     }

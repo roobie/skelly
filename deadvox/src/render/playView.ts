@@ -18,9 +18,9 @@ import { PLAYER } from '../game/player.ts';
 import { CaseEffects } from './caseEffects.ts';
 import { Flashlight, flashlightDaylightScale } from './flashlight.ts';
 import { FurnitureMeshes } from './furniture.ts';
-import { GlowstickThrows } from './glowstickThrows.ts';
 import { type HeldHandlingFrame, HeldItems } from './hands.ts';
 import { ImpactEffects } from './impactEffects.ts';
+import { ItemThrows } from './itemThrows.ts';
 import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
@@ -99,7 +99,7 @@ export const createPlayView = (
   const playerPalette = registry.figures.get('player')!.palette;
   const piles = new PileMeshes(s, models, config.seed);
   const caseEffects = new CaseEffects(s, models);
-  const glowstickThrows = new GlowstickThrows();
+  const itemThrows = new ItemThrows(registry, models, s);
   const targetCell = config.debug
     ? (block: Vec3) => {
         const entity = engine.entities.at(...block);
@@ -108,12 +108,12 @@ export const createPlayView = (
     : undefined;
   const impactEffects = new ImpactEffects(s, engine.isSolid, targetCell);
   const held = new HeldItems(inventory, models, playerPalette);
-  scene.add(caseEffects.mesh, impactEffects.group, glowstickThrows.group);
+  scene.add(caseEffects.mesh, impactEffects.group, itemThrows.group);
   const dispose = () => {
     piles.dispose();
     caseEffects.dispose();
     impactEffects.dispose();
-    glowstickThrows.dispose();
+    itemThrows.dispose();
     held.dispose();
   };
   page.addEventListener('pagehide', dispose);
@@ -139,7 +139,7 @@ export const createPlayView = (
     models,
     piles,
     caseEffects,
-    glowstickThrows,
+    itemThrows,
     impactEffects,
     furniture,
     playerMeshes,
@@ -169,7 +169,7 @@ export const createPlayView = (
       frozen,
       perceptionLabels,
     }: PlayWorldFrame) => {
-      glowstickThrows.update(dt);
+      itemThrows.update(dt);
       const hour = hourOfDay(calendar);
       const sky = skyInWeather(skyAt(hour), weather);
       applySky(engine.sky, sky);
