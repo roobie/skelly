@@ -1,7 +1,7 @@
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 
-const QUICKBAR_SLOTS = 5;
+export const QUICKBAR_SLOTS = 5;
 
 /** Non-owning UID bindings; Inventory is the sole authority for live items. */
 export class Quickbar {

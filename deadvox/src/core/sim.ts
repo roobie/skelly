@@ -289,6 +289,27 @@ export class Simulation {
     return advanced;
   }
 
+  /** Advances a replay by fixed simulation time without consulting wall-clock compression. */
+  frameReplay(simDt: number): number {
+    if (this.paused || this.dead) {
+      return 0;
+    }
+    if (!Number.isFinite(simDt) || simDt < 0) {
+      throw new Error('Invalid replay step');
+    }
+    this.checkInterruptions();
+    const { c } = this.compression;
+    const dt = Math.min(simDt * c, this.compression.limits.maxSimPerFrame);
+    const hadAction = this.actions.job !== undefined;
+    const advanced = this.scheduler.advance(
+      dt,
+      c,
+      () => this.dead !== undefined || this.checkInterruptions() || (hadAction && this.actions.job === undefined),
+    );
+    this.actions.syncInterruption();
+    return advanced;
+  }
+
   /**
    * Drops compression to 1× on an emitted interrupt, or when unowned active
    * compression stops being safe. Returns true so the scheduler stops before the next step.

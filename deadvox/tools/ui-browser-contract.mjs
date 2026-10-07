@@ -816,12 +816,11 @@ try {
     `scroll survives selecting an item (${inventoryScroll.top} -> ${paneTop})`,
   );
 
-  await action('inventory.best-pocket');
-  assert.notEqual(
-    await evaluate("document.querySelector('#inventory .inv-queue').textContent.includes('Nothing queued')"),
-    true,
-    'selected item queues a move',
-  );
+  const moveQueued = () => evaluate("document.querySelector('#inventory .inv-job') !== null");
+  assert.equal(await moveQueued(), false, 'inventory starts with no queued move');
+  await pressCdpAction(evaluate, send, 'inventory.best-pocket');
+  await waitFor(moveQueued, 'selected item queues a move', 1000);
+  assert.equal(await moveQueued(), true, 'selected item queues a move');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives queueing a move');
   await waitFor(
