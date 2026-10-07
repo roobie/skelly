@@ -351,8 +351,18 @@ describe('content', () => {
           book: { title: 'Fixture manual', recipes: ['missing_recipe'], readingGameMinutes: gameMinutes(1) },
         },
       ],
+      recipes: [
+        {
+          id: 'fixture_recipe',
+          result: { item: 'book_reference_fixture', count: 1 },
+          timeGameMinutes: gameMinutes(1),
+          skills: {},
+          qualities: {},
+          components: [[{ item: 'book_reference_fixture', count: 1 }]],
+        },
+      ],
     };
-    const result = buildRegistry([...base, { source, data }]);
+    const result = buildRegistry([{ source, data }]);
     expect(result.issues).toContainEqual({
       source,
       path: 'items[0].book.recipes[0]',
@@ -364,7 +374,7 @@ describe('content', () => {
   it('rejects placement loot without a container and retains the same loot when a pocket exists', () => {
     const source = 'test/fixtures/content/loot-override-no-container.json';
     const data = JSON.parse(readFileSync(source, 'utf8')) as ContentFile;
-    const rejected = buildRegistry([...base, { source, data }]);
+    const rejected = buildRegistry([{ source, data }]);
     expect
       .soft(rejected.issues)
       .toEqual([{ source, path: 'templates[0].palette["Ω"].loot', message: 'has loot but no container to put it in' }]);
@@ -372,7 +382,7 @@ describe('content', () => {
     // Only the container changes: shape/references and actual marked placement stay identical.
     const control = structuredClone(data);
     control.furniture![0]!.container = { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] };
-    const { registry, issues } = buildRegistry([...base, { source, data: control }]);
+    const { registry, issues } = buildRegistry([{ source, data: control }]);
     expect(issues).toEqual([]);
     expect(checkReachability(registry).found.has('review_only_item')).toBe(true);
     const placement: Placement = {
@@ -597,6 +607,17 @@ describe('content', () => {
 });
 
 describe('content references', () => {
+  const recipeDependencies = {
+    source: 'recipe-component-items.json',
+    data: {
+      items: [
+        { id: 'rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+        { id: 'nails', name: 'Nails', category: 'material', weight: 1, size: [1, 1] },
+      ],
+      skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 1 } }],
+    },
+  };
+
   const recipePack = {
     items: [
       {
@@ -670,7 +691,7 @@ describe('content references', () => {
   });
 
   it('validates and merges a mod recipe/skill with declared IDs at exactly 1024 alternatives', () => {
-    const { registry, issues } = buildRegistry([...base, { source: 'recipe-mod.json', data: recipePack }]);
+    const { registry, issues } = buildRegistry([recipeDependencies, { source: 'recipe-mod.json', data: recipePack }]);
     expect(issues).toEqual([]);
     expect(registry.recipes.get('fixture_recipe')).toEqual({
       ...recipePack.recipes[0],
@@ -698,7 +719,7 @@ describe('content references', () => {
         },
       ],
     };
-    const { registry, issues } = buildRegistry([...base, { source: 'bad-recipe-mod.json', data }]);
+    const { registry, issues } = buildRegistry([recipeDependencies, { source: 'bad-recipe-mod.json', data }]);
     expect(issues.map(({ path, message }) => [path, message])).toEqual([
       ['recipes[0].result.item', 'no item "missing_result"'],
       ['recipes[0].skills.missing_skill', 'no skill "missing_skill"'],
@@ -722,7 +743,7 @@ describe('content references', () => {
       items: [Object.fromEntries(Object.entries(recipePack.items[0]!).filter(([key]) => key !== 'disassembly'))],
     };
     const source = 'missing-disassembly.json';
-    const { issues } = withBase({ source, data: missingYield });
+    const { issues } = buildRegistry([recipeDependencies, { source, data: missingYield }]);
     expect(issues).toContainEqual({
       source,
       path: 'items[0].disassembly',
@@ -731,7 +752,7 @@ describe('content references', () => {
   });
 
   it('reports a loot entry for a missing item, and drops the whole file', () => {
-    const { registry, issues } = withBase(fixture);
+    const { registry, issues } = buildRegistry([fixture]);
     expect(issues).toEqual([
       { source: 'broken-reference.json', path: 'loot[0].entries[1].item', message: 'no item "golden_toilet"' },
     ]);
@@ -744,10 +765,17 @@ describe('content references', () => {
       source: 'uses.json',
       data: { loot: [{ id: 'more', rolls: [1, 1], entries: [{ table: 'fixture_drawer', weight: 1 }] }] },
     };
-    const { registry, issues } = withBase(fixture, uses);
+    const retained = {
+      source: 'retained-loot.json',
+      data: {
+        items: [{ id: 'retained_item', name: 'Retained', category: 'material', weight: 1, size: [1, 1] }],
+        loot: [{ id: 'retained_table', rolls: [1, 1], entries: [{ item: 'retained_item', weight: 1 }] }],
+      },
+    };
+    const { registry, issues } = buildRegistry([fixture, uses, retained]);
     expect(issues.map((i) => i.source)).toEqual(['broken-reference.json', 'uses.json']);
     expect(registry.loot.has('more')).toBe(false);
-    expect(registry.loot.has('kitchen_cupboard')).toBe(true);
+    expect(registry.loot.has('retained_table')).toBe(true);
   });
 
   it('finds nested loot tables that loop', () => {
@@ -760,7 +788,7 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = withBase(loop);
+    const { issues } = buildRegistry([loop]);
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
