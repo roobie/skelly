@@ -74,7 +74,7 @@ export const HUMANOID_PARAM_ORDER = [
 
 export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>>;
 
-const WOUNDABLE_BONES = [
+export const WOUNDABLE_BONES = [
   'spine',
   'chest',
   'upperArm.L',
@@ -792,7 +792,7 @@ const buildPalette = (p: HumanoidParams): Record<Material, Vec3> => ({
 
 // ---- Build & sample ----
 
-const buildHumanoid = (genome: Genome): Body => {
+export const buildHumanoid = (genome: Genome): Body => {
   const p = genome.params as HumanoidParams;
   const layout = jointLayout(p);
   const bones = buildBones(layout);
@@ -872,7 +872,7 @@ const amputateCrawlerLegs = (body: Body): Body => {
   return { ...body, bones, features };
 };
 
-const sampleWounds = (rng: Rng, count: number): Wound[] => {
+export const sampleWounds = (rng: Rng, count: number): Wound[] => {
   const n = Math.max(0, Math.round(count));
   const wounds: Wound[] = [];
   for (let i = 0; i < n; i++) {

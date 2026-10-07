@@ -5,9 +5,8 @@
 
 import { registerTemplate, type Template } from '../core/template.ts';
 import { FEET_BONES } from './humanoid.ts';
-import './humanoid.ts'; // registers the 'humanoid' body plan (sample + build)
 
-const FEET = FEET_BONES;
+const SUPPORT_BONES = FEET_BONES;
 /** Shares of nominal mass for severable parts; each key covers the whole subtree it cuts off (forearm.L includes its hand). */
 const HUMANOID_MASS_FRACTIONS = {
   'hand.L': 0.006,
@@ -58,7 +57,7 @@ const shamblerParams: Template['params'] = {
   footLift: { min: 0.02, max: 0.06 },
 };
 
-const shambler: Template = {
+export const shambler: Template = {
   name: 'shambler',
   description: 'Average build, hunched, shuffling walk with an occasional forward reach.',
   bodyPlan: 'humanoid',
@@ -66,7 +65,7 @@ const shambler: Template = {
   bodyMassKg: 70,
   massFractions: HUMANOID_MASS_FRACTIONS,
   params: shamblerParams,
-  feet: FEET,
+  supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 500, max: 2000 },
     totalTriangles: { min: 800, max: 9500 },
@@ -94,7 +93,7 @@ const runner: Template = {
     jawOpen: { choices: [0, 0, 0.2, 0.4, 0.6] },
     woundCount: { choices: [0, 0, 0, 1, 1, 2] },
   },
-  feet: FEET,
+  supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 500, max: 2100 },
     totalTriangles: { min: 800, max: 9500 },
@@ -119,7 +118,7 @@ const crawler: Template = {
     kneeBend: { min: 15, max: 35 },
     woundCount: { choices: [0, 1, 1, 2, 3] },
   },
-  feet: ['thigh.L', 'thigh.R', 'hand.L', 'hand.R'],
+  supportBones: ['thigh.L', 'thigh.R', 'hand.L', 'hand.R'],
   budgets: {
     totalVoxels: { min: 400, max: 1800 },
     totalTriangles: { min: 700, max: 8500 },
@@ -145,7 +144,7 @@ const brute: Template = {
     strideFactor: { min: 0.7, max: 1.0 },
     armSwing: { min: 3, max: 12 },
   },
-  feet: FEET,
+  supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 500, max: 2400 },
     totalTriangles: { min: 800, max: 10_000 },
