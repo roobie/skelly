@@ -15,6 +15,25 @@ const CRAWLER_SWEEP_SEEDS = Array.from({ length: 64 }, (_, index) => index + 1).
   (seed) => !SHAMBLER_SEED_SET.has(seed),
 );
 const LOWER_LEG_BONE = /^(shin|foot)\./;
+const pullElbowProperties = (
+  realized: ReturnType<typeof realize>,
+  phase: number,
+  side: 'L' | 'R',
+): { lateral: boolean; rearward: boolean; nearGround: boolean } => {
+  const pullEnd = crawlerGaitPose(realized, phase, 1);
+  const pullTransforms = boneTransforms(realized.body.bones, pullEnd);
+  const upper = realized.body.bones.find((bone) => bone.id === `upperArm.${side}`)!;
+  const transform = pullTransforms.get(upper.id)!;
+  const shoulder = applyPoint(transform, upper.head);
+  const elbow = applyPoint(transform, upper.tail);
+  const voxel = realized.voxels.size;
+  return {
+    lateral: (elbow[0] - shoulder[0]) * (side === 'L' ? -1 : 1) > voxel,
+    rearward: elbow[2] - shoulder[2] > voxel,
+    nearGround: elbow[1] >= -voxel && elbow[1] <= 2 * voxel,
+  };
+};
+
 const trailingSupportProperties = (seed: number): boolean[] => {
   const properties: boolean[] = [];
   const realized = realize(generate(crawler, seed));
@@ -68,6 +87,14 @@ describe('crawler', () => {
       expect(rightReach.rotations['upperArm.R']).not.toEqual(rest.rotations['upperArm.R']);
       expect(rightReach.rotations['upperArm.L']).toEqual(rest.rotations['upperArm.L']);
       expect(crawlerGaitPose(realized, 0.5, 0)).toEqual(rest);
+
+      for (const side of ['L', 'R'] as const) {
+        const phase = (side === 'L' ? 0 : Math.PI) + Math.PI * 0.82;
+        const properties = pullElbowProperties(realized, phase, side);
+        expect(properties.lateral).toBe(true);
+        expect(properties.rearward).toBe(true);
+        expect(properties.nearGround).toBe(true);
+      }
 
       const tolerance = 2 * realized.voxels.size;
       for (const [phase, speed] of [

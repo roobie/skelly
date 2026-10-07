@@ -354,7 +354,7 @@ After seeing the stumps, BR's question was whether they read correctly despite t
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
-BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). d106-13 wires that approved static crawler pose into detailed rendering and adds render-only gaze. The drag gait and in-game hit response remain d130 work, after #325 merges.
+BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). d106-13 wires that approved static crawler pose into detailed rendering and adds render-only gaze. d130 adds the arm-drag gait and runner/crawler flinches; these poses drive simulation hitboxes from existing state, add no saved state, and change the simulation fingerprint so older replays do not carry over. Crawler hitboxes now follow the prone body. Gameplay stagger, slowdown and knockdown remain open for BR; generated-body grounding validation remains deferred to #363.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 

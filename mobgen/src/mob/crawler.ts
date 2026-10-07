@@ -134,21 +134,25 @@ export const groundCrawlerPose = (realized: Realized, pose: Pose): Pose => {
 };
 
 const DRAG_KEYS = [
-  { at: 0, upper: 15, forearm: -15 },
-  { at: 0.25, upper: 15, forearm: -15 },
-  { at: 0.4, upper: 0, forearm: 0 },
-  { at: 0.62, upper: -15, forearm: 40 },
-  { at: 0.82, upper: -15, forearm: 40 },
-  { at: 1, upper: 0, forearm: 0 },
+  { at: 0, upper: 15, upperRoll: 0, forearm: -15 },
+  { at: 0.25, upper: 15, upperRoll: 0, forearm: -15 },
+  { at: 0.4, upper: 0, upperRoll: 0, forearm: 0 },
+  { at: 0.62, upper: 60, upperRoll: 150, forearm: 40 },
+  { at: 0.82, upper: 60, upperRoll: 150, forearm: 40 },
+  { at: 1, upper: 0, upperRoll: 0, forearm: 0 },
 ] as const;
 
-const dragAngles = (progress: number): { upper: number; forearm: number } => {
+const dragAngles = (progress: number): { upper: number; upperRoll: number; forearm: number } => {
   const right = DRAG_KEYS.findIndex((key) => key.at >= progress);
   const from = DRAG_KEYS[Math.max(0, right - 1)]!;
   const to = DRAG_KEYS[Math.max(0, right)] ?? from;
   const span = to.at - from.at;
   const t = span === 0 ? 1 : smoothstep((progress - from.at) / span);
-  return { upper: from.upper + (to.upper - from.upper) * t, forearm: from.forearm + (to.forearm - from.forearm) * t };
+  return {
+    upper: from.upper + (to.upper - from.upper) * t,
+    upperRoll: from.upperRoll + (to.upperRoll - from.upperRoll) * t,
+    forearm: from.forearm + (to.forearm - from.forearm) * t,
+  };
 };
 
 /** Alternates arm reach, plant and pull from distance-driven phase; the trailing leg stumps never step. */
@@ -162,12 +166,12 @@ export const crawlerGaitPose = (realized: Realized, phase: number, speed: number
   const progress = (cycle % Math.PI) / Math.PI;
   const angles = dragAngles(progress);
   const rotations: Record<string, Mat3> = { ...base.rotations };
-  for (const [bone, delta] of [
-    [`upperArm.${side}`, angles.upper],
-    [`forearm.${side}`, angles.forearm],
-  ] as const) {
-    rotations[bone] = mulMM(rotations[bone] ?? IDENTITY_M, rotX(delta));
-  }
+  const upper = `upperArm.${side}`;
+  const forearm = `forearm.${side}`;
+  // The mirrored rig needs opposite roll to send each elbow outward along its side.
+  const sideRoll = side === 'L' ? -angles.upperRoll : angles.upperRoll;
+  rotations[upper] = mulMM(mulMM(rotations[upper] ?? IDENTITY_M, rotX(angles.upper)), rotZ(sideRoll));
+  rotations[forearm] = mulMM(rotations[forearm] ?? IDENTITY_M, rotX(angles.forearm));
   return groundCrawlerPose(realized, { ...base, rotations });
 };
 

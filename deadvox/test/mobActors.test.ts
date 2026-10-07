@@ -31,6 +31,7 @@ import { Rng } from '../src/core/random.ts';
 import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
+import { PLAYER } from '../src/game/player.ts';
 import {
   fallDirectionAwayFromPlayer,
   HEARING_GAZE_JITTER,
@@ -598,6 +599,8 @@ describe('MobActorMeshes', () => {
     zombie.investigationTier = 'near';
     zombie.lastPerceived = [playerEye[0] / blockSize, 0, playerEye[2] / blockSize];
     expect(perceptionLabelFor(zombie, true, playerEye, blockSize)).toBe('hears you');
+    const oneSprintStepLater: Vec3 = [playerEye[0] + PLAYER.sprint / 20, playerEye[1], playerEye[2]];
+    expect(perceptionLabelFor(zombie, true, oneSprintStepLater, blockSize)).toBe('hears you');
     const lureLightPosition: Vec3 = [playerEye[0] + blockSize, playerEye[1], playerEye[2]];
     zombie.lastPerceived = [lureLightPosition[0] / blockSize, 0, lureLightPosition[2] / blockSize];
     expect(perceptionLabelFor(zombie, true, playerEye, blockSize)).toBe('notices something');
