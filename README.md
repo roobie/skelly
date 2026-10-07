@@ -12,11 +12,11 @@ A home for small 3D projects and a voxel survival game. The point is to have fun
 
 ## Projects
 
-| Project | What it is | Progress |
-| --- | --- | --- |
-| [gungen](gungen/PROJECT.md) | A designer and exporter for feasible low-poly firearms. | Project plan and milestones |
-| [deadvox](deadvox/EPIC.md) | A singleplayer, browser-based voxel survival game. | Version 1 roadmap |
-| [mobgen](mobgen/PROJECT.md) | A procedural generator of voxel mobile actors. | Project plan and milestones |
+| Project | What it is |
+| --- | --- |
+| [gungen](gungen/PROJECT.md) | A designer and exporter for feasible low-poly firearms. |
+| [deadvox](deadvox/EPIC.md) | A singleplayer, browser-based voxel survival game. |
+| [mobgen](mobgen/PROJECT.md) | A procedural generator of voxel mobile actors. |
 
 How work moves from spec to merge, what done means, and the working rules are in [`docs/PROCESS.md`](docs/PROCESS.md).
 
@@ -43,7 +43,11 @@ BR, 2026-10-07 17:05:55 +02:00:
 
 Docs explain why and name a trigger only when it matters; code owns what and how. Cue code by path and symbol, replace superseded text instead of appending amendments, and keep the final reason in a tracked doc. Design docs may state intent before implementation, but the implementing change trims them to the reason and code cues.
 
-A review that finds an amendment trail returns FIX (br-28). Superseded ADRs, reviews and retros belong in git history, not as current records in the working tree (br-29). The deep docs pass runs once per slice during closure (br-30).
+A review that finds an amendment trail returns FIX, not a nit. BR, 2026-10-07 20:27:13 +02:00: "FIX".
+
+Superseded ADRs, reviews and retros belong in git history, not as current records in the working tree. BR, 2026-10-07 22:51:19 +02:00: "obsoleted or superseded ADRs are deleted, confined to git history. We should make reviews and retros too live in historical layers only - not in-repo as current records."
+
+The deep docs pass runs once per slice during closure. BR, 2026-10-07 20:27:13 +02:00: "Once per slice, in the process of closing it".
 
 ## Run and check
 
