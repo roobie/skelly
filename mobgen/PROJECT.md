@@ -47,10 +47,10 @@ data, and the defaults must work for any body plan.
 - Getting actors into deadvox: export format, batched rendering, level of
   detail (CHALLENGES §1, §9).
 - Body plans beyond the humanoid and the static crawler exception; dismemberment.
-- Animations beyond the humanoid walk, crawler's static pose and bounded render-only gaze.
+- Animations beyond the humanoid walk and bounded render-only gaze, except the approved crawler arm-drag gait implemented for d130.
 - Pose validation beyond the humanoid rest pose and crawler support properties in `test/crawler.test.ts` (CHALLENGES §7).
 
-Slice 3.8's static crawler is an exception to the humanoid milestone scope: its body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses `src/mob/crawler.ts`, `crawlerPose`. Rig-specific gaze limits live in `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and the render-only pose adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the static silhouette at 2026-10-07 10:03; the drag gait and in-game hit response remain d130 work, after #325 merges. The crawler's humanoid rest-pose grounding validator issue is tracked for d130: `src/mob/crawler.ts`, `crawlerPose`, supplies the static prone render pose, while `src/core/validate.ts`, `validate`, still applies the humanoid generation rules. In the mobgen viewer, `src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera because the viewer has no perception state.
+Slice 3.8's static crawler is an exception to the humanoid milestone scope: its body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses `src/mob/crawler.ts`, `crawlerPose`. Rig-specific gaze limits live in `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and the render-only pose adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the static silhouette at 2026-10-07 10:03. BR's d106-8 ruling (2026-10-07 00:18) says the crawler “drags itself on its arms”; `crawlerGaitPose` follows that reading with alternating reach, plant and pull while the stumps trail. d130 implements this presentation gait and runner/crawler hit flinches layered on existing `hitFlinchTime`; gameplay stagger, slowdown or knockdown and per-type clip tuning remain BR decisions. The generated-body grounding validator remains in the #363-dependent d130 follow-up: `src/mob/crawler.ts`, `crawlerPose`, supplies the prone pose while `src/core/validate.ts`, `validate`, still applies humanoid generation rules. `test/crawler.test.ts` checks the static pose, gait and flinch surfaces. In the mobgen viewer, `src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera because the viewer has no perception state.
 
 ## Decisions
 
@@ -134,7 +134,7 @@ Query parameters are `?template=<name>&seed=<n>`, as in gungen.
   detail, generating in a worker (CHALLENGES §1, §9).
 - Joint limits and pose rules (CHALLENGES §7).
 - Wounds during play and dismemberment (CHALLENGES §10).
-- More body plans: skeleton. The crawler's body and static pose are the Slice 3.8 exception above; its drag gait remains deferred to d130, after #325 merges.
+- More body plans: skeleton. The crawler's body, static pose and d130 arm-drag gait are the Slice 3.8 exception above.
 - Per-vertex ambient occlusion.
 - A voxelized reference figure as a viewer layer, for calibration.
 

@@ -63,7 +63,6 @@ import {
 } from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
-  boneTransforms,
   boneTransformsInto,
   indexBonesByParent,
   type MutableTransform,
@@ -72,7 +71,6 @@ import {
 } from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
-import { crawlerPose } from '@mobgen/mob/crawler.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
@@ -159,6 +157,7 @@ export interface ZombieRenderer {
 const DEFAULT_POOL_SIZE = SHAMBLER_FIGURE_SEEDS.length;
 const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
 
+/** Keeps severing-energy tests within the selected fixture seed instead of allocating every renderer variant. */
 export const mobFigurePoolSizeThrough = (figureSeed: number): number => {
   const index = SHAMBLER_FIGURE_SEEDS.indexOf(figureSeed as (typeof SHAMBLER_FIGURE_SEEDS)[number]);
   if (index < 0) {
@@ -1416,19 +1415,13 @@ export class MobActorMeshes implements ZombieRenderer {
     const { dt: gazeFrameDelta = 0, presentationSimSeconds = 0 } = gazeFrame;
     const { position, worldPos, yaw, headYaw } = placement;
     const variant = this.variants[state.variantIndex]!;
-    const posed =
-      variant.model === 'crawler'
-        ? (() => {
-            const pose = crawlerPose(variant.realized);
-            return { pose, transforms: boneTransforms(variant.realized.body.bones, pose) };
-          })()
-        : posedShambler(
-            zombiePoseInputFor(zombie, state.id, this.blockSize, {
-              position,
-              facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
-              headYaw,
-            }),
-          );
+    const posed = posedShambler(
+      zombiePoseInputFor(zombie, state.id, this.blockSize, {
+        position,
+        facing: [-Math.sin(yaw), 0, -Math.cos(yaw)],
+        headYaw,
+      }),
+    );
     let { pose, transforms }: { pose: Pose; transforms: ReadonlyMap<string, Transform> } = posed;
     const hasHead = zombie.regions.head > 0 && !zombie.severed.includes('head');
     if (hasHead) {
