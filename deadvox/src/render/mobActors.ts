@@ -123,7 +123,7 @@ import {
 import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
-import { ZOMBIE_RATE } from '../game/session.ts';
+import { ZOMBIE_RATE } from '../game/simulationRates.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
