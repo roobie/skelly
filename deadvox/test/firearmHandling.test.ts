@@ -531,26 +531,36 @@ describe('rifle firearm handling', () => {
     expect(rifle.firearm?.chamber).toBe('round');
   });
 
-  it('adds a case to the nearest matching pile and round-trips it through inventory save state', () => {
+  it('drops each case in the pile of the block it lands on, never a case pile on a nearer block', () => {
+    // BR, 2026-10-07 11:27 (DESIGN.md, "Spent cases per block"): cases are saved per block.
+    const [landing] = [...shot(1).inventory.piles.values()].map((pile) => pile.pos);
+    const feet: Vec3 = [
+      Math.floor(pose.feet[0] / pose.blockSize),
+      pose.feet[1],
+      Math.floor(pose.feet[2] / pose.blockSize),
+    ];
+    expect(landing).toBeDefined();
+    expect(landing).not.toEqual(feet);
+    const cases = (ground: Inventory, pos: Vec3) =>
+      ground.pileAt(pos)?.items.find(({ item }) => item.type === caseType)?.item.count;
+
+    const beside = shot(1, (prepared) => {
+      expect(prepared.add(prepared.create(caseType, 11), { kind: 'pile', pos: feet })).toBe(true);
+    }).inventory;
+    expect([cases(beside, feet), cases(beside, landing!)]).toEqual([11, 1]);
+
     const { effect, inventory } = shot(1, (prepared) => {
-      expect(prepared.add(prepared.create('nails', 2), { kind: 'pile', pos: [0, 1, 0] })).toBe(true);
-      expect(prepared.add(prepared.create(caseType, 5), { kind: 'pile', pos: [2, 1, 0] })).toBe(true);
-      expect(prepared.add(prepared.create(caseType, 11), { kind: 'pile', pos: [45, 1, 0] })).toBe(true);
+      expect(prepared.add(prepared.create(caseType, 5), { kind: 'pile', pos: landing! })).toBe(true);
     });
-    expect(effect).toMatchObject({
-      speed: 3.5,
-      caseModelId: 'case_5_d_56x45',
-    });
-    expect(inventory.pileAt([0, 1, 0])?.items.find(({ item }) => item.type === 'nails')?.item.count).toBe(2);
-    expect(inventory.pileAt([2, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(6);
-    expect(inventory.pileAt([45, 1, 0])?.items.find(({ item }) => item.type === caseType)?.item.count).toBe(11);
+    expect(effect).toMatchObject({ speed: 3.5, caseModelId: 'case_5_d_56x45' });
+    expect(cases(inventory, landing!)).toBe(6);
 
     const saved = JSON.parse(JSON.stringify(inventory.snapshotState())) as InventoryState;
     const restored = Inventory.restoreState(registry, saved);
     expect(restored.snapshotState()).toEqual(saved);
   });
 
-  it('creates a deterministic case pile from the exported held pose when none is within 20 m', () => {
+  it('creates a deterministic case pile from the exported held pose', () => {
     const first = shot(2.5);
     const second = shot(2.5);
     expect(first.effect).toEqual(second.effect);

@@ -24,7 +24,6 @@ import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { dropTarget, stowTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
-import { pilesInRadius } from '../core/reach.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
 import { MAGAZINE_LOAD_ACTION } from './magazineHandling.ts';
 
@@ -572,7 +571,7 @@ export class FirearmMechanics {
     if (!emission) {
       return 'No held ejection pose';
     }
-    const drop = this.ejectionDrop(type, emission, state?.chamber === 'case');
+    const drop = this.ejectionDrop(type, emission);
     return drop.plan.ok ? undefined : drop.plan.reason;
   }
 
@@ -990,22 +989,12 @@ export class FirearmMechanics {
     };
   }
 
-  /** Metadata-only placement probe: never allocate a UID during read-only rack admission. */
-  private ejectionDrop(
-    type: string,
-    emission: Omit<PendingCase, 'seed'>,
-    counter = false,
-  ): ReturnType<typeof dropTarget> {
-    const probe: Item = { uid: 0, type, count: 1, condition: 1 };
-    const landing = this.landing(emission);
-    const nearby = counter
-      ? pilesInRadius(this.inventory, emission.feet, 20 / this.blockSize).find(
-          (pile) =>
-            pile.items.some(({ item }) => item.type === type) &&
-            this.inventory.planAdd(probe, { kind: 'pile', pos: pile.pos }).ok,
-        )
-      : undefined;
-    return dropTarget(this.inventory, probe, nearby?.pos ?? landing);
+  /**
+   * Metadata-only placement probe: never allocate a UID during read-only rack admission. An ejected item lands in
+   * the pile of the block it falls on, so cases are saved per block (DESIGN.md, "Spent cases per block").
+   */
+  private ejectionDrop(type: string, emission: Omit<PendingCase, 'seed'>): ReturnType<typeof dropTarget> {
+    return dropTarget(this.inventory, { uid: 0, type, count: 1, condition: 1 }, this.landing(emission));
   }
 
   private ejectLive(item: Item, state: FirearmState, data: FirearmHandlingData): string | undefined {
@@ -1055,7 +1044,7 @@ export class FirearmMechanics {
     const emission = pose ? this.emission(item, data, pose) : pending;
     const landing = this.landing(emission);
     const type = spentCaseItemId(data.calibre);
-    const drop = this.ejectionDrop(type, emission, true);
+    const drop = this.ejectionDrop(type, emission);
     if (!drop.plan.ok) {
       return drop.plan.reason;
     }

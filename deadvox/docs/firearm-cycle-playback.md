@@ -56,8 +56,8 @@ Ejection uses the exported anchor and direction through the same grip, roll and
 hold transforms as the held mesh, followed by simulation eye position, pitch and
 yaw. Cosmetic camera bob, roll and recoil do not change ballistics. Transient
 speed (3.5 m/s), flight duration (0.48 s), rifle masses and case masses are
-labelled gameplay estimates, not measured firearm data. Cases continue merging
-into the nearest same-calibre pile within about 20 m.
+labelled gameplay estimates, not measured firearm data. Each case joins the pile
+of the block it lands on (DESIGN.md, "Spent cases per block").
 
 Automatic cycles and pending fired cases survive a snapshot. Manual motion is
 omitted from the save copy, just like manual handling jobs, without changing the

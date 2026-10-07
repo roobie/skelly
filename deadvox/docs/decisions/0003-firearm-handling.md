@@ -44,11 +44,11 @@ Each gun's export describes its action, and deadvox plays it; nothing is hand-an
 - **Hold-open on empty:** the AR's bolt catch holds the carrier at the rear after the last round; the AK returns to battery on an empty magazine. BR: a big part of the feel is the difference between guns.
 - **What moves visibly:** on the AK the carrier and its charging handle reciprocate; on the AR the carrier moves inside the receiver (seen through the ejection port) and the charging handle stays forward.
 
-### 3. Spent cases: one counter per area, not one object per case
+### 3. Spent cases: one counter per block, not one object per case
 
 This is a survival game and reloading ammunition is part of it, so spent cases are **simulation state** and are saved. But deadvox does **not** model each case. Instead:
 
-- Each shot adds 1 to a **spent-case pile** item for that calibre: the nearest existing spent-case pile of the same calibre within **about 20 m** of the shooter; if there is none, a new pile is placed where that shot's case lands. The radius is deliberately large so an area holds few piles.
+- Each shot adds 1 to the **spent-case pile** item for that calibre on the block where that shot's case lands, starting a pile there if there is none. BR's 2026-10-07 ruling (below) replaced the first ruling's counter per area of about 20 m; see DESIGN.md, "Spent cases per block".
 - The increment happens **at the shot**, from the simulation, never from the flying case's physics, so it is deterministic and survives save and restore.
 - The pile is an ordinary pile with a stack of `spent_case_<calibre>` items with a count; picking it up gives the cases (for reloading later).
 - **Rendering the pile** uses the count: up to a cap, a scatter of instanced case models laid out deterministically from the pile's seed and count, spreading wider as the count grows. Beyond the cap the scatter stays as is.
@@ -92,7 +92,7 @@ The existing fingerprint rules (`SIMULATION_EXCLUSIONS`) apply: presentation cod
 
 ## Rulings (2026-10-02)
 
-- Casings: not per case; a counter per area of about 20 m that also drives rendering (BR's pushback on decorative-only cases).
+- Casings: not per case; a counter per area of about 20 m that also drives rendering (BR's pushback on decorative-only cases). Superseded by BR, 2026-10-07 11:27, asked whether to save cases per block with a deterministic scatter or each at its exact landing point: "keep it simple in code, so i guess per block?" The counter is now per block.
 - A handling range first, damage later; a gun range site next to the hamlet.
 - Hold-open on empty modelled; the guns should feel different.
 - Cycle numbers are eyeballed.
