@@ -11,6 +11,7 @@
     "bolt-carrier": { "family": "bolt-carrier", "params": { "pattern": "pump" } },
     "lower": { "family": "lower", "params": { "layout": "pump" } },
     "barrel": { "family": "barrel", "params": { "length": "M" } },
+    "front-bead": { "family": "front-sight-bead" },
     "tube": { "family": "tube-magazine" },
     "forend": { "family": "forend" },
     "stock": { "family": "stock", "params": { "length": "M", "style": "tapered" } }
@@ -18,6 +19,7 @@
   "connections": [
     { "from": "receiver.lower", "to": "lower.top" },
     { "from": "receiver.barrel", "to": "barrel.rear" },
+    { "from": "barrel.bead", "to": "front-bead.base" },
     { "from": "receiver.bolt-carrier", "to": "bolt-carrier.mount" },
     { "from": "receiver.tube", "to": "tube.rear" },
     { "from": "tube.cap", "to": "barrel.lug" },
