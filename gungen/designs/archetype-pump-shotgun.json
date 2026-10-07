@@ -32,6 +32,9 @@
           "length": "M"
         }
       },
+      "front-bead": {
+        "family": "front-sight-bead"
+      },
       "tube": {
         "family": "tube-magazine",
         "params": { "lengthPercent": "75" }
@@ -55,6 +58,10 @@
       {
         "from": "receiver.barrel",
         "to": "barrel.rear"
+      },
+      {
+        "from": "barrel.bead",
+        "to": "front-bead.base"
       },
       {
         "from": "receiver.bolt-carrier",
