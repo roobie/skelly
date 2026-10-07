@@ -242,10 +242,26 @@ describe('authored layout acceptance', () => {
     invalidWithFullPack({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
   });
   it('rejects an elevated shambler spawn without support', () => {
-    invalidWithFullPack(
-      { ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] },
-      'supported surface',
-    );
+    const supported = validationLayout('shambler_support_fixture');
+    const unsupported = {
+      ...supported,
+      shamblers: [{ ...layout.shamblers[0]!, position: [5, 10.5, 5] as const }],
+    };
+    const accepted = buildRegistry([
+      ...layoutValidationBase,
+      { source: 'layout-test.json', data: { layouts: [supported] } },
+    ]);
+    expect(accepted.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+    const rejected = buildRegistry([
+      ...layoutValidationBase,
+      { source: 'layout-test.json', data: { layouts: [unsupported] } },
+    ]);
+    expect(
+      rejected.issues.some(
+        (issue) => issue.source === 'layout-test.json' && issue.message.includes('supported surface'),
+      ),
+    ).toBe(true);
+    expect([...rejected.registry.layouts.keys()]).toEqual(baseLayoutIds);
   });
   it('rejects a player spawn on an unsupported building cell', () => {
     invalidWithFullPack({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
