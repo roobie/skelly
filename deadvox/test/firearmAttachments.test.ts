@@ -6,13 +6,24 @@ import { firearmAttachmentResponse, muzzleLoad, wearFirearmAttachments } from '.
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { defOf, weightOf } from '../src/core/items.ts';
+import { slotsReason } from '../src/core/magazine.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
+import { withDefaultAttachment } from './firearmAttachmentFixture.ts';
 
 const base = 'src/content/base';
 const sources = readdirSync(base)
   .filter((file) => file.endsWith('.json'))
   .sort()
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
+const { registry: baseRegistry, issues } = buildRegistry(sources);
+if (issues.length > 0) {
+  throw new Error(`Fixture content is invalid: ${JSON.stringify(issues)}`);
+}
+const freshRegistry = () => ({
+  ...baseRegistry,
+  items: new Map(baseRegistry.items),
+  models: new Map(baseRegistry.models),
+});
 
 const exportedDefault = (registry: ReturnType<typeof buildRegistry>['registry']) => {
   const firearmModel = registry.models.get(defOf(registry, 'rifle_assault').model!)!;
@@ -30,33 +41,26 @@ const exportedDefault = (registry: ReturnType<typeof buildRegistry>['registry'])
   return { attachment, item, modelId: item.model };
 };
 
-const fixture = () => {
-  const { registry, issues } = buildRegistry(sources);
-  if (issues.length > 0) {
-    throw new Error(`Fixture content is invalid: ${JSON.stringify(issues)}`);
-  }
+const fixture = (massKg = 0.4) => {
+  const registry = freshRegistry();
   const exported = exportedDefault(registry);
   const model = registry.models.get(exported.modelId)!;
   registry.models.set(exported.modelId, {
     ...model,
-    attachment: { ...model.attachment!, massKg: 0.4 },
+    attachment: { ...model.attachment!, massKg },
   });
   const inventory = new Inventory(registry);
-  return { registry, rifle: inventory.create('rifle_assault'), ...exported };
+  return { registry, inventory, rifle: inventory.create('rifle_assault'), ...exported };
 };
 
-const attachAtExportedMount = (
-  registry: ReturnType<typeof buildRegistry>['registry'],
-  firearm: ReturnType<Inventory['create']>,
-  item: ReturnType<Inventory['create']>,
-) => {
-  const hostModel = registry.models.get(defOf(registry, firearm.type).model!)!;
-  const mount = registry.models.get(defOf(registry, item.type).model!)?.attachment?.mount;
-  const slot = hostModel.attachmentSlots?.find((candidate) => candidate.mount === mount);
-  if (!slot) {
-    throw new Error('Fixture firearm has no slot for the attachment mount');
+const attachmentFixture = (itemType: string) => {
+  const fitted = withDefaultAttachment(baseRegistry, 'rifle_assault', itemType);
+  const inventory = new Inventory(fitted.registry);
+  const rifle = inventory.create('rifle_assault');
+  if (slotsReason(fitted.registry, rifle.type, rifle.slots)) {
+    throw new Error('Factory-created fitted attachment is not accepted by slotsReason');
   }
-  firearm.slots = { ...firearm.slots, [slot.id]: item };
+  return { ...fitted, inventory, rifle };
 };
 
 describe('muzzle load', () => {
@@ -93,23 +97,23 @@ describe('muzzle load', () => {
   });
 
   it('increases sway and raise time while reducing recovery and ready movement', () => {
-    const { registry } = fixture();
-    const inventory = new Inventory(registry);
-    const gun = inventory.create('rifle_assault');
-    expect(inventory.add(gun, { kind: 'hand', side: 'right' })).toBe(true);
-    const fittedSlots = gun.slots!;
-    gun.slots = {};
-    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
-      blockSize: 1,
-      pose: () => undefined,
-      onEjection: () => undefined,
-    });
-    const unloaded = mechanics.skillZeroHandlingFor(gun.uid);
-    const unloadedStance = mechanics.stanceEffectsFor(gun.uid);
-    gun.slots = fittedSlots;
-    expect(muzzleLoad(registry, gun)).toBeGreaterThan(0);
-    const loaded = mechanics.skillZeroHandlingFor(gun.uid);
-    const loadedStance = mechanics.stanceEffectsFor(gun.uid);
+    const unloadedFixture = fixture(0);
+    const loadedFixture = fixture();
+    expect(unloadedFixture.inventory.add(unloadedFixture.rifle, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(loadedFixture.inventory.add(loadedFixture.rifle, { kind: 'hand', side: 'right' })).toBe(true);
+    const mechanicsFor = (inventory: Inventory) =>
+      new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+        blockSize: 1,
+        pose: () => undefined,
+        onEjection: () => undefined,
+      });
+    const unloadedMechanics = mechanicsFor(unloadedFixture.inventory);
+    const loadedMechanics = mechanicsFor(loadedFixture.inventory);
+    const unloaded = unloadedMechanics.skillZeroHandlingFor(unloadedFixture.rifle.uid);
+    const unloadedStance = unloadedMechanics.stanceEffectsFor(unloadedFixture.rifle.uid);
+    expect(muzzleLoad(loadedFixture.registry, loadedFixture.rifle)).toBeGreaterThan(0);
+    const loaded = loadedMechanics.skillZeroHandlingFor(loadedFixture.rifle.uid);
+    const loadedStance = loadedMechanics.stanceEffectsFor(loadedFixture.rifle.uid);
 
     expect(loaded.singleShot.variance).toBeGreaterThan(unloaded.singleShot.variance);
     expect(loaded.singleShot.recoilRecoveryScale).toBeLessThan(unloaded.singleShot.recoilRecoveryScale);
@@ -118,21 +122,23 @@ describe('muzzle load', () => {
   });
 
   it('gives an improvised suppressor less recoil and noise reduction and faster wear', () => {
-    const { registry } = fixture();
-    const inventory = new Inventory(registry);
-    const firearm = inventory.create('rifle_assault');
-    expect(inventory.add(firearm, { kind: 'hand', side: 'right' })).toBe(true);
-    const real = inventory.create('real_suppressor');
-    attachAtExportedMount(registry, firearm, real);
-    const realResponse = firearmAttachmentResponse(registry, firearm);
-    wearFirearmAttachments(registry, firearm);
+    const realFixture = attachmentFixture('real_suppressor');
+    const real = realFixture.rifle.slots?.[realFixture.fitted.mountedAt];
+    if (!real) {
+      throw new Error('Factory-created suppressor default is missing');
+    }
+    const realResponse = firearmAttachmentResponse(realFixture.registry, realFixture.rifle);
+    wearFirearmAttachments(realFixture.registry, realFixture.rifle);
     const realWear = 1 - real.condition;
-    const wornRealResponse = firearmAttachmentResponse(registry, firearm);
+    const wornRealResponse = firearmAttachmentResponse(realFixture.registry, realFixture.rifle);
 
-    const improvised = inventory.create('improvised_suppressor');
-    attachAtExportedMount(registry, firearm, improvised);
-    const improvisedResponse = firearmAttachmentResponse(registry, firearm);
-    wearFirearmAttachments(registry, firearm);
+    const improvisedFixture = attachmentFixture('improvised_suppressor');
+    const improvised = improvisedFixture.rifle.slots?.[improvisedFixture.fitted.mountedAt];
+    if (!improvised) {
+      throw new Error('Factory-created suppressor default is missing');
+    }
+    const improvisedResponse = firearmAttachmentResponse(improvisedFixture.registry, improvisedFixture.rifle);
+    wearFirearmAttachments(improvisedFixture.registry, improvisedFixture.rifle);
 
     expect(improvisedResponse.recoilScale).toBeGreaterThan(realResponse.recoilScale);
     expect(improvisedResponse.noiseFactor).toBeGreaterThan(realResponse.noiseFactor);
@@ -142,12 +148,9 @@ describe('muzzle load', () => {
   });
 
   it('maps the foregrip to improved aim and stance response', () => {
-    const { registry } = fixture();
-    const inventory = new Inventory(registry);
-    const firearm = inventory.create('rifle_assault');
-    attachAtExportedMount(registry, firearm, inventory.create('foregrip'));
+    const fitted = attachmentFixture('foregrip');
 
-    const response = firearmAttachmentResponse(registry, firearm);
+    const response = firearmAttachmentResponse(fitted.registry, fitted.rifle);
 
     expect(response.swayScale).toBeLessThan(1);
     expect(response.recoveryScale).toBeGreaterThan(1);
@@ -167,14 +170,20 @@ describe('muzzle load', () => {
     expect(weightOf(registry, rifle)).toBeGreaterThan(original);
   });
 
-  it('does not fabricate a load when an exported attachment mass is missing', () => {
-    const { registry, rifle, modelId } = fixture();
-    const optic = registry.models.get(modelId)!;
-    registry.models.set(modelId, {
-      ...optic,
-      attachment: { ...optic.attachment!, massKg: undefined },
-    });
+  it('uses content weight and no muzzle load when attachment mass is unavailable', () => {
+    const registry = baseRegistry;
+    const rifle = new Inventory(registry).create('rifle_assault');
+    const children = Object.values(rifle.slots ?? {}).filter((child) => child !== undefined);
+    if (children.length === 0) {
+      throw new Error('Factory-created rifle has no default attachment child');
+    }
 
     expect(muzzleLoad(registry, rifle)).toBeUndefined();
+    for (const child of children) {
+      expect(weightOf(registry, child)).toBe(defOf(registry, child.type).weight);
+    }
+    expect(weightOf(registry, rifle)).toBe(
+      defOf(registry, rifle.type).weight + children.reduce((sum, child) => sum + weightOf(registry, child), 0),
+    );
   });
 });

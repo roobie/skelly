@@ -1,15 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
-import { buildRegistry, type ContentSource } from '../src/core/content.ts';
+import { buildRegistry, type ContentSource, type Registry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
 import { chargeOf, toggleLight } from '../src/core/lights.ts';
+import { slotsReason } from '../src/core/magazine.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { EAT_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Survival } from '../src/game/survival.ts';
+import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -28,9 +30,9 @@ const batteryOf = (light: Item): Item => {
   return battery;
 };
 
-const setup = () => {
+const setup = (content: Registry = registry) => {
   const sim = new Simulation({ seed: 1 });
-  const inventory = new Inventory(registry);
+  const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
   const notices: string[] = [];
   const player = { inventory, position: [0, 0, 0] as [number, number, number], blockSize: 1 };
@@ -192,17 +194,21 @@ describe('using what you hold', () => {
   });
 
   it('keeps a mounted light on and drains its nested battery while its firearm is held', () => {
-    const t = setup();
+    const mounted = withDefaultMountedLight(registry, 'rifle_assault', 'flashlight');
+    const t = setup(mounted.registry);
     const firearm = t.hold('rifle_assault');
-    const light = t.inventory.create('flashlight');
-    firearm.slots = { ...firearm.slots, 'device.light': light };
-    expect(toggleLight(registry, light, t.sim.calendar)).toBeUndefined();
-    const initialCharge = chargeOf(registry, light)!;
+    const light = firearm.slots?.[mounted.fitted.mountedAt];
+    if (!light) {
+      throw new Error('Factory-created mounted light default is missing');
+    }
+    expect(slotsReason(mounted.registry, firearm.type, firearm.slots)).toBeUndefined();
+    expect(toggleLight(mounted.registry, light, t.sim.calendar)).toBeUndefined();
+    const initialCharge = chargeOf(mounted.registry, light)!;
 
     t.sim.frame(2);
 
     expect(light.on).toBe(true);
-    expect(chargeOf(registry, light)).toBeLessThan(initialCharge);
+    expect(chargeOf(mounted.registry, light)).toBeLessThan(initialCharge);
   });
 
   it('scalar light switching and drain invalidate the cached state-sensitive reach', () => {

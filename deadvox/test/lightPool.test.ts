@@ -4,12 +4,14 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import { slotsReason } from '../src/core/magazine.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
+import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -122,15 +124,17 @@ describe('made-light point pool', () => {
   });
 
   it('shares exposure for carried pockets but excludes lights stored in furniture', () => {
-    const inventory = new Inventory(registry);
+    const mounted = withDefaultMountedLight(registryWithTestLights(), 'rifle_assault', 'flashlight');
+    const fixtureRegistry = mounted.registry;
+    const inventory = new Inventory(fixtureRegistry);
     const backpack = inventory.create('school_backpack');
     expect(inventory.add(backpack, { kind: 'worn' })).toBe(true);
     const pocketLight = inventory.create('glowstick');
-    expect(toggleLight(registry, pocketLight, 0)).toBeUndefined();
+    expect(toggleLight(fixtureRegistry, pocketLight, 0)).toBeUndefined();
     expect(inventory.add(pocketLight, { kind: 'pocket', owner: backpack, pocket: 0 })).toBe(true);
     const pocketEntry = [...inventory.items()].find(({ item }) => item === pocketLight)!;
     const pocketSource = lightSenseSourceFor({
-      registry,
+      registry: fixtureRegistry,
       item: pocketLight,
       location: pocketEntry.location,
       path: pocketEntry.path,
@@ -141,12 +145,15 @@ describe('made-light point pool', () => {
 
     const heldGun = inventory.create('rifle_assault');
     expect(inventory.add(heldGun, { kind: 'hand', side: 'right' })).toBe(true);
-    const mountedLight = inventory.create('flashlight');
-    expect(toggleLight(registry, mountedLight, 0)).toBeUndefined();
-    heldGun.slots = { ...heldGun.slots, 'device.light': mountedLight };
+    const mountedLight = heldGun.slots?.[mounted.fitted.mountedAt];
+    if (!mountedLight) {
+      throw new Error('Factory-created mounted light default is missing');
+    }
+    expect(slotsReason(fixtureRegistry, heldGun.type, heldGun.slots)).toBeUndefined();
+    expect(toggleLight(fixtureRegistry, mountedLight, 0)).toBeUndefined();
     const mountedEntry = [...inventory.items()].find(({ item }) => item === mountedLight)!;
     const mountedSource = lightSenseSourceFor({
-      registry,
+      registry: fixtureRegistry,
       item: mountedLight,
       location: mountedEntry.location,
       path: mountedEntry.path,
@@ -157,7 +164,7 @@ describe('made-light point pool', () => {
     mountedLight.slots!.battery!.charges = 0;
     expect(
       lightSenseSourceFor({
-        registry,
+        registry: fixtureRegistry,
         item: mountedLight,
         location: mountedEntry.location,
         path: mountedEntry.path,
@@ -168,12 +175,12 @@ describe('made-light point pool', () => {
 
     const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' }, [])!;
     const storedLight = inventory.create('glowstick');
-    expect(toggleLight(registry, storedLight, 0)).toBeUndefined();
+    expect(toggleLight(fixtureRegistry, storedLight, 0)).toBeUndefined();
     expect(inventory.add(storedLight, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
     const storedEntry = [...inventory.items()].find(({ item }) => item === storedLight)!;
     expect(
       lightSenseSourceFor({
-        registry,
+        registry: fixtureRegistry,
         item: storedLight,
         location: storedEntry.location,
         path: storedEntry.path,

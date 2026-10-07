@@ -632,8 +632,6 @@ const ModelSchema = pipe(
     /** Replaceable model parts and the gun-side mount frames for later fitting. */
     attachments: optional(array(FittedAttachmentSchema)),
     attachmentSlots: optional(array(AttachmentSlotSchema)),
-    /** Per-firearm certified dynamic fits; absent means no dynamic pair is certified. */
-    compatibility: optional(record(Id, array(Id))),
     /** Exact baked GLB node and replacement transform for each item-owned model slot. */
     slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
     /** Static model metadata for an attachment exported as its own item asset. */

@@ -31,6 +31,10 @@ export interface TreeEntry<Node, Pile, Entity> {
   readonly path: string;
 }
 
+/** Whether a path is inside a slot-owned subtree rooted in either held hand. */
+const HELD_ITEM_SLOT_TREE_PATH = /(?:^|\.)hands\.[^.]+\.slots\./;
+export const isInHeldItemSlotTree = (path: string): boolean => HELD_ITEM_SLOT_TREE_PATH.test(path);
+
 /** Lazy roots: lookup of a held light need not collect the world first. */
 export function* itemRoots<Node, Pile extends PileShape<Node>, Entity extends EntityShape<Node>>(
   forest: {

@@ -9,6 +9,7 @@ import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { Inventory, Location, Target } from './inventory.ts';
 import { defOf, type Item } from './items.ts';
+import { isInHeldItemSlotTree } from './itemTree.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
 import { sunDirection } from './sky.ts';
@@ -18,8 +19,6 @@ import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 export const BATTERY_SWAP = 2;
 /** Lift ground-light emitters so the near-field falloff reaches nearby surfaces, rather than only grazing the floor. */
 export const WORLD_LIGHT_HEIGHT_METRES = 0.4;
-const MOUNTED_ON_HELD_FIREARM = /^inventory\.hands\.[^.]+\.slots\./;
-
 export type LightExposure = 'carried' | 'world';
 
 export interface LightSenseSource {
@@ -40,8 +39,8 @@ export const lightExposureFor = (
   if (!(item.on && definition?.light) || (definition.light.power && chargeOf(registry, item) === 0)) {
     return undefined;
   }
-  const mountedOnHeldFirearm = location.kind === 'slot' && MOUNTED_ON_HELD_FIREARM.test(path);
-  if (location.kind === 'hand' || location.kind === 'worn' || mountedOnHeldFirearm) {
+  const inHeldItemSlotTree = location.kind === 'slot' && isInHeldItemSlotTree(path);
+  if (location.kind === 'hand' || location.kind === 'worn' || inHeldItemSlotTree) {
     return 'carried';
   }
   if (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))) {

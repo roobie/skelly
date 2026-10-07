@@ -9,6 +9,7 @@ import { freshnessWord, isRotten } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { chargeOf, chargeShare, drainBurnLight, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
 import { consume, FOOD_POISONING } from '../core/needs.ts';
 import { DRINK_TIME, EAT_TIME, useOption } from '../core/options.ts';
@@ -28,13 +29,11 @@ const numberParam = (params: JobParams, key: string): number => {
 
 type LightSpec = NonNullable<ReturnType<typeof defOf>['light']>;
 type LightLocation = NonNullable<ReturnType<Inventory['locate']>>;
-const MOUNTED_ON_HELD_FIREARM = /^inventory\.hands\.[^.]+\.slots\./;
-
 const shouldDouse = (spec: LightSpec, location: LightLocation, path: string, sprinting: boolean): boolean => {
   const { burning } = spec;
   const wornHeadlamp = location.kind === 'worn' && location.slot === 'head' && spec.beam !== undefined;
-  const mountedOnHeldFirearm = location.kind === 'slot' && MOUNTED_ON_HELD_FIREARM.test(path);
-  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp && !mountedOnHeldFirearm;
+  const inHeldItemSlotTree = location.kind === 'slot' && isInHeldItemSlotTree(path);
+  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp && !inHeldItemSlotTree;
   const dropped = location.kind === 'pile';
   return (
     (dropped ? burning?.drop !== 'stay' : movedOutOfHand && burning?.stow !== 'stay') ||
