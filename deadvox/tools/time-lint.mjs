@@ -80,6 +80,7 @@ const typeProgram = (file) => {
       moduleResolution: ts.ModuleResolutionKind.Bundler,
       skipLibCheck: true,
       target: ts.ScriptTarget.Latest,
+      types: fixture ? [] : undefined,
     });
     checkerPrograms.set(key, program);
   }
