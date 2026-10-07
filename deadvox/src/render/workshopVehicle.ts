@@ -17,7 +17,7 @@ import { RANGE_ROVER, STRIPPED_REMOVED } from '../vehicles/rangeRover.ts';
 import { GLASS, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
 
 const partLibrary = new PartLibrary(CATALOGUE);
-export const WORKSHOP_REMOVED: readonly string[] = [...STRIPPED_REMOVED, 'spare-wheel'];
+const WORKSHOP_REMOVED: readonly string[] = [...STRIPPED_REMOVED, 'spare-wheel'];
 export const WORKSHOP_DISPLAY_CAR = newInstance(RANGE_ROVER, 'workshop-stripped-4x4', WORKSHOP_REMOVED);
 
 const rgb = (paint: Paint, material: string): Rgb => {
