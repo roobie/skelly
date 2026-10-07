@@ -4,14 +4,14 @@ import type { PartDef } from '../core/schema.ts';
 import type { MountKind } from './mounts.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 
-export type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'flashlight-mount' | 'foregrip';
+type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'flashlight-mount' | 'foregrip';
 
-export interface MagnificationRange {
+interface MagnificationRange {
   readonly min: number;
   readonly max: number;
 }
 
-export interface AttachmentProperties {
+interface AttachmentProperties {
   readonly magnification?: MagnificationRange;
   readonly reticleKind?: 'dot' | 'crosshair' | 'chevron';
   readonly noiseFactor?: number;
@@ -19,7 +19,7 @@ export interface AttachmentProperties {
   readonly handlingClass?: string;
 }
 
-export interface AttachmentSightMetadata {
+interface AttachmentSightMetadata {
   readonly kind: 'optic' | 'iron';
   /** Ocular point relative to the attachment node, in metres. */
   readonly eye: Vec3;
