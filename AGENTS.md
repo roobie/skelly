@@ -64,8 +64,8 @@ a comment or a PR:
 - Every tracked doc starts with front matter whose `read_if` lists the reasons to read
   it. Add or update it whenever you add or change a doc.
 - When you touch a doc, trim the whole part you touch of what, how and history, not
-  only the lines you change. Keep the current rule instead of accumulated amendments;
-  reviews flag amendment trails as false lines.
+  only the lines you change. Keep the current rule instead of accumulated amendments.
+  Reviews flag an amendment trail left in the section you touched.
 - A false doc is a defect: a review returns FIX for it.
 
 ## Work item IDs

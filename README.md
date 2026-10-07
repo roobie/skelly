@@ -100,9 +100,13 @@ BR, 2026-10-07 17:05:55 +02:00:
 >
 > this is already a core pillar, but we must execute it incrementally, continuously and periodically
 
+Design docs may state intent ahead of the code; the PR that builds it trims the doc to the why and cues the code.
+Reviews and retros are dated snapshots, true as of their date, and exempt from this pillar, including the no-history rule.
+Existing findings stay frozen in `tools/zero-drift-baseline.json` until the docs sweep (#222).
+
 Replace a changed rule with its current form; do not keep the change history in the
 doc. Trim incrementally and continuously as you edit, then periodically. `r50` is
-the first deep pass, after playtest 1 launches (#181); no recurring interval is set.
+the first deep pass, after playtest 1 launches (#181); no recurring interval is set until BR sets one.
 
 ## Shared direction
 
