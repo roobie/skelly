@@ -8,8 +8,8 @@ import { Inventory } from '../src/core/inventory.ts';
 import { defOf, type Item } from '../src/core/items.ts';
 import { FirearmAttachmentHandling } from '../src/game/firearmAttachmentHandling.ts';
 
-type Pair = readonly [readonly [string, string], readonly [string, string]];
-type ModelWithPairs = ModelDef & { compatibilityPairs?: readonly Pair[] };
+type Pair = NonNullable<ModelDef['compatibilityPairs']>[number];
+type Choice = Pair[number];
 
 const base = 'src/content/base';
 const sources = readdirSync(base)
@@ -37,8 +37,8 @@ const makeFixture = () => {
   const inventory = new Inventory(registry);
   const firearm = inventory.create(firearmType);
   const foregrip = inventory.create(attachmentType);
-  const withModel = (change: (model: ModelWithPairs) => ModelWithPairs): void => {
-    registry.models.set(modelId, change(model as ModelWithPairs));
+  const withModel = (change: (model: ModelDef) => ModelDef): void => {
+    registry.models.set(modelId, change(model));
   };
   return { registry, model, modelId, inventory, firearm, foregrip, withModel };
 };
@@ -49,7 +49,7 @@ const bottomRailSlots = (model: ModelDef): string[] =>
     .map((slot) => slot.id)
     .slice(0, 2);
 
-const pair = (a: readonly [string, string], b: readonly [string, string]): Pair => [b, a];
+const pair = (a: Choice, b: Choice): Pair => [b, a];
 const SINGLE_FIT_DENIED = /does not certify foregrip/;
 const PAIR_FIT_DENIED = /combined attachment fit/;
 const NOTCH_FIT_DENIED = /does not fit the exported notches/;
@@ -76,6 +76,7 @@ describe('certified firearm fitting', () => {
     fixture.withModel((model) => ({
       ...model,
       compatibility: { ...model.compatibility, [slot]: ['foregrip'] },
+      compatibilityPairs: [],
     }));
 
     expect(() => fitAttachmentInFixture(fixture.inventory, fixture.firearm, slot, fixture.foregrip)).toThrow(

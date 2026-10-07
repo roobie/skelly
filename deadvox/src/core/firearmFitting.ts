@@ -3,9 +3,6 @@ import type { ModelDef, Registry } from './content.ts';
 import type { Item } from './items.ts';
 
 export type AttachmentChoice = readonly [slotId: string, attachmentId: string];
-type CompatibilityPairsModel = ModelDef & {
-  readonly compatibilityPairs?: readonly (readonly [AttachmentChoice, AttachmentChoice])[];
-};
 
 const compareChoice = (a: AttachmentChoice, b: AttachmentChoice): number =>
   a[0].localeCompare(b[0]) || a[1].localeCompare(b[1]);
@@ -28,7 +25,7 @@ export const compatibilityPairCertifies = (
     return false;
   }
   const expected = canonicalPair(a, b);
-  const pairs = (model as CompatibilityPairsModel).compatibilityPairs;
+  const pairs = model.compatibilityPairs;
   return (
     pairs?.some((pair) => {
       const actual = canonicalPair(pair[0], pair[1]);
