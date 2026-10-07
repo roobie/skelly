@@ -683,7 +683,17 @@ try {
     await page.waitForFunction(
       async () => {
         const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
-        return !controller.writing && Boolean(await storage.load(namespace));
+        return !controller.writing && controller.queued === undefined && Boolean(await storage.load(namespace));
+      },
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    await page.waitForFunction(
+      async () => {
+        const { controller } = globalThis.deadvoxSaveTest;
+        const locks = await navigator.locks.query();
+        const activeSaveLock = [...locks.held, ...locks.pending].some((lock) => lock.name === 'deadvox-save-storage');
+        return !controller.writing && controller.queued === undefined && !activeSaveLock;
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
@@ -715,9 +725,14 @@ try {
     await page.waitForFunction(
       async () => {
         const locks = await navigator.locks.query();
-        const held = locks.held.some((lock) => lock.name === 'deadvox-save-storage');
+        const writer = [...locks.held, ...locks.pending].some(
+          (lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'exclusive',
+        );
+        const readerPending = locks.pending.some(
+          (lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'shared',
+        );
         const ready = globalThis.deadvoxSaveTest?.controller.ready;
-        return sessionStorage.getItem('d144-pagehide') !== null && (held || ready);
+        return sessionStorage.getItem('d144-pagehide') !== null && (ready || (writer && readerPending));
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
