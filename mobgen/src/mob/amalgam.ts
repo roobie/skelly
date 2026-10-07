@@ -1,24 +1,27 @@
 import type { Body, Feature } from '../core/body.ts';
 import { type BodyPlanDef, registerBodyPlan, sampleParams } from '../core/generate.ts';
-import { mulMM, mulMV, rotY, type Vec3 } from '../core/math.ts';
+import { add, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, scale, sub, type Vec3 } from '../core/math.ts';
+import { aabbOf } from '../core/sdf.ts';
 import type { Genome, Wound } from '../core/template.ts';
 import type { Voxels } from '../core/voxelize.ts';
 import { severedBoneSet } from './dismember.ts';
 import { buildHumanoid, HUMANOID_PARAM_ORDER, sampleWounds, WOUNDABLE_BONES } from './humanoid.ts';
 
-export const AMALGAM_MEMBER_IDS = [0, 1, 2] as const;
+export const MIN_AMALGAM_MEMBERS = 3;
+export const AMALGAM_MEMBER_IDS = [0, 1, 2, 3, 4] as const;
+export const MAX_AMALGAM_MEMBERS = AMALGAM_MEMBER_IDS.length;
 const MEMBER_BONE_PREFIX = (member: number): string => `member.${member}.`;
+const MEMBER_ID_PATTERN = /^member\.(\d+)\./;
 const memberBone = (member: number, bone: string): string => `${MEMBER_BONE_PREFIX(member)}${bone}`;
 
 const memberParam = (member: number, param: string): string => `member.${member}.${param}`;
-const MEMBER_PARAM_ORDER = AMALGAM_MEMBER_IDS.flatMap((member) =>
-  HUMANOID_PARAM_ORDER.map((param) => memberParam(member, param)),
-);
-const AMALGAM_PARAM_ORDER = [...MEMBER_PARAM_ORDER, 'height', 'headScale'];
-
-export const AMALGAM_SUPPORT_BONES = AMALGAM_MEMBER_IDS.flatMap((member) =>
-  (['L', 'R'] as const).map((side) => memberBone(member, `foot.${side}`)),
-);
+const PLACEMENT_PARAMS = ['anchorX', 'anchorZ', 'groundGap', 'scale', 'rotateX', 'rotateY', 'rotateZ'] as const;
+const MEMBER_PARAM_ORDER = AMALGAM_MEMBER_IDS.flatMap((member) => [
+  ...HUMANOID_PARAM_ORDER.map((param) => memberParam(member, param)),
+  ...PLACEMENT_PARAMS.map((param) => memberParam(member, param)),
+]);
+const AMALGAM_SAMPLE_ORDER = ['memberCount', ...MEMBER_PARAM_ORDER];
+const AMALGAM_PARAM_ORDER = [...AMALGAM_SAMPLE_ORDER, 'height', 'headScale'];
 
 const WOUND_BONES = AMALGAM_MEMBER_IDS.flatMap((member) => WOUNDABLE_BONES.map((bone) => memberBone(member, bone)));
 
@@ -26,47 +29,35 @@ interface ModulePlacement {
   readonly member: number;
   readonly scale: number;
   readonly offset: Vec3;
-  readonly yaw: number;
+  readonly rotation: Mat3;
+  readonly root: Vec3;
 }
 
-// The offsets overlap the module torsos around the shared trunk while keeping their heads visible.
-const MODULE_PLACEMENTS: readonly ModulePlacement[] = [
-  { member: 0, scale: 0.72, offset: [-0.44, 0, 0.12], yaw: -24 },
-  { member: 1, scale: 0.72, offset: [0, 0, -0.06], yaw: 0 },
-  { member: 2, scale: 0.72, offset: [0.44, 0, 0.12], yaw: 24 },
-];
-
-const pointFor = (point: Vec3, placement: ModulePlacement): Vec3 => {
-  const rotated = mulMV(rotY(placement.yaw), point);
-  return [
-    rotated[0] * placement.scale + placement.offset[0],
-    rotated[1] * placement.scale + placement.offset[1],
-    rotated[2] * placement.scale + placement.offset[2],
-  ];
-};
+const placementPoint = (point: Vec3, placement: ModulePlacement): Vec3 =>
+  add(mulMV(placement.rotation, scale(sub(point, placement.root), placement.scale)), placement.offset);
 
 const rotateShape = (shape: Feature['shape'], placement: ModulePlacement): Feature['shape'] => {
-  const rotation = rotY(placement.yaw);
+  const { rotation } = placement;
   switch (shape.kind) {
     case 'capsule':
       return {
         ...shape,
-        a: pointFor(shape.a, placement),
-        b: pointFor(shape.b, placement),
+        a: placementPoint(shape.a, placement),
+        b: placementPoint(shape.b, placement),
         ra: shape.ra * placement.scale,
         rb: shape.rb * placement.scale,
       };
     case 'ellipsoid':
       return {
         ...shape,
-        center: pointFor(shape.center, placement),
+        center: placementPoint(shape.center, placement),
         radii: [shape.radii[0] * placement.scale, shape.radii[1] * placement.scale, shape.radii[2] * placement.scale],
         rot: mulMM(rotation, shape.rot ?? [1, 0, 0, 0, 1, 0, 0, 0, 1]),
       };
     case 'box':
       return {
         ...shape,
-        center: pointFor(shape.center, placement),
+        center: placementPoint(shape.center, placement),
         half: [shape.half[0] * placement.scale, shape.half[1] * placement.scale, shape.half[2] * placement.scale],
         round: shape.round * placement.scale,
         rot: mulMM(rotation, shape.rot ?? [1, 0, 0, 0, 1, 0, 0, 0, 1]),
@@ -80,13 +71,17 @@ const namespacedWounds = (member: number, wounds: readonly Wound[]): Wound[] =>
   wounds.map((wound) => ({ ...wound, bone: memberBone(member, wound.bone) }));
 
 const sampleAmalgam: BodyPlanDef['sample'] = (rng, template) => {
-  const params = sampleParams(rng, template.params, MEMBER_PARAM_ORDER);
+  const params = sampleParams(rng, template.params, AMALGAM_SAMPLE_ORDER);
+  const memberCount = params.memberCount!;
+  if (!Number.isInteger(memberCount) || memberCount < MIN_AMALGAM_MEMBERS || memberCount > MAX_AMALGAM_MEMBERS) {
+    throw new Error(`amalgam member count must be an integer in [${MIN_AMALGAM_MEMBERS}, ${MAX_AMALGAM_MEMBERS}]`);
+  }
+  const members = AMALGAM_MEMBER_IDS.slice(0, memberCount);
   for (const derived of ['height', 'headScale'] as const) {
     params[derived] =
-      AMALGAM_MEMBER_IDS.reduce<number>((sum, member) => sum + params[memberParam(member, derived)]!, 0) /
-      AMALGAM_MEMBER_IDS.length;
+      members.reduce<number>((sum, member) => sum + params[memberParam(member, derived)]!, 0) / members.length;
   }
-  const wounds = AMALGAM_MEMBER_IDS.flatMap((member) =>
+  const wounds = members.flatMap((member) =>
     namespacedWounds(member, sampleWounds(rng, params[memberParam(member, 'woundCount')]!)),
   );
   return { params, wounds };
@@ -105,20 +100,24 @@ const humanoidGenome = (genome: Genome, member: number): Genome => {
 
 const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
   const height = genome.params.height!;
+  const memberCount = genome.params.memberCount!;
+  if (!Number.isInteger(memberCount) || memberCount < MIN_AMALGAM_MEMBERS || memberCount > MAX_AMALGAM_MEMBERS) {
+    throw new Error(`amalgam member count must be an integer in [${MIN_AMALGAM_MEMBERS}, ${MAX_AMALGAM_MEMBERS}]`);
+  }
   const coreBone = {
     id: 'core',
     parent: null,
-    head: [0, height * 0.26, 0] as Vec3,
-    tail: [0, height * 0.73, 0] as Vec3,
+    head: [0, height * 0.28, 0] as Vec3,
+    tail: [0, height * 0.15, 0] as Vec3,
   };
   const bones: Body['bones'][number][] = [coreBone];
   const features: Feature[] = [
     {
       bone: 'core',
       op: 'add',
-      shape: { kind: 'ellipsoid', center: [0, height * 0.57, 0], radii: [height * 0.22, height * 0.13, height * 0.18] },
+      shape: { kind: 'ellipsoid', center: [0, height * 0.24, 0], radii: [height * 0.34, height * 0.24, height * 0.3] },
       material: 'skin',
-      blend: height * 0.08,
+      blend: height * 0.01,
     },
     {
       bone: 'core',
@@ -126,27 +125,109 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
       shape: { kind: 'capsule', a: coreBone.head, b: coreBone.tail, ra: height * 0.1, rb: height * 0.1 },
       material: 'skin',
     },
+    {
+      bone: 'core',
+      op: 'add',
+      shape: {
+        kind: 'box',
+        center: [0, height * 0.06, 0],
+        half: [height * 0.34, height * 0.06, height * 0.3],
+        round: height * 0.02,
+      },
+      material: 'skin',
+    },
   ];
   let palette: Body['palette'] | undefined;
 
-  for (const placement of MODULE_PLACEMENTS) {
-    const memberBody = buildHumanoid(humanoidGenome(genome, placement.member));
+  for (const member of AMALGAM_MEMBER_IDS.slice(0, memberCount)) {
+    const memberBody = buildHumanoid(humanoidGenome(genome, member));
     palette ??= memberBody.palette;
-    const ids = new Map(memberBody.bones.map((bone) => [bone.id, memberBone(placement.member, bone.id)]));
+    const root = memberBody.bones.find((bone) => bone.id === 'pelvis')?.head;
+    if (!root) {
+      throw new Error(`amalgam member ${member} has no pelvis root`);
+    }
+    const ids = new Map(memberBody.bones.map((bone) => [bone.id, memberBone(member, bone.id)]));
+    const memberScale = genome.params[memberParam(member, 'scale')]!;
+    const rotation = mulMM(
+      rotY(genome.params[memberParam(member, 'rotateY')]!),
+      mulMM(rotZ(genome.params[memberParam(member, 'rotateZ')]!), rotX(genome.params[memberParam(member, 'rotateX')]!)),
+    );
+    const anchorX = genome.params[memberParam(member, 'anchorX')]! * height;
+    const anchorZ = genome.params[memberParam(member, 'anchorZ')]! * height;
+    const provisional: ModulePlacement = {
+      member,
+      scale: memberScale,
+      offset: [anchorX, 0, anchorZ],
+      rotation,
+      root,
+    };
+    const jointRadius = genome.params[memberParam(member, 'height')]! * 0.1;
+    const lowest = Math.min(
+      ...memberBody.bones.flatMap((bone) => [
+        placementPoint(bone.head, provisional)[1],
+        placementPoint(bone.tail, provisional)[1],
+      ]),
+      ...memberBody.features
+        .filter((feature) => feature.op === 'add')
+        .map((feature) => aabbOf(rotateShape(feature.shape, provisional)).min[1]),
+      ...memberBody.bones.flatMap((bone) => {
+        if (bone.parent === null) {
+          return [];
+        }
+        const parent = memberBody.bones.find((candidate) => candidate.id === bone.parent)!;
+        return [
+          placementPoint(parent.tail, provisional)[1] - jointRadius * memberScale,
+          placementPoint(bone.head, provisional)[1] - jointRadius * memberScale,
+        ];
+      }),
+    );
+    const groundGap = genome.params[memberParam(member, 'groundGap')]! * height;
+    const placement: ModulePlacement = {
+      ...provisional,
+      offset: [anchorX, groundGap - lowest + height * 0.005, anchorZ],
+    };
     bones.push(
       ...memberBody.bones.map((bone) => ({
         ...bone,
         id: ids.get(bone.id)!,
         parent: bone.parent === null ? 'core' : ids.get(bone.parent)!,
-        head: pointFor(bone.head, placement),
-        tail: pointFor(bone.tail, placement),
+        head: placementPoint(bone.head, placement),
+        tail: placementPoint(bone.tail, placement),
       })),
     );
+    const joints = memberBody.bones.flatMap((bone) => {
+      if (bone.parent === null) {
+        return [];
+      }
+      const parent = memberBody.bones.find((candidate) => candidate.id === bone.parent);
+      if (!parent) {
+        throw new Error(`amalgam member ${member} bone ${bone.id} has a missing parent`);
+      }
+      return [
+        {
+          bone: ids.get(bone.id)!,
+          op: 'add' as const,
+          shape: rotateShape(
+            {
+              kind: 'capsule' as const,
+              a: parent.tail,
+              b: bone.head,
+              ra: jointRadius,
+              rb: jointRadius,
+            },
+            placement,
+          ),
+          material: 'skin' as const,
+        },
+      ];
+    });
     features.push(
+      ...joints,
       ...memberBody.features.map((feature) => ({
         ...feature,
         bone: ids.get(feature.bone)!,
         shape: rotateShape(feature.shape, placement),
+        ...(feature.blend === undefined ? {} : { blend: feature.blend * placement.scale }),
         ...(feature.noise ? { noise: { ...feature.noise, scale: feature.noise.scale * placement.scale } } : {}),
       })),
     );
@@ -155,7 +236,7 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
   if (!palette) {
     throw new Error('amalgam has no member modules');
   }
-  return { bones, features, palette };
+  return { bones, features, jointAdjacencyPolicy: 'reserve-overlaps', palette };
 };
 
 registerBodyPlan('amalgam', {
@@ -186,6 +267,26 @@ interface AmalgamManifest {
   readonly regions: readonly AmalgamRegion[];
   readonly headBoneIds: readonly string[];
 }
+
+const memberIdsInBody = (body: Body): number[] =>
+  [
+    ...new Set(
+      body.bones.flatMap((bone) => {
+        const match = bone.id.match(MEMBER_ID_PATTERN);
+        return match ? [Number(match[1])] : [];
+      }),
+    ),
+  ].sort((a, b) => a - b);
+
+const assertMemberSequence = (members: readonly number[]): void => {
+  if (
+    members.length < MIN_AMALGAM_MEMBERS ||
+    members.length > MAX_AMALGAM_MEMBERS ||
+    members.some((member, index) => member !== index)
+  ) {
+    throw new Error('amalgam body has an invalid member count or member id sequence');
+  }
+};
 
 const REGION_BONES: Readonly<Record<string, readonly string[]>> = {
   head: ['head', 'jaw'],
@@ -309,6 +410,8 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
   const parts: AmalgamPart[] = [];
   const headBoneIds: string[] = [];
   const ownerCounts = new Map<string, number>();
+  const members = memberIdsInBody(body);
+  assertMemberSequence(members);
   for (const owner of voxels.owner) {
     if (owner === 0) {
       continue;
@@ -336,7 +439,7 @@ export const amalgamManifest = (body: Body, voxels: Voxels): AmalgamManifest => 
     capabilityIds: [],
   });
 
-  for (const member of AMALGAM_MEMBER_IDS) {
+  for (const member of members) {
     const partId = `member.${member}`;
     const prefix = MEMBER_BONE_PREFIX(member);
     const boneIds = body.bones.filter((bone) => bone.id.startsWith(prefix)).map((bone) => bone.id);

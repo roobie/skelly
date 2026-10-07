@@ -11,6 +11,7 @@ export type ParamSpec =
   | { readonly choices: readonly number[] };
 
 export type BodyPlan = 'humanoid' | 'amalgam';
+export type SupportBones = readonly string[] | 'ground-contacts';
 
 export interface Template {
   readonly name: string;
@@ -23,8 +24,8 @@ export interface Template {
   readonly massFractions?: Readonly<Record<string, number>>;
   readonly params: Readonly<Record<string, ParamSpec>>;
   readonly budgets: Budgets;
-  /** Bone ids that may own ground-layer voxels under the `grounded` rule. */
-  readonly supportBones: readonly string[];
+  /** Fixed support-bone ids, or the generated voxels' actual ground contacts. */
+  readonly supportBones: SupportBones;
 }
 
 export interface Wound {

@@ -59,14 +59,33 @@ This is the reason for an amalgam body plan rather than several independent
 actors: a severable member must be a subtree in one connected body, while the
 shared trunk remains a distinct, non-severable core.
 
+BR, 2026-10-07 13:16, requested: “good start - but can we make it procedural
+how many shamblers are part of it? Not all needs to be in contact with floor -
+it can be more random. And actually - the body parts can be randomy distributed
+too - like a leg from a shambler can be pointing straight up, while it's head
+is at floor, like a foot” / “think of John Carpenter's "The Thing" kind of”
+
+The first-look generator samples three to five complete shambler members per
+seed. This is an initial BR-tunable range: at least three distinct bodies give
+the car-scale enemy the requested mass and grotesque multiplicity, while the
+upper bound keeps the fused body within the template's voxel and triangle
+budgets. Members are independently scaled, anchored around the core, lifted by
+seeded gaps, and turned in quarter-turn orientations on all three axes, so a
+head or hand may bear weight and other members may hang. The first look keeps
+each module a complete shambler rather than adding partial-body variants; the
+resolved member subtrees remain individually severable. The core includes the
+shared floor-bearing base, so severing any member leaves a valid, supported
+body.
+
 The m1 mobgen contribution is the generated body, its resolved part/region
-manifest, declared support bones, and a static first-look viewer. See
-`src/mob/amalgam.ts` for the body-plan and manifest, `src/core/rules.ts` for
-the declared-support grounding contract, and `src/viewer/main.ts` for the
-static view. The manifest separates geometry ownership from the effects and
-tuning that a later Deadvox round owns. The first-look composition is a
-proposal for BR's visual judgment, not an encounter-count or gameplay-tuning
-decision.
+manifest, support bones derived from the actual ground-contact voxel owners,
+and a static first-look viewer. See `src/mob/amalgam.ts` for the body-plan
+and manifest, `src/core/generate.ts` for contact-derived support bones,
+`src/core/rules.ts` for the declared-support grounding contract, and
+`src/viewer/main.ts` for the static view. The manifest separates geometry
+ownership from the effects and tuning that a later Deadvox round owns. The
+seeded composition and member-count range are first-look proposals for BR's
+visual judgment, not encounter-count or gameplay-tuning decisions.
 
 To keep this viewer-only first look out of Deadvox's simulation fingerprint,
 the viewer imports `src/mob/bossTemplate.ts` (`VIEWER_TEMPLATES`) rather than
@@ -75,14 +94,17 @@ registering the boss in `src/mob/templates.ts`, which Deadvox reaches through
 integration (#308): `deadvox/test/simulationFingerprint.test.ts` checks the
 separation, and that integration round changes the contract.
 
-The static view is useful before animation or game integration. The part
-manifest is independent of those later systems, but look-at-player, boss gait,
-and Deadvox integration must follow #325 because it changes the rig and model
+The static view is useful before animation or game integration. Open it with
+`?template=boss&seed=N&shot=1` to inspect a deterministic arrangement. The part
+manifest is independent of later systems, but look-at-player, boss gait, and
+Deadvox integration must follow #325 because it changes the rig and model
 interfaces this feature will extend. The open design questions from #308
 remain open until BR rules on them:
 
-- Is the proposed three-module, low/broad first-look composition the right
-  silhouette and topology, or should its count/arrangement change?
+- Does the procedural, full-shambler composition read as a grotesque fusion,
+  or should the silhouette use partial members or a different arrangement?
+- Is the initial member-count range appropriate for the car-scale silhouette?
+
 - How does it move, and what does it sense? Which motion should the rig
   animate?
 - What can it break: fences, doors, containers, or other world objects?
@@ -103,7 +125,7 @@ remain open until BR rules on them:
 | Source of truth | Template + seed → **Genome**, a plain JSON record of the sampled params and wounds that carries its seed. Everything after it is a deterministic function of the genome: builder → **Body** → voxelizer → mesher → validator |
 | Body | A skeleton of bones plus shape features, as signed distance shapes (tapered capsules, ellipsoids, rounded boxes). A feature adds flesh, carves it away, or paints colour without changing the shape |
 | Humanoid | 18 bones: pelvis (root), spine, chest, neck, head, jaw, and left and right upperArm, forearm, hand, thigh, shin, foot. Default joint positions come from the CC0 `fgc_skeleton` rig in `reference/`, converted from Blender's Z-up, −Y-forward axes |
-| Voxelization | Every voxel is owned by exactly one bone: the one whose flesh is nearest. "Marrow" is rasterized as a face-connected path along every bone and always filled, so each bone is connected to its parent however thin its flesh. A carve that cuts marrow leaves it in place, coloured as exposed bone |
+| Voxelization | Every voxel is owned by exactly one bone: the one whose flesh is nearest. "Marrow" is rasterized as a face-connected path along every bone and always filled, so each bone is connected to its parent however thin its flesh. Amalgams reserve repaired joint voxel pairs because overlapping body modules can otherwise let a later repair erase an earlier connection; see `src/mob/amalgam.ts`, `buildAmalgam`, and `src/core/voxelize.ts`, `repairOverlappingJointAdjacency`. A carve that cuts marrow leaves it in place, coloured as exposed bone |
 | Paint and carve | Clothing, hair, bruises and the mouth are paint. Wounds carve, with a gore rim. Eye socket dimensions are metric, with grid-snapped centers; sub-voxel details may disappear at coarse LOD. Face dimensions are height-relative, while eye columns and feature placement remain snapped to the grid |
 | Colour | 10 materials × 4 shades (palette index = material × 4 + shade), with base colours chosen per actor. Shade comes from low-frequency noise, so neighbouring voxels tend to agree and faces still merge. The look, from deadvox's notes: sickly and fleshy, not a swamp monster |
 | Meshing | Greedy, per bone, merging faces of the same colour. Faces between voxels of different bones are kept, so each bone's mesh is closed: a bent joint shows a cut face, not a hole into the body. Seams at bent joints are expected (CHALLENGES §3) |
@@ -119,6 +141,8 @@ remain open until BR rules on them:
 | Tests | Vitest |
 | CI | `.github/workflows/mobgen.yml`: typecheck, tests, viewer build |
 | Hosting | GitHub Pages (`.github/workflows/pages.yml`), at <https://roobie.github.io/skelly/mobgen/> once the viewer exists |
+
+Broad population assertions remain out of the default local test run because they measure distribution quality rather than individual contracts; CI and an explicit sweep run still exercise them. See `test/generate.test.ts`, `sweepGroup`, and `test/sweeps.ts`, `runSweeps`.
 
 ## Design areas
 

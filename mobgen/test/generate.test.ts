@@ -321,14 +321,20 @@ describe('validation profiles', () => {
 describe('templates', () => {
   for (const t of TEMPLATES) {
     describe(t.name, () => {
-      it(`is valid at least 80% of the time (${SEEDS} seeds)`, () => {
-        let valid = 0;
-        for (let seed = 0; seed < SEEDS; seed++) {
-          if (realize(generate(t, seed)).report.ok) {
-            valid += 1;
-          }
-        }
-        expect(valid / SEEDS).toBeGreaterThanOrEqual(0.8);
+      sweepGroup('validity sweep', () => {
+        it(
+          `is valid at least 80% of the time (${SEEDS} seeds)`,
+          () => {
+            let valid = 0;
+            for (let seed = 0; seed < SEEDS; seed++) {
+              if (realize(generate(t, seed)).report.ok) {
+                valid += 1;
+              }
+            }
+            expect(valid / SEEDS).toBeGreaterThanOrEqual(0.8);
+          },
+          SEEDS * 100,
+        );
       });
 
       it('generateValid finds a passing build', () => {
@@ -342,18 +348,24 @@ describe('templates', () => {
     });
   }
 
-  it('shambler head+jaw voxel count is within the template budget on average', () => {
-    const t = TEMPLATES.find((x) => x.name === 'shambler')!;
-    const head = t.budgets.groups.head!;
-    let sum = 0;
-    for (let seed = 0; seed < SEEDS; seed++) {
-      const { report } = realize(generate(t, seed));
-      sum += (report.stats.perBoneVoxels.head ?? 0) + (report.stats.perBoneVoxels.jaw ?? 0);
-    }
-    const mean = sum / SEEDS;
-    // Bounds come from the template itself (mobgen/src/mob/templates.ts), not repeated here, so a
-    // deliberate head-size retune (e.g. the 5-voxel-wide face) can't leave this test stale.
-    expect(mean).toBeGreaterThanOrEqual(head.min);
-    expect(mean).toBeLessThanOrEqual(head.max);
+  sweepGroup('head volume sweep', () => {
+    it(
+      'shambler head+jaw voxel count is within the template budget on average',
+      () => {
+        const t = TEMPLATES.find((x) => x.name === 'shambler')!;
+        const head = t.budgets.groups.head!;
+        let sum = 0;
+        for (let seed = 0; seed < SEEDS; seed++) {
+          const { report } = realize(generate(t, seed));
+          sum += (report.stats.perBoneVoxels.head ?? 0) + (report.stats.perBoneVoxels.jaw ?? 0);
+        }
+        const mean = sum / SEEDS;
+        // Bounds come from the template itself (mobgen/src/mob/templates.ts), not repeated here, so a
+        // deliberate head-size retune (e.g. the 5-voxel-wide face) can't leave this test stale.
+        expect(mean).toBeGreaterThanOrEqual(head.min);
+        expect(mean).toBeLessThanOrEqual(head.max);
+      },
+      SEEDS * 100,
+    );
   });
 });

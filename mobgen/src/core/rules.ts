@@ -212,7 +212,7 @@ const grounded: Rule = {
       return [
         {
           rule: 'grounded',
-          message: `Ground-layer voxels belong to non-foot bone(s): ${[...badBones].join(', ')}.`,
+          message: `Ground-layer voxels belong to undeclared support bone(s): ${[...badBones].join(', ')}.`,
           bones: [...badBones],
         },
       ];
