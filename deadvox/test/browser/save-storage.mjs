@@ -339,7 +339,7 @@ try {
                   (error) => error.message,
                 ),
             );
-            if (!failure.includes('World is still open or saving in another page') || encodedWhileBusy) {
+            if (!failure.includes('World is still open or saving in another tab') || encodedWhileBusy) {
               throw new Error(`Queued writer did not fail safely at its deadline: ${failure}`);
             }
             const locks = await navigator.locks.query();
@@ -834,7 +834,7 @@ try {
       locks: await navigator.locks.query(),
       warnings: globalThis.__d144LockWarnings,
     }));
-    assert.match(hiddenFailure.status, /World is still open or saving in another page/);
+    assert.match(hiddenFailure.status, /World is still open or saving in another tab/);
     assert.equal(hiddenFailure.continueDisabled, true);
     const hiddenWarning = hiddenFailure.warnings.find(([message]) => message === 'Deadvox save lock request timed out');
     assert.ok(hiddenWarning);
@@ -954,7 +954,7 @@ try {
         locks: await navigator.locks.query(),
         warnings: globalThis.__d144LockWarnings,
       }));
-      assert.match(busy.status, /World is still open or saving in another page/);
+      assert.match(busy.status, /World is still open or saving in another tab/);
       assert.match(busy.newWorldLabel, /Play without saving/);
       assert.equal(busy.retryVisible, true);
       assert.equal(busy.continueDisabled, true);
