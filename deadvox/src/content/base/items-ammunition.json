@@ -85,8 +85,16 @@
       "weight": 12,
       "size": [1, 1],
       "stack": 30,
-      "description": "A loose 5.56×45 rifle cartridge. Bullet diameter from gungen cartridges/5.56x45.json (C.I.P. .223 Rem projectile G1 as a modelling proxy). Loaded mass 12 g is a gameplay estimate, not a sourced specification.",
-      "ammo": { "calibre": "5.56x45", "pellets": 1, "diameterMm": 5.7 },
+      "description": "A loose 5.56×45 rifle cartridge. Bullet diameter from gungen cartridges/5.56x45.json (C.I.P. .223 Rem projectile G1 as a modelling proxy). Loaded mass 12 g is a gameplay estimate, not a sourced specification. Damage, push and reach are gameplay estimates too.",
+      "ammo": {
+        "calibre": "5.56x45",
+        "pellets": 1,
+        "diameterMm": 5.7,
+        "damage": 35,
+        "impulse": 1,
+        "rangeMetres": 500,
+        "headDamageMultiplier": 2
+      },
       "model": "round_5_d_56x45"
     },
     {
@@ -96,8 +104,16 @@
       "weight": 16,
       "size": [1, 1],
       "stack": 30,
-      "description": "A loose 7.62×39 rifle cartridge. Bullet diameter from gungen cartridges/7.62x39.json (C.I.P. projectile G1). Loaded mass 16 g is a gameplay estimate, not a sourced specification.",
-      "ammo": { "calibre": "7.62x39", "pellets": 1, "diameterMm": 7.92 },
+      "description": "A loose 7.62×39 rifle cartridge. Bullet diameter from gungen cartridges/7.62x39.json (C.I.P. projectile G1). Loaded mass 16 g is a gameplay estimate, not a sourced specification. Damage, push and reach are gameplay estimates too.",
+      "ammo": {
+        "calibre": "7.62x39",
+        "pellets": 1,
+        "diameterMm": 7.92,
+        "damage": 45,
+        "impulse": 1.5,
+        "rangeMetres": 400,
+        "headDamageMultiplier": 2
+      },
       "model": "round_7_d_62x39"
     },
     {

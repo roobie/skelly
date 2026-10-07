@@ -21,7 +21,7 @@ import { defOf, type Item } from '../core/items.ts';
 import { magazineFits, magazineSpec, magazineWellCalibre } from '../core/magazine.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { dropTarget, stowTarget } from '../core/options.ts';
-import { coneDirection, type PelletShot, pelletShotFromBasis } from '../core/pellets.ts';
+import { coneDirection, type PelletShot, pelletShotFromBasis, projectileShot } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
 import { pilesInRadius } from '../core/reach.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
@@ -216,7 +216,8 @@ export class FirearmMechanics {
   private readonly blockSize: number;
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
-  private readonly onShot: (shot: PelletShot, time: number) => void;
+  /** Simulation: resolves the shot's hits. It runs before `onTrajectory`, which is presentation only. */
+  private readonly onShot: (shot: PelletShot, time: number, firearm: Item) => void;
   private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
   private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
   private readonly onCommittedShot: (seed: number, recoilKickRadians: number, shotKind: FirearmsSkillShotKind) => void;
@@ -242,7 +243,7 @@ export class FirearmMechanics {
       blockSize: number;
       pose: (uid: number) => FirearmPoseInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
-      onShot?: (shot: PelletShot, time: number) => void;
+      onShot?: (shot: PelletShot, time: number, firearm: Item) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
       onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
       onCommittedShot?: (seed: number, recoilKickRadians: number, shotKind: FirearmsSkillShotKind) => void;
@@ -468,7 +469,7 @@ export class FirearmMechanics {
     state.roundType = undefined;
     state.pendingCase = { ...emission, seed };
     const pellets = pelletShotFromBasis({ ammo, origin: muzzle, basis: shotBasis, seed: input.seed, key: shotKey });
-    this.onShot(pellets, input.simTime);
+    this.onShot(pellets, input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind);
     this.previousShotAt.set(item.uid, input.simTime);
@@ -477,7 +478,8 @@ export class FirearmMechanics {
 
   private commitBallisticShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
     const roundType = item.firearm?.roundType;
-    if (!(roundType && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
+    const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
+    if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
       return false;
     }
     const shotKind = this.handlingShotKind(item.uid, input.simTime);
@@ -499,6 +501,7 @@ export class FirearmMechanics {
       data.dispersionRadians,
       Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
     );
+    this.onShot(projectileShot(ammo, muzzle, [direction]), input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind);
     this.previousShotAt.set(item.uid, input.simTime);

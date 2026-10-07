@@ -517,13 +517,16 @@ export const createSession = (options: SessionOptions) => {
         firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning(), shotKind).recoilKickScale,
       );
     },
-    onShot: (shot, time) => {
+    onShot: (shot, time, firearm) => {
       const hits = zombieSystem.firePellets(shot);
       if (hits > 0 && firearmReadyWalking) {
         const training = skillActivityPractice(registry, 'firearms_combat', 'hit');
         character.awardPractice('firearms_combat', training.practice, training.tier);
       }
-      playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
+      // Other firearms' shot sounds are the player's presentation cue (play.ts, `firearmShotSound`).
+      if (registry.items.get(firearm.type)?.firearm?.pump) {
+        playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
+      }
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),

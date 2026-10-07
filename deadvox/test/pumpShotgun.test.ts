@@ -563,13 +563,16 @@ describe('real pump ammunition', () => {
     expect(new Set(a.shots[0]!.directions.map((vector) => vector.join(','))).size).toBe(ammo.pellets);
     expect(a.shots[0]!.directions.every((direction) => Math.abs(Math.hypot(...direction) - 1) < 1e-9)).toBe(true);
     const changed = { ...registry, items: new Map(registry.items) };
-    changed.items.set(shellType, { ...registry.items.get(shellType)!, ammo: { ...ammo, pellets: 7, diameterMm: 9.1 } });
+    changed.items.set(shellType, {
+      ...registry.items.get(shellType)!,
+      ammo: { ...ammo, pellets: 7, diameterMm: 9.1, damage: ammo.damage * 2 },
+    });
     const fromData = fixture(changed);
     fromData.load(0);
     fromData.rack(1);
     expect(fromData.fire(3)).toBe(true);
     expect(fromData.shots[0]?.diameterMm).toBe(9.1);
-    expect(fromData.shots[0]!.damage / a.shots[0]!.damage).toBeCloseTo((9.1 / ammo.diameterMm) ** 3);
+    expect([fromData.shots[0]!.damage, a.shots[0]!.damage]).toEqual([ammo.damage * 2, ammo.damage]);
     expect(fromData.shots[0]!.directions).toHaveLength(7);
   });
 

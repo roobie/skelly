@@ -201,10 +201,19 @@ const FirearmSchema = strictObject({
   /** Half-angle of the firearm's independent per-round cone; pump firearms must set zero because pellet spread owns their cone. */
   dispersionRadians: pipe(NonNegative, maxValue(Math.PI / 2, 'must be at most a right angle')),
 });
+/** Per projectile (one rifle bullet, or each pellet); damage, push and reach are gameplay estimates, not ballistics. */
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
   diameterMm: Positive,
+  /** Region health a projectile takes, before the zombie's per-region pierce resistance. */
+  damage: Positive,
+  /** Push in N·s on the struck body. */
+  impulse: Positive,
+  /** Hitscan reach. */
+  rangeMetres: Positive,
+  /** Scales `damage` on a head hit; absent means 1. */
+  headDamageMultiplier: optional(Positive),
 });
 
 const LightSchema = strictObject({
