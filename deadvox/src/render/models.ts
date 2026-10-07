@@ -54,14 +54,20 @@ const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof
 };
 
 /** The frame a slot's `at` and `turn` place a part in: the base model's file frame. */
-const slotFrame = (slot: ItemLookSlot): Group => {
+export const fittedPartFrame = (slot: ItemLookSlot): Group => {
   const frame = new Group();
   frame.position.set(...slot.at);
   if (slot.direction && slot.up) {
-    const direction = new Vector3(...slot.direction).normalize();
-    const up = new Vector3(...slot.up).normalize();
-    const side = direction.clone().cross(up).normalize();
-    frame.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(direction, up, side));
+    if (!slot.mountFrame) throw new Error(`Fitted model ${slot.model ?? slot.slot} has no exported mount frame`);
+    const sourceNormal = new Vector3(...slot.mountFrame.normal).normalize();
+    const sourceUp = new Vector3(...slot.mountFrame.up).normalize();
+    const sourceSide = sourceNormal.clone().cross(sourceUp).normalize();
+    const targetNormal = new Vector3(...slot.direction).negate().normalize();
+    const targetUp = new Vector3(...slot.up).normalize();
+    const targetSide = targetNormal.clone().cross(targetUp).normalize();
+    const sourceFrame = new Matrix4().makeBasis(sourceNormal, sourceUp, sourceSide);
+    const targetFrame = new Matrix4().makeBasis(targetNormal, targetUp, targetSide);
+    frame.quaternion.setFromRotationMatrix(targetFrame.multiply(sourceFrame.invert()));
   } else if (slot.turn) {
     const [tx, ty, tz] = slot.turn;
     frame.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
@@ -236,7 +242,7 @@ export class ModelLibrary {
   private attachParts(frame: Object3D, look: ItemLook): ComposedHeld['slots'] {
     const slots: ComposedHeld['slots'] = {};
     for (const slot of look.slots) {
-      const group = slotFrame(slot);
+      const group = fittedPartFrame(slot);
       const model = slot.model === undefined ? undefined : this.part(slot.model);
       if (model) {
         group.add(model);

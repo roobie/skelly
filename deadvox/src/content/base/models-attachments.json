@@ -8,6 +8,7 @@
         "kind": "foregrip",
         "massKg": 0.016938745312499996,
         "mount": "rail-bottom",
+        "mountFrame": { "normal": [0, 1, 0], "up": [1, 0, 0] },
         "properties": {
           "handlingClass": "vertical",
           "railSpanNotches": {
@@ -25,6 +26,7 @@
         "kind": "suppressor",
         "mount": "muzzle",
         "massKg": 1.2218603437304045,
+        "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] },
         "properties": {
           "noiseFactor": 0.7,
           "wearClass": "improvised"
@@ -39,6 +41,7 @@
         "kind": "optic",
         "massKg": 0.3376618423714778,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "reticleKind": "crosshair",
           "magnification": {
@@ -68,6 +71,7 @@
         "kind": "optic",
         "massKg": 0.357488038040254,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "reticleKind": "chevron",
           "magnification": {
@@ -97,6 +101,7 @@
         "kind": "optic",
         "massKg": 0.3254916611224242,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "reticleKind": "crosshair",
           "magnification": {
@@ -126,6 +131,7 @@
         "kind": "optic",
         "massKg": 0.30874713046874996,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "reticleKind": "dot",
           "railSpanNotches": {
@@ -151,6 +157,7 @@
         "kind": "optic",
         "massKg": 0.16156919783654183,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "reticleKind": "crosshair",
           "magnification": {
@@ -180,6 +187,7 @@
         "kind": "optic",
         "massKg": 0.08004009503411555,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "reticleKind": "dot",
           "railSpanNotches": {
@@ -205,6 +213,7 @@
         "kind": "optic",
         "massKg": 0.04629537375454333,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "reticleKind": "dot",
           "railSpanNotches": {
@@ -230,6 +239,7 @@
         "kind": "iron-sight",
         "massKg": 0.0257431857421875,
         "mount": "rail-top",
+        "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
         "properties": {
           "railSpanNotches": {
             "minOffset": 0,
@@ -253,6 +263,7 @@
         "kind": "suppressor",
         "massKg": 0.497976429221834,
         "mount": "muzzle",
+        "mountFrame": { "normal": [-1, 0, 0], "up": [0, 1, 0] },
         "properties": {
           "noiseFactor": 0.45,
           "wearClass": "real"
@@ -267,6 +278,7 @@
         "kind": "flashlight-mount",
         "massKg": 0.015398859374999999,
         "mount": "rail-side",
+        "mountFrame": { "normal": [0, 0, -1], "up": [0, 1, 0] },
         "properties": {
           "railSpanNotches": {
             "minOffset": 0,

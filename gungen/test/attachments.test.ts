@@ -76,6 +76,9 @@ const attachmentMetadataProblems = (id: string, attachment: AttachmentMetadata |
   if (attachment.id !== id) {
     problems.push('attachment ID differs');
   }
+  if (!attachment.mountFrame) {
+    problems.push('exported mount connector frame is missing');
+  }
   if (id.startsWith('optic-') && (!attachment.properties.reticleKind || attachment.sight?.kind !== 'optic')) {
     problems.push('optic reticle or sight frame is missing');
   }
@@ -250,6 +253,10 @@ describe('attachment parts and export metadata', () => {
       expect(deadvox.issues).toEqual([]);
       expect(deadvox.registry.models.has(modelId)).toBe(true);
       expect(attachmentMetadataProblems(id, result.modelEntry.attachment)).toEqual([]);
+      const { familyName, params, part } = attachmentBuild(id);
+      const metadata = attachmentMetadata(familyName, params, gunDomain.units.metresPerUnit, part)!;
+      const port = part.ports.find(({ gender, mount }) => gender === 'male' && mount === metadata.mount);
+      expect(metadata.mountFrame).toEqual(port && { normal: port.normal, up: port.up });
       expect(gltf.issues.numErrors).toBe(0);
       expect(gltf.issues.numWarnings).toBe(0);
       expect(nodes).toContain(partNodeName(id, attachmentFamily(id)));

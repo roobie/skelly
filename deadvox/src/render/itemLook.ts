@@ -14,6 +14,8 @@ export interface ItemLookSlot {
   readonly turn?: Vec3;
   readonly direction?: Vec3;
   readonly up?: Vec3;
+  /** The fitted model's exported connector frame, aligned to the gun-side slot frame. */
+  readonly mountFrame?: { readonly normal: Vec3; readonly up: Vec3 };
   /** The fitted item's model; absent while the slot is empty. */
   readonly model?: string;
 }
@@ -51,12 +53,14 @@ export const itemLook = (registry: Registry, item: Item): ItemLook | undefined =
     }
     const mount = modelDef?.attachmentSlots?.find(({ id }) => id === slotId);
     const attachmentModel = defOf(registry, child.type).model;
-    if (mount && attachmentModel) {
+    const mountFrame = attachmentModel ? registry.models.get(attachmentModel)?.attachment?.mountFrame : undefined;
+    if (mount && attachmentModel && mountFrame) {
       slots.push({
         slot: slotId,
         at: mount.position,
         direction: mount.direction,
         up: mount.up,
+        mountFrame,
         model: attachmentModel,
       });
     }

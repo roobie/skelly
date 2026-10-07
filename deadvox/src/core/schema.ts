@@ -545,6 +545,7 @@ const AttachmentFieldsSchema = strictObject({
   massKg: Positive,
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
+  mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
   sight: optional(AttachmentSightSchema),
 });

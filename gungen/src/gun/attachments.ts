@@ -32,10 +32,14 @@ interface AttachmentSightMetadata {
   readonly ocularDiameterMetres?: number;
 }
 
+type AttachmentCoreMetadata = Omit<AttachmentMetadata, 'mountFrame'>;
+
 export interface AttachmentMetadata {
   readonly id: string;
   readonly kind: AttachmentKind;
   readonly mount: MountKind;
+  /** Local connector frame of the standalone attachment model; its normal opposes the firearm slot normal. */
+  readonly mountFrame: { readonly normal: Vec3; readonly up: Vec3 };
   readonly massKg: number;
   readonly properties: AttachmentProperties;
   /** Local sight frame for runtime fitting; the host gun transform is applied by Deadvox. */
@@ -153,7 +157,7 @@ const opticMetadata = (
   params: Readonly<Record<string, string>> | undefined,
   metresPerUnit: number,
   part?: PartDef,
-): AttachmentMetadata => {
+): AttachmentCoreMetadata => {
   const optic = getOptic(params?.type, params?.mountSection);
   const span = railSpanNotches(part, optic.mount.kind);
   if (!part) {
@@ -184,7 +188,7 @@ const opticMetadata = (
   };
 };
 
-const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): AttachmentMetadata => {
+const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): AttachmentCoreMetadata => {
   const axis = part?.axes.find(({ kind }) => kind === 'sight');
   const span = railSpanNotches(part, 'rail-top');
   if (!part) {
@@ -214,7 +218,7 @@ const suppressorMetadata = (
   params: Readonly<Record<string, string>> | undefined,
   part: PartDef | undefined,
   metresPerUnit: number,
-): AttachmentMetadata | undefined => {
+): AttachmentCoreMetadata | undefined => {
   const type = params?.type as keyof typeof suppressors | undefined;
   const properties = type && suppressors[type];
   if (!properties) {
@@ -232,7 +236,7 @@ const suppressorMetadata = (
   };
 };
 
-const flashlightMountMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentMetadata => {
+const flashlightMountMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentCoreMetadata => {
   const span = railSpanNotches(part, 'rail-side');
   if (!part) {
     throw new Error('Flashlight mount has no geometry for mass metadata');
@@ -246,7 +250,7 @@ const flashlightMountMetadata = (part: PartDef | undefined, metresPerUnit: numbe
   };
 };
 
-const foregripMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentMetadata => {
+const foregripMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentCoreMetadata => {
   const span = railSpanNotches(part, 'rail-bottom');
   if (!part) {
     throw new Error('Foregrip has no geometry for mass metadata');
@@ -266,18 +270,28 @@ export const attachmentMetadata = (
   metresPerUnit: number,
   part?: PartDef,
 ): AttachmentMetadata | undefined => {
-  switch (family) {
-    case 'sight':
-      return opticMetadata(params, metresPerUnit, part);
-    case 'rail-front-sight':
-      return railFrontSightMetadata(metresPerUnit, part);
-    case 'suppressor':
-      return suppressorMetadata(params, part, metresPerUnit);
-    case 'tactical-flashlight-mount':
-      return flashlightMountMetadata(part, metresPerUnit);
-    case 'foregrip':
-      return foregripMetadata(part, metresPerUnit);
-    default:
-      return undefined;
+  const metadata = (() => {
+    switch (family) {
+      case 'sight':
+        return opticMetadata(params, metresPerUnit, part);
+      case 'rail-front-sight':
+        return railFrontSightMetadata(metresPerUnit, part);
+      case 'suppressor':
+        return suppressorMetadata(params, part, metresPerUnit);
+      case 'tactical-flashlight-mount':
+        return flashlightMountMetadata(part, metresPerUnit);
+      case 'foregrip':
+        return foregripMetadata(part, metresPerUnit);
+      default:
+        return undefined;
+    }
+  })();
+  if (!metadata) {
+    return undefined;
   }
+  const port = part?.ports.find(({ gender, mount }) => gender === 'male' && mount === metadata.mount);
+  if (!port) {
+    throw new Error(`Attachment ${metadata.id} has no male ${metadata.mount} connector`);
+  }
+  return { ...metadata, mountFrame: { normal: port.normal, up: port.up } };
 };

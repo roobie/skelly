@@ -102,6 +102,7 @@
             "eyeReliefMetres": 0.08625,
             "ocularDiameterMetres": 0.031625
           },
+          "mountFrame": { "normal": [0, -1, 0], "up": [1, 0, 0] },
           "node": "sight:sight",
           "mountedAt": "receiver.rail.3"
         }

@@ -5,6 +5,8 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory, PILE_GRID, type Pile } from '../src/core/inventory.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
+import { itemLook } from '../src/render/itemLook.ts';
+import { fittedPartFrame } from '../src/render/models.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { prepareModel } from '../src/render/models.ts';
 
@@ -166,6 +168,69 @@ describe('model forms', () => {
     expect(box.min.z).toBeCloseTo(-0.25);
     expect(box.max.z).toBeCloseTo(0.05);
     expect(box.max.x - box.min.x).toBeCloseTo(0.1);
+  });
+});
+
+describe('fitted attachment model frames', () => {
+  it('maps every exported connector frame to the firearm slot frame', () => {
+    const attachments = [...registry.models.values()].filter((model) => model.attachment);
+    expect(attachments.length).toBeGreaterThan(0);
+    for (const model of attachments) {
+      const mountFrame = model.attachment!.mountFrame;
+      const frame = fittedPartFrame({
+        slot: 'fixture',
+        at: [0, 0, 0],
+        direction: [0, 1, 0],
+        up: [1, 0, 0],
+        mountFrame,
+        model: model.id,
+      });
+      const normal = new Vector3(...mountFrame.normal).applyQuaternion(frame.quaternion);
+      const up = new Vector3(...mountFrame.up).applyQuaternion(frame.quaternion);
+      expect(normal.dot(new Vector3(0, -1, 0)), model.id).toBeCloseTo(1, 8);
+      expect(up.dot(new Vector3(1, 0, 0)), model.id).toBeCloseTo(1, 8);
+    }
+  });
+
+  it('keeps the default fitted optic along the bore and seated on its rail', async () => {
+    const firearm = registry.models.get('rifle_assault')!;
+    const optic = firearm.attachments?.find(({ kind }) => kind === 'optic');
+    if (!optic) throw new Error('Exported firearm has no default optic');
+    const attachmentModelId = registry.items.get('optic_lpvo_1_6x')?.model;
+    if (!attachmentModelId) throw new Error('Default optic item has no exported model');
+    const mount = firearm.attachmentSlots!.find(({ id }) => id === optic.mountedAt)!;
+    const look = itemLook(registry, new Inventory(registry).create('rifle_assault'))!;
+    const slot = look.slots.find(({ slot: id }) => id === optic.mountedAt)!;
+    if (slot.model !== attachmentModelId || !slot.mountFrame) throw new Error('Default optic look is incomplete');
+    const gunScene = (await parseGlb(readFileSync(`${BASE}/${firearm.file}`))).scene;
+    const opticScene = (await parseGlb(readFileSync(`${BASE}/${registry.models.get(attachmentModelId)!.file}`))).scene;
+    const held = prepareModel(firearm, gunScene).held;
+    const modelFrame = held.children[0]!.children[0]!;
+    const fitted = fittedPartFrame(slot).add(opticScene);
+    modelFrame.add(fitted);
+    held.updateMatrixWorld(true);
+    const origin = fitted.getWorldPosition(new Vector3());
+    const bore = modelFrame.localToWorld(new Vector3(1, 0, 0)).sub(modelFrame.localToWorld(new Vector3())).normalize();
+    const tube = new Vector3(1, 0, 0).transformDirection(opticScene.matrixWorld);
+    expect(Math.abs(tube.dot(bore))).toBeCloseTo(1, 6);
+
+    const railNormal = modelFrame
+      .localToWorld(new Vector3(...mount.direction))
+      .sub(modelFrame.localToWorld(new Vector3()))
+      .normalize();
+    const railPosition = origin.dot(railNormal);
+    const corners = new Box3().setFromObject(opticScene);
+    const lowest = [
+      new Vector3(corners.min.x, corners.min.y, corners.min.z),
+      new Vector3(corners.min.x, corners.min.y, corners.max.z),
+      new Vector3(corners.min.x, corners.max.y, corners.min.z),
+      new Vector3(corners.min.x, corners.max.y, corners.max.z),
+      new Vector3(corners.max.x, corners.min.y, corners.min.z),
+      new Vector3(corners.max.x, corners.min.y, corners.max.z),
+      new Vector3(corners.max.x, corners.max.y, corners.min.z),
+      new Vector3(corners.max.x, corners.max.y, corners.max.z),
+    ].reduce((min, point) => Math.min(min, point.dot(railNormal)), Number.POSITIVE_INFINITY);
+    expect(lowest).toBeCloseTo(railPosition, 6);
   });
 });
 

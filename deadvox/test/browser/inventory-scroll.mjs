@@ -95,6 +95,8 @@ const firearmRegistry = BUNDLED_CONTENT.registry;
 const firearmInventory = new Inventory(firearmRegistry);
 const firearmQueue = new HandlingQueue(firearmInventory);
 const firearmHandling = new FirearmAttachmentHandling(firearmInventory, firearmQueue, () => [0, 0, 0]);
+const firearmNotices = [];
+const firearmDispatches = [];
 const rifle = firearmInventory.create('rifle_assault');
 const rifleModelId = firearmRegistry.items.get(rifle.type).model;
 const rifleModel = firearmRegistry.models.get(rifleModelId);
@@ -111,10 +113,13 @@ const firearmScreen = new InventoryScreen(document.querySelector('#firearm-inven
   reach: bindReach({ inventory: firearmInventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...firearmInventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0,
-  dispatch: (payload) => payload.kind === 'firearm.attachment.fit'
-    ? firearmHandling.fit(payload.firearmUid, payload.slotId, payload.attachmentUid)
-    : payload.kind === 'firearm.attachment.remove' ? firearmHandling.remove(payload.firearmUid, payload.slotId) : undefined,
-  searching: () => false, notice: () => {}, describe: () => [], workOptions: () => [], body: () => body.snapshotState(),
+  dispatch: (payload) => {
+    firearmDispatches.push(payload);
+    return payload.kind === 'firearm.attachment.fit'
+      ? firearmHandling.fit(payload.firearmUid, payload.slotId, payload.attachmentUid)
+      : payload.kind === 'firearm.attachment.remove' ? firearmHandling.remove(payload.firearmUid, payload.slotId) : undefined;
+  },
+  searching: () => false, notice: (message) => firearmNotices.push(message), describe: () => [], workOptions: () => [], body: () => body.snapshotState(),
   attachmentCandidates: (firearmUid, slotId) => firearmHandling.candidates(firearmUid, slotId),
 });
 firearmScreen.selected = rifle;
@@ -137,22 +142,28 @@ target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions: BODY_REGIONS,
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
-  fitFirearmAttachment() {
+  prepareAttachmentAction() {
     firearmScreen.open();
-    const fitSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
-    if (!fitSlotButton) throw Error('Inspect view did not offer the certified fixture fit');
-    const queuedBeforeFit = firearmQueue.jobs.length;
-    fitSlotButton.click();
-    if (firearmQueue.jobs.length !== queuedBeforeFit + 1) throw Error('Fit control did not queue handling');
+    const selector = '#firearm-inventory [data-attachment-slot="' + slot.id + '"] button';
+    const button = document.querySelector(selector);
+    if (!button) throw Error('Inspect view did not offer the certified fixture fit');
+    return { selector, label: button.textContent.trim(), queuedBefore: firearmQueue.jobs.length };
+  },
+  finishAttachmentFit(queuedBefore) {
+    if (firearmQueue.jobs.length !== queuedBefore + 1) throw Error('Fit control did not queue handling: ' + JSON.stringify({ dispatches: firearmDispatches, notices: firearmNotices }));
     const fitResult = firearmQueue.tick(1);
     firearmScreen.update();
     if (fitResult.failed.length > 0) throw Error('Fit handling failed: ' + fitResult.failed.map(({ reason }) => reason).join('; '));
     if (rifle.slots?.[slot.id] !== foregrip) throw Error('Inspect view did not fit the accessory');
-    const removeSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
-    if (!removeSlotButton) throw Error('Inspect view did not offer removal');
-    const queuedBeforeRemove = firearmQueue.jobs.length;
-    removeSlotButton.click();
-    if (firearmQueue.jobs.length !== queuedBeforeRemove + 1) throw Error('Remove control did not queue handling');
+  },
+  prepareAttachmentRemove() {
+    const selector = '#firearm-inventory [data-attachment-slot="' + slot.id + '"] button';
+    const button = document.querySelector(selector);
+    if (!button) throw Error('Inspect view did not offer removal');
+    return { selector, label: button.textContent.trim(), queuedBefore: firearmQueue.jobs.length };
+  },
+  finishAttachmentRemove(queuedBefore) {
+    if (firearmQueue.jobs.length !== queuedBefore + 1) throw Error('Remove control did not queue handling: ' + JSON.stringify({ dispatches: firearmDispatches, notices: firearmNotices }));
     const removeResult = firearmQueue.tick(1);
     firearmScreen.update();
     if (removeResult.failed.length > 0) throw Error('Remove handling failed: ' + removeResult.failed.map(({ reason }) => reason).join('; '));
@@ -298,7 +309,14 @@ try {
   }
   assert.deepEqual(errors, []);
   assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
-  await page.evaluate(() => globalThis.scrollFixture.fitFirearmAttachment());
+  const fit = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentAction());
+  process.stdout.write(`${engine}: attachment action control ${JSON.stringify(fit)}\n`);
+  await page.locator(fit.selector).click();
+  await page.evaluate((queuedBefore) => globalThis.scrollFixture.finishAttachmentFit(queuedBefore), fit.queuedBefore);
+  const remove = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentRemove());
+  process.stdout.write(`${engine}: attachment removal control ${JSON.stringify(remove)}\n`);
+  await page.locator(remove.selector).click();
+  await page.evaluate((queuedBefore) => globalThis.scrollFixture.finishAttachmentRemove(queuedBefore), remove.queuedBefore);
   process.stdout.write(
     `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
   );
