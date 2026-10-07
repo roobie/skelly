@@ -84,7 +84,7 @@ export interface HandlingViewModel {
   readonly minimumPercent?: number;
 }
 
-export interface ThrowChargePresentation {
+interface ThrowChargePresentation {
   readonly elapsedSimSeconds: number;
   readonly chargeSimSeconds: number;
   readonly minimumHoldSimSeconds: number;
