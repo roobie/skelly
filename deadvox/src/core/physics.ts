@@ -30,7 +30,8 @@ const MAX_STEP = 0.45; // per-axis move per substep; below 1 so only one new blo
 
 type Axis = 0 | 1 | 2;
 
-const halfExtent = (body: Body, axis: Axis): number => (axis === 2 ? (body.halfDepth ?? body.halfWidth) : body.halfWidth);
+const halfExtent = (body: Body, axis: Axis): number =>
+  axis === 2 ? (body.halfDepth ?? body.halfWidth) : body.halfWidth;
 const offsets = (body: Body, axis: Axis): [number, number] =>
   axis === 1 ? [0, body.height] : [-halfExtent(body, axis), halfExtent(body, axis)];
 
@@ -221,6 +222,67 @@ export const stepBodyHorizontal = (
   }
 };
 
+const pushPairAlongAxis = ({
+  first,
+  second,
+  axis,
+  direction,
+  push,
+  collision,
+}: {
+  first: Body;
+  second: Body;
+  axis: Axis;
+  direction: number;
+  push: number;
+  collision: CollisionContext;
+}): readonly [number, number] => {
+  const firstStart = first.pos[axis]!;
+  const secondStart = second.pos[axis]!;
+  moveAxis(first, axis, -direction * push, collision);
+  moveAxis(second, axis, direction * push, collision);
+  return [Math.abs(first.pos[axis]! - firstStart), Math.abs(second.pos[axis]! - secondStart)];
+};
+
+const separateOnOtherAxis = ({
+  first,
+  second,
+  axis,
+  overlapX,
+  overlapZ,
+  firstMoved,
+  secondMoved,
+  maxPushBlocks,
+  collision,
+}: {
+  first: Body;
+  second: Body;
+  axis: Axis;
+  overlapX: number;
+  overlapZ: number;
+  firstMoved: number;
+  secondMoved: number;
+  maxPushBlocks: number;
+  collision: CollisionContext;
+}): void => {
+  const otherAxis: Axis = axis === 0 ? 2 : 0;
+  const otherOverlap = otherAxis === 0 ? overlapX : overlapZ;
+  if (otherOverlap <= 0) {
+    return;
+  }
+  const otherComponent = second.pos[otherAxis]! - first.pos[otherAxis]!;
+  const otherDirection = otherComponent === 0 ? 1 : Math.sign(otherComponent);
+  const otherPush = Math.min(otherOverlap / 2, maxPushBlocks);
+  const firstBudget = Math.max(0, maxPushBlocks - firstMoved);
+  const secondBudget = Math.max(0, maxPushBlocks - secondMoved);
+  if (firstBudget > 0) {
+    moveAxis(first, otherAxis, -otherDirection * Math.min(otherPush, firstBudget), collision);
+  }
+  if (secondBudget > 0) {
+    moveAxis(second, otherAxis, otherDirection * Math.min(otherPush, secondBudget), collision);
+  }
+};
+
 const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: CollisionContext): void => {
   if (!overlapsBody(first, second)) {
     return;
@@ -237,31 +299,19 @@ const separatePair = (first: Body, second: Body, maxPushBlocks: number, collisio
   const component = axis === 0 ? deltaX : deltaZ;
   const direction = component === 0 ? 1 : Math.sign(component);
   const push = Math.min(overlap / 2, maxPushBlocks);
-  const firstStart = [...first.pos] as Vec3;
-  const secondStart = [...second.pos] as Vec3;
-  moveAxis(first, axis, -direction * push, collision);
-  moveAxis(second, axis, direction * push, collision);
-
-  const firstMoved = Math.abs(first.pos[axis]! - firstStart[axis]!);
-  const secondMoved = Math.abs(second.pos[axis]! - secondStart[axis]!);
-  if (firstMoved >= push - CONTACT_SKIN && secondMoved >= push - CONTACT_SKIN) {
-    return;
-  }
-  const otherAxis: Axis = axis === 0 ? 2 : 0;
-  const otherOverlap = otherAxis === 0 ? overlapX : overlapZ;
-  if (otherOverlap <= 0) {
-    return;
-  }
-  const otherComponent = second.pos[otherAxis]! - first.pos[otherAxis]!;
-  const otherDirection = otherComponent === 0 ? 1 : Math.sign(otherComponent);
-  const otherPush = Math.min(otherOverlap / 2, maxPushBlocks);
-  const firstBudget = Math.max(0, maxPushBlocks - firstMoved);
-  const secondBudget = Math.max(0, maxPushBlocks - secondMoved);
-  if (firstBudget > 0) {
-    moveAxis(first, otherAxis, -otherDirection * Math.min(otherPush, firstBudget), collision);
-  }
-  if (secondBudget > 0) {
-    moveAxis(second, otherAxis, otherDirection * Math.min(otherPush, secondBudget), collision);
+  const [firstMoved, secondMoved] = pushPairAlongAxis({ first, second, axis, direction, push, collision });
+  if (firstMoved < push - CONTACT_SKIN || secondMoved < push - CONTACT_SKIN) {
+    separateOnOtherAxis({
+      first,
+      second,
+      axis,
+      overlapX,
+      overlapZ,
+      firstMoved,
+      secondMoved,
+      maxPushBlocks,
+      collision,
+    });
   }
 };
 

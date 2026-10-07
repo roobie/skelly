@@ -1,11 +1,12 @@
+// biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves to sibling source through this package's Vite and TypeScript aliases.
 import { generateValid } from '@mobgen/core/generate.ts';
 import { worldPosition } from '@mobgen/core/voxelize.ts';
 import { amalgamManifest } from '@mobgen/mob/amalgam.ts';
 import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
 import type { BoneVoxelBox } from '@mobgen/mob/shamblerFigure.ts';
 
-export type AmalgamRealized = NonNullable<ReturnType<typeof generateValid>>['realized'];
-export type AmalgamManifest = ReturnType<typeof amalgamManifest>;
+type AmalgamRealized = NonNullable<ReturnType<typeof generateValid>>['realized'];
+type AmalgamManifest = ReturnType<typeof amalgamManifest>;
 
 export interface AmalgamFigure {
   readonly seed: number;
@@ -28,6 +29,70 @@ interface Bounds {
 export const AMALGAM_FIGURE_SEED = 1;
 
 const cache = new Map<number, AmalgamFigure>();
+
+interface VoxelBounds {
+  byBone: Map<string, Bounds>;
+  voxelCentersByBone: Map<string, [number, number, number][]>;
+  totalBounds: Bounds;
+}
+
+const addOwnedVoxel = ({
+  realized,
+  byBone,
+  voxelCentersByBone,
+  totalBounds,
+  i,
+  j,
+  k,
+}: {
+  realized: AmalgamRealized;
+  byBone: Map<string, Bounds>;
+  voxelCentersByBone: Map<string, [number, number, number][]>;
+  totalBounds: Bounds;
+  i: number;
+  j: number;
+  k: number;
+}): void => {
+  const { voxels, body } = realized;
+  const owner = voxels.owner[i + j * voxels.dims[0] + k * voxels.dims[0] * voxels.dims[1]]! - 1;
+  if (owner < 0) {
+    return;
+  }
+  const bone = body.bones[owner]!;
+  const point = worldPosition(voxels, i, j, k) as [number, number, number];
+  const centers = voxelCentersByBone.get(bone.id) ?? [];
+  centers.push(point);
+  voxelCentersByBone.set(bone.id, centers);
+  const current = byBone.get(bone.id) ?? {
+    min: [...point] as [number, number, number],
+    max: [...point] as [number, number, number],
+  };
+  for (let axis = 0; axis < 3; axis++) {
+    current.min[axis] = Math.min(current.min[axis]!, point[axis]!);
+    current.max[axis] = Math.max(current.max[axis]!, point[axis]!);
+    totalBounds.min[axis] = Math.min(totalBounds.min[axis]!, point[axis]! - voxels.size / 2);
+    totalBounds.max[axis] = Math.max(totalBounds.max[axis]!, point[axis]! + voxels.size / 2);
+  }
+  byBone.set(bone.id, current);
+};
+
+const collectVoxelBounds = (realized: AmalgamRealized): VoxelBounds => {
+  const { voxels } = realized;
+  const byBone = new Map<string, Bounds>();
+  const voxelCentersByBone = new Map<string, [number, number, number][]>();
+  const totalBounds: Bounds = {
+    min: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
+    max: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
+  };
+  for (let k = 0; k < voxels.dims[2]; k++) {
+    for (let j = 0; j < voxels.dims[1]; j++) {
+      for (let i = 0; i < voxels.dims[0]; i++) {
+        addOwnedVoxel({ realized, byBone, voxelCentersByBone, totalBounds, i, j, k });
+      }
+    }
+  }
+  return { byBone, voxelCentersByBone, totalBounds };
+};
 
 export interface AmalgamCollisionEnvelope {
   readonly halfWidth: number;
@@ -65,37 +130,8 @@ export const amalgamFigure = (seed: number): AmalgamFigure => {
   }
   const { realized } = generated;
   const manifest = amalgamManifest(realized.body, realized.voxels);
-  const byBone = new Map<string, Bounds>();
-  const voxelCentersByBone = new Map<string, [number, number, number][]>();
-  const totalBounds: Bounds = {
-    min: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
-    max: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
-  };
-  const { voxels, body } = realized;
-  for (let k = 0; k < voxels.dims[2]; k++) {
-    for (let j = 0; j < voxels.dims[1]; j++) {
-      for (let i = 0; i < voxels.dims[0]; i++) {
-        const owner = voxels.owner[i + j * voxels.dims[0] + k * voxels.dims[0] * voxels.dims[1]]! - 1;
-        if (owner < 0) {
-          continue;
-        }
-        const bone = body.bones[owner]!;
-        const point = worldPosition(voxels, i, j, k) as [number, number, number];
-        const centers = voxelCentersByBone.get(bone.id) ?? [];
-        centers.push(point);
-        voxelCentersByBone.set(bone.id, centers);
-        const current = byBone.get(bone.id) ?? { min: [...point] as [number, number, number], max: [...point] as [number, number, number] };
-        for (let axis = 0; axis < 3; axis++) {
-          current.min[axis] = Math.min(current.min[axis]!, point[axis]!);
-          current.max[axis] = Math.max(current.max[axis]!, point[axis]!);
-          totalBounds.min[axis] = Math.min(totalBounds.min[axis]!, point[axis]! - voxels.size / 2);
-          totalBounds.max[axis] = Math.max(totalBounds.max[axis]!, point[axis]! + voxels.size / 2);
-        }
-        byBone.set(bone.id, current);
-      }
-    }
-  }
-  const margin = voxels.size / 2 + 0.001;
+  const { byBone, voxelCentersByBone, totalBounds } = collectVoxelBounds(realized);
+  const margin = realized.voxels.size / 2 + 0.001;
   const boxes = Object.fromEntries(
     manifest.regions.map((region) => [
       region.id,
@@ -108,7 +144,11 @@ export const amalgamFigure = (seed: number): AmalgamFigure => {
           {
             bone,
             center: limits.min.map((value, axis) => (value + limits.max[axis]!) / 2) as [number, number, number],
-            halfSize: limits.min.map((value, axis) => (limits.max[axis]! - value) / 2 + margin) as [number, number, number],
+            halfSize: limits.min.map((value, axis) => (limits.max[axis]! - value) / 2 + margin) as [
+              number,
+              number,
+              number,
+            ],
           },
         ];
       }),

@@ -224,7 +224,14 @@ const progression = obj({
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const bodyRegionValues = BODY_REGIONS;
-const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, halfDepth: opt(positive), height: positive, onGround: bool });
+const body = obj({
+  pos: vec3,
+  vel: vec3,
+  halfWidth: positive,
+  halfDepth: opt(positive),
+  height: positive,
+  onGround: bool,
+});
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),

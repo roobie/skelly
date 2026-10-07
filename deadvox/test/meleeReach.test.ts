@@ -209,7 +209,7 @@ describe('player melee reach at shambler attack distance', () => {
           const beforeHealth = { ...swingZombie.regions };
           const swingResult = swingSystem.swing(playerEye, direction, weapon);
           const changed = (Object.keys(beforeHealth) as ZombieRegion[]).find(
-            (region) => swingZombie.regions[region]! < beforeHealth[region]!
+            (region) => swingZombie.regions[region]! < beforeHealth[region]!,
           );
           expect(aim?.inReach ? [aim.id, aim.region] : undefined, `${ray.name} seed ${seed} ${pose.name}`).toEqual(
             changed === undefined ? undefined : [swingId, changed],

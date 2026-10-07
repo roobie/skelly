@@ -3,11 +3,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { amalgamCollisionEnvelope, amalgamFigure } from '../src/core/amalgamFigure.ts';
 import { buildRegistry } from '../src/core/content.ts';
-import { decodeSave } from '../src/core/saveFormat.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { makeScale } from '../src/core/scale.ts';
 import { projectileShot } from '../src/core/pellets.ts';
 import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
+import { decodeSave } from '../src/core/saveFormat.ts';
+import { makeScale } from '../src/core/scale.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
@@ -16,7 +16,7 @@ import {
   ZombieSystem,
   zombieAttackReachMetres,
 } from '../src/core/zombies.ts';
-import { physicsFor, PLAYER } from '../src/game/player.ts';
+import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, contentLookup, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
@@ -50,6 +50,38 @@ const system = (): ZombieSystem =>
     seed: 17,
   });
 
+const MEMBER_RAY_DIRECTIONS: Vec3[] = [
+  [1, 0, 0],
+  [-1, 0, 0],
+  [0, 0, 1],
+  [0, 0, -1],
+  [0, 1, 0],
+  [0, -1, 0],
+];
+
+const findRegionRay = (
+  simulation: ZombieSystem,
+  id: number,
+  regionId: string,
+  boxes: readonly ReturnType<typeof posedAmalgamRegionBoxes>[string][number][],
+): { origin: Vec3; direction: Vec3 } | null => {
+  const weapon = { damage: 0, reach: 4, cooldown: 0 };
+  for (const box of boxes) {
+    for (const direction of MEMBER_RAY_DIRECTIONS) {
+      const origin: Vec3 = [
+        box.voxelCentroid[0] - (direction[0] * 3) / BLOCK_SIZE,
+        box.voxelCentroid[1] - (direction[1] * 3) / BLOCK_SIZE,
+        box.voxelCentroid[2] - (direction[2] * 3) / BLOCK_SIZE,
+      ];
+      const aim = simulation.aimAt(origin, direction, weapon);
+      if (aim?.id === id && aim.region === regionId) {
+        return { origin, direction };
+      }
+    }
+  }
+  return null;
+};
+
 const findMemberRay = (simulation: ZombieSystem, id: number) => {
   const zombie = simulation.store.get(id)!;
   const figure = amalgamFigure(zombie.figureSeed);
@@ -59,29 +91,11 @@ const findMemberRay = (simulation: ZombieSystem, id: number) => {
     blockSize: BLOCK_SIZE,
     severed: zombie.severed,
   });
-  const weapon = { damage: 0, reach: 4, cooldown: 0 };
-  const directions: Vec3[] = [
-    [1, 0, 0],
-    [-1, 0, 0],
-    [0, 0, 1],
-    [0, 0, -1],
-    [0, 1, 0],
-    [0, -1, 0],
-  ];
   for (const member of activeAmalgamMembers(zombie)) {
     for (const regionId of member.regionIds) {
-      for (const box of regions[regionId] ?? []) {
-        for (const direction of directions) {
-          const origin: Vec3 = [
-            box.voxelCentroid[0] - (direction[0] * 3) / BLOCK_SIZE,
-            box.voxelCentroid[1] - (direction[1] * 3) / BLOCK_SIZE,
-            box.voxelCentroid[2] - (direction[2] * 3) / BLOCK_SIZE,
-          ];
-          const aim = simulation.aimAt(origin, direction, weapon);
-          if (aim?.id === id && aim.region === regionId) {
-            return { origin, direction, partId: member.partId, regionId };
-          }
-        }
+      const ray = findRegionRay(simulation, id, regionId, regions[regionId] ?? []);
+      if (ray) {
+        return { ...ray, partId: member.partId, regionId };
       }
     }
   }
@@ -94,8 +108,16 @@ describe('amalgam body and combat seam', () => {
     const figure = amalgamFigure(3);
     const envelope = amalgamCollisionEnvelope(figure, BLOCK_SIZE);
     const { bounds, originOffset } = figure;
-    const localMin = [bounds.min[0] + originOffset[0], bounds.min[1] + originOffset[1], bounds.min[2] + originOffset[2]];
-    const localMax = [bounds.max[0] + originOffset[0], bounds.max[1] + originOffset[1], bounds.max[2] + originOffset[2]];
+    const localMin = [
+      bounds.min[0] + originOffset[0],
+      bounds.min[1] + originOffset[1],
+      bounds.min[2] + originOffset[2],
+    ];
+    const localMax = [
+      bounds.max[0] + originOffset[0],
+      bounds.max[1] + originOffset[1],
+      bounds.max[2] + originOffset[2],
+    ];
 
     expect(localMin[1]).toBeCloseTo(0);
     expect(envelope.halfWidth * BLOCK_SIZE).toBeCloseTo(Math.max(Math.abs(localMin[0]!), Math.abs(localMax[0]!)));
@@ -149,9 +171,7 @@ describe('amalgam body and combat seam', () => {
       ),
     ).toBe(1);
     expect(zombie.regions[ray.regionId]).toBeLessThan(before[ray.regionId]!);
-    expect(
-      Object.keys(before).filter((region) => zombie.regions[region] !== before[region]),
-    ).toEqual([ray.regionId]);
+    expect(Object.keys(before).filter((region) => zombie.regions[region] !== before[region])).toEqual([ray.regionId]);
   });
 
   it('removes a severed member from attack reach while preserving the other members', () => {
@@ -180,7 +200,9 @@ describe('amalgam body and combat seam', () => {
       ...zombie,
       severed: [
         ...zombie.severed,
-        ...amalgamFigure(zombie.figureSeed).manifest.parts.filter((part) => part.severable).map((part) => part.id),
+        ...amalgamFigure(zombie.figureSeed)
+          .manifest.parts.filter((part) => part.severable)
+          .map((part) => part.id),
       ],
     };
     expect(activeAmalgamMembers(noMembers)).toHaveLength(0);
@@ -213,7 +235,7 @@ describe('amalgam body and combat seam', () => {
     const membersBefore = activeAmalgamMembers(zombie);
     const ray = findMemberRay(simulation, id);
     const target = membersBefore.find((member) => member.partId === ray.partId)!;
-    const regionId = ray.regionId;
+    const { regionId } = ray;
     const before = { ...zombie.regions };
 
     expect(

@@ -4,10 +4,12 @@
 import { type Mat3, mulMM, rotY, transpose } from '@mobgen/core/math.ts';
 import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
-import type { AmalgamFigure } from './amalgamFigure.ts';
 import { type BoneVoxelBox, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import type { AmalgamFigure } from './amalgamFigure.ts';
 import type { ShamblerHitRegion, ZombieHitRegion, ZombieRegion } from './schema.ts';
+
 export type { ZombieHitRegion, ZombieRegion, ZombieRegions } from './schema.ts';
+
 import type { Vec3 } from './coords.ts';
 import { posedShambler, type ShamblerPoseInput } from './zombiePose.ts';
 
@@ -212,7 +214,12 @@ export const posedShamblerRegionBoxes = (
 /** Rest-pose hit boxes for an amalgam; the member tree is translated and yawed as one body. */
 export const posedAmalgamRegionBoxes = (
   figure: AmalgamFigure,
-  input: { readonly position: Vec3; readonly facing: Vec3; readonly blockSize: number; readonly severed: readonly string[] },
+  input: {
+    readonly position: Vec3;
+    readonly facing: Vec3;
+    readonly blockSize: number;
+    readonly severed: readonly string[];
+  },
 ): Readonly<Record<string, readonly PosedBoneBox[]>> => {
   const pose: Pose = { root: figure.originOffset, rotations: {} };
   const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));

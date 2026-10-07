@@ -8,10 +8,10 @@ import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobg
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { flinchPose, flinchPoseWithClip, HIT_FLINCH, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import { type ShamblerFigure, zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
-import type { ZombieFigure } from './zombieFigure.ts';
-import type { Vec3 } from './coords.ts';
+import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { amalgamFigure } from './amalgamFigure.ts';
+import type { Vec3 } from './coords.ts';
+import type { ZombieFigure } from './zombieFigure.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ShamblerPoseInput {

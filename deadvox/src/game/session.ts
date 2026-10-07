@@ -5,7 +5,6 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { zombieFigure } from '../core/zombieFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bodyRegionForHitArea } from '../core/body.ts';
@@ -56,6 +55,7 @@ import type { SoundEventId } from '../core/soundEvents.ts';
 import { type SoundEmission, type SoundEmissionMeta, SoundPicker } from '../core/soundPicker.ts';
 import { wearMeleeWeaponOnHit, wearOnPlayerHit } from '../core/wear.ts';
 import type { World } from '../core/world.ts';
+import { zombieFigure } from '../core/zombieFigure.ts';
 import type { ZombieRegion } from '../core/zombieRegions.ts';
 import { ZombieSpawner } from '../core/zombieSpawns.ts';
 import {

@@ -183,9 +183,7 @@ const worldSources = (registry: Registry) => {
     }
   }
   const spawnWeights = new Map(
-    [...registry.zombies]
-      .filter(([, zombie]) => !zombie.debugOnly)
-      .map(([id, zombie]) => [id, zombie.spawnWeight]),
+    [...registry.zombies].filter(([, zombie]) => !zombie.debugOnly).map(([id, zombie]) => [id, zombie.spawnWeight]),
   );
   for (const id of possibleHamletZombies(markers, spawnWeights)) {
     const loot = registry.zombies.get(id)?.loot;

@@ -141,7 +141,7 @@ const TRIGGER_ENTRIES = [
     },
   ],
   ...(['runner', 'crawler', 'amalgam'] as const).flatMap((type) => {
-    const subject = type === 'runner' ? 'A runner' : type === 'crawler' ? 'A crawler' : 'An amalgam';
+    const subject = { runner: 'A runner', crawler: 'A crawler', amalgam: 'An amalgam' }[type];
     return (['idle', 'alert', 'attack', 'hurt'] as const).map((action) => {
       const event = {
         idle: 'idles nearby',
@@ -316,7 +316,8 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
     ),
   ),
   ...(['idle', 'alert', 'attack', 'hurt'] as const).map(
-    (action) => [`amalgam_${action}`, "Stand-in mapping; reuses shambler recordings pending BR's br-39 sound ruling."] as const,
+    (action) =>
+      [`amalgam_${action}`, "Stand-in mapping; reuses shambler recordings pending BR's br-39 sound ruling."] as const,
   ),
   ['door_open', 'Approved by BR (2026-10-02) with door-open-03 only; more variants are future work.'],
   ['door_close', 'Approved by BR (2026-10-02).'],
