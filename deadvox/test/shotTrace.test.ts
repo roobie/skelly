@@ -14,6 +14,7 @@ const normalize = (direction: Vec3): Vec3 => {
 const trajectory = (y: number, direction: Vec3 = [1, 0, 0]): FirearmTrajectory => ({
   eye: [0.5, y, 0.5],
   muzzle: [0.5, y, 0.5],
+  origin: [0.5, y, 0.5],
   directions: [normalize(direction)],
 });
 
@@ -87,9 +88,12 @@ describe('shot traces and diegetic impacts', () => {
 
   it('keeps updated laser segments from being rejected by stale geometry bounds', () => {
     const effects = new ImpactEffects(0.5, () => false);
-    effects.fire({ eye: [100, 30, 20], muzzle: [100, 30, 20], directions: [[1, 0, 0]] }, true);
+    effects.fire({ eye: [100, 30, 20], muzzle: [100, 30, 20], origin: [100, 30, 20], directions: [[1, 0, 0]] }, true);
     effects.laser.geometry.computeBoundingSphere();
-    effects.fire({ eye: [-100, -20, 100], muzzle: [-100, -20, 100], directions: [[0, 0, 1]] }, true);
+    effects.fire(
+      { eye: [-100, -20, 100], muzzle: [-100, -20, 100], origin: [-100, -20, 100], directions: [[0, 0, 1]] },
+      true,
+    );
     const { boundingSphere } = effects.laser.geometry;
     const positions = effects.laser.geometry.getAttribute('position');
     let allEndpointsInsideBounds = boundingSphere !== null;
@@ -100,7 +104,7 @@ describe('shot traces and diegetic impacts', () => {
     effects.dispose();
   });
 
-  it('marks the near face of a wall between the ballistic eye and muzzle', () => {
+  it('traces from the eye when the firearm mechanics selects it for a blocked muzzle', () => {
     const blockSize = 0.5;
     const wallX = 1;
     const eye: Vec3 = [0.5, 0.5, 0.5];
@@ -109,6 +113,7 @@ describe('shot traces and diegetic impacts', () => {
       {
         eye,
         muzzle: [2.5, 0.5, 0.5],
+        origin: eye,
         directions: [[1, 0, 0]],
       },
       false,

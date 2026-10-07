@@ -1,6 +1,9 @@
 // Read-only play presentation. No input handlers, commands, admission or simulation writes.
+
 import { render } from 'lit-html';
+import { type Camera, Vector3 } from 'three';
 import { formatClock } from '../core/clock.ts';
+import type { Vec3 } from '../core/coords.ts';
 import type { Needs } from '../core/needs.ts';
 import { labelForAction } from '../game/inputBindings.ts';
 import { type HandlingPresentationSource, renderHandling } from './hud.ts';
@@ -12,10 +15,57 @@ export interface PlayHudRoots {
   readonly crosshair: HTMLElement;
 }
 
+export const projectCrosshairScreenPosition = (
+  camera: Camera,
+  viewport: Pick<DOMRect, 'left' | 'top' | 'width' | 'height'>,
+  point: Vec3,
+  blockSize: number,
+): { left: number; top: number } | undefined => {
+  if (!(blockSize > 0 && viewport.width > 0 && viewport.height > 0)) {
+    return undefined;
+  }
+  camera.updateMatrixWorld(true);
+  const worldPosition = new Vector3(point[0] * blockSize, point[1] * blockSize, point[2] * blockSize);
+  const viewPosition = worldPosition.clone().applyMatrix4(camera.matrixWorldInverse);
+  const projected = worldPosition.project(camera);
+  if (
+    ![projected.x, projected.y, projected.z, viewPosition.z].every(Number.isFinite) ||
+    projected.x < -1 ||
+    projected.x > 1 ||
+    projected.y < -1 ||
+    projected.y > 1 ||
+    viewPosition.z >= 0
+  ) {
+    return undefined;
+  }
+  return {
+    left: viewport.left + ((projected.x + 1) / 2) * viewport.width,
+    top: viewport.top + ((1 - projected.y) / 2) * viewport.height,
+  };
+};
+
+export interface PlayCrosshairFrame {
+  readonly visible: boolean;
+  readonly screenPosition?: { readonly left: number; readonly top: number };
+}
+
+export const playCrosshairFrame = (
+  enabled: boolean,
+  firearmWielded: boolean,
+  screenPosition: { readonly left: number; readonly top: number } | undefined,
+): PlayCrosshairFrame => {
+  const position = firearmWielded ? screenPosition : undefined;
+  return {
+    visible: enabled && (!firearmWielded || position !== undefined),
+    ...(position === undefined ? {} : { screenPosition: position }),
+  };
+};
+
 export interface PlayHudFrame {
   readonly hud: string;
   readonly prompt: string;
   readonly crosshairVisible: boolean;
+  readonly crosshairScreenPosition?: { readonly left: number; readonly top: number } | undefined;
 }
 
 /** Rendering consumes a completed projection, never live session/input APIs. */
@@ -23,6 +73,13 @@ export const renderPlayHud = (roots: PlayHudRoots, frame: PlayHudFrame): void =>
   render(frame.hud, roots.hud);
   roots.hud.hidden = frame.hud === '';
   roots.crosshair.hidden = !frame.crosshairVisible;
+  if (frame.crosshairScreenPosition) {
+    roots.crosshair.style.left = `${frame.crosshairScreenPosition.left}px`;
+    roots.crosshair.style.top = `${frame.crosshairScreenPosition.top}px`;
+  } else {
+    roots.crosshair.style.removeProperty('left');
+    roots.crosshair.style.removeProperty('top');
+  }
   render(frame.prompt, roots.prompt);
   roots.prompt.hidden = frame.prompt === '';
 };
