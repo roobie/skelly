@@ -181,7 +181,6 @@ const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, end
   });
   replay.sim.paused = false;
   for (let frame = 0; !player.finished; frame += 1) {
-    replay.sim.compression.c = player.peek()?.compression ?? replay.sim.compression.c;
     replay.session.frameReplay(1 / 60);
     if (frame > inputs.frames.length + 24) {
       throw new Error('Replay session did not consume its recorded inputs');
