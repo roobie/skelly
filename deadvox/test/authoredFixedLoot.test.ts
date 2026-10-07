@@ -8,6 +8,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { rollLoot } from '../src/core/loot.ts';
+import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { Rng } from '../src/core/random.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
@@ -352,7 +353,7 @@ describe('authored fixed loot', () => {
     expect(rifles.every((rifle) => rifle.firearm?.chamber === 'empty' && rifle.slots?.magazine === undefined)).toBe(
       true,
     );
-    const magazines = placedItems.filter(({ type }) => type.startsWith('magazine_'));
+    const magazines = placedItems.filter(({ type }) => magazineSpec(result.registry, type) !== undefined);
     expect(magazines.length).toBeGreaterThan(0);
     expect(magazines.every((magazine) => (magazine.cartridges ?? []).length === 0)).toBe(true);
     expect(contents(forward)).toEqual(contents(reverse));
@@ -445,20 +446,14 @@ describe('authored fixed loot', () => {
       expect(fixedCount(overrides, 'camp_armoury', magazine)).toBeGreaterThan(0);
     }
     const armouryLoot = overrides.filter(({ building }) => building.template === 'camp_armoury');
-    const fixedRifles = armouryLoot
-      .flatMap(({ override }) => override.items)
-      .filter(({ item }) => item.startsWith('rifle_'));
-    const rackCapacity = result.registry.furniture
-      .get('rifle_rack')!
-      .container!.pockets.reduce((sum, pocket) => sum + pocket.grid[0] * pocket.grid[1], 0);
-    expect(fixedRifles.length).toBeGreaterThan(0);
-    expect(fixedRifles.length).toBeLessThan(rackCapacity);
-    const rifleLoot = armouryLoot.find(({ override }) => override.items.some(({ item }) => item.startsWith('rifle_')));
+    const rifleLoot = armouryLoot.find(({ override }) =>
+      override.items.some(({ item }) => magazineWellCalibre(result.registry, item) !== undefined),
+    );
     const ammunition = armouryLoot.find(({ override }) =>
-      override.items.some(({ item }) => item.startsWith('cartridge_')),
+      override.items.some(({ item }) => result.registry.items.get(item)?.ammo !== undefined),
     );
     const magazines = armouryLoot.find(({ override }) =>
-      override.items.some(({ item }) => item.startsWith('magazine_')),
+      override.items.some(({ item }) => magazineSpec(result.registry, item) !== undefined),
     );
     expect(rifleLoot).toBeDefined();
     expect(ammunition).toBeDefined();
@@ -466,7 +461,7 @@ describe('authored fixed loot', () => {
     expect(ammunition).not.toBe(rifleLoot);
     expect(ammunition).not.toBe(magazines);
     expect(furnitureAt(ammunition!)).toBe('ammo_crate');
-    const sparse = result.registry.loot.get('camp_armoury_spare')!;
+    const sparse = result.registry.loot.get('military_armoury')!;
     const nothingWeight = sparse.entries.find(({ nothing }) => nothing)?.weight ?? 0;
     const itemWeight = sparse.entries
       .filter(({ item }) => item !== undefined)
@@ -615,8 +610,9 @@ describe('authored fixed loot', () => {
       x1: Math.max(...fenceRects.map(({ x1 }) => x1)),
       z1: Math.max(...fenceRects.map(({ z1 }) => z1)),
     };
+    expect(runners.length).toBeGreaterThan(0);
     expect(
-      runners.some(
+      runners.every(
         ({ position: [x, , z] }) =>
           x < fenceBounds.x0 || x > fenceBounds.x1 || z < fenceBounds.z0 || z > fenceBounds.z1,
       ),

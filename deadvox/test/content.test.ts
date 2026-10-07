@@ -847,8 +847,8 @@ describe('content references', () => {
     ]);
   });
 
-  it('makes every military-only item reachable once an authored site rolls a military table', () => {
-    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
+  it('makes every military-only item reachable once an authored site rolls all military tables', () => {
+    const militaryTables = [...baseRegistry.loot.values()].filter((table) => table.military);
     // Demo layouts aren't world sources (`worldSources`), so the site must come from a played layout.
     const authoredOnly = [...baseRegistry.layouts.values()]
       .filter((layout) => !layout.demo)
@@ -859,16 +859,25 @@ describe('content references', () => {
       .find((definition) =>
         Object.values(definition.palette).some((entry) => typeof entry === 'object' && 'loot' in entry),
       );
-    if (armoury === undefined || site === undefined) {
-      throw new Error('base content needs a military table and an authored-only template with a loot container');
+    if (militaryTables.length === 0 || site === undefined) {
+      throw new Error('base content needs military tables and an authored-only template with a loot container');
     }
+    const allMilitaryLoot = {
+      id: 'fixture_all_military_tables',
+      military: true,
+      rolls: [1, 1],
+      entries: militaryTables.map(({ id }) => ({ table: id, weight: 1 })),
+    };
     site.military = true;
     for (const [key, entry] of Object.entries(site.palette)) {
       if (typeof entry === 'object' && 'loot' in entry) {
-        site.palette[key] = { ...entry, loot: armoury.id };
+        site.palette[key] = { ...entry, loot: allMilitaryLoot.id };
       }
     }
-    const { registry, issues } = withBase({ source: 'armoury-site.json', data: { templates: [site] } });
+    const { registry, issues } = withBase({
+      source: 'armoury-site.json',
+      data: { templates: [site], loot: [allMilitaryLoot] },
+    });
     expect(issues).toEqual([]);
     const { found } = checkReachability(registry);
     const military = [...militaryLootItems(registry)];
