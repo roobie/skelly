@@ -22,7 +22,7 @@ import type { Genome, Template } from '../core/template.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
-import { crawlerPose } from '../mob/crawler.ts';
+import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
@@ -153,6 +153,7 @@ interface Loaded {
 
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
+let crawlerPhase = 0;
 let gridZ = 0;
 // Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
 // matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,

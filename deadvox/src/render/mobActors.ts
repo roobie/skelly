@@ -123,6 +123,7 @@ import {
 import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
+import { ZOMBIE_RATE } from '../game/session.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -343,8 +344,8 @@ const perceivedAtPlayer = (target: Vec3, playerEye: Vec3 | undefined, blockSize:
     return false;
   }
   // The stored point and eye position differ vertically; horizontal equality identifies a player source without source state.
-  // Attention is sampled at 20 Hz; allow the player to move one sprint step before the next render frame.
-  const tolerance = Math.max(blockSize / 1000, PLAYER.sprint / 20);
+  // Allow one maximum-speed step between attention samples and the next render frame.
+  const tolerance = Math.max(blockSize / 1000, PLAYER.sprint / ZOMBIE_RATE);
   return Math.hypot(target[0] * blockSize - playerEye[0], target[2] * blockSize - playerEye[2]) <= tolerance;
 };
 

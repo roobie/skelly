@@ -94,7 +94,7 @@ import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { Survival } from './survival.ts';
 
 export const PHYSICS_RATE = 60;
-const ZOMBIE_RATE = 20;
+export const ZOMBIE_RATE = 20;
 export const HANDLING_RATE = 20;
 const sessionFirearmsTuning = (
   mechanics: FirearmMechanics,

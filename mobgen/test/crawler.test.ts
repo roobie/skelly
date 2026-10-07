@@ -67,6 +67,26 @@ const trailingSupportProperties = (seed: number): boolean[] => {
 };
 
 describe('crawler', () => {
+  it('validates ground support from the generated voxel contacts', () => {
+    const realized = realize(generate(crawler, 1));
+    const [nx, ny] = realized.voxels.dims;
+    let lowestRow = Number.POSITIVE_INFINITY;
+    for (let index = 0; index < realized.voxels.owner.length; index++) {
+      if (realized.voxels.owner[index] !== 0) {
+        lowestRow = Math.min(lowestRow, Math.floor(index / nx) % ny);
+      }
+    }
+    const contacts = new Set<string>();
+    for (let index = 0; index < realized.voxels.owner.length; index++) {
+      const owner = realized.voxels.owner[index]!;
+      if (owner !== 0 && Math.floor(index / nx) % ny === lowestRow) {
+        contacts.add(realized.body.bones[owner - 1]!.id);
+      }
+    }
+    expect(realized.supportBones).toEqual(contacts);
+    expect(realized.report.issues.filter((issue) => issue.rule === 'grounded')).toEqual([]);
+  });
+
   it('uses upper-thigh stumps rather than intact lower legs', () => {
     const { body } = realize(generate(crawler, 1));
     expect(body.bones.some((bone) => bone.id.startsWith('thigh.'))).toBe(true);
