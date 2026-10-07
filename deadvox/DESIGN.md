@@ -617,8 +617,11 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `projectCrosshairScreenPosition` and `playCrosshairFrame`, hide it outside the
   viewport and keep the centered default only when no firearm is wielded. The hip pose reuses the hand placement but not the melee
   wrist rotation, so the visible bore follows the player's look. The debug X is
-  separate from the optional crosshair. For d134-1, ADS aligns the undeviated
-  sight direction and up axis, including cant and eye relief, to the fixed view
+  separate from the optional crosshair. BR, 2026-10-07 16:20, ruled: “Really,
+  in ADS, the recoil should let the firearm move (i.e. follow the
+  muzzle-crosshair) without the view following - that is the 'uncontrol' that
+  recoil and other handling aspects brings”. For d134-1, ADS aligns the
+  undeviated sight direction and up axis, including cant and eye relief, to the fixed view
   in `heldFirearmTransform`; recoil, sway and handling then move that shared
   firearm pose and bore while the view stays put. `HeldItems.update` keeps the
   optic window attached to the shifted sight, and `heldFirearmBore` uses the
