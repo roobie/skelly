@@ -88,6 +88,7 @@ try {
     browser = await launchChromium(stageId, {
       headless: true,
       args: ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'],
+      ...(navigationOnly ? { ignoreDefaultArgs: ['--disable-back-forward-cache'] } : {}),
       timeout: STAGE_TIMEOUT_MS,
     });
     context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -100,6 +101,9 @@ try {
   await observeFailures(context, browser, firefoxServer?.process());
   if (navigationOnly) {
     await context.addInitScript(() => {
+      if (typeof navigator.locks?.request !== 'function') {
+        return;
+      }
       const request = navigator.locks.request.bind(navigator.locks);
       navigator.locks.request = (name, options, callback) => {
         if (
@@ -642,10 +646,18 @@ try {
   const autosaveResults = [];
   let appBackends = [];
   if (navigationOnly) {
-    const appUrl = `http://127.0.0.1:${address.port}/?seed=73&debug=1&save-backend=indexeddb&save-test=1`;
+    const appUrl = browserStageUrl(
+      stageId,
+      `http://127.0.0.1:${address.port}/?seed=73&debug=1&save-backend=indexeddb&save-test=1`,
+    );
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
+    });
+    await page.evaluate(() => {
+      if (typeof navigator.locks?.request !== 'function' || typeof navigator.locks.query !== 'function') {
+        throw new Error('Navigation regression requires the Web Locks API');
+      }
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
@@ -661,25 +673,30 @@ try {
     await page.evaluate(() => {
       globalThis.__d144HoldNextSave = true;
     });
-    await page.goto(`${appUrl}&loadout=pump`, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
-    const observation = await page.waitForFunction(
+    const pumpUrl = new URL(appUrl);
+    pumpUrl.searchParams.set('loadout', 'pump');
+    await page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(
       async () => {
         const status = document.querySelector('#save-status')?.textContent ?? '';
         const locks = await navigator.locks.query();
-        const held = locks.held.filter((lock) => lock.name === 'deadvox-save-storage');
-        const pending = locks.pending.filter((lock) => lock.name === 'deadvox-save-storage');
-        if (status.includes('Title screen ready')) {
-          return { ready: true, status, held, pending };
-        }
-        if (status.includes('Save storage unavailable') || (held.length > 0 && pending.length > 0)) {
-          return { ready: false, status, held, pending };
-        }
-        return false;
+        const held = locks.held.some((lock) => lock.name === 'deadvox-save-storage');
+        const pending = locks.pending.some((lock) => lock.name === 'deadvox-save-storage');
+        return status.includes('Title screen ready') || status.includes('Save storage unavailable') || (held && pending);
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
-    let result = await observation.jsonValue();
+    let result = await page.evaluate(async () => {
+      const status = document.querySelector('#save-status')?.textContent ?? '';
+      const locks = await navigator.locks.query();
+      return {
+        ready: status.includes('Title screen ready'),
+        status,
+        held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
+        pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
+      };
+    });
     const pendingAtBlock = result.pending;
     if (!result.ready && !result.status.includes('Save storage unavailable')) {
       await page.waitForFunction(
@@ -710,6 +727,7 @@ try {
       `${browserName}: in-tab loadout navigation ${JSON.stringify({ ...evidence, ...result, pendingAtBlock, holderIsAnotherClient })}\n`,
     );
     assert.ok(evidence.pagehide, 'same-tab navigation dispatched pagehide');
+    assert.equal(evidence.heldWriter, 'true', 'leaving page started a save while it held the write lock');
     assert.equal(result.ready, true, `saved world did not load after in-tab navigation: ${result.status}`);
     assert.equal(evidence.continueDisabled, false, 'saved world remains available to Continue');
   } else if (busyLockOnly) {
