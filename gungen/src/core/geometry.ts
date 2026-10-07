@@ -188,7 +188,7 @@ const signedArea2D = (points: readonly Vec2[]): number => {
   return areaSum / 2;
 };
 
-const polyhedronVolume = (polyhedron: ConvexPolyhedron): number => {
+export const polyhedronVolume = (polyhedron: ConvexPolyhedron): number => {
   let sixVolume = 0;
   for (const face of polyhedron.faces) {
     for (let i = 1; i < face.length - 1; i++) {

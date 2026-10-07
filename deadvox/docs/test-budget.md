@@ -31,6 +31,8 @@ For #318, neither whole-tree scan guard carries the whole tree under one test ti
 
 For each milestone, compare the previous milestone's merge commit with the new head using three interleaved default-suite runs per head, each in its own isolated run. Treat median growth beyond the run-to-run spread as an overrun, and record per-file deltas. The absolute budget remains the quiet-host target.
 
+When #380 reports registry checks approaching Vitest's default timeout, give each check the smallest registry sources that exercise its assertion. In `test/content.test.ts`, keep `baseBuild` and `baseRegistry` for read-only checks of authored content, use fixtures such as `recipeDependencies` for independent reference rules, and retain full `withBase` builds where the assertion needs actual authored content or an overlay. This keeps base-integration coverage without charging unrelated registry checks for the full content pack.
+
 On a busy shared host, absolute duration moves with load and can read over budget without a milestone regression. The interleaved d103 comparison between d92's merge and #304's merge found no suite-level median growth despite over-budget absolute readings. Module import accounted for a large share, but its evaluation cost was spread across the graph under per-file isolation, with no single module dominating; Vitest's `experimental.importDurations` reports the module profile. d103 found the candidate import savings small relative to that whole graph, so it changed no tests or runtime imports.
 
 Decided (BR, 2026-10-06): measure each milestone's growth against the previous milestone's merge and cut loading time with no test loss. BR: "agreed; do as suggested".
