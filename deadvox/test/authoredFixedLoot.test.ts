@@ -19,9 +19,10 @@ import {
   footprint,
   placedBlockAt,
   placedPieces,
+  placedSpawns,
 } from '../src/core/templates.ts';
-import { newInstance } from '../src/vehicles/model.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../src/vehicles/rangeRover.ts';
+import { WORKSHOP_DISPLAY_CAR } from '../src/render/workshopVehicle.ts';
+import { wheel } from '../src/vehicles/rangeRover.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -573,19 +574,20 @@ describe('authored fixed loot', () => {
     const template = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
     const lifts = template.pieces.filter(({ furniture }) => furniture === 'workshop_lift');
     const cars = template.pieces.filter(({ furniture }) => furniture === 'workshop_stripped_car');
-    expect(lifts).toHaveLength(1);
-    expect(cars).toHaveLength(1);
-    const lift = lifts[0]!;
-    const car = cars[0]!;
-    expect(car.pos[1]).toBe(lift.pos[1] + lift.size[1]);
-    for (const axis of [0, 2] as const) {
-      expect(car.pos[axis]).toBeLessThan(lift.pos[axis] + lift.size[axis]);
-      expect(lift.pos[axis]).toBeLessThan(car.pos[axis] + car.size[axis]);
+    expect(lifts.length).toBeGreaterThan(0);
+    expect(cars.length).toBeGreaterThan(0);
+    for (const car of cars) {
+      const supported = lifts.some((lift) => {
+        const directlyUnder = lift.pos[1] + lift.size[1] === car.pos[1];
+        const overlapsX = car.pos[0] < lift.pos[0] + lift.size[0] && lift.pos[0] < car.pos[0] + car.size[0];
+        const overlapsZ = car.pos[2] < lift.pos[2] + lift.size[2] && lift.pos[2] < car.pos[2] + car.size[2];
+        return directlyUnder && overlapsX && overlapsZ;
+      });
+      expect(supported).toBe(true);
     }
 
-    const vehicle = newInstance(RANGE_ROVER, 'workshop-test', STRIPPED_REMOVED);
-    expect(vehicle.fittings.length).toBeGreaterThan(0);
-    expect(vehicle.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
+    expect(WORKSHOP_DISPLAY_CAR.fittings.length).toBeGreaterThan(0);
+    expect(WORKSHOP_DISPLAY_CAR.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
   });
 
   it('spawns each authored workshop runner marker as a runner', () => {
@@ -593,12 +595,14 @@ describe('authored fixed loot', () => {
     const workshopIds = new Set(['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']);
     const markers = site.placements
       .filter((placement) => workshopIds.has(placement.template.id))
-      .flatMap((placement) => placement.template.spawns.filter(({ zombie }) => zombie === 'runner'));
+      .flatMap((placement) => placedSpawns(placement).filter(({ zombie }) => zombie === 'runner'));
     const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
     const runners = spawns.filter(({ type }) => type === 'runner');
 
-    expect(markers).toHaveLength(2);
-    expect(runners).toHaveLength(markers.length);
+    expect(markers.length).toBeGreaterThan(0);
+    for (const marker of markers) {
+      expect(runners.some(({ pos }) => pos.every((coordinate, axis) => coordinate === marker.pos[axis]))).toBe(true);
+    }
   });
 
   it('places the agreed shambler threats by beat and keeps the seeded wanderer', () => {

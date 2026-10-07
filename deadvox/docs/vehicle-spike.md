@@ -14,9 +14,11 @@ read_if:
 
 A debug page for judging how vehicles look and come apart before they enter game content.
 It is not in Deadvox's default entry point; the workshop uses its Range Rover blueprint as
-static display scenery and runs no vehicle simulation. Open `/vehicle-spike.html` on the dev
-server. URL parameters pick the build and the camera
-preset; see `src/debug/vehicleSpike.ts`, `BUILDS` and `VIEWS`. That file holds the scene
+static display scenery and runs no vehicle simulation. d124-5 builds the workshop voxel grid
+on first use of `src/render/workshopVehicle.ts`, `workshopCar`, so runs that never draw the
+workshop do not pay for its display mesh. Open `/vehicle-spike.html` on the dev server. URL
+parameters pick the build and the camera preset; see `src/debug/vehicleSpike.ts`, `BUILDS` and
+`VIEWS`. That file holds the scene
 and the page state, `src/debug/vehicleSpikePanel.ts` the lit-html control panel (ADR 0001),
 and `src/vehicles/` the model. The goal these builds test is in
 [DESIGN.md](../DESIGN.md#vehicles), "Vehicles".
@@ -204,8 +206,8 @@ None of these is built, and each waits for the event that needs it:
   vehicles share a view in the game.
 - **The content schema, pack loading and validation of the baked voxel grids:** once BR
   answers the source-of-truth question below. The workshop's TypeScript blueprint reference is an
-  interim placement, following BR's 16:32 request, "can't we use the example from the vehicle
-  spike?" It does not establish the vehicle-content source of truth.
+  interim placement, following BR's 2026-10-07 16:32 request, "can't we use the example from the
+  vehicle spike?" It does not establish the vehicle-content source of truth.
 - **Cargo as items in storage rather than fittings** (the 4×4's spare wheel is a fitting):
   when storage is built.
 

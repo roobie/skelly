@@ -768,6 +768,7 @@ describe('content references', () => {
     const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
       ({ id }) => id === 'door_open',
     )!;
+    const quietDoorOpen = { ...doorOpen, noise: { ...doorOpen.noise, enabled: false } };
     const quietDoor = {
       source: 'quiet-door.json',
       data: {
@@ -782,7 +783,7 @@ describe('content references', () => {
         ],
       },
     };
-    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [doorOpen] } }, quietDoor]);
+    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietDoor]);
     expect(issues).toContainEqual({
       source: 'quiet-door.json',
       path: 'furniture[0].door.openNoise.sound',

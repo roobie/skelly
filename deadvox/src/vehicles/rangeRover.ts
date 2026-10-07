@@ -484,7 +484,7 @@ export const RANGE_ROVER: Blueprint = {
   fittings: FITTINGS,
 };
 
-/** The car on the workshop lift: panels, glass and wheels off, shell, engine and cabin left to read. */
+/** The spike's stripped build removes panels, glass and road wheels, leaving the spare wheel fitted. */
 export const STRIPPED_REMOVED: readonly string[] = [
   'bonnet',
   'front-wing-near',
@@ -504,5 +504,4 @@ export const STRIPPED_REMOVED: readonly string[] = [
   'wheel-front-far',
   'wheel-rear-near',
   'wheel-rear-far',
-  'spare-wheel',
 ];

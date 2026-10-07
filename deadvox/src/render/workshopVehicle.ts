@@ -17,7 +17,8 @@ import { RANGE_ROVER, STRIPPED_REMOVED } from '../vehicles/rangeRover.ts';
 import { GLASS, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
 
 const partLibrary = new PartLibrary(CATALOGUE);
-const displayCar = newInstance(RANGE_ROVER, 'workshop-stripped-4x4', STRIPPED_REMOVED);
+export const WORKSHOP_REMOVED: readonly string[] = [...STRIPPED_REMOVED, 'spare-wheel'];
+export const WORKSHOP_DISPLAY_CAR = newInstance(RANGE_ROVER, 'workshop-stripped-4x4', WORKSHOP_REMOVED);
 
 const rgb = (paint: Paint, material: string): Rgb => {
   const hex = material === 'paint' ? paint.body : (MATERIALS[material] ?? material);
@@ -27,7 +28,7 @@ const rgb = (paint: Paint, material: string): Rgb => {
 
 const vehicleGrid = (): VoxelGrid => {
   const grid: VoxelGrid = new Map();
-  for (const fitting of displayCar.fittings) {
+  for (const fitting of WORKSHOP_DISPLAY_CAR.fittings) {
     for (const [voxel, material] of partLibrary.placed(fitting).grid) {
       grid.set(voxel, material);
     }
@@ -51,14 +52,22 @@ const geometryOf = (buffers: MeshBuffers): BufferGeometry | undefined => {
   return geometry;
 };
 
-const combinedGrid = vehicleGrid();
-const { solid, clear } = meshGrid(
-  combinedGrid,
-  (material) => rgb(displayCar.paint, material),
-  (material) => material === GLASS,
-);
-const solidGeometry = geometryOf(solid);
-const clearGeometry = geometryOf(clear);
+const vehicleGeometry = () => {
+  const { solid, clear } = meshGrid(
+    vehicleGrid(),
+    (material) => rgb(WORKSHOP_DISPLAY_CAR.paint, material),
+    (material) => material === GLASS,
+  );
+  return { solidGeometry: geometryOf(solid), clearGeometry: geometryOf(clear) };
+};
+let cachedVehicleGeometry: ReturnType<typeof vehicleGeometry> | undefined;
+const getVehicleGeometry = () => {
+  if (cachedVehicleGeometry === undefined) {
+    cachedVehicleGeometry = vehicleGeometry();
+  }
+  return cachedVehicleGeometry;
+};
+
 const solidMaterial = new MeshLambertMaterial({ vertexColors: true });
 const glassMaterial = new MeshPhongMaterial({
   vertexColors: true,
@@ -95,6 +104,7 @@ export const workshopCar = (entity: BlockEntity, blockSize = BLOCK_SIZE): Group 
     (entity.pos[2] + entity.size[2] / 2) * blockSize,
   );
   group.rotation.y = Math.PI / 2;
+  const { solidGeometry, clearGeometry } = getVehicleGeometry();
   if (solidGeometry) {
     const mesh = new Mesh(solidGeometry, solidMaterial);
     mesh.castShadow = true;
