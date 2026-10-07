@@ -319,8 +319,8 @@ interface SlotHolder {
 interface ZombieRenderState extends SlotHolder {
   readonly id: EntityId;
   lookAtState: LookAtState;
-  previousPerceptionTime: number | undefined;
-  perceptionTime: number | undefined;
+  previousPerceptionSimSeconds: number | undefined;
+  perceptionSimSeconds: number | undefined;
   readonly walkActor: WalkActor;
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
@@ -330,11 +330,11 @@ interface ZombieRenderState extends SlotHolder {
 /** A dead zombie that still occupies its live slot (see MobActorMeshes' own doc comment): frozen at the
  * pose/position/facing/fall-direction it died with, and driven purely by `elapsed` from there — the sim
  * has already forgotten this id entirely. */
-/** Render-only hearing variation. The entity id and presentation time make this repeatable without a simulation RNG. */
+/** Render-only hearing variation. The entity id and simulation presentation time make this repeatable without an RNG stream. */
 export const HEARING_GAZE_JITTER = {
   yawDeg: 5,
   pitchDeg: 3,
-  cyclesPerSecond: 0.6,
+  cyclesPerSimSecond: 0.6,
 } as const;
 
 export type PerceptionLabel = 'sees you' | 'hears you' | 'remembers' | 'unaware';
@@ -355,13 +355,14 @@ export const perceptionLabelFor = (zombie: Zombie, recentNearStimulus: boolean):
 export const hearingGazeTarget = (
   target: readonly [number, number, number],
   id: EntityId,
-  presentationTime: number,
+  presentationSimSeconds: number,
 ): Vec3 => {
   const distance = Math.hypot(...target);
   if (distance === 0) {
     return [...target];
   }
-  const phase = id * 2.399_963_229_728_653 + presentationTime * 2 * Math.PI * HEARING_GAZE_JITTER.cyclesPerSecond;
+  const phase =
+    id * 2.399_963_229_728_653 + presentationSimSeconds * 2 * Math.PI * HEARING_GAZE_JITTER.cyclesPerSimSecond;
   const yaw = Math.atan2(-target[0], -target[2]) + (HEARING_GAZE_JITTER.yawDeg * Math.PI * Math.sin(phase)) / 180;
   const pitchBase = Math.atan2(target[1], Math.hypot(target[0], target[2]));
   const pitch = Math.max(
@@ -921,8 +922,8 @@ export class MobActorMeshes implements ZombieRenderer {
     const state: ZombieRenderState = {
       id,
       lookAtState: LOOK_AT_REST,
-      previousPerceptionTime: undefined,
-      perceptionTime: undefined,
+      previousPerceptionSimSeconds: undefined,
+      perceptionSimSeconds: undefined,
       variantIndex,
       localSlot,
       globalRow,
@@ -1385,15 +1386,15 @@ export class MobActorMeshes implements ZombieRenderer {
 
   private observePerceptionTime(state: ZombieRenderState, zombie: Zombie): void {
     const { time } = zombie.renderPrevious;
-    if (time === undefined || time === state.perceptionTime) {
+    if (time === undefined || time === state.perceptionSimSeconds) {
       return;
     }
-    if (state.perceptionTime !== undefined && time < state.perceptionTime) {
-      state.previousPerceptionTime = undefined;
+    if (state.perceptionSimSeconds !== undefined && time < state.perceptionSimSeconds) {
+      state.previousPerceptionSimSeconds = undefined;
     } else {
-      state.previousPerceptionTime = state.perceptionTime;
+      state.previousPerceptionSimSeconds = state.perceptionSimSeconds;
     }
-    state.perceptionTime = time;
+    state.perceptionSimSeconds = time;
   }
 
   private hasRecentNearStimulus(state: ZombieRenderState, zombie: Zombie): boolean {
@@ -1402,7 +1403,7 @@ export class MobActorMeshes implements ZombieRenderer {
       mode === 'investigate' &&
       investigationTier === 'near' &&
       stimulusAt !== undefined &&
-      (stimulusAt === state.perceptionTime || stimulusAt === state.previousPerceptionTime)
+      (stimulusAt === state.perceptionSimSeconds || stimulusAt === state.previousPerceptionSimSeconds)
     );
   }
 
@@ -1410,9 +1411,9 @@ export class MobActorMeshes implements ZombieRenderer {
     state: ZombieRenderState,
     zombie: Zombie,
     placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number },
-    gazeFrame: { readonly dt?: number; readonly presentationTime?: number } = {},
+    gazeFrame: { readonly dt?: number; readonly presentationSimSeconds?: number } = {},
   ): { pose: Pose; transforms: ReadonlyMap<string, Transform>; placement: CrowdPlacement } {
-    const { dt: gazeFrameDelta = 0, presentationTime = 0 } = gazeFrame;
+    const { dt: gazeFrameDelta = 0, presentationSimSeconds = 0 } = gazeFrame;
     const { position, worldPos, yaw, headYaw } = placement;
     const variant = this.variants[state.variantIndex]!;
     const posed =
@@ -1444,7 +1445,7 @@ export class MobActorMeshes implements ZombieRenderer {
             zombie.lastPerceived[2] * this.blockSize - worldPos[2],
           ]),
           state.id,
-          presentationTime,
+          presentationSimSeconds,
         );
       }
       const gaze = lookAtPose({
@@ -1477,12 +1478,12 @@ export class MobActorMeshes implements ZombieRenderer {
     frame: {
       placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number };
       gazeFrameDelta: number;
-      presentationTime: number;
+      presentationSimSeconds: number;
     },
   ): void {
     const posed = this.posedFrame(state, zombie, frame.placement, {
       dt: frame.gazeFrameDelta,
-      presentationTime: frame.presentationTime,
+      presentationSimSeconds: frame.presentationSimSeconds,
     });
     const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, zombie.severed));
     this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices });
@@ -1559,7 +1560,7 @@ export class MobActorMeshes implements ZombieRenderer {
   private syncZombie(
     { id, zombie }: { id: EntityId; zombie: Zombie },
     gazeDt: number,
-    presentationTime: number,
+    presentationSimSeconds: number,
   ): boolean {
     let anyDirty = false;
     if (!zombie.incapacitated && this.corpses.get(id)?.incapacitated) {
@@ -1598,7 +1599,11 @@ export class MobActorMeshes implements ZombieRenderer {
     if (this.shouldSkipPose(worldPelvis)) {
       return anyDirty;
     }
-    this.packPose(state, variant, zombie, { placement, gazeFrameDelta: gazeDt, presentationTime });
+    this.packPose(state, variant, zombie, {
+      placement,
+      gazeFrameDelta: gazeDt,
+      presentationSimSeconds,
+    });
     return true;
   }
 
