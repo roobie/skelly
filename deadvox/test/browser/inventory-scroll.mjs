@@ -207,7 +207,12 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
-  await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+  try {
+    await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`${message}${errors.length > 0 ? `; page errors: ${errors.join('; ')}` : ''}`, { cause: error });
+  }
   assert.equal(
     await page.locator('[data-body-region]').count(),
     await page.evaluate(() => globalThis.scrollFixture.bodyRegions.length),
