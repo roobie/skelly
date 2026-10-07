@@ -4,13 +4,11 @@
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: imperative CDP contract assertions
 
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
-import { accessSync, constants } from 'node:fs';
-import { delimiter, isAbsolute, resolve } from 'node:path';
 import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { inspect } from 'node:util';
 import { createServer } from 'vite';
+import { launchChromium } from '../test/browser/chromium.mjs';
 import { cdpKey, pressCdpAction } from '../test/browser/input-actions.mjs';
 import {
   dispatchMenuPointerClickExpression,
@@ -20,35 +18,9 @@ import { browserStageArgs, browserStageMode, browserStageUrl } from '../test/bro
 
 const graphicsArgument = /^--(?:disable-gpu|use-gl|use-angle|enable-unsafe-swiftshader)(?:=|$)/;
 const cwd = process.cwd();
-const resolveExecutable = (command) => {
-  if (isAbsolute(command) || command.includes('/')) {
-    return resolve(command);
-  }
-  for (const directory of (process.env.PATH ?? '').split(delimiter)) {
-    const candidate = resolve(directory, command);
-    try {
-      accessSync(candidate, constants.X_OK);
-      return candidate;
-    } catch (error) {
-      if (!['EACCES', 'ENOENT', 'ENOTDIR'].includes(error.code)) {
-        throw error;
-      }
-    }
-  }
-  return command;
-};
-const chromeExecutable = resolveExecutable(process.env.CHROME_BIN ?? 'google-chrome');
-const chromeVersionProbe = spawnSync(chromeExecutable, ['--version'], { encoding: 'utf8' });
-const chromeVersion =
-  chromeVersionProbe.status === 0
-    ? chromeVersionProbe.stdout.trim()
-    : `unavailable: ${chromeVersionProbe.error?.message ?? chromeVersionProbe.stderr.trim()}`;
 const renderMode = browserStageMode('ui-browser-contract');
-const launchArgs = browserStageArgs('ui-browser-contract', [
-  '--disable-extensions',
-  '--password-store=basic',
-  '--window-size=1280,900',
-]);
+const launchExtraArgs = ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'];
+const launchArgs = browserStageArgs('ui-browser-contract', launchExtraArgs);
 const graphicsArgs = launchArgs.filter((arg) => graphicsArgument.test(arg));
 const discovery = { phase: 'Vite server', lastHttpStatus: undefined, lastError: undefined };
 const viteDiagnostics = { state: 'not-started', port: undefined, error: undefined };
@@ -100,21 +72,15 @@ try {
   await viteResponse.body?.cancel();
   process.stdout.write(
     `UI_BROWSER_LAUNCH ${JSON.stringify({
-      launcher: 'playwright-cdp-pipe',
-      chromeVersion,
+      launcher: 'playwright-managed-cdp-pipe',
       graphicsArgs,
       windowSize: '1280,900',
       stageUrl,
     })}\n`,
   );
-  const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
-  debugChannels.add('pw:browser');
-  process.env.DEBUG = [...debugChannels].join(',');
-  const { chromium } = await import('playwright');
-  browser = await chromium.launch({
-    executablePath: chromeExecutable,
+  browser = await launchChromium('ui-browser-contract', {
     headless: true,
-    args: launchArgs,
+    args: launchExtraArgs,
     timeout: 30_000,
   });
   browser.on('disconnected', () => {
@@ -311,8 +277,7 @@ try {
   })`);
   process.stdout.write(
     `UI_BROWSER_GRAPHICS ${JSON.stringify({
-      launcher: 'playwright-cdp-pipe',
-      chromeVersion,
+      launcher: 'playwright-managed-cdp-pipe',
       browserVersion: browser.version(),
       graphicsArgs,
       graphics,
@@ -1036,8 +1001,7 @@ try {
   process.stderr.write(
     `UI_LAUNCH_FAILURE ${JSON.stringify({
       error: inspect(error, { depth: 5 }),
-      launcher: 'playwright-cdp-pipe',
-      chromeVersion,
+      launcher: 'playwright-managed-cdp-pipe',
       browserVersion: browser?.version(),
       graphicsArgs,
       graphics,
@@ -1047,7 +1011,6 @@ try {
       browser: {
         connected: browser?.isConnected(),
         version: browser?.version(),
-        requestedExecutable: chromeExecutable,
         requestedArgs: launchArgs,
       },
       page: { url: page?.url(), errors: pageErrors },

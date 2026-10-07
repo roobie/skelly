@@ -8,11 +8,11 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
-import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
+import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
-const { chromium } = await import('playwright');
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
@@ -80,10 +80,10 @@ const measureGlowstickFloor = async (page, uid, label) => {
   );
 };
 const checkDroppedGlowstickPixel = async (port) => {
-  const browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
+  const browser = await launchChromium('primary-action', {
     headless: true,
-    args: browserStageArgs('primary-action', ['--enable-webgl'], 'pixel'),
+    args: ['--enable-webgl'],
+    renderMode: 'pixel',
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -447,10 +447,10 @@ try {
   assert(address && typeof address !== 'string');
   const renderOverride = process.env.DEADVOX_TEST_RENDER_MODE;
   const renderMode = browserStageMode('primary-action', renderOverride);
-  browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
+  browser = await launchChromium('primary-action', {
     headless: true,
-    args: browserStageArgs('primary-action', renderMode === 'pixel' ? ['--enable-webgl'] : [], renderOverride),
+    args: renderMode === 'pixel' ? ['--enable-webgl'] : [],
+    renderMode: renderOverride,
   });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
