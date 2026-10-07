@@ -62,7 +62,7 @@ const vite = await createServer({
         if (!id.endsWith('/src/game/play.ts')) {
           return;
         }
-        const marker = 'startPlayFrames(frame);';
+        const marker = 'startRealFrames(frame);';
         assert.ok(code.includes(marker));
         return `import { doorPanel as stairsDoorPanel } from '../core/blockEntities.ts';\n${code.replace(
           marker,

@@ -53,7 +53,7 @@ const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Ui
     magic: 'DEADVOX_REPLAY',
     schemaVersion: 6,
     endStateFingerprint: '0'.repeat(64),
-    endSimTime: 0,
+    endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
     frames: inputs.frames,
     actions: inputs.actions,
@@ -174,7 +174,7 @@ const recordActiveSession = (
   return source;
 };
 
-const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, endSimTime?: number) => {
+const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, endSimTimestamp?: number) => {
   let replay!: ReturnType<typeof createRuntime>;
   const player = new InputReplayPlayer(inputs, (action) => {
     if (action.payload) {
@@ -218,8 +218,8 @@ const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, end
       throw new Error('Replay session did not consume its recorded inputs');
     }
   }
-  if (endSimTime !== undefined) {
-    const endRemainder = endSimTime - replay.sim.time;
+  if (endSimTimestamp !== undefined) {
+    const endRemainder = endSimTimestamp - replay.sim.time;
     if (endRemainder > 0) {
       replay.session.frameReplay(endRemainder / replay.sim.compression.c);
     }
@@ -440,7 +440,7 @@ describe('input replay', () => {
     const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, sourceEnd);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     expect(decoded.endStateFingerprint).toBe(await replayStateFingerprint(sourceEnd));
-    expect(decoded.endSimTime).toBe(sourceEnd.character.simulation.time);
+    expect(decoded.endSimTimestamp).toBe(sourceEnd.character.simulation.time);
     expect(source.view.yaw).not.toBe(start.character.player.yaw);
     expect(source.view.pitch).not.toBe(start.character.player.pitch);
     const replay = playSession(start, decoded.inputs);
@@ -481,7 +481,7 @@ describe('input replay', () => {
       payloads.map(({ payload }) => payload),
     );
     expect(source.quickbar.slots[1]).toBe(beans.uid);
-    const replay = playSession(start, decoded.inputs, decoded.endSimTime);
+    const replay = playSession(start, decoded.inputs, decoded.endSimTimestamp);
     expect(replay.inventory.itemByUid(beans.uid)?.uid).toBe(beans.uid);
     expect(replay.quickbar.slots[1]).toBe(beans.uid);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
@@ -507,7 +507,7 @@ describe('input replay', () => {
       'craft.continue',
       'craft.stop',
     ]);
-    const replay = playSession(start, decoded.inputs, decoded.endSimTime);
+    const replay = playSession(start, decoded.inputs, decoded.endSimTimestamp);
     expect(replay.session.crafting.currentUid).toBe(source.session.crafting.currentUid);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });

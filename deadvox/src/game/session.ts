@@ -337,7 +337,7 @@ const restoreSessionAudio = (restored: Readonly<SaveSnapshot> | undefined, sound
         saved.vocalNoise === null ? undefined : { ...saved.vocalNoise, pos: [...saved.vocalNoise.pos] as Vec3 },
     },
     footstepClock: saved.footstepClock,
-    rustleClock: { cells: new Set(saved.rustleClock.cells), nextTime: saved.rustleClock.nextTime },
+    rustleClock: { cells: new Set(saved.rustleClock.cells), nextSimTimestamp: saved.rustleClock.nextSimTimestamp },
     airbornePeakY: saved.airbornePeakY ?? undefined,
   };
 };
@@ -922,7 +922,7 @@ export const createSession = (options: SessionOptions) => {
         handling,
         readyMovementFactor,
         movementSpeed: sim.body.consequences.movementSpeed,
-        crouchSpeed: senseTuning.crouch.speedMetresPerSecond,
+        crouchSpeed: senseTuning.crouch.speedMetresPerSimSecond,
       },
     );
     const tools = debug?.();
@@ -1169,10 +1169,7 @@ export const createSession = (options: SessionOptions) => {
     },
     searching: (entity: BlockEntity): boolean => searching.has(entity),
     nameOf,
-    /**
-     * One real-time frame: advances the simulation (through rest, if any) and the player's own
-     * sounds. `until` caps the simulation time reached, for the debug time skip.
-     */
+    /** Advances an explicit Sim-time step (through rest, if any) and the player's own sounds. */
     frame: (dt: number, until?: number): void => {
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frame(dt, until);

@@ -9,7 +9,9 @@ import { Skylight } from '../src/render/skylight.ts';
 const { registry } = buildRegistry([
   {
     source: 'fixture.json',
-    data: { furniture: [{ id: 'door', name: 'Door', size: [1, 4, 2], color: '#99794c', door: { handling: 0.6 } }] },
+    data: {
+      furniture: [{ id: 'door', name: 'Door', size: [1, 4, 2], color: '#99794c', door: { handlingSimSeconds: 0.6 } }],
+    },
   },
 ]);
 const box: SkyBounds = { min: [0, 0, 0], max: [8, 10, 8] };

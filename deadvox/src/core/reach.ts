@@ -38,7 +38,7 @@ export interface ReachSnapshot {
     entity: BlockEntity;
     id: string;
     qualities: Readonly<Record<string, number>>;
-    workTimeBonus: number;
+    workFactorBonus: number;
   }[];
 }
 

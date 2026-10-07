@@ -7,6 +7,7 @@ import { buildRegistry, type RecipeDef, type Registry } from '../src/core/conten
 import { admissionRefusal, indexCraftReach, planCraft, requirementStatus } from '../src/core/crafting.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { bindReach, type ReachSnapshot } from '../src/core/reach.ts';
+import { gameMinutes, simSeconds } from '../src/core/time.ts';
 
 const inputs = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json'))
@@ -67,13 +68,13 @@ const benchmarkEntries = (source: Registry): BenchmarkEntry[] => {
 const recipe = (components: RecipeDef['components'], qualities: RecipeDef['qualities'] = {}): RecipeDef => ({
   id: 'fixture',
   result: { item: 'torch', count: 1 },
-  time: 20,
+  timeGameMinutes: gameMinutes(20),
   skills: {},
   qualities,
   components,
 });
 const character = { skills: {}, knownRecipes: new Set(['fixture']) };
-const fixtureWorkstationRegistry = (workTimeBonus: number) => {
+const fixtureWorkstationRegistry = (workFactorBonus: number) => {
   const built = buildRegistry([
     ...inputs,
     {
@@ -85,7 +86,7 @@ const fixtureWorkstationRegistry = (workTimeBonus: number) => {
             name: 'Fixture bench',
             size: [1, 3, 1],
             color: '#ffffff',
-            workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workTimeBonus },
+            workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus },
           },
         ],
       },
@@ -152,14 +153,14 @@ describe('pure craft planner', () => {
   });
 
   it('subtracts the fixture workstation bonus from recipe work time', () => {
-    const workTimeBonus = 0.37;
-    const definitions = fixtureWorkstationRegistry(workTimeBonus);
+    const workFactorBonus = 0.37;
+    const definitions = fixtureWorkstationRegistry(workFactorBonus);
     const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
     const staged = stock([{ type: 'rag' }], definitions);
     staged.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
     const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5 })();
     const result = planCraft(recipeWithStation, reach, character);
-    expect('plan' in result && result.plan.work).toBe(recipeWithStation.time * 60 * (1 - workTimeBonus));
+    expect('plan' in result && result.plan.work).toBe(recipeWithStation.timeGameMinutes * (1 - workFactorBonus));
   });
 
   it('names the first understocked component group instead of reporting allocation competition', () => {
@@ -193,7 +194,7 @@ describe('pure craft planner', () => {
             { ...registry.items.get('crowbar')!, stack: 4 },
             {
               ...registry.items.get('school_backpack')!,
-              container: { pockets: [{ name: 'Fixture', grid: [600, 8], handling: 0.5 }] },
+              container: { pockets: [{ name: 'Fixture', grid: [600, 8], handlingSimSeconds: 0.5 }] },
             },
           ],
         },
@@ -295,7 +296,7 @@ describe('pure craft planner', () => {
     ]);
     const result = planCraft(definition, snapshot, character);
     expect('plan' in result && result.plan.components.map((component) => component.item)).toEqual([items[0], items[1]]);
-    expect('plan' in result && result.plan.work).toBe(definition.time * 60);
+    expect('plan' in result && result.plan.work).toBe(definition.timeGameMinutes);
     expect(inventory.snapshotState()).toEqual(before);
     // Editing returned plan records must not poison the derived per-reach result cache.
     if ('plan' in result) {
@@ -408,7 +409,7 @@ describe('pure craft planner', () => {
     const baseBag = registry.items.get('school_backpack')!;
     benchmarkRegistry.items.set(baseBag.id, {
       ...baseBag,
-      container: { pockets: [{ name: 'Benchmark', grid: [600, 8], handling: 0.5 }] },
+      container: { pockets: [{ name: 'Benchmark', grid: [600, 8], handlingSimSeconds: simSeconds(0.5) }] },
     });
     const inventory = new Inventory(benchmarkRegistry);
     const bag = inventory.create('school_backpack');
