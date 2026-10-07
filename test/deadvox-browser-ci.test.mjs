@@ -155,11 +155,7 @@ describe('deadvox browser CI coverage', () => {
     }
     const helper = readFileSync(join(ROOT, 'deadvox/test/browser/chromium.mjs'), 'utf8');
     assert.match(helper, helperChromiumLaunchPattern, 'the shared helper owns Chromium launch');
-    assert.doesNotMatch(
-      helper,
-      unhandledRejectionListenerPattern,
-      'the helper must not swallow floating rejections',
-    );
+    assert.doesNotMatch(helper, unhandledRejectionListenerPattern, 'the helper must not swallow floating rejections');
   });
 
   it('installs and caches Playwright Chromium on every non-Firefox browser shard', () => {
