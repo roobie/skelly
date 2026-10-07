@@ -34,7 +34,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Temporary Chromium launch comparison (d133)
         if: ${{ inputs.shard == 'input' && github.event_name == 'pull_request' && github.head_ref == 'deadvox/chromium-launch' }}
-        run: node tools/chromium-launch-diagnostic.mjs
+        run: npm run test:browser:launch-diagnostic
       - if: ${{ inputs.shard == 'control-check' }}
         run: npm ci --prefix tools/lit-check
       - if: ${{ inputs.shard == 'control-check' }}
