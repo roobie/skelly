@@ -3,7 +3,7 @@
     {
       "id": "fixture_missing_component",
       "result": { "item": "rag", "count": 1 },
-      "time": 1,
+      "timeGameMinutes": 1,
       "skills": {},
       "qualities": {},
       "components": [[{ "item": "golden_toilet", "count": 1 }]],

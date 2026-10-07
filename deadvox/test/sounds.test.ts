@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { SoundDef } from '../src/core/content.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
+import { simSeconds } from '../src/core/time.ts';
 
 const sound = (variants: string[]): SoundDef => ({
   id: 'player_hurt_light',
@@ -9,7 +10,7 @@ const sound = (variants: string[]): SoundDef => ({
   gain: 0.8,
   pitchJitter: [0.95, 1.05],
   gainJitter: [0.8, 1.2],
-  minIntervalSeconds: 0.1,
+  minIntervalSimSeconds: simSeconds(0.1),
   category: 'body',
   noise: { enabled: true, radiusMetres: 8 },
 });

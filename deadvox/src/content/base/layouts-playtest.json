@@ -371,13 +371,13 @@
           "type": "shambler",
           "position": [181, 21.5, 74],
           "chance": 1,
-          "window": { "from": "dusk" }
+          "window": { "fromGameTimeOfDay": "dusk" }
         },
         {
           "type": "shambler",
           "position": [304, 30.5, 134],
           "chance": 1,
-          "window": { "from": "dusk" }
+          "window": { "fromGameTimeOfDay": "dusk" }
         }
       ],
       "woodlands": [
@@ -414,7 +414,7 @@
           "surface": "dirt"
         }
       ],
-      "startTime": "16:00"
+      "startTimeGameTimeOfDay": "16:00"
     }
   ]
 }

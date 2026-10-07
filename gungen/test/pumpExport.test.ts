@@ -36,7 +36,7 @@ it('exports a hand-only coupled 12-gauge action and an integral tube without box
   expect(out.modelEntry.rounds).toBeUndefined();
   const action = out.modelEntry.action!;
   expect(action.fire).toBeUndefined();
-  expect(action.rpm).toBeUndefined();
+  expect(action.roundsPerSimMinute).toBeUndefined();
   expect(action.parts.carrier).toMatchObject({
     node: 'bolt-carrier:bolt-carrier',
     strokeMetres: 0.063_25,

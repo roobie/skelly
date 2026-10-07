@@ -511,21 +511,21 @@ describe('glb export: deadvox model entry', () => {
       const assembly = design(name);
       const out = exported(assembly);
       const action = out.modelEntry.action!;
-      if (!(action.fire && action.rpm)) {
-        throw new Error('automatic actions require fire timing and rpm');
+      if (!(action.fire && action.roundsPerSimMinute)) {
+        throw new Error('automatic actions require fire timing and roundsPerSimMinute');
       }
       const carrier = out.resolved.defs.get('bolt-carrier')!;
       const motion = carrier.motion!;
-      expect(action.rpm).toBe(expectedAction === 'ak' ? 600 : 800);
+      expect(action.roundsPerSimMinute).toBe(expectedAction === 'ak' ? 600 : 800);
       expect(action.holdOpen).toBe(expectedAction === 'ar');
-      expect(action.fire.durationSeconds).toBeCloseTo(60 / action.rpm, 9);
-      expect(action.hand.durationSeconds).toBeGreaterThan(action.fire.durationSeconds);
-      expect(action.fire.rearwardSeconds).toBeGreaterThan(0);
-      expect(action.fire.dwellSeconds).toBeGreaterThan(0);
-      expect(action.fire.forwardSeconds).toBeGreaterThan(0);
-      expect(action.hand.rearwardSeconds).toBeGreaterThan(0);
-      expect(action.hand.dwellSeconds).toBeGreaterThan(0);
-      expect(action.hand.forwardSeconds).toBeGreaterThan(0);
+      expect(action.fire.durationSimSeconds).toBeCloseTo(60 / action.roundsPerSimMinute, 9);
+      expect(action.hand.durationSimSeconds).toBeGreaterThan(action.fire.durationSimSeconds);
+      expect(action.fire.rearwardSimSeconds).toBeGreaterThan(0);
+      expect(action.fire.dwellSimSeconds).toBeGreaterThan(0);
+      expect(action.fire.forwardSimSeconds).toBeGreaterThan(0);
+      expect(action.hand.rearwardSimSeconds).toBeGreaterThan(0);
+      expect(action.hand.dwellSimSeconds).toBeGreaterThan(0);
+      expect(action.hand.forwardSimSeconds).toBeGreaterThan(0);
       expect(action.ejectAt).toBeGreaterThan(0);
       expect(action.ejectAt).toBeLessThan(1);
       expect(Object.fromEntries(Object.entries(action.parts).map(([role, part]) => [role, part.modes]))).toEqual(

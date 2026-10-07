@@ -14,6 +14,7 @@ import { raycast } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { grow } from '../src/core/site.ts';
 import { soundOcclusion } from '../src/core/soundOcclusion.ts';
+import { simRate, simSeconds } from '../src/core/time.ts';
 import {
   forestDensityAt,
   leafLitterAt,
@@ -43,9 +44,14 @@ const scale = makeScale(0.5);
 const soundTuning = { hearingRangeScale: 0.5, gain: 0.5, cutoffHz: 1200, clearGain: 1, clearCutoffHz: 18_000 };
 const senseTuning = {
   id: 'fixture_player',
-  crouch: { speedMetresPerSecond: 0.8, hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
+  crouch: { speedMetresPerSimSecond: simRate(0.8), hearingRangeScale: 0.5, sightRangeScale: 0.5, eyeDropMetres: 0.6 },
   wall: soundTuning,
-  light: { playerDaySightScale: 0, lureRangeScale: 0, throwMaxDistanceMetres: 8, throwChargeSeconds: 1.25 },
+  light: {
+    playerDaySightScale: 0,
+    lureRangeScale: 0,
+    throwMaxDistanceMetres: 8,
+    throwChargeSimSeconds: simSeconds(1.25),
+  },
 };
 
 const verticalBrushSession = (spawnY: number) => {
@@ -220,7 +226,7 @@ describe('passable but opaque vegetation', () => {
     body.pos[0] = 3.5;
     const fast = foliageRustle(entry.clock, { ...sample, gait: 'sprinting', time: 0.3 });
     expect(fast.sound?.event).toBe('foliage_rustle_fast');
-    expect(fast.clock.nextTime - 0.3).toBeLessThan(entry.clock.nextTime);
+    expect(fast.clock.nextSimTimestamp - 0.3).toBeLessThan(entry.clock.nextSimTimestamp);
     expect(foliageRustle(fast.clock, { ...sample, gait: 'sprinting', time: 0.5 }).sound?.event).toBe(
       'foliage_rustle_fast',
     );

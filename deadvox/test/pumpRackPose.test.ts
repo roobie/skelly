@@ -6,6 +6,7 @@ import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldAnchorOffset } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { simSeconds } from '../src/core/time.ts';
 import { FirearmMechanics } from '../src/game/firearmHandling.ts';
 import { rackCant } from '../src/render/firearmModel.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -27,7 +28,12 @@ it('rack pose turns an away-facing port only during handling without changing ga
   model.hold = undefined;
   model.anchors = { ...model.anchors, ejection: [0, 0.04, 0.02] };
   model.anchors.loading_port = [0, -0.02, 0];
-  model.action!.hand = { durationSeconds: 1.2, rearwardSeconds: 0.4, dwellSeconds: 0.3, forwardSeconds: 0.5 };
+  model.action!.hand = {
+    durationSimSeconds: simSeconds(1.2),
+    rearwardSimSeconds: simSeconds(0.4),
+    dwellSimSeconds: simSeconds(0.3),
+    forwardSimSeconds: simSeconds(0.5),
+  };
   const content = { ...registry, models: new Map(registry.models).set(model.id, model) };
   const inventory = new Inventory(content);
   const gun = inventory.create('pump_shotgun');
@@ -72,7 +78,7 @@ it('rack pose turns an away-facing port only during handling without changing ga
   expect(update().angleTo(rest)).toBeCloseTo(0);
   expect(mechanics.cock(gun.uid, 0)).toBeUndefined();
   expect(update().angleTo(rest)).toBeCloseTo(0);
-  const halfway = model.action!.hand.rearwardSeconds + model.action!.hand.dwellSeconds / 2;
+  const halfway = model.action!.hand.rearwardSimSeconds + model.action!.hand.dwellSimSeconds / 2;
   queue.tick(halfway);
   mechanics.advanceTo(halfway);
   const rotated = update();
@@ -106,7 +112,7 @@ it('rack pose turns an away-facing port only during handling without changing ga
   mechanics.advanceTo(halfway);
   expect(update().angleTo(rest)).toBeCloseTo(0);
   expect(mechanics.cock(gun.uid, 2)).toBeUndefined();
-  queue.tick(model.action!.hand.durationSeconds);
-  mechanics.advanceTo(2 + model.action!.hand.durationSeconds);
+  queue.tick(model.action!.hand.durationSimSeconds);
+  mechanics.advanceTo(2 + model.action!.hand.durationSimSeconds);
   expect(update().angleTo(rest)).toBeCloseTo(0);
 });

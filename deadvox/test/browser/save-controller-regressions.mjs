@@ -24,7 +24,7 @@ const observation = {
     if (!id.endsWith('/src/game/play.ts')) {
       return;
     }
-    const marker = '  startPlayFrames(frame);';
+    const marker = '  startRealFrames(frame);';
     assert(code.includes(marker), 'game-ready observation point exists');
     return code.replace(marker, `  Object.assign(globalThis, { saveControllerPlayStarted: true });\n${marker}`);
   },
