@@ -28,7 +28,7 @@ const solveThighPitch = (
   targetY: number,
 ): void => {
   const bone = realized.body.bones.find((candidate) => candidate.id === boneId)!;
-  let bestAngle = 20;
+  let bestAngle: number | undefined;
   let bestError = Number.POSITIVE_INFINITY;
   for (let angle = 0; angle <= 70; angle += 1) {
     const candidate = { ...rotations, [boneId]: rotX(angle) };
@@ -46,6 +46,9 @@ const solveThighPitch = (
       bestError = error;
       bestAngle = angle;
     }
+  }
+  if (bestAngle === undefined) {
+    throw new Error(`crawlerPose: no trailing support pitch found for ${boneId}`);
   }
   rotations[boneId] = rotX(bestAngle);
 };

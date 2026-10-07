@@ -777,10 +777,19 @@ while the pose still hovered. BR (2026-10-07 00:37):
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
-The thigh stumps are approved; the grounded static pose is the current silhouette
-checkpoint. The body uses `mobgen/src/mob/humanoid.ts`, `amputateCrawlerLegs`, and
-the static pose uses `mobgen/src/mob/crawler.ts`, `crawlerPose`. The drag gait and
-Deadvox wiring wait for BR's verdict on that pose; d106-13 owns that later work.
+BR (2026-10-07 10:03) approved the grounded static pose. The body uses
+`mobgen/src/mob/humanoid.ts`, `amputateCrawlerLegs`, and the static pose uses
+`mobgen/src/mob/crawler.ts`, `crawlerPose`. The same ruling requested:
+
+> "#325: good! It's now not hovering - but another issue was prominent now: it needs to look at the player's \"eyes\" (camera). And all mobs should do that by default. I.e. turn their heads such that they are \"looking\" at the player"
+
+The renderers treat the player's camera as the gaze target and distribute the
+turn over neck and head, bounded by rig-specific limits and turn speed in
+`mobgen/src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and applied by
+`mobgen/src/mob/lookAt.ts`, `lookAtPose`. This is presentation only: it reads the
+posed actor and camera each render frame, and does not feed hit geometry, saves,
+or replay state. The mobgen viewer uses its camera as the same target. The
+crawler's drag gait and in-game hit response remain d106-14 work, after d106-13.
 
 ### Evolution
 

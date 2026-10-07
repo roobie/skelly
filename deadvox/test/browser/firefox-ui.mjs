@@ -22,7 +22,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view } });\n${marker}`,
     );
   },
 };
@@ -71,7 +71,7 @@ try {
   await page.goto(
     browserStageUrl(
       'firefox-ui',
-      `http://127.0.0.1:${address.port}/?debug=1&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      `http://127.0.0.1:${address.port}/?debug=1&actors=detailed&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
     ),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
@@ -225,6 +225,26 @@ try {
       throw new Error('debug runner spawn did not select the registered mobgen model');
     }
   });
+  await pressAction(page, 'debug.spawn-crawler');
+  await pressAction(page, 'debug.spawn-shamblers');
+  await page.waitForFunction(
+    () => {
+      const { session, view } = globalThis.firefoxUiTest;
+      const zombies = [...session.zombies.store.entries()];
+      const required = ['crawler', 'runner', 'shambler'];
+      return required.every((typeId) => {
+        const found = zombies.find(([, zombie]) => zombie.type.id === typeId);
+        if (!found) {
+          return false;
+        }
+        const state = view.zombieMeshes.states?.get(found[0]);
+        const variant = state && view.zombieMeshes.variants?.[state.variantIndex];
+        return variant?.model === found[1].type.model && variant.mesh.count > 0;
+      });
+    },
+    null,
+    { timeout: 10_000 },
+  );
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {

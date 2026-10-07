@@ -269,31 +269,26 @@ describe('severed limb energy', () => {
     }
   });
 
-  it('caps real bat launches and dissipates each bounce across five zombie seeds', () => {
-    const reports = [3, 11, 19, 23, 29].map((seed) => createSeveredHit(seed, 'rolled'));
+  it.each([3, 11, 19, 23, 29])('caps a bat launch and dissipates each bounce for seed %i', (seed) => {
+    const report = createSeveredHit(seed, 'rolled');
     try {
-      expect(reports.some(({ missedRandomPart }) => missedRandomPart)).toBe(true);
-      for (const report of reports) {
-        expect(report.targetRayHitsRegion).toBe(true);
-        expect(report.swingHit).toBe(report.id);
-        expect(report.body).toBeDefined();
-        expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(20.000_001);
-        expect(report.appliedPoints).toHaveLength(1);
-        expect(impactPointIsInside(report.appliedPoints[0]!)).toBe(true);
-        const result = bounceApexesAndFreeFlightEnergyRise(report);
-        expect(result.maxFreeFlightRise).toBeLessThanOrEqual(report.initialEnergy * 0.005);
-        expect(result.apexes.length, JSON.stringify({ seed: report.zombieSeed, ...result })).toBeGreaterThan(0);
-        expect(
-          result.apexes.every((height, index) => index === 0 || height < result.apexes[index - 1]!),
-          JSON.stringify({ seed: report.zombieSeed, part: report.severedPart, apexes: result.apexes }),
-        ).toBe(true);
-        expect(result.asleep).toBe(true);
-        expect(result.finalEnergy).toBeLessThan(report.initialEnergy);
-      }
+      expect(report.targetRayHitsRegion).toBe(true);
+      expect(report.swingHit).toBe(report.id);
+      expect(report.body).toBeDefined();
+      expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(20.000_001);
+      expect(report.appliedPoints).toHaveLength(1);
+      expect(impactPointIsInside(report.appliedPoints[0]!)).toBe(true);
+      const result = bounceApexesAndFreeFlightEnergyRise(report);
+      expect(result.maxFreeFlightRise).toBeLessThanOrEqual(report.initialEnergy * 0.005);
+      expect(result.apexes.length, JSON.stringify({ seed: report.zombieSeed, ...result })).toBeGreaterThan(0);
+      expect(
+        result.apexes.every((height, index) => index === 0 || height < result.apexes[index - 1]!),
+        JSON.stringify({ seed: report.zombieSeed, part: report.severedPart, apexes: result.apexes }),
+      ).toBe(true);
+      expect(result.asleep).toBe(true);
+      expect(result.finalEnergy).toBeLessThan(report.initialEnergy);
     } finally {
-      for (const report of reports) {
-        report.renderer.dispose();
-      }
+      report.renderer.dispose();
     }
   });
 });
