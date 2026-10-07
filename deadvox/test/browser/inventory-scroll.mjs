@@ -322,6 +322,7 @@ try {
   assert.equal(fit.firearmLocation, 'hand');
   assert.equal(fit.foregripLocation, 'pocket');
   assert.equal(fit.selected, fit.rifleUid);
+  await page.locator(fit.selector).scrollIntoViewIfNeeded();
   const fitBounds = await page.locator(fit.selector).boundingBox();
   assert.ok(fitBounds);
   const fitPoint = { x: fitBounds.x + fitBounds.width / 2, y: fitBounds.y + fitBounds.height / 2 };
@@ -343,6 +344,7 @@ try {
   await page.evaluate((queuedBefore) => globalThis.scrollFixture.finishAttachmentFit(queuedBefore), fit.queuedBefore);
   const remove = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentRemove());
   process.stdout.write(`${engine}: attachment removal control ${JSON.stringify(remove)}\n`);
+  await page.locator(remove.selector).scrollIntoViewIfNeeded();
   const removeBounds = await page.locator(remove.selector).boundingBox();
   assert.ok(removeBounds);
   const removePoint = { x: removeBounds.x + removeBounds.width / 2, y: removeBounds.y + removeBounds.height / 2 };
