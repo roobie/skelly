@@ -313,25 +313,11 @@ describe('AK-pattern archetype', () => {
     }
   });
 
-  it('offers every AK magazine variant in the AK template', () => {
+  it('keeps every magazine variant available for curated AK designs', () => {
     const offered = ak.slots.find(({ id }) => id === 'magazine')?.params?.variant;
     expect(Array.isArray(offered) ? [...offered].sort() : offered).toEqual(
       [...FAMILIES.magazine!.params.variant!.values].sort(),
     );
-  });
-
-  // No seed is pinned: any template slot shifts the draws. Direct geometry and fixture checks cover each variant.
-  sweepGroup('generates a valid AK with every magazine variant within a bounded seed scan', () => {
-    it('passes', () => {
-      const wanted = new Set(FAMILIES.magazine!.params.variant!.values);
-      const seen = new Set<string>();
-      for (let seed = 0; seed < SEED_SCAN_BOUND && seen.size < wanted.size; seed += 1) {
-        const assembly = generate(ak, gunDomain, seed);
-        seen.add(assembly.parts.magazine!.params!.variant!);
-        expect(validate(assembly, gunDomain).ok, `seed ${seed}`).toBe(true);
-      }
-      expect(seen).toEqual(wanted);
-    });
   });
 
   it('builds exact-jointed convex ring sectors and a finer display tessellation from each curve profile', () => {

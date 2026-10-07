@@ -1,7 +1,7 @@
 // Item-owned chamber/cycle facts. Existing simulation/handling schedulers advance them;
 // presentation only observes ejection and the current cycle. No timers or second job queue.
 
-import { type AimBasis, type AimFrame, aimBasis, NEUTRAL_AIM } from '../core/aim.ts';
+import type { AimBasis, AimFrame } from '../core/aim.ts';
 import { dominantSide } from '../core/character.ts';
 import type { ModelDef, Registry } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -16,15 +16,17 @@ import {
   skillZeroHandlingForFirearm,
 } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
-import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
+import { heldEjectionPose } from '../core/heldPose.ts';
 import type { Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { dropTarget } from '../core/options.ts';
 import { coneDirection, type PelletShot, pelletShotFromBasis } from '../core/pellets.ts';
 import { Rng } from '../core/random.ts';
+import type { SolidAt } from '../core/raycast.ts';
 import { pilesInRadius } from '../core/reach.ts';
 import type { SoundEventId } from '../core/soundEvents.ts';
+import { firearmBoreRay } from './firearmAim.ts';
 
 /** Gameplay estimates for transient ballistics, not claimed as measured export data. */
 const CASE_SPEED = 3.5;
@@ -42,15 +44,6 @@ const unit = (vector: Vec3): Vec3 => {
     throw new Error('Invalid firearm pose direction');
   }
   return vector.map((value) => value / length) as Vec3;
-};
-
-const cameraVectorInWorld = (vector: Vec3, yaw: number, pitch: number): Vec3 => {
-  const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
-  return [
-    right[0] * vector[0] + up[0] * vector[1] - forward[0] * vector[2],
-    right[1] * vector[0] + up[1] * vector[1] - forward[1] * vector[2],
-    right[2] * vector[0] + up[2] * vector[1] - forward[2] * vector[2],
-  ];
 };
 
 const basisAlong = (forward: Vec3, up: Vec3): AimBasis => {
@@ -151,6 +144,7 @@ export const spentCaseItemId = (calibre: string): string => `spent_case_${calibr
 export interface FirearmTrajectory {
   readonly eye: Vec3;
   readonly muzzle: Vec3;
+  readonly origin: Vec3;
   readonly directions: readonly Vec3[];
 }
 
@@ -186,6 +180,7 @@ interface ShotCommit {
   readonly data: ReturnType<typeof firearmHandlingFor> & { recoilKickRadians: number; dispersionRadians: number };
   readonly emission: Omit<PendingCase, 'seed'>;
   readonly muzzle: Vec3;
+  readonly shotOrigin: Vec3;
   readonly shotBasis: AimBasis;
   readonly shotKey: string;
   readonly seed: number;
@@ -205,6 +200,7 @@ export class FirearmMechanics {
   private readonly inventory: Inventory;
   private readonly queue: HandlingQueue;
   private readonly blockSize: number;
+  private readonly isSolid: SolidAt;
   private readonly pose: (uid: number) => FirearmPoseInput | undefined;
   private readonly onEjection: (effect: FirearmShotEffect) => void;
   private readonly onShot: (shot: PelletShot, time: number) => void;
@@ -227,6 +223,7 @@ export class FirearmMechanics {
     queue: HandlingQueue,
     {
       blockSize,
+      isSolid,
       pose,
       onEjection,
       onShot = () => undefined,
@@ -237,6 +234,7 @@ export class FirearmMechanics {
       firearmsSkillZeroHandling,
     }: {
       blockSize: number;
+      isSolid?: SolidAt;
       pose: (uid: number) => FirearmPoseInput | undefined;
       onEjection: (effect: FirearmShotEffect) => void;
       onShot?: (shot: PelletShot, time: number) => void;
@@ -255,6 +253,7 @@ export class FirearmMechanics {
     this.inventory = inventory;
     this.queue = queue;
     this.blockSize = blockSize;
+    this.isSolid = isSolid ?? (() => false);
     this.pose = pose;
     this.onEjection = onEjection;
     this.onShot = onShot;
@@ -460,36 +459,42 @@ export class FirearmMechanics {
     }
     const emission = this.emission(item, data, input);
     const side = this.inventory.hands.right?.uid === item.uid ? 'right' : 'left';
-    const heldPose = heldFirearmTransform({
+    const tuning = this.requiredFirearmsCombatTuning();
+    const bore = firearmBoreRay({
       model: data.model,
+      eye: input.eye,
+      yaw: input.yaw,
+      pitch: input.pitch,
+      blockSize: this.blockSize,
       side,
       leadingSide: dominantSide(this.inventory.character),
       twoHanded: Boolean(defOf(this.inventory.registry, item.type).twoHanded),
-      progress: 1,
-      aimingDownSights: input.aimingDownSights ?? false,
       aimFrame: input.aimFrame,
-      loweredPitchRadians: this.requiredFirearmsCombatTuning().loweredPitchRadians,
-      adsApertureFill: this.requiredFirearmsCombatTuning().adsApertureFill,
+      aimingDownSights: input.aimingDownSights ?? false,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+      adsApertureFill: tuning.adsApertureFill,
       verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
+      isSolid: this.isSolid,
     });
-    const eyeMetres = input.eye.map((value) => value * this.blockSize) as Vec3;
-    const rootMetres = eyeMetres.map(
-      (value, index) => value + cameraVectorInWorld(heldPose.rootOffset, input.yaw, input.pitch)[index]!,
-    ) as Vec3;
-    const muzzleMetres = rootMetres.map(
-      (value, index) => value + cameraVectorInWorld(heldPose.muzzleOffset, input.yaw, input.pitch)[index]!,
-    ) as Vec3;
-    const muzzle = muzzleMetres.map((value) => value / this.blockSize) as Vec3;
-    const muzzleDirection = unit(cameraVectorInWorld(heldPose.muzzleDirection, input.yaw, input.pitch));
-    const muzzleUp = unit(cameraVectorInWorld(heldPose.muzzleUp, input.yaw, input.pitch));
-    const shotBasis = basisAlong(muzzleDirection, muzzleUp);
+    const { origin: shotOrigin, muzzle, direction, up } = bore;
+    const shotBasis = basisAlong(direction, up);
     const shotKey = `${item.uid}:${input.simTime}:${input.feet.join(',')}`;
     const seed = Math.floor(Rng.stream(input.seed, `firearm-case:${shotKey}`).next() * 4_294_967_296) >>> 0;
-    const commit = { input, item, data, emission, muzzle, shotBasis, shotKey, seed };
+    const commit = { input, item, data, emission, muzzle, shotOrigin, shotBasis, shotKey, seed };
     return pump ? this.commitPumpShot(commit) : this.commitBallisticShot(commit);
   }
 
-  private commitPumpShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+  private commitPumpShot({
+    input,
+    item,
+    data,
+    emission,
+    muzzle,
+    shotOrigin,
+    shotBasis,
+    shotKey,
+    seed,
+  }: ShotCommit): boolean {
     const roundType = item.firearm?.roundType;
     const ammo = roundType && defOf(this.inventory.registry, roundType).ammo;
     if (!(roundType && ammo && ammoMatchesCalibre(roundType, data.calibre, this.inventory.registry))) {
@@ -500,15 +505,25 @@ export class FirearmMechanics {
     state.chamber = 'case';
     state.roundType = undefined;
     state.pendingCase = { ...emission, seed };
-    const pellets = pelletShotFromBasis({ ammo, origin: muzzle, basis: shotBasis, seed: input.seed, key: shotKey });
+    const pellets = pelletShotFromBasis({ ammo, origin: shotOrigin, basis: shotBasis, seed: input.seed, key: shotKey });
     this.onShot(pellets, input.simTime);
-    this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
+    this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: pellets.directions }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
 
-  private commitBallisticShot({ input, item, data, emission, muzzle, shotBasis, shotKey, seed }: ShotCommit): boolean {
+  private commitBallisticShot({
+    input,
+    item,
+    data,
+    emission,
+    muzzle,
+    shotOrigin,
+    shotBasis,
+    shotKey,
+    seed,
+  }: ShotCommit): boolean {
     const shotKind = this.handlingShotKind(item.uid, input.simTime);
     item.firearm = {
       chamber: 'case',
@@ -529,7 +544,7 @@ export class FirearmMechanics {
       data.dispersionRadians,
       Rng.stream(input.seed, `firearm-dispersion:${shotKey}`),
     );
-    this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
+    this.onTrajectory({ eye: input.eye, muzzle, origin: shotOrigin, directions: [direction] }, input.simTime);
     this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;

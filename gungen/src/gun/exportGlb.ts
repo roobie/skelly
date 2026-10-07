@@ -2,16 +2,23 @@ import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
 import { localSolidBounds } from '../core/geometry.ts';
-import { exportGlb } from '../core/glb.ts';
+import { exportGlb, partNodeName } from '../core/glb.ts';
 import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '../core/math.ts';
 import { type Resolved, resolve } from '../core/resolve.ts';
 import type { Assembly, PartDef } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
+import {
+  type AttachmentMetadata,
+  type AttachmentSlotMetadata,
+  attachmentMetadata,
+  attachmentSlots,
+} from './attachments.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
-import { gripTurn, toFileAxes } from './exportFrame.ts';
+import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
+import type { MountKind } from './mounts.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
@@ -72,6 +79,14 @@ export interface DeadvoxModelEntry {
   readonly tube?: { readonly capacity: number };
   readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
   readonly action?: GunActionMetadata;
+  /** Metadata for an attachment exported as its own item model. */
+  readonly attachment?: AttachmentMetadata;
+  /** Default mods fitted by the template, with data for deadvox to consume. */
+  readonly attachments?: readonly (AttachmentMetadata & { readonly node: string; readonly mountedAt: string })[];
+  /** Authored mount interfaces; fitted occupancy is linked by attachment `mountedAt` IDs. */
+  readonly attachmentSlots?: readonly AttachmentSlotMetadata[];
+  /** Fitted, replaceable item slots whose baked geometry is present in the gun GLB. */
+  readonly slots?: { readonly magazine?: { readonly node: string; readonly at: Vec3; readonly turn: Vec3 } };
 }
 
 export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
@@ -219,6 +234,64 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
   };
 };
 
+const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKind): string | undefined => {
+  for (const { conn, from, to } of resolved.connections) {
+    if (from.part === partId) {
+      if (from.port.gender === 'male' && from.port.mount === mount && to.port.gender === 'female') {
+        return `${to.part}.${to.port.id}.0`;
+      }
+      continue;
+    }
+    if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
+      return `${from.part}.${from.port.id}.${conn.slot ?? 0}`;
+    }
+  }
+  return undefined;
+};
+
+const attachmentData = (resolved: Resolved): (AttachmentMetadata & { node: string; mountedAt: string })[] =>
+  [...resolved.defs.entries()].flatMap(([partId, definition]) => {
+    const instance = resolved.assembly.parts[partId];
+    if (!instance) {
+      return [];
+    }
+    const params = resolved.params.get(partId);
+    const metadata = attachmentMetadata(
+      instance.family,
+      params && Object.fromEntries(Object.entries(params).map(([name, value]) => [name, value.value])),
+      resolved.domain.units.metresPerUnit,
+      definition,
+    );
+    if (!metadata) {
+      return [];
+    }
+    const mountedAt = attachmentMountSlot(resolved, partId, metadata.mount);
+    if (!mountedAt) {
+      return [];
+    }
+    return [
+      {
+        ...metadata,
+        node: partNodeName(partId, instance.family),
+        mountedAt,
+      },
+    ];
+  });
+
+const magazineSlotData = (resolved: Resolved): NonNullable<DeadvoxModelEntry['slots']>['magazine'] | undefined => {
+  const [partId, instance] =
+    Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'magazine') ?? [];
+  const transform = partId && resolved.placed.get(partId);
+  if (!(partId && instance && transform)) {
+    return undefined;
+  }
+  return {
+    node: partNodeName(partId, instance.family),
+    at: modelPoint(transform.t, resolved.domain.units.metresPerUnit),
+    turn: eulerXyzDegrees(transform.r),
+  };
+};
+
 const sightMetadata = (resolved: Resolved): GunDeadvoxModelEntry['sight'] => {
   const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
     const candidate = sightCandidate(resolved, id, part);
@@ -285,10 +358,9 @@ export const createGunModelEntry = ({
   if (calibre !== undefined) {
     calibreSlug(calibre);
   }
-  const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
-    name,
-    modelPoint(frame.position, metresPerUnit),
-  ]);
+  const others = Object.entries(anchors.others)
+    .filter(([name]) => name !== 'magwell')
+    .map(([name, frame]): [string, Vec3] => [name, modelPoint(frame.position, metresPerUnit)]);
   return {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
@@ -338,18 +410,34 @@ export const exportGunGlb = (
   const handling = buildActionExport(resolved);
   const tubeCapacity =
     metadata.cartridge?.kind === 'shotshell' ? tubeMagazineCapacity(resolved, metadata.cartridge) : undefined;
+  const {
+    units: { metresPerUnit },
+  } = resolved.domain;
+  const modelEntry = createGunModelEntry({
+    asset,
+    anchors,
+    metresPerUnit,
+    options: {
+      ...metadata,
+      ...(handling ? { handling } : {}),
+      ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
+    },
+    sight: sightMetadata(resolved),
+  });
+  const attachmentSlotsData = attachmentSlots(resolved).map(({ position, direction, up, ...slot }) => ({
+    ...slot,
+    position: modelPoint(position, metresPerUnit),
+    direction: normalize(toFileAxes(direction)),
+    up: normalize(toFileAxes(up)),
+  }));
+  const magazine = magazineSlotData(resolved);
   return {
     ...result,
-    modelEntry: createGunModelEntry({
-      asset,
-      anchors,
-      metresPerUnit: resolved.domain.units.metresPerUnit,
-      options: {
-        ...metadata,
-        ...(handling ? { handling } : {}),
-        ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
-      },
-      sight: sightMetadata(resolved),
-    }),
+    modelEntry: {
+      ...modelEntry,
+      attachments: attachmentData(resolved),
+      attachmentSlots: attachmentSlotsData,
+      ...(magazine ? { slots: { magazine } } : {}),
+    },
   };
 };

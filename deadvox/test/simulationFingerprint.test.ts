@@ -202,6 +202,7 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('src/game/primaryAction.ts')).toBe(true);
     expect(graph.sources.has('src/debug/axisGizmo.ts')).toBe(false);
     expect(graph.sources.has('src/game/firearmHandling.ts')).toBe(true);
+    expect(graph.sources.has('src/game/debugTargetRay.ts')).toBe(false);
     expect(graph.sources.has('src/render/caseEffects.ts')).toBe(false);
     expect(graph.sources.has('src/game/controls.ts')).toBe(false);
     expect(graph.sources.has('src/render/meleePose.ts')).toBe(false);
@@ -210,6 +211,10 @@ describe('simulation source fingerprint', () => {
     const debugPresentation = await mutateSimulationSource(host, 'src/debug/axisGizmo.ts');
     expect(debugPresentation.included).toBe(false);
     expect(debugPresentation.value).toBe(original);
+
+    const debugTarget = await mutateSimulationSource(host, 'src/game/debugTargetRay.ts');
+    expect(debugTarget.included).toBe(false);
+    expect(debugTarget.value).toBe(original);
 
     const hint = await mutateSimulationSource(host, 'src/ui/primaryActionHint.ts');
     expect(hint.included).toBe(false);

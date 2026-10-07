@@ -92,14 +92,16 @@ export interface CorpusEntry {
 /** Every published design under designs/, as loaded assemblies. */
 export const loadDesigns = (): CorpusEntry[] =>
   readdirSync(DESIGNS)
-    .filter((f) => f.endsWith('.json'))
+    .filter((f) => f.endsWith('.json') && !f.startsWith('look-'))
     .sort()
-    .map((f) => {
+    .flatMap((f) => {
       const result = loadGunDesign(readFileSync(join(DESIGNS, f), 'utf8'));
       if (!result.ok) {
         throw new Error(`designs/${f}: ${result.error.code}: ${result.error.message}`);
       }
-      return { label: `design ${f}`, assembly: result.design.assembly };
+      return result.declaredStatus === 'published' && result.design.status === 'published'
+        ? [{ label: `design ${f}`, assembly: result.design.assembly }]
+        : [];
     });
 
 /**

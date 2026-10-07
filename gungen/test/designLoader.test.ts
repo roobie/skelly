@@ -5,12 +5,13 @@ import { type DesignLoadInputs, loadDesign, loadDesignValue } from '../src/core/
 import { generateValid } from '../src/core/generate.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
+import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_FINISH_SLOTS } from '../src/gun/palette.ts';
 import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
 import { ar, TEMPLATES } from '../src/gun/templates.ts';
-import { editorStateFromDesign, saveDesign } from '../src/viewer/designEditor.ts';
+import { createEditorState, editorStateFromDesign, saveDesign } from '../src/viewer/designEditor.ts';
 import { loadFixture } from './helpers.ts';
 
 /** A test catalogue; the real content belongs to 3.1. Two revisions of one id coexist. */
@@ -157,6 +158,48 @@ describe('loadDesign: fatal errors', () => {
 });
 
 describe('loadDesign: finish validation', () => {
+  it('retains the template calibre in generated design files', () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template?.calibre) {
+      throw new Error('AK template has no explicit calibre');
+    }
+    const generatedAk = generateValid(template, gunDomain, 0);
+    if (!generatedAk) {
+      throw new Error('AK template has no valid generated assembly');
+    }
+    const saved = saveDesign(
+      createEditorState(template, generatedAk.assembly, { calibre: template.calibre }),
+      gunDomain,
+    );
+    expect(saved.ok).toBe(true);
+    if (saved.ok) {
+      expect(saved.design.calibre).toBe(template.calibre);
+    }
+  });
+
+  it('does not assign a template calibre when opening a curated AK-74 fixture', () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template) {
+      throw new Error('AK template is missing');
+    }
+    const state = createEditorState(template, loadFixture('archetype-ak'));
+    expect(state.calibre).toBeUndefined();
+    const saved = saveDesign(state, gunDomain);
+    expect(saved.ok).toBe(true);
+    if (!saved.ok) {
+      return;
+    }
+    expect(saved.design.calibre).toBeUndefined();
+    const exported = exportFileText(saved.text, {
+      id: 'curated-ak-74',
+      file: 'assets/models/curated-ak-74.glb',
+    });
+    expect(exported.ok).toBe(true);
+    if (exported.ok) {
+      expect(exported.modelEntry.calibre).toBeUndefined();
+    }
+  });
+
   it('loads, saves, and exports overrides for every declared gun finish slot', () => {
     const finish = Object.fromEntries(GUN_FINISH_SLOTS.map((slot) => [slot, 'polymer-fde']));
     const loaded = loadGunDesign(JSON.stringify(makeDesign({ finish })));
@@ -190,7 +233,71 @@ describe('loadDesign: finish validation', () => {
   });
 });
 
+const mappedCalibreCase = (
+  template: Template,
+  calibre: string,
+  expectedVariant: string,
+  variants: readonly string[],
+) => {
+  const generatedAk = generateValid({ ...template, calibre }, gunDomain, 0);
+  if (!generatedAk) {
+    throw new Error(`AK template did not generate a valid ${calibre} design`);
+  }
+  const { assembly } = generatedAk;
+  const valid = load(makeDesign({ template: 'ak', assembly, calibre }), { template });
+  const wrongVariant = variants.find((variant) => variant !== expectedVariant);
+  const { magazine } = assembly.parts;
+  if (!(wrongVariant && magazine)) {
+    throw new Error('AK calibre mapping needs another magazine variant and a magazine part');
+  }
+  const wrongAssembly: Assembly = {
+    ...assembly,
+    parts: {
+      ...assembly.parts,
+      magazine: { ...magazine, params: { ...magazine.params, variant: wrongVariant } },
+    },
+  };
+  const invalid = load(makeDesign({ template: 'ak', assembly: wrongAssembly, calibre }), { template });
+  const slug = calibre.replaceAll('.', '_');
+  const exportResult = invalid.ok
+    ? exportFileText(JSON.stringify(invalid.design), {
+        id: `invalid-ak-${slug}`,
+        file: `assets/models/invalid-ak-${slug}.glb`,
+      })
+    : undefined;
+  return { valid, invalid, exportResult };
+};
+
 describe('loadDesign: change policy', () => {
+  it('validates calibre-mapped template params against an explicit design calibre', () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template) {
+      throw new Error('AK template is missing');
+    }
+    const mappings = Object.entries(AK_MAGAZINE_VARIANT_BY_CALIBRE);
+    expect(mappings.length).toBeGreaterThan(0);
+    const variants = [...new Set(mappings.map(([, variant]) => variant))];
+    for (const [calibre, expectedVariant] of mappings) {
+      const { valid, invalid, exportResult } = mappedCalibreCase(template, calibre, expectedVariant, variants);
+      expect(valid.ok).toBe(true);
+      if (valid.ok) {
+        expect(valid.issues.filter(({ code }) => code === 'template-choice')).toEqual([]);
+      }
+      expect(
+        invalid.ok &&
+          invalid.issues.some(
+            ({ code, path, parts }) =>
+              code === 'template-choice' &&
+              path === 'assembly.parts.magazine.params.variant' &&
+              parts?.includes('magazine'),
+          ),
+      ).toBe(true);
+      expect(exportResult).toMatchObject({
+        ok: false,
+        message: expect.stringContaining('design issue (template-choice)'),
+      });
+    }
+  });
   it('a family default change leaves a design untouched: defaults are never stored', () => {
     const family = gunDomain.families.barrel;
     if (!family?.params.length) {
