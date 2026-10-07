@@ -81,7 +81,7 @@
     {
       "id": "workshop_lift",
       "name": "Vehicle lift",
-      "size": [4, 3, 9],
+      "size": [4, 2, 9],
       "color": "#dfb72f",
       "solid": false
     },

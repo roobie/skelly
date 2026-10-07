@@ -14,7 +14,7 @@ import { CATALOGUE } from '../vehicles/catalogue.ts';
 import { MATERIALS } from '../vehicles/materials.ts';
 import { newInstance, type Paint, PartLibrary, VOXEL } from '../vehicles/model.ts';
 import { RANGE_ROVER, STRIPPED_REMOVED } from '../vehicles/rangeRover.ts';
-import { GLASS, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
+import { GLASS, keyVoxel, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
 
 const partLibrary = new PartLibrary(CATALOGUE);
 const WORKSHOP_REMOVED: readonly string[] = [...STRIPPED_REMOVED, 'spare-wheel'];
@@ -35,6 +35,19 @@ const vehicleGrid = (): VoxelGrid => {
   }
   return grid;
 };
+let cachedDisplay: { grid: VoxelGrid; solidBaseY: number } | undefined;
+const getDisplay = (): { grid: VoxelGrid; solidBaseY: number } => {
+  if (cachedDisplay === undefined) {
+    const grid = vehicleGrid();
+    cachedDisplay = {
+      grid,
+      solidBaseY: Math.min(
+        ...[...grid].flatMap(([voxel, material]) => (material === GLASS ? [] : [keyVoxel(voxel)[1] * VOXEL])),
+      ),
+    };
+  }
+  return cachedDisplay;
+};
 
 const geometryOf = (buffers: MeshBuffers): BufferGeometry | undefined => {
   if (buffers.quads === 0) {
@@ -54,7 +67,7 @@ const geometryOf = (buffers: MeshBuffers): BufferGeometry | undefined => {
 
 const vehicleGeometry = () => {
   const { solid, clear } = meshGrid(
-    vehicleGrid(),
+    getDisplay().grid,
     (material) => rgb(WORKSHOP_DISPLAY_CAR.paint, material),
     (material) => material === GLASS,
   );
@@ -80,6 +93,7 @@ const glassMaterial = new MeshPhongMaterial({
 
 const liftMaterial = new MeshLambertMaterial({ color: '#277e78' });
 const armMaterial = new MeshLambertMaterial({ color: '#e4b62f' });
+const LIFT_ARM_HEIGHT = 0.12;
 const boxGeometry = new BoxGeometry(1, 1, 1);
 
 interface BoxShape {
@@ -98,9 +112,10 @@ const addBox = (group: Group, material: MeshLambertMaterial, blockSize: number, 
 /** Renders the spike's 4×4 with its wheels and worked-on panels absent. */
 export const workshopCar = (entity: BlockEntity, blockSize = BLOCK_SIZE): Group => {
   const group = new Group();
+  const { solidBaseY } = getDisplay();
   group.position.set(
     (entity.pos[0] + entity.size[0] / 2) * blockSize,
-    entity.pos[1] * blockSize,
+    entity.pos[1] * blockSize - solidBaseY,
     (entity.pos[2] + entity.size[2] / 2) * blockSize,
   );
   group.rotation.y = Math.PI / 2;
@@ -136,8 +151,8 @@ export const workshopLift = (entity: BlockEntity, blockSize = BLOCK_SIZE): Group
     });
     for (const zOffset of [-2.1, 2.1]) {
       addBox(group, armMaterial, blockSize, {
-        position: [x + (x < width / 2 ? 0.65 : -0.65), liftTop - 0.15, postZ + zOffset],
-        size: [1.3, 0.12, 0.18],
+        position: [x + (x < width / 2 ? 0.65 : -0.65), liftTop - LIFT_ARM_HEIGHT / 2, postZ + zOffset],
+        size: [1.3, LIFT_ARM_HEIGHT, 0.18],
       });
     }
   }

@@ -1,15 +1,17 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { Mesh } from 'three';
 import { describe, expect, it } from 'vitest';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
+import { type BlockEntity, doorPanel } from '../src/core/blockEntities.ts';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { rollLoot } from '../src/core/loot.ts';
 import { Rng } from '../src/core/random.ts';
-import { makeScale } from '../src/core/scale.ts';
+import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
@@ -21,8 +23,11 @@ import {
   placedPieces,
   placedSpawns,
 } from '../src/core/templates.ts';
-import { WORKSHOP_DISPLAY_CAR } from '../src/render/workshopVehicle.ts';
+import { WORKSHOP_DISPLAY_CAR, workshopCar, workshopLift } from '../src/render/workshopVehicle.ts';
+import { CATALOGUE } from '../src/vehicles/catalogue.ts';
+import { PartLibrary, VOXEL } from '../src/vehicles/model.ts';
 import { wheel } from '../src/vehicles/rangeRover.ts';
+import { GLASS, keyVoxel } from '../src/vehicles/voxels.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -33,6 +38,7 @@ const layout = (
 ).layouts[0]!;
 const result = buildRegistry([...sources, { source: 'playtest-layout-test.json', data: { layouts: [layout] } }]);
 const scale = makeScale(0.5);
+const partLibrary = new PartLibrary(CATALOGUE);
 type FixedOverride = NonNullable<SiteLayoutDef['buildings'][number]['fixedLoot']>[number];
 interface OverridePlacement {
   building: SiteLayoutDef['buildings'][number];
@@ -248,6 +254,151 @@ const blockedDoorCells = (door: DoorPiece, placements: AuthoredSite['placements'
   doorSideCells(door)
     .flat()
     .filter((cell) => solidInPlacements(placements, cell));
+
+interface DoorSweepPose {
+  center: readonly [number, number];
+  lengthAxis: readonly [number, number];
+  thicknessAxis: readonly [number, number];
+  halfLength: number;
+  halfThickness: number;
+}
+
+const rotateDoorVector = ([x, z]: readonly [number, number], angle: number): [number, number] => [
+  Math.cos(angle) * x + Math.sin(angle) * z,
+  -Math.sin(angle) * x + Math.cos(angle) * z,
+];
+
+interface DoorSweepShape {
+  hinge: readonly [number, number];
+  length: number;
+  thickness: number;
+  alongX: boolean;
+  angle: number;
+}
+
+const doorSweepPose = ({ hinge, length, thickness, alongX, angle }: DoorSweepShape): DoorSweepPose => {
+  const lengthAxis = rotateDoorVector(alongX ? [1, 0] : [0, 1], angle);
+  const thicknessAxis = rotateDoorVector(alongX ? [0, 1] : [1, 0], angle);
+  const offset = rotateDoorVector(alongX ? [length / 2, 0] : [0, length / 2], angle);
+  return {
+    center: [hinge[0] + offset[0], hinge[1] + offset[1]],
+    lengthAxis,
+    thicknessAxis,
+    halfLength: length / 2,
+    halfThickness: thickness / 2,
+  };
+};
+
+const doorPanelFor = (door: DoorPiece) =>
+  doorPanel(
+    {
+      uid: 1,
+      type: door.furniture,
+      pos: door.pos,
+      size: door.size,
+      facing: door.facing,
+      searched: false,
+      open: true,
+    } satisfies BlockEntity,
+    BLOCK_SIZE,
+  );
+
+const doorPanelOverlapsCell = (pose: DoorSweepPose, cellX: number, cellZ: number): boolean => {
+  const dx = cellX + 0.5 - pose.center[0];
+  const dz = cellZ + 0.5 - pose.center[1];
+  const [axisX, axisZ] = pose.lengthAxis;
+  const [sideX, sideZ] = pose.thicknessAxis;
+  const epsilon = 1e-9;
+  return (
+    Math.abs(dx) < 0.5 + pose.halfLength * Math.abs(axisX) + pose.halfThickness * Math.abs(sideX) - epsilon &&
+    Math.abs(dz) < 0.5 + pose.halfLength * Math.abs(axisZ) + pose.halfThickness * Math.abs(sideZ) - epsilon &&
+    Math.abs(dx * axisX + dz * axisZ) < pose.halfLength + 0.5 * (Math.abs(axisX) + Math.abs(axisZ)) - epsilon &&
+    Math.abs(dx * sideX + dz * sideZ) < pose.halfThickness + 0.5 * (Math.abs(sideX) + Math.abs(sideZ)) - epsilon
+  );
+};
+
+const doorSweepBounds = (pose: DoorSweepPose) => {
+  const [axisX, axisZ] = pose.lengthAxis;
+  const [sideX, sideZ] = pose.thicknessAxis;
+  const extentX = pose.halfLength * Math.abs(axisX) + pose.halfThickness * Math.abs(sideX);
+  const extentZ = pose.halfLength * Math.abs(axisZ) + pose.halfThickness * Math.abs(sideZ);
+  return {
+    minX: Math.floor(pose.center[0] - extentX - 0.5),
+    maxX: Math.ceil(pose.center[0] + extentX + 0.5),
+    minZ: Math.floor(pose.center[1] - extentZ - 0.5),
+    maxZ: Math.ceil(pose.center[1] + extentZ + 0.5),
+  };
+};
+
+interface DoorSweepGrid {
+  pose: DoorSweepPose;
+  y: number;
+  height: number;
+  cells: Set<string>;
+}
+
+const addDoorSweepCells = ({ pose, y, height, cells }: DoorSweepGrid): void => {
+  const bounds = doorSweepBounds(pose);
+  for (let cellX = bounds.minX; cellX < bounds.maxX; cellX += 1) {
+    for (let cellZ = bounds.minZ; cellZ < bounds.maxZ; cellZ += 1) {
+      if (!doorPanelOverlapsCell(pose, cellX, cellZ)) {
+        continue;
+      }
+      for (let cellY = y; cellY < y + height; cellY += 1) {
+        cells.add(`${cellX},${cellY},${cellZ}`);
+      }
+    }
+  }
+};
+
+const doorSwingCells = (door: DoorPiece): DoorCell[] => {
+  const [x, y, z] = door.pos;
+  const [width, height, depth] = door.size;
+  const alongX = door.facing === 'n' || door.facing === 's';
+  const panel = doorPanelFor(door);
+  const length = alongX ? width : depth;
+  const thickness = panel.size[alongX ? 2 : 0] / BLOCK_SIZE;
+  const hinge: readonly [number, number] = alongX ? [x, z + depth / 2] : [x + width / 2, z];
+  const steps = Math.ceil(Math.abs(panel.rotationY) / (Math.PI / 720));
+  const cells = new Set<string>();
+
+  for (let step = 0; step <= steps; step += 1) {
+    addDoorSweepCells({
+      pose: doorSweepPose({ hinge, length, thickness, alongX, angle: (panel.rotationY * step) / steps }),
+      y,
+      height,
+      cells,
+    });
+  }
+
+  return [...cells].map((cell) => cell.split(',').map(Number) as DoorCell);
+};
+
+const furnitureInPlacements = (placements: AuthoredSite['placements'], cell: DoorCell): boolean =>
+  placements.some((placement) =>
+    placedPieces(placement).some((piece) => {
+      const def = result.registry.furniture.get(piece.furniture)!;
+      return (
+        !def.door &&
+        cell[0] >= piece.pos[0] &&
+        cell[0] < piece.pos[0] + piece.size[0] &&
+        cell[1] >= piece.pos[1] &&
+        cell[1] < piece.pos[1] + piece.size[1] &&
+        cell[2] >= piece.pos[2] &&
+        cell[2] < piece.pos[2] + piece.size[2]
+      );
+    }),
+  );
+
+const blockedDoorSwingCells = (door: DoorPiece, placements: AuthoredSite['placements']): DoorCell[] => {
+  const [x, , z] = door.pos;
+  const [width, , depth] = door.size;
+  const alongX = door.facing === 'n' || door.facing === 's';
+  return doorSwingCells(door).filter((cell) => {
+    const inDoorWall = alongX ? cell[2] >= z && cell[2] < z + depth : cell[0] >= x && cell[0] < x + width;
+    return !inDoorWall && (solidInPlacements(placements, cell) || furnitureInPlacements(placements, cell));
+  });
+};
 
 const furnishInOrder = (site: AuthoredSite, columns: [number, number][]): Inventory => {
   const inventory = new Inventory(result.registry);
@@ -523,7 +674,7 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('keeps both sides of each placed workshop door clear of solids', () => {
+  it('keeps the approaches and full opening sweeps of workshop doors clear', () => {
     const workshopIds = new Set(['workshop_hall', 'workshop_office', 'workshop_parts_store']);
     const site = new AuthoredSite(73, result.registry, scale, layout);
     const placements = site.placements.filter((placement) => workshopIds.has(placement.template.id));
@@ -537,7 +688,9 @@ describe('authored fixed loot', () => {
       const doors = placedPieces(placement).filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
       checkedDoors += doors.length;
       for (const door of doors) {
-        expect(blockedDoorCells(door, placements), `${building.template} door at ${door.pos.join(',')}`).toEqual([]);
+        const at = `${building.template} door at ${door.pos.join(',')}`;
+        expect(blockedDoorCells(door, placements), at).toEqual([]);
+        expect(blockedDoorSwingCells(door, placements), `${at} swing`).toEqual([]);
       }
     }
     expect(checkedDoors).toBeGreaterThan(0);
@@ -570,20 +723,54 @@ describe('authored fixed loot', () => {
     }
   });
 
-  it('keeps the stripped workshop vehicle above its lift without fitted wheels', () => {
+  it('rests the stripped workshop vehicle lowest solid voxel on its lift without fitted wheels', () => {
     const template = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
     const lifts = template.pieces.filter(({ furniture }) => furniture === 'workshop_lift');
     const cars = template.pieces.filter(({ furniture }) => furniture === 'workshop_stripped_car');
     expect(lifts.length).toBeGreaterThan(0);
     expect(cars.length).toBeGreaterThan(0);
+    const lowestSolidVoxelY = Math.min(
+      ...WORKSHOP_DISPLAY_CAR.fittings.flatMap((fitting) =>
+        [...partLibrary.placed(fitting).grid].flatMap(([voxel, material]) =>
+          material === GLASS ? [] : [keyVoxel(voxel)[1]],
+        ),
+      ),
+    );
     for (const car of cars) {
-      const supported = lifts.some((lift) => {
-        const directlyUnder = lift.pos[1] + lift.size[1] === car.pos[1];
+      const renderEntity = {
+        uid: 1,
+        type: car.furniture,
+        pos: car.pos,
+        size: car.size,
+        facing: car.facing,
+        searched: false,
+        open: false,
+      } satisfies BlockEntity;
+      const carBottom = workshopCar(renderEntity).position.y + lowestSolidVoxelY * VOXEL;
+      const supportingLift = lifts.find((lift) => {
         const overlapsX = car.pos[0] < lift.pos[0] + lift.size[0] && lift.pos[0] < car.pos[0] + car.size[0];
         const overlapsZ = car.pos[2] < lift.pos[2] + lift.size[2] && lift.pos[2] < car.pos[2] + car.size[2];
-        return directlyUnder && overlapsX && overlapsZ;
+        return overlapsX && overlapsZ;
       });
-      expect(supported).toBe(true);
+      expect(supportingLift).toBeDefined();
+      const liftEntity = {
+        uid: 2,
+        type: supportingLift!.furniture,
+        pos: supportingLift!.pos,
+        size: supportingLift!.size,
+        facing: supportingLift!.facing,
+        searched: false,
+        open: false,
+      } satisfies BlockEntity;
+      const liftView = workshopLift(liftEntity);
+      const armTops = liftView.children
+        .filter(
+          (child): child is Mesh =>
+            child instanceof Mesh && child.scale.y < child.scale.x && child.scale.y < child.scale.z,
+        )
+        .map((arm) => liftView.position.y + arm.position.y + arm.scale.y / 2);
+      expect(armTops.length).toBeGreaterThan(0);
+      expect(carBottom, 'lowest solid voxel meets lift arms without a gap').toBe(Math.max(...armTops));
     }
 
     expect(WORKSHOP_DISPLAY_CAR.fittings.length).toBeGreaterThan(0);
