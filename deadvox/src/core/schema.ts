@@ -523,8 +523,7 @@ const FittedAttachmentSchema = pipe(
     mountedAt: pipe(string(), nonEmpty('must not be empty')),
   }),
   check(
-    ({ mount, properties }) =>
-      mount === 'muzzle' ? properties.railSpanNotches === undefined : properties.railSpanNotches !== undefined,
+    (value) => attachmentSpanMatchesMount(value),
     'rail attachments need a notch span and muzzle attachments cannot have one',
   ),
 );

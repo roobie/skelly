@@ -3,6 +3,7 @@ import { parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly } from '../core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
+import { TEMPLATES } from '../gun/templates.ts';
 import { readCartridge } from './readCartridge.ts';
 
 /** Canonical fixture identities supply appearance independently from their mechanical templates. */
@@ -71,7 +72,13 @@ const readDesignAssembly = (text: string): ReadAssemblyResult => {
   if (!loaded.ok) {
     return { message: `${loaded.error.code}: ${loaded.error.message}` };
   }
-  const calibreIssue = loaded.issues.find((issue) => issue.path === 'calibre');
+  const template = TEMPLATES.find(({ name }) => name === loaded.design.template);
+  const calibrePaths = new Set(
+    (template?.calibreParams ?? []).map(({ slot, param }) => `assembly.parts.${slot}.params.${param}`),
+  );
+  const calibreIssue = loaded.issues.find(
+    (issue) => issue.path === 'calibre' || (issue.path !== undefined && calibrePaths.has(issue.path)),
+  );
   if (calibreIssue) {
     return { message: `design issue (template-choice): ${calibreIssue.message}` };
   }

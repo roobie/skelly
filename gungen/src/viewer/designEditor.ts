@@ -61,7 +61,7 @@ export const createEditorState = (
     readonly origin?: DesignOrigin;
   } = {},
 ): DesignEditorState => {
-  const calibre = options.calibre ?? template?.calibre;
+  const { calibre } = options;
   return {
     template,
     assembly,

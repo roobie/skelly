@@ -1279,6 +1279,8 @@ on the AR design's magazine, which references `stanag-20` today: a straight
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
+- `look-*.json` designs are untracked previews for BR looks; corpus tests and
+  published-design checks skip them.
 - Prefabs are named, curated parts in `src/gun/prefabs.ts`: a family plus
   fixed params. Examples: the STANAG 20 and 30 and the two AK magazines.
   A catalogue test checks every prefab against the domain (family exists,
@@ -1549,7 +1551,7 @@ not part of the export's acceptance:
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
-- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its anchor notch. Female ports on first-set attachment nodes are excluded because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors because Deadvox hides the baked magazine when no item is fitted; see `deadvox/docs/decisions/0003-firearm-handling.md`.
+- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid touches; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors because Deadvox hides the baked magazine when no item is fitted; see `deadvox/docs/decisions/0003-firearm-handling.md`.
 - **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
   but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
   and its curated design and fixtures live byte-identically under `designs/suspended/`

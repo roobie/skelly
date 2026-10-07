@@ -287,6 +287,51 @@ const slotIssues = (slot: SlotTemplate, assembly: Assembly, domain: Domain): Des
   return issues;
 };
 
+const calibreIssues = (design: Design, template: Template, domain: Domain): DesignIssue[] => {
+  if (design.calibre === undefined) {
+    return [];
+  }
+  const mappings = template.calibreParams ?? [];
+  if (mappings.length === 0) {
+    return template.calibre !== undefined && design.calibre !== template.calibre
+      ? [
+          {
+            code: 'template-choice',
+            message: `the design calibre is "${design.calibre}", but template "${template.name}" specifies "${template.calibre}"`,
+            path: 'calibre',
+          },
+        ]
+      : [];
+  }
+  const resolvedParams = resolve(design.assembly, domain).params;
+  return mappings.flatMap(({ slot, param, byCalibre }) => {
+    const expected = byCalibre[design.calibre!];
+    if (expected === undefined) {
+      return [
+        {
+          code: 'template-choice',
+          message: `template "${template.name}" has no ${slot}.${param} choice for calibre "${design.calibre}"`,
+          path: 'calibre',
+        },
+      ];
+    }
+    if (!design.assembly.parts[slot]) {
+      return [];
+    }
+    const actual = resolvedParams.get(slot)?.[param]?.value;
+    return actual === undefined || actual === expected
+      ? []
+      : [
+          {
+            code: 'template-choice',
+            message: `${slot}.${param} is "${actual}", but calibre "${design.calibre}" requires "${expected}"`,
+            path: partPath(slot, 'params', param),
+            parts: [slot],
+          },
+        ];
+  });
+};
+
 const templateIssues = (design: Design, template: Template, domain: Domain): DesignIssue[] => {
   const issues: DesignIssue[] = [];
   if (design.template !== template.name) {
@@ -296,13 +341,7 @@ const templateIssues = (design: Design, template: Template, domain: Domain): Des
       path: 'template',
     });
   }
-  if (template.calibre !== undefined && design.calibre !== undefined && design.calibre !== template.calibre) {
-    issues.push({
-      code: 'template-choice',
-      message: `the design calibre is "${design.calibre}", but template "${template.name}" specifies "${template.calibre}"`,
-      path: 'calibre',
-    });
-  }
+  issues.push(...calibreIssues(design, template, domain));
   if (design.assembly.root !== template.root) {
     issues.push({
       code: 'template-choice',

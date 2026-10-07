@@ -106,7 +106,11 @@ const railSpanNotches = (part: PartDef | undefined, mount: MountKind) => {
       }
     }
   }
-  return { minOffset: Math.ceil(min / pitch), maxOffset: Math.floor(max / pitch) };
+  // Include every half-pitch notch cell the solid overlaps, not only notch centres inside it.
+  return {
+    minOffset: Math.floor(min / pitch + 0.5),
+    maxOffset: Math.ceil(max / pitch + 0.5) - 1,
+  };
 };
 
 export const attachmentSlots = (resolved: Resolved): ResolvedAttachmentSlot[] =>

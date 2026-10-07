@@ -4,17 +4,25 @@ import validator from 'gltf-validator';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../../deadvox/src/core/content.ts';
 import { generateValid } from '../src/core/generate.ts';
+import { localSolidBounds } from '../src/core/geometry.ts';
 import { partNodeName } from '../src/core/glb.ts';
+import { applyPoint } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
-import type { Assembly } from '../src/core/schema.ts';
+import type { Assembly, PartDef, PortDef } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
-import { AK_MAGAZINE_CALIBRE_BY_VARIANT } from '../src/gun/akMagazineCalibre.ts';
+import { AK_MAGAZINE_CALIBRE_BY_VARIANT, AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
-import { ATTACHMENT_IDS, type AttachmentMetadata, attachmentSlots } from '../src/gun/attachments.ts';
+import {
+  ATTACHMENT_IDS,
+  type AttachmentMetadata,
+  attachmentMetadata,
+  attachmentSlots,
+} from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
-import { eulerXyzDegrees } from '../src/gun/exportFrame.ts';
+import { eulerXyzDegrees, toFileAxes } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
+import { MOUNT_STANDARDS } from '../src/gun/mounts.ts';
 import { OPTIC_CATALOG } from '../src/gun/optics.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
@@ -87,6 +95,91 @@ const attachmentFamily = (id: string): string => {
     return 'suppressor';
   }
   return id;
+};
+
+const fittedMountPose = ({
+  label,
+  assembly,
+  resolved,
+  fitted,
+  slots,
+}: {
+  readonly label: string;
+  readonly assembly: Assembly;
+  readonly resolved: ReturnType<typeof resolve>;
+  readonly fitted: { readonly id: string; readonly node: string; readonly mountedAt: string; readonly mount: string };
+  readonly slots: readonly { readonly id: string; readonly position: readonly number[] }[];
+}) => {
+  const slot = slots.find(({ id }) => id === fitted.mountedAt);
+  const partId = Object.entries(assembly.parts).find(
+    ([id, part]) => partNodeName(id, part.family) === fitted.node,
+  )?.[0];
+  if (!(slot && partId)) {
+    throw new Error(`${label}: ${fitted.id} has no exported mount slot or source part`);
+  }
+  const definition = resolved.defs.get(partId);
+  const transform = resolved.placed.get(partId);
+  const port = definition?.ports.find(({ gender, mount }) => gender === 'male' && mount === fitted.mount);
+  if (!(transform && port)) {
+    throw new Error(`${label}: ${fitted.id} has no placed male mount port`);
+  }
+  const position = toFileAxes(applyPoint(transform, port.pos)).map((value) => {
+    const rounded = Math.round(value * gunDomain.units.metresPerUnit * 1e6) / 1e6;
+    return rounded === 0 ? 0 : rounded;
+  });
+  return { actual: slot.position, expected: position, context: `${label}: ${fitted.id} mount pose` };
+};
+
+const attachmentBuild = (id: string) => {
+  const familyName = attachmentFamily(id);
+  const family = gunDomain.families[familyName];
+  if (!family) {
+    throw new Error(`${id} has no part family`);
+  }
+  const defaults = Object.fromEntries(
+    Object.entries(family.params).flatMap(([name, spec]) => (spec.default === undefined ? [] : [[name, spec.default]])),
+  );
+  const params = {
+    ...defaults,
+    ...(familyName === 'sight' ? { type: id.slice('optic-'.length) } : {}),
+    ...(familyName === 'suppressor' ? { type: id } : {}),
+  };
+  return { familyName, params, part: family.build(params) };
+};
+
+const railExtent = (part: PartDef, port: PortDef, pitch: number) => {
+  const offsets: number[] = [];
+  for (const solid of part.solids) {
+    const [low, high] = localSolidBounds(solid);
+    for (const x of [low[0], high[0]]) {
+      for (const y of [low[1], high[1]]) {
+        for (const z of [low[2], high[2]]) {
+          offsets.push(
+            ((x - port.pos[0]) * port.up[0] + (y - port.pos[1]) * port.up[1] + (z - port.pos[2]) * port.up[2]) / pitch,
+          );
+        }
+      }
+    }
+  }
+  return { min: Math.min(...offsets), max: Math.max(...offsets) };
+};
+
+const railSpanExtent = (id: string) => {
+  const { familyName, params, part } = attachmentBuild(id);
+  const metadata = attachmentMetadata(familyName, params, gunDomain.units.metresPerUnit, part);
+  if (!metadata) {
+    throw new Error(`${id} has no attachment metadata`);
+  }
+  if (metadata.mount === 'muzzle') {
+    return;
+  }
+  const span = metadata.properties.railSpanNotches;
+  const port = part.ports.find(({ gender, mount }) => gender === 'male' && mount === metadata.mount);
+  const pitch = MOUNT_STANDARDS[metadata.mount].slotPitchU;
+  if (!(span && port && pitch !== undefined)) {
+    throw new Error(`${id} has no rail span, male mount port, or notch pitch`);
+  }
+  return { id, span, extent: railExtent(part, port, pitch) };
 };
 
 describe('attachment parts and export metadata', () => {
@@ -197,7 +290,9 @@ describe('attachment parts and export metadata', () => {
         { ...fitted, id: 'overlapping-attachment', node: 'overlapping_node', mountedAt: conflict.id },
       ],
     };
-    expect(validateInDeadvox(invalid).issues.length).toBeGreaterThan(0);
+    expect(validateInDeadvox(invalid).issues.map(({ message }) => message)).toContain(
+      'fitted attachments need unique matching mount slots and non-overlapping rail spans',
+    );
   });
 
   it("does not export a fitted suppressor's female tip as a mount slot", () => {
@@ -265,18 +360,20 @@ describe('attachment parts and export metadata', () => {
     }
   });
 
-  it("generates an AK magazine whose calibre matches the template's", () => {
+  it('generates an AK magazine whose calibre matches each template selection', () => {
     const template = TEMPLATES.find(({ name }) => name === 'ak');
-    if (!template?.calibre) {
-      throw new Error('AK template has no explicit calibre');
+    if (!template) {
+      throw new Error('AK template is missing');
     }
-    const generated = generateValid(template, gunDomain, 0);
-    const variant = generated?.assembly.parts.magazine?.params?.variant as
-      | keyof typeof AK_MAGAZINE_CALIBRE_BY_VARIANT
-      | undefined;
-    expect(generated).toBeDefined();
-    expect(variant).toBeDefined();
-    expect(AK_MAGAZINE_CALIBRE_BY_VARIANT[variant!]).toBe(template.calibre);
+    for (const [calibre, expectedVariant] of Object.entries(AK_MAGAZINE_VARIANT_BY_CALIBRE)) {
+      const generated = generateValid({ ...template, calibre }, gunDomain, 0);
+      expect(generated).toBeDefined();
+      const variant = generated?.assembly.parts.magazine?.params?.variant as
+        | keyof typeof AK_MAGAZINE_CALIBRE_BY_VARIANT
+        | undefined;
+      expect(variant).toBe(expectedVariant);
+      expect(variant && AK_MAGAZINE_CALIBRE_BY_VARIANT[variant]).toBe(calibre);
+    }
   });
 
   it('exports every mount pose for the design and fixture corpus', () => {
@@ -292,7 +389,18 @@ describe('attachment parts and export metadata', () => {
       const deadvox = validateInDeadvox(model.modelEntry);
       expect(deadvox.issues, label).toEqual([]);
       expect(deadvox.registry.models.has(model.modelEntry.id), label).toBe(true);
-      const expectedPorts = attachmentSlots(resolve(assembly, gunDomain));
+      const resolved = resolve(assembly, gunDomain);
+      for (const fittedAttachment of fitted) {
+        const { actual, expected, context } = fittedMountPose({
+          label,
+          assembly,
+          resolved,
+          fitted: fittedAttachment,
+          slots,
+        });
+        expect(actual, context).toEqual(expected);
+      }
+      const expectedPorts = attachmentSlots(resolved);
       expect(slots).toHaveLength(expectedPorts.length);
       for (const expected of expectedPorts) {
         expect(
@@ -311,6 +419,18 @@ describe('attachment parts and export metadata', () => {
       checked += expectedPorts.length;
     }
     expect(checked).toBeGreaterThan(0);
+  });
+
+  it('exports rail spans that contain every attachment solid extent', () => {
+    const spans = ATTACHMENT_IDS.flatMap((id) => {
+      const span = railSpanExtent(id);
+      return span ? [span] : [];
+    });
+    expect(spans.length).toBeGreaterThan(0);
+    for (const { id, span, extent } of spans) {
+      expect(extent.min, `${id}: lower rail-cell edge`).toBeGreaterThanOrEqual(span.minOffset - 0.5 - 1e-9);
+      expect(extent.max, `${id}: upper rail-cell edge`).toBeLessThanOrEqual(span.maxOffset + 0.5 + 1e-9);
+    }
   });
 
   it('rejects an attachment on the wrong mount through port-compat', () => {

@@ -208,12 +208,12 @@ const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKin
   for (const { conn, from, to } of resolved.connections) {
     if (from.part === partId) {
       if (from.port.gender === 'male' && from.port.mount === mount && to.port.gender === 'female') {
-        return `${to.part}.${to.port.id}.${conn.slot ?? 0}`;
+        return `${to.part}.${to.port.id}.0`;
       }
       continue;
     }
     if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
-      return `${from.part}.${from.port.id}.0`;
+      return `${from.part}.${from.port.id}.${conn.slot ?? 0}`;
     }
   }
   return undefined;
