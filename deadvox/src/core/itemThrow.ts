@@ -1,7 +1,7 @@
 import type { Registry } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import { type Item, weightOf } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
-import { defOf, type Item } from './items.ts';
 
 export const ITEM_FLIGHT_SECONDS = 0.75;
 export const ITEM_ARC_HEIGHT_METRES = 1.1;
@@ -15,27 +15,22 @@ export const throwDistanceForItem = (
   {
     maximumDistanceMetres,
     chargeSimSeconds,
-    armSpeedMetresPerSecond,
+    armSpeedMetresPerRealSecond,
     armEnergyJoules,
   }: {
     maximumDistanceMetres: number;
     chargeSimSeconds: number;
-    armSpeedMetresPerSecond: number;
+    armSpeedMetresPerRealSecond: number;
     armEnergyJoules: number;
   },
   heldSimSeconds: number,
 ): number => {
-  const massKg = (weightOfItemGrams(item, registry) / 1000);
-  const armSpeedSquared = armSpeedMetresPerSecond ** 2;
+  const massKg = weightOf(registry, item) / 1000;
+  const armSpeedSquared = armSpeedMetresPerRealSecond ** 2;
   const energyLimitedSpeedSquared = massKg > 0 ? (2 * armEnergyJoules) / massKg : armSpeedSquared;
   const rangeFactor = Math.min(1, energyLimitedSpeedSquared / armSpeedSquared);
   const chargeFraction = Math.max(0, Math.min(1, heldSimSeconds / chargeSimSeconds));
   return maximumDistanceMetres * rangeFactor * chargeFraction;
-};
-
-const weightOfItemGrams = (item: Item, registry: Registry): number => {
-  const def = defOf(registry, item.type);
-  return def.weight * item.count;
 };
 
 export const itemFlightPoint = (from: Vec3, to: Vec3, progress: number): Vec3 => {

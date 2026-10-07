@@ -26,6 +26,9 @@ const senseTuning = {
     lureRangeScale: 0,
     throwMaxDistanceMetres: 8,
     throwChargeSimSeconds: simSeconds(1.25),
+    throwMinimumHoldSimSeconds: simSeconds(0.8),
+    throwArmSpeedMetresPerRealSecond: 6,
+    throwArmEnergyJoules: 20,
   },
 } as const;
 

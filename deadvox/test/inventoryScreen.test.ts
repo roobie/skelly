@@ -116,7 +116,7 @@ function setup() {
         craftStart: () => undefined,
         craftContinue: () => undefined,
         craftStop: () => undefined,
-        cancelGlowstick: () => undefined,
+        cancelItemThrow: () => undefined,
       }),
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),

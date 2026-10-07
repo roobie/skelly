@@ -13,9 +13,9 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
-import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
+import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, toHands } from '../core/options.ts';
@@ -279,13 +279,13 @@ export const startPlay = (
     throwMaxDistanceMetres,
     throwChargeSimSeconds,
     throwMinimumHoldSimSeconds,
-    throwArmSpeedMetresPerSecond,
+    throwArmSpeedMetresPerRealSecond,
     throwArmEnergyJoules,
   } = playerSenseTuning.light;
   const itemThrowTuning = {
     maximumDistanceMetres: throwMaxDistanceMetres,
     chargeSimSeconds: throwChargeSimSeconds,
-    armSpeedMetresPerSecond: throwArmSpeedMetresPerSecond,
+    armSpeedMetresPerRealSecond: throwArmSpeedMetresPerRealSecond,
     armEnergyJoules: throwArmEnergyJoules,
   };
   let itemThrowStartedAt: number | undefined;

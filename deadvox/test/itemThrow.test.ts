@@ -1,9 +1,9 @@
 import { PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
+import type { Item } from '../src/core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../src/core/itemThrow.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
-import type { Item } from '../src/core/items.ts';
 import { ItemThrows } from '../src/render/itemThrows.ts';
 
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
@@ -12,7 +12,7 @@ const testRegistry = (weights: Record<string, number>): Registry =>
 const tuning = {
   maximumDistanceMetres: 8,
   chargeSimSeconds: 2,
-  armSpeedMetresPerSecond: 9,
+  armSpeedMetresPerRealSecond: 9,
   armEnergyJoules: 60,
 };
 

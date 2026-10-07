@@ -91,8 +91,7 @@ export class ItemThrows {
     const point = itemFlightPoint(flight.start.toArray() as Vec3, flight.end.toArray() as Vec3, progress);
     flight.mesh.position.set(...point);
     flight.direction.subVectors(flight.end, flight.start);
-    flight.direction.y +=
-      (Math.cos(Math.PI * progress) * ITEM_ARC_HEIGHT_METRES * Math.PI) / ITEM_FLIGHT_SECONDS;
+    flight.direction.y += (Math.cos(Math.PI * progress) * ITEM_ARC_HEIGHT_METRES * Math.PI) / ITEM_FLIGHT_SECONDS;
     flight.mesh.quaternion.setFromUnitVectors(UP, flight.direction.normalize());
   }
 }

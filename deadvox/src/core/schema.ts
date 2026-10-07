@@ -1132,7 +1132,7 @@ const SenseSchema = strictObject({
     throwMaxDistanceMetres: Positive,
     throwChargeSimSeconds: PositiveSimSeconds,
     throwMinimumHoldSimSeconds: PositiveSimSeconds,
-    throwArmSpeedMetresPerSecond: Positive,
+    throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
   }),
 });
