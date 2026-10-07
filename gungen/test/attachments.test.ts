@@ -12,6 +12,7 @@ import type { Assembly, PartDef, PortDef } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { AK_MAGAZINE_CALIBRE_BY_VARIANT, AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
+import { attachmentMassKg } from '../src/gun/attachmentMass.ts';
 import {
   ATTACHMENT_IDS,
   type AttachmentMetadata,
@@ -37,8 +38,15 @@ const design = (name: string): Assembly => {
   return loaded.design.assembly;
 };
 
-const exported = (assembly: Assembly, id: string) => {
-  const result = exportGunGlb(assembly, { id, file: `assets/models/${id}.glb` }, {});
+const exported = (assembly: Assembly, id: string, includeCompatibility = true) => {
+  const result = exportGunGlb(
+    assembly,
+    { id, file: `assets/models/${id}.glb` },
+    {},
+    {
+      includeAttachmentCompatibility: includeCompatibility,
+    },
+  );
   if (!result.ok) {
     throw new Error(`${id}: ${JSON.stringify(result.error)}`);
   }
@@ -196,6 +204,26 @@ describe('attachment parts and export metadata', () => {
     const improvised = extent('improvised-suppressor');
     expect(improvised.length).toBeGreaterThan(real.length);
     expect(improvised.radius).toBeGreaterThan(real.radius);
+    const suppressorMass = (id: string) => {
+      const { familyName, params, part } = attachmentBuild(id);
+      return attachmentMetadata(familyName, params, gunDomain.units.metresPerUnit, part)!.massKg;
+    };
+    expect(suppressorMass('improvised-suppressor')).toBeGreaterThan(suppressorMass('real-suppressor'));
+  });
+
+  it('uses material density as a mass relation for identical geometry', () => {
+    const { part } = attachmentBuild('foregrip');
+    const aluminium = attachmentMassKg(
+      'foregrip',
+      { ...part, material: 'alu-anodized-black' },
+      gunDomain.units.metresPerUnit,
+    );
+    const steel = attachmentMassKg(
+      'foregrip',
+      { ...part, material: 'steel-parkerized' },
+      gunDomain.units.metresPerUnit,
+    );
+    expect(steel).toBeGreaterThan(aluminium);
   });
 
   it('exports each attachment as standalone glTF and metadata deadvox accepts', async () => {
@@ -251,6 +279,26 @@ describe('attachment parts and export metadata', () => {
       fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
     ).toBe(true);
     expect(validateInDeadvox(model.modelEntry).issues).toEqual([]);
+    const { compatibility } = model.modelEntry;
+    if (!compatibility) {
+      throw new Error('gungen did not export attachment compatibility');
+    }
+    expect(Object.keys(compatibility).sort()).toEqual(slots.map(({ id }) => id).sort());
+    for (const ids of Object.values(compatibility)) {
+      for (const id of ids) {
+        expect(ATTACHMENT_IDS).toContain(id);
+      }
+    }
+    expect(compatibility['receiver.rail.0']).not.toContain('optic-high-mag-5-25x');
+    const fittedOptic = model.modelEntry.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
+    const standaloneOptic = attachmentBuild('optic-lpvo-1-6x');
+    const standaloneMetadata = attachmentMetadata(
+      standaloneOptic.familyName,
+      standaloneOptic.params,
+      gunDomain.units.metresPerUnit,
+      standaloneOptic.part,
+    );
+    expect(fittedOptic?.massKg).toBe(standaloneMetadata?.massKg);
   });
 
   it('rejects a fitted mod whose mount slot is absent from the exported interfaces', () => {
@@ -394,7 +442,7 @@ describe('attachment parts and export metadata', () => {
   it('exports every mount pose for the design and fixture corpus', () => {
     let checked = 0;
     for (const { label, assembly } of loadCorpus()) {
-      const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`);
+      const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`, false);
       const slots = model.modelEntry.attachmentSlots ?? [];
       const fitted = model.modelEntry.attachments ?? [];
       expect(

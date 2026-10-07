@@ -86,8 +86,21 @@ type PortConnection = Pick<ResolvedConnection, 'conn' | 'from' | 'to'>;
 const fromSideFrame = (rc: PortConnection, fromPart: Transform): Transform =>
   compose(compose(fromPart, portFrame(rc.from.port, rc.conn.slot)), rotation(rotX(rc.conn.roll ?? 0)));
 
+/** Places a part by mating its port frame to a host port at one numbered slot. */
+export const mateTransform = (
+  hostTransform: Transform,
+  hostPort: PortDef,
+  slot: number | undefined,
+  attachmentPort: PortDef,
+  roll = 0,
+): Transform =>
+  compose(
+    compose(compose(compose(hostTransform, portFrame(hostPort, slot)), rotation(rotX(roll))), FLIP),
+    invert(portFrame(attachmentPort)),
+  );
+
 const placeTo = (rc: PortConnection, fromPart: Transform): Transform =>
-  compose(compose(fromSideFrame(rc, fromPart), FLIP), invert(portFrame(rc.to.port)));
+  mateTransform(fromPart, rc.from.port, rc.conn.slot, rc.to.port, rc.conn.roll ?? 0);
 
 const placeFrom = (rc: PortConnection, toPart: Transform): Transform => {
   const fromSide = compose(compose(toPart, portFrame(rc.to.port)), FLIP);

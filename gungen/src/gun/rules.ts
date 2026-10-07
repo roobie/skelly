@@ -548,35 +548,39 @@ const opticSupportError = (
   return undefined;
 };
 
+const checkOpticMountFit = (r: Resolved, focusSight?: string): Issue[] => {
+  const issues: Issue[] = [];
+  for (const [sight] of placedOptics(r).filter(([part]) => focusSight === undefined || part === focusSight)) {
+    const params = r.params.get(sight);
+    const optic = getOptic(params?.type?.value, params?.mountSection?.value);
+    const connection = r.connections.find((candidate) =>
+      [candidate.from, candidate.to].some((end) => end.part === sight && end.port.id === 'base'),
+    );
+    if (!connection) {
+      continue;
+    }
+    const host = connection.from.part === sight ? connection.to : connection.from;
+    const { port } = host;
+    const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
+    const slot = connection.conn.slot ?? 0;
+    const supportError = opticSupportError(r, sight, host, optic.mount.contactLengthU);
+    if (!mountCanAccept(port, optic.mount, slot) || supportError) {
+      issues.push({
+        rule: 'optic-mount-fit',
+        message: `${sight} (${optic.id}) needs ${optic.mount.kind} with ${optic.mount.contactLengthU}u contact length, ${optic.mount.contactWidthU}u width, and ${optic.mount.minimumSlots} slots; ${host.part}.${port.id} offers ${port.mount} with ${span}u span at slot ${slot}.${supportError ? ` ${supportError}.` : ''}`,
+        parts: [sight, host.part],
+      });
+    }
+  }
+  return issues;
+};
+
+export const opticMountFitForPart = (r: Resolved, part: string): Issue[] => checkOpticMountFit(r, part);
+
 export const opticMountFit: Rule = {
   id: 'optic-mount-fit',
   title: 'Optic footprint fits its generic mount interface',
-  check(r) {
-    const issues: Issue[] = [];
-    for (const [sight] of placedOptics(r)) {
-      const params = r.params.get(sight);
-      const optic = getOptic(params?.type?.value, params?.mountSection?.value);
-      const connection = r.connections.find((candidate) =>
-        [candidate.from, candidate.to].some((end) => end.part === sight && end.port.id === 'base'),
-      );
-      if (!connection) {
-        continue;
-      }
-      const host = connection.from.part === sight ? connection.to : connection.from;
-      const { port } = host;
-      const span = port.slots ? (port.slots.count - 1) * port.slots.pitch : 0;
-      const slot = connection.conn.slot ?? 0;
-      const supportError = opticSupportError(r, sight, host, optic.mount.contactLengthU);
-      if (!mountCanAccept(port, optic.mount, slot) || supportError) {
-        issues.push({
-          rule: 'optic-mount-fit',
-          message: `${sight} (${optic.id}) needs ${optic.mount.kind} with ${optic.mount.contactLengthU}u contact length, ${optic.mount.contactWidthU}u width, and ${optic.mount.minimumSlots} slots; ${host.part}.${port.id} offers ${port.mount} with ${span}u span at slot ${slot}.${supportError ? ` ${supportError}.` : ''}`,
-          parts: [sight, host.part],
-        });
-      }
-    }
-    return issues;
-  },
+  check: (r) => checkOpticMountFit(r),
 };
 
 const OPTIC_SUPPORT_ID = /foot|mount|ring-band|base|bridge/;
@@ -596,36 +600,42 @@ const loadingBodyIds = (r: Resolved, part: string): ReadonlySet<string> => {
 /** Refines the upper core keep-out allowance: real supports never bridge the opening; only bodies may.
  * The cartridge's angled loading path past those bodies is explicitly deferred to the tubular receiver.
  */
+const checkOpticLoadingClearance = (r: Resolved, focusSight?: string): Issue[] => {
+  const issues: Issue[] = [];
+  for (const [owner, def] of placedParts(r, 'receiver')) {
+    const opening = def.keepOuts.find(
+      ({ id, allowFamilies }) => id === 'loading-port' && allowFamilies?.includes('sight'),
+    );
+    if (!opening) {
+      continue;
+    }
+    const volume = worldSolid(r.placed.get(owner)!, { id: opening.id, kind: 'box', box: opening.box });
+    for (const [part, sightDef] of placedParts(r, 'sight').filter(
+      ([id]) => focusSight === undefined || id === focusSight,
+    )) {
+      const bodies = loadingBodyIds(r, part);
+      const intrudes = sightDef.solids.some(
+        (solid) => !bodies.has(solid.id) && penetrationWorld(volume, worldSolid(r.placed.get(part)!, solid)) > 1e-6,
+      );
+      if (intrudes) {
+        issues.push({
+          rule: 'keep-out',
+          message: `${part}'s foot, base, ring, bridge or unclassified solid crosses the loading opening of ${owner}; only optic bodies may bridge above it.`,
+          parts: [part, owner],
+          keepOut: { part: owner, id: opening.id },
+        });
+      }
+    }
+  }
+  return issues;
+};
+
+export const opticLoadingClearanceForPart = (r: Resolved, part: string): Issue[] => checkOpticLoadingClearance(r, part);
+
 export const opticLoadingClearance: Rule = {
   id: 'keep-out',
   title: 'Only optic bodies may bridge above the loading mouth',
-  check(r) {
-    const issues: Issue[] = [];
-    for (const [owner, def] of placedParts(r, 'receiver')) {
-      const opening = def.keepOuts.find(
-        ({ id, allowFamilies }) => id === 'loading-port' && allowFamilies?.includes('sight'),
-      );
-      if (!opening) {
-        continue;
-      }
-      const volume = worldSolid(r.placed.get(owner)!, { id: opening.id, kind: 'box', box: opening.box });
-      for (const [part, sightDef] of placedParts(r, 'sight')) {
-        const bodies = loadingBodyIds(r, part);
-        const intrudes = sightDef.solids.some(
-          (solid) => !bodies.has(solid.id) && penetrationWorld(volume, worldSolid(r.placed.get(part)!, solid)) > 1e-6,
-        );
-        if (intrudes) {
-          issues.push({
-            rule: 'keep-out',
-            message: `${part}'s foot, base, ring, bridge or unclassified solid crosses the loading opening of ${owner}; only optic bodies may bridge above it.`,
-            parts: [part, owner],
-            keepOut: { part: owner, id: opening.id },
-          });
-        }
-      }
-    }
-    return issues;
-  },
+  check: (r) => checkOpticLoadingClearance(r),
 };
 
 export const opticEyeRelief: Rule = {
