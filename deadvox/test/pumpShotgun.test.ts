@@ -443,8 +443,9 @@ describe('real pump ammunition', () => {
         input.keyUp(now);
       }
       frame(16);
-      landing ??= [...f.inventory.piles.values()].find((pile) => pile.items.some(({ item }) => item.type === shellType))
-        ?.pos;
+      landing ??= [...f.inventory.piles.values()].find((pile) =>
+        pile.items.some(({ item }) => item.type === shellType),
+      )?.pos;
     }
     const ejected = Number.isFinite(holdCycles) ? Math.ceil(holdCycles) : inGun;
     const ground = [...f.inventory.piles.values()].flatMap((pile) =>
