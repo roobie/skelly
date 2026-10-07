@@ -863,14 +863,9 @@ describe('content references', () => {
 });
 
 describe('templates', () => {
-  const template = (
-    layers: string[][],
-    palette: Record<string, unknown>,
-    size = [3, layers.length, 2],
-    id = 'hut',
-  ) => ({
+  const template = (layers: string[][], palette: Record<string, unknown>, size = [3, layers.length, 2]) => ({
     source: 'tpl.json',
-    data: { templates: [{ id, size, palette, layers }] },
+    data: { templates: [{ id: 'hut', size, palette, layers }] },
   });
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...base, t]).issues.map((i) => `${i.path}: ${i.message}`);
@@ -915,45 +910,29 @@ describe('templates', () => {
   });
 
   it('validates optional windows on template spawn markers', () => {
-    const cases = [
-      template(
-        [['Z..', '...']],
-        { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: '06:30' } } },
-        [3, 1, 2],
-        'valid_window',
-      ),
-      template(
-        [['Z..', '...']],
-        { '.': 'air', Z: { spawn: 'shambler', window: { from: 'sunset' } } },
-        [3, 1, 2],
-        'invalid_time',
-      ),
-      template(
-        [['Z..', '...']],
-        { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: 'dusk' } } },
-        [3, 1, 2],
-        'same_boundary',
-      ),
-      template(
-        [['F..', '...']],
-        { '.': 'air', F: { furniture: 'crate', window: { from: 'dusk' } } },
-        [3, 1, 2],
-        'furniture_window',
-      ),
-    ];
-    const { issues } = buildRegistry([
-      ...base,
-      { source: 'tpl-window-cases.json', data: { templates: cases.flatMap(({ data }) => data.templates) } },
-    ]);
-    const caseIssues = issues.filter(({ source }) => source === 'tpl-window-cases.json');
-    expect(caseIssues.some(({ path }) => path.startsWith('templates[0]'))).toBe(false);
-    expect(caseIssues.map(({ message }) => message)).toEqual(
-      expect.arrayContaining([
-        expect.stringContaining('expected a named game time or HH:MM'),
-        expect.stringContaining('from and to must differ'),
-        expect.stringContaining('window" only goes with "spawn'),
-      ]),
+    const valid = template(
+      [['Z..', '...']],
+      { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: '06:30' } } },
+      [3, 1, 2],
     );
+    expect(check(valid)).toEqual([]);
+    expect(
+      check(
+        template([['Z..', '...']], { '.': 'air', Z: { spawn: 'shambler', window: { from: 'sunset' } } }, [3, 1, 2]),
+      ),
+    ).toEqual(expect.arrayContaining([expect.stringContaining('expected a named game time or HH:MM')]));
+    expect(
+      check(
+        template(
+          [['Z..', '...']],
+          { '.': 'air', Z: { spawn: 'shambler', window: { from: 'dusk', to: 'dusk' } } },
+          [3, 1, 2],
+        ),
+      ),
+    ).toEqual(expect.arrayContaining([expect.stringContaining('from and to must differ')]));
+    expect(
+      check(template([['F..', '...']], { '.': 'air', F: { furniture: 'crate', window: { from: 'dusk' } } }, [3, 1, 2])),
+    ).toEqual(expect.arrayContaining([expect.stringContaining('window" only goes with "spawn')]));
   });
 
   it('checks layer sizes and that characters are in the palette', () => {
