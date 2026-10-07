@@ -382,6 +382,51 @@ describe('static reachability', () => {
     }
   });
 
+  it('unpacks recipe outputs into component and tool reachability', () => {
+    const registry = fresh();
+    registry.items.set('fixture_package_input', {
+      id: 'fixture_package_input',
+      name: 'Fixture package input',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
+    registry.items.set('fixture_crafted_package', {
+      id: 'fixture_crafted_package',
+      name: 'Fixture crafted package',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+      unpack: { item: 'fixture_crafted_payload', count: 1 },
+    });
+    registry.items.set('fixture_crafted_payload', {
+      id: 'fixture_crafted_payload',
+      name: 'Fixture crafted payload',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
+    const junk = registry.loot.get('junk')!;
+    registry.loot.set('junk', {
+      ...junk,
+      entries: [...junk.entries, { item: 'fixture_package_input', weight: 1 }],
+    });
+    registry.recipes.set('fixture_make_package', {
+      id: 'fixture_make_package',
+      result: { item: 'fixture_crafted_package', count: 1 },
+      timeGameMinutes: gameMinutes(1),
+      skills: {},
+      qualities: {},
+      components: [[{ item: 'fixture_package_input', count: 1 }]],
+    });
+
+    const result = checkReachability(registry, new Set(['fixture_make_package']));
+    expect(result.found.has('fixture_crafted_package')).toBe(false);
+    expect(result.components.has('fixture_crafted_package')).toBe(true);
+    expect(result.components.has('fixture_crafted_payload')).toBe(true);
+    expect(result.toolReachable.has('fixture_crafted_payload')).toBe(true);
+  });
+
   it('does not close over a yield that rounds to zero at top skill', () => {
     const registry = fresh();
     const source = 'fixture_zero_yield_source';

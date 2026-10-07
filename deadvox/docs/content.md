@@ -74,13 +74,14 @@ fingerprint require old saves to be refused rather than migrated during pre-alph
 
 ## Static reachability (Slice 2.3)
 
-`npm run validate` checks the effective merged pack, using the hamlet's actual
-`HAMLET_TEMPLATES` and compiled marked furniture/spawns, not every declared
-palette entry or every template. Placement loot overrides replace furniture
-loot. Nested tables contribute only with positive possible rolls/item counts
-(weights are already strictly positive by schema). Zombie loot comes from
-positive-chance markers that can fit the population cap, accounting for shuffled
-north templates, and roadside wanderers only when a slot can remain.
+`npm run validate` checks the effective merged pack using `HAMLET_TEMPLATES`
+and building templates in unmarked authored layouts. It compiles their placed
+furniture rather than treating every palette declaration or template as placed.
+Placement loot overrides replace furniture loot. Nested tables contribute only
+with positive possible rolls/item counts (weights are already strictly positive
+by schema). Zombie loot comes from positive-chance markers in the hamlet template
+set that can fit the population cap, accounting for shuffled north templates,
+and roadside wanderers only when a slot can remain.
 
 For #311, a globally reachable item type does not prove that its authored
 container can be looted. `test/authoredFixedLoot.test.ts` uses
@@ -94,10 +95,12 @@ than position-specific runtime code. `worldSources()` in
 `src/core/hamlet.ts`, so moving furniture keeps its loot source with the placed
 lot.
 
-For #346, `worldSources()` includes authored starting sites but skips showcase
-layouts marked by `SiteLayoutSchema.demo`; a selectable demo is not a source in
-the content world a player starts in. Ordinary authored sites remain sources so
-#181's military camp can ground d114's reachability requirement.
+For #346, `SiteLayoutSchema.demo` marks fixture and showcase layouts that are
+not sources in the starting-world reachability report. `worldSources()` roots
+loot from hamlet templates and unmarked authored layouts; for authored sites it
+includes both placed building containers and fixed loot. This leaves #181's
+military camp eligible to ground d114's reachability requirement without letting
+first-look fixtures add their stock to the content world.
 
 For d65's `hardware_store` and `garage`, `window_frame` remains solid; the
 authored opening around each frame supplies the sightline without adding a

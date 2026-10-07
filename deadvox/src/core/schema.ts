@@ -736,7 +736,7 @@ const LayoutBuilding = strictObject({
 
 const SiteLayoutSchema = strictObject({
   id: Id,
-  /** Demo sites are selectable scenes, not sources for the starting-world reachability report. */
+  /** Fixture and showcase layouts are not world sources; unmarked authored layouts contribute building containers and fixed loot. */
   demo: optional(vBoolean()),
   bounds: pipe(
     strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
