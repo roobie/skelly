@@ -1,6 +1,6 @@
 ---
 read_if:
-  - you change Deadvox's browser CI partition, required aggregate, or pilot measurements
+  - you change Deadvox's browser CI partition, required aggregate, browser launch source, or pilot measurements
 ---
 
 # Browser CI ownership and evidence
@@ -16,16 +16,22 @@ full reusable workflow and enabled package scripts. Package aliases do not add
 extra executions. Quarantines remain explicit: repartitioning must not silently
 restore a flaky case or remove its reinstatement obligation.
 
-The launch-timeout scan for issue #287 found failures only in the IndexedDB
-shard; other failed browser jobs in the sample had different causes. The
-save-storage path had explicitly selected runner system Chrome instead of
-Playwright's bundled Chromium. Other Chromium stages still launch system Chrome
-through `CHROME_BIN`; d120-2 changes only save-storage to Playwright's
-lockfile-matched browser. The reusable workflow caches that browser by the
-Deadvox lockfile so its revision follows the installed Playwright package.
-`deadvox/test/browser/playwrightDebugBuffer.mjs`,
-`bufferPlaywrightDebugOutput`, retains a bounded tail of `pw:browser` output for
-the stage and prints it on any failure, while discarding it on success.
+The issue #287 launch-timeout scan found one Chromium startup timeout in the
+sample, before page creation. That job used runner system Chrome 154 with
+Playwright 1.63.0, whose `browsers.json` pins Chrome for Testing 153.0.8010.12
+(revision 1243): [Playwright v1.63.0 browser metadata](https://github.com/microsoft/playwright/blob/v1.63.0/packages/playwright-core/browsers.json).
+Its [versioned BrowserType API](https://github.com/microsoft/playwright/blob/v1.63.0/docs/src/api/class-browsertype.md#option-executable-path)
+does not guarantee compatibility with arbitrary executables. D-Bus address
+parse errors also appeared, but do not establish the cause. All Chromium stages
+now use `deadvox/test/browser/chromium.mjs`, `launchChromium`, so the executable
+matches the installed Playwright package. The reusable workflow caches and
+installs that browser on every non-Firefox shard, keyed by the Deadvox lockfile.
+The helper records executable path, version and `DBUS_SESSION_BUS_ADDRESS` on
+launch failure; `deadvox/test/browser/playwrightDebugBuffer.mjs`,
+`bufferPlaywrightDebugOutput`, retains a bounded tail of `pw:browser` output and
+prints it on failure. The d133-1 branch-only diagnostic compares managed and
+runner system Chromium on one runner image without retries; its result will
+resolve whether the version gap explains the observed timeout.
 
 The required `check` in `.github/workflows/deadvox.yml` uses
 `tools/browser-ci-result.mjs`, `assertBrowserResult`. A selected layout's jobs

@@ -24,14 +24,17 @@ jobs:
             deadvox/tools/lit-check/package-lock.json
       - run: npm ci
       - name: Cache Playwright Chromium
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' || inputs.shard == 'opfs' || inputs.shard == 'indexeddb' }}
+        if: ${{ inputs.shard != 'firefox' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('deadvox/package-lock.json') }}
       - name: Install Playwright Chromium and system dependencies
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' || inputs.shard == 'opfs' || inputs.shard == 'indexeddb' }}
+        if: ${{ inputs.shard != 'firefox' }}
         run: npx playwright install --with-deps chromium
+      - name: Temporary Chromium launch comparison (d133)
+        if: ${{ inputs.shard == 'input' && github.event_name == 'pull_request' && github.head_ref == 'deadvox/chromium-launch' }}
+        run: node tools/chromium-launch-diagnostic.mjs
       - if: ${{ inputs.shard == 'control-check' }}
         run: npm ci --prefix tools/lit-check
       - if: ${{ inputs.shard == 'control-check' }}

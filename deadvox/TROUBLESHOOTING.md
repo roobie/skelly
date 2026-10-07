@@ -4,6 +4,7 @@ read_if:
   - you're using the debug test-house range
   - you need to see the game without a display
   - a browser contract or stage fails on software GL
+  - you investigate a Chromium launch failure in browser CI
   - you investigate native inventory selection or keyboard settlement in browser tests
   - you're authoring or exporting a Deadvox site in Tiled
   - you're choosing render-free or pixel mode for a browser stage
@@ -172,18 +173,19 @@ Two single-case quarantines remain; a fresh pass does not establish a fix:
 Neither is in the default Firefox command. No retries or increased bounds; record a
 fixed trial plan and before/after/restored-before evidence before reinstating a case.
 
-Set `DEBUG=pw:browser` for Playwright browser launch and transport traces. The Chromium UI
-contract in `tools/ui-browser-contract.mjs`, `ui-browser-contract`, enables that channel before
-importing Playwright, so Chrome launch messages appear in the job log as `pw:browser` lines. It
-starts Vite and waits for its root response before navigating a Playwright-controlled Chrome; a
-page CDP session preserves raw input. The contract checks DOM, pointer and keyboard behavior, not
-pixels or WebGL output, so it uses render-free mode (`?render=0` and `--disable-gpu`) and asserts
-that no WebGL context is requested. This keeps the stage out of the SwiftShader initialization
-path reported in #256; pixel checks remain in visual stages. `UI_BROWSER_LAUNCH` records
-Chrome version and graphics arguments, while `UI_BROWSER_GRAPHICS` records the render mode and
-WebGL requests. When `chromium.launch` fails, `UI_LAUNCH_FAILURE.error` carries Playwright's
-browser log; the record also includes requested browser arguments, browser connection
-state/version, Vite's last response, navigation phase, page URL and page errors.
+All Chromium browser stages use `test/browser/chromium.mjs`, `launchChromium`, which imports
+Playwright after enabling `pw:browser`, launches its managed Chromium and buffers browser logs
+until failure. A launch failure records the managed executable path and version together with
+`DBUS_SESSION_BUS_ADDRESS`; the buffered `pw:browser` lines contain Playwright's browser-process
+output. `tools/ui-browser-contract.mjs`, `ui-browser-contract`, starts Vite and waits for its root
+response before navigating; a page CDP session preserves raw input. The contract checks DOM,
+pointer and keyboard behavior, not pixels or WebGL output, so it uses render-free mode (`?render=0`
+and `--disable-gpu`) and asserts that no WebGL context is requested. This keeps the stage out of
+the SwiftShader initialization path reported in #256; pixel checks remain in visual stages.
+`UI_BROWSER_LAUNCH` records the managed launcher and graphics arguments, while
+`UI_BROWSER_GRAPHICS` records the browser version, render mode and WebGL requests. The issue #287
+revisit is documented in `docs/browser-ci.md`, including the system-Chrome/Playwright version gap
+and the evidence needed to distinguish it from the observed D-Bus parse errors.
 
 Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
 separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,

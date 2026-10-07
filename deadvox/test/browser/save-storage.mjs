@@ -9,9 +9,9 @@ import process from 'node:process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 import { createServer, build as viteBuild, preview as vitePreview } from 'vite';
+import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { observeFailures } from './failure-diagnostics.mjs';
-import { bufferPlaywrightDebugOutput } from './playwrightDebugBuffer.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
@@ -37,13 +37,7 @@ if (requestedAutosaveBackend && !['opfs', 'indexeddb'].includes(requestedAutosav
 if (!['chromium', 'firefox'].includes(browserName)) {
   throw new Error(`Expected browser name chromium or firefox, got ${browserName}`);
 }
-const originalDebug = process.env.DEBUG;
-if (browserName === 'chromium') {
-  const debugChannels = new Set((process.env.DEBUG ?? '').split(/[\s,]+/).filter(Boolean));
-  debugChannels.add('pw:browser');
-  process.env.DEBUG = [...debugChannels].join(',');
-}
-const { chromium, firefox } = await import('playwright');
+const { firefox } = await loadPlaywright();
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const viteConfig = fileURLToPath(new URL('../../vite.config.ts', import.meta.url));
 let vite;
@@ -81,9 +75,6 @@ const withTimeout = async (label, task, timeoutMs = STAGE_TIMEOUT_MS) => {
 };
 let browser;
 let firefoxServer;
-let launchDebugBuffer;
-let originalStderrWrite;
-let stageSucceeded = false;
 try {
   const address = await withTimeout('Vite startup', startWebServer());
   assert(address && typeof address !== 'string');
@@ -92,14 +83,9 @@ try {
     : `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
   let context;
   if (browserName === 'chromium') {
-    originalStderrWrite = process.stderr.write;
-    launchDebugBuffer = bufferPlaywrightDebugOutput((chunk, ...args) =>
-      originalStderrWrite.call(process.stderr, chunk, ...args),
-    );
-    process.stderr.write = launchDebugBuffer.write;
-    browser = await chromium.launch({
+    browser = await launchChromium(stageId, {
       headless: true,
-      args: browserStageArgs(stageId, ['--disable-extensions', '--password-store=basic', '--window-size=1280,900']),
+      args: ['--disable-extensions', '--password-store=basic', '--window-size=1280,900'],
       timeout: STAGE_TIMEOUT_MS,
     });
     context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
@@ -755,7 +741,6 @@ try {
       `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, ${contract.crashResults.length} kill stages, and autosave/title ${autosaveScenario} (${autosaveResults.map(({ backend }) => backend).join(', ')}) passed\n`,
     );
   }
-  stageSucceeded = true;
 } finally {
   await withTimeout('browser shutdown', browser?.close() ?? Promise.resolve(), 5000).catch((error) => {
     process.stderr.write(`Cleanup warning: ${String(error)}\n`);
@@ -767,18 +752,5 @@ try {
     await withTimeout('Vite shutdown', vite.close(), 5000).catch((error) => {
       process.stderr.write(`Cleanup warning: ${String(error)}\n`);
     });
-  }
-  if (stageSucceeded) {
-    launchDebugBuffer?.discard();
-  } else {
-    launchDebugBuffer?.flush();
-  }
-  if (originalStderrWrite) {
-    process.stderr.write = originalStderrWrite;
-  }
-  if (originalDebug === undefined) {
-    delete process.env.DEBUG;
-  } else {
-    process.env.DEBUG = originalDebug;
   }
 }

@@ -1,16 +1,13 @@
 // biome-ignore-all lint/correctness/noNodejsModules: standalone browser contract starts Vite and Chrome
 // biome-ignore-all lint/performance/noAwaitInLoops: post modes are tested sequentially against one running page
 // biome-ignore-all lint/suspicious/noMisplacedAssertion: Node's test runner owns these assertions
-// biome-ignore-all lint/style/noProcessEnv: the browser executable is configured by the runner
 import assert from 'node:assert/strict';
-import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
-
-const { chromium } = await import('playwright');
+import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const observationPlugin = {
@@ -40,11 +37,7 @@ try {
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
-  browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
-    headless: true,
-    args: browserStageArgs('melee-build-click'),
-  });
+  browser = await launchChromium('melee-build-click', { headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

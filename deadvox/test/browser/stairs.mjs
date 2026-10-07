@@ -8,12 +8,11 @@ import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
 
-const { chromium } = await import('playwright');
-
 import { createServer } from 'vite';
+import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const [, , mode] = process.argv;
 assert.ok(mode === 'traversal' || mode === 'lighting', 'choose traversal or lighting');
@@ -76,10 +75,8 @@ let browser;
 try {
   await vite.listen();
   const { port } = vite.httpServer.address();
-  browser = await chromium.launch({
+  browser = await launchChromium(mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting', {
     headless: process.env.BROWSER_HEADED !== '1',
-    executablePath: process.env.CHROME_BIN,
-    args: browserStageArgs(mode === 'traversal' ? 'stairs-traversal' : 'stairs-lighting'),
   });
   // Traversal screenshots are diagnostic, not pixel oracles: avoid paying full SwiftShader frame cost.
   const page = await browser.newPage({
