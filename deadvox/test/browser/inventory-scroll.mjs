@@ -39,9 +39,11 @@ const content = [
 const fixture = `
 import '/src/ui/style.css';
 import { buildRegistry } from '/src/core/content.ts';
+import { BUNDLED_CONTENT } from '/src/game/bundledContent.ts';
 import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
+import { FirearmAttachmentHandling } from '/src/game/firearmAttachmentHandling.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
@@ -78,8 +80,8 @@ for (let i = 0; i < 12; i++) {
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
-  containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
-  notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
+  containers: () => [], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
+  notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
   body: () => body.snapshotState(),
 });
 const rag = inventory.create('rag');
@@ -89,6 +91,46 @@ screen.open();
 screen.onAction('inventory.next');
 screen.selected = rag;
 screen.update();
+const firearmRegistry = BUNDLED_CONTENT.registry;
+const firearmInventory = new Inventory(firearmRegistry);
+const firearmQueue = new HandlingQueue(firearmInventory);
+const firearmHandling = new FirearmAttachmentHandling(firearmInventory, firearmQueue, () => [0, 0, 0]);
+const rifle = firearmInventory.create('rifle_assault');
+const rifleModelId = firearmRegistry.items.get(rifle.type).model;
+const rifleModel = firearmRegistry.models.get(rifleModelId);
+const defaultAttachment = rifleModel.attachments[0];
+const foregrip = firearmInventory.create('foregrip');
+const slot = rifleModel.attachmentSlots.find((candidate) => candidate.mount === 'rail-bottom' && rifleModel.compatibility[candidate.id].includes('foregrip'));
+if (!slot) throw Error('No exported foregrip fixture slot');
+firearmRegistry.models.set(rifleModelId, {
+  ...rifleModel,
+  compatibilityPairs: [[[slot.id, 'foregrip'], [defaultAttachment.mountedAt, defaultAttachment.id]]],
+});
+if (!firearmInventory.add(rifle, { kind: 'pile', pos: [0, 0, 0] }) || !firearmInventory.add(foregrip, { kind: 'hand', side: 'right' })) throw Error('Firearm fixture placement failed');
+const firearmScreen = new InventoryScreen(document.querySelector('#firearm-inventory'), firearmInventory, firearmQueue, {
+  reach: bindReach({ inventory: firearmInventory, position: [0, 0, 0], blockSize: 0.5 }),
+  feet: () => [0, 0, 0], nearby: () => [...firearmInventory.piles.values()], distance: () => 0,
+  containers: () => [], entityDistance: () => 0,
+  dispatch: (payload) => payload.kind === 'firearm.attachment.fit'
+    ? firearmHandling.fit(payload.firearmUid, payload.slotId, payload.attachmentUid)
+    : payload.kind === 'firearm.attachment.remove' ? firearmHandling.remove(payload.firearmUid, payload.slotId) : undefined,
+  searching: () => false, notice: () => {}, describe: () => [], workOptions: () => [], body: () => body.snapshotState(),
+  attachmentCandidates: (firearmUid, slotId) => firearmHandling.candidates(firearmUid, slotId),
+});
+firearmScreen.selected = rifle;
+firearmScreen.open();
+const fitSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot] button');
+if (!fitSlotButton) throw Error('Inspect view did not offer the certified fixture fit');
+fitSlotButton.click();
+firearmQueue.tick(1);
+firearmScreen.update();
+if (rifle.slots?.[slot.id] !== foregrip) throw Error('Inspect view did not fit the accessory');
+const removeSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
+if (!removeSlotButton) throw Error('Inspect view did not offer removal');
+removeSlotButton.click();
+firearmQueue.tick(1);
+firearmScreen.update();
+if (rifle.slots?.[slot.id] !== undefined) throw Error('Inspect view did not remove the accessory');
 const inputState = { locked: false, menuPointer: false };
 const input = {
   get locked() { return inputState.locked; },
@@ -128,7 +170,7 @@ const vite = await createServer({
           if (request.url === '/__scroll.html') {
             response.setHeader('Content-Type', 'text/html');
             response.end(
-              '<html><body><div id="view"></div><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor-root"><div id="game-cursor"></div></div><script type="module" src="/__scroll.js"></script></body></html>',
+              '<html><body><div id="view"></div><div id="overlay" hidden></div><div id="inventory" hidden></div><div id="firearm-inventory" hidden></div><div id="inventory-drag-root"></div><div id="game-cursor-root"><div id="game-cursor"></div></div><script type="module" src="/__scroll.js"></script></body></html>',
             );
           } else {
             next();
