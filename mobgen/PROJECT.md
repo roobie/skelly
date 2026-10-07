@@ -73,9 +73,16 @@ budgets. Members are independently scaled, anchored around the core, lifted by
 seeded gaps, and turned in quarter-turn orientations on all three axes, so a
 head or hand may bear weight and other members may hang. The first look keeps
 each module a complete shambler rather than adding partial-body variants; the
-resolved member subtrees remain individually severable. The core includes the
-shared floor-bearing base, so severing any member leaves a valid, supported
-body.
+resolved member subtrees remain individually severable. The core's merged,
+lobed lower flesh forms the shared floor-bearing mass, so severing any member
+leaves a valid, supported body.
+
+BR, 2026-10-07 15:11, FIX: “going in the right direction! Only main FIX I see
+is the blocky/non-organic 'platform' grafted at the bottom ->
+Screenshot_blocky-amalgam.png”. Replace the platform with overlapping flesh
+lobes owned by the non-severable core: their uneven, spreading outline reads as
+part of the body rather than a plinth, while avoiding pseudopods that could
+look like extra limbs.
 
 The m1 mobgen contribution is the generated body, its resolved part/region
 manifest, support bones derived from the actual ground-contact voxel owners,

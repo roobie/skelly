@@ -128,13 +128,42 @@ const buildAmalgam: BodyPlanDef['build'] = (genome, _template) => {
     {
       bone: 'core',
       op: 'add',
+      shape: { kind: 'ellipsoid', center: [0, height * 0.09, 0], radii: [height * 0.31, height * 0.09, height * 0.25] },
+      material: 'skin',
+      blend: height * 0.02,
+    },
+    {
+      bone: 'core',
+      op: 'add',
       shape: {
-        kind: 'box',
-        center: [0, height * 0.06, 0],
-        half: [height * 0.34, height * 0.06, height * 0.3],
-        round: height * 0.02,
+        kind: 'ellipsoid',
+        center: [height * 0.19, height * 0.07, height * 0.12],
+        radii: [height * 0.2, height * 0.07, height * 0.17],
       },
       material: 'skin',
+      blend: height * 0.02,
+    },
+    {
+      bone: 'core',
+      op: 'add',
+      shape: {
+        kind: 'ellipsoid',
+        center: [-height * 0.21, height * 0.065, -height * 0.13],
+        radii: [height * 0.18, height * 0.065, height * 0.17],
+      },
+      material: 'skin',
+      blend: height * 0.02,
+    },
+    {
+      bone: 'core',
+      op: 'add',
+      shape: {
+        kind: 'ellipsoid',
+        center: [height * 0.03, height * 0.06, height * 0.24],
+        radii: [height * 0.14, height * 0.06, height * 0.16],
+      },
+      material: 'skin',
+      blend: height * 0.02,
     },
   ];
   let palette: Body['palette'] | undefined;

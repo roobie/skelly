@@ -48,6 +48,36 @@ const actualGroundOwners = (realized: ReturnType<typeof realize>): ReadonlySet<s
   return owners;
 };
 
+const coreGroundFootprint = (realized: ReturnType<typeof realize>) => {
+  const { body, voxels } = realized;
+  const [nx, ny] = voxels.dims;
+  const coreOwner = body.bones.findIndex((bone) => bone.id === 'core') + 1;
+  let lowestRow = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < voxels.owner.length; index++) {
+    if (voxels.owner[index] !== 0) {
+      lowestRow = Math.min(lowestRow, Math.floor(index / nx) % ny);
+    }
+  }
+  const cells = new Set<string>();
+  let minX = Number.POSITIVE_INFINITY;
+  let maxX = Number.NEGATIVE_INFINITY;
+  let minZ = Number.POSITIVE_INFINITY;
+  let maxZ = Number.NEGATIVE_INFINITY;
+  for (let index = 0; index < voxels.owner.length; index++) {
+    if (voxels.owner[index] !== coreOwner || Math.floor(index / nx) % ny !== lowestRow) {
+      continue;
+    }
+    const z = Math.floor(index / (nx * ny));
+    const x = index - z * nx * ny - lowestRow * nx;
+    cells.add(`${x},${z}`);
+    minX = Math.min(minX, x);
+    maxX = Math.max(maxX, x);
+    minZ = Math.min(minZ, z);
+    maxZ = Math.max(maxZ, z);
+  }
+  return { cells: cells.size, boundingArea: (maxX - minX + 1) * (maxZ - minZ + 1) };
+};
+
 const inspectManifest = (manifest: ReturnType<typeof amalgamManifest>, boneIds: ReadonlySet<string>) => {
   const partById = new Map(manifest.parts.map((part) => [part.id, part]));
   const ownedBones = manifest.parts.flatMap((part) => part.boneIds);
@@ -107,6 +137,13 @@ describe('amalgam body plan', () => {
     expect(new Set(counts).size).toBeGreaterThan(1);
   });
 
+  it('gives the core an irregular footprint at the ground', () => {
+    const realized = realize(generate(boss, 0));
+    const footprint = coreGroundFootprint(realized);
+    expect(footprint.boundingArea).toBeGreaterThan(0);
+    expect(footprint.cells).toBeLessThan(footprint.boundingArea);
+  });
+
   it('rejects a member root detached from the shared core when building the manifest', () => {
     const realized = realize(generate(boss, SAMPLE_SEEDS[0]!));
     const brokenBody = {
@@ -163,6 +200,10 @@ describe('amalgam body plan', () => {
         sawFloorBearingHead ||= manifest.headBoneIds.some(
           (boneId) => contacts.has(boneId) || contacts.has(boneId.replace(HEAD_BONE_PATTERN, '.jaw')),
         );
+        for (const part of members) {
+          const report = bodyIssues(bodyWithoutAmalgamPart(realized.body, part.id), seed);
+          expect(report.ok, `seed ${seed}, sever ${part.id}: ${JSON.stringify(report.issues)}`).toBe(true);
+        }
       }
       expect(memberCounts.size).toBeGreaterThan(1);
       expect(sawHangingMember).toBe(true);
