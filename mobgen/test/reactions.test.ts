@@ -10,7 +10,7 @@ import { voxelize } from '../src/core/voxelize.ts';
 import { bodyRestExtents, corners, footRestExtents, INITIAL_CLOCK, walkPose } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
 import { DEATH_FALL_DURATION, deathPose, flinchPose, HIT_FLINCH } from '../src/mob/reactions.ts';
-import { TEMPLATES } from '../src/mob/templates.ts';
+import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
 const setup = (name: string, seed = 1) => {
   const t = TEMPLATES.find((x) => x.name === name)!;

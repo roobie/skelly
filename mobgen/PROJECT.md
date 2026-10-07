@@ -2,6 +2,11 @@
 read_if:
   - you're changing mobgen body plans or the boss amalgam
   - you're reviewing the m1 boss first-look scope or its open design questions
+  - you're changing mobgen pose generation or validation scope
+  - you're deciding what belongs in mobgen milestone 1 or later
+  - you're integrating a mobgen figure into deadvox
+  - you're tracking the crawler's static silhouette, grounding validator issue or d130 gait and hit response
+  - you're adding render-only gaze tracking or rig-specific eye limits
 ---
 
 # mobgen — procedural mob generator
@@ -43,11 +48,26 @@ data, and the defaults must work for any body plan.
 
 - Getting actors into deadvox: export format, batched rendering, level of
   detail (CHALLENGES §1, §9).
-- Gameplay-ready body plans other than the humanoid. The separate m1 boss
-  feature adds a static amalgam first-look body; it does not add a gameplay
-  gait or Deadvox dismemberment integration.
-- Runtime wounds, gameplay dismemberment, and animations other than the walk.
-- Checking poses other than the rest pose (CHALLENGES §7).
+- Gameplay-ready body plans beyond the humanoid. The m1 boss feature adds a
+  static amalgam first-look body, not a gameplay gait or Deadvox dismemberment
+  integration; the static crawler is another scoped exception.
+- Runtime wounds, gameplay dismemberment, and animations beyond the humanoid
+  walk, crawler's static pose and bounded render-only gaze.
+- Pose validation beyond the humanoid rest pose and crawler support properties
+  in `test/crawler.test.ts` (CHALLENGES §7).
+
+Slice 3.8's static crawler is an exception to the humanoid milestone scope: its
+body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses
+`src/mob/crawler.ts`, `crawlerPose`. Rig-specific gaze limits live in
+`src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and the render-only pose
+adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the static
+silhouette at 2026-10-07 10:03; the drag gait and in-game hit response remain
+d130 work. The crawler's humanoid rest-pose grounding validator issue is
+tracked for d130: `src/mob/crawler.ts`, `crawlerPose`, supplies the static
+prone render pose, while `src/core/validate.ts`, `validate`, still applies the
+humanoid generation rules. In the mobgen viewer, `src/viewer/main.ts`,
+`applyLookAt`, keeps gaze directed at the camera because the viewer has no
+perception state.
 
 ## Boss amalgam (m1)
 
@@ -71,8 +91,9 @@ three distinct bodies give the car-scale enemy the requested mass and grotesque
 multiplicity, while five is a first-look cap for BR to tune, not a limit imposed
 by the current budget math. Members are independently scaled, anchored around
 the core, lifted by seeded gaps, and turned in quarter-turn orientations on all
-three axes, so a head or hand may bear weight and other members may hang. The first look keeps
-each module a complete shambler rather than adding partial-body variants; the
+three axes, so a head or hand may bear weight and other members may hang. The
+first look keeps each module a complete shambler rather than adding partial-body
+variants; the
 resolved member subtrees remain individually severable. The core's merged,
 lobed lower flesh forms the shared floor-bearing mass, so severing any member
 leaves a valid, supported body.
@@ -102,11 +123,12 @@ integration (#308): `deadvox/test/simulationFingerprint.test.ts` checks the
 separation, and that integration round changes the contract.
 
 The static view is useful before animation or game integration. Open it with
-`?template=boss&seed=N&shot=1` to inspect a deterministic arrangement. The part
-manifest is independent of later systems, but look-at-player, boss gait, and
-Deadvox integration must follow #325 because it changes the rig and model
-interfaces this feature will extend. The open design questions from #308
-remain open until BR rules on them:
+`?template=boss&seed=N&shot=1` to inspect a deterministic arrangement. The boss has a `LOOK_AT_PROFILES` entry for viewer-template coverage, but the
+viewer does not apply gaze to it: its members can turn heads upside down or
+sideways, and the current humanoid gaze solver does not provide per-member head
+transforms. Boss gaze must handle those orientations before it is enabled; boss
+gait and Deadvox integration remain open for the #308 follow-up. The other open
+design questions from #308 remain open until BR rules on them:
 
 - Does the procedural, full-shambler composition read as a grotesque fusion,
   or should the silhouette use partial members or a different arrangement?
@@ -143,7 +165,7 @@ remain open until BR rules on them:
 | Profile recommendation | `recommendedProfileFor(genome, voxelSize)` measures the thinnest full-detail upper-arm/forearm/thigh/shin flesh feature in cells; below 1.5 cells it recommends `silhouette`. For BR's roughly 10 cm limb, 1/2 block (25 cm) is 0.4 cells, 1/6 block (8.33 cm) is 1.2 cells, and 1/12 block (4.17 cm) is 2.4 cells. This is advisory only; callers choose and pass the profile explicitly |
 | Determinism | Seeded RNG (mulberry32), never `Math.random`. The same genome gives the same voxels on the same JavaScript engine; engines may differ in the last digit of `Math.sin` and similar, which can flip a voxel on a shape's edge (CHALLENGES §11) |
 | Mass | Each template declares a total body mass (`bodyMassKg`). A part's mass is that total times its fraction: by default its share of the body's voxel volume; a template may override the fraction per part (the humanoids use anatomical values for the severable parts). The centre of mass and the shape of the inertia come from the part's voxels, scaled to the assigned mass. Being worked on in sk1 (severed-limb physics) |
-| Templates (milestone 1) | `shambler` (1/12), `runner` (1/12), `brute` (1/10) |
+| Templates | Gameplay-facing templates register in `src/mob/templates.ts`; the crawler is a static-silhouette exception, while the boss remains viewer-only in `src/mob/bossTemplate.ts` pending #308 |
 | Tests | Vitest |
 | CI | `.github/workflows/mobgen.yml`: typecheck, tests, viewer build |
 | Hosting | GitHub Pages (`.github/workflows/pages.yml`), at <https://roobie.github.io/skelly/mobgen/> once the viewer exists |
@@ -202,7 +224,7 @@ Query parameters are `?template=<name>&seed=<n>`, as in gungen.
   detail, generating in a worker (CHALLENGES §1, §9).
 - Joint limits and pose rules (CHALLENGES §7).
 - Wounds during play and dismemberment (CHALLENGES §10).
-- More body plans: crawler, skeleton.
+- More body plans: skeleton. The crawler's body and static pose are the Slice 3.8 exception above; its drag gait remains deferred to d130.
 - Per-vertex ambient occlusion.
 - A voxelized reference figure as a viewer layer, for calibration.
 

@@ -218,7 +218,7 @@ describe('static reachability', () => {
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
     registry.zombies.set('fixture_spawn', { ...shambler, id: 'fixture_spawn', loot: 'spawned' });
-    registry.zombies.set('fixture_zero', { ...shambler, id: 'fixture_zero', loot: 'zero_spawn' });
+    registry.zombies.set('fixture_zero', { ...shambler, id: 'fixture_zero', loot: 'zero_spawn', spawnWeight: 0 });
     registry.templates.set('shed', {
       id: 'shed',
       size: [3, 1, 1],

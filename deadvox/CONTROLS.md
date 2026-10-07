@@ -113,6 +113,7 @@ controls remain proposals until their issue is implemented.
   active)”. These are the special-circumstance exception to the debug gate;
   they work only while noclip is active, and WASD remains usable during flight.
   See `src/game/inputBindings.ts`, `noclip.ascend` and `noclip.descend`.
+- **Spectator camera (d106-15):** Debug viewing moves a separate camera with the noclip flight step; it never moves the player's body. While detached, the same movement context routes flight input to the camera, and toggling back restores the body view. This is a debug view, not player noclip. See `src/game/play.ts`, `stepSimulation`, and `src/render/playView.ts`, `updateCamera`.
 - **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
   continues both after an interruption and a stopped craft. See
   `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.
@@ -155,10 +156,11 @@ Noclip flight is the substantive debug exception: holding the debug gate for an
 entire flight would occupy a hand and interfere with viewing. Space/C flight
 controls are ungated only in the visible noclip context; entering/exiting it
 remains gated. BR's earlier exception clause was “Unless some special circumstance
-for a key need it readily available”. Spawn selection and dismissal are ordinary
-modal navigation, not authoring. Keyboard confirmation is available only while
-that debug-only menu owns input; native activation of debug buttons still requires
-the gate. Mouse authoring remains available without it.
+for a key need it readily available”. Spawn selection and dismissal are ordinary modal navigation, not authoring.
+Keyboard confirmation is available only while that debug-only menu owns input;
+native activation of debug buttons still requires the gate. Mouse authoring remains
+available without it. The debug menu's type-spawn actions support the 3.8 first
+look without adding player bindings; see `src/debug/index.ts`, `createDebugActions`.
 
 Alt is not refused pending BR's ruling. `REFUSED_MODIFIERS` in
 `src/game/inputBindings.ts` is the one place to extend refusal; it also drives

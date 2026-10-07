@@ -101,6 +101,31 @@ const runner: Template = {
   },
 };
 
+const crawler: Template = {
+  name: 'crawler',
+  description: 'Prone, low-profile corpse with reaching arms and trailing leg stumps.',
+  bodyPlan: 'crawler',
+  voxelSize: 0.5 / 12,
+  bodyMassKg: 55,
+  massFractions: HUMANOID_MASS_FRACTIONS,
+  params: {
+    ...shamblerParams,
+    height: { min: 1.35, max: 1.65 },
+    girth: { min: 0.9, max: 1.2 },
+    armLength: { min: 1.1, max: 1.3 },
+    legLength: { min: 0.75, max: 0.9 },
+    hunch: { min: 18, max: 32 },
+    kneeBend: { min: 15, max: 35 },
+    woundCount: { choices: [0, 1, 1, 2, 3] },
+  },
+  supportBones: ['thigh.L', 'thigh.R', 'hand.L', 'hand.R'],
+  budgets: {
+    totalVoxels: { min: 400, max: 1800 },
+    totalTriangles: { min: 700, max: 8500 },
+    groups: { head: { bones: ['head', 'jaw'], min: 50, max: 125 } },
+  },
+};
+
 const brute: Template = {
   name: 'brute',
   description: 'Tall, very broad, heavy, big hands. Coarser voxels (1/10 of a block).',
@@ -127,7 +152,8 @@ const brute: Template = {
   },
 };
 
-export const TEMPLATES: readonly Template[] = [shambler, runner, brute];
+export const TEMPLATES: readonly Template[] = [shambler, runner, crawler, brute];
+export const HUMANOID_TEMPLATES = TEMPLATES.filter((template) => template.bodyPlan === 'humanoid');
 for (const t of TEMPLATES) {
   registerTemplate(t);
 }

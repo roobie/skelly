@@ -12,7 +12,7 @@ import {
 } from '../src/core/pose.ts';
 import { advanceClock, footRestExtents, INITIAL_CLOCK, legGeometryFor, walkPose } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
-import { TEMPLATES } from '../src/mob/templates.ts';
+import { HUMANOID_TEMPLATES as TEMPLATES } from '../src/mob/templates.ts';
 
 const bones: readonly Bone[] = [
   { id: 'a', parent: null, head: [0, 0, 0], tail: [0, 1, 0] },

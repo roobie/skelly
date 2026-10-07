@@ -88,7 +88,7 @@ describe('debug action dispatch', () => {
     }
   });
   it('forwards time-skip and spawn requests once and refuses unknown commands', () => {
-    const { actions, skips, spawnCounts } = makeActions(25);
+    const { actions, skips, spawnCounts, spawnRequests } = makeActions(25);
     for (const action of ['debug.skip-hour', 'debug.skip-long']) {
       expect(dispatchDebugAction(actions, action)).toBe(true);
       const count = skips.length;
@@ -99,6 +99,12 @@ describe('debug action dispatch', () => {
     dispatchDebugAction(actions, 'debug.spawn-shamblers');
     dispatchDebugAction(actions, 'debug.spawn-shamblers', true);
     expect(spawnCounts).toEqual([25]);
+    dispatchDebugAction(actions, 'debug.spawn-runner');
+    dispatchDebugAction(actions, 'debug.spawn-crawler');
+    expect(spawnRequests).toEqual([
+      { typeId: 'runner', count: 1 },
+      { typeId: 'crawler', count: 1 },
+    ]);
     expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
   });
   it('catalogues the same URL parameters that the look owner accepts', () => {
@@ -115,7 +121,14 @@ describe('debug action dispatch', () => {
 
 const makeActions = (
   shamblerCount = 1,
-): { actions: Action[]; spawnCounts: number[]; skips: number[]; look: LookControls; replayCalls: string[] } => {
+): {
+  actions: Action[];
+  spawnCounts: number[];
+  spawnRequests: { typeId: string; count: number }[];
+  skips: number[];
+  look: LookControls;
+  replayCalls: string[];
+} => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
   const skips: number[] = [];
   let linear = false;
@@ -166,8 +179,23 @@ const makeActions = (
       throw new Error('not exercised');
     },
   };
+  let spectatorCamera = false;
+  let perceptionLabels = false;
   const hooks = {
     sim,
+    spectatorCamera: {
+      enabled: () => spectatorCamera,
+      toggle: () => {
+        spectatorCamera = !spectatorCamera;
+      },
+    },
+    perceptionLabels: {
+      enabled: () => perceptionLabels,
+      toggle: () => {
+        perceptionLabels = !perceptionLabels;
+      },
+    },
+    emitTestNoise: () => true,
     compress() {
       sim.compression.active = true;
     },
@@ -189,6 +217,7 @@ const makeActions = (
   let gameFrozen = false;
   let laserEnabled = true;
   const spawnCounts: number[] = [];
+  const spawnRequests: { typeId: string; count: number }[] = [];
   const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
@@ -202,6 +231,7 @@ const makeActions = (
     toggleNoclip: () => {
       noclip = !noclip;
     },
+    spawnUnawareShambler: () => undefined,
     isDanger: () => danger,
     toggleDanger: () => {
       danger = !danger;
@@ -209,6 +239,9 @@ const makeActions = (
     shamblerCount: () => shamblerCount,
     spawnShambler(count) {
       spawnCounts.push(count);
+    },
+    spawnZombie(typeId, count) {
+      spawnRequests.push({ typeId, count });
     },
     isAimEnabled: () => aimEnabled,
     toggleAim: () => {
@@ -235,5 +268,5 @@ const makeActions = (
       },
     },
   });
-  return { actions, spawnCounts, skips, look, replayCalls };
+  return { actions, spawnCounts, spawnRequests, skips, look, replayCalls };
 };

@@ -898,6 +898,8 @@ const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
+const ZOMBIE_MODEL = picklist(['shambler', 'runner']);
+
 const ZOMBIE_ABILITIES = [
   'grab',
   'leap',
@@ -923,6 +925,8 @@ const MeleeDamageResistanceSchema = strictObject({
 const ZombieSchema = strictObject({
   id: Id,
   name: Name,
+  /** Mobgen template selected for this type's silhouette and posed hit regions. */
+  model: ZOMBIE_MODEL,
   regions: strictObject({
     head: Positive,
     torso: Positive,
@@ -930,6 +934,14 @@ const ZombieSchema = strictObject({
     rightArm: Positive,
     leftLeg: Positive,
     rightLeg: Positive,
+  }),
+  /** Relative chance that a marker naming this type produces it; 1 is the common baseline. */
+  spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
+  sounds: strictObject({
+    idle: picklist(SOUND_EVENT_IDS),
+    alert: picklist(SOUND_EVENT_IDS),
+    attack: picklist(SOUND_EVENT_IDS),
+    hurt: picklist(SOUND_EVENT_IDS),
   }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
@@ -1015,6 +1027,7 @@ const ZombieSchema = strictObject({
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
+      hitRegion: optional(picklist(['torso', 'legs'])),
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
   ),

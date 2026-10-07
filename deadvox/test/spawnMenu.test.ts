@@ -100,7 +100,13 @@ describe('spawnMenuViewModel', () => {
       emit: () => undefined,
       hurt: () => undefined,
     };
-    const hooks = { sim, compress: () => undefined } as unknown as DebugHooks;
+    const hooks = {
+      sim,
+      compress: () => undefined,
+      spectatorCamera: { enabled: () => false, toggle: () => undefined },
+      perceptionLabels: { enabled: () => false, toggle: () => undefined },
+      emitTestNoise: () => true,
+    } as unknown as DebugHooks;
     const actions = createDebugActions({
       hooks,
       look: new LookControls(
@@ -121,10 +127,12 @@ describe('spawnMenuViewModel', () => {
       toggleSpawn: () => menu.open(),
       isNoclip: () => false,
       toggleNoclip: () => undefined,
+      spawnUnawareShambler: () => undefined,
       isDanger: () => false,
       toggleDanger: () => undefined,
       shamblerCount: () => 1,
       spawnShambler: () => undefined,
+      spawnZombie: () => undefined,
       isAimEnabled: () => true,
       toggleAim: () => undefined,
       isFrozen: () => false,

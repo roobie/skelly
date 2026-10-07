@@ -7,13 +7,14 @@ import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobg
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { flinchPose, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import { type ShamblerFigure, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { type ShamblerFigure, zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ShamblerPoseInput {
   readonly id?: number;
   readonly seed: number;
+  readonly model?: string;
   /** Simulation position in block units. */
   readonly position: Vec3;
   readonly facing: Vec3;
@@ -52,6 +53,7 @@ export const zombiePoseInputFor = (
   return {
     id,
     seed: zombie.figureSeed,
+    model: zombie.type.model,
     position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? zombie.facing,
     headYaw: root?.headYaw ?? zombie.headYaw,
@@ -108,12 +110,13 @@ const actorForFigure = (
   };
 };
 
-const actorCache = new Map<number, ReturnType<typeof actorForFigure>>();
-const actorForSeed = (seed: number): ReturnType<typeof actorForFigure> => {
-  let actor = actorCache.get(seed);
+const actorCache = new Map<string, ReturnType<typeof actorForFigure>>();
+const actorForSeed = (model: string, seed: number): ReturnType<typeof actorForFigure> => {
+  const key = `${model}:${seed}`;
+  let actor = actorCache.get(key);
   if (!actor) {
-    actor = actorForFigure(shamblerFigure(seed));
-    actorCache.set(seed, actor);
+    actor = actorForFigure(zombieFigure(model, seed));
+    actorCache.set(key, actor);
   }
   return actor;
 };
@@ -164,7 +167,7 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 
 /** The sole living-shambler pose source. Both render and hit FK consume this exact simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
-  const { actor, bones, idleBases } = actorForSeed(input.seed);
+  const { actor, bones, idleBases } = actorForSeed(input.model ?? 'shambler', input.seed);
   const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
   const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };
   const attackTime = attackTimeFor(input);
@@ -199,7 +202,7 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
-    figure: shamblerFigure(input.seed),
+    figure: zombieFigure(input.model ?? 'shambler', input.seed),
     hidden: severedBoneSet(bones, input.severed),
     yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
     position: input.position,
