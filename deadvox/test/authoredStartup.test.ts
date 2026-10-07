@@ -10,8 +10,8 @@ it('starts normal sites when a malformed bundled layout file is rejected whole',
         name: 'malformed-layout-startup-control',
         enforce: 'pre',
         load(id) {
-          if (id.endsWith('/src/content/base/layouts.json')) {
-            return JSON.stringify({ layouts: {} });
+          if (id.endsWith('/src/game/bundledContent.ts')) {
+            return `import { buildRegistry } from '../core/content.ts';\nexport const BUNDLED_CONTENT = buildRegistry([{ source: 'layouts.json', data: { layouts: {} } }]);`;
           }
           return null;
         },

@@ -847,7 +847,7 @@ describe('content references', () => {
         ],
       },
     };
-    expect(paths(withBase(mod).issues).sort()).toEqual([
+    expect(paths(buildRegistry([mod]).issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
