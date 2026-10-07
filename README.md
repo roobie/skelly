@@ -88,51 +88,21 @@ kept every snapshot unchanged but left two unit systems in one body plan.
 BR, 2026-10-04: "Code shows what and how (and github can show this too - but the
 lifecycle of an issue or PR terminates) / Docs describe why and when"
 
-If a code change can make a doc sentence false without anyone touching the doc, that
-sentence is in the wrong place. Say it in code (a name, a type, a test) and point to it
-from the doc.
+A doc sentence that code can make false belongs in code. Docs keep the reason and
+name a trigger only when it matters; cue the rule to its code rather than restating
+its what or how. The final reason for a contract belongs in a tracked doc or ADR,
+where it remains useful after an issue or PR closes.
 
-- **Point, don't restate.** Cue code by path and symbol, for example "see
-  `deadvox/src/core/options.ts`, `dropTarget`". Never cite a line number, and never copy
-  or generate a list, table or value from code into a doc.
-- **A "when" names its trigger.** "Until `<item>`" or "after #`<pr>`" can be checked; "today",
-  "currently" and "newly" can't. The PR that completes an item resolves every doc line
-  that names it.
-- **The final reason lives in the repo.** Reasoning in a PR, review, issue or commit
-  message that still matters after the merge goes into a tracked doc or ADR before the
-  merge. PRs and issues keep the history for archaeology; commit messages aren't a home
-  for the final reason.
-- **Comments say why, and only when there's a special why.** Most code needs none.
-- **Design docs may state intent ahead of the code.** The PR that builds it trims the
-  doc to the why and cues the code.
-- **ADRs:** the context is a dated snapshot. The decision and its consequences stay
-  true, amended by dated rulings or superseded by a new ADR. Specification belongs in
-  code, cued from the ADR.
-- **Reviews and retros are dated snapshots,** true as of their date, and exempt.
-- **A slice plan leaves the tree at its retrospective, after its live content moves.**
-  Git and GitHub history keep it (BR, 2026-10-04 21:49: "actually, recall on slice-1
-  directive / let's archive it as soon as possible (which would have been at the
-  retrospective), so next best would be now").
-- **Every doc says why you'd read it.** Its front matter carries `read_if`, a list of
-  reasons, each finishing the sentence "Read this if …" (BR, 2026-10-04: "it shall note
-  all up front reasons for readin[g] the document"):
+BR, 2026-10-07 17:05:55 +02:00:
 
-  ```yaml
-  ---
-  read_if:
-    - you change how saves are stored, versioned or loaded
-    - you add state that must survive a reload
-  ---
-  ```
+> specifically, we shall trim all the fat that is 'what' and 'how' and only keep 'why' and when needed 'when'
+> docs are _not_ for historical followup nor a place for accumulating amendments
+>
+> this is already a core pillar, but we must execute it incrementally, continuously and periodically
 
-A false doc is a defect, and a review returns FIX for it. `tools/zero-drift-check.mjs`
-checks the mechanical rules in CI: every cited path and symbol exists, no doc outside
-reviews and retros cites a line number, and every doc has `read_if` matching
-`tools/read_if.py`. Reviews check the rest. Existing findings are frozen in
-`tools/zero-drift-baseline.json` until the docs sweep (#222); a new finding fails, and
-fixing one means removing its baseline entry. Run
-`node tools/zero-drift-check.mjs --emit-baseline` to print a replacement for
-`tools/zero-drift-baseline.json` on stdout for review.
+Replace a changed rule with its current form; do not keep the change history in the
+doc. Trim incrementally and continuously as you edit, then periodically. `r50` is
+the first deep pass, after playtest 1 launches (#181); no recurring interval is set.
 
 ## Shared direction
 

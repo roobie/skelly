@@ -49,8 +49,8 @@ inside the `mobgen/reference/*.blend` files) are out of scope.
 
 ## Zero drift: code shows what and how, docs say why and when
 
-BR, 2026-10-04. The pillar and its reasons are in `README.md`, "Zero drift". When you
-write a doc, a comment or a PR:
+The pillar and its reasons are in `README.md`, "Zero drift". When you write a doc,
+a comment or a PR:
 
 - Cue code by path and symbol ("see `<path>`, `<symbol>`"). No line numbers, and
   no lists, tables or values copied from code. A cited path is relative to the repo
@@ -63,6 +63,9 @@ write a doc, a comment or a PR:
 - Write a comment only for a special why.
 - Every tracked doc starts with front matter whose `read_if` lists the reasons to read
   it. Add or update it whenever you add or change a doc.
+- When you touch a doc, trim the whole part you touch of what, how and history, not
+  only the lines you change. Keep the current rule instead of accumulated amendments;
+  reviews flag amendment trails as false lines.
 - A false doc is a defect: a review returns FIX for it.
 
 ## Work item IDs
