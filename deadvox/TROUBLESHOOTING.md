@@ -84,17 +84,18 @@ BR, 2026-10-07 14:01, d131-1, verbatim:
 > “but the info is rendered too much in the center of screen, sometimes occluding too much”
 > “so if we could put the hint near the bottom of the screen, adjusting itself for whether or not the quickbar is shown, that'd be great”
 
-The verbose block hint now sits above visible bottom HUD elements, following their actual bounds; with
+The verbose block hint sits above visible bottom HUD elements, following their actual bounds; with
 those hidden, it uses the quickbar's computed bottom offset. In `src/debug/index.ts`,
-`DebugRuntime.updateLookedAt` uses `src/debug/lookedAt.ts`, `describeLookedAt`, for text and calls
-`src/ui/hud.ts`, `positionLookedAtReadout`, for placement. The shorter shambler aim readout stays at
-the crosshair because it is target-specific, and the block hint yields while it is active.
+`attachDebugTools` installs `runtime.updateLookedAt`, which uses `src/debug/lookedAt.ts`,
+`describeLookedAt`, for text and calls `src/ui/hud.ts`, `positionLookedAtReadout`, for placement. The
+shorter shambler aim readout stays at the crosshair because it is target-specific, and the block hint
+yields while it is active.
 
 BR, 2026-10-07 15:48, d131-1-2, verbatim:
 
 > “aside: the debug X in center of screen should show only when crosshair is turned on”
 
-The debug centre X now follows the HUD Crosshair option live, so it does not mark the view when the
+The debug centre X follows the HUD Crosshair option live, so it does not mark the view when the
 player has turned that aid off. See `src/game/play.ts`, `frame`,
 `src/game/debugInterface.ts`, `DebugRuntime.setCrosshairVisible`, and `src/debug/index.ts`,
 `panelTemplate`.

@@ -76,7 +76,7 @@ export const positionLookedAtReadout = (readout: HTMLElement): void => {
     return;
   }
   const quickbarStyle = getComputedStyle(quickbar);
-  const visibleTops = [quickbar, document.getElementById('handling')]
+  const visibleTops = [quickbar, document.getElementById('handling'), document.getElementById('hotbar')]
     .filter((element): element is HTMLElement => element !== null)
     .flatMap((element) => {
       const style = getComputedStyle(element);
