@@ -466,7 +466,7 @@ const repairOverlappingJointAdjacency = (grid: Grid, body: Body, boneIndexById: 
   }
 };
 
-const forceJointCellsLegacy = (grid: Grid, repair: JointRepair): void => {
+const forceJointCellsInPlace = (grid: Grid, repair: JointRepair): void => {
   const [ci, cj, ck] = repair.cell;
   const jointIdx = cellIndex(grid.dims, ci, cj, ck);
   grid.filled[jointIdx] = 1;
@@ -483,7 +483,7 @@ const forceJointCellsLegacy = (grid: Grid, repair: JointRepair): void => {
   }
 };
 
-const repairJointAdjacencyLegacy = (grid: Grid, body: Body, boneIndexById: ReadonlyMap<string, number>): void => {
+const repairJointAdjacencyInPlace = (grid: Grid, body: Body, boneIndexById: ReadonlyMap<string, number>): void => {
   for (const bone of body.bones) {
     if (bone.parent === null) {
       continue;
@@ -498,7 +498,7 @@ const repairJointAdjacencyLegacy = (grid: Grid, body: Body, boneIndexById: Reado
       continue;
     }
     const { axis, sign } = dominantAxis(bone.head, bone.tail);
-    forceJointCellsLegacy(grid, { cell, childIdx, parentIdx, axis, sign });
+    forceJointCellsInPlace(grid, { cell, childIdx, parentIdx, axis, sign });
   }
 };
 
@@ -582,7 +582,7 @@ export const voxelize = (body: Body, size: number, seed: number): Voxels => {
   if (body.jointAdjacencyPolicy === 'reserve-overlaps') {
     repairOverlappingJointAdjacency(grid, body, boneIndexById);
   } else {
-    repairJointAdjacencyLegacy(grid, body, boneIndexById);
+    repairJointAdjacencyInPlace(grid, body, boneIndexById);
   }
   const color = assignMaterials(grid, body, { addByBone, paints, seed });
 

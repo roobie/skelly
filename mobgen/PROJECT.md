@@ -66,12 +66,12 @@ too - like a leg from a shambler can be pointing straight up, while it's head
 is at floor, like a foot” / “think of John Carpenter's "The Thing" kind of”
 
 The first-look generator samples three to five complete shambler members per
-seed. This is an initial BR-tunable range: at least three distinct bodies give
-the car-scale enemy the requested mass and grotesque multiplicity, while the
-upper bound keeps the fused body within the template's voxel and triangle
-budgets. Members are independently scaled, anchored around the core, lifted by
-seeded gaps, and turned in quarter-turn orientations on all three axes, so a
-head or hand may bear weight and other members may hang. The first look keeps
+seed. This is an initial BR-tunable range rather than a budget ceiling: at least
+three distinct bodies give the car-scale enemy the requested mass and grotesque
+multiplicity, while five is a first-look cap for BR to tune, not a limit imposed
+by the current budget math. Members are independently scaled, anchored around
+the core, lifted by seeded gaps, and turned in quarter-turn orientations on all
+three axes, so a head or hand may bear weight and other members may hang. The first look keeps
 each module a complete shambler rather than adding partial-body variants; the
 resolved member subtrees remain individually severable. The core's merged,
 lobed lower flesh forms the shared floor-bearing mass, so severing any member
@@ -111,7 +111,6 @@ remain open until BR rules on them:
 - Does the procedural, full-shambler composition read as a grotesque fusion,
   or should the silhouette use partial members or a different arrangement?
 - Is the initial member-count range appropriate for the car-scale silhouette?
-
 - How does it move, and what does it sense? Which motion should the rig
   animate?
 - What can it break: fences, doors, containers, or other world objects?
@@ -132,7 +131,7 @@ remain open until BR rules on them:
 | Source of truth | Template + seed → **Genome**, a plain JSON record of the sampled params and wounds that carries its seed. Everything after it is a deterministic function of the genome: builder → **Body** → voxelizer → mesher → validator |
 | Body | A skeleton of bones plus shape features, as signed distance shapes (tapered capsules, ellipsoids, rounded boxes). A feature adds flesh, carves it away, or paints colour without changing the shape |
 | Humanoid | 18 bones: pelvis (root), spine, chest, neck, head, jaw, and left and right upperArm, forearm, hand, thigh, shin, foot. Default joint positions come from the CC0 `fgc_skeleton` rig in `reference/`, converted from Blender's Z-up, −Y-forward axes |
-| Voxelization | Every voxel is owned by exactly one bone: the one whose flesh is nearest. "Marrow" is rasterized as a face-connected path along every bone and always filled, so each bone is connected to its parent however thin its flesh. Amalgams reserve repaired joint voxel pairs because overlapping body modules can otherwise let a later repair erase an earlier connection; see `src/mob/amalgam.ts`, `buildAmalgam`, and `src/core/voxelize.ts`, `repairOverlappingJointAdjacency`. A carve that cuts marrow leaves it in place, coloured as exposed bone |
+| Voxelization | Every voxel is owned by exactly one bone: the one whose flesh is nearest. "Marrow" is rasterized as a face-connected path along every bone and always filled, so each bone is connected to its parent however thin its flesh. Amalgams reserve repaired joint voxel pairs because overlapping body modules can otherwise let a later repair erase an earlier connection; see `src/mob/amalgam.ts`, `buildAmalgam`, and `src/core/voxelize.ts`, `repairOverlappingJointAdjacency`. The ordinary in-place repair remains for humanoids because coarse-foot and far-LOD contracts depend on its grid-snap behavior; see `repairJointAdjacencyInPlace`. A carve that cuts marrow leaves it in place, coloured as exposed bone |
 | Paint and carve | Clothing, hair, bruises and the mouth are paint. Wounds carve, with a gore rim. Eye socket dimensions are metric, with grid-snapped centers; sub-voxel details may disappear at coarse LOD. Face dimensions are height-relative, while eye columns and feature placement remain snapped to the grid |
 | Colour | 10 materials × 4 shades (palette index = material × 4 + shade), with base colours chosen per actor. Shade comes from low-frequency noise, so neighbouring voxels tend to agree and faces still merge. The look, from deadvox's notes: sickly and fleshy, not a swamp monster |
 | Meshing | Greedy, per bone, merging faces of the same colour. Faces between voxels of different bones are kept, so each bone's mesh is closed: a bent joint shows a cut face, not a hole into the body. Seams at bent joints are expected (CHALLENGES §3) |
@@ -172,7 +171,7 @@ The caller selects `full` (default) or `silhouette` explicitly. `full` remains t
 | --- | --- |
 | `floaters` | All voxels form one face-connected piece. Carves and small features such as ears can leave islands |
 | `attached` | Every bone owns at least one voxel, and at least one of them touches a voxel of its parent. Marrow makes this hold by construction, so it guards against builder bugs |
-| `grounded` | The lowest voxel layer is at y = 0, and every voxel in it belongs to a declared support bone (a humanoid's feet) |
+| `grounded` | The lowest voxel layer is at y = 0, and every voxel in it belongs to a declared support bone (a humanoid's feet, or the boss's actual ground contacts) |
 | `balance` | In the rest pose, the centre of mass, seen from above, is within the rectangle around the ground-layer voxels, widened by one voxel |
 | `budget` | Full: total voxels, triangles and per-bone voxel counts are within the template's limits, e.g. head and jaw together around 50. Silhouette: total voxel/triangle budgets only; group counts depend on bone ownership and are excluded |
 | `silhouette` | Coarse X width and Y height, measured between outer occupied-cell centres, each differ by at most one coarse cell plus the reference grid's quantization allowance |
@@ -183,7 +182,7 @@ passing through each other.
 
 ### 3. Templates and seeding
 
-A template fixes a body plan, a voxel size, budgets, its declared support bones (a humanoid's feet; see `src/core/template.ts`, `Template.supportBones`),
+A template fixes a body plan, a voxel size, budgets, its declared support bones (a humanoid's feet, or the boss's actual ground contacts; see `src/core/template.ts`, `Template.supportBones`),
 and a range or list of choices per param (proportions, posture, clothing,
 colours, wounds, gait). The generator samples them in a fixed order from the
 seed. `generateValid` tries seed, seed + 1, … until a build passes, as in
