@@ -1176,8 +1176,9 @@ try {
     return r.survival.use(r.inventory.itemByUid(uid));
   }, throwFixture.uid);
   assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
-  const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   const releaseThrow = await holdAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   await waitForSimulation(
     page,
     throwChargeSample,
