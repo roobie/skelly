@@ -4,6 +4,7 @@ read_if:
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
+  - you're changing or measuring input-replay capture and playback
 ---
 
 # Slice 3 — Flesh and noise
@@ -373,7 +374,7 @@ At d101-4, replay samples also preserve whether the source world was ready under
 
 Implementation is in `src/game/inputReplay.ts`, `InputReplayRecorder`; inventory and crafting commands converge on `applyReplayActionPayload` in `src/game/replayCommands.ts`, wired by `startPlay` in `src/game/play.ts`. The player-facing rationale is in [CONTROLS.md](CONTROLS.md).
 
-Zombie readiness replay now uses `src/game/streamer.ts`, `Streamer.onReadinessChange` to record transitions and `Streamer.readyColumns` to seed each recording window; replay zombie tiering reads that recorded set through `src/game/session.ts`, `createSession`, rather than consulting live streaming. In a two-hour profile with 64 starting ready columns and 120 transitions, the readiness data added 3,062 serialized bytes and 4,864 bytes to the recorder's retained-buffer estimate, about 2.4% over the same replay without those fields. Paired recorder timings did not distinguish an added per-tick cost from timer noise; keep host-specific timing values out of tracked docs under this slice's test-budget rule.
+For d119-2, replay schema v7 records generated terrain columns, not a derived readiness bit: `src/game/streamer.ts`, `Streamer.generatedColumns`, captures the recording boundary, while its replay-controlled generation methods prevent renderer streaming from advancing terrain ahead of the artifact. `src/game/inputReplayPlayer.ts`, `InputReplayPlayer.next`, prepares the next tick's column changes as it consumes the prior sample; `src/game/play.ts`, `stepReplaySimulation`, applies terrain and load/unload effects before that tick's systems run. This lets replay zombies read the terrain that made their recorded column ready, while column-load spawns and furniture still enter through session streaming effects. A two-minute, 7,200-tick profile with 64 starting generated columns and 120 transitions added 3,063 serialized bytes and 4,864 bytes to the recorder's retained-buffer estimate, about 2.4% over the same replay without those fields. Paired recorder timings did not distinguish an added per-tick cost from timer noise. This changes only the replay format; the world-save schema is unchanged.
 
 ### 3.11 Authored playtest map and playtest
 

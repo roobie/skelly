@@ -65,6 +65,7 @@ export class Streamer {
   private readonly workers: Worker[] = [];
   private readonly maxInFlight: number;
   private generationFailed = false;
+  private replayControlled = false;
   private readonly offsets: [number, number][] = [];
   private nextWorker = 0;
   private center: [number, number] = [Number.NaN, Number.NaN];
@@ -72,8 +73,6 @@ export class Streamer {
   onColumn: (cx: number, cz: number) => void = () => undefined;
   /** Called when a generated column leaves the streaming set. */
   onColumnUnload: (cx: number, cz: number) => void = () => undefined;
-  /** Called when a column's 3×3 generated-neighbour readiness changes. */
-  onReadinessChange: (cx: number, cz: number, ready: boolean) => void = () => undefined;
   /** Every added/unloaded data chunk, including all-air chunks that never get meshed. */
   onDataChange?: (origin: Vec3) => void;
   /** Handles a deterministic generation failure such as an unreadable restored chunk diff. */
@@ -110,24 +109,49 @@ export class Streamer {
     return this.neighboursGenerated(toChunk(Math.floor(x)), toChunk(Math.floor(z)));
   }
 
-  /** Ready column coordinates at the recording boundary. */
-  readyColumns(): [number, number][] {
-    const candidates = new Set<string>();
-    for (const column of this.generated) {
-      const [cx, cz] = column.split(',').map(Number) as [number, number];
-      for (let dz = -1; dz <= 1; dz++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const readyCx = cx + dx;
-          const readyCz = cz + dz;
-          if (this.neighboursGenerated(readyCx, readyCz)) {
-            candidates.add(`${readyCx},${readyCz}`);
-          }
-        }
-      }
-    }
-    return [...candidates]
+  setReplayControlled(): void {
+    this.replayControlled = true;
+  }
+
+  /** Generated terrain columns at a replay recording boundary. */
+  generatedColumns(): [number, number][] {
+    return [...this.generated]
       .map((key) => key.split(',').map(Number) as [number, number])
       .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
+  }
+
+  hasGeneratedColumn(cx: number, cz: number): boolean {
+    return this.generated.has(`${cx},${cz}`);
+  }
+
+  /** Generates replay-required terrain without applying its load-time simulation effects. */
+  generateForReplay(cx: number, cz: number): boolean {
+    if (this.generated.has(`${cx},${cz}`)) {
+      return true;
+    }
+    if (!(this.replayControlled && this.inRange(cx, cz))) {
+      return false;
+    }
+    this.generate(cx, cz, false);
+    return this.generated.has(`${cx},${cz}`);
+  }
+
+  /** Removes replay-unloaded terrain without applying its unload-time simulation effects. */
+  unloadForReplay(cx: number, cz: number): void {
+    const col = `${cx},${cz}`;
+    if (!(this.replayControlled && this.generated.delete(col))) {
+      return;
+    }
+    const { world, scale } = this.opts;
+    for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+      const key = chunkKey(cx, cy, cz);
+      if (!world.getChunk(cx, cy, cz)?.edited) {
+        world.removeChunk(cx, cy, cz);
+        this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
+        this.dirty.delete(key);
+        this.versions.delete(key);
+      }
+    }
   }
 
   /**
@@ -171,7 +195,7 @@ export class Streamer {
     const { radius } = this.opts;
 
     let budget = COLUMNS_PER_FRAME;
-    for (const [dx, dz] of this.offsets) {
+    for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
       if (this.generationFailed || budget === 0) {
         break;
       }
@@ -212,7 +236,9 @@ export class Streamer {
           this.dirty.add(key); // remesh when we come back
         }
       }
-      this.unloadFar();
+      if (!this.replayControlled) {
+        this.unloadFar();
+      }
     }
   }
 
@@ -233,43 +259,13 @@ export class Streamer {
           this.versions.delete(key);
         }
       }
-      const readyBeforeUnload = this.readyCentersAround(cx, cz);
       this.generated.delete(col);
-      this.reportReadinessChanges(cx, cz, readyBeforeUnload);
       this.onColumnUnload(cx, cz);
     }
   }
 
   private inRange(cx: number, cz: number): boolean {
     return Math.max(Math.abs(cx - this.center[0]), Math.abs(cz - this.center[1])) <= this.opts.radius + 1;
-  }
-
-  private readyCentersAround(cx: number, cz: number): Set<string> {
-    const ready = new Set<string>();
-    for (let dz = -1; dz <= 1; dz++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const readyCx = cx + dx;
-        const readyCz = cz + dz;
-        if (this.neighboursGenerated(readyCx, readyCz)) {
-          ready.add(`${readyCx},${readyCz}`);
-        }
-      }
-    }
-    return ready;
-  }
-
-  private reportReadinessChanges(cx: number, cz: number, before: ReadonlySet<string>): void {
-    for (let dz = -1; dz <= 1; dz++) {
-      for (let dx = -1; dx <= 1; dx++) {
-        const readyCx = cx + dx;
-        const readyCz = cz + dz;
-        const key = `${readyCx},${readyCz}`;
-        const ready = this.neighboursGenerated(readyCx, readyCz);
-        if (before.has(key) !== ready) {
-          this.onReadinessChange(readyCx, readyCz, ready);
-        }
-      }
-    }
   }
 
   private neighboursGenerated(cx: number, cz: number): boolean {
@@ -284,7 +280,7 @@ export class Streamer {
   }
 
   /** Generates a column if it doesn't exist yet. Returns true if it did work. */
-  private generate(cx: number, cz: number): boolean {
+  private generate(cx: number, cz: number, notify = true): boolean {
     if (this.generationFailed) {
       return false;
     }
@@ -307,10 +303,10 @@ export class Streamer {
           this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
         }
       }
-      const readyBeforeGeneration = this.readyCentersAround(cx, cz);
       this.generated.add(col);
-      this.reportReadinessChanges(cx, cz, readyBeforeGeneration);
-      this.onColumn(cx, cz);
+      if (notify) {
+        this.onColumn(cx, cz);
+      }
       return true;
     } catch (error) {
       this.generationFailed = true;

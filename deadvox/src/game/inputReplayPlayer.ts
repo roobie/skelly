@@ -1,5 +1,11 @@
 import { toChunk } from '../core/coords.ts';
-import type { ReplayAction, ReplayControlSample, ReplayInputData } from './inputReplay.ts';
+import type {
+  ReplayAction,
+  ReplayColumnChange,
+  ReplayControlSample,
+  ReplayGeneratedColumn,
+  ReplayInputData,
+} from './inputReplay.ts';
 import { sampleFromReplayFrame } from './inputReplay.ts';
 
 export const applyReplayLook = (
@@ -13,15 +19,17 @@ export const applyReplayLook = (
 export class InputReplayPlayer {
   private tickIndex = 0;
   private actionIndex = 0;
-  private readinessIndex = 0;
-  private readonly readyColumns: Set<string>;
+  private columnChangeIndex = 0;
+  private readonly generated: Set<string>;
+  private preparedColumnChanges: ReplayColumnChange[] = [];
   readonly inputs: ReplayInputData;
   private readonly dispatch: (action: ReplayAction, sample: ReplayControlSample) => void;
 
   constructor(inputs: ReplayInputData, dispatch: (action: ReplayAction, sample: ReplayControlSample) => void) {
     this.inputs = inputs;
     this.dispatch = dispatch;
-    this.readyColumns = new Set(inputs.readyColumns.map(([cx, cz]) => `${cx},${cz}`));
+    this.generated = new Set(inputs.generatedColumns.map(([cx, cz]) => `${cx},${cz}`));
+    this.preparedColumnChanges = this.prepareColumnChangesForNextTick();
   }
 
   get finished(): boolean {
@@ -36,28 +44,52 @@ export class InputReplayPlayer {
     return this.finished ? undefined : sampleFromReplayFrame(this.inputs.frames[this.tickIndex]!);
   }
 
-  prepareReadinessForNextTick(): void {
+  private prepareColumnChangesForNextTick(): ReplayColumnChange[] {
+    const changes: ReplayColumnChange[] = [];
     while (
-      this.readinessIndex < this.inputs.readinessChanges.length &&
-      this.inputs.readinessChanges[this.readinessIndex]![0] === this.tickIndex
+      this.columnChangeIndex < this.inputs.columnChanges.length &&
+      this.inputs.columnChanges[this.columnChangeIndex]![0] === this.tickIndex
     ) {
-      const [, cx, cz, ready] = this.inputs.readinessChanges[this.readinessIndex]!;
+      const change = this.inputs.columnChanges[this.columnChangeIndex]!;
+      const [, cx, cz, isGenerated] = change;
       const key = `${cx},${cz}`;
-      if (ready) {
-        this.readyColumns.add(key);
+      if (isGenerated) {
+        this.generated.add(key);
       } else {
-        this.readyColumns.delete(key);
+        this.generated.delete(key);
       }
-      this.readinessIndex += 1;
+      changes.push(change);
+      this.columnChangeIndex += 1;
     }
+    return changes;
+  }
+
+  takePreparedColumnChanges(): readonly ReplayColumnChange[] {
+    const changes = this.preparedColumnChanges;
+    this.preparedColumnChanges = [];
+    return changes;
+  }
+
+  generatedColumns(): ReplayGeneratedColumn[] {
+    return [...this.generated]
+      .map((key) => key.split(',').map(Number) as [number, number])
+      .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
   }
 
   isReady(x: number, z: number): boolean {
-    return this.readyColumns.has(`${toChunk(Math.floor(x))},${toChunk(Math.floor(z))}`);
+    const cx = toChunk(Math.floor(x));
+    const cz = toChunk(Math.floor(z));
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        if (!this.generated.has(`${cx + dx},${cz + dz}`)) {
+          return false;
+        }
+      }
+    }
+    return true;
   }
 
   next(): ReplayControlSample | undefined {
-    this.prepareReadinessForNextTick();
     if (this.finished) {
       return;
     }
@@ -71,6 +103,7 @@ export class InputReplayPlayer {
       this.dispatch(action, sample);
     }
     this.tickIndex += 1;
+    this.preparedColumnChanges = this.prepareColumnChangesForNextTick();
     return sample;
   }
 }

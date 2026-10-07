@@ -71,7 +71,7 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   expect(sky.at([2, 14.5, 2])).toBe(0);
 });
 
-it('reports only readiness transitions and snapshots the ready columns', () => {
+it('reports generated-column transitions that match the generated-column snapshot', () => {
   vi.stubGlobal('Worker', QuietWorker);
   const world = new World();
   const scale = makeScale(0.5);
@@ -87,22 +87,12 @@ it('reports only readiness transitions and snapshots the ready columns', () => {
     structures: [],
     radius: 0,
   });
-  const observedReady = new Set<string>();
-  const changes: [number, number, boolean][] = [];
-  let consumed = 0;
-  streamer.onReadinessChange = (cx, cz, ready) => changes.push([cx, cz, ready]);
+  const observedGenerated = new Set<string>();
+  streamer.onColumn = (cx, cz) => observedGenerated.add(`${cx},${cz}`);
+  streamer.onColumnUnload = (cx, cz) => observedGenerated.delete(`${cx},${cz}`);
   const reconcile = () => {
-    for (const [cx, cz, ready] of changes.slice(consumed)) {
-      const key = `${cx},${cz}`;
-      if (ready) {
-        observedReady.add(key);
-      } else {
-        observedReady.delete(key);
-      }
-    }
-    consumed = changes.length;
-    const snapshot = new Set(streamer.readyColumns().map(([cx, cz]) => `${cx},${cz}`));
-    expect(observedReady).toEqual(snapshot);
+    const snapshot = new Set(streamer.generatedColumns().map(([cx, cz]) => `${cx},${cz}`));
+    expect(observedGenerated).toEqual(snapshot);
   };
 
   for (let attempt = 0; attempt < 32 && !streamer.isReady(0, 0); attempt += 1) {
@@ -113,6 +103,44 @@ it('reports only readiness transitions and snapshots the ready columns', () => {
   streamer.update(20 * CHUNK, 20 * CHUNK);
   reconcile();
   expect(streamer.isReady(0, 0)).toBe(false);
+});
+
+it('lets replay drive terrain generation and unloading without live streaming side effects', () => {
+  vi.stubGlobal('Worker', QuietWorker);
+  const world = new World();
+  const scale = makeScale(0.5);
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const streamer = new Streamer({
+    world,
+    meshes: meshes as never,
+    seed: 17,
+    terrain: { grass: 1, dirt: 2, stone: 3, sand: 4 },
+    colors: new Uint8Array(256 * 4),
+    patterns: new Uint8Array(256),
+    scale,
+    structures: [],
+    radius: 0,
+    surface: { height: () => 20, top: () => undefined },
+  });
+  const liveLoads = vi.fn();
+  const liveUnloads = vi.fn();
+  streamer.onColumn = liveLoads;
+  streamer.onColumnUnload = liveUnloads;
+  streamer.setReplayControlled();
+
+  streamer.update(0, 0);
+  expect(streamer.generatedColumns()).toEqual([]);
+  expect(streamer.generateForReplay(0, 0)).toBe(true);
+  expect(world.getChunk(0, scale.minCy, 0)).toBeDefined();
+  expect(streamer.generateForReplay(2, 0)).toBe(false);
+  streamer.update(20 * CHUNK, 20 * CHUNK);
+  expect(streamer.generatedColumns()).toEqual([[0, 0]]);
+  streamer.unloadForReplay(0, 0);
+
+  expect(streamer.generatedColumns()).toEqual([]);
+  expect(world.getChunk(0, scale.minCy, 0)).toBeUndefined();
+  expect(liveLoads).not.toHaveBeenCalled();
+  expect(liveUnloads).not.toHaveBeenCalled();
 });
 
 describe('lazy restored world diffs', () => {

@@ -78,10 +78,11 @@ import {
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayAction,
+  type ReplayColumnChange,
+  type ReplayColumnUpdate,
   type ReplayControlSample,
+  type ReplayGeneratedColumn,
   type ReplayInputData,
-  type ReplayReadinessUpdate,
-  type ReplayReadyColumn,
   replayStateFingerprint,
   stashInputReplay,
   withReplayExportGuard,
@@ -111,7 +112,7 @@ import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const EMPTY_REPLAY_READINESS_UPDATES: readonly ReplayReadinessUpdate[] = [];
+const EMPTY_REPLAY_COLUMN_UPDATES: readonly ReplayColumnUpdate[] = [];
 /** Metres: how far away you can open a door or search a container you're looking at. */
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -189,12 +190,12 @@ const createInputReplayPlayer = (
 const createInputReplayRecorder = (
   replaying: boolean,
   snapshot: () => Readonly<SaveSnapshot>,
-  readyColumns: readonly ReplayReadyColumn[],
+  generatedColumns: readonly ReplayGeneratedColumn[],
 ): InputReplayRecorder | undefined => {
   if (replaying) {
     return undefined;
   }
-  return new InputReplayRecorder(snapshot(), undefined, readyColumns);
+  return new InputReplayRecorder(snapshot(), undefined, generatedColumns);
 };
 
 const handlingPresentationFor = (
@@ -233,6 +234,12 @@ export interface StartPlayOptions {
   };
 }
 
+const configureReplayStreaming = (streamer: Engine['streamer'], replay: StartPlayOptions['replay']): void => {
+  if (replay) {
+    streamer.setReplayControlled();
+  }
+};
+
 export const startPlay = (
   engine: Engine,
   debugModule?: DebugModule,
@@ -247,6 +254,7 @@ export const startPlay = (
       }
     };
   }
+  configureReplayStreaming(streamer, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
 
@@ -283,13 +291,13 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
-  const pendingReadinessChanges = new Map<string, ReplayReadinessUpdate>();
-  const takeReadinessChanges = (): readonly ReplayReadinessUpdate[] => {
-    if (pendingReadinessChanges.size === 0) {
-      return EMPTY_REPLAY_READINESS_UPDATES;
+  const pendingColumnChanges = new Map<string, ReplayColumnUpdate>();
+  const takeColumnChanges = (): readonly ReplayColumnUpdate[] => {
+    if (pendingColumnChanges.size === 0) {
+      return EMPTY_REPLAY_COLUMN_UPDATES;
     }
-    const changes = [...pendingReadinessChanges.values()];
-    pendingReadinessChanges.clear();
+    const changes = [...pendingColumnChanges.values()];
+    pendingColumnChanges.clear();
     return changes;
   };
   let pendingScreenCommands: ReplayActionPayload[] = [];
@@ -298,6 +306,7 @@ export const startPlay = (
   let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
   let replayVerificationTick: number | undefined;
   let replayVerificationStarted = false;
+  let replayTickRemainder = 0;
   const replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
@@ -308,7 +317,7 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      inputRecorder?.recordTick(live, compressionAtTick, takeReadinessChanges());
+      inputRecorder?.recordTick(live, compressionAtTick, takeColumnChanges());
       const commands = pendingScreenCommands;
       pendingScreenCommands = [];
       for (const payload of commands) {
@@ -555,16 +564,49 @@ export const startPlay = (
     });
   }
   // Furniture, with the loot rolled for it, arrives with its column.
-  streamer.onColumn = (cx, cz) => {
+  const applyColumnLoad = (cx: number, cz: number): void => {
     session.onColumn(cx, cz, engine.site);
     for (const { spec, loot } of engine.furnitureIn(cx, cz)) {
       inventory.furnish(spec, loot);
     }
   };
-  streamer.onColumnUnload = (cx, cz) => session.onColumnUnload(cx, cz);
-  streamer.onReadinessChange = (cx, cz, ready) => {
+  const applyColumnUnload = (cx: number, cz: number): void => session.onColumnUnload(cx, cz);
+  const applyReplayColumnChanges = (changes: readonly ReplayColumnChange[]): boolean => {
+    if (!replayPlayer) {
+      return true;
+    }
+    for (const [cx, cz] of replayPlayer.generatedColumns()) {
+      if (!(streamer.hasGeneratedColumn(cx, cz) || streamer.generateForReplay(cx, cz))) {
+        replayVerification = 'unavailable';
+        return false;
+      }
+    }
+    for (const [, cx, cz, generated] of changes) {
+      if (generated) {
+        applyColumnLoad(cx, cz);
+      } else {
+        streamer.unloadForReplay(cx, cz);
+        applyColumnUnload(cx, cz);
+      }
+    }
+    return true;
+  };
+  streamer.onColumn = (cx, cz) => {
+    if (replayPlayer) {
+      return;
+    }
+    applyColumnLoad(cx, cz);
     if (inputRecorder) {
-      pendingReadinessChanges.set(`${cx},${cz}`, [cx, cz, ready]);
+      pendingColumnChanges.set(`${cx},${cz}`, [cx, cz, true]);
+    }
+  };
+  streamer.onColumnUnload = (cx, cz) => {
+    if (replayPlayer) {
+      return;
+    }
+    applyColumnUnload(cx, cz);
+    if (inputRecorder) {
+      pendingColumnChanges.set(`${cx},${cz}`, [cx, cz, false]);
     }
   };
   const view = createPlayView(engine, inventory, (message) => {
@@ -2142,21 +2184,52 @@ export const startPlay = (
     }
   };
 
-  const stepReplaySimulation = (menuPaused: boolean, gameFrozen: boolean): void => {
-    const nextSample = replayPlayer?.peek();
-    const waitingForWorld = Boolean(nextSample?.worldReady && !streamer.isReady(body.pos[0], body.pos[2]));
-    sim.paused = menuPaused || gameFrozen || replayPlayer?.finished === true || waitingForWorld;
+  const advanceReplayTick = (): number => {
+    if (!(replayPlayer && applyReplayColumnChanges(replayPlayer.takePreparedColumnChanges()))) {
+      sim.paused = true;
+      return 0;
+    }
+    const sample = replayPlayer.peek();
+    if (!sample) {
+      return 0;
+    }
+    if (sample.worldReady && !streamer.isReady(body.pos[0], body.pos[2])) {
+      replayVerification = 'unavailable';
+      sim.paused = true;
+      return 0;
+    }
+    sim.compression.c = sample.compression;
+    const timeBefore = sim.time;
+    session.frameReplay(1 / (60 * sample.compression));
+    return sim.time - timeBefore;
+  };
+
+  const advanceReplayEndRemainder = (): void => {
+    if (!replayPlayer || replayVerification === 'unavailable') {
+      return;
+    }
+    const endRemainder = options.replay!.endSimTimestamp - sim.time;
+    if (endRemainder > 0) {
+      session.frameReplay(endRemainder / sim.compression.c);
+    }
+  };
+
+  const stepReplaySimulation = (realDt: RealSeconds, menuPaused: boolean, gameFrozen: boolean): void => {
+    sim.paused = menuPaused || gameFrozen || replayPlayer?.finished === true || replayVerification === 'unavailable';
     if (sim.paused || !replayPlayer) {
       return;
     }
-    replayPlayer.prepareReadinessForNextTick();
-    sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
-    session.frameReplay(1 / 60);
-    if (replayPlayer.finished) {
-      const endRemainder = options.replay!.endSimTimestamp - sim.time;
-      if (endRemainder > 0) {
-        session.frameReplay(endRemainder / sim.compression.c);
+    const frameCompression = replayPlayer.peek()?.compression ?? 1;
+    replayTickRemainder += Math.min(realDt * frameCompression, sim.compression.limits.maxSimPerFrame);
+    while (replayTickRemainder >= 1 / 60 && !replayPlayer.finished) {
+      const advanced = advanceReplayTick();
+      replayTickRemainder -= advanced;
+      if (advanced === 0) {
+        break;
       }
+    }
+    if (replayPlayer.finished) {
+      advanceReplayEndRemainder();
     }
     verifyReplayEndState();
   };
@@ -2167,7 +2240,7 @@ export const startPlay = (
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
-      stepReplaySimulation(menuPaused, gameFrozen);
+      stepReplaySimulation(realDt, menuPaused, gameFrozen);
     } else {
       sim.paused = menuPaused || gameFrozen;
       advanceLiveFrame(sim, realDt, skipUntil, (simDt, until) => session.frame(simDt, until));
@@ -2178,8 +2251,8 @@ export const startPlay = (
     }
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
-      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.readyColumns());
-      pendingReadinessChanges.clear();
+      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+      pendingColumnChanges.clear();
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     return gameFrozen;
@@ -2335,7 +2408,7 @@ export const startPlay = (
       { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   }
-  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.readyColumns());
+  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.generatedColumns());
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));

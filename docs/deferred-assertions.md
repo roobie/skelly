@@ -59,4 +59,6 @@ move its row to the bottom section with the PR that pinned it.
 
 ## Pinned since
 
-None yet.
+| What | Where it was (or would be) asserted | How it is checked | Pin when |
+|---|---|---|---|
+| Zombie terrain readiness and column-load effects during replay | `deadvox/test/inputReplay.test.ts`, `applies generated-column changes between compressed zombie-background ticks`; `deadvox/test/streamerRestore.test.ts`, replay-controlled terrain test | Compare whole-state fingerprints after recording and replaying a derived background-slice transition; verify replay terrain follows recorded generation/unload without live streaming callbacks | #335, pinned in d119-2 |

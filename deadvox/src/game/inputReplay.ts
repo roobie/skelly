@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 6;
+const INPUT_REPLAY_SCHEMA_VERSION = 7;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -22,8 +22,10 @@ const INPUT_REPLAY_TICKS_PER_FRAME = Math.ceil(SKIP_COMPRESSION.maxSimPerFrame *
 const INPUT_REPLAY_MAX_TICKS = INPUT_REPLAY_TICKS_PER_WINDOW * 2 + INPUT_REPLAY_TICKS_PER_FRAME;
 const INPUT_REPLAY_ACTIONS_PER_WINDOW = 8192;
 const INPUT_REPLAY_MAX_ACTIONS = INPUT_REPLAY_ACTIONS_PER_WINDOW * 2;
-const INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW = 32_768;
-const INPUT_REPLAY_MAX_READY_COLUMNS = 4096;
+const INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW = 32_768;
+const INPUT_REPLAY_MAX_GENERATED_COLUMNS = 4096;
+const INPUT_REPLAY_MAX_COLUMN_CHANGES =
+  INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW * 2 + INPUT_REPLAY_MAX_GENERATED_COLUMNS * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
@@ -123,16 +125,16 @@ export type ReplayFrame = readonly [
   compression: number,
 ];
 
-export type ReplayReadyColumn = readonly [cx: number, cz: number];
-export type ReplayReadinessUpdate = readonly [cx: number, cz: number, ready: boolean];
-export type ReplayReadinessChange = readonly [tick: number, cx: number, cz: number, ready: boolean];
-const NO_READINESS_UPDATES: readonly ReplayReadinessUpdate[] = [];
+export type ReplayGeneratedColumn = readonly [cx: number, cz: number];
+export type ReplayColumnUpdate = readonly [cx: number, cz: number, generated: boolean];
+export type ReplayColumnChange = readonly [tick: number, cx: number, cz: number, generated: boolean];
+const NO_COLUMN_CHANGES: readonly ReplayColumnUpdate[] = [];
 
 export interface ReplayInputData {
   readonly frames: readonly ReplayFrame[];
   readonly actions: readonly ReplayAction[];
-  readonly readyColumns: readonly ReplayReadyColumn[];
-  readonly readinessChanges: readonly ReplayReadinessChange[];
+  readonly generatedColumns: readonly ReplayGeneratedColumn[];
+  readonly columnChanges: readonly ReplayColumnChange[];
 }
 
 export interface DecodedInputReplay {
@@ -150,8 +152,8 @@ interface ReplayWire {
   startSave: string;
   frames: ReplayFrame[];
   actions: ReplayAction[];
-  readyColumns: ReplayReadyColumn[];
-  readinessChanges: ReplayReadinessChange[];
+  generatedColumns: ReplayGeneratedColumn[];
+  columnChanges: ReplayColumnChange[];
   endStateFingerprint: string;
   endSimTimestamp: number;
 }
@@ -223,17 +225,17 @@ const hasValidActionPayload = (action: string, candidate: Record<string, unknown
   return !hasPayload || (isReplayActionPayload(candidate.payload) && candidate.payload.kind === action);
 };
 
-const isReplayReadyColumn = (candidate: unknown): candidate is ReplayReadyColumn =>
+const isReplayGeneratedColumn = (candidate: unknown): candidate is ReplayGeneratedColumn =>
   Array.isArray(candidate) &&
   candidate.length === 2 &&
   Number.isSafeInteger(candidate[0]) &&
   Number.isSafeInteger(candidate[1]);
 
-const isReplayReadinessChange = (
+const isReplayColumnChange = (
   candidate: unknown,
   lastTick: number,
   frameCount: number,
-): candidate is ReplayReadinessChange =>
+): candidate is ReplayColumnChange =>
   Array.isArray(candidate) &&
   candidate.length === 4 &&
   Number.isSafeInteger(candidate[0]) &&
@@ -302,19 +304,19 @@ export const sampleFromReplayFrame = (frame: ReplayFrame): ReplayControlSample =
   };
 };
 
-const appendReadinessUpdates = (
-  changes: ReplayReadinessChange[],
+const appendColumnChanges = (
+  changes: ReplayColumnChange[],
   tick: number,
-  updates: readonly ReplayReadinessUpdate[],
+  updates: readonly ReplayColumnUpdate[],
 ): void => {
-  if (changes.length + updates.length > INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW) {
-    throw new Error('Input replay readiness changes exceed the recording window');
+  if (changes.length + updates.length > INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW) {
+    throw new Error('Input replay column changes exceed the recording window');
   }
-  for (const [cx, cz, ready] of updates) {
-    if (!(Number.isSafeInteger(cx) && Number.isSafeInteger(cz)) || typeof ready !== 'boolean') {
-      throw new Error('Invalid input replay readiness change');
+  for (const [cx, cz, generated] of updates) {
+    if (!(Number.isSafeInteger(cx) && Number.isSafeInteger(cz)) || typeof generated !== 'boolean') {
+      throw new Error('Invalid input replay column change');
     }
-    changes.push([tick, cx, cz, ready]);
+    changes.push([tick, cx, cz, generated]);
   }
 };
 
@@ -344,14 +346,14 @@ export class InputReplayRecorder {
   private batchStartedAtRealMilliseconds = 0;
   private readonly batchCosts: Float32Array = new Float32Array(120);
   private completedBatches = 0;
-  private readonly readinessChanges: ReplayReadinessChange[] = [];
+  private readonly columnChanges: ReplayColumnChange[] = [];
   readonly startSnapshot: Readonly<SaveSnapshot>;
-  readonly readyColumns: readonly ReplayReadyColumn[];
+  readonly generatedColumns: readonly ReplayGeneratedColumn[];
 
   constructor(
     startSnapshot: Readonly<SaveSnapshot>,
     ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW,
-    readyColumns: readonly ReplayReadyColumn[] = [],
+    generatedColumns: readonly ReplayGeneratedColumn[] = [],
   ) {
     this.ticksPerWindow = ticksPerWindow;
     if (!Number.isSafeInteger(ticksPerWindow) || ticksPerWindow < 1 || ticksPerWindow > INPUT_REPLAY_TICKS_PER_WINDOW) {
@@ -362,20 +364,20 @@ export class InputReplayRecorder {
     this.compression = new Float64Array(this.bufferTicks);
     this.movement = new Int8Array(this.bufferTicks * 2);
     this.flags = new Uint16Array(this.bufferTicks);
-    if (readyColumns.length > INPUT_REPLAY_MAX_READY_COLUMNS) {
-      throw new Error('Input replay has too many initially ready columns');
+    if (generatedColumns.length > INPUT_REPLAY_MAX_GENERATED_COLUMNS) {
+      throw new Error('Input replay has too many initially generated columns');
     }
-    const seenReadyColumns = new Set<string>();
-    this.readyColumns = readyColumns
+    const seenGeneratedColumns = new Set<string>();
+    this.generatedColumns = generatedColumns
       .map(([cx, cz]) => {
         if (!(Number.isSafeInteger(cx) && Number.isSafeInteger(cz))) {
-          throw new Error('Input replay readiness coordinates must be safe integers');
+          throw new Error('Input replay generated-column coordinates must be safe integers');
         }
         const key = `${cx},${cz}`;
-        if (seenReadyColumns.has(key)) {
-          throw new Error(`Input replay repeats an initially ready column ${key}`);
+        if (seenGeneratedColumns.has(key)) {
+          throw new Error(`Input replay repeats an initially generated column ${key}`);
         }
-        seenReadyColumns.add(key);
+        seenGeneratedColumns.add(key);
         return [cx, cz] as const;
       })
       .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
@@ -390,7 +392,7 @@ export class InputReplayRecorder {
     return (
       this.frameCount >= this.ticksPerWindow ||
       this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW ||
-      this.readinessChanges.length >= INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW
+      this.columnChanges.length >= INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW
     );
   }
 
@@ -406,8 +408,8 @@ export class InputReplayRecorder {
       this.actionContexts.byteLength +
       this.actionValues.byteLength +
       this.actionPayloadBytes * 2 +
-      this.readyColumns.length * 16 +
-      this.readinessChanges.length * 32 +
+      this.generatedColumns.length * 16 +
+      this.columnChanges.length * 32 +
       this.batchCosts.byteLength
     );
   }
@@ -447,12 +449,12 @@ export class InputReplayRecorder {
   recordTick(
     sample: Omit<ReplayControlSample, 'compression'>,
     compression = 1,
-    readinessUpdates: readonly ReplayReadinessUpdate[] = NO_READINESS_UPDATES,
+    columnChanges: readonly ReplayColumnUpdate[] = NO_COLUMN_CHANGES,
   ): void {
     if (this.frameCount >= this.bufferTicks) {
       throw new Error('Input replay tick buffer is full');
     }
-    appendReadinessUpdates(this.readinessChanges, this.frameCount, readinessUpdates);
+    appendColumnChanges(this.columnChanges, this.frameCount, columnChanges);
     if (this.frameCount % 60 === 0) {
       this.batchStartedAtRealMilliseconds = performance.now();
     }
@@ -507,8 +509,8 @@ export class InputReplayRecorder {
     return {
       frames,
       actions,
-      readyColumns: this.readyColumns.map(([cx, cz]) => [cx, cz]),
-      readinessChanges: this.readinessChanges.map(([tick, cx, cz, ready]) => [tick, cx, cz, ready]),
+      generatedColumns: this.generatedColumns.map(([cx, cz]) => [cx, cz]),
+      columnChanges: this.columnChanges.map(([tick, cx, cz, generated]) => [tick, cx, cz, generated]),
     };
   }
 
@@ -527,38 +529,38 @@ export class InputReplayRecorder {
   }
 }
 
-const applyReadinessChanges = (ready: Set<string>, changes: readonly ReplayReadinessChange[]): void => {
-  for (const [, cx, cz, isReady] of changes) {
+const applyColumnChanges = (generated: Set<string>, changes: readonly ReplayColumnChange[]): void => {
+  for (const [, cx, cz, isGenerated] of changes) {
     const key = `${cx},${cz}`;
-    if (isReady) {
-      ready.add(key);
+    if (isGenerated) {
+      generated.add(key);
     } else {
-      ready.delete(key);
+      generated.delete(key);
     }
   }
 };
 
-const readinessSeamChanges = (
+const columnSeamChanges = (
   previous: ReplayInputData,
   current: ReplayInputData,
   offset: number,
-): ReplayReadinessChange[] => {
-  const ready = new Set(previous.readyColumns.map(([cx, cz]) => `${cx},${cz}`));
-  applyReadinessChanges(ready, previous.readinessChanges);
-  const nextReady = new Set(current.readyColumns.map(([cx, cz]) => `${cx},${cz}`));
-  applyReadinessChanges(
-    nextReady,
-    current.readinessChanges.filter(([tick]) => tick === 0),
+): ReplayColumnChange[] => {
+  const generated = new Set(previous.generatedColumns.map(([cx, cz]) => `${cx},${cz}`));
+  applyColumnChanges(generated, previous.columnChanges);
+  const nextGenerated = new Set(current.generatedColumns.map(([cx, cz]) => `${cx},${cz}`));
+  applyColumnChanges(
+    nextGenerated,
+    current.columnChanges.filter(([tick]) => tick === 0),
   );
-  const seamChanges: ReplayReadinessChange[] = [];
-  for (const key of [...ready].sort()) {
-    if (!nextReady.has(key)) {
+  const seamChanges: ReplayColumnChange[] = [];
+  for (const key of [...generated].sort()) {
+    if (!nextGenerated.has(key)) {
       const [cx, cz] = key.split(',').map(Number) as [number, number];
       seamChanges.push([offset, cx, cz, false]);
     }
   }
-  for (const key of [...nextReady].sort()) {
-    if (!ready.has(key)) {
+  for (const key of [...nextGenerated].sort()) {
+    if (!generated.has(key)) {
       const [cx, cz] = key.split(',').map(Number) as [number, number];
       seamChanges.push([offset, cx, cz, true]);
     }
@@ -579,22 +581,22 @@ export function joinInputReplayWindows(
     ...previous.actions,
     ...current.actions.map((action) => ({ ...action, tick: action.tick + offset })),
   ];
-  const seamChanges = readinessSeamChanges(previous, current, offset);
-  const readinessChanges = [
-    ...previous.readinessChanges,
+  const seamChanges = columnSeamChanges(previous, current, offset);
+  const columnChanges = [
+    ...previous.columnChanges,
     ...seamChanges,
-    ...current.readinessChanges
+    ...current.columnChanges
       .filter(([tick]) => tick > 0)
-      .map(([tick, cx, cz, isReady]) => [tick + offset, cx, cz, isReady] as const),
+      .map(([tick, cx, cz, isGenerated]) => [tick + offset, cx, cz, isGenerated] as const),
   ];
   if (
     frames.length > INPUT_REPLAY_MAX_TICKS ||
     actions.length > INPUT_REPLAY_MAX_ACTIONS ||
-    readinessChanges.length > INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW * 2 + INPUT_REPLAY_MAX_READY_COLUMNS * 2
+    columnChanges.length > INPUT_REPLAY_MAX_COLUMN_CHANGES
   ) {
     throw new Error('Combined replay windows exceed the supported recording bounds');
   }
-  return { frames, actions, readyColumns: previous.readyColumns, readinessChanges };
+  return { frames, actions, generatedColumns: previous.generatedColumns, columnChanges };
 }
 
 export function stashInputReplay(bytes: Uint8Array): void {
@@ -666,8 +668,8 @@ export async function encodeInputReplay(
     startSave: encodeBase64(startSave),
     frames: inputs.frames.map((frame) => [...frame] as ReplayFrame),
     actions: inputs.actions.map((action) => ({ ...action })),
-    readyColumns: inputs.readyColumns.map(([cx, cz]) => [cx, cz]),
-    readinessChanges: inputs.readinessChanges.map(([tick, cx, cz, ready]) => [tick, cx, cz, ready]),
+    generatedColumns: inputs.generatedColumns.map(([cx, cz]) => [cx, cz]),
+    columnChanges: inputs.columnChanges.map(([tick, cx, cz, generated]) => [tick, cx, cz, generated]),
     endStateFingerprint: await replayStateFingerprint(endSnapshot),
     endSimTimestamp: endSnapshot.character.simulation.time,
   };
@@ -701,8 +703,8 @@ export async function decodeInputReplay(
     typeof value.startSave !== 'string' ||
     !Array.isArray(value.frames) ||
     !Array.isArray(value.actions) ||
-    !Array.isArray(value.readyColumns) ||
-    !Array.isArray(value.readinessChanges) ||
+    !Array.isArray(value.generatedColumns) ||
+    !Array.isArray(value.columnChanges) ||
     typeof value.endStateFingerprint !== 'string' ||
     !FINGERPRINT_PATTERN.test(value.endStateFingerprint) ||
     typeof value.endSimTimestamp !== 'number' ||
@@ -718,11 +720,10 @@ export async function decodeInputReplay(
     throw new Error('Replay input sequence has too many actions');
   }
   if (
-    value.readyColumns.length > INPUT_REPLAY_MAX_READY_COLUMNS ||
-    value.readinessChanges.length >
-      INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW * 2 + INPUT_REPLAY_MAX_READY_COLUMNS * 2
+    value.generatedColumns.length > INPUT_REPLAY_MAX_GENERATED_COLUMNS ||
+    value.columnChanges.length > INPUT_REPLAY_MAX_COLUMN_CHANGES
   ) {
-    throw new Error('Replay input sequence has too many column readiness entries');
+    throw new Error('Replay input sequence has too many generated-column entries');
   }
   if (new TextDecoder().decode(canonicalJsonBytes(value)) !== text) {
     throw new Error('Replay encoding is not canonical');
@@ -753,30 +754,30 @@ export async function decodeInputReplay(
       candidate[5] as number,
     ];
   });
-  const readyColumns: ReplayReadyColumn[] = value.readyColumns.map((candidate, index) => {
-    if (!isReplayReadyColumn(candidate)) {
-      throw new Error(`Invalid replay ready column ${index}`);
+  const generatedColumns: ReplayGeneratedColumn[] = value.generatedColumns.map((candidate, index) => {
+    if (!isReplayGeneratedColumn(candidate)) {
+      throw new Error(`Invalid replay generated column ${index}`);
     }
     return [candidate[0], candidate[1]];
   });
-  const readyColumnKeys = new Set(readyColumns.map(([cx, cz]) => `${cx},${cz}`));
-  if (readyColumnKeys.size !== readyColumns.length) {
-    throw new Error('Replay repeats an initially ready column');
+  const generatedColumnKeys = new Set(generatedColumns.map(([cx, cz]) => `${cx},${cz}`));
+  if (generatedColumnKeys.size !== generatedColumns.length) {
+    throw new Error('Replay repeats an initially generated column');
   }
-  let lastReadinessTick = -1;
-  const seenReadinessChanges = new Set<string>();
-  const readinessChanges: ReplayReadinessChange[] = value.readinessChanges.map((candidate, index) => {
-    if (!isReplayReadinessChange(candidate, lastReadinessTick, frames.length)) {
-      throw new Error(`Invalid or out-of-order replay readiness change ${index}`);
+  let lastColumnTick = -1;
+  const seenColumnChanges = new Set<string>();
+  const columnChanges: ReplayColumnChange[] = value.columnChanges.map((candidate, index) => {
+    if (!isReplayColumnChange(candidate, lastColumnTick, frames.length)) {
+      throw new Error(`Invalid or out-of-order replay column change ${index}`);
     }
-    const [tick, cx, cz, ready] = candidate;
+    const [tick, cx, cz, generated] = candidate;
     const key = `${tick}:${cx},${cz}`;
-    if (seenReadinessChanges.has(key)) {
-      throw new Error(`Replay repeats readiness change ${key}`);
+    if (seenColumnChanges.has(key)) {
+      throw new Error(`Replay repeats column change ${key}`);
     }
-    seenReadinessChanges.add(key);
-    lastReadinessTick = tick;
-    return [tick, cx, cz, ready];
+    seenColumnChanges.add(key);
+    lastColumnTick = tick;
+    return [tick, cx, cz, generated];
   });
   let lastTick = -1;
   let actionPayloadBytes = 0;
@@ -805,7 +806,7 @@ export async function decodeInputReplay(
   return {
     snapshot: decoded.snapshot,
     worldOptions: decoded.worldOptions,
-    inputs: { frames, actions, readyColumns, readinessChanges },
+    inputs: { frames, actions, generatedColumns, columnChanges },
     endStateFingerprint: value.endStateFingerprint,
     endSimTimestamp: value.endSimTimestamp,
   };

@@ -360,7 +360,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       return fetch(link.href).then((response) => response.text());
     });
     const cleanArtifact = JSON.parse(replayText);
-    assert(cleanArtifact.readinessChanges.length > 0, 'the clean recording captures streamed-column readiness');
+    assert(cleanArtifact.columnChanges.length > 0, 'the clean recording captures generated-column streaming');
     assert(
       cleanArtifact.actions.some(
         ({ action, payload }) =>
