@@ -1673,7 +1673,7 @@ export class ZombieSystem {
     scratch.tier = scratch.sees ? undefined : (scratch.vocal?.tier ?? hearingTier(hearing));
     scratch.wasAware = zombie.mode === 'chase' || zombie.mode === 'investigate';
     if ((scratch.sees || scratch.tier || scratch.lightTarget) && !scratch.wasAware) {
-      this.options.onSound?.('shambler_alert', copy(pos), zombie);
+      this.options.onSound?.(type.sounds.alert, copy(pos), zombie);
     }
   }
 
@@ -1780,7 +1780,7 @@ export class ZombieSystem {
     }
     zombie.idleSoundTimer -= dt;
     if (zombie.idleSoundTimer <= 0) {
-      this.options.onSound?.('shambler_idle', copy(pos), zombie);
+      this.options.onSound?.(zombie.type.sounds.idle, copy(pos), zombie);
       zombie.idleSoundTimer = 8 + zombie.soundRng.range(0, 12);
     }
   }
@@ -2107,7 +2107,7 @@ export class ZombieSystem {
         zombie.attackWindup <= 0 &&
         withinAttackReach({ zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid })
       ) {
-        this.options.hurtPlayer(type.attack.damage, 'torso', scratch.id);
+        this.options.hurtPlayer(type.attack.damage, type.attack.hitRegion ?? 'torso', scratch.id);
       }
     } else if (
       zombie.mode === 'chase' &&
@@ -2115,7 +2115,7 @@ export class ZombieSystem {
       canStillAttack(zombie.severed) &&
       withinAttackReach({ zombiePos: pos, playerPos: player.pos, type, blockSize, isSolid })
     ) {
-      this.options.onSound?.('shambler_attack', copy(pos), zombie);
+      this.options.onSound?.(type.sounds.attack, copy(pos), zombie);
       zombie.attackWindup = type.attack.windupSimSeconds;
       zombie.attackWait = type.attack.cooldownSimSeconds;
     }
@@ -2447,7 +2447,7 @@ export class ZombieSystem {
     if (!projectile) {
       this.options.onSound?.(isFist ? 'melee_hit_fist' : 'melee_hit', copy(zombie.body.pos), zombie);
     }
-    this.options.onSound?.('shambler_hurt', copy(zombie.body.pos), zombie);
+    this.options.onSound?.(zombie.type.sounds.hurt, copy(zombie.body.pos), zombie);
     const healthAfter = Math.max(0, healthBefore - meleeDamageForContact(zombie, region, weapon, damageType));
     zombie.regions[region] = healthAfter;
     if (healthAfter < healthBefore) {

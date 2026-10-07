@@ -4,16 +4,24 @@
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Bone } from '@mobgen/core/body.ts';
 import { generateValid, realize } from '@mobgen/core/generate.ts';
-import { IDENTITY_M, mulMV, quatToMat3, transpose } from '@mobgen/core/math.ts';
-import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
+import { applyPoint, IDENTITY_M, mulMV, quatToMat3, transpose } from '@mobgen/core/math.ts';
+import {
+  allocateBoneTransforms,
+  boneTransforms,
+  boneTransformsInto,
+  indexBonesByParent,
+  type Pose,
+} from '@mobgen/core/pose.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
+import { LOOK_AT_REST } from '@mobgen/mob/lookAt.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
-import { PerspectiveCamera } from 'three';
+import { type InstancedMesh, PerspectiveCamera } from 'three';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -23,7 +31,13 @@ import { Rng } from '../src/core/random.ts';
 import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
-import { fallDirectionAwayFromPlayer, MobActorMeshes } from '../src/render/mobActors.ts';
+import {
+  fallDirectionAwayFromPlayer,
+  HEARING_GAZE_JITTER,
+  hearingGazeTarget,
+  MobActorMeshes,
+  perceptionLabelFor,
+} from '../src/render/mobActors.ts';
 
 interface TestDebris {
   elapsed: number;
@@ -222,58 +236,88 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
 const SHAMBLER = registry.zombies.get('shambler')!;
+const RUNNER = registry.zombies.get('runner')!;
+const CRAWLER = registry.zombies.get('crawler')!;
 
 /** A minimal, valid Zombie — same shape ZombieSystem.add() builds (src/core/zombies.ts), constructed
  * directly so these tests don't need a full ZombieSystem (physics/senses/etc, irrelevant here). */
-const makeZombie = (position: Vec3, facing: Vec3 = [0, 0, -1], severed: string[] = [], figureSeed = 1): Zombie => ({
-  type: SHAMBLER,
-  figureSeed,
-  incapacitated: false,
-  body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
-  facing: [...facing],
-  home: [...position],
-  mode: 'idle' as ZombieMode,
-  investigationTier: undefined,
-  behaviorRng: Rng.stream(0, 'test-zombie'),
-  soundRng: Rng.stream(0, 'test-zombie-sound'),
-  dismemberRng: Rng.stream(0, 'test-zombie-dismember'),
-  idleSoundTimer: 8,
-  modeTimer: 0,
-  searchAnchor: undefined,
-  searchTimer: 0,
-  searchStrolling: false,
-  searchHeading: [...facing],
-  strollHeading: [...facing],
-  horizontalSpeed: 0,
-  obstacleWanderRemaining: 0,
-  obstacleContact: false,
-  obstacleSlideSide: 0,
-  bodyLookTarget: 0,
-  headYaw: 0,
-  headYawTarget: 0,
-  lookTimer: 0,
-  swayValue: 0,
-  swayStart: 0,
-  swayTarget: 0,
-  swayElapsed: 0,
-  swayDuration: 0,
-  lurchValue: 1,
-  lurchStart: 1,
-  lurchTarget: 1,
-  lurchElapsed: 0,
-  lurchDuration: 0,
-  stumbleFactor: 1,
-  stumbleElapsed: 0,
-  stumbleDuration: 0,
-  renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
-  regions: { ...SHAMBLER.regions },
-  attackWait: 0,
-  attackWindup: 0,
-  gaitPhase: 0,
-  footstepClock: initialShamblerFootstepClock(SHAMBLER.stepLength),
-  wanderClock: 0,
-  severed,
-});
+const makeZombie = (
+  position: Vec3,
+  facing: Vec3 = [0, 0, -1],
+  severed: string[] = [],
+  options: { readonly figureSeed?: number; readonly type?: typeof SHAMBLER } = {},
+): Zombie => {
+  const figureSeed = options.figureSeed ?? 1;
+  const type = options.type ?? SHAMBLER;
+  return {
+    type,
+    figureSeed,
+    incapacitated: false,
+    body: { pos: [...position], vel: [0, 0, 0], halfWidth: 0.28 / 0.5, height: 1.7 / 0.5, onGround: true },
+    facing: [...facing],
+    home: [...position],
+    mode: 'idle' as ZombieMode,
+    investigationTier: undefined,
+    behaviorRng: Rng.stream(0, 'test-zombie'),
+    soundRng: Rng.stream(0, 'test-zombie-sound'),
+    dismemberRng: Rng.stream(0, 'test-zombie-dismember'),
+    idleSoundTimer: 8,
+    modeTimer: 0,
+    searchAnchor: undefined,
+    searchTimer: 0,
+    searchStrolling: false,
+    searchHeading: [...facing],
+    strollHeading: [...facing],
+    horizontalSpeed: 0,
+    obstacleWanderRemaining: 0,
+    obstacleContact: false,
+    obstacleSlideSide: 0,
+    bodyLookTarget: 0,
+    headYaw: 0,
+    headYawTarget: 0,
+    lookTimer: 0,
+    swayValue: 0,
+    swayStart: 0,
+    swayTarget: 0,
+    swayElapsed: 0,
+    swayDuration: 0,
+    lurchValue: 1,
+    lurchStart: 1,
+    lurchTarget: 1,
+    lurchElapsed: 0,
+    lurchDuration: 0,
+    stumbleFactor: 1,
+    stumbleElapsed: 0,
+    stumbleDuration: 0,
+    renderPrevious: { pos: [...position], facing: [...facing], headYaw: 0, gaitPhase: 0 },
+    regions: { ...type.regions },
+    attackWait: 0,
+    attackWindup: 0,
+    gaitPhase: 0,
+    footstepClock: initialShamblerFootstepClock(type.stepLength),
+    wanderClock: 0,
+    severed,
+  };
+};
+
+const directionAngle = (a: Vec3, b: Vec3): number => {
+  const dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const scale = Math.hypot(...a) * Math.hypot(...b);
+  return Math.acos(Math.max(-1, Math.min(1, dot / scale)));
+};
+
+const renderedHead = (renderer: MobActorMeshes, id: number): { readonly forward: Vec3; readonly center: Vec3 } => {
+  const internal = renderer as unknown as {
+    states: Map<number, { variantIndex: number; lastPose: Pose | undefined }>;
+    variants: readonly { realized: { body: { bones: readonly Bone[] } } }[];
+  };
+  const state = internal.states.get(id)!;
+  const head = boneTransforms(internal.variants[state.variantIndex]!.realized.body.bones, state.lastPose!).get('head')!;
+  return {
+    forward: [...mulMV(head.r, [0, 0, -1])] as Vec3,
+    center: [...applyPoint(head, [0, 0, 0])] as Vec3,
+  };
+};
 
 describe('facing convention', () => {
   it('a zombie facing +X has its figure forward (local -Z) along +X in world, matching ZombieMeshes', () => {
@@ -325,12 +369,295 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
 });
 
 describe('MobActorMeshes', () => {
+  it('tracks the player with every live model without mutating zombie simulation state', () => {
+    const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(0.6, 1.6, 0);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      const store = new MapEntityStore<Zombie>();
+      const entries = [SHAMBLER, RUNNER, CRAWLER].map((type) => {
+        const zombie = makeZombie([0, 0, -4], [0, 0, 1], [], { type });
+        zombie.mode = 'chase';
+        return { zombie, id: store.add(zombie) };
+      });
+      const before = entries.map(({ zombie }) => ({
+        position: [...zombie.body.pos],
+        facing: [...zombie.facing],
+        headYaw: zombie.headYaw,
+        gaitPhase: zombie.gaitPhase,
+        behavior: zombie.behaviorRng.state(),
+        sound: zombie.soundRng.state(),
+        dismember: zombie.dismemberRng.state(),
+      }));
+
+      renderer.sync(store, 1 / 30, 1);
+      const first = entries.map(({ id }) => renderer.boneMatrix(id, 'head'));
+      renderer.sync(store, 1 / 30, 1);
+      const second = entries.map(({ id }) => renderer.boneMatrix(id, 'head'));
+
+      expect(first.every((matrix) => matrix !== undefined)).toBe(true);
+      expect(second.every((matrix, index) => matrix?.some((value, axis) => value !== first[index]![axis]))).toBe(true);
+      expect(
+        entries.map(({ zombie }) => ({
+          position: [...zombie.body.pos],
+          facing: [...zombie.facing],
+          headYaw: zombie.headYaw,
+          gaitPhase: zombie.gaitPhase,
+          behavior: zombie.behaviorRng.state(),
+          sound: zombie.soundRng.state(),
+          dismember: zombie.dismemberRng.state(),
+        })),
+      ).toEqual(before);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('eases gaze back to the simulation pose when the zombie loses sight', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(0.6, 1.6, 0);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      const zombie = makeZombie([0, 0, -4], [0, 0, 1]);
+      zombie.mode = 'investigate';
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 30, 1);
+      const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(
+        id,
+      )!;
+      expect(state.lookAtState).toEqual(LOOK_AT_REST);
+
+      zombie.mode = 'chase';
+      for (let frame = 0; frame < 10; frame++) {
+        renderer.sync(store, 1 / 30, 1);
+      }
+      const before = state.lookAtState;
+      expect(Math.abs(before[3]!)).toBeLessThan(1);
+
+      zombie.mode = 'investigate';
+      renderer.sync(store, 1 / 30, 1);
+
+      expect(state.lookAtState).not.toEqual(LOOK_AT_REST);
+      expect(Math.abs(state.lookAtState[3]!)).toBeGreaterThan(Math.abs(before[3]!));
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('aims at a recent near stimulus with deterministic jitter, then eases when two perception updates pass', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(-2.5, 1.6, -2);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      const zombie = makeZombie([0, 0, 0]);
+      zombie.mode = 'investigate';
+      zombie.investigationTier = 'near';
+      zombie.lastPerceived = [4, 0, -4];
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(zombie);
+      const heardPoint: Vec3 = [2, 0, -2];
+      let gazeKeepsVarying = false;
+      let previousGaze: readonly number[] | undefined;
+
+      for (let frame = 0; frame < 72; frame++) {
+        const time = 1 + frame / 20;
+        zombie.stimulusAt = time;
+        zombie.renderPrevious.time = time;
+        renderer.sync(store, 1 / 20, 1, false, 1, time);
+        const gaze = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(
+          id,
+        )!.lookAtState;
+        if (frame > 30 && previousGaze?.some((value, axis) => Math.abs(value - gaze[axis]!) > 1e-5)) {
+          gazeKeepsVarying = true;
+        }
+        previousGaze = [...gaze];
+      }
+
+      const finalHead = renderedHead(renderer, id);
+      const cameraDirection: Vec3 = [
+        camera.position.x - finalHead.center[0],
+        camera.position.y - finalHead.center[1],
+        camera.position.z - finalHead.center[2],
+      ];
+      const heardDirection: Vec3 = [
+        heardPoint[0] - finalHead.center[0],
+        heardPoint[1] - finalHead.center[1],
+        heardPoint[2] - finalHead.center[2],
+      ];
+      expect(directionAngle(finalHead.forward, heardDirection)).toBeLessThan(
+        directionAngle(finalHead.forward, cameraDirection),
+      );
+      expect(gazeKeepsVarying).toBe(true);
+
+      const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(
+        id,
+      )!;
+      const beforeStale = state.lookAtState;
+      zombie.renderPrevious.time = 1 + 72 / 20;
+      renderer.sync(store, 1 / 20, 1, false, 1, zombie.renderPrevious.time);
+      expect(state.lookAtState).not.toEqual(LOOK_AT_REST);
+      const afterOneUpdate = state.lookAtState;
+      zombie.renderPrevious.time = 1 + 73 / 20;
+      renderer.sync(store, 1 / 20, 1, false, 1, zombie.renderPrevious.time);
+      expect(state.lookAtState).not.toEqual(LOOK_AT_REST);
+      expect(Math.abs(state.lookAtState[3]!)).toBeGreaterThan(Math.abs(afterOneUpdate[3]!));
+      expect(Math.abs(state.lookAtState[3]!)).toBeGreaterThan(Math.abs(beforeStale[3]!));
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('keeps far investigations and horde targets from driving gaze', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const entries = [undefined, 'horde-test'].map((hordeId, index) => {
+        const zombie = makeZombie([index * 4, 0, 0]);
+        zombie.mode = 'investigate';
+        zombie.investigationTier = 'far';
+        zombie.lastPerceived = [8, 0, -8];
+        zombie.stimulusAt = 1;
+        zombie.renderPrevious.time = 1;
+        if (hordeId !== undefined) {
+          zombie.hordeId = hordeId;
+        }
+        return { id: store.add(zombie), zombie };
+      });
+      renderer.sync(store, 1 / 30, 1, false, 1, 1);
+      const { states } = renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> };
+      expect(entries.map(({ id }) => states.get(id)!.lookAtState)).toEqual([LOOK_AT_REST, LOOK_AT_REST]);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('keeps hearing jitter deterministic and within its yaw and pitch bounds', () => {
+    const target: Vec3 = [3, 1, -4];
+    const id = 37;
+    const time = 2.75;
+    const jittered = hearingGazeTarget(target, id, time);
+    expect(hearingGazeTarget(target, id, time)).toEqual(jittered);
+    expect(Math.hypot(...jittered)).toBeCloseTo(Math.hypot(...target), 10);
+    const yaw = (point: Vec3): number => Math.atan2(-point[0], -point[2]);
+    const pitch = (point: Vec3): number => Math.atan2(point[1], Math.hypot(point[0], point[2]));
+    const wrap = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
+    expect(Math.abs(wrap(yaw(jittered) - yaw(target)))).toBeLessThanOrEqual(
+      (HEARING_GAZE_JITTER.yawDeg * Math.PI) / 180 + 1e-8,
+    );
+    expect(Math.abs(pitch(jittered) - pitch(target))).toBeLessThanOrEqual(
+      (HEARING_GAZE_JITTER.pitchDeg * Math.PI) / 180 + 1e-8,
+    );
+    const varied = Array.from({ length: 32 }, (_, frame) => hearingGazeTarget(target, id, time + frame / 20));
+    expect(varied.some((point) => directionAngle(point, target) > 1e-4)).toBe(true);
+  });
+
+  it('aims chase gaze at the simulated body eyes instead of a spectator camera', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(-2.5, 1.6, -2);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      renderer.setPlayerEyePosition([2, 0, -2]);
+      const zombie = makeZombie([0, 0, -4]);
+      zombie.mode = 'chase';
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(zombie);
+      for (let frame = 0; frame < 20; frame++) {
+        renderer.sync(store, 1 / 20, 1);
+      }
+      const head = renderedHead(renderer, id);
+      const bodyEyeDirection: Vec3 = [2 - head.center[0], -head.center[1], -head.center[2]];
+      const cameraDirection: Vec3 = [-2.5 - head.center[0], 1.6 - head.center[1], -head.center[2]];
+      expect(directionAngle(head.forward, bodyEyeDirection)).toBeLessThan(
+        directionAngle(head.forward, cameraDirection),
+      );
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('labels sight, recent near stimulus, stale attention, and no attention from stored state', () => {
+    const zombie = makeZombie([0, 0, 0]);
+    zombie.mode = 'chase';
+    expect(perceptionLabelFor(zombie, false)).toBe('sees you');
+    zombie.mode = 'investigate';
+    zombie.investigationTier = 'near';
+    zombie.lastPerceived = [1, 0, 1];
+    expect(perceptionLabelFor(zombie, true)).toBe('hears you');
+    expect(perceptionLabelFor(zombie, false)).toBe('remembers');
+    zombie.mode = 'idle';
+    zombie.investigationTier = undefined;
+    zombie.lastPerceived = undefined;
+    expect(perceptionLabelFor(zombie, false)).toBe('unaware');
+  });
+
+  it('does not track after the zombie dies', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(0.6, 1.6, 0);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      const zombie = makeZombie([0, 0, -4], [0, 0, 1]);
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 30, 1);
+      renderer.zombieDied(id, zombie, [0, 0, 0]);
+      const corpse = (renderer as unknown as { corpses: Map<number, { basePose: unknown }> }).corpses.get(id)!;
+      const frozenPose = structuredClone(corpse.basePose);
+      camera.position.set(-2, 1.8, 1);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      store.remove(id);
+      renderer.sync(store, 1 / 30, 1);
+      expect(corpse.basePose).toEqual(frozenPose);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('does not track with a destroyed head', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(0.6, 1.6, 0);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      const zombie = makeZombie([0, 0, -4], [0, 0, 1]);
+      zombie.regions.head = 0;
+      zombie.severed = ['head'];
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 30, 1);
+      const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(
+        id,
+      )!;
+      expect(state.lookAtState).toEqual(LOOK_AT_REST);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('matches the simulation hit boxes to every renderer bone matrix within 1 mm across poses', () => {
     const renderer = new MobActorMeshes(0.5, 8);
     try {
       const store = new MapEntityStore<Zombie>();
       const entries = SHAMBLER_FIGURE_SEEDS.map((seed, index) => {
-        const zombie = makeZombie([index * 4, 0, 0], [0, 0, -1], [], seed);
+        const zombie = makeZombie([index * 4, 0, 0], [0, 0, -1], [], { figureSeed: seed });
         return { seed, zombie, id: store.add(zombie) };
       });
       renderer.sync(store, 0, 1);
@@ -377,7 +704,7 @@ describe('MobActorMeshes', () => {
     try {
       const store = new MapEntityStore<Zombie>();
       const ids = SHAMBLER_FIGURE_SEEDS.map((seed, index) =>
-        store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], seed)),
+        store.add(makeZombie([index * 2, 0, 0], [0, 0, -1], [], { figureSeed: seed })),
       );
       renderer.sync(store, 0, 1);
       const internals = renderer as unknown as {
@@ -387,6 +714,61 @@ describe('MobActorMeshes', () => {
       for (let i = 0; i < ids.length; i++) {
         const state = internals.states.get(ids[i]!)!;
         expect(internals.variants[state.variantIndex]!.walkActorTemplate.seed).toBe(SHAMBLER_FIGURE_SEEDS[i]);
+      }
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('selects the mobgen model from the zombie type data', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const runnerId = store.add(makeZombie([0, 0, 0], [0, 0, -1], [], { type: RUNNER }));
+      renderer.sync(store, 0, 1);
+      const internals = renderer as unknown as {
+        states: Map<number, { variantIndex: number }>;
+        variants: readonly { model: string; figureSeed: number }[];
+      };
+      const variant = internals.variants[internals.states.get(runnerId)!.variantIndex]!;
+      expect(variant.model).toBe(RUNNER.model);
+      expect(variant.figureSeed).toBe(1);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('renders visible actor meshes with bone transforms for every registered zombie type', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const store = new MapEntityStore<Zombie>();
+      const entries = [...registry.zombies.values()].map((type, index) => ({
+        type,
+        id: store.add(makeZombie([index * 3, 0, 0], [0, 0, -1], [], { type })),
+      }));
+      expect(entries.length).toBeGreaterThan(0);
+      renderer.sync(store, 0, 1);
+      const internals = renderer as unknown as {
+        group: { visible: boolean };
+        states: Map<number, { variantIndex: number }>;
+        variants: readonly { mesh: InstancedMesh }[];
+      };
+
+      expect(internals.group.visible).toBe(true);
+      for (const { id, type } of entries) {
+        const state = internals.states.get(id);
+        expect(state).toBeDefined();
+        if (!state) {
+          continue;
+        }
+        const { mesh } = internals.variants[state.variantIndex]!;
+        expect(mesh.visible).toBe(true);
+        expect(mesh.count).toBeGreaterThan(0);
+        expect(mesh.geometry.getAttribute('position').count).toBeGreaterThan(0);
+        const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+        expect(materials.length).toBeGreaterThan(0);
+        expect(materials.every((material) => material.visible)).toBe(true);
+        expect(renderer.boneMatrix(id, 'pelvis'), type.id).toHaveLength(12);
       }
     } finally {
       renderer.dispose();
@@ -603,7 +985,7 @@ describe('MobActorMeshes dismemberment', () => {
     const renderer = new MobActorMeshes(0.5, 4, { poolSize: 2 });
     try {
       const store = new MapEntityStore<Zombie>();
-      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], 1);
+      const zombie = makeZombie([0, 0, 0], [0, 0, -1], [], { figureSeed: 1 });
       const id = store.add(zombie);
       renderer.sync(store, 0, 1);
       renderer.zombieDied(id, zombie);
@@ -722,15 +1104,9 @@ describe('MobActorMeshes dismemberment', () => {
         variants: readonly { rigidParts: ReadonlyMap<string, { mass: number }> }[];
       };
       const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
-      expect(masses).toEqual([
-        ['hand.L', 70 * 0.006],
-        ['hand.R', 70 * 0.006],
-        ['forearm.L', 70 * 0.022],
-        ['forearm.R', 70 * 0.022],
-        ['upperArm.L', 70 * 0.05],
-        ['upperArm.R', 70 * 0.05],
-        ['head', 70 * 0.081],
-      ]);
+      const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+      const expected = SEVERABLE_PARTS.map((part) => [part, template.bodyMassKg * template.massFractions![part]!]);
+      expect(masses).toEqual(expected);
     } finally {
       renderer.dispose();
     }

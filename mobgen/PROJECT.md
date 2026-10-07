@@ -1,3 +1,12 @@
+---
+read_if:
+  - you're changing mobgen body plans, pose generation or validation scope
+  - you're deciding what belongs in mobgen milestone 1 or later
+  - you're integrating a mobgen figure into deadvox
+  - you're tracking the crawler's static silhouette, grounding validator issue or d130 gait and hit response
+  - you're adding render-only gaze tracking or rig-specific eye limits
+---
+
 # mobgen — procedural mob generator
 
 A skelly subproject that procedurally generates "mobile actors" (zombies and
@@ -37,9 +46,11 @@ data, and the defaults must work for any body plan.
 
 - Getting actors into deadvox: export format, batched rendering, level of
   detail (CHALLENGES §1, §9).
-- Body plans other than the humanoid, dismemberment, and animations other
-  than the walk.
-- Checking poses other than the rest pose (CHALLENGES §7).
+- Body plans beyond the humanoid and the static crawler exception; dismemberment.
+- Animations beyond the humanoid walk, crawler's static pose and bounded render-only gaze.
+- Pose validation beyond the humanoid rest pose and crawler support properties in `test/crawler.test.ts` (CHALLENGES §7).
+
+Slice 3.8's static crawler is an exception to the humanoid milestone scope: its body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses `src/mob/crawler.ts`, `crawlerPose`. Rig-specific gaze limits live in `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and the render-only pose adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the static silhouette at 2026-10-07 10:03; the drag gait and in-game hit response remain d130 work, after #325 merges. The crawler's humanoid rest-pose grounding validator issue is tracked for d130: `src/mob/crawler.ts`, `crawlerPose`, supplies the static prone render pose, while `src/core/validate.ts`, `validate`, still applies the humanoid generation rules. In the mobgen viewer, `src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera because the viewer has no perception state.
 
 ## Decisions
 
@@ -123,7 +134,7 @@ Query parameters are `?template=<name>&seed=<n>`, as in gungen.
   detail, generating in a worker (CHALLENGES §1, §9).
 - Joint limits and pose rules (CHALLENGES §7).
 - Wounds during play and dismemberment (CHALLENGES §10).
-- More body plans: crawler, skeleton.
+- More body plans: skeleton. The crawler's body and static pose are the Slice 3.8 exception above; its drag gait remains deferred to d130, after #325 merges.
 - Per-vertex ambient occlusion.
 - A voxelized reference figure as a viewer layer, for calibration.
 

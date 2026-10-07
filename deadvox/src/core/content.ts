@@ -511,6 +511,12 @@ const checkZombies = (registry: Registry, report: Report) => {
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
     }
+    for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
+      const event = zombie.sounds[key];
+      if (!registry.sounds.has(event)) {
+        report('zombies', zombie.id, `.sounds.${key}`, `no sound event "${event}"`);
+      }
+    }
   }
 };
 

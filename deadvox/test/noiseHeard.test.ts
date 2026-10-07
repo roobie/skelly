@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { PerspectiveCamera } from 'three';
 import { expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -14,11 +15,14 @@ import type { SimEvent, Timed } from '../src/core/sim.ts';
 import type { SoundEmission } from '../src/core/soundPicker.ts';
 import { World } from '../src/core/world.ts';
 import { FISTS_MELEE, type Zombie } from '../src/core/zombies.ts';
+import { spawnUnawareShambler } from '../src/debug/shamblerSpawning.ts';
 import { DOOR_ACTION } from '../src/game/doorAction.ts';
+import type { Engine } from '../src/game/engine.ts';
 import { firearmHandlingFor, SHELL_LOAD_SECONDS } from '../src/game/firearmHandling.ts';
 import { startPlayerMelee } from '../src/game/melee.ts';
 import type { MoveIntent } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { MobActorMeshes } from '../src/render/mobActors.ts';
 
 const BASE = 'src/content/base';
 const { registry } = buildRegistry(
@@ -488,6 +492,84 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
   expect(fixture.played.map(({ sound }) => sound)).toEqual(result.sounds.map(({ kind: _kind, ...sound }) => sound));
   for (const observation of result.checks) {
     expect(observation.passed, observation.label).toBe(true);
+  }
+});
+
+it('debug test noise reaches a shambler behind a wall and starts its hearing gaze', () => {
+  const scale = makeScale(0.5);
+  const world = new World();
+  const isSolid = (x: number, y: number, z: number): boolean =>
+    y === 0 || ((Math.abs(x) === 2 || Math.abs(z) === 2) && y >= 1 && y <= 4);
+  const session = createSession({
+    registry,
+    world,
+    isSolid,
+    isOpaque: isSolid,
+    scale,
+    seed: 73,
+    start: 43_200,
+    spawn: [0, 1, 0],
+    ready: () => true,
+    controls: {
+      active: () => true,
+      intent: () => ({ ...IDLE }),
+      yaw: () => 0,
+      pitch: () => 0,
+      walking: () => false,
+      descending: () => false,
+    },
+    audio: { play: () => undefined },
+    notice: () => undefined,
+    onRead: () => {
+      throw new Error('Unexpected reading in debug-noise fixture');
+    },
+  });
+  session.sim.paused = false;
+  const debugEngine = {
+    config: { scale, seed: 73 },
+    registry,
+    spawn: { pos: [0, 1, 0] },
+    isSolid,
+    isOpaque: isSolid,
+    groundAt: () => scale.blockSize,
+  } as unknown as Engine;
+  expect(spawnUnawareShambler(debugEngine, session.body, session.zombies)).toBe(true);
+  const [id, zombie] = [...session.zombieStore.entries()][0]!;
+  for (let frame = 0; frame < 3; frame++) {
+    session.frame(1 / 60);
+  }
+  expect(zombie.mode).not.toBe('chase');
+  expect(zombie.lastPerceived).toBeUndefined();
+  const events = session.sim.events.reader();
+  expect(session.playPlayerSound('player_hurt_light', session.sim.time, { sourceLabel: 'debug test noise' })).toBe(
+    true,
+  );
+  const emitted = events.read();
+  const noise = session.playerAudio.vocalNoise;
+  expect(emitted.some((event) => event.kind === 'noise' && event.event === 'player_hurt_light')).toBe(true);
+  expect(noise).toBeDefined();
+  if (!noise) {
+    throw new Error('Debug test sound did not create a player noise');
+  }
+  for (let frame = 0; frame < 3; frame++) {
+    session.frame(1 / 60);
+  }
+  expect(zombie.mode).toBe('investigate');
+  expect(zombie.investigationTier).toBe('near');
+  expect(zombie.lastPerceived).toEqual(noise.pos);
+
+  const renderer = new MobActorMeshes(scale.blockSize, 2);
+  try {
+    const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+    camera.position.set(4, 2, -3);
+    camera.lookAt(2, 1, 0);
+    camera.updateMatrixWorld(true);
+    renderer.setCamera(camera);
+    renderer.sync(session.zombieStore, 1 / 20, 1, false, 1, session.sim.time);
+    const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(id)!;
+    expect(state.lookAtState).not.toEqual([0, 0, 0, 1]);
+  } finally {
+    renderer.dispose();
   }
 });
 
