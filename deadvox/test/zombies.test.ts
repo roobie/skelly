@@ -20,12 +20,12 @@ import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
 import { gameTimeOfDay, simRate } from '../src/core/time.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
 import {
   FIGURE_BOXES,
   FIGURE_PARTS,
   posedRegionHitDistance,
   posedShamblerRegionBoxes,
-  ZOMBIE_REGION_NAMES,
   type ZombieRegion,
 } from '../src/core/zombieRegions.ts';
 import { ZombieSpawner } from '../src/core/zombieSpawns.ts';

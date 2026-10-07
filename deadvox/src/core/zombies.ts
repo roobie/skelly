@@ -23,12 +23,12 @@ import { soundOcclusion } from './soundOcclusion.ts';
 import { updateStepOffset } from './stepOffset.ts';
 import type { PlayerHitArea } from './wear.ts';
 import { advanceStanceWeight, HIT_FLINCH_DURATION, targetStanceWeight, zombiePoseInputFor } from './zombiePose.ts';
+import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 import {
   type PosedBoneBox,
   posedAmalgamRegionBoxes,
   posedRegionHitDistance,
   posedShamblerRegionBoxes,
-  ZOMBIE_REGION_NAMES,
   type ZombieHitRegion,
   type ZombieRegion,
   type ZombieRegions,
@@ -1169,6 +1169,9 @@ export class ZombieSystem {
         const type = resolveType(zombie.type);
         if (!type) {
           throw new Error(`Missing zombie type ${zombie.type}`);
+        }
+        if (type.model === 'amalgam' && zombie.figureSeed !== AMALGAM_FIGURE_SEED) {
+          throw new Error(`Invalid amalgam figure seed for entity ${id}`);
         }
         const expectedRegions = zombieRegionsFor(type, zombie.figureSeed);
         const expectedRegionIds = Object.keys(expectedRegions);

@@ -11,12 +11,8 @@ import { makeScale } from '../src/core/scale.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { World } from '../src/core/world.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import {
-  posedShamblerRegionBoxes,
-  ZOMBIE_REGION_NAMES,
-  type ZombieRegion,
-  type ZombieRegions,
-} from '../src/core/zombieRegions.ts';
+import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
+import { posedShamblerRegionBoxes, type ZombieRegion, type ZombieRegions } from '../src/core/zombieRegions.ts';
 import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';

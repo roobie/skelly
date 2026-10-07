@@ -2,8 +2,14 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
+import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
-import { amalgamCollisionEnvelope, amalgamFigure, amalgamFigureForType } from '../src/core/amalgamFigure.ts';
+import {
+  AMALGAM_FIGURE_SEED,
+  amalgamCollisionEnvelope,
+  amalgamFigure,
+  amalgamFigureForType,
+} from '../src/core/amalgamFigure.ts';
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
@@ -106,6 +112,46 @@ const findMemberRay = (simulation: ZombieSystem, id: number) => {
   throw new Error('Could not aim at an exposed amalgam member region');
 };
 
+const regionsInsideBounds = (
+  regions: ReturnType<typeof posedAmalgamRegionBoxes>,
+  minBounds: readonly number[],
+  maxBounds: readonly number[],
+): boolean => {
+  for (const boxes of Object.values(regions)) {
+    for (const box of boxes) {
+      for (let axis = 0; axis < 3; axis++) {
+        const min = box.center[axis]! * BLOCK_SIZE - box.halfSize[axis]!;
+        const max = box.center[axis]! * BLOCK_SIZE + box.halfSize[axis]!;
+        if (min < minBounds[axis]! - 1e-6 || max > maxBounds[axis]! + 1e-6) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+};
+
+const boundsOfPosedRegions = (regions: ReturnType<typeof posedAmalgamRegionBoxes>) => {
+  const bounds = {
+    min: [Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY, Number.POSITIVE_INFINITY],
+    max: [Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY],
+  };
+  for (const boxes of Object.values(regions)) {
+    for (const box of boxes) {
+      for (let axis = 0; axis < 3; axis++) {
+        const extent = [0, 1, 2].reduce(
+          (sum, column) => sum + Math.abs(box.rotation[axis * 3 + column]!) * box.halfSize[column]!,
+          0,
+        );
+        const center = box.center[axis]! * BLOCK_SIZE;
+        bounds.min[axis] = Math.min(bounds.min[axis]!, center - extent);
+        bounds.max[axis] = Math.max(bounds.max[axis]!, center + extent);
+      }
+    }
+  }
+  return bounds;
+};
+
 describe('amalgam body and combat seam', () => {
   it('derives a tight collision envelope and region boxes from the realized body manifest', () => {
     expect(registry.zombies.get('amalgam')?.debugOnly).toBe(true);
@@ -139,15 +185,12 @@ describe('amalgam body and combat seam', () => {
       blockSize: BLOCK_SIZE,
       severed: [],
     });
-    for (const boxes of Object.values(posed)) {
-      for (const box of boxes) {
-        for (let axis = 0; axis < 3; axis++) {
-          const min = box.center[axis]! * BLOCK_SIZE - box.halfSize[axis]!;
-          const max = box.center[axis]! * BLOCK_SIZE + box.halfSize[axis]!;
-          expect(min).toBeGreaterThanOrEqual(localMin[axis]! - 1e-6);
-          expect(max).toBeLessThanOrEqual(localMax[axis]! + 1e-6);
-        }
-      }
+    expect(regionsInsideBounds(posed, localMin, localMax)).toBe(true);
+    const regionBounds = boundsOfPosedRegions(posed);
+    const scaledVoxel = figure.realized.voxels.size * figure.scale;
+    for (let axis = 0; axis < 3; axis++) {
+      expect(Math.abs(regionBounds.min[axis]! - localMin[axis]!)).toBeLessThanOrEqual(scaledVoxel);
+      expect(Math.abs(regionBounds.max[axis]! - localMax[axis]!)).toBeLessThanOrEqual(scaledVoxel);
     }
 
     for (const region of figure.manifest.regions) {
@@ -340,6 +383,31 @@ describe('amalgam body and combat seam', () => {
     };
     expect(activeAmalgamMembers(noMembers)).toHaveLength(0);
     expect(zombieAttackReachMetres(noMembers)).toBe(0);
+  });
+
+  it('rejects an amalgam save with a seed that has no rendered variant', () => {
+    const simulation = system();
+    const type = registry.zombies.get('amalgam')!;
+    const id = simulation.add(type, [0, 1, 0]);
+    const state = structuredClone(simulation.snapshotState());
+    const { zombie } = state.zombies.find((entry) => entry.id === id)!;
+    const unsupportedSeed = SHAMBLER_FIGURE_SEEDS.find((seed) => seed !== AMALGAM_FIGURE_SEED)!;
+    const unsupportedFigure = amalgamFigureForType(type, unsupportedSeed);
+    zombie.figureSeed = unsupportedSeed;
+    zombie.regions = Object.fromEntries(
+      unsupportedFigure.manifest.regions.map(({ id: region }) => {
+        const healthKey = region === 'core.trunk' ? region : `member.${region.slice(region.lastIndexOf('.') + 1)}`;
+        return [region, type.regions[healthKey]!];
+      }),
+    );
+    const envelope = amalgamCollisionEnvelope(unsupportedFigure, BLOCK_SIZE);
+    zombie.body.halfWidth = envelope.halfWidth;
+    zombie.body.halfDepth = envelope.halfDepth;
+    zombie.body.height = envelope.height;
+
+    expect(() => system().restoreState(state, (typeId) => registry.zombies.get(typeId))).toThrow(
+      `Invalid amalgam figure seed for entity ${id}`,
+    );
   });
 
   it('round-trips an amalgam seed, dynamic regions and rectangular envelope through the save codec', async () => {

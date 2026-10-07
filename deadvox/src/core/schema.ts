@@ -44,6 +44,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
@@ -935,6 +936,8 @@ export type ZombieRegion = ShamblerHitRegion;
 export type ZombieHitRegion = ZombieRegion | 'core.trunk' | `member.${number}.${ShamblerHitRegion}`;
 export type ZombieRegions = Record<string, number>;
 
+const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
+
 const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam']);
 
 const ZOMBIE_ABILITIES = [
@@ -1074,6 +1077,12 @@ const ZombieSchema = strictObject({
   /** What's in its pockets. */
   loot: optional(Id),
 });
+
+const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): boolean => {
+  const expected = zombie.model === 'amalgam' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
+  const keys = Object.keys(zombie.regions);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
+};
 
 /** Actor palettes are content so appearance doesn't live in renderer code. */
 const FigureSchema = strictObject({
@@ -1261,6 +1270,7 @@ const SECTION_DESCRIPTOR = {
           (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.bodyScale !== undefined),
           'amalgam must define bodyScale',
         ),
+        check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
       ),
     ),
     label: 'zombie types',

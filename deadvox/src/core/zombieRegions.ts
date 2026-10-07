@@ -6,7 +6,8 @@ import { boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { type BoneVoxelBox, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { AmalgamFigure } from './amalgamFigure.ts';
-import type { ShamblerHitRegion, ZombieHitRegion, ZombieRegion } from './schema.ts';
+import type { ZombieHitRegion, ZombieRegion } from './schema.ts';
+import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 export type { ZombieHitRegion, ZombieRegion, ZombieRegions } from './schema.ts';
 
@@ -26,14 +27,6 @@ export const FIGURE_BOXES: Readonly<Record<FigurePart, FigureBox>> = {
   leftLeg: { size: [0.18, 0.62, 0.2], at: [-0.12, 0.62, 0] },
   rightLeg: { size: [0.18, 0.62, 0.2], at: [0.12, 0.62, 0] },
 };
-export const ZOMBIE_REGION_NAMES: readonly ShamblerHitRegion[] = [
-  'head',
-  'torso',
-  'leftArm',
-  'rightArm',
-  'leftLeg',
-  'rightLeg',
-];
 export const FIGURE_PARTS: readonly FigurePart[] = ['body', 'head', 'leftArm', 'rightArm', 'leftLeg', 'rightLeg'];
 
 const rayBoxEntry = (origin: Vec3, direction: Vec3, halfSize: readonly number[]): number | undefined => {
