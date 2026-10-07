@@ -36,7 +36,11 @@ describe('time lint boundary and naming rules', () => {
         "roundsPerSimMinute": 11,
         "renderGameTimeOfDay": 12,
         "fooSimSecondsPerHour": 13,
-        "gameTimeOfDayMs": 14
+        "gameTimeOfDayMs": 14,
+        "hour": 15,
+        "minute": 16,
+        "gameHourOfDay": 17,
+        "gameMinute": 18
       }`,
       'json',
     );
@@ -50,6 +54,8 @@ describe('time lint boundary and naming rules', () => {
       'fooMsReal',
       'fooSimSecondsPerHour',
       'gameTimeOfDayMs',
+      'hour',
+      'minute',
     ]);
   });
 

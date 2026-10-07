@@ -17,15 +17,15 @@ const NAME_TOKEN = /[A-Z]+(?=[A-Z][a-z]|$)|[A-Z]?[a-z]+|[0-9]+/g;
 const CLOCK_TOKENS = new Set(['sim', 'game', 'real']);
 const UNIT_TOKENS = new Set(['ms', 'milliseconds', 'seconds', 'minutes', 'hours', 'rpm', 'timestamp']);
 const TEMPORAL_SEMANTIC =
-  /(?:time|duration|elapsed|interval|cooldown|windup|burntime|burnremaining|rotsafter|lastplayedat|startedat|expiresat|litat|timestamp|timer)/;
+  /(?:time|duration|elapsed|interval|cooldown|windup|burntime|burnremaining|rotsafter|lastplayedat|startedat|expiresat|litat|timestamp)/;
 const nameTokens = (name) => (name.match(NAME_TOKEN) ?? []).map((token) => token.toLowerCase());
 const isUnitToken = (tokens, index) => {
   const token = tokens[index];
-  if (UNIT_TOKENS.has(token)) {
+  if (UNIT_TOKENS.has(token) || ['minute', 'hour'].includes(token)) {
     return true;
   }
   return (
-    ['second', 'minute', 'hour'].includes(token) &&
+    token === 'second' &&
     (tokens[index - 1] === 'per' || (CLOCK_TOKENS.has(tokens[index - 1]) && tokens[index - 2] === 'per'))
   );
 };

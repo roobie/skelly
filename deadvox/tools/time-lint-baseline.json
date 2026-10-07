@@ -14,6 +14,7 @@
       "timedOut": 1
     },
     "bench/run.ts": {
+      "hour": 1,
       "jogMetresPerSecond": 1,
       "jogSeconds": 1,
       "loadTimeout": 2,
@@ -25,7 +26,11 @@
       "startedAt": 1,
       "time": 2
     },
+    "bench/shamblers-cpu.mjs": {
+      "hour": 1
+    },
     "bench/shamblers.ts": {
+      "hour": 1,
       "startedAt": 1,
       "time": 2
     },
@@ -153,6 +158,7 @@
       "cooldown": 3,
       "expiresAt": 1,
       "hitFlinchTime": 1,
+      "hour": 6,
       "idleSoundTimer": 2,
       "lookTimer": 2,
       "lurchDuration": 2,
@@ -273,7 +279,8 @@
       "timer": 1
     },
     "game/session.ts": {
-      "expiresAt": 1
+      "expiresAt": 1,
+      "hour": 1
     },
     "game/streamer.ts": {
       "genMs": 1,
