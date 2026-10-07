@@ -4,6 +4,7 @@ import type { FurnitureDef, RecipeDef, Registry } from './content.ts';
 import { disassemblyOutputs } from './disassembly.ts';
 import { HAMLET_TEMPLATES, possibleHamletZombies } from './hamlet.ts';
 import { WORK_IN_PROGRESS } from './inventory.ts';
+import type { SiteLayoutDef } from './schema.ts';
 import { compileTemplate, type SpawnMarker } from './templates.ts';
 
 /** BR's content-count exclusions for the current base; extend with new debug/case/part definitions. */
@@ -55,6 +56,15 @@ const addLoot = (registry: Registry, roots: ReadonlySet<string>): Set<string> =>
 const inputsReady = (recipe: RecipeDef, items: ReadonlySet<string>): boolean =>
   recipe.components.every((group) => group.some((component) => items.has(component.item)));
 
+const addUnpackedContents = (registry: Registry, items: Set<string>): void => {
+  for (const id of items) {
+    const payload = registry.items.get(id)?.unpack?.item;
+    if (payload !== undefined) {
+      items.add(payload);
+    }
+  }
+};
+
 interface QualitySources {
   registry: Registry;
   items: ReadonlySet<string>;
@@ -100,6 +110,7 @@ const closure = ({ registry, found, tools, knowledge, skills, workstationQualiti
   let previous: number;
   do {
     previous = items.size;
+    addUnpackedContents(registry, items);
     addDisassemblyOutputs(registry, items);
     for (const recipe of registry.recipes.values()) {
       if (
@@ -133,9 +144,9 @@ const addWorkstationSource = (
   }
 };
 
-const authoredFixedLootItems = (registry: Registry): Set<string> => {
+const authoredFixedLootItems = (layouts: readonly SiteLayoutDef[]): Set<string> => {
   const items = new Set<string>();
-  for (const layout of registry.layouts.values()) {
+  for (const layout of layouts) {
     for (const building of layout.buildings) {
       for (const override of building.fixedLoot ?? []) {
         for (const fixed of override.items) {
@@ -152,10 +163,10 @@ const worldSources = (registry: Registry) => {
   const workstations = new Set<string>();
   const workstationQualities = new Map<string, number>();
   const markers = new Map<string, readonly SpawnMarker[]>();
-  // Authored sites place their buildings' containers too, so 3.11's military camp makes its loot reachable.
-  const authored = [...registry.layouts.values()].flatMap((layout) => layout.buildings.map(({ template }) => template));
+  const authoredLayouts = [...registry.layouts.values()].filter((layout) => !layout.demo);
+  const authoredTemplates = authoredLayouts.flatMap((layout) => layout.buildings.map(({ template }) => template));
   // Compiling uses the actual marked pieces/spawns, not unused palette declarations.
-  for (const id of new Set([...HAMLET_TEMPLATES, ...authored])) {
+  for (const id of new Set([...HAMLET_TEMPLATES, ...authoredTemplates])) {
     const definition = registry.templates.get(id);
     if (!definition) {
       continue; // A rejected/missing template provides no sources.
@@ -178,9 +189,10 @@ const worldSources = (registry: Registry) => {
     }
   }
   const found = addLoot(registry, roots);
-  for (const item of authoredFixedLootItems(registry)) {
+  for (const item of authoredFixedLootItems(authoredLayouts)) {
     found.add(item);
   }
+  addUnpackedContents(registry, found);
   return { found, workstations, workstationQualities };
 };
 

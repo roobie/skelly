@@ -38,8 +38,7 @@ const server = await createServer({
 });
 await server.listen();
 const browser = await chromium.launch({
-  executablePath:
-    process.env.CHROME_BIN ?? `${process.env.HOME}/.cache/ms-playwright/chromium-1243/chrome-linux64/chrome`,
+  executablePath: process.env.CHROME_BIN ?? chromium.executablePath(),
   headless: true,
   args: browserStageArgs('save-controller-regressions'),
 });

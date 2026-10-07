@@ -30,6 +30,12 @@ const projectionErrorPixels = (direction: readonly number[]): readonly [number, 
     depth,
   ];
 };
+const projectedVerticalPixels = (point: readonly number[]): number => {
+  const viewportHeight = 720;
+  const depth = -point[2]!;
+  const tangent = Math.tan((PLAYER_VIEW_FOV_DEGREES * Math.PI) / 360);
+  return (point[1]! / depth / tangent) * (viewportHeight / 2);
+};
 const items = new Map(source.items);
 items.set(rifleType, { ...items.get(rifleType)!, twoHanded: true });
 const registry = { ...source, items };
@@ -101,7 +107,7 @@ describe('actual-slot held placement', () => {
 
   it('projects each exported sight line to screen centre within one pixel in ADS', () => {
     const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
-    for (const modelId of ['rifle_assault', 'rifle_ak']) {
+    for (const modelId of ['rifle_assault', 'rifle_ak', 'shotgun_pump']) {
       const model = registry.models.get(modelId)!;
       expect(model.sight?.eyeReliefMetres).toBeGreaterThan(0);
       const pose = heldFirearmTransform({
@@ -124,6 +130,11 @@ describe('actual-slot held placement', () => {
       expect(depth).toBeGreaterThan(0);
       expect(horizontalErrorPixels).toBeLessThanOrEqual(1);
       expect(verticalErrorPixels).toBeLessThanOrEqual(1);
+      if (modelId === 'shotgun_pump') {
+        const barrelCenter = pose.rootOffset.map((offset, axis) => offset + pose.muzzleOffset[axis]!);
+        expect(barrelCenter[2]).toBeLessThan(0);
+        expect(projectedVerticalPixels(barrelCenter)).toBeLessThan(0);
+      }
     }
   });
 
