@@ -119,7 +119,7 @@ const firearmScreen = new InventoryScreen(document.querySelector('#firearm-inven
 });
 firearmScreen.selected = rifle;
 firearmScreen.open();
-const fitSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot] button');
+const fitSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
 if (!fitSlotButton) throw Error('Inspect view did not offer the certified fixture fit');
 fitSlotButton.click();
 firearmQueue.tick(1);
