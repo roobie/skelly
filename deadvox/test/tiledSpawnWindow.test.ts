@@ -1,7 +1,8 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
+import { buildRegistry } from '../src/core/content.ts';
 
 const mapsPath = join(process.cwd(), 'maps');
 const projectPath = join(mapsPath, 'deadvox.tiled-project');
@@ -11,6 +12,10 @@ const TILE_MAP = 'TileMap';
 const TEXT_FILE = 'TextFile';
 const TILED = 'tiled';
 const POINT = 'Point';
+const RECTANGLE = 'Rectangle';
+const POLYGON = 'Polygon';
+const POLYLINE = 'Polyline';
+const ELLIPSE = 'Ellipse';
 const ORTHOGONAL = 'Orthogonal';
 const READ_ONLY = 'ReadOnly';
 const WINDOW_FROM = 'window_from';
@@ -30,7 +35,13 @@ const TiledTextFile = class {
 Object.defineProperty(TiledTextFile, READ_ONLY, { value: 0 });
 const tiledGlobals: Record<string, unknown> = {};
 tiledGlobals[FILE_INFO] = { path: () => mapsPath };
-tiledGlobals[MAP_OBJECT] = { [POINT]: 'point' };
+tiledGlobals[MAP_OBJECT] = {
+  [POINT]: 'point',
+  [RECTANGLE]: 'rectangle',
+  [POLYGON]: 'polygon',
+  [POLYLINE]: 'polyline',
+  [ELLIPSE]: 'ellipse',
+};
 tiledGlobals[TILE_MAP] = { [ORTHOGONAL]: 'orthogonal' };
 tiledGlobals[TEXT_FILE] = TiledTextFile;
 tiledGlobals[TILED] = {
@@ -44,6 +55,56 @@ Object.assign(globalThis, tiledGlobals);
 
 // @ts-expect-error Tiled scripts are JavaScript modules without a TypeScript declaration.
 const { exportLayout } = await import('../maps/extensions/deadvox.mjs');
+
+const shapeFor = (entry: { point?: boolean; polyline?: unknown[]; polygon?: unknown[]; ellipse?: boolean }) => {
+  if (entry.point) {
+    return 'point';
+  }
+  if (entry.polyline) {
+    return 'polyline';
+  }
+  if (entry.polygon) {
+    return 'polygon';
+  }
+  if (entry.ellipse) {
+    return 'ellipse';
+  }
+  return 'rectangle';
+};
+
+interface ExportedWindow {
+  from: string;
+  to?: string;
+  [field: string]: unknown;
+}
+interface ExportedShambler {
+  window?: ExportedWindow;
+  [field: string]: unknown;
+}
+interface ExportedLayout {
+  startTime?: string;
+  shamblers: ExportedShambler[];
+  [field: string]: unknown;
+}
+
+const normalizeLayout = (layout: ExportedLayout) => {
+  const { startTime, shamblers, ...fields } = layout;
+  return {
+    ...fields,
+    ...(startTime === undefined ? {} : { startTimeGameTimeOfDay: startTime }),
+    shamblers: shamblers.map(({ window, ...spawn }) => {
+      if (!window) {
+        return spawn;
+      }
+      const { from, to, ...windowFields } = window;
+      const normalizedWindow: Record<string, unknown> = { ...windowFields, fromGameTimeOfDay: from };
+      if (to !== undefined) {
+        normalizedWindow.toGameTimeOfDay = to;
+      }
+      return { ...spawn, window: normalizedWindow };
+    }),
+  };
+};
 
 const object = (className: string, x: number, y: number, properties: Record<string, unknown>) => ({
   name: className,
@@ -83,7 +144,86 @@ describe('Tiled spawn-window export', () => {
       layerAt: () => layer,
       property: (name: string) => ({ id: 'timed_fixture', ground: 0 })[name as 'id' | 'ground'],
     };
-    expect(exportLayout(map).layouts[0]!.shamblers[0]!.window).toEqual({ from: 'dusk', to: 'dawn' });
+    const {
+      layouts: [layout],
+    } = exportLayout(map);
+    const {
+      shamblers: [shambler],
+    } = layout;
+    expect(shambler.window).toEqual({ from: 'dusk', to: 'dawn' });
+  });
+
+  it('keeps the committed playtest layout exported from its Tiled source', () => {
+    const source = JSON.parse(readFileSync(join(mapsPath, 'playtest.tmj'), 'utf8')) as {
+      width: number;
+      height: number;
+      tilewidth: number;
+      tileheight: number;
+      infinite: boolean;
+      orientation: string;
+      properties: { name: string; value: unknown }[];
+      layers: {
+        name: string;
+        type: string;
+        x: number;
+        y: number;
+        objects: {
+          properties?: { name: string; value: unknown }[];
+          point?: boolean;
+          polyline?: unknown[];
+          polygon?: unknown[];
+          ellipse?: boolean;
+          type: string;
+        }[];
+      }[];
+    };
+    const map = {
+      tileWidth: source.tilewidth,
+      tileHeight: source.tileheight,
+      infinite: source.infinite,
+      orientation: source.orientation,
+      width: source.width,
+      height: source.height,
+      layerCount: source.layers.length,
+      layerAt: (index: number) => {
+        const layer = source.layers[index]!;
+        return {
+          name: layer.name,
+          offset: { x: layer.x, y: layer.y },
+          isGroupLayer: layer.type === 'group',
+          isObjectLayer: layer.type === 'objectgroup',
+          objects: layer.objects.map((entry) => {
+            const properties = Object.fromEntries((entry.properties ?? []).map(({ name, value }) => [name, value]));
+            return {
+              ...entry,
+              polygon: entry.polygon ?? entry.polyline,
+              className: entry.type,
+              shape: shapeFor(entry),
+              property: (name: string) => properties[name],
+            };
+          }),
+        };
+      },
+      property: (name: string) => source.properties.find((property) => property.name === name)?.value,
+    };
+    const {
+      layouts: [rawLayout],
+    } = exportLayout(map);
+    const exported = { layouts: [normalizeLayout(rawLayout)] };
+    const contentPath = join(mapsPath, '../src/content/base');
+    const base = readdirSync(contentPath)
+      .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
+      .sort()
+      .map((file) => ({
+        source: file,
+        data: JSON.parse(readFileSync(join(contentPath, file), 'utf8')) as unknown,
+      }));
+    const committed = JSON.parse(readFileSync(join(contentPath, 'layouts-playtest.json'), 'utf8')) as unknown;
+    const emitted = buildRegistry([...base, { source: 'tiled-export-test.json', data: exported }]);
+    const checkedIn = buildRegistry([...base, { source: 'checked-in-layout-test.json', data: committed }]);
+    expect(emitted.issues.filter((issue) => issue.source === 'tiled-export-test.json')).toEqual([]);
+    expect(checkedIn.issues.filter((issue) => issue.source === 'checked-in-layout-test.json')).toEqual([]);
+    expect(emitted.registry.layouts.get('playtest')).toEqual(checkedIn.registry.layouts.get('playtest'));
   });
 
   it('rejects a close boundary without an opening boundary', () => {

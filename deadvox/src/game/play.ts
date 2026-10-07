@@ -116,7 +116,7 @@ import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 /** Metres: how far away you can open a door or search a container you're looking at. */
-const USE_REACH = 2;
+export const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
 const SKIP_SLACK = 1e-6;
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
@@ -265,7 +265,7 @@ export const startPlay = (
   const { scale } = config;
   const s = scale.blockSize;
 
-  const playerStart = playerStartFromWorld(engine, scale);
+  const playerStart = playerStartFromWorld(engine, scale, config.debugStart, options.restore !== undefined);
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
