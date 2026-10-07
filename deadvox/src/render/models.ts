@@ -58,7 +58,9 @@ export const fittedPartFrame = (slot: ItemLookSlot): Group => {
   const frame = new Group();
   frame.position.set(...slot.at);
   if (slot.direction && slot.up) {
-    if (!slot.mountFrame) throw new Error(`Fitted model ${slot.model ?? slot.slot} has no exported mount frame`);
+    if (!slot.mountFrame) {
+      throw new Error(`Fitted model ${slot.model ?? slot.slot} has no exported mount frame`);
+    }
     const sourceNormal = new Vector3(...slot.mountFrame.normal).normalize();
     const sourceUp = new Vector3(...slot.mountFrame.up).normalize();
     const sourceSide = sourceNormal.clone().cross(sourceUp).normalize();

@@ -310,7 +310,10 @@ try {
   const remove = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentRemove());
   process.stdout.write(`${engine}: attachment removal control ${JSON.stringify(remove)}\n`);
   await page.locator(remove.selector).click();
-  await page.evaluate((queuedBefore) => globalThis.scrollFixture.finishAttachmentRemove(queuedBefore), remove.queuedBefore);
+  await page.evaluate(
+    (queuedBefore) => globalThis.scrollFixture.finishAttachmentRemove(queuedBefore),
+    remove.queuedBefore,
+  );
   process.stdout.write(
     `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
   );

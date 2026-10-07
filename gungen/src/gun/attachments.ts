@@ -298,7 +298,7 @@ export const attachmentMetadata = (
       case 'foregrip':
         return foregripMetadata(part, metresPerUnit);
       default:
-        return undefined;
+        return;
     }
   })();
   if (!metadata) {
