@@ -1,7 +1,8 @@
 // Transient keyboard intent only. Existing HandlingQueue owns shell/rack jobs.
 /**
  * Real milliseconds. A press held for `hold` loads; a second press starting within `doublePress` of a tap racks
- * if released before `hold`, or removes the magazine once held for `hold` (CONTROLS.md, "Reload, rack, remove").
+ * if released before `hold`. Held for `hold`, it removes the magazine, or on a gun without one keeps racking
+ * (CONTROLS.md, "Reload, rack, remove").
  */
 export const RELOAD_GESTURE_MS = { hold: 250, doublePress: 250 } as const;
 
@@ -12,8 +13,14 @@ export interface ReloadBinding {
   readonly load: () => boolean;
   /** One admitted load per press, which release doesn't cancel: a magazine change rather than shell by shell. */
   readonly oneAction?: boolean;
-  readonly rack: () => void;
+  /** True only when the rack was admitted. */
+  readonly rack: () => boolean;
   readonly remove: () => void;
+  /**
+   * Only on a gun without a detachable magazine, such as the pump: whether a rack would still take anything out. A
+   * held second press racks instead of removing, and racks again after each rack while this holds.
+   */
+  readonly stillLoaded?: () => boolean;
   readonly cancelLoad: () => void;
 }
 
@@ -31,6 +38,8 @@ export interface ReloadTarget {
   readonly load: (time: number) => string | undefined;
   readonly rack: (time: number) => string | undefined;
   readonly remove: (time: number) => string | undefined;
+  /** See `ReloadBinding.stillLoaded`. */
+  readonly stillLoaded?: () => boolean;
   readonly cancelLoad: () => void;
 }
 
@@ -40,17 +49,21 @@ export const reloadTarget = (
     readonly reloadsInOneAction: (uid: number) => boolean;
     readonly cock: (uid: number, time: number) => string | undefined;
     readonly removeMagazine: (uid: number, time: number) => string | undefined;
+    readonly stillLoaded: (uid: number) => boolean;
   },
   magazines: ReloadOwner,
 ): ReloadTarget | undefined => {
   const gun = firearms.reloadableUid();
   if (gun !== undefined) {
+    const oneAction = firearms.reloadsInOneAction(gun);
     return {
       uid: gun,
-      oneAction: firearms.reloadsInOneAction(gun),
+      oneAction,
       load: (time) => firearms.loadNext(gun, time),
       rack: (time) => firearms.cock(gun, time),
       remove: (time) => firearms.removeMagazine(gun, time),
+      // A magazine change is one action; only a gun loaded round by round unloads by racking.
+      ...(oneAction ? {} : { stillLoaded: () => firearms.stillLoaded(gun) }),
       cancelLoad: () => firearms.cancelLoad(gun),
     };
   }
@@ -70,10 +83,12 @@ export const reloadTarget = (
 interface Press {
   readonly binding: ReloadBinding;
   readonly at: number;
-  /** A press that followed a tap: it racks on an early release, or removes once held. */
+  /** A press that followed a tap: it racks on an early release, or once held removes or keeps racking. */
   readonly second: boolean;
   released: boolean;
   loading: boolean;
+  /** A held second press on a gun without a detachable magazine, racking until release or nothing is left. */
+  racking: boolean;
 }
 
 /** One binding can later provide different firearm actions without changing the gesture. */
@@ -94,12 +109,14 @@ export class ReloadInput {
       now - previous.at < RELOAD_GESTURE_MS.doublePress
     ) {
       // Only this press's length tells a rack from a removal, so neither acts until it is released or held.
-      this.press = { binding, at: now, second: true, released: false, loading: false };
+      this.press = { binding, at: now, second: true, released: false, loading: false, racking: false };
       return;
     }
     this.advance(now, binding);
     this.down = true;
-    this.press = binding ? { binding, at: now, second: false, released: false, loading: false } : undefined;
+    this.press = binding
+      ? { binding, at: now, second: false, released: false, loading: false, racking: false }
+      : undefined;
   }
 
   keyUp(now: number): void {
@@ -109,8 +126,10 @@ export class ReloadInput {
       return;
     }
     if (press.second) {
-      this.press = undefined;
-      (now - press.at < RELOAD_GESTURE_MS.hold ? press.binding.rack : press.binding.remove)();
+      if (!press.racking) {
+        this.secondPress(press, now - press.at >= RELOAD_GESTURE_MS.hold);
+      }
+      this.press = undefined; // Releasing a held rack lets the cycle under way finish and starts no other.
     } else if (press.loading || now - press.at >= RELOAD_GESTURE_MS.hold) {
       this.cancel();
     } else {
@@ -128,9 +147,10 @@ export class ReloadInput {
       return;
     }
     if (press.second) {
-      if (now - press.at >= RELOAD_GESTURE_MS.hold) {
-        this.press = undefined;
-        press.binding.remove();
+      if (press.racking) {
+        this.rackAgain(press);
+      } else if (now - press.at >= RELOAD_GESTURE_MS.hold) {
+        this.secondPress(press, true);
       }
       return;
     }
@@ -144,6 +164,29 @@ export class ReloadInput {
       if (!press.loading || press.binding.oneAction) {
         this.press = undefined; // Full tube/no loose shells, or the one action began: wait for a fresh press.
       }
+    }
+  }
+
+  /** A released second press racks once; a held one removes the magazine, or starts racking a gun without one. */
+  private secondPress(press: Press, held: boolean): void {
+    if (!held) {
+      press.binding.rack();
+    } else if (press.binding.stillLoaded) {
+      press.racking = press.binding.rack();
+      this.press = press.racking ? press : undefined;
+    } else {
+      this.press = undefined;
+      press.binding.remove();
+    }
+  }
+
+  /** Each finished rack starts the next while anything is left to take out; a refused rack ends the hold. */
+  private rackAgain(press: Press): void {
+    if (press.binding.busy()) {
+      return;
+    }
+    if (!(press.binding.stillLoaded?.() && press.binding.rack())) {
+      this.press = undefined;
     }
   }
 

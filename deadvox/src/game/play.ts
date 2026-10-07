@@ -1188,6 +1188,7 @@ export const startPlay = (
       load: () => admit('firearm.load', target.load(sim.time)),
       rack: () => admit('firearm.rack', target.rack(sim.time)),
       remove: () => admit('firearm.remove', target.remove(sim.time)),
+      ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
       cancelLoad: target.cancelLoad,
     };
   };

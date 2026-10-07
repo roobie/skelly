@@ -18,6 +18,7 @@ const fixture = () => {
     },
     rack: () => {
       calls.racks += 1;
+      return true;
     },
     remove: () => {
       calls.removes += 1;
@@ -77,6 +78,17 @@ describe('R hold/double discrimination', () => {
     f.input.advance(afterWindows, f.binding);
     f.input.keyUp(afterWindows + 1);
     expect(f.calls).toEqual({ loads: 0, racks: 0, removes: 1, cancelled: 0 });
+  });
+  it('on a gun without a magazine, a second press released after the hold racks once, even unseen by a frame', () => {
+    const f = fixture();
+    const binding: ReloadBinding = { ...f.binding, stillLoaded: () => true };
+    f.input.keyDown(0, binding);
+    f.input.keyUp(shortTap);
+    const second = RELOAD_GESTURE_MS.doublePress - 1;
+    f.input.keyDown(second, binding);
+    f.input.keyUp(second + RELOAD_GESTURE_MS.hold);
+    f.input.advance(afterWindows, binding);
+    expect(f.calls).toEqual({ loads: 0, racks: 1, removes: 0, cancelled: 0 });
   });
   it('a press starting after the double window is a fresh hold: it loads and never removes', () => {
     const f = fixture();

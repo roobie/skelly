@@ -625,6 +625,12 @@ export class FirearmMechanics {
     return this.heldMagazineFed()?.uid === uid;
   }
 
+  /** Whether a rack would still take something out of the gun: a round or case in the chamber, or tube rounds. */
+  stillLoaded(uid: number): boolean {
+    const state = this.inventory.itemByUid(uid)?.firearm;
+    return state !== undefined && (state.chamber !== 'empty' || (state.tube?.length ?? 0) > 0);
+  }
+
   /** Loose carried cartridges only; ascending UID makes the source order save-stable. */
   loadNext(uid: number, time: number): string | undefined {
     const rifle = this.heldMagazineFed();

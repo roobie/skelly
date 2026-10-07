@@ -22,7 +22,7 @@ import {
   firearmHandlingFor,
   SHELL_LOAD_SECONDS,
 } from '../src/game/firearmHandling.ts';
-import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
+import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const base = 'src/content/base';
@@ -300,9 +300,7 @@ describe('real pump ammunition', () => {
         uid: f.gun.uid,
         busy: () => f.queue.busy || f.mechanics.busy,
         load: () => f.mechanics.loadNext(f.gun.uid, now / 1000) === undefined,
-        rack: () => {
-          f.mechanics.cock(f.gun.uid, now / 1000);
-        },
+        rack: () => f.mechanics.cock(f.gun.uid, now / 1000) === undefined,
         remove: () => undefined,
         cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
       };
@@ -327,9 +325,7 @@ describe('real pump ammunition', () => {
       uid: f.gun.uid,
       busy: () => f.queue.busy,
       load: () => f.mechanics.loadNext(f.gun.uid, 0.25) === undefined,
-      rack: () => {
-        f.mechanics.cock(f.gun.uid, 0.25);
-      },
+      rack: () => f.mechanics.cock(f.gun.uid, 0.25) === undefined,
       remove: () => undefined,
       cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
     };
@@ -400,6 +396,64 @@ describe('real pump ammunition', () => {
     f.load(3);
     expect(f.shells.count).toBe(18);
     expect(f.gun.firearm?.tube).toEqual([shellType, shellType]);
+  });
+
+  it.each([
+    { holdCycles: Number.POSITIVE_INFINITY, label: 'until the gun is empty' },
+    { holdCycles: 1.5, label: 'released mid-rack, finishing that rack only' },
+  ])('a tap, then a held press, racks the pump again and again: $label', ({ holdCycles }) => {
+    // BR, 2026-10-07 13:21 (CONTROLS.md, "Reload, rack, remove"): keep racking while R is held.
+    const f = fixture();
+    for (let i = 0; i < f.capacity; i++) {
+      f.load(i);
+    }
+    f.rack(f.capacity);
+    const inGun = 1 + f.gun.firearm!.tube!.length;
+    const target = reloadTarget(f.mechanics, {
+      reloadableUid: () => undefined,
+      loadNext: () => 'No magazine',
+      cancelLoad: () => undefined,
+    })!;
+    let now = f.capacity * 1000 + 1000;
+    const binding: ReloadBinding = {
+      uid: target.uid,
+      busy: () => f.queue.busy || f.mechanics.busy,
+      load: () => target.load(now / 1000) === undefined,
+      rack: () => target.rack(now / 1000) === undefined,
+      remove: () => target.remove(now / 1000),
+      ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
+      cancelLoad: target.cancelLoad,
+    };
+    const frame = (ms: number) => {
+      now += ms;
+      f.finish(ms / 1000, now / 1000);
+      input.advance(now, binding);
+    };
+    const input = new ReloadInput();
+    input.keyDown(now, binding);
+    frame(RELOAD_GESTURE_MS.doublePress / 3);
+    input.keyUp(now);
+    input.keyDown(now, binding);
+    const held = now;
+    const rackMs = firearmHandlingFor(f.gun, registry).action.hand.durationSimSeconds * 1000;
+    const releaseAt = held + RELOAD_GESTURE_MS.hold + holdCycles * rackMs;
+    let landing: Vec3 | undefined;
+    for (let step = 0; step < (inGun + 2) * (rackMs / 16 + 2); step++) {
+      if (now >= releaseAt) {
+        input.keyUp(now);
+      }
+      frame(16);
+      landing ??= [...f.inventory.piles.values()].find((pile) => pile.items.some(({ item }) => item.type === shellType))
+        ?.pos;
+    }
+    const ejected = Number.isFinite(holdCycles) ? Math.ceil(holdCycles) : inGun;
+    const ground = [...f.inventory.piles.values()].flatMap((pile) =>
+      pile.items.filter(({ item }) => item.type === shellType).map(({ item }) => [pile.pos, item.count]),
+    );
+    // Every live shell racked out lies, as one stack, in the pile of the block the first one landed on.
+    expect(ground).toEqual([[landing, ejected]]);
+    expect(1 + f.gun.firearm!.tube!.length - (f.gun.firearm!.chamber === 'empty' ? 1 : 0)).toBe(inGun - ejected);
+    expect(f.queue.busy).toBe(false);
   });
 
   it('ejects a live shell only at the exported hand threshold/direction and keeps it out of the spent counter', () => {

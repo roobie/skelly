@@ -137,7 +137,7 @@ describe('magazines loaded round by round', () => {
       uid: f.magazine.uid,
       busy: () => f.queue.busy,
       load: () => f.handling.loadNext(f.magazine.uid, 0.25) === undefined,
-      rack: () => undefined,
+      rack: () => false,
       remove: () => undefined,
       cancelLoad: () => f.handling.cancelLoad(f.magazine.uid),
     };

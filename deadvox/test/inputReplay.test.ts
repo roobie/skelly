@@ -28,7 +28,7 @@ import {
 } from '../src/game/inputReplay.ts';
 import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
 import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
-import { reloadTarget } from '../src/game/reloadInput.ts';
+import { type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
@@ -429,6 +429,109 @@ const recordReloadSteps = (start: Readonly<SaveSnapshot>, recorder: InputReplayR
     }
   }
   return source;
+};
+
+/**
+ * Records `steps` as `recordReloadSteps` does, then R tapped and pressed again and held, driven through
+ * `ReloadInput` as the play loop drives it, until the held `gun` has nothing left to rack out.
+ */
+const recordHeldRack = (
+  start: Readonly<SaveSnapshot>,
+  recorder: InputReplayRecorder,
+  gun: number,
+  steps: Extract<ReloadStep, { gesture: unknown }>[],
+) => {
+  let next = 0;
+  let racking = false;
+  const input = new ReloadInput();
+  const busy = () => source.handling.busy || source.session.firearms.busy;
+  const binding = (): ReloadBinding | undefined => {
+    const target = reloadTarget(source.session.firearms, source.session.magazines);
+    return (
+      target && {
+        uid: target.uid,
+        busy,
+        load: () => false,
+        // As play's binding does: an admitted rack is recorded, then applied once the tick is recorded.
+        rack: () => {
+          recorder.queueAction('firearm.rack', 'down', 'play');
+          racking = true;
+          return true;
+        },
+        remove: () => undefined,
+        ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
+        cancelLoad: target.cancelLoad,
+      }
+    );
+  };
+  // R down, up, then down and held: each once handling is free, then the hold advances every tick.
+  const presses = [
+    (now: number) => input.keyDown(now, binding()),
+    (now: number) => input.keyUp(now),
+    (now: number) => input.keyDown(now, binding()),
+  ];
+  let pressed = 0;
+  const pressR = (now: number) => {
+    if (pressed === presses.length) {
+      input.advance(now, binding());
+    } else if (!busy()) {
+      presses[pressed]!(now);
+      pressed += 1;
+    }
+  };
+  const source = createRuntime(start, false, undefined, {
+    sampleAtPlayerTick: (_tick, live, _time, compression) => {
+      const step = next < steps.length && !busy() ? steps[next] : undefined;
+      if (step) {
+        next += 1;
+        recorder.queueAction(step.gesture, 'down', 'play');
+      } else if (next === steps.length) {
+        pressR(source.sim.time * 1000);
+      }
+      recorder.recordTick(live, compression);
+      if (step) {
+        reloadGesture(source, step.gesture);
+      }
+      if (racking) {
+        racking = false;
+        reloadGesture(source, 'firearm.rack');
+      }
+      return live;
+    },
+  });
+  source.sim.paused = false;
+  for (let frame = 0; pressed < presses.length || source.session.firearms.stillLoaded(gun) || busy(); frame += 1) {
+    source.session.frame(1 / 60);
+    if (frame > 6000) {
+      throw new Error('The held rack did not empty the gun');
+    }
+  }
+  return source;
+};
+
+/** The pump held in both hands, with loose shells packed in the worn backpack. */
+const createPumpReplayFixture = (shells: number) => {
+  const runtime = createRuntime();
+  const { inventory } = runtime;
+  const { registry: content } = inventory;
+  const { calibre } = content.models.get(content.items.get('pump_shotgun')!.model!)!;
+  const shell = [...content.items.keys()].sort().find((id) => content.items.get(id)!.ammo?.calibre === calibre)!;
+  const pump = inventory.create('pump_shotgun');
+  const feet = runtime.player.body.pos;
+  const loose = inventory.create(shell, shells);
+  const target = stowTarget(inventory, loose, feet);
+  if (
+    !(
+      inventory.move(inventory.hands.right!, { kind: 'worn' }).ok &&
+      inventory.move(inventory.hands.left!, { kind: 'pile', pos: feet }).ok &&
+      target?.kind === 'pocket' &&
+      inventory.add(loose, target) &&
+      inventory.add(pump, { kind: 'hand', side: dominantSide(runtime.session.character) })
+    )
+  ) {
+    throw new Error('Replay fixture could not pack the shells and hold the pump');
+  }
+  return { runtime, pump, shell };
 };
 
 const createRifleReplayFixture = () => {
@@ -1057,6 +1160,31 @@ describe('input replay', () => {
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     const replay = playSession(start, decoded.inputs, { endSimTimestamp: decoded.endSimTimestamp });
     expect(charged(replay)).toEqual(charged(source));
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('replays a tap, then R held, racking the pump empty, to the same gun, ground and fingerprint', async () => {
+    const loads = 3;
+    const { runtime, pump, shell } = createPumpReplayFixture(loads);
+    const start = capture(runtime);
+    const recorder = new InputReplayRecorder(start);
+    const load = { gesture: 'firearm.load' } as const;
+    const source = recordHeldRack(start, recorder, pump.uid, [load, load, { gesture: 'firearm.rack' }, load]);
+    const racked = (end: ReturnType<typeof createRuntime>) => ({
+      gun: end.inventory.itemByUid(pump.uid)?.firearm,
+      onGround: [...end.inventory.piles.values()]
+        .flatMap((pile) => pile.items)
+        .reduce((sum, { item }) => sum + (item.type === shell ? item.count : 0), 0),
+    });
+    expect(racked(source)).toEqual({ gun: expect.objectContaining({ chamber: 'empty', tube: [] }), onGround: loads });
+
+    const sourceEnd = capture(source);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    // The rack that chambers the first shell, then one held rack per shell taken out.
+    expect(decoded.inputs.actions.filter(({ action }) => action === 'firearm.rack')).toHaveLength(1 + loads);
+    const replay = playSession(start, decoded.inputs, { endSimTimestamp: decoded.endSimTimestamp });
+    expect(racked(replay)).toEqual(racked(source));
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 

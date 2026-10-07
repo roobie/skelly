@@ -72,6 +72,18 @@ controls remain proposals until their issue is implemented.
   its existing handling owner (`src/game/firearmHandling.ts`,
   `FirearmMechanics.loadNext` and `FirearmMechanics.removeMagazine`). Inventory
   rotation is a different visible context, not another reload gesture.
+  - **Hold racks a gun without a magazine (2026-10-07 13:21, d114-11):** BR, on
+    what tap-then-hold does on the pump: “d114-11: i think it makes sense for it
+    to rack, but keep racking as long as the R button is held - it then reflects
+    what removing the mag means for a firearm with it -> remove the magazine
+    capacity”. On a gun without a detachable magazine, a tap followed by a held
+    press racks, then racks again each time a rack finishes, until R comes up or
+    nothing is left in the chamber or the tube. Each rack ejects what is
+    chambered and feeds the next shell, so holding through unloads the gun; live
+    shells land in the pile of the block they fall on, as spent cases do.
+    Releasing R starts no further rack, and the one under way finishes. A gun
+    with a detachable magazine keeps tap-then-hold as removal. See
+    `ReloadBinding.stillLoaded` and `FirearmMechanics.stillLoaded`.
   - History, **Reload only (2026-10-04):** “It shall mean only (re)load in the
     default view”; “press and hold R to load it with shells from inventory
     double-press R to rack”; “Single tap r does nothing”. The removal ruling
