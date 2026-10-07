@@ -8,6 +8,8 @@ export interface Body {
   pos: Vec3;
   vel: Vec3;
   halfWidth: number;
+  /** Half extent along Z; omitted for square bodies. */
+  halfDepth?: number;
   height: number;
   onGround: boolean;
 }
@@ -28,28 +30,31 @@ const MAX_STEP = 0.45; // per-axis move per substep; below 1 so only one new blo
 
 type Axis = 0 | 1 | 2;
 
+const halfExtent = (body: Body, axis: Axis): number => (axis === 2 ? (body.halfDepth ?? body.halfWidth) : body.halfWidth);
 const offsets = (body: Body, axis: Axis): [number, number] =>
-  axis === 1 ? [0, body.height] : [-body.halfWidth, body.halfWidth];
+  axis === 1 ? [0, body.height] : [-halfExtent(body, axis), halfExtent(body, axis)];
 
 const overlapsBlock = (body: Body, block: Vec3): boolean => {
   const [x, y, z] = body.pos;
-  const w = body.halfWidth;
+  const halfX = body.halfWidth;
+  const halfZ = body.halfDepth ?? halfX;
   return (
-    block[0] + 1 > x - w &&
-    block[0] < x + w &&
+    block[0] + 1 > x - halfX &&
+    block[0] < x + halfX &&
     block[1] + 1 > y &&
     block[1] < y + body.height &&
-    block[2] + 1 > z - w &&
-    block[2] < z + w
+    block[2] + 1 > z - halfZ &&
+    block[2] < z + halfZ
   );
 };
 
 const overlapsTerrain = (body: Body, isSolid: SolidAt): boolean => {
   const [x, y, z] = body.pos;
-  const w = body.halfWidth;
+  const halfX = body.halfWidth;
+  const halfZ = body.halfDepth ?? halfX;
   for (let by = Math.floor(y); by < Math.ceil(y + body.height); by++) {
-    for (let bz = Math.floor(z - w); bz < Math.ceil(z + w); bz++) {
-      for (let bx = Math.floor(x - w); bx < Math.ceil(x + w); bx++) {
+    for (let bz = Math.floor(z - halfZ); bz < Math.ceil(z + halfZ); bz++) {
+      for (let bx = Math.floor(x - halfX); bx < Math.ceil(x + halfX); bx++) {
         if (isSolid(bx, by, bz) && overlapsBlock(body, [bx, by, bz])) {
           return true;
         }
@@ -64,8 +69,8 @@ const overlapsBody = (body: Body, other: Body): boolean =>
   body.pos[0] + body.halfWidth > other.pos[0] - other.halfWidth &&
   body.pos[1] < other.pos[1] + other.height &&
   body.pos[1] + body.height > other.pos[1] &&
-  body.pos[2] - body.halfWidth < other.pos[2] + other.halfWidth &&
-  body.pos[2] + body.halfWidth > other.pos[2] - other.halfWidth;
+  body.pos[2] - (body.halfDepth ?? body.halfWidth) < other.pos[2] + (other.halfDepth ?? other.halfWidth) &&
+  body.pos[2] + (body.halfDepth ?? body.halfWidth) > other.pos[2] - (other.halfDepth ?? other.halfWidth);
 
 const overlapsSolid = (body: Body, isSolid: SolidAt, bodies: readonly Body[]): boolean =>
   overlapsTerrain(body, isSolid) || bodies.some((other) => overlapsBody(body, other));
@@ -82,7 +87,7 @@ const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number
   if (axis === 1) {
     return onNegativeSide ? other.pos[1] - body.height : other.pos[1] + other.height;
   }
-  const halfWidths = body.halfWidth + other.halfWidth;
+  const halfWidths = halfExtent(body, axis) + halfExtent(other, axis);
   return onNegativeSide ? other.pos[axis] - halfWidths : other.pos[axis] + halfWidths;
 };
 
@@ -223,7 +228,7 @@ const separatePair = (first: Body, second: Body, maxPushBlocks: number, collisio
   const deltaX = second.pos[0] - first.pos[0];
   const deltaZ = second.pos[2] - first.pos[2];
   const overlapX = first.halfWidth + second.halfWidth - Math.abs(deltaX);
-  const overlapZ = first.halfWidth + second.halfWidth - Math.abs(deltaZ);
+  const overlapZ = (first.halfDepth ?? first.halfWidth) + (second.halfDepth ?? second.halfWidth) - Math.abs(deltaZ);
   if (overlapX <= 0 || overlapZ <= 0) {
     return;
   }

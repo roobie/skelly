@@ -920,7 +920,12 @@ const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner']);
+export type ShamblerHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+export type ZombieRegion = ShamblerHitRegion;
+export type ZombieHitRegion = ZombieRegion | 'core.trunk' | `member.${number}.${ShamblerHitRegion}`;
+export type ZombieRegions = Record<string, number>;
+
+const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam']);
 
 const ZOMBIE_ABILITIES = [
   'grab',
@@ -949,16 +954,12 @@ const ZombieSchema = strictObject({
   name: Name,
   /** Mobgen template selected for this type's silhouette and posed hit regions. */
   model: ZOMBIE_MODEL,
-  regions: strictObject({
-    head: Positive,
-    torso: Positive,
-    leftArm: Positive,
-    rightArm: Positive,
-    leftLeg: Positive,
-    rightLeg: Positive,
-  }),
-  /** Relative chance that a marker naming this type produces it; 1 is the common baseline. */
+  /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
+  regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
+  /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
+  /** Excludes debug fixtures from ordinary hamlet selection while keeping authored/debug spawns available. */
+  debugOnly: optional(vBoolean()),
   sounds: strictObject({
     idle: picklist(SOUND_EVENT_IDS),
     alert: picklist(SOUND_EVENT_IDS),

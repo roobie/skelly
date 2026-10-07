@@ -211,6 +211,89 @@
       "dismember": { "chance": 0.05, "headOnKillChance": 0.15 },
       "abilities": ["grab"],
       "loot": "shambler_pockets"
+    },
+    {
+      "id": "amalgam",
+      "name": "Amalgam",
+      "model": "amalgam",
+      "spawnWeight": 1,
+      "debugOnly": true,
+      "sounds": {
+        "idle": "amalgam_idle",
+        "alert": "amalgam_alert",
+        "attack": "amalgam_attack",
+        "hurt": "amalgam_hurt"
+      },
+      "regions": {
+        "core.trunk": 60,
+        "member.head": 60,
+        "member.torso": 60,
+        "member.leftArm": 24,
+        "member.rightArm": 24,
+        "member.leftLeg": 24,
+        "member.rightLeg": 24
+      },
+      "meleeDamageResistance": {
+        "head": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "torso": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "leftArm": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "rightArm": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "leftLeg": { "blunt": 0, "cut": 0, "pierce": 0 },
+        "rightLeg": { "blunt": 0, "cut": 0, "pierce": 0 }
+      },
+      "speed": {
+        "wanderMetresPerSimSecond": 0.8,
+        "chaseMetresPerSimSecond": 2.8
+      },
+      "stepLength": 0.6,
+      "sight": 25,
+      "nightSight": 10,
+      "stimulusMemorySimSeconds": 180,
+      "sightCone": 60,
+      "hearing": 1,
+      "hearingRange": { "walk": 3, "jog": 8, "sprint": 15 },
+      "hearingModel": {
+        "farMultiplier": 2,
+        "bearingErrorRadians": 0.61,
+        "investigationDistanceMetres": 8,
+        "searchSimSeconds": { "min": 40, "max": 50 },
+        "searchRadiusMetres": 4,
+        "searchStrollSimSeconds": { "min": 1, "max": 3 }
+      },
+      "wander": {
+        "obstacleWanderChance": 0.25,
+        "obstacleWanderDistanceMetres": 10,
+        "idleSimSeconds": { "min": 3, "max": 10 },
+        "strollSimSeconds": { "min": 3, "max": 12 },
+        "leashMetres": 12,
+        "lookIntervalSimSeconds": { "min": 0.8, "max": 1.8 },
+        "bodyLookArcDegrees": 150,
+        "headLookArcDegrees": 100,
+        "bodyTurnDegreesPerSimSecond": 90,
+        "headTurnDegreesPerSimSecond": 120,
+        "movementAccelerationMetresPerSimSecondSquared": 4
+      },
+      "chaseMotion": {
+        "swayDegrees": 25,
+        "swayIntervalSimSeconds": { "min": 0.7, "max": 1.1 },
+        "speedMultiplier": { "min": 0.6, "max": 1.2 },
+        "lurchSimSeconds": 1,
+        "stumbleChancePerSimSecond": 0.16,
+        "stumbleDurationSimSeconds": { "min": 0.55, "max": 0.75 },
+        "stumbleEaseSimSeconds": 0.2,
+        "stumbleSpeedFraction": 0.04,
+        "stumbleDecelerationMetresPerSimSecondSquared": 14
+      },
+      "attack": {
+        "damage": 8,
+        "reach": 1.2,
+        "cooldownSimSeconds": 1.5,
+        "windupSimSeconds": 0.3,
+        "hitRegion": "torso"
+      },
+      "dismember": { "chance": 0.15, "headOnKillChance": 0.25 },
+      "abilities": [],
+      "loot": "shambler_pockets"
     }
   ]
 }

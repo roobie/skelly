@@ -151,7 +151,7 @@ const swingAt = ({
   const direction = target.map((coordinate, axis) => coordinate - playerEye[axis]!) as Vec3;
   const before = { ...zombie.regions };
   const hit = system.swing(playerEye, direction, weapon);
-  if (hit !== id || zombie.regions[region] >= before[region]) {
+  if (hit !== id || zombie.regions[region]! >= before[region]!) {
     return false;
   }
   return (Object.keys(before) as ZombieRegion[]).every(
@@ -177,8 +177,8 @@ const swingAtReachDistance = (
   }
   const offset = (distanceMetres - aim.distanceMetres) / BLOCK_SIZE;
   const origin = playerEye.map((coordinate, axis) => coordinate - direction[axis]! * offset) as Vec3;
-  const before = zombie.regions.torso;
-  return system.swing(origin, direction, weapon) === id && zombie.regions.torso < before;
+  const before = zombie.regions.torso!;
+  return system.swing(origin, direction, weapon) === id && zombie.regions.torso! < before;
 };
 
 describe('player melee reach at shambler attack distance', () => {
@@ -209,7 +209,7 @@ describe('player melee reach at shambler attack distance', () => {
           const beforeHealth = { ...swingZombie.regions };
           const swingResult = swingSystem.swing(playerEye, direction, weapon);
           const changed = (Object.keys(beforeHealth) as ZombieRegion[]).find(
-            (region) => swingZombie.regions[region] < beforeHealth[region],
+            (region) => swingZombie.regions[region]! < beforeHealth[region]!
           );
           expect(aim?.inReach ? [aim.id, aim.region] : undefined, `${ray.name} seed ${seed} ${pose.name}`).toEqual(
             changed === undefined ? undefined : [swingId, changed],
@@ -294,7 +294,7 @@ describe('player melee reach at shambler attack distance', () => {
     const aim = system.aimAt(playerEye, direction, FISTS_MELEE);
     expect(['leftArm', 'rightArm']).toContain(aim?.region);
     expect(system.swing(playerEye, direction, FISTS_MELEE)).toBe(id);
-    expect(zombie.regions[aim!.region]).toBeLessThan(before[aim!.region]);
+    expect(zombie.regions[aim!.region]!).toBeLessThan(before[aim!.region]!);
     expect(zombie.regions.torso).toBe(before.torso);
   });
 

@@ -8,8 +8,10 @@ import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobg
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { flinchPose, flinchPoseWithClip, HIT_FLINCH, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import { type ShamblerFigure, zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { type ShamblerFigure, zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
+import type { ZombieFigure } from './zombieFigure.ts';
 import type { Vec3 } from './coords.ts';
+import { amalgamFigure } from './amalgamFigure.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ShamblerPoseInput {
@@ -77,7 +79,7 @@ export interface PosedShambler {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  readonly figure: ShamblerFigure;
+  readonly figure: ZombieFigure;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -116,7 +118,7 @@ const actorForSeed = (model: string, seed: number): ReturnType<typeof actorForFi
   const key = `${model}:${seed}`;
   let actor = actorCache.get(key);
   if (!actor) {
-    actor = actorForFigure(zombieFigure(model, seed));
+    actor = actorForFigure(humanoidFigure(model, seed));
     actorCache.set(key, actor);
   }
   return actor;
@@ -193,7 +195,24 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 /** The shared living-zombie pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   const model = input.model ?? 'shambler';
-  const figure = zombieFigure(model, input.seed);
+  if (model === 'amalgam') {
+    const figure = amalgamFigure(input.seed);
+    const { bones } = figure.realized.body;
+    const pose: Pose = { root: figure.originOffset, rotations: {} };
+    const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
+    const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
+    return {
+      pose,
+      transforms: boneTransforms(bones, pose),
+      bones,
+      figure,
+      hidden: severedBoneSet(bones, cuts),
+      yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
+      position: input.position,
+      blockSize: input.blockSize,
+    };
+  }
+  const figure = humanoidFigure(model, input.seed);
   const { actor, bones, idleBases } = actorForSeed(model, input.seed);
   const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
   const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };

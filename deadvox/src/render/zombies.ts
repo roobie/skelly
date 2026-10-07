@@ -89,12 +89,26 @@ export class ZombieMeshes {
 
   private syncPart(part: Part, zombies: RenderZombie[]): void {
     const mesh = this.meshes.get(part)!;
-    const visible = zombies.filter(({ zombie }) => zombie.regions[REGION_FOR_PART[part]] > 0);
+    const visible = zombies.filter(({ zombie }) =>
+      zombie.type.model === 'amalgam'
+        ? part === 'body' && zombie.regions['core.trunk']! > 0
+        : zombie.regions[REGION_FOR_PART[part]]! > 0,
+    );
     mesh.count = Math.min(visible.length, mesh.instanceMatrix.count);
     const s = this.blockSize;
     for (let i = 0; i < mesh.count; i++) {
       const { zombie, position, yaw, headYaw, gaitPhase, verticalOffset } = visible[i]!;
-      const box = FIGURE_BOXES[part];
+      const box =
+        zombie.type.model === 'amalgam' && part === 'body'
+          ? {
+              size: [
+                zombie.body.halfWidth * 2 * s,
+                zombie.body.height * s,
+                (zombie.body.halfDepth ?? zombie.body.halfWidth) * 2 * s,
+              ] as [number, number, number],
+              at: [0, zombie.body.height * s * 0.5, 0] as [number, number, number],
+            }
+          : FIGURE_BOXES[part];
       const [x, y, z] = position;
       const partYaw = yaw + (part === 'head' ? headYaw : 0);
       const offsetX = box.at[0] * Math.cos(yaw) + box.at[2] * Math.sin(yaw);

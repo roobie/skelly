@@ -5,7 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { zombieFigure } from '../core/zombieFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bodyRegionForHitArea } from '../core/body.ts';
@@ -817,7 +817,10 @@ export const createSession = (options: SessionOptions) => {
         Math.floor(zombie.body.pos[1]),
         Math.floor(zombie.body.pos[2]),
       ];
-      inventory.add(inventory.create(SEVERED_ITEM[region]), { kind: 'pile', pos });
+      const item = SEVERED_ITEM[region as keyof typeof SEVERED_ITEM];
+      if (item) {
+        inventory.add(inventory.create(item), { kind: 'pile', pos });
+      }
     },
     onSever: (id, zombie, part, hit) => options.zombieEffects?.onSever?.(id, zombie, part, hit),
     onIncapacitated: (id, zombie) => options.zombieEffects?.onIncapacitated?.(id, zombie),

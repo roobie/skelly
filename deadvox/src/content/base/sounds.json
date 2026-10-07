@@ -469,6 +469,63 @@
       "noise": { "enabled": false, "radiusMetres": 1 }
     },
     {
+      "id": "amalgam_idle",
+      "variants": [
+        "assets/audio/shambler-idle-01.ogg",
+        "assets/audio/shambler-idle-02.ogg",
+        "assets/audio/shambler-idle-03.ogg"
+      ],
+      "gain": 0.45,
+      "pitchJitter": [0.95, 1.05],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0.1,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "amalgam_alert",
+      "variants": [
+        "assets/audio/shambler-alert-04.ogg",
+        "assets/audio/shambler-alert-05.ogg",
+        "assets/audio/shambler-alert-06.ogg"
+      ],
+      "gain": 0.72,
+      "pitchJitter": [0.94, 1.06],
+      "gainJitter": [0.9, 1.12],
+      "minIntervalSimSeconds": 0.25,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "amalgam_attack",
+      "variants": [
+        "assets/audio/shambler-attack-07.ogg",
+        "assets/audio/shambler-attack-08.ogg",
+        "assets/audio/shambler-attack-09.ogg"
+      ],
+      "gain": 0.8,
+      "pitchJitter": [0.94, 1.06],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0.25,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
+      "id": "amalgam_hurt",
+      "variants": [
+        "assets/audio/shambler-hurt-01.ogg",
+        "assets/audio/shambler-hit-05.ogg",
+        "assets/audio/shambler-hit-06.ogg",
+        "assets/audio/shambler-hit-07.ogg"
+      ],
+      "gain": 0.8,
+      "pitchJitter": [0.94, 1.06],
+      "gainJitter": [0.9, 1.1],
+      "minIntervalSimSeconds": 0.08,
+      "category": "world",
+      "noise": { "enabled": false, "radiusMetres": 1 }
+    },
+    {
       "id": "runner_idle",
       "variants": [
         "assets/audio/shambler-idle-01.ogg",

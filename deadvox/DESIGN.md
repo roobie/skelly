@@ -5,6 +5,7 @@ read_if:
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
+  - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're recording or reconciling BR's crawler silhouette rulings
   - you're changing crawler gait, hit response or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
@@ -866,6 +867,12 @@ BR ruled (2026-10-06 15:42, d102):
 > but we will want scriptability in future, but not for jump-scares necessarily, but e.g. a computer panel opening up some door or other dynamic events
 
 A marker's optional clock window delays its one-time spawn; `src/core/zombieSpawns.ts`, `ZombieSpawner.onColumn`, queues each windowed marker, and `ZombieSpawner.advance` checks its window on zombie ticks while the column stays loaded. Since a load never spawns a windowed marker, live play and replay agree at a window edge. Windowless markers keep chunk-load behavior. Bounded windows recur daily, so a marker that missed one remains eligible at the next opening instead of expiring: a playtest threat should not be lost because the player was elsewhere when its window passed, and may arrive the next evening. An open-ended `from` is eligible from day 1's occurrence of its boundary onward, so a run started after that occurrence is already eligible. Once spawned, its saved ledger entry prevents it returning when the window closes or after it is killed. This timing serves authored beats without scripting a player action. Scriptable dynamic events, such as a computer opening a door, remain future work in #313.
+
+### Amalgam body and damage (#308)
+
+The amalgam is a debug-only type until the authored camp spawn in #308 is designed. Its `amalgam_*` sound events have separate identities but reuse shambler recordings until BR's br-39 sound ruling; see `src/content/base/sounds.json` and `src/core/soundEvents.ts`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents, so closed doors and walls block the whole visible creature without relying on an arbitrary humanoid radius. Its empty corners are the deliberate broad-phase simplification; member hit boxes remain voxel-derived and independently targeted. See `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/physics.ts`, `Body` and `overlapsBlock`.
+
+BR's br-37 ruling for #308 is option A: severing one shambler member removes that member's hit regions and its contribution to attacks and reach; the core and every other member continue unchanged. This round uses `activeAmalgamMembers` and `zombieAttackReachMetres` to disable attacks and reach when no members remain, while retaining the shared reach for every surviving member; d137-3 can add per-member attack geometry without changing the ownership contract. The save records each manifest region's health and severed member IDs, then reconstructs geometry from the saved figure seed. `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, `activeAmalgamMembers` and `zombieAttackReachMetres`, and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, own that handoff. The initial member-health values inherit the shambler region values in `src/content/base/zombies.json`; BR tunes them after reviewing the realized body. Movement/attack pacing remains a separate tuning item and should not be made heavier by this body integration.
 
 Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
 sight-driven pursuit an immediate sprint threat, while the crawler uses the body's

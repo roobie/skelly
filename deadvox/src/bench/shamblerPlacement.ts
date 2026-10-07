@@ -13,8 +13,9 @@ export interface ShamblerPlacementWorld {
 }
 
 export const bodyIsClear = (body: Body, isSolid: SolidAt): boolean => {
+  const halfDepth = body.halfDepth ?? body.halfWidth;
   for (let y = Math.floor(body.pos[1]); y < Math.ceil(body.pos[1] + body.height); y++) {
-    for (let z = Math.floor(body.pos[2] - body.halfWidth); z < Math.ceil(body.pos[2] + body.halfWidth); z++) {
+    for (let z = Math.floor(body.pos[2] - halfDepth); z < Math.ceil(body.pos[2] + halfDepth); z++) {
       for (let x = Math.floor(body.pos[0] - body.halfWidth); x < Math.ceil(body.pos[0] + body.halfWidth); x++) {
         if (isSolid(x, y, z) && bodyOverlapsBlock(body, [x, y, z])) {
           return false;
@@ -101,7 +102,8 @@ export const placeShamblerRing = ({
       const overlaps = occupied.some(
         (other) =>
           Math.abs(candidate.pos[0] - other.pos[0]) < candidate.halfWidth + other.halfWidth &&
-          Math.abs(candidate.pos[2] - other.pos[2]) < candidate.halfWidth + other.halfWidth,
+          Math.abs(candidate.pos[2] - other.pos[2]) <
+            (candidate.halfDepth ?? candidate.halfWidth) + (other.halfDepth ?? other.halfWidth),
       );
       if (
         overlaps ||
