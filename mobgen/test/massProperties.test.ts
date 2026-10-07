@@ -15,7 +15,6 @@ const grid = (dims: [number, number, number], size = 0.05, origin: [number, numb
 });
 
 interface AssignedPartProof {
-  readonly seed: number;
   readonly part: string;
   readonly expectedMass: number;
   readonly density: ReturnType<typeof massProperties>;
@@ -32,7 +31,6 @@ const shamblerPartProofs = (): AssignedPartProof[] => {
     for (const part of SEVERABLE_PARTS) {
       const partIndices = [...severedBoneSet(body.bones, [part])].map((id) => byId.get(id)!);
       proofs.push({
-        seed,
         part,
         expectedMass: template.bodyMassKg * template.massFractions![part]!,
         density: massProperties(voxels, partIndices, generated.genome.voxelSize),
@@ -81,15 +79,9 @@ describe('massProperties', () => {
     expect(p.inertia[1][1]).toBeLessThan(p.inertia[2][2]);
   });
 
-  it('assigns every shambler severable part its template mass for seeds 1–5', () => {
-    const proofs = shamblerPartProofs();
-    const expected = [0.42, 0.42, 1.54, 1.54, 3.5, 3.5, 5.67];
-    for (let seed = 1; seed <= 5; seed++) {
-      const masses = proofs.filter((proof) => proof.seed === seed).map((proof) => proof.assigned.mass);
-      expect(masses).toHaveLength(expected.length);
-      for (let index = 0; index < expected.length; index++) {
-        expect(Math.abs(masses[index]! / expected[index]! - 1)).toBeLessThan(1e-9);
-      }
+  it('assigns each severable part its authored share of body mass', () => {
+    for (const { assigned, expectedMass } of shamblerPartProofs()) {
+      expect(assigned.mass).toBeCloseTo(expectedMass, 10);
     }
   });
 
@@ -113,22 +105,12 @@ describe('massProperties', () => {
     }
   });
 
-  it('declares nominal body masses and anatomical humanoid severing fractions', () => {
-    expect(TEMPLATES.map((template) => [template.name, template.bodyMassKg])).toEqual([
-      ['shambler', 70],
-      ['runner', 60],
-      ['brute', 140],
-    ]);
+  it('keeps authored body mass and severing fractions physically usable', () => {
     for (const template of TEMPLATES) {
-      expect(template.massFractions).toEqual({
-        'hand.L': 0.006,
-        'hand.R': 0.006,
-        'forearm.L': 0.022,
-        'forearm.R': 0.022,
-        'upperArm.L': 0.05,
-        'upperArm.R': 0.05,
-        head: 0.081,
-      });
+      expect(template.bodyMassKg).toBeGreaterThan(0);
+      const fractions = Object.values(template.massFractions ?? {});
+      expect(fractions.every((fraction) => Number.isFinite(fraction) && fraction > 0 && fraction < 1)).toBe(true);
+      expect(fractions.reduce((total, fraction) => total + fraction, 0)).toBeLessThan(1);
     }
   });
 

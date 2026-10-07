@@ -63,6 +63,9 @@ const layoutValidationBase = [
         zombie.loot = undefined;
         return zombie;
       }),
+      sounds: [...new Set([...layoutZombieIds].flatMap((id) => Object.values(registry.zombies.get(id)!.sounds)))].map(
+        (id) => structuredClone(registry.sounds.get(id)!),
+      ),
       layouts: baseLayoutIds.map(validationLayout),
     },
   },

@@ -140,6 +140,24 @@ const TRIGGER_ENTRIES = [
       debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
     },
   ],
+  ...(['runner', 'crawler'] as const).flatMap((type) => {
+    const subject = type === 'runner' ? 'A runner' : 'A crawler';
+    return (['idle', 'alert', 'attack', 'hurt'] as const).map((action) => {
+      const event = {
+        idle: 'idles nearby',
+        alert: 'notices you',
+        attack: 'reaches you and attacks',
+        hurt: 'is hit by a melee attack',
+      }[action];
+      return [
+        `${type}_${action}`,
+        {
+          trigger: `${subject} ${event}.`,
+          debugHint: `?debug=1: Use the debug panel's ${type} action to spawn ${type}s nearby.`,
+        },
+      ] as const;
+    });
+  }),
   ['player_hurt_light', { trigger: 'Take 1–14 points of damage.' }],
   ['player_nope', { trigger: 'Try an action the player cannot complete.' }],
   [
@@ -262,6 +280,11 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ['shambler_alert', 'Approved by BR (2026-10-02).'],
   ['shambler_attack', 'Approved by BR (2026-10-02).'],
   ['shambler_hurt', 'Approved by BR (2026-10-02).'],
+  ...(['runner', 'crawler'] as const).flatMap((type) =>
+    (['idle', 'alert', 'attack', 'hurt'] as const).map(
+      (action) => [`${type}_${action}`, 'Stand-in mapping; awaiting BR review of this zombie type’s sounds.'] as const,
+    ),
+  ),
   ['door_open', 'Approved by BR (2026-10-02) with door-open-03 only; more variants are future work.'],
   ['door_close', 'Approved by BR (2026-10-02).'],
   [

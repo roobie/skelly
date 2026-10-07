@@ -39,18 +39,21 @@ export interface PlayCameraFrame {
   readonly yaw: number;
   readonly pitch: number;
   readonly eye: Vec3;
+  readonly spectator?: { readonly position: Vec3; readonly yaw: number; readonly pitch: number };
   readonly sightImpaired: boolean;
 }
 
 export interface PlayWorldFrame {
   readonly calendar: number;
   readonly time: number;
+  readonly playerEye: Vec3;
   readonly lastZombieStep: number;
   readonly lastBackgroundStep: number;
   readonly dt: number;
   readonly entities: BlockEntities;
   readonly zombies: EntityStore<Zombie>;
   readonly frozen: boolean;
+  readonly perceptionLabels: boolean;
 }
 
 type PlayViewEngine = Readonly<
@@ -157,12 +160,14 @@ export const createPlayView = (
     syncWorld: ({
       calendar,
       time,
+      playerEye,
       lastZombieStep,
       lastBackgroundStep,
       dt,
       entities,
       zombies,
       frozen,
+      perceptionLabels,
     }: PlayWorldFrame) => {
       glowstickThrows.update(dt);
       const hour = hourOfDay(calendar);
@@ -174,6 +179,8 @@ export const createPlayView = (
       const alpha = Math.max(0, Math.min(1, (time - lastZombieStep) * 20));
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
       zombieMeshes.setCamera?.(camera);
+      zombieMeshes.setPlayerEyePosition?.(playerEye);
+      zombieMeshes.setPerceptionLabels?.(perceptionLabels);
       zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);
       return { hour, sky };
     },
@@ -188,7 +195,7 @@ export const createPlayView = (
       engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
-      const { dt, body, paused, noclip, yaw, pitch, eye, sightImpaired } = frame;
+      const { dt, body, paused, noclip, yaw, pitch, eye, spectator, sightImpaired } = frame;
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
         body.onGround,
@@ -201,11 +208,11 @@ export const createPlayView = (
         gaitPhase += (travel / 0.6) * Math.PI;
       }
       playerMeshes.sync({ body, yaw, stepOffset: offset, gaitPhase, moving, inventory });
-      const [ex, ey, ez] = eye;
-      camera.position.set(ex * s, ey * s + offset, ez * s);
+      const [ex, ey, ez] = spectator?.position ?? eye;
+      camera.position.set(ex * s, ey * s + (spectator ? 0 : offset), ez * s);
       const feedback = damageFeedback.step(dt);
-      cameraRoll = feedback.roll;
-      camera.rotation.copy(cameraRotation(pitch, yaw, feedback.roll));
+      cameraRoll = spectator ? 0 : feedback.roll;
+      camera.rotation.copy(cameraRotation(spectator?.pitch ?? pitch, spectator?.yaw ?? yaw, cameraRoll));
       damage.style.opacity = String(Math.max(feedback.vignetteOpacity, sightImpaired ? 0.2 : 0));
     },
     updateHeld: (
