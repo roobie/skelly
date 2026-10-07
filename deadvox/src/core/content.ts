@@ -343,6 +343,16 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
   if (magazineWellCalibre(registry, item.id) !== undefined && !registry.models.get(item.model!)?.slots?.magazine) {
     report('items', item.id, '.model', 'a magazine-fed firearm needs a model with a magazine slot');
   }
+  const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  for (const attachment of model?.attachments ?? []) {
+    const registered = [...registry.items.values()].some((candidate) => {
+      const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
+      return attachmentModel?.attachment?.id === attachment.id;
+    });
+    if (!registered) {
+      report('items', item.id, '.model', `no item model registered for attachment "${attachment.id}"`);
+    }
+  }
 };
 
 const checkItems = (registry: Registry, report: Report) => {

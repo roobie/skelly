@@ -420,12 +420,12 @@ export class Survival {
       this.douseLight(item, spec);
       return;
     }
-    const beforeCharge = item.charges;
+    const beforeCharge = chargeOf(registry, item);
     const expired =
       spec.burnTimeGameHours === undefined
         ? drainLight(registry, item, simToGameSeconds(this.sim.clock, simSeconds(dt))) !== undefined
         : drainBurnLight(item, this.sim.calendar);
-    if (item.charges !== beforeCharge || expired) {
+    if (chargeOf(registry, item) !== beforeCharge || expired) {
       this.inventory.version += 1;
     }
     if (!expired) {

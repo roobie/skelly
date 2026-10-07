@@ -3,17 +3,7 @@
 // over the origin, for piles; and held at its grip in the data-selected pose.
 // Until a model has loaded, or if it can't, its items show as if they had none.
 
-import {
-  Box3,
-  type BufferGeometry,
-  Group,
-  type Material,
-  MathUtils,
-  type Matrix4,
-  Mesh,
-  Object3D,
-  Vector3,
-} from 'three';
+import { Box3, type BufferGeometry, Group, type Material, MathUtils, Matrix4, Mesh, Object3D, Vector3 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
@@ -49,12 +39,15 @@ export interface ComposedSlot {
 }
 
 export interface ComposedHeld extends HeldModel {
-  readonly slots: Partial<Record<ItemLookSlot['slot'], ComposedSlot>>;
+  readonly slots: Partial<Record<string, ComposedSlot>>;
 }
 
 /** Hides the baked geometry of item-owned slots: an item's look draws what is really fitted there instead. */
 const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof namedNodes>[1]): void => {
-  const names = Object.values(def.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : []));
+  const names = [
+    ...Object.values(def.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : [])),
+    ...(def.attachments ?? []).map(({ node }) => node),
+  ];
   for (const node of namedNodes(scene, parser, names)) {
     node.visible = false;
   }
@@ -64,8 +57,15 @@ const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof
 const slotFrame = (slot: ItemLookSlot): Group => {
   const frame = new Group();
   frame.position.set(...slot.at);
-  const [tx, ty, tz] = slot.turn;
-  frame.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
+  if (slot.direction && slot.up) {
+    const direction = new Vector3(...slot.direction).normalize();
+    const up = new Vector3(...slot.up).normalize();
+    const side = direction.clone().cross(up).normalize();
+    frame.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(direction, up, side));
+  } else if (slot.turn) {
+    const [tx, ty, tz] = slot.turn;
+    frame.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
+  }
   return frame;
 };
 
@@ -224,7 +224,7 @@ export class ModelLibrary {
     const root = prepared.ground.clone();
     const frame = modelFrame(root, 'ground');
     const slots = Object.values(this.attachParts(frame, look));
-    if (slots.some((slot) => slot.model)) {
+    if (slots.some((slot) => slot?.model)) {
       frame.position.y -= visibleBounds(root).min.y;
     }
     if (look.slots.every((slot) => slot.model === undefined || this.ready.has(slot.model))) {

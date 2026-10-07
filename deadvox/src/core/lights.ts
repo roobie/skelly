@@ -1,5 +1,5 @@
-// Carried lights and their batteries (DESIGN.md, "Light"). A light's `charges` is the
-// charge of the battery in it; absent means a full one, as found. A light drains only
+// Carried lights and their batteries (DESIGN.md, "Light"). A powered light owns its battery
+// as a child item in `slots.battery`, so charge and identity have one owner. A light drains only
 // while it's on, at its rate per game hour, in closed form: a long step drains exactly
 // what ticking every second would, and the light goes out when the charge runs out.
 // Swapping in a fresh battery is handling; the old one comes out with what it had left.
@@ -131,9 +131,9 @@ export const chargeOf = (registry: Registry, item: Item): number | undefined => 
   if (def.battery) {
     return item.charges ?? def.battery.capacity;
   }
-  const power = def.light?.power;
-  if (power) {
-    return item.charges ?? capacityOf(registry, power.battery);
+  if (def.light?.power) {
+    const battery = item.slots?.battery;
+    return battery ? (battery.charges ?? capacityOf(registry, battery.type)) : 0;
   }
   return def.igniter ? (item.charges ?? def.igniter.capacity) : undefined;
 };
@@ -144,7 +144,7 @@ export const chargeShare = (registry: Registry, item: Item): number | undefined 
   const capacity =
     def.battery?.capacity ??
     def.igniter?.capacity ??
-    (def.light?.power ? capacityOf(registry, def.light.power.battery) : undefined);
+    (item.slots?.battery ? capacityOf(registry, item.slots.battery.type) : undefined);
   const charge = chargeOf(registry, item);
   return capacity === undefined || charge === undefined ? undefined : charge / capacity;
 };
@@ -210,13 +210,18 @@ export const drainLight = (
   if (!(light.on && ratePerGameSecond !== undefined)) {
     return undefined;
   }
-  const charge = chargeOf(registry, light)!;
+  const battery = light.slots?.battery;
+  const charge = chargeOf(registry, light) ?? 0;
   const lasts = charge / ratePerGameSecond;
   if (lasts > elapsedGameSeconds) {
-    light.charges = charge - ratePerGameSecond * elapsedGameSeconds;
+    if (battery) {
+      battery.charges = charge - ratePerGameSecond * elapsedGameSeconds;
+    }
     return undefined;
   }
-  light.charges = 0;
+  if (battery) {
+    battery.charges = 0;
+  }
   light.on = false;
   return gameSeconds(lasts);
 };
@@ -241,16 +246,19 @@ export const swapBattery = (inventory: Inventory, light: Item, battery: Item, sp
   if (!fitsLight(registry, light, battery)) {
     return "It doesn't take that battery";
   }
-  const old = chargeOf(registry, light)!;
-  const fresh = chargeOf(registry, battery)!;
+  const oldBattery = light.slots?.battery;
+  const old = oldBattery ? (chargeOf(registry, oldBattery) ?? 0) : 0;
+  const replacement = battery.count > 1 ? inventory.create(battery.type, 1, battery.condition) : battery;
+  if (battery.charges !== undefined) {
+    replacement.charges = battery.charges;
+  }
   if (!inventory.consume(battery)) {
     return 'The battery is gone';
   }
-  light.charges = fresh;
-  if (old > 0) {
-    const out = inventory.create(battery.type);
-    out.charges = old;
-    inventory.add(out, spent);
+  inventory.fitSlot(light, 'battery', replacement);
+  if (oldBattery && old > 0) {
+    oldBattery.charges = old;
+    inventory.add(oldBattery, spent);
   }
   return undefined;
 };

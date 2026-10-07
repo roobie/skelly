@@ -25,6 +25,7 @@ import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { turnedBore } from '../src/render/handlingTurn.ts';
 import { HeldItems } from '../src/render/hands.ts';
+import { itemLook } from '../src/render/itemLook.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
@@ -212,6 +213,37 @@ it('draws the magazine a rifle really has, in hand and on the ground: its own mo
   } finally {
     dispose();
   }
+});
+
+it('replaces a baked default attachment with its owned model and leaves the baked node hidden when removed', async () => {
+  expect(issues).toEqual([]);
+  const inventory = new Inventory(content);
+  const rifle = inventory.create(RIFLE);
+  const slotId = 'receiver.rail.3';
+  const optic = rifle.slots?.[slotId];
+  if (!optic) {
+    throw new Error('generated rifle has no default optic');
+  }
+  const opticModel = modelOf(optic.type);
+  const models = await library([modelOf(RIFLE), opticModel]);
+  const findNode = (root: Object3D) => {
+    let found: Object3D | undefined;
+    root.traverse((node) => {
+      if (node.userData.name === 'sight:sight') {
+        found = node;
+      }
+    });
+    return found;
+  };
+  const fitted = models.heldLook(itemLook(content, rifle)!)!;
+  expect(fitted.slots[slotId]?.modelId).toBe(opticModel);
+  expect(fitted.slots[slotId]?.model?.visible).toBe(true);
+  expect(findNode(fitted.root)?.visible).toBe(false);
+
+  expect(inventory.fitSlot(rifle, slotId, undefined)).toBe(optic);
+  const removed = models.heldLook(itemLook(content, rifle)!)!;
+  expect(removed.slots[slotId]).toBeUndefined();
+  expect(findNode(removed.root)?.visible).toBe(false);
 });
 
 it('animates a change from the job alone: the fitted magazine leaves the well, then the new one seats', async () => {

@@ -142,6 +142,51 @@ it('runtime firearm skill sliders tune the held gun and reset when its save is l
   expect(session([], saved).firearmsSkillZeroHandling).toEqual(contentTuning);
 });
 
+it('saves and restores fitted attachment identity and a nested light battery', async () => {
+  const original = session([]);
+  const rifle = original.inventory.create('rifle_assault');
+  const optic = rifle.slots?.['receiver.rail.3'];
+  const flashlight = original.inventory.create('flashlight');
+  const battery = flashlight.slots?.battery;
+  if (!(optic && battery)) {
+    throw new Error('fitted-item fixtures were not created');
+  }
+  optic.condition = 0.43;
+  battery.charges = 0.37;
+  if (
+    !(
+      original.inventory.add(rifle, { kind: 'hand', side: 'right' }) &&
+      original.inventory.add(flashlight, { kind: 'hand', side: 'left' })
+    )
+  ) {
+    throw new Error('could not put fitted-item save fixtures in the hands');
+  }
+
+  const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup });
+  const restored = session([], decoded.snapshot);
+  const restoredOptic = restored.inventory.hands.right?.slots?.['receiver.rail.3'];
+  const restoredBattery = restored.inventory.hands.left?.slots?.battery;
+  if (!(restoredOptic && restoredBattery)) {
+    throw new Error('fitted-item save state did not restore its children');
+  }
+
+  expect([restoredOptic.uid, restoredOptic.type, restoredOptic.condition]).toEqual([
+    optic.uid,
+    optic.type,
+    optic.condition,
+  ]);
+  expect([restoredBattery.uid, restoredBattery.type, restoredBattery.charges]).toEqual([
+    battery.uid,
+    battery.type,
+    battery.charges,
+  ]);
+});
+
 it('committed shots use the held firearm skill-zero recoil factors', () => {
   const sourceGun = registry.items.get('rifle_assault')!;
   const makeFixture = (id: string, weight: number, recoilKickScale: number) => {

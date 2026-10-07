@@ -4,6 +4,7 @@ import { SECONDS_PER_HOUR } from '../src/core/clock.ts';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import type { Item } from '../src/core/items.ts';
 import { chargeOf } from '../src/core/lights.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { EAT_TIME } from '../src/core/options.ts';
@@ -18,6 +19,14 @@ const { registry } = buildRegistry(
     .sort()
     .map((file) => read(`src/content/base/${file}`)),
 );
+
+const batteryOf = (light: Item): Item => {
+  const battery = light.slots?.battery;
+  if (!battery) {
+    throw new Error('powered-light fixture has no fitted battery');
+  }
+  return battery;
+};
 
 const setup = () => {
   const sim = new Simulation({ seed: 1 });
@@ -125,7 +134,7 @@ describe('using what you hold', () => {
     const { survival, sim, notices, hold } = setup();
     const matches = hold('matches');
     const emptyFlashlight = hold('flashlight', 'left');
-    emptyFlashlight.charges = 0;
+    batteryOf(emptyFlashlight).charges = 0;
     const batteryReason = survival.use(emptyFlashlight);
     expect(batteryReason).toEqual(expect.any(String));
     const fuelBefore = matches.charges;
@@ -147,7 +156,7 @@ describe('using what you hold', () => {
     const t = setup();
     const lighter = t.hold('lighter');
     const emptyFlashlight = t.hold('flashlight', 'left');
-    emptyFlashlight.charges = 0;
+    batteryOf(emptyFlashlight).charges = 0;
     const batteryReason = t.survival.use(emptyFlashlight);
     expect(batteryReason).toEqual(expect.any(String));
     lighter.charges = 0;
@@ -197,7 +206,7 @@ describe('using what you hold', () => {
   it('selects the fullest searched/ground spare and rechecks its reach at battery completion', () => {
     const t = setup();
     const light = t.hold('flashlight');
-    light.charges = 0;
+    batteryOf(light).charges = 0;
     const bag = t.inventory.create('school_backpack');
     t.inventory.add(bag, { kind: 'pile', pos: [0, 0, 0] });
     const floor = t.inventory.create('aa_battery');
@@ -216,12 +225,12 @@ describe('using what you hold', () => {
     expect(t.queue.jobs[0]).toMatchObject({ params: { batteryUid: spare.uid } });
     t.player.position[0] = 10;
     expect(t.queue.tick(3).failed[0]?.reason).toBe('The battery is no longer in reach');
-    expect(light.charges).toBe(0);
+    expect(batteryOf(light).charges).toBe(0);
     expect(t.inventory.itemByUid(spare.uid)).toBe(spare);
     t.player.position[0] = 0;
     t.survival.use(light);
     t.queue.tick(3);
-    expect(light.charges).toBe(0.9);
+    expect(batteryOf(light).charges).toBe(0.9);
     expect(light.on).not.toBe(true);
     t.survival.use(light);
     expect(light.on).toBe(true);
@@ -231,7 +240,7 @@ describe('using what you hold', () => {
     const { inventory, queue, survival, hold } = setup();
     const light = hold('flashlight');
     const battery = hold('aa_battery', 'left');
-    light.charges = 0.1;
+    batteryOf(light).charges = 0.1;
     expect(survival.use(battery)).toBeUndefined();
     queue.tick(2.1);
     expect(chargeOf(registry, light)).toBe(1);

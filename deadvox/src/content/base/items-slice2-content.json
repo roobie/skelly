@@ -369,9 +369,9 @@
       "id": "improvised_suppressor",
       "name": "Improvised suppressor",
       "category": "weapon",
-      "weight": 350,
-      "size": [1, 2],
-      "description": "A short scavenged tube with crude end collars. It is a loose item; fitting is not modeled.",
+      "weight": 600,
+      "size": [2, 2],
+      "description": "A heavy scavenged tube with crude end collars.",
       "model": "improvised_suppressor",
       "disassembly": {
         "timeGameMinutes": 8,
