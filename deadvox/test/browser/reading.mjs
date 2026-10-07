@@ -32,7 +32,7 @@ const vite = await createServer({
         if (!id.endsWith('/src/game/play.ts')) {
           return;
         }
-        const marker = 'startPlayFrames(frame);';
+        const marker = 'startRealFrames(frame);';
         assert.equal(code.split(marker).length, 2);
         return code.replace(
           marker,
