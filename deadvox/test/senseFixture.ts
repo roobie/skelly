@@ -21,5 +21,8 @@ export const TEST_SENSE_TUNING: SenseDef = {
     lureRangeScale: 0.5,
     throwMaxDistanceMetres: 8,
     throwChargeSimSeconds: simSeconds(1.25),
+    throwMinimumHoldSimSeconds: simSeconds(0.8),
+    throwArmSpeedMetresPerRealSecond: 6,
+    throwArmEnergyJoules: 20,
   },
 };

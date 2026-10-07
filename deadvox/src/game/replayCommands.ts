@@ -14,7 +14,7 @@ export type ReplayActionPayload =
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
-  | { kind: 'glowstick.cancel' };
+  | { kind: 'item.throw.cancel' };
 
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isSpot = (value: unknown): boolean =>
@@ -93,7 +93,7 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'inventory.cancel-handling':
     case 'craft.continue':
     case 'craft.stop':
-    case 'glowstick.cancel':
+    case 'item.throw.cancel':
       return Object.keys(payload).length === 1;
     case 'craft.start':
       return (
@@ -121,7 +121,7 @@ export interface ReplayCommandOwners {
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
-  cancelGlowstick: () => void;
+  cancelItemThrow: () => void;
 }
 
 export const applyReplayActionPayload = (
@@ -161,8 +161,8 @@ export const applyReplayActionPayload = (
       return owners.craftContinue();
     case 'craft.stop':
       return owners.craftStop();
-    case 'glowstick.cancel':
-      owners.cancelGlowstick();
+    case 'item.throw.cancel':
+      owners.cancelItemThrow();
       return undefined;
     default: {
       const exhaustive: never = payload;

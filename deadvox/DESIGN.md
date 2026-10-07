@@ -20,6 +20,7 @@ read_if:
   - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
+  - you're changing held-item throwing or its range tuning
 ---
 
 # deadvox — design
@@ -833,6 +834,48 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
   power (see [Base building](#base-building-and-electricity)).
 - **Hands:** most lights take a hand, which matters with a two-handed weapon.
   The headlamp frees them, at the cost of a weaker beam.
+
+## Held-item throws
+
+BR, 2026-10-07 14:27:
+
+> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
+
+BR, 2026-10-07 15:48:
+
+> "hmm, yeah holding T works for throwing - however, when throwing the AR: during flight, it looks like a lit candle (or perhaps uncolored glowstick)"
+>
+> "also: when handling progress is on: a throwing meter showing force should show based on throwing-charge"
+
+The rebindable T action throws only the primary-hand item; an empty primary hand
+refuses instead of reaching into the off hand. A release before BR's minimum held-time threshold throws nothing. With no rack
+or magazine job active, range charge starts on press and grows through the
+minimum hold, so the minimum is a release gate rather than an extra delay before
+charging. If T is pressed during a handling job, the throw waits to charge until
+the job finishes rather than interrupting the rack or magazine turn; releasing
+while it waits cancels the throw. Item weight limits launch range through arm
+speed and energy; a light item retains the existing maximum, while a heavier one
+travels no farther. A thrown item keeps its identity and state when it lands,
+including a firearm's fitted magazine, its rounds and chamber state. A lit
+glowstick remains lit at its landing pile. Flight uses the same item look as a
+ground pile, so a firearm carries its fitted magazine through the arc; ordinary
+items without a model use the same low bundle fallback as a ground pile,
+scattered cases keep the pile placeholder, and an active glowstick keeps its
+emissive marker. The optional Handling progress HUD shows charge while it is
+accumulating and marks the minimum-release point, so the release gate is visible
+without changing the throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
+`src/render/itemLook.ts`, `itemLook`, `src/ui/hud.ts`, `handlingViewModel`, and
+`src/game/play.ts`, `beginItemThrow` and `advancePendingItemThrow`.
+
+BR first ruled that holding T longer should throw farther and right-click should
+cancel (2026-10-06 14:24). BR then ruled (2026-10-07 14:35):
+
+> "yes. And at some point, likely not before playtest, atmospheric drag will affect too - i.e. a flimsy glowstick doesn't get as far as a hand grenade"
+
+Drag is deliberately absent until [#368](https://github.com/roobie/skelly/issues/368).
+The range uses the existing item `weight` and `senses` tuning; see
+`src/core/itemThrow.ts`, `throwDistanceForItem`, and `src/game/play.ts`,
+`finishItemThrow`. Throwing adds no hit damage or landing lure.
 
 ## Zombies
 
