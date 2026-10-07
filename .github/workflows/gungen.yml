@@ -29,19 +29,20 @@ jobs:
           cache-dependency-path: gungen/package-lock.json
       - run: npm ci
       - run: npm ci --prefix ../deadvox
+      - name: Cache Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ runner.os }}-${{ hashFiles('deadvox/package-lock.json') }}
+      - name: Install Playwright Chromium
+        timeout-minutes: 3
+        run: npx playwright install chromium
+        working-directory: deadvox
       - run: npm run typecheck
       - run: npm test
       - run: npm run validate
       - run: npm run check:designs
       - run: npx vite build
-      # The actual viewer indication needs a DOM/browser, not only the action inventory unit tests.
-      - name: Viewer pump pose indication (runner Chrome)
+      - name: Viewer browser tests (managed Chromium)
         timeout-minutes: 2
-        run: |
-          CHROME_BIN="$(command -v google-chrome)" || {
-            echo "::error::Runner google-chrome is required for the viewer regression"
-            exit 1
-          }
-          export CHROME_BIN
-          echo "Viewer browser: $CHROME_BIN"
-          npm run test:browser
+        run: npm run test:browser

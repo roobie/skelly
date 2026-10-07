@@ -3,18 +3,14 @@ import assert from 'node:assert/strict';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium } from '../chromium.mjs';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-const { chromium } = await import(resolve(root, '../deadvox/node_modules/playwright/index.mjs'));
 const server = await createServer({ root, server: { host: '127.0.0.1', port: 0 } });
 let browser;
 try {
   await server.listen();
-  browser = await chromium.launch({
-    headless: true,
-    ...(process.env.CHROME_BIN ? { executablePath: process.env.CHROME_BIN } : {}),
-    args: ['--no-sandbox', '--enable-webgl', '--use-gl=swiftshader', '--enable-unsafe-swiftshader'],
-  });
+  browser = await launchChromium(['--no-sandbox', '--enable-webgl', '--use-gl=swiftshader', '--enable-unsafe-swiftshader']);
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));

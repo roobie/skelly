@@ -1,6 +1,10 @@
 ---
 id: skelly::gungen-anti-materiel
 description: The anti-materiel rifle archetype in gungen - the vocabulary it added, the rules, the modelling choices and where its proportions come from.
+read_if:
+  - you change gungen's browser-test launch policy
+  - you work on the anti-materiel rifle archetype
+  - you review its proportions or browser regressions
 tags: [gungen, archetype, anti-materiel, vocabulary]
 created: 2026-10-01
 status: active
@@ -324,7 +328,13 @@ either), feed lips, and the magazine's follower and rounds.
 ## Not verified
 
 - The look has been checked in the viewer in headless Chromium only, with BR's
-  judgement of proportions still to come.
+  judgement of proportions still to come. Gungen's browser regression scripts
+  use the local `test/chromium.mjs`, `launchChromium` boundary.
+
+For g47-1, BR's br-43 ruling (2026-10-07 22:44:58) was, “Move every Chromium
+stage to managed Chromium via one helper (#384); keep #287 open for the why.” BR
+confirmed gungen in br-46 option A (2026-10-07 23:13:07): “yes, gungen too.”
+See `deadvox/TROUBLESHOOTING.md` for the launch-boundary rationale.
 - deadvox has not been given the model.
 - **How the real magazine stacks its rounds.** No source for the M82's stacking was found in what
   could be read (Wikipedia's M82 and .50 BMG articles, Barrett's model page; Wikipedia says the
