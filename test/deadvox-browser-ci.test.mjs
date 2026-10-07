@@ -11,7 +11,6 @@ import {
   describeStage,
   parseCommand,
   quarantinedScripts,
-  quarantinedStages,
   repositoryManifest,
   stagesOf,
 } from './browser-ci-manifest.mjs';
@@ -20,10 +19,7 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { scripts } = JSON.parse(readFileSync(join(ROOT, 'deadvox/package.json'), 'utf8'));
 const browserStages = browserStagesOfScripts(scripts);
 const covered = new Set(repositoryManifest(ROOT).full);
-const uncovered = (name) =>
-  browserStages[name]
-    .map(describeStage)
-    .filter((stage) => !(covered.has(stage) || Object.hasOwn(quarantinedStages, stage)));
+const uncovered = (name) => browserStages[name].map(describeStage).filter((stage) => !covered.has(stage));
 
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
@@ -133,14 +129,6 @@ describe('deadvox browser CI coverage', () => {
         stagesOf(scripts[name]).length,
         `${name} was reinstated without resolving its quarantine`,
       );
-    }
-  });
-
-  it('keeps quarantined Chromium save-storage stages declared but out of CI', () => {
-    const declared = new Set(Object.values(browserStages).flatMap((stages) => stages.map(describeStage)));
-    for (const [stage, reason] of Object.entries(quarantinedStages)) {
-      assert.ok(declared.has(stage), `${stage} is gone: drop the quarantine (${reason})`);
-      assert.equal(covered.has(stage), false, `${stage} was reinstated without resolving its quarantine`);
     }
   });
 });

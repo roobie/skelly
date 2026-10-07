@@ -48,19 +48,6 @@ export const describeStage = ({ env, command }) =>
       .map(([key, value]) => `${key}=${value}`),
     command,
   ].join(' ');
-export const quarantinedStages = Object.fromEntries(
-  [
-    'node test/browser/save-storage.mjs chromium',
-    'SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=opfs SAVE_AUTOSAVE_SCENARIO=continue node test/browser/save-storage.mjs chromium',
-    'SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=opfs SAVE_AUTOSAVE_SCENARIO=replacement node test/browser/save-storage.mjs chromium',
-    'SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=continue node test/browser/save-storage.mjs chromium',
-    'SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=replacement node test/browser/save-storage.mjs chromium',
-    'SAVE_AUTOSAVE_ONLY=1 SAVE_AUTOSAVE_BACKEND=indexeddb SAVE_AUTOSAVE_SCENARIO=busy-lock node test/browser/save-storage.mjs chromium',
-  ].map((command) => [
-    describeStage(parseCommand(command)),
-    'Chromium launch stalls before a page is created; root cause tracked by #287.',
-  ]),
-);
 export const stagesOf = (script) => script.split('&&').map(parseCommand);
 const isBrowser = ({ command }) =>
   command.startsWith('node test/browser/') || command === 'node tools/ui-browser-contract.mjs';
@@ -142,8 +129,7 @@ export function browserManifest({ caller, reusable, scripts }) {
   const expected = new Set(
     Object.entries(declared)
       .filter(([name]) => !Object.hasOwn(quarantinedScripts, name))
-      .flatMap(([, stages]) => stages.map(describeStage))
-      .filter((stage) => !Object.hasOwn(quarantinedStages, stage)),
+      .flatMap(([, stages]) => stages.map(describeStage)),
   );
   requireValue(expected.size > 0 && full.length > 0, 'no browser cases observed');
   requireEqual(
