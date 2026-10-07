@@ -2,7 +2,7 @@
 // systems registered on it. Pure, so scenario tests run it headless.
 
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
-import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
+import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
@@ -94,7 +94,7 @@ export class Simulation {
       tick: (dt) => {
         const rate = this.restRate();
         const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
-        for (const reason of stepNeeds(this.needs, this.body, gameHours(this.clock, dt), {
+        for (const reason of stepNeeds(this.needs, this.body, simToGameHours(this.clock, dt), {
           damageImmune: this.godMode,
           rates,
         })) {
@@ -267,6 +267,11 @@ export class Simulation {
 
   private unsafeReason(): string | undefined {
     return this.ignoreUnsafe ? undefined : this.unsafe();
+  }
+
+  /** Processes events emitted between frames before the outer driver sizes this frame. */
+  beginFrame(): void {
+    this.checkInterruptions();
   }
 
   /** Advances by an already-planned Sim-time step. Real-time conversion belongs to the outer frame driver. */

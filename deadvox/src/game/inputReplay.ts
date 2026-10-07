@@ -134,6 +134,7 @@ export interface DecodedInputReplay {
   readonly endSimTimestamp: number;
 }
 
+/** Strict wire shape: old payloads with `endSimTime` are rejected by field validation, with no compatibility alias. */
 interface ReplayWire {
   magic: typeof MAGIC;
   schemaVersion: number;

@@ -14,9 +14,10 @@ const ALLOW_REAL = new Set([join(SOURCE, 'game', 'frameDriver.ts')]);
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const REAL_NAMES = new Set(['Date', 'performance', 'requestAnimationFrame', 'setTimeout', 'setInterval', 'timeStamp']);
 const TEMPORAL_NAME =
-  /(?:Time|Duration|Elapsed|Interval|Cooldown|Windup|BurnTime|BurnRemaining|RotsAfter|LastPlayedAt|StartedAt|ExpiresAt|LitAt|Per(?:Sim|Game|Real)(?:Second|Minute|Hour)|Timestamp)/i;
-const CLOCK_UNIT = /(?:Sim|Game|Real)(?:Milliseconds?|Seconds?(?:Squared)?|Minutes?|Hours?|TimeOfDay|Timestamp|Rate)/;
-const BRANDED_CLOCK = /^(sim|game|real)(?:Seconds|Timestamp|Rate|TimeOfDay)$/;
+  /(?:Time|Duration|Elapsed|Interval|Cooldown|Windup|BurnTime|BurnRemaining|RotsAfter|LastPlayedAt|StartedAt|ExpiresAt|LitAt|Milliseconds?|\bMs\b|Seconds?(?:Squared)?|Minutes?|Hours?|Per(?:Milli(?:second)?|Second|Minute|Hour)|\bRpm\b|Timestamp)/i;
+const CLOCK_UNIT =
+  /(?:Sim|Game|Real)(?:Milliseconds?|Ms|Seconds?(?:Squared)?|Minutes?|Hours?|TimeOfDay|Timestamp|Rate)|Per(?:Sim|Game|Real)(?:Milliseconds?|Ms|Seconds?|Minutes?|Hours?)/i;
+const AUDIO_CONTEXT_TYPE = /^(?:AudioContext|BaseAudioContext)$/;
 const BRANDED_TYPE = /^(Sim|Game|Real)(?:Seconds|Timestamp|Rate|TimeOfDay)$/;
 
 const walkFiles = (dir, accept) =>
@@ -35,6 +36,24 @@ const sourceAst = (file, text) =>
     true,
     file.endsWith('.json') ? ts.ScriptKind.JSON : ts.ScriptKind.TS,
   );
+let checkerProgram;
+const typeProgram = (file) => {
+  const absolute = resolve(file);
+  if (!checkerProgram) {
+    const roots = [
+      ...walkFiles(SOURCE, (path) => ['.ts', '.tsx'].includes(extname(path))),
+      ...walkFiles(join(DEADVOX, 'test', 'fixtures', 'time-lint'), (path) => path.endsWith('.ts')),
+    ];
+    checkerProgram = ts.createProgram(roots, {
+      allowImportingTsExtensions: true,
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      skipLibCheck: true,
+      target: ts.ScriptTarget.Latest,
+    });
+  }
+  return { checker: checkerProgram.getTypeChecker(), source: checkerProgram.getSourceFile(absolute) };
+};
 const propertyName = (node) =>
   ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node) ? node.text : undefined;
 const lineOf = (source, node) => source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1;
@@ -43,7 +62,8 @@ const realClockFindings = (file, text) => {
   if (ALLOW_REAL.has(file)) {
     return [];
   }
-  const source = sourceAst(file, text);
+  const typed = typeProgram(file);
+  const source = typed.source ?? sourceAst(file, text);
   const findings = [];
   const report = (node, name) =>
     findings.push(
@@ -62,12 +82,13 @@ const realClockFindings = (file, text) => {
     ) {
       report(node, node.text);
     }
-    if (
-      ts.isPropertyAccessExpression(node) &&
-      propertyName(node.name) === 'currentTime' &&
-      node.expression.getText(source).includes('AudioContext')
-    ) {
-      report(node.name, 'AudioContext.currentTime');
+    if (ts.isPropertyAccessExpression(node) && propertyName(node.name) === 'currentTime') {
+      const receiver = typed.checker.getTypeAtLocation(node.expression);
+      const receiverName =
+        receiver.aliasSymbol?.name ?? receiver.getSymbol()?.name ?? typed.checker.typeToString(receiver);
+      if (AUDIO_CONTEXT_TYPE.test(receiverName)) {
+        report(node.name, 'AudioContext.currentTime');
+      }
     }
     visitChildren(node, visit);
   };
@@ -118,7 +139,11 @@ const resolveSource = (path) => {
 };
 
 const temporalNameField = (node, mode) => {
-  if ((mode === 'json' || mode === 'source') && ts.isPropertyAssignment(node)) {
+  if (
+    (mode === 'json' && ts.isPropertyAssignment(node)) ||
+    (mode === 'source' &&
+      (ts.isPropertyAssignment(node) || ts.isPropertySignature(node) || ts.isPropertyDeclaration(node)))
+  ) {
     const name = propertyName(node.name);
     return name ? { name, node: node.name } : undefined;
   }
@@ -149,50 +174,16 @@ export const temporalNameFindings = (file, text, mode = 'source') => {
   return findings;
 };
 
-const brandedClock = (node, source, declaredBrands) => {
-  if (!node) {
-    return;
-  }
-  if (ts.isParenthesizedExpression(node)) {
-    return brandedClock(node.expression, source, declaredBrands);
-  }
-  if (ts.isAsExpression(node) || ts.isTypeAssertionExpression(node)) {
-    return brandedClock(node.expression, source, declaredBrands);
-  }
-  if (ts.isIdentifier(node)) {
-    return (
-      declaredBrands.get(node.text) ??
-      (ts.isVariableDeclaration(node.parent) && node.parent.initializer
-        ? brandedClock(node.parent.initializer, source, declaredBrands)
-        : undefined)
-    );
-  }
-  if (ts.isCallExpression(node)) {
-    const name = node.expression.getText(source);
-    const clock = BRANDED_CLOCK.exec(name)?.[1];
-    return clock ? `${clock[0].toUpperCase()}${clock.slice(1)}` : undefined;
-  }
+const clockFromType = (checker, node) => {
+  const type = checker.getTypeAtLocation(node);
+  const name = type.aliasSymbol?.name ?? type.getSymbol()?.name;
+  return name ? BRANDED_TYPE.exec(name)?.[1] : undefined;
 };
 
 export const mixedArithmeticFindings = (file, text) => {
-  const source = sourceAst(file, text);
+  const typed = typeProgram(file);
+  const source = typed.source ?? sourceAst(file, text);
   const findings = [];
-  const declaredBrands = new Map();
-  const collect = (node) => {
-    if (
-      ts.isVariableDeclaration(node) &&
-      ts.isIdentifier(node.name) &&
-      node.type &&
-      ts.isTypeReferenceNode(node.type)
-    ) {
-      const clock = BRANDED_TYPE.exec(node.type.typeName.getText(source))?.[1];
-      if (clock) {
-        declaredBrands.set(node.name.text, clock);
-      }
-    }
-    visitChildren(node, collect);
-  };
-  collect(source);
   const visit = (node) => {
     if (
       ts.isBinaryExpression(node) &&
@@ -205,8 +196,8 @@ export const mixedArithmeticFindings = (file, text) => {
         ts.SyntaxKind.GreaterThanEqualsToken,
       ].includes(node.operatorToken.kind)
     ) {
-      const left = brandedClock(node.left, source, declaredBrands);
-      const right = brandedClock(node.right, source, declaredBrands);
+      const left = clockFromType(typed.checker, node.left);
+      const right = clockFromType(typed.checker, node.right);
       if (left && right && left !== right) {
         findings.push(`${file}:${lineOf(source, node)}: arithmetic/comparison mixes ${left} and ${right} clocks`);
       }

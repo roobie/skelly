@@ -40,6 +40,7 @@ export const gameTimeOfDay = (value: number): GameTimeOfDay => {
 export const simMinutes = (value: number): SimSeconds => simSeconds(finiteNonNegative(value, 'SimMinutes') * 60);
 export const gameMinutes = (value: number): GameSeconds => gameSeconds(finiteNonNegative(value, 'GameMinutes') * 60);
 export const gameHours = (value: number): GameSeconds => gameSeconds(finiteNonNegative(value, 'GameHours') * 3600);
+export const gameSecondsToMinutes = (value: GameSeconds): number => value / 60;
 export const simPerMinute = (value: number): SimRate => simRate(finiteNonNegative(value, 'SimPerMinute') / 60);
 export const gamePerHour = (value: number): GameRate => (finiteNonNegative(value, 'GamePerHour') / 3600) as GameRate;
 

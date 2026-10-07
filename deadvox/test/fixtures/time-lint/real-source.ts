@@ -1,3 +1,5 @@
 const frameTime = performance.now();
+declare const ctx: AudioContext;
+const audioTime = ctx.currentTime;
 
-export { frameTime };
+export { audioTime, frameTime };

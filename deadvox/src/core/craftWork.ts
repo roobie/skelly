@@ -8,6 +8,7 @@ import type { Item } from './items.ts';
 import type { CraftActionHooks } from './longAction.ts';
 import type { ReachSnapshot } from './reach.ts';
 import { craftingActivityTier } from './skillTraining.ts';
+import { gameSecondsToMinutes } from './time.ts';
 
 const inputsValid = (inventory: Inventory, item: Item): boolean => {
   try {
@@ -101,7 +102,11 @@ export const craftActionHooks = (
             if (offset === undefined) {
               throw new Error('Missing crafting practice tier offset');
             }
-            return { skill, amount: recipe.timeGameMinutes / 3600, tier: craftingActivityTier(level, offset) };
+            return {
+              skill,
+              amount: gameSecondsToMinutes(recipe.timeGameMinutes),
+              tier: craftingActivityTier(level, offset),
+            };
           })
         : [];
       inventory.releaseWork(item, true, feet());

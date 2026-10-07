@@ -43,7 +43,7 @@ export const calendarAt = (clock: ClockSettings, simTime: number): number =>
 export const simSecondsPerHour = (clock: ClockSettings): number => SECONDS_PER_HOUR / clock.ratio;
 
 /** Game hours for a span of simulation seconds. */
-export const gameHours = (clock: ClockSettings, simSeconds: number): number =>
+export const simToGameHours = (clock: ClockSettings, simSeconds: number): number =>
   (simSeconds * clock.ratio) / SECONDS_PER_HOUR;
 
 /** The simulation time `hours` game hours after `from` (a debug time skip's end). */

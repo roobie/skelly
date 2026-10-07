@@ -9,16 +9,28 @@ import {
 } from '../tools/time-lint.mjs';
 
 const fixture = (name: string) => `test/fixtures/time-lint/${name}`;
+const FIELD_NAME = /"([^"]+)"/;
 
 describe('time lint boundary and naming rules', () => {
   it('rejects a Real clock source in a simulation dependency', () => {
     const findings = analyzeFiles([fixture('real-source.ts')]);
     expect(findings.some((finding) => finding.includes('performance'))).toBe(true);
+    expect(findings.some((finding) => finding.includes('AudioContext.currentTime'))).toBe(true);
   });
 
-  it('rejects temporal schema and content fields without a clock and unit', () => {
-    const findings = temporalNameFindings('fixture.json', '{"duration": 3}', 'json');
-    expect(findings).toHaveLength(1);
+  it('rejects temporal fields that omit the clock before a unit or rate', () => {
+    const findings = temporalNameFindings(
+      'fixture.json',
+      '{"duration": 3, "fooSeconds": 1, "fooPerHour": 2, "rpm": 3, "durationSimSeconds": 4}',
+      'json',
+    );
+    expect(findings).toHaveLength(4);
+    expect(findings.map((finding) => finding.match(FIELD_NAME)?.[1])).toEqual([
+      'duration',
+      'fooSeconds',
+      'fooPerHour',
+      'rpm',
+    ]);
   });
 
   it('rejects arithmetic that combines branded clocks', () => {

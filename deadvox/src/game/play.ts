@@ -22,7 +22,7 @@ import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
-import { type RealSeconds, type RealTimestamp, realSeconds, simSeconds } from '../core/time.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
@@ -70,7 +70,7 @@ import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
-import { planRealFrame, realNow, startRealFrames } from './frameDriver.ts';
+import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import {
@@ -2150,8 +2150,7 @@ export const startPlay = (
       stepReplaySimulation(menuPaused, gameFrozen);
     } else {
       sim.paused = menuPaused || gameFrozen;
-      const simDt = sim.paused ? simSeconds(0) : planRealFrame(compression, realDt);
-      session.frame(simDt, skipUntil);
+      advanceLiveFrame(sim, realDt, skipUntil, (simDt, until) => session.frame(simDt, until));
     }
     // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
     if (skipUntil !== undefined) {

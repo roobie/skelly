@@ -1,9 +1,31 @@
 {
   "version": 1,
   "fields": {
-    "bench/plan.ts": { "startedAt": 1, "time": 1, "timedOut": 1 },
-    "bench/run.ts": { "loadTimeout": 2, "startedAt": 1, "time": 2 },
-    "bench/shamblers.ts": { "startedAt": 1, "time": 2 },
+    "bench/plan.ts": {
+      "jogMetresPerSecond": 1,
+      "jogSeconds": 1,
+      "lookSeconds": 1,
+      "seconds": 1,
+      "sprintMetresPerSecond": 1,
+      "sprintSeconds": 1,
+      "startedAt": 1,
+      "time": 1,
+      "timedOut": 1
+    },
+    "bench/run.ts": {
+      "hour": 1,
+      "jogMetresPerSecond": 1,
+      "jogSeconds": 1,
+      "loadTimeout": 2,
+      "lookSeconds": 1,
+      "seconds": 1,
+      "sprintMetresPerSecond": 1,
+      "sprintSeconds": 1,
+      "startedAt": 1,
+      "time": 2
+    },
+    "bench/shamblers-cpu.mjs": { "hour": 1 },
+    "bench/shamblers.ts": { "hour": 1, "startedAt": 1, "time": 2 },
     "core/body.ts": { "knockoutElapsed": 2 },
     "core/bookReading.ts": { "duration": 1 },
     "core/craftCommands.ts": { "duration": 2, "time": 3 },
@@ -17,6 +39,7 @@
     "core/longAction.ts": { "duration": 4, "elapsed": 6, "strikeInterval": 1 },
     "core/meleePose.ts": { "cooldown": 3 },
     "core/options.ts": { "time": 5 },
+    "core/physics.ts": { "second": 1 },
     "core/playerCombat.ts": { "cooldown": 1, "elapsed": 2 },
     "core/prying.ts": { "strikeInterval": 1, "time": 1 },
     "core/reach.ts": { "handlingTime": 2 },
@@ -61,6 +84,7 @@
       "cooldown": 3,
       "expiresAt": 1,
       "hitFlinchTime": 1,
+      "hour": 6,
       "idleSoundTimer": 2,
       "lookTimer": 2,
       "lurchDuration": 2,
@@ -68,6 +92,7 @@
       "modeTimer": 2,
       "roamTimer": 3,
       "searchTimer": 2,
+      "second": 1,
       "stumbleDuration": 2,
       "stumbleElapsed": 2,
       "swayDuration": 2,
@@ -76,6 +101,7 @@
     },
     "debug/index.ts": { "gameTime": 1, "setTimeOfDay": 2, "time": 1 },
     "debug/lookDump.ts": { "gameTime": 2, "timestamp": 1 },
+    "debug/vehicleSpike.ts": { "ms": 1 },
     "game/debugInterface.ts": { "setTimeOfDay": 1 },
     "game/melee.ts": { "cooldown": 2 },
     "game/firearmHandling.ts": { "duration": 5, "elapsed": 6, "simTime": 1, "startedAt": 3 },
@@ -91,30 +117,39 @@
     },
     "game/playtestObserver.ts": {
       "batchMeanDurationsMs": 1,
+      "handlingSeconds": 3,
       "observedTimerTickMs": 1,
       "timerQuantum": 2,
-      "timerQuantumCrossCheckPassed": 1
+      "timerQuantumCrossCheckPassed": 1,
+      "uiSeconds": 3
     },
     "game/playtestTools.ts": {
       "batchMeanDurationsMs": 1,
+      "compressedSeconds": 3,
       "durationMs": 1,
+      "handlingSeconds": 1,
       "observedTimerTickMs": 1,
+      "survivedSeconds": 1,
       "timerQuantum": 2,
-      "timerQuantumCrossCheckPassed": 1
+      "timerQuantumCrossCheckPassed": 1,
+      "uiSeconds": 1
     },
     "game/pressHoldInput.ts": { "holdDuration": 2, "startedAt": 2 },
     "game/quickbarInput.ts": { "holdDuration": 1 },
     "game/saveStorage.ts": { "requestTimeoutMs": 1, "timeoutMs": 1, "timer": 1 },
-    "game/session.ts": { "expiresAt": 1 },
+    "game/session.ts": { "expiresAt": 1, "hour": 1 },
     "render/firearmModel.ts": { "duration": 1, "elapsed": 1 },
+    "render/frameTimes.ts": { "ms": 1 },
     "render/hands.ts": { "duration": 1, "elapsed": 1 },
     "render/mobActors.ts": { "elapsed": 6, "quietTime": 1 },
     "render/playView.ts": { "time": 1 },
-    "render/rummagePose.ts": { "elapsed": 2 },
+    "render/rummagePose.ts": { "cyclesPerSecond": 1, "elapsed": 2, "transitionSeconds": 1 },
     "render/shellLoadPose.ts": { "duration": 1, "elapsed": 1 },
     "ui/craftReadout.ts": { "time": 2 },
     "ui/hud.ts": { "duration": 1, "elapsed": 1, "time": 3 },
     "ui/inventoryScreen.ts": { "duration": 1, "time": 2 },
-    "ui/saveController.ts": { "checkpointInterval": 1, "recordSnapshotDuration": 2, "simTime": 1 }
+    "ui/saveController.ts": { "checkpointInterval": 1, "recordSnapshotDuration": 2, "simTime": 1 },
+    "worker/mesh.worker.ts": { "ms": 1 },
+    "worker/protocol.ts": { "ms": 1 }
   }
 }

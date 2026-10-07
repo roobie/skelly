@@ -56,8 +56,8 @@ Equivalent reserved-UID sets are visited once per quality prefix, not once per
 provider tuple. No feasible plan is rejected by a search-budget cutoff.
 
 Gather time starts as **SimSeconds** and is converted to GameSeconds with the saved
-clock ratio; see `src/core/clock.ts`, `gameHours`, and `src/core/crafting.ts`,
-`planCraft`. Work time starts from recipe Game minutes converted to seconds, is adjusted by the named
+clock ratio; see `src/core/clock.ts`, `simToGameHours`, and `src/core/crafting.ts`,
+`planCraft`. Craft practice converts the recipe's Game seconds back to authored minutes through `src/core/time.ts`, `gameSecondsToMinutes`. Work time starts from recipe Game minutes converted to seconds, is adjusted by the named
 in-reach station's content-defined bonus, then by the character's skill modifier
 before it is stored in the work item. Skill-gated crafting, source-agnostic
 practice awards and the modifier are owned by `src/core/character.ts`,

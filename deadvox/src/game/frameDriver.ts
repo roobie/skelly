@@ -24,16 +24,27 @@ export const planRealFrame = (compression: Compression, elapsed: RealSeconds): S
   return simSeconds(Math.min(elapsed * compression.c, compression.limits.maxSimPerFrame));
 };
 
-/** Replay applies the recorded compression outside the simulation and supplies an explicit Sim step. */
-export const planReplayFrame = (compression: Compression, nominalFrame: SimSeconds): SimSeconds =>
-  simSeconds(Math.min(nominalFrame * compression.c, compression.limits.maxSimPerFrame));
+type AdvanceStep = (simDt: SimSeconds, until?: number) => void;
+const advanceStep = (sim: Simulation, simDt: SimSeconds, until: number | undefined, advance?: AdvanceStep): number => {
+  if (advance) {
+    advance(simDt, until);
+    return 0;
+  }
+  return sim.frame(simDt, until);
+};
 
-/** The live frame adapter is the only place that converts Real frame duration to a simulation step. */
-export const advanceLiveFrame = (sim: Simulation, elapsed: RealSeconds, until?: number): number => {
+/** Checks pending interruptions before either driver sizes and submits this frame's Sim step. */
+export const advanceLiveFrame = (
+  sim: Simulation,
+  elapsed: RealSeconds,
+  until?: number,
+  advance?: AdvanceStep,
+): number => {
   if (sim.paused || sim.dead) {
     return 0;
   }
-  return sim.frame(planRealFrame(sim.compression, elapsed), until);
+  sim.beginFrame();
+  return advanceStep(sim, planRealFrame(sim.compression, elapsed), until, advance);
 };
 
 /** Monotonic Real timestamp in milliseconds; only the outer frame/presentation adapter reads it. */
