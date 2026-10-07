@@ -18,6 +18,27 @@ import {
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { scripts } = JSON.parse(readFileSync(join(ROOT, 'deadvox/package.json'), 'utf8'));
 const browserStages = browserStagesOfScripts(scripts);
+const customChromiumSelection = /\b(?:executablePath|channel|CHROME_BIN)\b/;
+const stageScriptPathPattern = /^node (\S+\.mjs)\b/;
+const directChromiumLaunchPattern = /\bchromium\.launch\s*\(/;
+const sharedChromiumLaunchPattern = /\blaunchChromium\s*\(/;
+const helperChromiumLaunchPattern = /chromium\.launch\s*\(/;
+const unhandledRejectionListenerPattern = /process\.(?:once|on)\(['"]unhandledRejection['"]/;
+const expression = (body) => `\${{ ${body} }}`;
+const browserStagePaths = [
+  ...new Set(
+    Object.values(browserStages)
+      .flat()
+      .map(({ command }) => {
+        const match = command.match(stageScriptPathPattern);
+        if (!match) {
+          throw new Error(`Browser stage command has no script path: ${command}`);
+        }
+        return match[1];
+      }),
+  ),
+];
+const firefoxOnlyStages = new Set(['test/browser/firefox-first-click.mjs', 'test/browser/firefox-ui.mjs']);
 const covered = new Set(repositoryManifest(ROOT).full);
 const uncovered = (name) => browserStages[name].map(describeStage).filter((stage) => !covered.has(stage));
 
@@ -26,8 +47,6 @@ const duplicateCase = /exactly once/;
 const serialControl = /start independently/;
 const playwrightInstallCommand = /\bnpx playwright install(?:\s|$)/;
 const withDepsFlag = /--with-deps\b/;
-const customChromiumSelection = /\b(?:executablePath|channel)\s*:/;
-const expression = (body) => `\${{ ${body} }}`;
 
 const partitionFixture = () => ({
   caller: {
@@ -122,15 +141,34 @@ describe('deadvox browser CI coverage', () => {
     assert.deepEqual(missing, []);
   });
 
-  it('uses Playwright-managed Chromium for save-storage', () => {
-    const saveStorage = readFileSync(join(ROOT, 'deadvox/test/browser/save-storage.mjs'), 'utf8');
-    const launchOptions = saveStorage.split('browser = await chromium.launch({')[1]?.split('});')[0];
-    assert.ok(launchOptions, 'save-storage declares a Chromium launch');
-    assert.doesNotMatch(
-      launchOptions,
-      customChromiumSelection,
-      'save-storage must not select a system browser through executablePath or channel',
-    );
+  it('routes browser stages through the managed Chromium helper without system selection', () => {
+    const sources = browserStagePaths.map((path) => ({
+      path,
+      source: readFileSync(join(ROOT, 'deadvox', path), 'utf8'),
+    }));
+    for (const { path, source } of sources) {
+      assert.doesNotMatch(source, customChromiumSelection, `${path} must not select a system browser`);
+      assert.doesNotMatch(source, directChromiumLaunchPattern, `${path} must use launchChromium`);
+      if (!firefoxOnlyStages.has(path)) {
+        assert.match(source, sharedChromiumLaunchPattern, `${path} must use launchChromium`);
+      }
+    }
+    const helper = readFileSync(join(ROOT, 'deadvox/test/browser/chromium.mjs'), 'utf8');
+    assert.match(helper, helperChromiumLaunchPattern, 'the shared helper owns Chromium launch');
+    assert.doesNotMatch(helper, unhandledRejectionListenerPattern, 'the helper must not swallow floating rejections');
+  });
+
+  it('installs and caches Playwright Chromium on every non-Firefox browser shard', () => {
+    const {
+      jobs: {
+        run: { steps },
+      },
+    } = parse(readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8'));
+    const cache = steps.find(({ name }) => name === 'Cache Playwright Chromium');
+    const install = steps.find(({ run }) => run === 'npx playwright install chromium');
+    assert.ok(cache && install, 'the managed browser has both cache and install steps');
+    assert.equal(cache.if, expression("inputs.shard != 'firefox'"));
+    assert.equal(install.if, cache.if, 'all Chromium shards install the browser they cache');
   });
 
   it('rejects a missing case or a case executed in duplicate shards', () => {

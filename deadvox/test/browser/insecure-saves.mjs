@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { launchChromium } from './chromium.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -23,12 +24,7 @@ try {
   await server.listen();
   const address = server.httpServer.address();
   assert(address && typeof address !== 'string');
-  const { chromium } = await import('playwright');
-  browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN ?? undefined,
-    headless: true,
-    args: browserStageArgs('insecure-saves'),
-  });
+  browser = await launchChromium('insecure-saves', { headless: true });
   const context = await browser.newContext();
   await context.addInitScript(() => {
     Object.defineProperty(globalThis, 'isSecureContext', { configurable: true, value: false });
