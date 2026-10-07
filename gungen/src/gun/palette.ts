@@ -155,6 +155,12 @@ const roles = Object.keys(ROLE_SLOTS);
 const ROLE_MATERIALS = Object.fromEntries(
   roles.map((role) => {
     const slot = ROLE_SLOTS[role];
+    if (role === 'sight' || role === 'tactical-flashlight-mount') {
+      return [role, 'alu-anodized-black'];
+    }
+    if (role === 'suppressor') {
+      return [role, 'steel-stainless'];
+    }
     if (slot === 'furniture') {
       return [role, 'polymer-black'];
     }
