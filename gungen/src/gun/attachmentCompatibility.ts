@@ -201,7 +201,7 @@ export const attachmentCompatibility = (
   );
 };
 
-export type AttachmentCompatibilityChoice = readonly [slotId: string, attachmentId: string];
+type AttachmentCompatibilityChoice = readonly [slotId: string, attachmentId: string];
 export type AttachmentCompatibilityPair = readonly [
   first: AttachmentCompatibilityChoice,
   second: AttachmentCompatibilityChoice,
