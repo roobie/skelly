@@ -751,6 +751,21 @@ describe('MobActorMeshes', () => {
     }
   });
 
+  it('validates every crawler figure in the renderer pool', () => {
+    const renderer = new MobActorMeshes(0.5, 1, { poolSize: SHAMBLER_FIGURE_SEEDS.length });
+    try {
+      const crawlerFigures = (
+        renderer as unknown as {
+          variants: readonly { model: string; realized: { report: { ok: boolean } } }[];
+        }
+      ).variants.filter(({ model }) => model === 'crawler');
+      expect(crawlerFigures.length).toBeGreaterThan(0);
+      expect(crawlerFigures.every(({ realized }) => realized.report.ok)).toBe(true);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('renders visible actor meshes with bone transforms for every registered zombie type', () => {
     const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
     try {

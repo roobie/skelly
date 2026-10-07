@@ -612,8 +612,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   the view only if the turned muzzle point does. The pump's cant toward its port
   during a rack moves the mark the same way, though only slightly, since it
   rolls the gun about its own barrel (d114-13). `src/render/handlingTurn.ts`,
-  `handlingRotation`, gives the drawn model and the crosshair (`turnedBore`) the
-  same turn. Shots keep the unturned bore:
+  `handlingRotation`, supplies the same turn to `src/core/heldPose.ts`,
+  `heldFirearmTransform`, for the drawn firearm and its crosshair. Shots keep the
+  unturned bore:
   `FirearmMechanics.fire` refuses one while a handling job or a cycle runs, so
   the two never disagree at a shot.
   An earlier instruction was: “Also, "hipfire" is way off the mark (cross hair / center of
@@ -628,10 +629,18 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `projectCrosshairScreenPosition` and `playCrosshairFrame`, hide it outside the
   viewport and keep the centered default only when no firearm is wielded. The hip pose reuses the hand placement but not the melee
   wrist rotation, so the visible bore follows the player's look. The debug X is
-  separate from the optional crosshair. ADS retains its existing sight
-  alignment; its crosshair, when enabled, reports the aligned bore rather than
-  the random spread. `src/debug/index.ts` owns the development target-range
-  readout. BR's earlier requirement remains: “the number on the screenshot
+  separate from the optional crosshair. BR, 2026-10-07 16:20, ruled: “Really,
+  in ADS, the recoil should let the firearm move (i.e. follow the
+  muzzle-crosshair) without the view following - that is the 'uncontrol' that
+  recoil and other handling aspects brings”. In ADS the undeviated sight
+  direction and up axis, including cant and eye relief, align to the fixed view
+  in `heldFirearmTransform`; recoil, sway and handling then move that shared
+  firearm pose and bore while the view stays put. `HeldItems.update` keeps the
+  optic window attached to the shifted sight, and `heldFirearmBore` uses the
+  same transform for the crosshair. The intentional over-limit pitch shift still
+  moves the view through `src/game/session.ts`, `applyAimViewPitchShift`
+  (`controls.adjustPitch`).
+  `src/debug/index.ts` owns the development target-range readout. BR's earlier requirement remains: “the number on the screenshot
   should be a maximum of sub-1-meter”. Whether the readout meets it is for BR's
   look. BR's 2026-10-05 look at the range found that "the gun on screen is
   climbing (and plateauing)" and ruled,
@@ -909,7 +918,8 @@ BR (2026-10-07 10:03) approved the grounded static pose. The body uses
 
 BR clarified on 2026-10-07 12:33: “as for #325: looking good, but it's important they do so only when they perceive the player”. BR answered on 2026-10-07 13:08: “I'd say yes - best case would be to add some jitter, because it's reasonable that a person/creature turns their head towards what they're hearing, but sometimes they might turn the head so that the ears are in the 'hearing direction' - but to keep things simple for now, maybe we can add a bit of jitter so that it's not exact when the perception is hearing only”. The ears-toward-sound behavior is a possible later refinement; hearing gaze uses deterministic jitter around the heard point. BR answered the br-17 lure-light question for d130 on 2026-10-07 16:29, verbatim: “d130: as recommended -> yes”. The chosen option was “they look toward any light they notice (a lure works like a sound); the label reads 'notices something'”. A visible lit light, carried or lying in a pile, shares the near state and draws the gaze. `perceptionLabelFor` distinguishes the player's position from another near source by comparing `lastPerceived` with the current player's horizontal position, without adding source state. BR reported at 13:33, verbatim: “it's kinda hard testing (#325)” / “because if i see them (good enough to make out details) they generally see me too, which defeats the test”. The spectator camera, perception labels, hidden-shambler fixture and test-noise action make that boundary observable without moving the simulated player to the camera.
 
-BR's perception-directed gaze ruling makes sight, hearing and noticed lights legible without giving presentation ownership of the simulation. Keep gaze, labels and spectator-camera movement out of hit geometry, saves and replay; the debug test-noise action is different because it deliberately enters the simulation's sound path. A crawler's posture changes where hits land, so its drag gait and runner/crawler flinches follow the posed hit regions and affect replay compatibility without adding saved state. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded silhouette. See `src/core/zombies.ts`, `ZombieSystem.updateAttention`; `src/render/mobActors.ts`, `MobActorMeshes.posedFrame`; `src/core/zombiePose.ts`, `posedShambler`; `mobgen/src/mob/crawler.ts`, `crawlerGaitPose`; and `mobgen/src/core/generate.ts`, `resolveSupportBones`.
+BR's perception-directed gaze ruling makes sight, hearing and noticed lights legible without giving presentation ownership of the simulation. Gaze, labels and spectator-camera movement stay out of hit geometry, saves, replay and simulation fingerprints; the debug test-noise action is different because it deliberately enters the simulation's sound path. The mobgen viewer has no perception state, so its gaze follows its camera. A crawler's posture changes where hits land: its drag gait and runner/crawler flinches follow the posed hit regions, changing hit geometry and replay compatibility without adding saved state. Gameplay stagger, slowdown and knockdown remain open for BR. Generated support validation protects the grounded silhouette. See `src/core/zombies.ts`, `ZombieSystem.updateAttention`; `src/render/mobActors.ts`, `MobActorMeshes.posedFrame`; `src/core/zombiePose.ts`, `posedShambler`; `mobgen/src/mob/crawler.ts`, `crawlerGaitPose`; `mobgen/src/mob/lookAt.ts`, `lookAtPose`; `mobgen/src/viewer/main.ts`, `applyLookAt`; and `mobgen/src/core/generate.ts`, `resolveSupportBones`.
+
 
 Later (after playtest 1): #370 covers hesitation and pursuit decisions on non-violent sounds; #371 covers nearby shamblers taking interest in a pursuing shambler's hunting sound.
 
