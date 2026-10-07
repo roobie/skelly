@@ -105,6 +105,18 @@ const cloneFixtureChunk = (source: Chunk): Chunk => {
 
 export type Runtime = ReturnType<typeof createRuntime>;
 
+export const addFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
+  for (const chunk of fixtureChunksFor([[cx, cz]])) {
+    runtime.world.addChunk(cloneFixtureChunk(chunk));
+  }
+};
+
+export const removeFixtureColumn = (runtime: Runtime, cx: number, cz: number): void => {
+  for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+    runtime.world.removeChunk(cx, cy, cz);
+  }
+};
+
 // The scenario factory builds the same session the game does (src/game/session.ts) and only
 // supplies what the DOM would: controls, sound output, and the hamlet's world. Fresh and
 // restored runs share it.
@@ -120,6 +132,7 @@ export function createRuntime(
     active?: boolean;
     intent?: () => MoveIntent;
     ready?: (x: number, z: number) => boolean;
+    zombieReady?: (x: number, z: number) => boolean;
     sampleAtPlayerTick?: (
       tick: number,
       live: PlayerInputSample,
@@ -184,6 +197,7 @@ export function createRuntime(
     start: options.start ?? defaultClock.start,
     spawn,
     ready: options.ready ?? (() => true),
+    ...(options.zombieReady ? { zombieReady: options.zombieReady } : {}),
     controls: {
       active: () => options.active ?? Boolean(sampleAtPlayerTick),
       intent: options.intent ?? (() => view.intent),

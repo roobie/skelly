@@ -11,7 +11,6 @@ export interface ZombieColumnLoad {
   site: Site;
   registry: Registry;
   zombies: ZombieSystem;
-  calendar: number;
 }
 
 export interface ZombieSpawnAdvance {
@@ -45,9 +44,9 @@ export class ZombieSpawner {
     }
   }
 
-  onColumn({ cx, cz, site, registry, zombies, calendar }: ZombieColumnLoad): void {
+  onColumn({ cx, cz, site, registry, zombies }: ZombieColumnLoad): void {
     for (const spawn of site.zombiesIn(cx, cz)) {
-      this.consider(spawn, { cx, cz, calendar, registry, zombies });
+      this.consider(spawn, { cx, cz, registry, zombies });
     }
     for (const horde of site.hordesIn?.(cx, cz) ?? []) {
       const type = registry.zombies.get(horde.type);
@@ -87,12 +86,15 @@ export class ZombieSpawner {
     }
   }
 
-  private consider(spawn: ZombieSpawn, { cx, cz, calendar, registry, zombies }: Omit<ZombieColumnLoad, 'site'>): void {
+  private consider(
+    spawn: ZombieSpawn,
+    { cx, cz, registry, zombies }: Pick<ZombieColumnLoad, 'cx' | 'cz' | 'registry' | 'zombies'>,
+  ): void {
     const key = `${spawn.type}:${spawn.pos.join(',')}`;
     if (this.spawned.has(key)) {
       return;
     }
-    if (spawn.window && !spawnWindowOpen(calendar, spawn.window)) {
+    if (spawn.window) {
       this.pending.set(key, { spawn: { ...spawn, window: spawn.window }, cx, cz });
       return;
     }
