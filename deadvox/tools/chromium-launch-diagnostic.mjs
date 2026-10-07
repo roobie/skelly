@@ -199,7 +199,8 @@ try {
   );
 
   for (let iteration = 1; iteration <= samplesPerCell; iteration += 1) {
-    const busOffset = (iteration - 1) % buses.length;
+    // Start system Chrome's first sample on the private bus; the previous run's sole tail was its first system launch under unset bus.
+    const busOffset = (iteration + 1) % buses.length;
     const orderedBuses = [...buses.slice(busOffset), ...buses.slice(0, busOffset)];
     const orderedSources = iteration % 2 === 0 ? [...sources].reverse() : sources;
     for (const busCondition of orderedBuses) {
