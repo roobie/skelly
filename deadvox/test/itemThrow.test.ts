@@ -25,6 +25,18 @@ describe('held-item throws', () => {
     expect(hasMetThrowMinimumHold(1, 1)).toBe(true);
   });
 
+  it('increases light-item range with charge and caps it at full charge', () => {
+    const registry = testRegistry({ light: 450 });
+    const item = testItem('light');
+    const minimumHoldSimSeconds = tuning.chargeSimSeconds / 2;
+    const minimumRange = throwDistanceForItem(item, registry, tuning, minimumHoldSimSeconds);
+    const fullRange = throwDistanceForItem(item, registry, tuning, tuning.chargeSimSeconds);
+    const overchargedRange = throwDistanceForItem(item, registry, tuning, tuning.chargeSimSeconds * 2);
+
+    expect(minimumRange).toBeLessThan(fullRange);
+    expect(overchargedRange).toBeLessThanOrEqual(fullRange);
+  });
+
   it('limits heavier items to no greater range at the same charge', () => {
     const registry = testRegistry({ light: 450, heavy: 4000 });
     const heldSimSeconds = tuning.chargeSimSeconds;

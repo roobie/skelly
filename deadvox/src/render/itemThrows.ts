@@ -60,9 +60,9 @@ export class ItemThrows {
       model.name = look.key;
       flight.modelVisual = true;
       flight.group.add(model);
-    } else if (definition?.pileDisplay === PILE_DISPLAY_KIND.scatter) {
+    } else if (definition.pileDisplay === PILE_DISPLAY_KIND.scatter) {
       flight.group.add(placeholderCaseMesh());
-    } else if (definition) {
+    } else {
       // Match PileMeshes' unmodeled-item fallback: a low, neutral bundle sized from item cells.
       const capacity = PILE_GRID.w * PILE_GRID.h;
       const height = 0.06 + 0.18 * Math.min(1, cellCount(definition) / capacity);

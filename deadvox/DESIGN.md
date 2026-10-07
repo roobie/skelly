@@ -828,6 +828,10 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 ## Held-item throws
 
+BR, 2026-10-07 14:27:
+
+> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
+
 BR, 2026-10-07 15:48:
 
 > "hmm, yeah holding T works for throwing - however, when throwing the AR: during flight, it looks like a lit candle (or perhaps uncolored glowstick)"
@@ -835,23 +839,22 @@ BR, 2026-10-07 15:48:
 > "also: when handling progress is on: a throwing meter showing force should show based on throwing-charge"
 
 The rebindable T action throws only the primary-hand item; an empty primary hand
-refuses instead of reaching into the off hand. A release before BR's minimum
-held-time threshold throws nothing. The range charge starts on press and grows
-through that minimum hold, so the minimum is a release gate rather than an extra
-delay before charging. Item weight limits launch range through arm speed and
-energy; a light item retains the existing maximum, while a heavier one travels
-no farther. A thrown item keeps its identity and state when it lands, including a
-firearm's fitted magazine, its rounds and chamber state. A lit glowstick remains
-lit at its landing pile. Flight uses the same item look as a ground pile, so a
-firearm carries its fitted magazine through the arc; ordinary items without a
-model use the same low bundle fallback as a ground pile, scattered cases keep
-the pile placeholder, and an active glowstick keeps its emissive marker. A throw
-held through a handling job waits to charge until that job finishes, rather than
-interrupting a rack or magazine turn, so the job retains ownership of its item
-state. Releasing early cancels the waiting throw. The optional
-Handling progress HUD shows charge from the initial press and marks the
-minimum-release point, so the release gate is visible without changing the
-throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
+refuses instead of reaching into the off hand. A release before BR's minimum held-time threshold throws nothing. With no rack
+or magazine job active, range charge starts on press and grows through the
+minimum hold, so the minimum is a release gate rather than an extra delay before
+charging. If T is pressed during a handling job, the throw waits to charge until
+the job finishes rather than interrupting the rack or magazine turn; releasing
+while it waits cancels the throw. Item weight limits launch range through arm
+speed and energy; a light item retains the existing maximum, while a heavier one
+travels no farther. A thrown item keeps its identity and state when it lands,
+including a firearm's fitted magazine, its rounds and chamber state. A lit
+glowstick remains lit at its landing pile. Flight uses the same item look as a
+ground pile, so a firearm carries its fitted magazine through the arc; ordinary
+items without a model use the same low bundle fallback as a ground pile,
+scattered cases keep the pile placeholder, and an active glowstick keeps its
+emissive marker. The optional Handling progress HUD shows charge while it is
+accumulating and marks the minimum-release point, so the release gate is visible
+without changing the throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
 `src/render/itemLook.ts`, `itemLook`, `src/ui/hud.ts`, `handlingViewModel`, and
 `src/game/play.ts`, `beginItemThrow` and `advancePendingItemThrow`.
 

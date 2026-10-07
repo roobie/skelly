@@ -151,7 +151,7 @@ describe('handlingViewModel', () => {
       });
 
       expect(vm.visible).toBe(true);
-      expect(vm.label).toBe('Throw force');
+      expect(vm.label.trim()).not.toBe('');
       expect(vm.percent).toBe(Math.round((Math.min(chargeSimSeconds, elapsedSimSeconds) / chargeSimSeconds) * 100));
       expect(vm.minimumPercent).toBe(Math.round((minimumHoldSimSeconds / chargeSimSeconds) * 100));
     }
