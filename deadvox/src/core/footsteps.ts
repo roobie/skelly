@@ -11,7 +11,7 @@ export const STEP_DISTANCE_METRES: Readonly<Record<Exclude<PlayerGait, 'still'>,
 
 export const HARD_LANDING_METRES = 2.5;
 
-export const INITIAL_STRIDE_PHASE = 0.75;
+const INITIAL_STRIDE_PHASE = 0.75;
 
 export interface FootstepClock {
   gait: PlayerGait;
