@@ -1039,6 +1039,22 @@ describe('input replay', () => {
     expect(decoded.snapshot).toEqual(start);
   });
 
+  it('round-trips throwing-stance toggle and drop actions in the replay stream', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    recorder.queueAction('throw.stance.toggle', 'down', 'play');
+    recorder.queueAction('item.drop', 'down', 'play');
+    recorder.recordTick(replaySample);
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+
+    expect(decoded.inputs.actions.map(({ action, phase, context }) => [action, phase, context])).toEqual([
+      ['throw.stance.toggle', 'down', 'play'],
+      ['item.drop', 'down', 'play'],
+    ]);
+  });
+
   it('replays recorded compression through the replay driver', async () => {
     const runtime = createRuntime();
     expect(runtime.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();

@@ -1040,6 +1040,7 @@ try {
     {
       seconds: throwFixture.minimumHoldSimSeconds + 0.1,
       label: 'off-hand throw reaches its minimum charge',
+      record: (line) => process.stderr.write(`${line}\n`),
       stop: offHandOnlyThrow,
     },
   );

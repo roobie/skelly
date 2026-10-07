@@ -47,6 +47,8 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
 const REPLAY_SEMANTIC_ACTIONS = [
   'item.throw',
   'item.throw.cancel',
+  'throw.stance.toggle',
+  'item.drop',
   'inventory.move',
   'inventory.to-hands',
   'inventory.search',
