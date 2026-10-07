@@ -1,5 +1,5 @@
 /** Exact shot deadlines sampled by the existing player scheduler; no wall-clock timers. */
-export class DebugFirearmTrigger {
+export class FirearmTrigger {
   private burst: { uid: number; roundsPerSimSecond: number; start: number; next: number } | undefined;
   advance(
     time: number,

@@ -27,7 +27,6 @@
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "core/soundPicker.ts", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audio.ts", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audioPresentation.ts", "count": 1 },
-    { "path": "deadvox/docs/gunshot-playback.md", "check": "read_if", "text": "missing YAML front matter", "count": 1 },
     {
       "path": "deadvox/docs/reviews/2026-09-29-maintainability.md",
       "check": "read_if",

@@ -2352,6 +2352,7 @@ export class ZombieSystem {
       cooldown: 0,
       impulse: shot.impulse,
       type: 'pierce',
+      ...(shot.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: shot.headDamageMultiplier }),
     };
     for (const direction of shot.directions) {
       const aim = this.targetAt(shot.origin, direction, weapon, this.options.isSolid);

@@ -333,7 +333,7 @@ describe('game audio playback', () => {
     const listenerAtStart = playerOrigin.map((value) => value * scale.blockSize) as Vec3;
     audio.updateListener(listenerAtStart, [0, 0, -1]);
     session.playPlayerSound('player_strain');
-    const shot = firearmShotSound('debug_rifle_assault');
+    const shot = firearmShotSound('rifle_assault');
     session.playPlayerSound(shot.event, session.sim.time, shot);
     audio.updateListener([listenerAtStart[0] + 3, listenerAtStart[1], listenerAtStart[2]], [1, 0, 0]);
     await flush();

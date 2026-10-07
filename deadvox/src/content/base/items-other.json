@@ -242,8 +242,15 @@
       "weight": 40,
       "size": [1, 1],
       "stack": 25,
-      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00).",
-      "ammo": { "calibre": "12-gauge-00-buck", "pellets": 9, "diameterMm": 8.38 },
+      "description": "Nine-pellet 00 buckshot. Loaded-shell gameplay mass estimate: 40 g, not a manufacturer specification. Generic roll-crimp visual proxy. Payload from gungen cartridges/12-gauge-00-buck.json: Federal PFC154 00 (9 pellets), SAAMI shotshell standard p.39 (8.38 mm nominal 00). Per-pellet damage, push and reach are gameplay estimates.",
+      "ammo": {
+        "calibre": "12-gauge-00-buck",
+        "pellets": 9,
+        "diameterMm": 8.38,
+        "damage": 20,
+        "impulse": 0.35,
+        "rangeMetres": 50
+      },
       "model": "round_12_h_gauge_h_00_h_buck"
     },
     {

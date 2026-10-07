@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import {
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -335,9 +336,13 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   }
 };
 
-const checkItemFirearm = (item: ItemDef, report: Report): void => {
+const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): void => {
   if (item.firearm?.pump && item.firearm.dispersionRadians !== 0) {
     report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
+  }
+  // The fitted magazine is drawn at this slot, so a magazine-fed gun's model shows whether one is fitted.
+  if (magazineWellCalibre(registry, item.id) !== undefined && !registry.models.get(item.model!)?.slots?.magazine) {
+    report('items', item.id, '.model', 'a magazine-fed firearm needs a model with a magazine slot');
   }
 };
 
@@ -347,7 +352,7 @@ const checkItems = (registry: Registry, report: Report) => {
   const hasIgniter = items.some((item) => item.igniter !== undefined);
   for (const item of items) {
     checkItemLight(item, hasIgniter, registry, report);
-    checkItemFirearm(item, report);
+    checkItemFirearm(item, registry, report);
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
@@ -399,6 +404,51 @@ const checkDoorOpenNoise = (registry: Registry, furniture: FurnitureDef, report:
     report('furniture', furniture.id, '.door.openNoise.sound', `no sound event "${openNoise.sound}"`);
   } else if (openNoise && openingSound && !openingSound.noise.enabled) {
     report('furniture', furniture.id, '.door.openNoise.sound', 'opening sound must emit hearing noise');
+  }
+};
+
+const militaryOnly = (id: string) => `"${id}" is military loot only`;
+
+const checkMilitaryTables = (registry: Registry, military: ReadonlySet<string>, report: Report) => {
+  for (const table of registry.loot.values()) {
+    if (table.military) {
+      continue;
+    }
+    table.entries.forEach((entry, i) => {
+      if (entry.item !== undefined && military.has(entry.item)) {
+        report(
+          'loot',
+          table.id,
+          `.entries[${i}].item`,
+          `${militaryOnly(entry.item)}; only a "military" table may hold it`,
+        );
+      }
+      if (entry.table !== undefined && registry.loot.get(entry.table)?.military) {
+        report('loot', table.id, `.entries[${i}].table`, `only a "military" table may nest "${entry.table}"`);
+      }
+    });
+  }
+};
+
+/** Every source of a military-only item is a military table: no other table, craft or salvage makes one. */
+const checkMilitaryLoot = (registry: Registry, report: Report) => {
+  const military = militaryLootItems(registry);
+  checkMilitaryTables(registry, military, report);
+  for (const item of registry.items.values()) {
+    const outputs = [
+      ...(item.disassembly?.yields ?? []).map((output, i) => [`.disassembly.yields[${i}].item`, output.item] as const),
+      ...(item.salvage ?? []).map((output, i) => [`.salvage[${i}].item`, output.item] as const),
+    ];
+    for (const [path, output] of military.has(item.id) ? [] : outputs) {
+      if (military.has(output)) {
+        report('items', item.id, path, `${militaryOnly(output)}; salvage may not yield it`);
+      }
+    }
+  }
+  for (const recipe of registry.recipes.values()) {
+    if (recipe.kind !== 'repair' && military.has(recipe.result.item)) {
+      report('recipes', recipe.id, '.result.item', `${militaryOnly(recipe.result.item)}; no recipe may make it`);
+    }
   }
 };
 
@@ -610,6 +660,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkItems(registry, report);
   checkLoot(registry, report);
+  checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
   checkKeys(registry, report);
