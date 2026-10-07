@@ -94,6 +94,11 @@ than position-specific runtime code. `worldSources()` in
 `src/core/hamlet.ts`, so moving furniture keeps its loot source with the placed
 lot.
 
+For #346, `worldSources()` includes authored starting sites but skips showcase
+layouts marked by `SiteLayoutSchema.demo`; a selectable demo is not a source in
+the content world a player starts in. Ordinary authored sites remain sources so
+#181's military camp can ground d114's reachability requirement.
+
 For d65's `hardware_store` and `garage`, `window_frame` remains solid; the
 authored opening around each frame supplies the sightline without adding a
 translucent-block rule. See `src/content/base/templates.json`, `hardware_store`
@@ -103,8 +108,10 @@ The least component fixed point starts at found types. A result enters only when
 at least one alternative per component group is reachable; unseeded recipe cycles
 add nothing. Content acceptance reports **every declared alternative** that is
 neither found nor craftable. It is a type closure, not a quantity/consumption,
-particular-seed or whole-game solver. It extends each closure through actual
-disassembly and salvage outputs via `addDisassemblyOutputs` in
+particular-seed or whole-game solver. For #346, `addUnpackedContents` in
+`src/core/reachability.ts` also makes reachable package contents available,
+including packages nested inside other packages. The closure extends through
+actual disassembly and salvage outputs via `addDisassemblyOutputs` in
 `src/core/reachability.ts`; yield counts come from `disassemblyOutputs` in
 `src/core/disassembly.ts`, so zero-count yields add no reachable type.
 Self-yields are refused to prevent no-op take-apart; see

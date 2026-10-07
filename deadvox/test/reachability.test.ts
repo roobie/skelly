@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { possibleHamletZombies } from '../src/core/hamlet.ts';
 import { checkReachability } from '../src/core/reachability.ts';
+import type { SiteLayoutDef } from '../src/core/schema.ts';
 import type { SpawnMarker } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
 
@@ -16,7 +17,7 @@ const sources = readdirSync(BASE)
     data: JSON.parse(readFileSync(join(BASE, source), 'utf8')) as unknown,
   }));
 const baseline = buildRegistry(sources).registry;
-const mutableSections = ['items', 'furniture', 'loot', 'zombies', 'templates', 'recipes'] as const;
+const mutableSections = ['items', 'furniture', 'loot', 'zombies', 'templates', 'recipes', 'layouts'] as const;
 const fresh = () => ({
   ...baseline,
   ...Object.fromEntries(
@@ -245,6 +246,72 @@ describe('static reachability', () => {
     expect(result.workstations.has('placed_bench')).toBe(true);
   });
 
+  it('excludes demo layouts as sources while retaining ordinary authored-site loot', () => {
+    const registry = fresh();
+    registry.items.set('fixture_demo_fixed', {
+      id: 'fixture_demo_fixed',
+      name: 'Fixture fixed item',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
+    registry.items.set('fixture_demo_table_item', {
+      id: 'fixture_demo_table_item',
+      name: 'Fixture table item',
+      category: 'material',
+      weight: 1,
+      size: [1, 1],
+    });
+    registry.loot.set('fixture_demo_table', {
+      id: 'fixture_demo_table',
+      rolls: [1, 1],
+      entries: [{ item: 'fixture_demo_table_item', weight: 1 }],
+    });
+    registry.furniture.set('fixture_demo_container', {
+      ...registry.furniture.get('crate')!,
+      id: 'fixture_demo_container',
+      loot: 'fixture_demo_table',
+    });
+    registry.templates.set('fixture_demo_template', {
+      id: 'fixture_demo_template',
+      size: [2, 2, 2],
+      layers: [
+        ['CC', 'CC'],
+        ['CC', 'CC'],
+      ],
+      palette: { C: { furniture: 'fixture_demo_container' } },
+    });
+    const layout: SiteLayoutDef = {
+      id: 'fixture_site',
+      demo: true,
+      bounds: { x0: 0, z0: 0, x1: 5, z1: 5 },
+      ground: 0,
+      terrain: [],
+      buildings: [
+        {
+          template: 'fixture_demo_template',
+          position: [1, 0, 1],
+          rotation: 0,
+          fixedLoot: [{ at: [0, 0, 0], items: [{ item: 'fixture_demo_fixed' }] }],
+        },
+      ],
+      player: { position: [1, 0.5, 1], bearing: 0 },
+      shamblers: [],
+      woodlands: [],
+      tracks: [],
+    };
+    registry.layouts.set(layout.id, layout);
+
+    const demo = checkReachability(registry);
+    expect(demo.found.has('fixture_demo_fixed')).toBe(false);
+    expect(demo.found.has('fixture_demo_table_item')).toBe(false);
+
+    registry.layouts.set(layout.id, { ...layout, demo: false });
+    const authored = checkReachability(registry);
+    expect(authored.found.has('fixture_demo_fixed')).toBe(true);
+    expect(authored.found.has('fixture_demo_table_item')).toBe(true);
+  });
+
   it('closes found items over authored disassembly and salvage outputs in both reachability sets', () => {
     const registry = fresh();
     for (const id of [
@@ -280,6 +347,36 @@ describe('static reachability', () => {
     expect(result.found.has('fixture_yield_source')).toBe(true);
     expect(result.found.has('fixture_salvage_source')).toBe(true);
     for (const id of ['fixture_yield_output', 'fixture_salvage_output']) {
+      expect(result.components.has(id)).toBe(true);
+      expect(result.toolReachable.has(id)).toBe(true);
+    }
+  });
+
+  it('follows nested unpack contents from placed loot into both reachability sets', () => {
+    const registry = fresh();
+    for (const [id, unpack] of [
+      ['fixture_outer_box', { item: 'fixture_inner_box', count: 1 }],
+      ['fixture_inner_box', { item: 'fixture_unpacked_payload', count: 1 }],
+      ['fixture_unpacked_payload', undefined],
+    ] as const) {
+      registry.items.set(id, {
+        id,
+        name: id,
+        category: 'material',
+        weight: 1,
+        size: [1, 1],
+        ...(unpack ? { unpack } : {}),
+      });
+    }
+    const junk = registry.loot.get('junk')!;
+    registry.loot.set('junk', {
+      ...junk,
+      entries: [...junk.entries, { item: 'fixture_outer_box', weight: 1 }],
+    });
+
+    const result = checkReachability(registry);
+    for (const id of ['fixture_outer_box', 'fixture_inner_box', 'fixture_unpacked_payload']) {
+      expect(result.found.has(id)).toBe(true);
       expect(result.components.has(id)).toBe(true);
       expect(result.toolReachable.has(id)).toBe(true);
     }

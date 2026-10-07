@@ -736,6 +736,8 @@ const LayoutBuilding = strictObject({
 
 const SiteLayoutSchema = strictObject({
   id: Id,
+  /** Demo sites are selectable scenes, not sources for the starting-world reachability report. */
+  demo: optional(vBoolean()),
   bounds: pipe(
     strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
     check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'bounds must have positive area'),
