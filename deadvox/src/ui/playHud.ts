@@ -25,14 +25,16 @@ export const projectCrosshairScreenPosition = (
     return undefined;
   }
   camera.updateMatrixWorld(true);
-  const projected = new Vector3(point[0] * blockSize, point[1] * blockSize, point[2] * blockSize).project(camera);
+  const worldPosition = new Vector3(point[0] * blockSize, point[1] * blockSize, point[2] * blockSize);
+  const viewPosition = worldPosition.clone().applyMatrix4(camera.matrixWorldInverse);
+  const projected = worldPosition.project(camera);
   if (
-    ![projected.x, projected.y, projected.z].every(Number.isFinite) ||
+    ![projected.x, projected.y, projected.z, viewPosition.z].every(Number.isFinite) ||
     projected.x < -1 ||
     projected.x > 1 ||
     projected.y < -1 ||
     projected.y > 1 ||
-    projected.z > 1
+    viewPosition.z >= 0
   ) {
     return undefined;
   }

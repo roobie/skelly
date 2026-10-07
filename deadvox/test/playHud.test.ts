@@ -167,6 +167,15 @@ it('hides off-screen and behind-camera firearm crosshairs but keeps the no-firea
   expect([roots.crosshair.hidden, roots.crosshair.style.left, roots.crosshair.style.top]).toEqual([false, '', '']);
 });
 
+it('keeps an in-view firearm crosshair beyond the camera far plane', () => {
+  const camera = new PerspectiveCamera(60, 2, 0.1, 100);
+  const viewport = { left: 30, top: 20, width: 800, height: 400 };
+  const beyondFarPlane = projectCrosshairScreenPosition(camera, viewport, [0, 0, -101], 1);
+
+  expect(beyondFarPlane).toBeDefined();
+  expect(playCrosshairFrame(true, true, beyondFarPlane)).toMatchObject({ visible: true });
+});
+
 it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {
   const visible = hudVisibility({ ...DEFAULT_HUD_OPTIONS, messages: true, interaction: true });
   const state = Object.freeze({

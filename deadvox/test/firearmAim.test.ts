@@ -1,7 +1,8 @@
-import { PerspectiveCamera } from 'three';
+import { PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import type { ModelDef } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { firearmBoreRay, firearmBoreTarget } from '../src/game/firearmAim.ts';
 import { playCrosshairFrame, projectCrosshairScreenPosition } from '../src/ui/playHud.ts';
@@ -32,15 +33,16 @@ it('chooses a bore-line zombie in front of a far wall', () => {
   expect(result.zombie).toEqual(zombie);
 });
 
-it('projects the lowered firearm bore off-screen until it is raised', () => {
+it('projects the shipped lowered bore below the raised firearm bore', () => {
   const blockSize = 0.5;
   const eye: Vec3 = [0, 4, 0];
-  const camera = new PerspectiveCamera();
-  camera.aspect = 2;
-  camera.updateProjectionMatrix();
+  const camera = new PerspectiveCamera(PLAYER_VIEW_FOV_DEGREES, 2, 0.05, 100);
   camera.position.set(...(eye.map((value) => value * blockSize) as Vec3));
   const viewport = { left: 0, top: 0, width: 800, height: 400 };
-  const loweredPitchRadians = (camera.fov * Math.PI) / 180;
+  const tuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')?.combat?.firearms;
+  if (!tuning) {
+    throw new Error('Missing firearms-combat pose tuning');
+  }
   const pointOnBore = (progress: number): Vec3 => {
     const bore = firearmBoreRay({
       model: boreModel,
@@ -53,16 +55,28 @@ it('projects the lowered firearm bore off-screen until it is raised', () => {
       twoHanded: false,
       aimFrame: { yaw: 0, pitch: 0 },
       progress,
-      loweredPitchRadians,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+      verticalFovDegrees: camera.fov,
     });
     return bore.muzzle.map((value, axis) => value + bore.direction[axis]! * 100) as Vec3;
   };
+  const screenTop = (point: Vec3): number => {
+    const projected = new Vector3(point[0] * blockSize, point[1] * blockSize, point[2] * blockSize).project(camera);
+    return viewport.top + ((1 - projected.y) / 2) * viewport.height;
+  };
+  const raisedPoint = pointOnBore(1);
+  const loweredPoint = pointOnBore(0);
+  const raisedPosition = projectCrosshairScreenPosition(camera, viewport, raisedPoint, blockSize);
+  const loweredPosition = projectCrosshairScreenPosition(camera, viewport, loweredPoint, blockSize);
 
-  const raisedPosition = projectCrosshairScreenPosition(camera, viewport, pointOnBore(1), blockSize);
-  const loweredPosition = projectCrosshairScreenPosition(camera, viewport, pointOnBore(0), blockSize);
-
+  expect(screenTop(loweredPoint)).toBeGreaterThan(screenTop(raisedPoint));
   expect(raisedPosition).toBeDefined();
+  expect(raisedPosition!.top).toBeCloseTo(screenTop(raisedPoint));
   expect(playCrosshairFrame(true, true, raisedPosition)).toEqual({ visible: true, screenPosition: raisedPosition });
-  expect(loweredPosition).toBeUndefined();
-  expect(playCrosshairFrame(true, true, loweredPosition)).toEqual({ visible: false });
+  if (loweredPosition) {
+    expect(loweredPosition.top).toBeCloseTo(screenTop(loweredPoint));
+    expect(playCrosshairFrame(true, true, loweredPosition)).toEqual({ visible: true, screenPosition: loweredPosition });
+  } else {
+    expect(playCrosshairFrame(true, true, loweredPosition)).toEqual({ visible: false });
+  }
 });

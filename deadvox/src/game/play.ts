@@ -71,6 +71,7 @@ import {
 import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
+import { debugTargetRay } from './debugTargetRay.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
@@ -2080,7 +2081,19 @@ export const startPlay = (
     );
   };
 
-  const updateHeldItems = (dt: number): void => {
+  const firearmReadiness = () => {
+    const selected = selectPrimaryAction(inventory);
+    if (selected.kind !== 'firearm' || !input.rightMouseActionHeld || !input.locked || input.menuPointer) {
+      return;
+    }
+    return {
+      uid: selected.item.uid,
+      progress: firearms.readyProgress(selected.item.uid),
+      aimingDownSights: isAimingDownSights(),
+    };
+  };
+
+  const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
     const ready = shouldEnterMeleeReady({
@@ -2095,15 +2108,6 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
-    const selected = selectPrimaryAction(inventory);
-    const readiness =
-      selected.kind === 'firearm' && input.rightMouseActionHeld && input.locked && !input.menuPointer
-        ? {
-            uid: selected.item.uid,
-            progress: firearms.readyProgress(selected.item.uid),
-            aimingDownSights: isAimingDownSights(),
-          }
-        : undefined;
     view.updateHeld(dt, pose, survival.lit, {
       firearms: firearms.frames(),
       ...(readiness === undefined ? {} : { readiness }),
@@ -2112,7 +2116,7 @@ export const startPlay = (
     });
   };
 
-  const heldFirearmBore = () => {
+  const heldFirearmBore = (readiness = firearmReadiness()) => {
     const selected = selectPrimaryAction(inventory);
     if (selected.kind !== 'firearm') {
       return;
@@ -2122,6 +2126,7 @@ export const startPlay = (
       throw new Error('Missing firearms-combat pose tuning');
     }
     const { item } = selected;
+    const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
     return firearmBoreRay({
       model: firearmHandlingFor(item, registry).model,
       eye: eye(),
@@ -2132,8 +2137,8 @@ export const startPlay = (
       leadingSide: dominantSide(inventory.character),
       twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
       aimFrame: aim.frame,
-      progress: firearms.readyProgress(item.uid),
-      aimingDownSights: isAimingDownSights(),
+      progress: firearmPose?.progress ?? 0,
+      aimingDownSights: firearmPose?.aimingDownSights ?? false,
       loweredPitchRadians: tuning.loweredPitchRadians,
       adsApertureFill: tuning.adsApertureFill,
       verticalFovDegrees: camera.fov,
@@ -2251,11 +2256,20 @@ export const startPlay = (
     if (!debugTools) {
       return;
     }
-    const origin = bore?.origin ?? eye();
-    const direction = bore?.direction ?? lookDir();
-    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(origin, direction, meleeWeapon()) : undefined;
+    const selected = selectPrimaryAction(inventory);
+    const firearmReady = selected.kind === 'firearm' && isFirearmReady(selected.item.uid);
+    const ray = debugTargetRay({
+      bore,
+      eye: eye(),
+      lookDirection: lookDir(),
+      rightMouseHeld: input.rightMouseActionHeld,
+      pointerLocked: input.locked,
+      menuPointer: input.menuPointer,
+      firearmReady,
+    });
+    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
-    debugTools.updateLookedAt(origin, direction, input.locked);
+    debugTools.updateLookedAt(ray.origin, ray.direction, input.locked);
   };
 
   const updateActionInputs = (now: number): void => {
@@ -2323,8 +2337,9 @@ export const startPlay = (
       zombies: zombieStore,
       frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
     });
-    updateHeldItems(dt);
-    const bore = heldFirearmBore();
+    const readiness = firearmReadiness();
+    updateHeldItems(dt, readiness);
+    const bore = heldFirearmBore(readiness);
     updateDebugTargets(bore);
     updateDebugReadout(now);
     mark = realNow();

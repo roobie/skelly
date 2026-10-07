@@ -322,7 +322,7 @@ try {
   assert.equal(
     await page.evaluate(() => Boolean(globalThis.fullAutoRuntime.heldFirearmBore())),
     true,
-    'ready firearm publishes its bore for the crosshair',
+    'wielded firearm publishes its bore for the crosshair',
   );
   await page.mouse.move(500, 400);
   await page.mouse.down();

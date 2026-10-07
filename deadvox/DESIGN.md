@@ -551,12 +551,16 @@ plain box in your hands. Files are small, and follow
   2026-10-07 12:16, said verbatim: “#341: works really well overall - except
   that the muzzle crosshair stays (or is defaulted to center) after having
   raised -> then release so it's unraised. I'd expect the muzzle cross hair to
-  be off screen when rifle is unready (poiting down)”. For a wielded firearm,
-  the crosshair now follows the bore at its current pose and disappears outside
-  the viewport; with no firearm wielded, the main-game center crosshair remains.
+  be off screen when rifle is unready (poiting down)”. BR, 2026-10-07 13:30,
+  ruled: “i want it kept: it shows truthfully where the muzzle points, so there's
+  nothing wrong with that”. At 13:31 BR clarified: “i just thought it would
+  have pointed off screen, but that was just inference from my side”. The
+  unready crosshair therefore stays at the projected muzzle point wherever it
+  lands, and is hidden only when outside the view or behind the camera; with no
+  firearm wielded, the main-game center crosshair remains.
   An earlier instruction was: “Also, "hipfire" is way off the mark (cross hair / center of
   screen) - i.e. when simply readied the rifle and shooting one single round”.
-  BR's 2026-10-07 10:16 and 10:21 rulings below supersede that instruction,
+  BR's 2026-10-07 10:16 and 10:21 rulings above supersede that instruction,
   replacing convergence toward the crosshair surface or posed zombie with the
   bore-line hit.
   Shots now leave along the visible firearm's bore, plus firearm-owned spread.

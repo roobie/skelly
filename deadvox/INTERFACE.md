@@ -224,7 +224,10 @@ handling; melee combat governs block success. The tiered practice contract is in
   gizmo in `src/debug/index.ts`, `attachDebugTools`. BR's 2026-10-07 verdict
   supersedes the earlier hip-fire convergence: shots follow the visible firearm's
   bore plus spread, while the optional crosshair reports where that bore line
-  meets the world. `src/game/firearmAim.ts`, `firearmBoreRay` and
+  meets the world. BR's 12:16 ruling, recorded in `DESIGN.md`, "Firearms",
+  allows the mark to follow a wielded firearm's bore at its current raise
+  progress and disappear when its projected point leaves the viewport.
+  `src/game/firearmAim.ts`, `firearmBoreRay` and
   `firearmBoreTarget`, share the shot ray and its reported hit; the crosshair
   itself is projected by `src/ui/playHud.ts`, `projectCrosshairScreenPosition`.
   The pose defect came from applying the melee-ready wrist rotation to the whole
@@ -248,7 +251,7 @@ handling; melee combat governs block success. The tiered practice contract is in
 |---|---|---|---|
 | HUD stats (health, food, fatigue…) | meta, opt-in | bodily | the cues in "Bodily cues"; the opt-in stays for development |
 | Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
-| Crosshair | meta, opt-in | none | shipped: none, ever; the optional development mark follows the bore hit while a firearm is ready, including the existing ADS sight alignment |
+| Crosshair | meta, opt-in | none | shipped: none, ever; the optional development mark follows a wielded firearm's bore at its current raise progress, disappearing when its projected point leaves the viewport |
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
 | Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
