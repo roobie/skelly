@@ -116,6 +116,7 @@ try {
           globalThis.__d144HoldNextSave = false;
           return request(name, options, async (lock) => {
             sessionStorage.setItem('d144-held-writer', 'true');
+            globalThis.__d144WriterAcquired?.();
             await new Promise((resolve) => {
               globalThis.__d144ReleaseWriter = resolve;
             });
@@ -672,8 +673,17 @@ try {
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
-    await page.evaluate(() => {
+    await page.evaluate(async () => {
+      const acquired = new Promise((resolve) => {
+        globalThis.__d144WriterAcquired = resolve;
+      });
       globalThis.__d144HoldNextSave = true;
+      globalThis.deadvoxSaveTest.controller.beforeSleep();
+      await acquired;
+      const locks = await navigator.locks.query();
+      if (!locks.held.some((lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'exclusive')) {
+        throw new Error('test writer did not acquire the exclusive save lock');
+      }
     });
     const pumpUrl = new URL(appUrl);
     pumpUrl.searchParams.set('loadout', 'pump');
