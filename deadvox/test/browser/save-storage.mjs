@@ -682,7 +682,9 @@ try {
         const locks = await navigator.locks.query();
         const held = locks.held.some((lock) => lock.name === 'deadvox-save-storage');
         const pending = locks.pending.some((lock) => lock.name === 'deadvox-save-storage');
-        return status.includes('Title screen ready') || status.includes('Save storage unavailable') || (held && pending);
+        return (
+          status.includes('Title screen ready') || status.includes('Save storage unavailable') || (held && pending)
+        );
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
