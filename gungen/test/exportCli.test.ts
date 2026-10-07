@@ -116,14 +116,26 @@ describe('export CLI core', () => {
     }
   });
 
-  it('resolves the CLI calibre option to a real cartridge-data entry', () => {
+  it('exports a design calibre automatically and resolves an explicit CLI calibre', () => {
+    const designText = read('designs', 'archetype-ak-akm');
+    const designCalibre = (JSON.parse(designText) as { calibre?: string }).calibre;
+    expect(designCalibre).toBeTruthy();
+    const fromDesign = exportFileText(designText, ASSET);
+    expect(fromDesign.ok && fromDesign.modelEntry.calibre).toBe(designCalibre);
+    const mismatchedDesign = JSON.parse(designText) as Record<string, unknown>;
+    mismatchedDesign.calibre = `${designCalibre}-other`;
+    expect(exportFileText(JSON.stringify(mismatchedDesign), ASSET)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('calibre'),
+    });
+
     const temp = mkdtempSync(join(tmpdir(), 'gungen-export-ammo-'));
     try {
       execFileSync(
         process.execPath,
         [
           join(import.meta.dirname, '../src/cli/export.ts'),
-          'designs/archetype-ak.json',
+          'designs/archetype-ak-akm.json',
           '--out',
           temp,
           '--id',
@@ -135,10 +147,13 @@ describe('export CLI core', () => {
       );
       const entry = JSON.parse(readFileSync(join(temp, 'ak_test.model.json'), 'utf8')) as {
         calibre: string;
-        anchors: Record<string, number[]>;
+        anchors?: Record<string, number[]>;
+        slots?: { magazine?: { node: string; at: number[]; turn: number[] } };
       };
       expect(entry.calibre).toBe('7.62x39');
-      expect(entry.anchors.magwell).toHaveLength(3);
+      expect(entry.anchors?.magwell).toBeUndefined();
+      expect(entry.slots?.magazine?.node).toBeTruthy();
+      expect(entry.slots?.magazine?.at).toHaveLength(3);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

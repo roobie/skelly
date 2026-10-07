@@ -1,12 +1,11 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
+import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { heldEjectionPose, heldFirearmTransform } from '../src/core/heldPose.ts';
+import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
 import { weightOf } from '../src/core/items.ts';
 import { BUCK_HALF_ANGLE, type PelletShot } from '../src/core/pellets.ts';
@@ -14,6 +13,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
+import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -489,38 +489,30 @@ describe('real pump ammunition', () => {
     expect(experiencedRack.gun.firearm!.cycle!.duration).toBe(experiencedRackFrame.duration);
   });
 
-  it('centres pump pellets on the supplied aim frame', () => {
+  it('centres pump pellet spread on the firearm bore', () => {
     const f = fixture();
     f.load(0);
     f.rack(1);
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
     expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, debugMode: false, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
-    const modelId = f.inventory.registry.items.get(f.gun.type)!.model!;
-    const model = f.inventory.registry.models.get(modelId)!;
-    const tuning = f.inventory.registry.skills.get('firearms_combat')!.combat!.firearms!;
-    const held = heldFirearmTransform({
-      model,
+    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const bore = firearmBoreRay({
+      model: firearmHandlingFor(f.gun, registry).model,
+      eye: pose.eye,
+      yaw: pose.yaw,
+      pitch: pose.pitch,
+      blockSize: pose.blockSize,
       side: 'right',
-      leadingSide: dominantSide(f.inventory.character),
-      twoHanded: Boolean(f.inventory.registry.items.get(f.gun.type)!.twoHanded),
-      progress: 1,
-      aimingDownSights: false,
+      leadingSide: 'right',
+      twoHanded: true,
       aimFrame,
       loweredPitchRadians: tuning.loweredPitchRadians,
     });
-    const basis = aimBasis(pose.yaw, pose.pitch, NEUTRAL_AIM);
-    const center = [basis.right, basis.up, basis.forward].reduce<Vec3>(
-      (world, axis, index) =>
-        world.map(
-          (value, component) => value + axis[component]! * held.muzzleDirection[index]! * (index === 2 ? -1 : 1),
-        ) as Vec3,
-      [0, 0, 0],
-    );
     expect(
       f.shots[0]!.directions.every(
         (ray) =>
-          ray.reduce((sum, component, index) => sum + component * center[index]!, 0) >=
+          ray.reduce((sum, component, index) => sum + component * bore.direction[index]!, 0) >=
           Math.cos(BUCK_HALF_ANGLE) - 1e-9,
       ),
     ).toBe(true);

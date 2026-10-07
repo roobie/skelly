@@ -2,9 +2,10 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
-import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
+import { aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
@@ -12,6 +13,7 @@ import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { simSeconds } from '../src/core/time.ts';
+import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   type DebugFirearmShotInput,
   FirearmMechanics,
@@ -215,6 +217,148 @@ describe('debug firearm handling', () => {
     expect(trajectory.muzzle[2]).toBeCloseTo(expectedMuzzle[2]!);
   });
 
+  it('keeps the ready firearm bore aligned with the view before aim sway', () => {
+    const model = registry.models.get('rifle_ak')!;
+    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const yaw = 0.3;
+    const pitch = -0.2;
+    const bore = firearmBoreRay({
+      model,
+      eye: [...pose.eye],
+      yaw,
+      pitch,
+      blockSize: pose.blockSize,
+      side: 'right',
+      leadingSide: 'right',
+      twoHanded: true,
+      aimFrame: NEUTRAL_AIM,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+    });
+    const view = aimDirection(yaw, pitch, NEUTRAL_AIM);
+    const angle = Math.acos(
+      Math.max(
+        -1,
+        Math.min(
+          1,
+          bore.direction.reduce((sum, value, axis) => sum + value * view[axis]!, 0),
+        ),
+      ),
+    );
+    expect(angle).toBeLessThan(0.1);
+  });
+
+  it('fires along the bore and places the crosshair point on that same line', () => {
+    const definition = registry.items.get('debug_rifle_ak')!;
+    const fixtureBuild = buildRegistry([
+      ...base,
+      {
+        source: 'bore-line-fixture.json',
+        data: {
+          items: [
+            {
+              ...definition,
+              id: 'fixture_bore_rifle',
+              name: 'Bore-line fixture rifle',
+              firearm: { ...definition.firearm!, dispersionRadians: 0 },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(fixtureBuild.issues).toEqual([]);
+    const inventory = new Inventory(fixtureBuild.registry);
+    const rifle = inventory.create('fixture_bore_rifle');
+    expect(inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
+    const input = {
+      ...pose,
+      feet: [...pose.feet] as [number, number, number],
+      eye: [...pose.eye] as [number, number, number],
+      yaw: 0.3,
+      pitch: -0.2,
+      aimFrame: { yaw: 0.04, pitch: -0.03 },
+      debugMode: true,
+      item: rifle,
+      seed: 71,
+      simTime: 1,
+    };
+    const tuning = fixtureBuild.registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const bore = firearmBoreRay({
+      model: firearmHandlingFor(rifle, fixtureBuild.registry).model,
+      eye: input.eye,
+      yaw: input.yaw,
+      pitch: input.pitch,
+      blockSize: pose.blockSize,
+      side: 'right',
+      leadingSide: 'right',
+      twoHanded: true,
+      aimFrame: input.aimFrame,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+      isSolid: () => false,
+    });
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: pose.blockSize,
+      pose: () => ({ ...pose, feet: [...input.feet], eye: [...input.eye], yaw: input.yaw, pitch: input.pitch }),
+      onEjection: () => undefined,
+      onTrajectory: (published) => {
+        trajectory = published;
+      },
+    });
+    expect(mechanics.fire(input)).toBe(true);
+    if (!trajectory) {
+      throw new Error('Zero-spread shot did not publish a trajectory');
+    }
+    const firedTrajectory = trajectory;
+    const nearSurface = {
+      distanceBlocks: 2,
+      distanceMetres: 2 * pose.blockSize,
+      point: bore.origin.map((value, axis) => value + bore.direction[axis]! * 2) as [number, number, number],
+    };
+    const point = crosshairAimPoint(bore.origin, bore.direction, nearSurface);
+    const direction = firedTrajectory.directions[0]!;
+    expect(direction.every((value, axis) => Math.abs(value - bore.direction[axis]!) < 1e-9)).toBe(true);
+    const alongRay = point.reduce(
+      (sum, value, axis) => sum + (value - firedTrajectory.origin[axis]!) * direction[axis]!,
+      0,
+    );
+    const miss = Math.hypot(
+      ...firedTrajectory.origin.map((value, axis) => value + alongRay * direction[axis]! - point[axis]!),
+    );
+    expect(miss).toBeLessThan(1e-6);
+  });
+
+  it('traces from the eye when solid geometry blocks the eye-to-muzzle path', () => {
+    const inventory = new Inventory(registry);
+    const rifle = inventory.create('debug_rifle_ak');
+    if (!inventory.add(rifle, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the debug rifle');
+    }
+    let trajectory: FirearmTrajectory | undefined;
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: pose.blockSize,
+      isSolid: (_x, _y, z) => z === -1,
+      pose: () => ({ ...pose, feet: [...pose.feet], eye: [...pose.eye] }),
+      onEjection: () => undefined,
+      onTrajectory: (published) => {
+        trajectory = published;
+      },
+      firearmsSkillLevel: () => SKILL_LEVEL_MAX,
+    });
+    expect(
+      mechanics.fire({
+        ...pose,
+        feet: [...pose.feet],
+        eye: [...pose.eye],
+        aimFrame: NEUTRAL_AIM,
+        debugMode: true,
+        item: rifle,
+        seed: 71,
+        simTime: 1,
+      }),
+    ).toBe(true);
+    expect(trajectory?.origin).toEqual(pose.eye);
+  });
+
   it('requires a completed ready stance, rejects sprinting and cancels released readying', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
@@ -310,38 +454,27 @@ describe('debug firearm handling', () => {
     const novice = publish(0);
     const experienced = publish(SKILL_LEVEL_MAX);
     const direction = novice.directions[0]!;
-    const model = fixtureRegistry.models.get('rifle_assault')!;
+    const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
     const tuning = fixtureRegistry.skills.get('firearms_combat')!.combat!.firearms!;
-    const heldPose = heldFirearmTransform({
-      model,
+    const bore = firearmBoreRay({
+      model: firearmHandlingFor(fixtureItem, fixtureRegistry).model,
+      eye: [...pose.eye],
+      yaw,
+      pitch,
+      blockSize: pose.blockSize,
       side: 'right',
       leadingSide: 'right',
       twoHanded: true,
-      progress: 1,
-      aimingDownSights: false,
       aimFrame,
       loweredPitchRadians: tuning.loweredPitchRadians,
     });
-    const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
-    const baseDirection = [
-      right[0] * heldPose.muzzleDirection[0] +
-        up[0] * heldPose.muzzleDirection[1] -
-        forward[0] * heldPose.muzzleDirection[2],
-      right[1] * heldPose.muzzleDirection[0] +
-        up[1] * heldPose.muzzleDirection[1] -
-        forward[1] * heldPose.muzzleDirection[2],
-      right[2] * heldPose.muzzleDirection[0] +
-        up[2] * heldPose.muzzleDirection[1] -
-        forward[2] * heldPose.muzzleDirection[2],
-    ];
-    const fixtureItem = new Inventory(fixtureRegistry).create('fixture_skill_rifle');
     const cone = firearmHandlingFor(fixtureItem, fixtureRegistry).dispersionRadians!;
     const angle = Math.acos(
       Math.max(
         -1,
         Math.min(
           1,
-          baseDirection.reduce((sum, value, index) => sum + value * direction[index]!, 0),
+          bore.direction.reduce((sum, value, index) => sum + value * direction[index]!, 0),
         ),
       ),
     );

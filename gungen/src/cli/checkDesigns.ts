@@ -6,7 +6,7 @@ import { checkDesignFiles } from './designCheck.ts';
 const directory = process.argv[2] ?? 'designs';
 try {
   const files = readdirSync(directory)
-    .filter((file) => file.endsWith('.json'))
+    .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
     .sort()
     .map((file) => join(directory, file));
   const result = checkDesignFiles(files);

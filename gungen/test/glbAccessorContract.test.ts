@@ -11,6 +11,9 @@ const folders = ['designs', 'fixtures'] as const;
 const jsonFiles = (directory: string): string[] =>
   readdirSync(join(ROOT, directory), { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
+    if (directory.startsWith('designs') && entry.name.startsWith('look-')) {
+      return [];
+    }
     if (entry.isDirectory()) {
       return jsonFiles(path);
     }

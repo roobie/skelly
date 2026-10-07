@@ -948,39 +948,30 @@ describe('templates', () => {
   });
 
   it('validates optional windows on template spawn markers', () => {
-    const valid = template(
-      [['Z..', '...']],
-      { '.': 'air', Z: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: '06:30' } } },
-      [3, 1, 2],
+    const issues = check(
+      template(
+        [
+          ['FFZ', 'FFA'],
+          ['FFB', 'FF.'],
+        ],
+        {
+          '.': 'air',
+          F: { furniture: 'crate', window: { fromGameTimeOfDay: 'dusk' } },
+          Z: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: '06:30' } },
+          A: { spawn: 'shambler', window: { fromGameTimeOfDay: 'sunset' } },
+          B: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } },
+        },
+        [3, 2, 2],
+      ),
     );
-    expect(check(valid)).toEqual([]);
-    expect(
-      check(
-        template(
-          [['Z..', '...']],
-          { '.': 'air', Z: { spawn: 'shambler', window: { fromGameTimeOfDay: 'sunset' } } },
-          [3, 1, 2],
-        ),
-      ),
-    ).toEqual(expect.arrayContaining([expect.stringContaining('Expected (string | Object) but received Object')]));
-    expect(
-      check(
-        template(
-          [['Z..', '...']],
-          { '.': 'air', Z: { spawn: 'shambler', window: { fromGameTimeOfDay: 'dusk', toGameTimeOfDay: 'dusk' } } },
-          [3, 1, 2],
-        ),
-      ),
-    ).toEqual(expect.arrayContaining([expect.stringContaining('from and to must differ')]));
-    expect(
-      check(
-        template(
-          [['F..', '...']],
-          { '.': 'air', F: { furniture: 'crate', window: { fromGameTimeOfDay: 'dusk' } } },
-          [3, 1, 2],
-        ),
-      ),
-    ).toEqual(expect.arrayContaining([expect.stringContaining('window" only goes with "spawn')]));
+    expect(issues).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('from and to must differ'),
+        expect.stringContaining('window" only goes with "spawn'),
+      ]),
+    );
+    expect(issues.some((issue) => issue.includes('palette["A"]'))).toBe(true);
+    expect(issues.some((issue) => issue.includes('palette["Z"]'))).toBe(false);
   });
 
   it('checks layer sizes and that characters are in the palette', () => {

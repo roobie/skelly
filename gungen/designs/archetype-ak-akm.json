@@ -1,6 +1,7 @@
 {
   "format": 1,
   "template": "ak",
+  "calibre": "7.62x39",
   "assembly": {
     "name": "archetype-ak-akm",
     "description": "The archetype-ak rifle carrying the AKM magazine instead of the AK-74 one.",

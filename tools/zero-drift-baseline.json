@@ -24,12 +24,6 @@
       "text": "deadvox/src/game/player.ts, rest.ts",
       "count": 1
     },
-    {
-      "path": "deadvox/docs/decisions/0003-firearm-handling.md",
-      "check": "read_if",
-      "text": "read_if must be a non-empty list of non-empty strings",
-      "count": 1
-    },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "core/soundPicker.ts", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audio.ts", "count": 1 },
     { "path": "deadvox/docs/gunshot-playback.md", "check": "path", "text": "game/audioPresentation.ts", "count": 1 },

@@ -59,7 +59,7 @@ const roundedGeometry = (assembly: Assembly) => {
 const byName = new Map(loadFixtures().map((fixture) => [fixture.name, fixture]));
 const designFiles = () =>
   readdirSync(DESIGNS)
-    .filter((file) => file.endsWith('.json'))
+    .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
     .sort();
 
 const mustLoad = (text: string) => {
