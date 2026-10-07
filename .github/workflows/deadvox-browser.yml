@@ -31,10 +31,10 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('deadvox/package-lock.json') }}
-      - name: Install Playwright Chromium and system dependencies
+      - name: Install Playwright Chromium
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' || inputs.shard == 'opfs' || inputs.shard == 'indexeddb' }}
         timeout-minutes: 3
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - if: ${{ inputs.shard == 'control-check' }}
         run: npm ci --prefix tools/lit-check
         timeout-minutes: 3
@@ -109,10 +109,10 @@ jobs:
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' }}
         timeout-minutes: 1
         run: node test/browser/insecure-saves.mjs
-      - name: Install headed Firefox and system dependencies
+      - name: Install headed Firefox
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
         timeout-minutes: 3
-        run: npx playwright install --with-deps firefox
+        run: npx playwright install firefox
       # Native first-click #168, Firefox OPFS #224 and Continue #170 remain quarantined.
       - name: Firefox UI contract (synthetic pointer lock; native case remains quarantined)
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}

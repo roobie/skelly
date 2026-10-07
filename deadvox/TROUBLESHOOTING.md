@@ -106,7 +106,7 @@ Bisect a visual bug by flipping one toggle at a time before theorising.
 
 ## Deadvox CI browser dependency stalls
 
-For #388, Playwright's system-dependency install stalled while apt fetched package indexes, and the browser shard had no job bound. The runner-image probe found Playwright-declared system packages missing, so Chromium and Firefox keep their browser-specific dependency installs; each install and shard job now has a finite bound. A network stall ends at those bounds instead of occupying a runner indefinitely. See `.github/workflows/deadvox-browser.yml`, `jobs.run`, and `.github/workflows/deadvox.yml`, `jobs.fast`.
+For #388, Playwright's `--with-deps` stalled while apt fetched and installed runner packages. A branch-only probe found fonts, X fonts and Firefox media-codec packages absent, but the enabled browser contracts and Xvfb stages passed without apt; CI therefore installs browser binaries only. The install steps and shard jobs have finite bounds, so a browser-download stall ends at those limits instead of occupying a runner indefinitely. See `.github/workflows/deadvox-browser.yml`, `jobs.run`, and `.github/workflows/deadvox.yml`, `jobs.fast`.
 
 ## Seeing the game without a display
 
