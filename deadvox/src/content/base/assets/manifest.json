@@ -78,12 +78,12 @@
     },
     {
       "title": "Gungen AK design export",
-      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ak.json",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/designs/archetype-ak-akm.json",
       "author": "Skelly contributors",
       "licence": "CC0-1.0",
       "download": null,
       "files": ["assets/models/rifle_ak.glb"],
-      "changes": "Generated in metres from the curated archetype-ak design with gungen's export:glb CLI and --calibre 7.62x39; handle geometry travels on the carrier node; exported grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up"
+      "changes": "Generated in metres from the curated archetype-ak-akm design, whose own calibre is 7.62x39, with gungen's export:glb CLI; handle geometry travels on the carrier node; exported grip, action timelines and ejection anchor; original project-built geometry, +x forward and +y up"
     },
     {
       "title": "Gungen 7.62x39 cartridge exports",

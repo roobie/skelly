@@ -6,6 +6,8 @@ read_if:
   - you change firearm sight metadata or its ADS contract
   - you change the AK receiver's position relative to its centered bore
   - you change the AK archetype's proportions, or map them against its golden photo
+  - you change attachment parts, mount slots or their Deadvox export
+  - you change firearm design/template calibre or AK magazine selection
 
 # gungen — low-poly firearm designer
 
@@ -1063,8 +1065,11 @@ Decisions where the plan left representation open:
 
 The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
 are optional in the schema; byte-identical output is not a compatibility
-requirement. Exported structural anchors such as `magwell` are present whenever
-the geometry declares them, whether or not a cartridge is assigned.
+requirement. Structural anchors remain reference points; replaceable geometry
+uses item-owned slots so Deadvox can hide a baked node when no item is fitted.
+The design/template calibre keeps generated AK magazines matched to the gun's
+cartridge, because receiver compatibility with both patterns is not magazine
+ammunition interchangeability (`src/core/template.ts`, `Template`; `src/core/design.ts`, `Design`; `src/gun/templates.ts`, `ak`).
 
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
@@ -1078,9 +1083,9 @@ the geometry declares them, whether or not a cartridge is assigned.
   Curated hunting pump, reproducible command and estimates:
   `docs/pump-action-export.md`. Its hand-only viewer is
   `?design=archetype-pump-shotgun&cycle=hand&cycleSpeed=0.1`.
-- `anchors.magwell?: Point` is the magazine seating point. Like every anchor,
-  `Point` is `[x, y, z]` in metres in the model file's frame (+x forward, +y up,
-  +z right).
+- Replaceable box magazines use `slots.magazine` to identify the baked GLB node
+  and its replacement pose. This keeps the magazine's identity with the fitted
+  geometry that Deadvox hides or replaces.
 - G35 action data adds `anchors.ejection?: Point` (the case exit, in metres) and
   `action.ejectAt?: number` (a dimensionless stroke fraction) plus
   `action.ejectDirection?: [x, y, z]` (a unit vector in model coordinates).
@@ -1281,6 +1286,8 @@ on the AR design's magazine, which references `stanag-20` today: a straight
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
+- `look-*.json` designs are untracked previews for BR looks; corpus tests and
+  published-design checks skip them.
 - Prefabs are named, curated parts in `src/gun/prefabs.ts`: a family plus
   fixed params. Examples: the STANAG 20 and 30 and the two AK magazines.
   A catalogue test checks every prefab against the domain (family exists,
@@ -1421,6 +1428,8 @@ anchor. The pre-g23 length was 4.65 cm below the provided real AR-15 range of
 forward/upright orientation after the held transform.
 
 **Sight data for 3.7 optics.** BR, 2026-10-07 00:18: “2. the pump shotgun doesn't seem to work with ads (maybe it's missing iron sights? for the shotgun a simple pip at the muzzle would suffice) - when activaing ADS it simply pivots a little”
+
+BR, 2026-10-07 11:13, verbatim: “the shotgun bead is approved” (#345, after g42-5 seated it on its host).
 
 Every published firearm design exports sight metadata from its resolved sight
 parts, so ADS has a physical reference and a later optic can replace irons through
@@ -1572,8 +1581,9 @@ not part of the export's acceptance:
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
-- after 3.5: attachments with game properties and port compatibility
-  (gungen.2), with the deadvox schema change they need;
+- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors so Deadvox can hide the baked magazine when no magazine is fitted (d114-11, #337); see `deadvox/docs/decisions/0003-firearm-handling.md`.
+  For #347, BR, 2026-10-07 10:23, verbatim: “the supporessor should be approx 100% longer and have a 25% larger radius”. BR, 2026-10-07 10:59, verbatim: “also, the improvised suppressor must be larger - even larger and more unwieldy than the real suppressor”. The geometry is in `src/gun/attachmentParts.ts`; the exported suppressor properties do not derive mass, length, or balance from model size (`src/gun/attachments.ts`, `deadvox/src/core/schema.ts`, `AttachmentPropertiesSchema`). d118 needs gungen's export to compute each suppressor's mass from geometry and material. BR, 2026-10-07 13:13, verbatim: “both types of suppressors should affect the firearm:” “less recoil, but less handling/recovery” “the improvised one weighs more and is larger and thus is even worse than the real supp”. When Deadvox fits attachments (3.7, d118, after #337), both suppressors reduce recoil and worsen handling and recovery, with the improvised suppressor heavier, larger, and worse than the real one. This PR sets no values.
+  BR, 2026-10-07 11:27, verbatim: “#347 let's stick to 7.62x39 for now” and “but we will add 5.45x39 at some point”; generated AKs stay 7.62x39-only, and 5.45x39 is follow-up #362.
 - **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
   but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
   and its curated design and fixtures live byte-identically under `designs/suspended/`

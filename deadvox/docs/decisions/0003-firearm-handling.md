@@ -1,4 +1,7 @@
 ---
+read_if:
+  - "you change gungen's Deadvox firearm export contract"
+  - "you change Deadvox firearm model validation or attachment fitting"
 id: deadvox::adr-0003-firearm-handling
 description: Decision for how gungen exports what a gun needs to be handled and fired, and how deadvox plays the cycle, ejection, spent cases and magazines
 tags: [deadvox, gungen, adr, firearms, ammo, export, feel]
@@ -25,7 +28,7 @@ BR's goal: handling and firing a gun in deadvox should *feel* right, for example
 
 What exists today:
 
-- **gungen** exports a GLB and a `DeadvoxModelEntry` (`gungen/src/gun/exportGlb.ts`): `id`, `file`, `grip: { at, turn }` and optional named `anchors` (points). The 3.0a export types are frozen (`gungen/PROJECT.md`, "3.0a contracts"); `muzzle` anchors are accepted by deadvox but unused. Parts carry `PartMotion` (start/end, renamed in g28), and keep-outs already describe the ejection path.
+- **gungen** exports a GLB and a `DeadvoxModelEntry` (`gungen/src/gun/exportGlb.ts`): identity, grip pose, named anchors, and model-owned replaceable slots. The 3.0a export types are frozen (`gungen/PROJECT.md`, "3.0a contracts"); muzzle anchors are accepted by deadvox but unused. Parts carry `PartMotion` (start/end, renamed in g28), and keep-outs already describe the ejection path.
 - **Cartridges:** `gungen/cartridges/7.62x39.json` with sources, its parser and rules (#109 step 1). #127 added revolved solids and per-domain units.
 - **Spikes:** `gungen/ammo-geometry-spike` (round and case profiles, a staggered round column along a curved magazine, a filled detached magazine) and `gungen/action-spike` (a hand cocking timeline for the AK carrier). Both are being rebuilt as g34 and g35.
 - **deadvox:** `firearm` is a capability marker on items with no fields (`src/core/schema.ts`), and d10 reserved the `firearm` primary action. Ammo and magazines are planned for slice 3 (`EPIC.md`: "firearms from gungen assemblies: ammo, magazines, reloading as handling").
@@ -56,10 +59,12 @@ This is a survival game and reloading ammunition is part of it, so spent cases a
 
 ### 4. The gungen–Deadvox model contract
 
-This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and Deadvox may change their export and model schema together, without legacy paths or migrations. The acceptance gate is that a model exported by gungen is validated by Deadvox and loads in its model runtime. Gungen fills the following data from each design and its selected cartridge.
+This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and Deadvox may change their export and model schema together, without legacy paths or migrations. The acceptance gate is that a model exported by gungen is validated by Deadvox and loads in its model runtime. Gungen fills the following data from each design and its selected cartridge. For g44, design/template calibre stays explicit through generation and export so the AK magazine follows the selected cartridge; a receiver's ability to fit both patterns does not make the magazines interchangeable. BR's 2026-10-07 11:27 ruling for #347 keeps generated AKs 7.62×39-only, keeps the curated AK-74 fixture outside the generated pool, and schedules 5.45×39 generation for #362 (see `gungen/PROJECT.md`, g44).
 
-- `calibre`: the cartridge id (e.g. `7.62x39`) from gungen's cartridge data.
-- `anchors` gain named points: `muzzle` (already accepted) and `ejection` (where the case leaves). Each point is `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right). Where the magazine seats is a model slot, not an anchor: `slots.magazine` names the magazine node baked into the export and the frame a fitted magazine sits in (#347's export contract, taken by d114-11 so a gun is drawn with the magazine it has; DESIGN.md, "One item, one look").
+- `calibre`: the cartridge id from gungen's cartridge data.
+- `anchors` carry non-replaceable points such as `muzzle` and `ejection`, each `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right). The magazine seat is `slots.magazine: { node, at, turn }`: `node` names the baked magazine in the GLB and `at`/`turn` place its replacement. The item-owned slot—not a second magwell anchor—allows Deadvox to hide the baked node when no magazine is fitted (d114-11, #337), and to draw the fitted magazine's own model there instead (DESIGN.md, "One item, one look").
+- `attachmentSlots` preserves each attachable base-firearm rail notch and muzzle interface, whether or not a default mod occupies it. Rail slots carry an explicit rail group and notch index; Deadvox must not infer either by parsing the slot ID. `attachments[].mountedAt` links each fitted item to the exact host slot, and `attachments[].node` names its baked GLB node. `properties` carries item gameplay metadata and the rail-notch span relative to its anchor; its interval lets Deadvox reject a second part that overlaps the first item's rail footprint, which exact mount equality alone cannot detect. No first-set attachment is a host for another attachment, so female ports on attachment nodes are not exported as firearm slots.
+- A standalone model's `attachment` carries the same item identity, mount, properties, and any local sight frame without a host slot. Gungen authors the fit data from port/solid geometry; Deadvox validates it through `ModelSchema` and consumes it at runtime. See `gungen/src/gun/attachments.ts`, `attachmentSlots` and `attachmentMetadata`; `gungen/src/gun/exportGlb.ts`, `exportGunGlb`; and `deadvox/src/core/schema.ts`, `ModelSchema`.
 - `action`:
   - `parts`: the moving roles as **separate named nodes** in the GLB, each with `node` (exact glTF name), `axis` (unit travel direction), `strokeMetres`, and required `modes` (a nonempty, distinct list of `fire`/`hand` timing references). Nodes follow the shared timeline in each listed mode and stay home in other modes. The AR carrier lists both; its separate T-handle lists only `hand`, pulls through the same stroke, and returns/latches home. The AK handle remains part of its carrier node, which lists both. This needs no separate per-node animation scheduler;
   - `fire` (optional) and `hand`: cycle timelines (rear, dwell, forward seconds, or sampled curves). A pump exports hand only, with carrier/forend coupled on both hand-driven legs; no gas-driven fire timeline or cyclic rpm;
@@ -78,7 +83,27 @@ Three.js sanitizes `Object3D.name` (including stripping colons). Runtime node di
 
 Gungen's resolved action description is the shared source for part discovery, coupling and ejection data in viewer/export. Its pump carrier/forend hand cycle is manual on both legs. The separate static open pose remains view-only, with cycle controls hidden there: validation and export stay at rest, and no pump firing timeline is implied.
 
-The exact field names and units are settled in the gungen work items (g34, g35, g38) and recorded in `gungen/PROJECT.md` next to the 3.0a contracts; this ADR fixes what the contract must carry.
+The exact field names and units are settled in the gungen work items (g34, g35, g38, g44) and recorded in `gungen/PROJECT.md` next to the 3.0a contracts; this ADR records why the boundary carries them.
+
+#### Suppressor effects (#347, d118)
+
+For #347, BR, 2026-10-07 13:13, verbatim: “both types of suppressors should affect the firearm:” “less recoil, but less handling/recovery” “the improvised one weighs more and is larger and thus is even worse than the real supp”.
+
+BR, 2026-10-07 13:19, approved the four-point proposal, verbatim: “Overall agreed” and “yes, approved - make sure to file notes about what's deferred and why”. For 3.7 (d118), after #337, the approved design is:
+
+- Gungen derives each suppressor's mass from its geometry and material.
+- One shared muzzle rule uses weight times distance from the hands to slow raising and swinging, add sway, and slow recovery between shots.
+- Each type's recoil reduction follows trapped gas; this is the only hand-set value, and the improvised suppressor is less effective.
+- Each type has noise reduction and wear: condition falls per shot and suppression falls with it; the improvised suppressor wears quickly and eventually breaks.
+
+These effects apply when Deadvox fits attachments; #347 sets no values. See `gungen/PROJECT.md`, g44.
+
+The following remain deferred until after the first playtest (#181), with reasons tracked in #367:
+
+- Heat (#366): BR wants a general simulated property, not a firearm-only rule, so it needs its own cross-system design.
+- Smoke (#365): its schedule and whether it is visual-only or simulated remain undecided.
+- Improvised-suppressor accuracy loss (#367): it needs a shot-deviation model for misalignment or baffle clipping.
+- Fouling (#367): it depends on cleaning and malfunction systems.
 
 ### 5. Simulation and presentation
 
@@ -107,6 +132,7 @@ The existing fingerprint rules (`SIMULATION_EXCLUSIONS`) apply: presentation cod
 
 ## Open questions
 
+- #364: Decide whether the AK muzzle-device tip is a valid suppressor host; `gungen/src/gun/attachments.ts`, `attachmentSlots`, exports it, while `gungen/src/core/rules.ts`, `keepOut`, rejects a suppressor fitted there.
 - Steel-cased 7.62x39 (lacquered, grey-green) as well as brass: a finish variant of the case model, and does the pile keep them apart?
-- Recoil: a camera kick and hand motion now; anything physical later?
+- The global physical recoil model beyond presentation remains open; d118 builds only per-suppressor reduction (#347 records it).
 - Sounds: shot, mechanical clack, case tink per material; sourced like the other sounds and listed on the audio sheet.

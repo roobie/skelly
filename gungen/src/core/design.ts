@@ -32,6 +32,8 @@ export interface DesignOrigin {
 export interface Design {
   readonly format: DesignFormat;
   readonly template: string;
+  /** Cartridge-data id selected for this firearm design. */
+  readonly calibre?: string;
   readonly assembly: Assembly;
   readonly locks: DesignLocks;
   readonly status: DesignStatus;

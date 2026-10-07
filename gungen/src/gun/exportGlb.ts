@@ -9,9 +9,16 @@ import type { Assembly, PartDef } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
+import {
+  type AttachmentMetadata,
+  type AttachmentSlotMetadata,
+  attachmentMetadata,
+  attachmentSlots,
+} from './attachments.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
+import type { MountKind } from './mounts.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
@@ -72,6 +79,12 @@ export interface DeadvoxModelEntry {
   readonly tube?: { readonly capacity: number };
   readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
   readonly action?: GunActionMetadata;
+  /** Metadata for an attachment exported as its own item model. */
+  readonly attachment?: AttachmentMetadata;
+  /** Default mods fitted by the template, with data for deadvox to consume. */
+  readonly attachments?: readonly (AttachmentMetadata & { readonly node: string; readonly mountedAt: string })[];
+  /** Authored mount interfaces; fitted occupancy is linked by attachment `mountedAt` IDs. */
+  readonly attachmentSlots?: readonly AttachmentSlotMetadata[];
   /** Fitted, replaceable item slots whose baked geometry is present in the gun GLB. */
   readonly slots?: { readonly magazine?: { readonly node: string; readonly at: Vec3; readonly turn: Vec3 } };
 }
@@ -221,6 +234,50 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
   };
 };
 
+const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKind): string | undefined => {
+  for (const { conn, from, to } of resolved.connections) {
+    if (from.part === partId) {
+      if (from.port.gender === 'male' && from.port.mount === mount && to.port.gender === 'female') {
+        return `${to.part}.${to.port.id}.0`;
+      }
+      continue;
+    }
+    if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
+      return `${from.part}.${from.port.id}.${conn.slot ?? 0}`;
+    }
+  }
+  return undefined;
+};
+
+const attachmentData = (resolved: Resolved): (AttachmentMetadata & { node: string; mountedAt: string })[] =>
+  [...resolved.defs.entries()].flatMap(([partId, definition]) => {
+    const instance = resolved.assembly.parts[partId];
+    if (!instance) {
+      return [];
+    }
+    const params = resolved.params.get(partId);
+    const metadata = attachmentMetadata(
+      instance.family,
+      params && Object.fromEntries(Object.entries(params).map(([name, value]) => [name, value.value])),
+      resolved.domain.units.metresPerUnit,
+      definition,
+    );
+    if (!metadata) {
+      return [];
+    }
+    const mountedAt = attachmentMountSlot(resolved, partId, metadata.mount);
+    if (!mountedAt) {
+      return [];
+    }
+    return [
+      {
+        ...metadata,
+        node: partNodeName(partId, instance.family),
+        mountedAt,
+      },
+    ];
+  });
+
 const magazineSlotData = (resolved: Resolved): NonNullable<DeadvoxModelEntry['slots']>['magazine'] | undefined => {
   const [partId, instance] =
     Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'magazine') ?? [];
@@ -353,10 +410,13 @@ export const exportGunGlb = (
   const handling = buildActionExport(resolved);
   const tubeCapacity =
     metadata.cartridge?.kind === 'shotshell' ? tubeMagazineCapacity(resolved, metadata.cartridge) : undefined;
+  const {
+    units: { metresPerUnit },
+  } = resolved.domain;
   const modelEntry = createGunModelEntry({
     asset,
     anchors,
-    metresPerUnit: resolved.domain.units.metresPerUnit,
+    metresPerUnit,
     options: {
       ...metadata,
       ...(handling ? { handling } : {}),
@@ -364,11 +424,19 @@ export const exportGunGlb = (
     },
     sight: sightMetadata(resolved),
   });
+  const attachmentSlotsData = attachmentSlots(resolved).map(({ position, direction, up, ...slot }) => ({
+    ...slot,
+    position: modelPoint(position, metresPerUnit),
+    direction: normalize(toFileAxes(direction)),
+    up: normalize(toFileAxes(up)),
+  }));
   const magazine = magazineSlotData(resolved);
   return {
     ...result,
     modelEntry: {
       ...modelEntry,
+      attachments: attachmentData(resolved),
+      attachmentSlots: attachmentSlotsData,
       ...(magazine ? { slots: { magazine } } : {}),
     },
   };

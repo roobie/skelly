@@ -43,9 +43,6 @@
         "muzzle": [0.414, 0, 0],
         "ejection": [-0.048875, 0.002875, 0.023]
       },
-      "slots": {
-        "magazine": { "node": "magazine:magazine", "at": [-0.048875, -0.046, 0], "turn": [0, 0, 0] }
-      },
       "calibre": "5.56x45",
       "action": {
         "parts": {
@@ -78,6 +75,437 @@
         "ejectDirection": [-0.16063576942357702, 0.16063576942357702, 0.9738543521304357],
         "holdOpen": true,
         "roundsPerSimMinute": 800
+      },
+      "attachments": [
+        {
+          "id": "optic-lpvo-1-6x",
+          "kind": "optic",
+          "mount": "rail-top",
+          "properties": {
+            "reticleKind": "crosshair",
+            "magnification": {
+              "min": 1,
+              "max": 6
+            },
+            "railSpanNotches": {
+              "minOffset": -5,
+              "maxOffset": 6
+            }
+          },
+          "sight": {
+            "kind": "optic",
+            "eye": [-0.11499999999999999, 0.0345, 0],
+            "direction": [1, 0, 0],
+            "up": [0, 1, 0],
+            "eyeReliefMetres": 0.08625,
+            "ocularDiameterMetres": 0.031625
+          },
+          "node": "sight:sight",
+          "mountedAt": "receiver.rail.3"
+        }
+      ],
+      "attachmentSlots": [
+        {
+          "id": "receiver.rail.0",
+          "mount": "rail-top",
+          "railId": "receiver.rail",
+          "notchIndex": 0,
+          "position": [-0.138, 0.02875, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 0]
+        },
+        {
+          "id": "receiver.rail.1",
+          "mount": "rail-top",
+          "railId": "receiver.rail",
+          "notchIndex": 1,
+          "position": [-0.115, 0.02875, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 0]
+        },
+        {
+          "id": "receiver.rail.2",
+          "mount": "rail-top",
+          "railId": "receiver.rail",
+          "notchIndex": 2,
+          "position": [-0.092, 0.02875, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 0]
+        },
+        {
+          "id": "receiver.rail.3",
+          "mount": "rail-top",
+          "railId": "receiver.rail",
+          "notchIndex": 3,
+          "position": [-0.069, 0.02875, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 0]
+        },
+        {
+          "id": "receiver.rail.4",
+          "mount": "rail-top",
+          "railId": "receiver.rail",
+          "notchIndex": 4,
+          "position": [-0.046, 0.02875, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 0]
+        },
+        {
+          "id": "receiver.rail.5",
+          "mount": "rail-top",
+          "railId": "receiver.rail",
+          "notchIndex": 5,
+          "position": [-0.023, 0.02875, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 0]
+        },
+        {
+          "id": "receiver.rail.6",
+          "mount": "rail-top",
+          "railId": "receiver.rail",
+          "notchIndex": 6,
+          "position": [0, 0.02875, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 0]
+        },
+        {
+          "id": "barrel.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.414, 0, 0],
+          "direction": [1, 0, 1.2246467991473532e-16],
+          "up": [0, 1, 0]
+        },
+        {
+          "id": "handguard.rail.0",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 0,
+          "position": [0.023, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.1",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 1,
+          "position": [0.046, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.2",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 2,
+          "position": [0.069, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.3",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 3,
+          "position": [0.092, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.4",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 4,
+          "position": [0.115, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.5",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 5,
+          "position": [0.138, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.6",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 6,
+          "position": [0.161, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.7",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 7,
+          "position": [0.184, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.8",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 8,
+          "position": [0.207, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.9",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 9,
+          "position": [0.23, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.10",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 10,
+          "position": [0.253, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.11",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 11,
+          "position": [0.276, 0.020125, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.0",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 0,
+          "position": [0.023, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.1",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 1,
+          "position": [0.046, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.2",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 2,
+          "position": [0.069, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.3",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 3,
+          "position": [0.092, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.4",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 4,
+          "position": [0.115, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.5",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 5,
+          "position": [0.138, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.6",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 6,
+          "position": [0.161, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.7",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 7,
+          "position": [0.184, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.8",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 8,
+          "position": [0.207, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.9",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 9,
+          "position": [0.23, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.10",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 10,
+          "position": [0.253, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.11",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 11,
+          "position": [0.276, -0.020125, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.0",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 0,
+          "position": [0.023, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.1",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 1,
+          "position": [0.046, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.2",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 2,
+          "position": [0.069, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.3",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 3,
+          "position": [0.092, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.4",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 4,
+          "position": [0.115, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.5",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 5,
+          "position": [0.138, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.6",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 6,
+          "position": [0.161, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.7",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 7,
+          "position": [0.184, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.8",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 8,
+          "position": [0.207, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.9",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 9,
+          "position": [0.23, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.10",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 10,
+          "position": [0.253, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.11",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 11,
+          "position": [0.276, 0, 0.020125],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        }
+      ],
+      "slots": {
+        "magazine": {
+          "node": "magazine:magazine",
+          "at": [-0.048875, -0.046, 0],
+          "turn": [0, 0, 0]
+        }
       }
     },
     {
@@ -99,9 +527,6 @@
         "support": [0.09315, -0.020125, 0],
         "muzzle": [0.391, 0, 0],
         "ejection": [-0.048875, 0.0115, 0.023]
-      },
-      "slots": {
-        "magazine": { "node": "magazine:magazine", "at": [-0.08625, -0.02875, 0], "turn": [0, 0, 0] }
       },
       "calibre": "7.62x39",
       "action": {
@@ -129,6 +554,192 @@
         "ejectDirection": [0.3396605091514848, 0.1998002995008734, 0.9190813777040178],
         "holdOpen": false,
         "roundsPerSimMinute": 600
+      },
+      "attachments": [],
+      "attachmentSlots": [
+        {
+          "id": "barrel.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.368, 0, 0],
+          "direction": [1, 0, 1.2246467991473532e-16],
+          "up": [0, 1, 0]
+        },
+        {
+          "id": "muzzle-device.muzzle.0",
+          "mount": "muzzle",
+          "position": [0.391, 0, 0],
+          "direction": [1, 0, 2.4492935982947064e-16],
+          "up": [0, 1, 0]
+        },
+        {
+          "id": "handguard.rail.0",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 0,
+          "position": [0.023, 0.04025, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.1",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 1,
+          "position": [0.046, 0.04025, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.2",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 2,
+          "position": [0.069, 0.04025, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.3",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 3,
+          "position": [0.092, 0.04025, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.4",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 4,
+          "position": [0.115, 0.04025, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail.5",
+          "mount": "rail-top",
+          "railId": "handguard.rail",
+          "notchIndex": 5,
+          "position": [0.138, 0.04025, 0],
+          "direction": [0, 1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.0",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 0,
+          "position": [0.023, -0.04025, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.1",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 1,
+          "position": [0.046, -0.04025, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.2",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 2,
+          "position": [0.069, -0.04025, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.3",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 3,
+          "position": [0.092, -0.04025, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.4",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 4,
+          "position": [0.115, -0.04025, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-bottom.5",
+          "mount": "rail-bottom",
+          "railId": "handguard.rail-bottom",
+          "notchIndex": 5,
+          "position": [0.138, -0.04025, 0],
+          "direction": [0, -1, 0],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.0",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 0,
+          "position": [0.023, 0, 0.01725],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.1",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 1,
+          "position": [0.046, 0, 0.01725],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.2",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 2,
+          "position": [0.069, 0, 0.01725],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.3",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 3,
+          "position": [0.092, 0, 0.01725],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.4",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 4,
+          "position": [0.115, 0, 0.01725],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        },
+        {
+          "id": "handguard.rail-side.5",
+          "mount": "rail-side",
+          "railId": "handguard.rail-side",
+          "notchIndex": 5,
+          "position": [0.138, 0, 0.01725],
+          "direction": [-1.2246467991473532e-16, 0, 1],
+          "up": [1, 0, 1.2246467991473532e-16]
+        }
+      ],
+      "slots": {
+        "magazine": {
+          "node": "magazine:magazine",
+          "at": [-0.08625, -0.02875, 0],
+          "turn": [0, 0, 0]
+        }
       }
     },
     {
@@ -293,8 +904,16 @@
         "recoilKickRadians": 0.035,
         "dispersionRadians": 0,
         "skillZeroHandling": {
-          "singleShot": { "variance": 3, "recoilKickScale": 10, "recoilRecoveryScale": 0.35 },
-          "automaticFollowup": { "variance": 6, "recoilKickScale": 20, "recoilRecoveryScale": 0.18 }
+          "singleShot": {
+            "variance": 3,
+            "recoilKickScale": 10,
+            "recoilRecoveryScale": 0.35
+          },
+          "automaticFollowup": {
+            "variance": 6,
+            "recoilKickScale": 20,
+            "recoilRecoveryScale": 0.18
+          }
         }
       },
       "description": "Unbranded 12-gauge hunting pump. Four shells in the exported tube, plus one chambered. Hold R to load loose shells; double-press R to rack; tap, then hold R to keep racking it empty; a single tap does nothing. Wield and activate a sealed shell box to unpack it first. LMB fires once; rack before the next shot. Empty mass and 2x8 inventory size are gameplay estimates, fitting ordinary backpack/pile handling."
@@ -321,8 +940,16 @@
         "recoilKickRadians": 0.006,
         "dispersionRadians": 0.012,
         "skillZeroHandling": {
-          "singleShot": { "variance": 1.5, "recoilKickScale": 3, "recoilRecoveryScale": 0.75 },
-          "automaticFollowup": { "variance": 2.5, "recoilKickScale": 7, "recoilRecoveryScale": 0.4 }
+          "singleShot": {
+            "variance": 1.5,
+            "recoilKickScale": 3,
+            "recoilRecoveryScale": 0.75
+          },
+          "automaticFollowup": {
+            "variance": 2.5,
+            "recoilKickScale": 7,
+            "recoilRecoveryScale": 0.4
+          }
         }
       },
       "model": "rifle_assault"
@@ -339,8 +966,16 @@
         "recoilKickRadians": 0.012,
         "dispersionRadians": 0.018,
         "skillZeroHandling": {
-          "singleShot": { "variance": 2, "recoilKickScale": 6, "recoilRecoveryScale": 0.5 },
-          "automaticFollowup": { "variance": 4, "recoilKickScale": 12, "recoilRecoveryScale": 0.25 }
+          "singleShot": {
+            "variance": 2,
+            "recoilKickScale": 6,
+            "recoilRecoveryScale": 0.5
+          },
+          "automaticFollowup": {
+            "variance": 4,
+            "recoilKickScale": 12,
+            "recoilRecoveryScale": 0.25
+          }
         }
       },
       "model": "rifle_ak"

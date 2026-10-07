@@ -1,4 +1,5 @@
 node_modules/
+/gungen/designs/look-*.json
 # Agent mail (maildirs and scratch) lives in the main checkout, untracked.
 .agent-mail/
 
