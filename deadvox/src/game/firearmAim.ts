@@ -15,6 +15,7 @@ export interface FirearmBoreRayInput {
   readonly blockSize: number;
   readonly side: HandSide;
   readonly leadingSide: HandSide;
+  readonly progress?: number;
   readonly twoHanded: boolean;
   readonly aimFrame: AimFrame;
   readonly aimingDownSights?: boolean;
@@ -39,6 +40,7 @@ export const firearmBoreRay = ({
   blockSize,
   side,
   leadingSide,
+  progress = 1,
   twoHanded,
   aimFrame,
   aimingDownSights = false,
@@ -52,7 +54,7 @@ export const firearmBoreRay = ({
     side,
     leadingSide,
     twoHanded,
-    progress: 1,
+    progress,
     aimingDownSights,
     aimFrame,
     loweredPitchRadians,

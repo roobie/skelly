@@ -4,6 +4,7 @@ import { expect, it } from 'vitest';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
 import {
+  playCrosshairFrame,
   playInteractionText,
   playPromptText,
   projectCrosshairScreenPosition,
@@ -139,6 +140,31 @@ it('projects a bore hit into the crosshair screen position', () => {
   });
   expect(Number.parseFloat(roots.crosshair.style.left)).toBeCloseTo(projected.left, 5);
   expect(Number.parseFloat(roots.crosshair.style.top)).toBeCloseTo(projected.top, 5);
+  expect(playCrosshairFrame(true, true, projected)).toEqual({ visible: true, screenPosition: projected });
+});
+
+it('hides off-screen and behind-camera firearm crosshairs but keeps the no-firearm crosshair centered', () => {
+  const camera = new PerspectiveCamera(60, 2, 0.1, 100);
+  const viewport = { left: 30, top: 20, width: 800, height: 400 };
+  const blockSize = 1;
+  const offScreen = projectCrosshairScreenPosition(camera, viewport, [0, 50, -10], blockSize);
+  const behindCamera = projectCrosshairScreenPosition(camera, viewport, [0, 0, 1], blockSize);
+
+  expect(offScreen).toBeUndefined();
+  expect(behindCamera).toBeUndefined();
+  expect(playCrosshairFrame(true, true, offScreen)).toEqual({ visible: false });
+  expect(playCrosshairFrame(true, true, behindCamera)).toEqual({ visible: false });
+
+  const defaultCrosshair = playCrosshairFrame(true, false, undefined);
+  expect(defaultCrosshair).toEqual({ visible: true });
+  const roots = { hud: root(), prompt: root(), crosshair: root() };
+  renderPlayHud(roots, {
+    hud: '',
+    prompt: '',
+    crosshairVisible: defaultCrosshair.visible,
+    crosshairScreenPosition: defaultCrosshair.screenPosition,
+  });
+  expect([roots.crosshair.hidden, roots.crosshair.style.left, roots.crosshair.style.top]).toEqual([false, '', '']);
 });
 
 it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {

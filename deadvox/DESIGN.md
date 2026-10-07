@@ -547,23 +547,34 @@ plain box in your hands. Files are small, and follow
   if fired at that moment”. BR, 2026-10-07 10:21, chose the bore-line hit rather
   than the next shot's random spread (“choose: (a)”), and said “and additionally,
   when debug=1 the center of screen should be shown using an X mark so we can
-  relate to where center of screen is even when this is implemented”. This
-  supersedes d116-2's
-  convergence toward the crosshair surface or posed zombie;
-  that earlier rule is retained here as the history of the superseded behavior.
+  relate to where center of screen is even when this is implemented”. BR,
+  2026-10-07 12:16, said verbatim: “#341: works really well overall - except
+  that the muzzle crosshair stays (or is defaulted to center) after having
+  raised -> then release so it's unraised. I'd expect the muzzle cross hair to
+  be off screen when rifle is unready (poiting down)”. For a wielded firearm,
+  the crosshair now follows the bore at its current pose and disappears outside
+  the viewport; with no firearm wielded, the main-game center crosshair remains.
+  An earlier instruction was: “Also, "hipfire" is way off the mark (cross hair / center of
+  screen) - i.e. when simply readied the rifle and shooting one single round”.
+  BR's 2026-10-07 10:16 and 10:21 rulings below supersede that instruction,
+  replacing convergence toward the crosshair surface or posed zombie with the
+  bore-line hit.
   Shots now leave along the visible firearm's bore, plus firearm-owned spread.
   `src/game/firearmAim.ts`, `firearmBoreRay`, supplies that shared line to both
-  shot resolution and the readied-firearm crosshair; `src/ui/playHud.ts`,
-  `projectCrosshairScreenPosition`, reports its world hit on screen without
-  steering the shot. The hip pose reuses the hand placement but not the melee
+  shot resolution and the held-firearm crosshair; `src/game/play.ts`,
+  `heldFirearmBore`, supplies its current raise progress. `src/ui/playHud.ts`,
+  `projectCrosshairScreenPosition` and `playCrosshairFrame`, hide it outside the
+  viewport and keep the centered default only when no firearm is wielded. The hip pose reuses the hand placement but not the melee
   wrist rotation, so the visible bore follows the player's look. The debug X is
   separate from the optional crosshair. ADS retains its existing sight
   alignment; its crosshair, when enabled, reports the aligned bore rather than
   the random spread. `src/debug/index.ts` owns the development target-range
-  readout. BR's
-  2026-10-05 look at the range found that "the gun on screen is climbing (and
-  plateauing)" and ruled, "at the ~7° screen limit -> start scrolling the screen
-  with it / no plateauing." While an automatic trigger is held, recoil does not
+  readout. BR's earlier requirement remains: “the number on the screenshot
+  should be a maximum of sub-1-meter”. Whether the readout meets it is for BR's
+  look. BR's 2026-10-05 look at the range found that "the gun on screen is
+  climbing (and plateauing)" and ruled,
+  "at the ~7° screen limit -> start scrolling the screen with it / no plateauing."
+  While an automatic trigger is held, recoil does not
   recover; over-limit pitch shifts the saved view pitch. The shifted view stays
   after release while the on-screen weapon offset recovers, so mouse look can
   counter the climb. BR also clarified that "dispersion is not a skill issue,

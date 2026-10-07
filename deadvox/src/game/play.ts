@@ -46,6 +46,7 @@ import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
   type PlayStatus,
+  playCrosshairFrame,
   playHudText,
   playInteractionText,
   playNeedsText,
@@ -2111,12 +2112,9 @@ export const startPlay = (
     });
   };
 
-  const readiedFirearmBore = () => {
-    if (!(input.rightMouseActionHeld && input.locked && !input.menuPointer)) {
-      return;
-    }
+  const heldFirearmBore = () => {
     const selected = selectPrimaryAction(inventory);
-    if (selected.kind !== 'firearm' || !isFirearmReady(selected.item.uid)) {
+    if (selected.kind !== 'firearm') {
       return;
     }
     const tuning = registry.skills.get('firearms_combat')?.combat?.firearms;
@@ -2134,6 +2132,7 @@ export const startPlay = (
       leadingSide: dominantSide(inventory.character),
       twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
       aimFrame: aim.frame,
+      progress: firearms.readyProgress(item.uid),
       aimingDownSights: isAimingDownSights(),
       loweredPitchRadians: tuning.loweredPitchRadians,
       adsApertureFill: tuning.adsApertureFill,
@@ -2325,7 +2324,7 @@ export const startPlay = (
       frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
     });
     updateHeldItems(dt);
-    const bore = readiedFirearmBore();
+    const bore = heldFirearmBore();
     updateDebugTargets(bore);
     updateDebugReadout(now);
     mark = realNow();
@@ -2338,12 +2337,13 @@ export const startPlay = (
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();
 
+    const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {
         hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
-        crosshairVisible: visible.crosshair,
-        crosshairScreenPosition: crosshairScreenPosition(bore),
+        crosshairVisible: crosshair.visible,
+        crosshairScreenPosition: crosshair.screenPosition,
         prompt: promptText(now, visible),
       },
     );

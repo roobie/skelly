@@ -26,12 +26,36 @@ export const projectCrosshairScreenPosition = (
   }
   camera.updateMatrixWorld(true);
   const projected = new Vector3(point[0] * blockSize, point[1] * blockSize, point[2] * blockSize).project(camera);
-  if (![projected.x, projected.y, projected.z].every(Number.isFinite)) {
+  if (
+    ![projected.x, projected.y, projected.z].every(Number.isFinite) ||
+    projected.x < -1 ||
+    projected.x > 1 ||
+    projected.y < -1 ||
+    projected.y > 1 ||
+    projected.z > 1
+  ) {
     return undefined;
   }
   return {
     left: viewport.left + ((projected.x + 1) / 2) * viewport.width,
     top: viewport.top + ((1 - projected.y) / 2) * viewport.height,
+  };
+};
+
+export interface PlayCrosshairFrame {
+  readonly visible: boolean;
+  readonly screenPosition?: { readonly left: number; readonly top: number };
+}
+
+export const playCrosshairFrame = (
+  enabled: boolean,
+  firearmWielded: boolean,
+  screenPosition: { readonly left: number; readonly top: number } | undefined,
+): PlayCrosshairFrame => {
+  const position = firearmWielded ? screenPosition : undefined;
+  return {
+    visible: enabled && (!firearmWielded || position !== undefined),
+    ...(position === undefined ? {} : { screenPosition: position }),
   };
 };
 
