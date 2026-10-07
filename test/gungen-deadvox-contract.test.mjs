@@ -39,7 +39,7 @@ describe('gungen exports satisfy deadvox model validation', () => {
     }
   });
 
-  it('reproduces the pre-r44-3 action-name break against deadvox schema', () => {
+  it('rejects unknown action fields', () => {
     const { file, model } = loadExports().find(({ model: entry }) => entry.action?.fire) ?? {};
     assert.ok(file && model?.action?.fire);
     const oldCycleNames = ({ durationSimSeconds, rearwardSimSeconds, dwellSimSeconds, forwardSimSeconds }) => ({

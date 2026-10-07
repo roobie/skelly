@@ -125,7 +125,7 @@
       "workstation": {
         "id": "workbench",
         "qualities": { "hammering": 1, "sawing": 1 },
-        "workTimeBonus": 0.2
+        "workFactorBonus": 0.2
       }
     },
     {

@@ -579,7 +579,7 @@ describe('content references', () => {
             ['custom_shaping', 2],
             ['fixture_sawing', 1],
           ]),
-          workTimeBonus: 0.2,
+          workFactorBonus: 0.2,
         },
       },
       { id: 'fixture_plain_bench', name: 'Ordinary bench', size: [1, 1, 1], color: '#ffffff' },

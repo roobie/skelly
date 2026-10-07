@@ -575,7 +575,7 @@ const FurnitureSchema = strictObject({
     strictObject({
       id: Id,
       qualities: record(Id, QualityLevel),
-      workTimeBonus: Fraction,
+      workFactorBonus: Fraction,
     }),
   ),
 });

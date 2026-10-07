@@ -10,7 +10,6 @@ import { dropSpots, Inventory } from '../src/core/inventory.ts';
 import { defOf, footprint } from '../src/core/items.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { craftingActivityTier } from '../src/core/skillTraining.ts';
-import { gameSecondsToMinutes } from '../src/core/time.ts';
 import { craftRows } from '../src/ui/craftReadout.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
@@ -143,7 +142,7 @@ describe('core long actions', () => {
     const torch = registry.recipes.get('torch')!;
     expected.awardPractice(
       'crafting',
-      gameSecondsToMinutes(torch.timeGameMinutes),
+      torch.timeGameMinutes / 60,
       craftingActivityTier(torch.skills.crafting!, registry.skills.get('crafting')!.training!.craftingTierOffset!),
     );
     const runtime = start();

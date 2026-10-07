@@ -5,6 +5,7 @@
       "jogMetresPerSecond": 1,
       "jogSeconds": 1,
       "lookSeconds": 1,
+      "meshMs": 1,
       "seconds": 1,
       "sprintMetresPerSecond": 1,
       "sprintSeconds": 1,
@@ -13,37 +14,92 @@
       "timedOut": 1
     },
     "bench/run.ts": {
-      "hour": 1,
       "jogMetresPerSecond": 1,
       "jogSeconds": 1,
       "loadTimeout": 2,
       "lookSeconds": 1,
+      "meshMs": 1,
       "seconds": 1,
       "sprintMetresPerSecond": 1,
       "sprintSeconds": 1,
       "startedAt": 1,
       "time": 2
     },
-    "bench/shamblers-cpu.mjs": { "hour": 1 },
-    "bench/shamblers.ts": { "hour": 1, "startedAt": 1, "time": 2 },
-    "core/body.ts": { "knockoutElapsed": 2 },
-    "core/bookReading.ts": { "duration": 1 },
-    "core/craftCommands.ts": { "duration": 2, "time": 3 },
-    "core/disassembly.ts": { "duration": 2 },
-    "core/firearmsSkill.ts": { "rackDuration": 2, "raiseDuration": 2, "reloadDuration": 2 },
-    "core/firearmState.ts": { "duration": 2, "elapsed": 2, "startedAt": 1 },
-    "core/foliageRustle.ts": { "time": 1 },
-    "core/handling.ts": { "duration": 1, "elapsed": 3 },
-    "core/inventory.ts": { "duration": 2, "elapsed": 2, "time": 10 },
-    "core/items.ts": { "duration": 1, "elapsed": 1 },
-    "core/longAction.ts": { "duration": 4, "elapsed": 6, "strikeInterval": 1 },
-    "core/meleePose.ts": { "cooldown": 3 },
-    "core/options.ts": { "time": 5 },
-    "core/physics.ts": { "second": 1 },
-    "core/playerCombat.ts": { "cooldown": 1, "elapsed": 2 },
-    "core/prying.ts": { "strikeInterval": 1, "time": 1 },
-    "core/reach.ts": { "handlingTime": 2 },
-    "core/rigidBody.ts": { "elapsed": 1, "quietTime": 1 },
+    "bench/shamblers.ts": {
+      "startedAt": 1,
+      "time": 2
+    },
+    "bench/stats.ts": {
+      "msMax": 2,
+      "msMedian": 2,
+      "msP95": 2,
+      "msP99": 2
+    },
+    "core/body.ts": {
+      "knockoutElapsed": 2
+    },
+    "core/bookReading.ts": {
+      "duration": 1
+    },
+    "core/craftCommands.ts": {
+      "duration": 2,
+      "time": 3
+    },
+    "core/disassembly.ts": {
+      "duration": 2
+    },
+    "core/firearmsSkill.ts": {
+      "rackDuration": 2,
+      "raiseDuration": 2,
+      "reloadDuration": 2
+    },
+    "core/firearmState.ts": {
+      "duration": 2,
+      "elapsed": 2,
+      "startedAt": 1
+    },
+    "core/foliageRustle.ts": {
+      "time": 1
+    },
+    "core/handling.ts": {
+      "duration": 1,
+      "elapsed": 3
+    },
+    "core/inventory.ts": {
+      "duration": 2,
+      "elapsed": 2,
+      "time": 10
+    },
+    "core/items.ts": {
+      "duration": 1,
+      "elapsed": 1
+    },
+    "core/longAction.ts": {
+      "duration": 4,
+      "elapsed": 6,
+      "strikeInterval": 1
+    },
+    "core/meleePose.ts": {
+      "cooldown": 3
+    },
+    "core/options.ts": {
+      "time": 5
+    },
+    "core/playerCombat.ts": {
+      "cooldown": 1,
+      "elapsed": 2
+    },
+    "core/prying.ts": {
+      "strikeInterval": 1,
+      "time": 1
+    },
+    "core/reach.ts": {
+      "handlingTime": 2
+    },
+    "core/rigidBody.ts": {
+      "elapsed": 1,
+      "quietTime": 1
+    },
     "core/saveFormat.ts": {
       "attackWindup": 1,
       "cooldown": 2,
@@ -68,10 +124,23 @@
       "swayElapsed": 1,
       "time": 4
     },
-    "core/saveState.ts": { "expiresAt": 2 },
-    "core/scheduler.ts": { "time": 3 },
-    "core/sim.ts": { "expiresAt": 1, "time": 7 },
-    "core/soundPicker.ts": { "lastPlayedAt": 5, "time": 1 },
+    "core/saveState.ts": {
+      "expiresAt": 2
+    },
+    "core/scheduler.ts": {
+      "time": 3
+    },
+    "core/sideButton.ts": {
+      "windowMs": 1
+    },
+    "core/sim.ts": {
+      "expiresAt": 1,
+      "time": 7
+    },
+    "core/soundPicker.ts": {
+      "lastPlayedAt": 5,
+      "time": 1
+    },
     "core/zombiePose.ts": {
       "attackCooldown": 2,
       "attackWindup": 2,
@@ -84,7 +153,6 @@
       "cooldown": 3,
       "expiresAt": 1,
       "hitFlinchTime": 1,
-      "hour": 6,
       "idleSoundTimer": 2,
       "lookTimer": 2,
       "lurchDuration": 2,
@@ -92,19 +160,56 @@
       "modeTimer": 2,
       "roamTimer": 3,
       "searchTimer": 2,
-      "second": 1,
       "stumbleDuration": 2,
       "stumbleElapsed": 2,
       "swayDuration": 2,
       "swayElapsed": 2,
       "time": 4
     },
-    "debug/index.ts": { "gameTime": 1, "setTimeOfDay": 2, "time": 1 },
-    "debug/lookDump.ts": { "gameTime": 2, "timestamp": 1 },
-    "debug/vehicleSpike.ts": { "ms": 1 },
-    "game/debugInterface.ts": { "setTimeOfDay": 1 },
-    "game/melee.ts": { "cooldown": 2 },
-    "game/firearmHandling.ts": { "duration": 5, "elapsed": 6, "simTime": 1, "startedAt": 3 },
+    "debug/index.ts": {
+      "gameTime": 1,
+      "meshingQueueMs": 1,
+      "renderMs": 1,
+      "setTimeOfDay": 2,
+      "simulationMs": 1,
+      "snapshotLastMs": 1,
+      "snapshotP95Ms": 1,
+      "time": 1
+    },
+    "debug/lookDump.ts": {
+      "cpuMs": 1,
+      "frameMs": 1,
+      "gameTime": 2,
+      "timestamp": 1
+    },
+    "debug/vehicleSpike.ts": {
+      "ms": 1
+    },
+    "game/debugInterface.ts": {
+      "meshingQueueMs": 1,
+      "renderMs": 1,
+      "setTimeOfDay": 1,
+      "simulationMs": 1,
+      "snapshotLastMs": 1,
+      "snapshotP95Ms": 1
+    },
+    "game/firearmHandling.ts": {
+      "duration": 5,
+      "elapsed": 6,
+      "simTime": 1,
+      "startedAt": 3
+    },
+    "game/inputBindings.ts": {
+      "holdMs": 2
+    },
+    "game/inputReplay.ts": {
+      "maxMs": 3,
+      "meanMs": 3,
+      "p95Ms": 3
+    },
+    "game/melee.ts": {
+      "cooldown": 2
+    },
     "game/play.ts": {
       "cooldown": 1,
       "duration": 1,
@@ -113,43 +218,121 @@
       "recordSnapshotDuration": 1,
       "setTimeOfDay": 1,
       "simTime": 1,
+      "snapshotLastMs": 1,
+      "snapshotP95Ms": 1,
       "time": 2
     },
     "game/playtestObserver.ts": {
       "batchMeanDurationsMs": 1,
+      "batchMeanP50Ms": 1,
+      "batchMeanP95Ms": 1,
+      "calibrationBatchMs": 1,
       "handlingSeconds": 3,
+      "individualCaptureMaxMs": 1,
+      "individualCaptureMaxUpperBoundMs": 1,
+      "individualCaptureP95Ms": 1,
+      "individualCaptureP95UpperBoundMs": 1,
       "observedTimerTickMs": 1,
+      "targetBatchMs": 1,
       "timerQuantum": 2,
       "timerQuantumCrossCheckPassed": 1,
       "uiSeconds": 3
     },
     "game/playtestTools.ts": {
       "batchMeanDurationsMs": 1,
+      "batchMeanP50Ms": 2,
+      "batchMeanP95Ms": 2,
+      "calibrationBatchMs": 1,
       "compressedSeconds": 3,
       "durationMs": 1,
       "handlingSeconds": 1,
+      "individualCaptureMaxMs": 1,
+      "individualCaptureMaxUpperBoundMs": 1,
+      "individualCaptureP95Ms": 1,
+      "individualCaptureP95UpperBoundMs": 1,
+      "lastMs": 1,
       "observedTimerTickMs": 1,
+      "p95Ms": 1,
+      "quantumMs": 3,
       "survivedSeconds": 1,
+      "targetBatchMs": 1,
       "timerQuantum": 2,
       "timerQuantumCrossCheckPassed": 1,
       "uiSeconds": 1
     },
-    "game/pressHoldInput.ts": { "holdDuration": 2, "startedAt": 2 },
-    "game/quickbarInput.ts": { "holdDuration": 1 },
-    "game/saveStorage.ts": { "requestTimeoutMs": 1, "timeoutMs": 1, "timer": 1 },
-    "game/session.ts": { "expiresAt": 1, "hour": 1 },
-    "render/firearmModel.ts": { "duration": 1, "elapsed": 1 },
-    "render/frameTimes.ts": { "ms": 1 },
-    "render/hands.ts": { "duration": 1, "elapsed": 1 },
-    "render/mobActors.ts": { "elapsed": 6, "quietTime": 1 },
-    "render/playView.ts": { "time": 1 },
-    "render/rummagePose.ts": { "cyclesPerSecond": 1, "elapsed": 2, "transitionSeconds": 1 },
-    "render/shellLoadPose.ts": { "duration": 1, "elapsed": 1 },
-    "ui/craftReadout.ts": { "time": 2 },
-    "ui/hud.ts": { "duration": 1, "elapsed": 1, "time": 3 },
-    "ui/inventoryScreen.ts": { "duration": 1, "time": 2 },
-    "ui/saveController.ts": { "checkpointInterval": 1, "recordSnapshotDuration": 2, "simTime": 1 },
-    "worker/mesh.worker.ts": { "ms": 1 },
-    "worker/protocol.ts": { "ms": 1 }
+    "game/pressHoldInput.ts": {
+      "holdDuration": 2,
+      "startedAt": 2
+    },
+    "game/quickbarInput.ts": {
+      "holdDuration": 1
+    },
+    "game/saveStorage.ts": {
+      "requestTimeoutMs": 1,
+      "timeoutMs": 1,
+      "timer": 1
+    },
+    "game/session.ts": {
+      "expiresAt": 1
+    },
+    "game/streamer.ts": {
+      "genMs": 1,
+      "meshMs": 1
+    },
+    "main.ts": {
+      "genMs": 1,
+      "meshMs": 1
+    },
+    "render/firearmModel.ts": {
+      "duration": 1,
+      "elapsed": 1
+    },
+    "render/frameTimes.ts": {
+      "ms": 1,
+      "windowMs": 1
+    },
+    "render/hands.ts": {
+      "duration": 1,
+      "elapsed": 1
+    },
+    "render/mobActors.ts": {
+      "elapsed": 6,
+      "quietTime": 1
+    },
+    "render/playView.ts": {
+      "time": 1
+    },
+    "render/rummagePose.ts": {
+      "cyclesPerSecond": 1,
+      "elapsed": 2,
+      "transitionSeconds": 1
+    },
+    "render/shellLoadPose.ts": {
+      "duration": 1,
+      "elapsed": 1
+    },
+    "ui/craftReadout.ts": {
+      "time": 2
+    },
+    "ui/hud.ts": {
+      "duration": 1,
+      "elapsed": 1,
+      "time": 3
+    },
+    "ui/inventoryScreen.ts": {
+      "duration": 1,
+      "time": 2
+    },
+    "ui/saveController.ts": {
+      "checkpointInterval": 1,
+      "recordSnapshotDuration": 2,
+      "simTime": 1
+    },
+    "worker/mesh.worker.ts": {
+      "ms": 1
+    },
+    "worker/protocol.ts": {
+      "ms": 1
+    }
   }
 }

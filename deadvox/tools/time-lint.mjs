@@ -13,10 +13,35 @@ const RUNTIME_BASELINE = join(DEADVOX, 'tools', 'time-lint-baseline.json');
 const ALLOW_REAL = new Set([join(SOURCE, 'game', 'frameDriver.ts')]);
 const CODE_EXTENSIONS = new Set(['.ts', '.tsx', '.js', '.mjs']);
 const REAL_NAMES = new Set(['Date', 'performance', 'requestAnimationFrame', 'setTimeout', 'setInterval', 'timeStamp']);
-const TEMPORAL_NAME =
-  /(?:Time|Duration|Elapsed|Interval|Cooldown|Windup|BurnTime|BurnRemaining|RotsAfter|LastPlayedAt|StartedAt|ExpiresAt|LitAt|Milliseconds?|\bMs\b|Seconds?(?:Squared)?|Minutes?|Hours?|Per(?:Milli(?:second)?|Second|Minute|Hour)|\bRpm\b|Timestamp)/i;
-const CLOCK_UNIT =
-  /(?:Sim|Game|Real)(?:Milliseconds?|Ms|Seconds?(?:Squared)?|Minutes?|Hours?|TimeOfDay|Timestamp|Rate)|Per(?:Sim|Game|Real)(?:Milliseconds?|Ms|Seconds?|Minutes?|Hours?)/i;
+const NAME_TOKEN = /[A-Z]+(?=[A-Z][a-z]|$)|[A-Z]?[a-z]+|[0-9]+/g;
+const CLOCK_TOKENS = new Set(['sim', 'game', 'real']);
+const UNIT_TOKENS = new Set(['ms', 'milliseconds', 'seconds', 'minutes', 'hours', 'rpm', 'timestamp']);
+const TEMPORAL_SEMANTIC =
+  /(?:time|duration|elapsed|interval|cooldown|windup|burntime|burnremaining|rotsafter|lastplayedat|startedat|expiresat|litat|timestamp|timer)/;
+const nameTokens = (name) => (name.match(NAME_TOKEN) ?? []).map((token) => token.toLowerCase());
+const isUnitToken = (tokens, index) => {
+  const token = tokens[index];
+  if (UNIT_TOKENS.has(token)) {
+    return true;
+  }
+  return (
+    ['second', 'minute', 'hour'].includes(token) &&
+    (tokens[index - 1] === 'per' ||
+      (CLOCK_TOKENS.has(tokens[index - 1]) && tokens[index - 2] === 'per'))
+  );
+};
+const hasTemporalName = (name) => {
+  const tokens = nameTokens(name);
+  return tokens.some((_, index) => isUnitToken(tokens, index)) || TEMPORAL_SEMANTIC.test(tokens.join(''));
+};
+const hasClockUnit = (name) => {
+  const tokens = nameTokens(name);
+  const units = tokens.flatMap((_, index) => (isUnitToken(tokens, index) ? [index] : []));
+  const timeOfDay = tokens.some(
+    (token, index) => CLOCK_TOKENS.has(token) && tokens.slice(index + 1, index + 4).join('') === 'timeofday',
+  );
+  return units.length > 0 ? units.every((index) => CLOCK_TOKENS.has(tokens[index - 1])) : timeOfDay;
+};
 const AUDIO_CONTEXT_TYPE = /^(?:AudioContext|BaseAudioContext)$/;
 const BRANDED_TYPE = /^(Sim|Game|Real)(?:Seconds|Timestamp|Rate|TimeOfDay)$/;
 
@@ -36,23 +61,30 @@ const sourceAst = (file, text) =>
     true,
     file.endsWith('.json') ? ts.ScriptKind.JSON : ts.ScriptKind.TS,
   );
-let checkerProgram;
+const checkerPrograms = new Map();
 const typeProgram = (file) => {
   const absolute = resolve(file);
-  if (!checkerProgram) {
-    const roots = [
-      ...walkFiles(SOURCE, (path) => ['.ts', '.tsx'].includes(extname(path))),
-      ...walkFiles(join(DEADVOX, 'test', 'fixtures', 'time-lint'), (path) => path.endsWith('.ts')),
-    ];
-    checkerProgram = ts.createProgram(roots, {
+  const fixtureRoot = join(DEADVOX, 'test', 'fixtures', 'time-lint');
+  const fixture = absolute.startsWith(`${fixtureRoot}/`);
+  const key = fixture ? absolute : 'runtime';
+  let program = checkerPrograms.get(key);
+  if (!program) {
+    const roots = fixture
+      ? [absolute]
+      : [
+          ...walkFiles(SOURCE, (path) => ['.ts', '.tsx'].includes(extname(path))),
+          ...walkFiles(fixtureRoot, (path) => path.endsWith('.ts')),
+        ];
+    program = ts.createProgram(roots, {
       allowImportingTsExtensions: true,
       module: ts.ModuleKind.ESNext,
       moduleResolution: ts.ModuleResolutionKind.Bundler,
       skipLibCheck: true,
       target: ts.ScriptTarget.Latest,
     });
+    checkerPrograms.set(key, program);
   }
-  return { checker: checkerProgram.getTypeChecker(), source: checkerProgram.getSourceFile(absolute) };
+  return { checker: program.getTypeChecker(), source: program.getSourceFile(absolute) };
 };
 const propertyName = (node) =>
   ts.isIdentifier(node) || ts.isStringLiteral(node) || ts.isNumericLiteral(node) ? node.text : undefined;
@@ -163,7 +195,7 @@ export const temporalNameFindings = (file, text, mode = 'source') => {
   const findings = [];
   const visit = (node) => {
     const field = temporalNameField(node, mode);
-    if (field && field.name !== 'workTimeBonus' && TEMPORAL_NAME.test(field.name) && !CLOCK_UNIT.test(field.name)) {
+    if (field && hasTemporalName(field.name) && !hasClockUnit(field.name)) {
       findings.push(
         `${file}:${lineOf(source, field.node)}: temporal field "${field.name}" must include a clock and unit`,
       );
@@ -215,7 +247,7 @@ const ambiguousTemporalProperty = (node) => {
     return;
   }
   const name = propertyName(node.name);
-  return name && name !== 'workTimeBonus' && TEMPORAL_NAME.test(name) && !CLOCK_UNIT.test(name) ? name : undefined;
+  return name && hasTemporalName(name) && !hasClockUnit(name) ? name : undefined;
 };
 
 export const runtimeTemporalCounts = (files, read = readFileSync) => {
@@ -301,8 +333,8 @@ const collectAuthoredFields = (value, path, file, state) => {
   }
   for (const [name, child] of Object.entries(value)) {
     const fieldPath = path ? `${path}.${name}` : name;
-    const temporalName = TEMPORAL_NAME.test(name);
-    if (temporalName && CLOCK_UNIT.test(name) && !state.known.has(normalizedPath(fieldPath))) {
+    const temporalName = hasTemporalName(name);
+    if (temporalName && hasClockUnit(name) && !state.known.has(normalizedPath(fieldPath))) {
       state.findings.push(`${file}: temporal field path "${fieldPath}" is missing from the temporal catalogue`);
     }
     collectAuthoredFields(child, fieldPath, file, state);

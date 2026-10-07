@@ -74,7 +74,7 @@ const recipe = (components: RecipeDef['components'], qualities: RecipeDef['quali
   components,
 });
 const character = { skills: {}, knownRecipes: new Set(['fixture']) };
-const fixtureWorkstationRegistry = (workTimeBonus: number) => {
+const fixtureWorkstationRegistry = (workFactorBonus: number) => {
   const built = buildRegistry([
     ...inputs,
     {
@@ -86,7 +86,7 @@ const fixtureWorkstationRegistry = (workTimeBonus: number) => {
             name: 'Fixture bench',
             size: [1, 3, 1],
             color: '#ffffff',
-            workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workTimeBonus },
+            workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus },
           },
         ],
       },
@@ -153,14 +153,14 @@ describe('pure craft planner', () => {
   });
 
   it('subtracts the fixture workstation bonus from recipe work time', () => {
-    const workTimeBonus = 0.37;
-    const definitions = fixtureWorkstationRegistry(workTimeBonus);
+    const workFactorBonus = 0.37;
+    const definitions = fixtureWorkstationRegistry(workFactorBonus);
     const recipeWithStation = { ...recipe([[{ item: 'rag', count: 1 }]]), workstation: 'fixture_station' };
     const staged = stock([{ type: 'rag' }], definitions);
     staged.inventory.entities.add({ type: 'fixture_bench', pos: [3, 0, 0], size: [1, 3, 1], facing: 'n' });
     const reach = bindReach({ inventory: staged.inventory, position: [0, 0, 0], blockSize: 0.5 })();
     const result = planCraft(recipeWithStation, reach, character);
-    expect('plan' in result && result.plan.work).toBe(recipeWithStation.timeGameMinutes * (1 - workTimeBonus));
+    expect('plan' in result && result.plan.work).toBe(recipeWithStation.timeGameMinutes * (1 - workFactorBonus));
   });
 
   it('names the first understocked component group instead of reporting allocation competition', () => {

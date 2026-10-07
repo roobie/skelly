@@ -16,7 +16,6 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { options } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
-import { gameSecondsToMinutes } from '../src/core/time.ts';
 import { Simulation } from './simulationFixture.ts';
 
 const { registry } = buildRegistry(
@@ -67,7 +66,7 @@ describe('live craft commands', () => {
     r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
 
     expect(awards).toEqual(
-      Object.keys(recipe.skills).map((skill) => ({ skill, amount: gameSecondsToMinutes(recipe.timeGameMinutes) })),
+      Object.keys(recipe.skills).map((skill) => ({ skill, amount: recipe.timeGameMinutes / 60 })),
     );
   });
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   gameHours,
   gameMinutes,
+  gameSecondsToMinutes,
   gameToSimSeconds,
   gameToSimTimestamp,
   simMinutes,
@@ -15,6 +16,11 @@ describe('clock-branded time values', () => {
     expect(gameMinutes(2)).toBe(120);
     expect(gameHours(0.5)).toBe(1800);
     expect(simMinutes(0.25)).toBe(15);
+  });
+
+  it('converts Game seconds back to authored minutes without changing the value', () => {
+    const minutes = 37;
+    expect(gameSecondsToMinutes(gameMinutes(minutes))).toBe(minutes);
   });
 
   it('converts spans and instants through explicit clock operations', () => {

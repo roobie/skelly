@@ -24,14 +24,17 @@ describe('outer frame time planning', () => {
 
   it('sizes a live frame after a between-frame interruption drops active compression', () => {
     const sim = new Simulation({ seed: 1, bodyTuning: BODY_TUNING_FIXTURE });
-    sim.compression.active = true;
-    sim.compression.c = 30;
-    sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    expect(sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
+    expect(sim.compression.active).toBe(true);
+    advanceLiveFrame(sim, realSeconds(0.1));
+    expect(sim.compression.c).toBeGreaterThan(1);
 
+    sim.emit({ kind: 'interrupt', reason: 'test interruption' });
+    const before = sim.time;
     const advanced = advanceLiveFrame(sim, realSeconds(0.1));
 
     expect(advanced).toBeCloseTo(0.1, 12);
-    expect(sim.time).toBeCloseTo(0.1, 12);
+    expect(sim.time - before).toBeCloseTo(0.1, 12);
     expect(sim.compression.c).toBe(1);
   });
 });

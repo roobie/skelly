@@ -78,7 +78,7 @@ it('lists workstation components only when their furniture box is within two met
     name: 'Fixture station',
     size: [1, 3, 1],
     color: '#ffffff',
-    workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workTimeBonus: 0.2 },
+    workstation: { id: 'fixture_station', qualities: { sawing: 1 }, workFactorBonus: 0.2 },
   });
   const fixtureRegistry = { ...registry, furniture: fixtureFurniture };
   const inventory = new Inventory(fixtureRegistry);
@@ -101,7 +101,7 @@ it('lists workstation components only when their furniture box is within two met
       entity: near,
       id: 'fixture_station',
       qualities: { sawing: 1 },
-      workTimeBonus: 0.2,
+      workFactorBonus: 0.2,
     },
   ]);
 });

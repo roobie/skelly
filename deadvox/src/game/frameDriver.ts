@@ -33,7 +33,7 @@ const advanceStep = (sim: Simulation, simDt: SimSeconds, until: number | undefin
   return sim.frame(simDt, until);
 };
 
-/** Checks pending interruptions before either driver sizes and submits this frame's Sim step. */
+/** Checks pending interruptions before the live driver sizes and submits this frame's Sim step. */
 export const advanceLiveFrame = (
   sim: Simulation,
   elapsed: RealSeconds,

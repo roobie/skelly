@@ -56,7 +56,7 @@ describe('static reachability', () => {
     registry.furniture.get('crate')!.workstation = {
       id: 'fixture_station',
       qualities: Object.fromEntries([['fixture_sawing', 1]]),
-      workTimeBonus: 0.2,
+      workFactorBonus: 0.2,
     };
     const placed = checkReachability(registry, new Set(['fixture_recipe']));
     expect(placed.issues).toEqual([]);
@@ -212,7 +212,7 @@ describe('static reachability', () => {
       solid: false,
       loot: 'default',
       container: { pockets: [{ grid: [1, 1], handlingSimSeconds: simSeconds(1) }] },
-      workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workTimeBonus: 0.2 },
+      workstation: { id: 'placed_bench', qualities: { sawing: 1 }, workFactorBonus: 0.2 },
     });
     const shambler = registry.zombies.get('shambler')!;
     registry.zombies.set('shambler', { ...shambler, loot: 'wanderer' });
