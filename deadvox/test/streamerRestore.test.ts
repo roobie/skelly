@@ -71,6 +71,50 @@ it('reports real all-air arrivals and unloads so a padded top at 32 cannot retai
   expect(sky.at([2, 14.5, 2])).toBe(0);
 });
 
+it('reports only readiness transitions and snapshots the ready columns', () => {
+  vi.stubGlobal('Worker', QuietWorker);
+  const world = new World();
+  const scale = makeScale(0.5);
+  const meshes = { keys: () => [], set: vi.fn(), remove: vi.fn() };
+  const streamer = new Streamer({
+    world,
+    meshes: meshes as never,
+    seed: 17,
+    terrain: { grass: 1, dirt: 2, stone: 3, sand: 4 },
+    colors: new Uint8Array(256 * 4),
+    patterns: new Uint8Array(256),
+    scale,
+    structures: [],
+    radius: 0,
+  });
+  const observedReady = new Set<string>();
+  const changes: [number, number, boolean][] = [];
+  let consumed = 0;
+  streamer.onReadinessChange = (cx, cz, ready) => changes.push([cx, cz, ready]);
+  const reconcile = () => {
+    for (const [cx, cz, ready] of changes.slice(consumed)) {
+      const key = `${cx},${cz}`;
+      if (ready) {
+        observedReady.add(key);
+      } else {
+        observedReady.delete(key);
+      }
+    }
+    consumed = changes.length;
+    const snapshot = new Set(streamer.readyColumns().map(([cx, cz]) => `${cx},${cz}`));
+    expect(observedReady).toEqual(snapshot);
+  };
+
+  for (let attempt = 0; attempt < 32 && !streamer.isReady(0, 0); attempt += 1) {
+    streamer.update(0, 0);
+    reconcile();
+  }
+  expect(streamer.isReady(0, 0)).toBe(true);
+  streamer.update(20 * CHUNK, 20 * CHUNK);
+  reconcile();
+  expect(streamer.isReady(0, 0)).toBe(false);
+});
+
 describe('lazy restored world diffs', () => {
   it('turns a generated-base mismatch into a refusal callback instead of throwing from Streamer.update', () => {
     vi.stubGlobal('Worker', QuietWorker);

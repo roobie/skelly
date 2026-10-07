@@ -188,6 +188,8 @@ export interface SessionOptions {
   terrainFloor?: (x: number, z: number) => number;
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
+  /** Optional replayed terrain readiness used only to classify zombie tiers. */
+  zombieReady?: ((x: number, z: number) => boolean) | undefined;
   controls: SessionControls;
   audio: SessionAudio;
   /** A message that isn't an interruption, such as a completion notice. */
@@ -667,7 +669,7 @@ export const createSession = (options: SessionOptions) => {
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
-    isLoaded: options.ready,
+    isLoaded: options.zombieReady ?? options.ready,
     terrainFloor: options.terrainFloor,
     isSolid,
     isOpaque: options.isOpaque,

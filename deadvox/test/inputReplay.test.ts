@@ -12,6 +12,8 @@ import {
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayInputData,
+  type ReplayReadyColumn,
+  type ReplayReadinessUpdate,
   replayStateFingerprint,
   sampleFromReplayFrame,
   withReplayExportGuard,
@@ -49,12 +51,14 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 5,
+    schemaVersion: 6,
     endStateFingerprint: '0'.repeat(64),
     endSimTime: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
     frames: inputs.frames,
     actions: inputs.actions,
+    readyColumns: inputs.readyColumns,
+    readinessChanges: inputs.readinessChanges,
   });
 
 const dispatchWalkToggle = (
@@ -99,14 +103,25 @@ const recordActiveSession = (
   recorder: InputReplayRecorder,
   options: {
     ready?: (x: number, z: number) => boolean;
+    readiness?: {
+      initial: readonly ReplayReadyColumn[];
+      updatesAtTick: (tick: number) => readonly ReplayReadinessUpdate[];
+    };
     commands?: readonly { tick: number; context: 'inventory' | 'play'; payload: ReplayActionPayload }[];
     frameDts?: number[];
   } = {},
 ) => {
-  const { ready, commands = [], frameDts = [1 / 90, 1 / 60, 1 / 120] } = options;
+  const { ready, readiness, commands = [], frameDts = [1 / 90, 1 / 60, 1 / 120] } = options;
   const pendingCommands: ReplayActionPayload[] = [];
+  const readyColumns = new Set(readiness?.initial.map(([cx, cz]) => `${cx},${cz}`) ?? []);
+  const pendingReadiness = new Map<string, ReplayReadinessUpdate>();
   const source = createRuntime(start, false, undefined, {
     ...(ready ? { ready } : {}),
+    ...(readiness
+      ? {
+          zombieReady: (x, z) => readyColumns.has(`${toChunk(Math.floor(x))},${toChunk(Math.floor(z))}`),
+        }
+      : {}),
     sampleAtPlayerTick: (_tick, live, _time, compression) => {
       while (commands[nextCommand]?.tick === recorder.tickCount) {
         const { context, payload } = commands[nextCommand]!;
@@ -114,7 +129,9 @@ const recordActiveSession = (
         recorder.queueAction(payload.kind, 'down', context, payload);
         pendingCommands.push(payload);
       }
-      recorder.recordTick(live, compression);
+      const readinessChanges = [...pendingReadiness.values()];
+      pendingReadiness.clear();
+      recorder.recordTick(live, compression, readinessChanges);
       for (const payload of pendingCommands.splice(0)) {
         const reason = applyCommand(source, payload);
         if (reason) {
@@ -130,6 +147,15 @@ const recordActiveSession = (
   let sentUp = false;
   let nextCommand = 0;
   for (let frame = 0; recorder.tickCount < 96; frame += 1) {
+    for (const [cx, cz, isReady] of readiness?.updatesAtTick(recorder.tickCount) ?? []) {
+      const key = `${cx},${cz}`;
+      if (isReady) {
+        readyColumns.add(key);
+      } else {
+        readyColumns.delete(key);
+      }
+      pendingReadiness.set(key, [cx, cz, isReady]);
+    }
     if (!sentDown && recorder.tickCount >= 12) {
       dispatchWalkToggle(source, 'down', recorder);
       sentDown = true;
@@ -161,6 +187,10 @@ const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, end
     }
   });
   replay = createRuntime(start, false, undefined, {
+    zombieReady:
+      inputs.readyColumns.length > 0 || inputs.readinessChanges.length > 0
+        ? (x, z) => player.isReady(x, z)
+        : () => true,
     sampleAtPlayerTick: () => {
       const sample = player.next();
       if (!sample) {
@@ -181,6 +211,7 @@ const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, end
   });
   replay.sim.paused = false;
   for (let frame = 0; !player.finished; frame += 1) {
+    player.prepareReadinessForNextTick();
     replay.sim.compression.c = player.peek()?.compression ?? replay.sim.compression.c;
     replay.session.frameReplay(1 / 60);
     if (frame > inputs.frames.length + 24) {
@@ -275,11 +306,13 @@ describe('input replay', () => {
       context: 'play' as const,
     });
     const joined = joinInputReplayWindows(
-      { frames: [frame(0.1)], actions: [action(0)] },
-      { frames: [frame(0.2)], actions: [action(0)] },
+      { frames: [frame(0.1)], actions: [action(0)], readyColumns: [[1, 2]], readinessChanges: [] },
+      { frames: [frame(0.2)], actions: [action(0)], readyColumns: [[3, 4]], readinessChanges: [] },
     );
     expect(joined.frames).toEqual([frame(0.1), frame(0.2)]);
     expect(joined.actions.map(({ tick }) => tick)).toEqual([0, 1]);
+    expect(joined.readyColumns).toEqual([[1, 2]]);
+    expect(joined.readinessChanges).toEqual([[1, 1, 2, false], [1, 3, 4, true]]);
   });
 
   it('records whether the player column was ready at each player tick', () => {
@@ -290,6 +323,34 @@ describe('input replay', () => {
 
     expect(player.next()?.worldReady).toBe(true);
     expect(player.next()?.worldReady).toBe(false);
+  });
+
+  it('replays zombies when their column becomes ready at a recorded player tick', async () => {
+    const runtime = createRuntime();
+    const start = capture(runtime);
+    const firstZombie = runtime.zombies.store.entries().next().value?.[1];
+    if (!firstZombie) {
+      throw new Error('Replay fixture has no zombie');
+    }
+    const cx = toChunk(Math.floor(firstZombie.body.pos[0]));
+    const cz = toChunk(Math.floor(firstZombie.body.pos[2]));
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder, {
+      readiness: {
+        initial: [],
+        updatesAtTick: (tick) => (tick === 12 ? [[cx, cz, true]] : []),
+      },
+      frameDts: [1 / 60],
+    });
+    const inputs = recorder.copyInputs();
+    expect(inputs.readinessChanges).toContainEqual([12, cx, cz, true]);
+    const sourceEnd = capture(source);
+    const bytes = await encodeInputReplay(start, inputs, formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.readinessChanges).toContainEqual([12, cx, cz, true]);
+    const replay = playSession(start, decoded.inputs, sourceEnd.character.simulation.time);
+
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
   it('bounds the always-on recording window and retained buffers', () => {
@@ -332,6 +393,8 @@ describe('input replay', () => {
             payload: { kind: 'inventory.assign', slot: 0, itemUid: 0 },
           },
         ],
+        readyColumns: [],
+        readinessChanges: [],
       },
       formatWorldOptions,
       start,
@@ -550,6 +613,8 @@ describe('input replay', () => {
     const artifact = encodeFixtureReplay(startSave, {
       frames: [[0, 0, 0, 0, 1, 1]],
       actions: [],
+      readyColumns: [],
+      readinessChanges: [],
     });
     await expect(decodeInputReplay(artifact, { contentLookup })).rejects.toThrow(INCOMPATIBLE_SAVE);
   });

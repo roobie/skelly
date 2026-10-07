@@ -72,6 +72,8 @@ export class Streamer {
   onColumn: (cx: number, cz: number) => void = () => undefined;
   /** Called when a generated column leaves the streaming set. */
   onColumnUnload: (cx: number, cz: number) => void = () => undefined;
+  /** Called when a column's 3×3 generated-neighbour readiness changes. */
+  onReadinessChange: (cx: number, cz: number, ready: boolean) => void = () => undefined;
   /** Every added/unloaded data chunk, including all-air chunks that never get meshed. */
   onDataChange?: (origin: Vec3) => void;
   /** Handles a deterministic generation failure such as an unreadable restored chunk diff. */
@@ -106,6 +108,26 @@ export class Streamer {
   /** True once the player's column and its neighbours exist, so physics has ground to stand on. */
   isReady(x: number, z: number): boolean {
     return this.neighboursGenerated(toChunk(Math.floor(x)), toChunk(Math.floor(z)));
+  }
+
+  /** Ready column coordinates at the recording boundary. */
+  readyColumns(): [number, number][] {
+    const candidates = new Set<string>();
+    for (const column of this.generated) {
+      const [cx, cz] = column.split(',').map(Number) as [number, number];
+      for (let dz = -1; dz <= 1; dz++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const readyCx = cx + dx;
+          const readyCz = cz + dz;
+          if (this.neighboursGenerated(readyCx, readyCz)) {
+            candidates.add(`${readyCx},${readyCz}`);
+          }
+        }
+      }
+    }
+    return [...candidates]
+      .map((key) => key.split(',').map(Number) as [number, number])
+      .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
   }
 
   /**
@@ -211,13 +233,43 @@ export class Streamer {
           this.versions.delete(key);
         }
       }
+      const readyBeforeUnload = this.readyCentersAround(cx, cz);
       this.generated.delete(col);
+      this.reportReadinessChanges(cx, cz, readyBeforeUnload);
       this.onColumnUnload(cx, cz);
     }
   }
 
   private inRange(cx: number, cz: number): boolean {
     return Math.max(Math.abs(cx - this.center[0]), Math.abs(cz - this.center[1])) <= this.opts.radius + 1;
+  }
+
+  private readyCentersAround(cx: number, cz: number): Set<string> {
+    const ready = new Set<string>();
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const readyCx = cx + dx;
+        const readyCz = cz + dz;
+        if (this.neighboursGenerated(readyCx, readyCz)) {
+          ready.add(`${readyCx},${readyCz}`);
+        }
+      }
+    }
+    return ready;
+  }
+
+  private reportReadinessChanges(cx: number, cz: number, before: ReadonlySet<string>): void {
+    for (let dz = -1; dz <= 1; dz++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const readyCx = cx + dx;
+        const readyCz = cz + dz;
+        const key = `${readyCx},${readyCz}`;
+        const ready = this.neighboursGenerated(readyCx, readyCz);
+        if (before.has(key) !== ready) {
+          this.onReadinessChange(readyCx, readyCz, ready);
+        }
+      }
+    }
   }
 
   private neighboursGenerated(cx: number, cz: number): boolean {
@@ -255,7 +307,9 @@ export class Streamer {
           this.dirty.add(chunkKey(chunk.cx, chunk.cy, chunk.cz));
         }
       }
+      const readyBeforeGeneration = this.readyCentersAround(cx, cz);
       this.generated.add(col);
+      this.reportReadinessChanges(cx, cz, readyBeforeGeneration);
       this.onColumn(cx, cz);
       return true;
     } catch (error) {

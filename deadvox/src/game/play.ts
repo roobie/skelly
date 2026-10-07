@@ -79,6 +79,8 @@ import {
   type ReplayAction,
   type ReplayControlSample,
   type ReplayInputData,
+  type ReplayReadyColumn,
+  type ReplayReadinessUpdate,
   replayStateFingerprint,
   stashInputReplay,
   withReplayExportGuard,
@@ -108,6 +110,7 @@ import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+const EMPTY_REPLAY_READINESS_UPDATES: readonly ReplayReadinessUpdate[] = [];
 /** Metres: how far away you can open a door or search a container you're looking at. */
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -185,11 +188,12 @@ const createInputReplayPlayer = (
 const createInputReplayRecorder = (
   replaying: boolean,
   snapshot: () => Readonly<SaveSnapshot>,
+  readyColumns: readonly ReplayReadyColumn[],
 ): InputReplayRecorder | undefined => {
   if (replaying) {
     return undefined;
   }
-  return new InputReplayRecorder(snapshot());
+  return new InputReplayRecorder(snapshot(), undefined, readyColumns);
 };
 
 const handlingPresentationFor = (
@@ -278,6 +282,15 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
+  const pendingReadinessChanges = new Map<string, ReplayReadinessUpdate>();
+  const takeReadinessChanges = (): readonly ReplayReadinessUpdate[] => {
+    if (pendingReadinessChanges.size === 0) {
+      return EMPTY_REPLAY_READINESS_UPDATES;
+    }
+    const changes = [...pendingReadinessChanges.values()];
+    pendingReadinessChanges.clear();
+    return changes;
+  };
   let pendingScreenCommands: ReplayActionPayload[] = [];
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
@@ -294,7 +307,7 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      inputRecorder?.recordTick(live, compressionAtTick);
+      inputRecorder?.recordTick(live, compressionAtTick, takeReadinessChanges());
       const commands = pendingScreenCommands;
       pendingScreenCommands = [];
       for (const payload of commands) {
@@ -379,6 +392,7 @@ export const startPlay = (
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
+    zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
     controls: {
       active: () => Boolean(options.replay) || (input.locked && !input.menuPointer),
       intent: () => input.intent(),
@@ -547,6 +561,11 @@ export const startPlay = (
     }
   };
   streamer.onColumnUnload = (cx, cz) => session.onColumnUnload(cx, cz);
+  streamer.onReadinessChange = (cx, cz, ready) => {
+    if (inputRecorder) {
+      pendingReadinessChanges.set(`${cx},${cz}`, [cx, cz, ready]);
+    }
+  };
   const view = createPlayView(engine, inventory, (message) => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
@@ -2129,6 +2148,7 @@ export const startPlay = (
     if (sim.paused || !replayPlayer) {
       return;
     }
+    replayPlayer.prepareReadinessForNextTick();
     sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
     session.frameReplay(1 / 60);
     if (replayPlayer.finished) {
@@ -2157,7 +2177,8 @@ export const startPlay = (
     }
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
-      inputRecorder = new InputReplayRecorder(captureSnapshot());
+      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.readyColumns());
+      pendingReadinessChanges.clear();
     }
     stepFrozenNoclip(dt, gameFrozen && !menuPaused);
     return gameFrozen;
@@ -2313,7 +2334,7 @@ export const startPlay = (
       { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   }
-  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot);
+  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.readyColumns());
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));

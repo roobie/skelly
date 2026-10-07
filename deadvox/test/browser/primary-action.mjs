@@ -170,6 +170,7 @@ const observationPlugin = {
     keyboardInput,
     inventory,
     session,
+    streamer,
     survival,
     debugTools,
     engine,
@@ -280,7 +281,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=testHouse&radius=64&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=hamlet&radius=128&time=12:00&post=0&sunshadow=0&torchshadow=0`,
         renderOverride,
       ),
     );
@@ -310,6 +311,13 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert.notEqual(moved.yaw, start.yaw, 'the recording includes real mouse yaw');
     assert.notEqual(moved.pitch, start.pitch, 'the recording includes real mouse pitch');
     assert.notDeepEqual(moved.position, start.position, 'the recording includes player movement');
+    const zombieNearStreamEdge = await page.evaluate(() => {
+      const { session, streamer } = globalThis.primaryActionTest;
+      return [...session.zombies.store.entries()].some(([, zombie]) =>
+        !streamer.isReady(zombie.body.pos[0], zombie.body.pos[2]),
+      );
+    });
+    assert(zombieNearStreamEdge, 'the clean recording starts with a zombie in an unready stream-edge column');
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
@@ -352,6 +360,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
       return fetch(link.href).then((response) => response.text());
     });
     const cleanArtifact = JSON.parse(replayText);
+    assert(cleanArtifact.readinessChanges.length > 0, 'the clean recording captures streamed-column readiness');
     assert(
       cleanArtifact.actions.some(
         ({ action, payload }) =>

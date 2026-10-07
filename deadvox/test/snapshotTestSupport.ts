@@ -120,6 +120,7 @@ export function createRuntime(
     active?: boolean;
     intent?: () => MoveIntent;
     ready?: (x: number, z: number) => boolean;
+    zombieReady?: (x: number, z: number) => boolean;
     sampleAtPlayerTick?: (
       tick: number,
       live: PlayerInputSample,
@@ -184,6 +185,7 @@ export function createRuntime(
     start: options.start ?? defaultClock.start,
     spawn,
     ready: options.ready ?? (() => true),
+    ...(options.zombieReady ? { zombieReady: options.zombieReady } : {}),
     controls: {
       active: () => options.active ?? Boolean(sampleAtPlayerTick),
       intent: options.intent ?? (() => view.intent),

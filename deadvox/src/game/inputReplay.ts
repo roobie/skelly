@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 5;
+const INPUT_REPLAY_SCHEMA_VERSION = 6;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -22,6 +22,8 @@ const INPUT_REPLAY_TICKS_PER_FRAME = Math.ceil(SKIP_COMPRESSION.maxSimPerFrame *
 const INPUT_REPLAY_MAX_TICKS = INPUT_REPLAY_TICKS_PER_WINDOW * 2 + INPUT_REPLAY_TICKS_PER_FRAME;
 const INPUT_REPLAY_ACTIONS_PER_WINDOW = 8192;
 const INPUT_REPLAY_MAX_ACTIONS = INPUT_REPLAY_ACTIONS_PER_WINDOW * 2;
+const INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW = 32_768;
+const INPUT_REPLAY_MAX_READY_COLUMNS = 4096;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
@@ -121,9 +123,16 @@ export type ReplayFrame = readonly [
   compression: number,
 ];
 
+export type ReplayReadyColumn = readonly [cx: number, cz: number];
+export type ReplayReadinessUpdate = readonly [cx: number, cz: number, ready: boolean];
+export type ReplayReadinessChange = readonly [tick: number, cx: number, cz: number, ready: boolean];
+const NO_READINESS_UPDATES: readonly ReplayReadinessUpdate[] = [];
+
 export interface ReplayInputData {
   readonly frames: readonly ReplayFrame[];
   readonly actions: readonly ReplayAction[];
+  readonly readyColumns: readonly ReplayReadyColumn[];
+  readonly readinessChanges: readonly ReplayReadinessChange[];
 }
 
 export interface DecodedInputReplay {
@@ -140,6 +149,8 @@ interface ReplayWire {
   startSave: string;
   frames: ReplayFrame[];
   actions: ReplayAction[];
+  readyColumns: ReplayReadyColumn[];
+  readinessChanges: ReplayReadinessChange[];
   endStateFingerprint: string;
   endSimTime: number;
 }
@@ -210,6 +221,22 @@ const hasValidActionPayload = (action: string, candidate: Record<string, unknown
   }
   return !hasPayload || (isReplayActionPayload(candidate.payload) && candidate.payload.kind === action);
 };
+
+const isReplayReadyColumn = (candidate: unknown): candidate is ReplayReadyColumn =>
+  Array.isArray(candidate) &&
+  candidate.length === 2 &&
+  Number.isSafeInteger(candidate[0]) &&
+  Number.isSafeInteger(candidate[1]);
+
+const isReplayReadinessChange = (candidate: unknown, lastTick: number, frameCount: number): candidate is ReplayReadinessChange =>
+  Array.isArray(candidate) &&
+  candidate.length === 4 &&
+  Number.isSafeInteger(candidate[0]) &&
+  candidate[0] >= lastTick &&
+  candidate[0] < frameCount &&
+  Number.isSafeInteger(candidate[1]) &&
+  Number.isSafeInteger(candidate[2]) &&
+  typeof candidate[3] === 'boolean';
 
 const isReplayActionRecord = (
   candidate: unknown,
@@ -296,9 +323,15 @@ export class InputReplayRecorder {
   private batchStartedAt = 0;
   private readonly batchCosts: Float32Array = new Float32Array(120);
   private completedBatches = 0;
+  private readonly readinessChanges: ReplayReadinessChange[] = [];
   readonly startSnapshot: Readonly<SaveSnapshot>;
+  readonly readyColumns: readonly ReplayReadyColumn[];
 
-  constructor(startSnapshot: Readonly<SaveSnapshot>, ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW) {
+  constructor(
+    startSnapshot: Readonly<SaveSnapshot>,
+    ticksPerWindow = INPUT_REPLAY_TICKS_PER_WINDOW,
+    readyColumns: readonly ReplayReadyColumn[] = [],
+  ) {
     this.ticksPerWindow = ticksPerWindow;
     if (!Number.isSafeInteger(ticksPerWindow) || ticksPerWindow < 1 || ticksPerWindow > INPUT_REPLAY_TICKS_PER_WINDOW) {
       throw new Error('Invalid input replay window size');
@@ -308,6 +341,23 @@ export class InputReplayRecorder {
     this.compression = new Float64Array(this.bufferTicks);
     this.movement = new Int8Array(this.bufferTicks * 2);
     this.flags = new Uint16Array(this.bufferTicks);
+    if (readyColumns.length > INPUT_REPLAY_MAX_READY_COLUMNS) {
+      throw new Error('Input replay has too many initially ready columns');
+    }
+    const seenReadyColumns = new Set<string>();
+    this.readyColumns = readyColumns
+      .map(([cx, cz]) => {
+        if (!Number.isSafeInteger(cx) || !Number.isSafeInteger(cz)) {
+          throw new Error('Input replay readiness coordinates must be safe integers');
+        }
+        const key = `${cx},${cz}`;
+        if (seenReadyColumns.has(key)) {
+          throw new Error(`Input replay repeats an initially ready column ${key}`);
+        }
+        seenReadyColumns.add(key);
+        return [cx, cz] as const;
+      })
+      .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
     this.startSnapshot = structuredClone(startSnapshot);
   }
 
@@ -318,7 +368,8 @@ export class InputReplayRecorder {
   get full(): boolean {
     return (
       this.frameCount >= this.ticksPerWindow ||
-      this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
+      this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW ||
+      this.readinessChanges.length >= INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW
     );
   }
 
@@ -334,6 +385,8 @@ export class InputReplayRecorder {
       this.actionContexts.byteLength +
       this.actionValues.byteLength +
       this.actionPayloadBytes * 2 +
+      this.readyColumns.length * 16 +
+      this.readinessChanges.length * 32 +
       this.batchCosts.byteLength
     );
   }
@@ -370,9 +423,22 @@ export class InputReplayRecorder {
     });
   }
 
-  recordTick(sample: Omit<ReplayControlSample, 'compression'>, compression = 1): void {
+  recordTick(
+    sample: Omit<ReplayControlSample, 'compression'>,
+    compression = 1,
+    readinessUpdates: readonly ReplayReadinessUpdate[] = NO_READINESS_UPDATES,
+  ): void {
     if (this.frameCount >= this.bufferTicks) {
       throw new Error('Input replay tick buffer is full');
+    }
+    if (this.readinessChanges.length + readinessUpdates.length > INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW) {
+      throw new Error('Input replay readiness changes exceed the recording window');
+    }
+    for (const [cx, cz, ready] of readinessUpdates) {
+      if (!Number.isSafeInteger(cx) || !Number.isSafeInteger(cz) || typeof ready !== 'boolean') {
+        throw new Error('Invalid input replay readiness change');
+      }
+      this.readinessChanges.push([this.frameCount, cx, cz, ready]);
     }
     if (this.frameCount % 60 === 0) {
       this.batchStartedAt = performance.now();
@@ -425,7 +491,12 @@ export class InputReplayRecorder {
         ? {}
         : { payload: JSON.parse(this.actionPayloads[index]!) as ReplayActionPayload }),
     }));
-    return { frames, actions };
+    return {
+      frames,
+      actions,
+      readyColumns: this.readyColumns.map(([cx, cz]) => [cx, cz]),
+      readinessChanges: this.readinessChanges.map(([tick, cx, cz, ready]) => [tick, cx, cz, ready]),
+    };
   }
 
   timing(): { readonly samples: number; readonly meanMs: number; readonly p95Ms: number; readonly maxMs: number } {
@@ -456,10 +527,55 @@ export function joinInputReplayWindows(
     ...previous.actions,
     ...current.actions.map((action) => ({ ...action, tick: action.tick + offset })),
   ];
-  if (frames.length > INPUT_REPLAY_MAX_TICKS || actions.length > INPUT_REPLAY_MAX_ACTIONS) {
+  const ready = new Set(previous.readyColumns.map(([cx, cz]) => `${cx},${cz}`));
+  for (const [, cx, cz, isReady] of previous.readinessChanges) {
+    const key = `${cx},${cz}`;
+    if (isReady) {
+      ready.add(key);
+    } else {
+      ready.delete(key);
+    }
+  }
+  const nextReady = new Set(current.readyColumns.map(([cx, cz]) => `${cx},${cz}`));
+  for (const [tick, cx, cz, isReady] of current.readinessChanges) {
+    if (tick !== 0) {
+      continue;
+    }
+    const key = `${cx},${cz}`;
+    if (isReady) {
+      nextReady.add(key);
+    } else {
+      nextReady.delete(key);
+    }
+  }
+  const seamChanges: ReplayReadinessChange[] = [];
+  for (const key of [...ready].sort()) {
+    if (!nextReady.has(key)) {
+      const [cx, cz] = key.split(',').map(Number) as [number, number];
+      seamChanges.push([offset, cx, cz, false]);
+    }
+  }
+  for (const key of [...nextReady].sort()) {
+    if (!ready.has(key)) {
+      const [cx, cz] = key.split(',').map(Number) as [number, number];
+      seamChanges.push([offset, cx, cz, true]);
+    }
+  }
+  const readinessChanges = [
+    ...previous.readinessChanges,
+    ...seamChanges,
+    ...current.readinessChanges
+      .filter(([tick]) => tick > 0)
+      .map(([tick, cx, cz, isReady]) => [tick + offset, cx, cz, isReady] as const),
+  ];
+  if (
+    frames.length > INPUT_REPLAY_MAX_TICKS ||
+    actions.length > INPUT_REPLAY_MAX_ACTIONS ||
+    readinessChanges.length > INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW * 2 + INPUT_REPLAY_MAX_READY_COLUMNS * 2
+  ) {
     throw new Error('Combined replay windows exceed the supported recording bounds');
   }
-  return { frames, actions };
+  return { frames, actions, readyColumns: previous.readyColumns, readinessChanges };
 }
 
 export function stashInputReplay(bytes: Uint8Array): void {
@@ -531,6 +647,8 @@ export async function encodeInputReplay(
     startSave: encodeBase64(startSave),
     frames: inputs.frames.map((frame) => [...frame] as ReplayFrame),
     actions: inputs.actions.map((action) => ({ ...action })),
+    readyColumns: inputs.readyColumns.map(([cx, cz]) => [cx, cz]),
+    readinessChanges: inputs.readinessChanges.map(([tick, cx, cz, ready]) => [tick, cx, cz, ready]),
     endStateFingerprint: await replayStateFingerprint(endSnapshot),
     endSimTime: endSnapshot.character.simulation.time,
   };
@@ -564,6 +682,8 @@ export async function decodeInputReplay(
     typeof value.startSave !== 'string' ||
     !Array.isArray(value.frames) ||
     !Array.isArray(value.actions) ||
+    !Array.isArray(value.readyColumns) ||
+    !Array.isArray(value.readinessChanges) ||
     typeof value.endStateFingerprint !== 'string' ||
     !FINGERPRINT_PATTERN.test(value.endStateFingerprint) ||
     typeof value.endSimTime !== 'number' ||
@@ -577,6 +697,12 @@ export async function decodeInputReplay(
   }
   if (value.actions.length > INPUT_REPLAY_MAX_ACTIONS) {
     throw new Error('Replay input sequence has too many actions');
+  }
+  if (
+    value.readyColumns.length > INPUT_REPLAY_MAX_READY_COLUMNS ||
+    value.readinessChanges.length > INPUT_REPLAY_MAX_READINESS_CHANGES_PER_WINDOW * 2 + INPUT_REPLAY_MAX_READY_COLUMNS * 2
+  ) {
+    throw new Error('Replay input sequence has too many column readiness entries');
   }
   if (new TextDecoder().decode(canonicalJsonBytes(value)) !== text) {
     throw new Error('Replay encoding is not canonical');
@@ -607,6 +733,31 @@ export async function decodeInputReplay(
       candidate[5] as number,
     ];
   });
+  const readyColumns: ReplayReadyColumn[] = value.readyColumns.map((candidate, index) => {
+    if (!isReplayReadyColumn(candidate)) {
+      throw new Error(`Invalid replay ready column ${index}`);
+    }
+    return [candidate[0], candidate[1]];
+  });
+  const readyColumnKeys = new Set(readyColumns.map(([cx, cz]) => `${cx},${cz}`));
+  if (readyColumnKeys.size !== readyColumns.length) {
+    throw new Error('Replay repeats an initially ready column');
+  }
+  let lastReadinessTick = -1;
+  const seenReadinessChanges = new Set<string>();
+  const readinessChanges: ReplayReadinessChange[] = value.readinessChanges.map((candidate, index) => {
+    if (!isReplayReadinessChange(candidate, lastReadinessTick, frames.length)) {
+      throw new Error(`Invalid or out-of-order replay readiness change ${index}`);
+    }
+    const [tick, cx, cz, ready] = candidate;
+    const key = `${tick}:${cx},${cz}`;
+    if (seenReadinessChanges.has(key)) {
+      throw new Error(`Replay repeats readiness change ${key}`);
+    }
+    seenReadinessChanges.add(key);
+    lastReadinessTick = tick;
+    return [tick, cx, cz, ready];
+  });
   let lastTick = -1;
   let actionPayloadBytes = 0;
   const actions: ReplayAction[] = value.actions.map((candidate, index) => {
@@ -634,7 +785,7 @@ export async function decodeInputReplay(
   return {
     snapshot: decoded.snapshot,
     worldOptions: decoded.worldOptions,
-    inputs: { frames, actions },
+    inputs: { frames, actions, readyColumns, readinessChanges },
     endStateFingerprint: value.endStateFingerprint,
     endSimTime: value.endSimTime,
   };

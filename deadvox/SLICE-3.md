@@ -373,6 +373,8 @@ At d101-4, replay samples also preserve whether the source world was ready under
 
 Implementation is in `src/game/inputReplay.ts`, `InputReplayRecorder`; inventory and crafting commands converge on `applyReplayActionPayload` in `src/game/replayCommands.ts`, wired by `startPlay` in `src/game/play.ts`. The player-facing rationale is in [CONTROLS.md](CONTROLS.md).
 
+Zombie readiness replay now uses `src/game/streamer.ts`, `Streamer.onReadinessChange` to record transitions and `Streamer.readyColumns` to seed each recording window; replay zombie tiering reads that recorded set through `src/game/session.ts`, `createSession`, rather than consulting live streaming. In a two-hour profile with 64 starting ready columns and 120 transitions, the readiness data added 3,062 serialized bytes and 4,864 bytes to the recorder's retained-buffer estimate, about 2.4% over the same replay without those fields. Paired recorder timings did not distinguish an added per-tick cost from timer noise; keep host-specific timing values out of tracked docs under this slice's test-budget rule.
+
 ### 3.11 Authored playtest map and playtest
 
 **BR, 2026-10-06 12:31:** “can we continue on the authored playtest map meanwhile?”
