@@ -169,6 +169,35 @@ export const magazineMotion = (elapsed: number, duration: number, removeShare: n
   return { incoming: 1 - smooth((progress - removeShare) / (1 - removeShare)), reach };
 };
 
+/** Presentation: the share of the pull spent getting the off hand onto the charging handle. */
+const RACK_REACH_SHARE = 0.3;
+
+/**
+ * The off hand through a hand cycle, from the cycle's own timing: it takes the handle as the pull starts, rides it
+ * back and holds it, then lets go and returns while the handle snaps forward. `stroke` is where along the handle's
+ * travel the hand is, which stays rearmost once it has let go.
+ */
+export const rackGrip = (
+  action: FirearmAction,
+  elapsed: number,
+  duration?: number,
+): { reach: number; stroke: number } => {
+  const cycle = action.hand;
+  const time = (elapsed * cycle.durationSimSeconds) / (duration ?? actionCycleSeconds(action, 'hand'));
+  if (!(time >= 0 && time < cycle.durationSimSeconds)) {
+    return { reach: 0, stroke: 0 };
+  }
+  const release = cycle.rearwardSimSeconds + cycle.dwellSimSeconds;
+  const share = (part: number, whole: number): number => (whole > 0 ? Math.min(1, part / whole) : 1);
+  return {
+    reach:
+      time < release
+        ? smooth(share(time, RACK_REACH_SHARE * cycle.rearwardSimSeconds))
+        : 1 - smooth(share(time - release, cycle.forwardSimSeconds)),
+    stroke: share(time, cycle.rearwardSimSeconds),
+  };
+};
+
 /** Presentation estimate: bound the geometry-derived turn while exposing an away-facing port. */
 const MAX_RACK_CANT_RADIANS = Math.PI / 4;
 

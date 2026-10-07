@@ -6,6 +6,7 @@
 // without a model (or whose model hasn't loaded) is a plain box sized from its cells.
 
 import {
+  Box3,
   BoxGeometry,
   type BufferGeometry,
   ConeGeometry,
@@ -46,6 +47,7 @@ import {
   magazineMotion,
   poseActionParts,
   rackCant,
+  rackGrip,
   sampleActionStroke,
 } from './firearmModel.ts';
 import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
@@ -57,6 +59,10 @@ import type { SkyTargets } from './sky.ts';
 /** Metres per grid cell for the stand-in box. */
 const CELL = 0.06;
 const TORSO_Y_AXIS = new Vector3(0, 1, 0);
+/** Presentation: how far a gun turns, muzzle in and up and rolled, so a magazine change or a rack is seen. */
+const PRESENT_YAW_RADIANS = 0.45;
+const PRESENT_ROLL_RADIANS = 0.5;
+const PRESENT_PITCH_RADIANS = 0.2;
 
 export interface HeldFirearmPose {
   readonly uid: number;
@@ -65,6 +71,12 @@ export interface HeldFirearmPose {
   readonly duration?: number;
   readonly roundType?: string;
   readonly magazine?: { readonly removeShare: number; readonly incoming?: string };
+}
+
+/** A world point the off hand reaches for, and how far it has gone from its grip there. */
+interface OffHandGrip {
+  readonly point: Vector3;
+  readonly reach: number;
 }
 
 interface HeldReadiness {
@@ -327,7 +339,15 @@ export class HeldItems {
     const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
     this.poseAim(item, readyAim);
-    this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch, 0, cant, 'YXZ'));
+    const shown = this.handlingPresentation(item, frame) * (side === 'right' ? 1 : -1);
+    this.rackRotation.setFromEuler(
+      this.poseEuler.set(
+        loweredPitch + Math.abs(shown) * PRESENT_PITCH_RADIANS,
+        shown * PRESENT_YAW_RADIANS,
+        cant - shown * PRESENT_ROLL_RADIANS,
+        'YXZ',
+      ),
+    );
     this.poseRotation.multiply(this.rackRotation);
     const strength = Math.max(0, Math.min(1, recoil));
     transform.offset[1] += 0.012 * strength;
@@ -501,6 +521,21 @@ export class HeldItems {
     this.opticWindow.visible = true;
   }
 
+  /**
+   * How far a magazine job or a rifle's rack turns the gun to show the hands at work, 0 to 1, from the job alone. The
+   * pump turns its own port instead (`rackCant`).
+   */
+  private handlingPresentation(item: Item | undefined, frame: HeldFirearmPose | undefined): number {
+    if (!(item && frame) || this.pumpModels.has(item.uid)) {
+      return 0;
+    }
+    if (frame.mode === 'magazine' && frame.magazine && frame.duration !== undefined) {
+      return magazineMotion(frame.elapsed, frame.duration, frame.magazine.removeShare).reach;
+    }
+    const action = frame.mode === 'hand' ? this.firearmParts.get(item.uid)?.action : undefined;
+    return action ? rackGrip(action, frame.elapsed, frame.duration).reach : 0;
+  }
+
   private poseAim(item: Item | undefined, aim: AimFrame | undefined): void {
     if (!(item && aim && defOf(this.inventory.registry, item.type).firearm)) {
       return;
@@ -516,16 +551,41 @@ export class HeldItems {
       const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed, frame.duration) : 0;
       poseActionParts(parts, mode, stroke);
       this.updatePump(uid, frame, stroke);
-      this.poseMagazine(uid, frame);
+      const held = this.shown.get(uid);
+      if (held && !this.pumpModels.has(uid)) {
+        const magazineGrip = this.poseMagazine(uid, frame);
+        this.reachOffHand(uid, held, mode === 'hand' ? this.rackHandGrip(held, action, parts, frame!) : magazineGrip);
+      }
     }
   }
 
-  /** Plays a magazine job on the held gun: the fitted one leaves the well, the new one seats, the off hand helps. */
-  private poseMagazine(uid: number, frame: HeldFirearmPose | undefined): void {
+  /** Where the off hand holds the charging handle through a hand cycle: on its middle, rearmost once it lets go. */
+  private rackHandGrip(
+    held: Object3D,
+    action: FirearmAction,
+    parts: readonly HeldActionPart[],
+    frame: HeldFirearmPose,
+  ): OffHandGrip | undefined {
+    // A handle of its own moves only by hand; otherwise the hand works the carrier, as on an AK.
+    const handle =
+      parts.find((part) => !part.modes.includes('fire')) ?? parts.find((part) => part.modes.includes('hand'));
+    const { reach, stroke } = rackGrip(action, frame.elapsed, frame.duration);
+    const parent = handle?.node.parent;
+    if (!(handle && parent && reach > 0)) {
+      return undefined;
+    }
+    held.updateMatrixWorld(true);
+    const middle = new Box3().setFromObject(handle.node).getCenter(new Vector3());
+    const now = parent.localToWorld(handle.node.position.clone());
+    const gripped = parent.localToWorld(handle.rest.clone().addScaledVector(handle.travel, stroke));
+    return { point: middle.add(gripped.sub(now)), reach };
+  }
+
+  /** Plays a magazine job on the held gun: the fitted one leaves the well, the new one seats; returns the hand's grip. */
+  private poseMagazine(uid: number, frame: HeldFirearmPose | undefined): OffHandGrip | undefined {
     const slot = this.magazineSlots.get(uid);
-    const held = this.shown.get(uid);
-    if (!(slot && held)) {
-      return;
+    if (!slot) {
+      return undefined;
     }
     const motion =
       frame?.mode === 'magazine' && frame.magazine && frame.duration !== undefined
@@ -545,7 +605,12 @@ export class HeldItems {
       this.placeMagazine(incoming, motion!.incoming!);
     }
     const moving = motion?.outgoing === undefined ? incoming : fitted;
-    this.reachForMagazine(uid, held, moving, motion?.reach ?? 0);
+    const bounds = moving && this.models?.partBounds(moving.model);
+    if (!(moving && bounds && motion && motion.reach > 0)) {
+      return undefined;
+    }
+    moving.object.updateWorldMatrix(true, false);
+    return { point: moving.object.localToWorld(bounds.getCenter(new Vector3())), reach: motion.reach };
   }
 
   /** Slides a magazine out of its well along the slot's down axis by its own height, so it just clears. */
@@ -577,13 +642,8 @@ export class HeldItems {
     return entry;
   }
 
-  /** Moves the off hand from its grip to the moving magazine's middle while a magazine job plays. */
-  private reachForMagazine(
-    uid: number,
-    held: Object3D,
-    magazine: { object: Object3D; model: string } | undefined,
-    reach: number,
-  ): void {
+  /** Moves a two-handed gun's off hand from its grip toward `grip`, or back onto its grip without one. */
+  private reachOffHand(uid: number, held: Object3D, grip: OffHandGrip | undefined): void {
     const side = this.inventory.hands.right?.uid === uid ? 'left' : 'right';
     const arm = this.arms.get(side);
     const base = this.handBases.get(side);
@@ -591,13 +651,10 @@ export class HeldItems {
       return;
     }
     arm.position.set(...base);
-    const bounds = magazine && this.models?.partBounds(magazine.model);
-    if (!(magazine && bounds && reach > 0)) {
-      return;
+    if (grip) {
+      held.updateMatrixWorld(true);
+      arm.position.lerp(held.worldToLocal(grip.point.clone()), grip.reach);
     }
-    held.updateMatrixWorld(true);
-    const grip = held.worldToLocal(magazine.object.localToWorld(bounds.getCenter(new Vector3())));
-    arm.position.lerp(grip, reach);
   }
 
   private updatePump(uid: number, frame: HeldFirearmPose | undefined, stroke: number): void {
