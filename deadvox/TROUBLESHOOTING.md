@@ -5,6 +5,7 @@ read_if:
   - you need to see the game without a display
   - a browser contract or stage fails on software GL
   - you investigate native inventory selection or keyboard settlement in browser tests
+  - you're authoring a browser stage that checks a frame-applied effect
   - you're authoring or exporting a Deadvox site in Tiled
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
@@ -138,7 +139,9 @@ boundaries. A selection wait must compare the same empty representation as its
 pre-key sample, or it can declare success before any row is selected. See
 `test/browser/inventory-selection.ts`, `inventorySelectionChanged`, and
 `test/inventorySelectionWait.test.ts` for the missing-row regression. Wait for
-an observed UID change, not elapsed wall time or an injected selection.
+an observed UID change, not elapsed wall time or an injected selection. Debug
+toggles apply on the next frame; in a browser stage, use `pressAction`, wait for
+the effect, and only then assert.
 
 ## Render-free browser logic stages
 
