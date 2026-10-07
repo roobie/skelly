@@ -775,7 +775,7 @@ try {
     assert.deepEqual(after.swings, before.swings, 'light use never starts melee');
     assert.ok(after.stamina >= before.stamina, 'light use does not spend melee stamina');
   };
-  const attemptDuringHandling = async (actionSide, reservedHand, useMouse5 = false) => {
+  const attemptDuringHandling = async (actionSide, reservedHand, useMouse5 = false, tryThrow = false) => {
     await page.waitForFunction(() => {
       const combat = globalThis.primaryActionTest.session.playerCombat;
       return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
@@ -807,6 +807,12 @@ try {
         r.quickbarActions.hold(incoming);
         const expectedReason = r.getNotice();
         r.clearNotice();
+        let throwAttempt;
+        if (tryThrow) {
+          r.beginItemThrow();
+          throwAttempt = { charging: r.isChargingItemThrow(), reason: r.getNotice() };
+          r.clearNotice();
+        }
         if (forwardButton) {
           document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
         } else {
@@ -824,6 +830,7 @@ try {
           after,
           expectedReason,
           actualReason: r.getNotice(),
+          throwAttempt,
         };
         r.session.queue.cancel();
         ensure(r.inventory.consume(incoming, incoming.count), 'Could not remove busy-primary fixture item');
@@ -1295,6 +1302,118 @@ try {
   assert.equal(landedFirearm.locationKind, 'pile', 'the loaded firearm lands in a pile');
   assert.equal(landedFirearm.sameInstance, true, 'throw moves the same firearm instance');
   assert.deepEqual(landedFirearm.firearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
+  const rifleFixture = await page.evaluate(async () => {
+    const r = globalThis.primaryActionTest;
+    const { magazineSpec, magazineWellCalibre } = await import('/src/core/magazine.ts');
+    const { stowTarget } = await import('/src/core/options.ts');
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const { registry } = r.inventory;
+    const rifle = r.inventory.create('rifle_assault');
+    const calibre = magazineWellCalibre(registry, rifle.type);
+    const magazineType = [...registry.items.keys()].sort().find((id) => magazineSpec(registry, id)?.calibre === calibre);
+    const cartridgeType = [...registry.items.keys()]
+      .sort()
+      .find((id) => registry.items.get(id).ammo?.calibre === calibre);
+    if (!magazineType || !cartridgeType) {
+      throw new Error('No compatible rifle magazine/cartridge fixture is available');
+    }
+    const magazine = r.inventory.create(magazineType);
+    const cartridges = r.inventory.create(cartridgeType, 2);
+    r.placePocketed(cartridges);
+    r.setHand(r.dominant, magazine);
+    const settle = () => {
+      for (let step = 0; r.session.queue.busy; step += 1) {
+        if (step > 400) throw new Error('Fixture magazine handling did not finish');
+        r.session.frame(1 / 20);
+      }
+    };
+    for (let round = 0; round < 2; round += 1) {
+      const refusal = r.session.magazines.loadNext(magazine.uid, r.session.sim.time);
+      if (refusal) throw new Error(`Could not load fixture magazine: ${refusal}`);
+      settle();
+    }
+    const target = stowTarget(r.inventory, magazine, r.feet());
+    if (target?.kind !== 'pocket' || !r.inventory.move(magazine, target).ok) {
+      throw new Error('Could not stow loaded fixture magazine');
+    }
+    r.setHand(r.dominant, rifle);
+    let refusal = r.session.firearms.loadNext(rifle.uid, r.session.sim.time);
+    if (refusal) throw new Error(`Could not fit fixture magazine: ${refusal}`);
+    settle();
+    refusal = r.session.firearms.cock(rifle.uid, r.session.sim.time);
+    if (refusal) throw new Error(`Could not chamber fixture round: ${refusal}`);
+    return { uid: rifle.uid, magazineUid: magazine.uid };
+  });
+  const releaseRifleThrow = await holdAction(page, 'player.throw');
+  const throwWait = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return { handling: r.session.queue.busy, charging: r.isChargingItemThrow() };
+  });
+  assert.equal(throwWait.handling, true, 'rifle rack is still being handled when T is pressed');
+  assert.equal(throwWait.charging, false, 'throw charge waits for the rifle rack to finish');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !r.session.queue.busy && !r.session.firearms.busy && r.isChargingItemThrow();
+  });
+  const loadedRifle = await page.evaluate(async ({ uid, magazineUid }) => {
+    const r = globalThis.primaryActionTest;
+    const { itemLook } = await import('/src/render/itemLook.ts');
+    const rifle = r.inventory.itemByUid(uid);
+    const magazine = r.inventory.itemByUid(magazineUid);
+    const look = itemLook(r.inventory.registry, rifle);
+    if (!look || rifle.firearm?.chamber !== 'round' || magazine.cartridges?.length !== 1) {
+      throw new Error('Loaded rifle fixture needs a fitted magazine and a chambered round');
+    }
+    return {
+      uid,
+      magazineUid,
+      firearmState: structuredClone(rifle.firearm),
+      magazineCartridges: [...magazine.cartridges],
+      lookKey: look.key,
+      chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
+      chargeStartedAt: r.session.sim.time,
+    };
+  }, rifleFixture);
+  await waitForSimulation(
+    page,
+    throwChargeSample,
+    { start: loadedRifle.chargeStartedAt, seconds: loadedRifle.chargeSimSeconds },
+    {
+      seconds: loadedRifle.chargeSimSeconds + 0.1,
+      label: 'charged magazine-fed rifle throw completes',
+      record: (line) => process.stderr.write(`${line}\n`),
+      stop: releaseRifleThrow,
+    },
+  );
+  await page.waitForFunction(({ uid, lookKey }) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    return item && r.inventory.locate(item)?.kind === 'pile' && r.itemThrows.group.getObjectByName(lookKey);
+  }, loadedRifle);
+  const landedRifle = await page.evaluate(({ uid, magazineUid }) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    const magazine = r.inventory.itemByUid(magazineUid);
+    const location = item && r.inventory.locate(item);
+    const locations = [...r.inventory.items()].map(({ item: candidate }) => candidate.uid);
+    return {
+      sameInstance: location?.kind === 'pile' && location.pile.items.some(({ item: placed }) => placed === item),
+      sameMagazine: item?.slots?.magazine === magazine,
+      firearmState: item?.firearm,
+      magazineCartridges: magazine?.cartridges,
+      duplicateItemUids: locations.length !== new Set(locations).size,
+    };
+  }, loadedRifle);
+  assert.equal(landedRifle.sameInstance, true, 'throw moves the same loaded rifle instance');
+  assert.equal(landedRifle.sameMagazine, true, 'throw keeps the fitted magazine instance on the rifle');
+  assert.deepEqual(landedRifle.firearmState, loadedRifle.firearmState, 'throw keeps the chambered round');
+  assert.deepEqual(
+    landedRifle.magazineCartridges,
+    loadedRifle.magazineCartridges,
+    'throw keeps the fitted magazine rounds',
+  );
+  assert.equal(landedRifle.duplicateItemUids, false, 'throw does not duplicate the nested magazine item');
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
@@ -1311,6 +1430,10 @@ try {
     hand: 'left',
   });
   await finishedSwing();
+  const throwDuringHandling = await attemptDuringHandling(roles.dominant, roles.off, false, true);
+  assertHandlingRefusal(throwDuringHandling, 'held-item throw');
+  assert.equal(throwDuringHandling.throwAttempt?.charging, false, 'a queued handling job does not charge a throw');
+  assert.equal(throwDuringHandling.throwAttempt?.reason, 'Waiting for handling to finish');
   assertHandlingRefusal(await attemptDuringHandling(roles.dominant, roles.off), 'held-weapon attack');
   assertHandlingRefusal(await attemptDuringHandling(roles.off, roles.dominant), 'off-hand primary action');
   const mouse5WhileHandling = await attemptDuringHandling(roles.off, roles.dominant, true);

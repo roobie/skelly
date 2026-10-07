@@ -841,15 +841,19 @@ through that minimum hold, so the minimum is a release gate rather than an extra
 delay before charging. Item weight limits launch range through arm speed and
 energy; a light item retains the existing maximum, while a heavier one travels
 no farther. A thrown item keeps its identity and state when it lands, including a
-firearm's loaded magazine. A lit glowstick remains lit at its landing pile.
-The flight uses the item's loaded `ModelLibrary` ground model, keeping its
-appearance recognizable between hand and landing; ordinary items without a
+firearm's fitted magazine, its rounds and chamber state. A lit glowstick remains
+lit at its landing pile. Flight uses the same item look as a ground pile, so a
+firearm carries its fitted magazine through the arc; ordinary items without a
 model use the same low bundle fallback as a ground pile, scattered cases keep
-the pile placeholder, and an active glowstick keeps its emissive marker. The
-optional Handling progress HUD shows charge from the initial
-press and marks the minimum-release point, so the release gate is visible without
-changing the throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
-`src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `handlingPresentationFor`.
+the pile placeholder, and an active glowstick keeps its emissive marker. A throw
+held through a handling job waits to charge until that job finishes, rather than
+interrupting a rack or magazine turn, so the job retains ownership of its item
+state. Releasing early cancels the waiting throw. The optional
+Handling progress HUD shows charge from the initial press and marks the
+minimum-release point, so the release gate is visible without changing the
+throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
+`src/render/itemLook.ts`, `itemLook`, `src/ui/hud.ts`, `handlingViewModel`, and
+`src/game/play.ts`, `beginItemThrow` and `advancePendingItemThrow`.
 
 BR first ruled that holding T longer should throw farther and right-click should
 cancel (2026-10-06 14:24). BR then ruled (2026-10-07 14:35):

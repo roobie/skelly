@@ -7,6 +7,7 @@ import { ITEM_ARC_HEIGHT_METRES, ITEM_FLIGHT_SECONDS, itemFlightPoint } from '..
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { placeholderCaseMesh } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
+import { itemLook } from './itemLook.ts';
 import type { ModelLibrary } from './models.ts';
 
 const MAX_ACTIVE = 4;
@@ -32,11 +33,11 @@ export class ItemThrows {
   private readonly flights: Flight[] = [];
   private readonly geometry = new BoxGeometry(1, 1, 1);
   private readonly bundleMaterial = withHeightFog(new MeshLambertMaterial({ color: 0x5a_50_46 }), 'piles');
-  private readonly models: Pick<ModelLibrary, 'ground'> | undefined;
+  private readonly models: Pick<ModelLibrary, 'groundLook'> | undefined;
   private readonly registry: Registry;
   private readonly blockSize: number;
 
-  constructor(registry: Registry, models?: Pick<ModelLibrary, 'ground'>, blockSize = 1) {
+  constructor(registry: Registry, models?: Pick<ModelLibrary, 'groundLook'>, blockSize = 1) {
     this.registry = registry;
     this.models = models;
     this.blockSize = blockSize;
@@ -53,10 +54,10 @@ export class ItemThrows {
     flight.emissive.visible = false;
 
     const definition = defOf(this.registry, item.type);
-    const modelId = definition?.model;
-    const model = modelId ? this.models?.ground(modelId) : undefined;
-    if (modelId && model) {
-      model.name = modelId;
+    const look = itemLook(this.registry, item);
+    const model = look ? this.models?.groundLook(look) : undefined;
+    if (look && model) {
+      model.name = look.key;
       flight.modelVisual = true;
       flight.group.add(model);
     } else if (definition?.pileDisplay === PILE_DISPLAY_KIND.scatter) {

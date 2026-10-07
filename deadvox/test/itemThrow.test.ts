@@ -8,7 +8,10 @@ import { ItemThrows } from '../src/render/itemThrows.ts';
 
 const testItem = (type: string): Item => ({ uid: 1, type, count: 1, condition: 1 });
 const testRegistry = (weights: Record<string, number>): Registry =>
-  ({ items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])) }) as unknown as Registry;
+  ({
+    items: new Map(Object.entries(weights).map(([id, weight]) => [id, { id, weight }])),
+    models: new Map(),
+  }) as unknown as Registry;
 const tuning = {
   maximumDistanceMetres: 8,
   chargeSimSeconds: 2,
@@ -39,23 +42,31 @@ describe('held-item throws', () => {
     );
   });
 
-  it('uses the thrown item’s own model from ModelLibrary', () => {
+  it('uses the thrown item look, including its fitted magazine', () => {
     const rifleModel = new Group();
-    rifleModel.name = 'rifle-model';
-    let requestedModel: string | undefined;
+    let requestedLook: import('../src/render/itemLook.ts').ItemLook | undefined;
     const models = {
-      ground: (id: string) => {
-        requestedModel = id;
+      groundLook: (look: import('../src/render/itemLook.ts').ItemLook) => {
+        requestedLook = look;
         return rifleModel;
       },
     } as unknown as import('../src/render/models.ts').ModelLibrary;
-    const registry = testRegistry({ rifle: 4000 });
+    const registry = testRegistry({ rifle: 4000, magazine: 200 });
     registry.items.set('rifle', { id: 'rifle', weight: 4000, size: [1, 4], model: 'rifle_model' } as never);
+    registry.items.set('magazine', { id: 'magazine', weight: 200, size: [1, 2], model: 'magazine_model' } as never);
+    registry.models.set('rifle_model', {
+      slots: { magazine: { at: [0, 0, 0], turn: [0, 0, 0] } },
+    } as never);
+    const magazine = testItem('magazine');
+    const rifle = { ...testItem('rifle'), slots: { magazine } } as Item;
     const throws = new ItemThrows(registry, models, 1);
-    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rifle'));
+    throws.spawn([0, 1, 0], [2, 1, 0], rifle);
 
-    expect(requestedModel).toBe('rifle_model');
-    expect(throws.group.getObjectByName('rifle_model')).toBe(rifleModel);
+    expect(requestedLook).toMatchObject({
+      model: 'rifle_model',
+      slots: [{ slot: 'magazine', model: 'magazine_model' }],
+    });
+    expect(throws.group.getObjectByName('rifle_model+magazine=magazine_model')).toBe(rifleModel);
     throws.dispose();
   });
 
