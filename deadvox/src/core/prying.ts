@@ -64,7 +64,7 @@ export const pryPlan = (
     return refuse(`Need a tool with prying quality ${prying.quality}`);
   }
   const skillLevel = character?.skills[prying.skill] ?? SKILL_LEVEL_MIN;
-  const time = durationForSkill(prying.time, prying.fastestTime, skillLevel);
-  const strikeInterval = prying.strikeInterval * (time / prying.time);
+  const time = durationForSkill(prying.timeSimSeconds, prying.fastestTimeSimSeconds, skillLevel);
+  const strikeInterval = prying.strikeIntervalSimSeconds * (time / prying.timeSimSeconds);
   return { ok: true, time, strikeInterval, tool };
 };

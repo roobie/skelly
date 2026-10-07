@@ -30,10 +30,10 @@ interface ActionPartMetadata {
 }
 
 interface CycleMetadata {
-  readonly durationSeconds: number;
-  readonly rearwardSeconds: number;
-  readonly dwellSeconds: number;
-  readonly forwardSeconds: number;
+  readonly durationSimSeconds: number;
+  readonly rearwardSimSeconds: number;
+  readonly dwellSimSeconds: number;
+  readonly forwardSimSeconds: number;
 }
 
 interface GunActionMetadata {
@@ -45,7 +45,7 @@ interface GunActionMetadata {
   /** Unit ejection direction in model coordinates. */
   readonly ejectDirection: Vec3;
   readonly holdOpen: boolean;
-  readonly rpm?: number;
+  readonly roundsPerSimMinute?: number;
 }
 
 export interface DeadvoxModelEntry {
@@ -110,10 +110,10 @@ interface GunActionExport {
 }
 
 const cycleMetadata = (cycle: CycleTimeline): CycleMetadata => ({
-  durationSeconds: cycle.durationSeconds,
-  rearwardSeconds: cycle.rearwardSeconds,
-  dwellSeconds: cycle.dwellSeconds,
-  forwardSeconds: cycle.forwardSeconds,
+  durationSimSeconds: cycle.durationSeconds,
+  rearwardSimSeconds: cycle.rearwardSeconds,
+  dwellSimSeconds: cycle.dwellSeconds,
+  forwardSimSeconds: cycle.forwardSeconds,
 });
 
 const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
@@ -142,7 +142,7 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
       ejectAt: cycle.ejectAt,
       ejectDirection: cycle.ejectDirection,
       holdOpen: cycle.holdOpenOnEmpty,
-      ...(cycle.rpm === undefined ? {} : { rpm: cycle.rpm }),
+      ...(cycle.rpm === undefined ? {} : { roundsPerSimMinute: cycle.rpm }),
     },
   };
 };

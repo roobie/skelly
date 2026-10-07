@@ -75,7 +75,7 @@ if (bench === 'report') {
         replay: {
           inputs: decoded.inputs,
           endStateFingerprint: decoded.endStateFingerprint,
-          endSimTime: decoded.endSimTime,
+          endSimTimestamp: decoded.endSimTimestamp,
         },
       });
     } catch (error) {

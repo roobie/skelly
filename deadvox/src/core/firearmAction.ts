@@ -6,12 +6,12 @@ export type FirearmMode = 'fire' | 'hand';
 
 export const actionCycleSeconds = (action: FirearmAction, mode: FirearmMode): number => {
   if (mode === 'hand') {
-    return action.hand.durationSeconds;
+    return action.hand.durationSimSeconds;
   }
-  if (!(action.fire && action.rpm)) {
+  if (!(action.fire && action.roundsPerSimMinute)) {
     throw new Error('No exported automatic action data for this gun');
   }
-  return Math.min(action.fire.durationSeconds, 60 / action.rpm);
+  return Math.min(action.fire.durationSimSeconds, 1 / action.roundsPerSimMinute);
 };
 
 export const ejectSeconds = (action: FirearmAction, mode: FirearmMode): number => {
@@ -19,5 +19,5 @@ export const ejectSeconds = (action: FirearmAction, mode: FirearmMode): number =
   if (!cycle) {
     throw new Error('No exported automatic action data for this gun');
   }
-  return (cycle.rearwardSeconds * action.ejectAt * actionCycleSeconds(action, mode)) / cycle.durationSeconds;
+  return (cycle.rearwardSimSeconds * action.ejectAt * actionCycleSeconds(action, mode)) / cycle.durationSimSeconds;
 };

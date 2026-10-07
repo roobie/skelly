@@ -22,10 +22,10 @@ import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
-import { startPlayFrames } from '../render/playFrames.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
 import { mountCraftPanel } from '../ui/craftController.ts';
@@ -70,6 +70,7 @@ import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
+import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
 import {
@@ -213,7 +214,7 @@ const createPlayRefusalPresenter = (
   return createRefusalPresenter(
     showNotice,
     () => (nope ? audio.preview('player_nope', nope.variants[0]!) : false),
-    nope?.minIntervalSeconds ?? 0,
+    nope?.minIntervalSimSeconds ?? 0,
   );
 };
 
@@ -224,7 +225,7 @@ export interface StartPlayOptions {
   readonly replay?: {
     readonly inputs: ReplayInputData;
     readonly endStateFingerprint: string;
-    readonly endSimTime: number;
+    readonly endSimTimestamp: number;
   };
 }
 
@@ -254,7 +255,7 @@ export const startPlay = (
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
   }
-  const { throwMaxDistanceMetres, throwChargeSeconds } = playerSenseTuning.light;
+  const { throwMaxDistanceMetres, throwChargeSimSeconds: throwChargeSeconds } = playerSenseTuning.light;
   let glowstickChargeStartedAt: number | undefined;
   let glowstickChargeItemUid: number | undefined;
   const audio = new GameAudio({
@@ -586,7 +587,7 @@ export const startPlay = (
   let noticeUntil = 0;
   const showNotice = (text: string) => {
     notice = text;
-    noticeUntil = performance.now() + 3000;
+    noticeUntil = realNow() + 3000;
   };
   const showRefusal = createPlayRefusalPresenter(registry, audio, showNotice);
 
@@ -1686,7 +1687,7 @@ export const startPlay = (
       const weapon = item && registry.items.get(item.type)?.weapon?.melee;
       if (item && weapon) {
         return {
-          weapon,
+          weapon: { ...weapon, cooldown: weapon.cooldownSimSeconds },
           profile: weapon.type,
           hand,
           twoHanded: registry.items.get(item.type)?.twoHanded ?? false,
@@ -1777,8 +1778,8 @@ export const startPlay = (
       }
       return;
     }
-    const { rpm } = firearmHandlingFor(weapon, registry);
-    return rpm === undefined ? undefined : { uid: weapon.uid, rpm };
+    const { roundsPerSimSecond } = firearmHandlingFor(weapon, registry);
+    return roundsPerSimSecond === undefined ? undefined : { uid: weapon.uid, roundsPerSimSecond };
   };
 
   const refusalReason = (reason: string | undefined): void => {
@@ -1911,7 +1912,7 @@ export const startPlay = (
 
   // ---- loop ----
 
-  let last = performance.now();
+  let last = realNow();
   let lastDebugUpdate = 0;
   let fps = 0;
   // Debug readout: frame intervals and CPU work alongside simulation, rendering and mesh timings.
@@ -2132,7 +2133,7 @@ export const startPlay = (
     sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
     session.frameReplay(1 / 60);
     if (replayPlayer.finished) {
-      const endRemainder = options.replay!.endSimTime - sim.time;
+      const endRemainder = options.replay!.endSimTimestamp - sim.time;
       if (endRemainder > 0) {
         session.frameReplay(endRemainder / sim.compression.c);
       }
@@ -2141,7 +2142,7 @@ export const startPlay = (
   };
 
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
-  const stepSimulation = (dt: number, menuPaused: boolean): boolean => {
+  const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
     cancelGlowstickChargeOnRightClick();
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
@@ -2149,7 +2150,7 @@ export const startPlay = (
       stepReplaySimulation(menuPaused, gameFrozen);
     } else {
       sim.paused = menuPaused || gameFrozen;
-      session.frame(dt, skipUntil);
+      advanceLiveFrame(sim, realDt, skipUntil, (simDt, until) => session.frame(simDt, until));
     }
     // A running time skip simply waits out the freeze: a paused sim.frame leaves its target and compression alone.
     if (skipUntil !== undefined) {
@@ -2159,7 +2160,7 @@ export const startPlay = (
       previousInputRecorder = inputRecorder;
       inputRecorder = new InputReplayRecorder(captureSnapshot());
     }
-    stepFrozenNoclip(dt, gameFrozen && !menuPaused);
+    stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     return gameFrozen;
   };
 
@@ -2189,35 +2190,35 @@ export const startPlay = (
     hintToggleInput.update(now);
   };
 
-  const frame = (now: number) => {
-    const workStart = performance.now();
-    const realSeconds = Math.max(0, (now - last) / 1000);
-    const dt = Math.min(0.1, realSeconds);
+  const frame = (now: RealTimestamp) => {
+    const workStart = realNow();
+    const elapsedReal = Math.max(0, (now - last) / 1000);
+    const dt = realSeconds(Math.min(0.1, elapsedReal));
     frameInterval.record(now, now - last);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
 
     const menuState = syncMenuState();
     const visible = hudVisibility(hudOptions);
-    let mark = performance.now();
+    let mark = realNow();
     streamer.update(body.pos[0], body.pos[2]);
-    meshingQueueMs = performance.now() - mark;
+    meshingQueueMs = realNow() - mark;
     updateActionInputs(now);
     playtestObserver?.beforeFrame(queue, inventory);
-    mark = performance.now();
+    mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
     caseEffects.update(dt, engine.isSolid);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
-    simulationMs = performance.now() - mark;
+    simulationMs = realNow() - mark;
     options.saveController?.afterFrame();
     playtestObserver?.afterFrame(
-      { realSeconds, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
+      { realSeconds: elapsedReal, screenOpen: screen.isOpen, visible: document.visibilityState === 'visible' },
       queue,
       session,
     );
     if (
       playtestObserver?.frame({
-        realSeconds,
+        realSeconds: elapsedReal,
         paused: sim.paused,
         visible: document.visibilityState === 'visible',
         compression: compression.c,
@@ -2239,7 +2240,7 @@ export const startPlay = (
     });
     updateDebugTargets();
     updateDebugReadout(now);
-    mark = performance.now();
+    mark = realNow();
 
     updateVisualFeedback(dt);
     const unconsciousPresentation = sim.body.unconscious && !sim.dead;
@@ -2279,7 +2280,7 @@ export const startPlay = (
     updateHeldItems(dt);
     view.updateShadows(hour, sky);
     renderMs = view.render();
-    frameWork.record(now, performance.now() - workStart);
+    frameWork.record(now, realNow() - workStart);
     if (sim.dead) {
       die(sim.dead);
       return false;
@@ -2317,7 +2318,7 @@ export const startPlay = (
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));
-  startPlayFrames(frame);
+  startRealFrames(frame);
   return {
     enter: () => {
       audio.unlock();

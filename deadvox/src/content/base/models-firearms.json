@@ -61,21 +61,21 @@
           }
         },
         "fire": {
-          "durationSeconds": 0.075,
-          "rearwardSeconds": 0.019933333333333334,
-          "dwellSeconds": 0.006,
-          "forwardSeconds": 0.04616585577328428
+          "durationSimSeconds": 0.075,
+          "rearwardSimSeconds": 0.019933333333333334,
+          "dwellSimSeconds": 0.006,
+          "forwardSimSeconds": 0.04616585577328428
         },
         "hand": {
-          "durationSeconds": 1.6961658557732842,
-          "rearwardSeconds": 0.65,
-          "dwellSeconds": 0.3,
-          "forwardSeconds": 0.04616585577328428
+          "durationSimSeconds": 1.6961658557732842,
+          "rearwardSimSeconds": 0.65,
+          "dwellSimSeconds": 0.3,
+          "forwardSimSeconds": 0.04616585577328428
         },
         "ejectAt": 0.76,
         "ejectDirection": [-0.16063576942357702, 0.16063576942357702, 0.9738543521304357],
         "holdOpen": true,
-        "rpm": 800
+        "roundsPerSimMinute": 800
       }
     },
     {
@@ -110,21 +110,21 @@
           }
         },
         "fire": {
-          "durationSeconds": 0.1,
-          "rearwardSeconds": 0.019933333333333334,
-          "dwellSeconds": 0.006,
-          "forwardSeconds": 0.04616585577328428
+          "durationSimSeconds": 0.1,
+          "rearwardSimSeconds": 0.019933333333333334,
+          "dwellSimSeconds": 0.006,
+          "forwardSimSeconds": 0.04616585577328428
         },
         "hand": {
-          "durationSeconds": 1.6961658557732842,
-          "rearwardSeconds": 0.65,
-          "dwellSeconds": 0.3,
-          "forwardSeconds": 0.04616585577328428
+          "durationSimSeconds": 1.6961658557732842,
+          "rearwardSimSeconds": 0.65,
+          "dwellSimSeconds": 0.3,
+          "forwardSimSeconds": 0.04616585577328428
         },
         "ejectAt": 0.72,
         "ejectDirection": [0.3396605091514848, 0.1998002995008734, 0.9190813777040178],
         "holdOpen": false,
-        "rpm": 600
+        "roundsPerSimMinute": 600
       }
     },
     {
@@ -217,10 +217,10 @@
           }
         },
         "hand": {
-          "durationSeconds": 1.5,
-          "rearwardSeconds": 0.5,
-          "dwellSeconds": 0.15,
-          "forwardSeconds": 0.5
+          "durationSimSeconds": 1.5,
+          "rearwardSimSeconds": 0.5,
+          "dwellSimSeconds": 0.15,
+          "forwardSimSeconds": 0.5
         },
         "ejectAt": 0.76,
         "ejectDirection": [0.12038585308576918, 0.24077170617153837, 0.9630868246861535],

@@ -20,7 +20,8 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
 const SHAMBLER = registry.zombies.get('shambler')!;
-const BAT = registry.items.get('baseball_bat')!.weapon!.melee!;
+const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
+const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };
 const HEALTHY_REGIONS = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
 const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   isSolid,
@@ -166,7 +167,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
     speed: zombie.horizontalSpeed,
     chasing: false,
     attackWindup: 0,
-    attackWindupSeconds: zombie.type.attack.windup,
+    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
     severed: [],
     blockSize: BLOCK,
   });

@@ -121,7 +121,7 @@ describe('core long actions', () => {
     expect(sim.actions.beginTreatment('torso', 1, 'rag', 10)).toBeDefined();
     expect(sim.actions.resume()).toBeDefined();
 
-    sim.scheduler.advance(BODY_TUNING_FIXTURE.knockoutSeconds);
+    sim.scheduler.advance(BODY_TUNING_FIXTURE.knockoutSimSeconds);
     expect(sim.actions.job).toMatchObject({ jobType: 'treatment', stopped: true });
     expect(finished).toBe(0);
     expect(sim.body.unconscious).toBe(false);
@@ -130,7 +130,7 @@ describe('core long actions', () => {
     if (resumedJob?.jobType !== 'treatment') {
       throw new Error('Treatment action did not resume');
     }
-    sim.scheduler.advance((resumedJob.duration - resumedJob.elapsed) / sim.clock.ratio + 1);
+    sim.scheduler.advance(resumedJob.duration - resumedJob.elapsed + 1);
 
     expect(finished).toBe(1);
     expect(sim.actions.job).toBeUndefined();
@@ -142,7 +142,7 @@ describe('core long actions', () => {
     const torch = registry.recipes.get('torch')!;
     expected.awardPractice(
       'crafting',
-      torch.time,
+      torch.timeGameMinutes / 60,
       craftingActivityTier(torch.skills.crafting!, registry.skills.get('crafting')!.training!.craftingTierOffset!),
     );
     const runtime = start();
@@ -162,7 +162,6 @@ describe('core long actions', () => {
   it('stopped prying resumes elapsed work without counting its pause', () => {
     const runtime = make();
     const { sim } = runtime;
-    const { ratio } = sim.clock;
     const strikes: number[] = [];
     let finished = false;
     sim.actions.prying = {
@@ -176,7 +175,7 @@ describe('core long actions', () => {
     const strikeInterval = 50;
     expect(sim.actions.beginPrying(7, 11, duration, strikeInterval)).toBeUndefined();
     expect(sim.compression.active).toBe(false);
-    sim.scheduler.advance(10 / ratio);
+    sim.scheduler.advance(10);
     sim.actions.stop();
     const { job } = sim.actions;
     const elapsed = job?.jobType === 'pry' ? job.elapsed : 0;
@@ -188,7 +187,7 @@ describe('core long actions', () => {
 
     expect(sim.actions.resume()).toBeUndefined();
     expect(sim.compression.active).toBe(false);
-    sim.scheduler.advance(10 / ratio);
+    sim.scheduler.advance(10);
     const resumed = sim.actions.job;
     if (resumed?.jobType !== 'pry') {
       throw new Error('The resumed action was lost');
@@ -196,7 +195,7 @@ describe('core long actions', () => {
     expect(resumed.elapsed).toBeGreaterThan(elapsed);
     expect(strikes).toEqual([]);
     expect(finished).toBe(false);
-    sim.scheduler.advance(duration / ratio + 2);
+    sim.scheduler.advance(duration + 2);
     expect(sim.actions.job).toBeUndefined();
     expect(strikes).toHaveLength(2);
     expect(finished).toBe(true);
@@ -208,9 +207,8 @@ describe('core long actions', () => {
       strike: () => undefined,
       finish: () => undefined,
     };
-    const { ratio } = sim.clock;
     expect(sim.actions.beginPrying(7, 11, 100, 50)).toBeUndefined();
-    sim.scheduler.advance(10 / ratio);
+    sim.scheduler.advance(10);
     sim.actions.stop();
     const stopped = sim.actions.job;
     if (stopped?.jobType !== 'pry') {
@@ -252,14 +250,14 @@ describe('core long actions', () => {
           category: 'book',
           weight: 1,
           size: [1, 1],
-          book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingTime: 1 },
+          book: { title: 'Fixture manual', recipes: ['reading_fixture'], readingGameMinutes: 1 },
         },
       ],
       recipes: [
         {
           id: 'reading_fixture',
           result: { item: 'torch', count: 1 },
-          time: 1,
+          timeGameMinutes: 1,
           skills: {},
           qualities: {},
           components: [[{ item: 'rag', count: 1 }]],
