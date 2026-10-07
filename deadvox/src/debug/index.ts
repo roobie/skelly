@@ -25,6 +25,7 @@ import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
+import { positionLookedAtReadout } from '../ui/hud.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
@@ -390,7 +391,7 @@ const panelTemplate = ({
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
-    <div id="debug-look-readout" class="debug-aim-readout"></div>
+    <div id="debug-look-readout" class="debug-aim-readout debug-look-readout"></div>
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
     <section class="debug-panel" data-debug-controls ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (${labelForAction('debug.panel-toggle')})</button></header>
@@ -1488,6 +1489,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
               )
             : '';
         render(aimReadoutTemplate(text), lookReadout);
+        positionLookedAtReadout(lookReadout);
       }
     },
     recordMeleeResult(result: MeleeResult) {

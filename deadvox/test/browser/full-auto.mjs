@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, heldFirearmBore: () => heldFirearmBore() } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, debugTools, eye, heldFirearmBore: () => heldFirearmBore() } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -205,6 +205,99 @@ try {
     'debug X is centred vertically',
   );
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
+  const setQuickbarOption = async (visible) => {
+    await page.evaluate((nextVisibility) => {
+      const label = [...document.querySelectorAll('#hud-options label')].find((option) =>
+        option.textContent.includes('Quickbar'),
+      );
+      const checkbox = label?.querySelector('input');
+      if (!checkbox) {
+        throw new Error('Quickbar HUD option is missing');
+      }
+      checkbox.checked = nextVisibility;
+      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+    }, visible);
+    await page.waitForFunction(
+      (nextVisibility) =>
+        JSON.parse(localStorage.getItem('deadvox.hud-options')).quickbar === nextVisibility &&
+        document.querySelector('#quickbar').hidden !== nextVisibility,
+      visible,
+    );
+  };
+  await setQuickbarOption(true);
+  const shownReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateAim(undefined);
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    const quickbar = document.querySelector('#quickbar');
+    const bar = quickbar.getBoundingClientRect();
+    return {
+      text: document.querySelector('#debug-look-readout').textContent.trim(),
+      quickbarHidden: quickbar.hidden || getComputedStyle(quickbar).display === 'none',
+      readout: { top: readout.top, bottom: readout.bottom, left: readout.left, right: readout.right },
+      quickbarTop: bar.top,
+      middle: innerHeight / 2,
+      width: innerWidth,
+    };
+  });
+  assert.notEqual(shownReadout.text, '', 'looked-at block readout is populated');
+  assert.equal(shownReadout.quickbarHidden, false, 'quickbar is shown');
+  assert.ok(shownReadout.readout.top > shownReadout.middle, 'looked-at readout is below the screen middle');
+  assert.ok(shownReadout.readout.bottom <= shownReadout.quickbarTop, 'looked-at readout clears the quickbar');
+  assert.ok(centreXBox.y + centreXBox.height < shownReadout.readout.top, 'looked-at readout clears the centre X');
+  assert.ok(
+    shownReadout.quickbarTop - shownReadout.readout.bottom < shownReadout.readout.bottom - shownReadout.readout.top,
+    'looked-at readout sits just above the quickbar',
+  );
+  assert.equal(
+    shownReadout.readout.left + shownReadout.readout.right,
+    shownReadout.width,
+    'looked-at readout is horizontally centred',
+  );
+  const aimReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateAim({
+      id: 0,
+      region: 'torso',
+      distanceMetres: 1,
+      reachMetres: 1,
+      inReach: true,
+      health: 1,
+      maxHealth: 1,
+      boxes: [],
+    });
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const look = document.querySelector('#debug-look-readout');
+    return {
+      aim: document.querySelector('#debug-aim-readout').textContent,
+      look: look.textContent,
+      lookVisible: look.getClientRects().length > 0,
+    };
+  });
+  assert.notEqual(aimReadout.aim.trim(), '', 'shambler aim readout remains visible at the crosshair');
+  assert.equal(aimReadout.look, '', 'looked-at block readout yields while the aim readout is active');
+  assert.equal(aimReadout.lookVisible, false, 'the yielded readout has no box to overlap the aim readout');
+  await setQuickbarOption(false);
+  const hiddenReadout = await page.evaluate(() => {
+    const { debugTools, eye } = globalThis.fullAutoRuntime;
+    debugTools.updateAim(undefined);
+    debugTools.updateLookedAt(eye(), [0, -1, 0], true);
+    const readout = document.querySelector('#debug-look-readout').getBoundingClientRect();
+    return {
+      top: readout.top,
+      bottom: readout.bottom,
+      middle: innerHeight / 2,
+      height: innerHeight,
+      quickbarHidden: document.querySelector('#quickbar').hidden,
+    };
+  });
+  assert.equal(hiddenReadout.quickbarHidden, true, 'quickbar is hidden');
+  assert.ok(hiddenReadout.top > hiddenReadout.middle, 'hidden quickbar leaves the readout below the screen middle');
+  assert.ok(
+    hiddenReadout.height - hiddenReadout.bottom < hiddenReadout.top - hiddenReadout.middle,
+    'without a quickbar the readout stays near the bottom edge',
+  );
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
     globalThis.fullAutoProbe.f2DefaultPrevented = false;
