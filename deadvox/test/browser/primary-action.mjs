@@ -17,6 +17,9 @@ const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
 const firearmHandlingModule = '/src/game/firearmHandling.ts';
+const magazineModule = '/src/core/magazine.ts';
+const optionsModule = '/src/core/options.ts';
+const itemLookModule = '/src/render/itemLook.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
@@ -1302,49 +1305,62 @@ try {
   assert.equal(landedFirearm.locationKind, 'pile', 'the loaded firearm lands in a pile');
   assert.equal(landedFirearm.sameInstance, true, 'throw moves the same firearm instance');
   assert.deepEqual(landedFirearm.firearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
-  const rifleFixture = await page.evaluate(async () => {
-    const r = globalThis.primaryActionTest;
-    const { magazineSpec, magazineWellCalibre } = await import('/src/core/magazine.ts');
-    const { stowTarget } = await import('/src/core/options.ts');
-    r.clearHand(r.dominant);
-    r.clearHand(r.off);
-    const { registry } = r.inventory;
-    const rifle = r.inventory.create('rifle_assault');
-    const calibre = magazineWellCalibre(registry, rifle.type);
-    const magazineType = [...registry.items.keys()].sort().find((id) => magazineSpec(registry, id)?.calibre === calibre);
-    const cartridgeType = [...registry.items.keys()]
-      .sort()
-      .find((id) => registry.items.get(id).ammo?.calibre === calibre);
-    if (!magazineType || !cartridgeType) {
-      throw new Error('No compatible rifle magazine/cartridge fixture is available');
-    }
-    const magazine = r.inventory.create(magazineType);
-    const cartridges = r.inventory.create(cartridgeType, 2);
-    r.placePocketed(cartridges);
-    r.setHand(r.dominant, magazine);
-    const settle = () => {
-      for (let step = 0; r.session.queue.busy; step += 1) {
-        if (step > 400) throw new Error('Fixture magazine handling did not finish');
-        r.session.frame(1 / 20);
+  const rifleFixture = await page.evaluate(
+    async ({ magazineUrl, optionsUrl }) => {
+      const r = globalThis.primaryActionTest;
+      const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
+      const { stowTarget } = await import(optionsUrl);
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const { registry } = r.inventory;
+      const rifle = r.inventory.create('rifle_assault');
+      const calibre = magazineWellCalibre(registry, rifle.type);
+      const magazineType = [...registry.items.keys()]
+        .sort()
+        .find((id) => magazineSpec(registry, id)?.calibre === calibre);
+      const cartridgeType = [...registry.items.keys()]
+        .sort()
+        .find((id) => registry.items.get(id).ammo?.calibre === calibre);
+      if (!(magazineType && cartridgeType)) {
+        throw new Error('No compatible rifle magazine/cartridge fixture is available');
       }
-    };
-    for (let round = 0; round < 2; round += 1) {
-      const refusal = r.session.magazines.loadNext(magazine.uid, r.session.sim.time);
-      if (refusal) throw new Error(`Could not load fixture magazine: ${refusal}`);
+      const magazine = r.inventory.create(magazineType);
+      const cartridges = r.inventory.create(cartridgeType, 2);
+      r.placePocketed(cartridges);
+      r.setHand(r.dominant, magazine);
+      const settle = () => {
+        for (let step = 0; r.session.queue.busy; step += 1) {
+          if (step > 400) {
+            throw new Error('Fixture magazine handling did not finish');
+          }
+          r.session.frame(1 / 20);
+        }
+      };
+      for (let round = 0; round < 2; round += 1) {
+        const refusal = r.session.magazines.loadNext(magazine.uid, r.session.sim.time);
+        if (refusal) {
+          throw new Error(`Could not load fixture magazine: ${refusal}`);
+        }
+        settle();
+      }
+      const target = stowTarget(r.inventory, magazine, r.feet());
+      if (target?.kind !== 'pocket' || !r.inventory.move(magazine, target).ok) {
+        throw new Error('Could not stow loaded fixture magazine');
+      }
+      r.setHand(r.dominant, rifle);
+      let refusal = r.session.firearms.loadNext(rifle.uid, r.session.sim.time);
+      if (refusal) {
+        throw new Error(`Could not fit fixture magazine: ${refusal}`);
+      }
       settle();
-    }
-    const target = stowTarget(r.inventory, magazine, r.feet());
-    if (target?.kind !== 'pocket' || !r.inventory.move(magazine, target).ok) {
-      throw new Error('Could not stow loaded fixture magazine');
-    }
-    r.setHand(r.dominant, rifle);
-    let refusal = r.session.firearms.loadNext(rifle.uid, r.session.sim.time);
-    if (refusal) throw new Error(`Could not fit fixture magazine: ${refusal}`);
-    settle();
-    refusal = r.session.firearms.cock(rifle.uid, r.session.sim.time);
-    if (refusal) throw new Error(`Could not chamber fixture round: ${refusal}`);
-    return { uid: rifle.uid, magazineUid: magazine.uid };
-  });
+      refusal = r.session.firearms.cock(rifle.uid, r.session.sim.time);
+      if (refusal) {
+        throw new Error(`Could not chamber fixture round: ${refusal}`);
+      }
+      return { uid: rifle.uid, magazineUid: magazine.uid };
+    },
+    { magazineUrl: magazineModule, optionsUrl: optionsModule },
+  );
   const releaseRifleThrow = await holdAction(page, 'player.throw');
   const throwWait = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
@@ -1354,27 +1370,30 @@ try {
   assert.equal(throwWait.charging, false, 'throw charge waits for the rifle rack to finish');
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
-    return !r.session.queue.busy && !r.session.firearms.busy && r.isChargingItemThrow();
+    return !(r.session.queue.busy || r.session.firearms.busy) && r.isChargingItemThrow();
   });
-  const loadedRifle = await page.evaluate(async ({ uid, magazineUid }) => {
-    const r = globalThis.primaryActionTest;
-    const { itemLook } = await import('/src/render/itemLook.ts');
-    const rifle = r.inventory.itemByUid(uid);
-    const magazine = r.inventory.itemByUid(magazineUid);
-    const look = itemLook(r.inventory.registry, rifle);
-    if (!look || rifle.firearm?.chamber !== 'round' || magazine.cartridges?.length !== 1) {
-      throw new Error('Loaded rifle fixture needs a fitted magazine and a chambered round');
-    }
-    return {
-      uid,
-      magazineUid,
-      firearmState: structuredClone(rifle.firearm),
-      magazineCartridges: [...magazine.cartridges],
-      lookKey: look.key,
-      chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
-      chargeStartedAt: r.session.sim.time,
-    };
-  }, rifleFixture);
+  const loadedRifle = await page.evaluate(
+    async ({ uid, magazineUid, itemLookUrl }) => {
+      const r = globalThis.primaryActionTest;
+      const { itemLook } = await import(itemLookUrl);
+      const rifle = r.inventory.itemByUid(uid);
+      const magazine = r.inventory.itemByUid(magazineUid);
+      const look = itemLook(r.inventory.registry, rifle);
+      if (!look || rifle.firearm?.chamber !== 'round' || magazine.cartridges?.length !== 1) {
+        throw new Error('Loaded rifle fixture needs a fitted magazine and a chambered round');
+      }
+      return {
+        uid,
+        magazineUid,
+        firearmState: structuredClone(rifle.firearm),
+        magazineCartridges: [...magazine.cartridges],
+        lookKey: look.key,
+        chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
+        chargeStartedAt: r.session.sim.time,
+      };
+    },
+    { ...rifleFixture, itemLookUrl: itemLookModule },
+  );
   await waitForSimulation(
     page,
     throwChargeSample,
