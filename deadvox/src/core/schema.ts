@@ -484,6 +484,15 @@ const AttachmentPropertiesSchema = strictObject({
   noiseFactor: optional(Fraction),
   wearClass: optional(picklist(['real', 'improvised'])),
   handlingClass: optional(pipe(string(), nonEmpty('must not be empty'))),
+  railSpanNotches: optional(
+    pipe(
+      strictObject({
+        minOffset: pipe(number(), integer('must be a whole number')),
+        maxOffset: pipe(number(), integer('must be a whole number')),
+      }),
+      check(({ minOffset, maxOffset }) => minOffset <= maxOffset, 'maximum notch offset cannot be below minimum'),
+    ),
+  ),
 });
 const AttachmentSightSchema = strictObject({
   kind: picklist(['optic', 'iron']),
@@ -493,25 +502,71 @@ const AttachmentSightSchema = strictObject({
   eyeReliefMetres: Positive,
   ocularDiameterMetres: optional(Positive),
 });
-const AttachmentSchema = strictObject({
+const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
   properties: AttachmentPropertiesSchema,
   sight: optional(AttachmentSightSchema),
 });
-const AttachmentSlotSchema = strictObject({
-  id: pipe(string(), nonEmpty('must not be empty')),
-  mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
-  position: Point,
-  direction: UnitVector,
-  up: UnitVector,
-});
+const attachmentSpanMatchesMount = ({ mount, properties }: InferOutput<typeof AttachmentFieldsSchema>): boolean =>
+  mount === 'muzzle' ? properties.railSpanNotches === undefined : properties.railSpanNotches !== undefined;
+const attachmentSpanCheck = check(
+  attachmentSpanMatchesMount,
+  'rail attachments need a notch span and muzzle attachments cannot have one',
+);
+const AttachmentSchema = pipe(AttachmentFieldsSchema, attachmentSpanCheck);
+const FittedAttachmentSchema = pipe(
+  strictObject({
+    ...AttachmentFieldsSchema.entries,
+    node: pipe(string(), nonEmpty('must not be empty')),
+    mountedAt: pipe(string(), nonEmpty('must not be empty')),
+  }),
+  check(
+    ({ mount, properties }) =>
+      mount === 'muzzle' ? properties.railSpanNotches === undefined : properties.railSpanNotches !== undefined,
+    'rail attachments need a notch span and muzzle attachments cannot have one',
+  ),
+);
+const AttachmentSlotSchema = pipe(
+  strictObject({
+    id: pipe(string(), nonEmpty('must not be empty')),
+    mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
+    position: Point,
+    direction: UnitVector,
+    up: UnitVector,
+    railId: optional(pipe(string(), nonEmpty('must not be empty'))),
+    notchIndex: optional(pipe(number(), integer('must be a whole number'), minValue(0, 'must be non-negative'))),
+  }),
+  check(
+    ({ mount, railId, notchIndex }) =>
+      mount === 'muzzle'
+        ? railId === undefined && notchIndex === undefined
+        : railId !== undefined && notchIndex !== undefined,
+    'rail slots need railId and notchIndex; muzzle interfaces cannot have them',
+  ),
+);
 const ModelMagazineSlotSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   at: Point,
   turn: Point,
 });
+
+const attachmentRangesDoNotOverlap = (
+  attachments: readonly InferOutput<typeof FittedAttachmentSchema>[],
+  slots: readonly InferOutput<typeof AttachmentSlotSchema>[],
+): boolean => {
+  const ranges = attachments.flatMap(({ mountedAt, properties }) => {
+    const slot = slots.find(({ id }) => id === mountedAt);
+    const span = properties.railSpanNotches;
+    return slot?.railId !== undefined && slot.notchIndex !== undefined && span
+      ? [{ railId: slot.railId, min: slot.notchIndex + span.minOffset, max: slot.notchIndex + span.maxOffset }]
+      : [];
+  });
+  return ranges.every((a, index) =>
+    ranges.slice(index + 1).every((b) => a.railId !== b.railId || a.max < b.min || b.max < a.min),
+  );
+};
 
 const ModelSchema = pipe(
   strictObject({
@@ -537,17 +592,7 @@ const ModelSchema = pipe(
     /** Named points used by presentation that are not represented by replaceable item slots. */
     anchors: optional(record(Id, Point)),
     /** Replaceable model parts and the gun-side mount frames for later fitting. */
-    attachments: optional(
-      array(
-        pipe(
-          strictObject({
-            ...AttachmentSchema.entries,
-            node: pipe(string(), nonEmpty('must not be empty')),
-            mountedAt: pipe(string(), nonEmpty('must not be empty')),
-          }),
-        ),
-      ),
-    ),
+    attachments: optional(array(FittedAttachmentSchema)),
     attachmentSlots: optional(array(AttachmentSlotSchema)),
     /** Exact baked GLB node and replacement transform for each item-owned model slot. */
     slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
@@ -583,8 +628,9 @@ const ModelSchema = pipe(
         new Set(attachments.map(({ mountedAt }) => mountedAt)).size === attachments.length &&
         attachments.every(({ mountedAt, mount }) =>
           attachmentSlots.some((slot) => slot.id === mountedAt && slot.mount === mount),
-        )),
-    'fitted attachments need unique matching mount slots',
+        ) &&
+        attachmentRangesDoNotOverlap(attachments, attachmentSlots)),
+    'fitted attachments need unique matching mount slots and non-overlapping rail spans',
   ),
   check(
     ({ sight }) => sight?.kind !== 'optic' || sight.ocularDiameterMetres !== undefined,

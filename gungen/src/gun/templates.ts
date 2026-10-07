@@ -7,6 +7,7 @@
 // receiver, and a clamped handguard or tube magazine follows the barrel.
 
 import type { Template } from '../core/template.ts';
+import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from './akMagazineCalibre.ts';
 import type { OpticTypeId } from './optics.ts';
 
 const sightMix = (...weights: readonly (readonly [OpticTypeId, number])[]): readonly OpticTypeId[] =>
@@ -14,6 +15,7 @@ const sightMix = (...weights: readonly (readonly [OpticTypeId, number])[]): read
 
 const SML = ['S', 'M', 'L'] as const;
 const BATTLE_MAGAZINE_ORIENTATIONS = ['straight', 'tilt', 'slant-5', 'slant-8', 'slant-10'] as const;
+const GENERATED_AK_CALIBRE = '7.62x39';
 
 export const battleRifle: Template = {
   name: 'battle-rifle',
@@ -175,6 +177,8 @@ export const ak: Template = {
   name: 'ak',
   description:
     'AK-pattern rifle: dust cover, exposed gas block and gas cylinder, forward-leaning curved magazine, wooden buttstock, and block sights.',
+  calibre: GENERATED_AK_CALIBRE,
+  calibreParams: [{ slot: 'magazine', param: 'variant', byCalibre: AK_MAGAZINE_VARIANT_BY_CALIBRE }],
   root: 'receiver',
   slots: [
     { id: 'receiver', family: 'ak-receiver', params: { bore: ['S', 'M'] } },
@@ -186,7 +190,11 @@ export const ak: Template = {
     { id: 'gas-cylinder', family: 'gas-cylinder' },
     { id: 'gas-block', family: 'gas-block' },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
-    { id: 'magazine', family: 'magazine', params: { length: 'L', profile: 'ak-curved', variant: ['ak74', 'akm'] } },
+    {
+      id: 'magazine',
+      family: 'magazine',
+      params: { length: 'L', profile: 'ak-curved', variant: ['ak74', 'akm'] },
+    },
     { id: 'stock', family: 'stock', params: { length: ['M', 'L'], style: 'ak-buttstock' } },
     { id: 'rear-sight', family: 'ak-rear-sight' },
     { id: 'front-sight', family: 'front-sight', params: { style: 'ak' } },

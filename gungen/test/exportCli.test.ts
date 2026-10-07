@@ -116,7 +116,19 @@ describe('export CLI core', () => {
     }
   });
 
-  it('resolves the CLI calibre option to a real cartridge-data entry', () => {
+  it('exports a design calibre automatically and resolves an explicit CLI calibre', () => {
+    const designText = read('designs', 'archetype-ak-akm');
+    const designCalibre = (JSON.parse(designText) as { calibre?: string }).calibre;
+    expect(designCalibre).toBeTruthy();
+    const fromDesign = exportFileText(designText, ASSET);
+    expect(fromDesign.ok && fromDesign.modelEntry.calibre).toBe(designCalibre);
+    const mismatchedDesign = JSON.parse(designText) as Record<string, unknown>;
+    mismatchedDesign.calibre = `${designCalibre}-other`;
+    expect(exportFileText(JSON.stringify(mismatchedDesign), ASSET)).toMatchObject({
+      ok: false,
+      message: expect.stringContaining('calibre'),
+    });
+
     const temp = mkdtempSync(join(tmpdir(), 'gungen-export-ammo-'));
     try {
       execFileSync(

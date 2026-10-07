@@ -12,6 +12,7 @@ export interface DesignEditorState {
   readonly assembly: Assembly;
   readonly locks: DesignLocks;
   readonly status: DesignStatus;
+  readonly calibre?: string;
   readonly finish?: Readonly<Record<string, string>>;
   readonly origin?: DesignOrigin;
   /** Explicit values already present in a design file are all deliberate choices. */
@@ -54,19 +55,24 @@ export const createEditorState = (
   assembly: Assembly,
   options: {
     readonly status?: DesignStatus;
+    readonly calibre?: string;
     readonly locks?: DesignLocks;
     readonly finish?: Readonly<Record<string, string>>;
     readonly origin?: DesignOrigin;
   } = {},
-): DesignEditorState => ({
-  template,
-  assembly,
-  locks: options.locks ?? EMPTY_LOCKS,
-  status: options.status ?? 'draft',
-  ...(options.finish ? { finish: options.finish } : {}),
-  ...(options.origin ? { origin: options.origin } : {}),
-  chosenParams: {},
-});
+): DesignEditorState => {
+  const calibre = options.calibre ?? template?.calibre;
+  return {
+    template,
+    assembly,
+    locks: options.locks ?? EMPTY_LOCKS,
+    status: options.status ?? 'draft',
+    ...(calibre === undefined ? {} : { calibre }),
+    ...(options.finish ? { finish: options.finish } : {}),
+    ...(options.origin ? { origin: options.origin } : {}),
+    chosenParams: {},
+  };
+};
 
 /** Converts a loaded design to editable viewer state without materializing implicit params. */
 export const editorStateFromDesign = (design: Design, template: Template | undefined): DesignEditorState => ({
@@ -74,6 +80,7 @@ export const editorStateFromDesign = (design: Design, template: Template | undef
   assembly: design.assembly,
   locks: design.locks,
   status: design.status,
+  ...(design.calibre === undefined ? {} : { calibre: design.calibre }),
   ...(design.finish ? { finish: design.finish } : {}),
   ...(design.origin ? { origin: design.origin } : {}),
   chosenParams: Object.fromEntries(
@@ -363,6 +370,7 @@ export const saveDesign = (state: DesignEditorState, domain: Domain): SaveDesign
   const design: Design = {
     format: 1,
     template: state.template.name,
+    ...(state.calibre === undefined ? {} : { calibre: state.calibre }),
     assembly: chosenAssembly(state, domain),
     locks: state.locks,
     status: state.status,

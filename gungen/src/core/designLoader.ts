@@ -119,10 +119,25 @@ const parseOrigin = (value: unknown): Parsed<DesignOrigin> => {
 };
 
 /** Shape-checks everything after the format gate. */
+const parseOptionalCalibre = (value: unknown): Parsed<string | undefined> => {
+  if (value === undefined) {
+    return success(undefined);
+  }
+  const parsed = parseString(value, 'calibre');
+  if (!parsed.ok) {
+    return parsed;
+  }
+  return parsed.value.trim() === '' ? failure('calibre', 'expected a non-empty cartridge id') : parsed;
+};
+
 const parseDesignBody = (raw: Record<string, unknown>): Parsed<Design> => {
   const template = parseString(raw.template, 'template');
   if (!template.ok) {
     return template;
+  }
+  const calibre = parseOptionalCalibre(raw.calibre);
+  if (!calibre.ok) {
+    return calibre;
   }
   if (raw.status !== 'draft' && raw.status !== 'published') {
     return failure('status', `expected "draft" or "published", got ${JSON.stringify(raw.status) ?? 'nothing'}`);
@@ -155,6 +170,7 @@ const parseDesignBody = (raw: Record<string, unknown>): Parsed<Design> => {
   return success({
     format: SUPPORTED_FORMAT,
     template: template.value,
+    ...(calibre.value === undefined ? {} : { calibre: calibre.value }),
     assembly: assembly.assembly,
     locks: locks.value,
     status: raw.status,
@@ -278,6 +294,13 @@ const templateIssues = (design: Design, template: Template, domain: Domain): Des
       code: 'template-choice',
       message: `the design belongs to template "${design.template}", not "${template.name}"`,
       path: 'template',
+    });
+  }
+  if (template.calibre !== undefined && design.calibre !== undefined && design.calibre !== template.calibre) {
+    issues.push({
+      code: 'template-choice',
+      message: `the design calibre is "${design.calibre}", but template "${template.name}" specifies "${template.calibre}"`,
+      path: 'calibre',
     });
   }
   if (design.assembly.root !== template.root) {

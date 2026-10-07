@@ -6,6 +6,7 @@ read_if:
   - you change the AK receiver's position relative to its centered bore
   - you change the AK archetype's proportions, or map them against its golden photo
   - you change attachment parts, mount slots or their Deadvox export
+  - you change firearm design/template calibre or AK magazine selection
 
 # gungen — low-poly firearm designer
 
@@ -1063,8 +1064,11 @@ Decisions where the plan left representation open:
 
 The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
 are optional in the schema; byte-identical output is not a compatibility
-requirement. Exported structural anchors such as `magwell` are present whenever
-the geometry declares them, whether or not a cartridge is assigned.
+requirement. Structural anchors remain reference points; replaceable geometry
+uses item-owned slots so Deadvox can hide a baked node when no item is fitted.
+The design/template calibre keeps generated AK magazines matched to the gun's
+cartridge, because receiver compatibility with both patterns is not magazine
+ammunition interchangeability (`src/core/template.ts`, `Template`; `src/core/design.ts`, `Design`; `src/gun/templates.ts`, `ak`).
 
 - `calibre?: string` is the exact cartridge-data id (not a display designation;
   e.g. `7.62x39`). Deadvox validates it with the dedicated `CalibreId` syntax,
@@ -1078,9 +1082,9 @@ the geometry declares them, whether or not a cartridge is assigned.
   Curated hunting pump, reproducible command and estimates:
   `docs/pump-action-export.md`. Its hand-only viewer is
   `?design=archetype-pump-shotgun&cycle=hand&cycleSpeed=0.1`.
-- `anchors.magwell?: Point` is the magazine seating point. Like every anchor,
-  `Point` is `[x, y, z]` in metres in the model file's frame (+x forward, +y up,
-  +z right).
+- Replaceable box magazines use `slots.magazine` to identify the baked GLB node
+  and its replacement pose. This keeps the magazine's identity with the fitted
+  geometry that Deadvox hides or replaces.
 - G35 action data adds `anchors.ejection?: Point` (the case exit, in metres) and
   `action.ejectAt?: number` (a dimensionless stroke fraction) plus
   `action.ejectDirection?: [x, y, z]` (a unit vector in model coordinates).
@@ -1545,7 +1549,7 @@ not part of the export's acceptance:
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
-- Slice 3.7 exports attachment parts and standalone models through `src/gun/attachmentExport.ts`, `exportAttachmentGlb`, and `src/gun/exportGlb.ts`, `exportGunGlb`. `src/gun/attachments.ts`, `attachmentSlots` preserves every mount pose and `src/gun/exportGlb.ts`, `attachmentData` links fitted nodes to slot IDs, so Deadvox can remove a baked mod without losing the seat pose; `attachmentMetadata` exports optic sight frames for runtime fitting. A fitted magazine uses a named replacement slot rather than a positional anchor because Deadvox must hide its baked node when the item is absent, while anchors remain presentation points;
+- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its anchor notch. Female ports on first-set attachment nodes are excluded because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors because Deadvox hides the baked magazine when no item is fitted; see `deadvox/docs/decisions/0003-firearm-handling.md`.
 - **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
   but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
   and its curated design and fixtures live byte-identically under `designs/suspended/`

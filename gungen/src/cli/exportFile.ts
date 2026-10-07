@@ -3,6 +3,7 @@ import { parseAssemblyJson } from '../core/parseAssembly.ts';
 import type { Assembly } from '../core/schema.ts';
 import { loadGunDesign } from '../gun/designLoader.ts';
 import { exportGunGlb, type GunDeadvoxModelEntry, type GunExportMetadata } from '../gun/exportGlb.ts';
+import { readCartridge } from './readCartridge.ts';
 
 /** Canonical fixture identities supply appearance independently from their mechanical templates. */
 const FIXTURE_APPEARANCE: Readonly<Record<string, AppearanceContext>> = {
@@ -61,30 +62,31 @@ export type ExportFileResult =
     }
   | { readonly ok: false; readonly message: string };
 
-/** A design file has a `format`; anything else is read as a bare assembly (a fixture). */
-const readAssembly = (
-  text: string,
-): { assembly: Assembly; warnings: string[]; appearance: AppearanceContext } | { message: string } => {
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text);
-  } catch (error) {
-    return { message: `invalid JSON: ${error instanceof Error ? error.message : String(error)}` };
+type ReadAssemblyResult =
+  | { assembly: Assembly; warnings: string[]; appearance: AppearanceContext; calibre?: string }
+  | { message: string };
+
+const readDesignAssembly = (text: string): ReadAssemblyResult => {
+  const loaded = loadGunDesign(text);
+  if (!loaded.ok) {
+    return { message: `${loaded.error.code}: ${loaded.error.message}` };
   }
-  if (raw && typeof raw === 'object' && 'format' in raw) {
-    const loaded = loadGunDesign(text);
-    if (!loaded.ok) {
-      return { message: `${loaded.error.code}: ${loaded.error.message}` };
-    }
-    return {
-      assembly: loaded.design.assembly,
-      warnings: loaded.issues.map((issue) => `design issue (${issue.code}): ${issue.message}`),
-      appearance: {
-        variant: loaded.design.template,
-        ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
-      },
-    };
+  const calibreIssue = loaded.issues.find((issue) => issue.path === 'calibre');
+  if (calibreIssue) {
+    return { message: `design issue (template-choice): ${calibreIssue.message}` };
   }
+  return {
+    assembly: loaded.design.assembly,
+    warnings: loaded.issues.map((issue) => `design issue (${issue.code}): ${issue.message}`),
+    ...(loaded.design.calibre === undefined ? {} : { calibre: loaded.design.calibre }),
+    appearance: {
+      variant: loaded.design.template,
+      ...(loaded.design.finish ? { finish: loaded.design.finish } : {}),
+    },
+  };
+};
+
+const readFixtureAssembly = (text: string, raw: unknown): ReadAssemblyResult => {
   const parsed = parseAssemblyJson(text);
   if (!parsed.ok) {
     return { message: `${parsed.error.path}: ${parsed.error.message}` };
@@ -93,11 +95,27 @@ const readAssembly = (
   if (!metadata.ok) {
     return { message: metadata.message };
   }
+  const calibre = isRecord(raw) ? raw.calibre : undefined;
+  if (calibre !== undefined && (typeof calibre !== 'string' || calibre.trim() === '')) {
+    return { message: 'calibre: expected a non-empty cartridge id' };
+  }
   return {
     assembly: parsed.assembly,
     warnings: [],
     appearance: metadata.context ?? FIXTURE_APPEARANCE[parsed.assembly.name] ?? {},
+    ...(calibre === undefined ? {} : { calibre }),
   };
+};
+
+/** A design file has a `format`; anything else is read as a bare assembly (a fixture). */
+const readAssembly = (text: string): ReadAssemblyResult => {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch (error) {
+    return { message: `invalid JSON: ${error instanceof Error ? error.message : String(error)}` };
+  }
+  return isRecord(raw) && 'format' in raw ? readDesignAssembly(text) : readFixtureAssembly(text, raw);
 };
 
 /** Turns a design or fixture file's text into the `.glb` bytes and the deadvox model entry. */
@@ -110,7 +128,19 @@ export const exportFileText = (
   if ('message' in read) {
     return { ok: false, message: read.message };
   }
-  const result = exportGunGlb(read.assembly, asset, read.appearance, metadata);
+  if (read.calibre !== undefined && metadata.cartridge !== undefined && metadata.cartridge.id !== read.calibre) {
+    return {
+      ok: false,
+      message: `design calibre ${JSON.stringify(read.calibre)} does not match supplied cartridge ${JSON.stringify(metadata.cartridge.id)}`,
+    };
+  }
+  const cartridgeResult = readCartridge(read.calibre);
+  if (!cartridgeResult.ok) {
+    return { ok: false, message: `calibre: ${cartridgeResult.message}` };
+  }
+  const exportMetadata =
+    metadata.cartridge || !cartridgeResult.cartridge ? metadata : { ...metadata, cartridge: cartridgeResult.cartridge };
+  const result = exportGunGlb(read.assembly, asset, read.appearance, exportMetadata);
   if (!result.ok) {
     return { ok: false, message: `export refused: ${JSON.stringify(result.error)}` };
   }

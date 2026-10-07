@@ -8,6 +8,7 @@ import { partNodeName } from '../src/core/glb.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
+import { AK_MAGAZINE_CALIBRE_BY_VARIANT } from '../src/gun/akMagazineCalibre.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
 import { ATTACHMENT_IDS, type AttachmentMetadata, attachmentSlots } from '../src/gun/attachments.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
@@ -17,6 +18,7 @@ import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { OPTIC_CATALOG } from '../src/gun/optics.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
+import { loadCorpus } from './helpers.ts';
 
 const design = (name: string): Assembly => {
   const text = readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8');
@@ -38,6 +40,16 @@ const exported = (assembly: Assembly, id: string) => {
 const validateInDeadvox = (model: unknown) =>
   buildRegistry([{ source: 'gungen-attachment-test', data: { models: [model] } }]);
 
+const hasExpectedRailSpan = (attachment: AttachmentMetadata): boolean =>
+  attachment.mount === 'muzzle'
+    ? attachment.properties.railSpanNotches === undefined
+    : attachment.properties.railSpanNotches !== undefined;
+
+const suppressorPropertiesMissing = (attachment: AttachmentMetadata): boolean => {
+  const { noiseFactor, wearClass } = attachment.properties;
+  return noiseFactor === undefined || noiseFactor <= 0 || noiseFactor >= 1 || !wearClass;
+};
+
 const attachmentMetadataProblems = (id: string, attachment: AttachmentMetadata | undefined): string[] => {
   if (!attachment) {
     return [`${id} has no attachment metadata`];
@@ -49,14 +61,13 @@ const attachmentMetadataProblems = (id: string, attachment: AttachmentMetadata |
   if (id.startsWith('optic-') && (!attachment.properties.reticleKind || attachment.sight?.kind !== 'optic')) {
     problems.push('optic reticle or sight frame is missing');
   }
+  if (!hasExpectedRailSpan(attachment)) {
+    problems.push('rail notch span does not match attachment mount');
+  }
   if (id === 'rail-front-sight' && attachment.sight?.kind !== 'iron') {
     problems.push('iron sight frame is missing');
   }
-  const { noiseFactor, wearClass } = attachment.properties;
-  if (
-    attachment.kind === 'suppressor' &&
-    (noiseFactor === undefined || noiseFactor <= 0 || noiseFactor >= 1 || !wearClass)
-  ) {
+  if (attachment.kind === 'suppressor' && suppressorPropertiesMissing(attachment)) {
     problems.push('suppressor gameplay properties are missing');
   }
   if (attachment.kind === 'flashlight-mount' && attachment.mount !== 'rail-side') {
@@ -158,6 +169,76 @@ describe('attachment parts and export metadata', () => {
     ).toBe(true);
   });
 
+  it('rejects two fitted attachments whose rail notch spans overlap', () => {
+    const model = exported(design('archetype-ar'), 'ar_overlap');
+    const fitted = model.modelEntry.attachments?.find(({ mount }) => mount !== 'muzzle');
+    const anchor = model.modelEntry.attachmentSlots?.find(({ id }) => id === fitted?.mountedAt);
+    const span = fitted?.properties.railSpanNotches;
+    if (!(fitted && anchor?.railId && anchor.notchIndex !== undefined && span)) {
+      throw new Error('AR default optic has no rail span');
+    }
+    const min = anchor.notchIndex + span.minOffset;
+    const max = anchor.notchIndex + span.maxOffset;
+    const conflict = model.modelEntry.attachmentSlots?.find(
+      ({ id, railId, notchIndex }) =>
+        id !== anchor.id &&
+        railId === anchor.railId &&
+        notchIndex !== undefined &&
+        notchIndex + span.minOffset <= max &&
+        notchIndex + span.maxOffset >= min,
+    );
+    if (!conflict) {
+      throw new Error('AR optic span covers no other rail notch');
+    }
+    const invalid = {
+      ...model.modelEntry,
+      attachments: [
+        ...(model.modelEntry.attachments ?? []),
+        { ...fitted, id: 'overlapping-attachment', node: 'overlapping_node', mountedAt: conflict.id },
+      ],
+    };
+    expect(validateInDeadvox(invalid).issues.length).toBeGreaterThan(0);
+  });
+
+  it("does not export a fitted suppressor's female tip as a mount slot", () => {
+    const ar = design('archetype-ar');
+    const assembly: Assembly = {
+      ...ar,
+      parts: { ...ar.parts, suppressor: { family: 'suppressor', params: { type: 'real-suppressor' } } },
+      connections: [...ar.connections, { from: 'barrel.muzzle', to: 'suppressor.base' }],
+    };
+    const model = exported(assembly, 'ar_suppressor');
+    expect(model.modelEntry.attachmentSlots?.some(({ id }) => id.startsWith('suppressor.'))).toBe(false);
+    expect(
+      model.modelEntry.attachments?.some(
+        ({ id, mountedAt }) => id === 'real-suppressor' && mountedAt === 'barrel.muzzle.0',
+      ),
+    ).toBe(true);
+  });
+
+  it('finds an attachment host from its male mount port when another connection touches its female tip first', () => {
+    const ar = design('archetype-ar');
+    const assembly: Assembly = {
+      ...ar,
+      parts: {
+        ...ar.parts,
+        suppressor: { family: 'suppressor', params: { type: 'real-suppressor' } },
+        tipDevice: { family: 'suppressor', params: { type: 'improvised-suppressor' } },
+      },
+      connections: [
+        { from: 'suppressor.muzzle', to: 'tipDevice.base' },
+        { from: 'barrel.muzzle', to: 'suppressor.base' },
+        ...ar.connections,
+      ],
+    };
+    const result = exportGunGlb(assembly, { id: 'ar_tip_device', file: 'assets/models/ar_tip_device.glb' }, {});
+    if (!result.ok) {
+      throw new Error(JSON.stringify(result.error));
+    }
+    const suppressor = result.modelEntry.attachments?.find(({ id }) => id === 'real-suppressor');
+    expect(suppressor?.mountedAt).toBe('barrel.muzzle.0');
+  });
+
   it('exports the fitted magazine node and replacement transform as the item-owned slot', () => {
     for (const name of ['archetype-ar', 'archetype-ak-akm']) {
       const assembly = design(name);
@@ -184,36 +265,52 @@ describe('attachment parts and export metadata', () => {
     }
   });
 
-  it('selects the AKM magazine profile for the 7.62×39 AK design', () => {
-    const akm = design('archetype-ak-akm');
-    expect(akm.parts.magazine?.params?.variant).toBe('akm');
-    expect(akm.parts.magazine?.params?.profile).toBe('ak-curved');
+  it("generates an AK magazine whose calibre matches the template's", () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template?.calibre) {
+      throw new Error('AK template has no explicit calibre');
+    }
+    const generated = generateValid(template, gunDomain, 0);
+    const variant = generated?.assembly.parts.magazine?.params?.variant as
+      | keyof typeof AK_MAGAZINE_CALIBRE_BY_VARIANT
+      | undefined;
+    expect(generated).toBeDefined();
+    expect(variant).toBeDefined();
+    expect(AK_MAGAZINE_CALIBRE_BY_VARIANT[variant!]).toBe(template.calibre);
   });
 
-  it('exports every mount pose, including open slots, on every firearm template', () => {
-    for (const [index, template] of TEMPLATES.entries()) {
-      const generated = generateValid(template, gunDomain, 73 + index);
-      if (!generated) {
-        throw new Error(`${template.name} has no valid fixture`);
-      }
-      const model = exported(generated.assembly, `template_${template.name.replaceAll('-', '_')}`);
+  it('exports every mount pose for the design and fixture corpus', () => {
+    let checked = 0;
+    for (const { label, assembly } of loadCorpus()) {
+      const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`);
       const slots = model.modelEntry.attachmentSlots ?? [];
-      expect(slots.length).toBeGreaterThan(0);
-      expect(slots.some(({ id }) => !model.modelEntry.attachments?.some(({ mountedAt }) => mountedAt === id))).toBe(
-        true,
-      );
+      const fitted = model.modelEntry.attachments ?? [];
       expect(
-        (model.modelEntry.attachments ?? []).every(({ mountedAt, mount }) =>
-          slots.some((slot) => slot.id === mountedAt && slot.mount === mount),
-        ),
-        `${template.name}: ${JSON.stringify(model.modelEntry.attachments?.map(({ id, mountedAt, mount }) => ({ id, mountedAt, mount })))}`,
+        fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
+        label,
       ).toBe(true);
       const deadvox = validateInDeadvox(model.modelEntry);
-      expect(deadvox.issues).toEqual([]);
-      expect(deadvox.registry.models.has(model.modelEntry.id)).toBe(true);
-      const expectedPorts = attachmentSlots(resolve(generated.assembly, gunDomain));
+      expect(deadvox.issues, label).toEqual([]);
+      expect(deadvox.registry.models.has(model.modelEntry.id), label).toBe(true);
+      const expectedPorts = attachmentSlots(resolve(assembly, gunDomain));
       expect(slots).toHaveLength(expectedPorts.length);
+      for (const expected of expectedPorts) {
+        expect(
+          slots.some((slot) => slot.id === expected.id),
+          `${label}: ${expected.id}`,
+        ).toBe(true);
+        if (expected.mount === 'muzzle') {
+          expect(slots.find(({ id }) => id === expected.id)).not.toHaveProperty('railId');
+        } else {
+          expect(slots.find(({ id }) => id === expected.id)).toMatchObject({
+            railId: expected.railId,
+            notchIndex: expected.notchIndex,
+          });
+        }
+      }
+      checked += expectedPorts.length;
     }
+    expect(checked).toBeGreaterThan(0);
   });
 
   it('rejects an attachment on the wrong mount through port-compat', () => {

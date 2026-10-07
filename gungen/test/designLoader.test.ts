@@ -10,7 +10,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { GUN_FINISH_SLOTS } from '../src/gun/palette.ts';
 import type { PrefabCatalogue } from '../src/gun/prefabs.ts';
 import { ar, TEMPLATES } from '../src/gun/templates.ts';
-import { editorStateFromDesign, saveDesign } from '../src/viewer/designEditor.ts';
+import { createEditorState, editorStateFromDesign, saveDesign } from '../src/viewer/designEditor.ts';
 import { loadFixture } from './helpers.ts';
 
 /** A test catalogue; the real content belongs to 3.1. Two revisions of one id coexist. */
@@ -157,6 +157,22 @@ describe('loadDesign: fatal errors', () => {
 });
 
 describe('loadDesign: finish validation', () => {
+  it('retains the template calibre in generated design files', () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template?.calibre) {
+      throw new Error('AK template has no explicit calibre');
+    }
+    const generatedAk = generateValid(template, gunDomain, 0);
+    if (!generatedAk) {
+      throw new Error('AK template has no valid generated assembly');
+    }
+    const saved = saveDesign(createEditorState(template, generatedAk.assembly), gunDomain);
+    expect(saved.ok).toBe(true);
+    if (saved.ok) {
+      expect(saved.design.calibre).toBe(template.calibre);
+    }
+  });
+
   it('loads, saves, and exports overrides for every declared gun finish slot', () => {
     const finish = Object.fromEntries(GUN_FINISH_SLOTS.map((slot) => [slot, 'polymer-fde']));
     const loaded = loadGunDesign(JSON.stringify(makeDesign({ finish })));

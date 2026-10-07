@@ -17,6 +17,7 @@ import {
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
+import type { MountKind } from './mounts.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
@@ -203,6 +204,21 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
   };
 };
 
+const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKind): string | undefined => {
+  for (const { conn, from, to } of resolved.connections) {
+    if (from.part === partId) {
+      if (from.port.gender === 'male' && from.port.mount === mount && to.port.gender === 'female') {
+        return `${to.part}.${to.port.id}.${conn.slot ?? 0}`;
+      }
+      continue;
+    }
+    if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
+      return `${from.part}.${from.port.id}.0`;
+    }
+  }
+  return undefined;
+};
+
 const attachmentData = (resolved: Resolved): (AttachmentMetadata & { node: string; mountedAt: string })[] =>
   [...resolved.defs.entries()].flatMap(([partId, definition]) => {
     const instance = resolved.assembly.parts[partId];
@@ -219,16 +235,15 @@ const attachmentData = (resolved: Resolved): (AttachmentMetadata & { node: strin
     if (!metadata) {
       return [];
     }
-    const connection = resolved.connections.find(({ from, to }) => from.part === partId || to.part === partId);
-    const host = connection && [connection.from, connection.to].find((endpoint) => endpoint.port.gender === 'female');
-    if (!host) {
+    const mountedAt = attachmentMountSlot(resolved, partId, metadata.mount);
+    if (!mountedAt) {
       return [];
     }
     return [
       {
         ...metadata,
         node: partNodeName(partId, instance.family),
-        mountedAt: `${host.part}.${host.port.id}.${connection.conn.slot ?? 0}`,
+        mountedAt,
       },
     ];
   });
