@@ -23,6 +23,7 @@ const stageScriptPathPattern = /^node (\S+\.mjs)\b/;
 const directChromiumLaunchPattern = /\bchromium\.launch\s*\(/;
 const sharedChromiumLaunchPattern = /\blaunchChromium\s*\(/;
 const helperChromiumLaunchPattern = /chromium\.launch\s*\(/;
+const unhandledRejectionListenerPattern = /process\.(?:once|on)\(['"]unhandledRejection['"]/;
 const expression = (body) => `\${{ ${body} }}`;
 const browserStagePaths = [
   ...new Set(
@@ -156,7 +157,7 @@ describe('deadvox browser CI coverage', () => {
     assert.match(helper, helperChromiumLaunchPattern, 'the shared helper owns Chromium launch');
     assert.doesNotMatch(
       helper,
-      /process\.(?:once|on)\(['"]unhandledRejection['"]/,
+      unhandledRejectionListenerPattern,
       'the helper must not swallow floating rejections',
     );
   });
