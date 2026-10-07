@@ -186,9 +186,11 @@ pointer and keyboard behavior, not pixels or WebGL output, so it uses render-fre
 and `--disable-gpu`) and asserts that no WebGL context is requested. This keeps the stage out of
 the SwiftShader initialization path reported in #256; pixel checks remain in visual stages.
 `UI_BROWSER_LAUNCH` records the managed launcher and graphics arguments, while
-`UI_BROWSER_GRAPHICS` records the browser version, render mode and WebGL requests. The issue #287
-revisit is documented in `docs/browser-ci.md`, including the system-Chrome/Playwright version gap
-and the evidence needed to distinguish it from the observed D-Bus parse errors.
+`UI_BROWSER_GRAPHICS` records the browser version, render mode and WebGL requests. Issue #287
+tracks a Chromium launch timeout before page creation. The system-browser version gap and D-Bus
+messages are competing hypotheses, not a diagnosis; the branch-only comparison in
+`tools/chromium-launch-diagnostic.mjs` tests their effects, while a clean finite sample cannot rule
+out a rarer stall. See `docs/browser-ci.md` for the CI evidence boundary.
 
 Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
 separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,

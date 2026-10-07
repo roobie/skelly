@@ -29,9 +29,10 @@ installs that browser on every non-Firefox shard, keyed by the Deadvox lockfile.
 The helper records executable path, version and `DBUS_SESSION_BUS_ADDRESS` on
 launch failure; `deadvox/test/browser/playwrightDebugBuffer.mjs`,
 `bufferPlaywrightDebugOutput`, retains a bounded tail of `pw:browser` output and
-prints it on failure. The d133-1 branch-only diagnostic compares managed and
-runner system Chromium on one runner image without retries; its result will
-resolve whether the version gap explains the observed timeout.
+prints it on failure. The d133-1 branch-only diagnostic samples managed and
+runner system Chromium against different D-Bus states to test whether either
+factor tracks launch delay or failure. A clean sample is evidence, not proof that
+an intermittent timeout cannot recur; see `deadvox/tools/chromium-launch-diagnostic.mjs`.
 
 The required `check` in `.github/workflows/deadvox.yml` uses
 `tools/browser-ci-result.mjs`, `assertBrowserResult`. A selected layout's jobs
