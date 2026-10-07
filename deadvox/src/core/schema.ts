@@ -750,6 +750,8 @@ const LayoutBuilding = strictObject({
 
 const SiteLayoutSchema = strictObject({
   id: Id,
+  /** Fixture and showcase layouts are not world sources; unmarked authored layouts contribute building containers and fixed loot. */
+  demo: optional(vBoolean()),
   bounds: pipe(
     strictObject({ x0: Metres, z0: Metres, x1: Metres, z1: Metres }),
     check((r) => r.x0 < r.x1 && r.z0 < r.z1, 'bounds must have positive area'),

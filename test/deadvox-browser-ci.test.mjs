@@ -24,6 +24,7 @@ const uncovered = (name) => browserStages[name].map(describeStage).filter((stage
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
 const serialControl = /start independently/;
+const customChromiumSelection = /\b(?:executablePath|channel)\s*:/;
 const expression = (body) => `\${{ ${body} }}`;
 
 const partitionFixture = () => ({
@@ -102,6 +103,17 @@ describe('deadvox browser CI coverage', () => {
       .filter((name) => !(name in quarantinedScripts))
       .flatMap((name) => uncovered(name));
     assert.deepEqual(missing, []);
+  });
+
+  it('uses Playwright-managed Chromium for save-storage', () => {
+    const saveStorage = readFileSync(join(ROOT, 'deadvox/test/browser/save-storage.mjs'), 'utf8');
+    const launchOptions = saveStorage.split('browser = await chromium.launch({')[1]?.split('});')[0];
+    assert.ok(launchOptions, 'save-storage declares a Chromium launch');
+    assert.doesNotMatch(
+      launchOptions,
+      customChromiumSelection,
+      'save-storage must not select a system browser through executablePath or channel',
+    );
   });
 
   it('rejects a missing case or a case executed in duplicate shards', () => {

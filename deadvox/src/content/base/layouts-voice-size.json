@@ -2,6 +2,7 @@
   "layouts": [
     {
       "id": "voice_size",
+      "demo": true,
       "bounds": { "x0": 0, "z0": 0, "x1": 32, "z1": 32 },
       "ground": 21,
       "terrain": [],

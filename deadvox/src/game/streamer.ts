@@ -65,6 +65,7 @@ export class Streamer {
   private readonly workers: Worker[] = [];
   private readonly maxInFlight: number;
   private generationFailed = false;
+  private replayControlled = false;
   private readonly offsets: [number, number][] = [];
   private nextWorker = 0;
   private center: [number, number] = [Number.NaN, Number.NaN];
@@ -108,6 +109,51 @@ export class Streamer {
     return this.neighboursGenerated(toChunk(Math.floor(x)), toChunk(Math.floor(z)));
   }
 
+  setReplayControlled(): void {
+    this.replayControlled = true;
+  }
+
+  /** Generated terrain columns at a replay recording boundary. */
+  generatedColumns(): [number, number][] {
+    return [...this.generated]
+      .map((key) => key.split(',').map(Number) as [number, number])
+      .sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
+  }
+
+  hasGeneratedColumn(cx: number, cz: number): boolean {
+    return this.generated.has(`${cx},${cz}`);
+  }
+
+  /** Generates replay-required terrain without applying its load-time simulation effects. */
+  generateForReplay(cx: number, cz: number): boolean {
+    if (this.generated.has(`${cx},${cz}`)) {
+      return true;
+    }
+    if (!(this.replayControlled && this.inRange(cx, cz))) {
+      return false;
+    }
+    this.generate(cx, cz, false);
+    return this.generated.has(`${cx},${cz}`);
+  }
+
+  /** Removes replay-unloaded terrain without applying its unload-time simulation effects. */
+  unloadForReplay(cx: number, cz: number): void {
+    const col = `${cx},${cz}`;
+    if (!(this.replayControlled && this.generated.delete(col))) {
+      return;
+    }
+    const { world, scale } = this.opts;
+    for (let cy = scale.minCy; cy <= scale.maxCy; cy++) {
+      const key = chunkKey(cx, cy, cz);
+      if (!world.getChunk(cx, cy, cz)?.edited) {
+        world.removeChunk(cx, cy, cz);
+        this.onDataChange?.([cx * CHUNK, cy * CHUNK, cz * CHUNK]);
+        this.dirty.delete(key);
+        this.versions.delete(key);
+      }
+    }
+  }
+
   /**
    * Columns within `within` chunks of (x, z) (square) that aren't fully meshed yet:
    * not generated, or with a chunk waiting for or being meshed. Zero means no holes.
@@ -149,7 +195,7 @@ export class Streamer {
     const { radius } = this.opts;
 
     let budget = COLUMNS_PER_FRAME;
-    for (const [dx, dz] of this.offsets) {
+    for (const [dx, dz] of this.replayControlled ? [] : this.offsets) {
       if (this.generationFailed || budget === 0) {
         break;
       }
@@ -190,7 +236,9 @@ export class Streamer {
           this.dirty.add(key); // remesh when we come back
         }
       }
-      this.unloadFar();
+      if (!this.replayControlled) {
+        this.unloadFar();
+      }
     }
   }
 
@@ -232,7 +280,7 @@ export class Streamer {
   }
 
   /** Generates a column if it doesn't exist yet. Returns true if it did work. */
-  private generate(cx: number, cz: number): boolean {
+  private generate(cx: number, cz: number, notify = true): boolean {
     if (this.generationFailed) {
       return false;
     }
@@ -256,7 +304,9 @@ export class Streamer {
         }
       }
       this.generated.add(col);
-      this.onColumn(cx, cz);
+      if (notify) {
+        this.onColumn(cx, cz);
+      }
       return true;
     } catch (error) {
       this.generationFailed = true;
