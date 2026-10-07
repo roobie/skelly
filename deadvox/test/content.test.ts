@@ -862,6 +862,7 @@ describe('content references', () => {
     if (armoury === undefined || site === undefined) {
       throw new Error('base content needs a military table and an authored-only template with a loot container');
     }
+    site.military = true;
     for (const [key, entry] of Object.entries(site.palette)) {
       if (typeof entry === 'object' && 'loot' in entry) {
         site.palette[key] = { ...entry, loot: armoury.id };
@@ -869,6 +870,54 @@ describe('content references', () => {
     }
     const { registry, issues } = withBase({ source: 'armoury-site.json', data: { templates: [site] } });
     expect(issues).toEqual([]);
+    const { found } = checkReachability(registry);
+    const military = [...militaryLootItems(registry)];
+    expect(military.length).toBeGreaterThan(0);
+    expect(military.filter((id) => !found.has(id))).toEqual([]);
+  });
+
+  it('limits military tables to military templates and forbids them on zombie types', () => {
+    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
+    if (armoury === undefined) {
+      throw new Error('base content needs a military loot table');
+    }
+    const template = {
+      size: [2, 2, 2],
+      palette: { C: { furniture: 'crate', loot: armoury.id } },
+      layers: [
+        ['CC', 'CC'],
+        ['CC', 'CC'],
+      ],
+    };
+    const source = 'military-site.json';
+    const zombie = structuredClone(baseRegistry.zombies.get('shambler')!);
+    zombie.id = 'fixture_military_looter';
+    zombie.loot = armoury.id;
+    const result = withBase({
+      source,
+      data: {
+        templates: [{ ...template, id: 'fixture_nonmilitary_site', military: false }],
+        zombies: [zombie],
+      },
+    });
+    expect(result.issues).toContainEqual({
+      source,
+      path: 'templates[0].palette["C"].loot',
+      message: 'military loot tables may only appear in a military template',
+    });
+    expect(result.issues).toContainEqual({
+      source,
+      path: 'zombies[0].loot',
+      message: 'zombie loot may not use a military table',
+    });
+  });
+
+  it('makes every military-only item reachable from the playtest layout', () => {
+    const playtest = baseRegistry.layouts.get('playtest');
+    if (playtest === undefined) {
+      throw new Error('base content needs the playtest layout');
+    }
+    const registry = { ...baseRegistry, layouts: new Map([[playtest.id, playtest]]) };
     const { found } = checkReachability(registry);
     const military = [...militaryLootItems(registry)];
     expect(military.length).toBeGreaterThan(0);

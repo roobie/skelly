@@ -136,6 +136,18 @@
       "name": "Hazard paint",
       "color": "#c9a43a",
       "solid": true
+    },
+    {
+      "id": "chain_link",
+      "name": "Chain-link fence",
+      "color": "#89979a",
+      "solid": true
+    },
+    {
+      "id": "sandbag",
+      "name": "Sandbag",
+      "color": "#9b8d6a",
+      "solid": true
     }
   ]
 }

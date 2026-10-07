@@ -13,7 +13,13 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
-import { type CompiledTemplate, compileTemplate, footprint, placedPieces } from '../src/core/templates.ts';
+import {
+  type CompiledTemplate,
+  compileTemplate,
+  footprint,
+  placedPieces,
+  placedSpawns,
+} from '../src/core/templates.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -35,7 +41,7 @@ type Bounds = ReturnType<typeof buildingBounds>;
 
 const compactFixture = (): SiteLayoutDef => ({
   ...layout,
-  bounds: { x0: 85, z0: 40, x1: 370, z1: 180 },
+  bounds: layout.bounds,
   woodlands: [],
 });
 
@@ -338,6 +344,17 @@ describe('authored fixed loot', () => {
     for (const seeded of seededCounts) {
       expect(seeded.found).toBeGreaterThanOrEqual(seeded.expected);
     }
+    const placedItems = [...forward.entities.all].flatMap((entity) =>
+      (entity.pockets ?? []).flatMap((pocket) => pocket.map(({ item }) => item)),
+    );
+    const rifles = placedItems.filter(({ type }) => ['rifle_assault', 'rifle_ak'].includes(type));
+    expect(rifles.length).toBeGreaterThan(0);
+    expect(rifles.every((rifle) => rifle.firearm?.chamber === 'empty' && rifle.slots?.magazine === undefined)).toBe(
+      true,
+    );
+    const magazines = placedItems.filter(({ type }) => type.startsWith('magazine_'));
+    expect(magazines.length).toBeGreaterThan(0);
+    expect(magazines.every((magazine) => (magazine.cartridges ?? []).length === 0)).toBe(true);
     expect(contents(forward)).toEqual(contents(reverse));
   });
 
@@ -414,6 +431,62 @@ describe('authored fixed loot', () => {
     expect(cellar).toBeDefined();
     expect(cellar!.override.at[1]).toBe(cabin?.access?.storeys.find(({ id }) => id === 'cellar')?.floor);
     expect(fixedCount(overrides, 'playtest_dads_cabin', 'pump_shotgun')).toBeGreaterThan(0);
+  });
+
+  it('locks the armoury, keeps fixed guns empty, and separates its loose rounds', () => {
+    const overrides = placedOverrides(layout);
+    const officerKey = overrideFor(overrides, 'medical_hall', 'camp_armoury_key');
+    expect(officerKey).toBeDefined();
+    expect(furnitureAt(officerKey!)).toBe('dead_officer_body');
+    for (const rifle of ['rifle_assault', 'rifle_ak']) {
+      expect(fixedCount(overrides, 'camp_armoury', rifle)).toBeGreaterThan(0);
+    }
+    for (const magazine of ['magazine_stanag_30', 'magazine_akm_30']) {
+      expect(fixedCount(overrides, 'camp_armoury', magazine)).toBeGreaterThan(0);
+    }
+    const armouryLoot = overrides.filter(({ building }) => building.template === 'camp_armoury');
+    const fixedRifles = armouryLoot
+      .flatMap(({ override }) => override.items)
+      .filter(({ item }) => item.startsWith('rifle_'));
+    const rackCapacity = result.registry.furniture
+      .get('rifle_rack')!
+      .container!.pockets.reduce((sum, pocket) => sum + pocket.grid[0] * pocket.grid[1], 0);
+    expect(fixedRifles.length).toBeGreaterThan(0);
+    expect(fixedRifles.length).toBeLessThan(rackCapacity);
+    const rifleLoot = armouryLoot.find(({ override }) => override.items.some(({ item }) => item.startsWith('rifle_')));
+    const ammunition = armouryLoot.find(({ override }) =>
+      override.items.some(({ item }) => item.startsWith('cartridge_')),
+    );
+    const magazines = armouryLoot.find(({ override }) =>
+      override.items.some(({ item }) => item.startsWith('magazine_')),
+    );
+    expect(rifleLoot).toBeDefined();
+    expect(ammunition).toBeDefined();
+    expect(magazines).toBeDefined();
+    expect(ammunition).not.toBe(rifleLoot);
+    expect(ammunition).not.toBe(magazines);
+    expect(furnitureAt(ammunition!)).toBe('ammo_crate');
+    const sparse = result.registry.loot.get('camp_armoury_spare')!;
+    const nothingWeight = sparse.entries.find(({ nothing }) => nothing)?.weight ?? 0;
+    const itemWeight = sparse.entries
+      .filter(({ item }) => item !== undefined)
+      .reduce((sum, entry) => sum + entry.weight, 0);
+    expect(nothingWeight).toBeGreaterThanOrEqual(itemWeight);
+
+    const inventory = new Inventory(result.registry);
+    for (const rifle of ['rifle_assault', 'rifle_ak']) {
+      expect(inventory.create(rifle)).toMatchObject({ firearm: { chamber: 'empty' }, slots: {} });
+    }
+    for (const magazine of ['magazine_stanag_30', 'magazine_akm_30']) {
+      expect(inventory.create(magazine).cartridges ?? []).toEqual([]);
+    }
+    const armoury = result.registry.templates.get('camp_armoury')!;
+    const compiledArmoury = compileTemplate(result.registry, armoury);
+    const door = compiledArmoury.pieces.find((piece) => piece.furniture === 'container_door');
+    expect(door?.lock).toEqual({ id: 'camp_armoury', locked: true });
+    expect(result.registry.furniture.get('container_door')?.door?.prying).toBeDefined();
+    expect(compiledArmoury.pieces.some((piece) => piece.furniture === 'camp_closing_note')).toBe(true);
+    expect(compiledArmoury.spawns).toEqual([]);
   });
 
   it('keeps every fixed-loot container reachable from outside at standing height', () => {
@@ -532,6 +605,39 @@ describe('authored fixed loot', () => {
         polylineDistance([spawn.position[0], spawn.position[2]], track.points) <= track.width * 2,
     );
     expect(roadsideThreats).toHaveLength(2);
+    const runners = layout.shamblers.filter(({ type }) => type === 'runner');
+    const fenceRects = layout.buildings
+      .filter(({ template }) => template === 'camp_fence_run')
+      .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
+    const fenceBounds = {
+      x0: Math.min(...fenceRects.map(({ x0 }) => x0)),
+      z0: Math.min(...fenceRects.map(({ z0 }) => z0)),
+      x1: Math.max(...fenceRects.map(({ x1 }) => x1)),
+      z1: Math.max(...fenceRects.map(({ z1 }) => z1)),
+    };
+    expect(
+      runners.some(
+        ({ position: [x, , z] }) =>
+          x < fenceBounds.x0 || x > fenceBounds.x1 || z < fenceBounds.z0 || z > fenceBounds.z1,
+      ),
+    ).toBe(true);
+    const campSite = new AuthoredSite(73, result.registry, scale, layout);
+    const campSpawnMarkers = layout.buildings.flatMap((building, index) =>
+      ['camp_command_tent', 'camp_tent'].includes(building.template) ? placedSpawns(campSite.placements[index]!) : [],
+    );
+    expect(campSpawnMarkers.length).toBeGreaterThan(0);
+    expect(
+      campSpawnMarkers.every(({ pos: [x, , z] }) => {
+        const worldX = x * scale.blockSize;
+        const worldZ = z * scale.blockSize;
+        return (
+          worldX >= fenceBounds.x0 && worldX <= fenceBounds.x1 && worldZ >= fenceBounds.z0 && worldZ <= fenceBounds.z1
+        );
+      }),
+    ).toBe(true);
+    const armouryPlacement =
+      campSite.placements[layout.buildings.findIndex(({ template }) => template === 'camp_armoury')]!;
+    expect(placedSpawns(armouryPlacement)).toEqual([]);
     const parsedLayout = result.registry.layouts.get(layout.id)!;
     const parsedThreats = parsedLayout.shamblers;
     const parsedRoadsideThreats = parsedThreats.filter(
@@ -587,5 +693,8 @@ describe('authored fixed loot', () => {
     ]);
     expect(nearCabins.count).toBeGreaterThan(0);
     expect(nearCabins.distance).toBeLessThanOrEqual(track.width * 2);
+    const nearCamp = nearestAreaDistance(fixture, rects, route.samples, ['camp_sandbag_post']);
+    expect(nearCamp.count).toBeGreaterThan(0);
+    expect(nearCamp.distance).toBeLessThanOrEqual(track.width * 2);
   });
 });

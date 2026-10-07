@@ -813,6 +813,8 @@ const TemplateAccessSchema = strictObject({
 
 const TemplateSchema = strictObject({
   id: Id,
+  /** Military supply may be rolled only inside a military site. */
+  military: optional(vBoolean()),
   /** Blocks: [x, y, z]. */
   size: Size,
   /** What each character means: a block id ("air" for empty), or furniture or a spawn point. */

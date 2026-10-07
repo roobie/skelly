@@ -1,0 +1,487 @@
+{
+  "items": [
+    {
+      "id": "camp_armoury_key",
+      "name": "Military armoury key",
+      "category": "tool",
+      "weight": 10,
+      "size": [1, 1],
+      "key": { "lock": "camp_armoury" },
+      "description": "A key for the locked armoury container."
+    },
+    {
+      "id": "camp_supply_manifest",
+      "name": "Military supply manifest",
+      "category": "book",
+      "weight": 5,
+      "size": [1, 1],
+      "readable": {
+        "title": "Clinic supply manifest",
+        "text": "SUPPLY RECORD — COMMUNITY HEALTH SITE\n\nAntibiotics, sampling kits and dressings were sent to the clinic. Keep the ward stocked and the pharmacy secured. The road remains under military protection."
+      }
+    }
+  ],
+  "loot": [
+    {
+      "id": "camp_armoury_spare",
+      "military": true,
+      "rolls": [1, 1],
+      "entries": [
+        { "item": "cartridge_5_d_56x45", "weight": 1, "count": [5, 15] },
+        { "item": "cartridge_7_d_62x39", "weight": 1, "count": [5, 15] },
+        { "item": "cartridge_box_5_d_56x45", "weight": 1 },
+        { "item": "cartridge_box_7_d_62x39", "weight": 1 },
+        { "item": "magazine_stanag_30", "weight": 1 },
+        { "nothing": true, "weight": 6 }
+      ]
+    },
+    {
+      "id": "camp_supplies",
+      "rolls": [1, 2],
+      "entries": [
+        { "item": "canned_beans", "weight": 2 },
+        { "item": "water_bottle", "weight": 2 },
+        { "item": "bandage", "weight": 1 },
+        { "item": "camp_supply_manifest", "weight": 1 },
+        { "nothing": true, "weight": 3 }
+      ]
+    }
+  ],
+  "furniture": [
+    {
+      "id": "container_door",
+      "name": "Steel container door",
+      "size": [2, 4, 1],
+      "color": "#718087",
+      "door": {
+        "handlingSimSeconds": 0.6,
+        "prying": {
+          "quality": 3,
+          "skill": "mechanics",
+          "timeSimSeconds": 15,
+          "fastestTimeSimSeconds": 7.5,
+          "strikeIntervalSimSeconds": 0.5
+        }
+      }
+    },
+    {
+      "id": "rifle_rack",
+      "name": "Rifle rack",
+      "size": [4, 3, 1],
+      "color": "#69716f",
+      "container": { "pockets": [{ "grid": [12, 5], "handlingSimSeconds": 1.2 }] },
+      "loot": "camp_armoury_spare"
+    },
+    {
+      "id": "ammo_crate",
+      "name": "Ammunition crate",
+      "size": [2, 2, 2],
+      "color": "#77725a",
+      "container": { "pockets": [{ "grid": [6, 5], "handlingSimSeconds": 1.2 }] },
+      "loot": "camp_armoury_spare"
+    },
+    {
+      "id": "footlocker",
+      "name": "Footlocker",
+      "size": [2, 2, 1],
+      "color": "#6b756f",
+      "container": { "pockets": [{ "grid": [6, 4], "handlingSimSeconds": 1.0 }] },
+      "loot": "camp_supplies"
+    },
+    {
+      "id": "camp_cot",
+      "name": "Folding cot",
+      "size": [2, 1, 4],
+      "color": "#677a82",
+      "rest": { "quality": 0.6, "sleep": true }
+    },
+    {
+      "id": "field_desk",
+      "name": "Field desk",
+      "size": [3, 2, 2],
+      "color": "#71674f",
+      "container": { "pockets": [{ "grid": [6, 4], "handlingSimSeconds": 1.0 }] },
+      "loot": "camp_supplies"
+    },
+    {
+      "id": "camp_closing_note",
+      "name": "Playtest closing note",
+      "size": [2, 2, 1],
+      "color": "#b8b5a5",
+      "solid": false,
+      "readable": {
+        "title": "A note for the next visitor",
+        "text": "Thank you for playtesting Deadvox. This is the end of the authored military-camp playtest. To share feedback or reach the project home, press F9 and use Project home. You can stop here or continue playing."
+      }
+    },
+    {
+      "id": "camp_orders",
+      "name": "Camp orders board",
+      "size": [2, 2, 1],
+      "color": "#a6936f",
+      "solid": false,
+      "readable": {
+        "title": "Orders for the road",
+        "text": "Hold the road and keep the clinic supplied. The medical site is under the camp's protection. Keep the armoury locked; its key stays with the officer."
+      }
+    },
+    {
+      "id": "camp_sandbag_barricade",
+      "name": "Sandbag barricade",
+      "size": [2, 2, 2],
+      "color": "#9b8d6a",
+      "solid": true
+    }
+  ],
+  "templates": [
+    {
+      "id": "camp_armoury",
+      "military": true,
+      "size": [20, 6, 12],
+      "palette": {
+        ".": "air",
+        "=": "concrete",
+        "#": "galvanized",
+        "D": { "furniture": "container_door", "facing": "n", "lock": { "id": "camp_armoury", "locked": true } },
+        "R": { "furniture": "rifle_rack", "loot": "camp_armoury_spare" },
+        "A": { "furniture": "ammo_crate", "loot": "camp_armoury_spare" },
+        "N": { "furniture": "camp_closing_note" }
+      },
+      "layers": [
+        [
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "====================",
+          "===================="
+        ],
+        [
+          "#########DD#########",
+          "#..................#",
+          "#..................#",
+          "#..RRRR............#",
+          "#..................#",
+          "#......AA..........#",
+          "#......AA..........#",
+          "#............AA....#",
+          "#............AA....#",
+          "#..NN..............#",
+          "#..................#",
+          "####################"
+        ],
+        [
+          "#########DD#########",
+          "#..................#",
+          "#..................#",
+          "#..RRRR............#",
+          "#..................#",
+          "#......AA..........#",
+          "#......AA..........#",
+          "#............AA....#",
+          "#............AA....#",
+          "#..NN..............#",
+          "#..................#",
+          "####################"
+        ],
+        [
+          "#########DD#########",
+          "#..................#",
+          "#..................#",
+          "#..RRRR............#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "####################"
+        ],
+        [
+          "#########DD#########",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "#..................#",
+          "####################"
+        ],
+        [
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################",
+          "####################"
+        ]
+      ]
+    },
+    {
+      "id": "camp_command_tent",
+      "size": [16, 5, 10],
+      "palette": {
+        ".": "air",
+        "T": "fabric",
+        "=": "planks",
+        "W": { "furniture": "field_desk", "loot": "camp_supplies" },
+        "O": { "furniture": "camp_orders" },
+        "F": { "furniture": "footlocker", "loot": "camp_supplies" },
+        "z": { "spawn": "shambler", "chance": 0.5 }
+      },
+      "layers": [
+        [
+          "================",
+          "================",
+          "================",
+          "================",
+          "================",
+          "================",
+          "================",
+          "================",
+          "================",
+          "================"
+        ],
+        [
+          "TTTTTTTTTTTTTTTT",
+          "T..z...........T",
+          "T..............T",
+          "T.....WWW......T",
+          "T.....WWW......T",
+          "T...OO.........T",
+          "T..............T",
+          "T........FF....T",
+          "T..............T",
+          "TTTTTTTTTTTTTTTT"
+        ],
+        [
+          "TTTTTTTTTTTTTTTT",
+          "T..............T",
+          "T..............T",
+          "T.....WWW......T",
+          "T.....WWW......T",
+          "T...OO.........T",
+          "T..............T",
+          "T........FF....T",
+          "T..............T",
+          "TTTTTTTTTTTTTTTT"
+        ],
+        [
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT"
+        ],
+        [
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT",
+          "TTTTTTTTTTTTTTTT"
+        ]
+      ]
+    },
+    {
+      "id": "camp_container",
+      "size": [18, 6, 10],
+      "palette": {
+        ".": "air",
+        "=": "concrete",
+        "#": "galvanized",
+        "D": { "furniture": "container_door", "facing": "n" },
+        "F": { "furniture": "footlocker", "loot": "camp_supplies" }
+      },
+      "layers": [
+        [
+          "==================",
+          "==================",
+          "==================",
+          "==================",
+          "==================",
+          "==================",
+          "==================",
+          "==================",
+          "==================",
+          "=================="
+        ],
+        [
+          "########DD########",
+          "#................#",
+          "#................#",
+          "#...FF...........#",
+          "#...FF...........#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "##################"
+        ],
+        [
+          "########DD########",
+          "#................#",
+          "#................#",
+          "#...FF...........#",
+          "#...FF...........#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "##################"
+        ],
+        [
+          "########DD########",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "##################"
+        ],
+        [
+          "########DD########",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "#................#",
+          "##################"
+        ],
+        [
+          "##################",
+          "##################",
+          "##################",
+          "##################",
+          "##################",
+          "##################",
+          "##################",
+          "##################",
+          "##################",
+          "##################"
+        ]
+      ]
+    },
+    {
+      "id": "camp_tent",
+      "size": [12, 4, 8],
+      "palette": {
+        ".": "air",
+        "T": "fabric",
+        "B": { "furniture": "camp_cot" },
+        "F": { "furniture": "footlocker", "loot": "camp_supplies" },
+        "z": { "spawn": "shambler", "chance": 0.4 }
+      },
+      "layers": [
+        [
+          "............",
+          "............",
+          "............",
+          "............",
+          "............",
+          "............",
+          "............",
+          "............"
+        ],
+        [
+          "TTTT....TTTT",
+          "T..........T",
+          "T.BB..BB...T",
+          "T.BB..BB...T",
+          "T.BB..BBFF.T",
+          "T.BB..BBFF.T",
+          "T..........T",
+          "TTTT....TTTT"
+        ],
+        [
+          "TTTT....TTTT",
+          "TTTT....TTTT",
+          "TTTT....TTTT",
+          "TTTT....TTTT",
+          "TTTT....FFTT",
+          "TTTT....FFTT",
+          "TTTT....TTTT",
+          "TTTT....TTTT"
+        ],
+        [
+          "............",
+          "............",
+          "............",
+          "............",
+          "............",
+          "............",
+          "............",
+          "............"
+        ]
+      ]
+    },
+    {
+      "id": "camp_watchtower",
+      "size": [8, 8, 8],
+      "palette": { ".": "air", "#": "planks", "S": { "furniture": "camp_sandbag_barricade" } },
+      "layers": [
+        ["........", "........", "........", "........", "........", "........", "........", "........"],
+        ["........", "........", "........", "........", "........", "........", "........", "........"],
+        ["########", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#"],
+        ["########", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#"],
+        ["########", "#......#", "#......#", "#......#", "#......#", "#......#", "#......#", "########"],
+        ["........", "........", "........", "........", "........", "........", "........", "........"]
+      ]
+    },
+    {
+      "id": "camp_fence_run",
+      "size": [32, 4, 2],
+      "palette": { ".": "air", "F": "chain_link" },
+      "layers": [
+        ["................................", "................................"],
+        ["FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"],
+        ["FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"],
+        ["................................", "................................"]
+      ]
+    },
+    {
+      "id": "camp_sandbag_post",
+      "size": [8, 3, 8],
+      "palette": { ".": "air", "S": "sandbag" },
+      "layers": [
+        ["........", "........", "........", "........", "........", "........", "........", "........"],
+        ["SSSSSSSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S......S", "SSSSSSSS"],
+        ["SSSSSSSS", "S......S", "S......S", "S......S", "S......S", "S......S", "S......S", "SSSSSSSS"]
+      ]
+    }
+  ]
+}

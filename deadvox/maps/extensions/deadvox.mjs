@@ -33,6 +33,7 @@ function content() {
     'templates-stairs.json',
     'templates-playtest.json',
     'templates-medical.json',
+    'camp.json',
   ];
   const templates = [];
   for (const file of templateFiles) {

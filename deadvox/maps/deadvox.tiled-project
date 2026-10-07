@@ -13,6 +13,12 @@
       "storageType": "string",
       "values": [
         "bungalow",
+        "camp_armoury",
+        "camp_command_tent",
+        "camp_fence_run",
+        "camp_sandbag_post",
+        "camp_tent",
+        "camp_watchtower",
         "corner_store",
         "dads_cabin",
         "garage",
@@ -43,6 +49,7 @@
       "type": "enum",
       "storageType": "string",
       "values": [
+        "runner",
         "shambler"
       ],
       "valuesAsFlags": false

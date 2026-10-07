@@ -457,6 +457,27 @@ const checkFurniture = (registry: Registry, report: Report) => {
 
 type PaletteThing = Exclude<TemplateDef['palette'][string], string>;
 
+const militaryLootIssue = (
+  registry: Registry,
+  template: TemplateDef,
+  lootId: string | undefined,
+): string | undefined =>
+  registry.loot.get(lootId ?? '')?.military && !template.military
+    ? 'military loot tables may only appear in a military template'
+    : undefined;
+
+const checkPaletteObjectRefs = (registry: Registry, entry: PaletteThing): [string, string][] => {
+  const found: [string, string][] = [];
+  const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
+  if (entry.lock && furniture && !furniture.door) {
+    found.push(['.lock', 'only a door can have a lock']);
+  }
+  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
+    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
+  }
+  return found;
+};
+
 const checkPaletteThing = (registry: Registry, template: TemplateDef, char: string, entry: PaletteThing) => {
   const found: [string, string][] = [];
   const furniture = entry.furniture === undefined ? undefined : registry.furniture.get(entry.furniture);
@@ -467,18 +488,18 @@ const checkPaletteThing = (registry: Registry, template: TemplateDef, char: stri
   if (problem) {
     found.push(['.furniture', problem]);
   }
+  const lootId = entry.loot ?? furniture?.loot;
   if (entry.loot !== undefined && !registry.loot.has(entry.loot)) {
     found.push(['.loot', `no loot table "${entry.loot}"`]);
+  }
+  const militaryIssue = militaryLootIssue(registry, template, lootId);
+  if (militaryIssue) {
+    found.push(['.loot', militaryIssue]);
   }
   if (entry.loot !== undefined && furniture && furniture.container === undefined) {
     found.push(['.loot', 'has loot but no container to put it in']);
   }
-  if (entry.lock && furniture && !furniture.door) {
-    found.push(['.lock', 'only a door can have a lock']);
-  }
-  if (entry.spawn !== undefined && !registry.zombies.has(entry.spawn)) {
-    found.push(['.spawn', `no zombie type "${entry.spawn}"`]);
-  }
+  found.push(...checkPaletteObjectRefs(registry, entry));
   return found;
 };
 
@@ -510,6 +531,8 @@ const checkZombies = (registry: Registry, report: Report) => {
   for (const zombie of registry.zombies.values()) {
     if (zombie.loot !== undefined && !registry.loot.has(zombie.loot)) {
       report('zombies', zombie.id, '.loot', `no loot table "${zombie.loot}"`);
+    } else if (registry.loot.get(zombie.loot ?? '')?.military) {
+      report('zombies', zombie.id, '.loot', 'zombie loot may not use a military table');
     }
     for (const key of ['idle', 'alert', 'attack', 'hurt'] as const) {
       const event = zombie.sounds[key];

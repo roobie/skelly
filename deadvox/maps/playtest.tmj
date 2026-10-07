@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 7,
-  "nextobjectid": 51,
+  "nextobjectid": 69,
   "properties": [
     {
       "name": "id",
@@ -329,7 +329,7 @@
             }
           ]
         },
-        {"id":27,"name":"Commandeered community hall","type":"building","x":418.5,"y":239,"width":16,"height":12,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"medical_hall"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[4,1,20],\"items\":[{\"item\":\"antiseptic\",\"count\":1},{\"item\":\"pharmacy_key\",\"count\":1}]},{\"at\":[25,1,3],\"items\":[{\"item\":\"antibiotics\",\"count\":1}]},{\"at\":[3,1,10],\"items\":[{\"item\":\"medical_research_log\",\"count\":1}]}]"}]},
+        {"id":27,"name":"Commandeered community hall","type":"building","x":418.5,"y":239,"width":16,"height":12,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"medical_hall"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[4,1,20],\"items\":[{\"item\":\"antiseptic\",\"count\":1},{\"item\":\"pharmacy_key\",\"count\":1}]},{\"at\":[25,1,3],\"items\":[{\"item\":\"antibiotics\",\"count\":1}]},{\"at\":[3,1,10],\"items\":[{\"item\":\"medical_research_log\",\"count\":1}]},{\"at\":[12,1,1],\"items\":[{\"item\":\"camp_armoury_key\",\"count\":1}]}]"}]},
         {"id":28,"name":"Triage tent west","type":"building","x":407,"y":242,"width":7,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"triage_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
         {"id":29,"name":"Triage tent east","type":"building","x":436.5,"y":242,"width":7,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"triage_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
         {"id":30,"name":"Medical fence north 1","type":"building","x":402,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
@@ -352,7 +352,24 @@
         {"id":47,"name":"Medical fence east 2","type":"building","x":444.5,"y":237.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
         {"id":48,"name":"Medical fence east 3","type":"building","x":444.5,"y":244.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
         {"id":49,"name":"Medical fence east 4","type":"building","x":444.5,"y":251.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
-        {"id":50,"name":"Medical fence east 5","type":"building","x":444.5,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]}
+        {"id":50,"name":"Medical fence east 5","type":"building","x":444.5,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":51,"name":"Camp fence north west","type":"building","x":450,"y":510,"width":16,"height":1,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":52,"name":"Camp fence north east","type":"building","x":482,"y":510,"width":16,"height":1,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":53,"name":"Camp fence south west","type":"building","x":450,"y":543,"width":16,"height":1,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":54,"name":"Camp fence south centre","type":"building","x":466,"y":543,"width":16,"height":1,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":55,"name":"Camp fence south east","type":"building","x":482,"y":543,"width":16,"height":1,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":56,"name":"Camp fence west north","type":"building","x":451,"y":511,"width":16,"height":1,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":57,"name":"Camp fence west south","type":"building","x":451,"y":527,"width":16,"height":1,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":58,"name":"Camp fence east north","type":"building","x":499,"y":511,"width":16,"height":1,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":59,"name":"Camp fence east south","type":"building","x":499,"y":527,"width":16,"height":1,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_fence_run"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":60,"name":"Sandbag post west of gate","type":"building","x":466,"y":511,"width":4,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_sandbag_post"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":61,"name":"Sandbag post east of gate","type":"building","x":478,"y":511,"width":4,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_sandbag_post"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":62,"name":"Sandbag post far corner","type":"building","x":486,"y":537,"width":4,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_sandbag_post"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":63,"name":"Camp watchtower","type":"building","x":486,"y":516,"width":4,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_watchtower"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":64,"name":"Command tent","type":"building","x":452,"y":516,"width":8,"height":5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_command_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":65,"name":"Sleeping tent","type":"building","x":452,"y":525,"width":6,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":69,"name":"Supply container","type":"building","x":452,"y":533,"width":9,"height":5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_container"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":66,"name":"Locked military armoury","type":"building","x":470,"y":526,"width":10,"height":6,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"camp_armoury"},{"name":"fixed_loot","type":"string","value":"[{\"at\":[3,1,3],\"items\":[{\"item\":\"rifle_assault\",\"count\":1},{\"item\":\"rifle_ak\",\"count\":1}]},{\"at\":[7,1,5],\"items\":[{\"item\":\"magazine_stanag_30\",\"count\":1},{\"item\":\"magazine_akm_30\",\"count\":1}]},{\"at\":[13,1,7],\"items\":[{\"item\":\"cartridge_5_d_56x45\",\"count\":15},{\"item\":\"cartridge_7_d_62x39\",\"count\":15}]}]"}]}
       ]
     },
     {
@@ -495,6 +512,32 @@
               "value": "dusk"
             }
           ]
+        },
+        {
+          "id": 67,
+          "name": "Runner on the camp approach",
+          "type": "shambler",
+          "point": true,
+          "x": 474,
+          "y": 505,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "runner" }]
+        },
+        {
+          "id": 68,
+          "name": "Runner beyond the camp fence",
+          "type": "shambler",
+          "point": true,
+          "x": 500,
+          "y": 534,
+          "width": 0,
+          "height": 0,
+          "rotation": 0,
+          "visible": true,
+          "properties": [{ "name": "zombie", "type": "string", "propertytype": "zombie_type", "value": "runner" }]
         }
       ]
     },
@@ -777,7 +820,13 @@
             {
               "x": 334.5,
               "y": 167
-            }
+            },
+            { "x": 334.5, "y": 185 },
+            { "x": 348, "y": 215 },
+            { "x": 363, "y": 275 },
+            { "x": 378, "y": 345 },
+            { "x": 382, "y": 395 },
+            { "x": 381.5, "y": 425 }
           ],
           "properties": [
             {

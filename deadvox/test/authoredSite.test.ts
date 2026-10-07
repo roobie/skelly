@@ -303,7 +303,22 @@ describe('authored layout acceptance', () => {
     }
     const fixed = withFixedLoot(fixedLootContainer.pos, military);
     invalidWithFullPack(fixed, 'military loot only');
-    const armoury = { loot: [{ ...rolled, military: true }], layouts: [fixed] };
+    const template = structuredClone(registry.templates.get(fixedLootBuilding.template)!);
+    template.id = 'military_fixed_loot_fixture';
+    template.military = true;
+    const containerEntry = Object.values(template.palette).find(
+      (entry) => typeof entry !== 'string' && entry.furniture === fixedLootContainer.furniture,
+    );
+    if (containerEntry === undefined || typeof containerEntry === 'string') {
+      throw new Error('fixture needs a furniture palette entry for its fixed-loot container');
+    }
+    const militaryTable = { ...rolled, id: 'military_fixed_loot_fixture_table', military: true };
+    containerEntry.loot = militaryTable.id;
+    const militaryLayout = {
+      ...fixed,
+      buildings: [{ ...fixed.buildings[0]!, template: template.id }, ...fixed.buildings.slice(1)],
+    };
+    const armoury = { loot: [militaryTable], templates: [template], layouts: [militaryLayout] };
     expect(buildRegistry([...base, { source: 'layout-test.json', data: armoury }]).issues).toEqual([]);
   });
   it('rejects fixed loot without a furniture anchor', () => {
