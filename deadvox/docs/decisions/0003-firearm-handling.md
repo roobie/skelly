@@ -65,7 +65,21 @@ This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and De
 - `anchors` carry non-replaceable points such as `muzzle` and `ejection`, each `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right). The magazine seat is `slots.magazine: { node, at, turn }`: `node` names the baked magazine in the GLB and `at`/`turn` place its replacement. The item-owned slot—not a second magwell anchor—allows Deadvox to hide the baked node when no magazine is fitted (d114-11, #337).
 - `attachmentSlots` preserves each attachable base-firearm rail notch and muzzle interface, whether or not a default mod occupies it. Rail slots carry an explicit rail group and notch index; Deadvox must not infer either by parsing the slot ID. `attachments[].mountedAt` links each fitted item to the exact host slot, and `attachments[].node` names its baked GLB node. `properties` carries item gameplay metadata and the rail-notch span relative to its anchor; its interval lets Deadvox reject a second part that overlaps the first item's rail footprint, which exact mount equality alone cannot detect. No first-set attachment is a host for another attachment, so female ports on attachment nodes are not exported as firearm slots.
 
-For #347, BR, 2026-10-07 13:13, verbatim: “both types of suppressors should affect the firearm:” “less recoil, but less handling/recovery” “the improvised one weighs more and is larger and thus is even worse than the real supp”. When Deadvox fits attachments (3.7, d118, after #337), both suppressors reduce recoil and worsen handling and recovery, with the improvised suppressor heavier, larger, and worse than the real one. This PR sets no values; see `gungen/PROJECT.md`, g44.
+For #347, BR, 2026-10-07 13:13, verbatim: “both types of suppressors should affect the firearm:” “less recoil, but less handling/recovery” “the improvised one weighs more and is larger and thus is even worse than the real supp”.
+
+BR, 2026-10-07 13:19, approved the four-point proposal, verbatim: “Overall agreed” and “yes, approved - make sure to file notes about what's deferred and why”. For 3.7 (d118), after #337, the approved design is:
+- Gungen derives each suppressor's mass from its geometry and material.
+- One shared muzzle rule uses weight times distance from the hands to slow raising and swinging, add sway, and slow recovery between shots.
+- Each type's recoil reduction follows trapped gas; this is the only hand-set value, and the improvised suppressor is less effective.
+- Each type has noise reduction and wear: condition falls per shot and suppression falls with it; the improvised suppressor wears quickly and eventually breaks.
+
+These effects apply when Deadvox fits attachments; #347 sets no values. See `gungen/PROJECT.md`, g44.
+
+The following remain deferred until after the first playtest (#181), with reasons tracked in #367:
+- Heat (#366): BR wants a general simulated property, not a firearm-only rule, so it needs its own cross-system design.
+- Smoke (#365): its schedule and whether it is visual-only or simulated remain undecided.
+- Improvised-suppressor accuracy loss (#367): it needs a shot-deviation model for misalignment or baffle clipping.
+- Fouling (#367): it depends on cleaning and malfunction systems.
 - A standalone model's `attachment` carries the same item identity, mount, properties, and any local sight frame without a host slot. Gungen authors the fit data from port/solid geometry; Deadvox validates it through `ModelSchema` and consumes it at runtime. See `gungen/src/gun/attachments.ts`, `attachmentSlots` and `attachmentMetadata`; `gungen/src/gun/exportGlb.ts`, `exportGunGlb`; and `deadvox/src/core/schema.ts`, `ModelSchema`.
 - `action`:
   - `parts`: the moving roles as **separate named nodes** in the GLB, each with `node` (exact glTF name), `axis` (unit travel direction), `strokeMetres`, and required `modes` (a nonempty, distinct list of `fire`/`hand` timing references). Nodes follow the shared timeline in each listed mode and stay home in other modes. The AR carrier lists both; its separate T-handle lists only `hand`, pulls through the same stroke, and returns/latches home. The AK handle remains part of its carrier node, which lists both. This needs no separate per-node animation scheduler;
@@ -116,5 +130,5 @@ The existing fingerprint rules (`SIMULATION_EXCLUSIONS`) apply: presentation cod
 
 - #364: Decide whether the AK muzzle-device tip is a valid suppressor host; `gungen/src/gun/attachments.ts`, `attachmentSlots`, exports it, while `gungen/src/core/rules.ts`, `keepOut`, rejects a suppressor fitted there.
 - Steel-cased 7.62x39 (lacquered, grey-green) as well as brass: a finish variant of the case model, and does the pile keep them apart?
-- Recoil: a camera kick and hand motion now; anything physical later?
+- The global physical recoil model beyond presentation remains open; #347/d118 defines only per-suppressor reduction.
 - Sounds: shot, mechanical clack, case tink per material; sourced like the other sounds and listed on the audio sheet.
