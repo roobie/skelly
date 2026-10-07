@@ -1,6 +1,8 @@
 import { clippedExtrudedPolygonPolyhedron, polyhedronVolume } from '../core/geometry.ts';
 import type { PartDef, Solid } from '../core/schema.ts';
+import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { GUN_PALETTE } from './palette.ts';
+import { FAMILIES } from './parts.ts';
 
 interface MaterialDensity {
   readonly material: string;
@@ -66,7 +68,7 @@ const ATTACHMENT_MATERIAL_DENSITIES: Readonly<Record<string, MaterialDensity>> =
 const ATTACHMENT_KIND_FILL: Readonly<Record<string, { readonly fraction: number; readonly source: string }>> = {
   optic: {
     fraction: 1,
-    source: 'https://www.aimpoint.com/products/aimpoint-micro-t-2/ (96 g; 68 × 41 × 36 mm envelope)',
+    source: 'Calibrated against Aimpoint Micro T-2: 0.080 kg computed versus 0.096 kg published',
   },
   suppressor: {
     fraction: 0.7,
@@ -101,6 +103,27 @@ const attachmentSolidVolumeU3 = (solid: Solid): number => {
   return result;
 };
 
+const canonicalAttachmentPart = (id: string): { readonly family: string; readonly part: PartDef } => {
+  if (id.startsWith('optic-')) {
+    const family = FAMILIES.sight;
+    if (!family) {
+      throw new Error('Missing sight family for attachment mass');
+    }
+    return { family: 'sight', part: family.build({ type: id.slice('optic-'.length) }) };
+  }
+  if (id === 'real-suppressor' || id === 'improvised-suppressor') {
+    return { family: 'suppressor', part: ATTACHMENT_FAMILIES.suppressor!.build({ type: id }) };
+  }
+  const family = FAMILIES[id] ?? ATTACHMENT_FAMILIES[id];
+  if (!family) {
+    throw new Error(`No attachment family for ${id}`);
+  }
+  const params = Object.fromEntries(
+    Object.entries(family.params).flatMap(([name, spec]) => (spec.default === undefined ? [] : [[name, spec.default]])),
+  );
+  return { family: id, part: family.build(params) };
+};
+
 const solidMaterial = (family: string, part: PartDef, solid: Solid): string => {
   if (solid.material) {
     return solid.material;
@@ -119,32 +142,31 @@ const solidMaterial = (family: string, part: PartDef, solid: Solid): string => {
   return familyMaterial ?? 'steel-parkerized';
 };
 
-/** Mass in kilograms, independent of the firearm's visual finish context. */
-const massCache = new Map<string, number>();
-export const attachmentMassKg = (family: string, part: PartDef, metresPerUnit: number, designId?: string): number => {
-  const cacheKey = designId
-    ? `${family}:${designId}:${metresPerUnit}`
-    : `${family}:${part.material ?? ''}:${part.slot ?? ''}:${metresPerUnit}:${JSON.stringify(part.solids)}`;
-  const cached = massCache.get(cacheKey);
-  if (cached !== undefined) {
-    return cached;
-  }
+/** Mass in kilograms from canonical standalone geometry when an attachment ID is known. */
+export const attachmentMassKg = (
+  family: string,
+  part: PartDef,
+  metresPerUnit: number,
+  attachmentId?: string,
+): number => {
+  const canonical = attachmentId ? canonicalAttachmentPart(attachmentId) : { family, part };
+  const massFamily = canonical.family;
+  const massPart = canonical.part;
   let fillKind = 'solid';
-  if (family === 'sight') {
+  if (massFamily === 'sight') {
     fillKind = 'optic';
-  } else if (family === 'suppressor') {
+  } else if (massFamily === 'suppressor') {
     fillKind = 'suppressor';
   }
   const fill = ATTACHMENT_KIND_FILL[fillKind]?.fraction ?? 1;
   const cubicMetresPerUnit = metresPerUnit ** 3;
-  const mass = part.solids.reduce((sum, solid) => {
-    const materialId = solidMaterial(family, part, solid);
+  const mass = massPart.solids.reduce((sum, solid) => {
+    const materialId = solidMaterial(massFamily, massPart, solid);
     const density = ATTACHMENT_MATERIAL_DENSITIES[materialId];
     if (!density) {
       throw new Error(`No attachment density for palette material ${materialId}`);
     }
     return sum + attachmentSolidVolumeU3(solid) * cubicMetresPerUnit * density.kgPerM3 * fill;
   }, 0);
-  massCache.set(cacheKey, mass);
   return mass;
 };

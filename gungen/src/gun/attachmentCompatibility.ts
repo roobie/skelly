@@ -1,6 +1,6 @@
 import { mateTransform, type Resolved, resolve } from '../core/resolve.ts';
 import { keepOutForPart, portCompat, solidOverlapForPart } from '../core/rules.ts';
-import type { Assembly, PartDef } from '../core/schema.ts';
+import type { Assembly, Domain, PartDef } from '../core/schema.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { ATTACHMENT_IDS, type AttachmentSlotMetadata, attachmentMetadata } from './attachments.ts';
 import { gunDomain } from './domain.ts';
@@ -130,8 +130,9 @@ const passesFitRules = ({
 export const attachmentCompatibility = (
   firearm: Assembly,
   slots: readonly Pick<AttachmentSlotMetadata, 'id' | 'mount' | 'notchIndex'>[],
+  domain: Domain = gunDomain,
 ): Readonly<Record<string, readonly string[]>> => {
-  const source = resolve(firearm, gunDomain);
+  const source = resolve(firearm, domain);
   const fittedParts = new Set(
     [...source.defs].flatMap(([id, definition]) => {
       const params = Object.fromEntries(
@@ -154,7 +155,7 @@ export const attachmentCompatibility = (
       ({ from, to }) => !(fittedParts.has(from.split('.')[0]!) || fittedParts.has(to.split('.')[0]!)),
     ),
   };
-  const base = resolve(bareFirearm, gunDomain);
+  const base = resolve(bareFirearm, domain);
   const candidatesByMount = new Map<string, Candidate[]>();
   for (const id of ATTACHMENT_IDS) {
     const { family, params } = attachmentInstance(id);
