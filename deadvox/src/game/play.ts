@@ -27,7 +27,7 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
-import { handlingTurn, turnedBore } from '../render/handlingTurn.ts';
+import { turnedBore } from '../render/handlingTurn.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -2158,11 +2158,10 @@ export const startPlay = (
     const { model } = firearmHandlingFor(item, registry);
     const side = inventory.hands.right?.uid === item.uid ? 'right' : 'left';
     const progress = firearmPose?.progress ?? 0;
+    const viewpoint = { eye: eye(), yaw: input.yaw, pitch: input.pitch };
     const bore = firearmBoreRay({
       model,
-      eye: eye(),
-      yaw: input.yaw,
-      pitch: input.pitch,
+      ...viewpoint,
       blockSize: s,
       side,
       leadingSide: dominantSide(inventory.character),
@@ -2175,16 +2174,14 @@ export const startPlay = (
       verticalFovDegrees: camera.fov,
       isSolid: engine.isSolid,
     });
-    // The mark follows the muzzle where a rack or a magazine job turns the drawn rifle (BR, 2026-10-07 14:55).
+    // The mark follows the muzzle where a rack or a magazine job turns the drawn gun (BR, 2026-10-07 14:55).
     return turnedBore(bore, {
       model,
       side,
-      turn: handlingTurn(
-        model,
-        firearms.frames().find((pose) => pose.uid === item.uid),
-      ),
+      frame: firearms.frames().find((pose) => pose.uid === item.uid),
       loweredPitch: -tuning.loweredPitchRadians * (1 - progress),
       blockSize: s,
+      ...viewpoint,
     });
   };
 

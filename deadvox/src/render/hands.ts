@@ -52,11 +52,10 @@ import {
   type HeldActionPart,
   magazineMotion,
   poseActionParts,
-  rackCant,
   rackGrip,
   sampleActionStroke,
 } from './firearmModel.ts';
-import { handlingTurn, handlingTurnRotation } from './handlingTurn.ts';
+import { handlingRotation } from './handlingTurn.ts';
 import { itemLook } from './itemLook.ts';
 import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
@@ -337,14 +336,15 @@ export class HeldItems {
         this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
       }
     }
-    const pumpModel = item && this.pumpModels.get(item.uid);
     const frame = item && handling.firearms.find((entry) => entry.uid === item.uid);
-    const cant = rackCant(pumpModel, side, frame, { x: transform.offset[0], y: transform.offset[1] });
+    const [turnPitch, turnYaw, turnRoll] = handlingRotation(modelDefinition, side, frame, {
+      x: transform.offset[0],
+      y: transform.offset[1],
+    });
     const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
     this.poseAim(item, readyAim);
-    const [turnPitch, turnYaw, turnRoll] = handlingTurnRotation(handlingTurn(modelDefinition, frame), side);
-    this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch + turnPitch, turnYaw, cant + turnRoll, 'YXZ'));
+    this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch + turnPitch, turnYaw, turnRoll, 'YXZ'));
     this.poseRotation.multiply(this.rackRotation);
     const strength = Math.max(0, Math.min(1, recoil));
     transform.offset[1] += 0.012 * strength;

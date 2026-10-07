@@ -59,8 +59,8 @@ has reached for it. Through a rack the off hand follows `rackGrip`, from the
 exported hand cycle: it takes the handle (the part only a hand moves, else the
 carrier) as the pull starts, holds it through the dwell and lets go as it
 returns. Through either job the rifle turns muzzle-in so the work shows in first
-person; `src/render/handlingTurn.ts`, `handlingTurn`, sets how far, for the drawn
-model and the crosshair alike (DESIGN.md, "Firearms", BR's 14:55 ruling). The
+person; `src/render/handlingTurn.ts`, `handlingRotation`, sets how far, for the
+drawn model and the crosshair alike (DESIGN.md, "Firearms", BR's 14:55 ruling). The
 magazine in the well is the fitted one's own model, drawn in the
 model's magazine slot (DESIGN.md, "One item, one look").
 
