@@ -90,6 +90,15 @@ those hidden, it uses the quickbar's computed bottom offset. In `src/debug/index
 `src/ui/hud.ts`, `positionLookedAtReadout`, for placement. The shorter shambler aim readout stays at
 the crosshair because it is target-specific, and the block hint yields while it is active.
 
+BR, 2026-10-07 15:48, d131-1-2, verbatim:
+
+> “aside: the debug X in center of screen should show only when crosshair is turned on”
+
+The debug centre X now follows the HUD Crosshair option live, so it does not mark the view when the
+player has turned that aid off. See `src/game/play.ts`, `frame`,
+`src/game/debugInterface.ts`, `DebugRuntime.setCrosshairVisible`, and `src/debug/index.ts`,
+`panelTemplate`.
+
 Bisect a visual bug by flipping one toggle at a time before theorising.
 
 ## Seeing the game without a display

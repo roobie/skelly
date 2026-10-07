@@ -192,8 +192,36 @@ try {
   });
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
+  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
-  const centreXBox = await page.locator('#debug-center-x').boundingBox();
+  const setHudOption = async (labelText, key, selector, visible) => {
+    await page.evaluate(
+      ({ label, nextVisibility }) => {
+        const option = [...document.querySelectorAll('#hud-options label')].find((candidate) =>
+          candidate.textContent.includes(label),
+        );
+        const checkbox = option?.querySelector('input');
+        if (!checkbox) {
+          throw new Error(`${label} HUD option is missing`);
+        }
+        checkbox.checked = nextVisibility;
+        checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+      },
+      { label: labelText, nextVisibility: visible },
+    );
+    await page.waitForFunction(
+      ({ optionKey, optionSelector, nextVisibility }) =>
+        JSON.parse(localStorage.getItem('deadvox.hud-options'))[optionKey] === nextVisibility &&
+        document.querySelector(optionSelector).hidden === !nextVisibility,
+      { optionKey: key, optionSelector: selector, nextVisibility: visible },
+    );
+  };
+  const centreX = page.locator('#debug-center-x');
+  await setHudOption('Crosshair', 'crosshair', '#crosshair', false);
+  assert.equal(await centreX.isVisible(), false, 'debug centre X is hidden with the Crosshair option off');
+  await setHudOption('Crosshair', 'crosshair', '#crosshair', true);
+  assert.equal(await centreX.isVisible(), true, 'debug centre X appears when the Crosshair option is on');
+  const centreXBox = await centreX.boundingBox();
   const viewport = page.viewportSize();
   assert(centreXBox && viewport);
   assert.ok(
@@ -204,27 +232,7 @@ try {
     Math.abs(centreXBox.y + centreXBox.height / 2 - viewport.height / 2) < 0.5,
     'debug X is centred vertically',
   );
-  await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
-  const setQuickbarOption = async (visible) => {
-    await page.evaluate((nextVisibility) => {
-      const label = [...document.querySelectorAll('#hud-options label')].find((option) =>
-        option.textContent.includes('Quickbar'),
-      );
-      const checkbox = label?.querySelector('input');
-      if (!checkbox) {
-        throw new Error('Quickbar HUD option is missing');
-      }
-      checkbox.checked = nextVisibility;
-      checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-    }, visible);
-    await page.waitForFunction(
-      (nextVisibility) =>
-        JSON.parse(localStorage.getItem('deadvox.hud-options')).quickbar === nextVisibility &&
-        document.querySelector('#quickbar').hidden !== nextVisibility,
-      visible,
-    );
-  };
-  await setQuickbarOption(true);
+  await setHudOption('Quickbar', 'quickbar', '#quickbar', true);
   const shownReadout = await page.evaluate(() => {
     const { debugTools, eye } = globalThis.fullAutoRuntime;
     debugTools.updateAim(undefined);
@@ -278,7 +286,7 @@ try {
   assert.notEqual(aimReadout.aim.trim(), '', 'shambler aim readout remains visible at the crosshair');
   assert.equal(aimReadout.look, '', 'looked-at block readout yields while the aim readout is active');
   assert.equal(aimReadout.lookVisible, false, 'the yielded readout has no box to overlap the aim readout');
-  await setQuickbarOption(false);
+  await setHudOption('Quickbar', 'quickbar', '#quickbar', false);
   const hiddenReadout = await page.evaluate(() => {
     const { debugTools, eye } = globalThis.fullAutoRuntime;
     debugTools.updateAim(undefined);
