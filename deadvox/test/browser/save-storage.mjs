@@ -22,12 +22,14 @@ const requestedAutosaveBackend = process.env.SAVE_AUTOSAVE_BACKEND;
 const autosaveScenario = process.env.SAVE_AUTOSAVE_SCENARIO ?? 'continue';
 const busyLockOnly = autosaveOnly && autosaveScenario === 'busy-lock';
 const productionBundleStage =
-  autosaveOnly &&
-  autosaveScenario === 'continue' &&
-  ((browserName === 'chromium' && requestedAutosaveBackend === 'opfs') ||
-    (browserName === 'firefox' && requestedAutosaveBackend === 'indexeddb'));
-const productionBundleStageId =
+  navigationOnly ||
+  (autosaveOnly &&
+    autosaveScenario === 'continue' &&
+    ((browserName === 'chromium' && requestedAutosaveBackend === 'opfs') ||
+      (browserName === 'firefox' && requestedAutosaveBackend === 'indexeddb')));
+const continueBundleStageId =
   browserName === 'chromium' ? 'save-storage-opfs-continue' : 'save-storage-indexeddb-continue';
+const productionBundleStageId = navigationOnly ? 'save-storage-navigation' : continueBundleStageId;
 const stageId = productionBundleStage ? productionBundleStageId : 'save-storage';
 if (!['continue', 'replacement', 'busy-lock'].includes(autosaveScenario)) {
   throw new Error(`Unsupported autosave scenario ${autosaveScenario}`);
@@ -702,7 +704,10 @@ try {
     const pendingAtBlock = result.pending;
     if (!result.ready && !result.status.includes('Save storage unavailable')) {
       await page.waitForFunction(
-        () => (document.querySelector('#save-status')?.textContent ?? '').includes('Save storage unavailable'),
+        () => {
+          const status = document.querySelector('#save-status')?.textContent ?? '';
+          return status.includes('Save storage unavailable') || status.includes('Title screen ready');
+        },
         undefined,
         { timeout: STAGE_TIMEOUT_MS },
       );
