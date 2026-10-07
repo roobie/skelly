@@ -44,6 +44,8 @@ const uncovered = (name) => browserStages[name].map(describeStage).filter((stage
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
 const serialControl = /start independently/;
+const playwrightInstallCommand = /\bnpx playwright install(?:\s|$)/;
+const withDepsFlag = /--with-deps\b/;
 
 const partitionFixture = () => ({
   caller: {
@@ -105,6 +107,21 @@ describe('browser port reservation', () => {
 });
 
 describe('deadvox browser CI coverage', () => {
+  it('keeps Playwright installs apt-free and bounds Deadvox CI jobs', () => {
+    const browserWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8'));
+    const deadvoxWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox.yml'), 'utf8'));
+    const installSteps = browserWorkflow.jobs.run.steps.filter(({ run = '' }) => playwrightInstallCommand.test(run));
+
+    assert.ok(installSteps.length > 0, 'browser workflow declares Playwright browser installs');
+    for (const step of installSteps) {
+      assert.doesNotMatch(step.run, withDepsFlag, 'browser install must not run apt per shard');
+      assert.ok(Object.hasOwn(step, 'timeout-minutes'), 'browser install has a finite step bound');
+    }
+    assert.ok(Object.hasOwn(browserWorkflow.jobs.run, 'timeout-minutes'), 'browser shards have a finite job bound');
+    assert.ok(Object.hasOwn(deadvoxWorkflow.jobs.fast, 'timeout-minutes'), 'fast job has a finite job bound');
+    assert.ok(Object.hasOwn(deadvoxWorkflow.jobs.check, 'timeout-minutes'), 'aggregate check has a finite job bound');
+  });
+
   it('normalizes a leading ./ and stage wrappers', () => {
     assert.deepEqual(parseCommand('SAVE_AUTOSAVE_ONLY=1 xvfb-run -a timeout 300 node ./test/browser/x.mjs'), {
       env: { SAVE_AUTOSAVE_ONLY: '1' },
@@ -146,18 +163,10 @@ describe('deadvox browser CI coverage', () => {
       },
     } = parse(readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8'));
     const cache = steps.find(({ name }) => name === 'Cache Playwright Chromium');
-    const install = steps.find(({ name }) => name === 'Install Playwright Chromium and system dependencies');
+    const install = steps.find(({ run }) => run === 'npx playwright install chromium');
     assert.ok(cache && install, 'the managed browser has both cache and install steps');
     assert.equal(cache.if, expression("inputs.shard != 'firefox'"));
     assert.equal(install.if, cache.if, 'all Chromium shards install the browser they cache');
-    const diagnostic = steps.find(({ name }) => name === 'Temporary Chromium launch comparison (d133)');
-    assert.equal(
-      diagnostic.if,
-      expression(
-        "inputs.shard == 'input' && github.event_name == 'pull_request' && github.head_ref == 'deadvox/chromium-launch'",
-      ),
-      'the system-browser comparison is limited to this investigation branch',
-    );
   });
 
   it('rejects a missing case or a case executed in duplicate shards', () => {

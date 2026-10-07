@@ -5,7 +5,7 @@ read_if:
   - you're changing mobgen pose generation or validation scope
   - you're deciding what belongs in mobgen milestone 1 or later
   - you're integrating a mobgen figure into deadvox
-  - you're tracking the crawler's static silhouette, grounding validator issue or d130 gait and hit response
+  - you're changing the crawler's static silhouette, generated-body grounding, gait or hit response
   - you're adding render-only gaze tracking or rig-specific eye limits
 ---
 
@@ -50,24 +50,31 @@ data, and the defaults must work for any body plan.
   detail (CHALLENGES §1, §9).
 - Gameplay-ready body plans beyond the humanoid. The m1 apex enemy feature adds
   a static amalgam first-look body, not a gameplay gait or Deadvox dismemberment
-  integration; the static crawler is another scoped exception.
-- Runtime wounds, gameplay dismemberment, and animations beyond the humanoid
-  walk, crawler's static pose and bounded render-only gaze.
-- Pose validation beyond the humanoid rest pose and crawler support properties
-  in `test/crawler.test.ts` (CHALLENGES §7).
+  integration; the crawler is another scoped exception.
+- Runtime wounds and gameplay dismemberment.
+- Pose validation beyond the humanoid rest pose and the crawler's generated-body
+  grounding rule (CHALLENGES §7).
 
-Slice 3.8's static crawler is an exception to the humanoid milestone scope: its
-body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses
+Slice 3.8's crawler is an exception to the humanoid milestone scope: its body
+uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses
 `src/mob/crawler.ts`, `crawlerPose`. Rig-specific gaze limits live in
 `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and the render-only pose
-adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the static
-silhouette at 2026-10-07 10:03; the drag gait and in-game hit response remain
-d130 work. The crawler's humanoid rest-pose grounding validator issue is
-tracked for d130: `src/mob/crawler.ts`, `crawlerPose`, supplies the static
-prone render pose, while `src/core/validate.ts`, `validate`, still applies the
-humanoid generation rules. In the mobgen viewer, `src/viewer/main.ts`,
-`applyLookAt`, keeps gaze directed at the camera because the viewer has no
-perception state.
+adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the silhouette
+at 2026-10-07 10:03. The crawler's generated support bones resolve from voxel
+ground contacts through `src/core/generate.ts`, `resolveSupportBones`, so the
+`grounded` rule validates its body plan without humanoid foot assumptions.
+`src/mob/crawler.ts`, `crawlerPose`, grounds the pose per realized figure;
+`crawlerGaitPose` and `crawlerHitPose` layer movement and hit response over it.
+BR's 2026-10-07 17:00:03 +02:00 ruling on `crawlerGaitPose`'s rearward reach
+was: “#377: it'd be nice if we could have the arms' range of motion (by having
+the elbows move by the side/along the ground) fully go rear-of the shoulders”.
+`test/crawler.test.ts` guards that pull-end reach. In the viewer,
+`src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera because
+the viewer has no perception state. BR's form ruling, 2026-10-06 21:49, was
+verbatim: “crawler: (A)”; this means a prone ground-crawler dragging itself on
+its arms with trailing legs, not either of the other proposed humanoid forms.
+Gameplay stagger, slowdown, knockdown and per-type clip tuning remain open BR
+decisions.
 
 ## Playtest 1 apex enemy: amalgam (m1)
 
@@ -237,7 +244,7 @@ Query parameters are `?template=<name>&seed=<n>`, as in gungen.
   detail, generating in a worker (CHALLENGES §1, §9).
 - Joint limits and pose rules (CHALLENGES §7).
 - Wounds during play and dismemberment (CHALLENGES §10).
-- More body plans: skeleton. The crawler's body and static pose are the Slice 3.8 exception above; its drag gait remains deferred to d130.
+- More body plans: skeleton. The crawler remains the Slice 3.8 exception above.
 - Per-vertex ambient occlusion.
 - A voxelized reference figure as a viewer layer, for calibration.
 

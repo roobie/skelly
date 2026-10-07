@@ -8,6 +8,7 @@ read_if:
   - you investigate native inventory selection or keyboard settlement in browser tests
   - you're authoring a browser stage that checks a frame-applied effect
   - you're authoring or exporting a Deadvox site in Tiled
+  - you diagnose a stalled Deadvox CI browser dependency install (#388)
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
 ---
@@ -103,6 +104,10 @@ player has turned that aid off. See `src/game/play.ts`, `frame`,
 `panelTemplate`.
 
 Bisect a visual bug by flipping one toggle at a time before theorising.
+
+## Deadvox CI browser dependency stalls
+
+For #388, Playwright's `--with-deps` stalled while apt fetched and installed runner packages. The enabled browser contracts and Xvfb stages passed without apt, so CI installs browser binaries only and bounds the install and job. If a stage starts asserting text glyphs or Firefox media, install the specific package that assertion needs rather than restoring `--with-deps`. See `.github/workflows/deadvox-browser.yml`, `jobs.run`, and `.github/workflows/deadvox.yml`, `jobs.fast` and `jobs.check`.
 
 ## Seeing the game without a display
 

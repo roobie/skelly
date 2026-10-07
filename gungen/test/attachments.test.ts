@@ -8,10 +8,12 @@ import { localSolidBounds } from '../src/core/geometry.ts';
 import { partNodeName } from '../src/core/glb.ts';
 import { applyPoint } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
-import type { Assembly, PartDef, PortDef } from '../src/core/schema.ts';
+import type { Assembly, Domain, PartDef, PartFamily, PortDef } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { AK_MAGAZINE_CALIBRE_BY_VARIANT, AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
+import { attachmentCompatibility } from '../src/gun/attachmentCompatibility.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
+import { attachmentMassKg } from '../src/gun/attachmentMass.ts';
 import {
   ATTACHMENT_IDS,
   type AttachmentMetadata,
@@ -22,8 +24,9 @@ import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { eulerXyzDegrees, toFileAxes } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
-import { MOUNT_STANDARDS } from '../src/gun/mounts.ts';
+import { MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { OPTIC_CATALOG } from '../src/gun/optics.ts';
+import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
 import { loadCorpus } from './helpers.ts';
@@ -37,8 +40,15 @@ const design = (name: string): Assembly => {
   return loaded.design.assembly;
 };
 
-const exported = (assembly: Assembly, id: string) => {
-  const result = exportGunGlb(assembly, { id, file: `assets/models/${id}.glb` }, {});
+const exported = (assembly: Assembly, id: string, includeCompatibility = true) => {
+  const result = exportGunGlb(
+    assembly,
+    { id, file: `assets/models/${id}.glb` },
+    {},
+    {
+      includeAttachmentCompatibility: includeCompatibility,
+    },
+  );
   if (!result.ok) {
     throw new Error(`${id}: ${JSON.stringify(result.error)}`);
   }
@@ -196,6 +206,26 @@ describe('attachment parts and export metadata', () => {
     const improvised = extent('improvised-suppressor');
     expect(improvised.length).toBeGreaterThan(real.length);
     expect(improvised.radius).toBeGreaterThan(real.radius);
+    const suppressorMass = (id: string) => {
+      const { familyName, params, part } = attachmentBuild(id);
+      return attachmentMetadata(familyName, params, gunDomain.units.metresPerUnit, part)!.massKg;
+    };
+    expect(suppressorMass('improvised-suppressor')).toBeGreaterThan(suppressorMass('real-suppressor'));
+  });
+
+  it('uses material density as a mass relation for identical geometry', () => {
+    const { part } = attachmentBuild('foregrip');
+    const aluminium = attachmentMassKg(
+      'foregrip',
+      { ...part, material: 'alu-anodized-black' },
+      gunDomain.units.metresPerUnit,
+    );
+    const steel = attachmentMassKg(
+      'foregrip',
+      { ...part, material: 'steel-parkerized' },
+      gunDomain.units.metresPerUnit,
+    );
+    expect(steel).toBeGreaterThan(aluminium);
   });
 
   it('exports each attachment as standalone glTF and metadata deadvox accepts', async () => {
@@ -251,6 +281,98 @@ describe('attachment parts and export metadata', () => {
       fitted.every(({ mountedAt, mount }) => slots.some((slot) => slot.id === mountedAt && slot.mount === mount)),
     ).toBe(true);
     expect(validateInDeadvox(model.modelEntry).issues).toEqual([]);
+    const { compatibility } = model.modelEntry;
+    if (!compatibility) {
+      throw new Error('gungen did not export attachment compatibility');
+    }
+    expect(Object.keys(compatibility).sort()).toEqual(slots.map(({ id }) => id).sort());
+    for (const ids of Object.values(compatibility)) {
+      for (const id of ids) {
+        expect(ATTACHMENT_IDS).toContain(id);
+      }
+    }
+    const fittedOptic = model.modelEntry.attachments?.find(({ id }) => id === 'optic-lpvo-1-6x');
+    const standaloneOptic = attachmentBuild('optic-lpvo-1-6x');
+    expect(fittedOptic?.massKg).toBe(attachmentMassKg('sight', standaloneOptic.part, gunDomain.units.metresPerUnit));
+    const standalone = exportAttachmentGlb('optic-lpvo-1-6x', {
+      id: 'optic_lpvo_mass_comparison',
+      file: 'assets/models/optic_lpvo_mass_comparison.glb',
+    });
+    if (!standalone.ok) {
+      throw new Error(JSON.stringify(standalone.error));
+    }
+    expect(fittedOptic?.massKg).toBe(standalone.modelEntry.attachment?.massKg);
+  });
+
+  it('rejects a candidate at an obstructed slot while certifying the same mount at a clear slot', () => {
+    const params = {
+      action: 'auto',
+      feed: 'box',
+      section: 'ar',
+      bore: 'M',
+      rail: 'full',
+      chargingHandle: 'side',
+      boltHandle: 'rest',
+      carrierPattern: 'auto',
+      handleStyle: 'auto',
+      boltHandleProfile: 'standard',
+      magazineWell: 'standard',
+    };
+    const receiverFamily = FAMILIES.receiver;
+    if (!receiverFamily) {
+      throw new Error('Receiver family is missing');
+    }
+    const originalReceiver = receiverFamily.build(params);
+    const rail = originalReceiver.ports.find(({ id }) => id === 'rail');
+    if (!(rail?.slots && rail.mount === 'rail-top')) {
+      throw new Error('Fixture receiver has no top rail');
+    }
+    const blockedIndex = 2;
+    const clearIndex = 5;
+    const blockedX = rail.pos[0] + rail.up[0] * blockedIndex * rail.slots.pitch;
+    const obstructedReceiver: PartFamily = {
+      ...receiverFamily,
+      build: (fixtureParams) => {
+        const receiver = receiverFamily.build(fixtureParams);
+        return {
+          ...receiver,
+          keepOuts: [
+            ...receiver.keepOuts,
+            {
+              id: 'fixture-optic-obstruction',
+              kind: 'fixture obstruction',
+              box: {
+                center: [blockedX, rail.pos[1] + 1.5, 0] as const,
+                half: [2, 1.5, 2] as const,
+              },
+            },
+          ],
+        };
+      },
+    };
+    const fixtureDomain: Domain = {
+      ...gunDomain,
+      families: { ...gunDomain.families, receiver: obstructedReceiver },
+    };
+    const assembly: Assembly = {
+      name: 'attachment-compatibility-obstruction-fixture',
+      root: 'receiver',
+      parts: { receiver: { family: 'receiver', params } },
+      connections: [],
+    };
+    const resolved = resolve(assembly, fixtureDomain);
+    const slots = attachmentSlots(resolved);
+    const compatibility = attachmentCompatibility(assembly, slots, fixtureDomain);
+    const blocked = slots.find(({ id }) => id === `receiver.rail.${blockedIndex}`);
+    const clear = slots.find(({ id }) => id === `receiver.rail.${clearIndex}`);
+    const optic = OPTIC_CATALOG['mini-reflex'];
+    if (!(blocked && clear && optic)) {
+      throw new Error('Fixture did not produce both optic slots');
+    }
+    expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
+    expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
+    expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
+    expect(compatibility[clear.id]).toContain('optic-mini-reflex');
   });
 
   it('rejects a fitted mod whose mount slot is absent from the exported interfaces', () => {
@@ -394,7 +516,7 @@ describe('attachment parts and export metadata', () => {
   it('exports every mount pose for the design and fixture corpus', () => {
     let checked = 0;
     for (const { label, assembly } of loadCorpus()) {
-      const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`);
+      const model = exported(assembly, `corpus_${assembly.name.replaceAll('-', '_')}`, false);
       const slots = model.modelEntry.attachmentSlots ?? [];
       const fitted = model.modelEntry.attachments ?? [];
       expect(

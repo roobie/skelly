@@ -147,7 +147,10 @@ export const exportFileText = (
   }
   const exportMetadata =
     metadata.cartridge || !cartridgeResult.cartridge ? metadata : { ...metadata, cartridge: cartridgeResult.cartridge };
-  const result = exportGunGlb(read.assembly, asset, read.appearance, exportMetadata);
+  const result = exportGunGlb(read.assembly, asset, read.appearance, {
+    ...exportMetadata,
+    includeAttachmentCompatibility: true,
+  });
   if (!result.ok) {
     return { ok: false, message: `export refused: ${JSON.stringify(result.error)}` };
   }

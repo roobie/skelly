@@ -4,7 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { advanceStanceWeight, posedShambler, targetStanceWeight, zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import {
+  advanceStanceWeight,
+  HIT_FLINCH_DURATION,
+  posedShambler,
+  targetStanceWeight,
+  zombiePoseInputFor,
+} from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -26,18 +32,18 @@ const FLOOR = (_x: number, y: number) => y === 0;
 const offsetForBox = ({
   renderer,
   id,
-  zombie,
   region,
   box,
+  figure,
 }: {
   renderer: MobActorMeshes;
   id: number;
-  zombie: Zombie;
   region: ZombieRegion;
   box: { bone: string; center: Vec3; rotation: readonly number[] };
+  figure: ReturnType<typeof posedShambler>['figure'];
 }) => {
   const matrix = renderer.boneMatrix(id, box.bone)!;
-  const local = shamblerRegionBoxes(zombie.figureSeed)[region].find((candidate) => candidate.bone === box.bone)!.center;
+  const local = figure.boxes[region].find((candidate) => candidate.bone === box.bone)!.center;
   const world = [0, 1, 2].map(
     (axis) =>
       matrix[axis * 4]! * local[0]! +
@@ -69,7 +75,9 @@ const offsetForBox = ({
 };
 
 const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
-  const hit = posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK_SIZE));
+  const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+  const { figure } = posedShambler(input);
+  const hit = posedShamblerRegionBoxes(input);
   let worst = {
     bone: '',
     centreCm: 0,
@@ -81,7 +89,7 @@ const maxOffset = (renderer: MobActorMeshes, id: number, zombie: Zombie) => {
   for (const [regionName, boxes] of Object.entries(hit)) {
     const region = regionName as ZombieRegion;
     for (const box of boxes) {
-      const current = offsetForBox({ renderer, id, zombie, region, box });
+      const current = offsetForBox({ renderer, id, region, box, figure });
       if (current.centreCm > worst.centreCm) {
         worst = current;
       }
@@ -118,6 +126,46 @@ describe('rendered and hit shambler poses', () => {
     const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { poolSize: 2 });
     try {
       renderer.sync(system.store, 0, 1);
+      renderer.sync(system.store, 0, 1, true);
+      const mismatch = maxOffset(renderer, id, zombie);
+      expect(mismatch.worst.centreCm).toBeLessThan(0.001);
+      expect(mismatch.worst.rotationDeltaDeg).toBeLessThan(0.1);
+      expect(mismatch.worstHead.centreCm).toBeLessThan(0.001);
+      expect(mismatch.worstHead.rotationDeltaDeg).toBeLessThan(0.1);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it.each(['runner', 'crawler'] as const)('keeps rendered %s gait and flinch aligned with hit regions', (model) => {
+    const system = new ZombieSystem({
+      tuning: TEST_SENSE_TUNING,
+      isOpaque: FLOOR,
+      player: () => ({ pos: [100, 1, 100], facing: [0, 0, -1], movement: 'still', lit: false, lightSeenFrom: 40 }),
+      isSolid: FLOOR,
+      hour: () => 12,
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(SCALE),
+      jumpSpeed: PLAYER.jump,
+      hurtPlayer: () => undefined,
+    });
+    const id = system.add(registry.zombies.get(model)!, [2, 1, 3], [0, 0, -1]);
+    const zombie = system.store.get(id)!;
+    zombie.figureSeed = 1;
+    zombie.mode = 'idle';
+    zombie.horizontalSpeed = 0.7;
+    zombie.gaitPhase = 0.8;
+    const baseInput = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    zombie.hitFlinchTime = 0.08;
+    const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
+    const flinched = posedShambler(input);
+    const base = posedShambler(baseInput);
+    const recovered = posedShambler({ ...input, hitFlinchTime: HIT_FLINCH_DURATION });
+    expect(flinched.pose.rotations.head).not.toEqual(base.pose.rotations.head);
+    expect(recovered.transforms).toEqual(base.transforms);
+
+    const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { poolSize: 2 });
+    try {
       renderer.sync(system.store, 0, 1, true);
       const mismatch = maxOffset(renderer, id, zombie);
       expect(mismatch.worst.centreCm).toBeLessThan(0.001);

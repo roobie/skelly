@@ -42,6 +42,7 @@ jobs:
   fast:
     if: ${{ github.event.inputs.layout != 'control' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 50
     defaults:
       run:
         working-directory: deadvox
@@ -56,10 +57,14 @@ jobs:
             deadvox/package-lock.json
             deadvox/tools/lit-check/package-lock.json
       - run: npm ci --prefix ..
+        timeout-minutes: 3
       - name: Browser partition manifest
+        timeout-minutes: 1
         run: node ../test/browser-ci-manifest.mjs
       - run: npm ci
+        timeout-minutes: 3
       - run: npm ci --prefix tools/lit-check
+        timeout-minutes: 3
       - run: timeout 300 npm run lint:lit
       - run: timeout 300 npm run lint:time
       - run: timeout 300 npm run typecheck
@@ -104,6 +109,7 @@ jobs:
     needs: [fast, browser, control-check, control-stages]
     if: always()
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/github-script@v7
