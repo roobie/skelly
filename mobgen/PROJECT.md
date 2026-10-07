@@ -68,6 +68,13 @@ tuning that a later Deadvox round owns. The first-look composition is a
 proposal for BR's visual judgment, not an encounter-count or gameplay-tuning
 decision.
 
+To keep this viewer-only first look out of Deadvox's simulation fingerprint,
+the viewer imports `src/mob/bossTemplate.ts` (`VIEWER_TEMPLATES`) rather than
+registering the boss in `src/mob/templates.ts`, which Deadvox reaches through
+`src/mob/shamblerFigure.ts`. This boundary lasts until the Deadvox boss
+integration (#308): `deadvox/test/simulationFingerprint.test.ts` checks the
+separation, and that integration round changes the contract.
+
 The static view is useful before animation or game integration. The part
 manifest is independent of those later systems, but look-at-player, boss gait,
 and Deadvox integration must follow #325 because it changes the rig and model
