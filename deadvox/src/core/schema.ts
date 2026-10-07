@@ -443,6 +443,45 @@ const MagazineRoundSchema = strictObject({
 });
 
 const MagazineCapacity = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
+const AttachmentPropertiesSchema = strictObject({
+  magnification: optional(
+    pipe(
+      strictObject({ min: Positive, max: Positive }),
+      check(({ min, max }) => max >= min, 'maximum magnification cannot be below minimum'),
+    ),
+  ),
+  reticleKind: optional(picklist(['dot', 'crosshair', 'chevron'])),
+  noiseFactor: optional(Fraction),
+  wearClass: optional(picklist(['real', 'improvised'])),
+  handlingClass: optional(pipe(string(), nonEmpty('must not be empty'))),
+});
+const AttachmentSightSchema = strictObject({
+  kind: picklist(['optic', 'iron']),
+  eye: Point,
+  direction: UnitVector,
+  up: UnitVector,
+  eyeReliefMetres: Positive,
+  ocularDiameterMetres: optional(Positive),
+});
+const AttachmentSchema = strictObject({
+  id: pipe(string(), nonEmpty('must not be empty')),
+  kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
+  mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
+  properties: AttachmentPropertiesSchema,
+  sight: optional(AttachmentSightSchema),
+});
+const AttachmentSlotSchema = strictObject({
+  id: pipe(string(), nonEmpty('must not be empty')),
+  mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
+  position: Point,
+  direction: UnitVector,
+  up: UnitVector,
+});
+const ModelMagazineSlotSchema = strictObject({
+  node: pipe(string(), nonEmpty('must not be empty')),
+  at: Point,
+  turn: Point,
+});
 
 const ModelSchema = pipe(
   strictObject({
@@ -465,8 +504,25 @@ const ModelSchema = pipe(
     hold: optional(picklist(['forward', 'upright'])),
     /** Degrees to roll around the model's long +x axis before applying the hold pose. */
     roll: optional(pipe(number(), minValue(-180), maxValue(180))),
-    /** Named points, such as the flashlight's `lens` or a firearm's `magwell`. */
+    /** Named points used by presentation that are not represented by replaceable item slots. */
     anchors: optional(record(Id, Point)),
+    /** Replaceable model parts and the gun-side mount frames for later fitting. */
+    attachments: optional(
+      array(
+        pipe(
+          strictObject({
+            ...AttachmentSchema.entries,
+            node: pipe(string(), nonEmpty('must not be empty')),
+            mountedAt: pipe(string(), nonEmpty('must not be empty')),
+          }),
+        ),
+      ),
+    ),
+    attachmentSlots: optional(array(AttachmentSlotSchema)),
+    /** Exact baked GLB node and replacement transform for each item-owned model slot. */
+    slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
+    /** Static model metadata for an attachment exported as its own item asset. */
+    attachment: optional(AttachmentSchema),
     /** Model-derived eye point, sight line and up axis for ADS presentation and ballistics. */
     sight: optional(
       strictObject({
@@ -489,6 +545,16 @@ const ModelSchema = pipe(
         ? true
         : calibre !== undefined && capacity !== undefined && rounds !== undefined && rounds.length === capacity,
     'magazine metadata needs calibre, capacity, and one round pose per capacity slot',
+  ),
+  check(
+    ({ attachments, attachmentSlots }) =>
+      attachments === undefined ||
+      (attachmentSlots !== undefined &&
+        new Set(attachments.map(({ mountedAt }) => mountedAt)).size === attachments.length &&
+        attachments.every(({ mountedAt, mount }) =>
+          attachmentSlots.some((slot) => slot.id === mountedAt && slot.mount === mount),
+        )),
+    'fitted attachments need unique matching mount slots',
   ),
   check(
     ({ sight }) => sight?.kind !== 'optic' || sight.ocularDiameterMetres !== undefined,

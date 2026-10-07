@@ -5,6 +5,7 @@ read_if:
   - you change optic eye-relief validation
   - you change the AK receiver's position relative to its centered bore
   - you change the AK archetype's proportions, or map them against its golden photo
+  - you change attachment parts, mount slots or their Deadvox export
 
 # gungen — low-poly firearm designer
 
@@ -1544,8 +1545,7 @@ not part of the export's acceptance:
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
   `Solid` type in `src/core/schema.ts`, so lane A owns it;
-- after 3.5: attachments with game properties and port compatibility
-  (gungen.2), with the deadvox schema change they need;
+- Slice 3.7 exports attachment parts and standalone models through `src/gun/attachmentExport.ts`, `exportAttachmentGlb`, and `src/gun/exportGlb.ts`, `exportGunGlb`. `src/gun/attachments.ts`, `attachmentSlots` preserves every mount pose and `src/gun/exportGlb.ts`, `attachmentData` links fitted nodes to slot IDs, so Deadvox can remove a baked mod without losing the seat pose; `attachmentMetadata` exports optic sight frames for runtime fitting. A fitted magazine uses a named replacement slot rather than a positional anchor because Deadvox must hide its baked node when the item is absent, while anchors remain presentation points;
 - **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
   but the template is excluded from active `TEMPLATES` via `SUSPENDED_TEMPLATE_NAMES`,
   and its curated design and fixtures live byte-identically under `designs/suspended/`
