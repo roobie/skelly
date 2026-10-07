@@ -679,10 +679,15 @@ try {
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
-    await page.keyboard.press('Escape');
-    await page.waitForFunction(() => !document.querySelector('#overlay')?.hidden, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
+    await page.keyboard.press('m');
+    await page.waitForFunction(
+      () => {
+        const marker = document.querySelector('.debug-frozen');
+        return marker !== null && !marker.hidden;
+      },
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
     await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
     await page.waitForFunction(
       async () => {
@@ -725,7 +730,7 @@ try {
     }
     const pumpUrl = new URL(appUrl);
     pumpUrl.searchParams.set('loadout', 'pump');
-    await page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    await page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' });
     await page.waitForFunction(
       async () => {
         const locks = await navigator.locks.query();
@@ -743,17 +748,17 @@ try {
     );
     const result = await page.evaluate(async () => {
       const locks = await navigator.locks.query();
-      const { controller } = globalThis.deadvoxSaveTest;
+      const controller = globalThis.deadvoxSaveTest?.controller;
       return {
         pagehide: JSON.parse(sessionStorage.getItem('d144-pagehide') ?? 'null'),
         heldWriter: sessionStorage.getItem('d144-held-writer'),
-        ready: controller.ready,
-        hasSavedWorld: controller.restored !== undefined,
-        storageUnavailable: controller.storageUnavailable,
+        ready: controller?.ready,
+        hasSavedWorld: controller?.restored !== undefined,
+        storageUnavailable: controller?.storageUnavailable,
         continueDisabled: document.querySelector('#continue')?.disabled,
         held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
         pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
-        warnings: globalThis.__d144LockWarnings,
+        warnings: globalThis.__d144LockWarnings ?? [],
       };
     });
     process.stdout.write(`${browserName}: in-tab loadout navigation ${JSON.stringify(result)}\n`);
@@ -771,7 +776,7 @@ try {
       assert.equal(result.hasSavedWorld, true);
       assert.equal(result.continueDisabled, false);
       assert.equal(result.warnings.length, 0);
-      await page.goBack({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+      await page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS });
       await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') === 'true', undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
