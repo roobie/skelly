@@ -23,6 +23,9 @@ export interface OpticCatalogEntry {
   readonly envelopeU: readonly [length: number, height: number, width: number];
   readonly mount: MountRequirement & { readonly description: string };
   readonly opticalAxisY: number;
+  readonly reticleKind: 'dot' | 'crosshair' | 'chevron';
+  /** Magnification range for export; absent on non-magnifying sights. */
+  readonly magnification?: { readonly min: number; readonly max: number };
   readonly ocularX: number;
   /** Diameter of the clear ocular opening, measured at its exported plane. */
   readonly ocularOpeningDiameterU: number;
@@ -158,6 +161,7 @@ const MICRO_HOUSING_DISPLAY = { bevel: false, outline: false, mergeGroup: 'micro
 export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   'mini-reflex': makeEntry({
     id: 'mini-reflex',
+    reticleKind: 'dot',
     label: 'Closed micro dot (ACRO P-2 class)',
     reference:
       'Aimpoint ACRO P-2, 47 × 33 × 31 mm (L × W × H); modeled at BR’s approximately 51 × 30 × 30 mm mounted class',
@@ -230,6 +234,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'tube-dot': makeEntry({
     id: 'tube-dot',
+    reticleKind: 'dot',
     label: 'Tube dot (Micro T-2 class)',
     reference: 'Aimpoint Micro T-2, 68 × 41 × 41 mm class',
     source: 'https://www.aimpoint.com/products/red-dot-sights/micro-t-2',
@@ -258,6 +263,7 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   holographic: makeEntry({
     id: 'holographic',
+    reticleKind: 'dot',
     label: 'Compact holographic (XPS2 class)',
     reference: 'EOTECH XPS2, 96.5 × 53.3 × 63.5 mm (L × W × H); deliberately about 8% smaller at BR’s visual request',
     source: 'https://www.eotechinc.com/eotech-hws-xps2',
@@ -299,7 +305,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'fixed-prism-4x': makeEntry({
     id: 'fixed-prism-4x',
+    reticleKind: 'chevron',
     label: 'Fixed 4× prism (TA31 class)',
+    magnification: { min: 4, max: 4 },
     reference: 'Trijicon ACOG TA31 class, including mount, approximately 150 × 45 × 60 mm',
     source: 'https://www.trijicon.com/products/details/ta31-d-100549',
     envelopeMm: [150, 45, 60],
@@ -367,7 +375,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'lpvo-1-6x': makeEntry({
     id: 'lpvo-1-6x',
+    reticleKind: 'crosshair',
     label: 'Low-power variable optic (Razor Gen II-E class)',
+    magnification: { min: 1, max: 6 },
     reference: 'Vortex Razor HD Gen II-E 1–6×24, approximately 257 mm long',
     source: 'https://vortexoptics.com/razor-hd-gen-ii-e-1-6x24.html',
     envelopeMm: [257, 80, 65],
@@ -405,7 +415,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'high-mag-5-25x': makeEntry({
     id: 'high-mag-5-25x',
+    reticleKind: 'crosshair',
     label: 'High-magnification scope (ATACR 5–25×56 class)',
+    magnification: { min: 5, max: 25 },
     reference: 'Nightforce ATACR 5–25×56 F1 class, approximately 363 mm long',
     source: 'https://www.nightforceoptics.com/riflescopes/atacr/atacr-5-25x56-f1/',
     envelopeMm: [363, 86, 75],
@@ -443,7 +455,9 @@ export const OPTIC_CATALOG: Readonly<Record<OpticTypeId, OpticCatalogEntry>> = {
   }),
   'digital-thermal': makeEntry({
     id: 'digital-thermal',
+    reticleKind: 'crosshair',
     label: 'Digital optic (Thermion 2 XQ50 Pro class)',
+    magnification: { min: 3, max: 12 },
     reference: 'Pulsar Thermion 2 XQ50 Pro, approximately 343 mm long',
     source: 'https://pulsarnv.com/products/thermion-2-xq50-pro',
     envelopeMm: [343, 80, 80],

@@ -74,7 +74,20 @@ export const generate = (template: Template, domain: Domain, seed: number): Asse
     }
     const params: Record<string, string> = {};
     for (const [name, c] of Object.entries(slot.params ?? {})) {
-      params[name] = chooseParam(rng, c, parts, domain);
+      const calibreMapping = template.calibreParams?.find(
+        ({ slot: slotId, param }) => slotId === slot.id && param === name,
+      );
+      if (calibreMapping) {
+        const selected = calibreMapping.byCalibre[template.calibre ?? ''];
+        if (selected === undefined) {
+          throw new Error(
+            `Template ${template.name} has no ${slot.id}.${name} choice for calibre ${template.calibre ?? '(unset)'}.`,
+          );
+        }
+        params[name] = selected;
+      } else {
+        params[name] = chooseParam(rng, c, parts, domain);
+      }
     }
     parts[slot.id] = Object.keys(params).length > 0 ? { family: slot.family, params } : { family: slot.family };
   }

@@ -595,7 +595,7 @@ describe('glb export: deadvox model entry', () => {
   it('emits muzzle and support anchors in metres when the design has them', () => {
     const out = exported(design('archetype-ar'));
     const selected = selectGunAnchors(out.resolved, GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['ejection', 'magwell', 'muzzle', 'support']);
+    expect(Object.keys(out.modelEntry.anchors ?? {}).sort()).toEqual(['ejection', 'muzzle', 'support']);
     near(
       out.modelEntry.anchors!.muzzle!,
       selected.others.muzzle!.position.map((x) => x * S),
@@ -683,7 +683,7 @@ describe('glb export: deadvox model entry', () => {
     }
   });
 
-  it('emits the structural magwell anchor with or without assigned calibre metadata', () => {
+  it('exports the magazine replacement slot regardless of calibre metadata', () => {
     const assembly = design('archetype-ak');
     const appearance = { variant: 'ak' };
     const bare = exportGunGlb(assembly, ASSET, appearance);
@@ -694,10 +694,16 @@ describe('glb export: deadvox model entry', () => {
     }
     expect(bare.modelEntry).not.toHaveProperty('calibre');
     expect(assigned.modelEntry.calibre).toBe('7.62x39');
-    const selected = selectGunAnchors(resolve(assembly, gunDomain), GUN_ANCHORS, GUN_ANCHOR_POLICY) as SelectedAnchors;
-    const expected = selected.others.magwell!.position.map((x) => x * S);
-    near(bare.modelEntry.anchors!.magwell!, expected, 6);
-    near(assigned.modelEntry.anchors!.magwell!, expected, 6);
+    const bareSlot = bare.modelEntry.slots?.magazine;
+    const assignedSlot = assigned.modelEntry.slots?.magazine;
+    expect(bare.modelEntry.anchors?.magwell).toBeUndefined();
+    expect(assigned.modelEntry.anchors?.magwell).toBeUndefined();
+    expect(bareSlot).toBeDefined();
+    expect(assignedSlot).toBeDefined();
+    expect(assignedSlot?.node).toBe(bareSlot?.node);
+    expect(assignedSlot?.at).toEqual(bareSlot?.at);
+    expect(assignedSlot?.turn).toEqual(bareSlot?.turn);
+    expect(readGlb(bare.glb).json.nodes.map(({ name }) => name)).toContain(bareSlot?.node);
   });
 
   it('emits the fixed axis-mapping turn, not one derived from the grip', () => {

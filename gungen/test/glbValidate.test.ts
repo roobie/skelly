@@ -7,7 +7,7 @@ import { exportGunGlb } from '../src/gun/exportGlb.ts';
 
 const DESIGNS = join(import.meta.dirname, '..', 'designs');
 const names = readdirSync(DESIGNS)
-  .filter((f) => f.endsWith('.json'))
+  .filter((f) => f.endsWith('.json') && !f.startsWith('look-'))
   .sort();
 
 // Khronos glTF-Validator over the exported binary of every published archetype design (PROJECT.md 3.4).

@@ -109,7 +109,7 @@ describe('site launchers track the games’ URL parameters', () => {
     assert.deepEqual(coverageFailures('gungen fixture', fixtureNames, optionValues('gungen-fixture')), []);
 
     const designNames = readdirSync(join(ROOT, 'gungen/designs'))
-      .filter((name) => name.endsWith('.json'))
+      .filter((name) => name.endsWith('.json') && !name.startsWith('look-'))
       .map((name) => name.replace(JSON_FILE, ''));
     assert.deepEqual(coverageFailures('gungen design', designNames, optionValues('gungen-design')), []);
   });

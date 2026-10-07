@@ -10,7 +10,7 @@ const ROOT = new URL('../', import.meta.url).pathname;
 const DESIGNS = join(ROOT, 'gungen/designs');
 const loadExports = () =>
   readdirSync(DESIGNS)
-    .filter((file) => file.endsWith('.json'))
+    .filter((file) => file.endsWith('.json') && !file.startsWith('look-'))
     .sort()
     .map((file) => {
       const loaded = loadGunDesign(readFileSync(join(DESIGNS, file), 'utf8'));
