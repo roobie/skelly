@@ -23,7 +23,7 @@ import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
-import { type RealSeconds, type RealTimestamp, realSeconds } from '../core/time.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
@@ -81,11 +81,13 @@ import {
   joinInputReplayWindows,
   type ReplayAction,
   type ReplayControlSample,
+  type ReplayGeneratedColumn,
   type ReplayInputData,
   replayStateFingerprint,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
+import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
@@ -188,12 +190,18 @@ const createInputReplayPlayer = (
 const createInputReplayRecorder = (
   replaying: boolean,
   snapshot: () => Readonly<SaveSnapshot>,
+  generatedColumns: readonly ReplayGeneratedColumn[],
 ): InputReplayRecorder | undefined => {
   if (replaying) {
     return undefined;
   }
-  return new InputReplayRecorder(snapshot());
+  return new InputReplayRecorder(snapshot(), undefined, generatedColumns);
 };
+
+const createInputReplayDriver = (
+  player: InputReplayPlayer | undefined,
+  ports: Omit<InputReplayDriverPorts, 'player'>,
+): InputReplayDriver | undefined => (player ? new InputReplayDriver({ ...ports, player }) : undefined);
 
 const handlingPresentationFor = (
   job: Readonly<LongJob> | undefined,
@@ -231,6 +239,12 @@ export interface StartPlayOptions {
   };
 }
 
+const configureReplayStreaming = (streamer: Engine['streamer'], replay: StartPlayOptions['replay']): void => {
+  if (replay) {
+    streamer.setReplayControlled();
+  }
+};
+
 export const startPlay = (
   engine: Engine,
   debugModule?: DebugModule,
@@ -245,6 +259,7 @@ export const startPlay = (
       }
     };
   }
+  configureReplayStreaming(streamer, options.replay);
   const { scale } = config;
   const s = scale.blockSize;
 
@@ -308,22 +323,9 @@ export const startPlay = (
       }
       return live;
     }
-    replaySample = replayPlayer.next();
-    if (replaySample) {
-      sim.compression.c = replaySample.compression;
-      applyReplayLook(input, replaySample);
-      return replaySample;
-    }
-    return {
-      active: false,
-      inputLocked: true,
-      intent: { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false },
-      yaw: input.yaw,
-      pitch: input.pitch,
-      walking: false,
-      descending: false,
-      worldReady: false,
-    };
+    const replayInput = nextReplayInputSample(replayPlayer, sim.compression, input);
+    replaySample = replayInput.recordedSample;
+    return replayInput.input;
   };
   let automaticFireUid: number | undefined;
   const automaticFireWeapon = (): Item | undefined => {
@@ -382,6 +384,7 @@ export const startPlay = (
     terrainFloor: (x, z) => engine.groundAt(x * s, z * s) / s,
     ...(options.restore ? { restore: options.restore } : {}),
     ready: (x, z) => streamer.isReady(x, z),
+    zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
     controls: {
       active: () => Boolean(options.replay) || (input.locked && !input.menuPointer),
       intent: () => input.intent(),
@@ -543,13 +546,39 @@ export const startPlay = (
     });
   }
   // Furniture, with the loot rolled for it, arrives with its column.
-  streamer.onColumn = (cx, cz) => {
+  const applyColumnLoad = (cx: number, cz: number): void => {
     session.onColumn(cx, cz, engine.site);
     for (const { spec, loot } of engine.furnitureIn(cx, cz)) {
       inventory.furnish(spec, loot);
     }
   };
-  streamer.onColumnUnload = (cx, cz) => session.onColumnUnload(cx, cz);
+  const applyColumnUnload = (cx: number, cz: number): void => session.onColumnUnload(cx, cz);
+  const replayDriver = createInputReplayDriver(replayPlayer, {
+    terrain: streamer,
+    onColumnLoad: applyColumnLoad,
+    onColumnUnload: applyColumnUnload,
+    simulation: { currentSimSeconds: () => sim.time, compression: sim.compression },
+    frameReplay: (realSeconds) => session.frameReplay(realSeconds),
+    playerPosition: () => body.pos,
+  });
+  streamer.onColumn = (cx, cz) => {
+    if (replayPlayer) {
+      return;
+    }
+    applyColumnLoad(cx, cz);
+    if (inputRecorder) {
+      inputRecorder.queueColumnChange(cx, cz, true);
+    }
+  };
+  streamer.onColumnUnload = (cx, cz) => {
+    if (replayPlayer) {
+      return;
+    }
+    applyColumnUnload(cx, cz);
+    if (inputRecorder) {
+      inputRecorder.queueColumnChange(cx, cz, false);
+    }
+  };
   const view = createPlayView(engine, inventory, (message) => {
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
@@ -2140,20 +2169,18 @@ export const startPlay = (
     }
   };
 
-  const stepReplaySimulation = (menuPaused: boolean, gameFrozen: boolean): void => {
-    const nextSample = replayPlayer?.peek();
-    const waitingForWorld = Boolean(nextSample?.worldReady && !streamer.isReady(body.pos[0], body.pos[2]));
-    sim.paused = menuPaused || gameFrozen || replayPlayer?.finished === true || waitingForWorld;
-    if (sim.paused || !replayPlayer) {
+  const stepReplaySimulation = (realDt: RealSeconds, menuPaused: boolean, gameFrozen: boolean): void => {
+    sim.paused = menuPaused || gameFrozen || replayPlayer?.finished === true || replayVerification === 'unavailable';
+    if (sim.paused || !replayPlayer || !replayDriver) {
       return;
     }
-    sim.compression.c = replayPlayer.peek()?.compression ?? sim.compression.c;
-    session.frameReplay(1 / 60);
+    if (replayDriver.advanceFrame(realDt).kind === 'unavailable') {
+      replayVerification = 'unavailable';
+      sim.paused = true;
+      return;
+    }
     if (replayPlayer.finished) {
-      const endRemainder = options.replay!.endSimTimestamp - sim.time;
-      if (endRemainder > 0) {
-        session.frameReplay(endRemainder / sim.compression.c);
-      }
+      replayDriver.advanceEndRemainder(options.replay!.endSimTimestamp);
     }
     verifyReplayEndState();
   };
@@ -2164,7 +2191,7 @@ export const startPlay = (
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
-      stepReplaySimulation(menuPaused, gameFrozen);
+      stepReplaySimulation(realDt, menuPaused, gameFrozen);
     } else {
       sim.paused = menuPaused || gameFrozen;
       advanceLiveFrame(sim, realDt, skipUntil, (simDt, until) => session.frame(simDt, until));
@@ -2175,7 +2202,7 @@ export const startPlay = (
     }
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
-      inputRecorder = new InputReplayRecorder(captureSnapshot());
+      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     return gameFrozen;
@@ -2210,7 +2237,7 @@ export const startPlay = (
   const frame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
-    const dt = realSeconds(Math.min(0.1, elapsedReal));
+    const dt = realDuration(Math.min(0.1, elapsedReal));
     frameInterval.record(now, now - last);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;
@@ -2331,7 +2358,7 @@ export const startPlay = (
       { clock: sim.clock, recordSnapshotDuration: (durationMs) => snapshotHistory.add(durationMs) },
     );
   }
-  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot);
+  inputRecorder = createInputReplayRecorder(Boolean(options.replay), captureSnapshot, streamer.generatedColumns());
   // Shaders compile while the world streams in behind the main menu: started now, not awaited, so
   // nothing waits for it. Models that load later (glTF materials) compile when first drawn.
   view.warmUp().catch((error: unknown) => showNotice(`Shader warm-up failed: ${String(error)}`));

@@ -36,7 +36,7 @@ describe('debug action dispatch', () => {
     expect(dispatchDebugAction(actions, 'debug.input-replay-import')).toBe(true);
     expect(replayCalls).toEqual(['export', 'import']);
   });
-  it('dispatches each exposed toggle to its owner rather than retaining panel-only state', () => {
+  it('dispatches each exposed toggle to its owner, including the debug compression contract', () => {
     const { actions } = makeActions();
     const toggles = actions.filter((action) => action.state !== undefined);
     expect(toggles.length).toBeGreaterThan(0);
