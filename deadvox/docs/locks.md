@@ -56,7 +56,7 @@ unlocked, making forced entry a one-way breach. See `src/core/prying.ts`,
 
 ## Medical hall pharmacy
 
-BR ruled for d122-6, “to keep it simple, we'll go for 1:(b), 2:front counter”
+BR ruled for d122-6, “to keep it simple, we'll go for 1:(b) , 2:front counter”
 (2026-10-07 11:13). The pharmacy door uses the existing #309 key-or-crowbar lock
 contract, and the matching key is fixed in the medical hall's front counter;
 `src/content/base/templates-medical.json` and

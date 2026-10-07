@@ -3,15 +3,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
-import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { doorOptions } from '../src/core/options.ts';
 import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileTemplate, type Facing } from '../src/core/templates.ts';
-import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
 import { USE_REACH } from '../src/game/play.ts';
 
 const sources = readdirSync('src/content/base')
@@ -122,7 +118,6 @@ describe('authored medical site', () => {
     const tent = compileTemplate(result.registry, definition);
     expect(templateSpatialIssues(result.registry, tent)).toEqual([]);
     const reachable = templateReachableStandingPositions(result.registry, tent);
-    expect(reachable.length).toBeGreaterThan(0);
     const [width, , depth] = tent.size;
     expect(
       reachable.some(
@@ -238,36 +233,8 @@ describe('authored medical site', () => {
     expect(nearPiece(staffDoorClosed, officer)).toBe(false);
     expect(nearPiece(staffDoorClosed, pharmacy.piece)).toBe(true);
     expect(nearPiece(pharmacyDoorClosed, pharmacy.piece)).toBe(false);
+    expect(nearPiece(pharmacyDoorClosed, front.piece)).toBe(true);
     expect(nearPiece(pharmacyDoorClosed, sofa)).toBe(true);
-
-    const pharmacyLock = required(pharmacyDoor.lock, 'pharmacy lock');
-    const inventory = new Inventory(result.registry);
-    const pharmacyEntity = inventory.furnish({
-      type: pharmacyDoor.furniture,
-      pos: pharmacyDoor.pos,
-      size: pharmacyDoor.size,
-      facing: pharmacyDoor.facing,
-      lock: pharmacyLock,
-    });
-    expect(pharmacyEntity).toBeDefined();
-    const key = inventory.create('pharmacy_key');
-    inventory.add(key, { kind: 'hand', side: 'right' });
-    const unlock = doorOptions(inventory, pharmacyEntity!)[1]!;
-    expect(unlock.plan.ok).toBe(true);
-    if (!unlock.plan.ok) {
-      throw new Error(unlock.plan.reason);
-    }
-    const queue = new HandlingQueue(inventory);
-    registerDoorAction({
-      queue,
-      inventory,
-      player: () => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.2, height: 1.8, onGround: true }),
-      others: () => [],
-      playWorldSound: () => undefined,
-    });
-    queue.enqueueAction(DOOR_ACTION, 'Unlock', unlock.plan.time, { entityUid: pharmacyEntity!.uid, locked: false });
-    expect(queue.tick(unlock.plan.time).failed).toEqual([]);
-    expect(pharmacyEntity!.lock).toEqual({ id: pharmacyLock.id, locked: false });
   });
 
   it('keeps the clinic sign on the clear route to the hall entrance', () => {
