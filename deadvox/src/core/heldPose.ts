@@ -1,6 +1,6 @@
-// A held grip is a shared spatial contract: gameplay ejection and the rendered model
-// use the same metres/axes. Camera bob/recoil/roll remain cosmetic, not ballistic input.
-import { type AimFrame, aimBasis, NEUTRAL_AIM } from './aim.ts';
+// A held grip is shared by the rendered model and gameplay rays in the same metres/axes.
+// AimFrame moves both the firearm and its bore; camera bob and damage roll stay presentation-only.
+import { type AimFrame, aimBasis } from './aim.ts';
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandSide } from './inventory.ts';
@@ -53,17 +53,27 @@ export const heldAnchorOffset = (model: ModelDef, name: string): Vec3 => {
 
 const rotateYXZ = ([x, y, z]: Vec3, [pitch, yaw, roll]: Vec3): Vec3 => ry(rx(rz([x, y, z], roll), pitch), yaw);
 
-const sightAimRotation = (model: ModelDef): Vec3 => {
+const dot = (left: Vec3, right: Vec3): number => left[0] * right[0] + left[1] * right[1] + left[2] * right[2];
+const cross = (left: Vec3, right: Vec3): Vec3 => [
+  left[1] * right[2] - left[2] * right[1],
+  left[2] * right[0] - left[0] * right[2],
+  left[0] * right[1] - left[1] * right[0],
+];
+
+// The full sight frame maps direction and up/cant onto the camera axes, not direction alone.
+const sightFrame = (model: ModelDef): { right: Vec3; up: Vec3; forward: Vec3 } | undefined => {
   if (!model.sight) {
-    return [0, 0, 0];
+    return undefined;
   }
-  const direction = normalize(modelToView(model, model.sight.direction));
-  return [
-    -Math.atan2(direction[1], Math.hypot(direction[0], direction[2])),
-    Math.atan2(direction[0], -direction[2]),
-    0,
-  ];
+  const forward = normalize(modelToView(model, model.sight.direction));
+  const sightUp = modelToView(model, model.sight.up);
+  const up = normalize(sightUp.map((value, axis) => value - forward[axis]! * dot(sightUp, forward)) as Vec3);
+  const right = normalize(cross(forward, up));
+  return { right, up: normalize(cross(right, forward)), forward };
 };
+
+const alignToSight = (vector: Vec3, sight: ReturnType<typeof sightFrame>): Vec3 =>
+  sight ? [dot(vector, sight.right), dot(vector, sight.up), -dot(vector, sight.forward)] : vector;
 
 export const readyFirearmPose = (leading: MeleeHand): MeleePoseFrame => {
   const hands = readyMeleePose(true, leading);
@@ -106,6 +116,7 @@ export interface HeldFirearmTransformInput {
   readonly progress: number;
   readonly aimingDownSights: boolean;
   readonly aimFrame: AimFrame;
+  readonly handlingTurn?: Vec3;
   readonly loweredPitchRadians: number;
   readonly adsApertureFill?: number | undefined;
   readonly verticalFovDegrees?: number;
@@ -121,7 +132,8 @@ export interface HeldFirearmTransform {
   readonly sightEyeOffset?: Vec3;
   readonly sightDirection?: Vec3;
   readonly sightUp?: Vec3;
-  readonly aimingRotation?: Vec3;
+  /** Root rotation columns in camera axes: right, up, back. */
+  readonly rootRotation: readonly [Vec3, Vec3, Vec3];
 }
 
 /** Shared simulation/render firearm pose. Anchors and directions use the model's grip frame. */
@@ -133,12 +145,13 @@ export const heldFirearmTransform = ({
   progress,
   aimingDownSights,
   aimFrame,
+  handlingTurn = [0, 0, 0],
   loweredPitchRadians,
   adsApertureFill,
   verticalFovDegrees = PLAYER_VIEW_FOV_DEGREES,
 }: HeldFirearmTransformInput): HeldFirearmTransform => {
   if (
-    !(model.grip && model.anchors?.muzzle && [progress, loweredPitchRadians].every(Number.isFinite)) ||
+    !(model.grip && model.anchors?.muzzle && [progress, loweredPitchRadians, ...handlingTurn].every(Number.isFinite)) ||
     progress < 0 ||
     progress > 1 ||
     loweredPitchRadians < 0
@@ -149,18 +162,21 @@ export const heldFirearmTransform = ({
   const eased = progress * progress * (3 - 2 * progress);
   const handRotation = aimingDownSights ? ([0, 0, 0] as Vec3) : (pose.rotation.map((value) => value * eased) as Vec3);
   const loweredPitch = -loweredPitchRadians * (1 - progress);
-  const adsSightRotation = sightAimRotation(model);
-  const applyRootRotation = (vector: Vec3): Vec3 =>
-    inCameraFrame(
-      rotateYXZ(rotateYXZ(rx(vector, loweredPitch), handRotation), aimingDownSights ? adsSightRotation : [0, 0, 0]),
-      progress >= 1 ? aimFrame : NEUTRAL_AIM,
-    );
+  const sight = aimingDownSights ? sightFrame(model) : undefined;
+  const applyAlignedRoot = (vector: Vec3, turn: Vec3): Vec3 =>
+    alignToSight(rotateYXZ(rotateYXZ(vector, [loweredPitch + turn[0], turn[1], turn[2]]), handRotation), sight);
+  const applyRootRotation = (vector: Vec3): Vec3 => {
+    const aligned = applyAlignedRoot(vector, handlingTurn);
+    return progress >= 1 ? inCameraFrame(aligned, aimFrame) : aligned;
+  };
   const sightEye = sightEyeBehind(model, adsApertureFill, verticalFovDegrees);
   const normalRoot = heldGripOffset(side, twoHanded).map((value, index) => value + pose.offset[index]! * eased) as Vec3;
+  // Seat the undeviated sight eye at the view; aim and handling turns then pivot the firearm off that baseline.
   const rootOffset =
     aimingDownSights && model.sight && sightEye
-      ? (applyRootRotation(
+      ? (applyAlignedRoot(
           modelToView(model, sightEye.map((value, index) => value - model.grip!.at[index]!) as Vec3),
+          [0, 0, 0],
         ).map((value) => -value) as Vec3)
       : normalRoot;
   const muzzleOffset = applyRootRotation(heldAnchorOffset(model, 'muzzle'));
@@ -171,6 +187,11 @@ export const heldFirearmTransform = ({
     : undefined;
   const sightDirection = model.sight ? applyRootRotation(modelToView(model, model.sight.direction)) : undefined;
   const sightUp = model.sight ? applyRootRotation(modelToView(model, model.sight.up)) : undefined;
+  const rootRotation = [
+    applyRootRotation([1, 0, 0]),
+    applyRootRotation([0, 1, 0]),
+    applyRootRotation([0, 0, 1]),
+  ] as const;
   return {
     rootOffset,
     muzzleOffset,
@@ -179,7 +200,7 @@ export const heldFirearmTransform = ({
     ...(sightEyeOffset ? { sightEyeOffset } : {}),
     ...(sightDirection ? { sightDirection: normalize(sightDirection) } : {}),
     ...(sightUp ? { sightUp: normalize(sightUp) } : {}),
-    ...(aimingDownSights && model.sight ? { aimingRotation: adsSightRotation } : {}),
+    rootRotation,
   };
 };
 

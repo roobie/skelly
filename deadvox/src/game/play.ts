@@ -13,6 +13,7 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
+import { heldFirearmTransform } from '../core/heldPose.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
@@ -27,7 +28,7 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
-import { turnedBore } from '../render/handlingTurn.ts';
+import { handlingRotation } from '../render/handlingTurn.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -2195,32 +2196,36 @@ export const startPlay = (
     const { item } = selected;
     const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
     const { model } = firearmHandlingFor(item, registry);
-    const side = inventory.hands.right?.uid === item.uid ? 'right' : 'left';
+    const side = inventory.hands.right?.uid === item.uid ? ('right' as const) : ('left' as const);
     const progress = firearmPose?.progress ?? 0;
     const viewpoint = { eye: eye(), yaw: input.yaw, pitch: input.pitch };
-    const bore = firearmBoreRay({
+    const leadingSide = dominantSide(inventory.character);
+    const twoHanded = Boolean(registry.items.get(item.type)?.twoHanded);
+    const aimingDownSights = firearmPose?.aimingDownSights ?? false;
+    const poseInput = {
       model,
-      ...viewpoint,
-      blockSize: s,
       side,
-      leadingSide: dominantSide(inventory.character),
-      twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
-      aimFrame: aim.frame,
+      leadingSide,
+      twoHanded,
       progress,
-      aimingDownSights: firearmPose?.aimingDownSights ?? false,
+      aimingDownSights,
+      aimFrame: aim.frame,
       loweredPitchRadians: tuning.loweredPitchRadians,
       adsApertureFill: tuning.adsApertureFill,
       verticalFovDegrees: camera.fov,
-      isSolid: engine.isSolid,
+    };
+    const basePose = heldFirearmTransform(poseInput);
+    const heldFirearmFrame = firearms.frames().find((entry) => entry.uid === item.uid);
+    const handlingTurn = handlingRotation(model, side, heldFirearmFrame, {
+      x: basePose.rootOffset[0],
+      y: basePose.rootOffset[1],
     });
-    // The mark follows the muzzle where a rack or a magazine job turns the drawn gun (BR, 2026-10-07 14:55).
-    return turnedBore(bore, {
-      model,
-      side,
-      frame: firearms.frames().find((pose) => pose.uid === item.uid),
-      loweredPitch: -tuning.loweredPitchRadians * (1 - progress),
-      blockSize: s,
+    return firearmBoreRay({
+      ...poseInput,
       ...viewpoint,
+      blockSize: s,
+      handlingTurn,
+      isSolid: engine.isSolid,
     });
   };
 

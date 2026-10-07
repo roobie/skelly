@@ -11,9 +11,9 @@ import {
   worldSolid,
 } from './geometry.ts';
 import type { Issue } from './issue.ts';
-import { angleBetween, applyDir, applyPoint, cross, length, sub } from './math.ts';
+import { angleBetween, applyDir, applyPoint, cross, length, sub, type Transform } from './math.ts';
 import { connectionMismatch, type Resolved } from './resolve.ts';
-import type { Rule } from './schema.ts';
+import type { KeepOut, PartDef, Rule } from './schema.ts';
 
 const TRAILING_ZEROS = /\.?0+$/;
 const fmt = (n: number): string => n.toFixed(2).replace(TRAILING_ZEROS, '');
@@ -24,7 +24,7 @@ const label = (r: Resolved, part: string): string => {
 };
 
 /** Mount type, gender and size agree; each port (or slot) is used at most once. */
-const portCompat: Rule = {
+export const portCompat: Rule = {
   id: 'port-compat',
   title: 'Ports are compatible',
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
@@ -128,14 +128,25 @@ const connectionAllowances = (r: Resolved): Map<string, number> => {
   return allowances;
 };
 
-/** Transform every placed solid once per rule check. */
-const placedSolids = (r: Resolved): Map<string, WorldSolid[]> => {
+/** Transform every placed solid once per rule check; immutable resolved transforms share geometry across probes. */
+const placedSolidCache = new WeakMap<object, { readonly definition: PartDef; readonly solids: WorldSolid[] }>();
+const placedSolids = (r: Resolved, partIds?: readonly string[]): Map<string, WorldSolid[]> => {
   const placed = new Map<string, WorldSolid[]>();
-  for (const [part, transform] of r.placed) {
-    placed.set(
-      part,
-      r.defs.get(part)!.solids.map((solid) => worldSolid(transform, solid)),
-    );
+  const entries =
+    partIds === undefined
+      ? [...r.placed]
+      : partIds.flatMap((part) => {
+          const transform = r.placed.get(part);
+          return transform ? [[part, transform] as const] : [];
+        });
+  for (const [part, transform] of entries) {
+    const definition = r.defs.get(part)!;
+    let cached = placedSolidCache.get(transform);
+    if (!cached || cached.definition !== definition) {
+      cached = { definition, solids: definition.solids.map((solid) => worldSolid(transform, solid)) };
+      placedSolidCache.set(transform, cached);
+    }
+    placed.set(part, cached.solids);
   }
   return placed;
 };
@@ -154,33 +165,45 @@ const worstPenetration = (a: readonly WorldSolid[], b: readonly WorldSolid[], cu
   return worst;
 };
 
+const checkSolidOverlap = (r: Resolved, focusParts?: readonly string[]): Issue[] => {
+  const issues: Issue[] = [];
+  const allowances = connectionAllowances(r);
+  const solids = placedSolids(r, focusParts?.length === 2 ? focusParts : undefined);
+  const ids = [...solids.keys()];
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i + 1; j < ids.length; j++) {
+      const a = ids[i]!;
+      const b = ids[j]!;
+      if (focusParts && !focusParts.every((part) => a === part || b === part)) {
+        continue;
+      }
+      const allowed = allowances.get([a, b].sort().join('|')) ?? TOLERANCE.contact;
+      const depth = worstPenetration(solids.get(a)!, solids.get(b)!, allowed + TOLERANCE.contact);
+      if (depth > allowed + TOLERANCE.contact) {
+        issues.push({
+          rule: 'solid-overlap',
+          message: `${label(r, a)} and ${label(r, b)} overlap by ${fmt(depth)}u (allowed: ${fmt(allowed)}u).`,
+          parts: [a, b],
+        });
+      }
+    }
+  }
+  return issues;
+};
+
 /** No two parts interpenetrate. Directly connected parts may nest a little. */
 const solidOverlap: Rule = {
   id: 'solid-overlap',
   title: 'Solids do not overlap',
-  check(r) {
-    const issues: Issue[] = [];
-    const allowances = connectionAllowances(r);
-    const solids = placedSolids(r);
-    const ids = [...r.placed.keys()];
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = i + 1; j < ids.length; j++) {
-        const a = ids[i]!;
-        const b = ids[j]!;
-        const allowed = allowances.get([a, b].sort().join('|')) ?? TOLERANCE.contact;
-        const depth = worstPenetration(solids.get(a)!, solids.get(b)!, allowed + TOLERANCE.contact);
-        if (depth > allowed + TOLERANCE.contact) {
-          issues.push({
-            rule: 'solid-overlap',
-            message: `${label(r, a)} and ${label(r, b)} overlap by ${fmt(depth)}u (allowed: ${fmt(allowed)}u).`,
-            parts: [a, b],
-          });
-        }
-      }
-    }
-    return issues;
-  },
+  check: (r) => checkSolidOverlap(r),
 };
+
+/** Existing solid-overlap rule restricted to interactions involving one newly placed part. */
+export const solidOverlapForPart = (r: Resolved, part: string): Issue[] => checkSolidOverlap(r, [part]);
+
+/** Existing solid-overlap rule restricted to the interaction between two newly placed parts. */
+export const solidOverlapBetweenParts = (r: Resolved, first: string, second: string): Issue[] =>
+  checkSolidOverlap(r, [first, second]);
 
 /** Solids on the two parts of every connection touch or lie within tolerance. */
 export const connectionContact: Rule = {
@@ -223,62 +246,130 @@ export const connectionContact: Rule = {
   },
 };
 
+const keepOutAllowedParts = (r: Resolved, owner: string, allowPort?: string): ReadonlySet<string> => {
+  const allowed = new Set([owner]);
+  if (allowPort) {
+    for (const rc of r.connections) {
+      if (rc.from.part === owner && rc.from.port.id === allowPort) {
+        allowed.add(rc.to.part);
+      }
+      if (rc.to.part === owner && rc.to.port.id === allowPort) {
+        allowed.add(rc.from.part);
+      }
+    }
+  }
+  return allowed;
+};
+
+const keepOutOtherParts = (r: Resolved, owner: string, focusPart?: string): Iterable<string> => {
+  if (focusPart === undefined) {
+    return r.placed.keys();
+  }
+  if (owner === focusPart) {
+    return [...r.placed.keys()].filter((part) => part !== focusPart);
+  }
+  return [focusPart];
+};
+
+const keepOutIssue = ({
+  r,
+  solids,
+  owner,
+  ko,
+  koShape,
+  other,
+  allowed,
+}: {
+  readonly r: Resolved;
+  readonly solids: ReturnType<typeof placedSolids>;
+  readonly owner: string;
+  readonly ko: KeepOut;
+  readonly koShape: WorldSolid;
+  readonly other: string;
+  readonly allowed: ReadonlySet<string>;
+}): Issue | undefined => {
+  if (allowed.has(other) || ko.allowFamilies?.includes(r.defs.get(other)!.family)) {
+    return undefined;
+  }
+  let worst = Number.NEGATIVE_INFINITY;
+  for (const solid of solids.get(other)!) {
+    if (lowerBoundDistanceWorld(koShape, solid) <= TOLERANCE.contact) {
+      worst = Math.max(worst, penetrationWorld(koShape, solid));
+    }
+  }
+  if (worst <= TOLERANCE.contact) {
+    return undefined;
+  }
+  return {
+    rule: 'keep-out',
+    message: `${label(r, other)} intrudes ${fmt(worst)}u into the ${ko.kind} volume of ${label(r, owner)}.`,
+    parts: [other, owner],
+    keepOut: { part: owner, id: ko.id },
+  };
+};
+
+const keepOutIssuesForOwner = ({
+  r,
+  solids,
+  owner,
+  ownerT,
+  focusPart,
+}: {
+  readonly r: Resolved;
+  readonly solids: ReturnType<typeof placedSolids>;
+  readonly owner: string;
+  readonly ownerT: Transform;
+  readonly focusPart?: string;
+}): Issue[] => {
+  const issues: Issue[] = [];
+  for (const ko of r.defs.get(owner)!.keepOuts) {
+    const koShape =
+      ko.profile && ko.z
+        ? worldSolid(ownerT, {
+            id: ko.id,
+            kind: 'extruded-polygon',
+            profile: ko.profile,
+            z: ko.z,
+            ...(ko.axis ? { axis: ko.axis } : {}),
+          })
+        : worldBox(ownerT, ko.box);
+    const allowed = keepOutAllowedParts(r, owner, ko.allowPort);
+    for (const other of keepOutOtherParts(r, owner, focusPart)) {
+      const issue = keepOutIssue({ r, solids, owner, ko, koShape, other, allowed });
+      if (issue) {
+        issues.push(issue);
+      }
+    }
+  }
+  return issues;
+};
+
 /** No part occupies another part's keep-out volume. */
+const checkKeepOut = (r: Resolved, focusPart?: string): Issue[] => {
+  const solids = placedSolids(r);
+  return [...r.placed].flatMap(([owner, ownerT]) =>
+    keepOutIssuesForOwner({ r, solids, owner, ownerT, ...(focusPart === undefined ? {} : { focusPart }) }),
+  );
+};
+
+/** Existing keep-out rule restricted to interactions involving one newly placed part. */
+export const keepOutForPart = (r: Resolved, part: string): Issue[] => checkKeepOut(r, part);
+
+/** Existing keep-out rule restricted to the interaction between two newly placed parts. */
+export const keepOutBetweenParts = (r: Resolved, first: string, second: string): Issue[] => {
+  const solids = placedSolids(r, [first, second]);
+  const firstT = r.placed.get(first);
+  const secondT = r.placed.get(second);
+  return [
+    ...(firstT ? keepOutIssuesForOwner({ r, solids, owner: first, ownerT: firstT, focusPart: second }) : []),
+    ...(secondT ? keepOutIssuesForOwner({ r, solids, owner: second, ownerT: secondT, focusPart: first }) : []),
+  ];
+};
+
 export const keepOut: Rule = {
   id: 'keep-out',
   title: 'Keep-out volumes are empty',
-  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: predates the complexity limit; split it up when next changed
-  check(r) {
-    const issues: Issue[] = [];
-    const solids = placedSolids(r);
-    for (const [owner, ownerT] of r.placed) {
-      for (const ko of r.defs.get(owner)!.keepOuts) {
-        const koShape =
-          ko.profile && ko.z
-            ? worldSolid(ownerT, {
-                id: ko.id,
-                kind: 'extruded-polygon',
-                profile: ko.profile,
-                z: ko.z,
-                ...(ko.axis ? { axis: ko.axis } : {}),
-              })
-            : worldBox(ownerT, ko.box);
-        const allowed = new Set([owner]);
-        const allowedFamilies = new Set(ko.allowFamilies ?? []);
-        if (ko.allowPort) {
-          for (const rc of r.connections) {
-            if (rc.from.part === owner && rc.from.port.id === ko.allowPort) {
-              allowed.add(rc.to.part);
-            }
-            if (rc.to.part === owner && rc.to.port.id === ko.allowPort) {
-              allowed.add(rc.from.part);
-            }
-          }
-        }
-        for (const other of r.placed.keys()) {
-          if (allowed.has(other) || allowedFamilies.has(r.defs.get(other)!.family)) {
-            continue;
-          }
-          let worst = Number.NEGATIVE_INFINITY;
-          for (const s of solids.get(other)!) {
-            if (lowerBoundDistanceWorld(koShape, s) > TOLERANCE.contact) {
-              continue;
-            }
-            worst = Math.max(worst, penetrationWorld(koShape, s));
-          }
-          if (worst > TOLERANCE.contact) {
-            issues.push({
-              rule: 'keep-out',
-              message: `${label(r, other)} intrudes ${fmt(worst)}u into the ${ko.kind} volume of ${label(r, owner)}.`,
-              parts: [other, owner],
-              keepOut: { part: owner, id: ko.id },
-            });
-          }
-        }
-      }
-    }
-    return issues;
-  },
+  check: (r) => checkKeepOut(r),
 };
 
 /** Every required port has something attached. */

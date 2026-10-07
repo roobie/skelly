@@ -1,4 +1,4 @@
-// biome-ignore-all lint/style/noProcessEnv: seed sweeps are opt-in locally and enabled in CI.
+// biome-ignore-all lint/style/noProcessEnv: broad seed sweeps are for CI and explicit local runs.
 import process from 'node:process';
 import { describe } from 'vitest';
 

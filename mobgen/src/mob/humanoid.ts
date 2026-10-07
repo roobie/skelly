@@ -26,6 +26,7 @@ import {
 } from '../core/math.ts';
 import { pick, type Rng, range } from '../core/random.ts';
 import type { Genome, Template, Wound } from '../core/template.ts';
+import { voxelize } from '../core/voxelize.ts';
 
 const SIDES = ['L', 'R'] as const;
 type Side = (typeof SIDES)[number];
@@ -74,7 +75,7 @@ export const HUMANOID_PARAM_ORDER = [
 
 export type HumanoidParams = Readonly<Record<(typeof HUMANOID_PARAM_ORDER)[number], number>>;
 
-const WOUNDABLE_BONES = [
+export const WOUNDABLE_BONES = [
   'spine',
   'chest',
   'upperArm.L',
@@ -792,7 +793,7 @@ const buildPalette = (p: HumanoidParams): Record<Material, Vec3> => ({
 
 // ---- Build & sample ----
 
-const buildHumanoid = (genome: Genome): Body => {
+export const buildHumanoid = (genome: Genome): Body => {
   const p = genome.params as HumanoidParams;
   const layout = jointLayout(p);
   const bones = buildBones(layout);
@@ -855,8 +856,42 @@ const trimCrawlerFeature = (
   return [feature];
 };
 
+// Amputation removes the humanoid feet that otherwise align generated voxels with y = 0.
+const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): Body => {
+  const voxels = voxelize(body, size, seed);
+  let lowestRow = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < voxels.owner.length; index++) {
+    if (voxels.owner[index] !== 0) {
+      lowestRow = Math.min(lowestRow, Math.floor(index / voxels.dims[0]) % voxels.dims[1]);
+    }
+  }
+  const groundIndex = voxels.origin[1] + lowestRow;
+  if (!Number.isFinite(groundIndex) || groundIndex === 0) {
+    return body;
+  }
+  const offset = -groundIndex * size;
+  const translate = ([x, y, z]: Vec3): Vec3 => [x, y + offset, z];
+  const features = body.features.map((feature) => {
+    const { shape } = feature;
+    switch (shape.kind) {
+      case 'capsule':
+        return { ...feature, shape: { ...shape, a: translate(shape.a), b: translate(shape.b) } };
+      case 'ellipsoid':
+      case 'box':
+        return { ...feature, shape: { ...shape, center: translate(shape.center) } };
+      default:
+        throw new Error('unsupported crawler shape');
+    }
+  });
+  return {
+    ...body,
+    bones: body.bones.map((bone) => ({ ...bone, head: translate(bone.head), tail: translate(bone.tail) })),
+    features,
+  };
+};
+
 /** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
-const amputateCrawlerLegs = (body: Body): Body => {
+const amputateCrawlerLegs = (body: Body, genome: Genome): Body => {
   const { bones, cuts } = cutCrawlerBones(body.bones);
   const boneHeads = new Map(body.bones.map((bone) => [bone.id, bone.head]));
   const features = body.features.flatMap((feature) => trimCrawlerFeature(feature, cuts.get(feature.bone), boneHeads));
@@ -869,10 +904,10 @@ const amputateCrawlerLegs = (body: Body): Body => {
       onto: ['skin'],
     });
   }
-  return { ...body, bones, features };
+  return translateCrawlerBodyToGround({ ...body, bones, features }, genome.voxelSize, genome.seed);
 };
 
-const sampleWounds = (rng: Rng, count: number): Wound[] => {
+export const sampleWounds = (rng: Rng, count: number): Wound[] => {
   const n = Math.max(0, Math.round(count));
   const wounds: Wound[] = [];
   for (let i = 0; i < n; i++) {
@@ -901,7 +936,7 @@ registerBodyPlan('humanoid', {
 
 registerBodyPlan('crawler', {
   sample: sampleHumanoid,
-  build: (genome) => amputateCrawlerLegs(buildHumanoid(genome)),
+  build: (genome) => amputateCrawlerLegs(buildHumanoid(genome), genome),
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
 });

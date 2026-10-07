@@ -10,15 +10,20 @@ import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
 import {
+  type AttachmentCompatibilityPair,
+  attachmentCompatibility,
+  attachmentCompatibilityPairs,
+} from './attachmentCompatibility.ts';
+import {
   type AttachmentMetadata,
   type AttachmentSlotMetadata,
   attachmentMetadata,
+  attachmentMountSlot,
   attachmentSlots,
 } from './attachments.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
-import type { MountKind } from './mounts.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
@@ -85,6 +90,10 @@ export interface DeadvoxModelEntry {
   readonly attachments?: readonly (AttachmentMetadata & { readonly node: string; readonly mountedAt: string })[];
   /** Authored mount interfaces; fitted occupancy is linked by attachment `mountedAt` IDs. */
   readonly attachmentSlots?: readonly AttachmentSlotMetadata[];
+  /** Complete gungen-certified standalone attachment allowlist for each mount slot. */
+  readonly compatibility?: Readonly<Record<string, readonly string[]>>;
+  /** Complete canonical allowlist of compatible pairs of single-fit choices. */
+  readonly compatibilityPairs?: readonly AttachmentCompatibilityPair[];
   /** Fitted, replaceable item slots whose baked geometry is present in the gun GLB. */
   readonly slots?: { readonly magazine?: { readonly node: string; readonly at: Vec3; readonly turn: Vec3 } };
 }
@@ -96,6 +105,11 @@ export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
 export interface GunExportMetadata {
   /** Cartridge loaded by this design; its id becomes the exact Deadvox `calibre` value. */
   readonly cartridge?: Cartridge;
+}
+
+interface GunExportOptions extends GunExportMetadata {
+  /** Geometry-only callers skip the slot solver; CLI model exports explicitly request its certificate. */
+  readonly includeAttachmentCompatibility?: boolean;
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
@@ -232,21 +246,6 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
     eyeReliefMetres: eyeReliefU * resolved.domain.units.metresPerUnit,
     ...(optic ? { ocularDiameterMetres: optic.ocularOpeningDiameterU * resolved.domain.units.metresPerUnit } : {}),
   };
-};
-
-const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKind): string | undefined => {
-  for (const { conn, from, to } of resolved.connections) {
-    if (from.part === partId) {
-      if (from.port.gender === 'male' && from.port.mount === mount && to.port.gender === 'female') {
-        return `${to.part}.${to.port.id}.0`;
-      }
-      continue;
-    }
-    if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
-      return `${from.part}.${from.port.id}.${conn.slot ?? 0}`;
-    }
-  }
-  return undefined;
 };
 
 const attachmentData = (resolved: Resolved): (AttachmentMetadata & { node: string; mountedAt: string })[] =>
@@ -389,8 +388,9 @@ export const exportGunGlb = (
   assembly: Assembly,
   asset: GunAssetIdentity,
   appearance: AppearanceContext,
-  metadata: GunExportMetadata = {},
+  options: GunExportOptions = {},
 ): GunExportResult => {
+  const { includeAttachmentCompatibility = false, ...metadata } = options;
   const resolved = resolve(assembly, gunDomain);
   // Broken assemblies get the core writer's structure report before anchor selection.
   if (resolved.issues.length > 0 || resolved.placed.size < Object.keys(assembly.parts).length) {
@@ -431,12 +431,20 @@ export const exportGunGlb = (
     up: normalize(toFileAxes(up)),
   }));
   const magazine = magazineSlotData(resolved);
+  const compatibility = includeAttachmentCompatibility
+    ? attachmentCompatibility(assembly, attachmentSlotsData)
+    : undefined;
+  const compatibilityPairs =
+    compatibility === undefined
+      ? undefined
+      : attachmentCompatibilityPairs(assembly, attachmentSlotsData, compatibility);
   return {
     ...result,
     modelEntry: {
       ...modelEntry,
       attachments: attachmentData(resolved),
       attachmentSlots: attachmentSlotsData,
+      ...(compatibility === undefined || compatibilityPairs === undefined ? {} : { compatibility, compatibilityPairs }),
       ...(magazine ? { slots: { magazine } } : {}),
     },
   };

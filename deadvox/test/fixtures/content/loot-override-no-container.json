@@ -1,52 +1,13 @@
 {
-  "items": [
-    {
-      "id": "review_only_item",
-      "name": "Only here",
-      "category": "material",
-      "weight": 1,
-      "size": [1, 1],
-      "disassembly": {
-        "timeGameMinutes": 1,
-        "skill": "crafting",
-        "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
-      }
-    }
-  ],
+  "items": [{ "id": "review_only_item", "name": "Only here", "category": "material", "weight": 1, "size": [1, 1] }],
   "furniture": [{ "id": "review_pedestal", "name": "Pedestal", "size": [1, 1, 1], "color": "#123456" }],
   "loot": [{ "id": "review_only_loot", "rolls": [1, 1], "entries": [{ "item": "review_only_item", "weight": 1 }] }],
   "templates": [
     {
       "id": "shed",
-      "size": [8, 6, 6],
-      "palette": {
-        "=": "concrete",
-        "#": "planks",
-        ".": "air",
-        "^": "roof",
-        "D": { "furniture": "wood_door" },
-        "C": { "furniture": "crate", "loot": "shed_tools" },
-        "z": { "spawn": "shambler", "chance": 0.3 },
-        "Ω": { "furniture": "review_pedestal", "loot": "review_only_loot" }
-      },
-      "layers": [
-        ["Ω=======", "========", "========", "========", "========", "========"],
-        ["###DD###", "#......#", "#.z....#", "#....CC#", "#....CC#", "########"],
-        ["###DD###", "#......#", "#......#", "#....CC#", "#....CC#", "########"],
-        ["###DD###", "#......#", "#......#", "#......#", "#......#", "########"],
-        ["###DD###", "#......#", "#......#", "#......#", "#......#", "########"],
-        ["^^^^^^^^", "^^^^^^^^", "^^^^^^^^", "^^^^^^^^", "^^^^^^^^", "^^^^^^^^"]
-      ]
-    }
-  ],
-  "recipes": [
-    {
-      "id": "review_needs_item",
-      "result": { "item": "review_only_item", "count": 1 },
-      "timeGameMinutes": 1,
-      "components": [[{ "item": "review_only_item", "count": 1 }]],
-      "qualities": {},
-      "skills": {}
+      "size": [1, 1, 1],
+      "palette": { "Ω": { "furniture": "review_pedestal", "loot": "review_only_loot" } },
+      "layers": [["Ω"]]
     }
   ]
 }
