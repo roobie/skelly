@@ -10,6 +10,7 @@ import {
   actionPartPaths,
   cloneHeldModel,
   type FirearmAction,
+  magazineMotion,
   poseActionParts,
   sampleActionStroke,
 } from '../src/render/firearmModel.ts';
@@ -101,6 +102,34 @@ describe('exported firearm presentation', () => {
     expect(sampleActionStroke(handOnly, 'fire', rearward / 2)).toBe(0);
     expect(sampleActionStroke(handOnly, 'hand', rearward / 2)).toBeCloseTo(0.5);
     expect(sampleActionStroke(handOnly, 'hand', rearward)).toBe(1);
+  });
+
+  it('poses a magazine job from its progress alone: out of the well first, then the new one in, never both', () => {
+    // A removal alone, an insertion alone, and a change that removes before it inserts.
+    for (const removeShare of [1, 0, 0.5]) {
+      const poses = Array.from({ length: 33 }, (_, step) => {
+        const pose = magazineMotion(step / 16, 2, removeShare);
+        expect(magazineMotion(step / 8, 4, removeShare)).toEqual(pose); // A longer job at the same progress.
+        expect(pose.outgoing === undefined || pose.incoming === undefined).toBe(true);
+        return pose;
+      });
+      const outgoing = poses.flatMap((pose) => (pose.outgoing === undefined ? [] : [pose.outgoing]));
+      const incoming = poses.flatMap((pose) => (pose.incoming === undefined ? [] : [pose.incoming]));
+      expect(outgoing).toEqual(outgoing.toSorted((a, b) => a - b));
+      expect(incoming).toEqual(incoming.toSorted((a, b) => b - a));
+      const firstIn = poses.findIndex((pose) => pose.incoming !== undefined);
+      expect(firstIn === -1 || poses.findLastIndex((pose) => pose.outgoing !== undefined) < firstIn).toBe(true);
+      // Only a removal leaves the well empty, and only once it is done.
+      expect(poses.every((pose) => pose.outgoing !== undefined || pose.incoming !== undefined)).toBe(removeShare < 1);
+      expect(outgoing.length > 0).toBe(removeShare > 0);
+      expect(incoming.length > 0).toBe(removeShare < 1);
+      expect(poses[0]).toMatchObject(removeShare > 0 ? { outgoing: 0 } : { incoming: 1 }); // Starts seated, or clear.
+      expect(poses.at(-1)!.outgoing).toBeUndefined(); // Ends gone, or seated.
+      expect(poses.at(-1)!.incoming ?? 0).toBe(0);
+      expect([poses[0]!.reach, poses.at(-1)!.reach]).toEqual([0, 0]); // The hand starts and ends at its grip.
+    }
+    expect(magazineMotion(-1, 2, 0.5)).toEqual(magazineMotion(0, 2, 0.5));
+    expect(magazineMotion(3, 2, 0.5)).toEqual(magazineMotion(2, 2, 0.5));
   });
 
   it('keeps cloned action motion independent from another held copy and the prepared ground meshes', async () => {

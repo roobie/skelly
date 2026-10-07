@@ -108,6 +108,15 @@ export const dropTarget = (
   return first!;
 };
 
+/** Where an item leaving a held one goes: the first player pocket with room, else the ground at the feet. */
+export const stowTarget = (inv: Inventory, item: Item, feet: Vec3): Target | undefined => {
+  const inPocket = playerPockets(inv)
+    .map(({ owner, pocket }): Target => ({ kind: 'pocket', owner, pocket }))
+    .find((target) => inv.planAdd(item, target).ok);
+  const ground = inPocket ? undefined : dropTarget(inv, item, feet);
+  return inPocket ?? (ground?.plan.ok ? ground.target : undefined);
+};
+
 /** Ordinary E key still picks the quickest pocket, not quick-move's backpack priority. */
 export const bestPocket = (
   inv: Pick<Inventory, 'carried' | 'registry' | 'name' | 'plan'>,

@@ -16,8 +16,6 @@ export interface FirearmCycleState {
   /** Effective scheduled duration, including skill effects; stable across animation and recovery. */
   duration?: number;
   ejected: boolean;
-  /** Debug AR/AKs feed a virtual round at the end; real ammunition is not invented. */
-  readonly feedRound: boolean;
   forwardSounded?: boolean;
 }
 
@@ -29,9 +27,9 @@ interface FirearmRaiseState {
 
 export interface FirearmState {
   chamber: 'empty' | 'round' | 'case';
-  /** A real loaded cartridge's item type, when present (debug rifles use virtual rounds). */
+  /** The chambered cartridge's item type, present exactly when the chamber holds a round. */
   roundType?: string | undefined;
-  /** Cartridge item types in feed order; absent for debug virtual-round firearms. */
+  /** A pump's tube: cartridge item types in feed order. Magazine-fed firearms feed from their magazine slot. */
   tube?: string[];
   /** Simulation-clock hull landing cue, committed separately from the already ejected case. */
   landing?: { at: number; position: Vec3 } | undefined;
@@ -78,7 +76,6 @@ const assertCycleState = (cycle: FirearmCycleState | undefined): void => {
       cycle.elapsed < 0 ||
       (cycle.duration !== undefined && (!Number.isFinite(cycle.duration) || cycle.duration <= 0)) ||
       typeof cycle.ejected !== 'boolean' ||
-      typeof cycle.feedRound !== 'boolean' ||
       (cycle.forwardSounded !== undefined && typeof cycle.forwardSounded !== 'boolean'))
   ) {
     throw new Error('Invalid firearm cycle');
@@ -93,8 +90,8 @@ export const assertFirearmState = (state: FirearmState): void => {
   if ((state.chamber === 'case') !== (state.pendingCase !== undefined)) {
     throw new Error('Fired chamber needs exactly one pending case');
   }
-  if (state.roundType !== undefined && state.chamber !== 'round') {
-    throw new Error('Loaded cartridge type needs a loaded chamber');
+  if ((state.roundType !== undefined) !== (state.chamber === 'round')) {
+    throw new Error('A loaded chamber needs exactly one cartridge type');
   }
   assertPumpExtras(state);
   const { cycle } = state;

@@ -100,6 +100,7 @@ export interface DebugRuntime {
   readonly menuOpen: boolean;
   readonly aimEnabled: boolean;
   updateAim: (aim: ZombieAim | undefined) => void;
+  setCrosshairVisible: (visible: boolean) => void;
   /** Names the block or furniture under the crosshair in the aim readout; call after `updateAim`, which wins when a shambler is aimed at. */
   updateLookedAt: (eye: Vec3, dir: Vec3, active: boolean) => void;
   recordMeleeResult: (result: MeleeResult) => void;

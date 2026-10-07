@@ -176,7 +176,7 @@ const TRIGGER_ENTRIES = [
       note: 'Stand-in recording until a better fist-hit source is found.',
     },
   ],
-  ['gunshot', { trigger: 'Fire a virtual-round debug rifle; both AKM variants are selected randomly per shot.' }],
+  ['gunshot', { trigger: 'Fire the AR or AK; both AKM variants are selected randomly per shot.' }],
   ['gunshot_pbs1_reference', { trigger: 'Preview-only PBS-1 suppressed AKM alternatives; not used by gameplay.' }],
   [
     'shotgun_blast',
@@ -214,6 +214,36 @@ const TRIGGER_ENTRIES = [
     {
       trigger: 'A fired pump hull lands 0.48 s after its exported eject point, on the simulation clock.',
       note: 'Placeholder: LFA hollow plastic clicks, not actual brass-headed hull drops; no metal layer. Approved as-is with #209 by BR (2026-10-04); further improvements deferred.',
+    },
+  ],
+  [
+    'magazine_round_insert',
+    {
+      trigger:
+        'Hold R with a magazine in hand and loose matching cartridges carried; each round is one handling job. Release cancels the partial job.',
+      note: 'Stand-in: the pump-insert recordings, pitched up; a magazine-specific click is future work (d114).',
+    },
+  ],
+  [
+    'magazine_round_strip',
+    {
+      trigger: "Use a loaded magazine in hand (its 'Strip a round' item action) to strip its top round.",
+      note: 'Stand-in: the pump-insert recordings, pitched higher still; a magazine-specific click is future work (d114).',
+    },
+  ],
+  [
+    'magazine_change',
+    {
+      trigger:
+        'With an AR or AK in hand, hold R to change or insert a magazine, or tap then hold R to remove it. The job finishes even if R is released.',
+      note: 'Stand-in: the pump rack-forward recording, pitched down; a magazine latch and seating sound is future work (d114).',
+    },
+  ],
+  [
+    'rifle_charge',
+    {
+      trigger: 'Double-press R with an AR or AK in hand to work the charging handle.',
+      note: 'Stand-in: the pump rack-back recording, pitched up; a charging-handle sound is future work (d114).',
     },
   ],
   ['item_drop_wood', { trigger: 'Drop an item into a pile, or spill it onto the ground.' }],
@@ -271,7 +301,7 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ],
   [
     'gunshot',
-    'Approved by BR (2026-10-02); akm_1p v1/v2 are random per-shot variants used for virtual-round debug rifles. The pump uses shotgun_blast.',
+    'Approved by BR (2026-10-02); akm_1p v1/v2 are random per-shot variants used for the AR and AK. The pump uses shotgun_blast.',
   ],
   ['gunshot_pbs1_reference', 'Reserved PBS-1 suppressed alternatives for a future suppressor; not used by gameplay.'],
   ['item_drop_wood', 'Approved by BR (2026-10-02) on wood; splitting by pile surface remains future work.'],

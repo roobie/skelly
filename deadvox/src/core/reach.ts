@@ -60,8 +60,8 @@ const pileInReach = (player: ReachPlayer, position: Vec3): boolean =>
 const furnitureInReach = (player: ReachPlayer, entity: BlockEntity): boolean =>
   furnitureDistance(player, entity) <= INVENTORY_REACH;
 
-/** Generic spatial collection, including the debug 20m case query: not inventory admission. */
-export const pilesInRadius = (inventory: Inventory, position: Vec3, radiusBlocks: number): Pile[] => {
+/** Generic spatial collection: not inventory admission. */
+const pilesInRadius = (inventory: Inventory, position: Vec3, radiusBlocks: number): Pile[] => {
   const distance = (pile: Pile) => pileDistance(position, pile.pos, 1);
   return [...inventory.piles.values()]
     .filter((pile) => distance(pile) <= radiusBlocks)
@@ -112,7 +112,7 @@ export const reach = (player: ReachPlayer): ReachSnapshot => {
     entities: furniture.filter((entity) => entity.searched),
   });
   for (const { item, location } of walkItemTree(roots)) {
-    if (location.kind === 'work') {
+    if (location.kind === 'work' || location.kind === 'slot') {
       continue;
     }
     entries.push({
