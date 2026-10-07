@@ -7,6 +7,12 @@ import {
   skillSaturation,
 } from './character.ts';
 
+export const FIREARMS_SKILL_ZERO_RANGES = {
+  variance: { min: 0.1, max: 100, step: 0.1 },
+  recoilKickScale: { min: 0.1, max: 100, step: 0.1 },
+  recoilRecoveryScale: { min: 0.01, max: 10, step: 0.01 },
+} as const;
+
 export interface FirearmsSkillZeroEffect {
   readonly variance: number;
   readonly recoilKickScale: number;
@@ -19,6 +25,11 @@ export interface FirearmsSkillZeroHandling {
 }
 
 export type FirearmsSkillShotKind = keyof FirearmsSkillZeroHandling;
+
+export const skillZeroHandlingForFirearm = (
+  firearm: FirearmsSkillZeroHandling | undefined,
+  shared: FirearmsSkillZeroHandling,
+): FirearmsSkillZeroHandling => firearm ?? shared;
 
 export const sameFirearmsSkillZeroHandling = (
   left: FirearmsSkillZeroHandling,
@@ -35,6 +46,10 @@ export interface FirearmsCombatTuning {
   readonly loweredPitchRadians: number;
   readonly adsApertureFill: number;
   readonly skillZeroHandling: FirearmsSkillZeroHandling;
+  readonly reloadFactorFloor: number;
+  readonly reloadFactorHalfLifeLevels: number;
+  readonly rackFactorFloor: number;
+  readonly rackFactorHalfLifeLevels: number;
 }
 
 export interface FirearmsSkillEffects {
@@ -75,8 +90,8 @@ export const firearmsSkillEffects = (
     variance: atSkillZero(expertControl, zero.variance),
     recoilKickScale: atSkillZero(expertControl, zero.recoilKickScale),
     recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryScale),
-    reloadDuration: skillSaturation(effectLevel, 0.55, 5),
-    rackDuration: skillSaturation(effectLevel, 0.62, 3),
+    reloadDuration: skillSaturation(effectLevel, tuning.reloadFactorFloor, tuning.reloadFactorHalfLifeLevels),
+    rackDuration: skillSaturation(effectLevel, tuning.rackFactorFloor, tuning.rackFactorHalfLifeLevels),
   };
 };
 
