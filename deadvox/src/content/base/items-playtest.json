@@ -38,6 +38,26 @@
         "title": "Hunter's logbook",
         "text": "The deer ran straight at the fence instead of away from us. The dogs won't go near the creek. Something is wrong with the animals. Mike says his garage down the ridge road has fuel and a radio. I'm heading there at first light."
       }
+    },
+    {
+      "id": "pharmacy_key",
+      "name": "Medical pharmacy key",
+      "category": "tool",
+      "weight": 10,
+      "size": [1, 1],
+      "key": { "lock": "medical_pharmacy" },
+      "description": "A key for the medical hall pharmacy."
+    },
+    {
+      "id": "medical_research_log",
+      "name": "Medical sampling log",
+      "category": "book",
+      "weight": 5,
+      "size": [1, 1],
+      "readable": {
+        "title": "Sampling intake log",
+        "text": "The community hall became a temporary viral-sampling site after the first fever cases. We record each swab and compare the progression of symptoms; there is no treatment protocol yet. The military camp sends the sealed kits and replacement supplies. Keep the ward notes with the samples."
+      }
     }
   ]
 }

@@ -17,7 +17,7 @@ import { World } from '../core/world.ts';
 import { type Surface, terrainHeightMetres, worldGroundAt } from '../core/worldgen.ts';
 import type { ChunkMeshes } from '../render/chunks.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
-import type { GameConfig } from './config.ts';
+import type { DebugStart, GameConfig } from './config.ts';
 import { Streamer, type StreamerStats } from './streamer.ts';
 import { HOUSE_OFFSET, LOT_CENTRE, SPAWN_OFFSET, SPAWN_YAW, testHouse, testHouseFurniture } from './testHouse.ts';
 import { testHouseRangeStock } from './testHouseRange.ts';
@@ -256,9 +256,21 @@ export function createWorldSetup(config: GameConfig, meshes: ChunkMeshes, stats?
   };
 }
 
-/** Convert the generated world spawn (metres) into the player's block-space body origin. */
-export function playerStartFromWorld(setup: Pick<WorldSetup, 'spawn'>, scale: Scale): { position: Vec3; yaw: number } {
-  const [x, y, z] = setup.spawn.pos;
+/** Resolve the initial pose in block space; restored state bypasses debug starts. */
+export function playerStartFromWorld(
+  setup: Pick<WorldSetup, 'spawn' | 'groundAt'>,
+  scale: Scale,
+  debugStart?: DebugStart,
+  restoring = false,
+): { position: Vec3; yaw: number } {
   const { blockSize } = scale;
+  if (debugStart && !restoring) {
+    const { x, z, yawDegrees } = debugStart;
+    return {
+      position: [x / blockSize, setup.groundAt(x, z) / blockSize + 0.01, z / blockSize],
+      yaw: yawDegrees === undefined ? setup.spawn.yaw : (yawDegrees * Math.PI) / 180,
+    };
+  }
+  const [x, y, z] = setup.spawn.pos;
   return { position: [x / blockSize, y / blockSize + 0.01, z / blockSize], yaw: setup.spawn.yaw };
 }

@@ -340,7 +340,44 @@
               ]
             }
           ]
-        }
+        },
+        {
+          "template": "medical_hall",
+          "position": [418.5, 21, 239],
+          "rotation": 0,
+          "storeys": 1,
+          "fixedLoot": [
+            {
+              "at": [4, 1, 20],
+              "items": [{ "item": "antiseptic", "count": 1 }, { "item": "pharmacy_key", "count": 1 }]
+            },
+            { "at": [25, 1, 3], "items": [{ "item": "antibiotics", "count": 1 }] },
+            { "at": [3, 1, 10], "items": [{ "item": "medical_research_log", "count": 1 }] }
+          ]
+        },
+        { "template": "triage_tent", "position": [407, 21, 242], "rotation": 0, "storeys": 1 },
+        { "template": "triage_tent", "position": [436.5, 21, 242], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [402, 21, 230], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [409, 21, 230], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [416, 21, 230], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [423, 21, 230], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [430, 21, 230], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [437, 21, 230], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [402, 21, 265.5], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [409, 21, 265.5], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [416, 21, 265.5], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [430, 21, 265.5], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [437, 21, 265.5], "rotation": 0, "storeys": 1 },
+        { "template": "rickety_fence", "position": [401.5, 21, 230.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [401.5, 21, 237.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [401.5, 21, 244.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [401.5, 21, 251.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [401.5, 21, 258.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [444, 21, 230.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [444, 21, 237.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [444, 21, 244.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [444, 21, 251.5], "rotation": 90, "storeys": 1 },
+        { "template": "rickety_fence", "position": [444, 21, 258.5], "rotation": 90, "storeys": 1 }
       ],
       "player": {
         "position": [92, 21.5, 85],
@@ -408,7 +445,16 @@
             [230, 108],
             [290, 130],
             [318, 145],
-            [330, 151]
+            [330, 151],
+            [330, 140],
+            [342, 140],
+            [372, 146],
+            [390, 180],
+            [398, 220],
+            [399, 260],
+            [400, 270],
+            [426.5, 270],
+            [426.5, 252]
           ],
           "width": 2,
           "surface": "dirt"
