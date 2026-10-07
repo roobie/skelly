@@ -313,8 +313,8 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     assert.notDeepEqual(moved.position, start.position, 'the recording includes player movement');
     const zombieNearStreamEdge = await page.evaluate(() => {
       const { session, streamer } = globalThis.primaryActionTest;
-      return [...session.zombies.store.entries()].some(([, zombie]) =>
-        !streamer.isReady(zombie.body.pos[0], zombie.body.pos[2]),
+      return [...session.zombies.store.entries()].some(
+        ([, zombie]) => !streamer.isReady(zombie.body.pos[0], zombie.body.pos[2]),
       );
     });
     assert(zombieNearStreamEdge, 'the clean recording includes a zombie in an unready stream-edge column');

@@ -12,8 +12,8 @@ import {
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayInputData,
-  type ReplayReadyColumn,
   type ReplayReadinessUpdate,
+  type ReplayReadyColumn,
   replayStateFingerprint,
   sampleFromReplayFrame,
   withReplayExportGuard,
@@ -98,6 +98,22 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
     cancelGlowstick: () => undefined,
   });
 
+const applyReadinessAtTick = (
+  updates: readonly ReplayReadinessUpdate[] | undefined,
+  readyColumns: Set<string>,
+  pendingReadiness: Map<string, ReplayReadinessUpdate>,
+): void => {
+  for (const [cx, cz, isReady] of updates ?? []) {
+    const key = `${cx},${cz}`;
+    if (isReady) {
+      readyColumns.add(key);
+    } else {
+      readyColumns.delete(key);
+    }
+    pendingReadiness.set(key, [cx, cz, isReady]);
+  }
+};
+
 const recordActiveSession = (
   start: Readonly<SaveSnapshot>,
   recorder: InputReplayRecorder,
@@ -147,15 +163,7 @@ const recordActiveSession = (
   let sentUp = false;
   let nextCommand = 0;
   for (let frame = 0; recorder.tickCount < 96; frame += 1) {
-    for (const [cx, cz, isReady] of readiness?.updatesAtTick(recorder.tickCount) ?? []) {
-      const key = `${cx},${cz}`;
-      if (isReady) {
-        readyColumns.add(key);
-      } else {
-        readyColumns.delete(key);
-      }
-      pendingReadiness.set(key, [cx, cz, isReady]);
-    }
+    applyReadinessAtTick(readiness?.updatesAtTick(recorder.tickCount), readyColumns, pendingReadiness);
     if (!sentDown && recorder.tickCount >= 12) {
       dispatchWalkToggle(source, 'down', recorder);
       sentDown = true;
@@ -312,7 +320,10 @@ describe('input replay', () => {
     expect(joined.frames).toEqual([frame(0.1), frame(0.2)]);
     expect(joined.actions.map(({ tick }) => tick)).toEqual([0, 1]);
     expect(joined.readyColumns).toEqual([[1, 2]]);
-    expect(joined.readinessChanges).toEqual([[1, 1, 2, false], [1, 3, 4, true]]);
+    expect(joined.readinessChanges).toEqual([
+      [1, 1, 2, false],
+      [1, 3, 4, true],
+    ]);
   });
 
   it('records whether the player column was ready at each player tick', () => {

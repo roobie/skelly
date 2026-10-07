@@ -348,6 +348,8 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
   handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
 });
 
+const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
+
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
   const s = scale.blockSize;
@@ -669,7 +671,7 @@ export const createSession = (options: SessionOptions) => {
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
-    isLoaded: options.zombieReady ?? options.ready,
+    isLoaded: zombieReadinessFor(options),
     terrainFloor: options.terrainFloor,
     isSolid,
     isOpaque: options.isOpaque,
