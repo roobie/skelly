@@ -17,7 +17,6 @@ import {
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayAction,
-  type ReplayColumnChange,
   type ReplayColumnUpdate,
   type ReplayControlSample,
   type ReplayGeneratedColumn,
@@ -26,6 +25,7 @@ import {
   sampleFromReplayFrame,
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
+import { InputReplayDriver } from '../src/game/inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import {
   applyReplayActionPayload,
@@ -145,19 +145,6 @@ const generatedColumnsReady = (generated: ReadonlySet<string>, x: number, z: num
   return true;
 };
 
-const loadInitialColumns = (
-  runtime: ReturnType<typeof createRuntime>,
-  columns: readonly ReplayGeneratedColumn[] | undefined,
-  site: Site | undefined,
-): void => {
-  if (!(columns && site)) {
-    return;
-  }
-  for (const [cx, cz] of [...columns].sort(([ax, az], [bx, bz]) => ax - bx || az - bz)) {
-    runtime.session.onColumn(cx, cz, site);
-  }
-};
-
 const recordActiveSession = (
   start: Readonly<SaveSnapshot>,
   recorder: InputReplayRecorder,
@@ -219,7 +206,9 @@ const recordActiveSession = (
       },
     },
   );
-  loadInitialColumns(source, columns?.initial, options.initialColumnSite);
+  for (const [cx, cz] of columns?.initial ?? []) {
+    source.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureHamlet);
+  }
   source.sim.paused = false;
   source.view.intent.forward = 1;
   let sentDown = false;
@@ -281,39 +270,6 @@ const replayInputSample = (
   };
 };
 
-const applyFixtureColumnChanges = (
-  replay: ReturnType<typeof createRuntime>,
-  changes: readonly ReplayColumnChange[],
-): void => {
-  for (const [, cx, cz, generated] of changes) {
-    if (generated) {
-      addFixtureColumn(replay, cx, cz);
-      replay.session.onColumn(cx, cz, fixtureHamlet);
-    } else {
-      removeFixtureColumn(replay, cx, cz);
-      replay.session.onColumnUnload(cx, cz);
-    }
-  }
-};
-
-const advanceReplayFrame = (
-  replay: ReturnType<typeof createRuntime>,
-  player: InputReplayPlayer,
-  remainder: number,
-): number => {
-  const frameCompression = player.peek()?.compression ?? 1;
-  let remainingTicks = remainder + Math.min(frameCompression, replay.sim.compression.limits.maxSimPerFrame * 60);
-  while (remainingTicks >= 1 && !player.finished) {
-    // Match play.ts, advanceReplayTick: apply recorded terrain effects before this tick's systems.
-    applyFixtureColumnChanges(replay, player.takePreparedColumnChanges());
-    const tickCompression = player.peek()?.compression ?? replay.sim.compression.c;
-    replay.sim.compression.c = tickCompression;
-    replay.session.frameReplay(1 / (60 * tickCompression));
-    remainingTicks -= 1;
-  }
-  return remainingTicks;
-};
-
 const playSession = (
   start: Readonly<SaveSnapshot>,
   inputs: ReplayInputData,
@@ -338,21 +294,50 @@ const playSession = (
       sampleAtPlayerTick: () => replayInputSample(replay, player),
     },
   );
-  loadInitialColumns(replay, inputs.generatedColumns, options.initialColumnSite);
+  const generatedColumns = new Set(replay.columns.map(([cx, cz]) => `${cx},${cz}`));
+  const driver = new InputReplayDriver({
+    player,
+    terrain: {
+      hasGeneratedColumn: (cx, cz) => generatedColumns.has(`${cx},${cz}`),
+      generateForReplay: (cx, cz) => {
+        const key = `${cx},${cz}`;
+        if (!generatedColumns.has(key)) {
+          addFixtureColumn(replay, cx, cz);
+          generatedColumns.add(key);
+        }
+        return true;
+      },
+      unloadForReplay: (cx, cz) => {
+        removeFixtureColumn(replay, cx, cz);
+        generatedColumns.delete(`${cx},${cz}`);
+      },
+      isReady: () => true,
+    },
+    onColumnLoad: (cx, cz) => replay.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureHamlet),
+    onColumnUnload: (cx, cz) => replay.session.onColumnUnload(cx, cz),
+    simulation: {
+      currentSimSeconds: () => replay.sim.time,
+      compression: replay.sim.compression,
+    },
+    frameReplay: (simSeconds) => replay.session.frameReplay(simSeconds),
+    playerPosition: () => replay.player.body.pos,
+  });
+  if (!driver.initializeColumns()) {
+    throw new Error('Replay fixture could not generate its initial columns');
+  }
   options.onCreated?.(replay);
   replay.sim.paused = false;
-  let replayTickRemainder = 0;
   for (let frame = 0; !player.finished; frame += 1) {
-    replayTickRemainder = advanceReplayFrame(replay, player, replayTickRemainder);
+    const result = driver.advanceFrame(1 / 60);
+    if (result.kind === 'unavailable') {
+      throw new Error('Replay fixture became unavailable');
+    }
     if (frame > inputs.frames.length + 24) {
       throw new Error('Replay session did not consume its recorded inputs');
     }
   }
   if (options.endSimTimestamp !== undefined) {
-    const endRemainder = options.endSimTimestamp - replay.sim.time;
-    if (endRemainder > 0) {
-      replay.session.frameReplay(endRemainder / replay.sim.compression.c);
-    }
+    driver.advanceEndRemainder(options.endSimTimestamp);
   }
   return replay;
 };
@@ -458,7 +443,7 @@ describe('input replay', () => {
     expect(player.takePreparedColumnChanges()).toEqual([[0, column[0], column[1], true]]);
   });
 
-  it('prepares a column load after the preceding sample and before the changed tick', () => {
+  it('applies a prepared column load before the changed tick runs its systems', () => {
     const initialColumns: ReplayGeneratedColumn[] = [];
     for (let dz = -1; dz <= 1; dz++) {
       for (let dx = -1; dx <= 1; dx++) {
@@ -471,12 +456,42 @@ describe('input replay', () => {
     recorder.recordTick(replaySample);
     recorder.recordTick(replaySample, 1, [[0, 0, true]]);
     const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
+    const generated = new Set(initialColumns.map(([cx, cz]) => `${cx},${cz}`));
+    const loaded = new Set<string>();
+    const sim = { time: 0, compression: { c: 1, limits: { maxSimPerFrame: 1 } } };
+    const driver = new InputReplayDriver({
+      player,
+      terrain: {
+        hasGeneratedColumn: (cx, cz) => generated.has(`${cx},${cz}`),
+        generateForReplay: (cx, cz) => {
+          generated.add(`${cx},${cz}`);
+          return true;
+        },
+        unloadForReplay: (cx, cz) => {
+          generated.delete(`${cx},${cz}`);
+        },
+        isReady: () => true,
+      },
+      onColumnLoad: (cx, cz) => loaded.add(`${cx},${cz}`),
+      onColumnUnload: (cx, cz) => loaded.delete(`${cx},${cz}`),
+      simulation: { currentSimSeconds: () => sim.time, compression: sim.compression },
+      frameReplay: () => {
+        if (player.tickCount === 1) {
+          expect(generated.has('0,0')).toBe(true);
+          expect(loaded.has('0,0')).toBe(true);
+        }
+        const sample = player.next();
+        if (sample) {
+          sim.time += 1 / 60;
+        }
+      },
+      playerPosition: () => [0, 0, 0],
+    });
 
-    expect(player.isReady(0.5, 0.5)).toBe(false);
-    expect(player.next()).toBeDefined();
-    expect(player.tickCount).toBe(1);
+    expect(driver.advanceFrame(1 / 60).kind).toBe('advanced');
     expect(player.isReady(0.5, 0.5)).toBe(true);
-    expect(player.takePreparedColumnChanges()).toEqual([[1, 0, 0, true]]);
+    expect(driver.advanceFrame(1 / 60).kind).toBe('finished');
+    expect(player.tickCount).toBe(2);
   });
 
   it('records whether the player column was ready at each player tick', () => {
@@ -487,6 +502,33 @@ describe('input replay', () => {
 
     expect(player.next()?.worldReady).toBe(true);
     expect(player.next()?.worldReady).toBe(false);
+  });
+
+  it('reports replay unavailable when a recorded-ready player column is missing', () => {
+    const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
+    recorder.recordTick(replaySample);
+    const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
+    const runtime = createRuntime();
+    const driver = new InputReplayDriver({
+      player,
+      terrain: {
+        hasGeneratedColumn: () => false,
+        generateForReplay: () => false,
+        unloadForReplay: () => undefined,
+        isReady: () => false,
+      },
+      onColumnLoad: () => undefined,
+      onColumnUnload: () => undefined,
+      simulation: {
+        currentSimSeconds: () => runtime.sim.time,
+        compression: runtime.sim.compression,
+      },
+      frameReplay: (simSeconds) => runtime.session.frameReplay(simSeconds),
+      playerPosition: () => runtime.player.body.pos,
+    });
+
+    expect(driver.advanceFrame(1 / 60)).toEqual({ kind: 'unavailable', simSeconds: 0 });
+    expect(player.tickCount).toBe(0);
   });
 
   it('replays a windowed marker from an initially generated column when its window opens', async () => {
