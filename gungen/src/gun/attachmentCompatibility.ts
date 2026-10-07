@@ -75,7 +75,7 @@ const withCandidate = ({
     ]),
     placed: new Map([
       ...base.placed,
-      [partId, mateTransform(hostTransform, hostPort, connection.slot, attachmentPort)],
+      [partId, mateTransform({ hostTransform, hostPort, slot: connection.slot, attachmentPort })],
     ]),
     connections: [...base.connections, resolvedConnection],
   };
