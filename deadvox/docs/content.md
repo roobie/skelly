@@ -3,6 +3,7 @@ read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
+  - you change how content-loading tests build their registry fixtures
   - you change recipe, workstation or book reachability contracts
   - you change static reachability checks
   - you author or validate time-windowed template spawns
@@ -20,6 +21,15 @@ entry. Blocks keep explicit numeric IDs and reserved AIR handling. Model/sound
 origin tables remain explicit. File order, overrides and diagnostic order remain
 unchanged. See `npm run validate` for the exhaustive current section/count list,
 not a second hand-maintained section table here.
+
+## Content test registries
+
+For d121, keep fixture-only template checks on a registry containing the
+content those assertions exercise; full-pack cases retain the base definitions
+when their contract depends on cross-file merging or references. This avoids
+rechecking unrelated base content while preserving those integration checks;
+see `test/content.test.ts`, `templateBase`, and `test/authoredSite.test.ts`,
+`registry`.
 
 ## Recipe format (Slice 2.2)
 

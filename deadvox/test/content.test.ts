@@ -24,7 +24,8 @@ const base = readdirSync(BASE)
   .map((f) => ({ source: f, data: JSON.parse(readFileSync(join(BASE, f), 'utf8')) as unknown }));
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
-const missingSoundsRegistry = buildRegistry(base.filter(({ source }) => source !== 'sounds.json')).registry;
+const missingSoundsRegistry = { ...baseRegistry, sounds: new Map(baseRegistry.sounds) };
+missingSoundsRegistry.sounds.clear();
 
 interface WindowFrameRun {
   y: number;
@@ -405,24 +406,9 @@ describe('content', () => {
   });
 
   it('fails when a required sound event has no definition', () => {
-    const sounds = {
-      source: 'sounds.json',
-      data: {
-        sounds: [
-          {
-            id: 'player_hurt_light',
-            variants: ['assets/audio/player-hurt-light-01.ogg'],
-            gain: 0.8,
-            pitchJitter: [0.95, 1.05],
-            gainJitter: [0.9, 1.1],
-            minIntervalSimSeconds: 0.1,
-            category: 'body',
-            noise: { enabled: true, radiusMetres: 8 },
-          },
-        ],
-      },
-    };
-    const { registry } = buildRegistry([...base.filter(({ source }) => source !== 'sounds.json'), sounds]);
+    const registry = { ...baseRegistry, sounds: new Map(baseRegistry.sounds) };
+    registry.sounds.clear();
+    registry.sounds.set('player_hurt_light', baseRegistry.sounds.get('player_hurt_light')!);
     const missingHeavy = requiredSoundIssues(registry).some(
       (issue) => issue.message === 'missing required sound event "player_hurt_heavy"',
     );
@@ -819,13 +805,35 @@ describe('content references', () => {
   });
 });
 
+const templateZombieFile = base.find(({ source }) => source === 'zombies.json')!;
+const templateShambler = Object.fromEntries(
+  Object.entries(
+    structuredClone(
+      (templateZombieFile.data as { zombies: { id: string }[] }).zombies.find(({ id }) => id === 'shambler')!,
+    ),
+  ).filter(([key]) => key !== 'loot'),
+);
+const templateBase = [
+  { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
+  {
+    source: 'template-support.json',
+    data: {
+      furniture: [
+        { id: 'fixture_door', name: 'Door', size: [1, 1, 1], color: '#7a5534' },
+        { id: 'crate', name: 'Crate', size: [2, 2, 2], color: '#7a5534' },
+      ],
+    },
+  },
+  { source: 'template-zombies.json', data: { zombies: [templateShambler] } },
+];
+
 describe('templates', () => {
   const template = (layers: string[][], palette: Record<string, unknown>, size = [3, layers.length, 2]) => ({
     source: 'tpl.json',
     data: { templates: [{ id: 'hut', size, palette, layers }] },
   });
   const check = (t: { source: string; data: unknown }) =>
-    buildRegistry([...base, t]).issues.map((i) => `${i.path}: ${i.message}`);
+    buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
 
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {
