@@ -45,8 +45,8 @@ export interface RuleContext {
   readonly body: Body;
   readonly voxels: Voxels;
   readonly meshes: ReadonlyMap<number, BoneMesh>;
-  /** Bone ids the template counts as feet, for the `grounded` rule. */
-  readonly feet: ReadonlySet<string>;
+  /** Bone ids the template declares as supports for the ground layer. */
+  readonly supportBones: ReadonlySet<string>;
   readonly budgets: RuleBudgets;
 }
 
@@ -183,10 +183,10 @@ const attached: Rule = {
   },
 };
 
-/** The lowest filled layer is on the ground (y = 0) and belongs to feet. */
+/** The lowest filled layer is on the ground (y = 0) and belongs to declared support bones. */
 const grounded: Rule = {
   id: 'grounded',
-  check({ body, voxels, feet }) {
+  check({ body, voxels, supportBones }) {
     let minJ = Number.POSITIVE_INFINITY;
     forEachFilled(voxels, (_i, j) => {
       minJ = Math.min(minJ, j);
@@ -204,7 +204,7 @@ const grounded: Rule = {
         return;
       }
       const bone = body.bones[voxels.owner[idx]! - 1]!;
-      if (!feet.has(bone.id)) {
+      if (!supportBones.has(bone.id)) {
         badBones.add(bone.id);
       }
     });

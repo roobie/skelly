@@ -10,7 +10,7 @@ export type ParamSpec =
   | { readonly min: number; readonly max: number }
   | { readonly choices: readonly number[] };
 
-export type BodyPlan = 'humanoid';
+export type BodyPlan = string;
 
 export interface Template {
   readonly name: string;
@@ -23,8 +23,8 @@ export interface Template {
   readonly massFractions?: Readonly<Record<string, number>>;
   readonly params: Readonly<Record<string, ParamSpec>>;
   readonly budgets: Budgets;
-  /** Bone ids the `grounded` rule accepts for the ground layer. */
-  readonly feet: readonly string[];
+  /** Bone ids that may own ground-layer voxels under the `grounded` rule. */
+  readonly supportBones: readonly string[];
 }
 
 export interface Wound {

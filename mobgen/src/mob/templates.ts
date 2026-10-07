@@ -4,10 +4,10 @@
 // dispatch by name alone.
 
 import { registerTemplate, type Template } from '../core/template.ts';
+import { AMALGAM_MEMBER_IDS, AMALGAM_SUPPORT_BONES } from './amalgam.ts';
 import { FEET_BONES } from './humanoid.ts';
-import './humanoid.ts'; // registers the 'humanoid' body plan (sample + build)
 
-const FEET = FEET_BONES;
+const SUPPORT_BONES = FEET_BONES;
 /** Shares of nominal mass for severable parts; each key covers the whole subtree it cuts off (forearm.L includes its hand). */
 const HUMANOID_MASS_FRACTIONS = {
   'hand.L': 0.006,
@@ -66,7 +66,7 @@ export const shambler: Template = {
   bodyMassKg: 70,
   massFractions: HUMANOID_MASS_FRACTIONS,
   params: shamblerParams,
-  feet: FEET,
+  supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 500, max: 2000 },
     totalTriangles: { min: 800, max: 9500 },
@@ -94,7 +94,7 @@ const runner: Template = {
     jawOpen: { choices: [0, 0, 0.2, 0.4, 0.6] },
     woundCount: { choices: [0, 0, 0, 1, 1, 2] },
   },
-  feet: FEET,
+  supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 500, max: 2100 },
     totalTriangles: { min: 800, max: 9500 },
@@ -120,7 +120,7 @@ const brute: Template = {
     strideFactor: { min: 0.7, max: 1.0 },
     armSwing: { min: 3, max: 12 },
   },
-  feet: FEET,
+  supportBones: SUPPORT_BONES,
   budgets: {
     totalVoxels: { min: 500, max: 2400 },
     totalTriangles: { min: 800, max: 10_000 },
@@ -132,3 +132,31 @@ export const TEMPLATES: readonly Template[] = [shambler, runner, brute];
 for (const t of TEMPLATES) {
   registerTemplate(t);
 }
+
+const amalgamParams: Template['params'] = {
+  height: shamblerParams.height!,
+  headScale: shamblerParams.headScale!,
+  ...Object.fromEntries(
+    AMALGAM_MEMBER_IDS.flatMap((member) =>
+      Object.entries(shamblerParams).map(([name, spec]) => [`member.${member}.${name}`, spec]),
+    ),
+  ),
+};
+
+export const boss: Template = {
+  name: 'boss',
+  description: 'Three fused shamblers around a shared core trunk.',
+  bodyPlan: 'amalgam',
+  voxelSize: shambler.voxelSize,
+  bodyMassKg: shambler.bodyMassKg * AMALGAM_MEMBER_IDS.length,
+  params: amalgamParams,
+  supportBones: AMALGAM_SUPPORT_BONES,
+  budgets: {
+    totalVoxels: { min: 1, max: shambler.budgets.totalVoxels.max * AMALGAM_MEMBER_IDS.length * 2 },
+    totalTriangles: { min: 1, max: shambler.budgets.totalTriangles.max * AMALGAM_MEMBER_IDS.length * 3 },
+    groups: {},
+  },
+};
+registerTemplate(boss);
+
+export const VIEWER_TEMPLATES: readonly Template[] = [...TEMPLATES, boss];

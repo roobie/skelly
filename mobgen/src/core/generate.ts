@@ -215,7 +215,7 @@ export const realize = (genome: Genome, options: RealizeOptions = {}): Realized 
     body,
     voxels,
     meshes,
-    feet: new Set(template.feet),
+    supportBones: new Set(template.supportBones),
     budgets,
   });
   return { profile, body, voxels, meshes, report };

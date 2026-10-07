@@ -18,7 +18,8 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { generate, generateValid, type Realized, realize, realizeLod } from '../core/generate.ts';
 import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
-import type { Genome } from '../core/template.ts';
+import type { Genome, Template } from '../core/template.ts';
+import { amalgamManifest } from '../mob/amalgam.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
@@ -36,7 +37,7 @@ import {
 import type { HumanoidParams } from '../mob/humanoid.ts';
 import { type IdleStance, idlePose } from '../mob/idle.ts';
 import { deathPose, flinchPose, HIT_FLINCH } from '../mob/reactions.ts';
-import { TEMPLATES } from '../mob/templates.ts';
+import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/templates.ts';
 import { type Actor, buildActor, buildShambler, disposeActor } from './scene.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
@@ -46,6 +47,9 @@ const seedInput = $<HTMLInputElement>('seed');
 const onlyValid = $<HTMLInputElement>('only-valid');
 const voxelSelect = $<HTMLSelectElement>('voxel-size');
 const profileSelect = $<HTMLSelectElement>('validation-profile');
+const walkFieldset = $<HTMLFieldSetElement>('walk');
+const attackFieldset = $<HTMLFieldSetElement>('attack');
+const reactionsFieldset = $<HTMLFieldSetElement>('reactions');
 const walkOn = $<HTMLInputElement>('walk-on');
 const speedInput = $<HTMLInputElement>('speed');
 const speedValue = $<HTMLSpanElement>('speed-value');
@@ -133,12 +137,12 @@ interface Loaded {
   readonly genome: Genome;
   readonly realized: Realized;
   readonly actor: Actor;
-  readonly params: HumanoidParams;
-  readonly extents: ReturnType<typeof footRestExtents>;
-  readonly bodyExtents: ReturnType<typeof bodyRestExtents>;
-  readonly legGeometry: LegGeometry;
+  readonly params?: HumanoidParams;
+  readonly extents?: ReturnType<typeof footRestExtents>;
+  readonly bodyExtents?: ReturnType<typeof bodyRestExtents>;
+  readonly legGeometry?: LegGeometry;
   /** Built once per load so its GaitCache stays warm across frames (a per-frame literal would not). */
-  readonly walkActor: WalkActor;
+  readonly walkActor?: WalkActor;
 }
 
 let current: Loaded | undefined;
@@ -198,7 +202,7 @@ const heal = (): void => {
 /** Freezes whatever pose is current (walk, standing, or mid-attack) and starts the death fall from that
  * snapshot — a falling body doesn't keep striding underneath itself, unlike a flinch. */
 const playDeath = (): void => {
-  if (!current) {
+  if (!current?.walkActor) {
     return;
   }
   const actor = current.walkActor;
@@ -278,7 +282,9 @@ const renderPanel = (realizeMs: number): void => {
       return li;
     }),
   );
-  const headJaw = (report.stats.perBoneVoxels.head ?? 0) + (report.stats.perBoneVoxels.jaw ?? 0);
+  const headJaw = Object.entries(report.stats.perBoneVoxels)
+    .filter(([bone]) => bone === 'head' || bone === 'jaw' || bone.endsWith('.head') || bone.endsWith('.jaw'))
+    .reduce((sum, [, count]) => sum + count, 0);
   const rows: readonly (readonly [string, string])[] = [
     ['Voxels', String(report.stats.voxels)],
     ['Head+jaw voxels', String(headJaw)],
@@ -325,21 +331,37 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   }
   const actor = buildActor(realized, genome.voxelSize);
   scene.add(actor.root);
-  const extents = footRestExtents(realized.body.bones, realized.voxels);
-  const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-  const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
-  const params = genome.params as HumanoidParams;
-  const walkActor: WalkActor = {
-    bones: realized.body.bones,
-    extents,
-    params,
-    seed: genome.seed,
-    cache: createGaitCache(),
-  };
-  // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
-  // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
-  actor.applyPose(idlePose(walkActor, currentStance(), idleTime));
-  current = { genome, realized, actor, params, extents, bodyExtents, legGeometry, walkActor };
+  const template = TEMPLATES.find((candidate) => candidate.name === genome.template)!;
+  const staticOnly = template.bodyPlan === 'amalgam';
+  let loaded: Loaded = { genome, realized, actor };
+  if (staticOnly) {
+    actor.applyPose({ root: [0, 0, 0], rotations: {} });
+    const manifest = amalgamManifest(realized.body, realized.voxels);
+    severPart.replaceChildren(
+      ...manifest.parts.filter((part) => part.severable).map((part) => new Option(part.rootBone, part.rootBone)),
+    );
+  } else {
+    const extents = footRestExtents(realized.body.bones, realized.voxels);
+    const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
+    const legGeometry = legGeometryFor(realized.body.bones, extents, 'L');
+    const params = genome.params as HumanoidParams;
+    const walkActor: WalkActor = {
+      bones: realized.body.bones,
+      extents,
+      params,
+      seed: genome.seed,
+      cache: createGaitCache(),
+    };
+    // Never the bind pose, even for this first static frame (e.g. ?shot=1 screenshots, taken before the
+    // render loop ticks) — same idle stance the live frame loop would settle into at speed 0.
+    actor.applyPose(idlePose(walkActor, currentStance(), idleTime));
+    loaded = { genome, realized, actor, params, extents, bodyExtents, legGeometry, walkActor };
+    severPart.replaceChildren(...SEVERABLE_PARTS.map((part) => new Option(part, part)));
+  }
+  walkFieldset.hidden = staticOnly;
+  attackFieldset.hidden = staticOnly;
+  reactionsFieldset.hidden = staticOnly;
+  current = loaded;
   clock = INITIAL_CLOCK;
   gridZ = 0;
   attackTime = undefined;
@@ -364,7 +386,7 @@ const voxelOverride = (): number | undefined =>
 type ValidCandidate = NonNullable<ReturnType<typeof generateValid>>;
 
 const loadValidated = (
-  template: (typeof TEMPLATES)[number],
+  template: Template,
   found: ValidCandidate,
   voxelSize: number,
   profile: ValidationProfile,
@@ -532,7 +554,7 @@ renderer.render(scene, camera);
 
 /** Advances the walk clock/gridZ if walking — keeps advancing through an attack too. */
 const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
-  if (!(walking && speed > 0 && current)) {
+  if (!(walking && speed > 0 && current?.walkActor && current.params && current.legGeometry)) {
     return;
   }
   clock = advanceClock(clock, speed * dt, {
@@ -577,6 +599,9 @@ const advanceHit = (dt: number): void => {
 /** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
  * standing), optionally attacked, optionally flinched on top. */
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
+  if (!loaded.walkActor) {
+    return;
+  }
   const walking = walkOn.checked;
   const speed = walking ? Number(speedInput.value) : 0;
   advanceWalk(dt, walking, speed);
@@ -595,6 +620,9 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
 /** Advances and poses one frame while dead: deathTime free-runs (deathPose clamps internally), from the
  * pose frozen at the moment of death — a falling body doesn't keep striding or swinging underneath itself. */
 const applyDeathFrame = (loaded: Loaded, dt: number): void => {
+  if (!(loaded.walkActor && loaded.bodyExtents)) {
+    return;
+  }
   deathTime = (deathTime ?? 0) + dt;
   // A fresh wrapper per frame, but it carries the persistent actor's cache.
   const actor = { ...loaded.walkActor, bodyExtents: loaded.bodyExtents };

@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're changing mobgen body plans or the boss amalgam
+  - you're reviewing the m1 boss first-look scope or its open design questions
+---
+
 # mobgen — procedural mob generator
 
 A skelly subproject that procedurally generates "mobile actors" (zombies and
@@ -37,9 +43,45 @@ data, and the defaults must work for any body plan.
 
 - Getting actors into deadvox: export format, batched rendering, level of
   detail (CHALLENGES §1, §9).
-- Body plans other than the humanoid, dismemberment, and animations other
-  than the walk.
+- Gameplay-ready body plans other than the humanoid. The separate m1 boss
+  feature adds a static amalgam first-look body; it does not add a gameplay
+  gait or Deadvox dismemberment integration.
+- Runtime wounds, gameplay dismemberment, and animations other than the walk.
 - Checking poses other than the rest pose (CHALLENGES §7).
+
+## Boss amalgam (m1)
+
+Issue #308 calls for “an amalgamation of several shamblers - an enemy the
+size of a car” and says “it makes it end with something new and exciting”.
+BR's 2026-10-07 11:27 ruling on how it is beaten was “(c)”: firearms and
+melee, with constituent shamblers as severable parts that each weaken it.
+This is the reason for an amalgam body plan rather than several independent
+actors: a severable member must be a subtree in one connected body, while the
+shared trunk remains a distinct, non-severable core.
+
+The m1 mobgen contribution is the generated body, its resolved part/region
+manifest, declared support bones, and a static first-look viewer. See
+`src/mob/amalgam.ts` for the body-plan and manifest, `src/core/rules.ts` for
+the declared-support grounding contract, and `src/viewer/main.ts` for the
+static view. The manifest separates geometry ownership from the effects and
+tuning that a later Deadvox round owns. The first-look composition is a
+proposal for BR's visual judgment, not an encounter-count or gameplay-tuning
+decision.
+
+The static view is useful before animation or game integration. The part
+manifest is independent of those later systems, but look-at-player, boss gait,
+and Deadvox integration must follow #325 because it changes the rig and model
+interfaces this feature will extend. The open design questions from #308
+remain open until BR rules on them:
+
+- Is the proposed three-module, low/broad first-look composition the right
+  silhouette and topology, or should its count/arrangement change?
+- How does it move, and what does it sense? Which motion should the rig
+  animate?
+- What can it break: fences, doors, containers, or other world objects?
+- What does it sound like?
+- Is the camp appearance guaranteed, or can boss instances roam? What encounter
+  count/placement behavior is wanted?
 
 ## Decisions
 
