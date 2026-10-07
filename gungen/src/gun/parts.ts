@@ -2781,7 +2781,7 @@ const muzzleBead: PartFamily = {
         },
       ],
       keepOuts: [],
-      axes: [{ kind: 'sight', origin: [0, 1.25, 0], dir: X, eyeReliefU: 4 }],
+      axes: [{ kind: 'sight', origin: [0, 1.25, 0], dir: X }],
     };
   },
 };

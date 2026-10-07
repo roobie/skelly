@@ -1,8 +1,9 @@
 import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
+import { localSolidBounds } from '../core/geometry.ts';
 import { exportGlb } from '../core/glb.ts';
-import { applyDir, applyPoint, length, normalize, type Vec3 } from '../core/math.ts';
+import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '../core/math.ts';
 import { type Resolved, resolve } from '../core/resolve.ts';
 import type { Assembly, PartDef } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
@@ -146,6 +147,31 @@ const buildActionExport = (resolved: Resolved): GunActionExport | undefined => {
   };
 };
 
+const frontBeadSightLine = (
+  resolved: Resolved,
+  beadTop: Vec3,
+): { readonly direction: Vec3; readonly eyeReliefU: number } => {
+  const receiverId = Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'receiver')?.[0];
+  const receiver = receiverId && resolved.defs.get(receiverId);
+  const receiverTransform = receiverId && resolved.placed.get(receiverId);
+  if (!(receiver && receiverTransform)) {
+    throw new Error('Front bead sight needs a receiver to derive its eye line');
+  }
+  const bounds = receiver.solids.map(localSolidBounds);
+  const minimumX = Math.min(...bounds.map(([minimum]) => minimum[0]));
+  const maximumX = Math.max(...bounds.map(([, maximum]) => maximum[0]));
+  const maximumY = Math.max(...bounds.map(([, maximum]) => maximum[1]));
+  const minimumZ = Math.min(...bounds.map(([minimum]) => minimum[2]));
+  const maximumZ = Math.max(...bounds.map(([, maximum]) => maximum[2]));
+  const receiverTop = applyPoint(receiverTransform, [(minimumX + maximumX) / 2, maximumY, (minimumZ + maximumZ) / 2]);
+  const eyePoint: Vec3 = [receiverTop[0], beadTop[1], receiverTop[2]];
+  const eyeToBead = sub(beadTop, eyePoint);
+  if (!(eyePoint[0] < beadTop[0] && eyePoint[1] > receiverTop[1] && length(eyeToBead) > 0)) {
+    throw new Error('Front bead must sit forward of and above the receiver top');
+  }
+  return { direction: normalize(eyeToBead), eyeReliefU: length(eyeToBead) };
+};
+
 interface SightCandidate {
   id: string;
   priority: number;
@@ -164,12 +190,16 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
   const { family } = resolved.assembly.parts[id]!;
   const params = resolved.params.get(id);
   const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
-  const direction = normalize(applyDir(transform, axis.dir));
-  const eyeReliefU = optic?.eyeReliefU ?? axis.eyeReliefU;
+  const eyeLocal = optic ? ([optic.ocularX, optic.opticalAxisY, 0] as Vec3) : axis.origin;
+  const eye = applyPoint(transform, eyeLocal);
+  let direction = normalize(applyDir(transform, axis.dir));
+  let eyeReliefU = optic?.eyeReliefU ?? axis.eyeReliefU;
+  if (family === 'front-sight-bead') {
+    ({ direction, eyeReliefU } = frontBeadSightLine(resolved, eye));
+  }
   if (eyeReliefU === undefined) {
     throw new Error(`Sight part ${id} needs exported eye relief`);
   }
-  const eyeLocal = optic ? ([optic.ocularX, optic.opticalAxisY, 0] as Vec3) : axis.origin;
   let priority = 3;
   if (optic) {
     priority = 0;
@@ -182,7 +212,7 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
     id,
     priority,
     kind: optic ? 'optic' : 'iron',
-    eye: applyPoint(transform, eyeLocal),
+    eye,
     direction,
     eyeReliefMetres: eyeReliefU * resolved.domain.units.metresPerUnit,
     ...(optic ? { ocularDiameterMetres: optic.ocularOpeningDiameterU * resolved.domain.units.metresPerUnit } : {}),

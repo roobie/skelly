@@ -4,20 +4,9 @@ import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { displayItems as selectDisplayItems } from '../src/core/display.ts';
-import { penetrationWorld, worldBox, worldSolid } from '../src/core/geometry.ts';
+import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '../src/core/geometry.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
-import {
-  applyDir,
-  applyPoint,
-  IDENTITY,
-  type Mat3,
-  mulMM,
-  mulMV,
-  rotX,
-  rotY,
-  rotZ,
-  type Vec3,
-} from '../src/core/math.ts';
+import { applyPoint, IDENTITY, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, type Vec3 } from '../src/core/math.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
@@ -459,26 +448,58 @@ describe('glb export: deadvox model entry', () => {
       throw new Error('pump shotgun needs its front bead in the exported sight data');
     }
     const beadAxis = out.resolved.defs.get(beadId)!.axes.find(({ kind }) => kind === 'sight')!;
-    const transform = out.resolved.placed.get(beadId)!;
-    const eye = applyPoint(transform, beadAxis.origin);
-    const direction = applyDir(transform, beadAxis.dir);
-    const magnitude = Math.hypot(...direction);
-    const forward: Vec3 = [direction[0] / magnitude, direction[1] / magnitude, direction[2] / magnitude];
-    near(forward, [1, 0, 0]);
-    near(out.modelEntry.sight.direction, toFileAxes(forward));
-    expect(out.modelEntry.sight.kind).toBe('iron');
-    const muzzle = out.modelEntry.anchors?.muzzle;
-    expect(muzzle).toBeDefined();
-    expect(muzzle![0] - out.modelEntry.sight.eye[0]).toBeGreaterThan(0);
-    expect(muzzle![0] - out.modelEntry.sight.eye[0]).toBeLessThan(0.02);
-
-    const start: Vec3 = [
-      eye[0] - forward[0] * beadAxis.eyeReliefU!,
-      eye[1] - forward[1] * beadAxis.eyeReliefU!,
-      eye[2] - forward[2] * beadAxis.eyeReliefU!,
+    const beadTransform = out.resolved.placed.get(beadId)!;
+    const beadTop = applyPoint(beadTransform, beadAxis.origin);
+    const receiverId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'receiver')?.[0];
+    if (!receiverId) {
+      throw new Error('pump shotgun needs a receiver to derive its bead eye line');
+    }
+    const receiver = out.resolved.defs.get(receiverId)!;
+    const receiverTransform = out.resolved.placed.get(receiverId)!;
+    const bounds = receiver.solids.map(localSolidBounds);
+    const minimum: Vec3 = [
+      Math.min(...bounds.map(([min]) => min[0])),
+      Math.min(...bounds.map(([min]) => min[1])),
+      Math.min(...bounds.map(([min]) => min[2])),
     ];
-    const center: Vec3 = [(start[0] + eye[0]) / 2, (start[1] + eye[1]) / 2, (start[2] + eye[2]) / 2];
-    const sightLine = worldBox(IDENTITY, { center, half: [beadAxis.eyeReliefU! / 2, 0.05, 0.05] });
+    const maximum: Vec3 = [
+      Math.max(...bounds.map(([, max]) => max[0])),
+      Math.max(...bounds.map(([, max]) => max[1])),
+      Math.max(...bounds.map(([, max]) => max[2])),
+    ];
+    const receiverTop = applyPoint(receiverTransform, [
+      (minimum[0] + maximum[0]) / 2,
+      maximum[1],
+      (minimum[2] + maximum[2]) / 2,
+    ]);
+    const eyePoint: Vec3 = [receiverTop[0], beadTop[1], receiverTop[2]];
+    const eyeToBead = sub(beadTop, eyePoint);
+    const sightLength = Math.hypot(...eyeToBead);
+    const expectedDirection: Vec3 = [
+      eyeToBead[0] / sightLength,
+      eyeToBead[1] / sightLength,
+      eyeToBead[2] / sightLength,
+    ];
+    const scale = out.resolved.domain.units.metresPerUnit;
+    const exportedEye: Vec3 = out.modelEntry.sight.eye.map((value) => value / scale) as unknown as Vec3;
+    const exportedDirection = out.modelEntry.sight.direction;
+    const exportedEyePoint: Vec3 = [
+      exportedEye[0] - exportedDirection[0] * (out.modelEntry.sight.eyeReliefMetres / scale),
+      exportedEye[1] - exportedDirection[1] * (out.modelEntry.sight.eyeReliefMetres / scale),
+      exportedEye[2] - exportedDirection[2] * (out.modelEntry.sight.eyeReliefMetres / scale),
+    ];
+    expect(eyePoint[1]).toBeGreaterThan(receiverTop[1]);
+    expect(eyePoint[0]).toBeLessThan(beadTop[0]);
+    near(exportedEyePoint, eyePoint);
+    near(exportedDirection, toFileAxes(expectedDirection));
+    expect(out.modelEntry.sight.kind).toBe('iron');
+
+    const center: Vec3 = [
+      (eyePoint[0] + beadTop[0]) / 2,
+      (eyePoint[1] + beadTop[1]) / 2,
+      (eyePoint[2] + beadTop[2]) / 2,
+    ];
+    const sightLine = worldBox(IDENTITY, { center, half: [sightLength / 2, 0.05, 0.05] });
     for (const [id, part] of out.resolved.defs) {
       if (id === beadId) {
         continue;

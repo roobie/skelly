@@ -1419,10 +1419,12 @@ forward/upright orientation after the held transform.
 Every published firearm design exports sight metadata from its resolved sight
 parts, so ADS has a physical reference and a later optic can replace irons through
 the same `src/gun/exportGlb.ts`, `sightCandidate` path. The pump's `front-bead`
-part sits on the barrel's front bead port. Its sight axis starts at the bead and
-points forward along the barrel, keeping a front-only sight line above the barrel
-without inventing a rear sight. The revolver's frame carries the axis for its
-built-in rear notch; its barrel supplies the front post. `test/glbValidate.test.ts`
+part sits on the barrel's front bead port. `src/gun/exportGlb.ts`,
+`frontBeadSightLine` derives the eye point from the
+receiver top and bead top, so the sight line reaches from above the receiver to
+the bead instead of placing the eye beside the muzzle or aiming down the bore.
+The revolver's frame carries the axis for its built-in rear notch; its barrel
+supplies the front post. `test/glbValidate.test.ts`
 checks sight metadata on each published design export, and
 `test/exportGlb.test.ts` checks the pump bead's clear line.
 
