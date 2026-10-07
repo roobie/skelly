@@ -696,7 +696,7 @@ const FurnitureSchema = strictObject({
     strictObject({
       handlingSimSeconds: SimSeconds,
       prying: optional(DoorPryingSchema),
-      openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]), radiusMetres: Positive })),
+      openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
     }),
   ),
   /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */

@@ -13,7 +13,15 @@ import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
-import { type CompiledTemplate, compileTemplate, footprint, placedPieces } from '../src/core/templates.ts';
+import {
+  type CompiledTemplate,
+  compileTemplate,
+  footprint,
+  placedBlockAt,
+  placedPieces,
+} from '../src/core/templates.ts';
+import { newInstance } from '../src/vehicles/model.ts';
+import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../src/vehicles/rangeRover.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -186,6 +194,59 @@ const columnsFor = (site: AuthoredSite, fixture: SiteLayoutDef): [number, number
   }
   return [...columns.values()];
 };
+
+type DoorCell = [number, number, number];
+type DoorPiece = ReturnType<typeof placedPieces>[number];
+
+const doorSideCells = (door: DoorPiece): DoorCell[][] => {
+  const [x, y, z] = door.pos;
+  const [width, height, depth] = door.size;
+  const yOffsets = Array.from({ length: height }, (_, yOffset) => yOffset);
+  if (door.facing === 'n' || door.facing === 's') {
+    return [-1, 1].map((direction) =>
+      yOffsets.flatMap((yOffset) =>
+        Array.from(
+          { length: width },
+          (_, xOffset) => [x + xOffset, y + yOffset, z + (direction < 0 ? -1 : depth)] as DoorCell,
+        ),
+      ),
+    );
+  }
+  return [-1, 1].map((direction) =>
+    yOffsets.flatMap((yOffset) =>
+      Array.from(
+        { length: depth },
+        (_, zOffset) => [x + (direction < 0 ? -1 : width), y + yOffset, z + zOffset] as DoorCell,
+      ),
+    ),
+  );
+};
+
+const solidInPlacements = (placements: AuthoredSite['placements'], cell: DoorCell): boolean =>
+  placements.some((placement) => {
+    const block = placedBlockAt(placement, cell);
+    if (block !== undefined && result.registry.blocks[block]?.solid) {
+      return true;
+    }
+    return placedPieces(placement).some((piece) => {
+      const def = result.registry.furniture.get(piece.furniture)!;
+      return (
+        !def.door &&
+        def.solid !== false &&
+        cell[0] >= piece.pos[0] &&
+        cell[0] < piece.pos[0] + piece.size[0] &&
+        cell[1] >= piece.pos[1] &&
+        cell[1] < piece.pos[1] + piece.size[1] &&
+        cell[2] >= piece.pos[2] &&
+        cell[2] < piece.pos[2] + piece.size[2]
+      );
+    });
+  });
+
+const blockedDoorCells = (door: DoorPiece, placements: AuthoredSite['placements']): DoorCell[] =>
+  doorSideCells(door)
+    .flat()
+    .filter((cell) => solidInPlacements(placements, cell));
 
 const furnishInOrder = (site: AuthoredSite, columns: [number, number][]): Inventory => {
   const inventory = new Inventory(result.registry);
@@ -461,6 +522,26 @@ describe('authored fixed loot', () => {
     }
   });
 
+  it('keeps both sides of each placed workshop door clear of solids', () => {
+    const workshopIds = new Set(['workshop_hall', 'workshop_office', 'workshop_parts_store']);
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    const placements = site.placements.filter((placement) => workshopIds.has(placement.template.id));
+    let checkedDoors = 0;
+
+    for (const [index, building] of layout.buildings.entries()) {
+      if (!workshopIds.has(building.template)) {
+        continue;
+      }
+      const placement = site.placements[index]!;
+      const doors = placedPieces(placement).filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
+      checkedDoors += doors.length;
+      for (const door of doors) {
+        expect(blockedDoorCells(door, placements), `${building.template} door at ${door.pos.join(',')}`).toEqual([]);
+      }
+    }
+    expect(checkedDoors).toBeGreaterThan(0);
+  });
+
   it('keeps every workshop opening connected to standing space', () => {
     for (const templateId of ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']) {
       const template = compileTemplate(result.registry, result.registry.templates.get(templateId)!);
@@ -486,6 +567,38 @@ describe('authored fixed loot', () => {
         expect(nearDoor, `${templateId} door at ${door.pos.join(',')}`).toBe(true);
       }
     }
+  });
+
+  it('keeps the stripped workshop vehicle above its lift without fitted wheels', () => {
+    const template = compileTemplate(result.registry, result.registry.templates.get('workshop_hall')!);
+    const lifts = template.pieces.filter(({ furniture }) => furniture === 'workshop_lift');
+    const cars = template.pieces.filter(({ furniture }) => furniture === 'workshop_stripped_car');
+    expect(lifts).toHaveLength(1);
+    expect(cars).toHaveLength(1);
+    const lift = lifts[0]!;
+    const car = cars[0]!;
+    expect(car.pos[1]).toBe(lift.pos[1] + lift.size[1]);
+    for (const axis of [0, 2] as const) {
+      expect(car.pos[axis]).toBeLessThan(lift.pos[axis] + lift.size[axis]);
+      expect(lift.pos[axis]).toBeLessThan(car.pos[axis] + car.size[axis]);
+    }
+
+    const vehicle = newInstance(RANGE_ROVER, 'workshop-test', STRIPPED_REMOVED);
+    expect(vehicle.fittings.length).toBeGreaterThan(0);
+    expect(vehicle.fittings.some(({ type }) => type === wheel.type.id)).toBe(false);
+  });
+
+  it('spawns each authored workshop runner marker as a runner', () => {
+    const site = new AuthoredSite(73, result.registry, scale, layout);
+    const workshopIds = new Set(['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']);
+    const markers = site.placements
+      .filter((placement) => workshopIds.has(placement.template.id))
+      .flatMap((placement) => placement.template.spawns.filter(({ zombie }) => zombie === 'runner'));
+    const spawns = columnsFor(site, layout).flatMap(([cx, cz]) => site.zombiesIn(cx, cz));
+    const runners = spawns.filter(({ type }) => type === 'runner');
+
+    expect(markers).toHaveLength(2);
+    expect(runners).toHaveLength(markers.length);
   });
 
   it('places the agreed shambler threats by beat and keeps the seeded wanderer', () => {

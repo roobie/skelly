@@ -6,13 +6,7 @@ import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from
 import { Inventory } from '../src/core/inventory.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
 import { checkReachability } from '../src/core/reachability.ts';
-import {
-  BLOCK_PATTERNS,
-  CONTENT_SECTION_KEYS,
-  type ContentFile,
-  type ItemDef,
-  type TemplateDef,
-} from '../src/core/schema.ts';
+import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
@@ -302,15 +296,42 @@ describe('content', () => {
   });
 
   it('validates tool-quality references in disassembly yield modifiers', () => {
-    const files = structuredClone(base);
-    const tools = files.find(({ source }) => source === 'items-tools.json')!.data as ContentFile;
-    const torchIndex = tools.items!.findIndex(({ id }) => id === 'torch');
-    const torch = tools.items![torchIndex] as ItemDef;
-    torch.disassembly!.yields[0]!.toolModifier = { quality: 'unknown_quality', bonusByLevel: [0.1] };
-    const { issues } = buildRegistry(files);
+    const source = 'tool-quality-fixture.json';
+    const { issues } = buildRegistry([
+      {
+        source,
+        data: {
+          skills: [{ id: 'fixture_skill', name: 'Fixture skill' }],
+          items: [
+            { id: 'fixture_output', name: 'Output', category: 'material', weight: 1, size: [1, 1] },
+            {
+              id: 'fixture_tool',
+              name: 'Tool',
+              category: 'tool',
+              weight: 1,
+              size: [1, 1],
+              tool: { qualities: { shaping: 1 } },
+              disassembly: {
+                timeGameMinutes: 1,
+                skill: 'fixture_skill',
+                yields: [
+                  {
+                    item: 'fixture_output',
+                    count: 1,
+                    fractions: [0.5, 1],
+                    rounding: 'floor',
+                    toolModifier: { quality: 'unknown_quality', bonusByLevel: [0.1] },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      },
+    ]);
     expect(issues).toContainEqual({
-      source: 'items-tools.json',
-      path: `items[${torchIndex}].disassembly.yields[0].toolModifier.quality`,
+      source,
+      path: 'items[1].disassembly.yields[0].toolModifier.quality',
       message: 'no tool quality "unknown_quality"',
     });
   });
@@ -755,6 +776,32 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
+  it('requires an opening-noise door to select a sound event with hearing noise', () => {
+    const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
+      ({ id }) => id === 'door_open',
+    )!;
+    const quietDoor = {
+      source: 'quiet-door.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_quiet_door',
+            name: 'Fixture door',
+            size: [1, 1, 1],
+            color: '#333333',
+            door: { handlingSimSeconds: 0.4, openNoise: { sound: 'door_open' } },
+          },
+        ],
+      },
+    };
+    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [doorOpen] } }, quietDoor]);
+    expect(issues).toContainEqual({
+      source: 'quiet-door.json',
+      path: 'furniture[0].door.openNoise.sound',
+      message: 'opening sound must emit hearing noise',
+    });
+  });
+
   it('checks furniture, prying-skill, zombie and light references', () => {
     const mod = {
       source: 'mod.json',
@@ -855,16 +902,12 @@ describe('content references', () => {
         ],
       },
     };
-    expect(paths(buildRegistry([mod]).issues).sort()).toEqual([
+    expect(paths(withBase(mod).issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
       'items[0].light.power.battery',
       'zombies[0].loot',
-      'zombies[0].sounds.alert',
-      'zombies[0].sounds.attack',
-      'zombies[0].sounds.hurt',
-      'zombies[0].sounds.idle',
     ]);
   });
 });

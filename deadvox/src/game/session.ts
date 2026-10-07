@@ -1107,8 +1107,10 @@ export const createSession = (options: SessionOptions) => {
     inventory,
     player: () => body,
     others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
-    playWorldSound: (event, position, noiseRadiusMetres) =>
-      playWorldSound(event, position, sim.time, noiseRadiusMetres === undefined ? {} : { noiseRadiusMetres }),
+    playWorldSound: (event, position) => {
+      const noise = registry.sounds.get(event)?.noise;
+      playWorldSound(event, position, sim.time, noise?.enabled ? { noiseRadiusMetres: noise.radiusMetres } : {});
+    },
   });
   sim.actions.prying = {
     validate: (entityUid, toolUid) => {

@@ -30,10 +30,9 @@ import { BUNDLED_CONTENT } from '../game/bundledContent.ts';
 import { PlayerMeshes } from '../render/playerFigure.ts';
 import { PLAYER_FIGURE_LAYER } from '../render/shadowFlags.ts';
 import { applySky } from '../render/sky.ts';
-import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
-import { CATALOGUE } from './vehicles/catalogue.ts';
-import { HATCHBACK, HATCHBACK_ADD_ONS } from './vehicles/hatchback.ts';
-import { MATERIALS } from './vehicles/materials.ts';
+import { CATALOGUE } from '../vehicles/catalogue.ts';
+import { HATCHBACK, HATCHBACK_ADD_ONS } from '../vehicles/hatchback.ts';
+import { MATERIALS } from '../vehicles/materials.ts';
 import {
   addFitting,
   type Blueprint,
@@ -55,12 +54,13 @@ import {
   type VehicleInstance,
   VOXEL,
   VOXELS_PER_CELL,
-} from './vehicles/model.ts';
-import { MOTORBIKE } from './vehicles/motorbike.ts';
-import { PICKUP } from './vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from './vehicles/rangeRover.ts';
-import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from './vehicles/voxels.ts';
-import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from './vehicles/wear.ts';
+} from '../vehicles/model.ts';
+import { MOTORBIKE } from '../vehicles/motorbike.ts';
+import { PICKUP } from '../vehicles/pickup.ts';
+import { RANGE_ROVER, STRIPPED_REMOVED, wheel } from '../vehicles/rangeRover.ts';
+import { gridBounds, type MeshBuffers, meshGrid, type Rgb, type VoxelGrid } from '../vehicles/voxels.ts';
+import { fittingWear, type WearSite, wearGrid, wearKey, wearPalette } from '../vehicles/wear.ts';
+import { type PanelActions, type PanelModel, panelTemplate } from './vehicleSpikePanel.ts';
 
 const required = <T extends Element>(selector: string): T => {
   const element = document.querySelector<T>(selector);

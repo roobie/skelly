@@ -159,4 +159,4 @@ separate owners.
 
 ## Door opening noise
 
-`DoorSchema.openNoise` in `src/core/schema.ts` gives a door its opening sound and hearing radius; `src/game/doorAction.ts`, `registerDoorAction`, sends that through the ordinary positioned sound path. The field is optional so a door stays quiet unless its content says otherwise. This keeps a loud workshop roller door distinct without making the everyday `wood_door` noisy or introducing a door-specific hearing system.
+`FurnitureSchema` in `src/core/schema.ts` lets door content select an opening sound through `door.openNoise`; `src/core/content.ts`, `checkFurniture`, requires that event to emit hearing noise. The event definition owns its hearing radius, and `src/game/doorAction.ts`, `registerDoorAction`, sends it through the ordinary positioned sound path. The field is optional so a door stays quiet unless its content says otherwise. This keeps a loud workshop roller door distinct without making the everyday `wood_door` noisy or duplicating radius tuning.

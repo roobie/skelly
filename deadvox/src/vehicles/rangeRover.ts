@@ -504,4 +504,5 @@ export const STRIPPED_REMOVED: readonly string[] = [
   'wheel-front-far',
   'wheel-rear-near',
   'wheel-rear-far',
+  'spare-wheel',
 ];

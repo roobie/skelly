@@ -554,6 +554,8 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   const doorOrigin: Vec3 = [0, 1, 0];
   const door = session.entities.add({ type: 'workshop_roller_door', pos: doorOrigin, size: [6, 5, 1], facing: 'n' })!;
   const listenerId = session.zombies.add(registry.zombies.get('shambler')!, [8, 1, 0.5]);
+  const listener = session.zombieStore.get(listenerId)!;
+  expect(listener.mode).toBe('idle');
   const handling = registry.furniture.get('workshop_roller_door')!.door!.handlingSimSeconds;
   session.queue.enqueueAction(DOOR_ACTION, 'Open roller door', handling, { entityUid: door.uid, closing: false });
   for (let frame = 0; frame < 120; frame++) {
@@ -564,7 +566,10 @@ it('lets a roller-door noise wake a nearby shambler through hearing', () => {
   if (!noise) {
     throw new Error('Roller-door opening did not commit its noise stimulus');
   }
-  expect(session.zombieStore.get(listenerId)?.lastVocalNoiseId).toBe(noise.id);
+  expect(listener.lastVocalNoiseId).toBe(noise.id);
+  expect(listener.mode).toBe('investigate');
+  expect(listener.investigationTier).toBe('near');
+  expect(listener.lastPerceived).toEqual(noise.pos);
 });
 
 it('debug test noise reaches a shambler behind a wall and starts its hearing gaze', () => {

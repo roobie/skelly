@@ -859,7 +859,7 @@ BR (2026-10-07 10:03) approved the grounded static pose. The body uses
 
 BR clarified on 2026-10-07 12:33: “as for #325: looking good, but it's important they do so only when they perceive the player”. BR answered on 2026-10-07 13:08: “I'd say yes - best case would be to add some jitter, because it's reasonable that a person/creature turns their head towards what they're hearing, but sometimes they might turn the head so that the ears are in the 'hearing direction' - but to keep things simple for now, maybe we can add a bit of jitter so that it's not exact when the perception is hearing only”. The ears-toward-sound behavior is a possible later refinement; this PR uses jittered gaze toward the heard point. BR reported at 13:33, verbatim: “it's kinda hard testing (#325)” / “because if i see them (good enough to make out details) they generally see me too, which defeats the test”. The spectator camera, perception labels, hidden-shambler fixture and test-noise action make that boundary observable without moving the simulated player to the camera.
 
-In `deadvox/src/core/zombies.ts`, `ZombieSystem.updateAttention` sets `mode` to `chase` for sight and uses `investigate` with a near tier and `lastPerceived` for near stimuli; far-tier and horde targets are far. `deadvox/src/render/mobActors.ts`, `MobActorMeshes.posedFrame`, aims at the player's body-eye position in chase, or at `lastPerceived` for a near investigation while `stimulusAt` is among the actor's two most recent perception timestamps (`MobActorMeshes.hasRecentNearStimulus`). Once stale, gaze eases back to the base pose, including simulation head yaw. Near carried-light perception shares the near state and is treated as perceiving the player's presence; BR may overrule this at the look. `hearingGazeTarget` adds deterministic, id/time-based jitter, and `mobgen/src/mob/lookAt.ts`, `lookAtPose`, keeps gaze within the same rig limits and bounded turn rate from `mobgen/src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`. The debug spectator camera moves independently through `deadvox/src/render/playView.ts`, `updateCamera`, while `MobActorMeshes.setPlayerEyePosition` keeps chase gaze on the simulated body. `perceptionLabelFor` reads the stored perception state for debug labels. The test-noise action uses `session.playPlayerSound` with the existing `player_hurt_light` definition; because it commits `playerAudio` and a noise event, it is a debug simulation action rather than presentation-only. Gaze, labels and camera movement remain presentation-only and do not feed hit geometry, saves, replay or simulation fingerprints. The mobgen viewer has no perception state and continues to gaze at its camera in `mobgen/src/viewer/main.ts`, `applyLookAt`. The crawler's drag gait and in-game hit response remain d130 work, after #325 merges.
+In `deadvox/src/core/zombies.ts`, `ZombieSystem.updateAttention` sets `mode` to `chase` for sight and uses `investigate` with a near tier and `lastPerceived` for near stimuli; far-tier and horde targets are far. `deadvox/src/render/mobActors.ts`, `MobActorMeshes.posedFrame`, aims at the player's body-eye position in chase, or at `lastPerceived` for a near investigation while `stimulusAt` is among the actor's two most recent perception timestamps (`MobActorMeshes.hasRecentNearStimulus`). Once stale, gaze eases back to the base pose, including simulation head yaw. Near carried-light perception shares the near state and is treated as perceiving the player's presence; BR may overrule this at the look. `hearingGazeTarget` adds deterministic, id/time-based jitter, and `mobgen/src/mob/lookAt.ts`, `lookAtPose`, keeps gaze within the same rig limits and bounded turn rate from `mobgen/src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`. The debug spectator camera moves independently through `deadvox/src/render/playView.ts`, `updateCamera`, while `MobActorMeshes.setPlayerEyePosition` keeps chase gaze on the simulated body. `perceptionLabelFor` reads the stored perception state for debug labels. The test-noise action uses `session.playPlayerSound` with the existing `player_hurt_light` definition; because it commits `playerAudio` and a noise event, it is a debug simulation action rather than presentation-only. Gaze, labels and camera movement remain presentation-only and do not feed hit geometry, saves, replay or simulation fingerprints. The mobgen viewer has no perception state and continues to gaze at its camera in `mobgen/src/viewer/main.ts`, `applyLookAt`. The crawler's drag gait and in-game hit response remain d130 work.
 
 Later (after playtest 1): #370 covers hesitation and pursuit decisions on non-violent sounds; #371 covers nearby shamblers taking interest in a pursuing shambler's hunting sound.
 
@@ -968,12 +968,12 @@ spike tests the part model against this goal, and its reasons are in
    then build things the designers didn't foresee. For that, the spike's vehicles own
    their fittings rather than switching a designer's list on and off (BR, 2026-10-06
    18:07; see [docs/vehicle-spike.md](docs/vehicle-spike.md), "Catalogue, blueprints and
-   vehicles"): `src/debug/vehicles/model.ts`, `VehicleInstance`.
+   vehicles"): `src/vehicles/model.ts`, `VehicleInstance`.
 2. **Fitting answers four separate questions:** what may go here (slot and layer); what
    holds it up (a set of supports, which also decides what can be removed); by what
    (skill, tools, materials and time to install, remove and repair, because building and
    repair are crafting); and what it's for (the capabilities it provides). The spike's
-   supports are `src/debug/vehicles/model.ts`, `Fitting.supportedBy`.
+   supports are `src/vehicles/model.ts`, `Fitting.supportedBy`.
 3. **Two layers.** A part type is immutable content that mods can extend. A fitting is
    that part on this vehicle, with its own state: condition (intact, damaged, badly
    damaged, broken) and attachment (attached or ripped off). Collisions damage the parts
@@ -995,10 +995,10 @@ spike tests the part model against this goal, and its reasons are in
 6. **Parts are items.** A removed part becomes an item carrying its type and condition
    (the `vehiclePart` component, see [The item model](#the-item-model)): salvage it,
    carry it, refit it. A vehicle can be pieced together from wrecks. So a part type's id
-   names one type across all vehicles: `src/debug/vehicles/catalogue.ts`, `CATALOGUE`.
+   names one type across all vehicles: `src/vehicles/catalogue.ts`, `CATALOGUE`.
 7. **Data-driven and moddable.** Part types and vehicles live in schema-validated content
    (see [Content and modding](#content-and-modding)), and a mod adds parts without code.
-   The spike keeps its part types content-shaped for that: `src/debug/vehicles/voxels.ts`,
+   The spike keeps its part types content-shaped for that: `src/vehicles/voxels.ts`,
    `ShapeOp`.
 8. **The grain is "a part a player would name and swap":** wheel, door, engine, battery,
    seat, bull bar. No bolts, wire runs or plumbing as separate things.

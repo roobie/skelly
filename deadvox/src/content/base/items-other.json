@@ -211,7 +211,7 @@
       "category": "misc",
       "weight": 2500,
       "size": [3, 3],
-      "description": "A can for storing fuel."
+      "description": "A fuel-filled can."
     },
     {
       "id": "spent_case_5_d_56x45",

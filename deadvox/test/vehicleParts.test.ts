@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { pairAcross } from '../src/debug/vehicles/authoring.ts';
-import { CATALOGUE } from '../src/debug/vehicles/catalogue.ts';
+import { pairAcross } from '../src/vehicles/authoring.ts';
+import { CATALOGUE } from '../src/vehicles/catalogue.ts';
 import {
   addFitting,
   type Blueprint,
@@ -13,10 +13,10 @@ import {
   partTypeOf,
   removeFitting,
   supportProblems,
-} from '../src/debug/vehicles/model.ts';
-import { MOTORBIKE } from '../src/debug/vehicles/motorbike.ts';
-import { PICKUP } from '../src/debug/vehicles/pickup.ts';
-import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/debug/vehicles/rangeRover.ts';
+} from '../src/vehicles/model.ts';
+import { MOTORBIKE } from '../src/vehicles/motorbike.ts';
+import { PICKUP } from '../src/vehicles/pickup.ts';
+import { RANGE_ROVER, STRIPPED_REMOVED } from '../src/vehicles/rangeRover.ts';
 import {
   GLASS,
   keyVoxel,
@@ -25,8 +25,8 @@ import {
   rasterize,
   type VoxelGrid,
   voxelKey,
-} from '../src/debug/vehicles/voxels.ts';
-import { WEAR_MATERIALS, wearGrid, wearKey } from '../src/debug/vehicles/wear.ts';
+} from '../src/vehicles/voxels.ts';
+import { WEAR_MATERIALS, wearGrid, wearKey } from '../src/vehicles/wear.ts';
 
 const FACES = [
   [1, 0, 0],

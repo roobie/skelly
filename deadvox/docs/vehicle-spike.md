@@ -12,12 +12,13 @@ read_if:
 
 # Vehicle spike: vehicles built from parts (r43)
 
-A debug page for judging how vehicles look and come apart before any of them reach the
-game. It is not in Deadvox's default entry point and the game loads none of it. Open
-`/vehicle-spike.html` on the dev server. URL parameters pick the build and the camera
+A debug page for judging how vehicles look and come apart before they enter game content.
+It is not in Deadvox's default entry point; the workshop uses its Range Rover blueprint as
+static display scenery and runs no vehicle simulation. Open `/vehicle-spike.html` on the dev
+server. URL parameters pick the build and the camera
 preset; see `src/debug/vehicleSpike.ts`, `BUILDS` and `VIEWS`. That file holds the scene
 and the page state, `src/debug/vehicleSpikePanel.ts` the lit-html control panel (ADR 0001),
-and `src/debug/vehicles/` the model. The goal these builds test is in
+and `src/vehicles/` the model. The goal these builds test is in
 [DESIGN.md](../DESIGN.md#vehicles), "Vehicles".
 
 ## BR's rulings
@@ -39,7 +40,7 @@ Verbatim, with the question each answers (2026-10-06):
 
 ## Catalogue, blueprints and vehicles
 
-See `src/debug/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` and
+See `src/vehicles/model.ts`, `PartType`, `Blueprint`, `VehicleInstance` and
 `Fitting`.
 
 - **A vehicle owns its fittings,** made from a blueprint and changed one fitting at a time:
@@ -106,7 +107,7 @@ part types.
 
 ## Paint wear
 
-BR's ruling above. See `src/debug/vehicles/wear.ts`, `fittingWear` and `wearGrid`, and
+BR's ruling above. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`, and
 `vehicleSpike.ts`, `fittingMeshes`.
 
 - **One amount per fitting,** spread around the vehicle's level by a hash of the vehicle
@@ -143,7 +144,7 @@ unresponsive at a finer grain.
 ## Proportions
 
 Each vehicle follows published dimensions, rounded to whole voxels in the shapes and
-fittings of its file in `src/debug/vehicles/`:
+fittings of its file in `src/vehicles/`:
 
 - **4×4:** the Range Rover Classic four-door: length, width, height, wheelbase, track,
   wheel diameter, overhangs, and the waist and glass lines (sources:
@@ -202,7 +203,9 @@ None of these is built, and each waits for the event that needs it:
 - **A baked mesh per parked vehicle, and a distance level of detail:** when several
   vehicles share a view in the game.
 - **The content schema, pack loading and validation of the baked voxel grids:** once BR
-  answers the source-of-truth question below.
+  answers the source-of-truth question below. The workshop's TypeScript blueprint reference is an
+  interim placement, following BR's 16:32 request, "can't we use the example from the vehicle
+  spike?" It does not establish the vehicle-content source of truth.
 - **Cargo as items in storage rather than fittings** (the 4×4's spare wheel is a fitting):
   when storage is built.
 
