@@ -25,6 +25,7 @@ import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
 import { HOT_CATEGORIES, HOT_KINDS } from '../render/hotCheck.ts';
+import { positionLookedAtReadout } from '../ui/hud.ts';
 import { DebugAimOverlay } from './aimOverlay.ts';
 import { formatFacing, formatPosition, projectPositiveAxes } from './axisGizmo.ts';
 import { BuildMode } from './build.ts';
@@ -291,6 +292,7 @@ const panelTemplate = ({
   replayDownload,
   firearmsSkillZeroHandling,
   firearmsSkillZeroTarget,
+  crosshairVisible,
   changeFirearmsSkillZeroEffect,
   copyFirearmsSkillZeroHandling,
   firearmsSkillCopyStatus,
@@ -326,6 +328,7 @@ const panelTemplate = ({
   replayDownload: { url: string; name: string } | undefined;
   firearmsSkillZeroHandling: FirearmsSkillZeroHandling;
   firearmsSkillZeroTarget: string | undefined;
+  crosshairVisible: boolean;
   changeFirearmsSkillZeroEffect: (
     shotKind: FirearmsSkillShotKind,
     field: keyof FirearmsSkillZeroEffect,
@@ -390,11 +393,11 @@ const panelTemplate = ({
   };
   return html`
   <div id="debug-ui-root">
-    <div id="debug-center-x" aria-hidden="true"></div>
+    <div id="debug-center-x" ?hidden=${!crosshairVisible} aria-hidden="true"></div>
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
-    <div id="debug-look-readout" class="debug-aim-readout"></div>
+    <div id="debug-look-readout" class="debug-aim-readout debug-look-readout"></div>
     <div id="debug-mouse-readout" class="debug-aim-readout" style="left:6px;top:auto;bottom:6px;transform:none"></div>
     <section class="debug-panel" data-debug-controls ?hidden=${!open}>
     <header class="debug-panel-header"><strong>Debug / authoring</strong><button type="button" @click=${toggleOpen}>Close (${labelForAction('debug.panel-toggle')})</button></header>
@@ -960,6 +963,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let panelOpen = false;
   let f3Open = false;
   let axesVisible = true;
+  let crosshairVisible = false;
   let targetRangeText = '';
   let crosshairRay: { eye: Vec3; dir: Vec3; active: boolean } | undefined;
   let copyStatus = '';
@@ -1287,6 +1291,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       shamblerCount,
       spawnStatus,
       axesVisible,
+      crosshairVisible,
       copyStatus,
       firearmsSkillZeroTarget,
       firearmsSkillZeroHandling,
@@ -1353,6 +1358,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           replayDownload,
           firearmsSkillZeroHandling,
           firearmsSkillZeroTarget,
+          crosshairVisible,
           changeFirearmsSkillZeroEffect: (shotKind, field, value) => {
             const current = hooks.firearmsSkillZeroHandling();
             hooks.setFirearmsSkillZeroHandling({
@@ -1514,6 +1520,14 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     drawShell();
   });
   const runtime: DebugRuntime = {
+    setCrosshairVisible(visible: boolean) {
+      if (crosshairVisible === visible) {
+        return;
+      }
+      crosshairVisible = visible;
+      shellKey = '';
+      drawShell();
+    },
     get aimEnabled() {
       return aimEnabled;
     },
@@ -1555,6 +1569,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
               )
             : '';
         render(aimReadoutTemplate(text), lookReadout);
+        positionLookedAtReadout(lookReadout);
       }
     },
     recordMeleeResult(result: MeleeResult) {

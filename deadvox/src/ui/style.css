@@ -91,6 +91,10 @@ body.unconscious::after {
 .debug-aim-readout:empty {
   display: none;
 }
+#debug-ui-root #debug-look-readout {
+  top: auto;
+  bottom: 0;
+}
 
 #crosshair {
   position: fixed;

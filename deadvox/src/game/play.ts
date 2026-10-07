@@ -2454,6 +2454,7 @@ export const startPlay = (
     menuPointer.update();
 
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
+    debugTools?.setCrosshairVisible(visible.crosshair);
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {

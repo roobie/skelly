@@ -69,6 +69,34 @@ export const renderQuickbar = (root: HTMLElement, bar: Quickbar, inv: Inventory)
   render(quickbarTemplate(quickbarViewModel(bar, inv)), root);
 };
 
+/** Keep the looked-at debug hint above visible bottom HUD elements, or at the quickbar's own bottom offset. */
+export const positionLookedAtReadout = (readout: HTMLElement): void => {
+  const quickbar = document.getElementById('quickbar');
+  if (!quickbar) {
+    return;
+  }
+  const quickbarStyle = getComputedStyle(quickbar);
+  const visibleTops = [quickbar, document.getElementById('handling'), document.getElementById('hotbar')]
+    .filter((element): element is HTMLElement => element !== null)
+    .flatMap((element) => {
+      const style = getComputedStyle(element);
+      const rect = element.getBoundingClientRect();
+      return !element.hidden && style.display !== 'none' && style.visibility !== 'hidden' && rect.height > 0
+        ? [rect.top]
+        : [];
+    });
+  if (visibleTops.length > 0) {
+    readout.style.bottom = `${window.innerHeight - Math.min(...visibleTops)}px`;
+    return;
+  }
+  const quickbarBottom = Number.parseFloat(quickbarStyle.bottom);
+  if (Number.isFinite(quickbarBottom)) {
+    readout.style.bottom = `${quickbarBottom}px`;
+  } else {
+    readout.style.removeProperty('bottom');
+  }
+};
+
 /** Changes when the inventory or a slot's item does; the redraw contract's key. */
 export const quickbarKey = (bar: Quickbar, inv: Inventory): string =>
   `${inputBindings.revision}|${inv.version}|${bar.slots.map((uid) => uid ?? 0).join(',')}`;
