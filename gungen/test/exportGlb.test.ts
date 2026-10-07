@@ -4,8 +4,20 @@ import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { displayItems as selectDisplayItems } from '../src/core/display.ts';
+import { penetrationWorld, worldBox, worldSolid } from '../src/core/geometry.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
-import { applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, type Vec3 } from '../src/core/math.ts';
+import {
+  applyDir,
+  applyPoint,
+  IDENTITY,
+  type Mat3,
+  mulMM,
+  mulMV,
+  rotX,
+  rotY,
+  rotZ,
+  type Vec3,
+} from '../src/core/math.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
@@ -20,7 +32,7 @@ import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
-import { expectWatertightMesh, variant } from './helpers.ts';
+import { expectWatertightMesh, loadCorpus, variant } from './helpers.ts';
 
 const design = (name: string): Assembly => {
   const result = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8'));
@@ -419,6 +431,16 @@ describe('glb export: deadvox model entry', () => {
     }
   });
 
+  it('exports sight metadata for every valid fixture and published firearm design', () => {
+    for (const { label, assembly } of loadCorpus()) {
+      const result = exportGunGlb(assembly, ASSET, { variant: 'ar' });
+      if (!result.ok) {
+        throw new Error(`${label}: export failed: ${JSON.stringify(result.error)}`);
+      }
+      expect(result.modelEntry.sight, `${label} should export sight metadata from its parts`).toBeDefined();
+    }
+  });
+
   it('exports optic ocular diameter and eye relief with the sight line', () => {
     const optic = exported(design('archetype-ar'));
     const iron = exported(design('archetype-ak'));
@@ -426,6 +448,49 @@ describe('glb export: deadvox model entry', () => {
     expect(optic.modelEntry.sight?.ocularDiameterMetres).toBeGreaterThan(0);
     expect(iron.modelEntry.sight?.eyeReliefMetres).toBeGreaterThan(0);
     expect(iron.modelEntry.sight?.ocularDiameterMetres).toBeUndefined();
+  });
+
+  it('aims the pump shotgun front bead along a clear line above the barrel', () => {
+    const out = exported(design('archetype-pump-shotgun'));
+    const beadId = Object.entries(out.resolved.assembly.parts).find(
+      ([, part]) => part.family === 'front-sight-bead',
+    )?.[0];
+    if (!(beadId && out.modelEntry.sight)) {
+      throw new Error('pump shotgun needs its front bead in the exported sight data');
+    }
+    const beadAxis = out.resolved.defs.get(beadId)!.axes.find(({ kind }) => kind === 'sight')!;
+    const transform = out.resolved.placed.get(beadId)!;
+    const eye = applyPoint(transform, beadAxis.origin);
+    const direction = applyDir(transform, beadAxis.dir);
+    const magnitude = Math.hypot(...direction);
+    const forward: Vec3 = [direction[0] / magnitude, direction[1] / magnitude, direction[2] / magnitude];
+    near(forward, [1, 0, 0]);
+    near(out.modelEntry.sight.direction, toFileAxes(forward));
+    expect(out.modelEntry.sight.kind).toBe('iron');
+    const muzzle = out.modelEntry.anchors?.muzzle;
+    expect(muzzle).toBeDefined();
+    expect(muzzle![0] - out.modelEntry.sight.eye[0]).toBeGreaterThan(0);
+    expect(muzzle![0] - out.modelEntry.sight.eye[0]).toBeLessThan(0.02);
+
+    const start: Vec3 = [
+      eye[0] - forward[0] * beadAxis.eyeReliefU!,
+      eye[1] - forward[1] * beadAxis.eyeReliefU!,
+      eye[2] - forward[2] * beadAxis.eyeReliefU!,
+    ];
+    const center: Vec3 = [(start[0] + eye[0]) / 2, (start[1] + eye[1]) / 2, (start[2] + eye[2]) / 2];
+    const sightLine = worldBox(IDENTITY, { center, half: [beadAxis.eyeReliefU! / 2, 0.05, 0.05] });
+    for (const [id, part] of out.resolved.defs) {
+      if (id === beadId) {
+        continue;
+      }
+      const placed = out.resolved.placed.get(id)!;
+      for (const solid of part.solids) {
+        expect(
+          penetrationWorld(sightLine, worldSolid(placed, solid)),
+          `${id}.${solid.id} blocks the bead sight line`,
+        ).toBeLessThanOrEqual(0);
+      }
+    }
   });
 
   it('aims the AK sight axis from the rear notch top edge to the front post tip', () => {
