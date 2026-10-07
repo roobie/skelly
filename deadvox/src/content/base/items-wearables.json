@@ -14,26 +14,10 @@
       },
       "container": {
         "pockets": [
-          {
-            "name": "front left",
-            "grid": [1, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "front right",
-            "grid": [1, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "back left",
-            "grid": [1, 2],
-            "handling": 0.6
-          },
-          {
-            "name": "back right",
-            "grid": [1, 2],
-            "handling": 0.6
-          }
+          { "name": "front left", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "front right", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "back left", "grid": [1, 2], "handlingSimSeconds": 0.6 },
+          { "name": "back right", "grid": [1, 2], "handlingSimSeconds": 0.6 }
         ]
       }
     },
@@ -51,26 +35,10 @@
       },
       "container": {
         "pockets": [
-          {
-            "name": "front left",
-            "grid": [1, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "front right",
-            "grid": [1, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "cargo left",
-            "grid": [2, 2],
-            "handling": 0.8
-          },
-          {
-            "name": "cargo right",
-            "grid": [2, 2],
-            "handling": 0.8
-          }
+          { "name": "front left", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "front right", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "cargo left", "grid": [2, 2], "handlingSimSeconds": 0.8 },
+          { "name": "cargo right", "grid": [2, 2], "handlingSimSeconds": 0.8 }
         ]
       }
     },
@@ -86,15 +54,7 @@
         "warmth": 25,
         "wearPerHit": 0.012
       },
-      "container": {
-        "pockets": [
-          {
-            "name": "front",
-            "grid": [3, 2],
-            "handling": 0.5
-          }
-        ]
-      }
+      "container": { "pockets": [{ "name": "front", "grid": [3, 2], "handlingSimSeconds": 0.5 }] }
     },
     {
       "id": "jacket",
@@ -110,21 +70,9 @@
       },
       "container": {
         "pockets": [
-          {
-            "name": "left",
-            "grid": [2, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "right",
-            "grid": [2, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "inner",
-            "grid": [1, 2],
-            "handling": 0.7
-          }
+          { "name": "left", "grid": [2, 2], "handlingSimSeconds": 0.5 },
+          { "name": "right", "grid": [2, 2], "handlingSimSeconds": 0.5 },
+          { "name": "inner", "grid": [1, 2], "handlingSimSeconds": 0.7 }
         ]
       }
     },
@@ -142,26 +90,10 @@
       },
       "container": {
         "pockets": [
-          {
-            "name": "pouch 1",
-            "grid": [1, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "pouch 2",
-            "grid": [1, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "pouch 3",
-            "grid": [1, 2],
-            "handling": 0.5
-          },
-          {
-            "name": "pouch 4",
-            "grid": [1, 2],
-            "handling": 0.5
-          }
+          { "name": "pouch 1", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "pouch 2", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "pouch 3", "grid": [1, 2], "handlingSimSeconds": 0.5 },
+          { "name": "pouch 4", "grid": [1, 2], "handlingSimSeconds": 0.5 }
         ]
       }
     },
@@ -171,18 +103,8 @@
       "category": "bag",
       "weight": 200,
       "size": [2, 2],
-      "wearable": {
-        "slot": "waist",
-        "encumbrance": 3
-      },
-      "container": {
-        "pockets": [
-          {
-            "grid": [3, 2],
-            "handling": 0.8
-          }
-        ]
-      }
+      "wearable": { "slot": "waist", "encumbrance": 3 },
+      "container": { "pockets": [{ "grid": [3, 2], "handlingSimSeconds": 0.8 }] }
     },
     {
       "id": "school_backpack",
@@ -190,22 +112,11 @@
       "category": "bag",
       "weight": 600,
       "size": [4, 4],
-      "wearable": {
-        "slot": "back",
-        "encumbrance": 10
-      },
+      "wearable": { "slot": "back", "encumbrance": 10 },
       "container": {
         "pockets": [
-          {
-            "name": "main",
-            "grid": [5, 6],
-            "handling": 1.5
-          },
-          {
-            "name": "front",
-            "grid": [3, 2],
-            "handling": 1.2
-          }
+          { "name": "main", "grid": [5, 6], "handlingSimSeconds": 1.5 },
+          { "name": "front", "grid": [3, 2], "handlingSimSeconds": 1.2 }
         ]
       }
     },
@@ -215,22 +126,11 @@
       "category": "bag",
       "weight": 1400,
       "size": [4, 5],
-      "wearable": {
-        "slot": "back",
-        "encumbrance": 12
-      },
+      "wearable": { "slot": "back", "encumbrance": 12 },
       "container": {
         "pockets": [
-          {
-            "name": "main",
-            "grid": [6, 8],
-            "handling": 1.5
-          },
-          {
-            "name": "lid",
-            "grid": [3, 2],
-            "handling": 1.0
-          }
+          { "name": "main", "grid": [6, 8], "handlingSimSeconds": 1.5 },
+          { "name": "lid", "grid": [3, 2], "handlingSimSeconds": 1.0 }
         ]
       }
     }

@@ -51,6 +51,28 @@ const make = (unsafe?: () => string | undefined, handedness?: HandSide) => {
 const workOf = (r: ReturnType<typeof make>) => r.inventory.hands.right!.work!;
 
 describe('live craft commands', () => {
+  it('awards the authored recipe minutes as crafting practice', () => {
+    const r = make();
+    const recipe = registry.recipes.get('torch')!;
+    const awards: { skill: string; amount: number }[] = [];
+    const award = r.character.awardPractice.bind(r.character);
+    r.character.awardPractice = (skill, amount, tier) => {
+      awards.push({ skill, amount });
+      award(skill, amount, tier);
+    };
+
+    expect(r.commands.start('torch')).toBeUndefined();
+    const work = workOf(r);
+    r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
+
+    expect(awards).toEqual(
+      Object.keys(recipe.skills).map((skill) => ({
+        skill,
+        amount: recipe.timeGameMinutes / 60,
+      })),
+    );
+  });
+
   it('starts repair in the shared craft owner using the target and live skill-scaled effect', () => {
     const r = make();
     r.character.awardPractice('crafting', practiceForNextLevel(0), SKILL_LEVEL_LEGENDARY);

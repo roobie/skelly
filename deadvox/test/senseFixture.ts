@@ -1,9 +1,10 @@
 import type { SenseDef } from '../src/core/schema.ts';
+import { simRate, simSeconds } from '../src/core/time.ts';
 
 export const TEST_SENSE_TUNING: SenseDef = {
   id: 'player',
   crouch: {
-    speedMetresPerSecond: 0.8,
+    speedMetresPerSimSecond: simRate(0.8),
     hearingRangeScale: 0.5,
     sightRangeScale: 0.5,
     eyeDropMetres: 0.8,
@@ -19,6 +20,6 @@ export const TEST_SENSE_TUNING: SenseDef = {
     playerDaySightScale: 0,
     lureRangeScale: 0.5,
     throwMaxDistanceMetres: 8,
-    throwChargeSeconds: 1.25,
+    throwChargeSimSeconds: simSeconds(1.25),
   },
 };

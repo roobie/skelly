@@ -12,6 +12,7 @@ import { defOf, type Item } from './items.ts';
 import { raycast, type SolidAt } from './raycast.ts';
 import type { SenseDef } from './schema.ts';
 import { sunDirection } from './sky.ts';
+import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 
 /** Seconds to swap the battery in a light. */
 export const BATTERY_SWAP = 2;
@@ -118,10 +119,10 @@ const capacityOf = (registry: Registry, batteryType: string): number =>
 /** Battery power, if this source takes replaceable batteries. */
 const batteryPowerOf = (registry: Registry, light: Item) => defOf(registry, light.type).light?.power;
 
-/** Charge used per game hour by a battery- or self-fuelled light. */
-const drainRateOf = (registry: Registry, light: Item): number | undefined => {
+/** Charge used per game second by a battery- or self-fuelled light. */
+const drainRateOf = (registry: Registry, light: Item): GameRate | undefined => {
   const spec = defOf(registry, light.type).light;
-  return spec?.power?.perHour ?? spec?.fuelPerHour;
+  return spec?.power?.chargePerGameHour ?? spec?.fuelPerGameHour;
 };
 
 /** Charge left in the light's battery, or in a battery; undefined for anything else. */
@@ -160,19 +161,19 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
       return "It can't be doused";
     }
     light.on = false;
-    light.litAt = undefined;
+    light.litAtGameTimestamp = undefined;
     return undefined;
   }
-  if (spec.burnTime !== undefined) {
-    if (light.burnRemaining !== undefined && !spec.burning?.relight) {
+  if (spec.burnTimeGameHours !== undefined) {
+    if (light.burnRemainingGameSeconds !== undefined && !spec.burning?.relight) {
       return "It can't be lit again";
     }
-    const remaining = light.burnRemaining ?? spec.burnTime;
+    const remaining = light.burnRemainingGameSeconds ?? spec.burnTimeGameHours;
     if (remaining <= 0) {
       return 'It has burned out';
     }
-    light.burnRemaining = remaining;
-    light.litAt = calendar;
+    light.burnRemainingGameSeconds = remaining;
+    light.litAtGameTimestamp = calendar;
   } else if (chargeOf(registry, light) === 0) {
     return def.igniter ? "It's out of fuel" : 'The battery is dead';
   }
@@ -182,38 +183,42 @@ export const toggleLight = (registry: Registry, light: Item, calendar = 0): stri
 
 /** Burns a consumable light to the current calendar time; returns true when it went out. */
 export const drainBurnLight = (light: Item, calendar: number): boolean => {
-  if (!(light.on && light.litAt !== undefined && light.burnRemaining !== undefined)) {
+  if (!(light.on && light.litAtGameTimestamp !== undefined && light.burnRemainingGameSeconds !== undefined)) {
     return false;
   }
-  const elapsed = Math.max(0, (calendar - light.litAt) / 3600);
-  light.litAt = calendar;
-  light.burnRemaining = Math.max(0, light.burnRemaining - elapsed);
-  if (light.burnRemaining > 0) {
+  const elapsed = Math.max(0, calendar - light.litAtGameTimestamp);
+  light.litAtGameTimestamp = calendar;
+  light.burnRemainingGameSeconds = Math.max(0, light.burnRemainingGameSeconds - elapsed);
+  if (light.burnRemainingGameSeconds > 0) {
     return false;
   }
   light.on = false;
-  light.litAt = undefined;
+  light.litAtGameTimestamp = undefined;
   return true;
 };
 
 /**
- * Drains a light that's on over `hours` game hours, in place. Returns the hours into
+ * Drains a light that's on over `elapsedGameSeconds`, in place. Returns the Game seconds into
  * the step when it ran out, or undefined if it's still going (or wasn't on).
  */
-export const drainLight = (registry: Registry, light: Item, hours: number): number | undefined => {
-  const rate = drainRateOf(registry, light);
-  if (!(light.on && rate !== undefined)) {
+export const drainLight = (
+  registry: Registry,
+  light: Item,
+  elapsedGameSeconds: GameSeconds,
+): GameSeconds | undefined => {
+  const ratePerGameSecond = drainRateOf(registry, light);
+  if (!(light.on && ratePerGameSecond !== undefined)) {
     return undefined;
   }
   const charge = chargeOf(registry, light)!;
-  const lasts = charge / rate;
-  if (lasts > hours) {
-    light.charges = charge - rate * hours;
+  const lasts = charge / ratePerGameSecond;
+  if (lasts > elapsedGameSeconds) {
+    light.charges = charge - ratePerGameSecond * elapsedGameSeconds;
     return undefined;
   }
   light.charges = 0;
   light.on = false;
-  return lasts;
+  return gameSeconds(lasts);
 };
 
 /** The actor's off-hand item if it has an instant use (today only a light's on/off). */

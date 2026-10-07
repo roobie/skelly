@@ -151,26 +151,26 @@ const lightCandleWithOffHandMatches = (runtime: ReturnType<typeof createRuntime>
 it('a doused candle keeps its remaining burn through save and relighting', async () => {
   const source = createRuntime();
   const candle = lightCandleWithOffHandMatches(source);
-  const duration = registry.items.get('candle')!.light!.burnTime!;
-  source.sim.setDebugCalendarTime(source.sim.calendar + duration * 1800);
+  const duration = registry.items.get('candle')!.light!.burnTimeGameHours!;
+  source.sim.setDebugCalendarTime(source.sim.calendar + duration / 2);
   source.sim.scheduler.advance(1);
   expect(candle.on).toBe(true);
-  const remaining = candle.burnRemaining!;
+  const remaining = candle.burnRemainingGameSeconds!;
   expect(remaining).toBeGreaterThan(0);
   expect(source.survival.use(candle)).toBeUndefined();
   expect(candle.on).toBe(false);
-  expect(candle.litAt).toBeUndefined();
+  expect(candle.litAtGameTimestamp).toBeUndefined();
 
   const decoded = await decodeSave(await encodeFixture(capture(source)), { version: formatVersion, contentLookup });
   const loaded = createRuntime(decoded.snapshot);
   const restored = loaded.inventory.itemByUid(candle.uid)!;
   expect(restored.on).toBe(false);
-  expect(restored.burnRemaining).toBeCloseTo(remaining, 9);
-  expect(restored.litAt).toBeUndefined();
+  expect(restored.burnRemainingGameSeconds).toBeCloseTo(remaining, 9);
+  expect(restored.litAtGameTimestamp).toBeUndefined();
   expect(loaded.survival.use(restored)).toBeUndefined();
   expect(restored.on).toBe(true);
-  expect(restored.litAt).toBe(loaded.sim.calendar);
-  expect(restored.burnRemaining).toBeCloseTo(remaining, 9);
+  expect(restored.litAtGameTimestamp).toBe(loaded.sim.calendar);
+  expect(restored.burnRemainingGameSeconds).toBeCloseTo(remaining, 9);
 });
 
 it('a lit light saves its active ignition time and remaining burn', async () => {
@@ -181,8 +181,8 @@ it('a lit light saves its active ignition time and remaining burn', async () => 
   const loaded = createRuntime(decoded.snapshot);
   expect(loaded.inventory.itemByUid(candle.uid)).toMatchObject({
     on: true,
-    burnRemaining: candle.burnRemaining,
-    litAt: source.sim.calendar,
+    burnRemainingGameSeconds: candle.burnRemainingGameSeconds,
+    litAtGameTimestamp: source.sim.calendar,
   });
 });
 

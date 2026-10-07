@@ -102,23 +102,23 @@ export const sampleActionStroke = (
   duration?: number,
 ): number => {
   const cycle = action[mode];
-  if (!cycle || (mode === 'fire' && action.rpm === undefined)) {
+  if (!cycle || (mode === 'fire' && action.roundsPerSimMinute === undefined)) {
     return 0;
   }
   const baseDuration = actionCycleSeconds(action, mode);
   const effectiveDuration = duration ?? baseDuration;
-  const time = (elapsed * cycle.durationSeconds) / effectiveDuration;
+  const time = (elapsed * cycle.durationSimSeconds) / effectiveDuration;
   if (elapsed < 0 || elapsed >= effectiveDuration) {
     return 0;
   }
-  if (time < cycle.rearwardSeconds) {
-    return time / cycle.rearwardSeconds;
+  if (time < cycle.rearwardSimSeconds) {
+    return time / cycle.rearwardSimSeconds;
   }
-  const returnAt = cycle.rearwardSeconds + cycle.dwellSeconds;
+  const returnAt = cycle.rearwardSimSeconds + cycle.dwellSimSeconds;
   if (time < returnAt) {
     return 1;
   }
-  return Math.max(0, 1 - (time - returnAt) / cycle.forwardSeconds);
+  return Math.max(0, 1 - (time - returnAt) / cycle.forwardSimSeconds);
 };
 
 /** Presentation estimate: bound the geometry-derived turn while exposing an away-facing port. */
