@@ -335,7 +335,7 @@ const heldGun = async (type: string) => {
 
 it('keeps over-limit view pitch changes in ADS while the held pose takes the recoil frame', async () => {
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
-  const aim = new AimController();
+  const aim = new AimController(registry.skills.get('firearms_combat')!.combat!.firearms!.wobbleLimitRadians);
   aim.recordShot(1, 0.3);
   aim.advance({
     dt: 1 / 60,

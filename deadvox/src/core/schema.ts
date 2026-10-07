@@ -1118,6 +1118,8 @@ const SkillSchema = pipe(
             loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
             adsApertureFill: pipe(Positive, maxValue(0.95)),
             skillZeroHandling: FirearmsSkillZeroHandlingSchema,
+            wobbleSkillTenVariance: pipe(Positive, maxValue(100)),
+            wobbleLimitRadians: pipe(Positive, maxValue(Math.PI / 2)),
             reloadFactorFloor: Fraction,
             reloadFactorHalfLifeLevels: Positive,
             rackFactorFloor: Fraction,

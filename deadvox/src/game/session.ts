@@ -451,6 +451,7 @@ export const createSession = (options: SessionOptions) => {
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
     : new Inventory(registry, undefined, options.entities, character);
   const aim = new AimController(
+    currentFirearmsCombatTuning().wobbleLimitRadians,
     restored?.character.aim,
     firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).variance,
   );

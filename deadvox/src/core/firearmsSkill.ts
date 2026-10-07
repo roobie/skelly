@@ -46,6 +46,8 @@ export interface FirearmsCombatTuning {
   readonly loweredPitchRadians: number;
   readonly adsApertureFill: number;
   readonly skillZeroHandling: FirearmsSkillZeroHandling;
+  readonly wobbleSkillTenVariance: number;
+  readonly wobbleLimitRadians: number;
   readonly reloadFactorFloor: number;
   readonly reloadFactorHalfLifeLevels: number;
   readonly rackFactorFloor: number;
@@ -87,7 +89,7 @@ export const firearmsSkillEffects = (
   const atSkillZero = (expertValue: number, zeroValue: number): number =>
     expertValue + (zeroValue - expertValue) * progressFromExpert;
   return {
-    variance: atSkillZero(expertControl, zero.variance),
+    variance: atSkillZero(tuning.wobbleSkillTenVariance, zero.variance),
     recoilKickScale: atSkillZero(expertControl, zero.recoilKickScale),
     recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryScale),
     reloadDuration: skillSaturation(effectLevel, tuning.reloadFactorFloor, tuning.reloadFactorHalfLifeLevels),

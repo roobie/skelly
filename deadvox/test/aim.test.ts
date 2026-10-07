@@ -4,10 +4,16 @@ import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { PLAYER } from '../src/game/player.ts';
 
 const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;
+const pumpHandling = BUNDLED_CONTENT.registry.items.get('pump_shotgun')!.firearm!.skillZeroHandling!;
+const pumpTuning = { ...stanceTuning, skillZeroHandling: pumpHandling };
 const skillEffects = (level: number, kind: FirearmsSkillShotKind = 'singleShot') =>
   firearmsSkillEffects(level, stanceTuning, kind);
+const pumpSkillEffects = (level: number) => firearmsSkillEffects(level, pumpTuning);
+const createAim = (variance = 1, wobbleLimitRadians = stanceTuning.wobbleLimitRadians) =>
+  new AimController(wobbleLimitRadians, undefined, variance);
 
 const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) => ({
   dt: 1 / 60,
@@ -22,7 +28,7 @@ const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) 
 });
 
 const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: number): number => {
-  const aim = new AimController(undefined, variance);
+  const aim = createAim(variance);
   const dt = 1 / 60;
   const burstSeconds = 2;
   let nextShotAt = 0;
@@ -62,14 +68,14 @@ it('uses camera pitch and yaw without presentation roll at neutral sway', () => 
 });
 
 it('actual movement and quick look turns increase isolated aim deviation', () => {
-  const still = new AimController();
-  const moving = new AimController();
+  const still = createAim();
+  const moving = createAim();
   const stillFrame = still.advance(step());
   const movingFrame = moving.advance(step({ velocity: [2, 0, 0] }));
   expect(Math.hypot(movingFrame.yaw, movingFrame.pitch)).toBeGreaterThan(Math.hypot(stillFrame.yaw, stillFrame.pitch));
 
-  const turning = new AimController();
-  const steady = new AimController();
+  const turning = createAim();
+  const steady = createAim();
   turning.advance(step());
   steady.advance(step());
   const turnedFrame = turning.advance(step({ yaw: 0.6 }));
@@ -78,9 +84,8 @@ it('actual movement and quick look turns increase isolated aim deviation', () =>
 });
 
 it('committed recoil recovers in simulation time and equal inputs stay deterministic', () => {
-  const first = new AimController();
-  const second = new AimController();
-  first.recordShot(73, 0.02);
+  const first = createAim();
+  const second = createAim();  first.recordShot(73, 0.02);
   second.recordShot(73, 0.02);
   const initial = first.advance(step());
   expect(second.advance(step())).toEqual(initial);
@@ -94,7 +99,7 @@ it('committed recoil recovers in simulation time and equal inputs stay determini
 });
 
 it('keeps held-fire recoil climbing while shifting over-limit pitch into the view', () => {
-  const aim = new AimController();
+  const aim = createAim();
   const dt = 1 / 60;
   const cadence = 60 / 800;
   const burstSeconds = 2;
@@ -112,7 +117,7 @@ it('keeps held-fire recoil climbing while shifting over-limit pitch into the vie
     const time = tick * dt;
     if (tick > 0) {
       const recoilBefore = aim.snapshotState().recoilPitch;
-      aim.advance(step({ dt, firing: true }));
+      aim.advance(step({ dt, pitch: viewPitch, firing: true }));
       expect(aim.snapshotState().recoilPitch).toBe(recoilBefore);
       applyViewShift();
     }
@@ -136,15 +141,36 @@ it('keeps held-fire recoil climbing while shifting over-limit pitch into the vie
   const heldOffset = Math.hypot(aim.frame.yaw, aim.frame.pitch);
   const retainedViewPitch = viewPitch;
   for (let tick = 0; tick < 30; tick++) {
-    aim.advance(step({ dt, firing: false }));
+    aim.advance(step({ dt, pitch: viewPitch, firing: false }));
     applyViewShift();
   }
   expect(viewPitch).toBeCloseTo(retainedViewPitch, 8);
   expect(Math.hypot(aim.frame.yaw, aim.frame.pitch)).toBeLessThan(heldOffset);
 });
 
+it('keeps recoil view-shift and recovery independent of stronger gait wobble', () => {
+  const recoilAfterMotion = (velocity: [number, number, number], variance: number) => {
+    const aim = createAim(variance);
+    aim.recordShot(1, 0.3);
+    aim.advance(step({ velocity, variance, firing: true }));
+    const shift = aim.pendingViewPitchShift;
+    aim.applyViewPitchShift(shift, shift);
+    aim.advance(step({ velocity, pitch: shift, variance, firing: false }));
+    const recoil = aim.snapshotState();
+    return { shift, recoilYaw: recoil.recoilYaw, recoilPitch: recoil.recoilPitch };
+  };
+  const neutral = recoilAfterMotion([0, 0, 0], 1);
+  const moving = recoilAfterMotion(
+    [0, 0, -(PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor) / step().blockSize],
+    pumpSkillEffects(0).variance,
+  );
+  expect(moving.shift).toBeCloseTo(neutral.shift, 8);
+  expect(moving.recoilYaw).toBeCloseTo(neutral.recoilYaw, 8);
+  expect(moving.recoilPitch).toBeCloseTo(neutral.recoilPitch, 8);
+});
+
 it('hands pitch beyond the aim-frame boundary to the view without losing it', () => {
-  const aim = new AimController();
+  const aim = createAim();
   aim.recordShot(1, 0.3);
   const before = aim.frame;
   const rawPitch = aim.snapshotState().recoilPitch;
@@ -189,15 +215,20 @@ it('skill-zero handling is worse for automatic follow-ups than single shots, and
   expect(single.recoilRecoveryRate).toBeLessThan(expert.recoilRecoveryRate);
 });
 
-it('expert firearm effects retain the established curve endpoint regardless of skill-zero tuning', () => {
+it('skill-ten wobble uses its content endpoint independent of skill-zero handling', () => {
   const alternate = {
     ...stanceTuning,
+    wobbleSkillTenVariance: stanceTuning.wobbleSkillTenVariance / 2,
     skillZeroHandling: {
       singleShot: { variance: 17, recoilKickScale: 23, recoilRecoveryScale: 0.07 },
       automaticFollowup: { variance: 31, recoilKickScale: 41, recoilRecoveryScale: 0.03 },
     },
   };
-  expect(skillEffects(SKILL_LEVEL_MAX)).toEqual(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate));
+  expect(skillEffects(SKILL_LEVEL_MAX).variance).toBe(stanceTuning.wobbleSkillTenVariance);
+  expect(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate).variance).toBe(alternate.wobbleSkillTenVariance);
+  expect(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate).recoilKickScale).toBe(
+    skillEffects(SKILL_LEVEL_MAX).recoilKickScale,
+  );
   expect(skillEffects(SKILL_LEVEL_LEGENDARY)).toEqual(skillEffects(SKILL_LEVEL_MAX));
 });
 
@@ -218,8 +249,8 @@ it('changing a content skill-zero value changes the matching skill effect', () =
 });
 
 it('skill-zero kick scale increases the immediate recoil from the same shot', () => {
-  const novice = new AimController();
-  const expert = new AimController();
+  const novice = createAim();
+  const expert = createAim();
   novice.recordShot(73, 0.02, skillEffects(0).recoilKickScale);
   expert.recordShot(73, 0.02, skillEffects(SKILL_LEVEL_MAX).recoilKickScale);
   expect(novice.snapshotState().recoilPitch).toBeGreaterThan(expert.snapshotState().recoilPitch);
@@ -227,8 +258,8 @@ it('skill-zero kick scale increases the immediate recoil from the same shot', ()
 });
 
 it('expert recovery scale decays the same released recoil faster', () => {
-  const novice = new AimController();
-  const expert = new AimController();
+  const novice = createAim();
+  const expert = createAim();
   novice.recordShot(73, 0.02);
   expert.recordShot(73, 0.02);
   const noviceRecoveryScale = skillEffects(0).recoilRecoveryRate;
@@ -244,12 +275,59 @@ it('expert recovery scale decays the same released recoil faster', () => {
   );
 });
 
-it('expert firearms skill reduces moving sway', () => {
-  const novice = new AimController();
-  const expert = new AimController();
-  const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: skillEffects(0).variance }));
-  const expertFrame = expert.advance(step({ velocity: [2, 0, 0], variance: skillEffects(SKILL_LEVEL_MAX).variance }));
-  expect(Math.hypot(expertFrame.yaw, expertFrame.pitch)).toBeLessThan(Math.hypot(noviceFrame.yaw, noviceFrame.pitch));
+const readiedWalkWobble = (level: number): number => {
+  const effects = pumpSkillEffects(level);
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const blockSize = step().blockSize;
+  const aim = createAim(effects.variance);
+  let peak = 0;
+  for (let tick = 0; tick < 240; tick++) {
+    const frame = aim.advance(
+      step({
+        velocity: [0, 0, -speed / blockSize],
+        variance: effects.variance,
+      }),
+    );
+    peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));
+  }
+  return peak;
+};
+
+it('pump skill-zero readied-walk wobble fits its content bound', () => {
+  const wobble = readiedWalkWobble(0);
+  expect(wobble).toBeGreaterThan(0);
+  expect(wobble).toBeLessThan(stanceTuning.wobbleLimitRadians);
+});
+
+it('wobble can use its larger content bound without merging it into recoil', () => {
+  const variance = pumpSkillEffects(0).variance;
+  const aim = createAim(variance);
+  let peak = 0;
+  for (let tick = 0; tick < 240; tick++) {
+    const frame = aim.advance(step({ velocity: [0, 0, -3 / step().blockSize], variance }));
+    peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));
+  }
+  expect(peak).toBeCloseTo(stanceTuning.wobbleLimitRadians, 8);
+});
+
+it('readied-walk wobble shrinks with firearms skill at equal movement', () => {
+  const levels = [0, Math.floor(SKILL_LEVEL_MAX / 2), SKILL_LEVEL_MAX];
+  const wobble = levels.map(readiedWalkWobble);
+  expect(wobble[1]).toBeLessThan(wobble[0]!);
+  expect(wobble[2]).toBeLessThan(wobble[1]!);
+  const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / pumpHandling.singleShot.variance;
+  expect(wobble[2]! / wobble[0]!).toBeCloseTo(configuredExpertFraction, 4);
+});
+
+it('quick-look lag follows the skill-scaled wobble endpoint', () => {
+  const turnLag = (level: number): number => {
+    const effects = pumpSkillEffects(level);
+    const aim = createAim(effects.variance);
+    aim.advance(step({ variance: effects.variance }));
+    const frame = aim.advance(step({ yaw: 0.01, variance: effects.variance }));
+    return Math.abs(frame.yaw);
+  };
+  expect(turnLag(SKILL_LEVEL_MAX)).toBeLessThan(turnLag(0));
 });
 
 it('firearms skill reduces climb over the same full-auto burst', () => {
@@ -284,9 +362,8 @@ it('firearms skill effects improve through expert level and legendary matches ex
   const legendary = skillEffects(SKILL_LEVEL_LEGENDARY);
   expect(experienced.variance).toBeLessThan(novice.variance);
   expect(experienced.recoilKickScale).toBeLessThan(novice.recoilKickScale);
-  expect(experienced.recoilKickScale).toBe(experienced.variance);
-  expect(experienced.recoilRecoveryRate).toBe(2 - experienced.variance);
   expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
+  expect(experienced.variance).toBe(stanceTuning.wobbleSkillTenVariance);
   expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
   expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
   const noviceStance = firearmStanceEffects(0, stanceTuning);

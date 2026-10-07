@@ -697,6 +697,13 @@ and `src/core/content.ts`, `checkItemFirearm`.
   each is about half the previous curve's duration; legendary remains clamped to skill 10.
   BR, 2026-10-07 10:23: “yep, feels good” on the handling comparison for PR #343.
 
+  BR (d142-1, 2026-10-07 23:07): “right now, the wobble from a readied shotgun and duck walking forward is approx 15px radius - i.e. the muzzle bearing varies by approx plus/minus 15px
+  for a completely unskilled character
+
+  this is waayyy too low. I mean, think on it, someone who've never held a firearm in their life, starts duck walking with a shotgun. I'd guess we actually need to 10x the effect
+  whereas a level 10 character hardly has any wobble” BR clarified at 23:10: “i wasn't crouch walking though - just readied-walking normally”.
+  So readied gait and look-lag wobble follow firearms skill, while dispersion and recoil remain separate. The per-firearm novice endpoint and shared expert endpoint and wobble bound are content-owned in `src/content/base/models-firearms.json` and `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, selects the skill scale. `src/core/aim.ts`, `frameFromState`, bounds wobble separately from recoil so enlarging the former does not retune the latter. Hip and ADS share this aim frame; ADS sight/view rules and firearm spread do not change. BR judges the ordinary readied walk at the first look.
+
   BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling

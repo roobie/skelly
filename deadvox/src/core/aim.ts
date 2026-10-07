@@ -45,19 +45,29 @@ const MAX_OFFSET = 0.12;
 const wrapAngle = (angle: number): number => Math.atan2(Math.sin(angle), Math.cos(angle));
 const bounded = (value: number): number => Math.max(-MAX_OFFSET, Math.min(MAX_OFFSET, value));
 
+const boundVector = (yaw: number, pitch: number, limit: number): AimFrame => {
+  const magnitude = Math.hypot(yaw, pitch);
+  const scale = magnitude > limit ? limit / magnitude : 1;
+  return { yaw: yaw * scale, pitch: pitch * scale };
+};
+
+// Keep gait/look wobble separate so its larger content bound cannot enlarge recoil's view-pitch limit.
 const frameFromState = (
   state: AimState,
   speed: number,
   variance: number,
+  wobbleLimitRadians: number,
 ): { frame: AimFrame; viewPitchShift: number } => {
   const gait = Math.sin(state.gaitPhase);
-  const yawSway = (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance;
-  const pitchSway = (state.lookPitch + Math.cos(state.gaitPhase) * speed * MOVE_PITCH_PER_SPEED) * variance;
-  const yawOffset = bounded(yawSway + state.recoilYaw);
-  const pitchOffset = pitchSway + state.recoilPitch;
-  const pitchLimit = Math.sqrt(Math.max(0, MAX_OFFSET ** 2 - yawOffset ** 2));
-  const boundedPitch = Math.max(-pitchLimit, Math.min(pitchLimit, pitchOffset));
-  const excessPitch = pitchOffset - boundedPitch;
+  const wobble = boundVector(
+    (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance,
+    (state.lookPitch + Math.cos(state.gaitPhase) * speed * MOVE_PITCH_PER_SPEED) * variance,
+    wobbleLimitRadians,
+  );
+  const recoilYaw = bounded(state.recoilYaw);
+  const pitchLimit = Math.sqrt(Math.max(0, MAX_OFFSET ** 2 - recoilYaw ** 2));
+  const boundedRecoilPitch = Math.max(-pitchLimit, Math.min(pitchLimit, state.recoilPitch));
+  const excessPitch = state.recoilPitch - boundedRecoilPitch;
   let viewPitchShift = 0;
   if (state.recoilPitch > 0) {
     viewPitchShift = Math.min(state.recoilPitch, Math.max(0, excessPitch));
@@ -66,8 +76,8 @@ const frameFromState = (
   }
   return {
     frame: Object.freeze({
-      yaw: yawOffset,
-      pitch: Math.max(-pitchLimit, Math.min(pitchLimit, pitchOffset - viewPitchShift)),
+      yaw: recoilYaw + wobble.yaw,
+      pitch: Math.max(-pitchLimit, Math.min(pitchLimit, state.recoilPitch - viewPitchShift)) + wobble.pitch,
     }),
     viewPitchShift,
   };
@@ -107,7 +117,7 @@ export const assertAimState = (state: AimState): void => {
     Math.abs(state.lookPitch) > MAX_OFFSET * 8 ||
     Math.abs(state.recoilYaw) > MAX_OFFSET * 8 ||
     Math.abs(state.recoilPitch) > MAX_OFFSET * 8 ||
-    Math.hypot(state.frame.yaw, state.frame.pitch) > MAX_OFFSET + 1e-9
+    Math.hypot(state.frame.yaw, state.frame.pitch) > Math.PI
   ) {
     throw new Error('Invalid aim state');
   }
@@ -118,16 +128,21 @@ export class AimController {
   private readonly state: AimState;
   private variance: number;
   private speed = 0;
+  private readonly wobbleLimitRadians: number;
   private viewPitchShift = 0;
 
-  constructor(state: AimState = initialAimState(), variance = 1) {
+  constructor(wobbleLimitRadians: number, state: AimState = initialAimState(), variance = 1) {
     assertAimState(state);
     if (!(Number.isFinite(variance) && variance > 0)) {
       throw new Error('Invalid aim variance');
     }
+    if (!(Number.isFinite(wobbleLimitRadians) && wobbleLimitRadians > 0)) {
+      throw new Error('Invalid aim wobble limit');
+    }
     this.state = structuredClone(state);
     this.state.frame = Object.freeze({ ...this.state.frame });
     this.variance = variance;
+    this.wobbleLimitRadians = wobbleLimitRadians;
   }
 
   get frame(): AimFrame {
@@ -154,7 +169,7 @@ export class AimController {
   }
 
   private recomputeFrame(): void {
-    const result = frameFromState(this.state, this.speed, this.variance);
+    const result = frameFromState(this.state, this.speed, this.variance, this.wobbleLimitRadians);
     this.state.frame = result.frame;
     this.viewPitchShift = result.viewPitchShift;
   }
