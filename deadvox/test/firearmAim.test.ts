@@ -37,9 +37,12 @@ it('chooses a bore-line zombie in front of a far wall', () => {
 it('projects the lowered firearm bore off-screen until it is raised', () => {
   const blockSize = 0.5;
   const eye: Vec3 = [0, 4, 0];
-  const camera = new PerspectiveCamera(60, 2, 0.1, 100);
+  const camera = new PerspectiveCamera();
+  camera.aspect = 2;
+  camera.updateProjectionMatrix();
   camera.position.set(...(eye.map((value) => value * blockSize) as Vec3));
   const viewport = { left: 0, top: 0, width: 800, height: 400 };
+  const loweredPitchRadians = (camera.fov * Math.PI) / 180;
   const pointOnBore = (progress: number): Vec3 => {
     const bore = firearmBoreRay({
       model: boreModel,
@@ -52,7 +55,7 @@ it('projects the lowered firearm bore off-screen until it is raised', () => {
       twoHanded: false,
       aimFrame: { yaw: 0, pitch: 0 },
       progress,
-      loweredPitchRadians: 1,
+      loweredPitchRadians,
     });
     return bore.muzzle.map((value, axis) => value + bore.direction[axis]! * 100) as Vec3;
   };
