@@ -10,7 +10,7 @@ export interface ItemAction {
   readonly label: string;
   readonly priority?: Readonly<{ bleeding: boolean; damage: number }>;
   readonly treatment?: Readonly<{ region: BodyRegion; kind: BodyTreatment }>;
-  /** Unloading a held magazine: R only loads (CONTROLS.md, "Reload only"), so stripping is an item action. */
+  /** Unloading a held magazine: R only loads one (CONTROLS.md, "Reload, rack, remove"), so stripping is an item action. */
   readonly magazine?: 'strip';
 }
 

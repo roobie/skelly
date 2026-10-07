@@ -1154,7 +1154,7 @@ export const startPlay = (
     hintToggleInput.cancel();
   });
 
-  /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
+  /** Default-view R reloads, racks and removes; menus own their own bindings (including inventory rotation). */
   const reloadBinding = (): ReloadBinding | undefined => {
     if (
       !(input.locked || replayPlayer) ||
@@ -1168,7 +1168,7 @@ export const startPlay = (
       return;
     }
     // An admitted gesture is recorded; replay drives it back through this binding.
-    const admit = (action: 'firearm.load' | 'firearm.rack', reason: string | undefined): boolean => {
+    const admit = (action: 'firearm.load' | 'firearm.rack' | 'firearm.remove', reason: string | undefined): boolean => {
       if (reason) {
         showRefusal(reason, sim.time);
       } else {
@@ -1186,6 +1186,7 @@ export const startPlay = (
       oneAction: target.oneAction,
       load: () => admit('firearm.load', target.load(sim.time)),
       rack: () => admit('firearm.rack', target.rack(sim.time)),
+      remove: () => admit('firearm.remove', target.remove(sim.time)),
       cancelLoad: target.cancelLoad,
     };
   };
@@ -1429,6 +1430,9 @@ export const startPlay = (
         return true;
       case 'firearm.rack':
         reloadBinding()?.rack();
+        return true;
+      case 'firearm.remove':
+        reloadBinding()?.remove();
         return true;
       case 'glowstick.throw': {
         const glowstick = [inventory.hands.right, inventory.hands.left].find((item) => item?.type === 'glowstick');

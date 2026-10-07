@@ -54,13 +54,25 @@ controls remain proposals until their issue is implemented.
   debug, rather than inventing no-op lean commands.
 - **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
   to the browser. Escape releases pointer lock and is never a game rebind.
-- **Reload only (2026-10-04):** “It shall mean only (re)load in the default
-  view”; “press and hold R to load it with shells from inventory double-press
-  R to rack”; “Single tap r does nothing”. The two gestures share one atomic
-  slot so rebinding cannot split a coupled action. `ReloadInput` in
-  `src/game/reloadInput.ts` owns classification; ammunition work belongs to its
-  existing handling owner.
-  Inventory rotation is a different visible context, not another reload gesture.
+- **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
+  “No, it should reload with the mag that is fullest in inventory, no matter what
+  is loaded in gun”; on double-pressing R working the charging handle, “yes,
+  correct”; and on removing the magazine, “Tap-then-press-and-hold R means remove
+  mag”. Holding R swaps in the fullest carried magazine that fits, even one with
+  fewer rounds than the fitted one. A double press racks. A tap followed by a
+  press held past the hold threshold removes the fitted magazine to a pocket or
+  the ground. Only the second press's length tells rack from remove, so neither
+  acts until it is released or held: a quick tap-tap never removes, and a plain
+  hold never removes. The gestures share one atomic slot so rebinding cannot
+  split a coupled action. `ReloadInput` in `src/game/reloadInput.ts` owns
+  classification and `RELOAD_GESTURE_MS` its timing; ammunition work belongs to
+  its existing handling owner (`src/game/firearmHandling.ts`,
+  `FirearmMechanics.loadNext` and `FirearmMechanics.removeMagazine`). Inventory
+  rotation is a different visible context, not another reload gesture.
+  - History, **Reload only (2026-10-04):** “It shall mean only (re)load in the
+    default view”; “press and hold R to load it with shells from inventory
+    double-press R to rack”; “Single tap r does nothing”. The removal ruling
+    above supersedes “only (re)load”; a single tap still does nothing.
 - **No rest or sleep keys (2026-10-04):** “`rest` shouldn't have a dedicatec
   keybind - instead, you interact with 'restable' items - e.g. beds, sofas,
   chairs, etc” and “`L` remvoed - sleep is on sleepable objects, like bed”.

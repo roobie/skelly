@@ -1,5 +1,8 @@
 // Transient keyboard intent only. Existing HandlingQueue owns shell/rack jobs.
-/** Real milliseconds: double presses must arrive before the window expires. */
+/**
+ * Real milliseconds. A press held for `hold` loads; a second press starting within `doublePress` of a tap racks
+ * if released before `hold`, or removes the magazine once held for `hold` (CONTROLS.md, "Reload, rack, remove").
+ */
 export const RELOAD_GESTURE_MS = { hold: 250, doublePress: 250 } as const;
 
 export interface ReloadBinding {
@@ -10,6 +13,7 @@ export interface ReloadBinding {
   /** One admitted load per press, which release doesn't cancel: a magazine change rather than shell by shell. */
   readonly oneAction?: boolean;
   readonly rack: () => void;
+  readonly remove: () => void;
   readonly cancelLoad: () => void;
 }
 
@@ -26,14 +30,16 @@ export interface ReloadTarget {
   readonly oneAction: boolean;
   readonly load: (time: number) => string | undefined;
   readonly rack: (time: number) => string | undefined;
+  readonly remove: (time: number) => string | undefined;
   readonly cancelLoad: () => void;
 }
 
-/** A held firearm takes R; otherwise a wielded magazine, which R only loads (CONTROLS.md, "Reload only"). */
+/** A held firearm takes R; otherwise a wielded magazine, which R only loads with rounds. */
 export const reloadTarget = (
   firearms: ReloadOwner & {
     readonly reloadsInOneAction: (uid: number) => boolean;
     readonly cock: (uid: number, time: number) => string | undefined;
+    readonly removeMagazine: (uid: number, time: number) => string | undefined;
   },
   magazines: ReloadOwner,
 ): ReloadTarget | undefined => {
@@ -44,6 +50,7 @@ export const reloadTarget = (
       oneAction: firearms.reloadsInOneAction(gun),
       load: (time) => firearms.loadNext(gun, time),
       rack: (time) => firearms.cock(gun, time),
+      remove: (time) => firearms.removeMagazine(gun, time),
       cancelLoad: () => firearms.cancelLoad(gun),
     };
   }
@@ -55,6 +62,7 @@ export const reloadTarget = (
         oneAction: false,
         load: (time) => magazines.loadNext(magazine, time),
         rack: () => 'Only a held firearm racks',
+        remove: () => 'Only a held firearm has a magazine to remove',
         cancelLoad: () => magazines.cancelLoad(magazine),
       };
 };
@@ -62,6 +70,8 @@ export const reloadTarget = (
 interface Press {
   readonly binding: ReloadBinding;
   readonly at: number;
+  /** A press that followed a tap: it racks on an early release, or removes once held. */
+  readonly second: boolean;
   released: boolean;
   loading: boolean;
 }
@@ -83,24 +93,28 @@ export class ReloadInput {
       previous.binding.uid === binding.uid &&
       now - previous.at < RELOAD_GESTURE_MS.doublePress
     ) {
-      this.press = undefined;
-      binding.rack();
+      // Only this press's length tells a rack from a removal, so neither acts until it is released or held.
+      this.press = { binding, at: now, second: true, released: false, loading: false };
       return;
     }
     this.advance(now, binding);
     this.down = true;
-    this.press = binding ? { binding, at: now, released: false, loading: false } : undefined;
+    this.press = binding ? { binding, at: now, second: false, released: false, loading: false } : undefined;
   }
 
   keyUp(now: number): void {
     this.down = false;
-    if (!this.press) {
+    const { press } = this;
+    if (!press) {
       return;
     }
-    if (this.press.loading || now - this.press.at >= RELOAD_GESTURE_MS.hold) {
+    if (press.second) {
+      this.press = undefined;
+      (now - press.at < RELOAD_GESTURE_MS.hold ? press.binding.rack : press.binding.remove)();
+    } else if (press.loading || now - press.at >= RELOAD_GESTURE_MS.hold) {
       this.cancel();
     } else {
-      this.press.released = true;
+      press.released = true;
     }
   }
 
@@ -111,6 +125,13 @@ export class ReloadInput {
     }
     if (press.binding.uid !== binding?.uid) {
       this.cancel();
+      return;
+    }
+    if (press.second) {
+      if (now - press.at >= RELOAD_GESTURE_MS.hold) {
+        this.press = undefined;
+        press.binding.remove();
+      }
       return;
     }
     if (now - press.at < Math.max(RELOAD_GESTURE_MS.hold, RELOAD_GESTURE_MS.doublePress)) {

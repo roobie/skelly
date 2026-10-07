@@ -12,7 +12,7 @@ export type InputContext =
   | 'noclip'
   | 'play'
   | 'interrupted';
-type PressKind = 'press' | 'held-state' | 'hold' | 'double-press';
+type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
   readonly code: string;
@@ -90,12 +90,20 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
   row('hand.use-off', 'Use off hand', world, ['Equal']),
   row('world.interact', 'Interact with the world', world, ['KeyF']),
-  row('firearm.reload', 'Hold to load; double-press to rack; tap does nothing', world, ['KeyR'], 'hold', {
-    commands: [
-      { id: 'firearm.load', kind: 'hold' },
-      { id: 'firearm.rack', kind: 'double-press' },
-    ],
-  }),
+  row(
+    'firearm.reload',
+    'Hold to load; double-press to rack; tap, then hold to remove the magazine; tap does nothing',
+    world,
+    ['KeyR'],
+    'hold',
+    {
+      commands: [
+        { id: 'firearm.load', kind: 'hold' },
+        { id: 'firearm.rack', kind: 'double-press' },
+        { id: 'firearm.remove', kind: 'tap-then-hold' },
+      ],
+    },
+  ),
   row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory'], ['Tab']),
   row('ui.main-menu-toggle', 'Main menu', entered, ['F9'], 'press', { text: true }),
   row('hud.toggle-interaction-hints', 'Hold to toggle interaction hints', entered, ['Backquote'], 'hold', {

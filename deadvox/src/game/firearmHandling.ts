@@ -644,37 +644,56 @@ export class FirearmMechanics {
   }
 
   /**
-   * Swaps in the fullest carried magazine that fits and holds more than the fitted one (lowest UID on a tie, so
-   * the choice is save-stable). R only (re)loads (CONTROLS.md, "Reload only"), so with none fuller it refuses
-   * rather than taking the fitted magazine out.
+   * Swaps in the fullest carried magazine that fits (lowest UID on a tie, so the choice is save-stable), whatever
+   * the fitted one holds (CONTROLS.md, "Reload, rack, remove").
    */
   private changeMagazine(gun: Item, time: number): string | undefined {
     if (this.queue.busy || gun.firearm?.cycle) {
       return 'Already handling something';
     }
-    const fitted = gun.slots?.magazine;
-    const replacement = this.fullerMagazine(gun, fitted);
+    const replacement = this.fullestMagazine(gun);
     if (!replacement) {
-      return fitted ? 'No fuller magazine is carried' : 'No magazine for this firearm is carried';
+      return 'No magazine for this firearm is carried';
     }
-    this.queue.enqueueAction(
-      MAGAZINE_ACTION,
-      fitted ? 'Change magazine' : 'Insert magazine',
-      MAGAZINE_CHANGE_SIM_SECONDS *
-        firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
-      { uid: gun.uid, magazineUid: replacement.uid },
-    );
-    this.onSound('magazine_change', undefined, time);
+    this.enqueueMagazineAction(gun, gun.slots?.magazine ? 'Change magazine' : 'Insert magazine', time, replacement);
     return undefined;
   }
 
-  private fullerMagazine(gun: Item, fitted: Item | undefined): Item | undefined {
+  /** Takes the fitted magazine out to a pocket or the ground: tap, then hold R (CONTROLS.md, "Reload, rack, remove"). */
+  removeMagazine(uid: number, time: number): string | undefined {
+    const gun = this.heldMagazineFed();
+    if (gun?.uid !== uid) {
+      return 'This firearm has no magazine to remove';
+    }
+    if (this.queue.busy || gun.firearm?.cycle) {
+      return 'Already handling something';
+    }
+    if (!gun.slots?.magazine) {
+      return 'No magazine is fitted';
+    }
+    this.enqueueMagazineAction(gun, 'Remove magazine', time);
+    return undefined;
+  }
+
+  /** A change names its replacement; a removal names none. */
+  private enqueueMagazineAction(gun: Item, label: string, time: number, replacement?: Item): void {
+    this.queue.enqueueAction(
+      MAGAZINE_ACTION,
+      label,
+      MAGAZINE_CHANGE_SIM_SECONDS *
+        firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
+      replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
+    );
+    this.onSound('magazine_change', undefined, time);
+  }
+
+  private fullestMagazine(gun: Item): Item | undefined {
     const rounds = (magazine: Item): number => magazine.cartridges?.length ?? 0;
     const [best] = [...this.inventory.items()]
       .map(({ item }) => item)
       .filter((item) => this.carried(item) && magazineFits(this.inventory.registry, gun.type, item.type))
       .sort((a, b) => rounds(b) - rounds(a) || a.uid - b.uid);
-    return best && (fitted === undefined || rounds(best) > rounds(fitted)) ? best : undefined;
+    return best;
   }
 
   /** Detaches the replacement, stows the fitted magazine, then fits the replacement; any failure undoes all. */
@@ -682,6 +701,9 @@ export class FirearmMechanics {
     const gun = typeof uid === 'number' ? this.inventory.itemByUid(uid) : undefined;
     if (!(gun?.slots && this.held(gun.uid))) {
       return 'Firearm is no longer held';
+    }
+    if (magazineUid === undefined) {
+      return this.completeMagazineRemoval(gun);
     }
     const replacement = this.carriedFitting(gun, magazineUid);
     if (!replacement) {
@@ -697,6 +719,19 @@ export class FirearmMechanics {
       if (!(this.inventory.add(replacement, back) || this.stow(gun, replacement))) {
         throw new Error('Undoing a magazine change lost the replacement magazine');
       }
+      return 'No room for the removed magazine';
+    }
+    return undefined;
+  }
+
+  /** Stows the fitted magazine; with nowhere to put it, it stays fitted. */
+  private completeMagazineRemoval(gun: Item): string | undefined {
+    const removed = this.inventory.fitSlot(gun, 'magazine', undefined);
+    if (!removed) {
+      return 'No magazine is fitted';
+    }
+    if (!this.stow(gun, removed)) {
+      this.inventory.fitSlot(gun, 'magazine', removed);
       return 'No room for the removed magazine';
     }
     return undefined;

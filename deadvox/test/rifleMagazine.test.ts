@@ -120,18 +120,48 @@ describe('magazine-fed rifles', () => {
     expect(inventory.locate(first!)?.kind).toBe('pocket');
   });
 
-  it('swaps in the fullest carried magazine, and refuses rather than unloading when none is fuller', () => {
-    const { inventory, queue, mechanics, rifle, loaded } = carrying([1, 3]);
-    const [lighter, fuller] = loaded;
+  it('reloads with the fullest carried magazine, even one holding fewer rounds than the fitted one', () => {
+    const { inventory, queue, mechanics, rifle, loaded } = carrying([1, 2, 3]);
+    const [lightest, middle, fullest] = loaded;
     expect(mechanics.loadNext(rifle.uid, 0)).toBeUndefined();
     settle(queue);
-    expect(rifle.slots?.magazine).toBe(fuller);
-    expect(inventory.locate(lighter!)?.kind).toBe('pocket');
+    expect(rifle.slots?.magazine).toBe(fullest);
 
-    // R only (re)loads (CONTROLS.md, "Reload only"): no fuller magazine means no job, and the fitted one stays.
-    expect(mechanics.loadNext(rifle.uid, 0)).toBeDefined();
-    expect(queue.busy).toBe(false);
-    expect(rifle.slots?.magazine).toBe(fuller);
+    // BR (CONTROLS.md, "Reload, rack, remove"): the fullest in inventory, no matter what is loaded in the gun.
+    expect(mechanics.loadNext(rifle.uid, 0)).toBeUndefined();
+    settle(queue);
+    expect(rifle.slots?.magazine).toBe(middle);
+    expect([fullest, lightest].map((magazine) => inventory.locate(magazine!)?.kind)).toEqual(['pocket', 'pocket']);
+  });
+
+  it('removes the fitted magazine to a pocket or else the ground, and keeps it fitted with nowhere to put it', () => {
+    const { inventory, queue, mechanics, world, pocket, rifle, loaded } = carrying([3]);
+    const [magazine] = loaded;
+    const insert = () => {
+      expect(mechanics.loadNext(rifle.uid, 0)).toBeUndefined();
+      settle(queue);
+      expect(rifle.slots?.magazine).toBe(magazine);
+    };
+    const remove = () => {
+      expect(mechanics.removeMagazine(rifle.uid, 0)).toBeUndefined();
+      settle(queue);
+    };
+    insert();
+    remove();
+    expect(rifle.slots?.magazine).toBeUndefined();
+    expect(inventory.locate(magazine!)?.kind).toBe('pocket');
+
+    insert();
+    world.grounded = false;
+    remove();
+    expect(rifle.slots?.magazine).toBe(magazine);
+    expect(magazine!.cartridges).toHaveLength(3);
+
+    world.grounded = true;
+    expect(inventory.move(pocket.owner, { kind: 'pile', pos: pose.feet }).ok).toBe(true);
+    remove();
+    expect(rifle.slots?.magazine).toBeUndefined();
+    expect(inventory.locate(magazine!)?.kind).toBe('pile');
   });
 
   it('undoes a magazine change, keeping both magazines, when the removed one has nowhere to go', () => {
@@ -161,6 +191,7 @@ describe('magazine-fed rifles', () => {
       oneAction: true,
       load: vi.fn(() => true),
       rack: vi.fn(),
+      remove: vi.fn(),
       cancelLoad: vi.fn(),
     };
     reload.keyDown(0, binding);
@@ -170,6 +201,7 @@ describe('magazine-fed rifles', () => {
     reload.keyUp(held * 5);
     expect(binding.load).toHaveBeenCalledOnce();
     expect(binding.cancelLoad).not.toHaveBeenCalled();
+    expect(binding.remove).not.toHaveBeenCalled();
   });
 
   it('restores the fitted magazine and chamber, and refuses a magazine or round of another calibre', () => {

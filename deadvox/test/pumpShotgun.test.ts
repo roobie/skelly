@@ -303,6 +303,7 @@ describe('real pump ammunition', () => {
         rack: () => {
           f.mechanics.cock(f.gun.uid, now / 1000);
         },
+        remove: () => undefined,
         cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
       };
       input.keyDown(0, binding);
@@ -329,6 +330,7 @@ describe('real pump ammunition', () => {
       rack: () => {
         f.mechanics.cock(f.gun.uid, 0.25);
       },
+      remove: () => undefined,
       cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
     };
     input.keyDown(0, binding);

@@ -383,13 +383,17 @@ const createCraftReplayFixture = () => {
 /** An R gesture as play applies it: through `reloadTarget`, the same routing as the play loop's reload binding. */
 const reloadGesture = (runtime: ReturnType<typeof createRuntime>, action: string): void => {
   const target = reloadTarget(runtime.session.firearms, runtime.session.magazines);
-  const reason = target ? (action === 'firearm.rack' ? target.rack : target.load)(runtime.sim.time) : 'Nothing takes R';
+  const act =
+    target && { 'firearm.load': target.load, 'firearm.rack': target.rack, 'firearm.remove': target.remove }[action];
+  const reason = act ? act(runtime.sim.time) : 'Nothing takes R';
   if (reason) {
     throw new Error(`${action} refused: ${reason}`);
   }
 };
 
-type ReloadStep = { readonly gesture: 'firearm.load' | 'firearm.rack' } | { readonly payload: ReplayActionPayload };
+type ReloadStep =
+  | { readonly gesture: 'firearm.load' | 'firearm.rack' | 'firearm.remove' }
+  | { readonly payload: ReplayActionPayload };
 
 /** Records each step at the first player tick its handling is free, then runs until the last one finishes. */
 const recordReloadSteps = (start: Readonly<SaveSnapshot>, recorder: InputReplayRecorder, steps: ReloadStep[]) => {
@@ -1019,7 +1023,7 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
-  it('replays R loading a magazine round by round, fitting it and charging to the same inventory and rifle', async () => {
+  it('replays R loading a magazine round by round, fitting it, charging and removing it to the same inventory and rifle', async () => {
     const { runtime, magazine, rifle } = createRifleReplayFixture();
     const start = capture(runtime);
     const recorder = new InputReplayRecorder(start);
@@ -1029,16 +1033,24 @@ describe('input replay', () => {
       { payload: { kind: 'inventory.to-hands', itemUid: rifle.uid, feet: [...runtime.player.body.pos] } },
       { gesture: 'firearm.load' },
       { gesture: 'firearm.rack' },
+      { gesture: 'firearm.remove' },
     ]);
     const charged = (end: ReturnType<typeof createRuntime>) => {
       const held = end.inventory.itemByUid(rifle.uid)!;
+      const removed = end.inventory.itemByUid(magazine.uid)!;
       return {
         fitted: held.slots?.magazine?.uid,
         chamber: held.firearm?.chamber,
-        left: held.slots?.magazine?.cartridges,
+        magazineAt: end.inventory.locate(removed)?.kind,
+        left: removed.cartridges,
       };
     };
-    expect(charged(source)).toEqual({ fitted: magazine.uid, chamber: 'round', left: [expect.any(String)] });
+    expect(charged(source)).toEqual({
+      fitted: undefined,
+      chamber: 'round',
+      magazineAt: 'pocket',
+      left: [expect.any(String)],
+    });
 
     const sourceEnd = capture(source);
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);

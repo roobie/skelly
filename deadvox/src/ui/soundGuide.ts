@@ -217,7 +217,7 @@ const TRIGGER_ENTRIES = [
     'magazine_change',
     {
       trigger:
-        'Hold R with an AR or AK in hand: a magazine change, insert or removal starts. The change finishes even if R is released.',
+        'With an AR or AK in hand, hold R to change or insert a magazine, or tap then hold R to remove it. The job finishes even if R is released.',
       note: 'Stand-in: the pump rack-forward recording, pitched down; a magazine latch and seating sound is future work (d114).',
     },
   ],
