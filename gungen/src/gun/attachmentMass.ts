@@ -9,7 +9,7 @@ interface MaterialDensity {
 }
 
 /** Densities for palette materials used by attachment roles; finish color is not a mass input. */
-export const ATTACHMENT_MATERIAL_DENSITIES: Readonly<Record<string, MaterialDensity>> = {
+const ATTACHMENT_MATERIAL_DENSITIES: Readonly<Record<string, MaterialDensity>> = {
   'wood-walnut': {
     material: 'American black walnut, oven-dry',
     kgPerM3: 610,
@@ -63,7 +63,7 @@ export const ATTACHMENT_MATERIAL_DENSITIES: Readonly<Record<string, MaterialDens
 };
 
 /** Effective solid-volume shares for envelopes whose authored solids omit internal voids. */
-export const ATTACHMENT_KIND_FILL: Readonly<Record<string, { readonly fraction: number; readonly source: string }>> = {
+const ATTACHMENT_KIND_FILL: Readonly<Record<string, { readonly fraction: number; readonly source: string }>> = {
   optic: {
     fraction: 1,
     source: 'https://www.aimpoint.com/products/aimpoint-micro-t-2/ (96 g; 68 × 41 × 36 mm envelope)',
@@ -76,7 +76,7 @@ export const ATTACHMENT_KIND_FILL: Readonly<Record<string, { readonly fraction: 
 
 /** Geometric volume in gungen units cubed, preserving a revolved profile's authored hollows. */
 const solidVolumeCache = new Map<string, number>();
-export const attachmentSolidVolumeU3 = (solid: Solid): number => {
+const attachmentSolidVolumeU3 = (solid: Solid): number => {
   const key = JSON.stringify(solid);
   const cached = solidVolumeCache.get(key);
   if (cached !== undefined) {
