@@ -14,17 +14,18 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
-import { NEUTRAL_AIM } from '../src/core/aim.ts';
+import { AimController, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { dominantSide } from '../src/core/character.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
+import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
-import { turnedBore } from '../src/render/handlingTurn.ts';
-import { HeldItems } from '../src/render/hands.ts';
+import { handlingRotation } from '../src/render/handlingTurn.ts';
+import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
@@ -313,9 +314,10 @@ const heldGun = async (type: string) => {
     gun,
     side,
     camera,
+    held,
     /** The drawn gun's world transform, read from its barrel node, which no action moves. */
-    heldFrame: (): Matrix4 => {
-      held.update(camera, undefined, 0, { firearms: mechanics.frames() });
+    heldFrame: (handling: HeldHandlingFrame = { firearms: mechanics.frames() }): Matrix4 => {
+      held.update(camera, undefined, 0, handling);
       const { scene } = held.warmUpTarget;
       scene.updateMatrixWorld(true);
       let barrel: Object3D | undefined;
@@ -330,6 +332,39 @@ const heldGun = async (type: string) => {
     dispose: () => held.dispose(),
   };
 };
+
+it('keeps over-limit view pitch changes in ADS while the held pose takes the recoil frame', async () => {
+  const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
+  const aim = new AimController();
+  aim.recordShot(1, 0.3);
+  aim.advance({
+    dt: 1 / 60,
+    velocity: [0, 0, 0],
+    blockSize: BLOCK,
+    yaw: 0,
+    pitch: 0,
+    variance: 1,
+    firing: true,
+    recoilRecoveryRate: 1,
+  });
+  const viewShift = aim.pendingViewPitchShift;
+  expect(viewShift).toBeGreaterThan(0);
+  aim.applyViewPitchShift(viewShift, viewShift);
+  camera.rotation.x = viewShift;
+  camera.updateMatrixWorld(true);
+  const shiftedView = camera.quaternion.clone();
+  const shiftedPitch = camera.rotation.x;
+  const readiness = { uid: gun.uid, progress: 1, aimingDownSights: true };
+  try {
+    const restingFrame = heldFrame({ firearms: mechanics.frames(), readiness, aim: NEUTRAL_AIM });
+    const recoilFrame = heldFrame({ firearms: mechanics.frames(), readiness, aim: aim.frame });
+    expect(recoilFrame.equals(restingFrame)).toBe(false);
+    expect(camera.quaternion.angleTo(shiftedView)).toBeLessThan(1e-6);
+    expect(camera.rotation.x).toBeCloseTo(shiftedPitch, 12);
+  } finally {
+    dispose();
+  }
+});
 
 // The rifle turns muzzle-in for a rack; the pump cants its port into view instead.
 it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack, turned mid-rack', async (type) => {
@@ -350,15 +385,35 @@ it.each([RIFLE, PUMP])('keeps the crosshair on the drawn %s bore through a rack,
       progress: 0,
       loweredPitchRadians,
     });
-  const crosshair = (): FirearmBoreRay =>
-    turnedBore(unturned(), {
+  const crosshair = (): FirearmBoreRay => {
+    const basePose = heldFirearmTransform({
       model,
       side,
-      frame: mechanics.frames().find((frame) => frame.uid === gun.uid),
-      loweredPitch: -loweredPitchRadians,
-      blockSize: BLOCK,
-      ...viewpoint,
+      leadingSide: side,
+      twoHanded: Boolean(content.items.get(type)!.twoHanded),
+      progress: 0,
+      aimingDownSights: false,
+      aimFrame: NEUTRAL_AIM,
+      loweredPitchRadians,
     });
+    const frame = mechanics.frames().find((entry) => entry.uid === gun.uid);
+    const handlingTurn = handlingRotation(model, side, frame, {
+      x: basePose.rootOffset[0],
+      y: basePose.rootOffset[1],
+    });
+    return firearmBoreRay({
+      model,
+      ...viewpoint,
+      blockSize: BLOCK,
+      side,
+      leadingSide: side,
+      twoHanded: Boolean(content.items.get(type)!.twoHanded),
+      aimFrame: NEUTRAL_AIM,
+      progress: 0,
+      handlingTurn,
+      loweredPitchRadians,
+    });
+  };
   const onScreen = ({ muzzle, direction }: { muzzle: Vec3; direction: Vec3 }): Vector3 =>
     new Vector3(...crosshairAimPoint(muzzle, direction, undefined)).multiplyScalar(BLOCK).project(camera).setZ(0);
   const { action } = firearmHandlingFor(gun, content);
