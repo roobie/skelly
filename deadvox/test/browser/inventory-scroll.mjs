@@ -214,7 +214,7 @@ try {
     throw new Error(`${message}${errors.length > 0 ? `; page errors: ${errors.join('; ')}` : ''}`, { cause: error });
   }
   assert.equal(
-    await page.locator('[data-body-region]').count(),
+    await page.locator('#inventory [data-body-region]').count(),
     await page.evaluate(() => globalThis.scrollFixture.bodyRegions.length),
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
