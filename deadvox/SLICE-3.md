@@ -54,7 +54,7 @@ The eleven milestones are:
 - Shared flow fields: dropped by BR in the 3.9 ruling. Background zombies use the beeline in big, cheap steps instead; d84 (#279) is the carried-in attention brain. The remaining route follow-up in #244 is obsolete under that direction.
 - Legendary effects beyond vanity. BR's direction is “mostly vanity thing, but we might come up with something along the way” (2026-10-05 21:29).
 
-The detailed beats for the workshop, medical site and military site are not filled in by this draft; BR and the lead will take them one per turn in #181 before the map work begins.
+Beat details in #181 are settled one turn at a time before their dependent map rounds. For d122-2, the approved schematic v2 is the basis for the first medical-site pass; pharmacy access remains a BR decision. Crawler markers stay deferred until #325 lands, and the military site follows its own map round.
 
 ## How this slice runs
 

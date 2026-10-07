@@ -20,6 +20,7 @@
         "hardware_store",
         "hen_house",
         "hunter_cabin",
+        "medical_hall",
         "playtest_dads_cabin",
         "playtest_gas_station",
         "playtest_house",
@@ -31,6 +32,7 @@
         "small_house",
         "stairs_cabin",
         "stairs_house",
+        "triage_tent",
         "woodshed"
       ],
       "valuesAsFlags": false
