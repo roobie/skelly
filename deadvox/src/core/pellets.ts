@@ -3,19 +3,36 @@ import type { Vec3 } from './coords.ts';
 import { Rng } from './random.ts';
 import type { ItemDef } from './schema.ts';
 
+/** One hitscan ray per projectile: each of a shell's pellets, or a rifle's single bullet. */
 export interface PelletShot {
-  /** Eye-origin hitscan rays in simulation blocks; no flight/penetration simulation. */
+  /** Muzzle-origin hitscan rays in simulation blocks; no flight/penetration simulation. */
   readonly origin: Vec3;
   readonly directions: readonly Vec3[];
   readonly diameterMm: number;
+  /** Per projectile, from the cartridge's `ammo` content. */
   readonly damage: number;
   readonly impulse: number;
   readonly rangeMetres: number;
+  readonly headDamageMultiplier?: number;
 }
 
 /** Gameplay estimates, not measured choke patterns or physical wound/energy models. */
 export const BUCK_HALF_ANGLE = (2 * Math.PI) / 180;
-const BUCK_RANGE_METRES = 50;
+
+/** The cartridge's projectile data along `directions`; each direction is copied, so the shot owns its rays. */
+export const projectileShot = (
+  ammo: NonNullable<ItemDef['ammo']>,
+  origin: Vec3,
+  directions: readonly Vec3[],
+): PelletShot => ({
+  origin: [...origin],
+  directions: directions.map((direction): Vec3 => [...direction]),
+  diameterMm: ammo.diameterMm,
+  damage: ammo.damage,
+  impulse: ammo.impulse,
+  rangeMetres: ammo.rangeMetres,
+  ...(ammo.headDamageMultiplier === undefined ? {} : { headDamageMultiplier: ammo.headDamageMultiplier }),
+});
 
 /** Uniform area sample in a forward cone's tangent-plane disk. */
 export const coneDirection = (basis: ReturnType<typeof aimBasis>, halfAngleRadians: number, rng: Rng): Vec3 => {
@@ -51,15 +68,7 @@ export const pelletShotFromBasis = ({
 }): PelletShot => {
   const rng = Rng.stream(seed, `buckshot:${key}`);
   const directions = Array.from({ length: ammo.pellets }, (): Vec3 => coneDirection(basis, BUCK_HALF_ANGLE, rng));
-  return {
-    origin: [...origin],
-    directions,
-    diameterMm: ammo.diameterMm,
-    // Diameter-scaled game balance: 20 region HP and 0.35 N·s per nominal 00 pellet. Not ballistics.
-    damage: 20 * (ammo.diameterMm / 8.38) ** 3,
-    impulse: 0.35 * (ammo.diameterMm / 8.38) ** 3,
-    rangeMetres: BUCK_RANGE_METRES,
-  };
+  return projectileShot(ammo, origin, directions);
 };
 
 export const pelletShot = ({

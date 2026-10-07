@@ -1,9 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
+import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
+import { ejectSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
@@ -13,6 +14,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
+import { equipDebugFirearms } from '../src/debug/debugLoadout.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
@@ -21,7 +23,7 @@ import {
   firearmHandlingFor,
   SHELL_LOAD_SECONDS,
 } from '../src/game/firearmHandling.ts';
-import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
+import { RELOAD_GESTURE_MS, type ReloadBinding, ReloadInput, reloadTarget } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
 
 const base = 'src/content/base';
@@ -100,7 +102,7 @@ const fixture = (content = registry, firearmsSkillLevel: () => number = () => 0)
     const duration = firearmHandlingFor(gun, inventory.registry).action.hand.durationSimSeconds;
     finish(duration, time + duration);
   };
-  const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time, debugMode: false });
+  const fire = (time: number) => mechanics.fire({ ...pose, item: gun, seed: 71, simTime: time });
   return {
     inventory,
     gun,
@@ -267,6 +269,28 @@ describe('real pump ammunition', () => {
     expect(f.inventory.itemByUid(f.box.uid)).toBe(f.box);
   });
 
+  it('gives the pump loadout one stack of loose shells, which the pump loads from', () => {
+    const inventory = new Inventory(registry);
+    expect(equipDebugFirearms(inventory, true, true, '?loadout=pump')).toBe(true);
+    const gun = inventory.hands[dominantSide(inventory.character)]!;
+    const looseShells = () => [...inventory.items()].map(({ item }) => item).filter(({ type }) => type === shellType);
+    expect(looseShells()).toHaveLength(1);
+    const [stack] = looseShells();
+    expect(stack!.count).toBeGreaterThan(1);
+    const carried = stack!.count;
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      pose: () => pose,
+      onEjection: () => [],
+    });
+    expect(mechanics.loadNext(gun.uid, 0)).toBeUndefined();
+    queue.tick(SHELL_LOAD_SECONDS);
+    mechanics.advanceTo(SHELL_LOAD_SECONDS);
+    expect(gun.firearm?.tube).toEqual([shellType]);
+    expect(looseShells().map(({ uid, count }) => ({ uid, count }))).toEqual([{ uid: stack!.uid, count: carried - 1 }]);
+  });
+
   it('takes loose carried shells by ascending UID rather than pocket traversal order', () => {
     const f = fixture();
     f.inventory.consume(f.shells, 19);
@@ -299,9 +323,8 @@ describe('real pump ammunition', () => {
         uid: f.gun.uid,
         busy: () => f.queue.busy || f.mechanics.busy,
         load: () => f.mechanics.loadNext(f.gun.uid, now / 1000) === undefined,
-        rack: () => {
-          f.mechanics.cock(f.gun.uid, now / 1000);
-        },
+        rack: () => f.mechanics.cock(f.gun.uid, now / 1000) === undefined,
+        remove: () => undefined,
         cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
       };
       input.keyDown(0, binding);
@@ -325,9 +348,8 @@ describe('real pump ammunition', () => {
       uid: f.gun.uid,
       busy: () => f.queue.busy,
       load: () => f.mechanics.loadNext(f.gun.uid, 0.25) === undefined,
-      rack: () => {
-        f.mechanics.cock(f.gun.uid, 0.25);
-      },
+      rack: () => f.mechanics.cock(f.gun.uid, 0.25) === undefined,
+      remove: () => undefined,
       cancelLoad: () => f.mechanics.cancelLoad(f.gun.uid),
     };
     input.keyDown(0, binding);
@@ -399,6 +421,65 @@ describe('real pump ammunition', () => {
     expect(f.gun.firearm?.tube).toEqual([shellType, shellType]);
   });
 
+  it.each([
+    { holdCycles: Number.POSITIVE_INFINITY, label: 'until the gun is empty' },
+    { holdCycles: 1.5, label: 'released mid-rack, finishing that rack only' },
+  ])('a tap, then a held press, racks the pump again and again: $label', ({ holdCycles }) => {
+    // BR, 2026-10-07 13:21 (CONTROLS.md, "Reload, rack, remove"): keep racking while R is held.
+    const f = fixture();
+    for (let i = 0; i < f.capacity; i++) {
+      f.load(i);
+    }
+    f.rack(f.capacity);
+    const inGun = 1 + f.gun.firearm!.tube!.length;
+    const target = reloadTarget(f.mechanics, {
+      reloadableUid: () => undefined,
+      loadNext: () => 'No magazine',
+      cancelLoad: () => undefined,
+    })!;
+    let now = f.capacity * 1000 + 1000;
+    const binding: ReloadBinding = {
+      uid: target.uid,
+      busy: () => f.queue.busy || f.mechanics.busy,
+      load: () => target.load(now / 1000) === undefined,
+      rack: () => target.rack(now / 1000) === undefined,
+      remove: () => target.remove(now / 1000),
+      ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
+      cancelLoad: target.cancelLoad,
+    };
+    const frame = (ms: number) => {
+      now += ms;
+      f.finish(ms / 1000, now / 1000);
+      input.advance(now, binding);
+    };
+    const input = new ReloadInput();
+    input.keyDown(now, binding);
+    frame(RELOAD_GESTURE_MS.doublePress / 3);
+    input.keyUp(now);
+    input.keyDown(now, binding);
+    const held = now;
+    const rackMs = firearmHandlingFor(f.gun, registry).action.hand.durationSimSeconds * 1000;
+    const releaseAt = held + RELOAD_GESTURE_MS.hold + holdCycles * rackMs;
+    let landing: Vec3 | undefined;
+    for (let step = 0; step < (inGun + 2) * (rackMs / 16 + 2); step++) {
+      if (now >= releaseAt) {
+        input.keyUp(now);
+      }
+      frame(16);
+      landing ??= [...f.inventory.piles.values()].find((pile) =>
+        pile.items.some(({ item }) => item.type === shellType),
+      )?.pos;
+    }
+    const ejected = Number.isFinite(holdCycles) ? Math.ceil(holdCycles) : inGun;
+    const ground = [...f.inventory.piles.values()].flatMap((pile) =>
+      pile.items.filter(({ item }) => item.type === shellType).map(({ item }) => [pile.pos, item.count]),
+    );
+    // Every live shell racked out lies, as one stack, in the pile of the block the first one landed on.
+    expect(ground).toEqual([[landing, ejected]]);
+    expect(1 + f.gun.firearm!.tube!.length - (f.gun.firearm!.chamber === 'empty' ? 1 : 0)).toBe(inGun - ejected);
+    expect(f.queue.busy).toBe(false);
+  });
+
   it('ejects a live shell only at the exported hand threshold/direction and keeps it out of the spent counter', () => {
     const f = fixture();
     f.load(0);
@@ -468,6 +549,27 @@ describe('real pump ammunition', () => {
     );
   });
 
+  it('keeps an unejected fired hull in the save copy while cancelling only the rack motion', () => {
+    const f = fixture();
+    f.load(0);
+    f.rack(1);
+    expect(f.fire(3)).toBe(true);
+    expect(f.mechanics.cock(f.gun.uid, 4)).toBeUndefined();
+    const beforeEjection = ejectSeconds(firearmHandlingFor(f.gun, registry).action, 'hand') / 2;
+    f.queue.tick(beforeEjection);
+    f.mechanics.advanceTo(4 + beforeEjection);
+    const { pendingCase } = f.gun.firearm!;
+    const saved = f.inventory.snapshotState();
+    expect(saved.hands.right?.firearm).toMatchObject({ chamber: 'case', pendingCase });
+    expect(saved.hands.right?.firearm?.cycle).toBeUndefined();
+    expect(f.gun.firearm?.cycle?.mode).toBe('hand');
+    expect(Inventory.restoreState(f.inventory.registry, saved).hands.right?.firearm?.pendingCase).toEqual(pendingCase);
+    f.queue.cancel();
+    f.mechanics.advanceTo(4 + beforeEjection * 2);
+    expect(f.gun.firearm?.cycle).toBeUndefined();
+    expect(f.gun.firearm?.chamber).toBe('case');
+  });
+
   it('commits skill-scaled reload and rack durations to their presentation frames', () => {
     const novice = fixture(registry, () => SKILL_LEVEL_MIN);
     const experienced = fixture(registry, () => SKILL_LEVEL_MAX);
@@ -494,7 +596,7 @@ describe('real pump ammunition', () => {
     f.load(0);
     f.rack(1);
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
-    expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, debugMode: false, aimFrame })).toBe(true);
+    expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
     const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
     const bore = firearmBoreRay({
@@ -533,13 +635,16 @@ describe('real pump ammunition', () => {
     expect(new Set(a.shots[0]!.directions.map((vector) => vector.join(','))).size).toBe(ammo.pellets);
     expect(a.shots[0]!.directions.every((direction) => Math.abs(Math.hypot(...direction) - 1) < 1e-9)).toBe(true);
     const changed = { ...registry, items: new Map(registry.items) };
-    changed.items.set(shellType, { ...registry.items.get(shellType)!, ammo: { ...ammo, pellets: 7, diameterMm: 9.1 } });
+    changed.items.set(shellType, {
+      ...registry.items.get(shellType)!,
+      ammo: { ...ammo, pellets: 7, diameterMm: 9.1, damage: ammo.damage * 2 },
+    });
     const fromData = fixture(changed);
     fromData.load(0);
     fromData.rack(1);
     expect(fromData.fire(3)).toBe(true);
     expect(fromData.shots[0]?.diameterMm).toBe(9.1);
-    expect(fromData.shots[0]!.damage / a.shots[0]!.damage).toBeCloseTo((9.1 / ammo.diameterMm) ** 3);
+    expect([fromData.shots[0]!.damage, a.shots[0]!.damage]).toEqual([ammo.damage * 2, ammo.damage]);
     expect(fromData.shots[0]!.directions).toHaveLength(7);
   });
 
@@ -560,7 +665,7 @@ describe('real pump ammunition', () => {
     const shotAt = SHELL_LOAD_SECONDS + duration + 1;
     s.firearms.advanceTo(shotAt);
     const events = s.sim.events.reader();
-    expect(s.firearms.fire({ ...pose, item: gun, seed: 71, simTime: shotAt, debugMode: false })).toBe(true);
+    expect(s.firearms.fire({ ...pose, item: gun, seed: 71, simTime: shotAt })).toBe(true);
     const emitted = events.read().filter((event) => event.kind === 'sound' || event.kind === 'noise');
     expect(emitted.map((event) => [event.kind, event.event])).toEqual([
       ['sound', 'shotgun_blast'],

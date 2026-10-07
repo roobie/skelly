@@ -442,7 +442,7 @@ describe('base pack guns', () => {
       firearms,
       {
         pos: [0, 0, 0],
-        items: [{ item: inventory.create('debug_rifle_assault'), x: 0, y: 0, rotated: false }],
+        items: [{ item: inventory.create('rifle_assault'), x: 0, y: 0, rotated: false }],
       },
       0.5,
     );

@@ -128,11 +128,18 @@ try {
     }
     const { count: payload, item: payloadType } = inv.registry.items.get(box.type).unpack;
     const { capacity } = inv.registry.models.get(inv.registry.items.get(gun.type).model).tube;
+    // The loadout's own loose shells (BR, 2026-10-07 15:54), before the box adds its payload.
+    const carried = [...inv.items()]
+      .filter(
+        ({ item, location }) => item.type === payloadType && location.kind !== 'furniture' && location.kind !== 'pile',
+      )
+      .reduce((sum, { item }) => sum + item.count, 0);
     return {
       gun: gun.uid,
       box: box.uid,
       payload,
       payloadType,
+      carried,
       capacity,
       fov: globalThis.pumpHandlingTest.camera.fov,
     };
@@ -277,7 +284,7 @@ try {
   await pressAction(page, 'handling.stop');
   const cancelled = await observe();
   assert.equal(cancelled.box, true);
-  assert.equal(cancelled.loose, 0);
+  assert.equal(cancelled.loose, ids.carried);
   assert.equal(cancelled.jobs, 0);
   await page.mouse.click(640, 450);
   await page.waitForFunction((uid) => {
@@ -286,7 +293,7 @@ try {
   }, ids.box);
   await waitForWork('itemGone', ids.box);
   const unpacked = await observe();
-  assert.equal(unpacked.loose, ids.payload);
+  assert.equal(unpacked.loose, ids.carried + ids.payload);
   assert.equal(unpacked.hand, null);
   await pressAction(page, 'firearm.reload');
   await page.waitForFunction(
@@ -306,7 +313,7 @@ try {
   );
   const tapped = await observe();
   assert.equal(tapped.jobs, 0);
-  assert.equal(tapped.loose, ids.payload);
+  assert.equal(tapped.loose, ids.carried + ids.payload);
   assert.deepEqual(tapped.gun.tube, []);
   assert.equal(tapped.rest, null);
   const releaseReloadWithoutAmmo = await holdAction(page, 'firearm.reload');
@@ -318,7 +325,7 @@ try {
     await releaseReloadWithoutAmmo();
   }
   const released = await observe();
-  assert.equal(released.loose, ids.payload);
+  assert.equal(released.loose, ids.carried + ids.payload);
   assert.equal(released.jobs, 0);
   assert.deepEqual(released.gun.tube, []);
   const releaseReload = await holdAction(page, 'firearm.reload');
@@ -338,7 +345,7 @@ try {
   }
   const loaded = await observe();
   assert.ok(loaded.gun.tube.length > 0 && loaded.gun.tube.length <= ids.capacity);
-  assert.equal(loaded.loose, ids.payload - loaded.gun.tube.length);
+  assert.equal(loaded.loose, ids.carried + ids.payload - loaded.gun.tube.length);
   assert.equal(loaded.jobs, 0);
   assert.equal(loaded.rest, null);
   // Submit the effective reload binding in one protocol burst so renderer pacing cannot split the double tap.

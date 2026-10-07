@@ -1,4 +1,10 @@
-# Gunshot playback and debug full-auto (d18-2 / d18-3)
+---
+read_if:
+  - you change gunshot sample playback, voice stealing or the player's listener-relative shot cue
+  - you change automatic fire's trigger sampling or shot deadlines (`FirearmTrigger`)
+---
+
+# Gunshot playback and automatic fire (d18-2 / d18-3)
 
 BR's 2026-10-02 listening verdict exposed two presentation defects:
 
@@ -40,26 +46,25 @@ on `sounds.html` is listener-relative too.
 logic remains included. The real-graph canary changes the voice cap from its configured value to 64
 without changing the hash, but changing the picker's seeded stream changes it.
 
-## Debug range full-auto
+## Automatic fire
 
-Hold primary with a firearm equipped in debug mode; release stops firing. Other
-item actions remain edge-triggered, and left-hand firearm clicks remain single
-shots. The existing 60Hz player scheduler samples the trigger; `DebugFirearmTrigger`
-computes deadlines as `burstStart + shotIndex * (60 / rpm)`, not repeated frame
+Hold primary with a ready automatic firearm (CONTROLS.md, "Readiness and melee");
+release stops firing. Other item actions remain edge-triggered, and left-hand
+firearm clicks remain single shots. The existing 60Hz player scheduler samples
+the trigger; `FirearmTrigger` (`src/game/firearmTrigger.ts`) computes deadlines as `burstStart + shotIndex * (60 / rpm)`, not repeated frame
 rounding or wall-clock timers. Every deadline produces its own deterministic case
 seed, flying case, saved case-pile increment and sound pick. A short click released
 between ticks still fires once. Menus, build mode and inactive input reset the burst.
 The held trigger is transient input, not resumable save state.
 
-The AR handling stand-in is **800rpm / 75ms**, with its cycle phases scaled to
-that period. The existing fallback remains **600rpm / 100ms** (including any future
-AK using that fallback); no AK weapon/model is newly added here. g35's exported
-handling data will replace these stand-ins. Presentation starts are dispatched at
-the player-tick boundary (up to 16.7ms after their exact simulation deadline),
-then after sample decoding on the first cold use; no claim of sample-accurate
-wall-clock playback is made.
+The rpm is the exported model action's (`src/game/firearmHandling.ts`,
+`firearmHandlingFor`), and a shot also needs a chambered cartridge fed from the
+fitted magazine (DESIGN.md, "Rifles (3.2, d114)"). Presentation starts are
+dispatched at the player-tick boundary (up to one player tick after their exact
+simulation deadline), then after sample decoding on the first cold use; no claim
+of sample-accurate wall-clock playback is made.
 
-Review: `/?seed=73&debug=1&radius=64&cam=43.50,33.00,0.00,-90.0,0.0,0.0` on a deadvox dev server.
+Review: `/?seed=73&debug=1&loadout=ar&radius=64&cam=43.50,33.00,0.00,-90.0,0.0,0.0` on a deadvox dev server. Double-press R to charge, hold right mouse to ready, then hold LMB.
 
 ## Related observation, deliberately not changed
 

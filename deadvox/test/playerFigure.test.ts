@@ -277,7 +277,7 @@ describe('player figure', () => {
     let modelLoaded = false;
     const models = {
       version: 0,
-      held: () => (modelLoaded ? new Group() : undefined),
+      heldLook: () => (modelLoaded ? { root: new Group(), parts: [], slots: {} } : undefined),
     } as unknown as NonNullable<ConstructorParameters<typeof HeldItems>[1]>;
     const held = new HeldItems(inventory, models, palette);
     const internals = held as unknown as { scene: Group; arms: Map<'left' | 'right', Group> };

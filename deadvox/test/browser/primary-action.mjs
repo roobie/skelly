@@ -1182,14 +1182,49 @@ try {
   assert.ok(menu.stamina >= blockedBefore.stamina);
   await pressAction(page, 'ui.inventory-toggle');
 
+  // The fixture gun is magazine-fed: the player loads a round into its magazine, fits it and charges.
   const firearm = await page.evaluate(async () => {
     const moduleUrl = '/src/game/firearmHandling.ts';
+    const magazineUrl = '/src/core/magazine.ts';
+    const optionsUrl = '/src/core/options.ts';
     const { firearmHandlingFor, spentCaseItemId } = await import(moduleUrl);
+    const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
+    const { stowTarget } = await import(optionsUrl);
     const r = globalThis.primaryActionTest;
-    const gun = r.inventory.create(r.types.gun);
+    const { registry } = r.inventory;
+    const { firearms, magazines, queue, sim } = r.session;
+    const must = (refusal) => {
+      if (refusal) {
+        throw new Error(`Could not ready the fixture firearm: ${refusal}`);
+      }
+    };
+    const settle = () => {
+      for (let step = 0; queue.busy; step += 1) {
+        if (step > 600) {
+          throw new Error('Fixture firearm handling did not finish');
+        }
+        r.session.frame(1 / 20);
+      }
+    };
+    const calibre = magazineWellCalibre(registry, r.types.gun);
+    const ids = [...registry.items.keys()].sort();
+    const magazine = r.inventory.create(ids.find((id) => magazineSpec(registry, id)?.calibre === calibre));
+    r.placePocketed(r.inventory.create(ids.find((id) => registry.items.get(id).ammo?.calibre === calibre)));
     r.clearHand(r.off);
+    r.setHand(r.dominant, magazine);
+    must(magazines.loadNext(magazine.uid, sim.time));
+    settle();
+    const pocket = stowTarget(r.inventory, magazine, r.feet());
+    if (pocket?.kind !== 'pocket' || !r.inventory.move(magazine, pocket).ok) {
+      throw new Error('Could not pocket the loaded fixture magazine');
+    }
+    const gun = r.inventory.create(r.types.gun);
     r.setHand(r.dominant, gun);
-    r.caseType = spentCaseItemId(firearmHandlingFor(gun, r.inventory.registry).calibre);
+    must(firearms.loadNext(gun.uid, sim.time));
+    settle();
+    must(firearms.cock(gun.uid, sim.time));
+    settle();
+    r.caseType = spentCaseItemId(firearmHandlingFor(gun, registry).calibre);
     return {
       uid: gun.uid,
       cases: [...r.inventory.piles.values()]
