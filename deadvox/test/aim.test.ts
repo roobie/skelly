@@ -85,7 +85,8 @@ it('actual movement and quick look turns increase isolated aim deviation', () =>
 
 it('committed recoil recovers in simulation time and equal inputs stay deterministic', () => {
   const first = createAim();
-  const second = createAim();  first.recordShot(73, 0.02);
+  const second = createAim();
+  first.recordShot(73, 0.02);
   second.recordShot(73, 0.02);
   const initial = first.advance(step());
   expect(second.advance(step())).toEqual(initial);
@@ -278,7 +279,7 @@ it('expert recovery scale decays the same released recoil faster', () => {
 const readiedWalkWobble = (level: number): number => {
   const effects = pumpSkillEffects(level);
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
-  const blockSize = step().blockSize;
+  const { blockSize } = step();
   const aim = createAim(effects.variance);
   let peak = 0;
   for (let tick = 0; tick < 240; tick++) {
@@ -300,7 +301,7 @@ it('pump skill-zero readied-walk wobble fits its content bound', () => {
 });
 
 it('wobble can use its larger content bound without merging it into recoil', () => {
-  const variance = pumpSkillEffects(0).variance;
+  const { variance } = pumpSkillEffects(0);
   const aim = createAim(variance);
   let peak = 0;
   for (let tick = 0; tick < 240; tick++) {
