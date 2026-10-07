@@ -111,7 +111,7 @@ import {
   Sphere,
   Vector3,
 } from 'three';
-import { AMALGAM_FIGURE_SEED, amalgamFigure } from '../core/amalgamFigure.ts';
+import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import {
@@ -122,7 +122,7 @@ import {
   type RigidWorld,
   stepRigidBody,
 } from '../core/rigidBody.ts';
-import { zombieFigure } from '../core/zombieFigure.ts';
+import { type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
@@ -459,7 +459,7 @@ interface Debris extends SlotHolder {
 export interface MobActorMeshesOptions {
   readonly poolSize?: number;
   readonly includeAmalgam?: boolean;
-  readonly amalgamScale?: number | undefined;
+  readonly amalgamType?: ZombieFigureType | undefined;
 }
 
 type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
@@ -474,22 +474,19 @@ interface BuiltActorVariant {
   severedRoots: ReadonlyMap<string, string>;
 }
 
-const requireAmalgamScale = (scale: number | undefined): number => {
-  if (scale === undefined) {
-    throw new Error('Amalgam actor is missing its authored scale');
+const requireAmalgamType = (type: ZombieFigureType | undefined): ZombieFigureType => {
+  if (type?.model !== 'amalgam') {
+    throw new Error('MobActorMeshes requires the amalgam content type when amalgam actors are enabled');
   }
-  return scale;
+  return type;
 };
 
-const severedRootsFor = (model: ActorModel, seed: number, scale?: number): ReadonlyMap<string, string> => {
-  if (model !== 'amalgam') {
+const severedRootsFor = (figure: ReturnType<typeof zombieFigure>): ReadonlyMap<string, string> => {
+  if (!('manifest' in figure)) {
     return new Map();
   }
-  return new Map(
-    amalgamFigure(seed, requireAmalgamScale(scale))
-      .manifest.parts.filter((part) => part.severable)
-      .map((part) => [part.id, part.rootBone]),
-  );
+  const amalgam = figure as AmalgamFigure;
+  return new Map(amalgam.manifest.parts.filter((part) => part.severable).map((part) => [part.id, part.rootBone]));
 };
 
 const copyScaledTransform = (source: Transform, target: MutableTransform, scale?: number): void => {
@@ -515,37 +512,38 @@ const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?:
   }
 };
 
+const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ZombieFigureType): BuiltActorVariant => {
+  const type = model === 'amalgam' ? requireAmalgamType(amalgamType) : { model };
+  const figure = zombieFigure(type, seed);
+  const { genome, realized } = figure;
+  const bodyScale = model === 'amalgam' ? type.bodyScale : undefined;
+  return {
+    model,
+    figureSeed: seed,
+    ...(bodyScale === undefined ? {} : { bodyScale }),
+    realized,
+    walkActorTemplate: {
+      bones: realized.body.bones,
+      extents: footRestExtents(realized.body.bones, realized.voxels),
+      params: genome.params as HumanoidParams,
+      seed: genome.seed,
+    },
+    bodyExtents: bodyRestExtents(realized.body.bones, realized.voxels),
+    lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model]!,
+    severedRoots: severedRootsFor(figure),
+  };
+};
+
 const buildActorVariants = (
   modelIds: readonly ActorModel[],
   figureSeeds: readonly number[],
-  amalgamScale?: number,
-): BuiltActorVariant[] => {
-  const built: BuiltActorVariant[] = [];
-  for (const model of modelIds) {
-    const modelSeeds = model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds;
-    for (const seed of modelSeeds) {
-      const bodyScale = model === 'amalgam' ? requireAmalgamScale(amalgamScale) : undefined;
-      const { genome, realized } = zombieFigure(model, seed, bodyScale);
-      const walkActorTemplate: WalkActor = {
-        bones: realized.body.bones,
-        extents: footRestExtents(realized.body.bones, realized.voxels),
-        params: genome.params as HumanoidParams,
-        seed: genome.seed,
-      };
-      built.push({
-        model,
-        figureSeed: seed,
-        ...(bodyScale === undefined ? {} : { bodyScale }),
-        realized,
-        walkActorTemplate,
-        bodyExtents: bodyRestExtents(realized.body.bones, realized.voxels),
-        lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model]!,
-        severedRoots: severedRootsFor(model, seed, bodyScale),
-      });
-    }
-  }
-  return built;
-};
+  amalgamType?: ZombieFigureType,
+): BuiltActorVariant[] =>
+  modelIds.flatMap((model) =>
+    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
+      buildActorVariant(model, seed, amalgamType),
+    ),
+  );
 
 /** Draws zombies as full mobgen actors, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
@@ -585,8 +583,8 @@ export class MobActorMeshes implements ZombieRenderer {
     this.blockSize = blockSize;
     this.capacity = capacity;
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
-    if (options.includeAmalgam && options.amalgamScale === undefined) {
-      throw new Error('MobActorMeshes requires amalgamScale when amalgam actors are enabled');
+    if (options.includeAmalgam && options.amalgamType?.model !== 'amalgam') {
+      throw new Error('MobActorMeshes requires amalgamType when amalgam actors are enabled');
     }
     const templatesByModel = new Map([...TEMPLATES, amalgamTemplate].map((template) => [template.name, template]));
     const modelIds: readonly ActorModel[] = options.includeAmalgam
@@ -594,7 +592,7 @@ export class MobActorMeshes implements ZombieRenderer {
       : ['shambler', 'runner', 'crawler'];
 
     const t0 = performance.now();
-    const built = buildActorVariants(modelIds, SHAMBLER_FIGURE_SEEDS.slice(0, poolSize), options.amalgamScale);
+    const built = buildActorVariants(modelIds, SHAMBLER_FIGURE_SEEDS.slice(0, poolSize), options.amalgamType);
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);

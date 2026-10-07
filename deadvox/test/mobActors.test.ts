@@ -770,7 +770,7 @@ describe('MobActorMeshes', () => {
     const renderer = new MobActorMeshes(0.5, 2, {
       poolSize: 1,
       includeAmalgam: true,
-      amalgamScale: registry.zombies.get('amalgam')?.bodyScale,
+      amalgamType: registry.zombies.get('amalgam'),
     });
     try {
       const store = new MapEntityStore<Zombie>();

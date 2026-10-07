@@ -11,6 +11,7 @@ import { projectileShot } from '../src/core/pellets.ts';
 import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
+import { zombieFigure } from '../src/core/zombieFigure.ts';
 import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
@@ -168,6 +169,64 @@ describe('amalgam body and combat seam', () => {
     expect((figure.bounds.max[1] - figure.bounds.min[1]) / figure.scale).toBeCloseTo(
       generatedBounds.halfExtents[1] * 2,
     );
+  });
+
+  it('realizes the authored figure when perception emits an amalgam alert sound', () => {
+    const type = registry.zombies.get('amalgam')!;
+    const noisyPlayer: PlayerSense = {
+      ...player(),
+      pos: [1000, 1, 1000],
+      vocalNoise: { id: 1, pos: [4, 1, 0], radiusMetres: 12, expiresAt: 10 },
+    };
+    let heardBody = false;
+    const hearingSystem = new ZombieSystem({
+      player: () => noisyPlayer,
+      isSolid: FLOOR,
+      isOpaque: FLOOR,
+      hour: () => 12,
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(makeScale(0.5)),
+      jumpSpeed: PLAYER.jump,
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+      onSound: (event, _position, zombie) => {
+        if (event === type.sounds.alert && zombie?.type.id === type.id) {
+          heardBody = zombieFigure(zombie.type, zombie.figureSeed).realized.body.bones.length > 0;
+        }
+      },
+    });
+    hearingSystem.add(type, [0, 1, 0], [1, 0, 0]);
+
+    hearingSystem.tick(1 / 60);
+
+    expect(heardBody).toBe(true);
+  });
+
+  it('realizes the authored figure when a melee sound reports an amalgam hit', () => {
+    const type = registry.zombies.get('amalgam')!;
+    let heardBody = false;
+    const combatSystem = new ZombieSystem({
+      player,
+      isSolid: FLOOR,
+      isOpaque: FLOOR,
+      hour: () => 12,
+      blockSize: BLOCK_SIZE,
+      physics: physicsFor(makeScale(0.5)),
+      jumpSpeed: PLAYER.jump,
+      tuning: TEST_SENSE_TUNING,
+      hurtPlayer: () => undefined,
+      onSound: (event, _position, zombie) => {
+        if (event === 'melee_hit' && zombie?.type.id === type.id) {
+          heardBody = zombieFigure(zombie.type, zombie.figureSeed).realized.body.bones.length > 0;
+        }
+      },
+    });
+    const id = combatSystem.add(type, [0, 1, 0], [1, 0, 0]);
+    const ray = findMemberRay(combatSystem, id);
+    const hit = combatSystem.swing(ray.origin, ray.direction, { ...FISTS_MELEE, damage: 1, reach: 4, impulse: 0 });
+
+    expect(hit).toBe(id);
+    expect(heardBody).toBe(true);
   });
 
   it('uses the realized envelope to stop at a wall', () => {

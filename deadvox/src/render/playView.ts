@@ -129,7 +129,7 @@ export const createPlayView = (
     config.actors === 'detailed'
       ? new MobActorMeshes(s, undefined, {
           includeAmalgam: true,
-          amalgamScale: registry.zombies.get('amalgam')?.bodyScale,
+          amalgamType: registry.zombies.get('amalgam'),
         })
       : new ZombieMeshes(s);
   zombieMeshes.setWorld?.(engine.isSolid, s);

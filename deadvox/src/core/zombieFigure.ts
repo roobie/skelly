@@ -2,15 +2,20 @@
 import { zombieFigure as humanoidFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { amalgamFigure } from './amalgamFigure.ts';
 
+export interface ZombieFigureType {
+  readonly model: string;
+  readonly bodyScale?: number | undefined;
+}
+
 /** One realization boundary for every content-selected Deadvox zombie model. */
-export const zombieFigure = (model: string, seed: number, bodyScale?: number) => {
-  if (model !== 'amalgam') {
-    return humanoidFigure(model, seed);
+export const zombieFigure = (type: ZombieFigureType, seed: number) => {
+  if (type.model !== 'amalgam') {
+    return humanoidFigure(type.model, seed);
   }
-  if (bodyScale === undefined) {
+  if (type.bodyScale === undefined) {
     throw new Error('Amalgam figure is missing its authored bodyScale');
   }
-  return amalgamFigure(seed, bodyScale);
+  return amalgamFigure(seed, type.bodyScale);
 };
 
 export type ZombieFigure = ReturnType<typeof zombieFigure>;

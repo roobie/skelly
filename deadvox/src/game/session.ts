@@ -790,7 +790,7 @@ export const createSession = (options: SessionOptions) => {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {}),
+          ...(zombie ? { body: zombieFigure(zombie.type, zombie.figureSeed).realized.body } : {}),
         });
         return;
       }
@@ -798,7 +798,7 @@ export const createSession = (options: SessionOptions) => {
         event,
         position,
         sim.time,
-        zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {},
+        zombie ? { body: zombieFigure(zombie.type, zombie.figureSeed).realized.body } : {},
       );
     },
     onFootstep: (position, id, mode, zombie) => {
@@ -808,7 +808,7 @@ export const createSession = (options: SessionOptions) => {
       });
       playWorldSound(event, position, sim.time, {
         sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
-        body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body,
+        body: zombieFigure(zombie.type, zombie.figureSeed).realized.body,
       });
     },
     onSevered: (zombie, region) => {
