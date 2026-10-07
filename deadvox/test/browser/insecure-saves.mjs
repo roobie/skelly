@@ -55,6 +55,7 @@ try {
     undefined,
     { timeout: STAGE_TIMEOUT_MS },
   );
+  assert.equal(await page.locator('#debug-center-x').count(), 0, 'ordinary profile has no debug center X');
   assert.match(
     await page.locator('#save-status').textContent(),
     /Saves need a secure \(https\) page; this session won't be saved/,

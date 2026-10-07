@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, heldFirearmBore: () => heldFirearmBore() } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -192,6 +192,18 @@ try {
   });
   await page.locator('#go').click();
   await page.waitForFunction(() => globalThis.fullAutoRuntime && document.querySelector('#debug-ui-root'));
+  assert.equal(await page.locator('#debug-center-x').count(), 1, 'debug profile includes the separate centre X');
+  const centreXBox = await page.locator('#debug-center-x').boundingBox();
+  const viewport = page.viewportSize();
+  assert(centreXBox && viewport);
+  assert.ok(
+    Math.abs(centreXBox.x + centreXBox.width / 2 - viewport.width / 2) < 0.5,
+    'debug X is centred horizontally',
+  );
+  assert.ok(
+    Math.abs(centreXBox.y + centreXBox.height / 2 - viewport.height / 2) < 0.5,
+    'debug X is centred vertically',
+  );
   await page.waitForFunction(() => document.pointerLockElement && document.querySelector('#overlay').hidden);
   await page.evaluate((code) => {
     globalThis.fullAutoProbe.f1DefaultPrevented = false;
@@ -306,6 +318,11 @@ try {
     }),
     true,
     'fixture rifle is ready before firing',
+  );
+  assert.equal(
+    await page.evaluate(() => Boolean(globalThis.fullAutoRuntime.heldFirearmBore())),
+    true,
+    'wielded firearm publishes its bore for the crosshair',
   );
   await page.mouse.move(500, 400);
   await page.mouse.down();
