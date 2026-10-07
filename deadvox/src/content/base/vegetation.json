@@ -43,7 +43,7 @@
       "gain": 0.4,
       "pitchJitter": [0.96, 1.04],
       "gainJitter": [0.9, 1.1],
-      "minIntervalSeconds": 0.45,
+      "minIntervalSimSeconds": 0.45,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 4 }
     },
@@ -53,7 +53,7 @@
       "gain": 0.75,
       "pitchJitter": [0.96, 1.04],
       "gainJitter": [0.9, 1.1],
-      "minIntervalSeconds": 0.15,
+      "minIntervalSimSeconds": 0.15,
       "category": "world",
       "noise": { "enabled": true, "radiusMetres": 10 }
     }

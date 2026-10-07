@@ -7,7 +7,7 @@
       "weight": 1,
       "size": [1, 1],
       "disassembly": {
-        "time": 1,
+        "timeGameMinutes": 1,
         "skill": "crafting",
         "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       }
@@ -43,7 +43,7 @@
     {
       "id": "review_needs_item",
       "result": { "item": "review_only_item", "count": 1 },
-      "time": 1,
+      "timeGameMinutes": 1,
       "components": [[{ "item": "review_only_item", "count": 1 }]],
       "qualities": {},
       "skills": {}

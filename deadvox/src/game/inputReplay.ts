@@ -131,9 +131,10 @@ export interface DecodedInputReplay {
   readonly worldOptions: SaveWorldOptions & { seed: number; clock: { ratio: number; start: number } };
   readonly inputs: ReplayInputData;
   readonly endStateFingerprint: string;
-  readonly endSimTime: number;
+  readonly endSimTimestamp: number;
 }
 
+/** Strict wire shape: old payloads with `endSimTime` are rejected by field validation, with no compatibility alias. */
 interface ReplayWire {
   magic: typeof MAGIC;
   schemaVersion: number;
@@ -141,7 +142,7 @@ interface ReplayWire {
   frames: ReplayFrame[];
   actions: ReplayAction[];
   endStateFingerprint: string;
-  endSimTime: number;
+  endSimTimestamp: number;
 }
 
 const encodeBase64 = (bytes: Uint8Array): string => {
@@ -293,7 +294,7 @@ export class InputReplayRecorder {
   private actionPayloadBytes = 0;
   private frameCount = 0;
   private actionCount = 0;
-  private batchStartedAt = 0;
+  private batchStartedAtRealMilliseconds = 0;
   private readonly batchCosts: Float32Array = new Float32Array(120);
   private completedBatches = 0;
   readonly startSnapshot: Readonly<SaveSnapshot>;
@@ -375,7 +376,7 @@ export class InputReplayRecorder {
       throw new Error('Input replay tick buffer is full');
     }
     if (this.frameCount % 60 === 0) {
-      this.batchStartedAt = performance.now();
+      this.batchStartedAtRealMilliseconds = performance.now();
     }
     for (const pending of this.pending) {
       const index = this.actionCount;
@@ -401,7 +402,7 @@ export class InputReplayRecorder {
     this.movement[frame * 2 + 1] = sample.intent.right;
     this.flags[frame] = flagOf(sample);
     if (this.frameCount % 60 === 0 && this.completedBatches < this.batchCosts.length) {
-      this.batchCosts[this.completedBatches] = (performance.now() - this.batchStartedAt) / 60;
+      this.batchCosts[this.completedBatches] = (performance.now() - this.batchStartedAtRealMilliseconds) / 60;
       this.completedBatches += 1;
     }
   }
@@ -532,7 +533,7 @@ export async function encodeInputReplay(
     frames: inputs.frames.map((frame) => [...frame] as ReplayFrame),
     actions: inputs.actions.map((action) => ({ ...action })),
     endStateFingerprint: await replayStateFingerprint(endSnapshot),
-    endSimTime: endSnapshot.character.simulation.time,
+    endSimTimestamp: endSnapshot.character.simulation.time,
   };
   const bytes = canonicalJsonBytes(wire);
   if (bytes.byteLength > INPUT_REPLAY_MAX_BYTES) {
@@ -566,9 +567,9 @@ export async function decodeInputReplay(
     !Array.isArray(value.actions) ||
     typeof value.endStateFingerprint !== 'string' ||
     !FINGERPRINT_PATTERN.test(value.endStateFingerprint) ||
-    typeof value.endSimTime !== 'number' ||
-    !Number.isFinite(value.endSimTime) ||
-    value.endSimTime < 0
+    typeof value.endSimTimestamp !== 'number' ||
+    !Number.isFinite(value.endSimTimestamp) ||
+    value.endSimTimestamp < 0
   ) {
     throw new Error('Replay is missing its starting save or input sequence');
   }
@@ -636,6 +637,6 @@ export async function decodeInputReplay(
     worldOptions: decoded.worldOptions,
     inputs: { frames, actions },
     endStateFingerprint: value.endStateFingerprint,
-    endSimTime: value.endSimTime,
+    endSimTimestamp: value.endSimTimestamp,
   };
 }

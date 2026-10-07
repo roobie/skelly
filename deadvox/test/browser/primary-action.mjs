@@ -580,10 +580,15 @@ try {
     const r = globalThis.primaryActionTest;
     const matches = r.inventory.itemByUid(matchesUid);
     const candle = r.inventory.itemByUid(candleUid);
-    return { on: candle?.on, litAt: candle?.litAt, charges: matches?.charges, notice: r.getNotice() };
+    return {
+      on: candle?.on,
+      litAtGameTimestamp: candle?.litAtGameTimestamp,
+      charges: matches?.charges,
+      notice: r.getNotice(),
+    };
   }, ignition);
   assert.equal(lit.on, true, 'primary action lights the candle held opposite matches');
-  assert.ok(lit.litAt > 0, 'the candle records its ignition time');
+  assert.ok(lit.litAtGameTimestamp > 0, 'the candle records its ignition time');
   assert.equal(lit.charges, ignition.charges - ignition.perIgnition, 'one declared ignition charge is spent');
   assert.equal(lit.notice, '', 'successful ignition does not refuse');
 
@@ -714,7 +719,7 @@ try {
   );
   await page.evaluate(() => {
     const { sim } = globalThis.primaryActionTest.session;
-    sim.body.advance(sim.body.tuning.knockoutSeconds);
+    sim.body.advance(sim.body.tuning.knockoutSimSeconds);
   });
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
@@ -990,7 +995,7 @@ try {
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
       distance: r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres,
-      chargeSeconds: r.inventory.registry.senses.get('player').light.throwChargeSeconds,
+      chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
     };
   });
   const interruptedThrow = await holdAction(page, 'player.throw-glowstick');
@@ -1036,7 +1041,7 @@ try {
   );
   await page.evaluate(() => {
     const { body } = globalThis.primaryActionTest.session.sim;
-    body.advance(body.tuning.knockoutSeconds);
+    body.advance(body.tuning.knockoutSimSeconds);
   });
   await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.body.unconscious);
   const cancelThrow = await holdAction(page, 'player.throw-glowstick');
@@ -1054,9 +1059,9 @@ try {
   await waitForSimulation(
     page,
     glowstickChargeSample,
-    { start: chargeStartedAt, seconds: throwFixture.chargeSeconds },
+    { start: chargeStartedAt, seconds: throwFixture.chargeSimSeconds },
     {
-      seconds: throwFixture.chargeSeconds + 1,
+      seconds: throwFixture.chargeSimSeconds + 1,
       label: 'glowstick charge reaches its maximum throw range',
       record: (line) => process.stderr.write(`${line}\n`),
       stop: releaseThrow,

@@ -92,8 +92,8 @@ it('requires a carried tool meeting the door quality and takes its time from con
     throw new Error(plan.reason);
   }
   expect(plan.tool.uid).toBe(crowbar.uid);
-  expect(plan.time).toBe(tuning.time);
-  expect(plan.strikeInterval).toBe(tuning.strikeInterval);
+  expect(plan.time).toBe(tuning.timeSimSeconds);
+  expect(plan.strikeInterval).toBe(tuning.strikeIntervalSimSeconds);
 });
 
 it('higher mechanics skill shortens prying and preserves its strike count', () => {
@@ -114,7 +114,7 @@ it('higher mechanics skill shortens prying and preserves its strike count', () =
     throw new Error(slow.reason);
   }
   const tuning = definition.door!.prying!;
-  expect(slow.time).toBe(tuning.time);
+  expect(slow.time).toBe(tuning.timeSimSeconds);
   while (character.skills.mechanics! < SKILL_LEVEL_MAX) {
     character.awardPractice('mechanics', practiceForNextLevel(character.skills.mechanics!), SKILL_LEVEL_MAX);
   }
@@ -122,7 +122,7 @@ it('higher mechanics skill shortens prying and preserves its strike count', () =
   if (!fast.ok) {
     throw new Error(fast.reason);
   }
-  expect(fast.time).toBe(tuning.fastestTime);
+  expect(fast.time).toBe(tuning.fastestTimeSimSeconds);
   expect(fast.time).toBeLessThan(slow.time);
   expect(Math.floor(fast.time / fast.strikeInterval)).toBe(Math.floor(slow.time / slow.strikeInterval));
 });
@@ -244,8 +244,8 @@ it('a prying strike travels through the sound-hearing path and draws a shambler'
   const shambler = runtime.zombies.store.get(id)!;
   expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
 
-  const { strikeInterval } = doorDef.door!.prying!;
-  runtime.sim.scheduler.advance(strikeInterval / runtime.sim.clock.ratio + 2);
+  const { strikeIntervalSimSeconds: strikeInterval } = doorDef.door!.prying!;
+  runtime.sim.scheduler.advance(strikeInterval + 2);
 
   const action = runtime.sim.actions.job;
   if (action?.jobType !== 'pry') {
@@ -285,7 +285,7 @@ it('saves a running pry just before a long-action tick and completes on the same
   }
   expect(loaded.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: false, elapsed: savedJob.elapsed });
 
-  const frameLimit = Math.ceil(((savedJob.duration - savedJob.elapsed) / split.sim.clock.ratio) * 60) + 60;
+  const frameLimit = Math.ceil((savedJob.duration - savedJob.elapsed) * 60) + 60;
   let completionFrame: number | undefined;
   for (let frame = 1; frame <= frameLimit; frame++) {
     advance(uninterrupted, 1);
@@ -309,7 +309,7 @@ it('a stopped part-done pry and a destroyed lock round-trip through save and loa
   const tuning = doorDef.door!.prying!;
   expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
 
-  runtime.sim.scheduler.advance(tuning.strikeInterval / 2 / runtime.sim.clock.ratio);
+  runtime.sim.scheduler.advance(tuning.strikeIntervalSimSeconds / 2);
   runtime.sim.actions.stop();
   const elapsed = runtime.sim.actions.job?.jobType === 'pry' ? runtime.sim.actions.job.elapsed : 0;
   expect(elapsed).toBeGreaterThan(0);
@@ -318,7 +318,7 @@ it('a stopped part-done pry and a destroyed lock round-trip through save and loa
   const loaded = makePryRuntime(decoded.snapshot);
   expect(loaded.sim.actions.job).toMatchObject({ jobType: 'pry', stopped: true, elapsed });
   expect(loaded.sim.actions.resume()).toBeUndefined();
-  loaded.sim.scheduler.advance((tuning.time - elapsed) / loaded.sim.clock.ratio + 2);
+  loaded.sim.scheduler.advance(tuning.timeSimSeconds - elapsed + 2);
 
   const loadedDoor = [...loaded.entities.all].find(
     (entity) => entity.type === doorDef.id && entity.pos.every((coordinate, axis) => coordinate === door.pos[axis]),

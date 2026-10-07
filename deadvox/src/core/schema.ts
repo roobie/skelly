@@ -23,6 +23,7 @@ import {
   regex,
   strictObject,
   string,
+  transform,
   tuple,
   union,
   boolean as vBoolean,
@@ -32,6 +33,16 @@ import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from './character.ts';
 import { parseSpawnTime } from './clock.ts';
 import { hasReadableWords, isReadablePlainText, READABLE_TEXT_LIMIT, READABLE_TITLE_LIMIT } from './readable.ts';
 import { SOUND_EVENT_IDS } from './soundEvents.ts';
+import {
+  gameHours,
+  gameMinutes,
+  gamePerHour,
+  gameTimeOfDay,
+  simAcceleration,
+  simPerMinute,
+  simRate,
+  simSeconds,
+} from './time.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
@@ -51,6 +62,24 @@ const SkillLevel = pipe(
 );
 const Fraction = pipe(number(), minValue(0, 'must be 0 to 1'), maxValue(1, 'must be 0 to 1'));
 const QualityLevel = pipe(number(), integer('must be a whole number'), minValue(1), maxValue(5));
+const SimSeconds = pipe(NonNegative, transform(simSeconds));
+const PositiveSimSeconds = pipe(Positive, transform(simSeconds));
+const SimRate = pipe(Positive, transform(simRate));
+const NonNegativeSimRate = pipe(NonNegative, transform(simRate));
+const SimAcceleration = pipe(Positive, transform(simAcceleration));
+const SimDurationRange = strictObject({ min: PositiveSimSeconds, max: PositiveSimSeconds });
+const PositiveGameHours = pipe(Positive, transform(gameHours));
+const PositiveGameMinutes = pipe(Positive, transform(gameMinutes));
+const GamePerHour = pipe(Positive, transform(gamePerHour));
+const SimPerMinute = pipe(Positive, transform(simPerMinute));
+const GameTimeOfDay = pipe(
+  string(),
+  regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'expected HH:MM'),
+  transform((text) => {
+    const [hours, minutes] = text.split(':').map(Number);
+    return gameTimeOfDay(hours! * 3600 + minutes! * 60);
+  }),
+);
 
 /** An inclusive [min, max] range. */
 const range = <S extends typeof Count | typeof Fraction>(item: S) =>
@@ -131,8 +160,8 @@ const PocketSchema = strictObject({
   name: optional(Name),
   /** Its grid: the only limit on what fits (DESIGN.md, "The item model"). */
   grid: Area,
-  /** Seconds to take an item out or put one in, before the per-cell part. */
-  handling: NonNegative,
+  /** Sim seconds to take an item out or put one in, before the per-cell part. */
+  handlingSimSeconds: SimSeconds,
 });
 
 const ContainerSchema = strictObject({ pockets: pipe(array(PocketSchema), nonEmpty('needs at least one pocket')) });
@@ -151,7 +180,7 @@ const FoodSchema = strictObject({
   /** Millilitres of water it gives. */
   water: NonNegative,
   /** Game hours until it spoils; absent means it keeps. */
-  rotsAfter: optional(Positive),
+  rotsAfterGameHours: optional(PositiveGameHours),
 });
 
 const ToolSchema = strictObject({
@@ -164,8 +193,8 @@ const WeaponSchema = strictObject({
     damage: Positive,
     /** Metres beyond the player's hand; the arm's reach is added when swinging. */
     reach: Positive,
-    /** Seconds between swings. */
-    cooldown: Positive,
+    /** Sim seconds between swings. */
+    cooldownSimSeconds: PositiveSimSeconds,
     stamina: NonNegative,
     /** Impulse delivered by a melee hit, in N·s. */
     impulse: optional(NonNegative),
@@ -217,10 +246,10 @@ const LightSchema = strictObject({
   intensity: Positive,
   /** Material glow for sources that remain visible when outside the point-light pool. */
   emissive: optional(NonNegative),
-  /** Total burn in game hours for a consumable flame/light. */
-  burnTime: optional(Positive),
-  /** Fuel units consumed per game hour, for self-fueled sources such as a lighter. */
-  fuelPerHour: optional(Positive),
+  /** Total burn in Game hours for a consumable flame/light. */
+  burnTimeGameHours: optional(PositiveGameHours),
+  /** Fuel units consumed per Game hour, for self-fueled sources such as a lighter. */
+  fuelPerGameHour: optional(GamePerHour),
   /** A cone of this many degrees; absent means light all around. */
   beam: optional(pipe(Positive, maxValue(180, 'must be at most 180'))),
   burning: optional(
@@ -233,8 +262,8 @@ const LightSchema = strictObject({
       relight: vBoolean(),
     }),
   ),
-  /** What powers it: an item with a battery component, and charge used per game hour. */
-  power: optional(strictObject({ battery: Id, perHour: Positive })),
+  /** What powers it: an item with a battery component, and charge used per Game hour. */
+  power: optional(strictObject({ battery: Id, chargePerGameHour: GamePerHour })),
 });
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
@@ -253,7 +282,7 @@ const BookSchema = strictObject({
   title: Name,
   recipes: pipe(array(Id), nonEmpty('needs at least one recipe')),
   /** Game minutes spent reading. */
-  readingTime: Positive,
+  readingGameMinutes: PositiveGameMinutes,
 });
 
 const readableText = (limit: number) =>
@@ -298,7 +327,7 @@ const DisassemblyYieldSchema = strictObject({
 });
 const DisassemblySchema = strictObject({
   /** Game minutes. */
-  time: Positive,
+  timeGameMinutes: PositiveGameMinutes,
   skill: Id,
   yields: pipe(array(DisassemblyYieldSchema), nonEmpty('needs at least one yield')),
 });
@@ -368,7 +397,7 @@ const SoundSchema = strictObject({
   gain: pipe(Positive, maxValue(1, 'must be at most 1')),
   pitchJitter: SoundMultipliers,
   gainJitter: SoundMultipliers,
-  minIntervalSeconds: NonNegative,
+  minIntervalSimSeconds: SimSeconds,
   category: picklist(['world', 'body', 'ui']),
   noise: strictObject({ enabled: vBoolean(), radiusMetres: Positive }),
   wall: optional(
@@ -386,14 +415,15 @@ const UnitVector = pipe(
 
 const ActionCycleSchema = pipe(
   strictObject({
-    durationSeconds: Positive,
-    rearwardSeconds: Positive,
-    dwellSeconds: NonNegative,
-    forwardSeconds: Positive,
+    durationSimSeconds: PositiveSimSeconds,
+    rearwardSimSeconds: PositiveSimSeconds,
+    dwellSimSeconds: SimSeconds,
+    forwardSimSeconds: PositiveSimSeconds,
   }),
   check(
-    (cycle) => cycle.rearwardSeconds + cycle.dwellSeconds + cycle.forwardSeconds <= cycle.durationSeconds + 1e-9,
-    'cycle phases must fit within durationSeconds',
+    (cycle) =>
+      cycle.rearwardSimSeconds + cycle.dwellSimSeconds + cycle.forwardSimSeconds <= cycle.durationSimSeconds + 1e-9,
+    'cycle phases must fit within durationSimSeconds',
   ),
 );
 
@@ -422,15 +452,15 @@ const ActionSchema = pipe(
     /** Unit direction vector in the exported model frame. */
     ejectDirection: UnitVector,
     holdOpen: vBoolean(),
-    /** Cyclic rate in rounds per minute. */
-    rpm: optional(Positive),
+    /** Cyclic rate in rounds per Sim minute. */
+    roundsPerSimMinute: optional(SimPerMinute),
   }),
   check(
     (action) => Object.values(action.parts).every((part) => part.modes.every((mode) => action[mode] !== undefined)),
     'moving part modes must reference a declared timeline',
   ),
   check(
-    (action) => (action.fire === undefined) === (action.rpm === undefined),
+    (action) => (action.fire === undefined) === (action.roundsPerSimMinute === undefined),
     'only an automatic fire timeline has a cyclic rpm',
   ),
 );
@@ -510,14 +540,17 @@ const DoorPryingSchema = pipe(
     quality: QualityLevel,
     /** Skill whose level shortens prying time. */
     skill: Id,
-    /** Simulated seconds of work at the lowest skill level. */
-    time: Positive,
-    /** Simulated seconds of work at the fastest skill level. */
-    fastestTime: Positive,
-    /** Simulated seconds between noisy strikes at the lowest skill level. */
-    strikeInterval: Positive,
+    /** Sim seconds of work at the lowest skill level. */
+    timeSimSeconds: PositiveSimSeconds,
+    /** Sim seconds of work at the fastest skill level. */
+    fastestTimeSimSeconds: PositiveSimSeconds,
+    /** Sim seconds between noisy strikes at the lowest skill level. */
+    strikeIntervalSimSeconds: PositiveSimSeconds,
   }),
-  check(({ time, fastestTime }) => fastestTime <= time, 'fastest prying time cannot exceed the base time'),
+  check(
+    ({ timeSimSeconds, fastestTimeSimSeconds }) => fastestTimeSimSeconds <= timeSimSeconds,
+    'fastest prying time cannot exceed the base time',
+  ),
 );
 
 const FurnitureSchema = strictObject({
@@ -533,8 +566,8 @@ const FurnitureSchema = strictObject({
   container: optional(ContainerSchema),
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
-  /** It opens and closes, taking this many seconds. */
-  door: optional(strictObject({ handling: NonNegative, prying: optional(DoorPryingSchema) })),
+  /** It opens and closes, taking this many Sim seconds. */
+  door: optional(strictObject({ handlingSimSeconds: SimSeconds, prying: optional(DoorPryingSchema) })),
   /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
   rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
   /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */
@@ -542,7 +575,7 @@ const FurnitureSchema = strictObject({
     strictObject({
       id: Id,
       qualities: record(Id, QualityLevel),
-      workTimeBonus: Fraction,
+      workFactorBonus: Fraction,
     }),
   ),
 });
@@ -581,10 +614,14 @@ const DoorLockSchema = strictObject({ id: Id, locked: vBoolean() });
 const SpawnTime = pipe(
   string(),
   check((value) => parseSpawnTime(value) !== undefined, 'expected a named game time or HH:MM'),
+  transform((value) => gameTimeOfDay(parseSpawnTime(value)!)),
 );
 const SpawnWindowSchema = pipe(
-  strictObject({ from: SpawnTime, to: optional(SpawnTime) }),
-  check(({ from, to }) => to === undefined || parseSpawnTime(from) !== parseSpawnTime(to), 'from and to must differ'),
+  strictObject({ fromGameTimeOfDay: SpawnTime, toGameTimeOfDay: optional(SpawnTime) }),
+  check(
+    ({ fromGameTimeOfDay, toGameTimeOfDay }) => toGameTimeOfDay === undefined || fromGameTimeOfDay !== toGameTimeOfDay,
+    'from and to must differ',
+  ),
 );
 
 /** A palette entry that isn't a plain block: furniture or a spawn point. */
@@ -706,7 +743,7 @@ const SiteLayoutSchema = strictObject({
   /** Foundation elevation: lower face of the top ground block, in metres. */
   ground: HalfMetres,
   /** Calendar time on day 1 when this site is selected without an explicit ?time=. */
-  startTime: optional(pipe(string(), regex(/^(?:[01]\d|2[0-3]):[0-5]\d$/, 'expected HH:MM'))),
+  startTimeGameTimeOfDay: optional(GameTimeOfDay),
   terrain: array(TerrainPrimitive),
   buildings: array(LayoutBuilding),
   player: strictObject({
@@ -769,31 +806,31 @@ const ZombieSchema = strictObject({
   }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
-  /** Metres per second. */
-  speed: strictObject({ wander: Positive, chase: Positive }),
+  /** Metres per Sim second. */
+  speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
   /** Metres by day. */
   sight: Positive,
   /** Metres by night. */
   nightSight: Positive,
-  /** Simulation seconds before a heard or seen stimulus is forgotten. */
-  stimulusMemorySeconds: Positive,
+  /** Sim seconds before a heard or seen stimulus is forgotten. */
+  stimulusMemorySimSeconds: Positive,
   /** Half-angle of the sight cone, in degrees. */
   sightCone: pipe(Positive, maxValue(180, 'must be at most 180')),
   /** Idle/stroll timing, home leash and eased look controls. */
   wander: strictObject({
     obstacleWanderChance: Fraction,
     obstacleWanderDistanceMetres: Positive,
-    idleSeconds: strictObject({ min: Positive, max: Positive }),
-    strollSeconds: strictObject({ min: Positive, max: Positive }),
+    idleSimSeconds: SimDurationRange,
+    strollSimSeconds: SimDurationRange,
     leashMetres: Positive,
-    lookIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+    lookIntervalSimSeconds: SimDurationRange,
     bodyLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
     headLookArcDegrees: pipe(Positive, maxValue(360, 'must be at most 360')),
-    bodyTurnDegreesPerSecond: Positive,
-    headTurnDegreesPerSecond: Positive,
-    movementAcceleration: Positive,
+    bodyTurnDegreesPerSimSecond: SimRate,
+    headTurnDegreesPerSimSecond: SimRate,
+    movementAccelerationMetresPerSimSecondSquared: SimAcceleration,
   }),
   /** 1 is normal hearing. */
   hearing: NonNegative,
@@ -803,33 +840,33 @@ const ZombieSchema = strictObject({
       farMultiplier: pipe(Positive, minValue(1, 'must be at least 1')),
       bearingErrorRadians: pipe(Positive, maxValue(Math.PI, 'must be at most pi')),
       investigationDistanceMetres: Positive,
-      searchSeconds: strictObject({ min: Positive, max: Positive }),
+      searchSimSeconds: SimDurationRange,
       searchRadiusMetres: Positive,
-      searchStrollSeconds: strictObject({ min: Positive, max: Positive }),
+      searchStrollSimSeconds: SimDurationRange,
     }),
     check(
-      (model) => model.searchSeconds.min <= model.searchSeconds.max,
+      (model) => model.searchSimSeconds.min <= model.searchSimSeconds.max,
       'minimum search duration must not exceed maximum',
     ),
     check(
-      (model) => model.searchStrollSeconds.min <= model.searchStrollSeconds.max,
+      (model) => model.searchStrollSimSeconds.min <= model.searchStrollSimSeconds.max,
       'minimum search stroll must not exceed maximum',
     ),
   ),
   chaseMotion: pipe(
     strictObject({
       swayDegrees: pipe(NonNegative, maxValue(90, 'must be at most 90')),
-      swayIntervalSeconds: strictObject({ min: Positive, max: Positive }),
+      swayIntervalSimSeconds: SimDurationRange,
       speedMultiplier: strictObject({ min: Positive, max: Positive }),
-      lurchSeconds: Positive,
-      stumbleChancePerSecond: pipe(NonNegative, maxValue(1, 'must be at most 1')),
-      stumbleDurationSeconds: strictObject({ min: Positive, max: Positive }),
-      stumbleEaseSeconds: Positive,
+      lurchSimSeconds: PositiveSimSeconds,
+      stumbleChancePerSimSecond: pipe(NonNegative, maxValue(1, 'must be at most 1'), transform(simRate)),
+      stumbleDurationSimSeconds: SimDurationRange,
+      stumbleEaseSimSeconds: PositiveSimSeconds,
       stumbleSpeedFraction: Fraction,
-      stumbleDeceleration: Positive,
+      stumbleDecelerationMetresPerSimSecondSquared: SimAcceleration,
     }),
     check(
-      (motion) => motion.swayIntervalSeconds.min <= motion.swayIntervalSeconds.max,
+      (motion) => motion.swayIntervalSimSeconds.min <= motion.swayIntervalSimSeconds.max,
       'minimum sway interval must not exceed maximum',
     ),
     check(
@@ -837,17 +874,22 @@ const ZombieSchema = strictObject({
       'minimum speed multiplier must not exceed maximum',
     ),
     check(
-      (motion) => motion.stumbleDurationSeconds.min <= motion.stumbleDurationSeconds.max,
+      (motion) => motion.stumbleDurationSimSeconds.min <= motion.stumbleDurationSimSeconds.max,
       'minimum stumble duration must not exceed maximum',
     ),
     check(
-      (motion) => motion.stumbleDurationSeconds.min >= 2 * motion.stumbleEaseSeconds,
+      (motion) => motion.stumbleDurationSimSeconds.min >= 2 * motion.stumbleEaseSimSeconds,
       'stumble duration must allow easing in and out',
     ),
   ),
   attack: pipe(
-    strictObject({ damage: Positive, reach: Positive, cooldown: Positive, windup: Positive }),
-    check((attack) => attack.windup < attack.cooldown, 'windup must be less than cooldown'),
+    strictObject({
+      damage: Positive,
+      reach: Positive,
+      cooldownSimSeconds: PositiveSimSeconds,
+      windupSimSeconds: PositiveSimSeconds,
+    }),
+    check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
   ),
   /** Per-hit chance of severing a random not-yet-severed arm part (src/core/zombies.ts's swing); a
    * killing blow additionally rolls headOnKillChance to sever the head too. Both independent 0..1 chances,
@@ -879,12 +921,12 @@ const SkillSchema = pipe(
             pipe(
               strictObject({
                 practice: optional(NonNegative),
-                practicePerSecond: optional(NonNegative),
+                practicePerSimSecond: optional(NonNegativeSimRate),
                 tier: SkillLevel,
               }),
               check(
-                (activity) => (activity.practice === undefined) !== (activity.practicePerSecond === undefined),
-                'needs exactly one of "practice" or "practicePerSecond"',
+                (activity) => (activity.practice === undefined) !== (activity.practicePerSimSecond === undefined),
+                'needs exactly one of "practice" or "practicePerSimSecond"',
               ),
             ),
           ),
@@ -895,8 +937,8 @@ const SkillSchema = pipe(
       strictObject({
         firearms: optional(
           strictObject({
-            raiseMinimumSeconds: Positive,
-            raiseRangeSeconds: NonNegative,
+            raiseMinimumSimSeconds: PositiveSimSeconds,
+            raiseRangeSimSeconds: SimSeconds,
             raiseHalfLifeLevels: Positive,
             readyMovementMinimum: Fraction,
             readyMovementRange: Fraction,
@@ -928,13 +970,13 @@ const SkillSchema = pipe(
     ),
   }),
   check(({ training, id, combat }) => {
-    const activity = (activityId: string, field: 'practice' | 'practicePerSecond') =>
+    const activity = (activityId: string, field: 'practice' | 'practicePerSimSecond') =>
       training?.activities?.[activityId]?.[field] !== undefined;
     const complete =
       (id !== 'crafting' || training?.craftingTierOffset !== undefined) &&
       (id !== 'firearms_combat' ||
         (combat?.firearms !== undefined &&
-          activity('readying', 'practicePerSecond') &&
+          activity('readying', 'practicePerSimSecond') &&
           activity('handling', 'practice') &&
           activity('shot', 'practice') &&
           activity('hit', 'practice'))) &&
@@ -951,7 +993,7 @@ const SkillSchema = pipe(
 const SenseSchema = strictObject({
   id: Id,
   crouch: strictObject({
-    speedMetresPerSecond: Positive,
+    speedMetresPerSimSecond: SimRate,
     hearingRangeScale: Fraction,
     sightRangeScale: Fraction,
     eyeDropMetres: Positive,
@@ -968,7 +1010,7 @@ const SenseSchema = strictObject({
     /** Reduce how far shamblers investigate non-player light sources. */
     lureRangeScale: Fraction,
     throwMaxDistanceMetres: Positive,
-    throwChargeSeconds: Positive,
+    throwChargeSimSeconds: PositiveSimSeconds,
   }),
 });
 const RecipeItemSchema = ItemCountSchema;
@@ -977,33 +1019,33 @@ const RecipeItemSchema = ItemCountSchema;
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
-  infectionOnsetGameHours: Positive,
+  infectionOnsetGameHours: PositiveGameHours,
   /** Game hours the early infection stage remains treatable with antiseptic. */
-  antisepticWindowGameHours: Positive,
+  antisepticWindowGameHours: PositiveGameHours,
   infectionChance: Fraction,
-  /** Simulation seconds that the player remains unconscious. */
-  knockoutSeconds: Positive,
-  /** Simulation seconds to wait after stamina reaches zero before recovery begins. */
-  staminaRegenDelaySimSeconds: Positive,
+  /** Sim seconds that the player remains unconscious. */
+  knockoutSimSeconds: PositiveSimSeconds,
+  /** Sim seconds to wait after stamina reaches zero before recovery begins. */
+  staminaRegenDelaySimSeconds: PositiveSimSeconds,
   /** Player eye height in metres while unconscious and prone. */
   proneEyeHeightMetres: Positive,
   /** Blunt-force shock damage per point of health damage. */
   bluntShockPerDamage: Positive,
-  /** Simulation seconds required to apply wound treatment. */
-  treatmentSeconds: Positive,
+  /** Sim seconds required to apply wound treatment. */
+  treatmentSimSeconds: PositiveSimSeconds,
   /** Shock restored when the player wakes, on a 0–100 scale. */
   wakeShock: pipe(
     Positive,
     check((value) => value < 100, 'must be below 100'),
   ),
-  /** Blood lost per simulation second while a wound bleeds. */
-  bloodLossPerSecond: Positive,
-  /** Blood recovered per simulation second when no wound bleeds. */
-  bloodRecoveryPerSecond: Positive,
-  /** Shock recovered per simulation second outside a knockout. */
-  shockRecoveryPerSecond: Positive,
-  /** Health lost per simulation second while infection is advanced. */
-  advancedInfectionHealthLossPerSecond: Positive,
+  /** Blood lost per Sim second while a wound bleeds. */
+  bloodLossPerSimSecond: SimRate,
+  /** Blood recovered per Sim second when no wound bleeds. */
+  bloodRecoveryPerSimSecond: SimRate,
+  /** Shock recovered per Sim second outside a knockout. */
+  shockRecoveryPerSimSecond: SimRate,
+  /** Health lost per Sim second while infection is advanced. */
+  advancedInfectionHealthLossPerSimSecond: SimRate,
   /** Aim sway added per point of torso damage. */
   aimSwayPerDamage: Positive,
   /** Swing slowdown added per point of arm damage. */
@@ -1023,8 +1065,8 @@ const RecipeSchema = strictObject({
   /** Omitted means an ordinary craft. A repair recipe's result identifies its target type. */
   kind: optional(picklist(['craft', 'repair'])),
   repair: optional(strictObject({ skill: Id, amount: Fraction, perSkill: Fraction })),
-  /** Game minutes, not simulation seconds. */
-  time: Positive,
+  /** Game minutes. */
+  timeGameMinutes: PositiveGameMinutes,
   skills: record(Id, SkillLevel),
   qualities: record(Id, pipe(Count, minValue(1), maxValue(5))),
   components: array(pipe(array(RecipeItemSchema), nonEmpty('needs at least one alternative'))),

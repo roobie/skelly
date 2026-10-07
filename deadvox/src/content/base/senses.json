@@ -3,7 +3,7 @@
     {
       "id": "player",
       "crouch": {
-        "speedMetresPerSecond": 1,
+        "speedMetresPerSimSecond": 1,
         "hearingRangeScale": 0.5,
         "sightRangeScale": 0.5,
         "eyeDropMetres": 0.7
@@ -19,7 +19,7 @@
         "playerDaySightScale": 0,
         "lureRangeScale": 0.5,
         "throwMaxDistanceMetres": 8,
-        "throwChargeSeconds": 1.25
+        "throwChargeSimSeconds": 1.25
       }
     }
   ]

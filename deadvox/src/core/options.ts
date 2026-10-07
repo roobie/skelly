@@ -29,7 +29,7 @@ export const doorPlan = (
     ((operation === 'lock' || operation === 'unlock') && !inventory.canReachEntity(entity)
       ? 'Too far away'
       : undefined);
-  return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handling };
+  return reason ? { ok: false, reason } : { ok: true, time: inventory.entities.defOf(entity).door!.handlingSimSeconds };
 };
 
 export const doorOptions = (
