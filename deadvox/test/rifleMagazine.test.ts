@@ -52,7 +52,7 @@ const carrying = (loads: readonly number[]) => {
   const rigged = rig();
   const { inventory, queue } = rigged;
   const { magazine: magazineType, cartridge } = rifleAmmunition(registry, 'rifle_assault');
-  const magazines = new MagazineHandling(inventory, queue, { feet: () => pose.feet, reloadDurationScale: () => 1 });
+  const magazines = new MagazineHandling(inventory, queue, { feet: () => pose.feet, reloadFactor: () => 1 });
   const bag = inventory.create('hiking_backpack');
   const pocket = { kind: 'pocket', owner: bag, pocket: 0 } as const;
   const hand = { kind: 'hand', side: 'right' } as const;

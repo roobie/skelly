@@ -60,7 +60,7 @@ const posedBoxes = (zombie: Zombie) =>
     speed: zombie.horizontalSpeed,
     chasing: zombie.mode === 'chase',
     attackWindup: zombie.attackWindup,
-    attackWindupSeconds: zombie.type.attack.windup,
+    attackWindupSeconds: zombie.type.attack.windupSimSeconds,
     severed: zombie.severed,
     blockSize: BLOCK_SIZE,
   });

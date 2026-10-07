@@ -83,7 +83,7 @@ export interface FirearmHandlingData {
   readonly action: Action;
   readonly calibre: string;
   readonly caseModelId?: string;
-  readonly rpm: number | undefined;
+  readonly roundsPerSimSecond: number | undefined;
   readonly recoilKickRadians?: number;
   readonly dispersionRadians?: number;
 }
@@ -110,7 +110,7 @@ const exportedActionReason = (item: Item, registry: Registry, mode: 'fire' | 'ha
   if (!(model?.calibre && model.action?.hand && model.grip && model.anchors?.ejection)) {
     return 'No exported action data for this gun';
   }
-  return mode === 'fire' && !(model.action.fire && model.action.rpm)
+  return mode === 'fire' && !(model.action.fire && model.action.roundsPerSimMinute)
     ? 'No exported automatic action data for this gun'
     : undefined;
 };
@@ -130,7 +130,7 @@ export const firearmHandlingFor = (item: Item, registry: Registry): FirearmHandl
     model,
     action,
     calibre: model.calibre!,
-    rpm: action.rpm,
+    roundsPerSimSecond: action.roundsPerSimMinute,
     ...(caseModelId ? { caseModelId } : {}),
     ...(defOf(registry, item.type).firearm
       ? {
@@ -391,9 +391,12 @@ export class FirearmMechanics {
     if (!item) {
       return 'singleShot';
     }
-    const { rpm } = firearmHandlingFor(item, this.inventory.registry);
+    const { roundsPerSimSecond } = firearmHandlingFor(item, this.inventory.registry);
     const previous = this.previousShotAt.get(uid);
-    return rpm !== undefined && previous !== undefined && time >= previous && time - previous <= 90 / rpm + 1e-9
+    return roundsPerSimSecond !== undefined &&
+      previous !== undefined &&
+      time >= previous &&
+      time - previous <= 1.5 / roundsPerSimSecond + 1e-9
       ? 'automaticFollowup'
       : 'singleShot';
   }
@@ -880,7 +883,7 @@ export class FirearmMechanics {
   }
 
   private rackForwardCue(item: Item, data: FirearmHandlingData, cycle: FirearmCycleState, timeScale: number): void {
-    const returnAt = (data.action.hand.rearwardSeconds + data.action.hand.dwellSeconds) * timeScale;
+    const returnAt = (data.action.hand.rearwardSimSeconds + data.action.hand.dwellSimSeconds) * timeScale;
     if (this.isPump(item) && !cycle.forwardSounded && cycle.elapsed + 1e-9 >= returnAt) {
       cycle.forwardSounded = true;
       this.onSound('shotgun_rack_forward', undefined, cycle.startedAt + returnAt);

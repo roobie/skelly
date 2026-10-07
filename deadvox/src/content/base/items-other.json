@@ -103,7 +103,7 @@
           "make_taped_flashlight_mount",
           "make_improvised_suppressor"
         ],
-        "readingTime": 20
+        "readingGameMinutes": 20
       },
       "readable": {
         "title": "Field Manual: Making Do",
@@ -126,7 +126,7 @@
           "assemble_fastener_pack",
           "make_scrap_foregrip"
         ],
-        "readingTime": 15
+        "readingGameMinutes": 15
       },
       "readable": {
         "title": "Camp Craft",
@@ -160,7 +160,7 @@
           "repair_fanny_pack",
           "repair_flashlight"
         ],
-        "readingTime": 25
+        "readingGameMinutes": 25
       },
       "readable": {
         "title": "Home Repair Handbook",
@@ -184,7 +184,7 @@
           "make_improvised_suppressor",
           "make_scrap_foregrip"
         ],
-        "readingTime": 30
+        "readingGameMinutes": 30
       },
       "readable": { "title": "Workshop Notes", "text": "Handwritten notes on careful repairs and using salvaged wire." }
     },

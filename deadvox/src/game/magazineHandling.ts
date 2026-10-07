@@ -19,7 +19,7 @@ export class MagazineHandling {
   private readonly queue: HandlingQueue;
   private readonly feet: () => Vec3;
   /** The firearms skill's reload-duration factor (DESIGN.md, "Firearms"). */
-  private readonly reloadDurationScale: () => number;
+  private readonly reloadFactor: () => number;
   private readonly onSound: (event: SoundEventId, time: number) => void;
 
   constructor(
@@ -27,18 +27,18 @@ export class MagazineHandling {
     queue: HandlingQueue,
     {
       feet,
-      reloadDurationScale,
+      reloadFactor,
       onSound = () => undefined,
     }: {
       feet: () => Vec3;
-      reloadDurationScale: () => number;
+      reloadFactor: () => number;
       onSound?: (event: SoundEventId, time: number) => void;
     },
   ) {
     this.inventory = inventory;
     this.queue = queue;
     this.feet = feet;
-    this.reloadDurationScale = reloadDurationScale;
+    this.reloadFactor = reloadFactor;
     this.onSound = onSound;
     queue.registerAction(MAGAZINE_LOAD_ACTION, (params) => this.completeLoad(params.uid, params.ammoUid));
     queue.registerAction(STRIP_ACTION, (params) => this.completeStrip(params.uid));
@@ -71,7 +71,7 @@ export class MagazineHandling {
     this.queue.enqueueAction(
       MAGAZINE_LOAD_ACTION,
       `Load round ${magazine.cartridges!.length + 1}/${spec.capacity}`,
-      ROUND_LOAD_SIM_SECONDS * this.reloadDurationScale(),
+      ROUND_LOAD_SIM_SECONDS * this.reloadFactor(),
       { uid: magazine.uid, ammoUid: round.uid },
     );
     this.onSound('magazine_round_insert', time);
@@ -90,7 +90,7 @@ export class MagazineHandling {
     if (magazine.cartridges!.length === 0) {
       return 'Magazine is empty';
     }
-    this.queue.enqueueAction(STRIP_ACTION, 'Strip a round', ROUND_STRIP_SIM_SECONDS * this.reloadDurationScale(), {
+    this.queue.enqueueAction(STRIP_ACTION, 'Strip a round', ROUND_STRIP_SIM_SECONDS * this.reloadFactor(), {
       uid: magazine.uid,
     });
     this.onSound('magazine_round_strip', time);

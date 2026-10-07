@@ -59,7 +59,7 @@ const fixture = (carried: readonly (readonly [string, number])[]) => {
     throw new Error('Magazine fixture does not fit');
   }
   const queue = new HandlingQueue(inventory);
-  const handling = new MagazineHandling(inventory, queue, { feet: () => [0, 0, 0], reloadDurationScale: () => 1 });
+  const handling = new MagazineHandling(inventory, queue, { feet: () => [0, 0, 0], reloadFactor: () => 1 });
   const load = () => {
     const refusal = handling.loadNext(magazine.uid, 0);
     if (refusal) {

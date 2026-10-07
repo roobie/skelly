@@ -100,7 +100,7 @@ describe('snapshot state components', () => {
     if (treatmentJob?.jobType !== 'treatment') {
       throw new Error('Treatment action was not started');
     }
-    runtime.sim.scheduler.advance(treatmentJob.duration / (runtime.sim.clock.ratio * 2));
+    runtime.sim.scheduler.advance(treatmentJob.duration / 2);
     runtime.sim.actions.stop();
 
     const snapshot = capture(runtime);
@@ -127,8 +127,8 @@ describe('snapshot state components', () => {
     if (resumedJob?.jobType !== 'treatment') {
       throw new Error('Treatment action did not resume');
     }
-    const remainingGameSeconds = resumedJob.duration - resumedJob.elapsed;
-    loaded.sim.scheduler.advance(remainingGameSeconds / loaded.sim.clock.ratio);
+    const remainingSimSeconds = resumedJob.duration - resumedJob.elapsed;
+    loaded.sim.scheduler.advance(remainingSimSeconds);
     expect(loaded.sim.actions.job).toBeUndefined();
     expect(loaded.inventory.itemByUid(rag.uid)).toBeUndefined();
     expect(loaded.sim.body.wounds.leftArm?.bleeding).toBe(false);

@@ -9,8 +9,10 @@ import { NEED_RATES, REST, SPAWN_NEEDS, stepNeeds } from '../src/core/needs.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SimOptions } from '../src/core/sim.ts';
+import { realSeconds, simSeconds } from '../src/core/time.ts';
 import { World } from '../src/core/world.ts';
 import { type PlayerSense, ZombieSystem } from '../src/core/zombies.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { RestController, type RestHooks, restKindForFurniture } from '../src/game/rest.ts';
 import { createSession, HANDLING_RATE, IDLE } from '../src/game/session.ts';
@@ -34,6 +36,10 @@ const FLOOR: SolidAt = (_x, y) => y === 0;
 /** A Simulation wired to a RestController, the way play.ts wires them: the sim's fatigue rate
  * comes from whatever the controller's action asks for. */
 const REST_ANCHOR = 1;
+const tickReal = (sim: Simulation, elapsed: number): void => {
+  advanceLiveFrame(sim, realSeconds(elapsed));
+};
+
 const makeRest = (
   simOptions: Partial<SimOptions> = {},
   hooks: Partial<RestHooks> = {},
@@ -147,7 +153,7 @@ describe('RestController start/resume/stop', () => {
     } = zombieSystem.store.get(id)!;
     for (let i = 1; i <= 30; i++) {
       zombieSystem.tick(0.1, i * 0.1);
-      sim.frame(1 / 60);
+      tickReal(sim, 1 / 60);
       expect(sim.compression.active).toBe(true);
       expect(sim.compression.interruption).toBeUndefined();
     }
@@ -160,7 +166,7 @@ describe('RestController start/resume/stop', () => {
     if (wakeReason === undefined) {
       throw new Error('Damage did not emit a wake interruption');
     }
-    sim.frame(1 / 60);
+    tickReal(sim, 1 / 60);
     expect(rest.action).toBeUndefined();
     expect(sim.compression.locksInput).toBe(false);
     expect(sim.compression.interruption).toBeUndefined();
@@ -174,12 +180,12 @@ describe('RestController start/resume/stop', () => {
     sim.needs.fatigue = 5;
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 10_000 && rest.action !== undefined; i++) {
-      rest.frame(1 / 60);
+      tickReal(sim, 1 / 60);
     }
     expect(rest.action).toBeUndefined();
     expect(sim.needs.fatigue).toBeCloseTo(0, 2);
     for (let i = 0; i < 60; i++) {
-      rest.frame(1 / 60); // let compression ramp back down, as it does after any long action
+      tickReal(sim, 1 / 60); // let compression ramp back down, as it does after any long action
     }
     expect(sim.compression.c).toBe(1);
     expect(messages).toContain('You feel rested');
@@ -189,10 +195,10 @@ describe('RestController start/resume/stop', () => {
     const { sim, rest } = makeRest();
     rest.start('rest', REST_ANCHOR);
     for (let i = 0; i < 120; i++) {
-      rest.frame(1 / 60);
+      tickReal(sim, 1 / 60);
     }
     sim.hurt(5, 'a debug key');
-    rest.frame(1 / 60);
+    tickReal(sim, 1 / 60);
     expect(sim.compression.interruption).toBeDefined();
     rest.stop();
     expect(sim.compression.interruption).toBeUndefined();
@@ -204,13 +210,13 @@ describe('RestController start/resume/stop', () => {
     const { sim, rest } = makeRest();
     rest.start('rest', REST_ANCHOR);
     for (let i = 0; i < 120; i++) {
-      rest.frame(1 / 60);
+      tickReal(sim, 1 / 60);
     }
     sim.hurt(5, 'a debug key');
-    rest.frame(1 / 60);
+    tickReal(sim, 1 / 60);
     const before = rest.action;
     expect(rest.resume()).toBeUndefined();
-    rest.frame(1 / 60);
+    tickReal(sim, 1 / 60);
     expect(sim.compression.c).toBeGreaterThan(1);
     expect(rest.action).toBe(before);
   });
@@ -230,7 +236,7 @@ describe('RestController start/resume/stop', () => {
     );
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     sim.hurt(5, 'a debug key');
-    rest.frame(1 / 60);
+    tickReal(sim, 1 / 60);
     reachable.delete(REST_ANCHOR);
     reachable.add(2);
     expect(rest.resume()).toBe('Too far away');
@@ -254,7 +260,7 @@ describe('RestController.toggle (manual stop)', () => {
     const fatigueBeforeRest = sim.needs.fatigue;
     expect(rest.toggle('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 20 && sim.needs.fatigue === fatigueBeforeRest; i++) {
-      rest.frame(0.5);
+      tickReal(sim, 0.5);
     }
     expect(sim.needs.fatigue).toBeLessThan(fatigueBeforeRest);
     expect(sim.compression.c).toBeGreaterThan(1);
@@ -265,7 +271,7 @@ describe('RestController.toggle (manual stop)', () => {
     expect(sim.compression.c).toBeGreaterThan(1);
     expect(sim.needs.fatigue).toBe(fatigueAtStop);
     for (let i = 0; i < 60; i++) {
-      rest.frame(1 / 60);
+      tickReal(sim, 1 / 60);
     }
     expect(sim.compression.c).toBe(1);
   });
@@ -274,7 +280,7 @@ describe('RestController.toggle (manual stop)', () => {
     const { sim, rest } = makeRest();
     expect(rest.toggle('sleep', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
-      rest.frame(1 / 60);
+      tickReal(sim, 1 / 60);
     }
     expect(sim.compression.c).toBeGreaterThan(1);
     const fatigueAtStop = sim.needs.fatigue;
@@ -336,7 +342,7 @@ describe('Session long-action input lock', () => {
     const { sim } = session;
     const { time } = sim;
     const position = [...session.body.pos];
-    session.frame(1 / 60);
+    session.frame(simSeconds(1 / 60));
     expect(session.rest.action?.kind).toBe(kind);
     expect(sim.compression.active).toBe(true);
     expect(sim.time).toBeGreaterThan(time);
@@ -378,16 +384,16 @@ describe('Session long-action input lock', () => {
     const job = session.queue.enqueueAction('test.knockout-handling', 'Fixture action', 0.01);
     session.sim.body.impact(0, 'torso', { shockDamage: session.sim.body.shock });
 
-    const maxFrames = Math.ceil(session.sim.body.tuning.knockoutSeconds * 60) + 2;
+    const maxFrames = Math.ceil(session.sim.body.tuning.knockoutSimSeconds * 60) + 2;
     for (let frame = 0; frame < maxFrames && session.sim.body.unconscious; frame += 1) {
-      session.frame(1 / 60);
+      session.frame(simSeconds(1 / 60));
     }
 
     expect(session.sim.body.unconscious).toBe(false);
     expect(completed).toBe(false);
     const handlingFrames = Math.ceil((job.duration + 2 / HANDLING_RATE) * 60);
     for (let frame = 0; frame < handlingFrames && !completed; frame += 1) {
-      session.frame(1 / 60);
+      session.frame(simSeconds(1 / 60));
     }
     expect(completed).toBe(true);
   });
@@ -431,12 +437,12 @@ describe('Session long-action input lock', () => {
 
     expect(session.rest.start('sleep', anchor.uid)).toBeUndefined();
     session.sim.hurt(1, 'a shambler');
-    session.frame(1 / 60);
+    session.frame(simSeconds(1 / 60));
     expect(session.rest.action).toBeUndefined();
     expect(session.sim.compression.locksInput).toBe(false);
     const position = [...session.body.pos];
     for (let i = 0; i < 10; i++) {
-      session.frame(1 / 60);
+      session.frame(simSeconds(1 / 60));
     }
     expect([session.body.pos[0], session.body.pos[2]]).not.toEqual([position[0], position[2]]);
   });
@@ -447,11 +453,11 @@ describe('long-action interruptions', () => {
     const { sim, rest } = makeRest();
     expect(rest.start('rest', REST_ANCHOR)).toBeUndefined();
     for (let i = 0; i < 120; i++) {
-      rest.frame(1 / 60);
+      tickReal(sim, 1 / 60);
     }
     expect(sim.compression.c).toBeGreaterThan(1);
     sim.hurt(10, 'a fall');
-    rest.frame(1 / 60);
+    tickReal(sim, 1 / 60);
     expect(sim.compression.interruption).toBe("You're hurt");
     expect(sim.compression.c).toBe(1);
   });
@@ -463,7 +469,7 @@ describe('long-action interruptions', () => {
     expect(rest.start('sleep', REST_ANCHOR)).toBeUndefined();
     const emittedInterruptions = sim.events.reader();
     for (let i = 0; i < 20_000 && rest.action !== undefined; i++) {
-      rest.frame(1 / 60);
+      tickReal(sim, 1 / 60);
     }
     const wakeReason = emittedInterruptions.read().find((event) => event.kind === 'interrupt')?.reason;
     if (wakeReason === undefined) {

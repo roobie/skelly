@@ -6,7 +6,7 @@
       "gain": 0.8,
       "pitchJitter": [0.95, 1.05],
       "gainJitter": [0.9, 1.1],
-      "minIntervalSeconds": 0.1,
+      "minIntervalSimSeconds": 0.1,
       "category": "body",
       "noise": { "enabled": true, "radiusMetres": 8 }
     }

@@ -13,6 +13,7 @@ import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
+import { simSeconds } from '../src/core/time.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -229,7 +230,7 @@ describe('rifle firearm handling', () => {
   ])('fires exact %i rpm deadlines independent of polling partitions', (rpm, count) => {
     const regular = new FirearmTrigger();
     const coarse = new FirearmTrigger();
-    const weapon = { uid: 1, rpm };
+    const weapon = { uid: 1, roundsPerSimSecond: rpm / 60 };
     const shots: number[] = [];
     for (let tick = 0; tick < 120; tick++) {
       shots.push(...regular.advance(tick / 60, weapon, tick === 0, true));
@@ -248,13 +249,13 @@ describe('rifle firearm handling', () => {
 
   it('unlatches release and quick clicks, and resets cadence on a weapon change', () => {
     const trigger = new FirearmTrigger();
-    const weapon = { uid: 1, rpm: 800 };
+    const weapon = { uid: 1, roundsPerSimSecond: 800 / 60 };
     expect(trigger.advance(1, weapon, true, false)).toEqual([1]);
     expect(trigger.advance(1.1, weapon, false, false)).toEqual([]);
     expect(trigger.advance(2, weapon, true, true)).toEqual([2]);
     // A release/repress between ticks is still a new trigger edge.
     expect(trigger.advance(2.02, weapon, true, true)).toEqual([2.02]);
-    expect(trigger.advance(2.04, { uid: 2, rpm: 600 }, false, true)).toEqual([2.04]);
+    expect(trigger.advance(2.04, { uid: 2, roundsPerSimSecond: 600 / 60 }, false, true)).toEqual([2.04]);
     expect(trigger.advance(2.14, undefined, false, true)).toEqual([]);
     expect(trigger.advance(4, weapon, true, true)).toEqual([4]);
   });
@@ -273,7 +274,7 @@ describe('rifle firearm handling', () => {
       const data = firearmHandlingFor(item, registry);
       expect(data.model).toBe(model);
       expect(data.action).toBe(model.action);
-      expect(data.rpm).toBe(model.action!.rpm);
+      expect(data.roundsPerSimSecond).toBe(model.action!.roundsPerSimMinute);
       expect(data.calibre).toBe(model.calibre);
       expect(data.caseModelId?.startsWith('case_')).toBe(true);
       expect(registry.models.get(data.caseModelId!)?.calibre).toBe(model.calibre);
@@ -288,15 +289,15 @@ describe('rifle firearm handling', () => {
     const configuredKick = firearmHandlingFor(rifle, registry).recoilKickRadians;
     const firearmDef = registry.items.get(rifle.type)!.firearm!;
     expect(configuredKick).toBe(firearmDef.recoilKickRadians);
-    const { rpm } = firearmHandlingFor(rifle, registry);
-    if (configuredKick === undefined || rpm === undefined) {
+    const { roundsPerSimSecond } = firearmHandlingFor(rifle, registry);
+    if (configuredKick === undefined || roundsPerSimSecond === undefined) {
       throw new Error('Firing fixture needs firearm kick and cadence data');
     }
 
     expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
     expect(shotKinds).toEqual(['singleShot']);
-    expect(mechanics.handlingShotKind(rifle.uid, 1 + 90 / rpm)).toBe('automaticFollowup');
-    expect(mechanics.handlingShotKind(rifle.uid, 1 + 90 / rpm + 1e-6)).toBe('singleShot');
+    expect(mechanics.handlingShotKind(rifle.uid, 1 + 1.5 / roundsPerSimSecond)).toBe('automaticFollowup');
+    expect(mechanics.handlingShotKind(rifle.uid, 1 + 1.5 / roundsPerSimSecond + 1e-6)).toBe('singleShot');
   });
 
   it('passes the held firearm’s data-owned kick with each committed shot', () => {
@@ -318,16 +319,16 @@ describe('rifle firearm handling', () => {
     const model = registry.models.get('rifle_assault')!;
     const action = structuredClone(model.action!);
     const fire = action.fire!;
-    const fixtureStretch = ((60 / action.rpm!) * 2) / fire.durationSeconds;
-    for (const key of ['durationSeconds', 'rearwardSeconds', 'dwellSeconds', 'forwardSeconds'] as const) {
-      fire[key] *= fixtureStretch;
+    const fixtureStretch = ((1 / action.roundsPerSimMinute!) * 2) / fire.durationSimSeconds;
+    for (const key of ['durationSimSeconds', 'rearwardSimSeconds', 'dwellSimSeconds', 'forwardSimSeconds'] as const) {
+      fire[key] = simSeconds(fire[key] * fixtureStretch);
     }
     const fixture = { ...registry, models: new Map(registry.models) };
     fixture.models.set(model.id, { ...model, action });
     const { inventory, mechanics, rifle } = armed({ pose: () => undefined }, { content: fixture });
     expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
-    const duration = 60 / action.rpm!;
-    const ejectAt = (fire.rearwardSeconds * action.ejectAt * duration) / fire.durationSeconds;
+    const duration = 1 / action.roundsPerSimMinute!;
+    const ejectAt = (fire.rearwardSimSeconds * action.ejectAt * duration) / fire.durationSimSeconds;
     expect(actionCycleSeconds(action, 'fire')).toBe(duration);
     expect(ejectSeconds(action, 'fire')).toBeCloseTo(ejectAt);
     expect(sampleActionStroke(action, 'fire', ejectAt)).toBeCloseTo(action.ejectAt);
@@ -347,8 +348,8 @@ describe('rifle firearm handling', () => {
     expect(firearmHandlingFor(pump, registry)).toMatchObject({
       calibre: '12-gauge-00-buck',
       caseModelId: 'case_12_h_gauge_h_00_h_buck',
-      rpm: undefined,
-      action: { hand: { durationSeconds: 1.5 } },
+      roundsPerSimSecond: undefined,
+      action: { hand: { durationSimSeconds: 1.5 } },
     });
     const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
       blockSize: 0.5,
@@ -415,7 +416,7 @@ describe('rifle firearm handling', () => {
     const loaded = rifle.slots!.magazine!.cartridges!.length;
     const chambered = rifle.firearm!.roundType!;
     expect(mechanics.cock(rifle.uid, 1)).toBeUndefined();
-    const elapsed = firearmHandlingFor(rifle, registry).action.hand.rearwardSeconds;
+    const elapsed = firearmHandlingFor(rifle, registry).action.hand.rearwardSimSeconds;
     queue.tick(elapsed);
     mechanics.advanceTo(1 + elapsed);
     queue.cancel();
@@ -433,7 +434,7 @@ describe('rifle firearm handling', () => {
 
   it('uses exported charge duration in the handling queue and prevents firing during the hand action', () => {
     const { queue, mechanics, rifle } = armed();
-    const duration = firearmHandlingFor(rifle, registry).action.hand.durationSeconds;
+    const duration = firearmHandlingFor(rifle, registry).action.hand.durationSimSeconds;
     expect(mechanics.cockReason(rifle.uid)).toBeUndefined();
     expect(mechanics.cock(rifle.uid, 10)).toBeUndefined();
     expect(mechanics.cockReason(rifle.uid)).toBeDefined();

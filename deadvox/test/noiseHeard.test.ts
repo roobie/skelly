@@ -281,7 +281,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     ];
     const door = session.entities.add({ type: 'wood_door', pos: doorOrigin, size: doorSize, facing: 'n' })!;
     const doorAction = (closing: boolean) => {
-      session.queue.enqueueAction(DOOR_ACTION, 'Door', registry.furniture.get('wood_door')!.door!.handling, {
+      session.queue.enqueueAction(DOOR_ACTION, 'Door', registry.furniture.get('wood_door')!.door!.handlingSimSeconds, {
         entityUid: door.uid,
         closing,
       });
@@ -330,7 +330,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     const loaded = session.firearms.load(shell, session.sim.time) === undefined;
     observe(scenario, 'shotgun loads', loaded);
     advance(Math.ceil(SHELL_LOAD_SECONDS * 60) + 1);
-    const rackDuration = firearmHandlingFor(gun, registry).action.hand.durationSeconds;
+    const rackDuration = firearmHandlingFor(gun, registry).action.hand.durationSimSeconds;
     const racked = session.firearms.cock(gun.uid, session.sim.time) === undefined;
     observe(scenario, 'shotgun racks', racked);
     advance(Math.ceil(rackDuration * 60) + 1);

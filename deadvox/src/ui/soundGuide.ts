@@ -316,7 +316,7 @@ export interface SoundGuideEntry {
   readonly gain: number;
   readonly pitchJitter: readonly [number, number];
   readonly gainJitter: readonly [number, number];
-  readonly minIntervalSeconds: number;
+  readonly minIntervalSimSeconds: number;
   readonly noiseRadiusMetres: number | null;
   readonly note: string | null;
   readonly variants: readonly SoundVariantGuide[];
@@ -414,7 +414,7 @@ export const buildSoundGuide = (sounds: readonly SoundDef[], manifest: Manifest)
         gain: sound.gain,
         pitchJitter: sound.pitchJitter,
         gainJitter: sound.gainJitter,
-        minIntervalSeconds: sound.minIntervalSeconds,
+        minIntervalSimSeconds: sound.minIntervalSimSeconds,
         noiseRadiusMetres: sound.noise.enabled ? sound.noise.radiusMetres : null,
         note: [BR_STATUS_NOTES.get(id), trigger.note].filter((note) => note !== undefined).join(' '),
         variants: sound.variants.map((file) => soundVariant(file, byFile.get(file))),

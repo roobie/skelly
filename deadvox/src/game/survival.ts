@@ -5,7 +5,6 @@
 
 import { canonicalJson } from '../core/canonicalJson.ts';
 import { dominantSide } from '../core/character.ts';
-import { gameHours } from '../core/clock.ts';
 import { freshnessWord, isRotten } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
@@ -16,6 +15,7 @@ import { DRINK_TIME, EAT_TIME, useOption } from '../core/options.ts';
 import type { ReachSnapshot } from '../core/reach.ts';
 import type { Readable } from '../core/readable.ts';
 import type { Simulation } from '../core/sim.ts';
+import { simSeconds, simToGameSeconds } from '../core/time.ts';
 import { type ItemAction, ItemActionSelection, itemActionsFor } from './itemActions.ts';
 
 const numberParam = (params: JobParams, key: string): number => {
@@ -183,7 +183,7 @@ export class Survival {
       treatment.region,
       item.uid,
       treatment.kind,
-      this.sim.body.tuning.treatmentSeconds,
+      this.sim.body.tuning.treatmentSimSeconds,
     );
   }
 
@@ -366,7 +366,7 @@ export class Survival {
   private switchLight(light: Item): string | undefined {
     const { registry } = this.inventory;
     const spec = defOf(registry, light.type).light!;
-    if (light.on && spec.burnTime !== undefined && drainBurnLight(light, this.sim.calendar)) {
+    if (light.on && spec.burnTimeGameHours !== undefined && drainBurnLight(light, this.sim.calendar)) {
       this.inventory.version += 1;
       return 'It has burned out';
     }
@@ -392,11 +392,11 @@ export class Survival {
 
   /** Turns off a light without discarding its remaining burn. */
   private douseLight(item: Item, spec: LightSpec): void {
-    if (spec.burnTime !== undefined) {
+    if (spec.burnTimeGameHours !== undefined) {
       drainBurnLight(item, this.sim.calendar);
     }
     item.on = false;
-    item.litAt = undefined;
+    item.litAtGameTimestamp = undefined;
     this.inventory.version += 1;
     if (this.lit === item) {
       this.lit = undefined;
@@ -422,8 +422,8 @@ export class Survival {
     }
     const beforeCharge = item.charges;
     const expired =
-      spec.burnTime === undefined
-        ? drainLight(registry, item, gameHours(this.sim.clock, dt)) !== undefined
+      spec.burnTimeGameHours === undefined
+        ? drainLight(registry, item, simToGameSeconds(this.sim.clock, simSeconds(dt))) !== undefined
         : drainBurnLight(item, this.sim.calendar);
     if (item.charges !== beforeCharge || expired) {
       this.inventory.version += 1;

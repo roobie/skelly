@@ -65,7 +65,7 @@ export const rifleInHand = (
     type = 'rifle_assault',
     rounds = 3,
     side = dominantSide(inventory.character),
-    magazines = new MagazineHandling(inventory, queue, { feet: () => [0, 1, 0], reloadDurationScale: () => 1 }),
+    magazines = new MagazineHandling(inventory, queue, { feet: () => [0, 1, 0], reloadFactor: () => 1 }),
   }: RifleOptions = {},
 ): ChargedRifle => {
   const { magazine: magazineType, cartridge } = rifleAmmunition(inventory.registry, type);
