@@ -336,14 +336,30 @@ export const HEARING_GAZE_JITTER = {
   cyclesPerSimSecond: 0.6,
 } as const;
 
-export type PerceptionLabel = 'sees you' | 'hears you' | 'remembers' | 'unaware';
+export type PerceptionLabel = 'sees you' | 'hears you' | 'notices something' | 'remembers' | 'unaware';
 
-export const perceptionLabelFor = (zombie: Zombie, recentNearStimulus: boolean): PerceptionLabel => {
+const perceivedAtPlayer = (target: Vec3, playerEye: Vec3 | undefined, blockSize: number): boolean => {
+  if (!playerEye) {
+    return false;
+  }
+  // The stored point and eye position differ vertically; horizontal equality identifies a player source without source state.
+  const tolerance = blockSize / 1000;
+  return Math.hypot(target[0] * blockSize - playerEye[0], target[2] * blockSize - playerEye[2]) <= tolerance;
+};
+
+export const perceptionLabelFor = (
+  zombie: Zombie,
+  recentNearStimulus: boolean,
+  playerEye: Vec3 | undefined,
+  blockSize: number,
+): PerceptionLabel => {
   if (zombie.mode === 'chase') {
     return 'sees you';
   }
   if (recentNearStimulus) {
-    return 'hears you';
+    return zombie.lastPerceived && perceivedAtPlayer(zombie.lastPerceived, playerEye, blockSize)
+      ? 'hears you'
+      : 'notices something';
   }
   if (zombie.lastPerceived !== undefined || zombie.mode === 'investigate' || zombie.mode === 'search') {
     return 'remembers';
@@ -714,7 +730,12 @@ export class MobActorMeshes implements ZombieRenderer {
       perceptionLabelRoot.append(label);
       this.perceptionLabels.set(id, label);
     }
-    const perception = perceptionLabelFor(zombie, this.hasRecentNearStimulus(state, zombie));
+    const perception = perceptionLabelFor(
+      zombie,
+      this.hasRecentNearStimulus(state, zombie),
+      this.playerEyePosition,
+      this.blockSize,
+    );
     label.textContent = perception;
     label.dataset.perceptionLabel = perception;
     this.labelProjection.set(placement.worldPos[0], placement.worldPos[1] + 1.8, placement.worldPos[2]).project(camera);

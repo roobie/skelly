@@ -588,19 +588,24 @@ describe('MobActorMeshes', () => {
     }
   });
 
-  it('labels sight, recent near stimulus, stale attention, and no attention from stored state', () => {
+  it('labels a player-source near noise, a lure light, stale attention, and no attention from stored state', () => {
     const zombie = makeZombie([0, 0, 0]);
+    const blockSize = 0.5;
+    const playerEye: Vec3 = [1.5, 1.6, -2];
     zombie.mode = 'chase';
-    expect(perceptionLabelFor(zombie, false)).toBe('sees you');
+    expect(perceptionLabelFor(zombie, false, playerEye, blockSize)).toBe('sees you');
     zombie.mode = 'investigate';
     zombie.investigationTier = 'near';
-    zombie.lastPerceived = [1, 0, 1];
-    expect(perceptionLabelFor(zombie, true)).toBe('hears you');
-    expect(perceptionLabelFor(zombie, false)).toBe('remembers');
+    zombie.lastPerceived = [playerEye[0] / blockSize, 0, playerEye[2] / blockSize];
+    expect(perceptionLabelFor(zombie, true, playerEye, blockSize)).toBe('hears you');
+    const lureLightPosition: Vec3 = [playerEye[0] + blockSize, playerEye[1], playerEye[2]];
+    zombie.lastPerceived = [lureLightPosition[0] / blockSize, 0, lureLightPosition[2] / blockSize];
+    expect(perceptionLabelFor(zombie, true, playerEye, blockSize)).toBe('notices something');
+    expect(perceptionLabelFor(zombie, false, playerEye, blockSize)).toBe('remembers');
     zombie.mode = 'idle';
     zombie.investigationTier = undefined;
     zombie.lastPerceived = undefined;
-    expect(perceptionLabelFor(zombie, false)).toBe('unaware');
+    expect(perceptionLabelFor(zombie, false, playerEye, blockSize)).toBe('unaware');
   });
 
   it('does not track after the zombie dies', () => {
