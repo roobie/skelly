@@ -10,7 +10,7 @@
   "tileheight": 1,
   "infinite": false,
   "nextlayerid": 7,
-  "nextobjectid": 27,
+  "nextobjectid": 51,
   "properties": [
     {
       "name": "id",
@@ -328,7 +328,31 @@
               "value": "[{\"at\":[5,1,3],\"items\":[{\"item\":\"crowbar\",\"count\":1,\"condition\":0.6}]}]"
             }
           ]
-        }
+        },
+        {"id":27,"name":"Commandeered community hall","type":"building","x":418.5,"y":239,"width":16,"height":12,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"medical_hall"},{"name":"storeys","type":"int","value":1},{"name":"fixed_loot","type":"string","value":"[{\"at\":[4,1,20],\"items\":[{\"item\":\"antiseptic\",\"count\":1},{\"item\":\"pharmacy_key\",\"count\":1}]},{\"at\":[25,1,3],\"items\":[{\"item\":\"antibiotics\",\"count\":1}]},{\"at\":[3,1,10],\"items\":[{\"item\":\"medical_research_log\",\"count\":1}]}]"}]},
+        {"id":28,"name":"Triage tent west","type":"building","x":407,"y":242,"width":7,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"triage_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":29,"name":"Triage tent east","type":"building","x":436.5,"y":242,"width":7,"height":4,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"triage_tent"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":30,"name":"Medical fence north 1","type":"building","x":402,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":31,"name":"Medical fence north 2","type":"building","x":409,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":32,"name":"Medical fence north 3","type":"building","x":416,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":33,"name":"Medical fence north 4","type":"building","x":423,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":34,"name":"Medical fence north 5","type":"building","x":430,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":35,"name":"Medical fence north 6","type":"building","x":437,"y":230,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":36,"name":"Medical fence south 1","type":"building","x":402,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":37,"name":"Medical fence south 2","type":"building","x":409,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":38,"name":"Medical fence south 3","type":"building","x":416,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":39,"name":"Medical fence south 4","type":"building","x":430,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":40,"name":"Medical fence south 5","type":"building","x":437,"y":265.5,"width":7,"height":0.5,"rotation":0,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":41,"name":"Medical fence west 1","type":"building","x":402,"y":230.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":42,"name":"Medical fence west 2","type":"building","x":402,"y":237.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":43,"name":"Medical fence west 3","type":"building","x":402,"y":244.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":44,"name":"Medical fence west 4","type":"building","x":402,"y":251.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":45,"name":"Medical fence west 5","type":"building","x":402,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":46,"name":"Medical fence east 1","type":"building","x":444.5,"y":230.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":47,"name":"Medical fence east 2","type":"building","x":444.5,"y":237.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":48,"name":"Medical fence east 3","type":"building","x":444.5,"y":244.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":49,"name":"Medical fence east 4","type":"building","x":444.5,"y":251.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]},
+        {"id":50,"name":"Medical fence east 5","type":"building","x":444.5,"y":258.5,"width":7,"height":0.5,"rotation":90,"visible":true,"properties":[{"name":"template","type":"string","propertytype":"template_id","value":"rickety_fence"},{"name":"fixed_loot","type":"string","value":"[]"}]}
       ]
     },
     {
@@ -661,7 +685,7 @@
       "objects": [
         {
           "id": 19,
-          "name": "Dirt track from house through hamlet to cabins",
+          "name": "Dirt track from house through hamlet and cabins to the medical compound",
           "type": "track",
           "x": 92,
           "y": 85,
@@ -717,6 +741,42 @@
             {
               "x": 238,
               "y": 66
+            },
+            {
+              "x": 238,
+              "y": 55
+            },
+            {
+              "x": 250,
+              "y": 55
+            },
+            {
+              "x": 280,
+              "y": 61
+            },
+            {
+              "x": 298,
+              "y": 95
+            },
+            {
+              "x": 306,
+              "y": 135
+            },
+            {
+              "x": 307,
+              "y": 175
+            },
+            {
+              "x": 308,
+              "y": 185
+            },
+            {
+              "x": 334.5,
+              "y": 185
+            },
+            {
+              "x": 334.5,
+              "y": 167
             }
           ],
           "properties": [

@@ -22,6 +22,8 @@ export interface GameConfig {
   debug: boolean;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
+  /** Debug-only fresh-session start in metres (`?at=x,z[,yawDegrees]`). */
+  debugStart?: DebugStart;
   /**
    * What stands near spawn: the hamlet, milestone 1.0's test house (the benchmark's
    * scene), or the stress-test city.
@@ -60,6 +62,31 @@ export const actorRendererFromUrl = (params: URLSearchParams): ActorRenderer =>
   params.get('actors') === 'boxes' ? 'boxes' : 'detailed';
 
 export type SiteName = string;
+
+export interface DebugStart {
+  x: number;
+  z: number;
+  yawDegrees?: number;
+}
+
+const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
+  if (params.get('debug') !== '1') {
+    return undefined;
+  }
+  const raw = params.get('at');
+  if (raw === null) {
+    return undefined;
+  }
+  const fields = raw.split(',');
+  const values = fields.map((field) => (field.trim() === '' ? Number.NaN : Number(field)));
+  if ((values.length !== 2 && values.length !== 3) || values.some((value) => !Number.isFinite(value))) {
+    // biome-ignore lint/suspicious/noConsole: a malformed debug URL needs a visible fallback warning.
+    console.warn(`Ignoring invalid debug start position "${raw}"; expected at=x,z[,yaw] in metres/degrees.`);
+    return undefined;
+  }
+  const [x, z, yawDegrees] = values;
+  return { x: x!, z: z!, ...(yawDegrees === undefined ? {} : { yawDegrees }) };
+};
 
 // URL parsing precedes world construction; only admitted files may contribute authored ids.
 const authoredIds = new Set(BUNDLED_CONTENT.registry.layouts.keys());
@@ -108,6 +135,10 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const requestedTime = params.get('time');
   config.start = requestedTime === null ? (layoutTime ?? SPAWN_TIME) : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
   config.debug = params.get('debug') === '1';
+  const debugStart = debugStartFromUrl(params);
+  if (debugStart) {
+    config.debugStart = debugStart;
+  }
   if (config.debug && params.get('handedness') === 'left') {
     config.debugHandedness = 'left';
   }

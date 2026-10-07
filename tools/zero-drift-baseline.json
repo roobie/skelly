@@ -91,7 +91,6 @@
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "game/play.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/chunks.ts", "count": 2 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/flashlight.ts", "count": 1 },
-    { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/furniture.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/hands.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/models.ts", "count": 1 },
     { "path": "deadvox/PROJECT.md", "check": "path", "text": "render/piles.ts", "count": 1 },

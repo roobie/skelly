@@ -151,11 +151,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('spawn.previous', 'Select previous spawn item', ['spawn'], ['ArrowUp'], 'press', { repeat: true, text: true }),
   row('spawn.next', 'Select next spawn item', ['spawn'], ['ArrowDown'], 'press', { repeat: true, text: true }),
   row('spawn.dismiss', 'Close spawn menu', ['spawn'], ['Tab'], 'press', { text: true }),
-  row('spawn.confirm', 'Spawn selected item', ['spawn'], ['Enter'], 'press', {
-    gate: 'debug.gate',
-    debug: true,
-    text: true,
-  }),
+  row('spawn.confirm', 'Spawn selected item', ['spawn'], ['Enter'], 'press', { debug: true, text: true }),
   row('debug.gate', 'Hold for debug commands', all, ['F2'], 'held-state', { debug: true, text: true }),
   debugRow('debug.panel-toggle', 'Debug panel', 'Backquote', all),
   debugModifiedRow('debug.input-replay-export', 'Export input replay', 'Backquote', 'shift'),

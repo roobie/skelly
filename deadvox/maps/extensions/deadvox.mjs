@@ -27,7 +27,13 @@ function writeJson(path, value) {
 }
 function content() {
   const base = `${root}/../src/content/base`;
-  const templateFiles = ['templates.json', 'templates-cabins.json', 'templates-stairs.json', 'templates-playtest.json'];
+  const templateFiles = [
+    'templates.json',
+    'templates-cabins.json',
+    'templates-stairs.json',
+    'templates-playtest.json',
+    'templates-medical.json',
+  ];
   const templates = [];
   for (const file of templateFiles) {
     const entries = readJson(`${base}/${file}`).templates || [];

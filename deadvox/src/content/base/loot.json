@@ -423,6 +423,16 @@
         { "item": "cartridge_7_d_62x39", "weight": 2, "count": [5, 15] },
         { "nothing": true, "weight": 2 }
       ]
+    },
+    {
+      "id": "medical_filler",
+      "rolls": [1, 2],
+      "entries": [
+        { "item": "bandage", "weight": 4, "count": [1, 2] },
+        { "item": "painkillers", "weight": 2 },
+        { "item": "rag", "weight": 1 },
+        { "nothing": true, "weight": 3 }
+      ]
     }
   ]
 }

@@ -30,18 +30,29 @@ catalogue that could mislead a player; see `BindingRegistry` in
 `src/game/inputBindings.ts`.
 
 Noclip flight is ungated while noclip is active so vertical movement can combine
-with WASD; entering noclip remains gated. Spawn-menu navigation and dismissal
-are ordinary modal controls. Keyboard spawn confirmation and native activation
-of debug buttons remain gated. Native text editing/focus stays with the browser;
-see `CONTROLS.md`, “Native browser boundary and exceptions”. A desktop OS can
-intercept a key before the browser receives it; report that boundary rather than
-claiming a synthetic event proves capture.
+with WASD; entering noclip remains gated. The spawn menu itself is debug-only,
+but its navigation and confirmation are ordinary modal controls. BR, 2026-10-07
+11:02, verbatim:
+
+> “in the F2+G menu, you shouldn't need F2+Enter to select”
+> “that is; simply Enter should suffice”
+
+Enter confirms while the spawn menu is open; native activation of debug buttons
+remains gated. Native text editing/focus stays with the browser; see `CONTROLS.md`,
+“Native browser boundary and exceptions”. A desktop OS can intercept a key before
+the browser receives it; report that boundary rather than claiming a synthetic
+event proves capture.
 
 Fresh debug games receive an authored loadout so experiments do not alter normal
 games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.
 
 - `cam=x,y,z,yaw,pitch,roll`: the player's feet in metres and the view in degrees. Copy it
   from the address bar to share an exact pose.
+- `at=x,z[,yaw]`: start a new debug session at x/z in metres on the site's ground, optionally
+  facing yaw degrees. It makes a site look URL reproducible without changing saved or replayed
+  state: loading a save keeps its saved position and view, and a replay starts from its recorded
+  snapshot. See `src/game/config.ts`, `configFromUrl`, and `src/game/worldSetup.ts`,
+  `playerStartFromWorld`.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
 - `voicePitch=<factor>` and `voicePitchLarge=<factor>` on `?site=voice_size&debug=1` tune figure pitch anchors. `src/game/shamblerAudio.ts`, `debugVoicePitch`, ignores them on other sites or without debug mode.
 - `firearmsCombat=<level>` on a fresh debug world sets the authored firearms-combat skill range (`firearms_combat`). See `src/core/character.ts`, `SKILL_LEVEL_MIN`, `SKILL_LEVEL_MAX` and `SKILL_LEVEL_LEGENDARY`, and `src/debug/debugFirearmsSkill.ts`, `setDebugFirearmsSkill`.
