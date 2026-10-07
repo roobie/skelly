@@ -18,13 +18,14 @@ restore a flaky case or remove its reinstatement obligation.
 
 The launch-timeout scan for issue #287 found failures only in the IndexedDB
 shard; other failed browser jobs in the sample had different causes. The
-save-storage path overrode Playwright's bundled Chromium with the runner's system
-Chrome. `deadvox/test/browser/save-storage.mjs`, `chromium`, now uses
-Playwright's lockfile-matched browser, and the reusable workflow caches that
-browser by the Deadvox lockfile so its revision follows the installed Playwright
-package. `deadvox/test/browser/playwrightDebugBuffer.mjs`,
-`bufferPlaywrightDebugOutput`, keeps `pw:browser` output available for a launch
-failure without flooding successful runs.
+save-storage path had explicitly selected runner system Chrome instead of
+Playwright's bundled Chromium. Other Chromium stages still launch system Chrome
+through `CHROME_BIN`; d120-2 changes only save-storage to Playwright's
+lockfile-matched browser. The reusable workflow caches that browser by the
+Deadvox lockfile so its revision follows the installed Playwright package.
+`deadvox/test/browser/playwrightDebugBuffer.mjs`,
+`bufferPlaywrightDebugOutput`, retains a bounded tail of `pw:browser` output for
+the stage and prints it on any failure, while discarding it on success.
 
 The required `check` in `.github/workflows/deadvox.yml` uses
 `tools/browser-ci-result.mjs`, `assertBrowserResult`. A selected layout's jobs

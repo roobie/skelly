@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, it } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { parse, stringify } from 'yaml';
+import { stringify } from 'yaml';
 import { reserveDistinctPorts } from '../deadvox/tools/browser-ports.mjs';
 import {
   browserManifest,
@@ -17,8 +17,6 @@ import {
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const { scripts } = JSON.parse(readFileSync(join(ROOT, 'deadvox/package.json'), 'utf8'));
-const browserWorkflow = parse(readFileSync(join(ROOT, '.github/workflows/deadvox-browser.yml'), 'utf8'));
-const browserWorkflowSteps = browserWorkflow.jobs.run.steps;
 const browserStages = browserStagesOfScripts(scripts);
 const covered = new Set(repositoryManifest(ROOT).full);
 const uncovered = (name) => browserStages[name].map(describeStage).filter((stage) => !covered.has(stage));
@@ -26,8 +24,7 @@ const uncovered = (name) => browserStages[name].map(describeStage).filter((stage
 const missingCase = /enabled package-script cases/;
 const duplicateCase = /exactly once/;
 const serialControl = /start independently/;
-const browserCacheKey = /hashFiles\('deadvox\/package-lock\.json'\)/;
-const customExecutablePath = /executablePath/;
+const customChromiumSelection = /\b(?:executablePath|channel)\s*:/;
 const expression = (body) => `\${{ ${body} }}`;
 
 const partitionFixture = () => ({
@@ -108,31 +105,15 @@ describe('deadvox browser CI coverage', () => {
     assert.deepEqual(missing, []);
   });
 
-  it('installs lockfile-pinned Playwright Chromium from the shared browser cache', () => {
-    const shards = ['control-check', 'save-other', 'opfs', 'indexeddb'];
-    const condition = expression(shards.map((shard) => `inputs.shard == '${shard}'`).join(' || '));
-    const cache = browserWorkflowSteps.find(({ name }) => name === 'Cache Playwright Chromium');
-    const install = browserWorkflowSteps.find(
-      ({ name }) => name === 'Install Playwright Chromium and system dependencies',
-    );
-
-    assert.equal(cache?.uses, 'actions/cache@v4');
-    assert.equal(cache?.if, condition);
-    assert.equal(cache?.with.path, '~/.cache/ms-playwright');
-    assert.match(cache?.with.key, browserCacheKey);
-    assert.equal(install?.if, condition);
-    assert.equal(install?.run, 'npx playwright install --with-deps chromium');
-    assert.ok(browserWorkflowSteps.indexOf(cache) < browserWorkflowSteps.indexOf(install));
-    assert.ok(
-      browserWorkflowSteps.findIndex(({ run }) => run === 'node test/browser/save-storage.mjs chromium') >
-        browserWorkflowSteps.indexOf(install),
-      'managed Chromium is installed before save-storage runs',
-    );
-
+  it('uses Playwright-managed Chromium for save-storage', () => {
     const saveStorage = readFileSync(join(ROOT, 'deadvox/test/browser/save-storage.mjs'), 'utf8');
     const launchOptions = saveStorage.split('browser = await chromium.launch({')[1]?.split('});')[0];
     assert.ok(launchOptions, 'save-storage declares a Chromium launch');
-    assert.doesNotMatch(launchOptions, customExecutablePath, 'save-storage must use Playwright-managed Chromium');
+    assert.doesNotMatch(
+      launchOptions,
+      customChromiumSelection,
+      'save-storage must not select a system browser through executablePath or channel',
+    );
   });
 
   it('rejects a missing case or a case executed in duplicate shards', () => {

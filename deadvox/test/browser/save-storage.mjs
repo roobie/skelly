@@ -83,6 +83,7 @@ let browser;
 let firefoxServer;
 let launchDebugBuffer;
 let originalStderrWrite;
+let stageSucceeded = false;
 try {
   const address = await withTimeout('Vite startup', startWebServer());
   assert(address && typeof address !== 'string');
@@ -96,17 +97,11 @@ try {
       originalStderrWrite.call(process.stderr, chunk, ...args),
     );
     process.stderr.write = launchDebugBuffer.write;
-    try {
-      browser = await chromium.launch({
-        headless: true,
-        args: browserStageArgs(stageId, ['--disable-extensions', '--password-store=basic', '--window-size=1280,900']),
-        timeout: STAGE_TIMEOUT_MS,
-      });
-      launchDebugBuffer.discard();
-    } catch (error) {
-      launchDebugBuffer.flush();
-      throw error;
-    }
+    browser = await chromium.launch({
+      headless: true,
+      args: browserStageArgs(stageId, ['--disable-extensions', '--password-store=basic', '--window-size=1280,900']),
+      timeout: STAGE_TIMEOUT_MS,
+    });
     context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   } else {
     // The managed server exposes public child-process diagnostics without reaching into Playwright internals.
@@ -760,6 +755,7 @@ try {
       `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, ${contract.crashResults.length} kill stages, and autosave/title ${autosaveScenario} (${autosaveResults.map(({ backend }) => backend).join(', ')}) passed\n`,
     );
   }
+  stageSucceeded = true;
 } finally {
   await withTimeout('browser shutdown', browser?.close() ?? Promise.resolve(), 5000).catch((error) => {
     process.stderr.write(`Cleanup warning: ${String(error)}\n`);
@@ -772,7 +768,11 @@ try {
       process.stderr.write(`Cleanup warning: ${String(error)}\n`);
     });
   }
-  launchDebugBuffer?.discard();
+  if (stageSucceeded) {
+    launchDebugBuffer?.discard();
+  } else {
+    launchDebugBuffer?.flush();
+  }
   if (originalStderrWrite) {
     process.stderr.write = originalStderrWrite;
   }
