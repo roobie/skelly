@@ -10,9 +10,7 @@
         // OS dependency installed for Firefox's native-window probe; not a project package.
         "xwininfo",
         // OS dependency installed for Firefox's native-window probe; not a project package.
-        "xprop",
-        // OS dependency used by the temporary Chromium launch diagnostic; not a project package.
-        "dbus-daemon"
+        "xprop"
       ],
       "ignoreUnresolved": [
         // Vite resolves this browser URL from the Deadvox root at runtime.
