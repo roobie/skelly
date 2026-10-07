@@ -39,21 +39,17 @@ export const withDefaultAttachment = (
 
 export const withDefaultMountedLight = (base: Registry, firearmType: string, lightType: string) => {
   const firearmModel = base.models.get(base.items.get(firearmType)?.model ?? '');
-  const slots = firearmModel?.attachmentSlots ?? [];
-  const slot = slots.find(({ mount }) => mount === 'rail-bottom') ?? slots.find(({ mount }) => mount !== 'muzzle');
   const sourceLight = base.items.get(lightType);
-  const sourceModel = sourceLight?.model === undefined ? undefined : base.models.get(sourceLight.model);
-  if (!(slot && sourceLight && sourceModel?.id)) {
-    throw new Error('Fixture firearm or light has no exported model/rail slot');
+  const mountItem = base.items.get('tactical_flashlight_mount');
+  const mountModel = mountItem?.model === undefined ? undefined : base.models.get(mountItem.model);
+  const exportedAttachment = mountModel?.attachment;
+  const attachment = exportedAttachment && { ...exportedAttachment, id: 'fixture-mounted-light' };
+  const slot = firearmModel?.attachmentSlots?.find(({ mount }) => mount === attachment?.mount);
+  if (!(slot && sourceLight && mountModel && attachment)) {
+    throw new Error('Fixture firearm, powered light, or exported rail mount is missing');
   }
   const fixtureType = 'fixture_mounted_light';
   const fixtureModelId = 'fixture_mounted_light';
-  const attachment: FixtureAttachment = {
-    id: 'fixture-mounted-light',
-    kind: 'flashlight-mount',
-    mount: slot.mount,
-    properties: { railSpanNotches: { minOffset: 0, maxOffset: 0 } },
-  };
   const fixtureRegistry: Registry = {
     ...base,
     items: new Map(base.items).set(fixtureType, {
@@ -62,11 +58,7 @@ export const withDefaultMountedLight = (base: Registry, firearmType: string, lig
       name: 'Fixture mounted light',
       model: fixtureModelId,
     }),
-    models: new Map(base.models).set(fixtureModelId, {
-      ...sourceModel,
-      id: fixtureModelId,
-      attachment,
-    }),
+    models: new Map(base.models).set(fixtureModelId, { ...mountModel, id: fixtureModelId }),
   };
   return withDefaultAttachment(fixtureRegistry, firearmType, fixtureType, attachment);
 };

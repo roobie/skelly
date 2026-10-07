@@ -75,7 +75,7 @@ export const muzzleLoad = (registry: Registry, firearm: Item): number | undefine
     const { massKg } = childModel.attachment;
     const grip = host?.grip?.at;
     const slot = host?.attachmentSlots?.find(({ id }) => id === slotId);
-    if (!(slot && grip && massKg !== undefined)) {
+    if (!(slot && grip)) {
       return undefined;
     }
     const distanceFromGrip = Math.hypot(

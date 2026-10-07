@@ -465,7 +465,7 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
 const itemWeightGrams = (registry: Registry, item: Item): number => {
   const def = defOf(registry, item.type);
   const model = def.model ? registry.models.get(def.model) : undefined;
-  return model?.attachment?.massKg === undefined ? def.weight : model.attachment.massKg * 1000;
+  return model?.attachment ? model.attachment.massKg * 1000 : def.weight;
 };
 
 /** Grams, counting the stack, ammunition and everything in its pockets. */

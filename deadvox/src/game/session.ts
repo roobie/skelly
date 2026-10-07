@@ -105,7 +105,7 @@ const sessionFirearmsSkillZeroHandling = (
   mechanics: FirearmMechanics,
   firearmUid: number | undefined,
   shared: FirearmsSkillZeroHandling,
-): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingFor(firearmUid));
+): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingSettingFor(firearmUid));
 const sessionFirearmsShotKind = (
   mechanics: FirearmMechanics,
   firearmUid: number | undefined,

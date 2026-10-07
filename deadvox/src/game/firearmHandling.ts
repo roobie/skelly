@@ -416,15 +416,22 @@ export class FirearmMechanics {
     return { ...tuning, skillZeroHandling: this.firearmsSkillZeroHandling() };
   }
 
-  skillZeroHandlingFor(uid: number): FirearmsSkillZeroHandling {
+  skillZeroHandlingSettingFor(uid: number): FirearmsSkillZeroHandling {
     const item = this.inventory.itemByUid(uid);
     if (!item) {
       return this.firearmsSkillZeroHandling();
     }
     const override = this.firearmsSkillZeroOverrides.get(item.type);
     const { firearm } = defOf(this.inventory.registry, item.type);
-    const source =
-      override ?? skillZeroHandlingForFirearm(firearm?.skillZeroHandling, this.firearmsSkillZeroHandling());
+    return override ?? skillZeroHandlingForFirearm(firearm?.skillZeroHandling, this.firearmsSkillZeroHandling());
+  }
+
+  skillZeroHandlingFor(uid: number): FirearmsSkillZeroHandling {
+    const item = this.inventory.itemByUid(uid);
+    if (!item) {
+      return this.firearmsSkillZeroHandling();
+    }
+    const source = this.skillZeroHandlingSettingFor(uid);
     const response = firearmAttachmentResponse(this.inventory.registry, item);
     const loadScale = this.muzzleLoadScale(item);
     return {

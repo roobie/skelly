@@ -6,6 +6,7 @@
       "attachment": {
         "id": "foregrip",
         "kind": "foregrip",
+        "massKg": 0.016938745312499996,
         "mount": "rail-bottom",
         "properties": {
           "handlingClass": "vertical",
@@ -23,6 +24,7 @@
         "id": "improvised-suppressor",
         "kind": "suppressor",
         "mount": "muzzle",
+        "massKg": 1.2218603437304045,
         "properties": {
           "noiseFactor": 0.7,
           "wearClass": "improvised"
@@ -35,6 +37,7 @@
       "attachment": {
         "id": "optic-digital-thermal",
         "kind": "optic",
+        "massKg": 0.3376618423714778,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "crosshair",
@@ -63,6 +66,7 @@
       "attachment": {
         "id": "optic-fixed-prism-4x",
         "kind": "optic",
+        "massKg": 0.357488038040254,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "chevron",
@@ -91,6 +95,7 @@
       "attachment": {
         "id": "optic-high-mag-5-25x",
         "kind": "optic",
+        "massKg": 0.3254916611224242,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "crosshair",
@@ -119,6 +124,7 @@
       "attachment": {
         "id": "optic-holographic",
         "kind": "optic",
+        "massKg": 0.30874713046874996,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "dot",
@@ -143,6 +149,7 @@
       "attachment": {
         "id": "optic-lpvo-1-6x",
         "kind": "optic",
+        "massKg": 0.16156919783654183,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "crosshair",
@@ -171,6 +178,7 @@
       "attachment": {
         "id": "optic-mini-reflex",
         "kind": "optic",
+        "massKg": 0.08004009503411555,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "dot",
@@ -195,6 +203,7 @@
       "attachment": {
         "id": "optic-tube-dot",
         "kind": "optic",
+        "massKg": 0.04629537375454333,
         "mount": "rail-top",
         "properties": {
           "reticleKind": "dot",
@@ -219,6 +228,7 @@
       "attachment": {
         "id": "rail-front-sight",
         "kind": "iron-sight",
+        "massKg": 0.0257431857421875,
         "mount": "rail-top",
         "properties": {
           "railSpanNotches": {
@@ -241,6 +251,7 @@
       "attachment": {
         "id": "real-suppressor",
         "kind": "suppressor",
+        "massKg": 0.497976429221834,
         "mount": "muzzle",
         "properties": {
           "noiseFactor": 0.45,
@@ -254,6 +265,7 @@
       "attachment": {
         "id": "tactical-flashlight-mount",
         "kind": "flashlight-mount",
+        "massKg": 0.015398859374999999,
         "mount": "rail-side",
         "properties": {
           "railSpanNotches": {

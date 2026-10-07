@@ -97,9 +97,9 @@ describe('muzzle load', () => {
   });
 
   it('increases sway and raise time while reducing recovery and ready movement', () => {
-    const unloadedFixture = fixture(0);
+    const lightFixture = fixture(0.01);
     const loadedFixture = fixture();
-    expect(unloadedFixture.inventory.add(unloadedFixture.rifle, { kind: 'hand', side: 'right' })).toBe(true);
+    expect(lightFixture.inventory.add(lightFixture.rifle, { kind: 'hand', side: 'right' })).toBe(true);
     expect(loadedFixture.inventory.add(loadedFixture.rifle, { kind: 'hand', side: 'right' })).toBe(true);
     const mechanicsFor = (inventory: Inventory) =>
       new FirearmMechanics(inventory, new HandlingQueue(inventory), {
@@ -107,18 +107,18 @@ describe('muzzle load', () => {
         pose: () => undefined,
         onEjection: () => undefined,
       });
-    const unloadedMechanics = mechanicsFor(unloadedFixture.inventory);
+    const lightMechanics = mechanicsFor(lightFixture.inventory);
     const loadedMechanics = mechanicsFor(loadedFixture.inventory);
-    const unloaded = unloadedMechanics.skillZeroHandlingFor(unloadedFixture.rifle.uid);
-    const unloadedStance = unloadedMechanics.stanceEffectsFor(unloadedFixture.rifle.uid);
+    const lighter = lightMechanics.skillZeroHandlingFor(lightFixture.rifle.uid);
+    const lighterStance = lightMechanics.stanceEffectsFor(lightFixture.rifle.uid);
     expect(muzzleLoad(loadedFixture.registry, loadedFixture.rifle)).toBeGreaterThan(0);
     const loaded = loadedMechanics.skillZeroHandlingFor(loadedFixture.rifle.uid);
     const loadedStance = loadedMechanics.stanceEffectsFor(loadedFixture.rifle.uid);
 
-    expect(loaded.singleShot.variance).toBeGreaterThan(unloaded.singleShot.variance);
-    expect(loaded.singleShot.recoilRecoveryScale).toBeLessThan(unloaded.singleShot.recoilRecoveryScale);
-    expect(loadedStance.raiseDurationSimSeconds).toBeGreaterThan(unloadedStance.raiseDurationSimSeconds);
-    expect(loadedStance.readyMovementFactor).toBeLessThan(unloadedStance.readyMovementFactor);
+    expect(loaded.singleShot.variance).toBeGreaterThan(lighter.singleShot.variance);
+    expect(loaded.singleShot.recoilRecoveryScale).toBeLessThan(lighter.singleShot.recoilRecoveryScale);
+    expect(loadedStance.raiseDurationSimSeconds).toBeGreaterThan(lighterStance.raiseDurationSimSeconds);
+    expect(loadedStance.readyMovementFactor).toBeLessThan(lighterStance.readyMovementFactor);
   });
 
   it('gives an improvised suppressor less recoil and noise reduction and faster wear', () => {
@@ -170,20 +170,30 @@ describe('muzzle load', () => {
     expect(weightOf(registry, rifle)).toBeGreaterThan(original);
   });
 
-  it('uses content weight and no muzzle load when attachment mass is unavailable', () => {
-    const registry = baseRegistry;
+  it('uses exported attachment mass for muzzle load and inventory weight', () => {
+    const registry = freshRegistry();
     const rifle = new Inventory(registry).create('rifle_assault');
-    const children = Object.values(rifle.slots ?? {}).filter((child) => child !== undefined);
-    if (children.length === 0) {
+    const child = Object.values(rifle.slots ?? {}).find((candidate) => candidate !== undefined);
+    if (!child) {
       throw new Error('Factory-created rifle has no default attachment child');
     }
-
-    expect(muzzleLoad(registry, rifle)).toBeUndefined();
-    for (const child of children) {
-      expect(weightOf(registry, child)).toBe(defOf(registry, child.type).weight);
+    const modelId = defOf(registry, child.type).model;
+    const model = modelId === undefined ? undefined : registry.models.get(modelId);
+    if (!model?.attachment) {
+      throw new Error('Factory-created attachment has no exported mass metadata');
     }
-    expect(weightOf(registry, rifle)).toBe(
-      defOf(registry, rifle.type).weight + children.reduce((sum, child) => sum + weightOf(registry, child), 0),
-    );
+    const initialLoad = muzzleLoad(registry, rifle);
+    const initialWeight = weightOf(registry, child);
+    if (initialLoad === undefined) {
+      throw new Error('Factory-created rifle has no measurable attachment load');
+    }
+
+    registry.models.set(model.id, {
+      ...model,
+      attachment: { ...model.attachment, massKg: model.attachment.massKg * 2 },
+    });
+
+    expect(muzzleLoad(registry, rifle)).toBeGreaterThan(initialLoad);
+    expect(weightOf(registry, child)).toBeGreaterThan(initialWeight);
   });
 });
