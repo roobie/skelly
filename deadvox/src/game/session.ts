@@ -1181,9 +1181,9 @@ export const createSession = (options: SessionOptions) => {
         }
       }
     },
-    frameReplay: (simDt: number): void => {
+    frameReplay: (realSeconds: number): void => {
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
-      rest.frameReplay(simDt);
+      rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
           playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);

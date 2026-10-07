@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 7;
+const INPUT_REPLAY_SCHEMA_VERSION = 8;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -22,10 +22,10 @@ const INPUT_REPLAY_TICKS_PER_FRAME = Math.ceil(SKIP_COMPRESSION.maxSimPerFrame *
 const INPUT_REPLAY_MAX_TICKS = INPUT_REPLAY_TICKS_PER_WINDOW * 2 + INPUT_REPLAY_TICKS_PER_FRAME;
 const INPUT_REPLAY_ACTIONS_PER_WINDOW = 8192;
 const INPUT_REPLAY_MAX_ACTIONS = INPUT_REPLAY_ACTIONS_PER_WINDOW * 2;
-const INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW = 32_768;
+const INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW = 32_768;
 const INPUT_REPLAY_MAX_GENERATED_COLUMNS = 4096;
-const INPUT_REPLAY_MAX_COLUMN_CHANGES =
-  INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW * 2 + INPUT_REPLAY_MAX_GENERATED_COLUMNS * 2;
+const INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS =
+  INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW * 2 + INPUT_REPLAY_MAX_GENERATED_COLUMNS * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
 
@@ -309,7 +309,7 @@ const appendColumnChanges = (
   tick: number,
   updates: readonly ReplayColumnUpdate[],
 ): void => {
-  if (changes.length + updates.length > INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW) {
+  if (changes.length + updates.length > INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW) {
     throw new Error('Input replay column changes exceed the recording window');
   }
   for (const [cx, cz, generated] of updates) {
@@ -392,7 +392,7 @@ export class InputReplayRecorder {
     return (
       this.frameCount >= this.ticksPerWindow ||
       this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW ||
-      this.columnChanges.length >= INPUT_REPLAY_MAX_COLUMN_CHANGES_PER_WINDOW
+      this.columnChanges.length >= INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW
     );
   }
 
@@ -548,10 +548,6 @@ const columnSeamChanges = (
   const generated = new Set(previous.generatedColumns.map(([cx, cz]) => `${cx},${cz}`));
   applyColumnChanges(generated, previous.columnChanges);
   const nextGenerated = new Set(current.generatedColumns.map(([cx, cz]) => `${cx},${cz}`));
-  applyColumnChanges(
-    nextGenerated,
-    current.columnChanges.filter(([tick]) => tick === 0),
-  );
   const seamChanges: ReplayColumnChange[] = [];
   for (const key of [...generated].sort()) {
     if (!nextGenerated.has(key)) {
@@ -585,14 +581,12 @@ export function joinInputReplayWindows(
   const columnChanges = [
     ...previous.columnChanges,
     ...seamChanges,
-    ...current.columnChanges
-      .filter(([tick]) => tick > 0)
-      .map(([tick, cx, cz, isGenerated]) => [tick + offset, cx, cz, isGenerated] as const),
+    ...current.columnChanges.map(([tick, cx, cz, isGenerated]) => [tick + offset, cx, cz, isGenerated] as const),
   ];
   if (
     frames.length > INPUT_REPLAY_MAX_TICKS ||
     actions.length > INPUT_REPLAY_MAX_ACTIONS ||
-    columnChanges.length > INPUT_REPLAY_MAX_COLUMN_CHANGES
+    columnChanges.length > INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS
   ) {
     throw new Error('Combined replay windows exceed the supported recording bounds');
   }
@@ -721,7 +715,7 @@ export async function decodeInputReplay(
   }
   if (
     value.generatedColumns.length > INPUT_REPLAY_MAX_GENERATED_COLUMNS ||
-    value.columnChanges.length > INPUT_REPLAY_MAX_COLUMN_CHANGES
+    value.columnChanges.length > INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS
   ) {
     throw new Error('Replay input sequence has too many generated-column entries');
   }
@@ -765,17 +759,11 @@ export async function decodeInputReplay(
     throw new Error('Replay repeats an initially generated column');
   }
   let lastColumnTick = -1;
-  const seenColumnChanges = new Set<string>();
   const columnChanges: ReplayColumnChange[] = value.columnChanges.map((candidate, index) => {
     if (!isReplayColumnChange(candidate, lastColumnTick, frames.length)) {
       throw new Error(`Invalid or out-of-order replay column change ${index}`);
     }
     const [tick, cx, cz, generated] = candidate;
-    const key = `${tick}:${cx},${cz}`;
-    if (seenColumnChanges.has(key)) {
-      throw new Error(`Replay repeats column change ${key}`);
-    }
-    seenColumnChanges.add(key);
     lastColumnTick = tick;
     return [tick, cx, cz, generated];
   });

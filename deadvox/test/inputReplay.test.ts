@@ -7,7 +7,7 @@ import { toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
-import { gameTimeOfDay, realSeconds } from '../src/core/time.ts';
+import { gameTimeOfDay, realSeconds as realDuration } from '../src/core/time.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
 import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
@@ -25,8 +25,8 @@ import {
   sampleFromReplayFrame,
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
-import { InputReplayDriver } from '../src/game/inputReplayDriver.ts';
-import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
+import { InputReplayDriver, nextReplayInputSample } from '../src/game/inputReplayDriver.ts';
+import { InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
@@ -37,6 +37,7 @@ import {
   capture,
   contentLookup,
   createRuntime,
+  fixtureColumns,
   fixtureHamlet,
   fixtureZombieColumn,
   formatVersion,
@@ -69,7 +70,7 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 7,
+    schemaVersion: 8,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
@@ -119,7 +120,7 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
 const applyColumnUpdates = (
   updates: readonly ReplayColumnUpdate[] | undefined,
   generatedColumns: Set<string>,
-  pendingChanges: Map<string, ReplayColumnUpdate>,
+  pendingChanges: ReplayColumnUpdate[],
 ): void => {
   for (const [cx, cz, isGenerated] of updates ?? []) {
     const key = `${cx},${cz}`;
@@ -128,7 +129,7 @@ const applyColumnUpdates = (
     } else {
       generatedColumns.delete(key);
     }
-    pendingChanges.set(key, [cx, cz, isGenerated]);
+    pendingChanges.push([cx, cz, isGenerated]);
   }
 };
 
@@ -163,7 +164,7 @@ const recordActiveSession = (
   const { ready, columns, commands = [], frameDts = [1 / 90, 1 / 60, 1 / 120] } = options;
   const pendingCommands: ReplayActionPayload[] = [];
   const generatedColumns = new Set(columns?.initial.map(([cx, cz]) => `${cx},${cz}`) ?? []);
-  const pendingColumnChanges = new Map<string, ReplayColumnUpdate>();
+  const pendingColumnChanges: ReplayColumnUpdate[] = [];
   const source = createRuntime(
     start,
     false,
@@ -182,15 +183,14 @@ const recordActiveSession = (
           recorder.queueAction(payload.kind, 'down', context, payload);
           pendingCommands.push(payload);
         }
-        const columnChanges = [...pendingColumnChanges.values()];
-        pendingColumnChanges.clear();
+        const columnChanges = pendingColumnChanges.splice(0);
         recorder.recordTick(live, compression, columnChanges);
         const updates = columns?.updatesAtTick(recorder.tickCount) ?? [];
         applyColumnUpdates(updates, generatedColumns, pendingColumnChanges);
         for (const [cx, cz, generated] of updates) {
           if (generated) {
             addFixtureColumn(source, cx, cz);
-            source.session.onColumn(cx, cz, fixtureHamlet);
+            source.session.onColumn(cx, cz, options.initialColumnSite ?? fixtureHamlet);
           } else {
             removeFixtureColumn(source, cx, cz);
             source.session.onColumnUnload(cx, cz);
@@ -225,7 +225,7 @@ const recordActiveSession = (
     }
     source.view.yaw += 0.007;
     source.view.pitch += 0.001;
-    advanceLiveFrame(source.sim, realSeconds(frameDts[frame % frameDts.length]!), undefined, (simDt, until) =>
+    advanceLiveFrame(source.sim, realDuration(frameDts[frame % frameDts.length]!), undefined, (simDt, until) =>
       source.session.frame(simDt, until),
     );
     if (frame > 400) {
@@ -246,29 +246,8 @@ const dispatchReplayAction = (replay: ReturnType<typeof createRuntime>, action: 
   }
 };
 
-const replayInputSample = (
-  replay: ReturnType<typeof createRuntime>,
-  player: InputReplayPlayer,
-): ReplayControlSample => {
-  // Match play.ts, samplePlayerInput: consume each control sample before applying its recorded controls.
-  const sample = player.next();
-  if (sample) {
-    replay.sim.compression.c = sample.compression;
-    applyReplayLook(replay.view, sample);
-    return sample;
-  }
-  return {
-    active: false,
-    inputLocked: true,
-    intent: { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false, useOff: false },
-    yaw: replay.view.yaw,
-    pitch: replay.view.pitch,
-    walking: false,
-    descending: false,
-    worldReady: false,
-    compression: replay.sim.compression.c,
-  };
-};
+const replayInputSample = (replay: ReturnType<typeof createRuntime>, player: InputReplayPlayer): ReplayControlSample =>
+  nextReplayInputSample(player, replay.sim.compression, replay.view).input;
 
 const playSession = (
   start: Readonly<SaveSnapshot>,
@@ -319,7 +298,7 @@ const playSession = (
       currentSimSeconds: () => replay.sim.time,
       compression: replay.sim.compression,
     },
-    frameReplay: (simSeconds) => replay.session.frameReplay(simSeconds),
+    frameReplay: (realSeconds) => replay.session.frameReplay(realSeconds),
     playerPosition: () => replay.player.body.pos,
   });
   if (!driver.initializeColumns()) {
@@ -401,6 +380,19 @@ const createCraftReplayFixture = () => {
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
 
 describe('input replay', () => {
+  it('rejects the previous replay schema after the column-change format change', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    recorder.recordTick(replaySample);
+    const current = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const previousSchema = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
+    previousSchema.schemaVersion = 7;
+
+    await expect(decodeInputReplay(canonicalJsonBytes(previousSchema), { contentLookup })).rejects.toThrow(
+      'Unsupported replay format',
+    );
+  });
+
   it('constructs the replay session at the decoded recording snapshot position', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
@@ -430,6 +422,95 @@ describe('input replay', () => {
     expect(joined.columnChanges).toEqual([
       [1, 1, 2, false],
       [1, 3, 4, true],
+    ]);
+  });
+
+  it('replays a same-tick column load and unload in order, preserving its marker and furniture', async () => {
+    const [cx, cz] = fixtureColumns.find(
+      ([columnX, columnZ]) => fixtureHamlet.furnitureIn(columnX, columnZ).length > 0,
+    )!;
+    const marker: ZombieSpawn = {
+      type: 'shambler',
+      pos: [cx * CHUNK + 7.25, 1, cz * CHUNK + 7.25],
+    };
+    const site: Site = {
+      surface: fixtureHamlet.surface,
+      spawn: fixtureHamlet.spawn,
+      stamp: (chunk) => fixtureHamlet.stamp(chunk),
+      furnitureIn: (columnX, columnZ) => fixtureHamlet.furnitureIn(columnX, columnZ),
+      zombiesIn: (columnX, columnZ) =>
+        columnX === cx && columnZ === cz ? [marker] : fixtureHamlet.zombiesIn(columnX, columnZ),
+      hordesIn: (columnX, columnZ) => fixtureHamlet.hordesIn(columnX, columnZ),
+    };
+    const initialColumns: ReplayGeneratedColumn[] = [[cx + 10, cz + 10]];
+    const start = capture(
+      createRuntime(
+        undefined,
+        false,
+        initialColumns.map(([columnX, columnZ]) => [columnX, columnZ]),
+      ),
+    );
+    const recorder = new InputReplayRecorder(start, undefined, initialColumns);
+    const source = recordActiveSession(start, recorder, {
+      columns: {
+        initial: initialColumns,
+        updatesAtTick: (tick) =>
+          tick === 1
+            ? [
+                [cx, cz, true],
+                [cx, cz, false],
+              ]
+            : [],
+      },
+      initialColumns,
+      initialColumnSite: site,
+      frameDts: [1 / 60],
+    });
+    const markerKey = `shambler:${marker.pos.join(',')}`;
+    expect(source.spawner.snapshotState()).toContain(markerKey);
+    expect(
+      [...source.entities.all].some(
+        (entity) => toChunk(Math.floor(entity.pos[0])) === cx && toChunk(Math.floor(entity.pos[2])) === cz,
+      ),
+    ).toBe(true);
+
+    const sourceEnd = capture(source);
+    const inputs = recorder.copyInputs();
+    const bytes = await encodeInputReplay(start, inputs, formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replay = playSession(start, decoded.inputs, {
+      endSimTimestamp: sourceEnd.character.simulation.time,
+      initialColumns,
+      initialColumnSite: site,
+    });
+
+    expect(replay.spawner.snapshotState()).toContain(markerKey);
+    expect(
+      [...replay.entities.all].some(
+        (entity) => toChunk(Math.floor(entity.pos[0])) === cx && toChunk(Math.floor(entity.pos[2])) === cz,
+      ),
+    ).toBe(true);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('preserves ordered tick-zero column effects when joining recording windows', () => {
+    const frame = [0, 0, 0, 0, 1, 1] as const;
+    const joined = joinInputReplayWindows(
+      { frames: [frame], actions: [], generatedColumns: [], columnChanges: [] },
+      {
+        frames: [frame],
+        actions: [],
+        generatedColumns: [],
+        columnChanges: [
+          [0, 7, -4, true],
+          [0, 7, -4, false],
+        ],
+      },
+    );
+
+    expect(joined.columnChanges).toEqual([
+      [1, 7, -4, true],
+      [1, 7, -4, false],
     ]);
   });
 
@@ -494,6 +575,25 @@ describe('input replay', () => {
     expect(player.tickCount).toBe(2);
   });
 
+  it('consumes replay compression and look in the shared player-tick step', () => {
+    const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
+    recorder.recordTick(replaySample, 7);
+    const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
+    const compression = { c: 1 };
+    const look = { yaw: 0, pitch: 0 };
+
+    const consumed = nextReplayInputSample(player, compression, look);
+
+    expect(consumed.input.compression).toBe(7);
+    expect(consumed.recordedSample?.compression).toBe(7);
+    expect(compression.c).toBe(7);
+    expect(look).toEqual({ yaw: replaySample.yaw, pitch: replaySample.pitch });
+    expect(player.finished).toBe(true);
+    const idle = nextReplayInputSample(player, compression, look);
+    expect(idle.recordedSample).toBeUndefined();
+    expect(idle.input).toMatchObject({ active: false, inputLocked: true, compression: 7 });
+  });
+
   it('records whether the player column was ready at each player tick', () => {
     const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
     recorder.recordTick({ ...replaySample, worldReady: true });
@@ -523,7 +623,7 @@ describe('input replay', () => {
         currentSimSeconds: () => runtime.sim.time,
         compression: runtime.sim.compression,
       },
-      frameReplay: (simSeconds) => runtime.session.frameReplay(simSeconds),
+      frameReplay: (realSeconds) => runtime.session.frameReplay(realSeconds),
       playerPosition: () => runtime.player.body.pos,
     });
 
