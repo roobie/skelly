@@ -600,8 +600,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   the view only if the turned muzzle point does. The pump's cant toward its port
   during a rack moves the mark the same way, though only slightly, since it
   rolls the gun about its own barrel (d114-13). `src/render/handlingTurn.ts`,
-  `handlingRotation`, gives the drawn model and the crosshair (`turnedBore`) the
-  same turn. Shots keep the unturned bore:
+  `handlingRotation`, supplies the same turn to `src/core/heldPose.ts`,
+  `heldFirearmTransform`, for the drawn firearm and its crosshair. Shots keep the
+  unturned bore:
   `FirearmMechanics.fire` refuses one while a handling job or a cycle runs, so
   the two never disagree at a shot.
   An earlier instruction was: “Also, "hipfire" is way off the mark (cross hair / center of
@@ -616,10 +617,18 @@ and `src/core/content.ts`, `checkItemFirearm`.
   `projectCrosshairScreenPosition` and `playCrosshairFrame`, hide it outside the
   viewport and keep the centered default only when no firearm is wielded. The hip pose reuses the hand placement but not the melee
   wrist rotation, so the visible bore follows the player's look. The debug X is
-  separate from the optional crosshair. ADS retains its existing sight
-  alignment; its crosshair, when enabled, reports the aligned bore rather than
-  the random spread. `src/debug/index.ts` owns the development target-range
-  readout. BR's earlier requirement remains: “the number on the screenshot
+  separate from the optional crosshair. BR, 2026-10-07 16:20, ruled: “Really,
+  in ADS, the recoil should let the firearm move (i.e. follow the
+  muzzle-crosshair) without the view following - that is the 'uncontrol' that
+  recoil and other handling aspects brings”. In ADS the undeviated sight
+  direction and up axis, including cant and eye relief, align to the fixed view
+  in `heldFirearmTransform`; recoil, sway and handling then move that shared
+  firearm pose and bore while the view stays put. `HeldItems.update` keeps the
+  optic window attached to the shifted sight, and `heldFirearmBore` uses the
+  same transform for the crosshair. The intentional over-limit pitch shift still
+  moves the view through `src/game/session.ts`, `applyAimViewPitchShift`
+  (`controls.adjustPitch`).
+  `src/debug/index.ts` owns the development target-range readout. BR's earlier requirement remains: “the number on the screenshot
   should be a maximum of sub-1-meter”. Whether the readout meets it is for BR's
   look. BR's 2026-10-05 look at the range found that "the gun on screen is
   climbing (and plateauing)" and ruled,

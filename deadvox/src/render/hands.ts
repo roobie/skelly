@@ -16,6 +16,7 @@ import {
   Group,
   HemisphereLight,
   type Material,
+  Matrix4,
   Mesh,
   MeshBasicMaterial,
   MeshLambertMaterial,
@@ -136,14 +137,13 @@ export class HeldItems {
   private readonly handBases = new Map<HandSide, Vec3>();
   private readonly heldByHand = new Map<HandSide, Object3D>();
   private readonly relativeCamera = new Quaternion();
-  private readonly opticWindowRotation = new Quaternion();
-  private readonly baseCameraQuaternion = new Quaternion();
   private opticWindowShape = '';
   private readonly lockedCamera = new Quaternion();
   private readonly poseRotation = new Quaternion();
   private readonly recoilRotation = new Quaternion();
   private readonly rackRotation = new Quaternion();
   private readonly aimRotation = new Quaternion();
+  private readonly poseMatrix = new Matrix4();
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
@@ -179,7 +179,6 @@ export class HeldItems {
   ): void {
     const { firearms: firearmPoses, readiness } = handling;
     const baseCameraQuaternion = main.quaternion.clone();
-    this.baseCameraQuaternion.copy(baseCameraQuaternion);
     this.restoreRummageSupport();
     this.sync();
     this.poseFirearms(firearmPoses);
@@ -189,12 +188,10 @@ export class HeldItems {
     const readyPose = readiness ? readyFirearmPose(leadingSide) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
     const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
-    let adsSightWorld: Vector3 | undefined;
-    let adsSightUpWorld: Vector3 | undefined;
     this.torso.rotation.y = pose?.torsoYaw ?? 0;
     this.opticWindow.visible = false;
     for (const side of ['right', 'left'] as const) {
-      const sights = this.poseHeldHand({
+      this.poseHeldHand({
         side,
         main,
         pose,
@@ -206,21 +203,6 @@ export class HeldItems {
         easedReady,
         loweredPitchRadians,
       });
-      adsSightWorld = sights.direction ?? adsSightWorld;
-      adsSightUpWorld = sights.up ?? adsSightUpWorld;
-    }
-    if (adsSightWorld && adsSightUpWorld) {
-      const currentForward = new Vector3(0, 0, -1).applyQuaternion(main.quaternion);
-      const alignSight = new Quaternion().setFromUnitVectors(currentForward, adsSightWorld);
-      main.quaternion.premultiply(alignSight);
-      const cameraUp = new Vector3(0, 1, 0).applyQuaternion(main.quaternion);
-      const roll = Math.atan2(
-        adsSightWorld.dot(cameraUp.clone().cross(adsSightUpWorld)),
-        cameraUp.dot(adsSightUpWorld),
-      );
-      main.quaternion.premultiply(new Quaternion().setFromAxisAngle(adsSightWorld, roll));
-      main.rotation.setFromQuaternion(main.quaternion, 'YXZ');
-      main.updateMatrixWorld(true);
     }
     this.camera.quaternion.copy(main.quaternion);
     this.view.quaternion.copy(baseCameraQuaternion);
@@ -257,7 +239,7 @@ export class HeldItems {
     readyAmount: number;
     easedReady: number;
     loweredPitchRadians: number;
-  }): { direction?: Vector3; up?: Vector3 } {
+  }): void {
     const neutral = { offset: [0, 0, 0] as Vec3, rotation: [0, 0, 0] as Vec3 };
     const hand = pose?.[side] ?? neutral;
     const target = readyPose?.[side];
@@ -270,7 +252,7 @@ export class HeldItems {
     const base = this.handBases.get(side);
     const arm = this.arms.get(side);
     if (!(base && arm)) {
-      return {};
+      return;
     }
     const transform = interpolateHandPose(base, stanceHand);
     this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
@@ -278,7 +260,7 @@ export class HeldItems {
     this.lockCutBladeRoll(side, pose);
     const item = this.inventory.hands[side];
     const itemDefinition = item && defOf(this.inventory.registry, item.type);
-    return this.poseHeldItem({
+    this.poseHeldItem({
       side,
       main,
       recoil,
@@ -317,7 +299,7 @@ export class HeldItems {
     transform: ReturnType<typeof interpolateHandPose>;
     item: Item | undefined;
     itemDefinition: ReturnType<typeof defOf> | undefined;
-  }): { direction?: Vector3; up?: Vector3 } {
+  }): void {
     const presentation = this.heldFirearmPresentation({
       side,
       main,
@@ -328,24 +310,26 @@ export class HeldItems {
       item,
       itemDefinition,
     });
-    const { firearmPose, firearmReadiness, aimingDownSights, sights, modelDefinition } = presentation;
+    const { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition } = presentation;
     if (firearmPose) {
       transform.offset = [...firearmPose.rootOffset];
       if (aimingDownSights) {
-        transform.rotation = firearmPose.aimingRotation ?? [0, 0, 0];
-        this.poseRotation.setFromEuler(this.poseEuler.set(...transform.rotation, 'YXZ'));
+        this.poseMatrix.makeBasis(
+          new Vector3(...firearmPose.rootRotation[0]),
+          new Vector3(...firearmPose.rootRotation[1]),
+          new Vector3(...firearmPose.rootRotation[2]),
+        );
+        this.poseRotation.setFromRotationMatrix(this.poseMatrix);
       }
     }
-    const frame = item && handling.firearms.find((entry) => entry.uid === item.uid);
-    const [turnPitch, turnYaw, turnRoll] = handlingRotation(modelDefinition, side, frame, {
-      x: transform.offset[0],
-      y: transform.offset[1],
-    });
+    const [turnPitch, turnYaw, turnRoll] = handlingTurn;
     const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
-    this.poseAim(item, readyAim);
-    this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch + turnPitch, turnYaw, turnRoll, 'YXZ'));
-    this.poseRotation.multiply(this.rackRotation);
+    if (!aimingDownSights) {
+      this.poseAim(item, readyAim);
+      this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch + turnPitch, turnYaw, turnRoll, 'YXZ'));
+      this.poseRotation.multiply(this.rackRotation);
+    }
     const strength = Math.max(0, Math.min(1, recoil));
     transform.offset[1] += 0.012 * strength;
     transform.offset[2] += 0.025 * strength;
@@ -365,11 +349,12 @@ export class HeldItems {
         diameter: ocularDiameter,
         fill: apertureFill,
         fov: main.fov,
-        baseCamera: this.baseCameraQuaternion,
-        aimedCamera: main.quaternion,
+        rootOffset: firearmPose?.rootOffset,
+        sightEyeOffset: firearmPose?.sightEyeOffset,
+        sightDirection: firearmPose?.sightDirection,
+        sightUp: firearmPose?.sightUp,
       });
     }
-    return sights;
   }
 
   private heldFirearmPresentation({
@@ -398,9 +383,9 @@ export class HeldItems {
     const aimingDownSights = Boolean(
       item && handling.readiness?.uid === item.uid && handling.readiness.aimingDownSights,
     );
-    const firearmPose =
+    const poseInput =
       itemDefinition?.firearm && modelDefinition
-        ? heldFirearmTransform({
+        ? {
             model: modelDefinition,
             side,
             leadingSide,
@@ -411,16 +396,16 @@ export class HeldItems {
             loweredPitchRadians,
             adsApertureFill: this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.adsApertureFill,
             verticalFovDegrees: main.fov,
-          })
-        : undefined;
-    const sights =
-      aimingDownSights && firearmPose?.sightDirection && firearmPose.sightUp
-        ? {
-            direction: new Vector3(...firearmPose.sightDirection).applyQuaternion(main.quaternion).normalize(),
-            up: new Vector3(...firearmPose.sightUp).applyQuaternion(main.quaternion).normalize(),
           }
-        : {};
-    return { firearmPose, firearmReadiness, aimingDownSights, sights, modelDefinition };
+        : undefined;
+    const basePose = poseInput ? heldFirearmTransform(poseInput) : undefined;
+    const frame = item && handling.firearms.find((entry) => entry.uid === item.uid);
+    const handlingTurn = handlingRotation(modelDefinition, side, frame, {
+      x: basePose?.rootOffset[0] ?? 0,
+      y: basePose?.rootOffset[1] ?? 0,
+    });
+    const firearmPose = poseInput ? heldFirearmTransform({ ...poseInput, handlingTurn }) : undefined;
+    return { firearmPose, firearmReadiness, aimingDownSights, handlingTurn, modelDefinition };
   }
 
   private placeHandAndHeldItem(
@@ -489,17 +474,31 @@ export class HeldItems {
     diameter,
     fill,
     fov,
-    baseCamera,
-    aimedCamera,
+    rootOffset,
+    sightEyeOffset,
+    sightDirection,
+    sightUp,
   }: {
     active: boolean;
     diameter: number | undefined;
     fill: number | undefined;
     fov: number;
-    baseCamera: Quaternion;
-    aimedCamera: Quaternion;
+    rootOffset: Vec3 | undefined;
+    sightEyeOffset: Vec3 | undefined;
+    sightDirection: Vec3 | undefined;
+    sightUp: Vec3 | undefined;
   }): void {
-    if (!(active && diameter !== undefined && fill !== undefined)) {
+    if (
+      !(
+        active &&
+        diameter !== undefined &&
+        fill !== undefined &&
+        rootOffset &&
+        sightEyeOffset &&
+        sightDirection &&
+        sightUp
+      )
+    ) {
       this.opticWindow.visible = false;
       return;
     }
@@ -512,9 +511,14 @@ export class HeldItems {
       this.opticWindow.geometry = new RingGeometry(innerRadius, outerRadius, 64);
       this.opticWindowShape = shape;
     }
-    this.opticWindow.position.set(0, 0, -distance);
-    this.opticWindowRotation.copy(baseCamera).invert().multiply(aimedCamera);
-    this.opticWindow.quaternion.copy(this.opticWindowRotation);
+    const forward = new Vector3(...sightDirection).normalize();
+    const up = new Vector3(...sightUp).normalize();
+    const right = forward.clone().cross(up).normalize();
+    const correctedUp = right.clone().cross(forward).normalize();
+    this.poseMatrix.makeBasis(right, correctedUp, forward.clone().negate());
+    this.opticWindow.quaternion.setFromRotationMatrix(this.poseMatrix);
+    const eye = new Vector3(...rootOffset).add(new Vector3(...sightEyeOffset));
+    this.opticWindow.position.copy(eye.addScaledVector(forward, distance));
     this.opticWindow.visible = true;
   }
 
