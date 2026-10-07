@@ -1,7 +1,7 @@
 import { Euler, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 
@@ -265,7 +265,7 @@ it('firearms skill reduces climb over the same full-auto burst', () => {
   expect(peaks.at(-1)).toBeLessThan(peaks[0]!);
 });
 
-it('reload and rack curves preserve skill-zero time, halve the old skill-ten time, and stay monotonic', () => {
+it('reload and rack curves preserve skill-zero time and stay monotonic', () => {
   const levels = Array.from({ length: SKILL_LEVEL_LEGENDARY + 1 }, (_, level) => level);
   const effects = levels.map((level) => skillEffects(level));
   const reloadDurations = effects.map(({ reloadDuration }) => reloadDuration);
@@ -276,10 +276,6 @@ it('reload and rack curves preserve skill-zero time, halve the old skill-ten tim
     expect(reloadDurations[index]).toBeLessThanOrEqual(reloadDurations[index - 1]!);
     expect(rackDurations[index]).toBeLessThanOrEqual(rackDurations[index - 1]!);
   }
-  expect(reloadDurations[SKILL_LEVEL_MAX]! / skillSaturation(SKILL_LEVEL_MAX, 0.55, 5)).toBeCloseTo(0.5, 6);
-  expect(rackDurations[SKILL_LEVEL_MAX]! / skillSaturation(SKILL_LEVEL_MAX, 0.62, 3)).toBeCloseTo(0.5, 6);
-  expect(reloadDurations[SKILL_LEVEL_LEGENDARY]).toBe(reloadDurations[SKILL_LEVEL_MAX]);
-  expect(rackDurations[SKILL_LEVEL_LEGENDARY]).toBe(rackDurations[SKILL_LEVEL_MAX]);
 });
 
 it('firearms skill effects improve through expert level and legendary matches expert', () => {

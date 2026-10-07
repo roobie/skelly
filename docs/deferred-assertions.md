@@ -55,6 +55,8 @@ move its row to the bottom section with the PR that pinned it.
 | Representative ten-hour save workload measurements | `deadvox/test/snapshot-format.test.ts`, `applyBudgetWorldEdits`, `applyBudgetPiles`, and `touchBudgetFurnitureAndZombies` | Run the save-budget test, inspect its metrics, and verify round-trip capture parity and the `TEN_HOUR_SAVE_BUDGET_BYTES` / `TEN_HOUR_LOAD_BUDGET_MS` constraints | content freeze, v1.0 beta |
 | AKM magazine silhouette against the AK's golden photo (bend, straight-top fraction, length and forward travel per depth) | `gungen/test/ak.test.ts`, the AK-74 silhouette test, whose AKM row was removed in g41-4 | Overlay `gungen/designs/archetype-ak-akm.json`, exported, on the golden photo cited in `gungen/PROJECT.md`, "Version 2: mapped from the golden photo"; the magazine's edges and floorplate should sit on the photo's | when BR accepts the AK magazines' look for v1.0 beta |
 
+| About half the pre-d117 skill-10 load and rack time | `deadvox/test/aim.test.ts`, reload/rack curve property test; `deadvox/src/core/firearmsSkill.ts`, `firearmsSkillEffects`; firearms-combat curve fields in `deadvox/src/content/base/recipes.json` | Compare `firearmsSkillEffects` at `SKILL_LEVEL_MAX` with the curve before d117's content move, then have BR compare `firearmsCombat=10` with `firearmsCombat=0` in PR #343 | when BR accepts the speed on PR #343, if ever |
+
 ## Pinned since
 
 None yet.

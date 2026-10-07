@@ -557,7 +557,8 @@ plain box in your hands. Files are small, and follow
   (2026-10-06): “also; now that i can properly fire from ADS on the AK, I can
   note that a firearm skill level zero (=0) is way too good at controlling
   automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
-  BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”.
+  BR then said, “i think at skill=0 the handling should be even worse - like at least 4
+  _times_ worse”.
   BR chose four times what they felt at `7a8c72db` as the comparison (“1: a”). They wanted
   kick, shot-to-shot dispersion and recovery all worsened (“2: all”), mostly for automatic
   follow-ups but for singles too (“3: mostly full auto, but singles too”). BR approved
@@ -566,15 +567,9 @@ plain box in your hands. Files are small, and follow
   automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
   firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
   them. A follow-up is a committed shot from the same firearm within its burst window; see
-  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
-  stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
-  BR (d117-1, 2026-10-07 00:30): “but a note: having skill=10 should be even faster at loading and racking - likely 2x as fast”. The shared reload and rack curves now live beside
-  `skillZeroHandling` in `src/content/base/recipes.json`, with bounds in
-  `src/core/schema.ts`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, applies
-  them without changing skill-zero time. `src/game/firearmHandling.ts`,
-  `FirearmMechanics.load` and `FirearmMechanics.cock`, multiply their existing base
-  durations by these shared curves rather than tuning them per firearm. At skill 10,
-  each is about half the previous curve's duration; legendary remains clamped to skill 10.
+  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert
+  endpoint stays on the existing curve, so skill-10 shot handling is unchanged;
+  legendary still matches expert.
   The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
   and four times for follow-ups. BR approved those values and ruled that guns need different
   factors: “oh yeah! Now we're talking. #324 approved as such / but it's important to note
@@ -602,7 +597,18 @@ plain box in your hands. Files are small, and follow
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
   `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
   `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,
-  `SAVE_SCHEMA_VERSION`. BR's earlier 2026-10-05 report on the skill scale
+  `SAVE_SCHEMA_VERSION`.
+
+  BR (d117-1, 2026-10-07 00:30): “but a note: having skill=10 should be even faster
+  at loading and racking - likely 2x as fast”. The shared reload and rack curves now
+  live beside `skillZeroHandling` in `src/content/base/recipes.json`, with bounds in
+  `src/core/schema.ts`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, applies
+  them without changing skill-zero time. `src/game/firearmHandling.ts`,
+  `FirearmMechanics.load` and `FirearmMechanics.cock`, multiply their existing base
+  durations by these shared curves rather than tuning them per firearm. At skill 10,
+  each is about half the previous curve's duration; legendary remains clamped to skill 10.
+
+  BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling
   separates firearm quality's dispersion from skill-controlled handling.
