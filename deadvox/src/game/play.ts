@@ -307,6 +307,7 @@ export const startPlay = (
   let replayVerificationTick: number | undefined;
   let replayVerificationStarted = false;
   let replayTickRemainder = 0;
+  let replayColumnsInitialized = false;
   const replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
@@ -571,22 +572,51 @@ export const startPlay = (
     }
   };
   const applyColumnUnload = (cx: number, cz: number): void => session.onColumnUnload(cx, cz);
+  const ensureReplayColumnGenerated = (cx: number, cz: number): boolean => {
+    if (streamer.hasGeneratedColumn(cx, cz) || streamer.generateForReplay(cx, cz)) {
+      return true;
+    }
+    replayVerification = 'unavailable';
+    return false;
+  };
+  const initializeReplayColumns = (): boolean => {
+    if (!replayPlayer || replayColumnsInitialized) {
+      return true;
+    }
+    const initialColumns = [...replayPlayer.inputs.generatedColumns].sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
+    for (const [cx, cz] of initialColumns) {
+      if (!ensureReplayColumnGenerated(cx, cz)) {
+        return false;
+      }
+    }
+    for (const [cx, cz] of initialColumns) {
+      applyColumnLoad(cx, cz);
+    }
+    replayColumnsInitialized = true;
+    return true;
+  };
+  const applyReplayColumnChange = ([, cx, cz, generated]: ReplayColumnChange): boolean => {
+    if (generated) {
+      if (!ensureReplayColumnGenerated(cx, cz)) {
+        return false;
+      }
+      applyColumnLoad(cx, cz);
+    } else {
+      streamer.unloadForReplay(cx, cz);
+      applyColumnUnload(cx, cz);
+    }
+    return true;
+  };
   const applyReplayColumnChanges = (changes: readonly ReplayColumnChange[]): boolean => {
     if (!replayPlayer) {
       return true;
     }
-    for (const [cx, cz] of replayPlayer.generatedColumns()) {
-      if (!(streamer.hasGeneratedColumn(cx, cz) || streamer.generateForReplay(cx, cz))) {
-        replayVerification = 'unavailable';
-        return false;
-      }
+    if (!initializeReplayColumns()) {
+      return false;
     }
-    for (const [, cx, cz, generated] of changes) {
-      if (generated) {
-        applyColumnLoad(cx, cz);
-      } else {
-        streamer.unloadForReplay(cx, cz);
-        applyColumnUnload(cx, cz);
+    for (const change of changes) {
+      if (!applyReplayColumnChange(change)) {
+        return false;
       }
     }
     return true;

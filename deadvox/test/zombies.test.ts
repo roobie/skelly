@@ -1854,14 +1854,15 @@ describe('shambler scenarios', () => {
     expect(first).toEqual(spawnOrder([...markers].reverse()));
   });
 
-  it('spawns a marker when its column first loads inside the window', () => {
+  it('queues a windowed marker loaded inside its open interval until advance', () => {
     const spawn: ZombieSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
       window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
     };
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    new ZombieSpawner().onColumn({
+    const spawner = new ZombieSpawner();
+    spawner.onColumn({
       cx: 0,
       cz: 0,
       site: spawnSite(spawn),
@@ -1869,6 +1870,8 @@ describe('shambler scenarios', () => {
       zombies: system,
       calendar: SPAWN_TIMES.dusk + 1,
     });
+    expect(system.store.size).toBe(0);
+    spawner.advance({ calendar: SPAWN_TIMES.dusk + 1, registry, zombies: system });
     expect(system.store.size).toBe(1);
   });
 
