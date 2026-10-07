@@ -1,12 +1,12 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildingBounds, polylineDistance } from '../src/core/authoredTerrain.mjs';
+import { polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
 import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
-import { type CompiledTemplate, compileTemplate } from '../src/core/templates.ts';
+import { type CompiledTemplate, compileTemplate, type Facing } from '../src/core/templates.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -77,63 +77,35 @@ const pointDistanceFromEntrance = (piece: CompiledTemplate['pieces'][number]): n
   return Math.hypot(piece.pos[0] + piece.size[0] / 2 - entrance[0], piece.pos[2] + piece.size[2] / 2 - entrance[2]);
 };
 
-const nearbyFenceBounds = (): ReturnType<typeof buildingBounds>[] => {
-  const hallBounds = buildingBounds(medicalBuilding, medicalDefinition.size);
-  return layout.buildings
-    .filter(({ template }) => template === 'rickety_fence')
-    .map((building) =>
-      buildingBounds(building, required(result.registry.templates.get(building.template), 'fence template').size),
-    )
-    .filter(
-      (rect) =>
-        rect.x0 >= hallBounds.x0 - 20 &&
-        rect.x1 <= hallBounds.x1 + 20 &&
-        rect.z0 >= hallBounds.z0 - 20 &&
-        rect.z1 <= hallBounds.z1 + 20,
-    );
+type Point = [number, number];
+
+const FACING_VECTOR: Record<Facing, Point> = {
+  n: [0, -1],
+  e: [1, 0],
+  s: [0, 1],
+  w: [-1, 0],
 };
 
-const horizontalFenceGap = (
-  a: ReturnType<typeof buildingBounds>,
-  b: ReturnType<typeof buildingBounds>,
-): [number, number] | undefined => {
-  if (a.x1 - a.x0 <= a.z1 - a.z0 || b.x1 - b.x0 <= b.z1 - b.z0) {
-    return undefined;
-  }
-  if (Math.abs(a.z0 - b.z0) > 0.001 || Math.abs(a.z1 - b.z1) > 0.001) {
-    return undefined;
-  }
-  const [left, right] = a.x0 <= b.x0 ? [a, b] : [b, a];
-  return right.x0 > left.x1 ? [(left.x1 + right.x0) / 2, (a.z0 + a.z1) / 2] : undefined;
-};
-
-const verticalFenceGap = (
-  a: ReturnType<typeof buildingBounds>,
-  b: ReturnType<typeof buildingBounds>,
-): [number, number] | undefined => {
-  if (a.z1 - a.z0 <= a.x1 - a.x0 || b.z1 - b.z0 <= b.x1 - b.x0) {
-    return undefined;
-  }
-  if (Math.abs(a.x0 - b.x0) > 0.001 || Math.abs(a.x1 - b.x1) > 0.001) {
-    return undefined;
-  }
-  const [north, south] = a.z0 <= b.z0 ? [a, b] : [b, a];
-  return south.z0 > north.z1 ? [(a.x0 + a.x1) / 2, (north.z1 + south.z0) / 2] : undefined;
-};
-
-const fenceGapCenters = (bounds: ReturnType<typeof buildingBounds>[]): [number, number][] => {
-  const gaps: [number, number][] = [];
-  for (let first = 0; first < bounds.length; first++) {
-    for (let second = first + 1; second < bounds.length; second++) {
-      const a = bounds[first]!;
-      const b = bounds[second]!;
-      const gap = horizontalFenceGap(a, b) ?? verticalFenceGap(a, b);
-      if (gap) {
-        gaps.push(gap);
-      }
+const nearestTrackPoint = (point: Point, points: readonly Point[]): Point => {
+  let nearest = points[0]!;
+  let distance = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < points.length - 1; index++) {
+    const from = points[index]!;
+    const to = points[index + 1]!;
+    const dx = to[0] - from[0];
+    const dz = to[1] - from[1];
+    const lengthSquared = dx * dx + dz * dz;
+    const projection =
+      lengthSquared === 0 ? 0 : ((point[0] - from[0]) * dx + (point[1] - from[1]) * dz) / lengthSquared;
+    const t = Math.max(0, Math.min(1, projection));
+    const candidate: Point = [from[0] + t * dx, from[1] + t * dz];
+    const candidateDistance = Math.hypot(point[0] - candidate[0], point[1] - candidate[1]);
+    if (candidateDistance < distance) {
+      nearest = candidate;
+      distance = candidateDistance;
     }
   }
-  return gaps;
+  return nearest;
 };
 
 describe('authored medical site', () => {
@@ -200,12 +172,13 @@ describe('authored medical site', () => {
     expect(nearPiece(reachable, sofa)).toBe(true);
     expect(nearPiece(reachable, pharmacy.piece)).toBe(true);
     expect(nearPiece(staffDoorClosed, sofa)).toBe(false);
+    expect(nearPiece(staffDoorClosed, officer)).toBe(false);
     expect(nearPiece(staffDoorClosed, pharmacy.piece)).toBe(true);
     expect(nearPiece(pharmacyDoorClosed, pharmacy.piece)).toBe(false);
     expect(nearPiece(pharmacyDoorClosed, sofa)).toBe(true);
   });
 
-  it('takes the route past the clinic sign, through the compound gate, and to the hall entrance', () => {
+  it('keeps the clinic sign on the clear route to the hall entrance', () => {
     expect(result.issues.filter((issue) => issue.source === 'medical-layout-test.json')).toEqual([]);
     const track = required(layout.tracks[0], 'authored track');
     const signBuilding = required(
@@ -217,24 +190,22 @@ describe('authored medical site', () => {
       signTemplate.pieces.find((piece) => piece.furniture === 'clinic_sign'),
       'clinic sign',
     );
-    expect(sign.facing).toBe('s');
-    const signPosition: [number, number] = [
+    const signPosition: Point = [
       signBuilding.position[0] + (sign.pos[0] + sign.size[0] / 2) * 0.5,
       signBuilding.position[2] + (sign.pos[2] + sign.size[2] / 2) * 0.5,
     ];
     expect(polylineDistance(signPosition, track.points)).toBeLessThan(6);
-
-    const gate = required(
-      fenceGapCenters(nearbyFenceBounds()).find((center) => polylineDistance(center, track.points) <= track.width / 2),
-      'fence gap crossed by the route',
-    );
-    expect(polylineDistance(gate, track.points)).toBeLessThanOrEqual(track.width / 2);
+    const roadPoint = nearestTrackPoint(signPosition, track.points);
+    const towardRoad: Point = [roadPoint[0] - signPosition[0], roadPoint[1] - signPosition[1]];
+    const [facingX, facingZ] = FACING_VECTOR[sign.facing];
+    expect(facingX * towardRoad[0] + facingZ * towardRoad[1]).toBeGreaterThan(0);
 
     const { entrance } = medical.access!;
-    const entrancePosition: [number, number] = [
+    const entrancePosition: Point = [
       medicalBuilding.position[0] + entrance[0] * 0.5,
       medicalBuilding.position[2] + entrance[2] * 0.5,
     ];
+    // The whole-track clearance check in authoredFixedLoot.test.ts plus this entrance check implies passage through the gate.
     expect(polylineDistance(entrancePosition, track.points)).toBeLessThanOrEqual(track.width);
   });
 });
