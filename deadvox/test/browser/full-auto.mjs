@@ -457,13 +457,20 @@ try {
     const { input } = globalThis.fullAutoRuntime;
     return { locked: input.locked, menuPointer: input.menuPointer };
   });
-  assert.deepEqual(pointerState, { locked: true, menuPointer: true }, 'the debug slider is used while pointer lock is routed to the menu');
+  assert.deepEqual(
+    pointerState,
+    { locked: true, menuPointer: true },
+    'the debug slider is used while pointer lock is routed to the menu',
+  );
   const physicalStart = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
   await page.mouse.move(physicalStart.x, physicalStart.y);
-  await page.evaluate(({ x, y }) => {
-    const { input } = globalThis.fullAutoRuntime;
-    input.moveMenuCursor(x - input.cursorX, y - input.cursorY);
-  }, { x: sliderStartX, y: sliderY });
+  await page.evaluate(
+    ({ x, y }) => {
+      const { input } = globalThis.fullAutoRuntime;
+      input.moveMenuCursor(x - input.cursorX, y - input.cursorY);
+    },
+    { x: sliderStartX, y: sliderY },
+  );
   await page.mouse.down();
   await page.mouse.move(physicalStart.x + sliderEndX - sliderStartX, physicalStart.y, { steps: 8 });
   await page.mouse.up();

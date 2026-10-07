@@ -37,34 +37,60 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
   const capturedRanges = new Map<number, { input: HTMLInputElement; initialValue: string }>();
   let forwardingPointer = false;
   const isInputElement = (element: Element): element is HTMLInputElement => element.tagName === 'INPUT';
-  const liveRangeInput = (input: HTMLInputElement): HTMLInputElement => {
-    const current = input.id ? document.getElementById(input.id) : null;
-    return current && isInputElement(current) && current.type === 'range' ? current : input;
+  const liveRangeInput = (rangeInput: HTMLInputElement): HTMLInputElement => {
+    const current = rangeInput.id ? document.getElementById(rangeInput.id) : null;
+    return current && isInputElement(current) && current.type === 'range' ? current : rangeInput;
   };
-  const setRangeValue = (input: HTMLInputElement, x: number) => {
-    const bounds = input.getBoundingClientRect();
-    const min = input.min === '' ? 0 : Number(input.min);
-    const max = input.max === '' ? 100 : Number(input.max);
-    if (input.matches(':disabled') || bounds.width <= 0 || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+  const setRangeValue = (rangeInput: HTMLInputElement, x: number) => {
+    const bounds = rangeInput.getBoundingClientRect();
+    const min = rangeInput.min === '' ? 0 : Number(rangeInput.min);
+    const max = rangeInput.max === '' ? 100 : Number(rangeInput.max);
+    if (
+      rangeInput.matches(':disabled') ||
+      bounds.width <= 0 ||
+      !Number.isFinite(min) ||
+      !Number.isFinite(max) ||
+      max <= min
+    ) {
       return;
     }
     const fraction = Math.max(0, Math.min(1, (x - bounds.left) / bounds.width));
-    const before = input.value;
-    input.value = String(min + fraction * (max - min));
-    if (input.value !== before) {
-      input.dispatchEvent(new Event('input', { bubbles: true }));
+    const before = rangeInput.value;
+    rangeInput.value = String(min + fraction * (max - min));
+    if (rangeInput.value !== before) {
+      rangeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+  const captureRangeInput = (event: PointerEvent, target: EventTarget): HTMLInputElement | undefined => {
+    if (event.type !== 'pointerdown') {
+      return undefined;
+    }
+    capturedPointers.add(event.pointerId);
+    if (!(target instanceof Element && isInputElement(target)) || target.type !== 'range') {
+      return undefined;
+    }
+    capturedRanges.set(event.pointerId, { input: target, initialValue: target.value });
+    return target;
+  };
+  const updateCapturedRange = (event: PointerEvent) => {
+    const capturedRange = capturedRanges.get(event.pointerId);
+    if (capturedRange) {
+      setRangeValue(liveRangeInput(capturedRange.input), input.cursorX);
     }
   };
   const releasePointerTarget = (event: PointerEvent) => {
-    if (event.type === 'pointerup' || event.type === 'pointercancel') {
-      capturedPointers.delete(event.pointerId);
-      const range = capturedRanges.get(event.pointerId);
-      const input = range ? liveRangeInput(range.input) : undefined;
-      if (range && input && event.type === 'pointerup' && input.value !== range.initialValue) {
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }
-      capturedRanges.delete(event.pointerId);
+    if (event.type !== 'pointerup' && event.type !== 'pointercancel') {
+      return;
     }
+    capturedPointers.delete(event.pointerId);
+    const capturedRange = capturedRanges.get(event.pointerId);
+    if (capturedRange && event.type === 'pointerup') {
+      const rangeInput = liveRangeInput(capturedRange.input);
+      if (rangeInput.value !== capturedRange.initialValue) {
+        rangeInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+    capturedRanges.delete(event.pointerId);
   };
   const isForwardableMenuTarget = (target: EventTarget | null): boolean =>
     target === document || (target instanceof Element && target !== canvas && target.id !== 'game-cursor');
@@ -106,6 +132,25 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       forwardingPointer = false;
     }
   };
+  const forwardLockedMenuPointer = (event: PointerEvent) => {
+    event.stopPropagation();
+    if (event.type === 'pointermove') {
+      input.moveMenuCursor(event.movementX, event.movementY);
+      updateCapturedRange(event);
+    }
+    const target = capturedPointers.has(event.pointerId)
+      ? document
+      : document.elementFromPoint(input.cursorX, input.cursorY);
+    if (!(target && isForwardableMenuTarget(target))) {
+      return;
+    }
+    const rangeInput = captureRangeInput(event, target);
+    dispatchMenuPointer(target, event);
+    if (rangeInput) {
+      // Pointer-lock forwarding is synthetic, so the browser does not run a range input's native drag action.
+      setRangeValue(liveRangeInput(rangeInput), input.cursorX);
+    }
+  };
   const forwardMenuPointer = (event: PointerEvent) => {
     if (forwardingPointer) {
       return;
@@ -114,31 +159,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       releasePointerTarget(event);
       return;
     }
-    event.stopPropagation();
-    if (event.type === 'pointermove') {
-      input.moveMenuCursor(event.movementX, event.movementY);
-      const range = capturedRanges.get(event.pointerId);
-      if (range) {
-        setRangeValue(liveRangeInput(range.input), input.cursorX);
-      }
-    }
-    const captured = capturedPointers.has(event.pointerId);
-    const target = captured ? document : document.elementFromPoint(input.cursorX, input.cursorY);
-    if (target && isForwardableMenuTarget(target)) {
-      let rangeInput: HTMLInputElement | undefined;
-      if (event.type === 'pointerdown') {
-        capturedPointers.add(event.pointerId);
-        if (target instanceof Element && isInputElement(target) && target.type === 'range') {
-          rangeInput = target;
-          capturedRanges.set(event.pointerId, { input: target, initialValue: target.value });
-        }
-      }
-      dispatchMenuPointer(target, event);
-      if (rangeInput) {
-        // Pointer-lock forwarding is synthetic, so the browser does not run a range input's native drag action.
-        setRangeValue(liveRangeInput(rangeInput), input.cursorX);
-      }
-    }
+    forwardLockedMenuPointer(event);
     releasePointerTarget(event);
   };
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'] as const) {
