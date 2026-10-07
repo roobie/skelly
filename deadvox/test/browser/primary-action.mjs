@@ -1951,6 +1951,10 @@ try {
     r.session.sim.body.impact(3, 'rightArm', { bleeding: true });
     return { uid: rag.uid, initial: r.survival.selectedItemAction(rag)?.treatment?.region };
   });
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = false;
+  });
+  await page.waitForFunction(() => document.querySelector('#prompt').hidden);
   assert.equal(await page.locator('#prompt').evaluate((node) => node.hidden), true);
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.interaction = true;
