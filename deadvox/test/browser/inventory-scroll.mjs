@@ -141,15 +141,21 @@ globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions
     firearmScreen.open();
     const fitSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
     if (!fitSlotButton) throw Error('Inspect view did not offer the certified fixture fit');
+    const queuedBeforeFit = firearmQueue.jobs.length;
     fitSlotButton.click();
-    firearmQueue.tick(1);
+    if (firearmQueue.jobs.length !== queuedBeforeFit + 1) throw Error('Fit control did not queue handling');
+    const fitResult = firearmQueue.tick(1);
     firearmScreen.update();
+    if (fitResult.failed.length > 0) throw Error('Fit handling failed: ' + fitResult.failed.map(({ reason }) => reason).join('; '));
     if (rifle.slots?.[slot.id] !== foregrip) throw Error('Inspect view did not fit the accessory');
     const removeSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
     if (!removeSlotButton) throw Error('Inspect view did not offer removal');
+    const queuedBeforeRemove = firearmQueue.jobs.length;
     removeSlotButton.click();
-    firearmQueue.tick(1);
+    if (firearmQueue.jobs.length !== queuedBeforeRemove + 1) throw Error('Remove control did not queue handling');
+    const removeResult = firearmQueue.tick(1);
     firearmScreen.update();
+    if (removeResult.failed.length > 0) throw Error('Remove handling failed: ' + removeResult.failed.map(({ reason }) => reason).join('; '));
     if (rifle.slots?.[slot.id] !== undefined) throw Error('Inspect view did not remove the accessory');
   },
   redraw() {
