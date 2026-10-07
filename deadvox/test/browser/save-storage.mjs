@@ -107,7 +107,7 @@ try {
       // biome-ignore lint/suspicious/noConsole: browser test captures the required product diagnostics.
       const originalWarn = console.warn.bind(console);
       console.warn = (...args) => {
-        if (String(args[0]).startsWith('Deadvox save lock')) {
+        if (String(args[0]).startsWith('Deadvox save')) {
           globalThis.__d144LockWarnings.push(args);
         }
         originalWarn(...args);
@@ -679,6 +679,10 @@ try {
     });
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => !document.querySelector('#overlay')?.hidden, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
     await page.waitForFunction(
       async () => {
