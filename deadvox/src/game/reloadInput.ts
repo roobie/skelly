@@ -13,6 +13,52 @@ export interface ReloadBinding {
   readonly cancelLoad: () => void;
 }
 
+/** A handling owner R can drive: firearm mechanics or magazine handling. */
+interface ReloadOwner {
+  readonly reloadableUid: () => number | undefined;
+  readonly loadNext: (uid: number, time: number) => string | undefined;
+  readonly cancelLoad: (uid: number) => void;
+}
+
+/** What R acts on; each action returns its refusal. Play adds refusal display and replay recording. */
+export interface ReloadTarget {
+  readonly uid: number;
+  readonly oneAction: boolean;
+  readonly load: (time: number) => string | undefined;
+  readonly rack: (time: number) => string | undefined;
+  readonly cancelLoad: () => void;
+}
+
+/** A held firearm takes R; otherwise a wielded magazine, which R only loads (CONTROLS.md, "Reload only"). */
+export const reloadTarget = (
+  firearms: ReloadOwner & {
+    readonly reloadsInOneAction: (uid: number) => boolean;
+    readonly cock: (uid: number, time: number) => string | undefined;
+  },
+  magazines: ReloadOwner,
+): ReloadTarget | undefined => {
+  const gun = firearms.reloadableUid();
+  if (gun !== undefined) {
+    return {
+      uid: gun,
+      oneAction: firearms.reloadsInOneAction(gun),
+      load: (time) => firearms.loadNext(gun, time),
+      rack: (time) => firearms.cock(gun, time),
+      cancelLoad: () => firearms.cancelLoad(gun),
+    };
+  }
+  const magazine = magazines.reloadableUid();
+  return magazine === undefined
+    ? undefined
+    : {
+        uid: magazine,
+        oneAction: false,
+        load: (time) => magazines.loadNext(magazine, time),
+        rack: () => 'Only a held firearm racks',
+        cancelLoad: () => magazines.cancelLoad(magazine),
+      };
+};
+
 interface Press {
   readonly binding: ReloadBinding;
   readonly at: number;

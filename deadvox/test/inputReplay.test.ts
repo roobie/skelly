@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalJsonBytes } from '../src/core/canonicalJson.ts';
-import { practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
+import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../src/core/character.ts';
 import { toChunk } from '../src/core/coords.ts';
-import { toHands } from '../src/core/options.ts';
+import type { Item } from '../src/core/items.ts';
+import { stowTarget, toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import {
@@ -17,11 +18,13 @@ import {
   withReplayExportGuard,
 } from '../src/game/inputReplay.ts';
 import { applyReplayLook, InputReplayPlayer } from '../src/game/inputReplayPlayer.ts';
+import { reloadTarget } from '../src/game/reloadInput.ts';
 import {
   applyReplayActionPayload,
   isReplayActionPayload,
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
+import { rifleAmmunition } from './rifleFixture.ts';
 import { capture, contentLookup, createRuntime, formatVersion, formatWorldOptions } from './snapshotTestSupport.ts';
 
 const INCOMPATIBLE_SAVE = /incompatible|version|identity/i;
@@ -156,6 +159,8 @@ const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, end
       if (reason) {
         throw new Error(`Replay command ${action.payload.kind} refused: ${reason}`);
       }
+    } else if (action.action.startsWith('firearm.')) {
+      reloadGesture(replay, action.action);
     } else {
       dispatchWalkToggle(replay, action.phase);
     }
@@ -250,6 +255,80 @@ const createCraftReplayFixture = () => {
     }
   }
   return { runtime, recipe };
+};
+
+/** An R gesture as play applies it: through `reloadTarget`, the same routing as the play loop's reload binding. */
+const reloadGesture = (runtime: ReturnType<typeof createRuntime>, action: string): void => {
+  const target = reloadTarget(runtime.session.firearms, runtime.session.magazines);
+  const reason = target ? (action === 'firearm.rack' ? target.rack : target.load)(runtime.sim.time) : 'Nothing takes R';
+  if (reason) {
+    throw new Error(`${action} refused: ${reason}`);
+  }
+};
+
+type ReloadStep = { readonly gesture: 'firearm.load' | 'firearm.rack' } | { readonly payload: ReplayActionPayload };
+
+/** Records each step at the first player tick its handling is free, then runs until the last one finishes. */
+const recordReloadSteps = (start: Readonly<SaveSnapshot>, recorder: InputReplayRecorder, steps: ReloadStep[]) => {
+  let next = 0;
+  const source = createRuntime(start, false, undefined, {
+    sampleAtPlayerTick: (_tick, live, _time, compression) => {
+      const step = next < steps.length && !source.handling.busy ? steps[next] : undefined;
+      if (step) {
+        next += 1;
+        if ('gesture' in step) {
+          recorder.queueAction(step.gesture, 'down', 'play');
+        } else {
+          recorder.queueAction(step.payload.kind, 'down', 'play', step.payload);
+        }
+      }
+      recorder.recordTick(live, compression);
+      if (step && 'gesture' in step) {
+        reloadGesture(source, step.gesture);
+      } else if (step) {
+        const reason = applyCommand(source, step.payload);
+        if (reason) {
+          throw new Error(`Source command ${step.payload.kind} refused: ${reason}`);
+        }
+      }
+      return live;
+    },
+  });
+  source.sim.paused = false;
+  for (let frame = 0; next < steps.length || source.handling.busy; frame += 1) {
+    source.session.frame(1 / 60);
+    if (frame > 3000) {
+      throw new Error('Reload steps did not finish');
+    }
+  }
+  return source;
+};
+
+const createRifleReplayFixture = () => {
+  const runtime = createRuntime();
+  const { inventory } = runtime;
+  const backpack = inventory.hands.right!;
+  const flashlight = inventory.hands.left!;
+  const { magazine: magazineType, cartridge } = rifleAmmunition(inventory.registry, 'rifle_assault');
+  const magazine = inventory.create(magazineType);
+  const rifle = inventory.create('rifle_assault');
+  const feet = runtime.player.body.pos;
+  const stow = (item: Item): boolean => {
+    const target = stowTarget(inventory, item, feet);
+    return target?.kind === 'pocket' && inventory.add(item, target);
+  };
+  if (
+    !(
+      inventory.move(backpack, { kind: 'worn' }).ok &&
+      inventory.move(flashlight, { kind: 'pile', pos: feet }).ok &&
+      stow(inventory.create(cartridge, 2)) &&
+      stow(rifle) &&
+      inventory.add(magazine, { kind: 'hand', side: dominantSide(runtime.session.character) })
+    )
+  ) {
+    throw new Error('Replay fixture could not pack the rifle, its cartridges and a held magazine');
+  }
+  return { runtime, magazine, rifle };
 };
 
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
@@ -446,6 +525,35 @@ describe('input replay', () => {
     ]);
     const replay = playSession(start, decoded.inputs, decoded.endSimTime);
     expect(replay.session.crafting.currentUid).toBe(source.session.crafting.currentUid);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('replays R loading a magazine round by round, fitting it and charging to the same inventory and rifle', async () => {
+    const { runtime, magazine, rifle } = createRifleReplayFixture();
+    const start = capture(runtime);
+    const recorder = new InputReplayRecorder(start);
+    const source = recordReloadSteps(start, recorder, [
+      { gesture: 'firearm.load' },
+      { gesture: 'firearm.load' },
+      { payload: { kind: 'inventory.to-hands', itemUid: rifle.uid, feet: [...runtime.player.body.pos] } },
+      { gesture: 'firearm.load' },
+      { gesture: 'firearm.rack' },
+    ]);
+    const charged = (end: ReturnType<typeof createRuntime>) => {
+      const held = end.inventory.itemByUid(rifle.uid)!;
+      return {
+        fitted: held.slots?.magazine?.uid,
+        chamber: held.firearm?.chamber,
+        left: held.slots?.magazine?.cartridges,
+      };
+    };
+    expect(charged(source)).toEqual({ fitted: magazine.uid, chamber: 'round', left: [expect.any(String)] });
+
+    const sourceEnd = capture(source);
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replay = playSession(start, decoded.inputs, decoded.endSimTime);
+    expect(charged(replay)).toEqual(charged(source));
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 

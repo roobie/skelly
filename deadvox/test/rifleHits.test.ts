@@ -10,7 +10,13 @@ import { type PelletShot, projectileShot } from '../src/core/pellets.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { ItemDef } from '../src/core/schema.ts';
 import { World } from '../src/core/world.ts';
-import { ZOMBIE_REGION_NAMES, type ZombieRegion, type ZombieRegions } from '../src/core/zombieRegions.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import {
+  posedShamblerRegionBoxes,
+  ZOMBIE_REGION_NAMES,
+  type ZombieRegion,
+  type ZombieRegions,
+} from '../src/core/zombieRegions.ts';
 import { FirearmMechanics, type FirearmShotInput, type FirearmTrajectory } from '../src/game/firearmHandling.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
@@ -89,7 +95,13 @@ describe('rifle hits', () => {
       const changed: Registry = { ...registry, items: new Map(registry.items) };
       changed.items.set(cartridge, {
         ...registry.items.get(cartridge)!,
-        ammo: { ...ammo, damage: ammo.damage * 2, impulse: ammo.impulse * 3, rangeMetres: ammo.rangeMetres / 2 },
+        ammo: {
+          ...ammo,
+          damage: ammo.damage * 2,
+          impulse: ammo.impulse * 3,
+          rangeMetres: ammo.rangeMetres / 2,
+          headDamageMultiplier: (ammo.headDamageMultiplier ?? 1) * 1.5,
+        },
       });
       const inventory = new Inventory(changed);
       const queue = new HandlingQueue(inventory);
@@ -119,11 +131,21 @@ describe('rifle hits', () => {
 
   it('damages exactly the posed region a projectile’s ray crosses, scaled on the head', () => {
     const shambler = registry.zombies.get('shambler')!;
-    /** A fresh standing shambler at `x`, shot along -z from `height`; returns the region the ray crosses, if any. */
-    const strike = (session: ReturnType<typeof runtime>, ammo: AmmoData, x: number, height: number) => {
-      const origin: Vec3 = [x, height, 0];
-      const direction: Vec3 = [0, 0, -1];
-      const zombie = session.zombieStore.get(session.zombies.add(shambler, [x, 0, -8]))!;
+    /**
+     * A fresh shambler at `x`, shot from in front of and above `target`'s bulkiest posed box, through its drawn
+     * voxels, so the ray is sized from the spawned body; returns the region the ray crosses first, if any.
+     */
+    const strike = (session: ReturnType<typeof runtime>, ammo: AmmoData, x: number, target: ZombieRegion) => {
+      const id = session.zombies.add(shambler, [x, 0, -8]);
+      const zombie = session.zombieStore.get(id)!;
+      const [box] = [...posedShamblerRegionBoxes(zombiePoseInputFor(zombie, id, BLOCK))[target]].sort(
+        (a, b) => b.voxelCount - a.voxelCount,
+      );
+      const aim = box!.voxelCentroid;
+      const front: Vec3 = [-zombie.facing[0], 0, -zombie.facing[2]];
+      const origin: Vec3 = [aim[0] + (front[0] * 0.75) / BLOCK, aim[1] + 1, aim[2] + (front[2] * 0.75) / BLOCK];
+      const length = Math.hypot(aim[0] - origin[0], aim[1] - origin[1], aim[2] - origin[2]);
+      const direction = aim.map((value, axis) => (value - origin[axis]!) / length) as Vec3;
       const region = session.zombies.aimAt(origin, direction, {
         damage: 0,
         reach: ammo.rangeMetres,
@@ -140,9 +162,9 @@ describe('rifle hits', () => {
     for (const type of RIFLES) {
       const ammo = registry.items.get(rifleAmmunition(registry, type).cartridge)!.ammo!;
       const session = runtime();
-      // One shambler per ray height, far enough apart that no ray passes another.
+      // One shambler per region, far enough apart that no ray passes another.
       const struck = new Set(
-        Array.from({ length: 10 }, (_, row) => strike(session, ammo, row * 6, 0.2 + row * 0.4)).filter(
+        ZOMBIE_REGION_NAMES.map((target, row) => strike(session, ammo, row * 6, target)).filter(
           (region) => region !== undefined,
         ),
       );

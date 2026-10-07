@@ -99,7 +99,7 @@ import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
-import type { ReloadBinding } from './reloadInput.ts';
+import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
@@ -1146,28 +1146,17 @@ export const startPlay = (
       }
       return reason === undefined;
     };
-    const gun = firearms.reloadableUid();
-    if (gun !== undefined) {
-      return {
-        uid: gun,
-        busy: () => queue.busy || firearms.busy,
-        oneAction: firearms.reloadsInOneAction(gun),
-        load: () => admit('firearm.load', firearms.loadNext(gun, sim.time)),
-        rack: () => admit('firearm.rack', firearms.cock(gun, sim.time)),
-        cancelLoad: () => firearms.cancelLoad(gun),
-      };
-    }
-    // A wielded magazine: hold R loads it round by round. R only loads, so stripping is an item action.
-    const magazine = magazines.reloadableUid();
-    if (magazine === undefined) {
+    const target = reloadTarget(firearms, magazines);
+    if (!target) {
       return;
     }
     return {
-      uid: magazine,
+      uid: target.uid,
       busy: () => queue.busy || firearms.busy,
-      load: () => admit('firearm.load', magazines.loadNext(magazine, sim.time)),
-      rack: () => admit('firearm.rack', 'Only a held firearm racks'),
-      cancelLoad: () => magazines.cancelLoad(magazine),
+      oneAction: target.oneAction,
+      load: () => admit('firearm.load', target.load(sim.time)),
+      rack: () => admit('firearm.rack', target.rack(sim.time)),
+      cancelLoad: target.cancelLoad,
     };
   };
 
