@@ -118,19 +118,6 @@ const firearmScreen = new InventoryScreen(document.querySelector('#firearm-inven
   attachmentCandidates: (firearmUid, slotId) => firearmHandling.candidates(firearmUid, slotId),
 });
 firearmScreen.selected = rifle;
-firearmScreen.open();
-const fitSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
-if (!fitSlotButton) throw Error('Inspect view did not offer the certified fixture fit');
-fitSlotButton.click();
-firearmQueue.tick(1);
-firearmScreen.update();
-if (rifle.slots?.[slot.id] !== foregrip) throw Error('Inspect view did not fit the accessory');
-const removeSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
-if (!removeSlotButton) throw Error('Inspect view did not offer removal');
-removeSlotButton.click();
-firearmQueue.tick(1);
-firearmScreen.update();
-if (rifle.slots?.[slot.id] !== undefined) throw Error('Inspect view did not remove the accessory');
 const inputState = { locked: false, menuPointer: false };
 const input = {
   get locked() { return inputState.locked; },
@@ -150,6 +137,21 @@ target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions: BODY_REGIONS,
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
+  fitFirearmAttachment() {
+    firearmScreen.open();
+    const fitSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
+    if (!fitSlotButton) throw Error('Inspect view did not offer the certified fixture fit');
+    fitSlotButton.click();
+    firearmQueue.tick(1);
+    firearmScreen.update();
+    if (rifle.slots?.[slot.id] !== foregrip) throw Error('Inspect view did not fit the accessory');
+    const removeSlotButton = document.querySelector('#firearm-inventory [data-attachment-slot="' + slot.id + '"] button');
+    if (!removeSlotButton) throw Error('Inspect view did not offer removal');
+    removeSlotButton.click();
+    firearmQueue.tick(1);
+    firearmScreen.update();
+    if (rifle.slots?.[slot.id] !== undefined) throw Error('Inspect view did not remove the accessory');
+  },
   redraw() {
     if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('redraw fixture failed');
     screen.update();
@@ -290,6 +292,7 @@ try {
   }
   assert.deepEqual(errors, []);
   assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
+  await page.evaluate(() => globalThis.scrollFixture.fitFirearmAttachment());
   process.stdout.write(
     `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
   );
