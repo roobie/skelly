@@ -1,0 +1,156 @@
+{
+  "models": [
+    {
+      "id": "magazine_stanag_30",
+      "file": "assets/models/magazine_stanag_30.glb",
+      "calibre": "5.56x45",
+      "capacity": 30,
+      "rounds": [
+        { "at": [0, 0.007185, 0.008137], "tilt": 0 },
+        { "at": [0, 0.002385, -0.008137], "tilt": 0 },
+        { "at": [0, -0.002415, 0.008137], "tilt": 0 },
+        { "at": [0, -0.007215, -0.008137], "tilt": 0 },
+        { "at": [0, -0.012015, 0.008137], "tilt": 0 },
+        { "at": [0, -0.016815, -0.008137], "tilt": 0 },
+        { "at": [0, -0.021615, 0.008137], "tilt": 0 },
+        { "at": [0, -0.026415, -0.008137], "tilt": 0 },
+        { "at": [0, -0.031215, 0.008137], "tilt": 0 },
+        { "at": [0, -0.036015, -0.008137], "tilt": 0 },
+        { "at": [0, -0.040815, 0.008137], "tilt": 0 },
+        { "at": [0, -0.045615, -0.008137], "tilt": 0 },
+        { "at": [0, -0.050415, 0.008137], "tilt": 0 },
+        { "at": [0, -0.055215, -0.008137], "tilt": 0 },
+        { "at": [0, -0.060015, 0.008137], "tilt": 0 },
+        { "at": [0, -0.064815, -0.008137], "tilt": 0 },
+        { "at": [0, -0.069615, 0.008137], "tilt": 0 },
+        { "at": [0.000009, -0.074415, -0.008137], "tilt": 0.3125 },
+        { "at": [0.000061, -0.079215, 0.008137], "tilt": 0.9375 },
+        { "at": [0.000175, -0.084013, -0.008137], "tilt": 1.5625 },
+        { "at": [0.00035, -0.08881, 0.008137], "tilt": 2.8125 },
+        { "at": [0.000594, -0.093604, -0.008137], "tilt": 3.4375 },
+        { "at": [0.000899, -0.098394, 0.008137], "tilt": 4.0625 },
+        { "at": [0.001266, -0.10318, -0.008137], "tilt": 4.6875 },
+        { "at": [0.001693, -0.107961, 0.008137], "tilt": 5.3125 },
+        { "at": [0.002181, -0.112736, -0.008137], "tilt": 5.9375 },
+        { "at": [0.002738, -0.117503, 0.008137], "tilt": 7.1875 },
+        { "at": [0.003355, -0.122263, -0.008137], "tilt": 7.8125 },
+        { "at": [0.004034, -0.127015, 0.008137], "tilt": 8.4375 },
+        { "at": [0.004772, -0.131758, -0.008137], "tilt": 9.0625 }
+      ]
+    },
+    {
+      "id": "magazine_akm_30",
+      "file": "assets/models/magazine_akm_30.glb",
+      "calibre": "7.62x39",
+      "capacity": 30,
+      "rounds": [
+        { "at": [0, -0.001702, 0.007263], "tilt": 0 },
+        { "at": [0, -0.007377, -0.007263], "tilt": 0 },
+        { "at": [0.000612, -0.013014, 0.007263], "tilt": 7.177083 },
+        { "at": [0.001444, -0.018627, -0.007263], "tilt": 9.53125 },
+        { "at": [0.00243, -0.024215, 0.007263], "tilt": 11.885417 },
+        { "at": [0.003598, -0.029768, -0.007263], "tilt": 11.885417 },
+        { "at": [0.004966, -0.035275, 0.007263], "tilt": 14.239583 },
+        { "at": [0.006484, -0.040742, -0.007263], "tilt": 16.59375 },
+        { "at": [0.008152, -0.046166, 0.007263], "tilt": 18.947917 },
+        { "at": [0.009994, -0.051533, -0.007263], "tilt": 18.947917 },
+        { "at": [0.01203, -0.05683, 0.007263], "tilt": 21.302083 },
+        { "at": [0.014211, -0.062068, -0.007263], "tilt": 23.65625 },
+        { "at": [0.016536, -0.067244, 0.007263], "tilt": 26.010417 },
+        { "at": [0.019024, -0.072344, -0.007263], "tilt": 26.010417 },
+        { "at": [0.021698, -0.077349, 0.007263], "tilt": 28.364583 },
+        { "at": [0.024509, -0.082278, -0.007263], "tilt": 30.71875 },
+        { "at": [0.027454, -0.087128, 0.007263], "tilt": 33.072917 },
+        { "at": [0.030551, -0.091883, -0.007263], "tilt": 33.072917 },
+        { "at": [0.033822, -0.09652, 0.007263], "tilt": 35.427083 },
+        { "at": [0.037219, -0.101065, -0.007263], "tilt": 37.78125 },
+        { "at": [0.04074, -0.105514, 0.007263], "tilt": 40.135417 },
+        { "at": [0.044398, -0.109853, -0.007263], "tilt": 40.135417 },
+        { "at": [0.048216, -0.114051, 0.007263], "tilt": 42.489583 },
+        { "at": [0.052148, -0.118142, -0.007263], "tilt": 44.84375 },
+        { "at": [0.056191, -0.122123, 0.007263], "tilt": 47.197917 },
+        { "at": [0.060355, -0.125979, -0.007263], "tilt": 47.197917 },
+        { "at": [0.064662, -0.129673, 0.007263], "tilt": 49.552083 },
+        { "at": [0.069068, -0.133248, -0.007263], "tilt": 51.90625 },
+        { "at": [0.073572, -0.1367, 0.007263], "tilt": 54.260417 },
+        { "at": [0.078178, -0.140014, -0.007263], "tilt": 54.260417 }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "cartridge_5_d_56x45",
+      "name": "5.56×45 cartridge",
+      "category": "ammo",
+      "weight": 12,
+      "size": [1, 1],
+      "stack": 30,
+      "description": "A loose 5.56×45 rifle cartridge. Bullet diameter from gungen cartridges/5.56x45.json (C.I.P. .223 Rem projectile G1 as a modelling proxy). Loaded mass 12 g is a gameplay estimate, not a sourced specification. Damage, push and reach are gameplay estimates too.",
+      "ammo": {
+        "calibre": "5.56x45",
+        "pellets": 1,
+        "diameterMm": 5.7,
+        "damage": 35,
+        "impulse": 1,
+        "rangeMetres": 500,
+        "headDamageMultiplier": 2
+      },
+      "model": "round_5_d_56x45"
+    },
+    {
+      "id": "cartridge_7_d_62x39",
+      "name": "7.62×39 cartridge",
+      "category": "ammo",
+      "weight": 16,
+      "size": [1, 1],
+      "stack": 30,
+      "description": "A loose 7.62×39 rifle cartridge. Bullet diameter from gungen cartridges/7.62x39.json (C.I.P. projectile G1). Loaded mass 16 g is a gameplay estimate, not a sourced specification. Damage, push and reach are gameplay estimates too.",
+      "ammo": {
+        "calibre": "7.62x39",
+        "pellets": 1,
+        "diameterMm": 7.92,
+        "damage": 45,
+        "impulse": 1.5,
+        "rangeMetres": 400,
+        "headDamageMultiplier": 2
+      },
+      "model": "round_7_d_62x39"
+    },
+    {
+      "id": "cartridge_box_5_d_56x45",
+      "name": "Sealed 5.56×45 box (20)",
+      "category": "ammo",
+      "weight": 280,
+      "size": [2, 1],
+      "description": "Sealed cardboard box of twenty 5.56×45 cartridges. Wield it and activate it to unpack; any loose cartridges that do not fit go into a pile at your feet. Size, 40 g cardboard and 12 g per cartridge are gameplay mass estimates.",
+      "unpack": { "item": "cartridge_5_d_56x45", "count": 20 }
+    },
+    {
+      "id": "cartridge_box_7_d_62x39",
+      "name": "Sealed 7.62×39 box (20)",
+      "category": "ammo",
+      "weight": 360,
+      "size": [2, 1],
+      "description": "Sealed cardboard box of twenty 7.62×39 cartridges. Wield it and activate it to unpack; any loose cartridges that do not fit go into a pile at your feet. Size, 40 g cardboard and 16 g per cartridge are gameplay mass estimates.",
+      "unpack": { "item": "cartridge_7_d_62x39", "count": 20 }
+    },
+    {
+      "id": "magazine_stanag_30",
+      "name": "STANAG magazine",
+      "category": "ammo",
+      "weight": 117,
+      "size": [1, 2],
+      "description": "A 30-round 5.56×45 box magazine for AR-pattern rifles, from gungen's stanag-30 prefab. Wield it and hold R to load carried loose 5.56×45 cartridges one at a time; click to strip the top round. Empty mass 117 g is a gameplay estimate.",
+      "model": "magazine_stanag_30"
+    },
+    {
+      "id": "magazine_akm_30",
+      "name": "AKM magazine",
+      "category": "ammo",
+      "weight": 330,
+      "size": [1, 2],
+      "description": "A 30-round 7.62×39 steel box magazine for AK-pattern rifles, from gungen's akm-30 prefab. Wield it and hold R to load carried loose 7.62×39 cartridges one at a time; click to strip the top round. Empty mass 330 g is a gameplay estimate.",
+      "model": "magazine_akm_30"
+    }
+  ]
+}

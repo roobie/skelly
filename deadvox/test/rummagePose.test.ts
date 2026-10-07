@@ -7,11 +7,13 @@ import { compassBearing } from '../src/core/coords.ts';
 import { actionCycleSeconds } from '../src/core/firearmAction.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { magazineWellCalibre } from '../src/core/magazine.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { Unpacking } from '../src/game/unpacking.ts';
 import { type HeldHandlingFrame, HeldItems } from '../src/render/hands.ts';
 import type { ModelLibrary } from '../src/render/models.ts';
 import { RUMMAGE_POSE, rummageFrame } from '../src/render/rummagePose.ts';
+import { chargedRifle } from './rifleFixture.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -52,10 +54,6 @@ if (issues.length > 0) {
 
 const fixture = (type: string, checkState: (before: unknown, after: unknown) => void, content: Registry = registry) => {
   const inventory = new Inventory(content);
-  const item = inventory.create(type);
-  if (!inventory.add(item, { kind: 'hand', side: 'right' })) {
-    throw new Error('Cannot hold fixture item');
-  }
   const queue = new HandlingQueue(inventory);
   const unpacking = new Unpacking(inventory, queue, () => [0, 0, 0]);
   const mechanics = new FirearmMechanics(inventory, queue, {
@@ -63,7 +61,18 @@ const fixture = (type: string, checkState: (before: unknown, after: unknown) => 
     pose: () => undefined,
     onEjection: () => undefined,
   });
-  const models = { version: 0, held: () => ({ root: new Group(), parts: [] }) } as unknown as ModelLibrary;
+  // A magazine-fed gun is held charged, the way a player readies it.
+  const item =
+    magazineWellCalibre(content, type) === undefined
+      ? inventory.create(type)
+      : chargedRifle(inventory, queue, mechanics, { type, side: 'right' }).rifle;
+  if (!(inventory.locate(item) || inventory.add(item, { kind: 'hand', side: 'right' }))) {
+    throw new Error('Cannot hold fixture item');
+  }
+  const models = {
+    version: 0,
+    heldLook: () => ({ root: new Group(), parts: [], slots: {} }),
+  } as unknown as ModelLibrary;
   const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
   const camera = new PerspectiveCamera();
   const project = (handling: HeldHandlingFrame = { firearms: mechanics.frames(), job: queue.jobs[0] }) => {
@@ -147,7 +156,6 @@ it('a live firearm pose takes precedence over a generic held move', () => {
   const f = fixture(gunDef!.id, (before, after) => expect(after).toEqual(before));
   expect(
     f.mechanics.fire({
-      debugMode: true,
       item: f.item,
       simTime: 0,
       seed: 7,

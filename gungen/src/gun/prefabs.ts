@@ -20,7 +20,7 @@ export const GUN_PREFABS: PrefabCatalogue = [
   // STANAG M = 10u (20-round reference); L = 15.75u (30-round curve).
   { id: 'stanag-20', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-curved' } },
   { id: 'stanag-30', version: 1, family: 'magazine', fixedParams: { length: 'L', profile: 'stanag-curved' } },
-  // AK-74 and AKM L bands are 16.5u and 19.25u respectively; variant selects curve geometry.
+  // The variant selects the AK curve geometry; its L band is in `MAGAZINE_PROFILE_LENGTHS_U` (parts.ts).
   {
     id: 'ak74-30',
     version: 1,

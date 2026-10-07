@@ -57,13 +57,37 @@ controls remain proposals until their issue is implemented.
   debug, rather than inventing no-op lean commands.
 - **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
   to the browser. Escape releases pointer lock and is never a game rebind.
-- **Reload only (2026-10-04):** “It shall mean only (re)load in the default
-  view”; “press and hold R to load it with shells from inventory double-press
-  R to rack”; “Single tap r does nothing”. The two gestures share one atomic
-  slot so rebinding cannot split a coupled action. `ReloadInput` in
-  `src/game/reloadInput.ts` owns classification; ammunition work belongs to its
-  existing handling owner.
-  Inventory rotation is a different visible context, not another reload gesture.
+- **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
+  “No, it should reload with the mag that is fullest in inventory, no matter what
+  is loaded in gun”; on double-pressing R working the charging handle, “yes,
+  correct”; and on removing the magazine, “Tap-then-press-and-hold R means remove
+  mag”. Holding R swaps in the fullest carried magazine that fits, even one with
+  fewer rounds than the fitted one. A double press racks. A tap followed by a
+  press held past the hold threshold removes the fitted magazine to a pocket or
+  the ground. Only the second press's length tells rack from remove, so neither
+  acts until it is released or held: a quick tap-tap never removes, and a plain
+  hold never removes. The gestures share one atomic slot so rebinding cannot
+  split a coupled action. `ReloadInput` in `src/game/reloadInput.ts` owns
+  classification and `RELOAD_GESTURE_MS` its timing; ammunition work belongs to
+  its existing handling owner (`src/game/firearmHandling.ts`,
+  `FirearmMechanics.loadNext` and `FirearmMechanics.removeMagazine`). Inventory
+  rotation is a different visible context, not another reload gesture.
+  - **Hold racks a gun without a magazine (2026-10-07 13:21, d114-11):** BR, on
+    what tap-then-hold does on the pump: “d114-11: i think it makes sense for it
+    to rack, but keep racking as long as the R button is held - it then reflects
+    what removing the mag means for a firearm with it -> remove the magazine
+    capacity”. On a gun without a detachable magazine, a tap followed by a held
+    press racks, then racks again each time a rack finishes, until R comes up or
+    nothing is left in the chamber or the tube. Each rack ejects what is
+    chambered and feeds the next shell, so holding through unloads the gun; live
+    shells land in the pile of the block they fall on, as spent cases do.
+    Releasing R starts no further rack, and the one under way finishes. A gun
+    with a detachable magazine keeps tap-then-hold as removal. See
+    `ReloadBinding.stillLoaded` and `FirearmMechanics.stillLoaded`.
+  - History, **Reload only (2026-10-04):** “It shall mean only (re)load in the
+    default view”; “press and hold R to load it with shells from inventory
+    double-press R to rack”; “Single tap r does nothing”. The removal ruling
+    above supersedes “only (re)load”; a single tap still does nothing.
 - **No rest or sleep keys (2026-10-04):** “`rest` shouldn't have a dedicatec
   keybind - instead, you interact with 'restable' items - e.g. beds, sofas,
   chairs, etc” and “`L` remvoed - sleep is on sleepable objects, like bed”.

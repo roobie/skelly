@@ -27,6 +27,7 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
+import { turnedBore } from '../render/handlingTurn.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -75,7 +76,7 @@ import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
 import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
-import { DebugFirearmTrigger } from './firearmTrigger.ts';
+import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
 import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
@@ -109,7 +110,7 @@ import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
-import type { ReloadBinding } from './reloadInput.ts';
+import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
@@ -298,7 +299,7 @@ export const startPlay = (
 
   let playtestObserver: PlaytestObserver | undefined;
   let debugLaserEnabled = true;
-  const firearmTrigger = new DebugFirearmTrigger();
+  const firearmTrigger = new FirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
   let pendingScreenCommands: ReplayActionPayload[] = [];
@@ -334,7 +335,7 @@ export const startPlay = (
   };
   let automaticFireUid: number | undefined;
   const automaticFireWeapon = (): Item | undefined => {
-    if (!config.debug || debugTools?.buildOn || queue.busy) {
+    if (debugTools?.buildOn || queue.busy) {
       return undefined;
     }
     const action = selectPrimaryAction(inventory);
@@ -363,7 +364,7 @@ export const startPlay = (
     );
     if (weapon) {
       for (const deadline of deadlines) {
-        fireDebugWeapon(weapon, deadline);
+        fireWeapon(weapon, deadline);
       }
     }
   };
@@ -408,10 +409,7 @@ export const startPlay = (
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(inventory);
         if (
-          !(
-            debugTools?.buildOn ||
-            (config.debug && action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump)
-          )
+          !(debugTools?.buildOn || (action.kind === 'firearm' && !registry.items.get(action.item.type)?.firearm?.pump))
         ) {
           performHandUse(dominantSide(inventory.character));
         }
@@ -495,6 +493,7 @@ export const startPlay = (
     entities,
     queue,
     firearms,
+    magazines,
     aim,
     quickbar,
     survival,
@@ -712,7 +711,7 @@ export const startPlay = (
     searching: session.searching,
     notice: showNotice,
     refusal: (text) => showRefusal(text, sim.time),
-    describe: (item) => [...survival.describe(item), ...firearms.describe(item)],
+    describe: (item) => [...survival.describe(item), ...firearms.describe(item), ...magazines.describe(item)],
     workOptions: (uid) => session.crafting.options(uid),
     body: () => sim.body.snapshotState(),
     actionRefusal: () => sim.body.actionRefusal,
@@ -1187,7 +1186,7 @@ export const startPlay = (
     hintToggleInput.cancel();
   });
 
-  /** Default-view R is reload only; menus own their own bindings (including inventory rotation). */
+  /** Default-view R reloads, racks and removes; menus own their own bindings (including inventory rotation). */
   const reloadBinding = (): ReloadBinding | undefined => {
     if (
       !(input.locked || replayPlayer) ||
@@ -1200,31 +1199,28 @@ export const startPlay = (
     ) {
       return;
     }
-    const uid = firearms.reloadableUid();
-    if (uid === undefined) {
+    // An admitted gesture is recorded; replay drives it back through this binding.
+    const admit = (action: 'firearm.load' | 'firearm.rack' | 'firearm.remove', reason: string | undefined): boolean => {
+      if (reason) {
+        showRefusal(reason, sim.time);
+      } else {
+        inputRecorder?.queueAction(action, 'down', inputContext());
+      }
+      return reason === undefined;
+    };
+    const target = reloadTarget(firearms, magazines);
+    if (!target) {
       return;
     }
     return {
-      uid,
+      uid: target.uid,
       busy: () => queue.busy || firearms.busy,
-      load: () => {
-        const reason = firearms.loadNext(uid, sim.time);
-        if (reason) {
-          showRefusal(reason, sim.time);
-        } else {
-          inputRecorder?.queueAction('firearm.load', 'down', inputContext());
-        }
-        return reason === undefined;
-      },
-      rack: () => {
-        const reason = firearms.cock(uid, sim.time);
-        if (reason) {
-          showRefusal(reason, sim.time);
-        } else {
-          inputRecorder?.queueAction('firearm.rack', 'down', inputContext());
-        }
-      },
-      cancelLoad: () => firearms.cancelLoad(uid),
+      oneAction: target.oneAction,
+      load: () => admit('firearm.load', target.load(sim.time)),
+      rack: () => admit('firearm.rack', target.rack(sim.time)),
+      remove: () => admit('firearm.remove', target.remove(sim.time)),
+      ...(target.stillLoaded ? { stillLoaded: target.stillLoaded } : {}),
+      cancelLoad: target.cancelLoad,
     };
   };
 
@@ -1467,6 +1463,9 @@ export const startPlay = (
         return true;
       case 'firearm.rack':
         reloadBinding()?.rack();
+        return true;
+      case 'firearm.remove':
+        reloadBinding()?.remove();
         return true;
       case 'glowstick.throw': {
         const glowstick = [inventory.hands.right, inventory.hands.left].find((item) => item?.type === 'glowstick');
@@ -1800,10 +1799,9 @@ export const startPlay = (
     }
   };
 
-  const fireDebugWeapon = (item: Item, time: number): boolean => {
+  const fireWeapon = (item: Item, time: number): boolean => {
     const fired = firearms.fire({
       aimFrame: aim.frame,
-      debugMode: config.debug,
       ready: isFirearmReady(item.uid),
       aimingDownSights: isAimingDownSights(),
       sprinting: session.sprinting,
@@ -1877,15 +1875,10 @@ export const startPlay = (
     showRefusal(primaryActionHint(registry, item), sim.time);
   };
   const fireHeldItem = (item: Item): void => {
-    if (!isFirearmReady(item.uid) || session.sprinting || fireDebugWeapon(item, sim.time)) {
+    if (!isFirearmReady(item.uid) || session.sprinting || fireWeapon(item, sim.time)) {
       return;
     }
-    const firearm = registry.items.get(item.type)?.firearm;
-    const refusal =
-      config.debug || firearm?.pump
-        ? (firearms.fireReason(item.uid) ?? 'Firearm is not ready')
-        : 'Firearms can only be fired in debug mode';
-    showRefusal(refusal, sim.time);
+    showRefusal(firearms.fireReason(item.uid) ?? 'Firearm is not ready', sim.time);
   };
   performHandUse = (hand: 'right' | 'left') => {
     if (sim.body.actionRefusal) {
@@ -1913,6 +1906,13 @@ export const startPlay = (
         return;
       case 'firearm':
         fireHeldItem(action.item);
+        return;
+      case 'magazine':
+        refusalReason(
+          survival.selectedItemAction(action.item)?.magazine === 'strip'
+            ? magazines.strip(action.item.uid, sim.time)
+            : 'Magazine is empty',
+        );
         return;
       case 'fists':
         swing(action.hand);
@@ -2155,22 +2155,33 @@ export const startPlay = (
     }
     const { item } = selected;
     const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
-    return firearmBoreRay({
-      model: firearmHandlingFor(item, registry).model,
-      eye: eye(),
-      yaw: input.yaw,
-      pitch: input.pitch,
+    const { model } = firearmHandlingFor(item, registry);
+    const side = inventory.hands.right?.uid === item.uid ? 'right' : 'left';
+    const progress = firearmPose?.progress ?? 0;
+    const viewpoint = { eye: eye(), yaw: input.yaw, pitch: input.pitch };
+    const bore = firearmBoreRay({
+      model,
+      ...viewpoint,
       blockSize: s,
-      side: inventory.hands.right?.uid === item.uid ? 'right' : 'left',
+      side,
       leadingSide: dominantSide(inventory.character),
       twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
       aimFrame: aim.frame,
-      progress: firearmPose?.progress ?? 0,
+      progress,
       aimingDownSights: firearmPose?.aimingDownSights ?? false,
       loweredPitchRadians: tuning.loweredPitchRadians,
       adsApertureFill: tuning.adsApertureFill,
       verticalFovDegrees: camera.fov,
       isSolid: engine.isSolid,
+    });
+    // The mark follows the muzzle where a rack or a magazine job turns the drawn gun (BR, 2026-10-07 14:55).
+    return turnedBore(bore, {
+      model,
+      side,
+      frame: firearms.frames().find((pose) => pose.uid === item.uid),
+      loweredPitch: -tuning.loweredPitchRadians * (1 - progress),
+      blockSize: s,
+      ...viewpoint,
     });
   };
 

@@ -234,7 +234,7 @@ const MeleeClassSchema = strictObject({
   speedMultiplier: Positive,
 });
 
-// Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
+// A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
@@ -244,10 +244,19 @@ const FirearmSchema = strictObject({
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
 });
+/** Per projectile (one rifle bullet, or each pellet); damage, push and reach are gameplay estimates, not ballistics. */
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
   diameterMm: Positive,
+  /** Region health a projectile takes, before the zombie's per-region pierce resistance. */
+  damage: Positive,
+  /** Push in N·s on the struck body. */
+  impulse: Positive,
+  /** Hitscan reach. */
+  rangeMetres: Positive,
+  /** Scales `damage` on a head hit; absent means 1. */
+  headDamageMultiplier: optional(Positive),
 });
 
 const LightSchema = strictObject({
@@ -626,6 +635,12 @@ const ModelSchema = pipe(
     muzzleDirection: optional(UnitVector),
     /** Optional estimated action cycles and the named moving GLB nodes. */
     action: optional(ActionSchema),
+    /**
+     * Where the charging handle sits around the bore: degrees from the top of the receiver toward the gun's right
+     * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (DESIGN.md, "Rifles
+     * (3.2, d114)"). Hand-authored: the export does not carry it.
+     */
+    chargingHandleDegrees: optional(pipe(number(), minValue(-180), maxValue(180))),
   }),
   check(
     ({ calibre, capacity, rounds }) =>
@@ -726,6 +741,8 @@ const LootEntrySchema = pipe(
 
 const LootTableSchema = strictObject({
   id: Id,
+  /** Military supply: the only tables that may hold military-only items or nest another military table. */
+  military: optional(vBoolean()),
   /** How many times to roll, inclusive. */
   rolls: range(Count),
   entries: pipe(array(LootEntrySchema), nonEmpty('needs at least one entry')),

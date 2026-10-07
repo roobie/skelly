@@ -47,11 +47,11 @@ Each gun's export describes its action, and deadvox plays it; nothing is hand-an
 - **Hold-open on empty:** the AR's bolt catch holds the carrier at the rear after the last round; the AK returns to battery on an empty magazine. BR: a big part of the feel is the difference between guns.
 - **What moves visibly:** on the AK the carrier and its charging handle reciprocate; on the AR the carrier moves inside the receiver (seen through the ejection port) and the charging handle stays forward.
 
-### 3. Spent cases: one counter per area, not one object per case
+### 3. Spent cases: one counter per block, not one object per case
 
 This is a survival game and reloading ammunition is part of it, so spent cases are **simulation state** and are saved. But deadvox does **not** model each case. Instead:
 
-- Each shot adds 1 to a **spent-case pile** item for that calibre: the nearest existing spent-case pile of the same calibre within **about 20 m** of the shooter; if there is none, a new pile is placed where that shot's case lands. The radius is deliberately large so an area holds few piles.
+- Each shot adds 1 to the **spent-case pile** item for that calibre on the block where that shot's case lands, starting a pile there if there is none. BR's 2026-10-07 ruling (below) replaced the first ruling's counter per area of about 20 m; see DESIGN.md, "Spent cases per block".
 - The increment happens **at the shot**, from the simulation, never from the flying case's physics, so it is deterministic and survives save and restore.
 - The pile is an ordinary pile with a stack of `spent_case_<calibre>` items with a count; picking it up gives the cases (for reloading later).
 - **Rendering the pile** uses the count: up to a cap, a scatter of instanced case models laid out deterministically from the pile's seed and count, spreading wider as the count grows. Beyond the cap the scatter stays as is.
@@ -62,7 +62,7 @@ This is a survival game and reloading ammunition is part of it, so spent cases a
 This project is pre-pre-alpha; no backwards compatibility is owed. Gungen and Deadvox may change their export and model schema together, without legacy paths or migrations. The acceptance gate is that a model exported by gungen is validated by Deadvox and loads in its model runtime. Gungen fills the following data from each design and its selected cartridge. For g44, design/template calibre stays explicit through generation and export so the AK magazine follows the selected cartridge; a receiver's ability to fit both patterns does not make the magazines interchangeable. BR's 2026-10-07 11:27 ruling for #347 keeps generated AKs 7.62×39-only, keeps the curated AK-74 fixture outside the generated pool, and schedules 5.45×39 generation for #362 (see `gungen/PROJECT.md`, g44).
 
 - `calibre`: the cartridge id from gungen's cartridge data.
-- `anchors` carry non-replaceable points such as `muzzle` and `ejection`, each `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right). The magazine seat is `slots.magazine: { node, at, turn }`: `node` names the baked magazine in the GLB and `at`/`turn` place its replacement. The item-owned slot—not a second magwell anchor—allows Deadvox to hide the baked node when no magazine is fitted (d114-11, #337).
+- `anchors` carry non-replaceable points such as `muzzle` and `ejection`, each `[x, y, z]` in metres in the model frame (+x forward, +y up, +z right). The magazine seat is `slots.magazine: { node, at, turn }`: `node` names the baked magazine in the GLB and `at`/`turn` place its replacement. The item-owned slot—not a second magwell anchor—allows Deadvox to hide the baked node when no magazine is fitted (d114-11, #337), and to draw the fitted magazine's own model there instead (DESIGN.md, "One item, one look").
 - `attachmentSlots` preserves each attachable base-firearm rail notch and muzzle interface, whether or not a default mod occupies it. Rail slots carry an explicit rail group and notch index; Deadvox must not infer either by parsing the slot ID. `attachments[].mountedAt` links each fitted item to the exact host slot, and `attachments[].node` names its baked GLB node. `properties` carries item gameplay metadata and the rail-notch span relative to its anchor; its interval lets Deadvox reject a second part that overlaps the first item's rail footprint, which exact mount equality alone cannot detect. No first-set attachment is a host for another attachment, so female ports on attachment nodes are not exported as firearm slots.
 - A standalone model's `attachment` carries the same item identity, mount, properties, and any local sight frame without a host slot. Gungen authors the fit data from port/solid geometry; Deadvox validates it through `ModelSchema` and consumes it at runtime. See `gungen/src/gun/attachments.ts`, `attachmentSlots` and `attachmentMetadata`; `gungen/src/gun/exportGlb.ts`, `exportGunGlb`; and `deadvox/src/core/schema.ts`, `ModelSchema`.
 - `action`:
@@ -117,7 +117,7 @@ The existing fingerprint rules (`SIMULATION_EXCLUSIONS`) apply: presentation cod
 
 ## Rulings (2026-10-02)
 
-- Casings: not per case; a counter per area of about 20 m that also drives rendering (BR's pushback on decorative-only cases).
+- Casings: not per case; a counter per area of about 20 m that also drives rendering (BR's pushback on decorative-only cases). Superseded by BR, 2026-10-07 11:27, asked whether to save cases per block with a deterministic scatter or each at its exact landing point: "keep it simple in code, so i guess per block?" The counter is now per block.
 - A handling range first, damage later; a gun range site next to the hamlet.
 - Hold-open on empty modelled; the guns should feel different.
 - Cycle numbers are eyeballed.
