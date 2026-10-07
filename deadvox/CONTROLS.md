@@ -9,6 +9,7 @@ read_if:
   - you review BR's control rulings or unresolved input questions
   - you change input ownership, binding preferences or their labels
   - you add a pointer, click or wheel action
+  - you implement or inspect input recording and replay
   - you change how a locked door advertises its crowbar fallback
 ---
 
@@ -169,6 +170,30 @@ coordination layer.
 
 Stored preferences are untrusted, so invalid rows are dropped instead of
 becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
+
+## Input recording and replay (d101)
+
+Replay capture is sampled at the fixed player-tick boundary so timing follows simulation
+steps rather than browser event timestamps. The downloadable artifact embeds its starting
+save and compatibility identity; it is explicit and does not change world-save state.
+The debug actions make import and export available without adding another input-binding
+surface. Retaining an earlier segment preserves recent history across bounded storage
+rollover while its start snapshot keeps the exported input replayable. An end-state
+fingerprint surfaces simulation drift from uncovered input rather than silently implying
+reproduction. The scope question was whether replay should cover inventory and crafting
+screen use. BR asked on 2026-10-06:
+
+> "how much effort is it to scope it to inventory and crafting too?"
+> "yes, do inventory and crafting in the validation too"
+
+Inventory and crafting screen actions therefore carry UID-based command payloads through
+the shared dispatcher; see `applyReplayActionPayload` in `src/game/replayCommands.ts`,
+`InventoryScreen` in `src/ui/inventoryScreen.ts`, and `startPlay` in `src/game/play.ts`.
+Replay export refuses debug firearm-handling values that differ from content; the slider
+values are not replay identity. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
+The replay rationale remains in [SLICE-3.md](SLICE-3.md), 3.10. See `INPUT_BINDINGS` in
+`src/game/inputBindings.ts` for the debug export and import actions, `InputReplayRecorder`
+and `replayStateFingerprint` in `src/game/inputReplay.ts`.
 
 ## Readiness and melee (2026-10-05, #267)
 

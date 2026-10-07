@@ -405,6 +405,10 @@ export class FirearmMechanics {
     return true;
   }
 
+  hasSkillZeroHandlingOverrides(): boolean {
+    return this.firearmsSkillZeroOverrides.size > 0;
+  }
+
   /** The next shot is a follow-up only inside the same weapon's short, content-cadence burst window. */
   handlingShotKind(uid: number, time: number): FirearmsSkillShotKind {
     const item = this.inventory.itemByUid(uid);

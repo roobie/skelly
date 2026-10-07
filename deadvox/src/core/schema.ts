@@ -183,8 +183,26 @@ const WeaponSchema = strictObject({
     impulse: optional(NonNegative),
     /** Condition lost when this weapon lands a melee hit. */
     wearPerHit: optional(Fraction),
+    /** Overrides the weapon class's per-hit damage spread. */
+    damageVariance: optional(Fraction),
+    /** Overrides the weapon class's head-hit damage multiplier. */
+    headDamageMultiplier: optional(Positive),
+    /** Overrides the weapon class's limb-hit damage multiplier. */
+    limbDamageMultiplier: optional(Positive),
+    /** Overrides the weapon class's swing-speed multiplier. */
+    speedMultiplier: optional(Positive),
     type: picklist(['blunt', 'cut', 'pierce']),
   }),
+});
+
+const MeleeClassSchema = strictObject({
+  id: picklist(['blunt', 'cut', 'pierce']),
+  /** Fractional spread applied symmetrically around base weapon damage. */
+  damageVariance: Fraction,
+  headDamageMultiplier: Positive,
+  limbDamageMultiplier: Positive,
+  /** Multiplies swing speed; cooldown is divided by this value. */
+  speedMultiplier: Positive,
 });
 
 // Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
@@ -743,6 +761,15 @@ const ZOMBIE_ABILITIES = [
   'burrow',
 ] as const;
 
+const MeleeDamageResistanceSchema = strictObject({
+  head: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
+  torso: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
+  leftArm: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
+  rightArm: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
+  leftLeg: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
+  rightLeg: strictObject({ blunt: Fraction, cut: Fraction, pierce: Fraction }),
+});
+
 const ZombieSchema = strictObject({
   id: Id,
   name: Name,
@@ -754,6 +781,8 @@ const ZombieSchema = strictObject({
     leftLeg: Positive,
     rightLeg: Positive,
   }),
+  /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
+  meleeDamageResistance: optional(MeleeDamageResistanceSchema),
   /** Metres per second. */
   speed: strictObject({ wander: Positive, chase: Positive }),
   /** Metres advanced by one half-cycle of the leg gait. */
@@ -957,6 +986,8 @@ const BodyTuningSchema = strictObject({
   infectionChance: Fraction,
   /** Simulation seconds that the player remains unconscious. */
   knockoutSeconds: Positive,
+  /** Simulation seconds to wait after stamina reaches zero before recovery begins. */
+  staminaRegenDelaySimSeconds: Positive,
   /** Player eye height in metres while unconscious and prone. */
   proneEyeHeightMetres: Positive,
   /** Blunt-force shock damage per point of health damage. */
@@ -1021,6 +1052,7 @@ const SECTION_DESCRIPTOR = {
   layouts: { schema: optional(array(SiteLayoutSchema)), label: 'site layouts', order: 11 },
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
+  meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1047,6 +1079,7 @@ export type FigureDef = InferOutput<typeof FigureSchema>;
 export type ModelDef = InferOutput<typeof ModelSchema>;
 export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
+export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;

@@ -151,6 +151,15 @@ export class Simulation {
     if (state.pendingInterrupt !== undefined && (typeof state.pendingInterrupt !== 'string' || state.dead)) {
       throw new Error('Invalid pending interruption state');
     }
+    const staminaDelay = state.needs.staminaRegenDelayRemainingSimSeconds;
+    if (
+      !Number.isFinite(staminaDelay) ||
+      staminaDelay < 0 ||
+      staminaDelay > this.body.tuning.staminaRegenDelaySimSeconds ||
+      (state.needs.stamina > 0 && staminaDelay !== 0)
+    ) {
+      throw new Error('Invalid stamina recovery delay');
+    }
     Object.assign(this.needs, state.needs);
     this.body.restoreState(state.body);
     this.compression.c = state.compression.c;
@@ -274,6 +283,27 @@ export class Simulation {
     const { c } = this.compression;
     const wanted = Math.min(realDt * c, this.compression.limits.maxSimPerFrame);
     const dt = until === undefined ? wanted : Math.min(wanted, Math.max(0, until - this.time));
+    const hadAction = this.actions.job !== undefined;
+    const advanced = this.scheduler.advance(
+      dt,
+      c,
+      () => this.dead !== undefined || this.checkInterruptions() || (hadAction && this.actions.job === undefined),
+    );
+    this.actions.syncInterruption();
+    return advanced;
+  }
+
+  /** Advances a replay by fixed simulation time without consulting wall-clock compression. */
+  frameReplay(simDt: number): number {
+    if (this.paused || this.dead) {
+      return 0;
+    }
+    if (!Number.isFinite(simDt) || simDt < 0) {
+      throw new Error('Invalid replay step');
+    }
+    this.checkInterruptions();
+    const { c } = this.compression;
+    const dt = Math.min(simDt * c, this.compression.limits.maxSimPerFrame);
     const hadAction = this.actions.job !== undefined;
     const advanced = this.scheduler.advance(
       dt,
