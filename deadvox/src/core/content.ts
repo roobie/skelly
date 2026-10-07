@@ -25,6 +25,7 @@ export type {
   FurnitureDef,
   ItemDef,
   LootEntry,
+  MeleeClassDef,
   ModelDef,
   RecipeDef,
   SoundDef,
@@ -169,17 +170,21 @@ const fileIssues = (file: ContentFile, source: string): [string, string][] => {
 export const schemaIssues = (source: string, issues: readonly Issue[]): ContentIssue[] =>
   issues.flatMap(flatten).map((issue) => ({ source, path: formatPath(issue), message: messageOf(issue) }));
 
-/** Checks one content file on its own. An empty list means the file is usable. */
-export const validateContent = ({ source, data }: ContentSource): ContentIssue[] => {
+/** Parses one authored content file into its runtime representation. */
+const parseContent = ({ source, data }: ContentSource): { file?: ContentFile; issues: ContentIssue[] } => {
   if (!isObject(data)) {
-    return [{ source, path: '', message: `expected an object with any of: ${SECTIONS.join(', ')}` }];
+    return { issues: [{ source, path: '', message: `expected an object with any of: ${SECTIONS.join(', ')}` }] };
   }
   const result = safeParse(ContentFileSchema, data);
   if (!result.success) {
-    return schemaIssues(source, result.issues);
+    return { issues: schemaIssues(source, result.issues) };
   }
-  return fileIssues(result.output, source).map(([path, message]) => ({ source, path, message }));
+  const issues = fileIssues(result.output, source).map(([path, message]) => ({ source, path, message }));
+  return { file: result.output, issues };
 };
+
+/** Checks one content file on its own. An empty list means the file is usable. */
+export const validateContent = (source: ContentSource): ContentIssue[] => parseContent(source).issues;
 
 // ---- merging ----
 
@@ -312,16 +317,16 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   if (igniter && igniter.perIgnition > igniter.capacity) {
     report('items', item.id, '.igniter.perIgnition', 'must not exceed fuel capacity');
   }
-  if (light?.power && light.burnTime !== undefined) {
-    report('items', item.id, '.light.burnTime', 'battery lights cannot also have a burn time');
+  if (light?.power && light.burnTimeGameHours !== undefined) {
+    report('items', item.id, '.light.burnTimeGameHours', 'battery lights cannot also have a burn time');
   }
-  if (light?.fuelPerHour !== undefined && !igniter) {
-    report('items', item.id, '.light.fuelPerHour', 'self-fuelled lights need an igniter fuel component');
+  if (light?.fuelPerGameHour !== undefined && !igniter) {
+    report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights need an igniter fuel component');
   }
-  if (light?.fuelPerHour !== undefined && light.burnTime !== undefined) {
-    report('items', item.id, '.light.fuelPerHour', 'self-fuelled lights cannot also have a burn time');
+  if (light?.fuelPerGameHour !== undefined && light.burnTimeGameHours !== undefined) {
+    report('items', item.id, '.light.fuelPerGameHour', 'self-fuelled lights cannot also have a burn time');
   }
-  if (light?.burning && light.burnTime === undefined) {
+  if (light?.burning && light.burnTimeGameHours === undefined) {
     report('items', item.id, '.light.burning', 'burning rules need a burn time');
   }
   if (light?.burning?.ignition === 'firestarter' && !hasIgniter) {
@@ -629,10 +634,10 @@ export const buildRegistry = (
   const issues: ContentIssue[] = [];
   let files: { source: string; file: ContentFile }[] = [];
   for (const src of sources) {
-    const found = validateContent(src);
-    issues.push(...found);
-    if (found.length === 0) {
-      files.push({ source: src.source, file: src.data as ContentFile });
+    const parsed = parseContent(src);
+    issues.push(...parsed.issues);
+    if (parsed.issues.length === 0 && parsed.file) {
+      files.push({ source: src.source, file: parsed.file });
     }
   }
   for (;;) {

@@ -8,7 +8,7 @@
       "size": [1, 1],
       "tool": { "qualities": { "fixture_quality": 2 } },
       "disassembly": {
-        "time": 1,
+        "timeGameMinutes": 1,
         "skill": "crafting",
         "yields": [{ "item": "rag", "count": 1, "fractions": [0.5, 1], "rounding": "floor" }]
       }
@@ -18,7 +18,7 @@
     {
       "id": "torch",
       "result": { "item": "fixture_tool", "count": 1 },
-      "time": 1,
+      "timeGameMinutes": 1,
       "skills": {},
       "qualities": { "fixture_quality": 2 },
       "components": [[{ "item": "rag", "count": 1 }]]

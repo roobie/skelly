@@ -5,6 +5,7 @@ read_if:
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
+  - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
@@ -14,6 +15,7 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
 ---
@@ -108,20 +110,15 @@ voxel model.
 
 ## Time
 
-### Two scales
+### Three clocks and canonical units
 
-- The **clock ratio** `r` is how many calendar seconds pass per simulation
-  second. The starting value is `r = 8` (written 1:8), so a game day is 3 real
-  hours. Content rates are written per
-  game hour (for example "thirst +1 per hour"), so tuning `r` doesn't touch
-  content.
-- **Compression** `c` speeds up the whole simulation. It is 1 during normal
-  play. During a long action it ramps up to a cap: start at 30, which makes
-  1 real second about 4 game minutes. Physics, AI, needs and fires all run `c`×
-  faster, and the player's own inputs are locked.
+Three clocks are explicit throughout the simulation boundary. BR asked, 2026-10-06 21:41, “what is our standard overall? Like, for all temporal fields - do they use the one or the other or is it mixed?” At 21:44: “yes, but let's be even more explicit, so that we use  SimSeconds and GameSeconds” and “that would be the complete pair? Or, we might have use of RealSeconds too, that aren't sim-bound - i.e. wall clock time”. At 21:48: “as for time: I think we'd do best with (b) having support for different units _or_ even have a uniform TimeSpan kind of struct or string, which would allow for any resolution needed at any point”. BR chose numeric fields with a mandatory clock and unit, and the outer Real-to-Sim boundary: “1. (b)” / “2. (i) + a custom linter that tries to detect violations” (2026-10-06 22:25).
 
-Real frame time × `c` gives simulation seconds; simulation seconds × `r` give
-calendar seconds.
+Simulation time advances only by a Sim-seconds step. `src/game/frameDriver.ts`, `advanceLiveFrame`, processes between-frame interruptions before ramping compression and sizing the live step; `src/game/play.ts` routes live play through that driver. Replay remains a separate deterministic path: `Simulation.frameReplay` checks interruptions before applying recorded compression to its fixed Sim step. The core accepts Sim seconds and never samples a wall clock. Game time advances from Sim time through the saved clock ratio; Real time is reserved for the frame/input/presentation boundary.
+
+The conversion is `SimSeconds = RealSeconds × compression`, followed by `GameSeconds = SimSeconds × CLOCK_RATIO`. `src/core/time.ts` owns named conversions: minutes normalize by multiplying by 60, hours by 3,600, and rates per minute or hour normalize by dividing by those factors. Timestamp conversion also includes the Game-clock origin; duration conversion does not. Game-clock content rates are authored per Game hour, so tuning the clock ratio (`CLOCK_RATIO`) does not change content.
+
+Authored temporal field names include their clock and unit. Content schemas parse numeric values to branded canonical seconds or rates; `src/core/temporalFields.ts`, `TEMPORAL_FIELDS`, catalogs authored fields and dimensions. The brands prevent assignment where a different branded unit is required; they do not prevent arithmetic between unlike brands. `deadvox/tools/time-lint.mjs`, `lint:time`, checks the simulation dependency graph for Real-clock sources, temporal names without clock-and-unit, arithmetic mixing branded clocks using the TypeScript checker, and the runtime-name baseline. The type-based checks use the TypeScript program assembled by `typeProgram`; if a simulation `.mjs` module gains clock arithmetic, widen that program before relying on those checks there. The baseline holds owner-boundary names deferred to r46; its ratchet requires each such field to leave when renamed. Gungen's internal cycle estimates are outside deadvox `lint:time`; exported action metadata follows deadvox's clock-and-unit schema, guarded by the root gungen-to-deadvox contract test. Owner-field and save-format renames are r46 work; persisted-name changes require a save-schema bump because older saves are rejected.
 
 ### Long actions
 
@@ -521,10 +518,24 @@ plain box in your hands. Files are small, and follow
   contact after `min(0.4 × cooldown, 0.25 s)`, with recovery filling the rest of
   cooldown. Misses and wall-blocked swings still spend stamina and cooldown.
   Active swings are saved and fingerprinted so Continue preserves one pending
-  hit; changing held items cancels that hit without refunding cooldown. Holding
-  right mouse raises a cosmetic ready stance. First-person motions use shared
-  blunt-arc, cut-slash, pierce-thrust and alternating-fist profiles; two-handed
-  items animate both arms. Confirmed hits add only clamped first-person recoil.
+  hit; changing held items cancels that hit without refunding cooldown. BR
+  (d113-1, 2026-10-06 23:52): “calling it 'cosmetic' seems like a bug”. Holding right
+  mouse with a melee weapon or empty hands enters en-garde; holding S while
+  en-garde attempts to block incoming melee, with success by melee-combat skill.
+  En-garde does not change movement pace. See `src/game/melee.ts`,
+  `shouldEnterMeleeReady` and `shouldBlockFromEnGarde`, `src/game/session.ts`,
+  `hurtPlayer`, `src/core/meleeCombat.ts`, `blocksAttack`, and
+  `src/game/player.ts`, `movementPace`. First-person motions use shared blunt-arc,
+  cut-slash, pierce-thrust and alternating-fist profiles; two-handed items
+  animate both arms. Confirmed hits add only clamped first-person recoil.
+
+  BR's 2026-10-07 ruling:
+
+  > blunt: lower variance, greater head damage, generally slower weapons
+  > edged: severs limbs more easily, medium variance, medium speed
+  > stabbing (piercing): in many cases faster, big damage variance
+
+  These class differences make weapon choice matter at contact instead of making every hit a fixed subtraction. The class defaults and per-weapon overrides are provisional content tuning so BR can adjust how those tradeoffs feel. `src/core/schema.ts`, `MeleeClassSchema` and `WeaponSchema`, validate the authored defaults and overrides; `src/game/melee.ts`, `resolvePlayerMeleeWeapon`, resolves them with the swing-time body slowdown into the saved active action, and `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, applies the contact effects. Damage variation uses one draw from `Zombie.dismemberRng` per class-weapon hit, before dismemberment checks and even at zero spread. Keeping draw order independent of spread prevents later dismemberment rolls from shifting when tuning moves to or from zero. Zero stamina refuses a swing, and the authored stamina-recovery wait is saved as remaining simulation time so Continue does not restart or skip that delay; see `src/core/needs.ts`, `spendStamina` and `stepStamina`, and `src/core/sim.ts`, `Simulation.restoreState`.
 - **Firearms** come from gungen assemblies: part choices decide calibre,
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
@@ -577,8 +588,13 @@ plain box in your hands. Files are small, and follow
   separates firearm quality's dispersion from skill-controlled handling.
   The #267 ruling makes ready stance gate firearm fire, prohibits firing while
   sprinting, assigns duck-walk speed to firearms combat and block success to
-  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. Until
-  3.1 lands, aim-sway look comparisons use the current movement rules;
+  melee combat. 3.1 ([SLICE-3.md](SLICE-3.md)) implements those rules. BR
+  (d113-1, 2026-10-06 23:51): “i tested the shotgun on gungen/ak-muzzles / issue: when RR
+  racking, a readied shotgun returns to unreadied during racking / this happens
+  too when loading / i don't think it should”. A held, completed ready stance
+  remains active through firearm rack/load handling; raising still takes its
+  skill-scaled simulation time. See `src/game/session.ts`,
+  `advancePlayerReadiness`. Until 3.1 lands, aim-sway look comparisons use the current movement rules;
   afterward, moving-fire comparisons use the skill-dependent duck-walk speed.
   d62 leaves practice unawarded until its source is ruled; #275 sets tiered
   training, while tiers for existing sources and above-tier practice remain
@@ -603,7 +619,14 @@ plain box in your hands. Files are small, and follow
 ## Damage, destruction and dismemberment
 
 Direction set by BR on 2026-09-28. The aim is an **interesting** damage
-system, not just bigger numbers.
+system, not just bigger numbers. BR's future direction is: “then at some point
+we'll model armor, and different armors have different resistances, like
+chainmail vs platemail vs ballistic vest (example only)”. Armour is outside
+3.3; its later resistances should enter through per-region, per-type damage
+application rather than weapon-class special cases. The neutral per-region,
+per-type data slot in `src/core/schema.ts`, `ZombieSchema`, and
+`src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, keeps that handoff open
+without modeling armour now.
 
 - **Damage comes in types.** Every hit deals a mix of types, and every target
   resists each type differently. The melee types above (blunt, cut, pierce) are
@@ -617,7 +640,7 @@ system, not just bigger numbers.
   steel, each with durability and a resistance per damage type, as content-pack
   data (today a block has only an id and `solid`). A destroyed block is removed
   with `World.setBlock`. Saves already store changed cells as an overlay on the
-  regenerated base chunks (`src/core/saveState.ts:153`), so destruction
+  regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
   persists without new save machinery; saves grow with the damage done.
 - **No structural collapse in the first version.** Blocks left unsupported
   stay where they are. Collapse is a later, separate system.

@@ -13,6 +13,8 @@ import type { Engine } from './engine.ts';
 import type { MoveIntent } from './player.ts';
 import type { SnapshotMeasurement } from './playtestTools.ts';
 
+export type InputReplayStatusState = 'idle' | 'recording' | 'playing' | 'verified' | 'diverged' | 'unavailable';
+
 export interface DebugHooks {
   readonly engine: Engine;
   /** The weather play renders with; the debug look controls set its fogginess. */
@@ -41,6 +43,12 @@ export interface DebugHooks {
   readonly measureSnapshot: () => SnapshotMeasurement;
   readonly impactLaser: { enabled: () => boolean; toggle: () => void };
   readonly exportMetrics: () => void;
+  readonly inputReplay: {
+    readonly status: () => string;
+    readonly state: () => InputReplayStatusState;
+    readonly export: () => Promise<Uint8Array>;
+    readonly import: (bytes: Uint8Array) => void;
+  };
   readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   readonly setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling) => void;
 }

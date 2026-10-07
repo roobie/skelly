@@ -2,7 +2,7 @@
 // systems registered on it. Pure, so scenario tests run it headless.
 
 import { Body, type BodyImpact, type BodyRegion, type BodyState } from './body.ts';
-import { type ClockSettings, calendarAt, defaultClock, gameHours } from './clock.ts';
+import { type ClockSettings, calendarAt, defaultClock, simToGameHours } from './clock.ts';
 import { Compression, type CompressionLimits } from './compression.ts';
 import type { Vec3 } from './coords.ts';
 import { EventQueue, type EventReader } from './events.ts';
@@ -14,6 +14,7 @@ import type { BodyTuningDef } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 import type { SoundEventId } from './soundEvents.ts';
 import type { SoundEmission } from './soundPicker.ts';
+import type { SimSeconds } from './time.ts';
 
 /** Events systems emit. Sound choices and their hearing stimuli are committed before playback. */
 export type SimEvent =
@@ -93,7 +94,7 @@ export class Simulation {
       tick: (dt) => {
         const rate = this.restRate();
         const rates = rate === undefined ? NEED_RATES : { ...NEED_RATES, fatigue: rate };
-        for (const reason of stepNeeds(this.needs, this.body, gameHours(this.clock, dt), {
+        for (const reason of stepNeeds(this.needs, this.body, simToGameHours(this.clock, dt), {
           damageImmune: this.godMode,
           rates,
         })) {
@@ -150,6 +151,15 @@ export class Simulation {
     }
     if (state.pendingInterrupt !== undefined && (typeof state.pendingInterrupt !== 'string' || state.dead)) {
       throw new Error('Invalid pending interruption state');
+    }
+    const staminaDelay = state.needs.staminaRegenDelayRemainingSimSeconds;
+    if (
+      !Number.isFinite(staminaDelay) ||
+      staminaDelay < 0 ||
+      staminaDelay > this.body.tuning.staminaRegenDelaySimSeconds ||
+      (state.needs.stamina > 0 && staminaDelay !== 0)
+    ) {
+      throw new Error('Invalid stamina recovery delay');
     }
     Object.assign(this.needs, state.needs);
     this.body.restoreState(state.body);
@@ -259,21 +269,42 @@ export class Simulation {
     return this.ignoreUnsafe ? undefined : this.unsafe();
   }
 
-  /**
-   * Advances by one real frame of `realDt` seconds. With `until`, it stops at that
-   * simulation time (the end of a long action). Returns the simulation seconds
-   * advanced.
-   */
-  frame(realDt: number, until?: number): number {
+  /** Processes events emitted between frames before the outer driver sizes this frame. */
+  beginFrame(): void {
+    this.checkInterruptions();
+  }
+
+  /** Advances by an already-planned Sim-time step. Real-time conversion belongs to the outer frame driver. */
+  frame(simDt: SimSeconds, until?: number): number {
     if (this.paused || this.dead) {
       return 0;
     }
-    this.compression.update(realDt);
     // Events emitted between frames (input, debug keys) count too.
     this.checkInterruptions();
     const { c } = this.compression;
-    const wanted = Math.min(realDt * c, this.compression.limits.maxSimPerFrame);
+    const wanted = Math.min(simDt, this.compression.limits.maxSimPerFrame ?? Number.POSITIVE_INFINITY);
     const dt = until === undefined ? wanted : Math.min(wanted, Math.max(0, until - this.time));
+    const hadAction = this.actions.job !== undefined;
+    const advanced = this.scheduler.advance(
+      dt,
+      c,
+      () => this.dead !== undefined || this.checkInterruptions() || (hadAction && this.actions.job === undefined),
+    );
+    this.actions.syncInterruption();
+    return advanced;
+  }
+
+  /** Advances a replay by fixed simulation time without consulting wall-clock compression. */
+  frameReplay(simDt: number): number {
+    if (this.paused || this.dead) {
+      return 0;
+    }
+    if (!Number.isFinite(simDt) || simDt < 0) {
+      throw new Error('Invalid replay step');
+    }
+    this.checkInterruptions();
+    const { c } = this.compression;
+    const dt = Math.min(simDt * c, this.compression.limits.maxSimPerFrame);
     const hadAction = this.actions.job !== undefined;
     const advanced = this.scheduler.advance(
       dt,

@@ -30,6 +30,12 @@ describe('debug action dispatch', () => {
     expect(grouped).toHaveLength(actions.length);
     expect(new Set(grouped.map(({ id }) => id)).size).toBe(actions.length);
   });
+  it('routes replay registry actions to the existing export and import controls', () => {
+    const { actions, replayCalls } = makeActions();
+    expect(dispatchDebugAction(actions, 'debug.input-replay-export')).toBe(true);
+    expect(dispatchDebugAction(actions, 'debug.input-replay-import')).toBe(true);
+    expect(replayCalls).toEqual(['export', 'import']);
+  });
   it('dispatches each exposed toggle to its owner rather than retaining panel-only state', () => {
     const { actions } = makeActions();
     const toggles = actions.filter((action) => action.state !== undefined);
@@ -121,6 +127,7 @@ const makeActions = (
   spawnRequests: { typeId: string; count: number }[];
   skips: number[];
   look: LookControls;
+  replayCalls: string[];
 } => {
   const renderer: FakeRenderer = { toneMapping: NoToneMapping, toneMappingExposure: 1 };
   const skips: number[] = [];
@@ -196,6 +203,7 @@ const makeActions = (
   let laserEnabled = true;
   const spawnCounts: number[] = [];
   const spawnRequests: { typeId: string; count: number }[] = [];
+  const replayCalls: string[] = [];
   const actions = createDebugActions({
     hooks,
     look,
@@ -231,6 +239,12 @@ const makeActions = (
     toggleGameFrozen: () => {
       gameFrozen = !gameFrozen;
     },
+    exportInputReplay: () => {
+      replayCalls.push('export');
+    },
+    chooseInputReplay: () => {
+      replayCalls.push('import');
+    },
     impactLaser: {
       enabled: () => laserEnabled,
       toggle: () => {
@@ -238,5 +252,5 @@ const makeActions = (
       },
     },
   });
-  return { actions, spawnCounts, spawnRequests, skips, look };
+  return { actions, spawnCounts, spawnRequests, skips, look, replayCalls };
 };

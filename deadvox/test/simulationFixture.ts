@@ -1,20 +1,22 @@
 import type { BodyTuningDef } from '../src/core/schema.ts';
 import { Simulation as CoreSimulation, type SimOptions } from '../src/core/sim.ts';
+import { gameHours, simRate, simSeconds } from '../src/core/time.ts';
 
 export const BODY_TUNING_FIXTURE: BodyTuningDef = {
   id: 'player-fixture',
-  infectionOnsetGameHours: 0.01,
-  antisepticWindowGameHours: 0.02,
+  infectionOnsetGameHours: gameHours(0.01),
+  antisepticWindowGameHours: gameHours(0.02),
   infectionChance: 0.5,
-  knockoutSeconds: 1,
+  knockoutSimSeconds: simSeconds(1),
+  staminaRegenDelaySimSeconds: simSeconds(5),
   proneEyeHeightMetres: 0.2,
   bluntShockPerDamage: 2,
-  treatmentSeconds: 1,
+  treatmentSimSeconds: simSeconds(1),
   wakeShock: 5,
-  bloodLossPerSecond: 0.004,
-  bloodRecoveryPerSecond: 0.002,
-  shockRecoveryPerSecond: 0.1,
-  advancedInfectionHealthLossPerSecond: 0.0005,
+  bloodLossPerSimSecond: simRate(0.004),
+  bloodRecoveryPerSimSecond: simRate(0.002),
+  shockRecoveryPerSimSecond: simRate(0.1),
+  advancedInfectionHealthLossPerSimSecond: simRate(0.0005),
   aimSwayPerDamage: 0.01,
   swingSlowdownPerDamage: 0.01,
   movementSlowdownPerDamage: 0.005,

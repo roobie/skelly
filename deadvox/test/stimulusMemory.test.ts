@@ -48,7 +48,7 @@ const noiseAtPlayer = (id: number, expiresAt: number): VocalNoise => ({
 const unreachableWall: SolidAt = (x, y) => y === 0 || (x === 100 && y > 0 && y < 5);
 
 describe('stimulus memory', () => {
-  const memorySeconds = SHAMBLER.stimulusMemorySeconds;
+  const memorySeconds = SHAMBLER.stimulusMemorySimSeconds;
 
   it.each([
     { hour: 12, expected: 'home' },
@@ -113,7 +113,7 @@ describe('stimulus memory', () => {
     if (stimulusAt === undefined) {
       throw new Error('Active zombie did not record the heard sound time');
     }
-    const deadline = stimulusAt + type.stimulusMemorySeconds;
+    const deadline = stimulusAt + type.stimulusMemorySimSeconds;
     const ticksBeforeExpiry = Math.ceil((deadline - time) / dt) - 1;
     for (let tick = 0; tick < ticksBeforeExpiry; tick++) {
       time += dt;

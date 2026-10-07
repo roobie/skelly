@@ -7,6 +7,7 @@ status: active
 read_if:
   - you're writing a test and want to assert a value that can drift during development
   - you remove or defer an assertion of mutable development data
+  - you're implementing input recording and replay
   - you're deciding whether to pin a deferred value, or its pin-when trigger has come
   - a review flags a test for pinning drifting data
 ---
@@ -57,6 +58,8 @@ move its row to the bottom section with the PR that pinned it.
 | Hamlet furniture and loot totals | `deadvox/test/hamlet.test.ts`; `deadvox/src/core/hamlet.ts`, `Hamlet.furnitureIn` | Inspect placed lot pieces and generated loot; verify collision-free furniture, range-furniture placement, and same-place loot determinism | content freeze, v1.0 beta |
 | Representative ten-hour save workload measurements | `deadvox/test/snapshot-format.test.ts`, `applyBudgetWorldEdits`, `applyBudgetPiles`, and `touchBudgetFurnitureAndZombies` | Run the save-budget test, inspect its metrics, and verify round-trip capture parity and the `TEN_HOUR_SAVE_BUDGET_BYTES` / `TEN_HOUR_LOAD_BUDGET_MS` constraints | content freeze, v1.0 beta |
 | AKM magazine silhouette against the AK's golden photo (bend, straight-top fraction, length and forward travel per depth) | `gungen/test/ak.test.ts`, the AK-74 silhouette test, whose AKM row was removed in g41-4 | Overlay `gungen/designs/archetype-ak-akm.json`, exported, on the golden photo cited in `gungen/PROJECT.md`, "Version 2: mapped from the golden photo"; the magazine's edges and floorplate should sit on the photo's | when BR accepts the AK magazines' look for v1.0 beta |
+| Compressed replay ending at a render-frame boundary | `deadvox/test/inputReplay.test.ts`, `playSession` | Record through a compressed ending and compare whole-state fingerprints; inspect `stepReplaySimulation` in `deadvox/src/game/play.ts` and `Simulation.frameReplay` in `deadvox/src/core/sim.ts` to verify the final Sim-seconds remainder is converted for the current frame-step contract, then check which sample `InputReplayPlayer.next` supplies | when a filed issue reports false divergence at a compressed ending |
+| Zombie streaming readiness during replay (the readiness test covers the player's column only) | `deadvox/test/inputReplay.test.ts`, `replays movement skips captured while the player column was unready` | Record with a zombie near a stream edge, replay while its column loads on a different tick, and require the whole-state fingerprint to verify; inspect `createSession` in `deadvox/src/game/session.ts` and `ZombieSystem.tierAt` in `deadvox/src/core/zombies.ts` | #335 |
 
 ## Pinned since
 

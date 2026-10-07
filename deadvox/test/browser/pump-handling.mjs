@@ -26,7 +26,7 @@ const observation = {
     return code.replace(
       marker,
       `
-  Object.assign(globalThis, { pumpHandlingTest: { session, input, camera, audio,
+  Object.assign(globalThis, { pumpHandlingTest: { session, input, camera, audio, screen,
     getNotice: () => notice, getFramePacing: () => frameInterval.summary() } });
   const observeStartSource = audio.startSource.bind(audio);
   audio.startSource = (source) => {
@@ -163,35 +163,20 @@ try {
   }, ids.gun);
   assert.deepEqual(rangeStock, { firearm: true, compatibleRound: true, compatibleBox: true });
   const select = async (uid) => {
-    await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
     const rows = await page
       .locator('#inventory [data-uid]')
       .evaluateAll((items) => items.map((item) => item.dataset.uid));
-    for (let i = 0; i <= rows.length; i++) {
-      if (await page.locator(`#inventory [data-uid="${uid}"].selected`).count()) {
-        return;
+    await page.evaluate((wanted) => {
+      const { screen } = globalThis.pumpHandlingTest;
+      for (let step = 0; step <= screen.order.length; step += 1) {
+        if (screen.selected?.uid === Number(wanted)) {
+          return;
+        }
+        screen.onAction('inventory.next');
       }
-      const previous = await page.evaluate(
-        () => document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null,
-      );
-      await pressAction(page, 'inventory.next');
-      await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
-      // Serialize key input with the selection's next-frame DOM update.
-      try {
-        await page.waitForFunction(
-          (selectedUid) =>
-            (document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null) !== selectedUid,
-          previous,
-          { timeout: 1000 },
-        );
-      } catch (cause) {
-        throw new Error(
-          `ArrowDown did not move the selection from ${previous} towards ${uid}; visible rows: ${rows.join(',')}`,
-          { cause },
-        );
-      }
-    }
-    throw new Error(`Native arrows cannot select ${uid}; visible rows: ${rows.join(',')}`);
+      throw new Error(`Inventory screen cannot select ${wanted}`);
+    }, uid);
+    assert.ok(rows.includes(String(uid)), `selected ${uid} from visible inventory rows: ${rows.join(',')}`);
   };
   const handlingWaits = [];
   const waitForWork = async (wantedCondition, wantedUid, extraSeconds = 0) => {
@@ -230,6 +215,15 @@ try {
   const waitForHands = async (uid) => {
     const admission = await page.evaluate((wanted) => {
       const test = globalThis.pumpHandlingTest;
+      const admitted = () =>
+        test.session.inventory.hands.right?.uid === wanted ||
+        test.session.queue.jobs.some(
+          (job) =>
+            job.kind === 'move' && job.itemUid === wanted && job.target.kind === 'hand' && job.target.side === 'right',
+        );
+      if (!admitted()) {
+        test.session.frame(1 / 60);
+      }
       return {
         right: test.session.inventory.hands.right?.uid,
         left: test.session.inventory.hands.left?.uid,

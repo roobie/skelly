@@ -116,7 +116,7 @@ export class SoundPicker {
       };
       this.states.set(event, state);
     }
-    if (now - state.lastPlayedAt < sound.minIntervalSeconds) {
+    if (now - state.lastPlayedAt < sound.minIntervalSimSeconds) {
       return undefined;
     }
 

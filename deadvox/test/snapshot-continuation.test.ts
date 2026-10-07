@@ -7,8 +7,10 @@ import { decodeSave } from '../src/core/saveFormat.ts';
 import { restorePlayerAudioState } from '../src/core/saveState.ts';
 import type { Site } from '../src/core/site.ts';
 import { SoundPicker } from '../src/core/soundPicker.ts';
+import { gameTimeOfDay, realSeconds } from '../src/core/time.ts';
 import { terrainHeight } from '../src/core/worldgen.ts';
 import { BACKGROUND_ZOMBIE_SLICE_COUNT } from '../src/core/zombies.ts';
+import { planRealFrame } from '../src/game/frameDriver.ts';
 import { IDLE } from '../src/game/session.ts';
 import {
   advance,
@@ -82,7 +84,7 @@ describe('hamlet save/load continuation', () => {
     advance(loaded, continuationFrames);
     expect(loaded.zombies.snapshotState()).toEqual(source.zombies.snapshotState());
     expect(loaded.sim.scheduler.snapshotState()).toEqual(source.sim.scheduler.snapshotState());
-    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySeconds;
+    const forgetAt = stimulusAt + registry.zombies.get('shambler')!.stimulusMemorySimSeconds;
     loaded.zombies.tickBackground(0.5, forgetAt - 0.5, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
     loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
@@ -93,7 +95,7 @@ describe('hamlet save/load continuation', () => {
     const start = SPAWN_TIMES.dusk - 60;
     const [cx, cz] = fixtureZombieColumn;
     const pos: [number, number, number] = [cx * 32 + 20, 1, cz * 32 + 20];
-    const marker = { type: 'shambler', pos, window: { from: 'dusk' } };
+    const marker = { type: 'shambler', pos, window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } };
     const timedSite = {
       surface: { height: (_x: number, _z: number, natural: number) => natural, top: () => undefined },
       spawn: { pos: [0, 0, 0] as [number, number, number], yaw: 0 },
@@ -233,10 +235,73 @@ describe('hamlet save/load continuation', () => {
     expect(loadedSprinting.session.sprinting).toBe(uninterrupted.session.sprinting);
   });
 
+  it('continues the stamina recovery delay across save/load', async () => {
+    const hedge = fixtureHamlet.hedges.find(({ min }) => toChunk(min[2]) === toChunk(min[2] + 3.5));
+    if (!hedge) {
+      throw new Error('Snapshot fixture has no ground route for stamina recovery');
+    }
+    const [x, , z] = hedge.min;
+    const startZ = z + 3.5;
+    const ground = fixtureHamlet.surface.height(x, startZ, terrainHeight(seed, scale, x, startZ));
+    const spawn: [number, number, number] = [x + 0.5, ground + 1.0001, startZ];
+    const cx = toChunk(x);
+    const cz = toChunk(z);
+    const columns: [number, number][] = [];
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        columns.push([cx + dx, cz + dz]);
+      }
+    }
+    let intent = { ...IDLE };
+    const runtimeFor = (savedSnapshot?: ReturnType<typeof capture>) =>
+      createRuntime(savedSnapshot, false, columns, { spawn, active: true, intent: () => intent });
+    const load = async (savedSnapshot: ReturnType<typeof capture>) => {
+      const bytes = await encodeFixture(savedSnapshot);
+      const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
+      return runtimeFor(decoded.snapshot);
+    };
+
+    const source = runtimeFor();
+    let frames = 0;
+    while (source.sim.needs.stamina > 0 && frames < 5000) {
+      intent = { ...IDLE, right: frames % 60 < 30 ? 1 : -1, sprint: true };
+      advance(source, 1);
+      frames += 1;
+    }
+    expect(frames).toBeLessThan(5000);
+    expect(source.player.body.onGround).toBe(true);
+    expect(source.sim.needs.stamina).toBe(0);
+    intent = { ...IDLE };
+    const framesBeforeRecovery = Math.floor((source.sim.body.tuning.staminaRegenDelaySimSeconds * 60) / 2);
+    advance(source, framesBeforeRecovery);
+    expect(source.sim.needs.stamina).toBe(0);
+
+    const snapshot = capture(source);
+    const remaining = snapshot.character.simulation.needs.staminaRegenDelayRemainingSimSeconds;
+    expect(remaining).toBeGreaterThan(0);
+    const loaded = await load(snapshot);
+    const beforeExpiry = Math.max(0, Math.floor(remaining * 60) - 1);
+    advance(source, beforeExpiry);
+    advance(loaded, beforeExpiry);
+    expect(source.sim.needs.stamina).toBe(0);
+    expect(loaded.sim.needs.stamina).toBe(0);
+
+    advance(source, 3);
+    advance(loaded, 3);
+    expect(source.sim.needs.stamina).toBeGreaterThan(0);
+    expect(loaded.sim.needs).toEqual(source.sim.needs);
+  });
+
   it('continues active compressed rest through the first 1 Hz tick after load', () => {
+    const advanceReal = (runtime: ReturnType<typeof createRuntime>, frames: number) => {
+      runtime.sim.paused = false;
+      for (let frame = 0; frame < frames; frame++) {
+        runtime.session.frame(planRealFrame(runtime.sim.compression, realSeconds(1 / 60)));
+      }
+    };
     const source = createRuntime(undefined, true, oneColumn);
     expect(startRest(source, 'sleep')).toBeUndefined();
-    advance(source, 120);
+    advanceReal(source, 120);
     expect(source.sim.compression.active).toBe(true);
     expect(source.sim.compression.c).toBeGreaterThan(1);
     expect(source.sim.actions.job).toMatchObject({ jobType: 'sleep', stopped: false });
@@ -250,8 +315,8 @@ describe('hamlet save/load continuation', () => {
 
     const schedulerSystems = ['needs', 'lights', 'long-action'] as const;
     const savedTicks = new Map(snapshot.character.simulation.scheduler.systems.map(({ id, ticks }) => [id, ticks]));
-    advance(source, 4);
-    advance(loaded, 4);
+    advanceReal(source, 4);
+    advanceReal(loaded, 4);
 
     for (const id of schedulerSystems) {
       const saved = savedTicks.get(id);

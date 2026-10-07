@@ -7,6 +7,7 @@ import { freshnessWord, isRotten, spoilage } from '../src/core/food.ts';
 import { Inventory, type Target } from '../src/core/inventory.ts';
 import { chargeOf, drainLight, swapBattery, toggleLight } from '../src/core/lights.ts';
 import { canSprint, consume, type Needs, SPAWN_NEEDS, STAMINA, stepNeeds, stepStamina } from '../src/core/needs.ts';
+import { gameHours, gameSeconds } from '../src/core/time.ts';
 import { BODY_TUNING_FIXTURE, Simulation } from './simulationFixture.ts';
 
 const HOUR = simSecondsPerHour(defaultClock); // 450 simulation seconds
@@ -55,17 +56,35 @@ describe('need rates', () => {
   });
 
   it('bring health back while needs are met, and take it while starving or parched', () => {
-    const fed: Needs = { calories: 80, hydration: 80, fatigue: 10, stamina: 100 };
+    const fed: Needs = {
+      calories: 80,
+      hydration: 80,
+      fatigue: 10,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const fedBody = bodyAtHealth(50);
     stepNeeds(fed, fedBody, 5);
     expect(fedBody.health).toBeGreaterThan(50);
 
-    const starving: Needs = { calories: 0, hydration: 80, fatigue: 10, stamina: 100 };
+    const starving: Needs = {
+      calories: 0,
+      hydration: 80,
+      fatigue: 10,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const starvingBody = bodyAtHealth(50);
     stepNeeds(starving, starvingBody, 5);
     expect(starvingBody.health).toBeLessThan(50);
 
-    const both: Needs = { calories: 0, hydration: 0, fatigue: 10, stamina: 100 };
+    const both: Needs = {
+      calories: 0,
+      hydration: 0,
+      fatigue: 10,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const bothBody = bodyAtHealth(50);
     stepNeeds(both, bothBody, 2);
     expect(bothBody.health).toBeLessThan(starvingBody.health);
@@ -88,7 +107,13 @@ describe('catch-up', () => {
   });
 
   it('starts and stops health coming back at the right moment', () => {
-    const start: Needs = { calories: 31, hydration: 90, fatigue: 0, stamina: 100 };
+    const start: Needs = {
+      calories: 31,
+      hydration: 90,
+      fatigue: 0,
+      stamina: 100,
+      staminaRegenDelayRemainingSimSeconds: 0,
+    };
     const caught = { ...start };
     const live = { ...start };
     const caughtBody = bodyAtHealth(40);
@@ -120,7 +145,7 @@ describe('food', () => {
   });
 
   it('counts from when it was made, and canned food keeps', () => {
-    const picked = { uid: 1, type: 'apple', count: 1, condition: 1, made: 100 * SECONDS_PER_HOUR };
+    const picked = { uid: 1, type: 'apple', count: 1, condition: 1, madeAtGameTimestamp: 100 * SECONDS_PER_HOUR };
     expect(spoilage(apple, picked, 220 * SECONDS_PER_HOUR)).toBeCloseTo(0.5, 9);
     expect(spoilage(beans, { uid: 2, type: 'canned_beans', count: 1, condition: 1 }, 1e9)).toBeUndefined();
   });
@@ -146,14 +171,14 @@ describe('flashlight', () => {
     const caught = lit().light;
     const live = lit().light;
     expect([caught.on, live.on]).toEqual([true, true]);
-    expect(drainLight(registry, caught, 3)).toBeUndefined();
+    expect(drainLight(registry, caught, gameHours(3))).toBeUndefined();
     for (let i = 0; i < 3 * HOUR; i++) {
-      drainLight(registry, live, 1 / HOUR);
+      drainLight(registry, live, gameSeconds(defaultClock.ratio));
     }
     expect(chargeOf(registry, caught)).toBeCloseTo(0.25, 9);
     expect(chargeOf(registry, live)).toBeCloseTo(0.25, 6);
 
-    expect(drainLight(registry, caught, 5)).toBeCloseTo(1, 9); // ran out an hour in
+    expect(drainLight(registry, caught, gameHours(5))).toBeCloseTo(gameHours(1), 9); // ran out an hour in
     expect(caught.on).toBe(false);
     expect(chargeOf(registry, caught)).toBe(0);
     expect(toggleLight(registry, caught)).toBe('The battery is dead');
@@ -161,7 +186,7 @@ describe('flashlight', () => {
 
   it('takes a fresh battery from a stack, and gives back the old one if it had charge left', () => {
     const { inventory, light } = lit();
-    drainLight(registry, light, 2); // half left
+    drainLight(registry, light, gameHours(2)); // half left
     const batteries = inventory.create('aa_battery', 3);
     inventory.add(batteries, { kind: 'hand', side: 'left' });
     const feet: Target = { kind: 'pile', pos: [0, 0, 0] };
@@ -171,7 +196,7 @@ describe('flashlight', () => {
     const spent = inventory.pileAt([0, 0, 0])!.items[0]!.item;
     expect([spent.type, chargeOf(registry, spent)]).toEqual(['aa_battery', 0.5]);
 
-    drainLight(registry, light, 10); // dead
+    drainLight(registry, light, gameHours(10)); // dead
     expect(swapBattery(inventory, light, batteries, feet)).toBeUndefined();
     expect(inventory.pileAt([0, 0, 0])!.items).toHaveLength(1); // the dead one is thrown away
     expect(swapBattery(inventory, light, light, feet)).toBe("It doesn't take that battery");
@@ -189,6 +214,20 @@ describe('stamina', () => {
     stepStamina(needs, 0.5, false);
     expect(needs.stamina).toBe(STAMINA.recover * 2.5);
     expect(canSprint(needs, false)).toBe(true);
+  });
+
+  it('waits out the remaining simulation-time delay before stamina recovers', () => {
+    const needs = { ...SPAWN_NEEDS };
+    const delay = BODY_TUNING_FIXTURE.staminaRegenDelaySimSeconds;
+    stepStamina(needs, needs.stamina / -STAMINA.sprint, true, delay);
+    expect(needs.stamina).toBe(0);
+    const remaining = needs.staminaRegenDelayRemainingSimSeconds;
+    expect(remaining).toBeGreaterThan(0);
+
+    stepStamina(needs, remaining / 2, false, delay);
+    expect(needs.stamina).toBe(0);
+    stepStamina(needs, remaining, false, delay);
+    expect(needs.stamina).toBeGreaterThan(0);
   });
 
   it('comes back at half speed when you are worn down', () => {

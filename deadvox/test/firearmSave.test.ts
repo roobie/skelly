@@ -72,7 +72,7 @@ const session = (
   options: {
     readonly firing?: boolean;
     readonly adjustPitch?: boolean;
-    readonly readyHeld?: boolean;
+    readonly readyHeld?: boolean | (() => boolean);
     readonly active?: boolean;
   } = {},
 ) =>
@@ -89,7 +89,7 @@ const session = (
     controls: {
       active: () => options.active ?? options.firing ?? false,
       automaticFireHeld: () => options.firing ?? false,
-      readyHeld: () => options.readyHeld ?? false,
+      readyHeld: () => (typeof options.readyHeld === 'function' ? options.readyHeld() : (options.readyHeld ?? false)),
       intent: () => IDLE,
       yaw: () => 0,
       pitch: () => look.pitch,
@@ -208,6 +208,89 @@ it('advances firearm readiness from simulation time while the stance input is he
   expect(original.firearms.isReady(rifle.uid)).toBe(true);
 });
 
+it('keeps a ready pump shotgun ready through racking and loading, then fires without raising again', async () => {
+  const original = session([], undefined, undefined, { readyHeld: true, active: true });
+  const shotgun = original.inventory.create('pump_shotgun');
+  const shells = original.inventory.create('shell_12_gauge_00_buck', 3);
+  expect(original.inventory.add(shotgun, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(original.inventory.add(shells, { kind: 'hand', side: 'left' })).toBe(true);
+
+  expect(original.firearms.load(shells, original.sim.time)).toBeUndefined();
+  original.queue.tick(original.queue.remaining);
+  expect(shotgun.firearm?.tube).toContain(shells.type);
+  original.frame(1 / 60);
+  const readying = shotgun.firearm?.readying;
+  expect(readying).toBeDefined();
+  original.frame(readying!.duration);
+  expect(original.firearms.isReady(shotgun.uid)).toBe(true);
+
+  const finishHandling = () => {
+    while (original.queue.busy) {
+      original.frame(1 / 60);
+    }
+  };
+  const shotInput = () => ({
+    debugMode: false,
+    item: shotgun,
+    seed: 71,
+    simTime: original.sim.time,
+    feet: original.feet(),
+    eye: [0, PLAYER.eye / 0.5, 0] as [number, number, number],
+    yaw: 0,
+    pitch: 0,
+    aimFrame: original.aim.frame,
+    blockSize: 0.5,
+    ready: original.firearms.isReady(shotgun.uid),
+    sprinting: false,
+  });
+  const readyAfterEachAction: boolean[] = [];
+  expect(original.firearms.cock(shotgun.uid, original.sim.time)).toBeUndefined();
+  expect(original.firearms.fire(shotInput())).toBe(false);
+  original.frame(1 / 60);
+  const rackSnapshot = original.snapshot({ worldId: 'world', characterId: 'character' });
+  const rackBytes = await encodeSave(rackSnapshot, {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+  });
+  const rackDecoded = await decodeSave(rackBytes, { version, contentLookup });
+  const resumed = session([], rackDecoded.snapshot, undefined, { readyHeld: true, active: true });
+  expect(resumed.firearms.isReady(shotgun.uid)).toBe(true);
+  finishHandling();
+  readyAfterEachAction.push(original.firearms.isReady(shotgun.uid));
+
+  expect(original.firearms.load(shells, original.sim.time)).toBeUndefined();
+  expect(original.firearms.fire(shotInput())).toBe(false);
+  finishHandling();
+  readyAfterEachAction.push(original.firearms.isReady(shotgun.uid));
+  expect(readyAfterEachAction).toEqual([true, true]);
+  expect(original.firearms.fire(shotInput())).toBe(true);
+});
+
+it('releasing ready during a rack lowers the shotgun', () => {
+  const stance = { held: true };
+  const original = session([], undefined, undefined, { readyHeld: () => stance.held, active: true });
+  const shotgun = original.inventory.create('pump_shotgun');
+  const shells = original.inventory.create('shell_12_gauge_00_buck');
+  expect(original.inventory.add(shotgun, { kind: 'hand', side: 'right' })).toBe(true);
+  expect(original.inventory.add(shells, { kind: 'hand', side: 'left' })).toBe(true);
+  expect(original.firearms.load(shells, original.sim.time)).toBeUndefined();
+  original.queue.tick(original.queue.remaining);
+  original.frame(1 / 60);
+  const readying = shotgun.firearm?.readying;
+  expect(readying).toBeDefined();
+  original.frame(readying!.duration);
+  expect(original.firearms.isReady(shotgun.uid)).toBe(true);
+
+  expect(original.firearms.cock(shotgun.uid, original.sim.time)).toBeUndefined();
+  original.frame(1 / 60);
+  stance.held = false;
+  while (original.queue.busy) {
+    original.frame(1 / 60);
+  }
+  expect(original.firearms.isReady(shotgun.uid)).toBe(false);
+});
+
 it('a codec save resumes firearm ready progress', async () => {
   const original = session([], undefined, undefined, { readyHeld: true });
   const rifle = original.inventory.create('debug_rifle_assault');
@@ -236,7 +319,7 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
   if (!action.fire) {
     throw new Error('AR knockout fixture needs exported automatic action data');
   }
-  const cycleSeconds = action.fire.durationSeconds;
+  const cycleSeconds = action.fire.durationSimSeconds;
   const frameSeconds = 1 / 60;
   expect(
     runtime.firearms.fire({
@@ -270,7 +353,7 @@ it('holds an active automatic firearm cycle through unconsciousness', () => {
   expect(pausedCycle!.elapsed).toBeGreaterThan(0);
   expect(pausedCycle!.elapsed).toBeLessThan(cycleSeconds);
 
-  runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSeconds);
+  runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSimSeconds);
   expect(runtime.sim.body.unconscious).toBe(false);
   const remainingSeconds = cycleSeconds - pausedCycle!.elapsed;
   const remainingFrames = Math.ceil((remainingSeconds + frameSeconds) / frameSeconds);
@@ -308,20 +391,20 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
         sprinting: false,
       }),
     ).toBe(true);
-    const framesBeforeKnockout = Math.max(1, Math.floor(action.fire.durationSeconds / 2 / frameSeconds));
+    const framesBeforeKnockout = Math.max(1, Math.floor(action.fire.durationSimSeconds / 2 / frameSeconds));
     for (let frame = 0; frame < framesBeforeKnockout; frame += 1) {
       runtime.frame(frameSeconds);
     }
     runtime.sim.body.impact(0, 'torso', { shockDamage: runtime.sim.body.shock });
     const framesIntoKnockout = Math.min(
       30,
-      Math.max(1, Math.floor((runtime.sim.body.tuning.knockoutSeconds * 60) / 2)),
+      Math.max(1, Math.floor((runtime.sim.body.tuning.knockoutSimSeconds * 60) / 2)),
     );
     for (let frame = 0; frame < framesIntoKnockout; frame += 1) {
       runtime.frame(frameSeconds);
     }
     expect(runtime.sim.body.unconscious).toBe(true);
-    return { runtime, rifle, cycleSeconds: action.fire.durationSeconds };
+    return { runtime, rifle, cycleSeconds: action.fire.durationSimSeconds };
   };
   const continuous = prepare([]);
   const saved = prepare([]);
@@ -339,7 +422,7 @@ it('a knockout codec save preserves an automatic cycle’s remaining frames', as
   expect(continuousCycle!.elapsed).toBe(resumedCycle!.elapsed);
 
   const framesUntilCycleEnds = (runtime: ReturnType<typeof session>): number => {
-    runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSeconds);
+    runtime.sim.body.advance(runtime.sim.body.tuning.knockoutSimSeconds);
     runtime.sim.paused = false;
     expect(runtime.sim.body.unconscious).toBe(false);
     let frames = 0;
@@ -364,8 +447,8 @@ it('a codec save before ejectAt restores one pending case and ejects it exactly 
   if (!action.fire) {
     throw new Error('AR save fixture needs exported automatic action data');
   }
-  const ejectTime = action.fire.rearwardSeconds * action.ejectAt;
-  const cycleTime = action.fire.durationSeconds;
+  const ejectTime = action.fire.rearwardSimSeconds * action.ejectAt;
+  const cycleTime = action.fire.durationSimSeconds;
   expect(
     original.firearms.fire({
       debugMode: true,

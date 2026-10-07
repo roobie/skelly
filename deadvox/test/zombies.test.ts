@@ -18,6 +18,7 @@ import type { DoorLockDef } from '../src/core/schema.ts';
 import { Simulation } from '../src/core/sim.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
 import { sunDirection } from '../src/core/sky.ts';
+import { gameTimeOfDay, simRate } from '../src/core/time.ts';
 import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import {
   FIGURE_BOXES,
@@ -53,6 +54,14 @@ const { registry } = buildRegistry(
 const SHAMBLER = registry.zombies.get('shambler')!;
 const RUNNER = registry.zombies.get('runner')!;
 const CRAWLER = registry.zombies.get('crawler')!;
+const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
+  ...weapon,
+  cooldown: weapon.cooldownSimSeconds,
+});
+const speedRates = (wander: number, chase: number) => ({
+  wanderMetresPerSimSecond: simRate(wander),
+  chaseMetresPerSimSecond: simRate(chase),
+});
 const SCALE = makeScale(0.5);
 const BLOCK_SIZE = SCALE.blockSize;
 const PHYSICS = physicsFor(SCALE);
@@ -661,8 +670,8 @@ describe('shambler scenarios', () => {
     let investigating = zombie.mode === 'investigate';
     let investigationEntries = Number(investigating);
     const observed = new Set([zombie.mode]);
-    const maxSearch = SHAMBLER.hearingModel.searchSeconds.max;
-    const roundTripSeconds = (distanceMetres / SHAMBLER.speed.wander) * 2;
+    const maxSearch = SHAMBLER.hearingModel.searchSimSeconds.max;
+    const roundTripSeconds = (distanceMetres / SHAMBLER.speed.wanderMetresPerSimSecond) * 2;
     const frames = Math.ceil((maxSearch + roundTripSeconds + 10) * 60);
     for (let frame = 1; frame <= frames; frame++) {
       system.tick(1 / 60, frame / 60);
@@ -848,7 +857,7 @@ describe('shambler scenarios', () => {
       ),
     );
     system.add(SHAMBLER, [5, 1, 1.56], [0, 0, -1]);
-    run(system, SHAMBLER.attack.windup + 0.1);
+    run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
     expect(damage).toBe(8);
   });
 
@@ -917,7 +926,7 @@ describe('shambler scenarios', () => {
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 5 && y >= 1 && y <= 5);
     const type = {
       ...SHAMBLER,
-      speed: { ...SHAMBLER.speed, chase: 2 },
+      speed: { ...SHAMBLER.speed, chaseMetresPerSimSecond: simRate(2) },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, speedMultiplier: { min: 1, max: 1 } },
     };
@@ -944,14 +953,14 @@ describe('shambler scenarios', () => {
     const wall: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 4 && y >= 1 && y <= 5);
     const type = {
       ...SHAMBLER,
-      speed: { ...SHAMBLER.speed, chase: 2 },
+      speed: { ...SHAMBLER.speed, chaseMetresPerSimSecond: simRate(2) },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       wander: { ...SHAMBLER.wander, obstacleWanderChance: 0 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
-        stumbleChancePerSecond: 0,
+        stumbleChancePerSimSecond: simRate(0),
       },
     };
     for (const seed of [1, 2, 3, 7, 23]) {
@@ -990,7 +999,7 @@ describe('shambler scenarios', () => {
       sightCone: 180,
       wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
-      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSecond: 0 },
+      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
     };
     for (const seed of [1, 7, 23]) {
       const system = new ZombieSystem({
@@ -1019,7 +1028,7 @@ describe('shambler scenarios', () => {
       nightSight: 1,
       wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
-      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSecond: 0 },
+      chaseMotion: { ...SHAMBLER.chaseMotion, swayDegrees: 0, stumbleChancePerSimSecond: simRate(0) },
     };
     const system = new ZombieSystem({
       ...senses(() => player([30, 1, 0], [-1, 0, 0], 'sprinting'), wall),
@@ -1069,7 +1078,7 @@ describe('shambler scenarios', () => {
     const target: Vec3 = [300, 1, 0];
     const type = {
       ...SHAMBLER,
-      speed: { ...SHAMBLER.speed, chase: 2 },
+      speed: { ...SHAMBLER.speed, chaseMetresPerSimSecond: simRate(2) },
       wander: { ...SHAMBLER.wander, obstacleWanderChance: 1 },
       sight: 1,
       nightSight: 1,
@@ -1078,7 +1087,7 @@ describe('shambler scenarios', () => {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
-        stumbleChancePerSecond: 0,
+        stumbleChancePerSimSecond: simRate(0),
       },
     };
     const system = new ZombieSystem({
@@ -1129,7 +1138,7 @@ describe('shambler scenarios', () => {
     const zombie = system.store.get(id)!;
     zombie.obstacleWanderHeading = [1, 0, 0];
     zombie.obstacleWanderRemaining = 3;
-    zombie.horizontalSpeed = type.speed.chase;
+    zombie.horizontalSpeed = type.speed.chaseMetresPerSimSecond;
     let endedAtBlockedContact = false;
     let resumedMotion = false;
     for (let tick = 0; tick < 20; tick++) {
@@ -1221,7 +1230,7 @@ describe('shambler scenarios', () => {
     const playerBody = createPlayerBody(SCALE, 0.5, 5, 0.5);
     playerBody.onGround = true;
     const target = () => ({ ...player(playerBody.pos), body: playerBody });
-    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const stillShambler = { ...SHAMBLER, speed: speedRates(0, 0) };
     const system = new ZombieSystem(senses(target, platform));
     const id = system.add(stillShambler, [0.5, 1, 0.5]);
     system.store.get(id)!.body.onGround = true;
@@ -1237,7 +1246,7 @@ describe('shambler scenarios', () => {
 
   it('does not separate overlapping shambler footprints when one stands two metres above the other', () => {
     const ledge: SolidAt = (x, y, z) => FLOOR(x, y, z) || (x === 0 && y === 4 && z === 0);
-    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const stillShambler = { ...SHAMBLER, speed: speedRates(0, 0) };
     const system = new ZombieSystem(senses(() => player([100, 1, 100]), ledge));
     const lowerId = system.add(stillShambler, [0.5, 1, 0.5]);
     const upperId = system.add(stillShambler, [0.5, 5, 0.5]);
@@ -1263,7 +1272,7 @@ describe('shambler scenarios', () => {
     const playerBody = createPlayerBody(SCALE, 4, 5, 0);
     const target = () => ({ ...player(playerBody.pos, [1, 0, 0]), body: playerBody });
     const system = new ZombieSystem(senses(target, wall));
-    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const stillShambler = { ...SHAMBLER, speed: speedRates(0, 0) };
     const id = system.add(stillShambler, [3.4, 1, 0]);
     const zombieBody = system.store.get(id)!.body;
     zombieBody.onGround = true;
@@ -1381,7 +1390,7 @@ describe('shambler scenarios', () => {
 
   it('pushes two overlapping shamblers apart in a one-metre corridor without wall intersections', () => {
     const corridor: SolidAt = (x, y, z) => FLOOR(x, y, z) || (y >= 1 && (x === 0 || x === 3));
-    const stillShambler = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const stillShambler = { ...SHAMBLER, speed: speedRates(0, 0) };
     const system = new ZombieSystem(senses(() => player([1000, 1, 1000]), corridor));
     const first = system.store.get(system.add(stillShambler, [2, 1, 2]))!;
     const second = system.store.get(system.add(stillShambler, [2, 1, 2]))!;
@@ -1413,7 +1422,7 @@ describe('shambler scenarios', () => {
       speed: zombie.horizontalSpeed,
       chasing: false,
       attackWindup: 0,
-      attackWindupSeconds: zombie.type.attack.windup,
+      attackWindupSeconds: zombie.type.attack.windupSimSeconds,
       severed: zombie.severed,
       blockSize: BLOCK_SIZE,
     }).head.find((box) => box.bone === 'head')!;
@@ -1686,7 +1695,7 @@ describe('shambler scenarios', () => {
   });
 
   it('cannot walk after both legs are severed', () => {
-    const walking = { ...SHAMBLER, speed: { wander: 0.8, chase: 0.8 } };
+    const walking = { ...SHAMBLER, speed: speedRates(0.8, 0.8) };
     const system = new ZombieSystem(senses(() => player([100, 2, 0])));
     const id = system.add(walking, [4, 1, 4]);
     const zombie = system.store.get(id)!;
@@ -1726,7 +1735,7 @@ describe('shambler scenarios', () => {
 
     let outsideDamage = 0;
     const stillTarget = player([0, 2, 0]);
-    const noChase = { ...SHAMBLER, speed: { ...SHAMBLER.speed, chase: 0 } };
+    const noChase = { ...SHAMBLER, speed: { ...SHAMBLER.speed, chaseMetresPerSimSecond: simRate(0) } };
     const outside = new ZombieSystem(
       senses(
         () => stillTarget,
@@ -1741,7 +1750,7 @@ describe('shambler scenarios', () => {
     run(outside, 10);
     expect(outsideDamage).toBe(0);
 
-    const stationary = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+    const stationary = { ...SHAMBLER, speed: speedRates(0, 0) };
     const fistSystem = new ZombieSystem(senses(() => player([100, 2, 0])));
     const fistId = fistSystem.add(stationary, [0.5, 1, 0]);
     let deathDrops = 0;
@@ -1766,7 +1775,7 @@ describe('shambler scenarios', () => {
     const fistRay = regionRay(fistTarget, 'head');
     expect(fistSystem.swing(fistRay.origin, fistRay.direction, FISTS_MELEE)).toBe(fistId);
 
-    const crowbar = registry.items.get('crowbar')!.weapon!.melee!;
+    const crowbar = runtimeWeapon(registry.items.get('crowbar')!.weapon!.melee!);
     const armed = new ZombieSystem(senses(() => player([100, 2, 0])));
     const armedId = armed.add(stationary, [1, 1, 0]);
     let swings = 0;
@@ -1869,7 +1878,11 @@ describe('shambler scenarios', () => {
   });
 
   it('waits for the game clock to enter a loaded spawn marker window', () => {
-    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk' } };
+    const spawn: ZombieSpawn = {
+      type: 'shambler',
+      pos: [0, 1, 0],
+      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) },
+    };
     const site = spawnSite(spawn);
     const spawner = new ZombieSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
@@ -1886,8 +1899,8 @@ describe('shambler scenarios', () => {
 
   it('spawns same-tick pending markers in stable order regardless of column load order', () => {
     const markers: ZombieSpawn[] = [
-      { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk' } },
-      { type: 'shambler', pos: [32, 1, 0], window: { from: 'dusk' } },
+      { type: 'shambler', pos: [0, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } },
+      { type: 'shambler', pos: [32, 1, 0], window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk) } },
     ];
     const spawnOrder = (order: readonly ZombieSpawn[]) => {
       const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
@@ -1915,7 +1928,11 @@ describe('shambler scenarios', () => {
   });
 
   it('spawns a marker when its column first loads inside the window', () => {
-    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk', to: '20:00' } };
+    const spawn: ZombieSpawn = {
+      type: 'shambler',
+      pos: [0, 1, 0],
+      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
+    };
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     new ZombieSpawner().onColumn({
       cx: 0,
@@ -1929,7 +1946,11 @@ describe('shambler scenarios', () => {
   });
 
   it('drops pending markers on unload and retries a missed bounded window the next day', () => {
-    const spawn: ZombieSpawn = { type: 'shambler', pos: [0, 1, 0], window: { from: 'dusk', to: '20:00' } };
+    const spawn: ZombieSpawn = {
+      type: 'shambler',
+      pos: [0, 1, 0],
+      window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
+    };
     const site = spawnSite(spawn);
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     const spawner = new ZombieSpawner();
@@ -2224,12 +2245,12 @@ describe('attention targets across terrain and changing blockers', () => {
     const initialTarget: Vec3 = [source[0] + 2, terrainFloor(source[0] + 2), 0];
     const type = {
       ...SHAMBLER,
-      speed: { wander: 0, chase: 2 },
+      speed: speedRates(0, 2),
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
-        stumbleChancePerSecond: 0,
+        stumbleChancePerSimSecond: simRate(0),
       },
     };
     let target = initialTarget;
@@ -2272,13 +2293,13 @@ describe('attention targets across terrain and changing blockers', () => {
     const target: Vec3 = [31, terrainFloor(31), 0];
     const type = {
       ...SHAMBLER,
-      speed: { wander: 0, chase: 2 },
+      speed: speedRates(0, 2),
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
-        stumbleChancePerSecond: 0,
+        stumbleChancePerSimSecond: simRate(0),
       },
     };
     const system = new ZombieSystem({
@@ -2302,13 +2323,13 @@ describe('attention targets across terrain and changing blockers', () => {
     const type = {
       ...SHAMBLER,
       sight: 1000,
-      speed: { wander: 0, chase: 2 },
+      speed: speedRates(0, 2),
       hearingRange: { ...SHAMBLER.hearingRange, sprint: 1000 },
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
-        stumbleChancePerSecond: 0,
+        stumbleChancePerSimSecond: simRate(0),
       },
     };
     const system = new ZombieSystem({
@@ -2333,12 +2354,12 @@ describe('attention targets across terrain and changing blockers', () => {
     const type = {
       ...SHAMBLER,
       sight: 1000,
-      speed: { wander: 0, chase: 2 },
+      speed: speedRates(0, 2),
       chaseMotion: {
         ...SHAMBLER.chaseMotion,
         swayDegrees: 0,
         speedMultiplier: { min: 1, max: 1 },
-        stumbleChancePerSecond: 0,
+        stumbleChancePerSimSecond: simRate(0),
       },
     };
     const system = new ZombieSystem({
@@ -2370,7 +2391,7 @@ describe('lurching chase', () => {
     const type = {
       ...SHAMBLER,
       sight: 1000,
-      chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSecond: 1 },
+      chaseMotion: { ...SHAMBLER.chaseMotion, stumbleChancePerSimSecond: simRate(1) },
     };
     const system = new ZombieSystem({ ...senses(() => player([20, 1, 0])), seed: 19 });
     const id = system.add(type, [0, 1, 0], [1, 0, 0]);
@@ -2431,11 +2452,14 @@ describe('lurching chase', () => {
     }
     expect(rms).toBeGreaterThanOrEqual(0.3);
     expect(rms).toBeLessThanOrEqual(1.5);
-    expect(largestOneSecondRange).toBeGreaterThanOrEqual(0.3 * SHAMBLER.speed.chase);
+    expect(largestOneSecondRange).toBeGreaterThanOrEqual(0.3 * SHAMBLER.speed.chaseMetresPerSimSecond);
     const beelineSeconds =
-      (15 - SHAMBLER.attack.reach - SHAMBLER.speed.chase ** 2 / (2 * SHAMBLER.wander.movementAcceleration)) /
-        SHAMBLER.speed.chase +
-      SHAMBLER.speed.chase / SHAMBLER.wander.movementAcceleration;
+      (15 -
+        SHAMBLER.attack.reach -
+        SHAMBLER.speed.chaseMetresPerSimSecond ** 2 /
+          (2 * SHAMBLER.wander.movementAccelerationMetresPerSimSecondSquared)) /
+        SHAMBLER.speed.chaseMetresPerSimSecond +
+      SHAMBLER.speed.chaseMetresPerSimSecond / SHAMBLER.wander.movementAccelerationMetresPerSimSecondSquared;
     expect(ticks / 20).toBeLessThanOrEqual(beelineSeconds * 1.6);
   });
 });
@@ -2766,13 +2790,18 @@ describe('two-tier shambler hearing', () => {
     noise = { ...noise, movement: 'still' };
     expect(advanceToMode(system, zombie, 'search', 200)).toBe(true);
     expect(zombie.searchAnchor).toEqual([24, 1, 0]);
-    expect(zombie.searchTimer).toBeGreaterThanOrEqual(type.hearingModel.searchSeconds.min);
-    expect(zombie.searchTimer).toBeLessThanOrEqual(type.hearingModel.searchSeconds.max);
+    expect(zombie.searchTimer).toBeGreaterThanOrEqual(type.hearingModel.searchSimSeconds.min);
+    expect(zombie.searchTimer).toBeLessThanOrEqual(type.hearingModel.searchSimSeconds.max);
 
-    const minSearchTicks = Math.floor((type.hearingModel.searchSeconds.min - 0.1) * 20);
+    const minSearchTicks = Math.floor((type.hearingModel.searchSimSeconds.min - 0.1) * 20);
     expect(stayInsideSearch(system, zombie, minSearchTicks, type.hearingModel.searchRadiusMetres)).toBe(true);
     expect(
-      finishSearch(system, zombie, type.hearingModel.searchSeconds.max * 20 + 5, type.hearingModel.searchRadiusMetres),
+      finishSearch(
+        system,
+        zombie,
+        type.hearingModel.searchSimSeconds.max * 20 + 5,
+        type.hearingModel.searchRadiusMetres,
+      ),
     ).toBe(true);
     expect(advanceToMode(system, zombie, 'idle', 20 * 20)).toBe(true);
   });
@@ -3045,8 +3074,8 @@ describe('attack windup', () => {
     expect(damage).toBe(0);
     const zombie = system.store.get(id)!;
     expect(zombie.mode).toBe('chase');
-    expect(zombie.attackWindup).toBeCloseTo(SHAMBLER.attack.windup, 5);
-    expect(zombie.attackWait).toBeCloseTo(SHAMBLER.attack.cooldown, 5);
+    expect(zombie.attackWindup).toBeCloseTo(SHAMBLER.attack.windupSimSeconds, 5);
+    expect(zombie.attackWait).toBeCloseTo(SHAMBLER.attack.cooldownSimSeconds, 5);
   });
 
   it('damages the player exactly once on the torso when the windup elapses in reach', () => {
@@ -3066,7 +3095,7 @@ describe('attack windup', () => {
     system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
     system.tick(1 / 60);
     expect(damage).toBe(0);
-    run(system, SHAMBLER.attack.windup + 0.1);
+    run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
     expect(damage).toBe(8);
     expect(areas).toEqual(['torso']);
   });
@@ -3088,7 +3117,7 @@ describe('attack windup', () => {
     system.tick(1 / 60);
     expect(system.store.get(id)!.attackWindup).toBeGreaterThan(0);
     target = [50, 2, 0]; // teleports well outside the shambler's reach mid-windup
-    run(system, SHAMBLER.attack.windup + 0.1);
+    run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
     expect(damage).toBe(0);
     expect(system.store.get(id)!.attackWindup).toBe(0); // the windup still resolves — as a miss, not a stall
   });
@@ -3111,7 +3140,7 @@ describe('attack windup', () => {
     system.tick(1 / 60);
     expect(system.store.get(id)!.attackWindup).toBeGreaterThan(0);
     entities.setOpen(door, false); // slams shut mid-windup, blocking the chest-to-chest raycast
-    run(system, SHAMBLER.attack.windup + 0.1);
+    run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
     expect(damage).toBe(0);
   });
 
@@ -3128,7 +3157,7 @@ describe('attack windup', () => {
       ),
     );
     const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
-    run(system, SHAMBLER.attack.windup + 0.05); // resolves the first attack
+    run(system, SHAMBLER.attack.windupSimSeconds + 0.05); // resolves the first attack
     expect(damage).toBe(8);
     const afterFirstHit = system.store.get(id)!.attackWait;
     expect(afterFirstHit).toBeGreaterThan(0);
@@ -3240,7 +3269,7 @@ describe('attack windup', () => {
     }
     const before = system.store.get(id)!.attackWindup;
     expect(before).toBeGreaterThan(0);
-    expect(before).toBeLessThan(SHAMBLER.attack.windup);
+    expect(before).toBeLessThan(SHAMBLER.attack.windupSimSeconds);
 
     const state = system.snapshotState();
     const restored = new ZombieSystem(senses(() => player([0, 2, 0]), FLOOR));
@@ -3251,7 +3280,7 @@ describe('attack windup', () => {
 });
 
 describe('dismemberment', () => {
-  const stationary = { ...SHAMBLER, speed: { wander: 0, chase: 0 } };
+  const stationary = { ...SHAMBLER, speed: speedRates(0, 0) };
   const armParts = ['hand.L', 'hand.R', 'forearm.L', 'forearm.R', 'upperArm.L', 'upperArm.R'];
 
   /** Regions too healthy for a few fist hits to destroy, so only the dismember roll can sever anything. */
@@ -3266,13 +3295,13 @@ describe('dismemberment', () => {
   it('scales launch distance monotonically through 40 N·s and keeps weapon distances bounded', () => {
     const type = {
       ...SHAMBLER,
-      speed: { wander: 0, chase: 0 },
+      speed: speedRates(0, 0),
       regions: { ...survives },
       dismember: { chance: 1, headOnKillChance: 0 },
     };
     const fists = FISTS_MELEE;
-    const crowbar = registry.items.get('crowbar')!.weapon!.melee!;
-    const bat = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const crowbar = runtimeWeapon(registry.items.get('crowbar')!.weapon!.melee!);
+    const bat = runtimeWeapon(registry.items.get('baseball_bat')!.weapon!.melee!);
     const simulate = (weapon: Parameters<ZombieSystem['swing']>[2], settleToRest = false) => {
       const renderer = new MobActorMeshes(BLOCK_SIZE);
       let debrisBody: { asleep: boolean; center: Vec3 } | undefined;
@@ -3481,7 +3510,7 @@ describe('dismemberment', () => {
     );
     const id = system.add(SHAMBLER, [1.2, 1, 0], [-1, 0, 0]);
     system.store.get(id)!.severed.push('hand.L', 'hand.R');
-    run(system, SHAMBLER.attack.windup + 0.1);
+    run(system, SHAMBLER.attack.windupSimSeconds + 0.1);
     expect(damage).toBe(8);
   });
 

@@ -109,7 +109,8 @@ describe('debug starting equipment', () => {
     expect(formatMeleeResult({ damage: 0, outcome: 'nothing' })).toBe('nothing · no region hit');
   });
   it('a baseball bat swings with its damage, reach, and 10 N·s impulse', () => {
-    const weapon = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const weaponDef = registry.items.get('baseball_bat')!.weapon!.melee!;
+    const weapon = { ...weaponDef, cooldown: weaponDef.cooldownSimSeconds };
     expect(weapon).toMatchObject({ damage: 15, reach: 0.8, impulse: 10 });
     let launchImpulse: number | undefined;
     const system = new ZombieSystem({

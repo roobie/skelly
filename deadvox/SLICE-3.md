@@ -362,10 +362,18 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 > 2. i think downloaded file makes most sense - depending on size it could be an attachment to the github issue?
 > 3. i'd say in general until we've hit v1 RC
 
+The scope question was whether replay should include inventory and crafting screen use. BR asked on 2026-10-06:
+
+> "how much effort is it to scope it to inventory and crafting too?"
+> "yes, do inventory and crafting in the validation too"
+
 **In:** Keep a rolling recent input window, if its measured performance cost allows; export a replay file containing the starting save and recorded inputs, small enough for a GitHub issue attachment where possible. Make it available in all builds until v1 RC. The replay is an artifact, not a second game-save format.
 **Saves:** No new world-save state. The replay file carries the start save and input sequence with enough build/simulation identity to reject an incompatible replay; the recording buffer is transient and the export is explicit.
-**Tests:** replaying a captured input sequence from its start save reproduces the same simulation result; export/import preserves the input order and fails clearly when the build/simulation identity is incompatible; measure always-on buffer cost before accepting it.
-**Done when:** a bug can be reported with a downloadable replay that reproduces the same state, and always-on capture fits the measured budget or is kept only when cost permits.
+**Tests:** Replaying a captured input sequence from its start save reproduces the same simulation result, including inventory and crafting screen commands; export/import preserves command parameters and item identity, and fails clearly when the build/simulation identity is incompatible; measure always-on buffer cost before accepting it.
+**Done when:** a bug can be reported with a downloadable replay that reproduces the same state after look, movement, inventory and crafting use, and always-on capture fits the measured budget or is kept only when cost permits.
+At d101-4, replay samples also preserve whether the source world was ready under the player. Source movement can be skipped while streamed terrain is missing; playback waits when a recorded move needs terrain and keeps source-side skips when it did not. Replay captures the source simulation's end time so verification is independent of how render frames grouped the fixed player ticks. See `src/game/session.ts`, `createSession`; `src/game/inputReplay.ts`, `encodeInputReplay`; and `src/game/play.ts`, `stepSimulation`.
+
+Implementation is in `src/game/inputReplay.ts`, `InputReplayRecorder`; inventory and crafting commands converge on `applyReplayActionPayload` in `src/game/replayCommands.ts`, wired by `startPlay` in `src/game/play.ts`. The player-facing rationale is in [CONTROLS.md](CONTROLS.md).
 
 ### 3.11 Authored playtest map and playtest
 
