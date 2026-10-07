@@ -1405,8 +1405,9 @@ deadvox holds a model with +x forward and +y up
   `test/glbValidate.test.ts`, `test/exportCli.test.ts`.
 
 **3.5 End to end in deadvox (implemented; awaiting BR visual review, 2026-09-29).**
-`rifle_assault` now uses the curated `archetype-ar` export; `debug_rifle_assault`
-spawns it with G under `?debug=1` for inspection in hands and piles. The model
+`rifle_assault` now uses the curated `archetype-ar` export; `rifle_assault` spawns
+with G under `?debug=1`, or `?debug=1&loadout=ar` holds it, for inspection in hands
+and piles. The model
 entry keeps the original id and asset path, with export-derived grip and anchors;
 `grip.turn` is `[0, 0, 0]` per BR's +x-forward/+y-up ruling. Reproduce the checked-in
 GLB and sidecar from the `gungen/` directory with:

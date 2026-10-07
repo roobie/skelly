@@ -2,6 +2,7 @@ import { html, nothing, render, type TemplateResult } from 'lit-html';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
 import {
   FIREARMS_SKILL_ZERO_RANGES,
   type FirearmsSkillShotKind,
@@ -19,6 +20,7 @@ import type {
   DebugRuntime,
   InputReplayStatusState,
 } from '../game/debugInterface.ts';
+import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
@@ -45,7 +47,6 @@ import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
 import { spawnShamblers } from './shamblerSpawning.ts';
-import { rangeToNearestShotTargetMetres, type ShotTargetBox } from './shotTargetRange.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
@@ -140,7 +141,7 @@ const f3OverlayTemplate = (readout: DebugReadout, visible: boolean, yaw: number,
 
 const axisGizmoTemplate = (visible: boolean, targetRange: string): TemplateResult => html`
   <canvas id="debug-axis-gizmo" width="144" height="144" ?hidden=${!visible} role="img" aria-label="World axes: positive X red, Y green, Z blue"></canvas>
-  <span id="debug-target-range" ?hidden=${targetRange === ''} aria-label="Range to shot target">${targetRange}</span>
+  <span id="debug-target-range" ?hidden=${targetRange === ''} aria-label="Range to crosshair hit">${targetRange}</span>
 `;
 
 function paintAxisGizmo(canvas: HTMLCanvasElement, quaternion: readonly [number, number, number, number]): void {
@@ -385,6 +386,7 @@ const panelTemplate = ({
   };
   return html`
   <div id="debug-ui-root">
+    <div id="debug-center-x" aria-hidden="true"></div>
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
@@ -911,6 +913,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   let f3Open = false;
   let axesVisible = true;
   let targetRangeText = '';
+  let crosshairRay: { eye: Vec3; dir: Vec3; active: boolean } | undefined;
   let copyStatus = '';
   let firearmsSkillCopyStatus = '';
   let cameraQuaternion: readonly [number, number, number, number] = [0, 0, 0, 1];
@@ -1128,21 +1131,35 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       return;
     }
     nextShotTargetRangeUpdate = now + 400;
-    function* shotTargets(): IterableIterator<ShotTargetBox> {
-      for (const entity of hooks.engine.entities.all) {
-        const shotTarget = hooks.engine.registry.furniture.get(entity.type)?.shotTarget === true;
-        if (shotTarget) {
-          yield { pos: entity.pos, size: entity.size, shotTarget };
-        }
-      }
-    }
-    const range = rangeToNearestShotTargetMetres(
-      hooks.body.pos,
-      hooks.body.height,
-      hooks.engine.config.scale.blockSize,
-      shotTargets(),
-    );
-    targetRangeText = range === undefined ? '' : `Target range: ${range.toFixed(1)} m`;
+    const ray = crosshairRay;
+    const { engine } = hooks;
+    const target = ray?.active
+      ? crosshairTarget(
+          {
+            world: engine.world,
+            registry: engine.registry,
+            entities: engine.entities,
+            isSolid: engine.isSolid,
+            blockSize: engine.config.scale.blockSize,
+          },
+          ray.eye,
+          ray.dir,
+          SHOT_TRACE_RANGE_BLOCKS,
+        )
+      : undefined;
+    const zombies = hooks.zombies();
+    const aimTarget =
+      ray?.active && zombies
+        ? firearmBoreTarget({
+            eye: ray.eye,
+            direction: ray.dir,
+            surface: target,
+            zombies,
+            blockSize: engine.config.scale.blockSize,
+          })
+        : undefined;
+    const distanceMetres = aimTarget?.distanceMetres ?? target?.distanceMetres;
+    targetRangeText = distanceMetres === undefined ? '' : `Target range: ${distanceMetres.toFixed(1)} m`;
   }
   async function exportInputReplay(): Promise<void> {
     replayStatus = 'Preparing replay export';
@@ -1453,6 +1470,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       }
     },
     updateLookedAt(eye: Vec3, dir: Vec3, active: boolean) {
+      crosshairRay = { eye: [...eye], dir: [...dir], active };
       if (lookReadout) {
         const { engine } = hooks;
         const text =
@@ -1462,7 +1480,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
                   world: engine.world,
                   registry: engine.registry,
                   entities: engine.entities,
-                  isSolid: engine.isOpaque,
+                  isSolid: engine.isSolid,
                   blockSize: engine.config.scale.blockSize,
                 },
                 eye,

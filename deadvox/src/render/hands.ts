@@ -32,7 +32,14 @@ import { dominantSide } from '../core/character.ts';
 import type { FigureDef, ModelDef } from '../core/content.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
-import { HOLD, heldAnchorOffset, heldFirearmTransform, heldGripOffset, modelToView } from '../core/heldPose.ts';
+import {
+  HOLD,
+  heldAnchorOffset,
+  heldFirearmTransform,
+  heldGripOffset,
+  modelToView,
+  readyFirearmPose,
+} from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
@@ -183,7 +190,7 @@ export class HeldItems {
     const loweredPitchRadians =
       this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.loweredPitchRadians ?? 0;
     const leadingSide = dominantSide(this.inventory.character);
-    const readyPose = readiness ? readyMeleePose(true, leadingSide) : undefined;
+    const readyPose = readiness ? readyFirearmPose(leadingSide) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
     const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
     let adsSightWorld: Vector3 | undefined;

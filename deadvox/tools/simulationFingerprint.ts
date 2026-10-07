@@ -82,6 +82,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/game/shamblerAudio.ts',
   'src/game/damageFeedback.ts',
   'src/game/engine.ts',
+  // Chooses the ray for debug readouts only; it cannot affect gameplay or saves.
+  'src/game/debugTargetRay.ts',
   'src/game/saveStorage.ts',
   'src/game/saveStorageLockError.ts',
   'src/game/saveStorageRecord.ts',

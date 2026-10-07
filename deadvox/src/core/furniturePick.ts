@@ -110,6 +110,11 @@ const firstPickCell = ({
     return entity !== undefined || isSolid(x, y, z);
   });
 
+export interface FurniturePickHit {
+  readonly entity: BlockEntity;
+  readonly distanceBlocks: number;
+}
+
 const resolvePick = ({
   entities,
   panelHit,
@@ -120,27 +125,27 @@ const resolvePick = ({
   panelHit: PanelHit | undefined;
   cellHit: RayHit | undefined;
   blockSize: number;
-}): BlockEntity | undefined => {
+}): FurniturePickHit | undefined => {
   const cellEntity = cellHit ? entities.at(...cellHit.block) : undefined;
   const sameClosedDoor = panelHit && cellEntity?.uid === panelHit.entity.uid;
   if (panelHit && (!cellHit || panelHit.distance <= cellHit.distance * blockSize || sameClosedDoor)) {
-    return panelHit.entity;
+    return { entity: panelHit.entity, distanceBlocks: panelHit.distance / blockSize };
   }
-  if (cellEntity && !entities.defOf(cellEntity).door) {
-    return cellEntity;
+  if (cellEntity && !entities.defOf(cellEntity).door && cellHit) {
+    return { entity: cellEntity, distanceBlocks: cellHit.distance };
   }
   return undefined;
 };
 
 /** Picks the nearest visible furniture cell or visible door panel along a block-space ray. */
-export const pickFurniture = ({
+export const pickFurnitureHit = ({
   entities,
   origin,
   direction,
   maxDistance,
   blockSize,
   isSolid,
-}: FurniturePickOptions): BlockEntity | undefined => {
+}: FurniturePickOptions): FurniturePickHit | undefined => {
   const magnitude = Math.hypot(...direction);
   if (magnitude === 0 || maxDistance < 0 || blockSize <= 0) {
     return undefined;
@@ -158,3 +163,6 @@ export const pickFurniture = ({
   const cellHit = firstPickCell({ entities, origin, direction: dir, maxDistance, isSolid });
   return resolvePick({ entities, panelHit, cellHit, blockSize });
 };
+
+export const pickFurniture = (options: FurniturePickOptions): BlockEntity | undefined =>
+  pickFurnitureHit(options)?.entity;

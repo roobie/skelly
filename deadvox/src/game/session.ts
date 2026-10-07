@@ -564,6 +564,7 @@ export const createSession = (options: SessionOptions) => {
 
   const firearms = new FirearmMechanics(inventory, queue, {
     blockSize: s,
+    isSolid,
     pose: (uid) =>
       inventory.hands.right?.uid === uid || inventory.hands.left?.uid === uid
         ? {
