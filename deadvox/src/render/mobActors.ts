@@ -48,7 +48,7 @@
 // (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
 import type { Material } from '@mobgen/core/body.ts';
-import { type Realized } from '@mobgen/core/generate.ts';
+import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import {
   type Mat3,
