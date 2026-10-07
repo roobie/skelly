@@ -261,7 +261,7 @@ export const startPlay = (
   const { scale } = config;
   const s = scale.blockSize;
 
-  const playerStart = playerStartFromWorld(engine, scale);
+  const playerStart = playerStartFromWorld(engine, scale, config.debugStart, options.restore !== undefined);
   let debugTools: DebugRuntime | undefined;
   const input = new Input(inputTarget, () => !debugTools?.buildOn);
   input.yaw = playerStart.yaw;
