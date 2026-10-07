@@ -54,7 +54,7 @@ describe('clock', () => {
 });
 
 describe('Simulation', () => {
-  it('applies recorded compression to each fixed replay frame', () => {
+  it('applies long-action compression to each fixed replay frame', () => {
     const sim = new Simulation({ seed: 1 });
     let ticks = 0;
     sim.scheduler.register({
@@ -64,10 +64,16 @@ describe('Simulation', () => {
         ticks += 1;
       },
     });
-    sim.compression.c = 4;
+    expect(sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
+    for (let frames = 0; sim.compression.c < COMPRESSION.cap && frames < 120; frames += 1) {
+      advanceLiveFrame(sim, realSeconds(FRAME));
+    }
+    expect(sim.compression.c).toBe(COMPRESSION.cap);
+    ticks = 0;
+    const recordedCompression = sim.compression.c;
 
-    expect(sim.frameReplay(FRAME)).toBe(4 * FRAME);
-    expect(ticks).toBe(4);
+    expect(sim.frameReplay(FRAME)).toBeCloseTo(recordedCompression * FRAME, 12);
+    expect(ticks).toBe(Math.round(recordedCompression));
   });
 
   it('rejects backward debug seeks and keeps existing absolute timestamps in the past', () => {

@@ -245,6 +245,7 @@ const replayInputSample = (
 ): ReplayControlSample => {
   const sample = player.next();
   if (sample) {
+    replay.sim.compression.c = sample.compression;
     applyReplayLook(replay.view, sample);
     return sample;
   }
@@ -593,6 +594,23 @@ describe('input replay', () => {
     expect(player.next()).toMatchObject({ yaw: 0.5, intent: { forward: 0 } });
     expect(seen).toEqual(['down:movement.walk-toggle:0.4', 'up:movement.walk-toggle:0.5', 'down:world.interact:0.5']);
     expect(decoded.snapshot).toEqual(start);
+  });
+
+  it('replays recorded compression through the replay driver', async () => {
+    const runtime = createRuntime();
+    expect(runtime.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
+    const start = capture(runtime);
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder, { frameDts: [1 / 60] });
+    const inputs = recorder.copyInputs();
+    expect(inputs.frames.some((frame) => sampleFromReplayFrame(frame).compression > 1)).toBe(true);
+
+    const sourceEnd = capture(source);
+    const replay = playSession(start, inputs, { endSimTimestamp: sourceEnd.character.simulation.time });
+
+    const finalSample = sampleFromReplayFrame(inputs.frames.at(-1)!);
+    expect(replay.sim.compression.c).toBe(finalSample.compression);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
   it('records active session movement and replays between-frame commands to the same state', async () => {

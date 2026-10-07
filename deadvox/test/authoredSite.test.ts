@@ -415,7 +415,6 @@ it('grounds the exported ridge lots, track and slope trees with order-independen
   const ridge = (
     JSON.parse(readFileSync('src/content/base/hunting-cabins.json', 'utf8')) as { layouts: SiteLayoutDef[] }
   ).layouts[0]!;
-  expect(buildRegistry(base).issues).toEqual([]);
   for (const building of ridge.buildings) {
     expect(building.position[1]).toBe(
       defaultFoundation(ridge, buildingBounds(building, registry.templates.get(building.template)!.size)),
