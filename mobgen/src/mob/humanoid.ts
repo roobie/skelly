@@ -856,7 +856,6 @@ const trimCrawlerFeature = (
   return [feature];
 };
 
-/** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
 // Amputation removes the humanoid feet that otherwise align generated voxels with y = 0.
 const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): Body => {
   const voxels = voxelize(body, size, seed);
@@ -891,6 +890,7 @@ const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): B
   };
 };
 
+/** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
 const amputateCrawlerLegs = (body: Body, genome: Genome): Body => {
   const { bones, cuts } = cutCrawlerBones(body.bones);
   const boneHeads = new Map(body.bones.map((bone) => [bone.id, bone.head]));

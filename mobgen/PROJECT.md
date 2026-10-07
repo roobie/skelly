@@ -50,25 +50,31 @@ data, and the defaults must work for any body plan.
   detail (CHALLENGES §1, §9).
 - Gameplay-ready body plans beyond the humanoid. The m1 apex enemy feature adds
   a static amalgam first-look body, not a gameplay gait or Deadvox dismemberment
-  integration; the static crawler is another scoped exception.
+  integration; the crawler is another scoped exception.
 - Runtime wounds and gameplay dismemberment.
 - Pose validation beyond the humanoid rest pose and the crawler's generated-body
   grounding rule (CHALLENGES §7).
 
-Slice 3.8's static crawler is an exception to the humanoid milestone scope: its
-body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses
+Slice 3.8's crawler is an exception to the humanoid milestone scope: its body
+uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses
 `src/mob/crawler.ts`, `crawlerPose`. Rig-specific gaze limits live in
 `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and the render-only pose
-adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the static
-silhouette at 2026-10-07 10:03. The crawler's generated support bones resolve
-from voxel ground contacts through `src/core/generate.ts`, `resolveSupportBones`,
-so the `grounded` rule validates its body plan without humanoid foot assumptions.
-`src/mob/crawler.ts`, `crawlerPose`, grounds the static pose per realized figure;
+adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the silhouette
+at 2026-10-07 10:03. The crawler's generated support bones resolve from voxel
+ground contacts through `src/core/generate.ts`, `resolveSupportBones`, so the
+`grounded` rule validates its body plan without humanoid foot assumptions.
+`src/mob/crawler.ts`, `crawlerPose`, grounds the pose per realized figure;
 `crawlerGaitPose` and `crawlerHitPose` layer movement and hit response over it.
-In the viewer, `src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the
-camera because the viewer has no perception state. BR's form ruling was
+BR's 2026-10-07 17:00:03 +02:00 ruling on `crawlerGaitPose`'s rearward reach
+was: “#377: it'd be nice if we could have the arms' range of motion (by having
+the elbows move by the side/along the ground) fully go rear-of the shoulders”.
+`test/crawler.test.ts` guards that pull-end reach. In the viewer,
+`src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera because
+the viewer has no perception state. BR's form ruling, 2026-10-06 21:49, was
 verbatim: “crawler: (A)”; this means a prone ground-crawler dragging itself on
 its arms with trailing legs, not either of the other proposed humanoid forms.
+Gameplay stagger, slowdown, knockdown and per-type clip tuning remain open BR
+decisions.
 
 ## Playtest 1 apex enemy: amalgam (m1)
 

@@ -32,7 +32,7 @@ import { flinchSideForId, zombiePoseInputFor } from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import type { Zombie, ZombieMode } from '../src/core/zombies.ts';
 import { PLAYER } from '../src/game/player.ts';
-import { ZOMBIE_RATE } from '../src/game/session.ts';
+import { ZOMBIE_RATE } from '../src/game/simulationRates.ts';
 import {
   fallDirectionAwayFromPlayer,
   HEARING_GAZE_JITTER,

@@ -91,10 +91,9 @@ import {
 import { Quickbar } from './quickbar.ts';
 import { RestController } from './rest.ts';
 import { shamblerBodyPitch } from './shamblerAudio.ts';
-import { ZOMBIE_RATE as ZOMBIE_SIMULATION_RATE } from './simulationRates.ts';
+import { ZOMBIE_RATE } from './simulationRates.ts';
 import { Survival } from './survival.ts';
 
-export const ZOMBIE_RATE = ZOMBIE_SIMULATION_RATE;
 export const PHYSICS_RATE = 60;
 export const HANDLING_RATE = 20;
 const sessionFirearmsTuning = (
