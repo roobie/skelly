@@ -43,8 +43,8 @@ it('projects the shipped lowered bore below the raised firearm bore', () => {
   if (!tuning) {
     throw new Error('Missing firearms-combat pose tuning');
   }
-  const pointOnBore = (progress: number): Vec3 => {
-    const bore = firearmBoreRay({
+  const boreAt = (progress: number) =>
+    firearmBoreRay({
       model: boreModel,
       eye,
       yaw: 0,
@@ -58,17 +58,23 @@ it('projects the shipped lowered bore below the raised firearm bore', () => {
       loweredPitchRadians: tuning.loweredPitchRadians,
       verticalFovDegrees: camera.fov,
     });
-    return bore.muzzle.map((value, axis) => value + bore.direction[axis]! * 100) as Vec3;
-  };
+  const pointOnBore = (bore: ReturnType<typeof firearmBoreRay>): Vec3 =>
+    bore.muzzle.map((value, axis) => value + bore.direction[axis]! * 100) as Vec3;
   const screenTop = (point: Vec3): number => {
     const projected = new Vector3(point[0] * blockSize, point[1] * blockSize, point[2] * blockSize).project(camera);
     return viewport.top + ((1 - projected.y) / 2) * viewport.height;
   };
-  const raisedPoint = pointOnBore(1);
-  const loweredPoint = pointOnBore(0);
+  const raisedBore = boreAt(1);
+  const loweredBore = boreAt(0);
+  const raisedDirection = new Vector3(...raisedBore.direction);
+  const loweredDirection = new Vector3(...loweredBore.direction);
+  const raisedPoint = pointOnBore(raisedBore);
+  const loweredPoint = pointOnBore(loweredBore);
   const raisedPosition = projectCrosshairScreenPosition(camera, viewport, raisedPoint, blockSize);
   const loweredPosition = projectCrosshairScreenPosition(camera, viewport, loweredPoint, blockSize);
 
+  expect(loweredDirection.y).toBeLessThan(raisedDirection.y);
+  expect(loweredDirection.angleTo(raisedDirection)).toBeCloseTo(tuning.loweredPitchRadians, 5);
   expect(screenTop(loweredPoint)).toBeGreaterThan(screenTop(raisedPoint));
   expect(raisedPosition).toBeDefined();
   expect(raisedPosition!.top).toBeCloseTo(screenTop(raisedPoint));

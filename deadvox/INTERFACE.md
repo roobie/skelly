@@ -224,8 +224,8 @@ handling; melee combat governs block success. The tiered practice contract is in
   gizmo in `src/debug/index.ts`, `attachDebugTools`. BR's 2026-10-07 verdict
   supersedes the earlier hip-fire convergence: shots follow the visible firearm's
   bore plus spread, while the optional crosshair reports where that bore line
-  meets the world. BR's 12:16 ruling, recorded in `DESIGN.md`, "Firearms",
-  allows the mark to follow a wielded firearm's bore at its current raise
+  meets the world. BR's 12:16 and 13:30 rulings in `DESIGN.md`, "Firearms",
+  allow the mark to follow a wielded firearm's bore at its current raise
   progress and disappear when its projected point leaves the viewport.
   `src/game/firearmAim.ts`, `firearmBoreRay` and
   `firearmBoreTarget`, share the shot ray and its reported hit; the crosshair
