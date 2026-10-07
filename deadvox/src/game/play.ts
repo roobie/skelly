@@ -1800,6 +1800,7 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
+    const noiseRadiusScale = firearms.noiseFactorFor(item);
     const fired = firearms.fire({
       aimFrame: aim.frame,
       ready: isFirearmReady(item.uid),
@@ -1821,7 +1822,7 @@ export const startPlay = (
       return true;
     }
     const shot = firearmShotSound(item.type);
-    session.playPlayerSound(shot.event, time, shot);
+    session.playPlayerSound(shot.event, time, { ...shot, noiseRadiusScale });
     return true;
   };
 

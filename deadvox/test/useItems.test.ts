@@ -5,7 +5,7 @@ import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import type { Item } from '../src/core/items.ts';
-import { chargeOf } from '../src/core/lights.ts';
+import { chargeOf, toggleLight } from '../src/core/lights.ts';
 import { FOOD_POISONING, SPAWN_NEEDS } from '../src/core/needs.ts';
 import { EAT_TIME } from '../src/core/options.ts';
 import { bindReach } from '../src/core/reach.ts';
@@ -189,6 +189,20 @@ describe('using what you hold', () => {
     expect(batteries.count).toBe(1);
     expect(survival.use(light)).toBeUndefined();
     expect(light.on).toBe(true);
+  });
+
+  it('keeps a mounted light on and drains its nested battery while its firearm is held', () => {
+    const t = setup();
+    const firearm = t.hold('rifle_assault');
+    const light = t.inventory.create('flashlight');
+    firearm.slots = { ...firearm.slots, 'device.light': light };
+    expect(toggleLight(registry, light, t.sim.calendar)).toBeUndefined();
+    const initialCharge = chargeOf(registry, light)!;
+
+    t.sim.frame(2);
+
+    expect(light.on).toBe(true);
+    expect(chargeOf(registry, light)).toBeLessThan(initialCharge);
   });
 
   it('scalar light switching and drain invalidate the cached state-sensitive reach', () => {

@@ -22,7 +22,6 @@ import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroHandling,
-  firearmStanceEffects,
   firearmsSkillEffects,
   sameFirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
@@ -501,6 +500,7 @@ export const createSession = (options: SessionOptions) => {
       player,
       sourceLabel = null,
       listenerRelative = false,
+      noiseRadiusScale = 1,
       body: mobBody,
     }: SoundEmissionMeta & {
       player: boolean;
@@ -530,7 +530,7 @@ export const createSession = (options: SessionOptions) => {
       playerAudio.vocalNoise = {
         id: playerAudio.vocalNoiseId,
         pos: [...position],
-        radiusMetres: definition.noise.radiusMetres,
+        radiusMetres: definition.noise.radiusMetres * noiseRadiusScale,
         expiresAt: time + VOCAL_NOISE_LIFETIME,
       };
     }
@@ -586,7 +586,8 @@ export const createSession = (options: SessionOptions) => {
       aim.recordShot(
         shotSeed,
         recoilKickRadians,
-        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale,
+        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale *
+          firearms.recoilScaleFor(firearmUid),
       );
     },
     onShot: (shot, time, firearm) => {
@@ -597,7 +598,10 @@ export const createSession = (options: SessionOptions) => {
       }
       // Other firearms' shot sounds are the player's presentation cue (play.ts, `firearmShotSound`).
       if (registry.items.get(firearm.type)?.firearm?.pump) {
-        playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
+        playPlayerSound('shotgun_blast', time, {
+          sourceLabel: 'pump shotgun',
+          noiseRadiusScale: firearms.noiseFactorFor(firearm),
+        });
       }
     },
     onSound: (event, position, time) =>
@@ -994,9 +998,9 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting);
     survival.setSprinting(sprinting);
     stepStamina(sim.needs, dt, sprinting, bodyTuning.staminaRegenDelaySimSeconds);
-    const readyMovementFactor = readyGait
-      ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
-      : 1;
+    const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
+    const readyMovementFactor =
+      readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
     const pacedIntent = movementPace(
       { ...intent, sprint: sprinting, crouch: crouching },
       {

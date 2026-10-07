@@ -138,6 +138,21 @@ const shot = (simTime = 1, prepare: (inventory: Inventory) => void = () => undef
 };
 
 describe('rifle firearm handling', () => {
+  it('wears a fitted suppressor on each committed shot', () => {
+    const { inventory, mechanics, rifle } = armed();
+    const suppressor = inventory.create('improvised_suppressor');
+    const firearmModel = registry.models.get(registry.items.get(rifle.type)!.model!)!;
+    const suppressorModel = registry.models.get(registry.items.get(suppressor.type)!.model!)!;
+    const slot = firearmModel.attachmentSlots?.find(({ mount }) => mount === suppressorModel.attachment?.mount);
+    if (!slot) {
+      throw new Error('Fixture firearm has no suppressor mount');
+    }
+    rifle.slots = { ...rifle.slots, [slot.id]: suppressor };
+
+    expect(mechanics.fire(shotInput(rifle, 1))).toBe(true);
+    expect(suppressor.condition).toBeLessThan(1);
+  });
+
   it('uses per-gun skill-zero factors, shared fallback and the common expert endpoint', () => {
     const inventory = new Inventory(skillZeroRegistry);
     const light = inventory.create('fixture_light_gun');

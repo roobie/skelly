@@ -139,6 +139,33 @@ describe('made-light point pool', () => {
     });
     expect(pocketSource?.carried).toBe(true);
 
+    const heldGun = inventory.create('rifle_assault');
+    expect(inventory.add(heldGun, { kind: 'hand', side: 'right' })).toBe(true);
+    const mountedLight = inventory.create('flashlight');
+    expect(toggleLight(registry, mountedLight, 0)).toBeUndefined();
+    heldGun.slots = { ...heldGun.slots, 'device.light': mountedLight };
+    const mountedEntry = [...inventory.items()].find(({ item }) => item === mountedLight)!;
+    const mountedSource = lightSenseSourceFor({
+      registry,
+      item: mountedLight,
+      location: mountedEntry.location,
+      path: mountedEntry.path,
+      playerPosition: [4, 1, 0],
+      eyeHeightMetres: 1.3,
+    });
+    expect(mountedSource?.carried).toBe(true);
+    mountedLight.slots!.battery!.charges = 0;
+    expect(
+      lightSenseSourceFor({
+        registry,
+        item: mountedLight,
+        location: mountedEntry.location,
+        path: mountedEntry.path,
+        playerPosition: [4, 1, 0],
+        eyeHeightMetres: 1.3,
+      }),
+    ).toBeUndefined();
+
     const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' }, [])!;
     const storedLight = inventory.create('glowstick');
     expect(toggleLight(registry, storedLight, 0)).toBeUndefined();

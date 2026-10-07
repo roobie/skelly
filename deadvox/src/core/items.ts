@@ -462,9 +462,15 @@ export const itemAt = (registry: Registry, placed: readonly Placed[], x: number,
     return x >= p.x && x < p.x + w && y >= p.y && y < p.y + h;
   });
 
+const itemWeightGrams = (registry: Registry, item: Item): number => {
+  const def = defOf(registry, item.type);
+  const model = def.model ? registry.models.get(def.model) : undefined;
+  return model?.attachment?.massKg === undefined ? def.weight : model.attachment.massKg * 1000;
+};
+
 /** Grams, counting the stack, ammunition and everything in its pockets. */
 export const weightOf = (registry: Registry, item: Item): number =>
-  defOf(registry, item.type).weight * item.count +
+  itemWeightGrams(registry, item) * item.count +
   ammunitionWeight(registry, item) +
   (item.cartridges ?? []).reduce((sum, round) => sum + defOf(registry, round).weight, 0) +
   Object.values(item.slots ?? {}).reduce((sum, child) => sum + (child ? weightOf(registry, child) : 0), 0) +

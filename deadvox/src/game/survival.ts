@@ -28,11 +28,13 @@ const numberParam = (params: JobParams, key: string): number => {
 
 type LightSpec = NonNullable<ReturnType<typeof defOf>['light']>;
 type LightLocation = NonNullable<ReturnType<Inventory['locate']>>;
+const MOUNTED_ON_HELD_FIREARM = /^inventory\.hands\.[^.]+\.slots\./;
 
-const shouldDouse = (spec: LightSpec, location: LightLocation, sprinting: boolean): boolean => {
+const shouldDouse = (spec: LightSpec, location: LightLocation, path: string, sprinting: boolean): boolean => {
   const { burning } = spec;
   const wornHeadlamp = location.kind === 'worn' && location.slot === 'head' && spec.beam !== undefined;
-  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp;
+  const mountedOnHeldFirearm = location.kind === 'slot' && MOUNTED_ON_HELD_FIREARM.test(path);
+  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp && !mountedOnHeldFirearm;
   const dropped = location.kind === 'pile';
   return (
     (dropped ? burning?.drop !== 'stay' : movedOutOfHand && burning?.stow !== 'stay') ||
@@ -405,18 +407,18 @@ export class Survival {
 
   /** Applies owner rules and burns every active item source, including pocketed and dropped lights. */
   private tickLights(dt: number): void {
-    for (const { item, location } of this.inventory.items()) {
-      this.tickLight(item, location, dt);
+    for (const { item, location, path } of this.inventory.items()) {
+      this.tickLight(item, location, path, dt);
     }
   }
 
-  private tickLight(item: Item, location: LightLocation, dt: number): void {
+  private tickLight(item: Item, location: LightLocation, path: string, dt: number): void {
     const { registry } = this.inventory;
     const spec = defOf(registry, item.type).light;
     if (!(spec && item.on)) {
       return;
     }
-    if (shouldDouse(spec, location, this.sprinting)) {
+    if (shouldDouse(spec, location, path, this.sprinting)) {
       this.douseLight(item, spec);
       return;
     }

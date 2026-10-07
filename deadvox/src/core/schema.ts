@@ -291,6 +291,18 @@ const LightSchema = strictObject({
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
+const FirearmAttachmentEffectsSchema = strictObject({
+  /** Fraction of the firearm's committed recoil kick removed at full condition. */
+  recoilReduction: optional(Fraction),
+  /** Condition lost per committed shot. */
+  wearPerShot: optional(Fraction),
+  /** Multipliers applied to the existing aim and stance response. */
+  swayScale: optional(Positive),
+  recoveryScale: optional(Positive),
+  raiseScale: optional(Positive),
+  swingScale: optional(Positive),
+});
+
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
   capacity: Positive,
@@ -391,6 +403,8 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
+  firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
@@ -527,6 +541,8 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
+  /** Geometry-derived gungen mass, explicitly in kilograms. */
+  massKg: optional(NonNegative),
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
   properties: AttachmentPropertiesSchema,
@@ -616,6 +632,8 @@ const ModelSchema = pipe(
     /** Replaceable model parts and the gun-side mount frames for later fitting. */
     attachments: optional(array(FittedAttachmentSchema)),
     attachmentSlots: optional(array(AttachmentSlotSchema)),
+    /** Per-firearm certified dynamic fits; absent means no dynamic pair is certified. */
+    compatibility: optional(record(Id, array(Id))),
     /** Exact baked GLB node and replacement transform for each item-owned model slot. */
     slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
     /** Static model metadata for an attachment exported as its own item asset. */

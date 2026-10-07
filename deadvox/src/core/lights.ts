@@ -18,6 +18,7 @@ import { type GameRate, type GameSeconds, gameSeconds } from './time.ts';
 export const BATTERY_SWAP = 2;
 /** Lift ground-light emitters so the near-field falloff reaches nearby surfaces, rather than only grazing the floor. */
 export const WORLD_LIGHT_HEIGHT_METRES = 0.4;
+const MOUNTED_ON_HELD_FIREARM = /^inventory\.hands\.[^.]+\.slots\./;
 
 export type LightExposure = 'carried' | 'world';
 
@@ -36,10 +37,11 @@ export const lightExposureFor = (
   path: string,
 ): LightExposure | undefined => {
   const definition = registry.items.get(item.type);
-  if (!(item.on && definition?.light)) {
+  if (!(item.on && definition?.light) || (definition.light.power && chargeOf(registry, item) === 0)) {
     return undefined;
   }
-  if (location.kind === 'hand' || location.kind === 'worn') {
+  const mountedOnHeldFirearm = location.kind === 'slot' && MOUNTED_ON_HELD_FIREARM.test(path);
+  if (location.kind === 'hand' || location.kind === 'worn' || mountedOnHeldFirearm) {
     return 'carried';
   }
   if (location.kind === 'pocket' && (path.startsWith('inventory.hands.') || path.startsWith('inventory.worn.'))) {
