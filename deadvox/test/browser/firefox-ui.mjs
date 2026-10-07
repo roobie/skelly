@@ -276,7 +276,9 @@ try {
   await pressAction(page, 'debug.spectator-camera-toggle');
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), false);
   await pressAction(page, 'debug.perception-labels-toggle');
-  await page.waitForFunction(() => document.querySelectorAll('.zombie-perception-label').length === 0);
+  await page.waitForFunction(() => document.querySelectorAll('.zombie-perception-label').length === 0, null, {
+    timeout: 5000,
+  });
 
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
