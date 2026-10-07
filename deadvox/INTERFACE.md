@@ -228,7 +228,7 @@ handling; melee combat governs block success. The tiered practice contract is in
   allow the mark to follow a wielded firearm's bore at its current raise
   progress and disappear when its projected point leaves the viewport. BR's 14:55
   ruling there turns the mark with the rifle while a rack or a magazine job turns
-  it (`src/render/handlingTurn.ts`, `turnedBore`).
+  it (`src/render/handlingTurn.ts`, `handlingRotation`).
   `src/game/firearmAim.ts`, `firearmBoreRay` and
   `firearmBoreTarget`, share the shot ray and its reported hit; the crosshair
   itself is projected by `src/ui/playHud.ts`, `projectCrosshairScreenPosition`.
@@ -237,8 +237,12 @@ handling; melee combat governs block success. The tiered practice contract is in
   without that gun-angle offset. BR also asked for an X at exact screen centre
   in debug mode; the mark lives in `src/debug/index.ts`, and is separate from
   the optional crosshair. ADS keeps its existing sight alignment, and its
-  optional crosshair reports the aligned bore rather than random spread. The
-  looked-at tooltip still stops at solid geometry, matching shot occlusion;
+  optional crosshair reports the aligned bore rather than random spread. For
+  d134-1, zero-deviation sight direction, cant and eye relief align to the fixed
+  view, then recoil and handling move the firearm, optic window and bore together;
+  `src/core/heldPose.ts`, `heldFirearmTransform`, is shared by `HeldItems.update`
+  and `heldFirearmBore`. The intentional over-limit pitch shift still moves the
+  view through `AimController.applyViewPitchShift`. The looked-at tooltip still stops at solid geometry, matching shot occlusion;
   `src/debug/lookedAt.ts`, `describeLookedAt`, uses the solid-world query.
 - **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
   a build) shows the hint channel and nothing from `src/debug`, so a tester sees
