@@ -142,7 +142,9 @@ try {
         sessionStorage.setItem('d144-pagehide', JSON.stringify({ persisted: event.persisted }));
       });
       globalThis.addEventListener('pageshow', (event) => {
+        sessionStorage.setItem('d144-pageshow', String(event.persisted));
         if (event.persisted) {
+          globalThis.__d144HoldNextSave = false;
           globalThis.__d144ReleaseWriter?.();
         }
       });
@@ -686,89 +688,98 @@ try {
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
-    await page.evaluate(async () => {
-      const acquired = new Promise((resolve) => {
-        globalThis.__d144WriterAcquired = resolve;
-      });
-      globalThis.__d144HoldNextSave = true;
-      globalThis.deadvoxSaveTest.controller.beforeSleep();
-      await acquired;
-      const locks = await navigator.locks.query();
-      if (!locks.held.some((lock) => lock.name === 'deadvox-save-storage' && lock.mode === 'exclusive')) {
-        throw new Error('test writer did not acquire the exclusive save lock');
-      }
+    const beforeNavigation = await page.evaluate(async () => ({
+      writing: globalThis.deadvoxSaveTest.controller.writing,
+      locks: await navigator.locks.query(),
+    }));
+    assert.equal(beforeNavigation.writing, false);
+    assert.equal(
+      beforeNavigation.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
+      false,
+      'the page enters navigation without already holding a lock that would disqualify bfcache',
+    );
+    assert.equal(beforeNavigation.locks.pending.length, 0);
+    await page.evaluate(() => {
+      sessionStorage.removeItem('d144-held-writer');
+      sessionStorage.removeItem('d144-pagehide');
+      sessionStorage.removeItem('d144-pageshow');
     });
+    if (browserName === 'chromium') {
+      await page.evaluate(() => {
+        globalThis.__d144HoldNextSave = true;
+      });
+    }
     const pumpUrl = new URL(appUrl);
     pumpUrl.searchParams.set('loadout', 'pump');
     await page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
     await page.waitForFunction(
       async () => {
-        const status = document.querySelector('#save-status')?.textContent ?? '';
         const locks = await navigator.locks.query();
         const held = locks.held.some((lock) => lock.name === 'deadvox-save-storage');
-        const pending = locks.pending.some((lock) => lock.name === 'deadvox-save-storage');
-        return (
-          status.includes('Title screen ready') || status.includes('Save storage unavailable') || (held && pending)
-        );
+        const ready = globalThis.deadvoxSaveTest?.controller.ready;
+        return sessionStorage.getItem('d144-pagehide') !== null && (held || ready);
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
-    let result = await page.evaluate(async () => {
-      const status = document.querySelector('#save-status')?.textContent ?? '';
+    const result = await page.evaluate(async () => {
       const locks = await navigator.locks.query();
+      const { controller } = globalThis.deadvoxSaveTest;
       return {
-        ready: status.includes('Title screen ready'),
-        status,
+        pagehide: JSON.parse(sessionStorage.getItem('d144-pagehide') ?? 'null'),
+        heldWriter: sessionStorage.getItem('d144-held-writer'),
+        ready: controller.ready,
+        hasSavedWorld: controller.restored !== undefined,
+        storageUnavailable: controller.storageUnavailable,
+        continueDisabled: document.querySelector('#continue')?.disabled,
         held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
         pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
+        warnings: globalThis.__d144LockWarnings,
       };
     });
-    const pendingAtBlock = result.pending;
-    if (!result.ready && !result.status.includes('Save storage unavailable')) {
-      await page.waitForFunction(
-        () => {
-          const status = document.querySelector('#save-status')?.textContent ?? '';
-          return status.includes('Save storage unavailable') || status.includes('Title screen ready');
-        },
-        undefined,
-        { timeout: STAGE_TIMEOUT_MS },
+    process.stdout.write(`${browserName}: in-tab loadout navigation ${JSON.stringify(result)}\n`);
+    if (browserName === 'chromium') {
+      assert.equal(result.pagehide?.persisted, true, 'Chromium keeps the outgoing world in bfcache');
+      assert.notEqual(
+        result.heldWriter,
+        'true',
+        'pagehide must not start a lock-holding save for a document entering bfcache',
       );
-      result = await page.evaluate(async () => {
-        const status = document.querySelector('#save-status')?.textContent ?? '';
-        const locks = await navigator.locks.query();
-        return {
-          ready: status.includes('Title screen ready'),
-          status,
-          held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
-          pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
-        };
+      assert.equal(result.held.length, 0, 'the cached page leaves no exclusive writer lock');
+      assert.equal(result.pending.length, 0, 'the new page has no shared request waiting on a cached writer');
+      assert.equal(result.storageUnavailable, false);
+      assert.equal(result.ready, true);
+      assert.equal(result.hasSavedWorld, true);
+      assert.equal(result.continueDisabled, false);
+      assert.equal(result.warnings.length, 0);
+      await page.goBack({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+      await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') === 'true', undefined, {
+        timeout: STAGE_TIMEOUT_MS,
+      });
+      const restored = await page.evaluate(async () => ({
+        locks: await navigator.locks.query(),
+        controllerEntered: globalThis.deadvoxSaveTest.controller.isEntered,
+      }));
+      assert.equal(restored.controllerEntered, true, 'Back restores the original world from bfcache');
+      assert.equal(
+        restored.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
+        false,
+        'restoring a cached page does not leave a save lock held',
+      );
+    } else {
+      assert.equal(result.ready, true, 'saved world did not load after in-tab navigation');
+      assert.equal(result.hasSavedWorld, true);
+      assert.equal(result.continueDisabled, false);
+    }
+    if (browserName !== 'chromium') {
+      await Promise.all([
+        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+        page.click('#continue', { timeout: STAGE_TIMEOUT_MS }),
+      ]);
+      await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
+        timeout: STAGE_TIMEOUT_MS,
       });
     }
-    const evidence = await page.evaluate(() => ({
-      pagehide: sessionStorage.getItem('d144-pagehide'),
-      heldWriter: sessionStorage.getItem('d144-held-writer'),
-      continueDisabled: document.querySelector('#continue')?.disabled,
-    }));
-    const heldClientId = result.held[0]?.clientId;
-    const waiterClientId = pendingAtBlock[0]?.clientId;
-    const holderIsAnotherClient =
-      heldClientId === undefined || waiterClientId === undefined ? null : heldClientId !== waiterClientId;
-    process.stdout.write(
-      `${browserName}: in-tab loadout navigation ${JSON.stringify({ ...evidence, ...result, pendingAtBlock, holderIsAnotherClient })}\n`,
-    );
-    assert.ok(evidence.pagehide, 'same-tab navigation dispatched pagehide');
-    assert.equal(evidence.heldWriter, 'true', 'outgoing page held the real exclusive writer before navigation');
-    assert.equal(result.ready, true, `saved world did not load after in-tab navigation: ${result.status}`);
-    assert.equal(evidence.continueDisabled, false, 'saved world remains available to Continue');
-
-    await Promise.all([
-      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
-      page.click('#continue', { timeout: STAGE_TIMEOUT_MS }),
-    ]);
-    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.isEntered, undefined, {
-      timeout: STAGE_TIMEOUT_MS,
-    });
     await page.evaluate(() => {
       sessionStorage.removeItem('d144-held-writer');
       globalThis.__d144HoldNextSave = true;
@@ -777,11 +788,13 @@ try {
     hiddenPage.on('pageerror', (error) => pageErrors.push(error.message));
     hiddenPage.on('requestfailed', recordRequestFailure);
     await hiddenPage.bringToFront();
-    await page.waitForFunction(
-      () => document.visibilityState === 'hidden' && sessionStorage.getItem('d144-held-writer') === 'true',
-      undefined,
-      { timeout: STAGE_TIMEOUT_MS },
-    );
+    await page.waitForFunction(() => document.visibilityState === 'hidden', undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
+    await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
+    await page.waitForFunction(() => sessionStorage.getItem('d144-held-writer') === 'true', undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     const frozenPage = browserName === 'chromium' ? await context.newCDPSession(page) : undefined;
     if (frozenPage) {
       await frozenPage.send('Page.setWebLifecycleState', { state: 'frozen' });
