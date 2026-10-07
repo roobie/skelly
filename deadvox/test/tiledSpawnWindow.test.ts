@@ -217,7 +217,9 @@ describe('Tiled spawn-window export', () => {
     for (const { template } of rawLayout.buildings) {
       expect(allowedTemplates, template).toContain(template);
     }
-    const committed = JSON.parse(readFileSync(join(mapsPath, '../src/content/base/layouts-playtest.json'), 'utf8')) as unknown;
+    const committed = JSON.parse(
+      readFileSync(join(mapsPath, '../src/content/base/layouts-playtest.json'), 'utf8'),
+    ) as unknown;
     expect(exported).toEqual(committed);
   });
 

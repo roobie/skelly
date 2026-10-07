@@ -264,7 +264,10 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ['shambler_attack', 'Approved by BR (2026-10-02).'],
   ['shambler_hurt', 'Approved by BR (2026-10-02).'],
   ['door_open', 'Approved by BR (2026-10-02) with door-open-03 only; more variants are future work.'],
-  ['door_roller_open', 'Temporary stand-in: uses the door-open recording; a dedicated roller-door sound remains future work.'],
+  [
+    'door_roller_open',
+    'Temporary stand-in: uses the door-open recording; a dedicated roller-door sound remains future work.',
+  ],
   ['door_close', 'Approved by BR (2026-10-02).'],
   [
     'door_blocked_close',

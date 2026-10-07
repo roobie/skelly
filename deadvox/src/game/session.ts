@@ -526,7 +526,11 @@ export const createSession = (options: SessionOptions) => {
       listenerRelative,
     });
     // Commit gameplay before calling the output adapter, regardless of device/assets/volume.
-    const noiseId = emittedAsNoise ? ++playerAudio.vocalNoiseId : undefined;
+    let noiseId: number | undefined;
+    if (emittedAsNoise) {
+      playerAudio.vocalNoiseId += 1;
+      noiseId = playerAudio.vocalNoiseId;
+    }
     const noisePosition = [...position] as Vec3;
     const expiresAt = time + VOCAL_NOISE_LIFETIME;
     if (emittedAsNoise) {

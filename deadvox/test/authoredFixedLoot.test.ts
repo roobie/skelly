@@ -416,7 +416,10 @@ describe('authored fixed loot', () => {
     expect(fixedCount(overrides, 'playtest_dads_cabin', 'pump_shotgun')).toBeGreaterThan(0);
 
     for (const template of ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']) {
-      expect(layout.buildings.some((building) => building.template === template), template).toBe(true);
+      expect(
+        layout.buildings.some((building) => building.template === template),
+        template,
+      ).toBe(true);
     }
     expect(fixedCount(overrides, 'workshop_hall', 'shotshell_box')).toBeGreaterThan(0);
     expect(fixedCount(overrides, 'workshop_hall', 'portable_radio')).toBeGreaterThan(0);
@@ -634,7 +637,7 @@ describe('authored fixed loot', () => {
     const yard = fixture.buildings.find((building) => building.template === 'workshop_yard')!;
     const template = result.registry.templates.get(yard.template)!;
     const bounds = buildingBounds(yard, template.size);
-    const entrance = template.access!.entrance;
+    const { entrance } = template.access!;
     const entranceX = yard.position[0] + entrance[0] * scale.blockSize;
     const entranceZ = yard.position[2] + entrance[2] * scale.blockSize;
     const gatePoints: Point[] = [
@@ -646,8 +649,8 @@ describe('authored fixed loot', () => {
     const start = spur.points[0]!;
     const end = spur.points.at(-1)!;
     expect(polylineDistance(start, mainTrack.points)).toBeLessThanOrEqual(spur.width / 2);
-    expect(
-      Math.min(...gatePoints.map(([x, z]) => Math.hypot(end[0] - x, end[1] - z))),
-    ).toBeLessThanOrEqual(spur.width / 2);
+    expect(Math.min(...gatePoints.map(([x, z]) => Math.hypot(end[0] - x, end[1] - z)))).toBeLessThanOrEqual(
+      spur.width / 2,
+    );
   });
 });

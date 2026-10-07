@@ -321,7 +321,7 @@ it('pairs every discrete hearing stimulus with one positioned sound across movem
     observe(
       scenario,
       'roller-door opening enters the positioned noise path',
-      rollerNoise !== undefined && rollerNoise.pos.every((value, i) => value === rollerCenter[i]),
+      rollerNoise?.pos.every((value, i) => value === rollerCenter[i]) ?? false,
     );
     for (const event of ['door_open', 'door_roller_open', 'door_blocked_close', 'door_close']) {
       observe(
