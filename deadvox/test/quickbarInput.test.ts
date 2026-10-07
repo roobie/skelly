@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { HUD_HINTS_HOLD_MS, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { PressHoldInput } from '../src/game/pressHoldInput.ts';
 import { QuickbarInput } from '../src/game/quickbarInput.ts';
@@ -49,6 +50,26 @@ describe('quickbar gesture admission', () => {
     input.keyUp(action, 50 + HUD_HINTS_HOLD_MS * 2);
     expect(toggles).toEqual([action]);
   });
+  it('classifies T release below the authored stance threshold as a tap and the boundary as a drop', () => {
+    const holdMs = BUNDLED_CONTENT.registry.senses.get('player')!.light.throwStanceDropHoldRealSeconds * 1000;
+    const actions: string[] = [];
+    const input = new PressHoldInput<string>({
+      holdDuration: () => holdMs,
+      tap: () => actions.push('stance-toggle'),
+      hold: () => actions.push('drop'),
+    });
+
+    input.keyDown('player.throw', 0);
+    input.update(holdMs - 1);
+    input.keyUp('player.throw', holdMs - 1);
+    expect(actions).toEqual(['stance-toggle']);
+
+    input.keyDown('player.throw', holdMs + 10);
+    input.update(holdMs * 2 + 10);
+    input.keyUp('player.throw', holdMs * 2 + 10);
+    expect(actions).toEqual(['stance-toggle', 'drop']);
+  });
+
   it('cancels a held gesture without dispatching when input is lost', () => {
     const { input, taps, holds } = fixture();
     input.keyDown(0, 0);

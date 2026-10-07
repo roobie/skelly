@@ -28,6 +28,10 @@ const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
 };
+const mouseCharge = async (page) => {
+  await page.mouse.down({ button: 'left' });
+  return async () => page.mouse.up({ button: 'left' });
+};
 const measureGlowstickFloor = async (page, uid, label) => {
   const screenshot = await page.locator('#view canvas').screenshot();
   const artifacts = resolve(projectRoot, 'test-results/primary-action');
@@ -199,6 +203,7 @@ const observationPlugin = {
     initialPlayerPosition: [...session.body.pos],
     getNotice: () => notice,
     isChargingItemThrow: () => itemThrowStartedAt !== undefined,
+    isThrowingStance: () => throwingStance,
     clearNotice: () => showNotice(''),
     clearHand: (side) => {
       const held = inventory.hands[side];
@@ -1005,10 +1010,14 @@ try {
   const throwFixture = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
+    r.clearHand(r.off);
     const glowstick = r.inventory.create('glowstick');
-    r.setHand(r.off, glowstick);
+    const offHandItem = r.inventory.create('glowstick');
+    r.setHand(r.dominant, glowstick);
+    r.setHand(r.off, offHandItem);
     return {
       uid: glowstick.uid,
+      offHandUid: offHandItem.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
       distance: r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres,
@@ -1016,21 +1025,68 @@ try {
       minimumHoldSimSeconds: r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds,
     };
   });
-  const offHandOnlyThrow = await holdAction(page, 'player.throw');
-  await offHandOnlyThrow();
-  const offHandResult = await page.evaluate((uid) => {
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
-    return { location: r.inventory.locate(r.inventory.itemByUid(uid)), expectedSide: r.off };
-  }, throwFixture.uid);
-  assert.equal(offHandResult.location?.kind, 'hand', 'an off-hand item stays held');
-  assert.equal(offHandResult.location?.side, offHandResult.expectedSide, 'T does not throw from the off hand');
-  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount), 0);
+    return r.isThrowingStance() && !document.querySelector('#throw-stance').hidden;
+  });
+  const offHandOnlyThrow = await mouseCharge(page);
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const offHandChargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  await waitForSimulation(
+    page,
+    throwChargeSample,
+    { start: offHandChargeStart, seconds: throwFixture.minimumHoldSimSeconds },
+    {
+      seconds: throwFixture.minimumHoldSimSeconds + 0.1,
+      label: 'off-hand throw reaches its minimum charge',
+      stop: offHandOnlyThrow,
+    },
+  );
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    throwFixture.offHandUid,
+  );
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0), true);
+  assert.equal(
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.isThrowingStance() && r.inventory.hands[r.dominant]?.uid === uid && !r.inventory.hands[r.off];
+    }, throwFixture.uid),
+    true,
+    'a throw prioritizes the off-hand item and leaves the main-hand item held in stance',
+  );
   await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.itemByUid(uid));
+    const offHandDrop = r.inventory.create('glowstick');
+    r.setHand(r.off, offHandDrop);
     r.hudOptions.handling = true;
   }, throwFixture.uid);
-  const meterThrow = await holdAction(page, 'player.throw');
+  const holdToDrop = await holdAction(page, 'player.throw');
+  const droppedOffHandUid = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return r.inventory.hands[r.off]?.uid;
+  });
+  await page.waitForFunction(
+    (uid) =>
+      globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind ===
+      'pile',
+    droppedOffHandUid,
+  );
+  await holdToDrop();
+  assert.equal(
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return r.inventory.hands[r.dominant]?.uid === uid;
+    }, throwFixture.uid),
+    throwFixture.uid,
+    'holding T drops the off-hand item before leaving the main-hand item held',
+  );
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.isThrowingStance()), true);
+  const meterThrow = await mouseCharge(page);
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
     const root = document.querySelector('#handling');
@@ -1080,10 +1136,29 @@ try {
     'hand',
     'right-click cancellation hides the throw meter without releasing the item',
   );
+  const stanceCancelThrow = await mouseCharge(page);
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !(r.isThrowingStance() || r.isChargingItemThrow());
+  });
+  await stanceCancelThrow();
+  assert.equal(
+    await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
+      throwFixture.uid,
+    ),
+    'hand',
+    'tapping T exits stance and cancels the active charge without throwing',
+  );
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
   await page.evaluate(() => {
     globalThis.primaryActionTest.hudOptions.handling = true;
   });
-  const interruptedThrow = await holdAction(page, 'player.throw');
+  const interruptedThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   assert.equal(
     await page.evaluate((uid) => Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)?.on), throwFixture.uid),
@@ -1104,7 +1179,7 @@ try {
     'knockout cancels an active item throw',
   );
   await interruptedThrow();
-  const rejectedThrow = await holdAction(page, 'player.throw');
+  const rejectedThrow = await mouseCharge(page);
   assert.equal(
     await page.evaluate(() => globalThis.primaryActionTest.isChargingItemThrow()),
     false,
@@ -1134,7 +1209,7 @@ try {
     body.advance(body.tuning.knockoutSimSeconds);
   });
   await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.body.unconscious);
-  const cancelThrow = await holdAction(page, 'player.throw');
+  const cancelThrow = await mouseCharge(page);
   await page.mouse.down({ button: 'right' });
   await cancelThrow();
   await page.mouse.up({ button: 'right' });
@@ -1145,7 +1220,7 @@ try {
     throwFixture.uid,
   );
   const shortStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
-  const shortRelease = await holdAction(page, 'player.throw');
+  const shortRelease = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   await waitForSimulation(
     page,
@@ -1176,7 +1251,7 @@ try {
     return r.survival.use(r.inventory.itemByUid(uid));
   }, throwFixture.uid);
   assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
-  const releaseThrow = await holdAction(page, 'player.throw');
+  const releaseThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   await waitForSimulation(
@@ -1210,6 +1285,7 @@ try {
   }, throwFixture.uid);
   assert.equal(thrownGlowstick.on, true, 'the thrown glowstick stays lit');
   assert.equal(thrownGlowstick.sameInstance, true, 'the same glowstick instance lands in the pile');
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.isThrowingStance()), false);
   const thrown = await page.evaluate(({ uid, start, blockSize }) => {
     const r = globalThis.primaryActionTest;
     const location = r.inventory.locate(r.inventory.itemByUid(uid));
@@ -1248,6 +1324,7 @@ try {
     }
     const firearm = r.inventory.create(definition.id);
     const shell = r.inventory.create(cartridge.id);
+    const spareShell = r.inventory.create(cartridge.id);
     r.setHand(r.dominant, firearm);
     r.setHand(r.off, shell);
     const { SHELL_LOAD_SECONDS } = await import(moduleUrl);
@@ -1262,8 +1339,10 @@ try {
     if (!firearmState?.tube?.length) {
       throw new Error('Firearm throw fixture did not load its ammunition');
     }
+    r.setHand(r.off, spareShell);
     return {
       uid: firearm.uid,
+      spareShellUid: spareShell.uid,
       modelId: definition.model,
       firearmState,
       start: [...r.session.body.pos],
@@ -1271,7 +1350,36 @@ try {
       chargeSimSeconds: registry.senses.get('player').light.throwChargeSimSeconds,
     };
   }, firearmHandlingModule);
-  const releaseFirearmThrow = await holdAction(page, 'player.throw');
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  const chargeSpareShell = await mouseCharge(page);
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const blockedReload = await holdAction(page, 'firearm.reload');
+  const reloadPressAt = await page.evaluate(() => performance.now());
+  await page.waitForFunction((started) => performance.now() - started >= 300, reloadPressAt);
+  assert.equal(
+    await page.evaluate((uid) => {
+      const r = globalThis.primaryActionTest;
+      return !(r.session.queue.busy || r.session.firearms.busy) && r.inventory.hands[r.off]?.uid === uid;
+    }, loadedFirearm.spareShellUid),
+    true,
+    'R during an active throw charge starts no reload job and remains unqueued',
+  );
+  await page.mouse.down({ button: 'right' });
+  await page.waitForFunction(() => !globalThis.primaryActionTest.isChargingItemThrow());
+  await page.mouse.up({ button: 'right' });
+  await chargeSpareShell();
+  await blockedReload();
+  assert.equal(
+    await page.evaluate(() => !globalThis.primaryActionTest.session.queue.busy),
+    true,
+    'an R press consumed during charging is not deferred until charge cancellation',
+  );
+  const reloadAfterCancel = await holdAction(page, 'firearm.reload');
+  await page.waitForFunction(() => globalThis.primaryActionTest.session.queue.busy);
+  await reloadAfterCancel();
+  await page.evaluate(() => globalThis.primaryActionTest.clearHand(globalThis.primaryActionTest.off));
+  const releaseFirearmThrow = await mouseCharge(page);
   const firearmThrowStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
   await waitForSimulation(
     page,
@@ -1362,12 +1470,14 @@ try {
     },
     { magazineUrl: magazineModule, optionsUrl: optionsModule },
   );
-  const releaseRifleThrow = await holdAction(page, 'player.throw');
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  const releaseRifleThrow = await mouseCharge(page);
   const throwWait = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     return { handling: r.session.queue.busy, charging: r.isChargingItemThrow() };
   });
-  assert.equal(throwWait.handling, true, 'rifle rack is still being handled when T is pressed');
+  assert.equal(throwWait.handling, true, 'rifle rack is still being handled when mouse-1 is pressed');
   assert.equal(throwWait.charging, false, 'throw charge waits for the rifle rack to finish');
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;

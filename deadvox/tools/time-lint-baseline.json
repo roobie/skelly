@@ -220,7 +220,7 @@
       "cooldown": 1,
       "duration": 1,
       "elapsed": 1,
-      "holdDuration": 1,
+      "holdDuration": 2,
       "recordSnapshotDuration": 1,
       "setTimeOfDay": 1,
       "simTime": 1,

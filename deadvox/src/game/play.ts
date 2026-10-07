@@ -80,7 +80,7 @@ import { firearmHandlingFor } from './firearmHandling.ts';
 import { FirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
 import { adjustLookPitch, Input } from './input.ts';
-import { type InputCommand, type InputContext, keyboardInput, labelForAction } from './inputBindings.ts';
+import { type InputCommand, type InputContext, keyboardInput } from './inputBindings.ts';
 import {
   encodeInputReplay,
   InputReplayRecorder,
@@ -289,6 +289,7 @@ export const startPlay = (
     throwMaxDistanceMetres,
     throwChargeSimSeconds,
     throwMinimumHoldSimSeconds,
+    throwStanceDropHoldRealSeconds,
     throwArmSpeedMetresPerRealSecond,
     throwArmEnergyJoules,
   } = playerSenseTuning.light;
@@ -298,8 +299,10 @@ export const startPlay = (
     armSpeedMetresPerRealSecond: throwArmSpeedMetresPerRealSecond,
     armEnergyJoules: throwArmEnergyJoules,
   };
+  let throwingStance = false;
   let itemThrowStartedAt: number | undefined;
   let itemThrowItemUid: number | undefined;
+  let itemThrowHand: HandSide | undefined;
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -358,7 +361,7 @@ export const startPlay = (
       return undefined;
     }
     const action = selectPrimaryAction(inventory);
-    if (action.kind !== 'firearm' || registry.items.get(action.item.type)?.firearm?.pump) {
+    if (throwingStance || action.kind !== 'firearm' || registry.items.get(action.item.type)?.firearm?.pump) {
       return undefined;
     }
     return action.item;
@@ -425,6 +428,10 @@ export const startPlay = (
       consumeOffUse: () => input.consumeOffUse(),
       consumeCrouchToggle: () => input.consumeCrouchToggle(),
       useDominant: () => {
+        if (throwingStance) {
+          beginItemThrow();
+          return;
+        }
         // Build-mode canvas clicks belong exclusively to the block editor, not the held-item action.
         const action = selectPrimaryAction(inventory);
         if (
@@ -434,6 +441,12 @@ export const startPlay = (
         }
       },
       heldDominantUse: (time, pressed, triggerHeld) => {
+        if (throwingStance) {
+          if (!triggerHeld && itemThrowItemUid !== undefined) {
+            finishItemThrow();
+          }
+          return;
+        }
         if (sim.body.actionRefusal) {
           firearmTrigger.advance(time, undefined, pressed, triggerHeld);
           if (pressed) {
@@ -1189,6 +1202,11 @@ export const startPlay = (
     quickbarActions.hold(item);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
+  const throwStanceInput = new PressHoldInput<string>({
+    holdDuration: () => throwStanceDropHoldRealSeconds * 1000,
+    tap: () => toggleThrowingStance(),
+    hold: () => dropHeldItemForThrowingStance(),
+  });
   const hintToggleInput = new PressHoldInput<string>({
     holdDuration: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
     tap: () => undefined,
@@ -1202,6 +1220,7 @@ export const startPlay = (
   });
   globalThis.addEventListener('blur', () => {
     quickbarInput.cancel();
+    throwStanceInput.cancel();
     hintToggleInput.cancel();
   });
 
@@ -1214,7 +1233,8 @@ export const startPlay = (
       sim.paused ||
       sim.dead ||
       sim.body.actionRefusal ||
-      debugTools?.buildOn
+      debugTools?.buildOn ||
+      itemThrowStartedAt !== undefined
     ) {
       return;
     }
@@ -1277,6 +1297,7 @@ export const startPlay = (
   keyboardInput.cancelled = (preservePointer) => {
     input.cancel(preservePointer);
     cancelItemThrow();
+    throwStanceInput.cancel();
     quickbarInput.cancel();
     hintToggleInput.cancel();
   };
@@ -1335,7 +1356,7 @@ export const startPlay = (
         withUnlockedInput(() => input.requestCrouchToggle());
         break;
       case 'player.throw':
-        withUnlockedInput(() => beginItemThrow());
+        withUnlockedInput(() => throwStanceInput.keyDown(action, at));
         break;
       case 'hand.use-off':
         if (!replayPlayer) {
@@ -1370,7 +1391,7 @@ export const startPlay = (
       input.reload.keyUp(at);
     }
     if (action === 'player.throw') {
-      finishItemThrow();
+      throwStanceInput.keyUp(action, at);
     }
     if (slot !== undefined) {
       quickbarInput.keyUp(slot, at);
@@ -1399,6 +1420,7 @@ export const startPlay = (
   };
   const cancelHeldInput = (): void => {
     input.reload.cancel();
+    throwStanceInput.cancel();
     quickbarInput.cancel();
   };
   const rejectRefusedInput = (): boolean => {
@@ -1487,12 +1509,20 @@ export const startPlay = (
         reloadBinding()?.remove();
         return true;
       case 'item.throw': {
-        const item = inventory.hands[dominantSide(inventory.character)];
+        const hand = throwHandPriority();
+        const item = inventory.hands[hand];
         if (item && action.value !== undefined) {
-          throwHeldItem(item, action.value);
+          throwHeldItem(item, hand, action.value);
+          syncThrowingStance();
         }
         return true;
       }
+      case 'throw.stance.toggle':
+        toggleThrowingStance();
+        return true;
+      case 'item.drop':
+        dropHeldItemForThrowingStance();
+        return true;
       case 'item.throw.cancel':
         cancelItemThrow();
         return true;
@@ -1612,6 +1642,54 @@ export const startPlay = (
     useTarget(entity);
   }
 
+  function throwHandPriority(): HandSide {
+    const off = offSide(inventory.character);
+    return inventory.hands[off] ? off : dominantSide(inventory.character);
+  }
+
+  function toggleThrowingStance(): void {
+    throwingStance = !throwingStance;
+    automaticFireUid = undefined;
+    if (!replayPlayer) {
+      inputRecorder?.queueAction('throw.stance.toggle', 'down', inputContext());
+    }
+    if (!throwingStance) {
+      cancelItemThrow();
+    }
+    syncThrowingStance();
+  }
+
+  function syncThrowingStance(): void {
+    if (throwingStance && !inventory.hands.right && !inventory.hands.left) {
+      throwingStance = false;
+      cancelItemThrow();
+    }
+  }
+
+  function dropHeldItemForThrowingStance(): void {
+    if (sim.body.actionRefusal) {
+      showRefusal(sim.body.actionRefusal, sim.time);
+      return;
+    }
+    const hand = throwHandPriority();
+    const item = inventory.hands[hand];
+    if (!item) {
+      return;
+    }
+    const result = inventory.move(item, { kind: 'pile', pos: feet() });
+    if (!result.ok) {
+      showRefusal(`Can't drop it: ${result.reason}`, sim.time);
+      return;
+    }
+    if (!replayPlayer) {
+      inputRecorder?.queueAction('item.drop', 'down', inputContext());
+    }
+    if (itemThrowItemUid === item.uid) {
+      cancelItemThrow();
+    }
+    syncThrowingStance();
+  }
+
   function beginItemThrow(): void {
     const refusal = sim.body.actionRefusal;
     if (refusal) {
@@ -1621,11 +1699,12 @@ export const startPlay = (
     if (itemThrowStartedAt !== undefined || itemThrowItemUid !== undefined) {
       return;
     }
-    const item = inventory.hands[dominantSide(inventory.character)];
+    const hand = throwHandPriority();
+    const item = inventory.hands[hand];
     if (!item) {
-      showRefusal('Nothing in your primary hand to throw', sim.time);
       return;
     }
+    itemThrowHand = hand;
     itemThrowItemUid = item.uid;
     if (queue.busy || firearms.busy) {
       showNotice('Waiting for handling to finish');
@@ -1644,6 +1723,7 @@ export const startPlay = (
     }
     const heldSimSeconds = Math.max(0, sim.time - itemThrowStartedAt);
     const uid = itemThrowItemUid;
+    const hand = itemThrowHand;
     cancelItemThrow();
     if (input.consumeRightMousePressed() || input.rightMouseHeld) {
       dispatchScreenCommand({ kind: 'item.throw.cancel' });
@@ -1654,43 +1734,45 @@ export const startPlay = (
       return;
     }
     const item = inventory.itemByUid(uid);
-    if (!(item && inventory.hands[dominantSide(inventory.character)] === item)) {
+    if (!(item && hand && inventory.hands[hand] === item)) {
       return;
     }
     const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
     if (!replayPlayer) {
       inputRecorder?.queueAction('item.throw', 'down', inputContext(), distance);
     }
-    throwHeldItem(item, distance);
+    throwHeldItem(item, hand, distance);
+    syncThrowingStance();
   }
 
   function cancelItemThrow(): void {
     itemThrowStartedAt = undefined;
     itemThrowItemUid = undefined;
+    itemThrowHand = undefined;
   }
 
   function advancePendingItemThrow(): void {
     if (itemThrowItemUid === undefined || itemThrowStartedAt !== undefined) {
       return;
     }
-    if (!keyboardInput.held('player.throw')) {
+    if (!input.dominantUseHeld) {
       cancelItemThrow();
       return;
     }
     if (sim.paused || queue.busy || firearms.busy) {
       return;
     }
-    if (inventory.hands[dominantSide(inventory.character)]?.uid !== itemThrowItemUid) {
+    if (itemThrowHand === undefined || inventory.hands[itemThrowHand]?.uid !== itemThrowItemUid) {
       cancelItemThrow();
-      showRefusal('The item left your primary hand before the throw began', sim.time);
+      showRefusal('The item left your hand before the throw began', sim.time);
       return;
     }
     itemThrowStartedAt = sim.time;
     showNotice('');
   }
 
-  function throwHeldItem(item: Item, distanceMetres: number): void {
-    if (inventory.hands[dominantSide(inventory.character)] !== item) {
+  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
+    if (inventory.hands[hand] !== item) {
       return;
     }
     const target = itemLandingTarget(distanceMetres);
@@ -1704,7 +1786,7 @@ export const startPlay = (
       return;
     }
     const location = inventory.locate(item);
-    if (location?.kind !== 'hand' || !inventory.consume(item)) {
+    if (location?.kind !== 'hand' || location.side !== hand || !inventory.consume(item)) {
       return;
     }
     if (!inventory.add(item, target)) {
@@ -2025,6 +2107,9 @@ export const startPlay = (
   let meshingQueueMs = 0;
 
   const displayCalendar = (): number => sim.calendar;
+  const throwStanceCueVisible = (): boolean =>
+    throwingStance && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
+
   const statusView = (): PlayStatus => ({
     calendar: displayCalendar(),
     speed: compression.c,
@@ -2049,9 +2134,7 @@ export const startPlay = (
         pending: streamer.pending,
         looking: [
           looking,
-          ...(visible.interaction && itemThrowStartedAt !== undefined
-            ? [`${labelForAction('player.throw')} held · right-click cancels`]
-            : []),
+          ...(visible.interaction && itemThrowStartedAt !== undefined ? ['Mouse-1 held · right-click cancels'] : []),
         ]
           .filter(Boolean)
           .join(' · '),
@@ -2389,6 +2472,7 @@ export const startPlay = (
     } else {
       quickbarInput.update(now);
     }
+    throwStanceInput.update(now);
     hintToggleInput.update(now);
   };
 
@@ -2410,6 +2494,7 @@ export const startPlay = (
     mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
     advancePendingItemThrow();
+    syncThrowingStance();
     caseEffects.update(dt, engine.isSolid);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;
@@ -2460,6 +2545,7 @@ export const startPlay = (
 
     const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     debugTools?.setCrosshairVisible(visible.crosshair);
+    $('throw-stance').hidden = !throwStanceCueVisible();
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {

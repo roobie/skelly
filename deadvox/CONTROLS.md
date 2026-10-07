@@ -244,9 +244,11 @@ blocking”. See [SLICE-3.md](SLICE-3.md), 3.1,
 `src/game/inputBindings.ts` describes the mouse actions, while the registry owns
 keyboard bindings.
 
-## Held-item throw
+## Throwing stance
 
-**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. **BR, 2026-10-07 14:27:** “It requires to be held 1 second before throwing”. T is the rebindable `player.throw` action; it throws the primary-hand item and never falls back to the off hand. The minimum is measured in simulation time. With no rack or magazine job active, range grows from the initial press to the charged maximum. If T is pressed during either job, the throw waits until it finishes before charging; releasing while it waits cancels the throw. A shorter release throws nothing, and right-click cancels. Item weight limits range through the one item-range function; BR later approved a range reduction by weight. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginItemThrow` and `finishItemThrow`.
+BR, 2026-10-07 23:44: “press-and-hold mouse-1 to charge up a throw / And press-and-hold T after 0.5 seconds would drop currently held item(s) prioritizing offhand then if it's empty, main hand”. BR approved the proposal at 23:49:21: “yes, on the throwing question: as proposed.” Tap T to toggle throwing stance; holding it through the authored real-time threshold drops one held item, choosing off hand before dominant hand, without toggling. T keeps its separate inventory quick-move role. In stance, hold mouse-1 to charge and release to throw; the off-hand item takes priority, mouse-1 never fires a firearm, and right mouse cancels a charge. The stance remains after a throw while either hand is occupied and ends when both are empty. T tap exits and cancels an active charge.
+
+BR answered br-27 on 2026-10-07 23:50:34: “The job can't start while a throw is charging: release or cancel the throw first”. R therefore starts no reload, rack or magazine removal during charge; that press is ignored, not queued, and R works normally after charge release or cancellation. See `src/content/base/senses.json`, `throwStanceDropHoldRealSeconds`, `src/game/pressHoldInput.ts`, `PressHoldInput`, `src/game/play.ts`, `toggleThrowingStance`, `beginItemThrow`, `finishItemThrow`, and `reloadBinding`.
 
 ## Remaining questions
 
