@@ -815,9 +815,9 @@ const templateShambler = Object.fromEntries(
 const templateShamblerSoundIds = new Set(
   Object.values((templateShambler as { sounds?: Record<string, string> }).sounds ?? {}),
 );
-const templateSoundDefinitions = (
-  (base.find(({ source }) => source === 'sounds.json')!.data as { sounds: { id: string }[] }).sounds
-).filter(({ id }) => templateShamblerSoundIds.has(id));
+const templateSoundDefinitions = (base.find(({ source }) => source === 'sounds.json')!.data as {
+  sounds: { id: string }[];
+}).sounds.filter(({ id }) => templateShamblerSoundIds.has(id));
 const templateBase = [
   { source: 'template-blocks.json', data: { blocks: [{ id: 'brick', name: 'Brick', color: '#ffffff', solid: true }] } },
   {
