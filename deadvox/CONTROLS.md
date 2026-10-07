@@ -192,8 +192,9 @@ screen use. BR asked on 2026-10-06:
 Inventory and crafting screen actions therefore carry UID-based command payloads through
 the shared dispatcher; see `applyReplayActionPayload` in `src/game/replayCommands.ts`,
 `InventoryScreen` in `src/ui/inventoryScreen.ts`, and `startPlay` in `src/game/play.ts`.
-Replay export refuses debug firearm-handling values that differ from content; the slider
-values are not replay identity. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
+Replay export stays disabled after any firearm-handling slider is used in a session, even if
+set back to content values: using a slider means the session no longer uses content handling,
+and a reload clears the override. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
 The replay rationale remains in [SLICE-3.md](SLICE-3.md), 3.10. See `INPUT_BINDINGS` in
 `src/game/inputBindings.ts` for the debug export and import actions, `InputReplayRecorder`
 and `replayStateFingerprint` in `src/game/inputReplay.ts`.

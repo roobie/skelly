@@ -995,8 +995,14 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(capture(source)));
   });
 
-  it('refuses export when the session reports firearm-handling overrides', () => {
-    const { session } = createRuntime();
+  it('replay export allows an unmodified held gun but refuses any per-type override', () => {
+    const { session, inventory } = createRuntime();
+    const backpack = inventory.hands.right!;
+    const flashlight = inventory.hands.left!;
+    expect(inventory.move(backpack, { kind: 'worn' }).ok).toBe(true);
+    expect(inventory.move(flashlight, { kind: 'pocket', owner: backpack, pocket: 0 }).ok).toBe(true);
+    const heldGun = inventory.create('pump_shotgun');
+    expect(inventory.add(heldGun, { kind: 'hand', side: 'right' })).toBe(true);
     const content = session.firearmsSkillZeroHandling;
     let encoded = false;
     const exportReplay = () =>
@@ -1024,9 +1030,28 @@ describe('input replay', () => {
     expect(() => exportReplay()).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
     expect(encoded).toBe(false);
     session.setFirearmsSkillZeroHandling(content);
-    expect(session.hasFirearmHandlingOverrides()).toBe(false);
-    expect(exportReplay()).toEqual(new Uint8Array([1]));
-    expect(encoded).toBe(true);
+    expect(session.hasFirearmHandlingOverrides()).toBe(true);
+    expect(() => exportReplay()).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
+
+    const unheldRuntime = createRuntime();
+    const unheldGun = unheldRuntime.inventory.create('debug_rifle_ak');
+    expect(unheldRuntime.inventory.add(unheldGun, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    const unheldContent = unheldRuntime.session.firearms.skillZeroHandlingFor(unheldGun.uid);
+    expect(
+      unheldRuntime.session.firearms.setSkillZeroHandlingFor(unheldGun.uid, {
+        ...unheldContent,
+        singleShot: { ...unheldContent.singleShot, variance: unheldContent.singleShot.variance + 1 },
+      }),
+    ).toBe(true);
+    expect(unheldRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
+    let unheldEncoded = false;
+    expect(() =>
+      withReplayExportGuard(unheldRuntime.session.hasFirearmHandlingOverrides(), () => {
+        unheldEncoded = true;
+        return new Uint8Array([1]);
+      }),
+    ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
+    expect(unheldEncoded).toBe(false);
   });
 
   it('rejects a replay whose embedded start save has an incompatible simulation identity', async () => {

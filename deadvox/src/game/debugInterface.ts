@@ -50,6 +50,7 @@ export interface DebugHooks {
     readonly import: (bytes: Uint8Array) => void;
   };
   readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
+  readonly firearmsSkillZeroTarget: () => string | undefined;
   readonly setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling) => void;
 }
 
