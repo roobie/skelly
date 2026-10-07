@@ -108,11 +108,11 @@ describe('content', () => {
       skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
     };
     const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
-    firearms.reloadDurationFloor = 1.1;
-    firearms.rackDurationHalfLifeLevels = 0;
+    firearms.reloadFactorFloor = 1.1;
+    firearms.rackFactorHalfLifeLevels = 0;
     const { issues } = buildRegistry([{ source: source.source, data }]);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.reloadDurationFloor'))).toBe(true);
-    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackDurationHalfLifeLevels'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.reloadFactorFloor'))).toBe(true);
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackFactorHalfLifeLevels'))).toBe(true);
   });
 
   it('rejects incomplete per-firearm skill-zero factors', () => {
