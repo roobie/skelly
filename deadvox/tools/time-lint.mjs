@@ -26,8 +26,7 @@ const isUnitToken = (tokens, index) => {
   }
   return (
     ['second', 'minute', 'hour'].includes(token) &&
-    (tokens[index - 1] === 'per' ||
-      (CLOCK_TOKENS.has(tokens[index - 1]) && tokens[index - 2] === 'per'))
+    (tokens[index - 1] === 'per' || (CLOCK_TOKENS.has(tokens[index - 1]) && tokens[index - 2] === 'per'))
   );
 };
 const hasTemporalName = (name) => {

@@ -66,7 +66,10 @@ describe('live craft commands', () => {
     r.sim.scheduler.advance(Math.ceil(work.duration / r.sim.clock.ratio) + 1);
 
     expect(awards).toEqual(
-      Object.keys(recipe.skills).map((skill) => ({ skill, amount: recipe.timeGameMinutes / 60 })),
+      Object.keys(recipe.skills).map((skill) => ({
+        skill,
+        amount: recipe.timeGameMinutes / 60,
+      })),
     );
   });
 
