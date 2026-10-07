@@ -32,7 +32,7 @@ const makeFixture = () => {
   const model = registry.models.get(modelId)!;
   const attachmentType = [...registry.items.values()].find((candidate) => {
     const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
-    return attachmentModel?.attachment?.id === 'foregrip';
+    return attachmentModel?.attachment?.kind === 'foregrip';
   })!.id;
   const inventory = new Inventory(registry);
   const firearm = inventory.create(firearmType);
@@ -157,6 +157,48 @@ describe('certified firearm fitting', () => {
       expect(fixture.firearm.slots?.[slot]).toBeUndefined();
       expect(fixture.inventory.locate(fixture.foregrip)?.kind).toBe('pile');
     }
+  });
+
+  it('keeps an unconfigured variable-power optic out of fitting', () => {
+    const fixture = makeFixture();
+    const optic = [...fixture.registry.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : fixture.registry.models.get(item.model);
+      const range = model?.attachment?.properties.magnification;
+      return (
+        model?.attachment?.kind === 'optic' &&
+        range !== undefined &&
+        range.min < range.max &&
+        item.opticMagnification === undefined
+      );
+    });
+    if (!optic) {
+      throw new Error('Fixture registry needs an unconfigured variable-power optic');
+    }
+    const opticModel = fixture.registry.models.get(optic.model!)!;
+    const firearmSlot = fixture.model.attachmentSlots!.find(({ id }) =>
+      fixture.model.compatibility?.[id]?.includes(opticModel.attachment!.id),
+    );
+    if (!firearmSlot) {
+      throw new Error('Fixture firearm needs a compatible optic slot');
+    }
+    if (fixture.firearm.slots?.[firearmSlot.id]) {
+      fixture.inventory.fitSlot(fixture.firearm, firearmSlot.id, undefined);
+    }
+    const thermal = fixture.inventory.create(optic.id);
+    const queue = new HandlingQueue(fixture.inventory);
+    const handling = new FirearmAttachmentHandling(fixture.inventory, queue, () => [0, 0, 0]);
+    if (
+      !(
+        fixture.inventory.add(fixture.firearm, { kind: 'hand', side: 'right' }) &&
+        fixture.inventory.add(thermal, { kind: 'pile', pos: [0, 0, 0] })
+      )
+    ) {
+      throw new Error('Fixture items could not be placed for optic handling');
+    }
+
+    expect(handling.candidates(fixture.firearm.uid, firearmSlot.id)).not.toContain(thermal);
+    expect(handling.fit(fixture.firearm.uid, firearmSlot.id, thermal.uid)).toBe('This optic has no supported view');
+    expect(queue.jobs).toHaveLength(0);
   });
 
   it('rejects two fitted rail footprints that overlap', () => {

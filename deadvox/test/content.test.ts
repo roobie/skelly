@@ -82,6 +82,14 @@ describe('content', () => {
     }
   });
 
+  it('keeps the thermal optic out of every loot table', () => {
+    expect(
+      [...baseRegistry.loot.values()].some((table) =>
+        table.entries.some((entry) => entry.item === 'optic_digital_thermal'),
+      ),
+    ).toBe(false);
+  });
+
   it('rejects a non-positive firearms skill-zero handling value', () => {
     const source = base.find((file) => file.source === 'recipes.json')!;
     const data = structuredClone(source.data) as {

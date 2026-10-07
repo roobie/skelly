@@ -22,7 +22,8 @@
       "category": "misc",
       "weight": 900,
       "size": [2, 2],
-      "model": "optic_high_mag_5_25x"
+      "model": "optic_high_mag_5_25x",
+      "opticMagnification": 10
     },
     {
       "id": "optic_holographic",
@@ -38,7 +39,8 @@
       "category": "misc",
       "weight": 520,
       "size": [2, 2],
-      "model": "optic_lpvo_1_6x"
+      "model": "optic_lpvo_1_6x",
+      "opticMagnification": 3
     },
     {
       "id": "optic_mini_reflex",

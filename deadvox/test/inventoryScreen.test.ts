@@ -219,6 +219,28 @@ describe('inventory screen Lit rendering', () => {
     }
   });
 
+  it('shows the reason when a firearm fit is refused', () => {
+    const test = setup();
+    const firearm = test.inv.create('rifle_assault');
+    if (!test.inv.add(firearm, { kind: 'pile', pos: [0, 0, 0] })) {
+      throw new Error('Fixture firearm could not be placed');
+    }
+    const reason = 'Fit refused: the attachment no longer has a rail certificate';
+    test.hooks.dispatch = (payload) => (payload.kind === 'firearm.attachment.fit' ? reason : undefined);
+    test.screen.selected = firearm;
+    test.screen.update();
+
+    const fit = test.root.querySelector<HTMLButtonElement>('.inv-details [data-attachment-slot] button.inv-option');
+    if (!fit) {
+      throw new Error('Fixture firearm did not render a fit action');
+    }
+    fit.click();
+
+    expect(test.refusals).toEqual([reason]);
+    expect(test.notices).toEqual([]);
+    expect(test.queue.jobs).toHaveLength(0);
+  });
+
   it('refuses inventory actions while unconscious and permits them after waking', () => {
     const { screen, queue, body, beans, refusals } = setup();
     screen.selected = beans;

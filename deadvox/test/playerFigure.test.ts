@@ -20,6 +20,7 @@ import { HOLD } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
@@ -89,6 +90,82 @@ describe('held light presentation', () => {
     });
     expect(visibleBody, `${id} in ${side} hand`).toBe(true);
     expect(flame, `${id} in ${side} hand`).toBe(definition.light!.burning?.ignition === 'firestarter');
+    held.dispose();
+  });
+});
+
+describe('optic lens presentation', () => {
+  it('carries the mounted optic export into the ADS lens frame', () => {
+    const inventory = new Inventory(registry);
+    const firearm = inventory.create('rifle_assault');
+    if (!inventory.add(firearm, { kind: 'hand', side: 'right' })) {
+      throw new Error('Fixture firearm could not be held');
+    }
+    const optic = Object.values(firearm.slots ?? {}).find((item) => {
+      const definition = registry.items.get(item.type);
+      const model = definition?.model === undefined ? undefined : registry.models.get(definition.model);
+      return model?.attachment?.kind === 'optic';
+    });
+    if (!optic) {
+      throw new Error('Fixture firearm needs a mounted optic');
+    }
+    const definition = registry.items.get(optic.type)!;
+    const model = registry.models.get(definition.model!)!;
+    const expected = opticViewSettings(definition, model);
+    if (!expected) {
+      throw new Error('Fixture optic needs a supported view');
+    }
+    const held = new HeldItems(inventory, undefined, palette);
+    const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
+    const handling = { firearms: [], readiness: { uid: firearm.uid, progress: 1, aimingDownSights: true } } as const;
+    held.update(camera, undefined, 0, handling);
+    const settled = held.opticLensFrame;
+    held.update(camera, undefined, 0.5, handling);
+    const recoiling = held.opticLensFrame;
+
+    expect(settled).toMatchObject(expected);
+    expect(settled?.radius.every((radius) => radius > 0)).toBe(true);
+    expect(recoiling?.center).not.toEqual(settled?.center);
+    held.dispose();
+  });
+
+  it('does not hide or render an unconfigured thermal optic in ADS', () => {
+    const inventory = new Inventory(registry);
+    const firearm = inventory.create('rifle_assault');
+    const firearmDefinition = registry.items.get(firearm.type)!;
+    const firearmModel = registry.models.get(firearmDefinition.model!)!;
+    const opticDefinition = registry.items.get('optic_digital_thermal')!;
+    const opticModel = registry.models.get(opticDefinition.model!)!;
+    const slot = firearmModel.attachmentSlots!.find(({ id }) =>
+      firearmModel.compatibility?.[id]?.includes(opticModel.attachment!.id),
+    );
+    if (!slot) {
+      throw new Error('Fixture firearm needs a thermal-compatible rail');
+    }
+    if (firearm.slots?.[slot.id]) {
+      inventory.fitSlot(firearm, slot.id, undefined);
+    }
+    inventory.registry.models.set(opticDefinition.model!, {
+      ...opticModel,
+      attachment: {
+        ...opticModel.attachment!,
+        properties: { ...opticModel.attachment!.properties, railSpanNotches: { minOffset: 0, maxOffset: 0 } },
+      },
+    });
+    const thermal = inventory.create(opticDefinition.id);
+    inventory.fitSlot(firearm, slot.id, thermal);
+    if (!inventory.add(firearm, { kind: 'hand', side: 'right' })) {
+      throw new Error('Fixture firearm could not be held');
+    }
+    const held = new HeldItems(inventory, undefined, palette);
+    held.update(new PerspectiveCamera(75, 16 / 9, 0.05, 128), undefined, 0, {
+      firearms: [],
+      readiness: { uid: firearm.uid, progress: 1, aimingDownSights: true },
+    });
+    const { shown } = held as unknown as { shown: Map<number, Group> };
+
+    expect(held.opticLensFrame).toBeUndefined();
+    expect(shown.get(firearm.uid)?.visible).toBe(true);
     held.dispose();
   });
 });

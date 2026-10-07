@@ -4,6 +4,7 @@ import type { HandlingQueue } from '../core/handling.ts';
 import { HANDLING, type Inventory, type Location, type Target } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { slotsReason } from '../core/magazine.ts';
+import { opticViewSettings } from '../core/opticView.ts';
 import { stowTarget } from '../core/options.ts';
 
 const ATTACHMENT_ACTION = 'firearm.attachment';
@@ -62,8 +63,16 @@ export class FirearmAttachmentHandling {
     if (firearm.slots?.[slotId]) {
       return 'That slot is occupied';
     }
-    if (!attachmentIdFor(this.inventory.registry, attachment)) {
+    const attachmentId = attachmentIdFor(this.inventory.registry, attachment);
+    if (!attachmentId) {
       return 'Item is not an exported firearm attachment';
+    }
+    const attachmentDefinition = defOf(this.inventory.registry, attachment.type);
+    const attachmentModel = attachmentDefinition.model
+      ? this.inventory.registry.models.get(attachmentDefinition.model)
+      : undefined;
+    if (attachmentModel?.attachment?.kind === 'optic' && !opticViewSettings(attachmentDefinition, attachmentModel)) {
+      return 'This optic has no supported view';
     }
     return slotsReason(this.inventory.registry, firearm.type, { ...firearm.slots, [slotId]: attachment });
   }

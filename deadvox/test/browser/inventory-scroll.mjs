@@ -42,6 +42,7 @@ import { Inventory } from '/src/core/inventory.ts';
 import { BODY_REGIONS, Body } from '/src/core/body.ts';
 import { HandlingQueue } from '/src/core/handling.ts';
 import { FirearmAttachmentHandling } from '/src/game/firearmAttachmentHandling.ts';
+import { InputReplayRecorder } from '/src/game/inputReplay.ts';
 import { bindReach } from '/src/core/reach.ts';
 import { InventoryScreen } from '/src/ui/inventoryScreen.ts';
 import { mountMenuPointer } from '/src/ui/menuPointer.ts';
@@ -95,6 +96,7 @@ const firearmQueue = new HandlingQueue(firearmInventory);
 const firearmHandling = new FirearmAttachmentHandling(firearmInventory, firearmQueue, () => [0, 0, 0]);
 const firearmNotices = [];
 const firearmDispatches = [];
+const replayRecorder = new InputReplayRecorder({});
 const rifle = firearmInventory.create('rifle_assault');
 const rifleModelId = firearmRegistry.items.get(rifle.type).model;
 const rifleModel = firearmRegistry.models.get(rifleModelId);
@@ -112,6 +114,7 @@ const firearmScreen = new InventoryScreen(document.querySelector('#firearm-inven
   feet: () => [0, 0, 0], nearby: () => [...firearmInventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0,
   dispatch: (payload) => {
+    replayRecorder.queueAction(payload.kind, 'down', 'inventory', payload);
     firearmDispatches.push(payload);
     return payload.kind === 'firearm.attachment.fit'
       ? firearmHandling.fit(payload.firearmUid, payload.slotId, payload.attachmentUid)
@@ -305,6 +308,9 @@ try {
   assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
   const fit = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentAction());
   process.stdout.write(`${engine}: attachment action control ${JSON.stringify(fit)}\n`);
+  await page.locator('#view').evaluate((view) => {
+    view.style.pointerEvents = 'none';
+  });
   await page.locator(fit.selector).click();
   await page.evaluate((queuedBefore) => globalThis.scrollFixture.finishAttachmentFit(queuedBefore), fit.queuedBefore);
   const remove = await page.evaluate(() => globalThis.scrollFixture.prepareAttachmentRemove());

@@ -197,18 +197,14 @@ describe('fitted attachment model frames', () => {
     if (!optic) {
       throw new Error('Exported firearm has no default optic');
     }
-    const attachmentModelId = registry.items.get('optic_lpvo_1_6x')?.model;
-    if (!attachmentModelId) {
-      throw new Error('Default optic item has no exported model');
-    }
     const mount = firearm.attachmentSlots!.find(({ id }) => id === optic.mountedAt)!;
     const look = itemLook(registry, new Inventory(registry).create('rifle_assault'))!;
     const slot = look.slots.find(({ slot: id }) => id === optic.mountedAt)!;
-    if (slot.model !== attachmentModelId || !slot.mountFrame) {
+    if (!(slot.model && slot.mountFrame)) {
       throw new Error('Default optic look is incomplete');
     }
     const gunScene = (await parseGlb(readFileSync(`${BASE}/${firearm.file}`))).scene;
-    const opticScene = (await parseGlb(readFileSync(`${BASE}/${registry.models.get(attachmentModelId)!.file}`))).scene;
+    const opticScene = (await parseGlb(readFileSync(`${BASE}/${registry.models.get(slot.model)!.file}`))).scene;
     const { held } = prepareModel(firearm, gunScene);
     const modelFrame = held.children[0]!.children[0]!;
     const fitted = fittedPartFrame(slot).add(opticScene);
@@ -220,7 +216,7 @@ describe('fitted attachment model frames', () => {
       .sub(modelFrame.localToWorld(new Vector3()))
       .normalize();
     const tube = new Vector3(1, 0, 0).transformDirection(opticScene.matrixWorld);
-    expect(Math.abs(tube.dot(bore))).toBeCloseTo(1, 6);
+    expect(tube.dot(bore)).toBeCloseTo(1, 6);
 
     const railNormal = modelFrame
       .localToWorld(new Vector3(...mount.direction))

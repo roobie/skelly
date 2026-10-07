@@ -418,7 +418,6 @@
         { "item": "magazine_stanag_30", "weight": 2 },
         { "item": "magazine_akm_30", "weight": 2 },
         { "item": "foregrip", "weight": 1 },
-        { "item": "optic_digital_thermal", "weight": 1 },
         { "item": "optic_fixed_prism_4x", "weight": 1 },
         { "item": "optic_high_mag_5_25x", "weight": 1 },
         { "item": "optic_holographic", "weight": 1 },

@@ -48,11 +48,15 @@ import {
   targetColorScale,
   VIGNETTE,
 } from '../core/mood.ts';
+import type { OpticLensFrame, ReticleKind } from '../core/opticView.ts';
 import type { Sky } from '../core/sky.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
 import { DrawPass } from './drawPass.ts';
 import { heightFogUniforms } from './heightFog.ts';
 import { toneKeyOf } from './look.ts';
+import { OpticLensRenderer, opticLensPass } from './opticLens.ts';
+
+const RETICLE_UNIFORM: Record<ReticleKind, number> = { dot: 0, crosshair: 1, chevron: 2 };
 
 /** MSAA samples of the scene target; the default framebuffer's `antialias: true` doesn't reach a composer. */
 const MSAA_SAMPLES = 4;
@@ -135,6 +139,8 @@ export class Mood {
   private readonly crackColor = new Color();
   private composer: EffectComposer | undefined;
   private readonly drawPass = new DrawPass();
+  private readonly opticLens = new OpticLensRenderer();
+  private opticPass: ShaderPass | undefined;
   private bloomPass: UnrealBloomPass | undefined;
   private gradePass: ShaderPass | undefined;
 
@@ -229,7 +235,7 @@ export class Mood {
    * Draws the frame. `drawHands` draws the held items on top of the scene: into the post chain
    * when post is on, onto the screen when it's off.
    */
-  render(drawHands: () => void): void {
+  render(drawHands: () => void, opticFrame?: OpticLensFrame): void {
     // Crack check: only the clear colour changes (the fog on geometry keeps the sky colour), so
     // magenta shows exactly where no geometry covered the sample. Post-on scales it like the sky.
     const { background } = this.scene;
@@ -241,7 +247,10 @@ export class Mood {
       this.scene.background = this.crackColor;
     }
     try {
-      this.draw(drawHands);
+      if (opticFrame) {
+        this.opticLens.prepare(this.renderer, this.scene, this.camera, opticFrame);
+      }
+      this.draw(drawHands, opticFrame);
     } finally {
       this.scene.background = background;
     }
@@ -256,8 +265,8 @@ export class Mood {
     this.crackOn = on;
   }
 
-  private draw(drawHands: () => void): void {
-    if (!this.state.post) {
+  private draw(drawHands: () => void, opticFrame?: OpticLensFrame): void {
+    if (!(this.state.post || opticFrame)) {
       const { renderer } = this;
       const chosen = renderer.toneMapping;
       renderer.toneMapping = screenToneMapping(chosen);
@@ -271,6 +280,7 @@ export class Mood {
     }
     const composer = this.ensureComposer();
     this.drawPass.draw = drawHands;
+    this.updateOpticPass(opticFrame);
     // A new seed each frame animates the grain; any irrational-ish step will do.
     this.frame = (this.frame + 1) % 4096;
     this.gradePass!.uniforms.uSeed!.value = (this.frame * 97.31) % 1000;
@@ -300,6 +310,20 @@ export class Mood {
       }
       mist.copy(savedMist);
     }
+  }
+
+  private updateOpticPass(frame: OpticLensFrame | undefined): void {
+    const opticPass = this.opticPass!;
+    opticPass.enabled = frame !== undefined;
+    if (!frame) {
+      return;
+    }
+    const { uniforms } = opticPass;
+    uniforms.uZoomTexture!.value = this.opticLens.texture;
+    uniforms.uZoomActive!.value = frame.magnification > 1 ? 1 : 0;
+    uniforms.uLensCenter!.value.set(...frame.center);
+    uniforms.uLensRadius!.value.set(...frame.radius);
+    uniforms.uReticleKind!.value = frame.reticleKind === undefined ? -1 : RETICLE_UNIFORM[frame.reticleKind];
   }
 
   /**
@@ -402,6 +426,9 @@ export class Mood {
     const composer = new EffectComposer(this.renderer, target);
     composer.addPass(new RenderPass(this.scene, this.camera));
     composer.addPass(this.drawPass);
+    this.opticPass = opticLensPass();
+    this.opticPass.enabled = false;
+    composer.addPass(this.opticPass);
     // UnrealBloomPass runs its blur chain from half of this resolution down.
     this.bloomPass = new UnrealBloomPass(
       new Vector2(this.width, this.height),

@@ -403,6 +403,8 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
+  opticMagnification: optional(Positive),
   /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
   firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** One authored/global lock id; no per-placement key payload. */
