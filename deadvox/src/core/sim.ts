@@ -294,17 +294,17 @@ export class Simulation {
     return advanced;
   }
 
-  /** Advances a replay by fixed simulation time without consulting wall-clock compression. */
-  frameReplay(simDt: number): number {
+  /** Advances one replay step in Real time, scaled by the recorded compression. */
+  frameReplay(realSeconds: number): number {
     if (this.paused || this.dead) {
       return 0;
     }
-    if (!Number.isFinite(simDt) || simDt < 0) {
+    if (!Number.isFinite(realSeconds) || realSeconds < 0) {
       throw new Error('Invalid replay step');
     }
     this.checkInterruptions();
     const { c } = this.compression;
-    const dt = Math.min(simDt * c, this.compression.limits.maxSimPerFrame);
+    const dt = Math.min(realSeconds * c, this.compression.limits.maxSimPerFrame);
     const hadAction = this.actions.job !== undefined;
     const advanced = this.scheduler.advance(
       dt,

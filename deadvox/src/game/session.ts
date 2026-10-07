@@ -188,6 +188,8 @@ export interface SessionOptions {
   terrainFloor?: (x: number, z: number) => number;
   /** Whether the world under (x, z), in blocks, is loaded enough to stand on. */
   ready: (x: number, z: number) => boolean;
+  /** Optional replayed terrain readiness used only to classify zombie tiers. */
+  zombieReady?: ((x: number, z: number) => boolean) | undefined;
   controls: SessionControls;
   audio: SessionAudio;
   /** A message that isn't an interruption, such as a completion notice. */
@@ -345,6 +347,8 @@ const restorePlayerSessionLatches = (player: ReturnType<typeof restorePlayer> | 
   firearmReadyWalking: player?.firearmReadyWalking ?? false,
   handlingPausedForKnockout: player?.handlingPausedForKnockout ?? false,
 });
+
+const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? options.ready;
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
@@ -667,7 +671,7 @@ export const createSession = (options: SessionOptions) => {
   const zombieSystem = new ZombieSystem({
     store: zombieStore,
     seed: sim.seed,
-    isLoaded: options.ready,
+    isLoaded: zombieReadinessFor(options),
     terrainFloor: options.terrainFloor,
     isSolid,
     isOpaque: options.isOpaque,
@@ -1135,7 +1139,7 @@ export const createSession = (options: SessionOptions) => {
         inventory.furnish(spec, loot);
       }
       if (site) {
-        spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem, calendar: sim.calendar });
+        spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem });
       }
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),
@@ -1177,9 +1181,9 @@ export const createSession = (options: SessionOptions) => {
         }
       }
     },
-    frameReplay: (simDt: number): void => {
+    frameReplay: (realSeconds: number): void => {
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
-      rest.frameReplay(simDt);
+      rest.frameReplay(realSeconds);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
           playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
