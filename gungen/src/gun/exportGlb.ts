@@ -18,12 +18,12 @@ import {
   type AttachmentMetadata,
   type AttachmentSlotMetadata,
   attachmentMetadata,
+  attachmentMountSlot,
   attachmentSlots,
 } from './attachments.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
 import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
-import type { MountKind } from './mounts.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
@@ -246,21 +246,6 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
     eyeReliefMetres: eyeReliefU * resolved.domain.units.metresPerUnit,
     ...(optic ? { ocularDiameterMetres: optic.ocularOpeningDiameterU * resolved.domain.units.metresPerUnit } : {}),
   };
-};
-
-const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKind): string | undefined => {
-  for (const { conn, from, to } of resolved.connections) {
-    if (from.part === partId) {
-      if (from.port.gender === 'male' && from.port.mount === mount && to.port.gender === 'female') {
-        return `${to.part}.${to.port.id}.0`;
-      }
-      continue;
-    }
-    if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
-      return `${from.part}.${from.port.id}.${conn.slot ?? 0}`;
-    }
-  }
-  return undefined;
 };
 
 const attachmentData = (resolved: Resolved): (AttachmentMetadata & { node: string; mountedAt: string })[] =>

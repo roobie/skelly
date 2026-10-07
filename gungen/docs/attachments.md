@@ -24,14 +24,16 @@ treatment as the real suppressor. This geometry follows BR's rulings for
 >
 > 2026-10-07 10:59: “also, the improvised suppressor must be larger - even larger and more unwieldy than the real suppressor”
 
-`attachmentCompatibilityPairs` certifies every geometry-clear pair of single-fit
-choices at distinct slots, including dynamic fits beside installed defaults. Each
+`src/gun/attachmentCompatibility.ts`, `attachmentCompatibilityPairs`, certifies
+every geometry-clear pair of single-fit choices at distinct slots, including
+dynamic fits beside installed defaults. Each
 choice must already pass its port and optic-support/loading-clearance rules alone;
 the pair check then tests pair-dependent solid overlap and keep-out on both placed
 choices. A pair is allowed only when both singles and their pair are certified;
-absence denies, and the present list is complete. The checks are pairwise, so no
-triple certificate is needed. Deadvox separately enforces rail-notch ownership and
-overlap. Attachment
+absence denies, and the present list is complete. Solid overlap and keep-out are
+relations between two parts, so a set of three attachments conflicts only if at
+least one of its pairs conflicts; no triple certificate is needed. Deadvox separately enforces rail-notch
+ownership and overlap. Attachment
 `massKg` is a model fact, not Deadvox inventory `weight`; d118 owns deriving or
 validating item weight against this single source.
 

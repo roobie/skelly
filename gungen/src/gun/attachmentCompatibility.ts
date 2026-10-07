@@ -9,7 +9,7 @@ import {
 } from '../core/rules.ts';
 import type { Assembly, Domain, PartDef } from '../core/schema.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
-import { ATTACHMENT_IDS, type AttachmentSlotMetadata, attachmentMetadata } from './attachments.ts';
+import { ATTACHMENT_IDS, type AttachmentSlotMetadata, attachmentMetadata, attachmentMountSlot } from './attachments.ts';
 import { gunDomain } from './domain.ts';
 import { mountCanAccept } from './mounts.ts';
 import { getOptic } from './optics.ts';
@@ -243,23 +243,11 @@ const slotConnection = (slot: AttachmentSlotMetadata, partId: string) => {
 const mountedSlot = (
   resolved: Resolved,
   partId: string,
-  mount: string,
+  mount: AttachmentSlotMetadata['mount'],
   slots: readonly AttachmentSlotMetadata[],
 ): AttachmentSlotMetadata | undefined => {
-  for (const { conn, from, to } of resolved.connections) {
-    if (
-      from.part === partId &&
-      from.port.gender === 'male' &&
-      from.port.mount === mount &&
-      to.port.gender === 'female'
-    ) {
-      return slots.find(({ id }) => id === `${to.part}.${to.port.id}.0`);
-    }
-    if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
-      return slots.find(({ id }) => id === `${from.part}.${from.port.id}.${conn.slot ?? 0}`);
-    }
-  }
-  return undefined;
+  const id = attachmentMountSlot(resolved, partId, mount);
+  return id ? slots.find((slot) => slot.id === id) : undefined;
 };
 
 interface FittedDefault {

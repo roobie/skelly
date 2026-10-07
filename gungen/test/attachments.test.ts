@@ -8,6 +8,7 @@ import { localSolidBounds } from '../src/core/geometry.ts';
 import { partNodeName } from '../src/core/glb.ts';
 import { applyPoint } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
+import { keepOutBetweenParts, solidOverlapBetweenParts } from '../src/core/rules.ts';
 import type { Assembly, Domain, PartDef, PartFamily, PortDef } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { AK_MAGAZINE_CALIBRE_BY_VARIANT, AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
@@ -17,6 +18,7 @@ import { attachmentMassKg } from '../src/gun/attachmentMass.ts';
 import {
   ATTACHMENT_IDS,
   type AttachmentMetadata,
+  type AttachmentSlotMetadata,
   attachmentMetadata,
   attachmentSlots,
 } from '../src/gun/attachments.ts';
@@ -85,6 +87,157 @@ const pairFixture = (withInstalledDefault = false) => {
   const compatibility = attachmentCompatibility(assembly, slots, domain);
   const pairs = attachmentCompatibilityPairs(assembly, slots, compatibility, domain);
   return { assembly, domain, slots, compatibility, pairs };
+};
+
+const sightlinePairFixture = () => {
+  const receiver: PartFamily = {
+    name: 'receiver',
+    params: {},
+    build: () => ({
+      family: 'receiver',
+      ports: [
+        {
+          id: 'rail',
+          mount: 'rail-top',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [0, 1, 0],
+          up: [1, 0, 0],
+          slots: { count: 31, pitch: 2 },
+        },
+      ],
+      solids: [{ id: 'receiver-fixture-body', kind: 'box', box: { center: [27, -2, 0], half: [43, 2, 3] } }],
+      keepOuts: [],
+      axes: [],
+    }),
+  };
+  const domain: Domain = { ...gunDomain, families: { ...gunDomain.families, receiver } };
+  const assembly: Assembly = {
+    name: 'optic-sightline-pair-fixture',
+    root: 'receiver',
+    parts: { receiver: { family: receiver.name, params: {} } },
+    connections: [],
+  };
+  const slots = attachmentSlots(resolve(assembly, domain));
+  const compatibility = attachmentCompatibility(assembly, slots, domain);
+  const topRailSlots = slots.filter(({ mount }) => mount === 'rail-top');
+  const slotAtNotch = (notch: number) => topRailSlots.find((slot) => slot.notchIndex === notch);
+  const closeFirst = slotAtNotch(2);
+  const closeSecond = slotAtNotch(12);
+  const clearSecond = slotAtNotch(27);
+  if (!(closeFirst && closeSecond && clearSecond)) {
+    throw new Error('Sightline fixture did not expose its near and far notches');
+  }
+  const nearOpticId = 'optic-mini-reflex';
+  const farOpticId = 'optic-digital-thermal';
+  const singles: Readonly<Record<string, readonly string[]>> = {
+    [closeFirst.id]: compatibility[closeFirst.id]?.filter((id) => id === nearOpticId) ?? [],
+    [closeSecond.id]: compatibility[closeSecond.id]?.filter((id) => id === farOpticId) ?? [],
+    [clearSecond.id]: compatibility[clearSecond.id]?.filter((id) => id === farOpticId) ?? [],
+  };
+  const certifiedChoices = [
+    singles[closeFirst.id]?.includes(nearOpticId),
+    singles[closeSecond.id]?.includes(farOpticId),
+    singles[clearSecond.id]?.includes(farOpticId),
+  ];
+  if (certifiedChoices.some((certified) => !certified)) {
+    throw new Error(`Sightline fixture does not certify each optic single: ${JSON.stringify(singles)}`);
+  }
+  const pairs = attachmentCompatibilityPairs(assembly, slots, singles, domain);
+  const pairAssembly = (firstSlot: AttachmentSlotMetadata, secondSlot: AttachmentSlotMetadata): Assembly => ({
+    ...assembly,
+    parts: {
+      ...assembly.parts,
+      opticNear: { family: 'sight', params: { type: 'mini-reflex' } },
+      opticFar: { family: 'sight', params: { type: 'digital-thermal' } },
+    },
+    connections: [
+      {
+        from: 'receiver.rail',
+        to: 'opticNear.base',
+        ...(firstSlot.notchIndex === undefined ? {} : { slot: firstSlot.notchIndex }),
+      },
+      {
+        from: 'receiver.rail',
+        to: 'opticFar.base',
+        ...(secondSlot.notchIndex === undefined ? {} : { slot: secondSlot.notchIndex }),
+      },
+    ],
+  });
+  const closeResolved = resolve(pairAssembly(closeFirst, closeSecond), domain);
+  const clearResolved = resolve(pairAssembly(closeFirst, clearSecond), domain);
+  const closeKeepOutIssues = keepOutBetweenParts(closeResolved, 'opticNear', 'opticFar');
+  return {
+    closePair: orderedPair([closeFirst.id, nearOpticId], [closeSecond.id, farOpticId]),
+    clearPair: orderedPair([closeFirst.id, nearOpticId], [clearSecond.id, farOpticId]),
+    pairs,
+    closeSolidIssues: solidOverlapBetweenParts(closeResolved, 'opticNear', 'opticFar'),
+    closeKeepOutIssues,
+    clearKeepOutIssues: keepOutBetweenParts(clearResolved, 'opticNear', 'opticFar'),
+  };
+};
+
+const singleObstructionFixture = (obstructionKind: 'solid' | 'keep-out') => {
+  const params = {
+    action: 'auto',
+    feed: 'box',
+    section: 'ar',
+    bore: 'M',
+    rail: 'full',
+    chargingHandle: 'side',
+    boltHandle: 'rest',
+    carrierPattern: 'auto',
+    handleStyle: 'auto',
+    boltHandleProfile: 'standard',
+    magazineWell: 'standard',
+  };
+  const receiverFamily = FAMILIES.receiver;
+  if (!receiverFamily) {
+    throw new Error('Receiver family is missing');
+  }
+  const originalReceiver = receiverFamily.build(params);
+  const rail = originalReceiver.ports.find(({ id }) => id === 'rail');
+  if (!(rail?.slots && rail.mount === 'rail-top')) {
+    throw new Error('Fixture receiver has no top rail');
+  }
+  const blockedIndex = 2;
+  const clearIndex = 5;
+  const blockedX = rail.pos[0] + rail.up[0] * blockedIndex * rail.slots.pitch;
+  const obstructedReceiver: PartFamily = {
+    ...receiverFamily,
+    build: (fixtureParams) => {
+      const receiver = receiverFamily.build(fixtureParams);
+      const obstructionBox = {
+        center: [blockedX, rail.pos[1] + 1.5, 0] as const,
+        half: [2, 1.5, 2] as const,
+      };
+      return obstructionKind === 'solid'
+        ? {
+            ...receiver,
+            solids: [...receiver.solids, { id: 'fixture-optic-obstruction', kind: 'box', box: obstructionBox }],
+          }
+        : {
+            ...receiver,
+            keepOuts: [
+              ...receiver.keepOuts,
+              { id: 'fixture-optic-obstruction', kind: 'fixture obstruction', box: obstructionBox },
+            ],
+          };
+    },
+  };
+  const fixtureDomain: Domain = {
+    ...gunDomain,
+    families: { ...gunDomain.families, receiver: obstructedReceiver },
+  };
+  const assembly: Assembly = {
+    name: `attachment-compatibility-${obstructionKind}-obstruction-fixture`,
+    root: 'receiver',
+    parts: { receiver: { family: 'receiver', params } },
+    connections: [],
+  };
+  const slots = attachmentSlots(resolve(assembly, fixtureDomain));
+  const compatibility = attachmentCompatibility(assembly, slots, fixtureDomain);
+  return { rail, blockedIndex, clearIndex, slots, compatibility };
 };
 
 const compareText = (a: string, b: string): number => {
@@ -372,67 +525,24 @@ describe('attachment parts and export metadata', () => {
     expect(fittedOptic?.massKg).toBe(standalone.modelEntry.attachment?.massKg);
   });
 
-  it('rejects a candidate at an obstructed slot while certifying the same mount at a clear slot', () => {
-    const params = {
-      action: 'auto',
-      feed: 'box',
-      section: 'ar',
-      bore: 'M',
-      rail: 'full',
-      chargingHandle: 'side',
-      boltHandle: 'rest',
-      carrierPattern: 'auto',
-      handleStyle: 'auto',
-      boltHandleProfile: 'standard',
-      magazineWell: 'standard',
-    };
-    const receiverFamily = FAMILIES.receiver;
-    if (!receiverFamily) {
-      throw new Error('Receiver family is missing');
+  it('rejects a candidate at a solid-obstructed slot while certifying the same mount at a clear slot', () => {
+    const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture('solid');
+    const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
+    const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
+    const optic = OPTIC_CATALOG['mini-reflex'];
+    if (!(blocked && clear && optic)) {
+      throw new Error('Fixture did not produce both optic slots');
     }
-    const originalReceiver = receiverFamily.build(params);
-    const rail = originalReceiver.ports.find(({ id }) => id === 'rail');
-    if (!(rail?.slots && rail.mount === 'rail-top')) {
-      throw new Error('Fixture receiver has no top rail');
-    }
-    const blockedIndex = 2;
-    const clearIndex = 5;
-    const blockedX = rail.pos[0] + rail.up[0] * blockedIndex * rail.slots.pitch;
-    const obstructedReceiver: PartFamily = {
-      ...receiverFamily,
-      build: (fixtureParams) => {
-        const receiver = receiverFamily.build(fixtureParams);
-        return {
-          ...receiver,
-          solids: [
-            ...receiver.solids,
-            {
-              id: 'fixture-optic-obstruction',
-              kind: 'box',
-              box: {
-                center: [blockedX, rail.pos[1] + 1.5, 0] as const,
-                half: [2, 1.5, 2] as const,
-              },
-            },
-          ],
-        };
-      },
-    };
-    const fixtureDomain: Domain = {
-      ...gunDomain,
-      families: { ...gunDomain.families, receiver: obstructedReceiver },
-    };
-    const assembly: Assembly = {
-      name: 'attachment-compatibility-obstruction-fixture',
-      root: 'receiver',
-      parts: { receiver: { family: 'receiver', params } },
-      connections: [],
-    };
-    const resolved = resolve(assembly, fixtureDomain);
-    const slots = attachmentSlots(resolved);
-    const compatibility = attachmentCompatibility(assembly, slots, fixtureDomain);
-    const blocked = slots.find(({ id }) => id === `receiver.rail.${blockedIndex}`);
-    const clear = slots.find(({ id }) => id === `receiver.rail.${clearIndex}`);
+    expect(mountCanAccept(rail, optic.mount, blockedIndex)).toBe(true);
+    expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
+    expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
+    expect(compatibility[clear.id]).toContain('optic-mini-reflex');
+  });
+
+  it('rejects a candidate in a keep-out at one slot while certifying it at a clear slot', () => {
+    const { rail, blockedIndex, clearIndex, slots, compatibility } = singleObstructionFixture('keep-out');
+    const blocked = slots.find(({ notchIndex }) => notchIndex === blockedIndex);
+    const clear = slots.find(({ notchIndex }) => notchIndex === clearIndex);
     const optic = OPTIC_CATALOG['mini-reflex'];
     if (!(blocked && clear && optic)) {
       throw new Error('Fixture did not produce both optic slots');
@@ -460,6 +570,16 @@ describe('attachment parts and export metadata', () => {
     expect(compatibility[blockedLeft.id]).toContain(sharedId);
     expect(compatibility[blockedRight.id]).toContain(sharedId);
     expect(pairs).not.toContainEqual(blockedPair);
+    expect(pairs).toContainEqual(clearPair);
+  });
+
+  it('rejects an optic pair whose sightline keep-out contains its partner without solid overlap', () => {
+    const { closePair, clearPair, pairs, closeSolidIssues, closeKeepOutIssues, clearKeepOutIssues } =
+      sightlinePairFixture();
+    expect(closeSolidIssues).toEqual([]);
+    expect(closeKeepOutIssues.length).toBeGreaterThan(0);
+    expect(clearKeepOutIssues).toEqual([]);
+    expect(pairs).not.toContainEqual(closePair);
     expect(pairs).toContainEqual(clearPair);
   });
 
