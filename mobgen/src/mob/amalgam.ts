@@ -14,7 +14,7 @@ const memberParam = (member: number, param: string): string => `member.${member}
 const MEMBER_PARAM_ORDER = AMALGAM_MEMBER_IDS.flatMap((member) =>
   HUMANOID_PARAM_ORDER.map((param) => memberParam(member, param)),
 );
-export const AMALGAM_PARAM_ORDER = [...MEMBER_PARAM_ORDER, 'height', 'headScale'];
+const AMALGAM_PARAM_ORDER = [...MEMBER_PARAM_ORDER, 'height', 'headScale'];
 
 export const AMALGAM_SUPPORT_BONES = AMALGAM_MEMBER_IDS.flatMap((member) =>
   (['L', 'R'] as const).map((side) => memberBone(member, `foot.${side}`)),
@@ -165,13 +165,13 @@ registerBodyPlan('amalgam', {
   woundBones: WOUND_BONES,
 });
 
-export interface AmalgamRegion {
+interface AmalgamRegion {
   readonly id: string;
   readonly partId: string;
   readonly boneIds: readonly string[];
 }
 
-export interface AmalgamPart {
+interface AmalgamPart {
   readonly id: string;
   readonly rootBone: string;
   readonly boneIds: readonly string[];
@@ -181,7 +181,7 @@ export interface AmalgamPart {
   readonly capabilityIds: readonly string[];
 }
 
-export interface AmalgamManifest {
+interface AmalgamManifest {
   readonly parts: readonly AmalgamPart[];
   readonly regions: readonly AmalgamRegion[];
   readonly headBoneIds: readonly string[];
