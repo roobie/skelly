@@ -873,13 +873,15 @@ const translateCrawlerBodyToGround = (body: Body, size: number, seed: number): B
   const offset = -groundIndex * size;
   const translate = ([x, y, z]: Vec3): Vec3 => [x, y + offset, z];
   const features = body.features.map((feature) => {
-    const shape = feature.shape;
+    const { shape } = feature;
     switch (shape.kind) {
       case 'capsule':
         return { ...feature, shape: { ...shape, a: translate(shape.a), b: translate(shape.b) } };
       case 'ellipsoid':
       case 'box':
         return { ...feature, shape: { ...shape, center: translate(shape.center) } };
+      default:
+        throw new Error('unsupported crawler shape');
     }
   });
   return {

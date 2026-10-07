@@ -589,7 +589,7 @@ const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
     groundGroup.position.z = gridZ;
     return;
   }
-  if (!current.walkActor || !current.params || !current.legGeometry) {
+  if (!(current.walkActor && current.params && current.legGeometry)) {
     return;
   }
   clock = advanceClock(clock, speed * dt, {
