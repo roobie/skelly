@@ -1,3 +1,4 @@
+// biome-ignore-all lint/suspicious/noMisplacedAssertion: shared property assertions are called only by tests.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -70,6 +71,68 @@ const furnitureAt = ({ building, override }: OverridePlacement): string | undefi
     compileTemplate(result.registry, template).pieces.find((piece) => piece.pos.join(',') === override.at.join(','))
       ?.furniture
   );
+};
+
+const expectCampHqProperties = (compiledArmoury: CompiledTemplate): void => {
+  const hqBuilding = layout.buildings.find(({ template }) => template === 'camp_hq')!;
+  const armouryBuilding = layout.buildings.find(({ template }) => template === 'camp_armoury')!;
+  const hqDefinition = result.registry.templates.get(hqBuilding.template)!;
+  const hqBounds = buildingBounds(hqBuilding, hqDefinition.size);
+  const armouryBounds = buildingBounds(armouryBuilding, compiledArmoury.size);
+  expect(hqBounds.z1).toBe(armouryBounds.z0);
+  expect(Math.min(hqBounds.x1, armouryBounds.x1)).toBeGreaterThan(Math.max(hqBounds.x0, armouryBounds.x0));
+  const fenceRects = layout.buildings
+    .filter(({ template }) => template === 'camp_fence_run')
+    .map((building) => buildingBounds(building, result.registry.templates.get(building.template)!.size));
+  expect(fenceRects.length).toBeGreaterThan(0);
+  const fenceBounds = {
+    x0: Math.min(...fenceRects.map(({ x0 }) => x0)),
+    z0: Math.min(...fenceRects.map(({ z0 }) => z0)),
+    x1: Math.max(...fenceRects.map(({ x1 }) => x1)),
+    z1: Math.max(...fenceRects.map(({ z1 }) => z1)),
+  };
+  const { entrance } = hqDefinition.access!;
+  const entranceWorld: [number, number] = [
+    hqBuilding.position[0] + entrance[0] * 0.5,
+    hqBuilding.position[2] + entrance[2] * 0.5,
+  ];
+  expect(entranceWorld[0]).toBeGreaterThan(fenceBounds.x0);
+  expect(entranceWorld[0]).toBeLessThan(fenceBounds.x1);
+  expect(entranceWorld[1]).toBeGreaterThan(fenceBounds.z0);
+  expect(entranceWorld[1]).toBeLessThan(fenceBounds.z1);
+
+  const compiledHq = compileTemplate(result.registry, hqDefinition);
+  expect(hqDefinition.military).toBe(true);
+  expect(compiledHq.pieces.some((piece) => piece.loot === 'military_armoury')).toBe(false);
+  expect(hqDefinition.access?.storeys.length).toBeGreaterThanOrEqual(3);
+  expect(templateSpatialIssues(result.registry, compiledHq)).toEqual([]);
+  const hqReachable = templateReachableStandingPositions(result.registry, compiledHq);
+  for (const floor of hqDefinition.access!.storeys) {
+    expect(
+      hqReachable.some(([, feet]) => feet === floor.floor),
+      `${floor.id} floor is reachable on foot`,
+    ).toBe(true);
+  }
+  const hqGround = hqDefinition.access!.storeys.find(({ id }) => id === hqDefinition.access!.ground)!;
+  expect(
+    hqReachable.some(
+      ([x, feet, z]) =>
+        feet === hqGround.floor && (x <= 1 || x >= compiledHq.size[0] - 1 || z <= 1 || z >= compiledHq.size[2] - 1),
+    ),
+  ).toBe(true);
+
+  const hqDoors = compiledHq.pieces.filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
+  expect(hqDoors.every((piece) => piece.pos[2] + piece.size[2] < compiledHq.size[2])).toBe(true);
+  const sharedWallSolid = (template: CompiledTemplate, x: number, y: number, z: number): boolean => {
+    const index = x + template.size[0] * (z + template.size[2] * y);
+    return result.registry.blocks[template.blocks[index]!]?.solid === true;
+  };
+  for (let x = 0; x < compiledHq.size[0]; x++) {
+    for (let y = 1; y < compiledArmoury.size[1]; y++) {
+      expect(sharedWallSolid(compiledHq, x, y, compiledHq.size[2] - 1)).toBe(true);
+      expect(sharedWallSolid(compiledArmoury, x, y, 0)).toBe(true);
+    }
+  }
 };
 
 const withTestEntrance = (template: CompiledTemplate, target: readonly [number, number, number]): CompiledTemplate => {
@@ -482,6 +545,31 @@ describe('authored fixed loot', () => {
     expect(result.registry.furniture.get('container_door')?.door?.prying).toBeDefined();
     expect(compiledArmoury.pieces.some((piece) => piece.furniture === 'camp_closing_note')).toBe(true);
     expect(compiledArmoury.spawns).toEqual([]);
+
+    expectCampHqProperties(compiledArmoury);
+  });
+
+  it('lets a player walk from inside every placed sandbag post to the compound', () => {
+    const posts = layout.buildings.filter(({ template }) => template === 'camp_sandbag_post');
+    expect(posts.length).toBeGreaterThan(0);
+    const definition = result.registry.templates.get('camp_sandbag_post')!;
+    const post = compileTemplate(result.registry, definition);
+    expect(templateSpatialIssues(result.registry, post)).toEqual([]);
+    const [width, , depth] = post.size;
+    for (const placement of posts) {
+      expect(templateSpatialIssues(result.registry, post), `${placement.template} at ${placement.position}`).toEqual(
+        [],
+      );
+      const reachable = templateReachableStandingPositions(result.registry, post);
+      expect(
+        reachable.some(
+          ([x, feet, z]) =>
+            feet === post.access?.storeys.find(({ id }) => id === post.access?.ground)?.floor &&
+            (x <= 1 || x >= width - 1 || z <= 1 || z >= depth - 1),
+        ),
+        `${placement.template} at ${placement.position} has a reachable exit`,
+      ).toBe(true);
+    }
   });
 
   it('keeps every fixed-loot container reachable from outside at standing height', () => {
@@ -619,9 +707,15 @@ describe('authored fixed loot', () => {
     ).toBe(true);
     const campSite = new AuthoredSite(73, result.registry, scale, layout);
     const campSpawnMarkers = layout.buildings.flatMap((building, index) =>
-      ['camp_command_tent', 'camp_tent'].includes(building.template) ? placedSpawns(campSite.placements[index]!) : [],
+      ['camp_command_tent', 'camp_tent', 'camp_hq'].includes(building.template)
+        ? placedSpawns(campSite.placements[index]!)
+        : [],
     );
     expect(campSpawnMarkers.length).toBeGreaterThan(0);
+    const hqIndex = layout.buildings.findIndex(({ template }) => template === 'camp_hq');
+    const hqThreats = placedSpawns(campSite.placements[hqIndex]!);
+    expect(hqThreats.length).toBeGreaterThan(0);
+    expect(hqThreats.every(({ chance }) => chance < 1)).toBe(true);
     expect(
       campSpawnMarkers.every(({ pos: [x, , z] }) => {
         const worldX = x * scale.blockSize;

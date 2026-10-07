@@ -349,66 +349,330 @@
           "fixedLoot": [
             {
               "at": [4, 1, 20],
-              "items": [{ "item": "antiseptic", "count": 1 }, { "item": "pharmacy_key", "count": 1 }]
+              "items": [
+                {
+                  "item": "antiseptic",
+                  "count": 1
+                },
+                {
+                  "item": "pharmacy_key",
+                  "count": 1
+                }
+              ]
             },
-            { "at": [25, 1, 3], "items": [{ "item": "antibiotics", "count": 1 }] },
-            { "at": [3, 1, 10], "items": [{ "item": "medical_research_log", "count": 1 }] },
-            { "at": [12, 1, 1], "items": [{ "item": "camp_armoury_key", "count": 1 }] }
+            {
+              "at": [25, 1, 3],
+              "items": [
+                {
+                  "item": "antibiotics",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "at": [3, 1, 10],
+              "items": [
+                {
+                  "item": "medical_research_log",
+                  "count": 1
+                }
+              ]
+            },
+            {
+              "at": [12, 1, 1],
+              "items": [
+                {
+                  "item": "camp_armoury_key",
+                  "count": 1
+                }
+              ]
+            }
           ]
         },
-        { "template": "triage_tent", "position": [407, 21, 242], "rotation": 0, "storeys": 1 },
-        { "template": "triage_tent", "position": [436.5, 21, 242], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [402, 21, 230], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [409, 21, 230], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [416, 21, 230], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [423, 21, 230], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [430, 21, 230], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [437, 21, 230], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [402, 21, 265.5], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [409, 21, 265.5], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [416, 21, 265.5], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [430, 21, 265.5], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [437, 21, 265.5], "rotation": 0, "storeys": 1 },
-        { "template": "rickety_fence", "position": [401.5, 21, 230.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [401.5, 21, 237.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [401.5, 21, 244.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [401.5, 21, 251.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [401.5, 21, 258.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [444, 21, 230.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [444, 21, 237.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [444, 21, 244.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [444, 21, 251.5], "rotation": 90, "storeys": 1 },
-        { "template": "rickety_fence", "position": [444, 21, 258.5], "rotation": 90, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [450, 21, 510], "rotation": 0, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [482, 21, 510], "rotation": 0, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [450, 21, 543], "rotation": 0, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [466, 21, 543], "rotation": 0, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [482, 21, 543], "rotation": 0, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [450, 21, 511], "rotation": 90, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [450, 21, 527], "rotation": 90, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [498, 21, 511], "rotation": 90, "storeys": 1 },
-        { "template": "camp_fence_run", "position": [498, 21, 527], "rotation": 90, "storeys": 1 },
-        { "template": "camp_sandbag_post", "position": [466, 21, 511], "rotation": 0, "storeys": 1 },
-        { "template": "camp_sandbag_post", "position": [478, 21, 511], "rotation": 0, "storeys": 1 },
-        { "template": "camp_sandbag_post", "position": [486, 21, 537], "rotation": 0, "storeys": 1 },
-        { "template": "camp_watchtower", "position": [486, 21, 516], "rotation": 0, "storeys": 1 },
-        { "template": "camp_command_tent", "position": [452, 21, 516], "rotation": 0, "storeys": 1 },
-        { "template": "camp_tent", "position": [452, 21, 525], "rotation": 0, "storeys": 1 },
-        { "template": "camp_container", "position": [452, 21, 533], "rotation": 0, "storeys": 1 },
+        {
+          "template": "triage_tent",
+          "position": [407, 21, 242],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "triage_tent",
+          "position": [436.5, 21, 242],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [402, 21, 230],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [409, 21, 230],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [416, 21, 230],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [423, 21, 230],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [430, 21, 230],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [437, 21, 230],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [402, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [409, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [416, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [430, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [437, 21, 265.5],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [401.5, 21, 230.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [401.5, 21, 237.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [401.5, 21, 244.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [401.5, 21, 251.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [401.5, 21, 258.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [444, 21, 230.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [444, 21, 237.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [444, 21, 244.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [444, 21, 251.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "rickety_fence",
+          "position": [444, 21, 258.5],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [450, 21, 510],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [482, 21, 510],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [450, 21, 543],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [466, 21, 543],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [482, 21, 543],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [450, 21, 511],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [450, 21, 527],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [498, 21, 511],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "camp_fence_run",
+          "position": [498, 21, 527],
+          "rotation": 90,
+          "storeys": 1
+        },
+        {
+          "template": "camp_sandbag_post",
+          "position": [466, 21, 511],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_sandbag_post",
+          "position": [478, 21, 511],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_sandbag_post",
+          "position": [486, 21, 537],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_watchtower",
+          "position": [486, 21, 516],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_command_tent",
+          "position": [452, 21, 516],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_tent",
+          "position": [452, 21, 525],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_container",
+          "position": [452, 21, 533],
+          "rotation": 0,
+          "storeys": 1
+        },
+        {
+          "template": "camp_hq",
+          "position": [470, 21, 520],
+          "rotation": 0,
+          "storeys": 1
+        },
         {
           "template": "camp_armoury",
           "position": [470, 21, 526],
           "rotation": 0,
           "storeys": 1,
           "fixedLoot": [
-            { "at": [3, 1, 3], "items": [{ "item": "rifle_assault", "count": 1 }, { "item": "rifle_ak", "count": 1 }] },
+            {
+              "at": [3, 1, 3],
+              "items": [
+                {
+                  "item": "rifle_assault",
+                  "count": 1
+                },
+                {
+                  "item": "rifle_ak",
+                  "count": 1
+                }
+              ]
+            },
             {
               "at": [7, 1, 5],
-              "items": [{ "item": "magazine_stanag_30", "count": 1 }, { "item": "magazine_akm_30", "count": 1 }]
+              "items": [
+                {
+                  "item": "magazine_stanag_30",
+                  "count": 1
+                },
+                {
+                  "item": "magazine_akm_30",
+                  "count": 1
+                }
+              ]
             },
             {
               "at": [13, 1, 7],
-              "items": [{ "item": "cartridge_5_d_56x45", "count": 15 }, { "item": "cartridge_7_d_62x39", "count": 15 }]
+              "items": [
+                {
+                  "item": "cartridge_5_d_56x45",
+                  "count": 15
+                },
+                {
+                  "item": "cartridge_7_d_62x39",
+                  "count": 15
+                }
+              ]
             }
           ]
         }
@@ -417,42 +681,6 @@
         "position": [92, 21.5, 85],
         "bearing": 330
       },
-      "shamblers": [
-        {
-          "type": "shambler",
-          "position": [196, 21.5, 77],
-          "chance": 1
-        },
-        {
-          "type": "shambler",
-          "position": [354, 30.5, 160],
-          "chance": 1
-        },
-        {
-          "type": "shambler",
-          "position": [203.5, 21.5, 69],
-          "chance": 1
-        },
-        {
-          "type": "shambler",
-          "position": [210, 21.5, 101],
-          "chance": 1
-        },
-        {
-          "type": "shambler",
-          "position": [181, 21.5, 74],
-          "chance": 1,
-          "window": { "fromGameTimeOfDay": "dusk" }
-        },
-        {
-          "type": "shambler",
-          "position": [304, 30.5, 134],
-          "chance": 1,
-          "window": { "fromGameTimeOfDay": "dusk" }
-        },
-        { "type": "runner", "position": [474, 21.5, 505], "chance": 1 },
-        { "type": "runner", "position": [500, 21.5, 534], "chance": 1 }
-      ],
       "woodlands": [
         {
           "polygon": [[48, 12], [150, 12], [152, 51], [48, 54]],
@@ -502,7 +730,55 @@
           "surface": "dirt"
         }
       ],
-      "startTimeGameTimeOfDay": "16:00"
+      "startTimeGameTimeOfDay": "16:00",
+      "shamblers": [
+        {
+          "type": "shambler",
+          "position": [196, 21.5, 77],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [354, 30.5, 160],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [203.5, 21.5, 69],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [210, 21.5, 101],
+          "chance": 1
+        },
+        {
+          "type": "shambler",
+          "position": [181, 21.5, 74],
+          "chance": 1,
+          "window": {
+            "fromGameTimeOfDay": "dusk"
+          }
+        },
+        {
+          "type": "shambler",
+          "position": [304, 30.5, 134],
+          "chance": 1,
+          "window": {
+            "fromGameTimeOfDay": "dusk"
+          }
+        },
+        {
+          "type": "runner",
+          "position": [474, 21.5, 505],
+          "chance": 1
+        },
+        {
+          "type": "runner",
+          "position": [500, 21.5, 534],
+          "chance": 1
+        }
+      ]
     }
   ]
 }
