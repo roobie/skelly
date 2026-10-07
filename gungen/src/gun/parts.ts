@@ -2670,6 +2670,15 @@ const barrel: PartFamily = {
         { id: 'clamp', mount: 'clamp', gender: 'female', pos: [fore, 0, 0], normal: NEG_X, up: Y },
         { id: 'lug', mount: 'lug', gender: 'female', pos: [tubeEnd, -tubeDrop, 0], normal: NEG_X, up: Y },
         ...supportLug,
+        {
+          id: 'bead',
+          mount: 'sight-block',
+          gender: 'female',
+          size: bore,
+          pos: [len - 0.5, r, 0],
+          normal: Y,
+          up: X,
+        },
         { id: 'muzzle', mount: 'muzzle', gender: 'female', pos: [len, 0, 0], normal: X, up: Y },
       ],
       keepOuts: [keepOut('muzzle', [len, -1.5, -1.5], [len + 30, 1.5, 1.5], 'muzzle')],
@@ -2753,7 +2762,31 @@ const frontSight: PartFamily = {
   },
 };
 
-/** A detachable AR front post that clamps to the forward top-rail slot. */
+/** A low-profile front bead attached to the barrel's front sight block. */
+const muzzleBead: PartFamily = {
+  name: 'front-sight-bead',
+  params: {},
+  build(): PartDef {
+    return {
+      family: 'front-sight-bead',
+      solids: [solid('bead', [-0.5, 0, -0.5], [0.5, 1.25, 0.5])],
+      ports: [
+        {
+          id: 'base',
+          mount: 'sight-block',
+          gender: 'male',
+          pos: [0, 0, 0],
+          normal: NEG_Y,
+          up: X,
+          required: true,
+        },
+      ],
+      keepOuts: [],
+      axes: [{ kind: 'sight', origin: [0, 1.25, 0], dir: X }],
+    };
+  },
+};
+
 const railFrontSight: PartFamily = {
   name: 'rail-front-sight',
   params: {
@@ -4078,6 +4111,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   barrel,
   'ak-muzzle-device': akMuzzleDevice,
   'front-sight': frontSight,
+  'front-sight-bead': muzzleBead,
   'rail-front-sight': railFrontSight,
   'gas-cylinder': gasCylinder,
   'gas-block': gasBlock,

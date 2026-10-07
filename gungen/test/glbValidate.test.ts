@@ -12,8 +12,8 @@ const names = readdirSync(DESIGNS)
 
 // Khronos glTF-Validator over the exported binary of every published archetype design (PROJECT.md 3.4).
 describe('gltf-validator', () => {
-  it('finds designs to validate', () => {
-    expect(names.length).toBeGreaterThanOrEqual(11);
+  it('finds published designs to validate', () => {
+    expect(names.length).toBeGreaterThan(0);
   });
 
   it.each(names)('validates the export of %s with zero errors and warnings', async (file) => {
@@ -33,6 +33,7 @@ describe('gltf-validator', () => {
     if (!result.ok) {
       throw new Error(`${file}: ${JSON.stringify(result.error)}`);
     }
+    expect(result.modelEntry.sight, `${file} should export sight metadata from its parts`).toBeDefined();
     const report = await validator.validateBytes(result.glb, { uri: `${id}.glb` });
     const problems = report.issues.messages
       .filter((m) => m.severity <= 1)

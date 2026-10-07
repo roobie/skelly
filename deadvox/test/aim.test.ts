@@ -265,6 +265,19 @@ it('firearms skill reduces climb over the same full-auto burst', () => {
   expect(peaks.at(-1)).toBeLessThan(peaks[0]!);
 });
 
+it('reload and rack curves preserve skill-zero time and stay monotonic', () => {
+  const levels = Array.from({ length: SKILL_LEVEL_LEGENDARY + 1 }, (_, level) => level);
+  const effects = levels.map((level) => skillEffects(level));
+  const reloadDurations = effects.map(({ reloadDuration }) => reloadDuration);
+  const rackDurations = effects.map(({ rackDuration }) => rackDuration);
+  expect(reloadDurations[0]).toBe(1);
+  expect(rackDurations[0]).toBe(1);
+  for (let index = 1; index < levels.length; index++) {
+    expect(reloadDurations[index]).toBeLessThanOrEqual(reloadDurations[index - 1]!);
+    expect(rackDurations[index]).toBeLessThanOrEqual(rackDurations[index - 1]!);
+  }
+});
+
 it('firearms skill effects improve through expert level and legendary matches expert', () => {
   const novice = skillEffects(0);
   const experienced = skillEffects(SKILL_LEVEL_MAX);

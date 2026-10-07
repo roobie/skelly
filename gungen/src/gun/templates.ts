@@ -441,6 +441,7 @@ export const pumpShotgun: Template = {
       params: { layout: ['pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'pump', 'trigger', 'trigger', 'trigger'] },
     },
     { id: 'barrel', family: 'barrel', params: { length: SML } },
+    { id: 'front-bead', family: 'front-sight-bead' },
     {
       id: 'tube',
       family: 'tube-magazine',
@@ -491,6 +492,7 @@ export const pumpShotgun: Template = {
   connections: [
     { from: 'receiver.lower', to: 'lower.top' },
     { from: 'receiver.barrel', to: 'barrel.rear' },
+    { from: 'barrel.bead', to: 'front-bead.base' },
     { from: 'receiver.bolt-carrier', to: 'bolt-carrier.mount' },
     { from: 'receiver.tube', to: 'tube.rear' },
     { from: 'tube.cap', to: 'barrel.lug' },

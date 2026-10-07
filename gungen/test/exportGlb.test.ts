@@ -4,8 +4,9 @@ import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import type { GlbAssetIdentity, Palette } from '../src/core/design.ts';
 import { displayItems as selectDisplayItems } from '../src/core/display.ts';
+import { localSolidBounds, penetrationWorld, worldBox, worldSolid } from '../src/core/geometry.ts';
 import { exportGlb, partNodeName, srgbToLinear } from '../src/core/glb.ts';
-import { applyPoint, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, type Vec3 } from '../src/core/math.ts';
+import { applyPoint, IDENTITY, type Mat3, mulMM, mulMV, rotX, rotY, rotZ, sub, type Vec3 } from '../src/core/math.ts';
 import { meshForSolid, meshForSolidGroup } from '../src/core/mesh.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly } from '../src/core/schema.ts';
@@ -17,10 +18,11 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { ejectionPoint } from '../src/gun/ejection.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/gun/exportFrame.ts';
 import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
+import { getOptic } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
-import { expectWatertightMesh, variant } from './helpers.ts';
+import { expectWatertightMesh, loadCorpus, variant } from './helpers.ts';
 
 const design = (name: string): Assembly => {
   const result = loadGunDesign(readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8'));
@@ -40,6 +42,60 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantNa
     throw new Error(`export failed: ${JSON.stringify(result.error)}`);
   }
   return { ...result, read: readGlb(result.glb), resolved: resolve(assembly, gunDomain) };
+};
+
+type ExportedGun = ReturnType<typeof exported>;
+const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): string => {
+  for (const [id, part] of out.resolved.defs) {
+    const axis = part.axes.find(({ kind }) => kind === 'sight');
+    const transform = out.resolved.placed.get(id);
+    if (!(axis && transform)) {
+      continue;
+    }
+    const { family } = out.resolved.assembly.parts[id]!;
+    const params = out.resolved.params.get(id);
+    const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
+    const localEye: Vec3 = optic ? [optic.ocularX, optic.opticalAxisY, 0] : axis.origin;
+    const eye = applyPoint(transform, localEye);
+    if (Math.hypot(eye[0] - endpoint[0], eye[1] - endpoint[1], eye[2] - endpoint[2]) < 1e-6) {
+      return id;
+    }
+  }
+  throw new Error(`${label}: exported sight endpoint does not match a sight part`);
+};
+
+const expectSightLineClear = (out: ExportedGun, label: string): void => {
+  const { sight } = out.modelEntry;
+  if (!sight) {
+    throw new Error(`${label}: export has no sight metadata`);
+  }
+  const endpoint = sight.eye.map((value) => value / S) as unknown as Vec3;
+  const targetId = sightTargetPartId(out, endpoint, label);
+  const eyeRelief = sight.eyeReliefMetres / S;
+  const eyePoint: Vec3 = [
+    endpoint[0] - sight.direction[0] * eyeRelief,
+    endpoint[1] - sight.direction[1] * eyeRelief,
+    endpoint[2] - sight.direction[2] * eyeRelief,
+  ];
+  const center: Vec3 = [
+    (eyePoint[0] + endpoint[0]) / 2,
+    (eyePoint[1] + endpoint[1]) / 2,
+    (eyePoint[2] + endpoint[2]) / 2,
+  ];
+  const sightLine = worldBox(IDENTITY, { center, half: [eyeRelief / 2, 0.05, 0.05] });
+  for (const [id, part] of out.resolved.defs) {
+    if (id === targetId) {
+      continue;
+    }
+    const placed = out.resolved.placed.get(id)!;
+    for (const solid of part.solids) {
+      // biome-ignore lint/suspicious/noMisplacedAssertion: called from the corpus sight-line test.
+      expect(
+        penetrationWorld(sightLine, worldSolid(placed, solid)),
+        `${label}: ${id}.${solid.id} blocks the sight line`,
+      ).toBeLessThanOrEqual(0);
+    }
+  }
 };
 
 const near = (a: readonly number[], b: readonly number[], digits = 6): void => {
@@ -419,6 +475,16 @@ describe('glb export: deadvox model entry', () => {
     }
   });
 
+  it('exports sight metadata for every valid fixture and published firearm design', () => {
+    for (const { label, assembly } of loadCorpus()) {
+      const result = exportGunGlb(assembly, ASSET, { variant: 'ar' });
+      if (!result.ok) {
+        throw new Error(`${label}: export failed: ${JSON.stringify(result.error)}`);
+      }
+      expect(result.modelEntry.sight, `${label} should export sight metadata from its parts`).toBeDefined();
+    }
+  });
+
   it('exports optic ocular diameter and eye relief with the sight line', () => {
     const optic = exported(design('archetype-ar'));
     const iron = exported(design('archetype-ak'));
@@ -426,6 +492,70 @@ describe('glb export: deadvox model entry', () => {
     expect(optic.modelEntry.sight?.ocularDiameterMetres).toBeGreaterThan(0);
     expect(iron.modelEntry.sight?.eyeReliefMetres).toBeGreaterThan(0);
     expect(iron.modelEntry.sight?.ocularDiameterMetres).toBeUndefined();
+  });
+
+  it('aims the pump shotgun front bead along a clear line above the barrel', () => {
+    const out = exported(design('archetype-pump-shotgun'));
+    const beadId = Object.entries(out.resolved.assembly.parts).find(
+      ([, part]) => part.family === 'front-sight-bead',
+    )?.[0];
+    if (!(beadId && out.modelEntry.sight)) {
+      throw new Error('pump shotgun needs its front bead in the exported sight data');
+    }
+    const beadAxis = out.resolved.defs.get(beadId)!.axes.find(({ kind }) => kind === 'sight')!;
+    const beadTransform = out.resolved.placed.get(beadId)!;
+    const beadTop = applyPoint(beadTransform, beadAxis.origin);
+    const receiverId = Object.entries(out.resolved.assembly.parts).find(([, part]) => part.family === 'receiver')?.[0];
+    if (!receiverId) {
+      throw new Error('pump shotgun needs a receiver to derive its bead eye line');
+    }
+    const receiver = out.resolved.defs.get(receiverId)!;
+    const receiverTransform = out.resolved.placed.get(receiverId)!;
+    const bounds = receiver.solids.map(localSolidBounds);
+    const minimum: Vec3 = [
+      Math.min(...bounds.map(([min]) => min[0])),
+      Math.min(...bounds.map(([min]) => min[1])),
+      Math.min(...bounds.map(([min]) => min[2])),
+    ];
+    const maximum: Vec3 = [
+      Math.max(...bounds.map(([, max]) => max[0])),
+      Math.max(...bounds.map(([, max]) => max[1])),
+      Math.max(...bounds.map(([, max]) => max[2])),
+    ];
+    const receiverTop = applyPoint(receiverTransform, [
+      (minimum[0] + maximum[0]) / 2,
+      maximum[1],
+      (minimum[2] + maximum[2]) / 2,
+    ]);
+    const eyePoint: Vec3 = [receiverTop[0], beadTop[1], receiverTop[2]];
+    const eyeToBead = sub(beadTop, eyePoint);
+    const sightLength = Math.hypot(...eyeToBead);
+    const expectedDirection: Vec3 = [
+      eyeToBead[0] / sightLength,
+      eyeToBead[1] / sightLength,
+      eyeToBead[2] / sightLength,
+    ];
+    const scale = out.resolved.domain.units.metresPerUnit;
+    const exportedEye: Vec3 = out.modelEntry.sight.eye.map((value) => value / scale) as unknown as Vec3;
+    const exportedDirection = out.modelEntry.sight.direction;
+    const exportedEyePoint: Vec3 = [
+      exportedEye[0] - exportedDirection[0] * (out.modelEntry.sight.eyeReliefMetres / scale),
+      exportedEye[1] - exportedDirection[1] * (out.modelEntry.sight.eyeReliefMetres / scale),
+      exportedEye[2] - exportedDirection[2] * (out.modelEntry.sight.eyeReliefMetres / scale),
+    ];
+    expect(eyePoint[1]).toBeGreaterThan(receiverTop[1]);
+    expect(eyePoint[0]).toBeLessThan(beadTop[0]);
+    near(exportedEyePoint, eyePoint);
+    near(exportedDirection, toFileAxes(expectedDirection));
+    expect(out.modelEntry.sight.kind).toBe('iron');
+  });
+
+  it('keeps every exported sight line clear of other solids', () => {
+    const corpus = loadCorpus();
+    expect(corpus.length).toBeGreaterThan(0);
+    for (const { label, assembly } of corpus) {
+      expectSightLineClear(exported(assembly), label);
+    }
   });
 
   it('aims the AK sight axis from the rear notch top edge to the front post tip', () => {

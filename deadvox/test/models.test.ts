@@ -97,6 +97,8 @@ it('loads the curated pump through preparation and resolves separate movers by g
   expect(def.tube?.capacity).toBe(4);
   expect(def.action?.fire).toBeUndefined();
   expect(def.grip?.turn).toEqual([0, 0, 0]);
+  expect(def.sight?.kind).toBe('iron');
+  expect(def.sight?.direction[0]).toBeGreaterThan(0);
   for (const part of Object.values(def.action!.parts)) {
     const index = gltf.parser.json.nodes.findIndex((node: { name?: string }) => node.name === part.node);
     expect(index).toBeGreaterThanOrEqual(0);
@@ -397,8 +399,11 @@ describe('base pack guns', () => {
 
   it.each(guns.map((m) => [m.id, m] as const))('%s is held muzzle forward, top up', async (_, def) => {
     const bytes = readFileSync(`src/content/base/${def.file}`);
-    const { scene } = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
-    const { held } = prepareModel(def, scene);
+    const gltf = await new GLTFLoader().parseAsync(Uint8Array.from(bytes).buffer, '');
+    if (gltf.parser.json.asset.generator === 'skelly gungen glb export') {
+      expect(def.sight, `${def.id} Gungen exports need sight metadata`).toBeDefined();
+    }
+    const { held } = prepareModel(def, gltf.scene);
     held.updateMatrixWorld(true);
     // held > turned > offset: the offset group maps the file's coordinates into the hand's.
     const offset = held.children[0]!.children[0]!;
