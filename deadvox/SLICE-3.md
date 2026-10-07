@@ -2,6 +2,7 @@
 read_if:
   - you're planning or implementing a Slice 3 milestone
   - you're checking Slice 3 scope, saves, tests or BR approval gates
+  - "you're tracking #308's playtest 1 apex enemy scope and design questions"
   - you're interpreting BR's camera-directed gaze ruling for zombie models
   - you're tracking d130 crawler gait, hit response or generation validation
   - you're preparing the end-of-slice playtest or its authored map
@@ -328,13 +329,13 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 > “maybe we should consider adding a 'boss' mob - maybe an amalgamation of several shamblers - an enemy the size of a car”
 > “yes, I think it's worth it, and it makes it end with something new and exciting”
 
-**In:** Add the runner (sprinting beeline, rarer than shamblers), crawler and boss mob, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design; the boss's design questions are tracked in #308. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
+**In:** Add the runner (sprinting beeline, rarer than shamblers), crawler and apex enemy, building on the existing type-data model and d84's beeline. Each zombie type gets distinct sounds. The crawler uses the approved type design; the apex enemy's design questions are tracked in #308. Infection consequences depend on 3.4. Screamer and bloater are deferred (#280).
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
-**Done when:** runner, crawler and boss are distinct playable threats and their persistent state round-trips.
-**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response); the boss's size, silhouette and encounter read.
+**Done when:** runner, crawler and apex enemy are distinct playable threats and their persistent state round-trips.
+**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response); the apex enemy's size, silhouette and encounter read.
 
-**Work split:** d106-1 implements the runner and crawler; #308 tracks the boss as a separate work item within 3.8.
+**Work split:** d106-1 implements the runner and crawler; #308 tracks playtest 1's apex enemy as a separate work item within 3.8.
 
 **Crawler form and pose (BR, 2026-10-06–07):** the question was whether the crawler should be (a) a prone ground-crawler dragging itself on its arms with trailing legs, (b) a low, hunched humanoid on all fours, or (c) a short, hunched humanoid variant.
 
@@ -453,7 +454,7 @@ Only questions BR left open; don't infer answers from implementation or old prop
 - **3.5 wall muffling — proposal above:** approve or replace the single coarse attenuation step when a wall lies between source and listener.
 - **#181 beat 4:** whether the radio works, and which quiet-or-light craft path fixed workshop loot should cover fully. d124-2 places the radio and defers both decisions; its attachment-dependent choice loot remains deferred to 3.7, and d124-4 adds two authored runner markers without scripted spawns. Beats 5–6 retain their own dependent map rounds.
 - **#181 tester prompt:** confirm the wording when BR details beats 4–6. BR's 2026-10-05 22:17 proposal was: “Instead it could be: "find the military camp", maybe?”
-- **#308 — boss mob:** the design questions remain open; see 3.8.
+- **#308 — playtest 1 apex enemy:** the design questions remain open; see 3.8.
 
 ## Definition of done
 

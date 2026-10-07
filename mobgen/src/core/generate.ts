@@ -161,8 +161,33 @@ export const FAR_LOD_HALF_BLOCK_VOXEL_SIZE = 0.5 / 2;
  * Raising it is deliberate and must cite fresh measurements; larger templates may need more. BR may revisit it. */
 export const FAR_LOD_HALF_BLOCK_TRIANGLE_CAP = 400;
 
+export const resolveSupportBones = (template: Template, body: Body, voxels: Voxels): ReadonlySet<string> => {
+  if (template.supportBones !== 'ground-contacts') {
+    return new Set(template.supportBones);
+  }
+  const [nx, ny] = voxels.dims;
+  let lowestRow = Number.POSITIVE_INFINITY;
+  for (let index = 0; index < voxels.owner.length; index++) {
+    if (voxels.owner[index] !== 0) {
+      lowestRow = Math.min(lowestRow, Math.floor(index / nx) % ny);
+    }
+  }
+  const supportBones = new Set<string>();
+  for (let index = 0; index < voxels.owner.length; index++) {
+    const owner = voxels.owner[index]!;
+    if (owner !== 0 && Math.floor(index / nx) % ny === lowestRow) {
+      const bone = body.bones[owner - 1];
+      if (bone) {
+        supportBones.add(bone.id);
+      }
+    }
+  }
+  return supportBones;
+};
+
 export interface Realized {
   readonly profile: ValidationProfile;
+  readonly supportBones: ReadonlySet<string>;
   readonly body: Body;
   readonly voxels: Voxels;
   readonly meshes: ReadonlyMap<number, BoneMesh>;
@@ -189,6 +214,7 @@ export const realize = (genome: Genome, options: RealizeOptions = {}): Realized 
       : undefined;
   const voxels = voxelize(body, genome.voxelSize, genome.seed);
   const meshes = meshBones(voxels, body.bones.length);
+  const supportBones = resolveSupportBones(template, body, voxels);
   const scaledBudgets = budgetsForGenome(template, genome, profile !== 'silhouette');
   // Silhouette LOD is a draw-cost contract: omit voxel/group budgets entirely. The recommended
   // 1/2-block tier has BR's fixed 300-triangle cap; other sizes use the m1-scaled triangle ceiling.
@@ -215,10 +241,10 @@ export const realize = (genome: Genome, options: RealizeOptions = {}): Realized 
     body,
     voxels,
     meshes,
-    feet: new Set(template.feet),
+    supportBones,
     budgets,
   });
-  return { profile, body, voxels, meshes, report };
+  return { profile, supportBones, body, voxels, meshes, report };
 };
 
 export interface ValidGeneration {

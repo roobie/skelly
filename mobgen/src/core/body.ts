@@ -43,5 +43,7 @@ export interface Body {
   readonly bones: readonly Bone[];
   /** Add features first influence the field; paints are then applied in this array's order. */
   readonly features: readonly Feature[];
+  /** Reserves repaired joint contacts for bodies assembled from overlapping modules. */
+  readonly jointAdjacencyPolicy?: 'reserve-overlaps';
   readonly palette: Readonly<Record<Material, Vec3>>;
 }
