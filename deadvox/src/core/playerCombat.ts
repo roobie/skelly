@@ -44,6 +44,22 @@ const unit = (v: Vec3): Vec3 => {
   return n > 0 ? [v[0] / n, v[1] / n, v[2] / n] : [0, 0, 0];
 };
 const copy = (v: Vec3): Vec3 => [v[0], v[1], v[2]];
+const validMeleeWeapon = (weapon: MeleeWeapon, actionCooldown: number): boolean =>
+  Number.isFinite(weapon.damage) &&
+  weapon.damage > 0 &&
+  Number.isFinite(weapon.reach) &&
+  weapon.reach > 0 &&
+  weapon.cooldown === actionCooldown &&
+  (weapon.stamina === undefined || (Number.isFinite(weapon.stamina) && weapon.stamina >= 0)) &&
+  (weapon.impulse === undefined || (Number.isFinite(weapon.impulse) && weapon.impulse >= 0)) &&
+  (weapon.damageVariance === undefined ||
+    (Number.isFinite(weapon.damageVariance) && weapon.damageVariance >= 0 && weapon.damageVariance <= 1)) &&
+  (weapon.headDamageMultiplier === undefined ||
+    (Number.isFinite(weapon.headDamageMultiplier) && weapon.headDamageMultiplier > 0)) &&
+  (weapon.limbDamageMultiplier === undefined ||
+    (Number.isFinite(weapon.limbDamageMultiplier) && weapon.limbDamageMultiplier > 0)) &&
+  (weapon.speedMultiplier === undefined || (Number.isFinite(weapon.speedMultiplier) && weapon.speedMultiplier > 0)) &&
+  (weapon.type === undefined || ['blunt', 'cut', 'pierce'].includes(weapon.type));
 
 export class PlayerCombat {
   private playerAttackWait = 0;
@@ -185,14 +201,7 @@ export class PlayerCombat {
       (action.hitResolved && action.elapsed < action.contactAt) ||
       !vector3(action.origin) ||
       !vector3(action.direction) ||
-      !Number.isFinite(action.weapon.damage) ||
-      action.weapon.damage <= 0 ||
-      !Number.isFinite(action.weapon.reach) ||
-      action.weapon.reach <= 0 ||
-      action.weapon.cooldown !== action.cooldown ||
-      (action.weapon.stamina !== undefined && (!Number.isFinite(action.weapon.stamina) || action.weapon.stamina < 0)) ||
-      (action.weapon.impulse !== undefined && (!Number.isFinite(action.weapon.impulse) || action.weapon.impulse < 0)) ||
-      (action.weapon.type !== undefined && !['blunt', 'cut', 'pierce'].includes(action.weapon.type)) ||
+      !validMeleeWeapon(action.weapon, action.cooldown) ||
       !action.hands ||
       !validUid(action.hands.right) ||
       !validUid(action.hands.left)

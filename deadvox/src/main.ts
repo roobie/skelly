@@ -10,12 +10,13 @@ import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
 import { inputBindings, keyboardInput, labelForAction } from './game/inputBindings.ts';
+import { clearPendingInputReplay, decodeInputReplay, pendingInputReplay } from './game/inputReplay.ts';
 import { startPlay } from './game/play.ts';
 import { renderFreeFromUrl } from './game/renderMode.ts';
 import type { SaveBackendPreference } from './game/saveStorage.ts';
 import type { StreamerStats } from './game/streamer.ts';
 import { mountInputOptions } from './ui/inputOptions.ts';
-import { SaveController } from './ui/saveController.ts';
+import { contentLookup, SaveController } from './ui/saveController.ts';
 
 const params = new URLSearchParams(location.search);
 const view = document.getElementById('view')!;
@@ -41,40 +42,82 @@ if (bench === 'report') {
   inputBindings.loadLayout();
   let config = configFromUrl(params);
   keyboardInput.context = () => ({ context: 'title', debug: config.debug });
-  const saveBackend = params.get('save-backend');
-  const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
-  const saveController = new SaveController(backend);
-  const savedWorld = await saveController.prepare();
-  if (params.get('save-test') === '1') {
-    Object.assign(globalThis, {
-      deadvoxSaveTest: {
-        storage: saveController.storage,
-        namespace: saveController.namespace,
-        controller: saveController,
-        triggerPeriodicCheckpoint: () => {
-          (saveController as unknown as { nextAutosaveAt: number }).nextAutosaveAt = 0;
-          saveController.afterFrame();
-        },
-      },
-    });
+  let pendingReplay: Uint8Array | undefined;
+  try {
+    pendingReplay = pendingInputReplay();
+  } catch (error) {
+    clearPendingInputReplay();
+    document.getElementById('errors')!.textContent =
+      `Replay rejected: ${error instanceof Error ? error.message : String(error)}`;
   }
-  if (savedWorld) {
-    const resumed = makeConfig(savedWorld.seed, config.radiusM, savedWorld.blockSize);
-    resumed.start = savedWorld.clock.start;
-    resumed.debug = config.debug;
-    resumed.actors = config.actors;
-    resumed.site = savedWorld.site;
-    resumed.storeys = savedWorld.storeys;
-    resumed.density = savedWorld.density;
-    config = resumed;
+  if (pendingReplay) {
+    config.debug = true;
   }
   const debugModule = config.debug ? await import('./debug/index.ts') : undefined;
-  const engine = createEngine(config, view, undefined, { render: !renderFree });
-  const restored = await saveController.validateContent(engine.registry);
-  if (saveController.isRestored && restored) {
-    startPlay(engine, debugModule, { saveController, restore: restored });
+  if (pendingReplay) {
+    try {
+      const preliminary = await decodeInputReplay(pendingReplay, { contentLookup: () => true });
+      const identity = preliminary.worldOptions;
+      const replayConfig = makeConfig(identity.seed, config.radiusM, identity.blockSize);
+      replayConfig.start = identity.clock.start;
+      replayConfig.debug = true;
+      replayConfig.actors = config.actors;
+      replayConfig.site = identity.site;
+      replayConfig.storeys = identity.storeys;
+      replayConfig.density = identity.density;
+      const engine = createEngine(replayConfig, view, undefined, { render: !renderFree });
+      const decoded = await decodeInputReplay(pendingReplay, {
+        contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
+      });
+      clearPendingInputReplay();
+      startPlay(engine, debugModule!, {
+        restore: decoded.snapshot,
+        replay: {
+          inputs: decoded.inputs,
+          endStateFingerprint: decoded.endStateFingerprint,
+          endSimTime: decoded.endSimTime,
+        },
+      });
+    } catch (error) {
+      clearPendingInputReplay();
+      document.getElementById('errors')!.textContent =
+        `Replay rejected: ${error instanceof Error ? error.message : String(error)}`;
+    }
   } else {
-    saveController.setNewWorldLauncher((creation) => startPlay(engine, debugModule, { saveController, ...creation }));
+    const saveBackend = params.get('save-backend');
+    const backend: SaveBackendPreference = saveBackend === 'opfs' || saveBackend === 'indexeddb' ? saveBackend : 'auto';
+    const saveController = new SaveController(backend);
+    const savedWorld = await saveController.prepare();
+    if (params.get('save-test') === '1') {
+      Object.assign(globalThis, {
+        deadvoxSaveTest: {
+          storage: saveController.storage,
+          namespace: saveController.namespace,
+          controller: saveController,
+          triggerPeriodicCheckpoint: () => {
+            (saveController as unknown as { nextAutosaveAt: number }).nextAutosaveAt = 0;
+            saveController.afterFrame();
+          },
+        },
+      });
+    }
+    if (savedWorld) {
+      const resumed = makeConfig(savedWorld.seed, config.radiusM, savedWorld.blockSize);
+      resumed.start = savedWorld.clock.start;
+      resumed.debug = config.debug;
+      resumed.actors = config.actors;
+      resumed.site = savedWorld.site;
+      resumed.storeys = savedWorld.storeys;
+      resumed.density = savedWorld.density;
+      config = resumed;
+    }
+    const engine = createEngine(config, view, undefined, { render: !renderFree });
+    const restored = await saveController.validateContent(engine.registry);
+    if (saveController.isRestored && restored) {
+      startPlay(engine, debugModule, { saveController, restore: restored });
+    } else {
+      saveController.setNewWorldLauncher((creation) => startPlay(engine, debugModule, { saveController, ...creation }));
+    }
   }
 } else if (bench === 'shamblers') {
   const run = shamblerRunFromUrl(params);
