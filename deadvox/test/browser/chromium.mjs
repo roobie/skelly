@@ -17,9 +17,6 @@ let failed = false;
 process.once('uncaughtExceptionMonitor', () => {
   failed = true;
 });
-process.once('unhandledRejection', () => {
-  failed = true;
-});
 process.once('exit', () => {
   if (failed || (process.exitCode !== undefined && process.exitCode !== 0)) {
     debugOutput.flush();

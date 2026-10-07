@@ -164,7 +164,9 @@ The pump-handling stage is render-free because it checks input, inventory, handl
 pixels. `test/browser/pump-handling.mjs` observes canvas context requests and asserts that the
 stage creates no WebGL context while its simulation and input assertions pass. Add future stages
 to the shared mode helper and use its URL/launch helpers together so the render choice and browser
-flags stay aligned; put pixel-only checks in an existing visual stage.
+flags stay aligned; put pixel-only checks in an existing visual stage. `tools/ui-browser-contract.mjs`
+checks DOM and input only, so it runs render-free and asserts no WebGL context, which keeps it off
+the SwiftShader initialization path in #256.
 
 Install Firefox once with `npx playwright install --with-deps firefox`, then from
 `deadvox/` run `xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop).
