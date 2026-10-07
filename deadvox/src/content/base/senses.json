@@ -19,7 +19,10 @@
         "playerDaySightScale": 0,
         "lureRangeScale": 0.5,
         "throwMaxDistanceMetres": 8,
-        "throwChargeSimSeconds": 1.25
+        "throwChargeSimSeconds": 1.25,
+        "throwMinimumHoldSimSeconds": 1,
+        "throwArmSpeedMetresPerSecond": 9,
+        "throwArmEnergyJoules": 60
       }
     }
   ]

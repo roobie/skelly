@@ -218,9 +218,9 @@ blocking”. See [SLICE-3.md](SLICE-3.md), 3.1,
 `src/game/inputBindings.ts` describes the mouse actions, while the registry owns
 keyboard bindings.
 
-## Charged glowstick throw (d100-2)
+## Held-item throw
 
-**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. Holding the rebindable action makes throw distance a deliberate choice; right-click cancels rather than starting another held action. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginGlowstickCharge`.
+**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. **BR, 2026-10-07 14:27:** “It requires to be held 1 second before throwing”. T is the rebindable `player.throw` action; it throws the primary-hand item and never falls back to the off hand. The minimum is measured in simulation time. Its release gate does not pause the existing charge: range grows from the initial press, then stays at the charged maximum. A shorter release throws nothing, and right-click cancels. Item weight limits range through the one item-range function; BR later approved a range reduction by weight. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginItemThrow` and `finishItemThrow`.
 
 ## Remaining questions
 

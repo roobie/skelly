@@ -17,6 +17,7 @@ read_if:
   - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
+  - you're changing held-item throwing or its range tuning
 ---
 
 # deadvox — design
@@ -734,6 +735,27 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
   power (see [Base building](#base-building-and-electricity)).
 - **Hands:** most lights take a hand, which matters with a two-handed weapon.
   The headlamp frees them, at the cost of a weaker beam.
+
+## Held-item throws
+
+The rebindable T action throws only the primary-hand item; an empty primary hand
+refuses instead of reaching into the off hand. A release before BR's minimum
+held-time threshold throws nothing. The range charge starts on press and grows
+through that minimum hold, so the minimum is a release gate rather than an extra
+delay before charging. Item weight limits launch range through arm speed and
+energy; a light item retains the existing maximum, while a heavier one travels
+no farther. A thrown item keeps its identity and state when it lands, including a
+firearm's loaded magazine. A lit glowstick remains lit at its landing pile.
+
+BR first ruled that holding T longer should throw farther and right-click should
+cancel (2026-10-06 14:24). BR then ruled (2026-10-07 14:35):
+
+> "yes. And at some point, likely not before playtest, atmospheric drag will affect too - i.e. a flimsy glowstick doesn't get as far as a hand grenade"
+
+Drag is deliberately absent until [#368](https://github.com/roobie/skelly/issues/368).
+The range uses the existing item `weight` and `senses` tuning; see
+`src/core/itemThrow.ts`, `throwDistanceForItem`, and `src/game/play.ts`,
+`finishItemThrow`. Throwing adds no hit damage or landing lure.
 
 ## Zombies
 
