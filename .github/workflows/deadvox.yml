@@ -81,7 +81,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [input, stages, save-other, opfs, indexeddb, firefox]
+        shard: [input, stages, save-other, firefox]
     uses: ./.github/workflows/deadvox-browser.yml
     with:
       shard: ${{ matrix.shard }}

@@ -16,6 +16,16 @@ full reusable workflow and enabled package scripts. Package aliases do not add
 extra executions. Quarantines remain explicit: repartitioning must not silently
 restore a flaky case or remove its reinstatement obligation.
 
+The Chromium save-storage stages are excluded while #287 tracks an intermittent
+Playwright launch stall. In the failing `browser (indexeddb)` run, Chrome spawned
+but did not complete Playwright's pipe handshake before the launch deadline, so no
+page or storage assertion ran. The successful save-storage launch in the same run
+reported the same D-Bus address error and continued, so that message alone does
+not explain the stall. The failing log does not identify a lower-level cause;
+`deadvox/test/browser/save-storage.mjs`, `chromium`, is the observed boundary.
+`quarantinedStages` in `test/browser-ci-manifest.mjs` keeps those cases out of the
+workflow and requires their explicit disposition before reinstatement.
+
 The required `check` in `.github/workflows/deadvox.yml` uses
 `tools/browser-ci-result.mjs`, `assertBrowserResult`. A selected layout's jobs
 must succeed; only the unselected layout's jobs may skip (the control jobs on a
