@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { Character, dominantSide, offSide } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
-import { Inventory } from '../src/core/inventory.ts';
-import { EAT_TIME, options, quickMove, toHands } from '../src/core/options.ts';
+import { Inventory, WORK_IN_PROGRESS } from '../src/core/inventory.ts';
+import { EAT_TIME, options, pocketGroundItem, quickMove, toHands } from '../src/core/options.ts';
 import { bindReach, type ReachPlayer } from '../src/core/reach.ts';
 
 const directory = join(import.meta.dirname, '../src/content/base');
@@ -199,6 +199,69 @@ describe('handling move admission', () => {
     expect(t.inventory.hands.right).toBe(item);
     expect(t.inventory.hands.left).toBeUndefined();
     expect(t.queue.remaining).toBe(0);
+  });
+
+  it('keeps a ground item in its pile when no player pocket can carry it', () => {
+    const t = setup();
+    const item = t.add('rag', { kind: 'pile', pos: [0, 0, 0] });
+
+    expect(pocketGroundItem(t.inventory, t.queue, item)?.toLowerCase().includes('room')).toBe(true);
+    expect(t.inventory.locate(item)).toMatchObject({ kind: 'pile' });
+    expect(t.queue.busy).toBe(false);
+  });
+
+  it('stows both occupied hands in a backpack before wielding a two-handed item', () => {
+    const t = setup();
+    const leading = dominantSide(t.inventory.character);
+    const secondary = offSide(t.inventory.character);
+    const backpack = t.add('school_backpack', { kind: 'worn' });
+    const first = t.add('duct_tape', { kind: 'hand', side: leading });
+    const second = t.add('rag', { kind: 'hand', side: secondary });
+    const type = [...registry.items.values()].find(
+      (definition) => definition.twoHanded && definition.id !== WORK_IN_PROGRESS,
+    )?.id;
+    if (!type) {
+      throw new Error('Two-handed fixture is missing');
+    }
+    const item = t.add(type, { kind: 'pile', pos: [0, 0, 0] });
+
+    expect(toHands(t.inventory, t.queue, item, [0, 0, 0])).toBeUndefined();
+    const jobs = [...t.queue.jobs];
+    expect(jobs).toHaveLength(3);
+    for (const job of jobs) {
+      t.queue.tick(job.duration);
+    }
+    expect(t.inventory.locate(first)).toMatchObject({ kind: 'pocket', owner: backpack });
+    expect(t.inventory.locate(second)).toMatchObject({ kind: 'pocket', owner: backpack });
+    expect(t.inventory.hands[leading]).toBe(item);
+    expect(t.inventory.hands[secondary]).toBeUndefined();
+    expect(t.queue.busy).toBe(false);
+  });
+
+  it('drops both displaced items when wielding a two-handed item and no pocket fits', () => {
+    const t = setup();
+    const leading = dominantSide(t.inventory.character);
+    const secondary = offSide(t.inventory.character);
+    const first = t.add('duct_tape', { kind: 'hand', side: leading });
+    const second = t.add('rag', { kind: 'hand', side: secondary });
+    const type = [...registry.items.values()].find(
+      (definition) => definition.twoHanded && definition.id !== WORK_IN_PROGRESS,
+    )?.id;
+    if (!type) {
+      throw new Error('Two-handed fixture is missing');
+    }
+    const item = t.add(type, { kind: 'pile', pos: [0, 0, 0] });
+
+    expect(toHands(t.inventory, t.queue, item, [0, 0, 0])).toBeUndefined();
+    const jobs = [...t.queue.jobs];
+    expect(jobs).toHaveLength(3);
+    for (const job of jobs) {
+      t.queue.tick(job.duration);
+    }
+    expect(t.inventory.locate(first)?.kind).toBe('pile');
+    expect(t.inventory.locate(second)?.kind).toBe('pile');
+    expect(t.inventory.hands[leading]).toBe(item);
+    expect(t.inventory.hands[secondary]).toBeUndefined();
   });
 
   it.each(['right', 'left'] as const)(

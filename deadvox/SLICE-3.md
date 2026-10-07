@@ -426,6 +426,15 @@ dependencies.
 > q4: i have one tester - the other two are open
 
 **In:** Finish the authored progression from the lone house through the hamlet, hunting cabins, a larger standalone workshop, medical site and low-to-mid-tier military site. BR's 2026-10-05 answer confirms the 2026-10-03 ruling: the medical site's virus-sampling research is lore, not a player mission.
+
+#### Loose-item pickup
+
+**BR, 2026-10-07 22:58:26, br-45:** “Slice 3, for playtest 1, with a simple grab animation.”
+
+**In:** From the game view, F pockets the nearest targeted ground item on tap or wields it on hold. The existing world target and reach also cover doors and containers; inventory placement and handling continue to own transfers, and the hand reach animation is presentation-only. See `src/core/interactionPick.ts`, `pickInteractionTarget`, and `src/render/grabPose.ts`, `grabPose`.
+
+**Done when:** a tap pockets a fitting item or leaves an unfit item on the ground with a reason; holding F wields the item and moves displaced hand items into pockets or onto the ground; the existing door tap still works; replay preserves the resolved gesture; and the hands visibly reach toward the item without owning its handling time.
+
 - **Discoverable lore:** readable notes and documents, perhaps a wall notice; distinct from 2.5's recipe-teaching books (BR, 2026-10-03; confirmed 2026-10-05).
 - **Nights:** night 1 near the hunting cabins; night 2 at the medical site (preliminary, BR, 2026-10-03).
 - **Armoury access:** the camp must remain reachable if the clinic key stays on the dead officer. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads 15 seconds as real play time; keep prying out of compression so the crowbar's noise draws the dead at normal pace. The matching key remains the quiet route, and `lock_test` is a first-look fixture, not the authored military site. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making forced entry one-way. See `DESIGN.md`, “Base building and electricity”, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.

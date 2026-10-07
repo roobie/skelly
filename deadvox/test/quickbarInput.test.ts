@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { HUD_HINTS_HOLD_MS, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { PressHoldInput } from '../src/game/pressHoldInput.ts';
 import { QuickbarInput } from '../src/game/quickbarInput.ts';
+import { RELOAD_GESTURE_MS } from '../src/game/reloadInput.ts';
 
 const fixture = () => {
   const taps: number[] = [];
@@ -13,6 +14,29 @@ const fixture = () => {
   };
 };
 describe('quickbar gesture admission', () => {
+  it('defers F interaction until release or R’s hold threshold', () => {
+    const action = INPUT_BINDINGS.find(({ id }) => id === 'world.interact')?.id;
+    if (!action) {
+      throw new Error('F interaction binding is missing');
+    }
+    const events: string[] = [];
+    const input = new PressHoldInput<string>({
+      holdRealMs: () => RELOAD_GESTURE_MS.hold,
+      tap: (value) => events.push(`tap:${value}`),
+      hold: (value) => events.push(`hold:${value}`),
+    });
+    input.keyDown(action, 10);
+    input.update(10 + RELOAD_GESTURE_MS.hold - 1);
+    expect(events).toEqual([]);
+    input.keyUp(action, 10 + RELOAD_GESTURE_MS.hold - 1);
+    expect(events).toEqual(['tap:world.interact']);
+
+    input.keyDown(action, 50);
+    input.update(50 + RELOAD_GESTURE_MS.hold);
+    expect(events).toEqual(['tap:world.interact', 'hold:world.interact']);
+    input.keyUp(action, 50 + RELOAD_GESTURE_MS.hold);
+    expect(events).toEqual(['tap:world.interact', 'hold:world.interact']);
+  });
   it('dispatches a quick release as a tap only', () => {
     const { input, taps, holds } = fixture();
     input.keyDown(2, 10);
@@ -35,7 +59,7 @@ describe('quickbar gesture admission', () => {
     expect(binding?.holdMs).toBe(HUD_HINTS_HOLD_MS);
     const toggles: string[] = [];
     const input = new PressHoldInput<string>({
-      holdDuration: () => binding?.holdMs ?? 0,
+      holdRealMs: () => binding?.holdMs ?? 0,
       tap: () => undefined,
       hold: (heldAction) => toggles.push(heldAction),
     });

@@ -4,7 +4,7 @@ import { dominantSide, practiceForNextLevel, SKILL_LEVEL_LEGENDARY } from '../sr
 import { defaultClock } from '../src/core/clock.ts';
 import { CHUNK, toChunk } from '../src/core/coords.ts';
 import type { Item } from '../src/core/items.ts';
-import { stowTarget, toHands } from '../src/core/options.ts';
+import { pocketGroundItem, stowTarget, toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
 import type { Site, ZombieSpawn } from '../src/core/site.ts';
@@ -73,7 +73,7 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 8,
+    schemaVersion: 9,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
@@ -108,6 +108,20 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
     toHands: (uid, feet) => {
       const item = runtime.inventory.itemByUid(uid);
       return item ? toHands(runtime.inventory, runtime.handling, item, feet) : 'The item is no longer available';
+    },
+    pickup: (uid, mode, feet) => {
+      const item = runtime.inventory.itemByUid(uid);
+      if (!item) {
+        return 'The item is no longer available';
+      }
+      if (mode === 'wield') {
+        return toHands(runtime.inventory, runtime.handling, item, feet);
+      }
+      return pocketGroundItem(runtime.inventory, runtime.handling, item);
+    },
+    interact: (uid) => {
+      const entity = runtime.entities.byUid(uid);
+      return entity ? runtime.session.search(entity) : 'The target is no longer available';
     },
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftContinue: () => {
@@ -985,9 +999,12 @@ describe('input replay', () => {
     expect(decoded.snapshot.character.inventory.hands[side]).toMatchObject({ uid: firearm.uid, type: firearm.type });
   });
 
-  it('rejects replay command payloads with invalid item identities', () => {
+  it('validates replay pickup identities and gesture modes', () => {
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 0 })).toBe(false);
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 1 })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 0, mode: 'wield', feet: [0, 0, 0] })).toBe(false);
+    expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 1, mode: 'pocket', feet: [0, 0, 0] })).toBe(true);
+    expect(isReplayActionPayload({ kind: 'furniture.interact', entityUid: 1 })).toBe(true);
   });
 
   it('rejects an invalid inventory payload while decoding a replay', async () => {

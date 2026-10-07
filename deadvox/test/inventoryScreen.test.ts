@@ -113,6 +113,8 @@ function setup() {
         },
         work: (uid, operation) => workHandler(uid, operation),
         toHands: () => undefined,
+        pickup: () => undefined,
+        interact: () => undefined,
         craftStart: () => undefined,
         craftContinue: () => undefined,
         craftStop: () => undefined,
