@@ -773,14 +773,14 @@ BR (2026-10-07 00:18):
 > “1. i'm thinking it shouldn't have full legs / and it looks to be hovering a bit over the ground, so that might be an issue”
 
 After the stumps were shown, BR's question was whether their shape read correctly,
-while the pose still hovered. BR (2026-10-07 00:38):
+while the pose still hovered. BR (2026-10-07 00:37):
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
 The thigh stumps are approved; the grounded static pose is the current silhouette
 checkpoint. The body uses `mobgen/src/mob/humanoid.ts`, `amputateCrawlerLegs`, and
 the static pose uses `mobgen/src/mob/crawler.ts`, `crawlerPose`. The drag gait and
-Deadvox wiring wait for BR's verdict on that pose; d106-12 owns that later work.
+Deadvox wiring wait for BR's verdict on that pose; d106-13 owns that later work.
 
 ### Evolution
 

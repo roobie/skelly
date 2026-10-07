@@ -329,7 +329,7 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
 **Done when:** runner, crawler and boss are distinct playable threats and their persistent state round-trips.
-**First look / BR approval:** runner silhouette and behavior; crawler's static prone pose before its drag gait and Deadvox wiring; the boss's size, silhouette and encounter read.
+**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response after d106-13); the boss's size, silhouette and encounter read.
 
 **Work split:** d106-1 implements the runner and crawler; #308 tracks the boss as a separate work item within 3.8.
 
@@ -347,11 +347,11 @@ The two alternatives are future mobs, not crawler variants. BR's follow-up asked
 
 > “1. i'm thinking it shouldn't have full legs / and it looks to be hovering a bit over the ground, so that might be an issue”
 
-After seeing the stumps, BR's question was whether they read correctly despite the remaining hover. BR (2026-10-07 00:38):
+After seeing the stumps, BR's question was whether they read correctly despite the remaining hover. BR (2026-10-07 00:37):
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
-The thigh stumps are approved; the grounded static pose remains the silhouette checkpoint. d106-12 builds the drag gait and wires the crawler into Deadvox only after BR approves that pose.
+The thigh stumps are approved; the grounded static pose remains the silhouette checkpoint. d106-13 builds the drag gait and wires the crawler into Deadvox only after BR approves that pose.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 

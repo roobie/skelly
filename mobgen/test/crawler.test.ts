@@ -8,7 +8,11 @@ import { SHAMBLER_FIGURE_SEEDS } from '../src/mob/shamblerFigure.ts';
 import { TEMPLATES } from '../src/mob/templates.ts';
 
 const crawler = TEMPLATES.find((template) => template.name === 'crawler')!;
-const CRAWLER_SUPPORT_SEEDS = [...SHAMBLER_FIGURE_SEEDS, 9, 10, 11, 12, 13, 14, 15, 16];
+const SHAMBLER_SEED_SET = new Set<number>(SHAMBLER_FIGURE_SEEDS);
+const CRAWLER_SUPPORT_SEEDS = [
+  ...SHAMBLER_FIGURE_SEEDS,
+  ...Array.from({ length: 64 }, (_, index) => index + 1).filter((seed) => !SHAMBLER_SEED_SET.has(seed)),
+];
 const LOWER_LEG_BONE = /^(shin|foot)\./;
 describe('crawler', () => {
   it('uses upper-thigh stumps rather than intact lower legs', () => {
@@ -17,26 +21,38 @@ describe('crawler', () => {
     expect(body.bones.some((bone) => LOWER_LEG_BONE.test(bone.id))).toBe(false);
   });
 
-  it.each(CRAWLER_SUPPORT_SEEDS)('grounds rig support points for figure seed %i', (seed) => {
+  it.each(CRAWLER_SUPPORT_SEEDS)('grounds trailing rig supports for figure seed %i', (seed) => {
     const realized = realize(generate(crawler, seed));
     const pose = crawlerPose(realized);
     const lowest = posedVoxelSurfaceBounds(realized, pose).byBone;
     const transforms = boneTransforms(realized.body.bones, pose);
-    const tailHeight = new Map(
-      realized.body.bones.map((bone) => [bone.id, applyPoint(transforms.get(bone.id)!, bone.tail)[1]]),
-    );
     const tolerance = 2 * realized.voxels.size;
-    for (const bone of ['thigh.L', 'thigh.R']) {
-      expect(Math.abs(tailHeight.get(bone)!)).toBeLessThanOrEqual(tolerance);
-      expect(Math.abs(lowest.get(bone)!)).toBeLessThanOrEqual(tolerance);
+    const maximumSink = realized.voxels.size;
+    for (const side of ['L', 'R']) {
+      const bone = realized.body.bones.find((candidate) => candidate.id === `thigh.${side}`)!;
+      const transform = transforms.get(bone.id)!;
+      const hip = applyPoint(transform, bone.head);
+      const tail = applyPoint(transform, bone.tail);
+      expect(tail[2]).toBeGreaterThan(hip[2]);
+      expect(tail[1]).toBeLessThan(hip[1]);
+      const surface = lowest.get(bone.id)!;
+      expect(surface).toBeGreaterThanOrEqual(-maximumSink);
+      expect(surface).toBeLessThanOrEqual(tolerance);
     }
     for (const side of ['L', 'R']) {
-      const armTail = Math.min(tailHeight.get(`forearm.${side}`)!, tailHeight.get(`hand.${side}`)!);
-      const armSurface = Math.min(lowest.get(`forearm.${side}`)!, lowest.get(`hand.${side}`)!);
-      expect(Math.abs(armTail)).toBeLessThanOrEqual(tolerance);
-      expect(Math.abs(armSurface)).toBeLessThanOrEqual(tolerance);
+      for (const bone of [`forearm.${side}`, `hand.${side}`]) {
+        const tail = applyPoint(
+          transforms.get(bone)!,
+          realized.body.bones.find((candidate) => candidate.id === bone)!.tail,
+        );
+        expect(Math.abs(tail[1])).toBeLessThanOrEqual(tolerance);
+        const surface = lowest.get(bone)!;
+        expect(surface).toBeGreaterThanOrEqual(-maximumSink);
+        expect(surface).toBeLessThanOrEqual(tolerance);
+      }
     }
     const torsoLowest = Math.min(...['pelvis', 'spine', 'chest'].map((bone) => lowest.get(bone)!));
-    expect(Math.abs(torsoLowest)).toBeLessThanOrEqual(tolerance);
+    expect(torsoLowest).toBeGreaterThanOrEqual(-maximumSink);
+    expect(torsoLowest).toBeLessThanOrEqual(tolerance);
   });
 });

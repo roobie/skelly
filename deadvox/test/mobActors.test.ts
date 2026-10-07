@@ -8,7 +8,7 @@ import { generateValid, realize } from '@mobgen/core/generate.ts';
 import { IDENTITY_M, mulMV, quatToMat3, transpose } from '@mobgen/core/math.ts';
 import { allocateBoneTransforms, boneTransformsInto, indexBonesByParent } from '@mobgen/core/pose.ts';
 import { cellIndex, worldPosition } from '@mobgen/core/voxelize.ts';
-import { severedBoneSet } from '@mobgen/mob/dismember.ts';
+import { SEVERABLE_PARTS, severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { corners, footRestExtents, INITIAL_CLOCK, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
@@ -787,15 +787,9 @@ describe('MobActorMeshes dismemberment', () => {
         variants: readonly { rigidParts: ReadonlyMap<string, { mass: number }> }[];
       };
       const masses = [...variants[0]!.rigidParts.entries()].map(([part, properties]) => [part, properties.mass]);
-      expect(masses).toEqual([
-        ['hand.L', 70 * 0.006],
-        ['hand.R', 70 * 0.006],
-        ['forearm.L', 70 * 0.022],
-        ['forearm.R', 70 * 0.022],
-        ['upperArm.L', 70 * 0.05],
-        ['upperArm.R', 70 * 0.05],
-        ['head', 70 * 0.081],
-      ]);
+      const template = TEMPLATES.find((candidate) => candidate.name === 'shambler')!;
+      const expected = SEVERABLE_PARTS.map((part) => [part, template.bodyMassKg * template.massFractions![part]!]);
+      expect(masses).toEqual(expected);
     } finally {
       renderer.dispose();
     }

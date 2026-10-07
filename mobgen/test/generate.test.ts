@@ -318,19 +318,34 @@ describe('validation profiles', () => {
   });
 });
 
+sweepGroup('template generation validity rate', () => {
+  for (const t of HUMANOID_TEMPLATES) {
+    describe(t.name, () => {
+      const evaluatedSeeds = new Set<number>();
+      const validSeeds = new Set<number>();
+      for (let start = 0; start < SEEDS; start += 20) {
+        const end = Math.min(start + 20, SEEDS);
+        it(`collects validity results for seeds ${start}–${end - 1}`, () => {
+          for (let seed = start; seed < end; seed++) {
+            evaluatedSeeds.add(seed);
+            if (realize(generate(t, seed)).report.ok) {
+              validSeeds.add(seed);
+            }
+          }
+          expect([...evaluatedSeeds].filter((seed) => seed >= start && seed < end)).toHaveLength(end - start);
+        });
+      }
+      it(`retains at least 80% valid figures across ${SEEDS} seeds`, () => {
+        expect(evaluatedSeeds.size).toBe(SEEDS);
+        expect(validSeeds.size / SEEDS).toBeGreaterThanOrEqual(0.8);
+      });
+    });
+  }
+});
+
 describe('templates', () => {
   for (const t of HUMANOID_TEMPLATES) {
     describe(t.name, () => {
-      it(`is valid at least 80% of the time (${SEEDS} seeds)`, () => {
-        let valid = 0;
-        for (let seed = 0; seed < SEEDS; seed++) {
-          if (realize(generate(t, seed)).report.ok) {
-            valid += 1;
-          }
-        }
-        expect(valid / SEEDS).toBeGreaterThanOrEqual(0.8);
-      });
-
       it('generateValid finds a passing build', () => {
         const found = generateValid(t, 1000)!;
         expect(found).toBeDefined();

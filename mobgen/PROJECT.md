@@ -49,7 +49,7 @@ data, and the defaults must work for any body plan.
 - Animations beyond the humanoid walk and crawler's static pose.
 - Pose validation beyond the humanoid rest pose and crawler support properties in `test/crawler.test.ts` (CHALLENGES §7).
 
-Slice 3.8's static crawler is an exception to the humanoid milestone scope: its body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses `src/mob/crawler.ts`, `crawlerPose`. The drag gait remains later work under d106-12, after BR approves the static silhouette.
+Slice 3.8's static crawler is an exception to the humanoid milestone scope: its body uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses `src/mob/crawler.ts`, `crawlerPose`. The drag gait remains later work under d106-13, after BR approves the static silhouette.
 
 ## Decisions
 
@@ -133,7 +133,7 @@ Query parameters are `?template=<name>&seed=<n>`, as in gungen.
   detail, generating in a worker (CHALLENGES §1, §9).
 - Joint limits and pose rules (CHALLENGES §7).
 - Wounds during play and dismemberment (CHALLENGES §10).
-- More body plans: skeleton. The crawler's body and static pose are the Slice 3.8 exception above; its drag gait remains deferred until BR approves the silhouette under d106-12.
+- More body plans: skeleton. The crawler's body and static pose are the Slice 3.8 exception above; its drag gait remains deferred until BR approves the silhouette under d106-13.
 - Per-vertex ambient occlusion.
 - A voxelized reference figure as a viewer layer, for calibration.
 
