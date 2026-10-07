@@ -3,6 +3,7 @@ read_if:
   - you decide how sunlight and shadows should read in play
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
+  - you're changing world block shapes or slab geometry
   - you're changing the rules for time, survival, light or zombies
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you change shambler attention, movement, obstacle response or floor-transition behavior
@@ -106,6 +107,17 @@ slab (half height), stairs, pane (thin wall or glass), pillar and ramp. Each sha
 has its own mesher case and collision box. Blocks that need more detail than a
 shape can give (furniture, machines) are block entities (see below) with a
 voxel model.
+
+BR's 2026-10-07 12:50 rulings refine this slab plan: “right okay; well we won't
+convert to 0.25 m blocks” and “but we won't implement it prior to playtest1”.
+The size set remains under discussion in #221. BR's 2026-10-07 13:10 purposes,
+in rough priority order, are roofs and silhouettes; movement aids such as
+half-steps and low walls to climb or vault; cover behind sandbags or low walls;
+and finer building detail. Movement and cover mean slabs are simulated for
+collision, sight and shot blocking, not only drawn. BR said at 13:10, “they are
+roughly in priority order too” and “We will want to build finer detailed
+buildings, making ergonomic movement aids, hiding behind stuff that are built
+partly from half slabs.”
 
 ## Time
 

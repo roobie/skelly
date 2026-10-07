@@ -2,6 +2,7 @@
 read_if:
   - you're authoring or exporting a Deadvox site in Tiled
   - you're changing authored-site fixed loot or playtest-map scope
+  - you're extending the workshop route or its multiple approaches
   - you're authoring time-windowed Tiled spawn markers
 ---
 
@@ -9,7 +10,7 @@ read_if:
 
 Tiled `.tmj` files describe site-scale terrain, routes, building placements and spawns; interiors stay reusable ASCII templates. `maps/extensions/deadvox.mjs`, `exportLayout`, turns one map into a content layout, and `npm run validate` checks the exported file against the merged content registry. Format the exported JSON with Biome before validation so Tiled output also satisfies the repository's formatting check. Keep the authored source and its committed JSON together. Review the extension before trusting it in Tiled.
 
-The playtest scenario is `maps/playtest.tmj`, exported to `src/content/base/layouts-playtest.json`. It combines beats 1–3 and the medical-site/night-two beat from [#181](https://github.com/roobie/skelly/issues/181) at the approved schematic scale. For d122-2, the compound continues the authored route so the shelter and treatment supplies are reached in context; sampling notes explain the site's purpose rather than giving the player a mission. The pharmacy door uses #309's key-or-crowbar lock, with its key in the front counter (see [docs/locks.md](../docs/locks.md#medical-hall-pharmacy), “Medical hall pharmacy”). Crawler markers wait for #325, so authored content uses only available zombie types. The military beat remains for its dependent map round.
+The playtest scenario is `maps/playtest.tmj`, exported to `src/content/base/layouts-playtest.json`. It combines beats 1–3, the dependency-independent workshop core and the medical-site/night-two beat from [#181](https://github.com/roobie/skelly/issues/181) at the approved schematic scale. The workshop is a standalone progression site reached by an open spur from the cabins; keeping approaches open preserves player choice instead of making the route a forced corridor. Its reusable interiors live in `src/content/base/templates-workshop.json`, separate from the Tiled site source. Fixed promises stay separate from seed-owned filler, and the roller door's content-owned opening noise makes the quiet side entrance a meaningful alternative (`src/core/schema.ts`, `DoorSchema`; `src/game/doorAction.ts`, `registerDoorAction`). Runners wait for #325, and choice-critical attachment loot waits for 3.7. The compound continues the authored route so the shelter and treatment supplies are reached in context; sampling notes explain the site's purpose rather than giving the player a mission. The pharmacy door uses #309's key-or-crowbar lock, with its key in the front counter (see [docs/locks.md](../docs/locks.md#medical-hall-pharmacy), “Medical hall pharmacy”). The military beat remains for its dependent map round.
 
 `lone-house.tmj` / `layouts.json` remains the small authored-site pipeline sample. `hunting_cabins.tmj` / `layouts-cabins.json` remains the terrain-and-cabin sample (`cabins_demo`). Keeping these examples separate lets them continue to demonstrate narrow editor/runtime contracts without turning them into alternate versions of the playtest progression.
 

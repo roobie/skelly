@@ -60,6 +60,55 @@
       "container": {
         "pockets": [{ "grid": [6, 4], "handlingSimSeconds": 1.2 }]
       }
+    },
+    {
+      "id": "workshop_roller_door",
+      "name": "Roller door",
+      "size": [6, 5, 1],
+      "color": "#666c70",
+      "door": {
+        "handlingSimSeconds": 1.2,
+        "openNoise": { "sound": "door_roller_open", "radiusMetres": 60 }
+      }
+    },
+    {
+      "id": "workshop_service_pit",
+      "name": "Service pit",
+      "size": [6, 1, 2],
+      "color": "#373a3b",
+      "solid": false
+    },
+    {
+      "id": "workshop_lift",
+      "name": "Vehicle lift",
+      "size": [6, 1, 3],
+      "color": "#8b4d3d"
+    },
+    {
+      "id": "workshop_stripped_car",
+      "name": "Stripped car",
+      "size": [6, 2, 3],
+      "color": "#5b605c"
+    },
+    {
+      "id": "workshop_scrap_pile",
+      "name": "Scrap pile",
+      "size": [4, 1, 3],
+      "color": "#615b50",
+      "container": {
+        "pockets": [{ "grid": [6, 5], "handlingSimSeconds": 1.2 }]
+      },
+      "loot": "workshop_filler"
+    },
+    {
+      "id": "workshop_map_board",
+      "name": "Workshop wall map",
+      "size": [2, 2, 1],
+      "color": "#9f9675",
+      "readable": {
+        "title": "Workshop wall map",
+        "text": "The clinic is south, past the hamlet. The military camp lies beyond it."
+      }
     }
   ]
 }

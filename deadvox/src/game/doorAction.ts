@@ -26,7 +26,7 @@ export interface DoorActionOptions {
   inventory: Inventory;
   player: () => Body;
   others: () => Iterable<Body>;
-  playWorldSound: (event: SoundEventId, position: Vec3) => void;
+  playWorldSound: (event: SoundEventId, position: Vec3, noiseRadiusMetres?: number) => void;
 }
 
 export const registerDoorAction = ({ queue, inventory, player, others, playWorldSound }: DoorActionOptions): void => {
@@ -38,7 +38,8 @@ export const registerDoorAction = ({ queue, inventory, player, others, playWorld
       if (reason) {
         return reason;
       }
-      playWorldSound('door_open', center);
+      const openNoise = entities.defOf(entity).door?.openNoise;
+      playWorldSound(openNoise?.sound ?? 'door_open', center, openNoise?.radiusMetres);
       return undefined;
     }
     const blocker = entities.closeDoor(entity, player(), others());

@@ -160,7 +160,7 @@ describe('simulation source fingerprint', () => {
     const admission = await mutateSimulationSource(
       host,
       'src/game/session.ts',
-      'const emittedAsNoise = player && definition.noise.enabled;',
+      'const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);',
       'const emittedAsNoise = false;',
     );
     expect(admission.included).toBe(true);

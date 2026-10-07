@@ -28,6 +28,7 @@ const TRIGGER_ENTRIES = [
   ['footstep_wood', { trigger: 'Walk, jog, or sprint over planks.' }],
   ['footstep_leaves', { trigger: 'Walk, jog, or sprint over fabric or carpet.' }],
   ['door_open', { trigger: 'Press F while looking at a closed, reachable door.' }],
+  ['door_roller_open', { trigger: 'Open a workshop roller door with F while it is closed.' }],
   [
     'door_close',
     {
@@ -263,6 +264,7 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ['shambler_attack', 'Approved by BR (2026-10-02).'],
   ['shambler_hurt', 'Approved by BR (2026-10-02).'],
   ['door_open', 'Approved by BR (2026-10-02) with door-open-03 only; more variants are future work.'],
+  ['door_roller_open', 'Temporary stand-in: uses the door-open recording; a dedicated roller-door sound remains future work.'],
   ['door_close', 'Approved by BR (2026-10-02).'],
   [
     'door_blocked_close',

@@ -8,6 +8,7 @@ read_if:
   - you change static reachability checks
   - you author or validate time-windowed template spawns
   - you're authoring or changing playtest fixed loot
+  - you're assigning noise to opening a door
 ---
 
 # Content sections and recipes
@@ -155,3 +156,7 @@ calculated disassembly yields at top skill; the separate recipe skill-source
 check must prove that reachable practice sources can raise a recipe's required skill. Reachability
 stores no closure or runtime state; progression, crafting and disassembly remain
 separate owners.
+
+## Door opening noise
+
+`DoorSchema.openNoise` in `src/core/schema.ts` gives a door its opening sound and hearing radius; `src/game/doorAction.ts`, `registerDoorAction`, sends that through the ordinary positioned sound path. The field is optional so a door stays quiet unless its content says otherwise. This keeps a loud workshop roller door distinct without making the everyday `wood_door` noisy or introducing a door-specific hearing system.

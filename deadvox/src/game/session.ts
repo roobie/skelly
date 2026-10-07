@@ -501,6 +501,7 @@ export const createSession = (options: SessionOptions) => {
       sourceLabel = null,
       listenerRelative = false,
       body: mobBody,
+      noiseRadiusMetres,
     }: SoundEmissionMeta & {
       player: boolean;
       body?: MobBody;
@@ -513,7 +514,8 @@ export const createSession = (options: SessionOptions) => {
     const definition = registry.sounds.get(event)!;
     const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
     const pick = { ...selected, pitch };
-    const emittedAsNoise = player && definition.noise.enabled;
+    const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
+    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres;
     const sound = freezeSnapshot({
       event,
       position: [...position] as Vec3,
@@ -524,19 +526,28 @@ export const createSession = (options: SessionOptions) => {
       listenerRelative,
     });
     // Commit gameplay before calling the output adapter, regardless of device/assets/volume.
+    const noiseId = emittedAsNoise ? ++playerAudio.vocalNoiseId : undefined;
+    const noisePosition = [...position] as Vec3;
+    const expiresAt = time + VOCAL_NOISE_LIFETIME;
     if (emittedAsNoise) {
-      playerAudio.vocalNoiseId += 1;
       playerAudio.vocalNoise = {
-        id: playerAudio.vocalNoiseId,
-        pos: [...position],
-        radiusMetres: definition.noise.radiusMetres,
+        id: noiseId!,
+        pos: noisePosition,
+        radiusMetres: emittedNoiseRadius,
         expiresAt: time + VOCAL_NOISE_LIFETIME,
       };
     }
     sim.events.emit({ kind: 'sound', ...sound });
     if (emittedAsNoise) {
-      const { id, pos, radiusMetres, expiresAt } = playerAudio.vocalNoise!;
-      sim.events.emit({ kind: 'noise', event, position: [...pos], time, id, radiusMetres, expiresAt });
+      sim.events.emit({
+        kind: 'noise',
+        event,
+        position: noisePosition,
+        time,
+        id: noiseId!,
+        radiusMetres: emittedNoiseRadius,
+        expiresAt,
+      });
     }
     audio.play(sound);
     return true;
@@ -1090,7 +1101,8 @@ export const createSession = (options: SessionOptions) => {
     inventory,
     player: () => body,
     others: () => [...zombieStore.entries()].map(([, zombie]) => zombie.body),
-    playWorldSound: (event, position) => playWorldSound(event, position),
+    playWorldSound: (event, position, noiseRadiusMetres) =>
+      playWorldSound(event, position, sim.time, noiseRadiusMetres === undefined ? {} : { noiseRadiusMetres }),
   });
   sim.actions.prying = {
     validate: (entityUid, toolUid) => {

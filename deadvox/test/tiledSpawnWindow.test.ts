@@ -1,8 +1,7 @@
-import { readdirSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
-import { buildRegistry } from '../src/core/content.ts';
 
 const mapsPath = join(process.cwd(), 'maps');
 const projectPath = join(mapsPath, 'deadvox.tiled-project');
@@ -210,20 +209,16 @@ describe('Tiled spawn-window export', () => {
       layouts: [rawLayout],
     } = exportLayout(map);
     const exported = { layouts: [normalizeLayout(rawLayout)] };
-    const contentPath = join(mapsPath, '../src/content/base');
-    const base = readdirSync(contentPath)
-      .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
-      .sort()
-      .map((file) => ({
-        source: file,
-        data: JSON.parse(readFileSync(join(contentPath, file), 'utf8')) as unknown,
-      }));
-    const committed = JSON.parse(readFileSync(join(contentPath, 'layouts-playtest.json'), 'utf8')) as unknown;
-    const emitted = buildRegistry([...base, { source: 'tiled-export-test.json', data: exported }]);
-    const checkedIn = buildRegistry([...base, { source: 'checked-in-layout-test.json', data: committed }]);
-    expect(emitted.issues.filter((issue) => issue.source === 'tiled-export-test.json')).toEqual([]);
-    expect(checkedIn.issues.filter((issue) => issue.source === 'checked-in-layout-test.json')).toEqual([]);
-    expect(emitted.registry.layouts.get('playtest')).toEqual(checkedIn.registry.layouts.get('playtest'));
+    const tiledProject = JSON.parse(readFileSync(projectPath, 'utf8')) as {
+      propertyTypes: { name: string; values: string[] }[];
+    };
+    const allowedTemplates = tiledProject.propertyTypes.find(({ name }) => name === 'template_id')?.values ?? [];
+    expect(allowedTemplates.length).toBeGreaterThan(0);
+    for (const { template } of rawLayout.buildings) {
+      expect(allowedTemplates, template).toContain(template);
+    }
+    const committed = JSON.parse(readFileSync(join(mapsPath, '../src/content/base/layouts-playtest.json'), 'utf8')) as unknown;
+    expect(exported).toEqual(committed);
   });
 
   it('rejects a close boundary without an opening boundary', () => {

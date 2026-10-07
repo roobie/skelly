@@ -414,6 +414,17 @@ describe('authored fixed loot', () => {
     expect(cellar).toBeDefined();
     expect(cellar!.override.at[1]).toBe(cabin?.access?.storeys.find(({ id }) => id === 'cellar')?.floor);
     expect(fixedCount(overrides, 'playtest_dads_cabin', 'pump_shotgun')).toBeGreaterThan(0);
+
+    for (const template of ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']) {
+      expect(layout.buildings.some((building) => building.template === template), template).toBe(true);
+    }
+    expect(fixedCount(overrides, 'workshop_hall', 'shotshell_box')).toBeGreaterThan(0);
+    expect(fixedCount(overrides, 'workshop_hall', 'portable_radio')).toBeGreaterThan(0);
+    expect(fixedCount(overrides, 'workshop_hall', 'jerry_can')).toBeGreaterThan(0);
+    expect(fixedCount(overrides, 'workshop_office', 'workshop_notes')).toBeGreaterThan(0);
+    const filler = result.registry.loot.get('workshop_filler')!;
+    expect(filler.entries.some(({ item }) => item === 'improvised_suppressor')).toBe(false);
+    expect(filler.entries.some(({ item }) => item === 'taped_flashlight_mount')).toBe(false);
   });
 
   it('keeps every fixed-loot container reachable from outside at standing height', () => {
@@ -443,6 +454,33 @@ describe('authored fixed loot', () => {
           return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
         });
         expect(nearContainer, `${building.template} at ${override.at.join(',')}`).toBe(true);
+      }
+    }
+  });
+
+  it('keeps every workshop opening connected to standing space', () => {
+    for (const templateId of ['workshop_hall', 'workshop_office', 'workshop_parts_store', 'workshop_yard']) {
+      const template = compileTemplate(result.registry, result.registry.templates.get(templateId)!);
+      expect(templateSpatialIssues(result.registry, template), templateId).toEqual([]);
+      const reachable = templateReachableStandingPositions(result.registry, template);
+      expect(reachable.length, templateId).toBeGreaterThan(0);
+      const doors = template.pieces.filter((piece) => result.registry.furniture.get(piece.furniture)?.door);
+      if (templateId === 'workshop_yard') {
+        continue;
+      }
+      expect(doors.length, templateId).toBeGreaterThan(0);
+      for (const door of doors) {
+        const [x, floor, z] = door.pos;
+        const [width, , depth] = door.size;
+        const nearDoor = reachable.some(([px, feet, pz]) => {
+          if (feet !== floor) {
+            return false;
+          }
+          const dx = Math.max(x - px, 0, px - (x + width));
+          const dz = Math.max(z - pz, 0, pz - (z + depth));
+          return Math.hypot(dx, dz) <= STAIR_BODY_HALF_WIDTH + 0.5;
+        });
+        expect(nearDoor, `${templateId} door at ${door.pos.join(',')}`).toBe(true);
       }
     }
   });
@@ -587,5 +625,29 @@ describe('authored fixed loot', () => {
     ]);
     expect(nearCabins.count).toBeGreaterThan(0);
     expect(nearCabins.distance).toBeLessThanOrEqual(track.width * 2);
+  });
+
+  it('joins the workshop-yard gate to the existing cabin route', () => {
+    const fixture = compactFixture();
+    const mainTrack = fixture.tracks[0]!;
+    const spur = fixture.tracks.find((track) => track !== mainTrack)!;
+    const yard = fixture.buildings.find((building) => building.template === 'workshop_yard')!;
+    const template = result.registry.templates.get(yard.template)!;
+    const bounds = buildingBounds(yard, template.size);
+    const entrance = template.access!.entrance;
+    const entranceX = yard.position[0] + entrance[0] * scale.blockSize;
+    const entranceZ = yard.position[2] + entrance[2] * scale.blockSize;
+    const gatePoints: Point[] = [
+      [bounds.x0, entranceZ],
+      [bounds.x1, entranceZ],
+      [entranceX, bounds.z0],
+      [entranceX, bounds.z1],
+    ];
+    const start = spur.points[0]!;
+    const end = spur.points.at(-1)!;
+    expect(polylineDistance(start, mainTrack.points)).toBeLessThanOrEqual(spur.width / 2);
+    expect(
+      Math.min(...gatePoints.map(([x, z]) => Math.hypot(end[0] - x, end[1] - z))),
+    ).toBeLessThanOrEqual(spur.width / 2);
   });
 });
