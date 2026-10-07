@@ -12,24 +12,37 @@ const sources = readdirSync(base)
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
 const { registry, issues } = buildRegistry(sources);
 const ASSAULT_RIFLE = 'rifle_assault';
-const DEFAULT_SLOT = 'receiver.rail.3';
 const UNCERTIFIED_ATTACHMENT = /Uncertified attachment/;
 
 describe('fitted firearm items', () => {
   it('creates removable default attachments as owned child items and renders them through the slot frame', () => {
     expect(issues).toEqual([]);
+    const rifleModel = registry.models.get(defOf(registry, ASSAULT_RIFLE).model!)!;
+    const [defaultAttachment] = rifleModel.attachments ?? [];
+    expect(defaultAttachment).toBeDefined();
+    const defaultItem = [...registry.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : registry.models.get(item.model);
+      return model?.attachment?.id === defaultAttachment!.id;
+    });
+    expect(defaultItem).toBeDefined();
+    const rival = [...registry.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : registry.models.get(item.model);
+      return model?.attachment?.mount === defaultAttachment!.mount && model.attachment.id !== defaultAttachment!.id;
+    });
+    expect(rival).toBeDefined();
+
     const inventory = new Inventory(registry);
     const rifle = inventory.create(ASSAULT_RIFLE);
-    const optic = rifle.slots?.[DEFAULT_SLOT];
+    const optic = rifle.slots?.[defaultAttachment!.mountedAt];
     expect(optic).toBeDefined();
-    expect(optic!.type).toBe('optic_lpvo_1_6x');
+    expect(optic!.type).toBe(defaultItem!.id);
     expect(inventory.add(rifle, { kind: 'hand', side: 'right' })).toBe(true);
     expect(inventory.itemByUid(optic!.uid)).toBe(optic);
     expect(weightOf(registry, rifle)).toBeGreaterThan(defOf(registry, rifle.type).weight);
 
-    const wrong = inventory.create('optic_mini_reflex');
-    expect(() => inventory.fitSlot(rifle, DEFAULT_SLOT, wrong)).toThrow(UNCERTIFIED_ATTACHMENT);
-    expect(inventory.fitSlot(rifle, DEFAULT_SLOT, undefined)).toBe(optic);
+    const wrong = inventory.create(rival!.id);
+    expect(() => inventory.fitSlot(rifle, defaultAttachment!.mountedAt, wrong)).toThrow(UNCERTIFIED_ATTACHMENT);
+    expect(inventory.fitSlot(rifle, defaultAttachment!.mountedAt, undefined)).toBe(optic);
     expect(inventory.itemByUid(optic!.uid)).toBeUndefined();
   });
 });

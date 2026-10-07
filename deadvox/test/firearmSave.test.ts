@@ -143,9 +143,21 @@ it('runtime firearm skill sliders tune the held gun and reset when its save is l
 });
 
 it('saves and restores fitted attachment identity and a nested light battery', async () => {
+  const firearm = registry.items.get('rifle_assault')!;
+  const firearmModel = registry.models.get(firearm.model!)!;
+  const [defaultAttachment] = firearmModel.attachments ?? [];
+  const defaultItem =
+    defaultAttachment &&
+    [...registry.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : registry.models.get(item.model);
+      return model?.attachment?.id === defaultAttachment.id;
+    });
+  if (!(defaultAttachment && defaultItem)) {
+    throw new Error('The firearm export has no registered default attachment');
+  }
   const original = session([]);
   const rifle = original.inventory.create('rifle_assault');
-  const optic = rifle.slots?.['receiver.rail.3'];
+  const optic = rifle.slots?.[defaultAttachment.mountedAt];
   const flashlight = original.inventory.create('flashlight');
   const battery = flashlight.slots?.battery;
   if (!(optic && battery)) {
@@ -169,7 +181,7 @@ it('saves and restores fitted attachment identity and a nested light battery', a
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
   const restored = session([], decoded.snapshot);
-  const restoredOptic = restored.inventory.hands.right?.slots?.['receiver.rail.3'];
+  const restoredOptic = restored.inventory.hands.right?.slots?.[defaultAttachment.mountedAt];
   const restoredBattery = restored.inventory.hands.left?.slots?.battery;
   if (!(restoredOptic && restoredBattery)) {
     throw new Error('fitted-item save state did not restore its children');

@@ -33,8 +33,10 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
 };
 
 /**
- * Military loot only: magazine-fed rifles, their magazines and cartridges, exported attachments, and packages that
- * unpack into any of them, however deeply nested. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
+ * The current military loot set includes magazine-fed rifles, their magazines and cartridges, exported attachments
+ * except improvised suppressors (which are scavenged or crafted), and packages that unpack into military-only items.
+ * BR's card br-41 asks whether attachments should be military-only at all; this is a current project rule, not a
+ * consequence of export metadata. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
  */
 const isMilitaryAttachment = (registry: Registry, itemId: string): boolean => {
   const item = registry.items.get(itemId);

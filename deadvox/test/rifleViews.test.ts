@@ -217,19 +217,30 @@ it('draws the magazine a rifle really has, in hand and on the ground: its own mo
 
 it('replaces a baked default attachment with its owned model and leaves the baked node hidden when removed', async () => {
   expect(issues).toEqual([]);
+  const rifleModel = content.models.get(modelOf(RIFLE))!;
+  const [defaultAttachment] = rifleModel.attachments ?? [];
+  const opticDef =
+    defaultAttachment &&
+    [...content.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : content.models.get(item.model);
+      return model?.attachment?.id === defaultAttachment.id;
+    });
+  if (!(defaultAttachment && opticDef)) {
+    throw new Error('generated rifle has no registered default attachment');
+  }
   const inventory = new Inventory(content);
   const rifle = inventory.create(RIFLE);
-  const slotId = 'receiver.rail.3';
+  const slotId = defaultAttachment.mountedAt;
   const optic = rifle.slots?.[slotId];
   if (!optic) {
-    throw new Error('generated rifle has no default optic');
+    throw new Error('generated rifle has no default attachment child');
   }
   const opticModel = modelOf(optic.type);
   const models = await library([modelOf(RIFLE), opticModel]);
   const findNode = (root: Object3D) => {
     let found: Object3D | undefined;
     root.traverse((node) => {
-      if (node.userData.name === 'sight:sight') {
+      if (node.userData.name === defaultAttachment.node) {
         found = node;
       }
     });
