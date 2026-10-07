@@ -135,10 +135,13 @@ describe('export CLI core', () => {
       );
       const entry = JSON.parse(readFileSync(join(temp, 'ak_test.model.json'), 'utf8')) as {
         calibre: string;
-        anchors: Record<string, number[]>;
+        anchors?: Record<string, number[]>;
+        slots?: { magazine?: { node: string; at: number[]; turn: number[] } };
       };
       expect(entry.calibre).toBe('7.62x39');
-      expect(entry.anchors.magwell).toHaveLength(3);
+      expect(entry.anchors?.magwell).toBeUndefined();
+      expect(entry.slots?.magazine?.node).toBeTruthy();
+      expect(entry.slots?.magazine?.at).toHaveLength(3);
     } finally {
       rmSync(temp, { recursive: true, force: true });
     }

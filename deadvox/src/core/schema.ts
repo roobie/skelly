@@ -496,6 +496,11 @@ const MagazineRoundSchema = strictObject({
 });
 
 const MagazineCapacity = pipe(number(), integer('must be a whole number'), minValue(1, 'must be at least 1'));
+const ModelMagazineSlotSchema = strictObject({
+  node: pipe(string(), nonEmpty('must not be empty')),
+  at: Point,
+  turn: Point,
+});
 
 const ModelSchema = pipe(
   strictObject({
@@ -518,8 +523,10 @@ const ModelSchema = pipe(
     hold: optional(picklist(['forward', 'upright'])),
     /** Degrees to roll around the model's long +x axis before applying the hold pose. */
     roll: optional(pipe(number(), minValue(-180), maxValue(180))),
-    /** Named points, such as the flashlight's `lens` or a firearm's `magwell`. */
+    /** Named points used by presentation that are not represented by replaceable item slots. */
     anchors: optional(record(Id, Point)),
+    /** Exact baked GLB node and replacement transform for each item-owned model slot. */
+    slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
     /** Model-derived eye point, sight line and up axis for ADS presentation and ballistics. */
     sight: optional(
       strictObject({

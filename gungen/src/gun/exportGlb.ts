@@ -2,7 +2,7 @@ import { calibreSlug } from '../ammo/calibreSlug.ts';
 import type { Cartridge } from '../ammo/cartridge.ts';
 import type { AppearanceContext, GlbAssetIdentity, GlbExportError, GlbExportResult } from '../core/design.ts';
 import { localSolidBounds } from '../core/geometry.ts';
-import { exportGlb } from '../core/glb.ts';
+import { exportGlb, partNodeName } from '../core/glb.ts';
 import { applyDir, applyPoint, length, normalize, sub, type Vec3 } from '../core/math.ts';
 import { type Resolved, resolve } from '../core/resolve.ts';
 import type { Assembly, PartDef } from '../core/schema.ts';
@@ -11,7 +11,7 @@ import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
 import type { CycleMode, CycleTimeline } from './cycle.ts';
 import { gunDomain } from './domain.ts';
-import { gripTurn, toFileAxes } from './exportFrame.ts';
+import { eulerXyzDegrees, gripTurn, toFileAxes } from './exportFrame.ts';
 import { getOptic } from './optics.ts';
 import { GUN_PALETTE } from './palette.ts';
 import { tubeMagazineCapacity } from './tubeCapacity.ts';
@@ -72,6 +72,8 @@ export interface DeadvoxModelEntry {
   readonly tube?: { readonly capacity: number };
   readonly rounds?: readonly { readonly at: Vec3; readonly tilt: number }[];
   readonly action?: GunActionMetadata;
+  /** Fitted, replaceable item slots whose baked geometry is present in the gun GLB. */
+  readonly slots?: { readonly magazine?: { readonly node: string; readonly at: Vec3; readonly turn: Vec3 } };
 }
 
 export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
@@ -219,6 +221,20 @@ const sightCandidate = (resolved: Resolved, id: string, part: PartDef): SightCan
   };
 };
 
+const magazineSlotData = (resolved: Resolved): NonNullable<DeadvoxModelEntry['slots']>['magazine'] | undefined => {
+  const [partId, instance] =
+    Object.entries(resolved.assembly.parts).find(([, part]) => part.family === 'magazine') ?? [];
+  const transform = partId && resolved.placed.get(partId);
+  if (!(partId && instance && transform)) {
+    return undefined;
+  }
+  return {
+    node: partNodeName(partId, instance.family),
+    at: modelPoint(transform.t, resolved.domain.units.metresPerUnit),
+    turn: eulerXyzDegrees(transform.r),
+  };
+};
+
 const sightMetadata = (resolved: Resolved): GunDeadvoxModelEntry['sight'] => {
   const candidates = [...resolved.defs.entries()].flatMap(([id, part]) => {
     const candidate = sightCandidate(resolved, id, part);
@@ -285,10 +301,9 @@ export const createGunModelEntry = ({
   if (calibre !== undefined) {
     calibreSlug(calibre);
   }
-  const others = Object.entries(anchors.others).map(([name, frame]): [string, Vec3] => [
-    name,
-    modelPoint(frame.position, metresPerUnit),
-  ]);
+  const others = Object.entries(anchors.others)
+    .filter(([name]) => name !== 'magwell')
+    .map(([name, frame]): [string, Vec3] => [name, modelPoint(frame.position, metresPerUnit)]);
   return {
     id: asset.id,
     file: asset.file as DeadvoxModelFile,
@@ -338,18 +353,23 @@ export const exportGunGlb = (
   const handling = buildActionExport(resolved);
   const tubeCapacity =
     metadata.cartridge?.kind === 'shotshell' ? tubeMagazineCapacity(resolved, metadata.cartridge) : undefined;
+  const modelEntry = createGunModelEntry({
+    asset,
+    anchors,
+    metresPerUnit: resolved.domain.units.metresPerUnit,
+    options: {
+      ...metadata,
+      ...(handling ? { handling } : {}),
+      ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
+    },
+    sight: sightMetadata(resolved),
+  });
+  const magazine = magazineSlotData(resolved);
   return {
     ...result,
-    modelEntry: createGunModelEntry({
-      asset,
-      anchors,
-      metresPerUnit: resolved.domain.units.metresPerUnit,
-      options: {
-        ...metadata,
-        ...(handling ? { handling } : {}),
-        ...(tubeCapacity === undefined ? {} : { tubeCapacity }),
-      },
-      sight: sightMetadata(resolved),
-    }),
+    modelEntry: {
+      ...modelEntry,
+      ...(magazine ? { slots: { magazine } } : {}),
+    },
   };
 };

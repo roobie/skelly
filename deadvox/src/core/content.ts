@@ -6,7 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
-import { militaryLootItems } from './magazine.ts';
+import { magazineWellCalibre, militaryLootItems } from './magazine.ts';
 import {
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -335,9 +335,13 @@ const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, 
   }
 };
 
-const checkItemFirearm = (item: ItemDef, report: Report): void => {
+const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): void => {
   if (item.firearm?.pump && item.firearm.dispersionRadians !== 0) {
     report('items', item.id, '.firearm.dispersionRadians', 'pump pellet spread owns its cone');
+  }
+  // The fitted magazine is drawn at this slot, so a magazine-fed gun's model shows whether one is fitted.
+  if (magazineWellCalibre(registry, item.id) !== undefined && !registry.models.get(item.model!)?.slots?.magazine) {
+    report('items', item.id, '.model', 'a magazine-fed firearm needs a model with a magazine slot');
   }
 };
 
@@ -347,7 +351,7 @@ const checkItems = (registry: Registry, report: Report) => {
   const hasIgniter = items.some((item) => item.igniter !== undefined);
   for (const item of items) {
     checkItemLight(item, hasIgniter, registry, report);
-    checkItemFirearm(item, report);
+    checkItemFirearm(item, registry, report);
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);
