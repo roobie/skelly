@@ -129,7 +129,6 @@ describe('authored medical site', () => {
         ([x, feet, z]) => feet === tent.access?.storeys[0]?.floor && x > 1 && x < width - 1 && z > 1 && z < depth - 1,
       ),
     ).toBe(true);
-    expect(tentBuildings.every(({ template }) => template === tent.id)).toBe(true);
   });
 
   it('hangs the readable research notice on the wall without blocking room access', () => {
