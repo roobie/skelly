@@ -31,6 +31,27 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
+describe('zombie attack causes', () => {
+  it('attributes player damage to the attacking zombie type', () => {
+    const runtime = createRuntime();
+    for (const [id] of runtime.zombies.store.entries()) {
+      runtime.zombies.store.remove(id);
+    }
+
+    const events = runtime.sim.events.reader();
+    const runner = registry.zombies.get('runner')!;
+    const playerPos = runtime.session.body.pos;
+    runtime.zombies.add(runner, [playerPos[0] + 0.5, playerPos[1], playerPos[2]], [-1, 0, 0]);
+    advance(runtime, 300);
+
+    expect(
+      events
+        .read()
+        .some((event) => event.kind === 'damage' && event.cause.toLowerCase().includes(runner.name.toLowerCase())),
+    ).toBe(true);
+  });
+});
+
 describe('hamlet save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
   it('continues horde noise response and night drift deterministically through a save', async () => {

@@ -69,16 +69,21 @@ const ZOMBIE_COUNT = [6, 10] as const;
 
 /** Possible types before seed rolls: north rows may shuffle; south rows keep their order.
  * Certain earlier markers can consume all spawn slots; wanderers only fill remaining slots. */
-export const possibleHamletZombies = (templates: ReadonlyMap<string, readonly SpawnMarker[]>): Set<string> => {
+export const possibleHamletZombies = (
+  templates: ReadonlyMap<string, readonly SpawnMarker[]>,
+  spawnWeights: ReadonlyMap<string, number> = new Map([[HAMLET_WANDERER, 1]]),
+): Set<string> => {
   const types = new Set<string>();
-  const certain = (id: string) => (templates.get(id) ?? []).filter((marker) => marker.chance === 1).length;
+  const weight = (type: string) => spawnWeights.get(type) ?? 1;
+  const chance = (marker: SpawnMarker) => marker.chance * weight(marker.zombie);
+  const certain = (id: string) => (templates.get(id) ?? []).filter((marker) => chance(marker) === 1).length;
   const scan = (id: string, prior: number) => {
     let used = prior;
     for (const marker of templates.get(id) ?? []) {
-      if (marker.chance > 0 && used < ZOMBIE_COUNT[1]) {
+      if (chance(marker) > 0 && used < ZOMBIE_COUNT[1]) {
         types.add(marker.zombie);
       }
-      if (marker.chance === 1) {
+      if (chance(marker) === 1) {
         used += 1;
       }
     }
@@ -92,6 +97,11 @@ export const possibleHamletZombies = (templates: ReadonlyMap<string, readonly Sp
     before = scan(id, before);
   }
   if (before < ZOMBIE_COUNT[1]) {
+    for (const [type, typeWeight] of spawnWeights) {
+      if (typeWeight > 0) {
+        types.add(type);
+      }
+    }
     types.add(HAMLET_WANDERER);
   }
   return types;
@@ -102,10 +112,31 @@ export const hamletZombieSpawns = (
   seed: number,
   road: Rect,
   markers: readonly SpawnMarker[],
-  roadHeightAt: (x: number) => number,
+  options: {
+    readonly roadHeightAt: (x: number) => number;
+    readonly spawnWeights?: ReadonlyMap<string, number>;
+  },
 ): ZombieSpawn[] => {
+  const { roadHeightAt } = options;
   const rng = Rng.stream(seed, 'hamlet-zombies');
-  const selected = markers.filter((spawn) => rng.chance(spawn.chance));
+  const spawnWeights = options.spawnWeights ?? new Map([[HAMLET_WANDERER, 1]]);
+  const weight = (type: string) => spawnWeights.get(type) ?? 1;
+  const selected = markers.filter((spawn) => rng.chance(spawn.chance * weight(spawn.zombie)));
+  const weightedTypes = [...spawnWeights].filter(([, typeWeight]) => typeWeight > 0);
+  if (!weightedTypes.some(([type]) => type === HAMLET_WANDERER)) {
+    weightedTypes.push([HAMLET_WANDERER, 1]);
+  }
+  const totalWeight = weightedTypes.reduce((total, [, typeWeight]) => total + typeWeight, 0);
+  const wandererType = (): string => {
+    let roll = rng.range(0, totalWeight);
+    for (const [type, typeWeight] of weightedTypes) {
+      roll -= typeWeight;
+      if (roll < 0) {
+        return type;
+      }
+    }
+    return weightedTypes.at(-1)![0];
+  };
   const count = rng.int(...ZOMBIE_COUNT);
   const spawns = selected.slice(0, count).map(({ zombie, pos }) => ({ type: zombie, pos }));
   const wanderers = count - spawns.length;
@@ -113,7 +144,7 @@ export const hamletZombieSpawns = (
     const x = Math.floor(road.x0 + ((i + 1) * (road.x1 - road.x0)) / (wanderers + 1));
     const side = i % 2 === 0 ? -1 : 1;
     const z = Math.floor((road.z0 + road.z1) / 2 + side * (HAMLET.road / 2 + 2));
-    spawns.push({ type: HAMLET_WANDERER, pos: [x, roadHeightAt(x) + 1, z] });
+    spawns.push({ type: wandererType(), pos: [x, roadHeightAt(x) + 1, z] });
   }
   return spawns;
 };
@@ -295,7 +326,12 @@ export class Hamlet implements Site {
 
   private makeZombieSpawns(): void {
     const markers = this.lots.flatMap(({ placement }) => placedSpawns(placement));
-    this.zombieSpawns.push(...hamletZombieSpawns(this.seed, this.road, markers, (worldX) => this.roadHeightAt(worldX)));
+    this.zombieSpawns.push(
+      ...hamletZombieSpawns(this.seed, this.road, markers, {
+        roadHeightAt: (worldX) => this.roadHeightAt(worldX),
+        spawnWeights: new Map([...this.registry.zombies].map(([type, zombie]) => [type, zombie.spawnWeight])),
+      }),
+    );
     const rng = Rng.stream(this.seed, 'hamlet-first-horde');
     const x = Math.floor(this.road.x0 + (this.road.x1 - this.road.x0) * 0.68);
     this.hordeSpawn = {

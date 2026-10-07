@@ -67,7 +67,7 @@ describe('validate CLI', () => {
       'FAIL  test/fixtures/content/recipe-too-many-combinations.json recipes[0].components: 2048 component combinations exceeds maximum 1024',
       'FAIL  test/fixtures/content/broken-reference.json loot[0].entries[1].item: no item "golden_toilet"',
       'FAIL  test/fixtures/content/missing-sound-file.json sounds[0].variants[0]: "assets/audio/missing.ogg" is not in the pack',
-      'FAIL  test/fixtures/content/zombie-with-model.json zombies[0].model: unknown field "model"',
+      'FAIL  test/fixtures/content/zombie-with-model.json zombies[0].sounds.attack: Invalid type: Expected',
       'FAIL  test/fixtures/content/missing-model-file.json models[0].file: "assets/models/lamp.glb" is not in the pack',
       'FAIL  test/fixtures/packs/stray/assets/manifest.json sources: "assets/models/stray.glb" is in the pack but no source lists it',
       'FAIL  test/fixtures/assets/manifest.json sources[0].author: CC-BY-4.0 needs an author',

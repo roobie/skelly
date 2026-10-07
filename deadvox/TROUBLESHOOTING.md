@@ -30,7 +30,19 @@ catalogue that could mislead a player; see `BindingRegistry` in
 `src/game/inputBindings.ts`.
 
 Noclip flight is ungated while noclip is active so vertical movement can combine
-with WASD; entering noclip remains gated. The spawn menu itself is debug-only,
+with WASD; entering noclip remains gated. The debug spectator camera also reuses
+that flight movement on a separate camera position: the player body remains in the
+simulation, and toggling spectator mode off snaps back to it. `MobActorMeshes`
+continues to aim chase gaze at the player's body eyes, not the detached view.
+Perception labels are a renderer overlay of stored state: sight, recent near
+attention, remembered attention, or unaware. The hidden-shambler action requires
+nearby solid geometry. The test-noise action plays the existing `player_hurt_light`
+event through `session.playPlayerSound`; this debug action writes the player's
+vocal-noise state and simulation event queue. See `src/game/inputBindings.ts`,
+`INPUT_BINDINGS`, `src/debug/shamblerSpawning.ts`, `spawnUnawareShambler`, and
+`src/game/debugInterface.ts`, `DebugHooks.emitTestNoise` for the action routes.
+
+The spawn menu itself is debug-only,
 but its navigation and confirmation are ordinary modal controls. BR, 2026-10-07
 11:02, verbatim:
 
@@ -53,6 +65,11 @@ games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.
   state: loading a save keeps its saved position and view, and a replay starts from its recorded
   snapshot. See `src/game/config.ts`, `configFromUrl`, and `src/game/worldSetup.ts`,
   `playerStartFromWorld`.
+- The debug bindings for spectator camera, perception labels, hidden-shambler spawn, and test noise
+  are listed by action in `src/game/inputBindings.ts`, `INPUT_BINDINGS`; their active keys remain
+  rebindable. Use them together to watch a shambler remain unaware behind a wall, emit a near test
+  noise, and then step the body into sight. The labels expose the state transition while gaze stays
+  tied to the simulated body.
 - `site=testHouse`: the small test scene (block sizes, materials, furniture). With `debug=1`, use the south garden gate, then go east around the wall to the range's west end; the rack and shooting table are there, and targets are east. Registry-derived stock is in `src/game/testHouseRange.ts`, `testHouseRangeStock`.
 - `voicePitch=<factor>` and `voicePitchLarge=<factor>` on `?site=voice_size&debug=1` tune figure pitch anchors. `src/game/shamblerAudio.ts`, `debugVoicePitch`, ignores them on other sites or without debug mode.
 - `firearmsCombat=<level>` on a fresh debug world sets the authored firearms-combat skill range (`firearms_combat`). See `src/core/character.ts`, `SKILL_LEVEL_MIN`, `SKILL_LEVEL_MAX` and `SKILL_LEVEL_LEGENDARY`, and `src/debug/debugFirearmsSkill.ts`, `setDebugFirearmsSkill`.

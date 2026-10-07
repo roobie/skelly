@@ -7,7 +7,7 @@
 // Hunch and kneeBend are baked into the rest pose (this file); the walk
 // itself is gait.ts.
 
-import type { Body, Feature, Material } from '../core/body.ts';
+import type { Body, Bone, Feature, Material } from '../core/body.ts';
 import { RIGHT, UP } from '../core/conventions.ts';
 import { type BodyPlanDef, registerBodyPlan, sampleParams } from '../core/generate.ts';
 import {
@@ -805,6 +805,73 @@ const buildHumanoid = (genome: Genome): Body => {
   return { bones, features, palette: buildPalette(p) };
 };
 
+const LOWER_CRAWLER_BONE = /^(shin|foot)\./;
+const CRAWLER_STUMP_FRACTION = 0.55;
+
+const cutCrawlerBones = (bones: readonly Bone[]): { bones: Bone[]; cuts: Map<string, Vec3> } => {
+  const cuts = new Map<string, Vec3>();
+  const retained = bones.flatMap((bone) => {
+    if (LOWER_CRAWLER_BONE.test(bone.id)) {
+      return [];
+    }
+    if (!bone.id.startsWith('thigh.')) {
+      return [bone];
+    }
+    const cut: Vec3 = [
+      bone.head[0] + (bone.tail[0] - bone.head[0]) * CRAWLER_STUMP_FRACTION,
+      bone.head[1] + (bone.tail[1] - bone.head[1]) * CRAWLER_STUMP_FRACTION,
+      bone.head[2] + (bone.tail[2] - bone.head[2]) * CRAWLER_STUMP_FRACTION,
+    ];
+    cuts.set(bone.id, cut);
+    return [{ ...bone, tail: cut }];
+  });
+  return { bones: retained, cuts };
+};
+
+const trimCrawlerFeature = (
+  feature: Feature,
+  cut: Vec3 | undefined,
+  boneHeads: ReadonlyMap<string, Vec3>,
+): Feature[] => {
+  if (LOWER_CRAWLER_BONE.test(feature.bone)) {
+    return [];
+  }
+  if (!cut || feature.op === 'paint') {
+    return cut ? [] : [feature];
+  }
+  if (feature.shape.kind === 'ellipsoid') {
+    const head = boneHeads.get(feature.bone)!;
+    return length(sub(feature.shape.center, head)) <= 0.08 ? [feature] : [];
+  }
+  if (feature.shape.kind === 'capsule') {
+    const direction = sub(feature.shape.b, feature.shape.a);
+    const lengthSquared = dot(direction, direction);
+    const t = lengthSquared > 0 ? dot(sub(cut, feature.shape.a), direction) / lengthSquared : 1;
+    if (t > 0 && t < 1) {
+      const radius = feature.shape.ra + (feature.shape.rb - feature.shape.ra) * t;
+      return [{ ...feature, shape: { ...feature.shape, b: cut, rb: radius } }];
+    }
+  }
+  return [feature];
+};
+
+/** Keeps a short upper-thigh stump on each side; the lower-leg subtree is absent. */
+const amputateCrawlerLegs = (body: Body): Body => {
+  const { bones, cuts } = cutCrawlerBones(body.bones);
+  const boneHeads = new Map(body.bones.map((bone) => [bone.id, bone.head]));
+  const features = body.features.flatMap((feature) => trimCrawlerFeature(feature, cuts.get(feature.bone), boneHeads));
+  for (const [bone, center] of cuts) {
+    features.push({
+      bone,
+      op: 'paint',
+      shape: { kind: 'ellipsoid', center, radii: [0.045, 0.035, 0.045] },
+      material: 'gore',
+      onto: ['skin'],
+    });
+  }
+  return { ...body, bones, features };
+};
+
 const sampleWounds = (rng: Rng, count: number): Wound[] => {
   const n = Math.max(0, Math.round(count));
   const wounds: Wound[] = [];
@@ -828,6 +895,13 @@ const sampleHumanoid: BodyPlanDef['sample'] = (rng: Rng, template: Template) => 
 registerBodyPlan('humanoid', {
   sample: sampleHumanoid,
   build: (genome) => buildHumanoid(genome),
+  paramOrder: HUMANOID_PARAM_ORDER,
+  woundBones: WOUNDABLE_BONES,
+});
+
+registerBodyPlan('crawler', {
+  sample: sampleHumanoid,
+  build: (genome) => amputateCrawlerLegs(buildHumanoid(genome)),
   paramOrder: HUMANOID_PARAM_ORDER,
   woundBones: WOUNDABLE_BONES,
 });

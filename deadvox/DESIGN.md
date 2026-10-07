@@ -4,6 +4,9 @@ read_if:
   - you trade near-player shadow detail against distance
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
+  - you're changing the rendering of zombie actor models
+  - you're recording or reconciling BR's crawler silhouette rulings
+  - you're tracking d130 crawler gait, hit response or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
@@ -805,6 +808,49 @@ BR ruled (2026-10-06 15:42, d102):
 
 A marker's optional clock window delays its one-time spawn; `src/core/zombieSpawns.ts`, `ZombieSpawner.onColumn`, queues each windowed marker, and `ZombieSpawner.advance` checks its window on zombie ticks while the column stays loaded. Since a load never spawns a windowed marker, live play and replay agree at a window edge. Windowless markers keep chunk-load behavior. Bounded windows recur daily, so a marker that missed one remains eligible at the next opening instead of expiring: a playtest threat should not be lost because the player was elsewhere when its window passed, and may arrive the next evening. An open-ended `from` is eligible from day 1's occurrence of its boundary onward, so a run started after that occurrence is already eligible. Once spawned, its saved ledger entry prevents it returning when the window closes or after it is killed. This timing serves authored beats without scripting a player action. Scriptable dynamic events, such as a computer opening a door, remain future work in #313.
 
+Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
+sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
+leg region as its attack target. Keep their selection, attack target and sound
+mapping authored with the type; see `src/content/base/zombies.json` and the spawn
+markers in `src/content/base/templates.json`. Type weights scale authored marker
+chances and choose hamlet wanderers, keeping rarity a content property rather than
+an inference from generated counts.
+
+BR's crawler ruling (2026-10-06–07): the question was whether the crawler should be
+(a) a prone ground-crawler dragging itself on its arms with trailing legs, (b) a
+low, hunched humanoid on all fours, or (c) a short, hunched humanoid variant.
+
+BR (2026-10-06 21:46):
+
+> “okay, yeah runners, I see when I spawn them now; but crawlers I'm not sure - aren't they supposed to be crawling?”
+
+BR (2026-10-06 21:49):
+
+> “crawler: (A)” / “the other variants you mention are other mobs, not yet defined, but each having their place in the roster at some point”
+
+The other two forms are future mobs, not crawler variants. BR's follow-up asked
+whether the crawler should retain full legs or have stumps, and noted the hovering.
+BR (2026-10-07 00:18):
+
+> “1. i'm thinking it shouldn't have full legs / and it looks to be hovering a bit over the ground, so that might be an issue”
+
+After the stumps were shown, BR's question was whether their shape read correctly,
+while the pose still hovered. BR (2026-10-07 00:37):
+
+> “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
+
+BR (2026-10-07 10:03) approved the grounded static pose. The body uses
+`mobgen/src/mob/humanoid.ts`, `amputateCrawlerLegs`, and the static pose uses
+`mobgen/src/mob/crawler.ts`, `crawlerPose`. The same ruling requested:
+
+> "#325: good! It's now not hovering - but another issue was prominent now: it needs to look at the player's \"eyes\" (camera). And all mobs should do that by default. I.e. turn their heads such that they are \"looking\" at the player"
+
+BR clarified on 2026-10-07 12:33: “as for #325: looking good, but it's important they do so only when they perceive the player”. BR answered on 2026-10-07 13:08: “I'd say yes - best case would be to add some jitter, because it's reasonable that a person/creature turns their head towards what they're hearing, but sometimes they might turn the head so that the ears are in the 'hearing direction' - but to keep things simple for now, maybe we can add a bit of jitter so that it's not exact when the perception is hearing only”. The ears-toward-sound behavior is a possible later refinement; this PR uses jittered gaze toward the heard point. BR reported at 13:33, verbatim: “it's kinda hard testing (#325)” / “because if i see them (good enough to make out details) they generally see me too, which defeats the test”. The spectator camera, perception labels, hidden-shambler fixture and test-noise action make that boundary observable without moving the simulated player to the camera.
+
+In `deadvox/src/core/zombies.ts`, `ZombieSystem.updateAttention` sets `mode` to `chase` for sight and uses `investigate` with a near tier and `lastPerceived` for near stimuli; far-tier and horde targets are far. `deadvox/src/render/mobActors.ts`, `MobActorMeshes.posedFrame`, aims at the player's body-eye position in chase, or at `lastPerceived` for a near investigation while `stimulusAt` is among the actor's two most recent perception timestamps (`MobActorMeshes.hasRecentNearStimulus`). Once stale, gaze eases back to the base pose, including simulation head yaw. Near carried-light perception shares the near state and is treated as perceiving the player's presence; BR may overrule this at the look. `hearingGazeTarget` adds deterministic, id/time-based jitter, and `mobgen/src/mob/lookAt.ts`, `lookAtPose`, keeps gaze within the same rig limits and bounded turn rate from `mobgen/src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`. The debug spectator camera moves independently through `deadvox/src/render/playView.ts`, `updateCamera`, while `MobActorMeshes.setPlayerEyePosition` keeps chase gaze on the simulated body. `perceptionLabelFor` reads the stored perception state for debug labels. The test-noise action uses `session.playPlayerSound` with the existing `player_hurt_light` definition; because it commits `playerAudio` and a noise event, it is a debug simulation action rather than presentation-only. Gaze, labels and camera movement remain presentation-only and do not feed hit geometry, saves, replay or simulation fingerprints. The mobgen viewer has no perception state and continues to gaze at its camera in `mobgen/src/viewer/main.ts`, `applyLookAt`. The crawler's drag gait and in-game hit response remain d130 work, after #325 merges.
+
+Later (after playtest 1): #370 covers hesitation and pursuit decisions on non-violent sounds; #371 covers nearby shamblers taking interest in a pursuing shambler's hunting sound.
+
 ### Evolution
 
 A zombie can change into a tougher type after enough game days. Where it lives
@@ -1055,8 +1101,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.
-- **Entities** are drawn with instanced meshes; zombie limbs are instanced
-  boxes.
+- **Zombie bodies:** each mobgen model/seed variant owns a block of pose rows,
+  one per drawn actor. Missing per-actor rows leave the shared bone texture
+  unable to place that actor's mesh in the world. See `src/render/mobActors.ts`,
+  `MobActorMeshes`.
 - **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
   is still a little jaggedness. But we won't pursue this more right now, so I'll
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.

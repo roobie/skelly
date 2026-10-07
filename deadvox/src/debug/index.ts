@@ -47,7 +47,11 @@ import { type LookUrlState, lookUrl, parseLookParams } from './lookUrl.ts';
 import { attachMouseDiag, formatMouseDiag } from './mouseDiag.ts';
 import { stepNoclip } from './noclip.ts';
 import { readShamblerCount, writeShamblerCount } from './shamblerCount.ts';
-import { spawnShamblers } from './shamblerSpawning.ts';
+import {
+  spawnShamblers,
+  spawnUnawareShambler as spawnUnawareShamblerBehindWall,
+  spawnZombieType,
+} from './shamblerSpawning.ts';
 import { SpawnMenu } from './spawnMenu.ts';
 
 const COMPASS_DEBUG_LOADOUT = 'compass';
@@ -464,10 +468,12 @@ interface ActionContext {
   toggleSpawn: () => void;
   isNoclip: () => boolean;
   toggleNoclip: () => void;
+  spawnUnawareShambler: () => void;
   isDanger: () => boolean;
   toggleDanger: () => void;
   shamblerCount: () => number;
   spawnShambler: (count: number) => void;
+  spawnZombie: (typeId: string, count: number) => void;
   isAimEnabled: () => boolean;
   toggleAim: () => void;
   isFrozen: () => boolean;
@@ -487,10 +493,12 @@ export const createDebugActions = ({
   toggleSpawn,
   isNoclip,
   toggleNoclip,
+  spawnUnawareShambler,
   isDanger,
   toggleDanger,
   shamblerCount,
   spawnShambler,
+  spawnZombie,
   isAimEnabled,
   toggleAim,
   isFrozen,
@@ -548,6 +556,20 @@ export const createDebugActions = ({
       },
       { id: 'debug.noclip-toggle', label: 'Noclip', group: 'tools', state: isNoclip, run: toggleNoclip },
       {
+        id: 'debug.spectator-camera-toggle',
+        label: 'Spectator camera',
+        group: 'tools',
+        state: hooks.spectatorCamera.enabled,
+        run: hooks.spectatorCamera.toggle,
+      },
+      {
+        id: 'debug.perception-labels-toggle',
+        label: 'Perception labels',
+        group: 'shamblers',
+        state: hooks.perceptionLabels.enabled,
+        run: hooks.perceptionLabels.toggle,
+      },
+      {
         id: 'debug.compression-test',
         label: 'Compress / rest',
         group: 'survival',
@@ -578,6 +600,32 @@ export const createDebugActions = ({
         label: 'Spawn shamblers',
         group: 'shamblers',
         run: () => spawnShambler(shamblerCount()),
+      },
+      {
+        id: 'debug.spawn-unaware-shambler',
+        label: 'Spawn unaware shambler behind wall',
+        group: 'shamblers',
+        run: spawnUnawareShambler,
+      },
+      {
+        id: 'debug.test-noise',
+        label: 'Test noise (player_hurt_light)',
+        group: 'shamblers',
+        run: () => {
+          hooks.emitTestNoise();
+        },
+      },
+      {
+        id: 'debug.spawn-runner',
+        label: 'Spawn runner',
+        group: 'shamblers',
+        run: () => spawnZombie('runner', 1),
+      },
+      {
+        id: 'debug.spawn-crawler',
+        label: 'Spawn crawler',
+        group: 'shamblers',
+        run: () => spawnZombie('crawler', 1),
       },
       {
         id: 'debug.melee-aim-toggle',
@@ -1021,6 +1069,14 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     toggleNoclip: () => {
       noclip = !noclip;
     },
+    spawnUnawareShambler: () => {
+      const zombies = hooks.zombies();
+      const placed = zombies ? spawnUnawareShamblerBehindWall(hooks.engine, hooks.body, zombies) : false;
+      spawnStatus = placed ? 'Placed an unaware shambler behind a wall' : 'No nearby wall could hide a shambler';
+      if (placed) {
+        hooks.showNotice('An unaware shambler is nearby');
+      }
+    },
     isDanger: () => danger,
     toggleDanger: () => {
       danger = !danger;
@@ -1051,6 +1107,17 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       spawnStatus = `Placed ${placed} of ${count}`;
       if (placed > 0) {
         hooks.showNotice(placed === 1 ? 'A shambler is approaching' : `${placed} shamblers are approaching`);
+      }
+    },
+    spawnZombie: (typeId, count) => {
+      const zombies = hooks.zombies();
+      const placed = zombies ? spawnZombieType(hooks.engine, hooks.body, zombies, { typeId, count }) : 0;
+      spawnStatus = `Placed ${placed} of ${count}`;
+      if (placed > 0) {
+        const name = hooks.engine.registry.zombies.get(typeId)?.name ?? typeId;
+        hooks.showNotice(
+          placed === 1 ? `A ${name.toLowerCase()} is approaching` : `${placed} ${name.toLowerCase()}s are approaching`,
+        );
       }
     },
   });
@@ -1506,6 +1573,12 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     },
     get noclip() {
       return noclip;
+    },
+    get spectatorCamera() {
+      return hooks.spectatorCamera.enabled();
+    },
+    get perceptionLabels() {
+      return hooks.perceptionLabels.enabled();
     },
     get frozen() {
       return gameFrozen;

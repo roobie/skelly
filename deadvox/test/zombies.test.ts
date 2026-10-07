@@ -52,6 +52,8 @@ const { registry } = buildRegistry(
     .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown })),
 );
 const SHAMBLER = registry.zombies.get('shambler')!;
+const RUNNER = registry.zombies.get('runner')!;
+const CRAWLER = registry.zombies.get('crawler')!;
 const runtimeWeapon = <T extends { cooldownSimSeconds: number }>(weapon: T) => ({
   ...weapon,
   cooldown: weapon.cooldownSimSeconds,
@@ -77,7 +79,7 @@ const senses = (
   playerFn: () => PlayerSense,
   isSolid: SolidAt = FLOOR,
   hourFn: () => number = () => 12,
-  hurtPlayer: (amount: number, area?: 'head' | 'torso' | 'legs') => void = () => undefined,
+  hurtPlayer: (amount: number, area?: 'head' | 'torso' | 'legs', attacker?: number) => void = () => undefined,
 ) => ({
   player: playerFn,
   isSolid,
@@ -1608,6 +1610,77 @@ describe('shambler scenarios', () => {
     restored.restoreState(system.snapshotState(), (restoreId) => (restoreId === type.id ? type : undefined));
     expect(restored.store.get(id)?.incapacitated).toBe(true);
     expect(restored.store.get(id)?.figureSeed).toBe(zombie.figureSeed);
+  });
+
+  it('runner closes a beeline faster than a shambler', () => {
+    const pursue = (type: typeof SHAMBLER) => {
+      const system = new ZombieSystem(senses(() => player([20, 1, 0])));
+      const id = system.add(type, [0, 1, 0], [1, 0, 0]);
+      run(system, 2);
+      return system.store.get(id)!;
+    };
+    const shambler = pursue(SHAMBLER);
+    const runner = pursue(RUNNER);
+    expect(shambler.mode).toBe('chase');
+    expect(runner.mode).toBe('chase');
+    expect(runner.body.pos[0]).toBeGreaterThan(shambler.body.pos[0]);
+    expect(runner.body.pos[0]).toBeGreaterThan(Math.abs(runner.body.pos[2]));
+  });
+
+  it('crawler attacks wear the player legs region and identify their attacker', () => {
+    const hitAreas: ('head' | 'torso' | 'legs')[] = [];
+    const attackers: number[] = [];
+    const system = new ZombieSystem(
+      senses(
+        () => player([1.5, 1, 0]),
+        FLOOR,
+        () => 12,
+        (_damage, area, attacker) => {
+          hitAreas.push(area ?? 'torso');
+          if (attacker !== undefined) {
+            attackers.push(attacker);
+          }
+        },
+      ),
+    );
+    system.add(CRAWLER, [0, 1, 0], [1, 0, 0]);
+    run(system, 2);
+    expect(hitAreas).toContain('legs');
+    expect(attackers.some((id) => system.store.get(id)?.type.name === CRAWLER.name)).toBe(true);
+  });
+
+  it('runner and crawler identity, body and movement state survive zombie restore', () => {
+    const source = new ZombieSystem({ ...senses(() => player([20, 1, 0])), seed: 0x4_92 });
+    source.add(RUNNER, [0, 1, 0], [1, 0, 0]);
+    source.add(CRAWLER, [0, 1, 2], [1, 0, 0]);
+    run(source, 0.5);
+    const snapshot = source.snapshotState();
+    expect(snapshot.zombies).toHaveLength(2);
+    expect(snapshot.zombies.map(({ zombie }) => zombie.type).sort()).toEqual(['crawler', 'runner']);
+    const expected = new Map(
+      snapshot.zombies.map(({ id, zombie }) => [
+        id,
+        {
+          type: zombie.type,
+          figureSeed: zombie.figureSeed,
+          mode: zombie.mode,
+          body: zombie.body,
+          gaitPhase: zombie.gaitPhase,
+        },
+      ]),
+    );
+    const restored = new ZombieSystem(senses(() => player([20, 1, 0])));
+    restored.restoreState(snapshot, (id) => registry.zombies.get(id));
+    expect(restored.store.size).toBe(2);
+    for (const [id, zombie] of restored.store.entries()) {
+      expect({
+        type: zombie.type.id,
+        figureSeed: zombie.figureSeed,
+        mode: zombie.mode,
+        body: zombie.body,
+        gaitPhase: zombie.gaitPhase,
+      }).toEqual(expected.get(id));
+    }
   });
 
   it('preserves every zombie figure seed in a snapshot/restore round trip', () => {
