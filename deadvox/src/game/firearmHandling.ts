@@ -400,7 +400,7 @@ export class FirearmMechanics {
     if (!progress) {
       progress = {
         elapsed: 0,
-        duration: this.stanceEffectsFor(uid).raiseDuration,
+        duration: this.stanceEffectsFor(uid).raiseDurationSimSeconds,
       };
       state.readying = progress;
       this.raising.add(uid);
@@ -451,7 +451,7 @@ export class FirearmMechanics {
     const loadScale = this.muzzleLoadScale(item);
     const response = firearmAttachmentResponse(this.inventory.registry, item);
     return {
-      raiseDuration: stance.raiseDuration * loadScale * response.raiseScale,
+      raiseDurationSimSeconds: stance.raiseDurationSimSeconds * loadScale * response.raiseScale,
       readyMovementFactor: (stance.readyMovementFactor * response.swingScale) / loadScale,
     };
   }

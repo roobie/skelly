@@ -113,7 +113,7 @@ describe('muzzle load', () => {
 
     expect(loaded.singleShot.variance).toBeGreaterThan(unloaded.singleShot.variance);
     expect(loaded.singleShot.recoilRecoveryScale).toBeLessThan(unloaded.singleShot.recoilRecoveryScale);
-    expect(loadedStance.raiseDuration).toBeGreaterThan(unloadedStance.raiseDuration);
+    expect(loadedStance.raiseDurationSimSeconds).toBeGreaterThan(unloadedStance.raiseDurationSimSeconds);
     expect(loadedStance.readyMovementFactor).toBeLessThan(unloadedStance.readyMovementFactor);
   });
 
