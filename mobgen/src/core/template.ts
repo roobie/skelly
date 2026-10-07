@@ -11,7 +11,7 @@ export type ParamSpec =
   | { readonly choices: readonly number[] };
 
 export type BodyPlan = 'humanoid' | 'amalgam';
-export type SupportBones = readonly string[] | 'ground-contacts';
+type SupportBones = readonly string[] | 'ground-contacts';
 
 export interface Template {
   readonly name: string;
