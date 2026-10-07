@@ -78,7 +78,6 @@ import {
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayAction,
-  type ReplayColumnChange,
   type ReplayColumnUpdate,
   type ReplayControlSample,
   type ReplayGeneratedColumn,
@@ -87,6 +86,7 @@ import {
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
+import { InputReplayDriver, type InputReplayDriverPorts } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
@@ -198,6 +198,11 @@ const createInputReplayRecorder = (
   return new InputReplayRecorder(snapshot(), undefined, generatedColumns);
 };
 
+const createInputReplayDriver = (
+  player: InputReplayPlayer | undefined,
+  ports: Omit<InputReplayDriverPorts, 'player'>,
+): InputReplayDriver | undefined => (player ? new InputReplayDriver({ ...ports, player }) : undefined);
+
 const handlingPresentationFor = (
   job: Readonly<LongJob> | undefined,
   queue: HandlingPresentationSource,
@@ -306,8 +311,6 @@ export const startPlay = (
   let replayVerification: 'matched' | 'diverged' | 'unavailable' | undefined;
   let replayVerificationTick: number | undefined;
   let replayVerificationStarted = false;
-  let replayTickRemainder = 0;
-  let replayColumnsInitialized = false;
   const replayPlayer = createInputReplayPlayer(options.replay?.inputs, (action, sample) =>
     dispatchReplayAction(action, sample),
   );
@@ -572,55 +575,14 @@ export const startPlay = (
     }
   };
   const applyColumnUnload = (cx: number, cz: number): void => session.onColumnUnload(cx, cz);
-  const ensureReplayColumnGenerated = (cx: number, cz: number): boolean => {
-    if (streamer.hasGeneratedColumn(cx, cz) || streamer.generateForReplay(cx, cz)) {
-      return true;
-    }
-    replayVerification = 'unavailable';
-    return false;
-  };
-  const initializeReplayColumns = (): boolean => {
-    if (!replayPlayer || replayColumnsInitialized) {
-      return true;
-    }
-    const initialColumns = [...replayPlayer.inputs.generatedColumns].sort(([ax, az], [bx, bz]) => ax - bx || az - bz);
-    for (const [cx, cz] of initialColumns) {
-      if (!ensureReplayColumnGenerated(cx, cz)) {
-        return false;
-      }
-    }
-    for (const [cx, cz] of initialColumns) {
-      applyColumnLoad(cx, cz);
-    }
-    replayColumnsInitialized = true;
-    return true;
-  };
-  const applyReplayColumnChange = ([, cx, cz, generated]: ReplayColumnChange): boolean => {
-    if (generated) {
-      if (!ensureReplayColumnGenerated(cx, cz)) {
-        return false;
-      }
-      applyColumnLoad(cx, cz);
-    } else {
-      streamer.unloadForReplay(cx, cz);
-      applyColumnUnload(cx, cz);
-    }
-    return true;
-  };
-  const applyReplayColumnChanges = (changes: readonly ReplayColumnChange[]): boolean => {
-    if (!replayPlayer) {
-      return true;
-    }
-    if (!initializeReplayColumns()) {
-      return false;
-    }
-    for (const change of changes) {
-      if (!applyReplayColumnChange(change)) {
-        return false;
-      }
-    }
-    return true;
-  };
+  const replayDriver = createInputReplayDriver(replayPlayer, {
+    terrain: streamer,
+    onColumnLoad: applyColumnLoad,
+    onColumnUnload: applyColumnUnload,
+    simulation: { currentSimSeconds: () => sim.time, compression: sim.compression },
+    frameReplay: (simSeconds) => session.frameReplay(simSeconds),
+    playerPosition: () => body.pos,
+  });
   streamer.onColumn = (cx, cz) => {
     if (replayPlayer) {
       return;
@@ -2214,52 +2176,18 @@ export const startPlay = (
     }
   };
 
-  const advanceReplayTick = (): number => {
-    if (!(replayPlayer && applyReplayColumnChanges(replayPlayer.takePreparedColumnChanges()))) {
-      sim.paused = true;
-      return 0;
-    }
-    const sample = replayPlayer.peek();
-    if (!sample) {
-      return 0;
-    }
-    if (sample.worldReady && !streamer.isReady(body.pos[0], body.pos[2])) {
-      replayVerification = 'unavailable';
-      sim.paused = true;
-      return 0;
-    }
-    sim.compression.c = sample.compression;
-    const timeBefore = sim.time;
-    session.frameReplay(1 / (60 * sample.compression));
-    return sim.time - timeBefore;
-  };
-
-  const advanceReplayEndRemainder = (): void => {
-    if (!replayPlayer || replayVerification === 'unavailable') {
-      return;
-    }
-    const endRemainder = options.replay!.endSimTimestamp - sim.time;
-    if (endRemainder > 0) {
-      session.frameReplay(endRemainder / sim.compression.c);
-    }
-  };
-
   const stepReplaySimulation = (realDt: RealSeconds, menuPaused: boolean, gameFrozen: boolean): void => {
     sim.paused = menuPaused || gameFrozen || replayPlayer?.finished === true || replayVerification === 'unavailable';
-    if (sim.paused || !replayPlayer) {
+    if (sim.paused || !replayPlayer || !replayDriver) {
       return;
     }
-    const frameCompression = replayPlayer.peek()?.compression ?? 1;
-    replayTickRemainder += Math.min(realDt * frameCompression, sim.compression.limits.maxSimPerFrame);
-    while (replayTickRemainder >= 1 / 60 && !replayPlayer.finished) {
-      const advanced = advanceReplayTick();
-      replayTickRemainder -= advanced;
-      if (advanced === 0) {
-        break;
-      }
+    if (replayDriver.advanceFrame(realDt).kind === 'unavailable') {
+      replayVerification = 'unavailable';
+      sim.paused = true;
+      return;
     }
     if (replayPlayer.finished) {
-      advanceReplayEndRemainder();
+      replayDriver.advanceEndRemainder(options.replay!.endSimTimestamp);
     }
     verifyReplayEndState();
   };
