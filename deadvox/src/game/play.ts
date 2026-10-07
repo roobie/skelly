@@ -22,7 +22,7 @@ import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
 import type { SoundEmission } from '../core/soundPicker.ts';
-import { type RealSeconds, type RealTimestamp, realSeconds } from '../core/time.ts';
+import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
@@ -78,7 +78,6 @@ import {
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayAction,
-  type ReplayColumnUpdate,
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
@@ -86,7 +85,7 @@ import {
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
-import { InputReplayDriver, type InputReplayDriverPorts } from './inputReplayDriver.ts';
+import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
@@ -112,7 +111,6 @@ import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const EMPTY_REPLAY_COLUMN_UPDATES: readonly ReplayColumnUpdate[] = [];
 /** Metres: how far away you can open a door or search a container you're looking at. */
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -296,15 +294,6 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
-  const pendingColumnChanges = new Map<string, ReplayColumnUpdate>();
-  const takeColumnChanges = (): readonly ReplayColumnUpdate[] => {
-    if (pendingColumnChanges.size === 0) {
-      return EMPTY_REPLAY_COLUMN_UPDATES;
-    }
-    const changes = [...pendingColumnChanges.values()];
-    pendingColumnChanges.clear();
-    return changes;
-  };
   let pendingScreenCommands: ReplayActionPayload[] = [];
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
@@ -321,7 +310,7 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      inputRecorder?.recordTick(live, compressionAtTick, takeColumnChanges());
+      inputRecorder?.recordTick(live, compressionAtTick);
       const commands = pendingScreenCommands;
       pendingScreenCommands = [];
       for (const payload of commands) {
@@ -332,22 +321,9 @@ export const startPlay = (
       }
       return live;
     }
-    replaySample = replayPlayer.next();
-    if (replaySample) {
-      sim.compression.c = replaySample.compression;
-      applyReplayLook(input, replaySample);
-      return replaySample;
-    }
-    return {
-      active: false,
-      inputLocked: true,
-      intent: { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false },
-      yaw: input.yaw,
-      pitch: input.pitch,
-      walking: false,
-      descending: false,
-      worldReady: false,
-    };
+    const replayInput = nextReplayInputSample(replayPlayer, sim.compression, input);
+    replaySample = replayInput.recordedSample;
+    return replayInput.input;
   };
   let automaticFireUid: number | undefined;
   const automaticFireWeapon = (): Item | undefined => {
@@ -580,7 +556,7 @@ export const startPlay = (
     onColumnLoad: applyColumnLoad,
     onColumnUnload: applyColumnUnload,
     simulation: { currentSimSeconds: () => sim.time, compression: sim.compression },
-    frameReplay: (simSeconds) => session.frameReplay(simSeconds),
+    frameReplay: (realSeconds) => session.frameReplay(realSeconds),
     playerPosition: () => body.pos,
   });
   streamer.onColumn = (cx, cz) => {
@@ -589,7 +565,7 @@ export const startPlay = (
     }
     applyColumnLoad(cx, cz);
     if (inputRecorder) {
-      pendingColumnChanges.set(`${cx},${cz}`, [cx, cz, true]);
+      inputRecorder.queueColumnChange(cx, cz, true);
     }
   };
   streamer.onColumnUnload = (cx, cz) => {
@@ -598,7 +574,7 @@ export const startPlay = (
     }
     applyColumnUnload(cx, cz);
     if (inputRecorder) {
-      pendingColumnChanges.set(`${cx},${cz}`, [cx, cz, false]);
+      inputRecorder.queueColumnChange(cx, cz, false);
     }
   };
   const view = createPlayView(engine, inventory, (message) => {
@@ -2210,7 +2186,6 @@ export const startPlay = (
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
-      pendingColumnChanges.clear();
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     return gameFrozen;
@@ -2245,7 +2220,7 @@ export const startPlay = (
   const frame = (now: RealTimestamp) => {
     const workStart = realNow();
     const elapsedReal = Math.max(0, (now - last) / 1000);
-    const dt = realSeconds(Math.min(0.1, elapsedReal));
+    const dt = realDuration(Math.min(0.1, elapsedReal));
     frameInterval.record(now, now - last);
     last = now;
     fps += (1 / Math.max(dt, 1e-3) - fps) * 0.05;

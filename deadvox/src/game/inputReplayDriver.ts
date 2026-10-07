@@ -1,5 +1,7 @@
 import type { ReplayColumnChange, ReplayControlSample } from './inputReplay.ts';
 import type { InputReplayPlayer } from './inputReplayPlayer.ts';
+import { applyReplayLook } from './inputReplayPlayer.ts';
+import { PHYSICS_RATE } from './session.ts';
 
 export interface InputReplayDriverPorts {
   readonly player: Pick<InputReplayPlayer, 'finished' | 'inputs' | 'peek' | 'takePreparedColumnChanges'>;
@@ -23,7 +25,43 @@ export type InputReplayFrameResult =
   | { readonly kind: 'advanced' | 'finished'; readonly simSeconds: number }
   | { readonly kind: 'unavailable'; readonly simSeconds: number };
 
-const PLAYER_TICK_SECONDS = 1 / 60;
+const PLAYER_TICK_SECONDS = 1 / PHYSICS_RATE;
+
+export const nextReplayInputSample = (
+  player: Pick<InputReplayPlayer, 'next'>,
+  compression: { c: number },
+  look: { yaw: number; pitch: number },
+): { readonly input: ReplayControlSample; readonly recordedSample: ReplayControlSample | undefined } => {
+  const recordedSample = player.next();
+  if (recordedSample) {
+    compression.c = recordedSample.compression;
+    applyReplayLook(look, recordedSample);
+    return { input: recordedSample, recordedSample };
+  }
+  return {
+    input: {
+      active: false,
+      inputLocked: true,
+      intent: {
+        forward: 0,
+        right: 0,
+        jump: false,
+        sprint: false,
+        walk: false,
+        useDominant: false,
+        useDominantHeld: false,
+        useOff: false,
+      },
+      yaw: look.yaw,
+      pitch: look.pitch,
+      walking: false,
+      descending: false,
+      worldReady: false,
+      compression: compression.c,
+    },
+    recordedSample: undefined,
+  };
+};
 
 type ReplayTickResult = InputReplayFrameResult;
 
@@ -105,7 +143,7 @@ export class InputReplayDriver {
     }
     simulation.compression.c = sample.compression;
     const timeBefore = simulation.currentSimSeconds();
-    frameReplay(PLAYER_TICK_SECONDS / sample.compression);
+    frameReplay(1 / (PHYSICS_RATE * sample.compression));
     return { kind: 'advanced', simSeconds: simulation.currentSimSeconds() - timeBefore };
   }
 
