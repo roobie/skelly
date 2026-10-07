@@ -281,7 +281,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
     await page.goto(
       browserStageUrl(
         'primary-action',
-        `http://127.0.0.1:${port}/?debug=1&seed=73&site=hamlet&radius=128&time=12:00&post=0&sunshadow=0&torchshadow=0`,
+        `http://127.0.0.1:${port}/?debug=1&seed=73&site=hamlet&radius=32&time=12:00&post=0&sunshadow=0&torchshadow=0`,
         renderOverride,
       ),
     );
@@ -317,7 +317,7 @@ const verifyCleanLookReplay = async (browserInstance, port, renderOverride) => {
         !streamer.isReady(zombie.body.pos[0], zombie.body.pos[2]),
       );
     });
-    assert(zombieNearStreamEdge, 'the clean recording starts with a zombie in an unready stream-edge column');
+    assert(zombieNearStreamEdge, 'the clean recording includes a zombie in an unready stream-edge column');
     const command = async (action) =>
       page.evaluate(
         async ({ id, moduleUrl }) => {
