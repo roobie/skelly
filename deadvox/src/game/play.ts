@@ -78,7 +78,6 @@ import {
   InputReplayRecorder,
   joinInputReplayWindows,
   type ReplayAction,
-  type ReplayColumnUpdate,
   type ReplayControlSample,
   type ReplayGeneratedColumn,
   type ReplayInputData,
@@ -112,7 +111,6 @@ import { Unpacking } from './unpacking.ts';
 import { playerStartFromWorld } from './worldSetup.ts';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const EMPTY_REPLAY_COLUMN_UPDATES: readonly ReplayColumnUpdate[] = [];
 /** Metres: how far away you can open a door or search a container you're looking at. */
 const USE_REACH = 2;
 /** Sim seconds of slack for a debug time skip "reaching its target"; the clamped last frame lands within float error of it. */
@@ -296,14 +294,6 @@ export const startPlay = (
   const firearmTrigger = new DebugFirearmTrigger();
   let inputRecorder: InputReplayRecorder | undefined;
   let previousInputRecorder: InputReplayRecorder | undefined;
-  const pendingColumnChanges: ReplayColumnUpdate[] = [];
-  const takeColumnChanges = (): readonly ReplayColumnUpdate[] => {
-    if (pendingColumnChanges.length === 0) {
-      return EMPTY_REPLAY_COLUMN_UPDATES;
-    }
-    const changes = pendingColumnChanges.splice(0);
-    return changes;
-  };
   let pendingScreenCommands: ReplayActionPayload[] = [];
   let replaySample: ReplayControlSample | undefined;
   let dispatchReplayAction: (action: ReplayAction, sample: ReplayControlSample) => void = () => undefined;
@@ -320,7 +310,7 @@ export const startPlay = (
     compressionAtTick: number,
   ): PlayerInputSample => {
     if (!replayPlayer) {
-      inputRecorder?.recordTick(live, compressionAtTick, takeColumnChanges());
+      inputRecorder?.recordTick(live, compressionAtTick);
       const commands = pendingScreenCommands;
       pendingScreenCommands = [];
       for (const payload of commands) {
@@ -575,7 +565,7 @@ export const startPlay = (
     }
     applyColumnLoad(cx, cz);
     if (inputRecorder) {
-      pendingColumnChanges.push([cx, cz, true]);
+      inputRecorder.queueColumnChange(cx, cz, true);
     }
   };
   streamer.onColumnUnload = (cx, cz) => {
@@ -584,7 +574,7 @@ export const startPlay = (
     }
     applyColumnUnload(cx, cz);
     if (inputRecorder) {
-      pendingColumnChanges.push([cx, cz, false]);
+      inputRecorder.queueColumnChange(cx, cz, false);
     }
   };
   const view = createPlayView(engine, inventory, (message) => {
@@ -2196,7 +2186,6 @@ export const startPlay = (
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
-      pendingColumnChanges.length = 0;
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     return gameFrozen;

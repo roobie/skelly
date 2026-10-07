@@ -128,7 +128,6 @@ export type ReplayFrame = readonly [
 export type ReplayGeneratedColumn = readonly [cx: number, cz: number];
 export type ReplayColumnUpdate = readonly [cx: number, cz: number, generated: boolean];
 export type ReplayColumnChange = readonly [tick: number, cx: number, cz: number, generated: boolean];
-const NO_COLUMN_CHANGES: readonly ReplayColumnUpdate[] = [];
 
 export interface ReplayInputData {
   readonly frames: readonly ReplayFrame[];
@@ -347,6 +346,7 @@ export class InputReplayRecorder {
   private readonly batchCosts: Float32Array = new Float32Array(120);
   private completedBatches = 0;
   private readonly columnChanges: ReplayColumnChange[] = [];
+  private readonly pendingColumnChanges: ReplayColumnUpdate[] = [];
   readonly startSnapshot: Readonly<SaveSnapshot>;
   readonly generatedColumns: readonly ReplayGeneratedColumn[];
 
@@ -446,15 +446,16 @@ export class InputReplayRecorder {
     });
   }
 
-  recordTick(
-    sample: Omit<ReplayControlSample, 'compression'>,
-    compression = 1,
-    columnChanges: readonly ReplayColumnUpdate[] = NO_COLUMN_CHANGES,
-  ): void {
+  queueColumnChange(cx: number, cz: number, generated: boolean): void {
+    this.pendingColumnChanges.push([cx, cz, generated]);
+  }
+
+  recordTick(sample: Omit<ReplayControlSample, 'compression'>, compression = 1): void {
     if (this.frameCount >= this.bufferTicks) {
       throw new Error('Input replay tick buffer is full');
     }
-    appendColumnChanges(this.columnChanges, this.frameCount, columnChanges);
+    appendColumnChanges(this.columnChanges, this.frameCount, this.pendingColumnChanges);
+    this.pendingColumnChanges.length = 0;
     if (this.frameCount % 60 === 0) {
       this.batchStartedAtRealMilliseconds = performance.now();
     }

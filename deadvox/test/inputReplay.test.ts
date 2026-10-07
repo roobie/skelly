@@ -120,7 +120,7 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
 const applyColumnUpdates = (
   updates: readonly ReplayColumnUpdate[] | undefined,
   generatedColumns: Set<string>,
-  pendingChanges: ReplayColumnUpdate[],
+  recorder: InputReplayRecorder,
 ): void => {
   for (const [cx, cz, isGenerated] of updates ?? []) {
     const key = `${cx},${cz}`;
@@ -129,7 +129,7 @@ const applyColumnUpdates = (
     } else {
       generatedColumns.delete(key);
     }
-    pendingChanges.push([cx, cz, isGenerated]);
+    recorder.queueColumnChange(cx, cz, isGenerated);
   }
 };
 
@@ -164,7 +164,6 @@ const recordActiveSession = (
   const { ready, columns, commands = [], frameDts = [1 / 90, 1 / 60, 1 / 120] } = options;
   const pendingCommands: ReplayActionPayload[] = [];
   const generatedColumns = new Set(columns?.initial.map(([cx, cz]) => `${cx},${cz}`) ?? []);
-  const pendingColumnChanges: ReplayColumnUpdate[] = [];
   const source = createRuntime(
     start,
     false,
@@ -183,10 +182,9 @@ const recordActiveSession = (
           recorder.queueAction(payload.kind, 'down', context, payload);
           pendingCommands.push(payload);
         }
-        const columnChanges = pendingColumnChanges.splice(0);
-        recorder.recordTick(live, compression, columnChanges);
+        recorder.recordTick(live, compression);
         const updates = columns?.updatesAtTick(recorder.tickCount) ?? [];
-        applyColumnUpdates(updates, generatedColumns, pendingColumnChanges);
+        applyColumnUpdates(updates, generatedColumns, recorder);
         for (const [cx, cz, generated] of updates) {
           if (generated) {
             addFixtureColumn(source, cx, cz);
@@ -380,15 +378,15 @@ const createCraftReplayFixture = () => {
 const REPLAY_EXPORT_OVERRIDE_MESSAGE = /debug firearm-handling overrides differ from content/;
 
 describe('input replay', () => {
-  it('rejects the previous replay schema after the column-change format change', async () => {
+  it('rejects a replay from another schema version', async () => {
     const start = capture(createRuntime());
     const recorder = new InputReplayRecorder(start);
     recorder.recordTick(replaySample);
     const current = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
-    const previousSchema = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
-    previousSchema.schemaVersion = 7;
+    const differentSchema = JSON.parse(new TextDecoder().decode(current)) as Record<string, unknown>;
+    differentSchema.schemaVersion = Number(differentSchema.schemaVersion) - 1;
 
-    await expect(decodeInputReplay(canonicalJsonBytes(previousSchema), { contentLookup })).rejects.toThrow(
+    await expect(decodeInputReplay(canonicalJsonBytes(differentSchema), { contentLookup })).rejects.toThrow(
       'Unsupported replay format',
     );
   });
@@ -517,7 +515,8 @@ describe('input replay', () => {
   it('prepares tick-zero generated columns when playback is constructed', () => {
     const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>);
     const column: ReplayColumnUpdate = [7, -4, true];
-    recorder.recordTick(replaySample, 1, [column]);
+    recorder.queueColumnChange(...column);
+    recorder.recordTick(replaySample);
     const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
 
     expect(player.generatedColumns()).toContainEqual([column[0], column[1]]);
@@ -535,7 +534,8 @@ describe('input replay', () => {
     }
     const recorder = new InputReplayRecorder({} as Readonly<SaveSnapshot>, undefined, initialColumns);
     recorder.recordTick(replaySample);
-    recorder.recordTick(replaySample, 1, [[0, 0, true]]);
+    recorder.queueColumnChange(0, 0, true);
+    recorder.recordTick(replaySample);
     const player = new InputReplayPlayer(recorder.copyInputs(), () => undefined);
     const generated = new Set(initialColumns.map(([cx, cz]) => `${cx},${cz}`));
     const loaded = new Set<string>();
