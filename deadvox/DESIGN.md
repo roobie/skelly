@@ -592,8 +592,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   firearm wielded, the main-game center crosshair remains. BR, 2026-10-07 14:55,
   on the rifle turned for a rack or a magazine job (d114-12): “as recommended:
   Follow the turned muzzle”. While a job turns the drawn rifle, the crosshair
-  follows the turned muzzle, usually off screen, and comes back as the turn eases
-  out. `src/render/handlingTurn.ts`, `handlingTurn`, gives the drawn model and
+  follows the turned muzzle (with the rifle raised it stays in view, along the
+  turned barrel) and comes back as the turn eases out; by #341's rule it leaves
+  the view only if the turned muzzle point does. `src/render/handlingTurn.ts`, `handlingTurn`, gives the drawn model and
   the crosshair (`turnedBore`) the same turn. Shots keep the unturned bore:
   `FirearmMechanics.fire` refuses one while a handling job or a cycle runs, so
   the two never disagree at a shot.
