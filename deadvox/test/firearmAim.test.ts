@@ -25,9 +25,7 @@ it('chooses a bore-line zombie in front of a far wall', () => {
   expect(surface.distanceMetres).toBeGreaterThan(zombie.distanceMetres);
 
   const result = firearmBoreTarget({ eye, direction, surface, zombies: system, blockSize });
-  const zombiePoint = eye.map(
-    (value, axis) => value + direction[axis]! * (zombie.distanceMetres / blockSize),
-  ) as Vec3;
+  const zombiePoint = eye.map((value, axis) => value + direction[axis]! * (zombie.distanceMetres / blockSize)) as Vec3;
 
   expect(result.point).toEqual(zombiePoint);
   expect(result.distanceMetres).toBe(zombie.distanceMetres);
