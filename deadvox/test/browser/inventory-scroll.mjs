@@ -90,7 +90,6 @@ screen.open();
 screen.onAction('inventory.next');
 screen.selected = rag;
 screen.update();
-screen.close();
 const firearmRegistry = BUNDLED_CONTENT.registry;
 const firearmInventory = new Inventory(firearmRegistry);
 const firearmQueue = new HandlingQueue(firearmInventory);
@@ -147,6 +146,7 @@ globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
   prepareAttachmentAction() {
+    screen.close();
     firearmScreen.open();
     const selector = '#inventory [data-attachment-slot="' + slot.id + '"] button';
     const button = document.querySelector(selector);
