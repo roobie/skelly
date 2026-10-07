@@ -545,6 +545,7 @@ const AttachmentFieldsSchema = strictObject({
   massKg: optional(NonNegative),
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
+  massKg: Positive,
   properties: AttachmentPropertiesSchema,
   sight: optional(AttachmentSightSchema),
 });
@@ -632,6 +633,10 @@ const ModelSchema = pipe(
     /** Replaceable model parts and the gun-side mount frames for later fitting. */
     attachments: optional(array(FittedAttachmentSchema)),
     attachmentSlots: optional(array(AttachmentSlotSchema)),
+    /** Complete per-slot allowlist certified by gungen; absence denies dynamic fitting. */
+    compatibility: optional(
+      record(pipe(string(), nonEmpty('must not be empty')), array(pipe(string(), nonEmpty('must not be empty')))),
+    ),
     /** Exact baked GLB node and replacement transform for each item-owned model slot. */
     slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
     /** Static model metadata for an attachment exported as its own item asset. */

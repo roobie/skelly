@@ -18,6 +18,7 @@ describe('export CLI core', () => {
     expect(fromDesign.ok && fromFixture.ok).toBe(true);
     if (fromDesign.ok && fromFixture.ok) {
       expect(fromDesign.modelEntry.file).toBe('assets/models/ar.glb');
+      expect(fromDesign.modelEntry.compatibility).toBeDefined();
       expect(fromDesign.modelEntry.grip.turn).toEqual(fromFixture.modelEntry.grip.turn);
     }
   });

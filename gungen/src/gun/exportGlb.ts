@@ -9,6 +9,7 @@ import type { Assembly, PartDef } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
+import { attachmentCompatibility } from './attachmentCompatibility.ts';
 import {
   type AttachmentMetadata,
   type AttachmentSlotMetadata,
@@ -85,6 +86,8 @@ export interface DeadvoxModelEntry {
   readonly attachments?: readonly (AttachmentMetadata & { readonly node: string; readonly mountedAt: string })[];
   /** Authored mount interfaces; fitted occupancy is linked by attachment `mountedAt` IDs. */
   readonly attachmentSlots?: readonly AttachmentSlotMetadata[];
+  /** Complete gungen-certified standalone attachment allowlist for each mount slot. */
+  readonly compatibility?: Readonly<Record<string, readonly string[]>>;
   /** Fitted, replaceable item slots whose baked geometry is present in the gun GLB. */
   readonly slots?: { readonly magazine?: { readonly node: string; readonly at: Vec3; readonly turn: Vec3 } };
 }
@@ -96,6 +99,11 @@ export interface GunDeadvoxModelEntry extends DeadvoxModelEntry {
 export interface GunExportMetadata {
   /** Cartridge loaded by this design; its id becomes the exact Deadvox `calibre` value. */
   readonly cartridge?: Cartridge;
+}
+
+interface GunExportOptions extends GunExportMetadata {
+  /** Geometry-only callers skip the slot solver; CLI model exports explicitly request its certificate. */
+  readonly includeAttachmentCompatibility?: boolean;
 }
 
 interface GunModelEntryOptions extends GunExportMetadata {
@@ -389,8 +397,9 @@ export const exportGunGlb = (
   assembly: Assembly,
   asset: GunAssetIdentity,
   appearance: AppearanceContext,
-  metadata: GunExportMetadata = {},
+  options: GunExportOptions = {},
 ): GunExportResult => {
+  const { includeAttachmentCompatibility = false, ...metadata } = options;
   const resolved = resolve(assembly, gunDomain);
   // Broken assemblies get the core writer's structure report before anchor selection.
   if (resolved.issues.length > 0 || resolved.placed.size < Object.keys(assembly.parts).length) {
@@ -437,6 +446,9 @@ export const exportGunGlb = (
       ...modelEntry,
       attachments: attachmentData(resolved),
       attachmentSlots: attachmentSlotsData,
+      ...(includeAttachmentCompatibility
+        ? { compatibility: attachmentCompatibility(assembly, attachmentSlotsData) }
+        : {}),
       ...(magazine ? { slots: { magazine } } : {}),
     },
   };
