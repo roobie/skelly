@@ -12,8 +12,7 @@ const sources = readdirSync(base)
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
 const { registry, issues } = buildRegistry(sources);
 const ASSAULT_RIFLE = 'rifle_assault';
-const UNCERTIFIED_ATTACHMENT = /Uncertified attachment/;
-
+const UNCERTIFIED_OR_OUT_OF_NOTCH_FIT = /Uncertified attachment|footprint does not fit/;
 describe('fitted firearm items', () => {
   it('creates removable default attachments as owned child items and renders them through the slot frame', () => {
     expect(issues).toEqual([]);
@@ -41,7 +40,9 @@ describe('fitted firearm items', () => {
     expect(weightOf(registry, rifle)).toBeGreaterThan(defOf(registry, rifle.type).weight);
 
     const wrong = inventory.create(rival!.id);
-    expect(() => inventory.fitSlot(rifle, defaultAttachment!.mountedAt, wrong)).toThrow(UNCERTIFIED_ATTACHMENT);
+    expect(() => inventory.fitSlot(rifle, defaultAttachment!.mountedAt, wrong)).toThrow(
+      UNCERTIFIED_OR_OUT_OF_NOTCH_FIT,
+    );
     expect(inventory.fitSlot(rifle, defaultAttachment!.mountedAt, undefined)).toBe(optic);
     expect(inventory.itemByUid(optic!.uid)).toBeUndefined();
   });

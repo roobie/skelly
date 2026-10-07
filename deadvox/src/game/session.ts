@@ -70,6 +70,7 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
+import { FirearmAttachmentHandling } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -607,6 +608,8 @@ export const createSession = (options: SessionOptions) => {
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
   });
+
+  const firearmAttachments = new FirearmAttachmentHandling(inventory, queue, feet);
 
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
@@ -1158,6 +1161,7 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     firearms,
+    firearmAttachments,
     magazines,
     aim,
     get firearmsSkillZeroHandling() {

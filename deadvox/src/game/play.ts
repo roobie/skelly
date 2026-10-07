@@ -715,6 +715,7 @@ export const startPlay = (
     workOptions: (uid) => session.crafting.options(uid),
     body: () => sim.body.snapshotState(),
     actionRefusal: () => sim.body.actionRefusal,
+    attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
   });
 
   const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
@@ -1065,6 +1066,9 @@ export const startPlay = (
       return search(entity);
     },
     work: actOnWork,
+    fitAttachment: (firearmUid, slotId, attachmentUid) =>
+      session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
+    removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
     toHands: (uid, feetPosition) => {
       const item = inventory.itemByUid(uid);
       return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';

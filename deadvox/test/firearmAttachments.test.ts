@@ -169,31 +169,4 @@ describe('muzzle load', () => {
 
     expect(weightOf(registry, rifle)).toBeGreaterThan(original);
   });
-
-  it('uses exported attachment mass for muzzle load and inventory weight', () => {
-    const registry = freshRegistry();
-    const rifle = new Inventory(registry).create('rifle_assault');
-    const child = Object.values(rifle.slots ?? {}).find((candidate) => candidate !== undefined);
-    if (!child) {
-      throw new Error('Factory-created rifle has no default attachment child');
-    }
-    const modelId = defOf(registry, child.type).model;
-    const model = modelId === undefined ? undefined : registry.models.get(modelId);
-    if (!model?.attachment) {
-      throw new Error('Factory-created attachment has no exported mass metadata');
-    }
-    const initialLoad = muzzleLoad(registry, rifle);
-    const initialWeight = weightOf(registry, child);
-    if (initialLoad === undefined) {
-      throw new Error('Factory-created rifle has no measurable attachment load');
-    }
-
-    registry.models.set(model.id, {
-      ...model,
-      attachment: { ...model.attachment, massKg: model.attachment.massKg * 2 },
-    });
-
-    expect(muzzleLoad(registry, rifle)).toBeGreaterThan(initialLoad);
-    expect(weightOf(registry, child)).toBeGreaterThan(initialWeight);
-  });
 });

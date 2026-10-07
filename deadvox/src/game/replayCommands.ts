@@ -11,6 +11,8 @@ export type ReplayActionPayload =
   | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
   | { kind: 'inventory.assign'; slot: number; itemUid: number }
   | { kind: 'inventory.cancel-handling' }
+  | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
+  | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
@@ -90,6 +92,10 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.slot as number) < QUICKBAR_SLOTS &&
         isUid(payload.itemUid)
       );
+    case 'firearm.attachment.fit':
+      return isUid(payload.firearmUid) && isUid(payload.attachmentUid) && typeof payload.slotId === 'string';
+    case 'firearm.attachment.remove':
+      return isUid(payload.firearmUid) && typeof payload.slotId === 'string';
     case 'inventory.cancel-handling':
     case 'craft.continue':
     case 'craft.stop':
@@ -117,6 +123,8 @@ export interface ReplayCommandOwners {
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
+  fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
+  removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   craftStart: (recipeId: string, preference?: CraftPreference) => string | undefined;
   craftContinue: () => string | undefined;
@@ -152,6 +160,14 @@ export const applyReplayActionPayload = (
       owners.quickbar.assign(payload.slot, item);
       return undefined;
     }
+    case 'firearm.attachment.fit':
+      return owners.fitAttachment
+        ? owners.fitAttachment(payload.firearmUid, payload.slotId, payload.attachmentUid)
+        : 'Attachment handling is unavailable';
+    case 'firearm.attachment.remove':
+      return owners.removeAttachment
+        ? owners.removeAttachment(payload.firearmUid, payload.slotId)
+        : 'Attachment handling is unavailable';
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;

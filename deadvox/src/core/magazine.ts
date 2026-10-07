@@ -1,6 +1,15 @@
 // A detachable box magazine (SLICE-3.md, 3.2): an item whose model carries gungen's fitted round column.
 // Its cartridges are item state in feed order: index 0 is the top round, the next one fed or stripped.
 import type { ModelDef, Registry } from './content.ts';
+import {
+  attachmentIdFor,
+  compatibilityPairCertifies,
+  footprintFitsRail,
+  isExportedSingleFit,
+  railFootprint,
+  railFootprintsOverlap,
+} from './firearmFitting.ts';
+import type { Item } from './items.ts';
 
 export interface MagazineSpec {
   readonly calibre: string;
@@ -89,24 +98,84 @@ export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
   return items;
 };
 
+interface FittedAttachment {
+  readonly slotId: string;
+  readonly attachmentId: string;
+  readonly isDefault: boolean;
+  readonly rail?: ReturnType<typeof railFootprint>;
+}
+
+const fittedAttachmentFor = (
+  registry: Registry,
+  model: ModelDef | undefined,
+  slotId: string,
+  child: { readonly type: string },
+): FittedAttachment | string => {
+  const slot = model?.attachmentSlots?.find(({ id }) => id === slotId);
+  const attachmentId = attachmentIdFor(registry, child as Item);
+  const attachmentModelId = registry.items.get(child.type)?.model;
+  const attachment = attachmentModelId === undefined ? undefined : registry.models.get(attachmentModelId)?.attachment;
+  const isDefault =
+    model?.attachments?.some(
+      (defaultAttachment) => defaultAttachment.mountedAt === slotId && defaultAttachment.id === attachmentId,
+    ) ?? false;
+  if (!(slot && attachment && attachmentId) || attachment.mount !== slot.mount) {
+    return `Uncertified attachment in slot "${slotId}"`;
+  }
+  if (!(isDefault || isExportedSingleFit(model, slotId, attachmentId))) {
+    return `Gungen does not certify ${attachmentId} for slot "${slotId}"`;
+  }
+  const rail = railFootprint(registry, model, slotId, child as Item);
+  // Authored defaults are certified as a complete assembly; their anchor slots are not the occupied rail extent.
+  if (!isDefault && slot.mount !== 'muzzle' && !(rail && footprintFitsRail(model, rail))) {
+    return `Attachment footprint does not fit the exported notches for slot "${slotId}"`;
+  }
+  return { slotId, attachmentId, isDefault, ...(rail ? { rail } : {}) };
+};
+
+const fittedPairReason = (
+  model: ModelDef | undefined,
+  current: FittedAttachment,
+  other: FittedAttachment,
+): string | undefined => {
+  if (current.rail && other.rail && railFootprintsOverlap(current.rail, other.rail)) {
+    return `Attachment footprints overlap on rail at slots "${current.slotId}" and "${other.slotId}"`;
+  }
+  const bothDefaults = current.isDefault && other.isDefault;
+  const pairCertified = compatibilityPairCertifies(
+    model,
+    [current.slotId, current.attachmentId],
+    [other.slotId, other.attachmentId],
+  );
+  if (!(bothDefaults || pairCertified)) {
+    return `Gungen does not certify the combined attachment fit at slots "${current.slotId}" and "${other.slotId}"`;
+  }
+  return undefined;
+};
+
 const attachmentSlotsReason = (
   registry: Registry,
   model: ModelDef | undefined,
   slots: Readonly<Record<string, { readonly type: string } | undefined>>,
 ): string | undefined => {
+  const fitted: FittedAttachment[] = [];
   for (const [slotId, child] of Object.entries(slots)) {
     if (!child || slotId === 'magazine' || slotId === 'battery') {
       continue;
     }
-    const slot = model?.attachmentSlots?.find(({ id }) => id === slotId);
-    const childDef = registry.items.get(child.type);
-    const attachmentModel = childDef?.model === undefined ? undefined : registry.models.get(childDef.model);
-    const attachment = attachmentModel?.attachment;
-    const certifiedDefault = model?.attachments?.some(
-      (fitted) => fitted.mountedAt === slotId && fitted.id === attachment?.id,
-    );
-    if (!(slot && attachment) || attachment.mount !== slot.mount || !certifiedDefault) {
-      return `Uncertified attachment in slot "${slotId}"`;
+    const result = fittedAttachmentFor(registry, model, slotId, child);
+    if (typeof result === 'string') {
+      return result;
+    }
+    fitted.push(result);
+  }
+  for (let index = 0; index < fitted.length; index += 1) {
+    const current = fitted[index]!;
+    for (const other of fitted.slice(index + 1)) {
+      const reason = fittedPairReason(model, current, other);
+      if (reason) {
+        return reason;
+      }
     }
   }
   return undefined;

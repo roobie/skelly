@@ -91,6 +91,7 @@ function setup() {
   });
   const notices: string[] = [];
   const refusals: string[] = [];
+  let lastPayload: ReplayActionPayload | undefined;
   let workHandler = (_uid: number, _operation: WorkOperation): string | undefined => undefined;
   const hooks = {
     reach: bindReach({ inventory: inv, position: [0, 0, 0], blockSize: 1 }),
@@ -99,8 +100,9 @@ function setup() {
     distance: () => 0,
     containers: () => [entity],
     entityDistance: () => 1,
-    dispatch: (payload: ReplayActionPayload) =>
-      applyReplayActionPayload(payload, {
+    dispatch: (payload: ReplayActionPayload) => {
+      lastPayload = payload;
+      return applyReplayActionPayload(payload, {
         inventory: inv,
         queue,
         quickbar: { assign: () => undefined },
@@ -117,7 +119,8 @@ function setup() {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         cancelGlowstick: () => undefined,
-      }),
+      });
+    },
     searching: (target: typeof entity) => searching.has(target),
     notice: (text: string) => notices.push(text),
     refusal: (text: string) => refusals.push(text),
@@ -125,6 +128,7 @@ function setup() {
     workOptions: (_uid: number): WorkOption[] => [],
     body: () => body.snapshotState(),
     actionRefusal: () => body.actionRefusal,
+    attachmentCandidates: () => [beans],
   };
   const root = document.querySelector<HTMLElement>('#inventory')!;
   const screen = new InventoryScreen(root, inv, queue, hooks);
@@ -141,6 +145,7 @@ function setup() {
     refusals,
     hooks,
     body,
+    lastPayload: () => lastPayload,
     setWorkHandler: (handler: typeof workHandler) => {
       workHandler = handler;
     },
@@ -169,6 +174,35 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
+  it('shows exported slots and dispatches fitting and removal for held and ground firearms', () => {
+    const { screen, inv, root, lastPayload, beans } = setup();
+    const groundFirearm = inv.create('rifle_assault');
+    inv.consume(beans);
+    const heldFirearm = inv.create('rifle_assault');
+    if (
+      !(
+        inv.add(groundFirearm, { kind: 'pile', pos: [0, 0, 0] }) &&
+        inv.add(heldFirearm, { kind: 'hand', side: 'right' })
+      )
+    ) {
+      throw new Error('Fixture firearms could not be placed');
+    }
+
+    const slotIds = registry.models.get('rifle_assault')!.attachmentSlots!.map((slot) => slot.id);
+    for (const firearm of [groundFirearm, heldFirearm]) {
+      screen.selected = firearm;
+      screen.update();
+      const rows = slotIds.map((id) => root.querySelector<HTMLElement>(`[data-attachment-slot="${id}"]`));
+      expect(rows.every(Boolean)).toBe(true);
+      const openRow = rows.find((row) => row!.dataset.occupied === 'false')!;
+      openRow.querySelector('button')!.click();
+      expect(lastPayload()).toMatchObject({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid });
+      const occupiedRow = rows.find((row) => row!.dataset.occupied === 'true')!;
+      occupiedRow.querySelector('button')!.click();
+      expect(lastPayload()).toMatchObject({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid });
+    }
+  });
+
   it('refuses inventory actions while unconscious and permits them after waking', () => {
     const { screen, queue, body, beans, refusals } = setup();
     screen.selected = beans;
