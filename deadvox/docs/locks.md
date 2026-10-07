@@ -54,6 +54,15 @@ player; its strikes use the existing sound and zombie-hearing path. BR answered
 unlocked, making forced entry a one-way breach. See `src/core/prying.ts`,
 `pryPlan`, and `src/core/blockEntities.ts`, `BlockEntities.breakLock`.
 
+## Medical hall pharmacy
+
+BR ruled for d122-6, “to keep it simple, we'll go for 1:(b), 2:front counter”
+(2026-10-07 11:13). The pharmacy door uses the existing #309 key-or-crowbar lock
+contract, and the matching key is fixed in the medical hall's front counter;
+`src/content/base/templates-medical.json` and
+`src/content/base/layouts-playtest.json` own those placements. The pharmacy stays
+reachable with its key or by forcing the existing padlock.
+
 Picking, shambler bashing, and the hunting-cabin map placement remain outside
 this minimal pull-forward. Save identity changes normally; there is no old-save
 migration or compatibility path.

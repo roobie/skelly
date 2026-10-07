@@ -55,7 +55,7 @@ The eleven milestones are:
 - Shared flow fields: dropped by BR in the 3.9 ruling. Background zombies use the beeline in big, cheap steps instead; d84 (#279) is the carried-in attention brain. The remaining route follow-up in #244 is obsolete under that direction.
 - Legendary effects beyond vanity. BR's direction is “mostly vanity thing, but we might come up with something along the way” (2026-10-05 21:29).
 
-Beat details in #181 are settled one turn at a time before their dependent map rounds. For d122-2, the approved schematic v2 is the basis for the first medical-site pass; pharmacy access remains a BR decision. Crawler markers stay deferred until #325 lands, and the military site follows its own map round.
+Beat details in #181 are settled one turn at a time before their dependent map rounds. For d122-2, the approved schematic v2 is the basis for the first medical-site pass. BR ruled on pharmacy access for d122-6, “to keep it simple, we'll go for 1:(b), 2:front counter” (2026-10-07 11:13): use #309's existing key-or-crowbar door lock and put the pharmacy key in the front counter. Crawler markers stay deferred until #325 lands, and the military site follows its own map round.
 
 ## How this slice runs
 

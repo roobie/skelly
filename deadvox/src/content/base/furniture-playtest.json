@@ -22,9 +22,10 @@
     },
     {
       "id": "medical_research_notice",
-      "name": "Medical sampling notice",
-      "size": [2, 3, 1],
+      "name": "Medical sampling notice board",
+      "size": [2, 2, 1],
       "color": "#b8b5a5",
+      "solid": false,
       "readable": {
         "title": "Sampling station notice",
         "text": "COMMUNITY HEALTH SITE — VIRAL SAMPLING\n\nThis hall was requisitioned for observation and collection of viral samples. Intake records are kept in the lab. Supplies arrive from the military camp; keep the pharmacy stocked for staff."

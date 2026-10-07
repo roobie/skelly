@@ -347,7 +347,10 @@
           "rotation": 0,
           "storeys": 1,
           "fixedLoot": [
-            { "at": [4, 1, 20], "items": [{ "item": "antiseptic", "count": 1 }] },
+            {
+              "at": [4, 1, 20],
+              "items": [{ "item": "antiseptic", "count": 1 }, { "item": "pharmacy_key", "count": 1 }]
+            },
             { "at": [25, 1, 3], "items": [{ "item": "antibiotics", "count": 1 }] },
             { "at": [3, 1, 10], "items": [{ "item": "medical_research_log", "count": 1 }] }
           ]

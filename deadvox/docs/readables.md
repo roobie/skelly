@@ -105,10 +105,12 @@ The samples loudly say **PLACEHOLDER / NOT PLAYTEST LORE** and remain separate
 from the authored progression. `items-playtest.json` and `furniture-playtest.json`
 provide d99-1's evacuation note, two signs and hunter's logbook. BR approved the
 note and logbook texts as written on 2026-10-06 at 14:43 (#181); those two signs
-also have approved text. The medical sampling log and wall notice are beat-5
-lore drafts and await BR's look; they explain the site's purpose and military
-resupply, not a player mission. `layouts-playtest.json` places these readings in
-their authored scenes.
+also have approved text. The medical sampling log and notice remain beat-5 lore
+drafts; they explain the site's purpose and military resupply, not a player
+mission. BR's 2026-10-07 11:05 wall-board ruling was: “right not the medical
+research notice is full on block (which looks like a cabinet) it'd make more
+sense for the message to hang on a board on the wall”. `layouts-playtest.json`
+places these readings in their authored scenes.
 
 ## Reading in darkness: report-only
 

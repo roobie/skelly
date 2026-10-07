@@ -3,10 +3,16 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { polylineDistance } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
+import { HandlingQueue } from '../src/core/handling.ts';
+import { Inventory } from '../src/core/inventory.ts';
+import { doorOptions } from '../src/core/options.ts';
+import { BLOCK_SIZE } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { STAIR_BODY_HALF_WIDTH } from '../src/core/stairFlight.ts';
+import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import { type CompiledTemplate, compileTemplate, type Facing } from '../src/core/templates.ts';
+import { DOOR_ACTION, registerDoorAction } from '../src/game/doorAction.ts';
+import { USE_REACH } from '../src/game/play.ts';
 
 const sources = readdirSync('src/content/base')
   .filter((file) => file.endsWith('.json') && !file.startsWith('layouts'))
@@ -109,7 +115,64 @@ const nearestTrackPoint = (point: Point, points: readonly Point[]): Point => {
 };
 
 describe('authored medical site', () => {
-  it('encloses the staff room and pharmacy behind reachable, unlocked doors', () => {
+  it('makes every placed triage tent enterable with reachable standing room', () => {
+    const tentBuildings = layout.buildings.filter(({ template }) => template === 'triage_tent');
+    expect(tentBuildings.length).toBeGreaterThan(0);
+    const definition = required(result.registry.templates.get('triage_tent'), 'triage tent template');
+    const tent = compileTemplate(result.registry, definition);
+    expect(templateSpatialIssues(result.registry, tent)).toEqual([]);
+    const reachable = templateReachableStandingPositions(result.registry, tent);
+    expect(reachable.length).toBeGreaterThan(0);
+    const [width, , depth] = tent.size;
+    expect(
+      reachable.some(
+        ([x, feet, z]) => feet === tent.access?.storeys[0]?.floor && x > 1 && x < width - 1 && z > 1 && z < depth - 1,
+      ),
+    ).toBe(true);
+    expect(tentBuildings.every(({ template }) => template === tent.id)).toBe(true);
+  });
+
+  it('hangs the readable research notice on the wall without blocking room access', () => {
+    expect(templateSpatialIssues(result.registry, medical)).toEqual([]);
+    const reachable = templateReachableStandingPositions(result.registry, medical);
+    const notice = required(
+      medical.pieces.find((piece) => piece.furniture === 'medical_research_notice'),
+      'research notice',
+    );
+    const definition = required(result.registry.furniture.get(notice.furniture), 'notice definition');
+    expect(definition.solid).toBe(false);
+    expect(notice.facing).toBe('e');
+
+    const [x, y, z] = notice.pos;
+    const [pieceWidth, pieceHeight, pieceDepth] = notice.size;
+    const [templateWidth, , templateDepth] = medical.size;
+    const wallBehind = Array.from({ length: pieceHeight }, (_, dy) => dy + y).every((wy) =>
+      Array.from({ length: pieceDepth }, (_, dz) => dz + z).every((wz) => {
+        const cell = x - 1 + templateWidth * (wz + templateDepth * wy);
+        return medical.blocks[cell] !== result.registry.blockIds.get('air');
+      }),
+    );
+    expect(wallBehind).toBe(true);
+
+    const overlapsNotice = ([px, feet, pz]: readonly [number, number, number]): boolean =>
+      px + STAIR_BODY_HALF_WIDTH > x &&
+      px - STAIR_BODY_HALF_WIDTH < x + pieceWidth &&
+      pz + STAIR_BODY_HALF_WIDTH > z &&
+      pz - STAIR_BODY_HALF_WIDTH < z + pieceDepth &&
+      feet < y + pieceHeight &&
+      feet + STAIR_BODY_HEIGHT > y;
+    expect(reachable.some(overlapsNotice)).toBe(true);
+
+    const frontReachable = reachable.filter(([px]) => px > x + pieceWidth);
+    const withinUseReach = frontReachable.some(([px, , pz]) => {
+      const dx = Math.max(x - px, 0, px - (x + pieceWidth));
+      const dz = Math.max(z - pz, 0, pz - (z + pieceDepth));
+      return Math.hypot(dx, dz) * BLOCK_SIZE <= USE_REACH;
+    });
+    expect(withinUseReach).toBe(true);
+  });
+
+  it('encloses staff and pharmacy rooms, with a keyable, pryable pharmacy door', () => {
     expect(result.issues.filter((issue) => issue.source === 'medical-layout-test.json')).toEqual([]);
     expect(templateSpatialIssues(result.registry, medical)).toEqual([]);
     const reachable = templateReachableStandingPositions(result.registry, medical);
@@ -118,6 +181,8 @@ describe('authored medical site', () => {
     const front = fixedContainer('antiseptic');
     const pharmacy = fixedContainer('antibiotics');
     const labLog = fixedContainer('medical_research_log');
+    const pharmacyKey = fixedContainer('pharmacy_key');
+    expect(pharmacyKey.piece).toBe(front.piece);
     for (const { piece } of [front, pharmacy, labLog]) {
       expect(result.registry.furniture.get(piece.furniture)?.container).toBeDefined();
       expect(nearPiece(reachable, piece), piece.furniture).toBe(true);
@@ -158,17 +223,16 @@ describe('authored medical site', () => {
       'staff-room door enclosing the sofa',
     );
     const pharmacyDoor = required(
-      unlockedDoors.find(
-        (door) =>
-          !nearPiece(templateReachableStandingPositions(result.registry, wallOffDoor(medical, door)), pharmacy.piece),
-      ),
-      'pharmacy door enclosing the antibiotics container',
+      medical.pieces.find((piece) => piece.lock?.locked),
+      'locked pharmacy door',
     );
+    expect(result.registry.furniture.get(pharmacyDoor.furniture)?.door?.prying).toBeDefined();
+    expect(result.registry.items.get('pharmacy_key')?.key?.lock).toBe(pharmacyDoor.lock?.id);
     expect(staffDoor).not.toBe(pharmacyDoor);
     const staffDoorClosed = templateReachableStandingPositions(result.registry, wallOffDoor(medical, staffDoor));
     const pharmacyDoorClosed = templateReachableStandingPositions(result.registry, wallOffDoor(medical, pharmacyDoor));
     expect(staffDoor.lock).toBeUndefined();
-    expect(pharmacyDoor.lock).toBeUndefined();
+    expect(pharmacyDoor.lock?.locked).toBe(true);
     expect(nearPiece(reachable, sofa)).toBe(true);
     expect(nearPiece(reachable, pharmacy.piece)).toBe(true);
     expect(nearPiece(staffDoorClosed, sofa)).toBe(false);
@@ -176,6 +240,35 @@ describe('authored medical site', () => {
     expect(nearPiece(staffDoorClosed, pharmacy.piece)).toBe(true);
     expect(nearPiece(pharmacyDoorClosed, pharmacy.piece)).toBe(false);
     expect(nearPiece(pharmacyDoorClosed, sofa)).toBe(true);
+
+    const pharmacyLock = required(pharmacyDoor.lock, 'pharmacy lock');
+    const inventory = new Inventory(result.registry);
+    const pharmacyEntity = inventory.furnish({
+      type: pharmacyDoor.furniture,
+      pos: pharmacyDoor.pos,
+      size: pharmacyDoor.size,
+      facing: pharmacyDoor.facing,
+      lock: pharmacyLock,
+    });
+    expect(pharmacyEntity).toBeDefined();
+    const key = inventory.create('pharmacy_key');
+    inventory.add(key, { kind: 'hand', side: 'right' });
+    const unlock = doorOptions(inventory, pharmacyEntity!)[1]!;
+    expect(unlock.plan.ok).toBe(true);
+    if (!unlock.plan.ok) {
+      throw new Error(unlock.plan.reason);
+    }
+    const queue = new HandlingQueue(inventory);
+    registerDoorAction({
+      queue,
+      inventory,
+      player: () => ({ pos: [0, 0, 0], vel: [0, 0, 0], halfWidth: 0.2, height: 1.8, onGround: true }),
+      others: () => [],
+      playWorldSound: () => undefined,
+    });
+    queue.enqueueAction(DOOR_ACTION, 'Unlock', unlock.plan.time, { entityUid: pharmacyEntity!.uid, locked: false });
+    expect(queue.tick(unlock.plan.time).failed).toEqual([]);
+    expect(pharmacyEntity!.lock).toEqual({ id: pharmacyLock.id, locked: false });
   });
 
   it('keeps the clinic sign on the clear route to the hall entrance', () => {
