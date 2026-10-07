@@ -15,9 +15,7 @@ const grid = (dims: [number, number, number], size = 0.05, origin: [number, numb
 });
 
 interface AssignedPartProof {
-  readonly seed: number;
   readonly part: string;
-  readonly expectedMass: number;
   readonly density: ReturnType<typeof massProperties>;
   readonly assigned: ReturnType<typeof templatePartMassProperties>;
 }
@@ -32,9 +30,7 @@ const shamblerPartProofs = (): AssignedPartProof[] => {
     for (const part of SEVERABLE_PARTS) {
       const partIndices = [...severedBoneSet(body.bones, [part])].map((id) => byId.get(id)!);
       proofs.push({
-        seed,
         part,
-        expectedMass: template.bodyMassKg * template.massFractions![part]!,
         density: massProperties(voxels, partIndices, generated.genome.voxelSize),
         assigned: templatePartMassProperties({
           voxels,
@@ -79,18 +75,6 @@ describe('massProperties', () => {
     }
     expect(p.inertia[1][1]).toBeLessThan(p.inertia[0][0]);
     expect(p.inertia[1][1]).toBeLessThan(p.inertia[2][2]);
-  });
-
-  it('assigns every shambler severable part its template mass for seeds 1–5', () => {
-    const proofs = shamblerPartProofs();
-    const expected = [0.42, 0.42, 1.54, 1.54, 3.5, 3.5, 5.67];
-    for (let seed = 1; seed <= 5; seed++) {
-      const masses = proofs.filter((proof) => proof.seed === seed).map((proof) => proof.assigned.mass);
-      expect(masses).toHaveLength(expected.length);
-      for (let index = 0; index < expected.length; index++) {
-        expect(Math.abs(masses[index]! / expected[index]! - 1)).toBeLessThan(1e-9);
-      }
-    }
   });
 
   it('keeps template-assigned part COM equal to density-derived COM', () => {

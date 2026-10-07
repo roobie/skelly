@@ -5,6 +5,7 @@ read_if:
   - you're choosing world scale, view distance or performance targets
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
+  - you're recording or reconciling BR's crawler silhouette rulings
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
@@ -751,8 +752,35 @@ leg region as its attack target. Keep their selection, attack target and sound
 mapping authored with the type; see `src/content/base/zombies.json` and the spawn
 markers in `src/content/base/templates.json`. Type weights scale authored marker
 chances and choose hamlet wanderers, keeping rarity a content property rather than
-an inference from generated counts. Keep the crawler's model as one content value
-until d106-1's first look settles its silhouette with BR.
+an inference from generated counts.
+
+BR's crawler ruling (2026-10-06–07): the question was whether the crawler should be
+(a) a prone ground-crawler dragging itself on its arms with trailing legs, (b) a
+low, hunched humanoid on all fours, or (c) a short, hunched humanoid variant.
+
+BR (2026-10-06 21:46):
+
+> “okay, yeah runners, I see when I spawn them now; but crawlers I'm not sure - aren't they supposed to be crawling?”
+
+BR (2026-10-06 21:49):
+
+> “crawler: (A)” / “the other variants you mention are other mobs, not yet defined, but each having their place in the roster at some point”
+
+The other two forms are future mobs, not crawler variants. BR's follow-up asked
+whether the crawler should retain full legs or have stumps, and noted the hovering.
+BR (2026-10-07 00:18):
+
+> “1. i'm thinking it shouldn't have full legs / and it looks to be hovering a bit over the ground, so that might be an issue”
+
+After the stumps were shown, BR's question was whether their shape read correctly,
+while the pose still hovered. BR (2026-10-07 00:38):
+
+> “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
+
+The thigh stumps are approved; the grounded static pose is the current silhouette
+checkpoint. The body uses `mobgen/src/mob/humanoid.ts`, `amputateCrawlerLegs`, and
+the static pose uses `mobgen/src/mob/crawler.ts`, `crawlerPose`. The drag gait and
+Deadvox wiring wait for BR's verdict on that pose; d106-12 owns that later work.
 
 ### Evolution
 
