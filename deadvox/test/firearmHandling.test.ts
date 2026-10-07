@@ -7,6 +7,7 @@ import { SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { actionCycleSeconds, ejectSeconds } from '../src/core/firearmAction.ts';
+import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import type { InventoryState } from '../src/core/inventory.ts';
@@ -31,6 +32,54 @@ const base = readdirSync(BASE)
   .sort()
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(BASE, file), 'utf8')) as unknown }));
 const { registry } = buildRegistry(base);
+const { registry: skillZeroRegistry } = buildRegistry([
+  ...base,
+  {
+    source: 'skill-zero-firearms.json',
+    data: {
+      items: [
+        {
+          id: 'fixture_light_gun',
+          name: 'Fixture light gun',
+          category: 'weapon',
+          weight: 1,
+          size: [1, 1],
+          firearm: {
+            recoilKickRadians: 0.01,
+            dispersionRadians: 0,
+            skillZeroHandling: {
+              singleShot: { variance: 1.2, recoilKickScale: 2, recoilRecoveryScale: 0.8 },
+              automaticFollowup: { variance: 2, recoilKickScale: 4, recoilRecoveryScale: 0.6 },
+            },
+          },
+        },
+        {
+          id: 'fixture_heavy_gun',
+          name: 'Fixture heavy gun',
+          category: 'weapon',
+          weight: 1,
+          size: [1, 1],
+          firearm: {
+            recoilKickRadians: 0.02,
+            dispersionRadians: 0,
+            skillZeroHandling: {
+              singleShot: { variance: 2.5, recoilKickScale: 12, recoilRecoveryScale: 0.2 },
+              automaticFollowup: { variance: 4, recoilKickScale: 20, recoilRecoveryScale: 0.1 },
+            },
+          },
+        },
+        {
+          id: 'fixture_shared_gun',
+          name: 'Fixture shared gun',
+          category: 'weapon',
+          weight: 1,
+          size: [1, 1],
+          firearm: { recoilKickRadians: 0.01, dispersionRadians: 0 },
+        },
+      ],
+    },
+  },
+]);
 const caseType = spentCaseItemId('5.56x45');
 const worldVector = (vector: readonly number[], yaw: number, pitch: number): [number, number, number] => {
   const { right, up, forward } = aimBasis(yaw, pitch, NEUTRAL_AIM);
@@ -85,6 +134,39 @@ const shot = (inventory: Inventory, rifle: ReturnType<Inventory['create']>, simT
 };
 
 describe('debug firearm handling', () => {
+  it('uses per-gun skill-zero factors, shared fallback and the common expert endpoint', () => {
+    const inventory = new Inventory(skillZeroRegistry);
+    const light = inventory.create('fixture_light_gun');
+    const heavy = inventory.create('fixture_heavy_gun');
+    const shared = inventory.create('fixture_shared_gun');
+    for (const item of [light, heavy, shared]) {
+      expect(inventory.add(item, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+    }
+    const mechanics = new FirearmMechanics(inventory, new HandlingQueue(inventory), {
+      blockSize: 0.5,
+      pose: () => undefined,
+      onEjection: () => undefined,
+    });
+    const globalTuning = skillZeroRegistry.skills.get('firearms_combat')!.combat!.firearms!;
+    const tuningFor = (uid: number) => ({
+      ...globalTuning,
+      skillZeroHandling: mechanics.skillZeroHandlingFor(uid),
+    });
+
+    expect(mechanics.skillZeroHandlingFor(shared.uid)).toEqual(globalTuning.skillZeroHandling);
+    expect(firearmsSkillEffects(0, tuningFor(shared.uid))).toEqual(firearmsSkillEffects(0, globalTuning));
+    for (const shotKind of ['singleShot', 'automaticFollowup'] as const) {
+      const lightEffects = firearmsSkillEffects(0, tuningFor(light.uid), shotKind);
+      const heavyEffects = firearmsSkillEffects(0, tuningFor(heavy.uid), shotKind);
+      expect(lightEffects.variance).toBeLessThan(heavyEffects.variance);
+      expect(lightEffects.recoilKickScale).toBeLessThan(heavyEffects.recoilKickScale);
+      expect(lightEffects.recoilRecoveryRate).toBeGreaterThan(heavyEffects.recoilRecoveryRate);
+      expect(firearmsSkillEffects(SKILL_LEVEL_MAX, tuningFor(light.uid), shotKind)).toEqual(
+        firearmsSkillEffects(SKILL_LEVEL_MAX, tuningFor(heavy.uid), shotKind),
+      );
+    }
+  });
+
   it('fires from the same ready-pose muzzle used by the held model', () => {
     const { inventory, rifle } = inventoryWithRifle();
     const { model } = firearmHandlingFor(rifle, registry);

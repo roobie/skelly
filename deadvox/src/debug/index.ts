@@ -3,10 +3,11 @@ import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
 import { crosshairTarget, SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
-import type {
-  FirearmsSkillShotKind,
-  FirearmsSkillZeroEffect,
-  FirearmsSkillZeroHandling,
+import {
+  FIREARMS_SKILL_ZERO_RANGES,
+  type FirearmsSkillShotKind,
+  type FirearmsSkillZeroEffect,
+  type FirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { ShadowState } from '../core/mood.ts';
@@ -246,9 +247,7 @@ const firearmsSkillEffectSlider = (
   const label = `${shotLabel} ${effectLabel}`;
   const id = `firearms-skill-${shotKind}-${field}`;
   const value = handling[shotKind][field];
-  const min = field === 'recoilRecoveryScale' ? 0.01 : 0.1;
-  const max = field === 'recoilRecoveryScale' ? 10 : 100;
-  const step = field === 'recoilRecoveryScale' ? 0.01 : 0.1;
+  const { min, max, step } = FIREARMS_SKILL_ZERO_RANGES[field];
   return html`
     <label for=${id}>${label}</label>
     <input id=${id} type="range" min=${min} max=${max} step=${step} .value=${String(value)}
@@ -287,6 +286,7 @@ const panelTemplate = ({
   importInputReplay,
   replayDownload,
   firearmsSkillZeroHandling,
+  firearmsSkillZeroTarget,
   changeFirearmsSkillZeroEffect,
   copyFirearmsSkillZeroHandling,
   firearmsSkillCopyStatus,
@@ -321,6 +321,7 @@ const panelTemplate = ({
   importInputReplay: (file: File) => void;
   replayDownload: { url: string; name: string } | undefined;
   firearmsSkillZeroHandling: FirearmsSkillZeroHandling;
+  firearmsSkillZeroTarget: string | undefined;
   changeFirearmsSkillZeroEffect: (
     shotKind: FirearmsSkillShotKind,
     field: keyof FirearmsSkillZeroEffect,
@@ -332,15 +333,15 @@ const panelTemplate = ({
   // What each group shows besides its action buttons.
   const extras: Partial<Record<GroupId, TemplateResult>> = {
     tools: html`
-      <fieldset class="debug-firearms-skill-tuning">
-        <legend>Skill-0 firearm handling · runtime only</legend>
+      <fieldset class="debug-firearms-skill-tuning" ?disabled=${firearmsSkillZeroTarget === undefined}>
+        <legend>${firearmsSkillZeroTarget ?? 'Hold a firearm'} · skill-0 handling · runtime only</legend>
         ${firearmsSkillEffectSlider('singleShot', 'variance', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('singleShot', 'recoilKickScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('singleShot', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('automaticFollowup', 'variance', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('automaticFollowup', 'recoilKickScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
         ${firearmsSkillEffectSlider('automaticFollowup', 'recoilRecoveryScale', firearmsSkillZeroHandling, changeFirearmsSkillZeroEffect)}
-        <button id="copy-firearms-skill-tuning" type="button" @click=${copyFirearmsSkillZeroHandling}>Copy firearm skill values</button>
+        <button id="copy-firearms-skill-tuning" type="button" @click=${copyFirearmsSkillZeroHandling}>Copy this gun's skill values</button>
         <output aria-live="polite">${firearmsSkillCopyStatus}</output>
       </fieldset>
     `,
@@ -1207,6 +1208,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Shell rendering keeps UI wiring and readout refresh together.
   function drawShell(): void {
     const groups = groupViews();
+    const firearmsSkillZeroHandling = hooks.firearmsSkillZeroHandling();
+    const firearmsSkillZeroTarget = hooks.firearmsSkillZeroTarget();
     const inputReplayState = hooks.inputReplay.state();
     const key = JSON.stringify([
       panelOpen,
@@ -1218,6 +1221,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
       spawnStatus,
       axesVisible,
       copyStatus,
+      firearmsSkillZeroTarget,
+      firearmsSkillZeroHandling,
       replayStatus,
       inputReplayState,
       groups.map((group) => [group.id, group.open, group.actions.map((view) => [view.label, view.state])]),
@@ -1279,7 +1284,8 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
           chooseInputReplay,
           importInputReplay,
           replayDownload,
-          firearmsSkillZeroHandling: hooks.firearmsSkillZeroHandling(),
+          firearmsSkillZeroHandling,
+          firearmsSkillZeroTarget,
           changeFirearmsSkillZeroEffect: (shotKind, field, value) => {
             const current = hooks.firearmsSkillZeroHandling();
             hooks.setFirearmsSkillZeroHandling({

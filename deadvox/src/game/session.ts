@@ -95,6 +95,76 @@ import { Survival } from './survival.ts';
 export const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
 export const HANDLING_RATE = 20;
+const sessionFirearmsTuning = (
+  mechanics: FirearmMechanics,
+  tuning: FirearmsCombatTuning,
+  firearmUid: number | undefined,
+): FirearmsCombatTuning =>
+  firearmUid === undefined ? tuning : { ...tuning, skillZeroHandling: mechanics.skillZeroHandlingFor(firearmUid) };
+const sessionFirearmsSkillZeroHandling = (
+  mechanics: FirearmMechanics,
+  firearmUid: number | undefined,
+  shared: FirearmsSkillZeroHandling,
+): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingFor(firearmUid));
+const sessionFirearmsShotKind = (
+  mechanics: FirearmMechanics,
+  firearmUid: number | undefined,
+  timeSimSeconds: number,
+): FirearmsSkillShotKind =>
+  firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, timeSimSeconds);
+const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
+  firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
+const advanceSessionAim = ({
+  aim,
+  firearms,
+  tuning,
+  skillLevel,
+  firearmUid,
+  timeSimSeconds,
+  dt,
+  velocity,
+  blockSize,
+  yaw,
+  pitch,
+  aimSway,
+  firing,
+}: {
+  aim: AimController;
+  firearms: FirearmMechanics;
+  tuning: FirearmsCombatTuning;
+  skillLevel: number;
+  firearmUid: number | undefined;
+  timeSimSeconds: number;
+  dt: number;
+  velocity: Vec3;
+  blockSize: number;
+  yaw: number;
+  pitch: number;
+  aimSway: number;
+  firing: boolean;
+}): void => {
+  const shotKind = sessionFirearmsShotKind(firearms, firearmUid, timeSimSeconds);
+  const skill = firearmsSkillEffects(skillLevel, sessionFirearmsTuning(firearms, tuning, firearmUid), shotKind);
+  aim.advance({
+    dt,
+    velocity,
+    blockSize,
+    yaw,
+    pitch,
+    variance: skill.variance * aimSway,
+    firing,
+    recoilRecoveryRate: skill.recoilRecoveryRate,
+  });
+};
+const setSessionFirearmsSkillZeroHandling = (
+  mechanics: FirearmMechanics,
+  firearmUid: number | undefined,
+  value: FirearmsSkillZeroHandling,
+): void => {
+  if (firearmUid !== undefined) {
+    mechanics.setSkillZeroHandlingFor(firearmUid, value);
+  }
+};
 /** Seconds a player's noise stays audible to shamblers. */
 const VOCAL_NOISE_LIFETIME = 0.5;
 export const IDLE: MoveIntent = { forward: 0, right: 0, jump: false, sprint: false, walk: false, useDominant: false };
@@ -374,11 +444,7 @@ export const createSession = (options: SessionOptions) => {
   if (!firearmsCombatTuning) {
     throw new Error('Missing firearms-combat skill tuning');
   }
-  let firearmsSkillZeroHandling = firearmsCombatTuning.skillZeroHandling;
-  const currentFirearmsCombatTuning = (): FirearmsCombatTuning => ({
-    ...firearmsCombatTuning,
-    skillZeroHandling: firearmsSkillZeroHandling,
-  });
+  const currentFirearmsCombatTuning = (): FirearmsCombatTuning => firearmsCombatTuning;
   const meleeCombatTuning = registry.skills.get('melee_combat')?.combat?.melee;
   const inventory = restored
     ? Inventory.restoreState(registry, restored.character.inventory, options.entities, character)
@@ -512,13 +578,14 @@ export const createSession = (options: SessionOptions) => {
     onTrajectory: (trajectory, time) => options.onFirearmTrajectory?.(trajectory, time),
     firearmsSkillLevel: () => firearmsSkillLevel(character),
     firearmsSkillZeroHandling: () => currentFirearmsCombatTuning().skillZeroHandling,
-    onCommittedShot: (shotSeed, recoilKickRadians, shotKind) => {
+    onCommittedShot: (shotSeed, recoilKickRadians, shotKind, firearmUid) => {
       const training = skillActivityPractice(registry, 'firearms_combat', 'shot');
       character.awardPractice('firearms_combat', training.practice, training.tier);
+      const tuning = sessionFirearmsTuning(firearms, currentFirearmsCombatTuning(), firearmUid);
       aim.recordShot(
         shotSeed,
         recoilKickRadians,
-        firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning(), shotKind).recoilKickScale,
+        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale,
       );
     },
     onShot: (shot, time) => {
@@ -580,20 +647,20 @@ export const createSession = (options: SessionOptions) => {
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
   const updateAim = (dt: number, firing: boolean): void => {
-    const held = inventory.hands.right ?? inventory.hands.left;
-    const shotKind: FirearmsSkillShotKind = held?.firearm
-      ? firearms.handlingShotKind(held.uid, sim.time)
-      : 'singleShot';
-    const skill = firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning(), shotKind);
-    aim.advance({
+    advanceSessionAim({
+      aim,
+      firearms,
+      tuning: currentFirearmsCombatTuning(),
+      skillLevel: firearmsSkillLevel(character),
+      firearmUid: firearmInHands()?.uid,
+      timeSimSeconds: sim.time,
       dt,
       velocity: body.vel,
       blockSize: s,
       yaw: sampledInput().yaw,
       pitch: sampledInput().pitch,
-      variance: skill.variance * sim.body.consequences.aimSway,
+      aimSway: sim.body.consequences.aimSway,
       firing,
-      recoilRecoveryRate: skill.recoilRecoveryRate,
     });
   };
   const applyAimViewPitchShift = (): void => {
@@ -1077,15 +1144,23 @@ export const createSession = (options: SessionOptions) => {
     firearms,
     aim,
     get firearmsSkillZeroHandling() {
-      return currentFirearmsCombatTuning().skillZeroHandling;
+      return sessionFirearmsSkillZeroHandling(
+        firearms,
+        firearmInHands()?.uid,
+        currentFirearmsCombatTuning().skillZeroHandling,
+      );
+    },
+    get firearmsSkillZeroTarget() {
+      return sessionFirearmTargetName(registry, firearmInHands()?.type);
     },
     hasFirearmHandlingOverrides: () =>
+      firearms.hasSkillZeroHandlingOverrides() ||
       !sameFirearmsSkillZeroHandling(
         firearmsCombatTuning.skillZeroHandling,
         currentFirearmsCombatTuning().skillZeroHandling,
       ),
     setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling): void => {
-      firearmsSkillZeroHandling = structuredClone(value);
+      setSessionFirearmsSkillZeroHandling(firearms, firearmInHands()?.uid, value);
     },
     quickbar,
     character,

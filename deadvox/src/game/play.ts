@@ -842,6 +842,7 @@ export const startPlay = (
     exportMetrics,
     inputReplay: inputReplayHooks,
     firearmsSkillZeroHandling: () => session.firearmsSkillZeroHandling,
+    firearmsSkillZeroTarget: () => session.firearmsSkillZeroTarget,
     setFirearmsSkillZeroHandling: (value) => session.setFirearmsSkillZeroHandling(value),
   });
 
