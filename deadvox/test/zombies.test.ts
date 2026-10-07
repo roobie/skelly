@@ -4,7 +4,7 @@ import process from 'node:process';
 import { Matrix4, MeshLambertMaterial, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities } from '../src/core/blockEntities.ts';
-import { parseSpawnTime, SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
+import { SECONDS_PER_DAY, SPAWN_TIMES } from '../src/core/clock.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { Hamlet } from '../src/core/hamlet.ts';
@@ -1838,13 +1838,13 @@ describe('shambler scenarios', () => {
     expect(column).toBeDefined();
     const spawner = new ZombieSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
     const state = system.snapshotState();
     const id = state.hordes[0]?.id;
     expect(id).toBeDefined();
     expect([...system.store.entries()].some(([, zombie]) => zombie.hordeId === id)).toBe(true);
     const { size } = system.store;
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
     expect(system.store.size).toBe(size);
     expect(system.snapshotState()).toEqual(state);
   });
@@ -1862,7 +1862,7 @@ describe('shambler scenarios', () => {
     expect(column).toBeDefined();
     const spawner = new ZombieSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
     const initial = [...system.store.entries()];
     expect(initial.length).toBeGreaterThan(0);
     const [id, zombie] = initial[0]!;
@@ -1872,7 +1872,7 @@ describe('shambler scenarios', () => {
       run(system, FISTS_MELEE.cooldown);
     }
     const survivors = system.store.size;
-    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system, calendar: 0 });
+    spawner.onColumn({ cx: column![0], cz: column![1], site, registry, zombies: system });
     expect(system.store.get(id)).toBeUndefined();
     expect(system.store.size).toBe(survivors);
   });
@@ -1886,9 +1886,9 @@ describe('shambler scenarios', () => {
     const site = spawnSite(spawn);
     const spawner = new ZombieSpawner();
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    const load = (calendar: number) => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system, calendar });
+    const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system });
 
-    load(SPAWN_TIMES.dusk - 1);
+    load();
     expect(system.store.size).toBe(0);
     spawner.advance({ calendar: SPAWN_TIMES.dusk - 1, registry, zombies: system });
     expect(system.store.size).toBe(0);
@@ -1912,7 +1912,6 @@ describe('shambler scenarios', () => {
           site: spawnSite(spawn),
           registry,
           zombies: system,
-          calendar: SPAWN_TIMES.dusk - 1,
         });
       });
       spawner.advance({ calendar: SPAWN_TIMES.dusk, registry, zombies: system });
@@ -1927,21 +1926,23 @@ describe('shambler scenarios', () => {
     expect(first).toEqual(spawnOrder([...markers].reverse()));
   });
 
-  it('spawns a marker when its column first loads inside the window', () => {
+  it('queues a windowed marker loaded inside its open interval until advance', () => {
     const spawn: ZombieSpawn = {
       type: 'shambler',
       pos: [0, 1, 0],
       window: { fromGameTimeOfDay: gameTimeOfDay(SPAWN_TIMES.dusk), toGameTimeOfDay: gameTimeOfDay(20 * 3600) },
     };
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
-    new ZombieSpawner().onColumn({
+    const spawner = new ZombieSpawner();
+    spawner.onColumn({
       cx: 0,
       cz: 0,
       site: spawnSite(spawn),
       registry,
       zombies: system,
-      calendar: SPAWN_TIMES.dusk + 1,
     });
+    expect(system.store.size).toBe(0);
+    spawner.advance({ calendar: SPAWN_TIMES.dusk + 1, registry, zombies: system });
     expect(system.store.size).toBe(1);
   });
 
@@ -1954,18 +1955,18 @@ describe('shambler scenarios', () => {
     const site = spawnSite(spawn);
     const system = new ZombieSystem(senses(() => player([1000, 2, 1000])));
     const spawner = new ZombieSpawner();
-    const load = (calendar: number) => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system, calendar });
-    load(parseSpawnTime('20:00')!);
+    const load = () => spawner.onColumn({ cx: 0, cz: 0, site, registry, zombies: system });
+    load();
     spawner.unloadColumn(0, 0);
     spawner.advance({ calendar: SPAWN_TIMES.dusk + SECONDS_PER_DAY, registry, zombies: system });
     expect(system.store.size).toBe(0);
 
-    load(parseSpawnTime('20:00')!);
+    load();
     spawner.advance({ calendar: SPAWN_TIMES.dusk + SECONDS_PER_DAY, registry, zombies: system });
     expect(system.store.size).toBe(1);
     const [id] = system.store.entries().next().value!;
     system.store.remove(id);
-    load(SPAWN_TIMES.dusk + 2 * SECONDS_PER_DAY);
+    load();
     spawner.advance({ calendar: SPAWN_TIMES.dusk + 2 * SECONDS_PER_DAY, registry, zombies: system });
     expect(system.store.size).toBe(0);
     expect(spawner.snapshotState()).toContain('shambler:0,1,0');
@@ -1979,7 +1980,6 @@ describe('shambler scenarios', () => {
       site,
       registry,
       zombies: afterRestore,
-      calendar: SPAWN_TIMES.dusk + 3 * SECONDS_PER_DAY,
     });
     expect(afterRestore.store.size).toBe(0);
   });

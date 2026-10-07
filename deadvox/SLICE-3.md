@@ -4,6 +4,7 @@ read_if:
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
+  - you're changing or measuring input-replay capture and playback
 ---
 
 # Slice 3 — Flesh and noise
@@ -394,6 +395,8 @@ The scope question was whether replay should include inventory and crafting scre
 At d101-4, replay samples also preserve whether the source world was ready under the player. Source movement can be skipped while streamed terrain is missing; playback waits when a recorded move needs terrain and keeps source-side skips when it did not. Replay captures the source simulation's end time so verification is independent of how render frames grouped the fixed player ticks. See `src/game/session.ts`, `createSession`; `src/game/inputReplay.ts`, `encodeInputReplay`; and `src/game/play.ts`, `stepSimulation`.
 
 Implementation is in `src/game/inputReplay.ts`, `InputReplayRecorder`; inventory and crafting commands converge on `applyReplayActionPayload` in `src/game/replayCommands.ts`, wired by `startPlay` in `src/game/play.ts`. The player-facing rationale is in [CONTROLS.md](CONTROLS.md).
+
+Replay records generated terrain columns, not a derived readiness bit: `src/game/streamer.ts`, `Streamer.generatedColumns`, captures the recording boundary, while its replay-controlled generation methods prevent renderer streaming from advancing terrain ahead of the artifact. `src/game/inputReplayPlayer.ts`, `InputReplayPlayer.next`, prepares each tick's ordered column changes as it consumes the prior sample; repeated changes to one column are meaningful when a load and unload both happen before the next player tick. `src/game/inputReplay.ts`, `joinInputReplayWindows`, preserves those tick-zero events across rolling-window joins instead of reducing them to their final terrain state. `src/game/inputReplayDriver.ts`, `InputReplayDriver`, owns replay initialization and stepping, while `nextReplayInputSample` shares sample consumption, compression and look application between production and the unit harness. This lets replay zombies read the terrain that made their recorded column ready, while column-load spawns and furniture still enter through session streaming effects. A format change rejects older replay files; world-save state remains separate and unchanged. At d119-2, a two-minute, 7,200-tick profile with 64 starting generated columns and 120 transitions added 3,063 serialized bytes (about 2.4% of the baseline artifact) and 4,864 bytes to the recorder's retained-buffer estimate. Paired recorder timings did not distinguish an added per-tick cost from timer noise.
 
 ### 3.11 Authored playtest map and playtest
 
