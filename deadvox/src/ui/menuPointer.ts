@@ -34,10 +34,36 @@ export interface MenuPointer {
 export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions): MenuPointer => {
   // Inventory redraws after pointerdown, so captured move/up events go to document rather than a soon-detached item node.
   const capturedPointers = new Set<number>();
+  const capturedRanges = new Map<number, { input: HTMLInputElement; initialValue: string }>();
   let forwardingPointer = false;
+  const isInputElement = (element: Element): element is HTMLInputElement => element.tagName === 'INPUT';
+  const liveRangeInput = (input: HTMLInputElement): HTMLInputElement => {
+    const current = input.id ? document.getElementById(input.id) : null;
+    return current && isInputElement(current) && current.type === 'range' ? current : input;
+  };
+  const setRangeValue = (input: HTMLInputElement, x: number) => {
+    const bounds = input.getBoundingClientRect();
+    const min = input.min === '' ? 0 : Number(input.min);
+    const max = input.max === '' ? 100 : Number(input.max);
+    if (input.matches(':disabled') || bounds.width <= 0 || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+      return;
+    }
+    const fraction = Math.max(0, Math.min(1, (x - bounds.left) / bounds.width));
+    const before = input.value;
+    input.value = String(min + fraction * (max - min));
+    if (input.value !== before) {
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
   const releasePointerTarget = (event: PointerEvent) => {
     if (event.type === 'pointerup' || event.type === 'pointercancel') {
       capturedPointers.delete(event.pointerId);
+      const range = capturedRanges.get(event.pointerId);
+      const input = range ? liveRangeInput(range.input) : undefined;
+      if (range && input && event.type === 'pointerup' && input.value !== range.initialValue) {
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      capturedRanges.delete(event.pointerId);
     }
   };
   const isForwardableMenuTarget = (target: EventTarget | null): boolean =>
@@ -91,14 +117,27 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
     event.stopPropagation();
     if (event.type === 'pointermove') {
       input.moveMenuCursor(event.movementX, event.movementY);
+      const range = capturedRanges.get(event.pointerId);
+      if (range) {
+        setRangeValue(liveRangeInput(range.input), input.cursorX);
+      }
     }
     const captured = capturedPointers.has(event.pointerId);
     const target = captured ? document : document.elementFromPoint(input.cursorX, input.cursorY);
     if (target && isForwardableMenuTarget(target)) {
+      let rangeInput: HTMLInputElement | undefined;
       if (event.type === 'pointerdown') {
         capturedPointers.add(event.pointerId);
+        if (target instanceof Element && isInputElement(target) && target.type === 'range') {
+          rangeInput = target;
+          capturedRanges.set(event.pointerId, { input: target, initialValue: target.value });
+        }
       }
       dispatchMenuPointer(target, event);
+      if (rangeInput) {
+        // Pointer-lock forwarding is synthetic, so the browser does not run a range input's native drag action.
+        setRangeValue(liveRangeInput(rangeInput), input.cursorX);
+      }
     }
     releasePointerTarget(event);
   };
@@ -144,7 +183,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       if (target && target !== canvas && target.id !== 'game-cursor') {
         forwardingClick = true;
         try {
-          if (target instanceof HTMLInputElement) {
+          if (isInputElement(target)) {
             target.focus();
           }
           target.dispatchEvent(
@@ -177,6 +216,9 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       hoveredElement = clickable;
       hoveredElement?.classList.add('game-cursor-hover');
     },
-    releaseCaptures: () => capturedPointers.clear(),
+    releaseCaptures: () => {
+      capturedPointers.clear();
+      capturedRanges.clear();
+    },
   };
 };

@@ -446,19 +446,41 @@ try {
   }
   const skillKickSlider = page.locator('#firearms-skill-automaticFollowup-recoilKickScale');
   await skillKickSlider.waitFor();
+  await skillKickSlider.scrollIntoViewIfNeeded();
+  const sliderBounds = await skillKickSlider.boundingBox();
+  assert.ok(sliderBounds, 'the firearms skill slider is visible for mouse input');
+  const sliderBefore = Number(await skillKickSlider.inputValue());
+  const sliderStartX = sliderBounds.x + sliderBounds.width * 0.2;
+  const sliderEndX = sliderBounds.x + sliderBounds.width * 0.8;
+  const sliderY = sliderBounds.y + sliderBounds.height / 2;
+  const pointerState = await page.evaluate(() => {
+    const { input } = globalThis.fullAutoRuntime;
+    return { locked: input.locked, menuPointer: input.menuPointer };
+  });
+  assert.deepEqual(pointerState, { locked: true, menuPointer: true }, 'the debug slider is used while pointer lock is routed to the menu');
+  const physicalStart = await page.evaluate(() => ({ x: innerWidth / 2, y: innerHeight / 2 }));
+  await page.mouse.move(physicalStart.x, physicalStart.y);
+  await page.evaluate(({ x, y }) => {
+    const { input } = globalThis.fullAutoRuntime;
+    input.moveMenuCursor(x - input.cursorX, y - input.cursorY);
+  }, { x: sliderStartX, y: sliderY });
+  await page.mouse.down();
+  await page.mouse.move(physicalStart.x + sliderEndX - sliderStartX, physicalStart.y, { steps: 8 });
+  await page.mouse.up();
   const runtimeTuning = await page.evaluate(() => {
     const slider = document.querySelector('#firearms-skill-automaticFollowup-recoilKickScale');
-    const current = Number(slider.value);
-    slider.value = String(current + 0.1);
-    slider.dispatchEvent(new Event('input', { bubbles: true }));
-    const { session } = globalThis.fullAutoRuntime;
+    const { input, inventory, session } = globalThis.fullAutoRuntime;
+    const gun = inventory.hands.right;
     return {
       slider: Number(slider.value),
-      runtime: session.firearmsSkillZeroHandling.automaticFollowup.recoilKickScale,
+      effective: session.firearms.skillZeroHandlingFor(gun.uid).automaticFollowup.recoilKickScale,
+      locked: input.locked,
       saved: JSON.stringify(session.snapshot({ worldId: 'world', characterId: 'character' })),
     };
   });
-  assert.equal(runtimeTuning.runtime, runtimeTuning.slider, 'the debug slider updates the running session');
+  assert.notEqual(runtimeTuning.slider, sliderBefore, 'the mouse drag changes the slider value');
+  assert.equal(runtimeTuning.effective, runtimeTuning.slider, 'the mouse-selected value changes firearm handling');
+  assert.equal(runtimeTuning.locked, true, 'dragging the slider keeps pointer lock available for play');
   assert.ok(!runtimeTuning.saved.includes('skillZeroHandling'), 'runtime tuning is not included in a save');
   assert.deepEqual(errors, []);
   process.stdout.write(

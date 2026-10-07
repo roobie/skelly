@@ -143,7 +143,10 @@ Native text entry, IME, selection, clipboard, focus traversal and ordinary menu
 form activation stay with the DOM. Reimplementing a text editor or focus engine
 would add a second platform without a game-specific inadequacy. Interpreted game
 commands, custom modal navigation and held quick/debug gates remain rebindable.
-See `src/game/inputBindings.ts`, `NATIVE_INPUTS` and `NATIVE_EDITING`.
+See `src/game/inputBindings.ts`, `NATIVE_INPUTS` and `NATIVE_EDITING`. In a
+pointer-locked menu, `mountMenuPointer` in `src/ui/menuPointer.ts` maps locked
+cursor movement to range values because forwarded synthetic pointer events do not
+trigger the browser's native range-drag action.
 
 Noclip flight is the substantive debug exception: holding the debug gate for an
 entire flight would occupy a hand and interfere with viewing. Space/C flight
