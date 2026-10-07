@@ -14,12 +14,12 @@ import {
   Object3D,
 } from 'three';
 import { type Inventory, PILE_GRID, type Pile } from '../core/inventory.ts';
-import { itemLook } from '../core/itemLook.ts';
 import { defOf } from '../core/items.ts';
 import { pileLayout } from '../core/pileLayout.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
+import { itemLook } from './itemLook.ts';
 import type { GroundModelPart, ModelLibrary } from './models.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 import { SPENT_CASE_SCATTER_CAP, spentCaseScatter } from './spentCaseScatter.ts';

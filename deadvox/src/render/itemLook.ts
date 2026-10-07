@@ -2,9 +2,9 @@
 // owns at their slots. Every view draws an item from this, never from its type alone, so a rifle looks the same in
 // the hands and on the ground.
 
-import type { Registry } from './content.ts';
-import type { Vec3 } from './coords.ts';
-import { defOf, type Item } from './items.ts';
+import type { Registry } from '../core/content.ts';
+import type { Vec3 } from '../core/coords.ts';
+import { defOf, type Item } from '../core/items.ts';
 
 export interface ItemLookSlot {
   readonly slot: 'magazine';

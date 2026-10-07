@@ -464,7 +464,7 @@ draws the fitted magazine's own model in that frame, so a rifle with its
 magazine out shows none, in the hands and on the ground alike. The validator
 requires the slot of every magazine-fed firearm. The hands and piles are the
 views that draw item models, and any later one (on the body, an inventory
-preview) builds the same look. See `src/core/itemLook.ts`, `itemLook`;
+preview) builds the same look. See `src/render/itemLook.ts`, `itemLook`;
 `src/render/models.ts`, `ModelLibrary.heldLook` and `ModelLibrary.groundLook`;
 and `src/core/content.ts`, `checkItemFirearm`.
 

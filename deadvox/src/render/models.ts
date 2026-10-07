@@ -16,8 +16,8 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
-import type { ItemLook, ItemLookSlot } from '../core/itemLook.ts';
 import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
+import type { ItemLook, ItemLookSlot } from './itemLook.ts';
 
 /** The base pack's model files, by their path within the pack. */
 const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(

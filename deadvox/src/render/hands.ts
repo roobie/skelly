@@ -34,7 +34,6 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
 import { HOLD, heldAnchorOffset, heldFirearmTransform, heldGripOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
-import { itemLook } from '../core/itemLook.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
@@ -50,6 +49,7 @@ import {
   rackGrip,
   sampleActionStroke,
 } from './firearmModel.ts';
+import { itemLook } from './itemLook.ts';
 import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
