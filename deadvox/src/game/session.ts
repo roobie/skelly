@@ -109,8 +109,9 @@ const sessionFirearmsSkillZeroHandling = (
 const sessionFirearmsShotKind = (
   mechanics: FirearmMechanics,
   firearmUid: number | undefined,
-  time: number,
-): FirearmsSkillShotKind => (firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, time));
+  timeSimSeconds: number,
+): FirearmsSkillShotKind =>
+  firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, timeSimSeconds);
 const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
 const advanceSessionAim = ({

@@ -46,6 +46,10 @@ export interface FirearmsCombatTuning {
   readonly loweredPitchRadians: number;
   readonly adsApertureFill: number;
   readonly skillZeroHandling: FirearmsSkillZeroHandling;
+  readonly reloadFactorFloor: number;
+  readonly reloadFactorHalfLifeLevels: number;
+  readonly rackFactorFloor: number;
+  readonly rackFactorHalfLifeLevels: number;
 }
 
 export interface FirearmsSkillEffects {
@@ -86,8 +90,8 @@ export const firearmsSkillEffects = (
     variance: atSkillZero(expertControl, zero.variance),
     recoilKickScale: atSkillZero(expertControl, zero.recoilKickScale),
     recoilRecoveryRate: atSkillZero(expertRecovery, zero.recoilRecoveryScale),
-    reloadDuration: skillSaturation(effectLevel, 0.55, 5),
-    rackDuration: skillSaturation(effectLevel, 0.62, 3),
+    reloadDuration: skillSaturation(effectLevel, tuning.reloadFactorFloor, tuning.reloadFactorHalfLifeLevels),
+    rackDuration: skillSaturation(effectLevel, tuning.rackFactorFloor, tuning.rackFactorHalfLifeLevels),
   };
 };
 

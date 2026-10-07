@@ -1,4 +1,5 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { generate } from '../src/core/generate.ts';
 import { distanceWorld, localSolidBounds, obbPolyhedron, penetrationWorld, worldSolid } from '../src/core/geometry.ts';
@@ -7,6 +8,7 @@ import { resolve } from '../src/core/resolve.ts';
 import type { PartDef } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
 import { validate } from '../src/core/validate.ts';
+import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { MOUNT_KINDS, MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
 import { getOptic, OPTIC_CATALOG, OPTIC_TYPE_IDS } from '../src/gun/optics.ts';
@@ -378,6 +380,51 @@ describe('template optics can be attached, validated, and removed', () => {
       expect(validate(removed, gunDomain).issues, `${template.name} without its optional optic`).toEqual([]);
     },
   );
+});
+
+describe('authored front-bead contact', () => {
+  const designsDir = join(import.meta.dirname, '..', 'designs');
+  const designs = readdirSync(designsDir)
+    .filter((file) => file.endsWith('.json'))
+    .map((file) => {
+      const loaded = loadGunDesign(readFileSync(join(designsDir, file), 'utf8'));
+      if (!loaded.ok) {
+        throw new Error(`${file}: ${loaded.error.message}`);
+      }
+      return { file, assembly: loaded.design.assembly };
+    })
+    .filter(({ assembly }) => Object.values(assembly.parts).some(({ family }) => family === 'front-sight-bead'));
+
+  it('keeps every authored bead in contact with its connected host', () => {
+    expect(designs.length).toBeGreaterThan(0);
+    for (const { file, assembly } of designs) {
+      const resolved = resolve(assembly, gunDomain);
+      const [beadId] = Object.entries(assembly.parts).find(([, part]) => part.family === 'front-sight-bead') ?? [];
+      const connection = beadId && assembly.connections.find(({ to }) => to === `${beadId}.base`);
+      if (!(beadId && connection)) {
+        throw new Error(`${file}: front bead has no connected host`);
+      }
+      const [hostId] = connection.from.split('.');
+      if (!hostId) {
+        throw new Error(`${file}: front bead host id is empty`);
+      }
+      const host = resolved.defs.get(hostId);
+      const hostTransform = resolved.placed.get(hostId);
+      const beadTransform = resolved.placed.get(beadId);
+      if (!(host && hostTransform && beadTransform)) {
+        throw new Error(`${file}: front bead or host is unresolved`);
+      }
+      const beadSolids = resolved.defs.get(beadId)!.solids;
+      expect(beadSolids.length, `${file} bead solids`).toBeGreaterThan(0);
+      expect(host.solids.length, `${file} ${hostId} solids`).toBeGreaterThan(0);
+      const gap = Math.min(
+        ...beadSolids.flatMap((bead) =>
+          host.solids.map((solid) => distanceWorld(worldSolid(beadTransform, bead), worldSolid(hostTransform, solid))),
+        ),
+      );
+      expect(gap, `${file} bead to ${hostId}`).toBeLessThanOrEqual(1e-6);
+    }
+  });
 });
 
 describe('curated optic mounts', () => {

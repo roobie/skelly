@@ -962,6 +962,10 @@ const SkillSchema = pipe(
             loweredPitchRadians: pipe(NonNegative, maxValue(Math.PI / 2)),
             adsApertureFill: pipe(Positive, maxValue(0.95)),
             skillZeroHandling: FirearmsSkillZeroHandlingSchema,
+            reloadFactorFloor: Fraction,
+            reloadFactorHalfLifeLevels: Positive,
+            rackFactorFloor: Fraction,
+            rackFactorHalfLifeLevels: Positive,
           }),
         ),
         melee: optional(
