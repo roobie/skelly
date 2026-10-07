@@ -11,7 +11,7 @@ import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Domain, PartDef, PartFamily, PortDef } from '../src/core/schema.ts';
 import { validate } from '../src/core/validate.ts';
 import { AK_MAGAZINE_CALIBRE_BY_VARIANT, AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
-import { attachmentCompatibility } from '../src/gun/attachmentCompatibility.ts';
+import { attachmentCompatibility, attachmentCompatibilityPairs } from '../src/gun/attachmentCompatibility.ts';
 import { exportAttachmentGlb } from '../src/gun/attachmentExport.ts';
 import { attachmentMassKg } from '../src/gun/attachmentMass.ts';
 import {
@@ -30,6 +30,73 @@ import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
 import { loadCorpus } from './helpers.ts';
+
+const pairFixture = (withInstalledDefault = false) => {
+  const family: PartFamily = {
+    name: 'fixture-pair-rails',
+    params: {},
+    build: () => ({
+      family: 'fixture-pair-rails',
+      ports: [
+        {
+          id: 'blocked-left',
+          mount: 'rail-bottom',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [0, -1, 0],
+          up: [1, 0, 0],
+        },
+        {
+          id: 'blocked-right',
+          mount: 'rail-bottom',
+          gender: 'female',
+          pos: [0, 0, 0],
+          normal: [0, -1, 0],
+          up: [1, 0, 0],
+        },
+        {
+          id: 'clear',
+          mount: 'rail-bottom',
+          gender: 'female',
+          pos: [0, 0, 100],
+          normal: [0, -1, 0],
+          up: [1, 0, 0],
+        },
+      ],
+      solids: [],
+      keepOuts: [],
+      axes: [],
+    }),
+  };
+  const domain: Domain = {
+    ...gunDomain,
+    families: { ...gunDomain.families, [family.name]: family },
+  };
+  const assembly: Assembly = {
+    name: 'pair-certificate-fixture',
+    root: 'mounts',
+    parts: {
+      mounts: { family: family.name, params: {} },
+      ...(withInstalledDefault ? { installed: { family: 'foregrip', params: {} } } : {}),
+    },
+    connections: withInstalledDefault ? [{ from: 'mounts.clear', to: 'installed.base' }] : [],
+  };
+  const slots = attachmentSlots(resolve(assembly, domain));
+  const compatibility = attachmentCompatibility(assembly, slots, domain);
+  const pairs = attachmentCompatibilityPairs(assembly, slots, compatibility, domain);
+  return { assembly, domain, slots, compatibility, pairs };
+};
+
+const compareText = (a: string, b: string): number => {
+  if (a < b) {
+    return -1;
+  }
+  return a > b ? 1 : 0;
+};
+const compareChoices = (a: readonly [string, string], b: readonly [string, string]): number =>
+  compareText(a[0], b[0]) || compareText(a[1], b[1]);
+const orderedPair = (a: readonly [string, string], b: readonly [string, string]) =>
+  compareChoices(a, b) <= 0 ? [a, b] : [b, a];
 
 const design = (name: string): Assembly => {
   const text = readFileSync(join(import.meta.dirname, '..', 'designs', `${name}.json`), 'utf8');
@@ -286,6 +353,7 @@ describe('attachment parts and export metadata', () => {
       throw new Error('gungen did not export attachment compatibility');
     }
     expect(Object.keys(compatibility).sort()).toEqual(slots.map(({ id }) => id).sort());
+    expect(model.modelEntry.compatibilityPairs).toBeDefined();
     for (const ids of Object.values(compatibility)) {
       for (const id of ids) {
         expect(ATTACHMENT_IDS).toContain(id);
@@ -336,11 +404,11 @@ describe('attachment parts and export metadata', () => {
         const receiver = receiverFamily.build(fixtureParams);
         return {
           ...receiver,
-          keepOuts: [
-            ...receiver.keepOuts,
+          solids: [
+            ...receiver.solids,
             {
               id: 'fixture-optic-obstruction',
-              kind: 'fixture obstruction',
+              kind: 'box',
               box: {
                 center: [blockedX, rail.pos[1] + 1.5, 0] as const,
                 half: [2, 1.5, 2] as const,
@@ -373,6 +441,51 @@ describe('attachment parts and export metadata', () => {
     expect(mountCanAccept(rail, optic.mount, clearIndex)).toBe(true);
     expect(compatibility[blocked.id]).not.toContain('optic-mini-reflex');
     expect(compatibility[clear.id]).toContain('optic-mini-reflex');
+  });
+
+  it('certifies clear attachment pairs and rejects a pair that overlaps on fixture geometry', () => {
+    const { slots, compatibility, pairs } = pairFixture();
+    const blockedLeft = slots.find(({ id }) => id === 'mounts.blocked-left.0');
+    const blockedRight = slots.find(({ id }) => id === 'mounts.blocked-right.0');
+    const clear = slots.find(({ id }) => id === 'mounts.clear.0');
+    if (!(blockedLeft && blockedRight && clear)) {
+      throw new Error('Pair fixture did not expose all mount slots');
+    }
+    const sharedId = compatibility[blockedLeft.id]?.find((id) => compatibility[blockedRight.id]?.includes(id));
+    if (!sharedId) {
+      throw new Error('Fixture has no attachment certified at both co-located slots');
+    }
+    const blockedPair = orderedPair([blockedLeft.id, sharedId], [blockedRight.id, sharedId]);
+    const clearPair = orderedPair([blockedLeft.id, sharedId], [clear.id, sharedId]);
+    expect(compatibility[blockedLeft.id]).toContain(sharedId);
+    expect(compatibility[blockedRight.id]).toContain(sharedId);
+    expect(pairs).not.toContainEqual(blockedPair);
+    expect(pairs).toContainEqual(clearPair);
+  });
+
+  it('certifies a dynamic single beside an installed default', () => {
+    const { assembly, domain, slots, compatibility } = pairFixture(true);
+    const blocked = slots.find(({ id }) => id === 'mounts.blocked-left.0');
+    const installed = slots.find(({ id }) => id === 'mounts.clear.0');
+    const blockedChoices = blocked ? compatibility[blocked.id] : undefined;
+    if (!(blocked && installed && blockedChoices?.includes('foregrip'))) {
+      throw new Error('Pair fixture did not expose a dynamic fit beside its default');
+    }
+    const onlyDynamicSlot = { [blocked.id]: blockedChoices };
+    const pairs = attachmentCompatibilityPairs(assembly, slots, onlyDynamicSlot, domain);
+    expect(pairs).toContainEqual(orderedPair([blocked.id, 'foregrip'], [installed.id, 'foregrip']));
+  });
+
+  it('serializes the complete pair list canonically regardless of slot input order', () => {
+    const { assembly, domain, slots, compatibility, pairs } = pairFixture();
+    const reversedCompatibility = Object.fromEntries(Object.entries(compatibility).reverse());
+    const reversed = attachmentCompatibilityPairs(assembly, [...slots].reverse(), reversedCompatibility, domain);
+    const comparePairs = (a: (typeof pairs)[number], b: (typeof pairs)[number]): number =>
+      compareChoices(a[0], b[0]) || compareChoices(a[1], b[1]);
+    expect(reversed).toEqual(pairs);
+    expect(pairs).toEqual([...pairs].sort(comparePairs));
+    expect(pairs.every(([first, second]) => compareChoices(first, second) <= 0)).toBe(true);
+    expect(new Set(pairs.map((pair) => JSON.stringify(pair))).size).toBe(pairs.length);
   });
 
   it('rejects a fitted mod whose mount slot is absent from the exported interfaces', () => {

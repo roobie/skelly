@@ -9,7 +9,11 @@ import type { Assembly, PartDef } from '../core/schema.ts';
 import { resolveGunAction } from './actionDescription.ts';
 import { GUN_ANCHORS } from './anchorData.ts';
 import { type AnchorSelectionError, GUN_ANCHOR_POLICY, type SelectedAnchors, selectGunAnchors } from './anchors.ts';
-import { attachmentCompatibility } from './attachmentCompatibility.ts';
+import {
+  type AttachmentCompatibilityPair,
+  attachmentCompatibility,
+  attachmentCompatibilityPairs,
+} from './attachmentCompatibility.ts';
 import {
   type AttachmentMetadata,
   type AttachmentSlotMetadata,
@@ -88,6 +92,8 @@ export interface DeadvoxModelEntry {
   readonly attachmentSlots?: readonly AttachmentSlotMetadata[];
   /** Complete gungen-certified standalone attachment allowlist for each mount slot. */
   readonly compatibility?: Readonly<Record<string, readonly string[]>>;
+  /** Complete canonical allowlist of compatible pairs of single-fit choices. */
+  readonly compatibilityPairs?: readonly AttachmentCompatibilityPair[];
   /** Fitted, replaceable item slots whose baked geometry is present in the gun GLB. */
   readonly slots?: { readonly magazine?: { readonly node: string; readonly at: Vec3; readonly turn: Vec3 } };
 }
@@ -440,15 +446,20 @@ export const exportGunGlb = (
     up: normalize(toFileAxes(up)),
   }));
   const magazine = magazineSlotData(resolved);
+  const compatibility = includeAttachmentCompatibility
+    ? attachmentCompatibility(assembly, attachmentSlotsData)
+    : undefined;
+  const compatibilityPairs =
+    compatibility === undefined
+      ? undefined
+      : attachmentCompatibilityPairs(assembly, attachmentSlotsData, compatibility);
   return {
     ...result,
     modelEntry: {
       ...modelEntry,
       attachments: attachmentData(resolved),
       attachmentSlots: attachmentSlotsData,
-      ...(includeAttachmentCompatibility
-        ? { compatibility: attachmentCompatibility(assembly, attachmentSlotsData) }
-        : {}),
+      ...(compatibility === undefined || compatibilityPairs === undefined ? {} : { compatibility, compatibilityPairs }),
       ...(magazine ? { slots: { magazine } } : {}),
     },
   };
