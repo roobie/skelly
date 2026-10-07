@@ -98,9 +98,7 @@ Revisit when bjorn/git-kit#7, #8 and #9 are fixed.
 
 Use plain git, following AGENTS.md:
 
-- **Start a topic:** `git fetch origin`, then `git worktree add
-  .claude/worktrees/<name> -b <branch> origin/main`, the installs under
-  "Installing check dependencies", and `git push -u origin <branch>`.
+- **Start a topic:** `git fetch origin`, then `git worktree add .claude/worktrees/<name> -b <branch> origin/main`, the installs under "Installing check dependencies", and `git push -u origin <branch>`.
 - **While working:** commit in reasonable chunks and `git push`. To take in main,
   `git fetch origin && git merge origin/main`. Never rebase or force-push a
   published branch, and never bypass the pre-push hook with `--no-verify` to get
@@ -108,9 +106,11 @@ Use plain git, following AGENTS.md:
 - **After BR merges the PR:** remove the worktree (`git worktree remove`) and
   delete the local branch; the lead does this.
 
-Keep this copy aligned with `.claude/CLAUDE.md`: BR's 2026-10-07 10:59 ruling
-directed that both agent entry points carry the rule. Leave the main checkout's
-untracked files alone; never clear them to satisfy a tool.
+Keep this copy aligned with `.claude/CLAUDE.md`. BR (2026-10-07 10:59): "duplicate the rule to AGENTS.md".
+
+### Main checkout
+
+**Lead note:** Leave the main checkout's untracked files alone; never clear them to satisfy a tool.
 
 ## Dependency age
 
