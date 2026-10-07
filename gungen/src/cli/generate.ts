@@ -12,6 +12,7 @@ import type { Assembly } from '../core/schema.ts';
 import { validate } from '../core/validate.ts';
 import { gunDomain } from '../gun/domain.ts';
 import { TEMPLATES } from '../gun/templates.ts';
+import { readCartridge } from './readCartridge.ts';
 
 const { values } = parseArgs({
   options: {
@@ -27,6 +28,15 @@ const template = TEMPLATES.find((t) => t.name === values.template);
 if (!template) {
   console.error(`--template must be one of: ${names}`);
   process.exit(2);
+}
+if (template.calibre !== undefined) {
+  const cartridge = readCartridge(template.calibre);
+  if (!(cartridge.ok && cartridge.cartridge)) {
+    console.error(
+      `Template ${template.name} calibre: ${cartridge.ok ? 'cartridge data is missing' : cartridge.message}`,
+    );
+    process.exit(2);
+  }
 }
 const seed = Number(values.seed);
 if (!Number.isInteger(seed)) {
@@ -53,7 +63,15 @@ if (values.valid) {
 }
 
 // Keep the selected finish preset explicit across file boundaries; never encode it in the generated name.
-const json = `${JSON.stringify({ ...assembly, appearance: { variant: template.name } }, null, 2)}\n`;
+const json = `${JSON.stringify(
+  {
+    ...assembly,
+    ...(template.calibre === undefined ? {} : { calibre: template.calibre }),
+    appearance: { variant: template.name },
+  },
+  null,
+  2,
+)}\n`;
 if (values.out) {
   writeFileSync(values.out, json);
 } else {

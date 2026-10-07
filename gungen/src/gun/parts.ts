@@ -7,12 +7,12 @@
 // frame, cylinder, and barrel are dedicated families in revolver.ts. Layout
 // still lives in the lower that hangs under it, so layouts are data: pick a lower.
 //
-// Mount types (receivers and lowers carry the female side):
+// Primary receiver joints and accessory rails share the same port compatibility contract:
 //   barrel     receiver front ↔ barrel rear (sized by bore)
 //   cylinder   revolver frame ↔ cylinder axis; cylinder ↔ barrel closes a loop
 //   handguard  receiver front ↔ handguard rear
 //   clamp      barrel ↔ handguard front (optional: handguards may float free)
-//   rail       receiver or handguard top rail (slotted) ↔ sight
+//   rail       receiver or handguard accessory rails (slotted) ↔ optics, lights and grips
 //   lower      receiver bottom ↔ lower
 //   grip       lower bottom ↔ grip
 //   magazine   lower bottom ↔ box magazine
@@ -30,6 +30,7 @@ import { AK_PROPORTIONS, akGasPortX } from './akProportions.ts';
 import { ANTI_MATERIEL_FAMILIES } from './antiMateriel/index.ts';
 import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
+import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
@@ -3074,6 +3075,24 @@ const handguard: PartFamily = {
           up: X,
           slots: { count: (len - 4) / 2 + 1, pitch: 2 },
         },
+        {
+          id: 'rail-bottom',
+          mount: 'rail-bottom',
+          gender: 'female',
+          pos: [2, snapGrid(-outerY), 0],
+          normal: NEG_Y,
+          up: X,
+          slots: { count: (len - 4) / 2 + 1, pitch: 2 },
+        },
+        {
+          id: 'rail-side',
+          mount: 'rail-side',
+          gender: 'female',
+          pos: [2, 0, snapGrid(outerZ)],
+          normal: [0, 0, 1],
+          up: X,
+          slots: { count: (len - 4) / 2 + 1, pitch: 2 },
+        },
         ...(tubeEnd === undefined
           ? []
           : [
@@ -4104,6 +4123,7 @@ export const FAMILIES: Readonly<Record<string, PartFamily>> = {
   magazine,
   stock,
   sight,
+  ...ATTACHMENT_FAMILIES,
   ...revolverFamilySet,
   ...ANTI_MATERIEL_FAMILIES,
 };

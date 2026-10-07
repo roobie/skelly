@@ -8,11 +8,9 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import process from 'node:process';
-import { calibreSlug } from '../ammo/calibreSlug.ts';
-import type { Cartridge } from '../ammo/cartridge.ts';
-import { formatCartridgeParseError, parseCartridgeJson } from '../ammo/parseCartridge.ts';
 import type { DeadvoxModelFile } from '../gun/exportGlb.ts';
 import { exportFileText } from './exportFile.ts';
+import { readCartridge } from './readCartridge.ts';
 
 const USAGE =
   'usage: export <design-or-fixture.json> [--out <dir>] [--entry-out <dir>] [--id <model_id>] [--calibre <cartridge_id>]';
@@ -20,30 +18,6 @@ const USAGE =
 const flag = (args: string[], name: string): string | undefined => {
   const at = args.indexOf(name);
   return at >= 0 ? args[at + 1] : undefined;
-};
-
-const readCartridge = (
-  id: string | undefined,
-): { readonly ok: true; readonly cartridge?: Cartridge } | { readonly ok: false; readonly message: string } => {
-  if (id === undefined) {
-    return { ok: true };
-  }
-  try {
-    calibreSlug(id);
-  } catch (error) {
-    return { ok: false, message: error instanceof Error ? error.message : String(error) };
-  }
-  let text: string;
-  try {
-    text = readFileSync(join(import.meta.dirname, '../../cartridges', `${id}.json`), 'utf8');
-  } catch {
-    return { ok: false, message: `no cartridge data with id ${JSON.stringify(id)}` };
-  }
-  const parsed = parseCartridgeJson(text);
-  if (!parsed.ok) {
-    return { ok: false, message: formatCartridgeParseError(parsed.error) };
-  }
-  return { ok: true, cartridge: parsed.cartridge };
 };
 
 const main = (): number => {
