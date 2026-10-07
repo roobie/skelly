@@ -1,7 +1,7 @@
 import { dominantSide } from '../core/character.ts';
 import type { Registry } from '../core/content.ts';
 import type { Inventory } from '../core/inventory.ts';
-import type { Item } from '../core/items.ts';
+import { defOf, type Item } from '../core/items.ts';
 import { magazineSpec } from '../core/magazine.ts';
 import type { ItemDef } from '../core/schema.ts';
 
@@ -27,19 +27,27 @@ export const equipDebugFirearms = (
     throw new Error('Could not equip firearm preview backpack');
   }
   if (choice === 'pump') {
-    const box = inventory.create('shotshell_box');
-    if (
-      !(
-        inventory.add(inventory.create('pump_shotgun'), { kind: 'hand', side: dominantSide(inventory.character) }) &&
-        inventory.add(box, { kind: 'pocket', owner: backpack, pocket: 0 })
-      )
-    ) {
-      throw new Error('Could not equip pump preview loadout');
-    }
+    equipPump(inventory, backpack);
     return true;
   }
   equipRifles(inventory, backpack, choice);
   return true;
+};
+
+/** The empty pump in hand; a sealed shell box and a stack of loose shells of the kind it holds packed, to load now. */
+const equipPump = (inventory: Inventory, backpack: Item): void => {
+  const box = inventory.create('shotshell_box');
+  const shell = defOf(inventory.registry, box.type).unpack!.item;
+  const pocket = { kind: 'pocket', owner: backpack, pocket: 0 } as const;
+  if (
+    !(
+      inventory.add(inventory.create('pump_shotgun'), { kind: 'hand', side: dominantSide(inventory.character) }) &&
+      inventory.add(box, pocket) &&
+      inventory.add(inventory.create(shell, 20), pocket)
+    )
+  ) {
+    throw new Error('Could not equip pump preview loadout');
+  }
 };
 
 /**

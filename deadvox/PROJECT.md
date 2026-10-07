@@ -151,7 +151,10 @@ keeps mobgen source imports available; its obstruction predicate must match play
   a four-shell tube plus chamber, one-shell loading jobs and manual exported
   hand racking. Its ammunition, nine pellets and loud F4 hearing require no
   automatic action metadata. It has a fresh `?debug=1&loadout=pump` fixture,
-  but no loot placement yet. Sound/look/feel remain awaiting BR.
+  but no loot placement yet. BR, 2026-10-07 15:54 (d114-13): "let's update the
+  loadout=pump to have 20 loose shells in inventory too". So that loadout packs a
+  stack of loose shells beside the sealed box, and hold R loads from the stack
+  straight away (`src/debug/debugLoadout.ts`, `equipDebugFirearms`). Sound/look/feel remain awaiting BR.
   See [pump-shotgun.md](docs/pump-shotgun.md) for controls, estimates and provenance.
   Synthetic 5.56/600-rpm handling,
   calibre and case fallbacks are retired: unannotated models still validate,

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
+import { dominantSide, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { ejectSeconds } from '../src/core/firearmAction.ts';
@@ -14,6 +14,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
+import { equipDebugFirearms } from '../src/debug/debugLoadout.ts';
 import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
@@ -266,6 +267,28 @@ describe('real pump ammunition', () => {
     expect(f.queue.jobs).toEqual([]);
     expect(f.gun.firearm?.tube).toEqual([]);
     expect(f.inventory.itemByUid(f.box.uid)).toBe(f.box);
+  });
+
+  it('gives the pump loadout one stack of loose shells, which the pump loads from', () => {
+    const inventory = new Inventory(registry);
+    expect(equipDebugFirearms(inventory, true, true, '?loadout=pump')).toBe(true);
+    const gun = inventory.hands[dominantSide(inventory.character)]!;
+    const looseShells = () => [...inventory.items()].map(({ item }) => item).filter(({ type }) => type === shellType);
+    expect(looseShells()).toHaveLength(1);
+    const [stack] = looseShells();
+    expect(stack!.count).toBeGreaterThan(1);
+    const carried = stack!.count;
+    const queue = new HandlingQueue(inventory);
+    const mechanics = new FirearmMechanics(inventory, queue, {
+      blockSize: 0.5,
+      pose: () => pose,
+      onEjection: () => [],
+    });
+    expect(mechanics.loadNext(gun.uid, 0)).toBeUndefined();
+    queue.tick(SHELL_LOAD_SECONDS);
+    mechanics.advanceTo(SHELL_LOAD_SECONDS);
+    expect(gun.firearm?.tube).toEqual([shellType]);
+    expect(looseShells().map(({ uid, count }) => ({ uid, count }))).toEqual([{ uid: stack!.uid, count: carried - 1 }]);
   });
 
   it('takes loose carried shells by ascending UID rather than pocket traversal order', () => {
