@@ -299,7 +299,8 @@ describe('debug time control', () => {
   it('seeks the clock without replaying skipped simulation ticks', () => {
     const sim = new Simulation({ seed: 3 });
     sim.frame(2);
-    sim.compression.active = true;
+    expect(sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
+    expect(sim.compression.active).toBe(true);
     sim.setDebugCalendarTime(24 * 3600 + 8 * 3600);
     expect(sim.calendar).toBe(32 * 3600);
     expect(sim.compression.active).toBe(false);

@@ -5,6 +5,8 @@ import { toChunk } from '../src/core/coords.ts';
 import { toHands } from '../src/core/options.ts';
 import { encodeSave } from '../src/core/saveFormat.ts';
 import type { SaveSnapshot } from '../src/core/saveState.ts';
+import { realSeconds } from '../src/core/time.ts';
+import { advanceLiveFrame } from '../src/game/frameDriver.ts';
 import {
   decodeInputReplay,
   encodeInputReplay,
@@ -140,7 +142,9 @@ const recordActiveSession = (
     }
     source.view.yaw += 0.007;
     source.view.pitch += 0.001;
-    source.session.frame(frameDts[frame % frameDts.length]!);
+    advanceLiveFrame(source.sim, realSeconds(frameDts[frame % frameDts.length]!), undefined, (simDt, until) =>
+      source.session.frame(simDt, until),
+    );
     if (frame > 400) {
       throw new Error('Source session did not reach the recorded tick window');
     }
@@ -175,12 +179,15 @@ const playSession = (start: Readonly<SaveSnapshot>, inputs: ReplayInputData, end
           worldReady: false,
         };
       }
+      // Match play.ts, samplePlayerInput: each player tick updates its recorded compression.
+      replay.sim.compression.c = sample.compression;
       applyReplayLook(replay.view, sample);
       return sample;
     },
   });
   replay.sim.paused = false;
   for (let frame = 0; !player.finished; frame += 1) {
+    // Match play.ts, stepReplaySimulation: replay frames use the recorded compression multiplier.
     replay.sim.compression.c = player.peek()?.compression ?? replay.sim.compression.c;
     replay.session.frameReplay(1 / 60);
     if (frame > inputs.frames.length + 24) {
@@ -362,6 +369,23 @@ describe('input replay', () => {
     expect(player.next()).toMatchObject({ yaw: 0.5, intent: { forward: 0 } });
     expect(seen).toEqual(['down:movement.walk-toggle:0.4', 'up:movement.walk-toggle:0.5', 'down:world.interact:0.5']);
     expect(decoded.snapshot).toEqual(start);
+  });
+
+  it('replays recorded compression through the replay driver', async () => {
+    const runtime = createRuntime();
+    expect(runtime.sim.actions.startRest('sleep', -10, 1)).toBeUndefined();
+    const start = capture(runtime);
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder, { frameDts: [1 / 60] });
+    const inputs = recorder.copyInputs();
+    expect(inputs.frames.some((frame) => sampleFromReplayFrame(frame).compression > 1)).toBe(true);
+
+    const sourceEnd = capture(source);
+    const replay = playSession(start, inputs, sourceEnd.character.simulation.time);
+
+    const finalSample = sampleFromReplayFrame(inputs.frames.at(-1)!);
+    expect(replay.sim.compression.c).toBe(finalSample.compression);
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
   it('records active session movement and replays between-frame commands to the same state', async () => {
