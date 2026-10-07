@@ -1,4 +1,4 @@
-import { PointLight } from 'three';
+import { Color, Group, Mesh, MeshBasicMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
 import type { Item } from '../src/core/items.ts';
@@ -39,9 +39,61 @@ describe('held-item throws', () => {
     );
   });
 
+  it('uses the thrown item’s own model from ModelLibrary', () => {
+    const rifleModel = new Group();
+    rifleModel.name = 'rifle-model';
+    let requestedModel: string | undefined;
+    const models = {
+      ground: (id: string) => {
+        requestedModel = id;
+        return rifleModel;
+      },
+    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    const registry = testRegistry({ rifle: 4000 });
+    registry.items.set('rifle', { id: 'rifle', weight: 4000, size: [1, 4], model: 'rifle_model' } as never);
+    const throws = new ItemThrows(registry, models, 1);
+    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rifle'));
+
+    expect(requestedModel).toBe('rifle_model');
+    expect(throws.group.getObjectByName('rifle_model')).toBe(rifleModel);
+    throws.dispose();
+  });
+
+  it('uses the low pile bundle fallback for an item without a model', () => {
+    const registry = testRegistry({ rag: 20 });
+    registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
+    const throws = new ItemThrows(registry, undefined, 1);
+    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rag'));
+    const flight = throws.group.children[0] as Group;
+    const bundle = flight.children[0] as Mesh;
+
+    expect(bundle).toBeInstanceOf(Mesh);
+    expect(bundle.scale.y).toBeLessThan(bundle.scale.x);
+    throws.dispose();
+  });
+
+  it('keeps the pile emissive marker on a burning item during flight', () => {
+    const registry = testRegistry({ glow: 30 });
+    const light = { color: '#62ff81', emissive: 0.3, burning: { drop: 'stay' } };
+    registry.items.set('glow', { id: 'glow', weight: 30, size: [1, 2], light } as never);
+    const throws = new ItemThrows(registry, undefined, 1);
+    throws.spawn([0, 1, 0], [2, 1, 0], { ...testItem('glow'), on: true });
+    const flight = throws.group.children[0] as Group;
+    const marker = flight.children.find(
+      (child) => child instanceof Mesh && child.material instanceof MeshBasicMaterial,
+    ) as Mesh;
+    const expected = new Color(light.color).multiplyScalar(light.emissive);
+
+    expect(marker).toBeDefined();
+    expect((marker.material as MeshBasicMaterial).color.equals(expected)).toBe(true);
+    throws.dispose();
+  });
+
   it('presents an item flight without adding a point light to the shader pool', () => {
-    const throws = new ItemThrows();
-    throws.spawn([0, 1, 0], [2, 1, 0], '#d8d0c4');
+    const registry = testRegistry({ rag: 20 });
+    registry.items.set('rag', { id: 'rag', weight: 20, size: [1, 2] } as never);
+    const throws = new ItemThrows(registry);
+    throws.spawn([0, 1, 0], [2, 1, 0], testItem('rag'));
 
     expect(throws.group.children.some((child) => child instanceof PointLight)).toBe(false);
     throws.dispose();

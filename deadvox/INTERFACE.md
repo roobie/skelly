@@ -209,6 +209,15 @@ handling; melee combat governs block success. The tiered practice contract is in
 - Lowered, a held item may block part of the view; its firearm pose rises with
   simulation-time readiness, as shown by `src/render/hands.ts`, `HeldItems.update`.
 
+## HUD
+
+The optional Handling progress HUD reuses its existing progress card for a held
+item throw. Its fill follows throw charge in simulation time; a labelled marker
+shows the minimum-release point. The meter appears only while `handling` is on
+and T is held, and disappears on release or cancellation, so the player can read
+force without a second widget or key instruction. See `src/ui/hud.ts`,
+`handlingViewModel`, and `src/game/play.ts`, `handlingPresentationFor`.
+
 ## Development and playtest
 
 - **`?debug=1` is the development profile.** Its panel, readouts and tools live in

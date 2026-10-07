@@ -209,14 +209,20 @@ const createInputReplayDriver = (
 const handlingPresentationFor = (
   job: Readonly<LongJob> | undefined,
   queue: HandlingPresentationSource,
-): HandlingPresentationSource =>
-  job?.jobType === 'pry' && !job.stopped
-    ? {
-        jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
-        cancelLabel: 'X pauses',
-        movementLabel: '',
-      }
-    : queue;
+  throwCharge?: HandlingPresentationSource['throwCharge'],
+): HandlingPresentationSource => {
+  if (throwCharge) {
+    return { jobs: [], throwCharge };
+  }
+  if (job?.jobType === 'pry' && !job.stopped) {
+    return {
+      jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
+      cancelLabel: 'X pauses',
+      movementLabel: '',
+    };
+  }
+  return queue;
+};
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -1655,7 +1661,7 @@ export const startPlay = (
     }
     const origin: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
     const landing: Vec3 = [(target.pos[0] + 0.5) * s, (target.pos[1] + 0.15) * s, (target.pos[2] + 0.5) * s];
-    itemThrows.spawn(origin, landing, registry.items.get(item.type)?.light?.color ?? '#d8d0c4');
+    itemThrows.spawn(origin, landing, item);
   }
 
   function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
@@ -1990,9 +1996,7 @@ export const startPlay = (
         looking: [
           looking,
           ...(visible.interaction && itemThrowStartedAt !== undefined
-            ? [
-                `${labelForAction('player.throw')} ${Math.round(Math.min(1, (sim.time - itemThrowStartedAt) / throwChargeSimSeconds) * 100)}% · right-click cancels`,
-              ]
+            ? [`${labelForAction('player.throw')} held · right-click cancels`]
             : []),
         ]
           .filter(Boolean)
@@ -2384,7 +2388,17 @@ export const startPlay = (
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(
       handlingBox,
-      handlingPresentationFor(sim.actions.job, queue),
+      handlingPresentationFor(
+        sim.actions.job,
+        queue,
+        itemThrowStartedAt === undefined
+          ? undefined
+          : {
+              elapsedSimSeconds: Math.max(0, sim.time - itemThrowStartedAt),
+              chargeSimSeconds: throwChargeSimSeconds,
+              minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
+            },
+      ),
       !screen.isOpen && visible.handling,
     );
     view.prepareLighting(sky);

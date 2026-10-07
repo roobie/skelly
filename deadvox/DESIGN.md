@@ -775,6 +775,12 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 ## Held-item throws
 
+BR, 2026-10-07 15:48:
+
+> "hmm, yeah holding T works for throwing - however, when throwing the AR: during flight, it looks like a lit candle (or perhaps uncolored glowstick)"
+>
+> "also: when handling progress is on: a throwing meter showing force should show based on throwing-charge"
+
 The rebindable T action throws only the primary-hand item; an empty primary hand
 refuses instead of reaching into the off hand. A release before BR's minimum
 held-time threshold throws nothing. The range charge starts on press and grows
@@ -783,6 +789,14 @@ delay before charging. Item weight limits launch range through arm speed and
 energy; a light item retains the existing maximum, while a heavier one travels
 no farther. A thrown item keeps its identity and state when it lands, including a
 firearm's loaded magazine. A lit glowstick remains lit at its landing pile.
+The flight uses the item's loaded `ModelLibrary` ground model, keeping its
+appearance recognizable between hand and landing; ordinary items without a
+model use the same low bundle fallback as a ground pile, scattered cases keep
+the pile placeholder, and an active glowstick keeps its emissive marker. The
+optional Handling progress HUD shows charge from the initial
+press and marks the minimum-release point, so the release gate is visible without
+changing the throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
+`src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `handlingPresentationFor`.
 
 BR first ruled that holding T longer should throw farther and right-click should
 cancel (2026-10-06 14:24). BR then ruled (2026-10-07 14:35):

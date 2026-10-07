@@ -141,6 +141,22 @@ describe('handlingViewModel', () => {
     expect(handlingViewModel(queue).visible).toBe(false);
   });
 
+  it('shows throw charge and the minimum-release point on the handling meter', () => {
+    const chargeSimSeconds = 2;
+    const minimumHoldSimSeconds = 1;
+    for (const elapsedSimSeconds of [0, chargeSimSeconds / 2, chargeSimSeconds * 2]) {
+      const vm = handlingViewModel({
+        jobs: [],
+        throwCharge: { elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds },
+      });
+
+      expect(vm.visible).toBe(true);
+      expect(vm.label).toBe('Throw force');
+      expect(vm.percent).toBe(Math.round((Math.min(chargeSimSeconds, elapsedSimSeconds) / chargeSimSeconds) * 100));
+      expect(vm.minimumPercent).toBe(Math.round((minimumHoldSimSeconds / chargeSimSeconds) * 100));
+    }
+  });
+
   it('shows the current job label, elapsed and total time, and the progress percent', () => {
     const inv = new Inventory(registry);
     const queue = queueForTest(inv);
@@ -151,7 +167,7 @@ describe('handlingViewModel', () => {
     const job = queue.jobs[0]!;
     expect(vm.visible).toBe(true);
     expect(vm.label).toBe(label);
-    expect(vm.time.match(/[\d.]+/g)?.map(Number)).toEqual([job.elapsed, job.duration]);
+    expect(vm.simSecondsLabel.match(/[\d.]+/g)?.map(Number)).toEqual([job.elapsed, job.duration]);
     expect(vm.percent).toBe(Math.round((job.elapsed / job.duration) * 100));
   });
 

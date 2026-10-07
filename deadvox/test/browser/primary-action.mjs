@@ -1018,7 +1018,61 @@ try {
   await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.dominant, r.inventory.itemByUid(uid));
+    r.hudOptions.handling = true;
   }, throwFixture.uid);
+  const meterThrow = await holdAction(page, 'player.throw');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    const root = document.querySelector('#handling');
+    return r.isChargingItemThrow() && !root.hidden && root.querySelector('.hd-minimum');
+  });
+  const meterStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  await waitForSimulation(
+    page,
+    throwChargeSample,
+    { start: meterStart, seconds: throwFixture.chargeSimSeconds / 2 },
+    {
+      seconds: throwFixture.chargeSimSeconds / 2 + 0.1,
+      label: 'throw handling meter advances with simulation-time charge',
+      record: (line) => process.stderr.write(`${line}\n`),
+    },
+  );
+  const meterMidpoint = await page.evaluate(() => {
+    const root = document.querySelector('#handling');
+    return {
+      fill: Number.parseFloat(root.querySelector('.hd-fill').style.width),
+      marker: Number.parseFloat(root.querySelector('.hd-minimum').style.left),
+      minimumLabel: root.querySelector('.hd-meter-minimum')?.textContent,
+    };
+  });
+  assert.ok(meterMidpoint.fill > 0 && meterMidpoint.fill < 100, 'charge meter reports partial throw force');
+  assert.equal(
+    meterMidpoint.marker,
+    Math.round((throwFixture.minimumHoldSimSeconds / throwFixture.chargeSimSeconds) * 100),
+    'meter marks the authored minimum release point',
+  );
+  assert.match(meterMidpoint.minimumLabel ?? '', /minimum release/i);
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.handling = false;
+  });
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  await page.mouse.down({ button: 'right' });
+  await meterThrow();
+  await page.mouse.up({ button: 'right' });
+  await page.waitForFunction(() => !globalThis.primaryActionTest.isChargingItemThrow());
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  assert.equal(
+    await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
+      throwFixture.uid,
+    ),
+    'hand',
+    'right-click cancellation hides the throw meter without releasing the item',
+  );
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.handling = true;
+  });
   const interruptedThrow = await holdAction(page, 'player.throw');
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   assert.equal(
@@ -1122,13 +1176,18 @@ try {
       seconds: throwFixture.chargeSimSeconds + 1,
       label: 'glowstick charge reaches its maximum throw range',
       record: (line) => process.stderr.write(`${line}\n`),
-      stop: releaseThrow,
     },
   );
+  const fullMeter = await page.evaluate(() =>
+    Number.parseFloat(document.querySelector('#handling .hd-fill').style.width),
+  );
+  assert.equal(fullMeter, 100, 'maximum charge fills the handling meter');
+  await releaseThrow();
   await page.waitForFunction((uid) => {
     const r = globalThis.primaryActionTest;
     return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
   }, throwFixture.uid);
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
   const thrownGlowstick = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;
     const item = r.inventory.itemByUid(uid);
@@ -1194,6 +1253,7 @@ try {
     }
     return {
       uid: firearm.uid,
+      modelId: definition.model,
       firearmState,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
@@ -1212,6 +1272,15 @@ try {
       record: (line) => process.stderr.write(`${line}\n`),
       stop: releaseFirearmThrow,
     },
+  );
+  const flightModelId = await page.waitForFunction((modelId) => {
+    const { itemThrows } = globalThis.primaryActionTest;
+    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(modelId) ? modelId : false;
+  }, loadedFirearm.modelId);
+  assert.equal(
+    await flightModelId.jsonValue(),
+    loadedFirearm.modelId,
+    'flight uses the firearm’s own ModelLibrary model',
   );
   const landedFirearm = await page.evaluate((uid) => {
     const r = globalThis.primaryActionTest;

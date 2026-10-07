@@ -76,15 +76,23 @@ export const quickbarKey = (bar: Quickbar, inv: Inventory): string =>
 export interface HandlingViewModel {
   readonly visible: boolean;
   readonly label: string;
-  readonly time: string;
+  readonly simSecondsLabel: string;
   readonly percent: number;
   readonly next: string;
   readonly cancelLabel: string;
   readonly movementLabel: string;
+  readonly minimumPercent?: number;
+}
+
+export interface ThrowChargePresentation {
+  readonly elapsedSimSeconds: number;
+  readonly chargeSimSeconds: number;
+  readonly minimumHoldSimSeconds: number;
 }
 
 export interface HandlingPresentationSource {
   readonly jobs: readonly { readonly label: string; readonly duration: number; readonly elapsed: number }[];
+  readonly throwCharge?: ThrowChargePresentation;
   readonly cancelLabel?: string;
   readonly movementLabel?: string;
 }
@@ -92,13 +100,28 @@ export interface HandlingPresentationSource {
 /** The current move and the next one, while the inventory is closed. */
 export const handlingViewModel = (queue: HandlingPresentationSource): HandlingViewModel => {
   const [job, next] = queue.jobs;
+  if (queue.throwCharge) {
+    const { elapsedSimSeconds, chargeSimSeconds, minimumHoldSimSeconds } = queue.throwCharge;
+    const percent = (seconds: number) =>
+      Math.round((Math.max(0, Math.min(chargeSimSeconds, seconds)) / chargeSimSeconds) * 100);
+    return {
+      visible: true,
+      label: 'Throw force',
+      simSecondsLabel: `${Math.max(0, Math.min(chargeSimSeconds, elapsedSimSeconds)).toFixed(1)} / ${chargeSimSeconds.toFixed(1)} s`,
+      percent: percent(elapsedSimSeconds),
+      minimumPercent: percent(minimumHoldSimSeconds),
+      next: '',
+      cancelLabel: '',
+      movementLabel: '',
+    };
+  }
   if (!job) {
-    return { visible: false, label: '', time: '', percent: 0, next: '', cancelLabel: '', movementLabel: '' };
+    return { visible: false, label: '', simSecondsLabel: '', percent: 0, next: '', cancelLabel: '', movementLabel: '' };
   }
   return {
     visible: true,
     label: job.label,
-    time: `${job.elapsed.toFixed(1)} / ${job.duration.toFixed(1)} s`,
+    simSecondsLabel: `${job.elapsed.toFixed(1)} / ${job.duration.toFixed(1)} s`,
     percent: Math.round((job.elapsed / Math.max(job.duration, 1e-6)) * 100),
     next: next ? `Then: ${next.label}` : '',
     cancelLabel: queue.cancelLabel ?? 'X cancels',
@@ -109,9 +132,23 @@ export const handlingViewModel = (queue: HandlingPresentationSource): HandlingVi
 const handlingTemplate = (vm: HandlingViewModel): TemplateResult => html`
   <div class="hd-row">
     <span>${vm.label}</span>
-    <span class="hd-time">${vm.time}</span>
+    <span class="hd-time">${vm.simSecondsLabel}</span>
   </div>
-  <div class="hd-bar"><div class="hd-fill" style=${`width: ${vm.percent}%`}></div></div>
+  <div class="hd-meter">
+    <div class="hd-bar">
+      <div class="hd-fill" style=${`width: ${vm.percent}%`}></div>
+      ${
+        vm.minimumPercent === undefined
+          ? ''
+          : html`<span class="hd-minimum" style=${`left: ${vm.minimumPercent}%`}></span>`
+      }
+    </div>
+    ${
+      vm.minimumPercent === undefined
+        ? ''
+        : html`<div class="hd-meter-minimum" style=${`left: ${vm.minimumPercent}%`}>Minimum release</div>`
+    }
+  </div>
   <div class="hd-row hd-muted">
     <span>${vm.next}</span>
     <span>${vm.cancelLabel}</span>
