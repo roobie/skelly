@@ -55,46 +55,60 @@ describe('crawler', () => {
   });
 
   it('alternates the arm drag and keeps gait and flinch surfaces grounded', () => {
-    const realized = realize(generate(crawler, 1));
-    const rest = crawlerPose(realized);
-    const leftReach = crawlerGaitPose(realized, 0.5, 1);
-    const rightReach = crawlerGaitPose(realized, Math.PI + 0.5, 1);
-    expect(leftReach.rotations['upperArm.L']).not.toEqual(rest.rotations['upperArm.L']);
-    expect(leftReach.rotations['upperArm.R']).toEqual(rest.rotations['upperArm.R']);
-    expect(rightReach.rotations['upperArm.R']).not.toEqual(rest.rotations['upperArm.R']);
-    expect(rightReach.rotations['upperArm.L']).toEqual(rest.rotations['upperArm.L']);
-    expect(crawlerGaitPose(realized, 0.5, 0)).toEqual(rest);
+    const seeds = SHAMBLER_FIGURE_SEEDS;
+    expect(seeds.length).toBeGreaterThan(0);
+    const representativeSeeds = [...new Set([seeds[0]!, seeds.at(-1)!])];
+    for (const seed of representativeSeeds) {
+      const realized = realize(generate(crawler, seed));
+      const rest = crawlerPose(realized);
+      const leftReach = crawlerGaitPose(realized, 0.5, 1);
+      const rightReach = crawlerGaitPose(realized, Math.PI + 0.5, 1);
+      expect(leftReach.rotations['upperArm.L']).not.toEqual(rest.rotations['upperArm.L']);
+      expect(leftReach.rotations['upperArm.R']).toEqual(rest.rotations['upperArm.R']);
+      expect(rightReach.rotations['upperArm.R']).not.toEqual(rest.rotations['upperArm.R']);
+      expect(rightReach.rotations['upperArm.L']).toEqual(rest.rotations['upperArm.L']);
+      expect(crawlerGaitPose(realized, 0.5, 0)).toEqual(rest);
 
-    const tolerance = 2 * realized.voxels.size;
-    for (const phase of [0, 0.5, 1.4, 2.8, Math.PI, Math.PI + 0.5, 4.8, 6]) {
-      const gait = crawlerGaitPose(realized, phase, 1);
-      const gaitSurfaces = posedVoxelSurfaceBounds(realized, gait);
-      expect(gaitSurfaces.lowest).toBeGreaterThanOrEqual(-realized.voxels.size / 2);
-      expect(gaitSurfaces.lowest).toBeLessThanOrEqual(tolerance);
-      const torsoBottom = Math.min(...['pelvis', 'spine', 'chest'].map((bone) => gaitSurfaces.byBone.get(bone)!));
-      const armBottom = Math.min(
-        ...['forearm.L', 'hand.L', 'forearm.R', 'hand.R'].map((bone) => gaitSurfaces.byBone.get(bone)!),
-      );
-      expect(torsoBottom).toBeLessThanOrEqual(tolerance);
-      expect(torsoBottom).toBeGreaterThanOrEqual(-tolerance);
-      expect(armBottom).toBeLessThanOrEqual(tolerance);
-      expect(armBottom).toBeGreaterThanOrEqual(-tolerance);
-      const flinch = crawlerHitPose(realized, gait, 0.08, 0.5);
-      expect(flinch.rotations.head).not.toEqual(gait.rotations.head);
-      const flinchSurfaces = posedVoxelSurfaceBounds(realized, flinch);
-      expect(flinchSurfaces.lowest).toBeGreaterThanOrEqual(-realized.voxels.size / 2);
-      expect(flinchSurfaces.lowest).toBeLessThanOrEqual(tolerance);
-      const flinchTorsoBottom = Math.min(
-        ...['pelvis', 'spine', 'chest'].map((bone) => flinchSurfaces.byBone.get(bone)!),
-      );
-      const flinchArmBottom = Math.min(
-        ...['forearm.L', 'hand.L', 'forearm.R', 'hand.R'].map((bone) => flinchSurfaces.byBone.get(bone)!),
-      );
-      expect(flinchTorsoBottom).toBeLessThanOrEqual(tolerance);
-      expect(flinchTorsoBottom).toBeGreaterThanOrEqual(-tolerance);
-      expect(flinchArmBottom).toBeLessThanOrEqual(tolerance);
-      expect(flinchArmBottom).toBeGreaterThanOrEqual(-tolerance);
-      expect(crawlerHitPose(realized, gait, HIT_FLINCH.duration)).toEqual(gait);
+      const tolerance = 2 * realized.voxels.size;
+      for (const [phase, speed] of [
+        [0, 0.5],
+        [0.5, 1],
+        [1.4, 1],
+        [2.8, 0.5],
+        [Math.PI, 1],
+        [Math.PI + 0.5, 0.5],
+        [4.8, 1],
+        [6, 0.5],
+      ] as const) {
+        const gait = crawlerGaitPose(realized, phase, speed);
+        const gaitSurfaces = posedVoxelSurfaceBounds(realized, gait);
+        expect(gaitSurfaces.lowest).toBeGreaterThanOrEqual(-realized.voxels.size / 2);
+        expect(gaitSurfaces.lowest).toBeLessThanOrEqual(tolerance);
+        const torsoBottom = Math.min(...['pelvis', 'spine', 'chest'].map((bone) => gaitSurfaces.byBone.get(bone)!));
+        const armBottom = Math.min(
+          ...['forearm.L', 'hand.L', 'forearm.R', 'hand.R'].map((bone) => gaitSurfaces.byBone.get(bone)!),
+        );
+        expect(torsoBottom).toBeLessThanOrEqual(tolerance);
+        expect(torsoBottom).toBeGreaterThanOrEqual(-tolerance);
+        expect(armBottom).toBeLessThanOrEqual(tolerance);
+        expect(armBottom).toBeGreaterThanOrEqual(-tolerance);
+        const flinch = crawlerHitPose(realized, gait, 0.08, 0.5);
+        expect(flinch.rotations.head).not.toEqual(gait.rotations.head);
+        const flinchSurfaces = posedVoxelSurfaceBounds(realized, flinch);
+        expect(flinchSurfaces.lowest).toBeGreaterThanOrEqual(-realized.voxels.size / 2);
+        expect(flinchSurfaces.lowest).toBeLessThanOrEqual(tolerance);
+        const flinchTorsoBottom = Math.min(
+          ...['pelvis', 'spine', 'chest'].map((bone) => flinchSurfaces.byBone.get(bone)!),
+        );
+        const flinchArmBottom = Math.min(
+          ...['forearm.L', 'hand.L', 'forearm.R', 'hand.R'].map((bone) => flinchSurfaces.byBone.get(bone)!),
+        );
+        expect(flinchTorsoBottom).toBeLessThanOrEqual(tolerance);
+        expect(flinchTorsoBottom).toBeGreaterThanOrEqual(-tolerance);
+        expect(flinchArmBottom).toBeLessThanOrEqual(tolerance);
+        expect(flinchArmBottom).toBeGreaterThanOrEqual(-tolerance);
+        expect(crawlerHitPose(realized, gait, HIT_FLINCH.duration)).toEqual(gait);
+      }
     }
   });
 

@@ -4,7 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { advanceStanceWeight, posedShambler, targetStanceWeight, zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import {
+  advanceStanceWeight,
+  HIT_FLINCH_DURATION,
+  posedShambler,
+  targetStanceWeight,
+  zombiePoseInputFor,
+} from '../src/core/zombiePose.ts';
 import { posedShamblerRegionBoxes, shamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -154,7 +160,9 @@ describe('rendered and hit shambler poses', () => {
     const input = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
     const flinched = posedShambler(input);
     const base = posedShambler(baseInput);
+    const recovered = posedShambler({ ...input, hitFlinchTime: HIT_FLINCH_DURATION });
     expect(flinched.pose.rotations.head).not.toEqual(base.pose.rotations.head);
+    expect(recovered.transforms).toEqual(base.transforms);
 
     const renderer = new MobActorMeshes(BLOCK_SIZE, 4, { poolSize: 2 });
     try {
