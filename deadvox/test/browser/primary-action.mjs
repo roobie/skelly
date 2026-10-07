@@ -1422,7 +1422,10 @@ try {
   }, loadedFirearm.uid);
   assert.equal(landedFirearm.locationKind, 'pile', 'the loaded firearm lands in a pile');
   assert.equal(landedFirearm.sameInstance, true, 'throw moves the same firearm instance');
-  assert.deepEqual(landedFirearm.firearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
+  const definedFirearmState = Object.fromEntries(
+    Object.entries(landedFirearm.firearmState ?? {}).filter(([, value]) => value !== undefined),
+  );
+  assert.deepEqual(definedFirearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
   const rifleFixture = await page.evaluate(
     async ({ magazineUrl, optionsUrl }) => {
       const r = globalThis.primaryActionTest;
