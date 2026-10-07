@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generate, realize } from '../src/core/generate.ts';
 import { applyPoint, dot, type Mat3, mulMM, mulMV, normalize, type Transform, transpose } from '../src/core/math.ts';
 import { boneTransforms, type Pose } from '../src/core/pose.ts';
-import { VIEWER_TEMPLATES as TEMPLATES } from '../src/mob/bossTemplate.ts';
+import { VIEWER_TEMPLATES as TEMPLATES } from '../src/mob/amalgamTemplate.ts';
 import { LOOK_AT_REST, lookAtPose } from '../src/mob/lookAt.ts';
 import { LOOK_AT_PROFILES } from '../src/mob/lookAtProfiles.ts';
 

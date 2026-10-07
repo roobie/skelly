@@ -20,8 +20,8 @@ import type { Pose } from '../core/pose.ts';
 import type { ValidationProfile } from '../core/rules.ts';
 import type { Genome, Template } from '../core/template.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
+import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
-import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/bossTemplate.ts';
 import { crawlerPose } from '../mob/crawler.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {

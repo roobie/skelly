@@ -30,8 +30,8 @@ const amalgamParams: Template['params'] = {
   ),
 };
 
-export const boss: Template = {
-  name: 'boss',
+export const amalgamTemplate: Template = {
+  name: 'amalgam',
   description: 'Procedurally fused shamblers in random orientations around a shared core.',
   bodyPlan: 'amalgam',
   voxelSize: shambler.voxelSize,
@@ -44,6 +44,6 @@ export const boss: Template = {
     groups: {},
   },
 };
-registerTemplate(boss);
+registerTemplate(amalgamTemplate);
 
-export const VIEWER_TEMPLATES: readonly Template[] = [...TEMPLATES, boss];
+export const VIEWER_TEMPLATES: readonly Template[] = [...TEMPLATES, amalgamTemplate];

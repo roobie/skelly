@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { generate, realize, resolveSupportBones } from '../src/core/generate.ts';
 import { mulMM, mulMV, rotX, rotY, rotZ } from '../src/core/math.ts';
 import { meshBones } from '../src/core/mesh.ts';
+import { aabbOf } from '../src/core/sdf.ts';
 import { validate } from '../src/core/validate.ts';
 import { voxelize } from '../src/core/voxelize.ts';
 import {
@@ -10,22 +11,31 @@ import {
   MAX_AMALGAM_MEMBERS,
   MIN_AMALGAM_MEMBERS,
 } from '../src/mob/amalgam.ts';
-import { boss } from '../src/mob/bossTemplate.ts';
+import { amalgamTemplate } from '../src/mob/amalgamTemplate.ts';
 import { sweepGroup } from './sweeps.ts';
 
 const SAMPLE_SEEDS = [1, 17, 42];
+const sampleRealizations = new Map<number, ReturnType<typeof realize>>();
+const realizeSample = (seed: number) => {
+  let realized = sampleRealizations.get(seed);
+  if (!realized) {
+    realized = realize(generate(amalgamTemplate, seed));
+    sampleRealizations.set(seed, realized);
+  }
+  return realized;
+};
 const FOOT_BONE_PATTERN = /\.foot\.[LR]$/;
 const HEAD_BONE_PATTERN = /\.head$/;
 
 const bodyIssues = (body: ReturnType<typeof realize>['body'], seed: number) => {
-  const voxels = voxelize(body, boss.voxelSize, seed);
+  const voxels = voxelize(body, amalgamTemplate.voxelSize, seed);
   const meshes = meshBones(voxels, body.bones.length);
   return validate({
     body,
     voxels,
     meshes,
-    supportBones: resolveSupportBones(boss, body, voxels),
-    budgets: boss.budgets,
+    supportBones: resolveSupportBones(amalgamTemplate, body, voxels),
+    budgets: amalgamTemplate.budgets,
   });
 };
 
@@ -48,34 +58,65 @@ const actualGroundOwners = (realized: ReturnType<typeof realize>): ReadonlySet<s
   return owners;
 };
 
-const coreGroundFootprint = (realized: ReturnType<typeof realize>) => {
-  const { body, voxels } = realized;
+const coreSurfaceProfile = (voxels: ReturnType<typeof realize>['voxels'], coreOwner: number) => {
   const [nx, ny] = voxels.dims;
-  const coreOwner = body.bones.findIndex((bone) => bone.id === 'core') + 1;
   let lowestRow = Number.POSITIVE_INFINITY;
   for (let index = 0; index < voxels.owner.length; index++) {
     if (voxels.owner[index] !== 0) {
       lowestRow = Math.min(lowestRow, Math.floor(index / nx) % ny);
     }
   }
-  const cells = new Set<string>();
+  const groundColumns = new Set<number>();
+  const topRowByColumn = new Map<number, number>();
   let minX = Number.POSITIVE_INFINITY;
   let maxX = Number.NEGATIVE_INFINITY;
   let minZ = Number.POSITIVE_INFINITY;
   let maxZ = Number.NEGATIVE_INFINITY;
   for (let index = 0; index < voxels.owner.length; index++) {
-    if (voxels.owner[index] !== coreOwner || Math.floor(index / nx) % ny !== lowestRow) {
+    if (voxels.owner[index] !== coreOwner) {
       continue;
     }
     const z = Math.floor(index / (nx * ny));
-    const x = index - z * nx * ny - lowestRow * nx;
-    cells.add(`${x},${z}`);
-    minX = Math.min(minX, x);
-    maxX = Math.max(maxX, x);
-    minZ = Math.min(minZ, z);
-    maxZ = Math.max(maxZ, z);
+    const row = Math.floor(index / nx) % ny;
+    const x = index - z * nx * ny - row * nx;
+    const column = x + z * nx;
+    topRowByColumn.set(column, Math.max(topRowByColumn.get(column) ?? Number.NEGATIVE_INFINITY, row));
+    if (row === lowestRow) {
+      groundColumns.add(column);
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minZ = Math.min(minZ, z);
+      maxZ = Math.max(maxZ, z);
+    }
   }
-  return { cells: cells.size, boundingArea: (maxX - minX + 1) * (maxZ - minZ + 1) };
+  const topRows = [...groundColumns].map((column) => topRowByColumn.get(column)!);
+  const topCounts = new Map<number, number>();
+  for (const row of topRows) {
+    topCounts.set(row, (topCounts.get(row) ?? 0) + 1);
+  }
+  const maxTopCount = Math.max(0, ...topCounts.values());
+  return {
+    cells: groundColumns.size,
+    boundingArea: (maxX - minX + 1) * (maxZ - minZ + 1),
+    maxTopFraction: groundColumns.size === 0 ? 1 : maxTopCount / groundColumns.size,
+  };
+};
+
+const coreBaseSurfaceProfile = (realized: ReturnType<typeof realize>, seed: number) => {
+  const core = realized.body.bones.find((bone) => bone.id === 'core')!;
+  const lowerAddFeatures = realized.body.features.filter((feature) => {
+    if (feature.bone !== core.id || feature.op !== 'add') {
+      return false;
+    }
+    const bounds = aabbOf(feature.shape);
+    return bounds.min[1] <= 0 && bounds.max[1] < core.head[1];
+  });
+  const baseBody = {
+    ...realized.body,
+    bones: [{ ...core, head: [0, 0, 0] as const, tail: [0, 0, 0] as const }],
+    features: lowerAddFeatures,
+  };
+  return coreSurfaceProfile(voxelize(baseBody, realized.voxels.size, seed), 1);
 };
 
 const inspectManifest = (manifest: ReturnType<typeof amalgamManifest>, boneIds: ReadonlySet<string>) => {
@@ -109,7 +150,7 @@ const inspectManifest = (manifest: ReturnType<typeof amalgamManifest>, boneIds: 
 describe('amalgam body plan', () => {
   it('generates valid connected bodies and a resolved part/region manifest across sample seeds', () => {
     for (const seed of SAMPLE_SEEDS) {
-      const realized = realize(generate(boss, seed));
+      const realized = realize(generate(amalgamTemplate, seed));
       expect(realized.report.ok, JSON.stringify(realized.report.issues)).toBe(true);
       const manifest = amalgamManifest(realized.body, realized.voxels);
       const boneIds = new Set(realized.body.bones.map((bone) => bone.id));
@@ -130,22 +171,39 @@ describe('amalgam body plan', () => {
   });
 
   it('samples member counts within range and varies them across seeds', () => {
-    const counts = Array.from({ length: 20 }, (_, seed) => generate(boss, seed).params.memberCount!);
+    const counts = Array.from({ length: 20 }, (_, seed) => generate(amalgamTemplate, seed).params.memberCount!);
     expect(
       counts.every((count) => Number.isInteger(count) && count >= MIN_AMALGAM_MEMBERS && count <= MAX_AMALGAM_MEMBERS),
     ).toBe(true);
     expect(new Set(counts).size).toBeGreaterThan(1);
   });
 
-  it('gives the core an irregular footprint at the ground', () => {
-    const realized = realize(generate(boss, 0));
-    const footprint = coreGroundFootprint(realized);
-    expect(footprint.boundingArea).toBeGreaterThan(0);
-    expect(footprint.cells).toBeLessThan(footprint.boundingArea);
+  it('keeps a margin around the core ground footprint across sample seeds', () => {
+    const failures = SAMPLE_SEEDS.flatMap((seed) => {
+      const realized = realizeSample(seed);
+      const footprint = coreSurfaceProfile(
+        realized.voxels,
+        realized.body.bones.findIndex((bone) => bone.id === 'core') + 1,
+      );
+      return footprint.boundingArea > 0 && (footprint.boundingArea - footprint.cells) * 10 >= footprint.boundingArea
+        ? []
+        : [`seed ${seed}: ${footprint.cells}/${footprint.boundingArea} ground cells`];
+    });
+    expect(failures).toEqual([]);
+  });
+
+  it('keeps the core base top from becoming one broad flat height across sample seeds', () => {
+    const failures = SAMPLE_SEEDS.flatMap((seed) => {
+      const profile = coreBaseSurfaceProfile(realizeSample(seed), seed);
+      return profile.cells > 0 && profile.maxTopFraction < 0.9
+        ? []
+        : [`seed ${seed}: ${profile.maxTopFraction} of ${profile.cells} footprint columns share the top height`];
+    });
+    expect(failures).toEqual([]);
   });
 
   it('rejects a member root detached from the shared core when building the manifest', () => {
-    const realized = realize(generate(boss, SAMPLE_SEEDS[0]!));
+    const realized = realize(generate(amalgamTemplate, SAMPLE_SEEDS[0]!));
     const brokenBody = {
       ...realized.body,
       bones: realized.body.bones.map((bone) => (bone.parent === 'core' ? { ...bone, parent: null } : bone)),
@@ -155,7 +213,7 @@ describe('amalgam body plan', () => {
 
   it('severing every member in one body leaves a valid core-supported body', () => {
     const seed = SAMPLE_SEEDS[0]!;
-    const realized = realize(generate(boss, seed));
+    const realized = realize(generate(amalgamTemplate, seed));
     const manifest = amalgamManifest(realized.body, realized.voxels);
     for (const part of manifest.parts.filter((candidate) => candidate.severable)) {
       const remaining = bodyWithoutAmalgamPart(realized.body, part.id);
@@ -173,7 +231,7 @@ describe('amalgam body plan', () => {
       let sawNonFootMemberContact = false;
       let sawFloorBearingHead = false;
       for (let seed = 0; seed < 100; seed++) {
-        const genome = generate(boss, seed);
+        const genome = generate(amalgamTemplate, seed);
         const realized = realize(genome);
         expect(realized.report.ok, `seed ${seed}: ${JSON.stringify(realized.report.issues)}`).toBe(true);
         const manifest = amalgamManifest(realized.body, realized.voxels);

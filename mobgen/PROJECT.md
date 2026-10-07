@@ -1,7 +1,7 @@
 ---
 read_if:
-  - you're changing mobgen body plans or the boss amalgam
-  - you're reviewing the m1 boss first-look scope or its open design questions
+  - you're changing mobgen body plans or the playtest 1 apex enemy amalgam
+  - you're reviewing the m1 apex enemy first-look scope or its open design questions
   - you're changing mobgen pose generation or validation scope
   - you're deciding what belongs in mobgen milestone 1 or later
   - you're integrating a mobgen figure into deadvox
@@ -48,8 +48,8 @@ data, and the defaults must work for any body plan.
 
 - Getting actors into deadvox: export format, batched rendering, level of
   detail (CHALLENGES §1, §9).
-- Gameplay-ready body plans beyond the humanoid. The m1 boss feature adds a
-  static amalgam first-look body, not a gameplay gait or Deadvox dismemberment
+- Gameplay-ready body plans beyond the humanoid. The m1 apex enemy feature adds
+  a static amalgam first-look body, not a gameplay gait or Deadvox dismemberment
   integration; the static crawler is another scoped exception.
 - Runtime wounds, gameplay dismemberment, and animations beyond the humanoid
   walk, crawler's static pose and bounded render-only gaze.
@@ -69,7 +69,7 @@ humanoid generation rules. In the mobgen viewer, `src/viewer/main.ts`,
 `applyLookAt`, keeps gaze directed at the camera because the viewer has no
 perception state.
 
-## Boss amalgam (m1)
+## Playtest 1 apex enemy: amalgam (m1)
 
 Issue #308 calls for “an amalgamation of several shamblers - an enemy the
 size of a car” and says “it makes it end with something new and exciting”.
@@ -85,18 +85,25 @@ it can be more random. And actually - the body parts can be randomy distributed
 too - like a leg from a shambler can be pointing straight up, while it's head
 is at floor, like a foot” / “think of John Carpenter's "The Thing" kind of”
 
+BR's naming ruling for #363:
+
+> BR, 2026-10-07 16:11: “now as for #363, we should avoid the term 'boss' - but instead we can call it the playtest#1's apex enemy maybe?”
+> BR, 2026-10-07 16:12: “agreed: Split”
+
+The role in design docs is playtest 1's apex enemy; the creature and its viewer
+template are named amalgam in code and content.
+
 The first-look generator samples three to five complete shambler members per
 seed. This is an initial BR-tunable range rather than a budget ceiling: at least
-three distinct bodies give the car-scale enemy the requested mass and grotesque
-multiplicity, while five is a first-look cap for BR to tune, not a limit imposed
-by the current budget math. Members are independently scaled, anchored around
-the core, lifted by seeded gaps, and turned in quarter-turn orientations on all
-three axes, so a head or hand may bear weight and other members may hang. The
-first look keeps each module a complete shambler rather than adding partial-body
-variants; the
-resolved member subtrees remain individually severable. The core's merged,
-lobed lower flesh forms the shared floor-bearing mass, so severing any member
-leaves a valid, supported body.
+three distinct bodies give the car-scale apex enemy the requested mass and
+grotesque multiplicity, while five is a first-look cap for BR to tune, not a
+limit imposed by the current budget math. Members are independently scaled,
+anchored around the core, lifted by seeded gaps, and turned in quarter-turn
+orientations on all three axes, so a head or hand may bear weight and other
+members may hang. The first look keeps each module a complete shambler rather
+than adding partial-body variants; the resolved member subtrees remain
+individually severable. The core's merged, lobed lower flesh forms the shared
+floor-bearing mass, so severing any member leaves a valid, supported body.
 
 BR, 2026-10-07 15:11, FIX: “going in the right direction! Only main FIX I see
 is the blocky/non-organic 'platform' grafted at the bottom ->
@@ -116,19 +123,20 @@ seeded composition and member-count range are first-look proposals for BR's
 visual judgment, not encounter-count or gameplay-tuning decisions.
 
 To keep this viewer-only first look out of Deadvox's simulation fingerprint,
-the viewer imports `src/mob/bossTemplate.ts` (`VIEWER_TEMPLATES`) rather than
-registering the boss in `src/mob/templates.ts`, which Deadvox reaches through
-`src/mob/shamblerFigure.ts`. This boundary lasts until the Deadvox boss
-integration (#308): `deadvox/test/simulationFingerprint.test.ts` checks the
+the viewer imports `src/mob/amalgamTemplate.ts` (`VIEWER_TEMPLATES`) rather than
+registering the amalgam template in `src/mob/templates.ts`, which Deadvox reaches
+through `src/mob/shamblerFigure.ts`. This boundary lasts until the Deadvox apex
+enemy integration (#308): `deadvox/test/simulationFingerprint.test.ts` checks the
 separation, and that integration round changes the contract.
 
 The static view is useful before animation or game integration. Open it with
-`?template=boss&seed=N&shot=1` to inspect a deterministic arrangement. The boss has a `LOOK_AT_PROFILES` entry for viewer-template coverage, but the
+`?template=amalgam&seed=N&shot=1` to inspect a deterministic arrangement. The
+amalgam has a `LOOK_AT_PROFILES` entry for viewer-template coverage, but the
 viewer does not apply gaze to it: its members can turn heads upside down or
 sideways, and the current humanoid gaze solver does not provide per-member head
-transforms. Boss gaze must handle those orientations before it is enabled; boss
-gait and Deadvox integration remain open for the #308 follow-up. The other open
-design questions from #308 remain open until BR rules on them:
+transforms. Amalgam gaze must handle those orientations before it is enabled;
+amalgam gait and Deadvox integration remain open for the #308 follow-up. The
+other open design questions from #308 remain open until BR rules on them:
 
 - Does the procedural, full-shambler composition read as a grotesque fusion,
   or should the silhouette use partial members or a different arrangement?
@@ -137,8 +145,8 @@ design questions from #308 remain open until BR rules on them:
   animate?
 - What can it break: fences, doors, containers, or other world objects?
 - What does it sound like?
-- Is the camp appearance guaranteed, or can boss instances roam? What encounter
-  count/placement behavior is wanted?
+- Is the camp appearance guaranteed, or can apex enemy instances roam? What
+  encounter count/placement behavior is wanted?
 
 ## Decisions
 
@@ -165,7 +173,7 @@ design questions from #308 remain open until BR rules on them:
 | Profile recommendation | `recommendedProfileFor(genome, voxelSize)` measures the thinnest full-detail upper-arm/forearm/thigh/shin flesh feature in cells; below 1.5 cells it recommends `silhouette`. For BR's roughly 10 cm limb, 1/2 block (25 cm) is 0.4 cells, 1/6 block (8.33 cm) is 1.2 cells, and 1/12 block (4.17 cm) is 2.4 cells. This is advisory only; callers choose and pass the profile explicitly |
 | Determinism | Seeded RNG (mulberry32), never `Math.random`. The same genome gives the same voxels on the same JavaScript engine; engines may differ in the last digit of `Math.sin` and similar, which can flip a voxel on a shape's edge (CHALLENGES §11) |
 | Mass | Each template declares a total body mass (`bodyMassKg`). A part's mass is that total times its fraction: by default its share of the body's voxel volume; a template may override the fraction per part (the humanoids use anatomical values for the severable parts). The centre of mass and the shape of the inertia come from the part's voxels, scaled to the assigned mass. Being worked on in sk1 (severed-limb physics) |
-| Templates | Gameplay-facing templates register in `src/mob/templates.ts`; the crawler is a static-silhouette exception, while the boss remains viewer-only in `src/mob/bossTemplate.ts` pending #308 |
+| Templates | Gameplay-facing templates register in `src/mob/templates.ts`; the crawler is a static-silhouette exception, while the amalgam remains viewer-only in `src/mob/amalgamTemplate.ts` pending #308 |
 | Tests | Vitest |
 | CI | `.github/workflows/mobgen.yml`: typecheck, tests, viewer build |
 | Hosting | GitHub Pages (`.github/workflows/pages.yml`), at <https://roobie.github.io/skelly/mobgen/> once the viewer exists |
@@ -193,7 +201,7 @@ The caller selects `full` (default) or `silhouette` explicitly. `full` remains t
 | --- | --- |
 | `floaters` | All voxels form one face-connected piece. Carves and small features such as ears can leave islands |
 | `attached` | Every bone owns at least one voxel, and at least one of them touches a voxel of its parent. Marrow makes this hold by construction, so it guards against builder bugs |
-| `grounded` | The lowest voxel layer is at y = 0, and every voxel in it belongs to a declared support bone (a humanoid's feet, or the boss's actual ground contacts) |
+| `grounded` | The lowest voxel layer is at y = 0, and every voxel in it belongs to a declared support bone (a humanoid's feet, or the apex enemy's actual ground contacts) |
 | `balance` | In the rest pose, the centre of mass, seen from above, is within the rectangle around the ground-layer voxels, widened by one voxel |
 | `budget` | Full: total voxels, triangles and per-bone voxel counts are within the template's limits, e.g. head and jaw together around 50. Silhouette: total voxel/triangle budgets only; group counts depend on bone ownership and are excluded |
 | `silhouette` | Coarse X width and Y height, measured between outer occupied-cell centres, each differ by at most one coarse cell plus the reference grid's quantization allowance |
@@ -204,7 +212,7 @@ passing through each other.
 
 ### 3. Templates and seeding
 
-A template fixes a body plan, a voxel size, budgets, its declared support bones (a humanoid's feet, or the boss's actual ground contacts; see `src/core/template.ts`, `Template.supportBones`),
+A template fixes a body plan, a voxel size, budgets, its declared support bones (a humanoid's feet, or the apex enemy's actual ground contacts; see `src/core/template.ts`, `Template.supportBones`),
 and a range or list of choices per param (proportions, posture, clothing,
 colours, wounds, gait). The generator samples them in a fixed order from the
 seed. `generateValid` tries seed, seed + 1, … until a build passes, as in
