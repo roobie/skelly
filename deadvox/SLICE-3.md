@@ -3,6 +3,7 @@ read_if:
   - you're planning or implementing a Slice 3 milestone
   - you're checking Slice 3 scope, saves, tests or BR approval gates
   - you're interpreting BR's camera-directed gaze ruling for zombie models
+  - you're tracking d130 crawler gait, hit response or generation validation
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
   - you're changing or measuring input-replay capture and playback
@@ -331,7 +332,7 @@ Daylight overwhelms portable light wherever the sky is open, including outdoor s
 **Saves:** Type identity and actor movement/body state use the existing zombie snapshot. Save/fingerprint any persistent type-specific ability state introduced by implementation; do not save a second copy of shared attention state.
 **Tests:** a runner pursues by sprinting beeline; a crawler is distinguishable and interacts with body-region damage; each type has a distinct sound; type identity and state survive save/load; spawn rarity is validated as a property of the authored source, not a pinned generated count.
 **Done when:** runner, crawler and boss are distinct playable threats and their persistent state round-trips.
-**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response after d106-13); the boss's size, silhouette and encounter read.
+**First look / BR approval:** runner and crawler silhouettes, movement and hit response (the crawler's static prone pose first, then its drag gait and in-game hit response after #325 merges); the boss's size, silhouette and encounter read.
 
 **Work split:** d106-1 implements the runner and crawler; #308 tracks the boss as a separate work item within 3.8.
 
@@ -353,7 +354,7 @@ After seeing the stumps, BR's question was whether they read correctly despite t
 
 > “thigh stumps look good / but still hovering: Screenshot_2026-10-07_00-37-27.png”
 
-BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). d106-13 wires that approved static crawler pose into detailed rendering and adds render-only gaze. The drag gait and in-game hit response remain d106-14 work, after d106-13.
+BR approved the grounded static pose and requested camera-directed gaze for every mob (BR, 2026-10-07 10:03). d106-13 wires that approved static crawler pose into detailed rendering and adds render-only gaze. The drag gait and in-game hit response remain d130 work, after #325 merges.
 
 **Legendary direction (BR, 2026-10-05 21:29):** “sounds about right” on the proposed cost; effects are “mostly vanity thing, but we might come up with something along the way”. The 3.1 skill work carries d83's scale/legendary contract; effects beyond vanity are out of this slice.
 

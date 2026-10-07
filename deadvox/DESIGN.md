@@ -6,6 +6,7 @@ read_if:
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
   - you're recording or reconciling BR's crawler silhouette rulings
+  - you're tracking d130 crawler gait, hit response or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
@@ -807,13 +808,7 @@ BR (2026-10-07 10:03) approved the grounded static pose. The body uses
 
 > "#325: good! It's now not hovering - but another issue was prominent now: it needs to look at the player's \"eyes\" (camera). And all mobs should do that by default. I.e. turn their heads such that they are \"looking\" at the player"
 
-The renderers treat the player's camera as the gaze target and distribute the
-turn over neck and head, bounded by rig-specific limits and turn speed in
-`mobgen/src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and applied by
-`mobgen/src/mob/lookAt.ts`, `lookAtPose`. This is presentation only: it reads the
-posed actor and camera each render frame, and does not feed hit geometry, saves,
-or replay state. The mobgen viewer uses its camera as the same target. The
-crawler's drag gait and in-game hit response remain d106-14 work, after d106-13.
+BR clarified on 2026-10-07 12:33: “as for #325: looking good, but it's important they do so only when they perceive the player”. In `deadvox/src/core/zombies.ts`, `ZombieSystem.updateAttention` sets `mode` to `chase` when `seesPlayer` is true and changes it to `investigate` when sight is lost; `deadvox/src/render/mobActors.ts`, `MobActorMeshes.posedFrame`, therefore aims gaze at the camera only in `chase`. Otherwise gaze eases toward the base pose, including simulation head yaw, at the same bounded rate. `mobgen/src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, supplies rig-specific limits and turn speed; `mobgen/src/mob/lookAt.ts`, `lookAtPose`, applies the render-only correction. It does not feed hit geometry, saves, replay or simulation fingerprints. The mobgen viewer has no perception state and continues to gaze at its camera in `mobgen/src/viewer/main.ts`, `applyLookAt`. The crawler's drag gait and in-game hit response remain d130 work, after #325 merges.
 
 ### Evolution
 

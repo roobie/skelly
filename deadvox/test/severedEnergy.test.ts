@@ -23,6 +23,7 @@ const SHAMBLER = registry.zombies.get('shambler')!;
 const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
 const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };
 const HEALTHY_REGIONS = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
+const ROLLED_CUT_SEEDS = [3, 11, 19, 23, 29] as const;
 const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   isSolid,
   isOpaque: isSolid,
@@ -269,7 +270,18 @@ describe('severed limb energy', () => {
     }
   });
 
-  it.each([3, 11, 19, 23, 29])('caps a bat launch and dissipates each bounce for seed %i', (seed) => {
+  it('includes a rolled seed whose severed part misses the bat ray', () => {
+    const reports = ROLLED_CUT_SEEDS.map((seed) => createSeveredHit(seed, 'rolled'));
+    try {
+      expect(reports.some(({ missedRandomPart }) => missedRandomPart)).toBe(true);
+    } finally {
+      for (const report of reports) {
+        report.renderer.dispose();
+      }
+    }
+  });
+
+  it.each(ROLLED_CUT_SEEDS)('caps a bat launch and dissipates each bounce for seed %i', (seed) => {
     const report = createSeveredHit(seed, 'rolled');
     try {
       expect(report.targetRayHitsRegion).toBe(true);

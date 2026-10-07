@@ -604,8 +604,6 @@ const advanceHit = (dt: number): void => {
   }
 }; // deliberately not gated on death: a fresh hit that lands mid-flinch is fine to just restart.
 
-/** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
- * standing), optionally attacked, optionally flinched on top. */
 const applyLookAt = (loaded: Loaded, pose: Pose, dt: number): void => {
   loaded.actor.root.updateMatrixWorld(true);
   const target = loaded.actor.root.worldToLocal(camera.position.clone());
@@ -621,6 +619,8 @@ const applyLookAt = (loaded: Loaded, pose: Pose, dt: number): void => {
   loaded.actor.applyPose(result.pose);
 };
 
+/** Advances and poses one frame while alive: walk/attack/hit clocks all tick, and the pose is a walk (or
+ * standing), optionally attacked, optionally flinched on top. */
 const applyLiveFrame = (loaded: Loaded, dt: number): void => {
   if (loaded.template.bodyPlan === 'crawler') {
     applyLookAt(loaded, crawlerPose(loaded.realized), dt);

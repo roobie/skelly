@@ -30,7 +30,7 @@ export interface LookAtResult {
 export interface LookAtInput {
   readonly bones: readonly Bone[];
   readonly pose: Pose;
-  readonly target: Vec3;
+  readonly target: Vec3 | undefined;
   readonly profile: LookAtProfile;
   readonly state: LookAtState;
   readonly gazeFrameDelta: number;
@@ -95,7 +95,7 @@ const correctionStep = (current: LookAtState, target: Mat3, maxRadians: number):
 };
 
 /** Add a bounded, smoothed, presentation-only gaze correction to a humanoid pose. `target` is in the
- * actor's root-local frame; the caller owns the transient turn state and decides when tracking is disabled. */
+ * actor's root-local frame; omitting it eases the correction back to the base pose at the same bounded rate. */
 export const lookAtPose = ({
   bones,
   pose,
@@ -108,7 +108,7 @@ export const lookAtPose = ({
   const neck = bones.find((bone) => bone.id === 'neck');
   const head = bones.find((bone) => bone.id === 'head');
   const headTransform = baseTransforms.get('head');
-  if (!(neck && head && headTransform) || Math.hypot(...target) === 0) {
+  if (!(neck && head && headTransform)) {
     return { pose, transforms: baseTransforms, state: LOOK_AT_REST };
   }
 
@@ -118,16 +118,17 @@ export const lookAtPose = ({
     (head.head[2] + head.tail[2]) / 2,
   ] as const;
   const fromHead = applyPoint(headTransform, headCenter);
-  const direction = [target[0] - fromHead[0], target[1] - fromHead[1], target[2] - fromHead[2]] as const;
-  if (Math.hypot(...direction) < 1e-9) {
-    return { pose, transforms: baseTransforms, state: LOOK_AT_REST };
+  let bounded = IDENTITY_M;
+  if (target && Math.hypot(...target) > 0) {
+    const direction = [target[0] - fromHead[0], target[1] - fromHead[1], target[2] - fromHead[2]] as const;
+    if (Math.hypot(...direction) > 1e-9) {
+      const targetYaw = Math.atan2(-direction[0], -direction[2]);
+      const targetPitch = Math.atan2(direction[1], Math.hypot(direction[0], direction[2]));
+      const targetOrientation = mulMM(rotY(degrees(targetYaw)), rotX(degrees(targetPitch)));
+      const required = mulMM(targetOrientation, transpose(headTransform.r));
+      bounded = clampCorrection(required, profile);
+    }
   }
-
-  const targetYaw = Math.atan2(-direction[0], -direction[2]);
-  const targetPitch = Math.atan2(direction[1], Math.hypot(direction[0], direction[2]));
-  const targetOrientation = mulMM(rotY(degrees(targetYaw)), rotX(degrees(targetPitch)));
-  const required = mulMM(targetOrientation, transpose(headTransform.r));
-  const bounded = clampCorrection(required, profile);
   const nextState = correctionStep(state, bounded, radians(profile.turnRateDegPerSecond) * Math.max(0, gazeFrameDelta));
   const applied = quatToMat3(nextState);
   const { neck: neckCorrection, head: headCorrection } = splitCorrection(applied);

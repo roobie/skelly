@@ -23,8 +23,9 @@
 //
 // Living base pose (gait, idle clock, attack cooldown phase, and hit flinch) is simulation-owned and comes
 // from core/zombiePose.ts, the same pure function used by hit-region FK. This renderer adds the
-// interpolated root transform and camera-directed neck/head gaze; gaze does not feed hit-region FK. Fixed-step
-// state, not render dt or randomness, drives the simulation-owned pose. A
+// interpolated root transform and neck/head gaze toward the camera only while Zombie.mode is 'chase'; gaze
+// eases back to the simulation pose at the same bounded rate otherwise, and never feeds hit-region FK.
+// Fixed-step state, not render dt or randomness, drives the simulation-owned pose. A
 // death is different — src/core/zombies.ts's onDeath removes the zombie from its store and calls zombieDied
 // here in the very same step, so this renderer owns the corpse from then on: it keeps the existing
 // slot/variant/instance, plays deathPose from the frozen living pose, holds once lying, sinks, then frees
@@ -1262,16 +1263,19 @@ export class MobActorMeshes implements ZombieRenderer {
           );
     let { pose, transforms }: { pose: Pose; transforms: ReadonlyMap<string, Transform> } = posed;
     const hasHead = zombie.regions.head > 0 && !zombie.severed.includes('head');
-    if (this.camera && hasHead) {
-      const localTarget = mulMV(transpose(rotY((yaw * 180) / Math.PI)), [
-        this.cameraPosition.x - worldPos[0],
-        this.cameraPosition.y - worldPos[1],
-        this.cameraPosition.z - worldPos[2],
-      ]);
+    if (hasHead) {
+      const target =
+        zombie.mode === 'chase' && this.camera
+          ? mulMV(transpose(rotY((yaw * 180) / Math.PI)), [
+              this.cameraPosition.x - worldPos[0],
+              this.cameraPosition.y - worldPos[1],
+              this.cameraPosition.z - worldPos[2],
+            ])
+          : undefined;
       const gaze = lookAtPose({
         bones: variant.realized.body.bones,
         pose,
-        target: localTarget,
+        target,
         profile: variant.lookAt,
         state: state.lookAtState,
         gazeFrameDelta,

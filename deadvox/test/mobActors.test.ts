@@ -348,6 +348,7 @@ describe('MobActorMeshes', () => {
       const store = new MapEntityStore<Zombie>();
       const entries = [SHAMBLER, RUNNER, CRAWLER].map((type) => {
         const zombie = makeZombie([0, 0, -4], [0, 0, 1], [], { type });
+        zombie.mode = 'chase';
         return { zombie, id: store.add(zombie) };
       });
       const before = entries.map(({ zombie }) => ({
@@ -378,6 +379,41 @@ describe('MobActorMeshes', () => {
           dismember: zombie.dismemberRng.state(),
         })),
       ).toEqual(before);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
+  it('eases gaze back to the simulation pose when the zombie loses sight', () => {
+    const renderer = new MobActorMeshes(0.5, 2, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(0.6, 1.6, 0);
+      camera.lookAt(0, 1, -2);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      const zombie = makeZombie([0, 0, -4], [0, 0, 1]);
+      zombie.mode = 'investigate';
+      const store = new MapEntityStore<Zombie>();
+      const id = store.add(zombie);
+      renderer.sync(store, 1 / 30, 1);
+      const state = (renderer as unknown as { states: Map<number, { lookAtState: readonly number[] }> }).states.get(
+        id,
+      )!;
+      expect(state.lookAtState).toEqual(LOOK_AT_REST);
+
+      zombie.mode = 'chase';
+      for (let frame = 0; frame < 10; frame++) {
+        renderer.sync(store, 1 / 30, 1);
+      }
+      const before = state.lookAtState;
+      expect(Math.abs(before[3]!)).toBeLessThan(1);
+
+      zombie.mode = 'investigate';
+      renderer.sync(store, 1 / 30, 1);
+
+      expect(state.lookAtState).not.toEqual(LOOK_AT_REST);
+      expect(Math.abs(state.lookAtState[3]!)).toBeGreaterThan(Math.abs(before[3]!));
     } finally {
       renderer.dispose();
     }
