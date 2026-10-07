@@ -193,20 +193,23 @@ try {
       timeout: 5000,
     });
   };
-  const clickGameElement = async (selector) => {
-    const rect = await page.locator(selector).boundingBox();
-    assert(rect);
-    await moveCursorTo({ x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 });
-    await page.evaluate(() =>
-      document.querySelector('#view').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })),
+  const bandages = () =>
+    page.evaluate(() =>
+      globalThis.firefoxUiTest.session.inventory
+        .snapshotState()
+        .piles.flatMap(({ items }) => items)
+        .filter(({ item }) => item.type === 'bandage')
+        .reduce((count, { item }) => count + item.count, 0),
     );
-  };
   await pressAction(page, 'debug.spawn-menu-toggle');
   await page.locator('#spawn input').fill('bandage');
-  await clickGameElement('#spawn .spawn-list button');
-  assert.match((await page.locator('#spawn .spawn-status').textContent()) ?? '', /is at your feet/);
-  await page.locator('#spawn input').evaluate((input) => input.blur());
-  await pressAction(page, 'debug.spawn-menu-toggle');
+  const bandagesBeforeConfirm = await bandages();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(() => document.querySelector('#spawn').hidden);
+  const bandagesAfterConfirm = await bandages();
+  assert.equal(bandagesAfterConfirm, bandagesBeforeConfirm + 1, 'plain Enter spawns the selected item');
+  await page.keyboard.press('Enter');
+  assert.equal(await bandages(), bandagesAfterConfirm, 'Enter after closing the menu does not spawn an item');
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {

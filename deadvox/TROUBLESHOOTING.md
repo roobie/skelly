@@ -30,12 +30,18 @@ catalogue that could mislead a player; see `BindingRegistry` in
 `src/game/inputBindings.ts`.
 
 Noclip flight is ungated while noclip is active so vertical movement can combine
-with WASD; entering noclip remains gated. Spawn-menu navigation and dismissal
-are ordinary modal controls. Keyboard spawn confirmation and native activation
-of debug buttons remain gated. Native text editing/focus stays with the browser;
-see `CONTROLS.md`, “Native browser boundary and exceptions”. A desktop OS can
-intercept a key before the browser receives it; report that boundary rather than
-claiming a synthetic event proves capture.
+with WASD; entering noclip remains gated. The spawn menu itself is debug-only,
+but its navigation and confirmation are ordinary modal controls. BR, 2026-10-07
+11:02, verbatim:
+
+> “in the F2+G menu, you shouldn't need F2+Enter to select”
+> “that is; simply Enter should suffice”
+
+Enter confirms while the spawn menu is open; native activation of debug buttons
+remains gated. Native text editing/focus stays with the browser; see `CONTROLS.md`,
+“Native browser boundary and exceptions”. A desktop OS can intercept a key before
+the browser receives it; report that boundary rather than claiming a synthetic
+event proves capture.
 
 Fresh debug games receive an authored loadout so experiments do not alter normal
 games or restored saves. See `src/debug/index.ts`, `attachDebugTools`.

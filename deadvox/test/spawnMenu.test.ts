@@ -6,8 +6,20 @@ import { createDebugActions, dispatchDebugAction } from '../src/debug/index.ts';
 import { LookControls } from '../src/debug/look.ts';
 import { SpawnMenu, spawnMenuViewModel } from '../src/debug/spawnMenu.ts';
 import type { DebugHooks } from '../src/game/debugInterface.ts';
+import { BindingRegistry, KeyboardInput } from '../src/game/inputBindings.ts';
 import { FakeMood } from './fakeMood.ts';
 import { FakeShadows } from './fakeShadows.ts';
+
+const keyEvent = (code: string) => ({
+  code,
+  shiftKey: false,
+  altKey: false,
+  ctrlKey: false,
+  metaKey: false,
+  repeat: false,
+  isComposing: false,
+  timeStamp: 0,
+});
 
 const { registry } = buildRegistry([
   {
@@ -128,6 +140,39 @@ describe('spawnMenuViewModel', () => {
     expect(menu.isOpen).toBe(true);
     expect(field.value).toBe('');
     expect(field.focus).toHaveBeenCalledOnce();
+  });
+
+  it('confirms with Enter while open and does not spawn when Enter is pressed after closing', () => {
+    const field = { value: '', focus: vi.fn(), blur: vi.fn() };
+    const root = { hidden: true, querySelector: () => field, querySelectorAll: () => [] } as unknown as HTMLElement;
+    const spawn = vi.fn((id: string) => `${id} spawned`);
+    const menu = new SpawnMenu(registry, spawn, () => undefined);
+    menu.setRoot(root);
+    const keyboard = new KeyboardInput(new BindingRegistry());
+    keyboard.context = () => ({ context: menu.isOpen ? 'spawn' : 'play', debug: true });
+    const commands: string[] = [];
+    keyboard.command = ({ action, phase }) => {
+      if (phase === 'down') {
+        commands.push(action);
+        if (action === 'spawn.confirm') {
+          menu.handleAction(action);
+        }
+      }
+    };
+
+    menu.open();
+    const openMenuEnter = keyEvent('Enter');
+    expect(keyboard.press(openMenuEnter)).toBe(true);
+    keyboard.release(openMenuEnter);
+    expect(spawn).toHaveBeenCalledWith(menu.viewModel.items[menu.viewModel.selectedIndex]?.id);
+    expect(menu.isOpen).toBe(false);
+
+    const previousCommandCount = commands.length;
+    const closedMenuEnter = keyEvent('Enter');
+    keyboard.press(closedMenuEnter);
+    keyboard.release(closedMenuEnter);
+    expect(commands.slice(previousCommandCount)).not.toContain('spawn.confirm');
+    expect(spawn).toHaveBeenCalledOnce();
   });
 
   it('clamps semantic navigation, confirms a spawn, and dismisses without spawning', () => {
