@@ -19,6 +19,7 @@ import {
 } from '../src/game/inputBindings.ts';
 import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/replayCommands.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
+import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
 const contentDir = join(import.meta.dirname, '../src/content/base');
@@ -59,9 +60,9 @@ const { InventoryScreen } = await import('../src/ui/inventoryScreen.ts');
 
 afterAll(() => dom.happyDOM.abort());
 
-function setup() {
+function setup(contentRegistry = registry) {
   document.body.innerHTML = '<div id="inventory" hidden></div><div id="inventory-drag-root"></div>';
-  const inv = new Inventory(registry);
+  const inv = new Inventory(contentRegistry);
   const queue = new HandlingQueue(inv);
   const jeans = inv.create('jeans');
   const hoodie = inv.create('hoodie');
@@ -174,6 +175,21 @@ const holdQuickGate = () => {
 };
 
 describe('inventory screen Lit rendering', () => {
+  it('shows the nested battery slot of a mounted light in firearm details', () => {
+    const mounted = withDefaultMountedLight(registry, 'rifle_assault', 'flashlight');
+    const { screen, inv, root } = setup(mounted.registry);
+    const firearm = inv.create('rifle_assault');
+    if (!inv.add(firearm, { kind: 'pile', pos: [0, 0, 0] })) {
+      throw new Error('Fixture firearm could not be placed on the ground');
+    }
+
+    screen.selected = firearm;
+    screen.update();
+
+    const battery = root.querySelector<HTMLElement>(`[data-attachment-slot="${mounted.fitted.mountedAt}.battery"]`);
+    expect(battery?.dataset.occupied).toBe('true');
+  });
+
   it('shows exported slots and dispatches fitting and removal for held and ground firearms', () => {
     const { screen, inv, root, lastPayload, beans } = setup();
     const groundFirearm = inv.create('rifle_assault');
