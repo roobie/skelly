@@ -585,6 +585,14 @@ const AttachmentSlotSchema = pipe(
     'rail slots need railId and notchIndex; muzzle interfaces cannot have them',
   ),
 );
+const AttachmentCompatibilityChoiceSchema = tuple([
+  pipe(string(), nonEmpty('must not be empty')),
+  pipe(string(), nonEmpty('must not be empty')),
+]);
+const AttachmentCompatibilityPairSchema = tuple([
+  AttachmentCompatibilityChoiceSchema,
+  AttachmentCompatibilityChoiceSchema,
+]);
 const ModelMagazineSlotSchema = strictObject({
   node: pipe(string(), nonEmpty('must not be empty')),
   at: Point,
@@ -637,6 +645,8 @@ const ModelSchema = pipe(
     compatibility: optional(
       record(pipe(string(), nonEmpty('must not be empty')), array(pipe(string(), nonEmpty('must not be empty')))),
     ),
+    /** Complete pairwise allowlist; each tuple is [slot ID, attachment ID], absence denies pairs. */
+    compatibilityPairs: optional(array(AttachmentCompatibilityPairSchema)),
     /** Exact baked GLB node and replacement transform for each item-owned model slot. */
     slots: optional(strictObject({ magazine: optional(ModelMagazineSlotSchema) })),
     /** Static model metadata for an attachment exported as its own item asset. */

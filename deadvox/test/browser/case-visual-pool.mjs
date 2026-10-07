@@ -5,9 +5,9 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { launchChromium } from './chromium.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
-const { chromium } = await import('playwright');
 const root = resolve(process.env.CASE_VISUAL_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const probePath = resolve(root, '__casePoolProbe.js');
 const probeSource = `
@@ -239,11 +239,7 @@ try {
   await server.listen();
   const address = server.httpServer.address();
   assert(address && typeof address !== 'string');
-  browser = await chromium.launch({
-    headless: true,
-    executablePath: process.env.CHROME_BIN,
-    args: browserStageArgs('case-visual-pool'),
-  });
+  browser = await launchChromium('case-visual-pool', { headless: true });
   // Measure all three controls before checking, so fail-before logs show both clone churn and fallback GPU growth.
   const loaded = await measure(browser, address, 'loaded');
   const failed = await measure(browser, address, 'failed');

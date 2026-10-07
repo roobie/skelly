@@ -5,6 +5,8 @@ import { join } from 'node:path';
 import process from 'node:process';
 import { describe, expect, it } from 'vitest';
 import { exportFileText } from '../src/cli/exportFile.ts';
+import { parseAssemblyJson } from '../src/core/parseAssembly.ts';
+import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { readGlb } from './glbReader.ts';
 
 const read = (dir: string, name: string): string =>
@@ -14,12 +16,17 @@ const ASSET = { id: 'ar', file: 'assets/models/ar.glb' } as const;
 describe('export CLI core', () => {
   it('exports a design file and a fixture to the same model', () => {
     const fromDesign = exportFileText(read('designs', 'archetype-ar'), ASSET);
-    const fromFixture = exportFileText(read('fixtures', 'archetype-ar'), ASSET);
-    expect(fromDesign.ok && fromFixture.ok).toBe(true);
-    if (fromDesign.ok && fromFixture.ok) {
+    const fixture = parseAssemblyJson(read('fixtures', 'archetype-ar'));
+    expect(fromDesign.ok && fixture.ok).toBe(true);
+    if (fromDesign.ok && fixture.ok) {
+      const fromFixture = exportGunGlb(fixture.assembly, ASSET, { variant: 'ar' });
+      expect(fromFixture.ok).toBe(true);
       expect(fromDesign.modelEntry.file).toBe('assets/models/ar.glb');
       expect(fromDesign.modelEntry.compatibility).toBeDefined();
-      expect(fromDesign.modelEntry.grip.turn).toEqual(fromFixture.modelEntry.grip.turn);
+      expect(fromDesign.modelEntry.compatibilityPairs).toBeDefined();
+      if (fromFixture.ok) {
+        expect(fromDesign.modelEntry.grip.turn).toEqual(fromFixture.modelEntry.grip.turn);
+      }
     }
   });
 

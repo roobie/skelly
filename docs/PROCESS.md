@@ -5,6 +5,7 @@ read_if:
   - you record a decision by BR and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you hit a working rule's situation (shared host, test pool, run bounds, units, CI cost)
+  - you change Deadvox browser CI's browser installation or launch source
   - you apply BR's standing rules for visual work, playtest discoveries, review causes, test budgets or hosted-CI outages
 ---
 
@@ -77,7 +78,7 @@ approved anything visual. Install each worktree's check dependencies as CI does;
 |---|---|
 | Root, every change | `npm run ci` and `npm run test:site` (the installed pre-push hook runs both for pushes that update refs) |
 | gungen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `validate`, `check:designs`, `build`. Regenerate deadvox's exported models when the export changes |
-| deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with `CHROME_BIN`), `test:browser:firefox` (under xvfb), `validate`, `build` (Vite also verifies the simulation fingerprint; `build` includes the favicon check) |
+| deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with Playwright-managed Chromium), `test:browser:firefox` (under xvfb), `validate`, `build` (Vite also verifies the simulation fingerprint; `build` includes the favicon check) |
 | mobgen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `build` |
 
 A plain `test` skips the sweeps that CI runs, which has turned main red before (#85). Use

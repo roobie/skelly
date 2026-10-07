@@ -59,6 +59,29 @@ export const HIT_FLINCH: AttackClip = {
   ],
 };
 
+export const RUNNER_HIT_FLINCH: AttackClip = {
+  ...HIT_FLINCH,
+  name: 'runner-hit-flinch',
+  keys: [
+    zeroKey(0, FLINCH_BONES),
+    {
+      t: 0.07,
+      rotations: {
+        spine: [3, 0, 3],
+        chest: [5, 0, 5],
+        neck: [5, 0, 6],
+        head: [9, 0, 7],
+        jaw: [10, 0, 0],
+        'upperArm.L': [-20, 0, 9],
+        'upperArm.R': [-20, 0, -9],
+        'forearm.L': [16, 0, 0],
+        'forearm.R': [16, 0, 0],
+      },
+    },
+    zeroKey(HIT_FLINCH.duration, FLINCH_BONES),
+  ],
+};
+
 export interface FlinchParams {
   /** -1..1: mirrors HIT_FLINCH's own sideways (Z) snap, meant to come from the hit direction relative to
    * facing (a hit from the actor's right vs. left). 0 (the default) drops the sideways component
@@ -85,8 +108,15 @@ const scaleClipZ = (clip: AttackClip, scale: number): AttackClip =>
         })),
       };
 
+export const flinchPoseWithClip = (
+  actor: WalkActor,
+  time: number,
+  walkBase: Pose,
+  options: FlinchParams & { readonly clip: AttackClip },
+): Pose => attackPose(actor, scaleClipZ(options.clip, options.side ?? 0), time, walkBase);
+
 export const flinchPose = (actor: WalkActor, time: number, walkBase: Pose, params: FlinchParams = {}): Pose =>
-  attackPose(actor, scaleClipZ(HIT_FLINCH, params.side ?? 0), time, walkBase);
+  flinchPoseWithClip(actor, time, walkBase, { ...params, clip: HIT_FLINCH });
 
 // ---- death fall: whole-body motion the clip format can't express (root pitch + a ground-anchored drop) ----
 

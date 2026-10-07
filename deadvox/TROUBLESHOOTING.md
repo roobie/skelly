@@ -4,9 +4,11 @@ read_if:
   - you're using the debug test-house range
   - you need to see the game without a display
   - a browser contract or stage fails on software GL
+  - you investigate a Chromium launch failure in browser CI
   - you investigate native inventory selection or keyboard settlement in browser tests
   - you're authoring a browser stage that checks a frame-applied effect
   - you're authoring or exporting a Deadvox site in Tiled
+  - you diagnose a stalled Deadvox CI browser dependency install (#388)
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
 ---
@@ -103,6 +105,10 @@ player has turned that aid off. See `src/game/play.ts`, `frame`,
 
 Bisect a visual bug by flipping one toggle at a time before theorising.
 
+## Deadvox CI browser dependency stalls
+
+For #388, Playwright's `--with-deps` stalled while apt fetched and installed runner packages. The enabled browser contracts and Xvfb stages passed without apt, so CI installs browser binaries only and bounds the install and job. If a stage starts asserting text glyphs or Firefox media, install the specific package that assertion needs rather than restoring `--with-deps`. See `.github/workflows/deadvox-browser.yml`, `jobs.run`, and `.github/workflows/deadvox.yml`, `jobs.fast` and `jobs.check`.
+
 ## Seeing the game without a display
 
 `tools/render-probe.mjs` renders a URL in headless Chromium on SwiftShader (software
@@ -158,7 +164,9 @@ The pump-handling stage is render-free because it checks input, inventory, handl
 pixels. `test/browser/pump-handling.mjs` observes canvas context requests and asserts that the
 stage creates no WebGL context while its simulation and input assertions pass. Add future stages
 to the shared mode helper and use its URL/launch helpers together so the render choice and browser
-flags stay aligned; put pixel-only checks in an existing visual stage.
+flags stay aligned; put pixel-only checks in an existing visual stage. `tools/ui-browser-contract.mjs`
+checks DOM and input only, so it runs render-free and asserts no WebGL context, which keeps it off
+the SwiftShader initialization path in #256.
 
 Install Firefox once with `npx playwright install --with-deps firefox`, then from
 `deadvox/` run `xvfb-run -a npm run test:browser:firefox` (no `xvfb-run` on a desktop).
@@ -175,18 +183,14 @@ Two single-case quarantines remain; a fresh pass does not establish a fix:
 Neither is in the default Firefox command. No retries or increased bounds; record a
 fixed trial plan and before/after/restored-before evidence before reinstating a case.
 
-Set `DEBUG=pw:browser` for Playwright browser launch and transport traces. The Chromium UI
-contract in `tools/ui-browser-contract.mjs`, `ui-browser-contract`, enables that channel before
-importing Playwright, so Chrome launch messages appear in the job log as `pw:browser` lines. It
-starts Vite and waits for its root response before navigating a Playwright-controlled Chrome; a
-page CDP session preserves raw input. The contract checks DOM, pointer and keyboard behavior, not
-pixels or WebGL output, so it uses render-free mode (`?render=0` and `--disable-gpu`) and asserts
-that no WebGL context is requested. This keeps the stage out of the SwiftShader initialization
-path reported in #256; pixel checks remain in visual stages. `UI_BROWSER_LAUNCH` records
-Chrome version and graphics arguments, while `UI_BROWSER_GRAPHICS` records the render mode and
-WebGL requests. When `chromium.launch` fails, `UI_LAUNCH_FAILURE.error` carries Playwright's
-browser log; the record also includes requested browser arguments, browser connection
-state/version, Vite's last response, navigation phase, page URL and page errors.
+**BR decision (br-43, 2026-10-07 22:44:58), verbatim:** “B”.
+
+The selected containment treats the system Chrome 154 + Playwright 1.63 pairing as
+unsupported: all observed launch failures used system Chrome, while managed Chromium
+had zero launch failures in the 91-run sample. The cause remains unproven; the 240-launch
+source × bus comparison did not establish one. Issue #287 stays open for the root cause.
+See `test/browser/chromium.mjs`, `launchChromium`, for the shared managed launch boundary,
+and `docs/browser-ci.md` for CI evidence.
 
 Save-browser waits emit `BROWSER_FAILURE` without changing the failing result. It
 separates absent, hidden/zero-size and unresponsive canvases; records navigation/load,

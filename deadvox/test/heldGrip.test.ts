@@ -9,6 +9,7 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { type HandSide, Inventory } from '../src/core/inventory.ts';
 import { PLAYER_VIEW_FOV_DEGREES } from '../src/core/opticWindow.ts';
+import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, type FirearmShotEffect, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { chargedRifle } from './rifleFixture.ts';
 
@@ -126,6 +127,9 @@ describe('actual-slot held placement', () => {
       for (let axis = 0; axis < 3; axis++) {
         expect(pose.rootOffset[axis]! + pose.sightEyeOffset![axis]!).toBeCloseTo(0);
       }
+      for (let axis = 0; axis < 3; axis++) {
+        expect(pose.sightUp![axis]).toBeCloseTo([0, 1, 0][axis]!, 10);
+      }
       const [horizontalErrorPixels, verticalErrorPixels, depth] = projectionErrorPixels(pose.sightDirection!);
       expect(depth).toBeGreaterThan(0);
       expect(horizontalErrorPixels).toBeLessThanOrEqual(1);
@@ -136,6 +140,53 @@ describe('actual-slot held placement', () => {
         expect(projectedVerticalPixels(barrelCenter)).toBeLessThan(0);
       }
     }
+  });
+
+  it('keeps the sight and bore together off the fixed view during ADS recoil', () => {
+    const coaxialSource = [...registry.models.values()].find(
+      (candidate) => candidate.sight && candidate.grip && candidate.anchors?.muzzle,
+    );
+    if (!coaxialSource?.sight) {
+      throw new Error('No sighted firearm model fixture');
+    }
+    const model = {
+      ...coaxialSource,
+      muzzleDirection: coaxialSource.sight.direction,
+      sight: { ...coaxialSource.sight, direction: coaxialSource.sight.direction },
+    };
+    const common = {
+      model,
+      side: 'right' as const,
+      leadingSide: 'right' as const,
+      twoHanded: true,
+      progress: 1,
+      aimingDownSights: true,
+      loweredPitchRadians: 0,
+      adsApertureFill: registry.skills.get('firearms_combat')!.combat!.firearms!.adsApertureFill,
+      verticalFovDegrees: PLAYER_VIEW_FOV_DEGREES,
+    };
+    const resting = heldFirearmTransform({ ...common, aimFrame: NEUTRAL_AIM });
+    const recoilFrame = { yaw: 0.06, pitch: -0.03 };
+    const recoiling = heldFirearmTransform({ ...common, aimFrame: recoilFrame });
+    const bore = firearmBoreRay({
+      ...common,
+      eye: [0, 0, 0],
+      yaw: 0,
+      pitch: 0,
+      blockSize: 0.5,
+      aimFrame: recoilFrame,
+    });
+    for (let axis = 0; axis < 3; axis++) {
+      expect(resting.sightDirection![axis]).toBeCloseTo([0, 0, -1][axis]!, 10);
+      expect(resting.muzzleDirection[axis]).toBeCloseTo(resting.sightDirection![axis]!, 10);
+      expect(recoiling.sightDirection![axis]).toBeCloseTo(recoiling.muzzleDirection[axis]!, 10);
+      expect(recoiling.muzzleDirection[axis]).toBeCloseTo(bore.direction[axis]!, 10);
+    }
+    expect(Math.hypot(recoiling.sightDirection![0], recoiling.sightDirection![1])).toBeGreaterThan(0);
+    expect(recoiling.sightEyeOffset).toBeDefined();
+    expect(
+      Math.hypot(...recoiling.rootOffset.map((value, axis) => value + recoiling.sightEyeOffset![axis]!)),
+    ).toBeGreaterThan(0);
   });
 
   it('translates two-handed ejection origins by physical slot, not actor dominance, without mirroring authored direction', () => {

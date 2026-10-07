@@ -8,10 +8,9 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
+import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction, pressCdpActionBurst } from './input-actions.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
-
-const { chromium } = await import('playwright');
+import { browserStageUrl } from './stage-mode.mjs';
 
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
 const marker = '  const onForwardPress = (e: MouseEvent) => {';
@@ -50,10 +49,9 @@ try {
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
-  browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
+  browser = await launchChromium('pump-handling', {
     headless: true,
-    args: browserStageArgs('pump-handling', ['--password-store=basic']),
+    args: ['--password-store=basic'],
   });
   const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
   const errors = [];
