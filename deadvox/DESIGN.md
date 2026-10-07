@@ -620,13 +620,14 @@ and `src/core/content.ts`, `checkItemFirearm`.
   separate from the optional crosshair. BR, 2026-10-07 16:20, ruled: “Really,
   in ADS, the recoil should let the firearm move (i.e. follow the
   muzzle-crosshair) without the view following - that is the 'uncontrol' that
-  recoil and other handling aspects brings”. For d134-1, ADS aligns the
-  undeviated sight direction and up axis, including cant and eye relief, to the fixed view
+  recoil and other handling aspects brings”. In ADS the undeviated sight
+  direction and up axis, including cant and eye relief, align to the fixed view
   in `heldFirearmTransform`; recoil, sway and handling then move that shared
   firearm pose and bore while the view stays put. `HeldItems.update` keeps the
   optic window attached to the shifted sight, and `heldFirearmBore` uses the
   same transform for the crosshair. The intentional over-limit pitch shift still
-  updates the view through `AimController.applyViewPitchShift`.
+  moves the view through `src/game/session.ts`, `applyAimViewPitchShift`
+  (`controls.adjustPitch`).
   `src/debug/index.ts` owns the development target-range readout. BR's earlier requirement remains: “the number on the screenshot
   should be a maximum of sub-1-meter”. Whether the readout meets it is for BR's
   look. BR's 2026-10-05 look at the range found that "the gun on screen is
