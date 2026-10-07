@@ -17,6 +17,7 @@ const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
 const browserName = process.argv[2] ?? 'chromium';
 const autosaveOnly = process.env.SAVE_AUTOSAVE_ONLY === '1';
+const navigationOnly = process.env.SAVE_NAVIGATION_ONLY === '1';
 const requestedAutosaveBackend = process.env.SAVE_AUTOSAVE_BACKEND;
 const autosaveScenario = process.env.SAVE_AUTOSAVE_SCENARIO ?? 'continue';
 const busyLockOnly = autosaveOnly && autosaveScenario === 'busy-lock';
@@ -78,9 +79,10 @@ let firefoxServer;
 try {
   const address = await withTimeout('Vite startup', startWebServer());
   assert(address && typeof address !== 'string');
-  const testUrl = autosaveOnly
-    ? `http://127.0.0.1:${address.port}/?save-test=1`
-    : `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
+  const testUrl =
+    autosaveOnly || navigationOnly
+      ? `http://127.0.0.1:${address.port}/?save-test=1`
+      : `http://127.0.0.1:${address.port}/test/browser/save-storage-contract.html`;
   let context;
   if (browserName === 'chromium') {
     browser = await launchChromium(stageId, {
@@ -96,6 +98,36 @@ try {
     context = await browser.newContext();
   }
   await observeFailures(context, browser, firefoxServer?.process());
+  if (navigationOnly) {
+    await context.addInitScript(() => {
+      const request = navigator.locks.request.bind(navigator.locks);
+      navigator.locks.request = (name, options, callback) => {
+        if (
+          name === 'deadvox-save-storage' &&
+          options?.mode === 'exclusive' &&
+          globalThis.__d144HoldNextSave === true
+        ) {
+          globalThis.__d144HoldNextSave = false;
+          return request(name, options, async (lock) => {
+            sessionStorage.setItem('d144-held-writer', 'true');
+            await new Promise((resolve) => {
+              globalThis.__d144ReleaseWriter = resolve;
+            });
+            return callback(lock);
+          });
+        }
+        return request(name, options, callback);
+      };
+      globalThis.addEventListener('pagehide', (event) => {
+        sessionStorage.setItem('d144-pagehide', JSON.stringify({ persisted: event.persisted }));
+      });
+      globalThis.addEventListener('pageshow', (event) => {
+        if (event.persisted) {
+          globalThis.__d144ReleaseWriter?.();
+        }
+      });
+    });
+  }
   if (busyLockOnly) {
     await context.addInitScript(() => {
       let locked = null;
@@ -118,7 +150,7 @@ try {
   };
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('requestfailed', recordRequestFailure);
-  if (!autosaveOnly) {
+  if (!autosaveOnly && !navigationOnly) {
     await page.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForSelector('#ready', { timeout: STAGE_TIMEOUT_MS });
   }
@@ -376,21 +408,22 @@ try {
       }, STAGE_TIMEOUT_MS),
       OVERALL_TIMEOUT_MS,
     );
-  const contract = autosaveOnly
-    ? {
-        autoBackend: requestedAutosaveBackend ?? 'indexeddb',
-        backendResults: [],
-        concurrentBackendResults: [],
-        crashResults: [],
-      }
-    : await runStorageContract();
+  const contract =
+    autosaveOnly || navigationOnly
+      ? {
+          autoBackend: requestedAutosaveBackend ?? 'indexeddb',
+          backendResults: [],
+          concurrentBackendResults: [],
+          crashResults: [],
+        }
+      : await runStorageContract();
 
   await page.close();
   page = await context.newPage();
   page.on('pageerror', (error) => pageErrors.push(error.message));
   page.on('requestfailed', recordRequestFailure);
-  const probePage = autosaveOnly ? page : await context.newPage();
-  if (!autosaveOnly) {
+  const probePage = autosaveOnly || navigationOnly ? page : await context.newPage();
+  if (!autosaveOnly && !navigationOnly) {
     await probePage.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
   }
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: browser contract exercises save entry, recovery, and replacement end to end.
@@ -608,7 +641,78 @@ try {
   };
   const autosaveResults = [];
   let appBackends = [];
-  if (busyLockOnly) {
+  if (navigationOnly) {
+    const appUrl = `http://127.0.0.1:${address.port}/?seed=73&debug=1&save-backend=indexeddb&save-test=1`;
+    await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
+    await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
+    await page.click('#go', { timeout: STAGE_TIMEOUT_MS });
+    await page.evaluate(() => globalThis.deadvoxSaveTest.controller.beforeSleep());
+    await page.waitForFunction(
+      async () => {
+        const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
+        return !controller.writing && Boolean(await storage.load(namespace));
+      },
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    await page.evaluate(() => {
+      globalThis.__d144HoldNextSave = true;
+    });
+    await page.goto(`${appUrl}&loadout=pump`, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    const observation = await page.waitForFunction(
+      async () => {
+        const status = document.querySelector('#save-status')?.textContent ?? '';
+        const locks = await navigator.locks.query();
+        const held = locks.held.filter((lock) => lock.name === 'deadvox-save-storage');
+        const pending = locks.pending.filter((lock) => lock.name === 'deadvox-save-storage');
+        if (status.includes('Title screen ready')) {
+          return { ready: true, status, held, pending };
+        }
+        if (status.includes('Save storage unavailable') || (held.length > 0 && pending.length > 0)) {
+          return { ready: false, status, held, pending };
+        }
+        return false;
+      },
+      undefined,
+      { timeout: STAGE_TIMEOUT_MS },
+    );
+    let result = await observation.jsonValue();
+    const pendingAtBlock = result.pending;
+    if (!result.ready && !result.status.includes('Save storage unavailable')) {
+      await page.waitForFunction(
+        () => (document.querySelector('#save-status')?.textContent ?? '').includes('Save storage unavailable'),
+        undefined,
+        { timeout: STAGE_TIMEOUT_MS },
+      );
+      result = await page.evaluate(async () => {
+        const locks = await navigator.locks.query();
+        return {
+          ready: false,
+          status: document.querySelector('#save-status')?.textContent ?? '',
+          held: locks.held.filter((lock) => lock.name === 'deadvox-save-storage'),
+          pending: locks.pending.filter((lock) => lock.name === 'deadvox-save-storage'),
+        };
+      });
+    }
+    const evidence = await page.evaluate(() => ({
+      pagehide: sessionStorage.getItem('d144-pagehide'),
+      heldWriter: sessionStorage.getItem('d144-held-writer'),
+      continueDisabled: document.querySelector('#continue')?.disabled,
+    }));
+    const heldClientId = result.held[0]?.clientId;
+    const waiterClientId = pendingAtBlock[0]?.clientId;
+    const holderIsAnotherClient =
+      heldClientId === undefined || waiterClientId === undefined ? null : heldClientId !== waiterClientId;
+    process.stdout.write(
+      `${browserName}: in-tab loadout navigation ${JSON.stringify({ ...evidence, ...result, pendingAtBlock, holderIsAnotherClient })}\n`,
+    );
+    assert.ok(evidence.pagehide, 'same-tab navigation dispatched pagehide');
+    assert.equal(result.ready, true, `saved world did not load after in-tab navigation: ${result.status}`);
+    assert.equal(evidence.continueDisabled, false, 'saved world remains available to Continue');
+  } else if (busyLockOnly) {
     assert.equal(requestedAutosaveBackend, 'indexeddb', 'isolated busy-lock regression uses IndexedDB');
   } else if (autosaveOnly && requestedAutosaveBackend) {
     appBackends = [requestedAutosaveBackend];
@@ -729,14 +833,14 @@ try {
     }
   }
 
-  if (!autosaveOnly) {
+  if (!autosaveOnly && !navigationOnly) {
     const expectedBackends = contract.autoBackend === 'opfs' ? 2 : 1;
     assert.equal(contract.backendResults.length, expectedBackends);
     assert.equal(contract.concurrentBackendResults.length, expectedBackends);
     assert.equal(contract.crashResults.length, contract.autoBackend === 'opfs' ? 9 : 4);
   }
   assert.deepEqual(pageErrors, []);
-  if (!busyLockOnly) {
+  if (!busyLockOnly && !navigationOnly) {
     process.stdout.write(
       `${browserName}: auto selected ${contract.autoBackend}; tested ${contract.backendResults.map(({ backend }) => backend).join(', ')}; round-trip, contention, ${contract.crashResults.length} kill stages, and autosave/title ${autosaveScenario} (${autosaveResults.map(({ backend }) => backend).join(', ')}) passed\n`,
     );
