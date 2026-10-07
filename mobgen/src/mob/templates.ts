@@ -118,7 +118,7 @@ const crawler: Template = {
     kneeBend: { min: 15, max: 35 },
     woundCount: { choices: [0, 1, 1, 2, 3] },
   },
-  supportBones: ['thigh.L', 'thigh.R', 'hand.L', 'hand.R'],
+  supportBones: 'ground-contacts',
   budgets: {
     totalVoxels: { min: 400, max: 1800 },
     totalTriangles: { min: 700, max: 8500 },

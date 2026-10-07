@@ -1,10 +1,11 @@
 // Prone crawler rest pose: the humanoid rig is lowered onto its front, with the head raised, arms reaching
-// forward and legs trailing. The later drag cycle changes the arm reach alternately; this pose is its anchor.
+// forward and leg stumps trailing. crawlerGaitPose layers alternating arm reach, plant and pull onto it.
 
 import type { Realized } from '../core/generate.ts';
-import { applyPoint, type Mat3, rotX } from '../core/math.ts';
+import { applyPoint, IDENTITY_M, type Mat3, mulMM, rotX, rotZ } from '../core/math.ts';
 import { boneTransforms, type Pose } from '../core/pose.ts';
 import { posedVoxelSurfaceBoundsForBones } from '../core/voxelBounds.ts';
+import { HIT_FLINCH } from './reactions.ts';
 
 const ROOT = [0, 0, 0] as const;
 const BASE_ROTATIONS: Readonly<Record<string, Mat3>> = {
@@ -109,4 +110,87 @@ export const crawlerPose = (realized: Realized): Pose => {
   const pose = { root: [0, -torsoGroundY, 0] as const, rotations };
   poseCache.set(realized, pose);
   return pose;
+};
+
+const smoothstep = (value: number): number => value * value * (3 - 2 * value);
+
+const GROUND_CONTACT_BONES = [
+  'pelvis',
+  'spine',
+  'chest',
+  'forearm.L',
+  'hand.L',
+  'forearm.R',
+  'hand.R',
+  'thigh.L',
+  'thigh.R',
+];
+
+export const groundCrawlerPose = (realized: Realized, pose: Pose): Pose => {
+  const probe: Pose = { root: [pose.root[0], 0, pose.root[2]], rotations: pose.rotations };
+  const surfaces = posedVoxelSurfaceBoundsForBones(realized, probe, GROUND_CONTACT_BONES);
+  const lowest = Math.min(...surfaces.values());
+  return { ...pose, root: [pose.root[0], -lowest, pose.root[2]] };
+};
+
+const DRAG_KEYS = [
+  { at: 0, upper: 15, upperRoll: 0, forearm: -15 },
+  { at: 0.25, upper: 15, upperRoll: 0, forearm: -15 },
+  { at: 0.4, upper: 0, upperRoll: 0, forearm: 0 },
+  { at: 0.62, upper: 60, upperRoll: 150, forearm: 40 },
+  { at: 0.82, upper: 60, upperRoll: 150, forearm: 40 },
+  { at: 1, upper: 0, upperRoll: 0, forearm: 0 },
+] as const;
+
+const dragAngles = (progress: number): { upper: number; upperRoll: number; forearm: number } => {
+  const right = DRAG_KEYS.findIndex((key) => key.at >= progress);
+  const from = DRAG_KEYS[Math.max(0, right - 1)]!;
+  const to = DRAG_KEYS[Math.max(0, right)] ?? from;
+  const span = to.at - from.at;
+  const t = span === 0 ? 1 : smoothstep((progress - from.at) / span);
+  return {
+    upper: from.upper + (to.upper - from.upper) * t,
+    upperRoll: from.upperRoll + (to.upperRoll - from.upperRoll) * t,
+    forearm: from.forearm + (to.forearm - from.forearm) * t,
+  };
+};
+
+/** Alternates arm reach, plant and pull from distance-driven phase; the trailing leg stumps never step. */
+export const crawlerGaitPose = (realized: Realized, phase: number, speed: number): Pose => {
+  const base = crawlerPose(realized);
+  if (speed <= 0 || !Number.isFinite(phase)) {
+    return base;
+  }
+  const cycle = ((phase % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
+  const side = cycle < Math.PI ? 'L' : 'R';
+  const progress = (cycle % Math.PI) / Math.PI;
+  const angles = dragAngles(progress);
+  const rotations: Record<string, Mat3> = { ...base.rotations };
+  const upper = `upperArm.${side}`;
+  const forearm = `forearm.${side}`;
+  // The mirrored rig needs opposite roll to send each elbow outward along its side.
+  const sideRoll = side === 'L' ? -angles.upperRoll : angles.upperRoll;
+  rotations[upper] = mulMM(mulMM(rotations[upper] ?? IDENTITY_M, rotX(angles.upper)), rotZ(sideRoll));
+  rotations[forearm] = mulMM(rotations[forearm] ?? IDENTITY_M, rotX(angles.forearm));
+  return groundCrawlerPose(realized, { ...base, rotations });
+};
+
+/** A short brace/recoil layered over the current crawl pose and re-grounded against its support bones. */
+export const crawlerHitPose = (realized: Realized, base: Pose, time: number, side = 0): Pose => {
+  if (!(time > 0) || time >= HIT_FLINCH.duration) {
+    return base;
+  }
+  const progress = time / HIT_FLINCH.duration;
+  const intensity = progress < 0.2 ? smoothstep(progress / 0.2) : 1 - smoothstep((progress - 0.2) / 0.8);
+  const rotations: Record<string, Mat3> = { ...base.rotations };
+  const addRotation = (bone: string, delta: Mat3): void => {
+    rotations[bone] = mulMM(rotations[bone] ?? IDENTITY_M, delta);
+  };
+  addRotation('spine', rotX(-2 * intensity));
+  addRotation('chest', rotX(-3 * intensity));
+  addRotation('neck', rotX(2 * intensity));
+  addRotation('head', rotX(6 * intensity));
+  addRotation('upperArm.L', rotZ(-2 * intensity * side));
+  addRotation('upperArm.R', rotZ(2 * intensity * side));
+  return groundCrawlerPose(realized, { ...base, rotations });
 };

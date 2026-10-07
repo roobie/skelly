@@ -2,11 +2,12 @@ import type { Bone } from '@mobgen/core/body.ts';
 import { IDENTITY_M, type Mat3, mulMM, rotY } from '@mobgen/core/math.ts';
 import { blendPose, boneTransforms, type Pose } from '@mobgen/core/pose.ts';
 import { attackPose, LUNGE_GRAB } from '@mobgen/mob/attack.ts';
+import { crawlerGaitPose, crawlerHitPose, groundCrawlerPose } from '@mobgen/mob/crawler.ts';
 import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobgen/mob/gait.ts';
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
-import { flinchPose, HIT_FLINCH } from '@mobgen/mob/reactions.ts';
+import { flinchPose, flinchPoseWithClip, HIT_FLINCH, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
 import { type ShamblerFigure, zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
 import type { Vec3 } from './coords.ts';
 import type { Zombie } from './zombies.ts';
@@ -147,6 +148,30 @@ const attackTimeFor = ({
     : undefined;
 };
 
+interface ModelPoseContext {
+  readonly model: string;
+  readonly figure: ShamblerFigure;
+  readonly actor: WalkActor;
+}
+
+const withAttackPose = (context: ModelPoseContext, base: Pose, attackTime: number | undefined): Pose => {
+  if (attackTime === undefined || attackTime > LUNGE_GRAB.duration) {
+    return base;
+  }
+  const attacked = attackPose(context.actor, LUNGE_GRAB, attackTime, base);
+  return context.model === 'crawler' ? groundCrawlerPose(context.figure.realized, attacked) : attacked;
+};
+
+const withHitFlinch = (context: ModelPoseContext, base: Pose, time: number, side: number): Pose => {
+  if (context.model === 'crawler') {
+    return crawlerHitPose(context.figure.realized, base, time, side);
+  }
+  if (context.model === 'runner') {
+    return flinchPoseWithClip(context.actor, time, base, { clip: RUNNER_HIT_FLINCH, side });
+  }
+  return flinchPose(context.actor, time, base, { side });
+};
+
 const STANCE_CROSSFADE_SECONDS = 0.5;
 
 export const targetStanceWeight = (input: ShamblerPoseInput): number => {
@@ -165,9 +190,11 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
   return Math.abs(delta) <= maxDelta + 1e-12 ? target : current + Math.sign(delta) * maxDelta;
 };
 
-/** The sole living-shambler pose source. Both render and hit FK consume this exact simulation-driven pose. */
+/** The shared living-zombie pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
-  const { actor, bones, idleBases } = actorForSeed(input.model ?? 'shambler', input.seed);
+  const model = input.model ?? 'shambler';
+  const figure = zombieFigure(model, input.seed);
+  const { actor, bones, idleBases } = actorForSeed(model, input.seed);
   const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
   const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };
   const attackTime = attackTimeFor(input);
@@ -179,11 +206,12 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
     input.idleTime ?? 0,
     input.id ?? input.seed,
   );
-  const walk = walkPose(actor, clock, input.speed, { idle });
-  const basePose =
-    attackTime === undefined || attackTime > LUNGE_GRAB.duration
-      ? walk
-      : attackPose(actor, LUNGE_GRAB, attackTime, walk);
+  const walk =
+    model === 'crawler'
+      ? crawlerGaitPose(figure.realized, input.gaitPhase, input.speed)
+      : walkPose(actor, clock, input.speed, { idle });
+  const context = { model, figure, actor };
+  const basePose = withAttackPose(context, walk, attackTime);
   const headPose: Pose =
     input.headYaw === 0
       ? basePose
@@ -194,15 +222,14 @@ export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
             head: mulMM(basePose.rotations.head ?? IDENTITY_M, rotY((input.headYaw * 180) / Math.PI)),
           },
         };
+  const flinchSide = flinchSideForId(input.id ?? 0);
   const pose =
-    input.hitFlinchTime === undefined
-      ? headPose
-      : flinchPose(actor, input.hitFlinchTime, headPose, { side: flinchSideForId(input.id ?? 0) });
+    input.hitFlinchTime === undefined ? headPose : withHitFlinch(context, headPose, input.hitFlinchTime, flinchSide);
   return {
     pose,
     transforms: boneTransforms(bones, pose),
     bones,
-    figure: zombieFigure(input.model ?? 'shambler', input.seed),
+    figure,
     hidden: severedBoneSet(bones, input.severed),
     yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
     position: input.position,

@@ -22,7 +22,7 @@ import type { Genome, Template } from '../core/template.ts';
 import { amalgamManifest } from '../mob/amalgam.ts';
 import { VIEWER_TEMPLATES as TEMPLATES } from '../mob/amalgamTemplate.ts';
 import { ATTACK_CLIPS, attackPose } from '../mob/attack.ts';
-import { crawlerPose } from '../mob/crawler.ts';
+import { crawlerGaitPose, crawlerHitPose, crawlerPose } from '../mob/crawler.ts';
 import { SEVERABLE_PARTS, severedBoneSet } from '../mob/dismember.ts';
 import {
   advanceClock,
@@ -153,6 +153,7 @@ interface Loaded {
 
 let current: Loaded | undefined;
 let clock: GaitClock = INITIAL_CLOCK;
+let crawlerPhase = 0;
 let gridZ = 0;
 // Runs unconditionally (walking, standing, attacking...) so breathing/sway never stalls; only its phase
 // matters, so it's never reset on load/death — a fresh actor just joins the motion already in progress,
@@ -387,6 +388,7 @@ const load = (genome: Genome, realized: Realized, realizeMs: number): void => {
   reactionsFieldset.hidden = staticOnly;
   current = loaded;
   clock = INITIAL_CLOCK;
+  crawlerPhase = 0;
   gridZ = 0;
   attackTime = undefined;
   attackCooldown = 0;
@@ -578,7 +580,16 @@ renderer.render(scene, camera);
 
 /** Advances the walk clock/gridZ if walking — keeps advancing through an attack too. */
 const advanceWalk = (dt: number, walking: boolean, speed: number): void => {
-  if (!(walking && speed > 0 && current?.walkActor && current.params && current.legGeometry)) {
+  if (!walking || speed <= 0 || !current) {
+    return;
+  }
+  if (current.template.bodyPlan === 'crawler') {
+    crawlerPhase += speed * dt * Math.PI;
+    gridZ = (gridZ + speed * dt) % 0.5;
+    groundGroup.position.z = gridZ;
+    return;
+  }
+  if (!(current.walkActor && current.params && current.legGeometry)) {
     return;
   }
   clock = advanceClock(clock, speed * dt, {
@@ -642,7 +653,13 @@ const applyLiveFrame = (loaded: Loaded, dt: number): void => {
     return;
   }
   if (loaded.template.bodyPlan === 'crawler') {
-    applyLookAt(loaded, crawlerPose(loaded.realized), dt);
+    const walking = walkOn.checked;
+    const speed = walking ? Number(speedInput.value) : 0;
+    advanceWalk(dt, walking, speed);
+    advanceHit(dt);
+    const basePose = crawlerGaitPose(loaded.realized, crawlerPhase, speed);
+    const pose = hitTime === undefined ? basePose : crawlerHitPose(loaded.realized, basePose, hitTime, hitSide);
+    applyLookAt(loaded, pose, dt);
     return;
   }
   if (!loaded.walkActor) {
