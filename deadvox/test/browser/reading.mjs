@@ -453,7 +453,20 @@ try {
       undefined,
       { seconds: 5, from: handStart, label: 'note to hand', record },
     );
+    const noteUid = await page.evaluate(
+      () =>
+        Object.values(globalThis.readingWitness.session.inventory.hands).find((item) => item?.type === 'sample_note')
+          .uid,
+    );
     await pressAction(page, 'quickbar.assign.1');
+    const assignedUid = await page.evaluate((uid) => {
+      const { session } = globalThis.readingWitness;
+      if (session.quickbar.slots[0] !== uid) {
+        session.frame(1 / 60);
+      }
+      return session.quickbar.slots[0];
+    }, noteUid);
+    assert.equal(assignedUid, noteUid, 'quickbar assignment is applied at the next player tick');
     await pressAction(page, 'ui.inventory-toggle');
     assert.equal(await page.evaluate(() => globalThis.readingWitness.screen.isOpen), false);
     // Observe the real pre-open focus, never manufacture a focus for the restore assertion.

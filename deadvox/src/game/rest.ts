@@ -84,4 +84,7 @@ export class RestController {
   frame(realDt: number, until?: number): void {
     this.sim.frame(realDt, until);
   }
+  frameReplay(simDt: number): void {
+    this.sim.frameReplay(simDt);
+  }
 }

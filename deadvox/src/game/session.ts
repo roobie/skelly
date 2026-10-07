@@ -24,6 +24,7 @@ import {
   type FirearmsSkillZeroHandling,
   firearmStanceEffects,
   firearmsSkillEffects,
+  sameFirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
 import { foliageRustle, initialRustleClock } from '../core/foliageRustle.ts';
 import {
@@ -91,7 +92,7 @@ import { RestController } from './rest.ts';
 import { shamblerBodyPitch } from './shamblerAudio.ts';
 import { Survival } from './survival.ts';
 
-const PHYSICS_RATE = 60;
+export const PHYSICS_RATE = 60;
 const ZOMBIE_RATE = 20;
 export const HANDLING_RATE = 20;
 const sessionFirearmsTuning = (
@@ -177,10 +178,23 @@ const SEVERED_ITEM: Readonly<Record<Exclude<ZombieRegion, 'head'>, string>> = {
 };
 
 /** What the player is doing with the keyboard and mouse, read each tick. */
+export interface PlayerInputSample {
+  readonly active: boolean;
+  readonly inputLocked: boolean;
+  readonly intent: MoveIntent;
+  readonly yaw: number;
+  readonly pitch: number;
+  readonly walking: boolean;
+  readonly descending: boolean;
+  readonly worldReady: boolean;
+}
+
 interface SessionControls {
   /** True when input reaches the world: the pointer is locked and no menu has it. */
   active: () => boolean;
   intent: () => MoveIntent;
+  /** Recording and replay meet at the fixed player-tick boundary, never at a DOM timestamp. */
+  sampleAtPlayerTick?: (tick: number, live: PlayerInputSample, time: number, compression: number) => PlayerInputSample;
   /** Clears edge-triggered intents after the player tick samples them. */
   consumeDominantUse?: () => void;
   consumeOffUse?: () => void;
@@ -549,8 +563,8 @@ export const createSession = (options: SessionOptions) => {
         ? {
             feet: feet(),
             eye: [body.pos[0], body.pos[1] + playerEyeHeightMetres() / s, body.pos[2]],
-            yaw: controls.yaw(),
-            pitch: controls.pitch(),
+            yaw: sampledInput().yaw,
+            pitch: sampledInput().pitch,
             blockSize: s,
           }
         : undefined,
@@ -619,7 +633,10 @@ export const createSession = (options: SessionOptions) => {
   let footstepClock = savedFootstepClock;
   let rustleClock = restoredRustleClock;
   let airbornePeakY = restoredAirbornePeakY;
-  const currentIntent = (): MoveIntent => (controls.active() && !compression.locksInput ? controls.intent() : IDLE);
+  const currentIntent = (): MoveIntent => {
+    const input = sampledInput();
+    return input.active && !input.inputLocked ? input.intent : IDLE;
+  };
   const playerCrouching = (): boolean => crouching;
   const playerMovement = (): PlayerMovement =>
     playerMovementForIntent(movementIntent(sim.body.actionRefusal, currentIntent()), crouching, sprinting);
@@ -634,8 +651,8 @@ export const createSession = (options: SessionOptions) => {
       dt,
       velocity: body.vel,
       blockSize: s,
-      yaw: controls.yaw(),
-      pitch: controls.pitch(),
+      yaw: sampledInput().yaw,
+      pitch: sampledInput().pitch,
       aimSway: sim.body.consequences.aimSway,
       firing,
     });
@@ -668,7 +685,7 @@ export const createSession = (options: SessionOptions) => {
     }
   };
   const playerSense = () => {
-    const yaw = controls.yaw();
+    const { yaw } = sampledInput();
     const eyeHeightMetres = playerEyeHeightMetres();
     const hour = hourOfDay(sim.calendar);
     const lightSources = [...inventory.items()]
@@ -808,6 +825,19 @@ export const createSession = (options: SessionOptions) => {
   let lastBackgroundStep = 0;
   let backgroundSliceIndex = 0;
   let lastPlayerStep = 0;
+  let playerTick = 0;
+  let playerInput: PlayerInputSample | undefined;
+  const sampledInput = (): PlayerInputSample =>
+    playerInput ?? {
+      active: controls.active(),
+      inputLocked: compression.locksInput,
+      intent: controls.intent(),
+      yaw: controls.yaw(),
+      pitch: controls.pitch(),
+      walking: controls.walking(),
+      descending: controls.descending(),
+      worldReady: false,
+    };
   const dispatchPlayerActions = (moving: boolean, intent: MoveIntent): void => {
     controls.heldDominantUse?.(
       sim.time,
@@ -850,7 +880,7 @@ export const createSession = (options: SessionOptions) => {
     const wasGrounded = body.onGround;
     const previousPosition: Vec3 = [...body.pos];
     const jumpStarted = pacedIntent.jump && wasGrounded;
-    steer(body, scale, controls.yaw(), pacedIntent);
+    steer(body, scale, sampledInput().yaw, pacedIntent);
     if (jumpStarted) {
       playPlayerSound('player_strain', time);
     }
@@ -906,11 +936,22 @@ export const createSession = (options: SessionOptions) => {
     return readyGait;
   };
 
-  const preparePlayerStep = (dt: number) => {
-    const active = controls.active();
-    const requested = active ? controls.intent() : IDLE;
-    const moving = active && !compression.locksInput && !sim.body.actionRefusal;
-    const intent = moving ? requested : IDLE;
+  const preparePlayerStep = (dt: number, time: number) => {
+    const live: PlayerInputSample = {
+      active: controls.active(),
+      inputLocked: compression.locksInput,
+      intent: controls.intent(),
+      yaw: controls.yaw(),
+      pitch: controls.pitch(),
+      walking: controls.walking(),
+      descending: controls.descending(),
+      worldReady: options.ready(body.pos[0], body.pos[2]),
+    };
+    const tick = playerTick;
+    playerTick += 1;
+    playerInput = controls.sampleAtPlayerTick?.(tick, live, time, sim.compression.c) ?? live;
+    const moving = playerInput.active && !playerInput.inputLocked && !sim.body.actionRefusal;
+    const intent = moving ? playerInput.intent : IDLE;
     const handling = queue.busy || firearms.busy;
     const readyGait = advancePlayerReadiness(dt, intent, moving);
     controls.consumeDominantUse?.();
@@ -955,10 +996,10 @@ export const createSession = (options: SessionOptions) => {
       tools.stepNoclip({
         body,
         scale,
-        yaw: controls.yaw(),
-        pitch: controls.pitch(),
+        yaw: sampledInput().yaw,
+        pitch: sampledInput().pitch,
         intent: pacedIntent,
-        descend: controls.descending(),
+        descend: sampledInput().descending,
         dt,
       });
       return;
@@ -974,9 +1015,9 @@ export const createSession = (options: SessionOptions) => {
     rate: PHYSICS_RATE,
     tick: (dt, time) => {
       lastPlayerStep = time;
-      const step = preparePlayerStep(dt);
+      const step = preparePlayerStep(dt, time);
       applyAimViewPitchShift();
-      if (!options.ready(body.pos[0], body.pos[2])) {
+      if (!playerInput?.worldReady) {
         return;
       }
       advancePlayerMovement(dt, time, step);
@@ -1106,6 +1147,12 @@ export const createSession = (options: SessionOptions) => {
     get firearmsSkillZeroTarget() {
       return sessionFirearmTargetName(registry, firearmInHands()?.type);
     },
+    hasFirearmHandlingOverrides: () =>
+      firearms.hasSkillZeroHandlingOverrides() ||
+      !sameFirearmsSkillZeroHandling(
+        firearmsCombatTuning.skillZeroHandling,
+        currentFirearmsCombatTuning().skillZeroHandling,
+      ),
     setFirearmsSkillZeroHandling: (value: FirearmsSkillZeroHandling): void => {
       setSessionFirearmsSkillZeroHandling(firearms, firearmInHands()?.uid, value);
     },
@@ -1201,6 +1248,15 @@ export const createSession = (options: SessionOptions) => {
     frame: (dt: number, until?: number): void => {
       crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
       rest.frame(dt, until);
+      for (const event of audioEvents.read()) {
+        if (event.kind === 'damage') {
+          playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
+        }
+      }
+    },
+    frameReplay: (simDt: number): void => {
+      crouching = nextCrouchState(controls.consumeCrouchToggle?.() ?? false, debug?.()?.noclip ?? false, crouching);
+      rest.frameReplay(simDt);
       for (const event of audioEvents.read()) {
         if (event.kind === 'damage') {
           playPlayerSound(event.amount >= 15 ? 'player_hurt_heavy' : 'player_hurt_light', event.time);
