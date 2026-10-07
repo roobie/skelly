@@ -1139,7 +1139,7 @@ export const createSession = (options: SessionOptions) => {
         inventory.furnish(spec, loot);
       }
       if (site) {
-        spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem, calendar: sim.calendar });
+        spawner.onColumn({ cx, cz, site, registry, zombies: zombieSystem });
       }
     },
     onColumnUnload: (cx: number, cz: number): void => spawner.unloadColumn(cx, cz),

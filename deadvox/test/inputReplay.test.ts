@@ -546,7 +546,7 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
-  it('applies generated-column changes between compressed zombie-background ticks', async () => {
+  it("replays a recorded column load's spawn and furniture under compression", async () => {
     const runtime = createRuntime();
     const firstZombieEntry = runtime.zombies.store.entries().next().value;
     if (!firstZombieEntry) {

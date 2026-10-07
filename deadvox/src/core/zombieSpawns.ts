@@ -11,7 +11,6 @@ export interface ZombieColumnLoad {
   site: Site;
   registry: Registry;
   zombies: ZombieSystem;
-  calendar: number;
 }
 
 export interface ZombieSpawnAdvance {
