@@ -11,12 +11,23 @@ export const STEP_DISTANCE_METRES: Readonly<Record<Exclude<PlayerGait, 'still'>,
 
 export const HARD_LANDING_METRES = 2.5;
 
+export const INITIAL_STRIDE_PHASE = 0.75;
+
 export interface FootstepClock {
   gait: PlayerGait;
   distanceUntilStep: number;
+  /** Fraction of a two-step stride, shared by walking presentation and readied-firearm wobble. */
+  stridePhase: number;
+  /** Monotonic footfall index seeds deterministic, step-eased aim jitter. */
+  stepIndex: number;
 }
 
-export const initialFootstepClock = (): FootstepClock => ({ gait: 'still', distanceUntilStep: 0 });
+export const initialFootstepClock = (): FootstepClock => ({
+  gait: 'still',
+  distanceUntilStep: 0,
+  stridePhase: INITIAL_STRIDE_PHASE,
+  stepIndex: 0,
+});
 
 const SURFACE_EVENTS = new Map<string, SoundEventId>([
   ['grass', 'footstep_grass'],
@@ -51,17 +62,28 @@ export interface FootstepAdvance {
 /** Emits one footfall per gait distance actually travelled; airborne and stationary movement resets cadence. */
 export const advanceFootsteps = (clock: FootstepClock, gait: PlayerGait, travelledMetres: number): FootstepAdvance => {
   if (gait === 'still' || !(travelledMetres > 0)) {
-    return { clock: initialFootstepClock(), steps: 0 };
+    return { clock: { ...initialFootstepClock(), stepIndex: clock.stepIndex }, steps: 0 };
   }
   const stepDistance = STEP_DISTANCE_METRES[gait];
   const remaining = clock.gait === gait ? clock.distanceUntilStep : stepDistance;
+  const stridePhase =
+    (clock.gait === gait ? clock.stridePhase : INITIAL_STRIDE_PHASE) + travelledMetres / (2 * stepDistance);
+  const normalizedStridePhase = stridePhase - Math.floor(stridePhase);
   if (travelledMetres < remaining) {
-    return { clock: { gait, distanceUntilStep: remaining - travelledMetres }, steps: 0 };
+    return {
+      clock: {
+        gait,
+        distanceUntilStep: remaining - travelledMetres,
+        stridePhase: normalizedStridePhase,
+        stepIndex: clock.stepIndex,
+      },
+      steps: 0,
+    };
   }
   const afterFirst = travelledMetres - remaining;
   const steps = 1 + Math.floor(afterFirst / stepDistance);
   const distanceUntilStep = stepDistance - (afterFirst % stepDistance);
-  return { clock: { gait, distanceUntilStep }, steps };
+  return { clock: { gait, distanceUntilStep, stridePhase: normalizedStridePhase, stepIndex: clock.stepIndex + steps }, steps };
 };
 
 export interface ShamblerFootstepClock {

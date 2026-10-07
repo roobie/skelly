@@ -1,4 +1,5 @@
 import type { Vec3 } from './coords.ts';
+import { hash3 } from './random.ts';
 
 /** Camera-local angles shared by firearm presentation and ballistic direction. */
 export interface AimFrame {
@@ -9,7 +10,6 @@ export interface AimFrame {
 export const NEUTRAL_AIM: AimFrame = Object.freeze({ yaw: 0, pitch: 0 });
 
 export interface AimState {
-  gaitPhase: number;
   lookYaw: number;
   lookPitch: number;
   recoilYaw: number;
@@ -30,11 +30,19 @@ export interface AimStep {
   readonly variance: number;
   readonly firing: boolean;
   readonly recoilRecoveryRate: number;
+  /** Fraction of the shared two-step footfall stride. */
+  readonly stridePhase: number;
+  readonly stepIndex: number;
+}
+
+export interface AimWobbleShape {
+  readonly archPower: number;
+  readonly phaseOffsetRadians: number;
+  readonly jitterShare: number;
+  readonly jitterAmplitudeFraction: number;
 }
 
 const TAU = Math.PI * 2;
-const GAIT_BASE_HZ = 1.15;
-const GAIT_SPEED_HZ = 0.72;
 const MOVE_YAW_PER_SPEED = 0.0045;
 const MOVE_PITCH_PER_SPEED = 0.003;
 const LOOK_LAG_PER_RADIAN = 0.035;
@@ -57,11 +65,26 @@ const frameFromState = (
   speed: number,
   variance: number,
   wobbleLimitRadians: number,
+  shape: AimWobbleShape,
+  jitterSeed: number,
+  stridePhase: number,
+  stepIndex: number,
 ): { frame: AimFrame; viewPitchShift: number } => {
-  const gait = Math.sin(state.gaitPhase);
+  const phase = stridePhase * TAU;
+  const gait = Math.sin(phase);
+  const archPhase = phase + shape.phaseOffsetRadians * Math.sin(2 * phase) ** 2;
+  const pitchArch = 1 - 2 * Math.abs(Math.sin(archPhase)) ** shape.archPower;
+  const stepProgress = ((stridePhase + 0.25) * 2) % 1;
+  const jitterEnvelope = Math.sin(Math.PI * stepProgress) ** 2;
+  const carriesJitter = hash3(jitterSeed, stepIndex, 0, 0) < shape.jitterShare;
+  const jitterAngle = hash3(jitterSeed, stepIndex, 1, 0) * TAU;
+  const jitterScale =
+    carriesJitter
+      ? shape.jitterAmplitudeFraction * (0.5 + hash3(jitterSeed, stepIndex, 2, 0) * 0.5) * jitterEnvelope
+      : 0;
   const wobble = boundVector(
-    (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance,
-    (state.lookPitch + Math.cos(state.gaitPhase) * speed * MOVE_PITCH_PER_SPEED) * variance,
+    (state.lookYaw + (gait + Math.cos(jitterAngle) * jitterScale) * speed * MOVE_YAW_PER_SPEED) * variance,
+    (state.lookPitch + (pitchArch + Math.sin(jitterAngle) * jitterScale) * speed * MOVE_PITCH_PER_SPEED) * variance,
     wobbleLimitRadians,
   );
   const recoilYaw = bounded(state.recoilYaw);
@@ -84,7 +107,6 @@ const frameFromState = (
 };
 
 const initialAimState = (): AimState => ({
-  gaitPhase: 0,
   lookYaw: 0,
   lookPitch: 0,
   recoilYaw: 0,
@@ -100,7 +122,6 @@ export const assertAimState = (state: AimState): void => {
     !(
       state &&
       [
-        state.gaitPhase,
         state.lookYaw,
         state.lookPitch,
         state.recoilYaw,
@@ -112,7 +133,6 @@ export const assertAimState = (state: AimState): void => {
       ].every(Number.isFinite)
     ) ||
     typeof state.hasLookSample !== 'boolean' ||
-    Math.abs(state.gaitPhase) > TAU * 4 ||
     Math.abs(state.lookYaw) > MAX_OFFSET * 8 ||
     Math.abs(state.lookPitch) > MAX_OFFSET * 8 ||
     Math.abs(state.recoilYaw) > MAX_OFFSET * 8 ||
@@ -129,9 +149,21 @@ export class AimController {
   private variance: number;
   private speed = 0;
   private readonly wobbleLimitRadians: number;
+  private readonly wobbleShape: AimWobbleShape;
+  private readonly jitterSeed: number;
+  private stridePhase = 0;
+  private stepIndex = 0;
   private viewPitchShift = 0;
 
-  constructor(wobbleLimitRadians: number, state: AimState = initialAimState(), variance = 1) {
+  constructor(
+    wobbleLimitRadians: number,
+    wobbleShape: AimWobbleShape,
+    jitterSeed: number,
+    state: AimState = initialAimState(),
+    variance = 1,
+    stridePhase = 0,
+    stepIndex = 0,
+  ) {
     assertAimState(state);
     if (!(Number.isFinite(variance) && variance > 0)) {
       throw new Error('Invalid aim variance');
@@ -139,6 +171,22 @@ export class AimController {
     if (!(Number.isFinite(wobbleLimitRadians) && wobbleLimitRadians > 0)) {
       throw new Error('Invalid aim wobble limit');
     }
+    if (
+      !wobbleShape ||
+      !(Number.isFinite(wobbleShape.archPower) && wobbleShape.archPower > 0) ||
+      !(Number.isFinite(wobbleShape.phaseOffsetRadians) && Math.abs(wobbleShape.phaseOffsetRadians) < 0.5) ||
+      !(Number.isFinite(wobbleShape.jitterShare) && wobbleShape.jitterShare >= 0 && wobbleShape.jitterShare <= 1) ||
+      !(Number.isFinite(wobbleShape.jitterAmplitudeFraction) && wobbleShape.jitterAmplitudeFraction > 0) ||
+      !(Number.isSafeInteger(jitterSeed) && jitterSeed >= 0 && jitterSeed <= 0xff_ff_ff_ff) ||
+      !(Number.isFinite(stridePhase) && stridePhase >= 0 && stridePhase < 1) ||
+      !(Number.isSafeInteger(stepIndex) && stepIndex >= 0)
+    ) {
+      throw new Error('Invalid aim wobble shape or stride phase');
+    }
+    this.wobbleShape = { ...wobbleShape };
+    this.jitterSeed = jitterSeed;
+    this.stridePhase = stridePhase;
+    this.stepIndex = stepIndex;
     this.state = structuredClone(state);
     this.state.frame = Object.freeze({ ...this.state.frame });
     this.variance = variance;
@@ -169,7 +217,16 @@ export class AimController {
   }
 
   private recomputeFrame(): void {
-    const result = frameFromState(this.state, this.speed, this.variance, this.wobbleLimitRadians);
+    const result = frameFromState(
+      this.state,
+      this.speed,
+      this.variance,
+      this.wobbleLimitRadians,
+      this.wobbleShape,
+      this.jitterSeed,
+      this.stridePhase,
+      this.stepIndex,
+    );
     this.state.frame = result.frame;
     this.viewPitchShift = result.viewPitchShift;
   }
@@ -178,7 +235,18 @@ export class AimController {
     return Object.freeze({ ...this.state });
   }
 
-  advance({ dt, velocity, blockSize, yaw, pitch, variance, firing, recoilRecoveryRate }: AimStep): AimFrame {
+  advance({
+    dt,
+    velocity,
+    blockSize,
+    yaw,
+    pitch,
+    variance,
+    firing,
+    recoilRecoveryRate,
+    stridePhase,
+    stepIndex,
+  }: AimStep): AimFrame {
     if (
       !(
         Number.isFinite(dt) &&
@@ -188,7 +256,11 @@ export class AimController {
         Number.isFinite(variance) &&
         variance > 0 &&
         velocity.every(Number.isFinite) &&
-        [yaw, pitch, recoilRecoveryRate].every(Number.isFinite) &&
+        [yaw, pitch, recoilRecoveryRate, stridePhase].every(Number.isFinite) &&
+        stridePhase >= 0 &&
+        stridePhase < 1 &&
+        Number.isSafeInteger(stepIndex) &&
+        stepIndex >= 0 &&
         typeof firing === 'boolean' &&
         recoilRecoveryRate > 0
       )
@@ -199,8 +271,8 @@ export class AimController {
     const speed = Math.hypot(velocity[0], velocity[2]) * blockSize;
     this.variance = variance;
     this.speed = speed;
-    const phaseRate = TAU * (GAIT_BASE_HZ + speed * GAIT_SPEED_HZ);
-    state.gaitPhase = (state.gaitPhase + dt * phaseRate) % TAU;
+    this.stridePhase = stridePhase;
+    this.stepIndex = stepIndex;
 
     if (state.hasLookSample) {
       const yawRate = wrapAngle(yaw - state.lastYaw) / dt;

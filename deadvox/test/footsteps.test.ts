@@ -39,6 +39,8 @@ describe('player footsteps', () => {
       const full = advanceFootsteps(half.clock, gait, distance / 2);
       expect(full.steps).toBe(1);
       expect(full.clock.distanceUntilStep).toBeCloseTo(distance);
+      expect(full.clock.stridePhase).toBeCloseTo((initialFootstepClock().stridePhase + 0.5) % 1);
+      expect(full.clock.stepIndex).toBe(initialFootstepClock().stepIndex + 1);
     }
   });
 
@@ -47,7 +49,9 @@ describe('player footsteps', () => {
     const jogging = advanceFootsteps(walking.clock, 'jogging', 0.5);
     expect(jogging.steps).toBe(0);
     expect(jogging.clock.distanceUntilStep).toBeCloseTo(STEP_DISTANCE_METRES.jogging - 0.5);
-    expect(advanceFootsteps(jogging.clock, 'still', 5)).toEqual({ clock: initialFootstepClock(), steps: 0 });
+    const stopped = advanceFootsteps(jogging.clock, 'still', 5);
+    expect(stopped.clock).toEqual({ ...initialFootstepClock(), stepIndex: jogging.clock.stepIndex });
+    expect(stopped.steps).toBe(0);
   });
 
   it('plays a hard landing at and above a 2.5 m drop, not below it', () => {

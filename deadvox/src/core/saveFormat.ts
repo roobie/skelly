@@ -443,6 +443,8 @@ const playerAudio = obj({
   footstepClock: obj({
     gait: enumeration(['still', 'walking', 'jogging', 'sprinting']),
     distanceUntilStep: nonNegative,
+    stridePhase: num({ min: 0, max: 0.9999999999999999 }),
+    stepIndex: nonNegativeInt,
   }),
   airbornePeakY: nullable(finite),
   rustleClock: obj({ cells: arr(str()), nextSimTimestamp: finite }),
@@ -570,7 +572,6 @@ const playerCombat = obj({
   nextFistHand: enumeration(['right', 'left']),
 });
 const aim = obj({
-  gaitPhase: finite,
   lookYaw: finite,
   lookPitch: finite,
   recoilYaw: finite,

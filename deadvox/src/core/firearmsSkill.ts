@@ -48,6 +48,10 @@ export interface FirearmsCombatTuning {
   readonly skillZeroHandling: FirearmsSkillZeroHandling;
   readonly wobbleSkillTenVariance: number;
   readonly wobbleLimitRadians: number;
+  readonly wobbleLuneArchPower: number;
+  readonly wobbleLunePhaseOffsetRadians: number;
+  readonly wobbleJitterShare: number;
+  readonly wobbleJitterAmplitudeFraction: number;
   readonly reloadFactorFloor: number;
   readonly reloadFactorHalfLifeLevels: number;
   readonly rackFactorFloor: number;

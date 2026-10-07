@@ -496,7 +496,7 @@ try {
     const state = session.aim.snapshotState();
     return {
       finite: [
-        state.gaitPhase,
+        session.playerStridePhase,
         state.lookYaw,
         state.lookPitch,
         state.recoilYaw,

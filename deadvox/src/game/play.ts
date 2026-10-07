@@ -2099,6 +2099,7 @@ export const startPlay = (
         noclip: debugTools?.noclip ?? false,
         yaw: input.yaw,
         pitch: input.pitch,
+        stridePhase: session.playerStridePhase,
         eye: eye(),
         ...(spectatorCameraEnabled && spectatorCameraBody
           ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }

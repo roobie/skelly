@@ -155,6 +155,11 @@ export const restorePlayerAudioState = (state: PlayerAudioSnapshot): Readonly<Pl
     !['still', 'walking', 'jogging', 'sprinting'].includes(state.footstepClock.gait) ||
     !Number.isFinite(state.footstepClock.distanceUntilStep) ||
     state.footstepClock.distanceUntilStep < 0 ||
+    !Number.isFinite(state.footstepClock.stridePhase) ||
+    state.footstepClock.stridePhase < 0 ||
+    state.footstepClock.stridePhase >= 1 ||
+    !Number.isSafeInteger(state.footstepClock.stepIndex) ||
+    state.footstepClock.stepIndex < 0 ||
     (state.airbornePeakY !== null && !Number.isFinite(state.airbornePeakY)) ||
     !state.rustleClock ||
     !Array.isArray(state.rustleClock.cells) ||
