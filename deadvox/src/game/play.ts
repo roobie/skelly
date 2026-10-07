@@ -13,7 +13,7 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
-import { heldFirearmTransform } from '../core/heldPose.ts';
+import { heldFirearmTransform, throwStanceWorldOffset } from '../core/heldPose.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
@@ -1741,7 +1741,7 @@ export const startPlay = (
     if (!replayPlayer) {
       inputRecorder?.queueAction('item.throw', 'down', inputContext(), distance);
     }
-    throwHeldItem(item, hand, distance);
+    throwHeldItem(item, hand, distance, Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds));
     syncThrowingStance();
   }
 
@@ -1771,7 +1771,7 @@ export const startPlay = (
     showNotice('');
   }
 
-  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number): void {
+  function throwHeldItem(item: Item, hand: HandSide, distanceMetres: number, chargeProgress = 0): void {
     if (inventory.hands[hand] !== item) {
       return;
     }
@@ -1794,7 +1794,14 @@ export const startPlay = (
       showRefusal("Couldn't land the item there", sim.time);
       return;
     }
-    const origin: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
+    const throwOffset: Vec3 = throwingStance
+      ? throwStanceWorldOffset(hand, input.yaw, input.pitch, chargeProgress)
+      : [0, 0, 0];
+    const origin: Vec3 = [
+      body.pos[0] * s + throwOffset[0],
+      body.pos[1] * s + session.playerEyeHeightMetres + throwOffset[1],
+      body.pos[2] * s + throwOffset[2],
+    ];
     const landing: Vec3 = [(target.pos[0] + 0.5) * s, (target.pos[1] + 0.15) * s, (target.pos[2] + 0.5) * s];
     itemThrows.spawn(origin, landing, item);
   }
@@ -2108,7 +2115,7 @@ export const startPlay = (
 
   const displayCalendar = (): number => sim.calendar;
   const throwStanceCueVisible = (): boolean =>
-    throwingStance && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
+    throwingStance && hudOptions.interaction && input.locked && !screen.isOpen && !reading.isOpen && !mainMenuOpen;
 
   const statusView = (): PlayStatus => ({
     calendar: displayCalendar(),
@@ -2263,6 +2270,16 @@ export const startPlay = (
       firearms: firearms.frames(),
       ...(readiness === undefined ? {} : { readiness }),
       aim: aim.frame,
+      ...(throwingStance
+        ? {
+            throwing: {
+              chargeProgress:
+                itemThrowStartedAt === undefined
+                  ? 0
+                  : Math.max(0, Math.min(1, (sim.time - itemThrowStartedAt) / itemThrowTuning.chargeSimSeconds)),
+            },
+          }
+        : {}),
       job: queue.jobs[0],
     });
   };

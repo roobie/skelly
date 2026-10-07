@@ -182,6 +182,7 @@ const observationPlugin = {
     survival,
     debugTools,
     engine,
+    view,
     caseEffects,
     itemThrows,
     audio,
@@ -1030,11 +1031,32 @@ try {
       minimumHoldSimSeconds: r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds,
     };
   });
-  await pressAction(page, 'player.throw');
   await page.waitForFunction(() => {
-    const r = globalThis.primaryActionTest;
-    return r.isThrowingStance() && !document.querySelector('#throw-stance').hidden;
+    const hands = globalThis.primaryActionTest.view.held.heldByHand;
+    return hands.has('right') && hands.has('left');
   });
+  const normalThrowPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+  });
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = false;
+  });
+  await pressAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  assert.equal(await page.locator('#throw-stance').evaluate((node) => node.hidden), true);
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.interaction = true;
+  });
+  await page.waitForFunction(() => !document.querySelector('#throw-stance').hidden);
+  const stanceThrowPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+  });
+  for (const side of ['right', 'left']) {
+    assert.ok(stanceThrowPose[side][1] > normalThrowPose[side][1], `${side} hand is raised in throwing stance`);
+    assert.ok(stanceThrowPose[side][2] > normalThrowPose[side][2], `${side} hand draws back in throwing stance`);
+  }
   const offHandOnlyThrow = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const offHandChargeStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
@@ -1149,6 +1171,22 @@ try {
     const r = globalThis.primaryActionTest;
     return !(r.isThrowingStance() || r.isChargingItemThrow());
   });
+  await page.waitForFunction((normal) => {
+    const r = globalThis.primaryActionTest;
+    return ['right', 'left'].every((side) =>
+      r.view.held.arms
+        .get(side)
+        .position.toArray()
+        .every((value, axis) => Math.abs(value - normal[side][axis]) < 0.001),
+    );
+  }, normalThrowPose);
+  const restoredThrowPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return Object.fromEntries(['right', 'left'].map((side) => [side, r.view.held.arms.get(side).position.toArray()]));
+  });
+  for (const side of ['right', 'left']) {
+    assert.ok(restoredThrowPose[side].every((value, axis) => Math.abs(value - normalThrowPose[side][axis]) < 0.001));
+  }
   await stanceCancelThrow();
   assert.equal(
     await page.evaluate(
@@ -1364,8 +1402,35 @@ try {
       chargeSimSeconds: registry.senses.get('player').light.throwChargeSimSeconds,
     };
   }, firearmHandlingModule);
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return r.view.held.heldByHand.has(r.dominant);
+  });
+  const firearmRestPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return {
+      hand: r.view.held.arms.get(r.dominant).position.toArray(),
+      item: r.view.held.heldByHand.get(r.dominant).position.toArray(),
+    };
+  });
   await pressAction(page, 'player.throw');
   await page.waitForFunction(() => globalThis.primaryActionTest.isThrowingStance());
+  await page.waitForFunction((rest) => {
+    const r = globalThis.primaryActionTest;
+    const hand = r.view.held.arms.get(r.dominant).position;
+    return hand.y > rest.hand[1] && hand.z > rest.hand[2];
+  }, firearmRestPose);
+  const firearmThrowPose = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return {
+      hand: r.view.held.arms.get(r.dominant).position.toArray(),
+      item: r.view.held.heldByHand.get(r.dominant).position.toArray(),
+    };
+  });
+  for (const key of ['hand', 'item']) {
+    assert.ok(firearmThrowPose[key][1] > firearmRestPose[key][1], `main-hand firearm ${key} is raised to throw`);
+    assert.ok(firearmThrowPose[key][2] > firearmRestPose[key][2], `main-hand firearm ${key} is drawn back to throw`);
+  }
   const chargeSpareShell = await mouseCharge(page);
   await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   const blockedReload = await holdAction(page, 'firearm.reload');
