@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { type Matrix4, Vector3 } from 'three';
+import { type Matrix4, type Mesh, Vector3 } from 'three';
 import { describe, expect, it } from 'vitest';
 import { BlockEntities, doorPanel, searchTime } from '../src/core/blockEntities.ts';
 import { Chunk } from '../src/core/chunk.ts';
@@ -9,6 +9,7 @@ import { pickFurniture } from '../src/core/furniturePick.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { HANDLING, Inventory } from '../src/core/inventory.ts';
 import type { Body } from '../src/core/physics.ts';
+import { BLOCK_SIZE } from '../src/core/scale.ts';
 import {
   cellsOf,
   compileTemplate,
@@ -204,6 +205,22 @@ describe('furniture', () => {
       isSolid: (x, y, z) => x === 5 && y === 3 && z === 2,
     });
     expect(stoppedByWall).toBeUndefined();
+  });
+
+  it('renders a nonblocking readable sign as a thin board facing into the room', () => {
+    const entities = new BlockEntities(registry);
+    const board = entities.add({
+      type: 'medical_research_notice',
+      pos: [1, 2, 20],
+      size: [1, 2, 2],
+      facing: 'e',
+    })!;
+    const furniture = new FurnitureMeshes(BLOCK_SIZE);
+    furniture.sync(entities);
+    const mesh = furniture.group.children[0] as Mesh;
+    expect(mesh.scale.x).toBeLessThan(BLOCK_SIZE);
+    expect(mesh.scale.z).toBeGreaterThan(mesh.scale.x);
+    expect(mesh.position.x - mesh.scale.x / 2).toBeCloseTo(board.pos[0] * BLOCK_SIZE);
   });
 
   it('shares the renderer door-panel transform with the core box within 1 mm for every facing/state', () => {
