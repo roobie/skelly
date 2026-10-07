@@ -539,16 +539,28 @@ plain box in your hands. Files are small, and follow
   capacity, handling and noise. Ammo and magazines are items with pockets. The
   simulation's `AimController` publishes the same offset to shot resolution and
   held-firearm presentation, so the weapon does not visibly aim somewhere other
-  than its shot ray. Aim state is saved because it can change hit outcomes. BR
-  reported, “Also, "hipfire" is way off the mark (cross hair / center of screen)
-  - i.e. when simply readied the rifle and shooting one single round”; of the
-  debug Target range, BR said “the number on the screenshot should be a maximum
-  of sub-1-meter”. The resting muzzle-to-camera offset was systematic, separate
-  from skill-0 spread. `resolveShotAim` converges hip-fire on the nearer of the
-  crosshair surface and the posed zombie region, without re-posing the gun and
-  changing its reviewed ready pose; `crosshairTarget` supplies the surface hit.
-  The debug Target range uses that same nearer target. ADS stays on the muzzle
-  line until g42 adds sight data. BR's
+  than its shot ray. Aim state is saved because it can change hit outcomes. BR,
+  2026-10-07 10:16, said “completely wrong ... indeed the hip-fire goes to the
+  cross hair, but the rifle points completely wrong” and proposed “we should
+  perhaps do it the other way: the crosshair (when wielding a readied firearm)
+  should point where the muzzle is pointing or even where the bullet _would_ hit
+  if fired at that moment”. BR, 2026-10-07 10:21, chose the bore-line hit rather
+  than the next shot's random spread (“choose: (a)”), and said “and additionally,
+  when debug=1 the center of screen should be shown using an X mark so we can
+  relate to where center of screen is even when this is implemented”. This
+  supersedes d116-2's
+  convergence toward the crosshair surface or posed zombie;
+  that earlier rule is retained here as the history of the superseded behavior.
+  Shots now leave along the visible firearm's bore, plus firearm-owned spread.
+  `src/game/firearmAim.ts`, `firearmBoreRay`, supplies that shared line to both
+  shot resolution and the readied-firearm crosshair; `src/ui/playHud.ts`,
+  `projectCrosshairScreenPosition`, reports its world hit on screen without
+  steering the shot. The hip pose reuses the hand placement but not the melee
+  wrist rotation, so the visible bore follows the player's look. The debug X is
+  separate from the optional crosshair. ADS retains its existing sight
+  alignment; its crosshair, when enabled, reports the aligned bore rather than
+  the random spread. `src/debug/index.ts` owns the development target-range
+  readout. BR's
   2026-10-05 look at the range found that "the gun on screen is climbing (and
   plateauing)" and ruled, "at the ~7° screen limit -> start scrolling the screen
   with it / no plateauing." While an automatic trigger is held, recoil does not
@@ -585,8 +597,8 @@ plain box in your hands. Files are small, and follow
   per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
   spread and adds no firearm cone. This reuses the already saved player pitch, so no
   aim-state field or save-schema change is needed. See
-  `src/game/firearmHandling.ts`, `resolveShotAim`, `src/core/crosshairTarget.ts`,
-  `crosshairTarget`, `src/core/zombies.ts`, `ZombieSystem.aimAt`,
+  `src/game/firearmAim.ts`, `firearmBoreRay`, `firearmBoreTarget`,
+  `src/core/crosshairTarget.ts`, `crosshairTarget`, `src/core/zombies.ts`, `ZombieSystem.aimAt`,
   `src/core/pellets.ts`, `coneDirection`,
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
   `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,

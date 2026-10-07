@@ -1,9 +1,15 @@
 // @vitest-environment happy-dom
-import { BufferAttribute, BufferGeometry, Mesh, Object3D } from 'three';
+import { BufferAttribute, BufferGeometry, Mesh, Object3D, PerspectiveCamera, Vector3 } from 'three';
 import { expect, it } from 'vitest';
 import { inputBindings, labelForAction } from '../src/game/inputBindings.ts';
 import { DEFAULT_HUD_OPTIONS, hudVisibility } from '../src/ui/hudOptions.ts';
-import { playInteractionText, playPromptText, renderPlayHud, renderPlayInventoryStats } from '../src/ui/playHud.ts';
+import {
+  playInteractionText,
+  playPromptText,
+  projectCrosshairScreenPosition,
+  renderPlayHud,
+  renderPlayInventoryStats,
+} from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
 
 it('projects debug positions in metres and counts only existing chunk/geometry attribute bytes', () => {
@@ -91,14 +97,39 @@ it('renders immutable HUD projections and resets text/visibility on the next fra
   renderPlayHud(roots, empty);
   expect([roots.hud.textContent, roots.prompt.textContent]).toEqual(['', '']);
   expect([roots.hud.hidden, roots.prompt.hidden, roots.crosshair.hidden]).toEqual([true, true, true]);
-  renderPlayHud(roots, Object.freeze({ hud: 'health 100%', prompt: 'F: open the door', crosshairVisible: true }));
+  renderPlayHud(
+    roots,
+    Object.freeze({
+      hud: 'health 100%',
+      prompt: 'F: open the door',
+      crosshairVisible: true,
+      crosshairScreenPosition: { left: 12, top: 34 },
+    }),
+  );
   expect([roots.hud.textContent, roots.prompt.textContent]).toEqual(['health 100%', 'F: open the door']);
   expect([roots.hud.hidden, roots.prompt.hidden, roots.crosshair.hidden]).toEqual([false, false, false]);
+  expect([roots.crosshair.style.left, roots.crosshair.style.top]).toEqual(['12px', '34px']);
+  renderPlayHud(roots, { hud: '', prompt: '', crosshairVisible: true });
+  expect([roots.crosshair.style.left, roots.crosshair.style.top]).toEqual(['', '']);
   const stats = root();
   renderPlayInventoryStats(stats, true, 'stamina 100%');
   expect([stats.hidden, stats.textContent]).toEqual([false, 'stamina 100%']);
   renderPlayInventoryStats(stats, false, 'stamina 99%');
   expect([stats.hidden, stats.textContent]).toEqual([true, 'stamina 99%']);
+});
+
+it('projects a bore hit through the active camera into viewport coordinates', () => {
+  const camera = new PerspectiveCamera(60, 2, 0.1, 100);
+  const viewport = { left: 30, top: 20, width: 800, height: 400 };
+  const point = [2, 1, -20] as [number, number, number];
+  const blockSize = 0.5;
+  const ndc = new Vector3(point[0] * blockSize, point[1] * blockSize, point[2] * blockSize).project(camera);
+  const projected = projectCrosshairScreenPosition(camera, viewport, point, blockSize);
+  if (!projected) {
+    throw new Error('Visible bore point did not project');
+  }
+  expect(projected.left).toBeCloseTo(viewport.left + ((ndc.x + 1) / 2) * viewport.width);
+  expect(projected.top).toBeCloseTo(viewport.top + ((1 - ndc.y) / 2) * viewport.height);
 });
 
 it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {

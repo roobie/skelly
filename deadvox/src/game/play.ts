@@ -50,6 +50,7 @@ import {
   playInteractionText,
   playNeedsText,
   playPromptText,
+  projectCrosshairScreenPosition,
   renderPlayHandling,
   renderPlayHud,
   renderPlayInventoryStats,
@@ -69,7 +70,7 @@ import {
 import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
-import { firearmAimTarget } from './firearmAim.ts';
+import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
@@ -1772,23 +1773,8 @@ export const startPlay = (
   };
 
   const fireDebugWeapon = (item: Item, time: number): boolean => {
-    const shotEye = eye();
-    const centerDirection = aimDirection(input.yaw, input.pitch, NEUTRAL_AIM);
-    const target = crosshairTarget(
-      { world: engine.world, registry, entities, isSolid: engine.isSolid, blockSize: s },
-      shotEye,
-      centerDirection,
-    );
-    const aimPoint = firearmAimTarget({
-      eye: shotEye,
-      direction: centerDirection,
-      surface: target,
-      zombies: zombieSystem,
-      blockSize: s,
-    }).point;
     const fired = firearms.fire({
       aimFrame: aim.frame,
-      aimPoint,
       debugMode: config.debug,
       ready: isFirearmReady(item.uid),
       aimingDownSights: isAimingDownSights(),
@@ -2124,6 +2110,59 @@ export const startPlay = (
     });
   };
 
+  const readiedFirearmBore = () => {
+    if (!(input.rightMouseActionHeld && input.locked && !input.menuPointer)) {
+      return;
+    }
+    const selected = selectPrimaryAction(inventory);
+    if (selected.kind !== 'firearm' || !isFirearmReady(selected.item.uid)) {
+      return;
+    }
+    const tuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+    if (!tuning) {
+      throw new Error('Missing firearms-combat pose tuning');
+    }
+    const { item } = selected;
+    return firearmBoreRay({
+      model: firearmHandlingFor(item, registry).model,
+      eye: eye(),
+      yaw: input.yaw,
+      pitch: input.pitch,
+      blockSize: s,
+      side: inventory.hands.right?.uid === item.uid ? 'right' : 'left',
+      leadingSide: dominantSide(inventory.character),
+      twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
+      aimFrame: aim.frame,
+      aimingDownSights: isAimingDownSights(),
+      loweredPitchRadians: tuning.loweredPitchRadians,
+      adsApertureFill: tuning.adsApertureFill,
+      verticalFovDegrees: camera.fov,
+      isSolid: engine.isSolid,
+    });
+  };
+
+  const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
+    const surface = crosshairTarget(
+      { world: engine.world, registry, entities, isSolid: engine.isSolid, blockSize: s },
+      bore.origin,
+      bore.direction,
+    );
+    return firearmBoreTarget({
+      eye: bore.origin,
+      direction: bore.direction,
+      surface,
+      zombies: zombieSystem,
+      blockSize: s,
+    });
+  };
+
+  const crosshairScreenPosition = (bore: ReturnType<typeof firearmBoreRay> | undefined) => {
+    if (!bore) {
+      return;
+    }
+    return projectCrosshairScreenPosition(camera, inputTarget.getBoundingClientRect(), targetAlongBore(bore).point, s);
+  };
+
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
   const stepFrozenNoclip = (dt: number, frozenAndPlaying: boolean): void => {
     if (!(frozenAndPlaying && !replayPlayer && debugTools?.noclip && input.locked && !input.menuPointer)) {
@@ -2208,13 +2247,15 @@ export const startPlay = (
     return gameFrozen;
   };
 
-  const updateDebugTargets = () => {
+  const updateDebugTargets = (bore: ReturnType<typeof firearmBoreRay> | undefined) => {
     if (!debugTools) {
       return;
     }
-    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
+    const origin = bore?.origin ?? eye();
+    const direction = bore?.direction ?? lookDir();
+    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(origin, direction, meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
-    debugTools.updateLookedAt(eye(), lookDir(), input.locked);
+    debugTools.updateLookedAt(origin, direction, input.locked);
   };
 
   const updateActionInputs = (now: number): void => {
@@ -2282,7 +2323,9 @@ export const startPlay = (
       zombies: zombieStore,
       frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
     });
-    updateDebugTargets();
+    updateHeldItems(dt);
+    const bore = readiedFirearmBore();
+    updateDebugTargets(bore);
     updateDebugReadout(now);
     mark = realNow();
 
@@ -2299,6 +2342,7 @@ export const startPlay = (
       {
         hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
         crosshairVisible: visible.crosshair,
+        crosshairScreenPosition: crosshairScreenPosition(bore),
         prompt: promptText(now, visible),
       },
     );
@@ -2321,7 +2365,6 @@ export const startPlay = (
       !screen.isOpen && visible.handling,
     );
     view.prepareLighting(sky);
-    updateHeldItems(dt);
     view.updateShadows(hour, sky);
     renderMs = view.render();
     frameWork.record(now, realNow() - workStart);

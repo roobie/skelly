@@ -1,11 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { aimDirection } from '../src/core/aim.ts';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { SHOT_TRACE_RANGE_BLOCKS } from '../src/core/crosshairTarget.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldEjectionPose } from '../src/core/heldPose.ts';
 import { dropSpots, Inventory, PILE_GRID } from '../src/core/inventory.ts';
@@ -15,8 +13,7 @@ import { decodeSave, encodeSave, SAVE_SCHEMA_VERSION, type SaveVersionComponents
 import { makeScale } from '../src/core/scale.ts';
 import type { SoundEventId } from '../src/core/soundEvents.ts';
 import { World } from '../src/core/world.ts';
-import { posedRegionHitDistance } from '../src/core/zombieRegions.ts';
-import { firearmAimTarget } from '../src/game/firearmAim.ts';
+import { firearmBoreRay } from '../src/game/firearmAim.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -26,7 +23,6 @@ import {
 } from '../src/game/firearmHandling.ts';
 import { RELOAD_GESTURE_MS, ReloadInput } from '../src/game/reloadInput.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { farWallTarget, zombieAimFixture } from './zombieAimFixture.ts';
 
 const base = 'src/content/base';
 const { registry, issues } = buildRegistry(
@@ -493,56 +489,33 @@ describe('real pump ammunition', () => {
     expect(experiencedRack.gun.firearm!.cycle!.duration).toBe(experiencedRackFrame.duration);
   });
 
-  it('centres pump pellet spread on the converged aim frame', () => {
+  it('centres pump pellet spread on the firearm bore', () => {
     const f = fixture();
     f.load(0);
     f.rack(1);
     const aimFrame = { yaw: 0.1, pitch: -0.06 };
     expect(f.mechanics.fire({ ...pose, item: f.gun, seed: 71, simTime: 3, debugMode: false, aimFrame })).toBe(true);
     expect(f.trajectories[0]?.directions).toEqual(f.shots[0]?.directions);
-    const aimDirectionForShot = aimDirection(pose.yaw, pose.pitch, aimFrame);
-    const targetPoint = pose.eye.map(
-      (value, axis) => value + aimDirectionForShot[axis]! * SHOT_TRACE_RANGE_BLOCKS,
-    ) as Vec3;
-    const { origin } = f.trajectories[0]!;
-    const offset = targetPoint.map((value, axis) => value - origin[axis]!);
-    const offsetLength = Math.hypot(...offset);
-    const center = offset.map((value) => value / offsetLength);
+    const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+    const bore = firearmBoreRay({
+      model: firearmHandlingFor(f.gun, registry).model,
+      eye: pose.eye,
+      yaw: pose.yaw,
+      pitch: pose.pitch,
+      blockSize: pose.blockSize,
+      side: 'right',
+      leadingSide: 'right',
+      twoHanded: true,
+      aimFrame,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+    });
     expect(
       f.shots[0]!.directions.every(
         (ray) =>
-          ray.reduce((sum, component, index) => sum + component * center[index]!, 0) >=
+          ray.reduce((sum, component, index) => sum + component * bore.direction[index]!, 0) >=
           Math.cos(BUCK_HALF_ANGLE) - 1e-9,
       ),
     ).toBe(true);
-  });
-
-  it('keeps the pump pellet centre on a zombie under the crosshair before a far wall', () => {
-    const f = fixture(registry, () => SKILL_LEVEL_MAX);
-    f.load(0);
-    f.rack(1);
-    const direction = aimDirection(pose.yaw, pose.pitch, pose.aimFrame);
-    const { system: zombies, target: zombie } = zombieAimFixture(registry, pose.eye, direction, pose.blockSize);
-    const wall = farWallTarget(pose.eye, direction, pose.blockSize);
-    expect(zombie.distanceMetres).toBeLessThan(wall.distanceMetres);
-    const target = firearmAimTarget({
-      eye: pose.eye,
-      direction,
-      surface: wall,
-      zombies,
-      blockSize: pose.blockSize,
-    });
-    expect(target.distanceMetres).toBeCloseTo(zombie.distanceMetres);
-    expect(
-      f.mechanics.fire({ ...pose, aimPoint: target.point, item: f.gun, seed: 71, simTime: 3, debugMode: false }),
-    ).toBe(true);
-    const shot = f.shots[0]!;
-    const centre = shot.directions.reduce((sum, ray) => sum.map((value, axis) => value + ray[axis]!) as Vec3, [
-      0, 0, 0,
-    ] as Vec3);
-    const centreLength = Math.hypot(...centre);
-    const centreDirection = centre.map((value) => value / centreLength) as Vec3;
-    expect(posedRegionHitDistance(zombie.boxes, shot.origin, centreDirection, pose.blockSize)).toBeDefined();
   });
 
   it('uses cartridge pellet count/diameter and a distinct deterministic shot stream', () => {

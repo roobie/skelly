@@ -221,23 +221,26 @@ handling; melee combat governs block success. The tiered practice contract is in
   `src/render/impactEffects.ts`, `ImpactEffects`. BR also said on 2026-10-05:
   "also: in debug mode we should render the rage to target down by the direction
   gizmo so that i can say which range i'm at". The readout is beside the
-  gizmo in `src/debug/index.ts`, `attachDebugTools`. BR reported, “Also,
-  "hipfire" is way off the mark (cross hair / center of screen) - i.e. when
-  simply readied the rifle and shooting one single round”, and said of the range
-  “the number on the screenshot should be a maximum of sub-1-meter”. The resting
-  muzzle-to-camera offset was systematic, separate from intended skill-0 spread.
-  Hip-fire converges on the nearer of the world surface and posed zombie region
-  under the crosshair without changing the reviewed ready pose; aim-frame sway
-  and firearm spread remain. The range readout uses that same target. The
-  looked-at tooltip also stops at solid geometry, matching shot occlusion;
+  gizmo in `src/debug/index.ts`, `attachDebugTools`. BR's 2026-10-07 verdict
+  supersedes the earlier hip-fire convergence: shots follow the visible firearm's
+  bore plus spread, while the optional crosshair reports where that bore line
+  meets the world. `src/game/firearmAim.ts`, `firearmBoreRay` and
+  `firearmBoreTarget`, share the shot ray and its reported hit; the crosshair
+  itself is projected by `src/ui/playHud.ts`, `projectCrosshairScreenPosition`.
+  The pose defect came from applying the melee-ready wrist rotation to the whole
+  firearm; `src/core/heldPose.ts`, `readyFirearmPose`, retains the hand placement
+  without that gun-angle offset. BR also asked for an X at exact screen centre
+  in debug mode; the mark lives in `src/debug/index.ts`, and is separate from
+  the optional crosshair. ADS keeps its existing sight alignment, and its
+  optional crosshair reports the aligned bore rather than random spread. The
+  looked-at tooltip still stops at solid geometry, matching shot occlusion;
   `src/debug/lookedAt.ts`, `describeLookedAt`, uses the solid-world query.
-  `src/game/firearmHandling.ts`, `resolveShotAim`, leaves ADS on the muzzle line
-  until g42 supplies sight data.
 - **Playtests need hints but not debug tools.** A playtest profile (a URL flag, not
   a build) shows the hint channel and nothing from `src/debug`, so a tester sees
   the game close to how it ships, with the instructions it still needs.
 - **The shipped profile** shows no hints and no debug, and its HUD defaults are
-  empty (as ui.1 already made them).
+  empty (as ui.1 already made them). The optional crosshair remains development-only;
+  the debug center X is part of `?debug=1` and never ships.
 
 ## Where the current interface stands
 
@@ -245,7 +248,7 @@ handling; melee combat governs block success. The tiered practice contract is in
 |---|---|---|---|
 | HUD stats (health, food, fatigue…) | meta, opt-in | bodily | the cues in "Bodily cues"; the opt-in stays for development |
 | Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
-| Crosshair | meta, opt-in | none | shipped: none, ever; aiming down the sights uses the weapon's sights, and hip fire is imprecise by design. The opt-in dot stays for development |
+| Crosshair | meta, opt-in | none | shipped: none, ever; the optional development mark follows the bore hit while a firearm is ready, including the existing ADS sight alignment |
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
 | Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
@@ -286,6 +289,10 @@ DESIGN.md's line is amended to say so.
    for the events we have". The first audio item makes the player's vocal sounds
    (pain now, coughs and groans with the bodily cues) noise events with a radius
    in data, so the effect can be judged in game and tuned or turned off.
+7. **Ready-firearm crosshair (BR, 2026-10-07):** “the crosshair (when wielding a
+   readied firearm) should point where the muzzle is pointing” and BR chose the
+   bore-line hit instead of the random spread. It reports the firearm's direction;
+   it does not steer the shot. With `?debug=1`, the separate X marks screen centre.
 
 ## Order of work
 

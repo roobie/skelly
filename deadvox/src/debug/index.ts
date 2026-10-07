@@ -19,7 +19,7 @@ import type {
   DebugRuntime,
   InputReplayStatusState,
 } from '../game/debugInterface.ts';
-import { firearmAimTarget } from '../game/firearmAim.ts';
+import { firearmBoreTarget } from '../game/firearmAim.ts';
 import { inputBindings, labelForAction } from '../game/inputBindings.ts';
 import { INPUT_REPLAY_MAX_BYTES } from '../game/inputReplay.ts';
 import type { SnapshotMeasurement } from '../game/playtestTools.ts';
@@ -385,6 +385,7 @@ const panelTemplate = ({
   };
   return html`
   <div id="debug-ui-root">
+    <div id="debug-center-x" aria-hidden="true"></div>
     <div class="debug-marker" ?hidden=${open} @click=${toggleOpen}>DEBUG · ${labelForAction('debug.panel-toggle')}</div>
     <div class="debug-marker debug-frozen" ?hidden=${!gameFrozen}>FROZEN · ${labelForAction('debug.freeze-game')}</div>
     <div id="debug-aim-readout" class="debug-aim-readout" aria-live="polite"></div>
@@ -1148,7 +1149,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     const zombies = hooks.zombies();
     const aimTarget =
       ray?.active && zombies
-        ? firearmAimTarget({
+        ? firearmBoreTarget({
             eye: ray.eye,
             direction: ray.dir,
             surface: target,
