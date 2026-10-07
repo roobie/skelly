@@ -45,6 +45,7 @@ const PATTERN_VARYING = 'flat varying float vPattern;\ncentroid varying vec3 vWo
 // scales only the indirect irradiance (hemisphere and ambient light), never the sun or flashlight.
 // `centroid` for the same MSAA reason as above; the fragment shader clamps it as a guard.
 const OCCLUSION_VARYING = 'centroid varying float vOcclusion;';
+const WEATHER_VARYING = 'centroid varying vec2 vWeather;';
 
 // three declares vColor in these chunks as a plain `varying vec4`; same guard as theirs, centroid added.
 const COLOR_PARS_GUARD_VERTEX =
@@ -57,30 +58,39 @@ const centroidColorPars = (guard: string): string => `${guard}\ncentroid varying
  * pattern. `linearColors`, `patterns` and `occlusion` (0 off, 1 on) are shared with the compiled shader,
  * so changing them doesn't recompile.
  */
-const chunkMaterial = (
-  blockSize: number,
-  linearColors: { value: number },
-  patterns: { value: number },
-  occlusion: { value: number },
-): MeshLambertMaterial => {
+const chunkMaterial = ({
+  blockSize,
+  linearColors,
+  patterns,
+  occlusion,
+  weathering,
+}: {
+  blockSize: number;
+  linearColors: { value: number };
+  patterns: { value: number };
+  occlusion: { value: number };
+  weathering: { value: number };
+}): MeshLambertMaterial => {
   const material = new MeshLambertMaterial({ vertexColors: true });
   material.onBeforeCompile = (shader) => {
     shader.uniforms.uBlockSize = { value: blockSize };
     shader.uniforms.uLinearColors = linearColors;
     shader.uniforms.uPatterns = patterns;
     shader.uniforms.uOcclusion = occlusion;
+    shader.uniforms.uWeathering = weathering;
     patchHeightFog(shader, 'chunk');
     shader.vertexShader = shader.vertexShader
       .replace('#include <color_pars_vertex>', centroidColorPars(COLOR_PARS_GUARD_VERTEX))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\nattribute float occlusion;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}`,
+        `#include <common>\nuniform float uBlockSize;\nattribute float pattern;\nattribute float occlusion;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\nattribute vec2 weather;\n${WEATHER_VARYING}`,
       )
       .replace(
         '#include <begin_vertex>',
         // Half a block inside the face, in world block coordinates.
         `#include <begin_vertex>
 vOcclusion = occlusion;
+vWeather = weather;
 vCell = (modelMatrix * vec4(position - normalize(normal) * 0.5, 1.0)).xyz / uBlockSize;
 vPattern = pattern;
 vWorld = (modelMatrix * vec4(position, 1.0)).xyz;
@@ -90,7 +100,7 @@ vFaceN = normalize(normal);`,
       .replace('#include <color_pars_fragment>', centroidColorPars(COLOR_PARS_GUARD_FRAGMENT))
       .replace(
         '#include <common>',
-        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
+        `#include <common>\nuniform float uLinearColors;\nuniform float uPatterns;\nuniform float uOcclusion;\nuniform float uWeathering;\n${CELL_VARYING}\n${PATTERN_VARYING}\n${OCCLUSION_VARYING}\n${WEATHER_VARYING}\n${CELL_HASH}\n${SRGB_TO_LINEAR}\n${SURFACE_PATTERN_GLSL}`,
       )
       .replace(
         '#include <lights_fragment_end>',
@@ -118,10 +128,26 @@ float patId = floor(vPattern + 0.5);
 float patSeed = dot(abs(vFaceN), vec3(7.13, 13.7, 3.31));
 diffuseColor.rgb *= (uPatterns > 0.5 && patId > 0.5)
   ? patternShade(patId, patUV, max(patFw.x, patFw.y), patFw, patSeed)
-  : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));`,
+  : 0.94 + 0.12 * cellHash(floor(vCell + 1e-3));
+// Keep the zero-strength comparison on the pre-weathering colour path exactly.
+if (uWeathering > 0.0) {
+  float verticalFace = 1.0 - abs(vFaceN.y);
+  float weatherable = step(0.5, patId) * (1.0 - step(0.5, abs(patId - PAT_CORRUGATED)));
+  float grain = vnoise(patUV * 1.7 + vec2(patSeed));
+  float patch = smoothstep(0.28, 0.76, grain);
+  float sheltered = clamp(vOcclusion, 0.0, 1.0);
+  float cornerGrime = (1.0 - sheltered) * (0.22 + 0.34 * patch) + vWeather.y * 0.3;
+  float grime = cornerGrime;
+  float streakNoise = vnoise(vec2(patUV.x * 3.1 + patSeed, patUV.y * 0.16));
+  float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y * 0.42)));
+  float northShade = 0.65 + 0.35 * step(vFaceN.z, -0.5);
+  float moss = (1.0 - sheltered) * (0.4 + 0.6 * patch) * (0.25 + 0.75 * verticalFace) * northShade;
+  vec3 tint = vec3(0.72, 0.72 + 0.08 * moss, 0.68 - 0.06 * streak);
+  diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
+}`,
       );
   };
-  material.customProgramCacheKey = () => 'deadvox-chunk-occlusion';
+  material.customProgramCacheKey = () => 'deadvox-chunk-weathering';
   return material;
 };
 
@@ -139,6 +165,7 @@ export class ChunkMeshes {
   private readonly linearColors = { value: 0 };
   private readonly patterns = { value: 1 };
   private readonly occlusion = { value: 1 };
+  private readonly weathering = { value: 0 };
   private readonly frustum = new Frustum();
   private readonly viewProjection = new Matrix4();
   private changes = 0;
@@ -147,7 +174,13 @@ export class ChunkMeshes {
 
   /** Meshes are in blocks; the group scales them to metres. */
   constructor(blockSize: number) {
-    this.material = chunkMaterial(blockSize, this.linearColors, this.patterns, this.occlusion);
+    this.material = chunkMaterial({
+      blockSize,
+      linearColors: this.linearColors,
+      patterns: this.patterns,
+      occlusion: this.occlusion,
+      weathering: this.weathering,
+    });
     this.blockSize = blockSize;
     this.group.scale.setScalar(blockSize);
     // Never drawn and not in `boxes`, so `cull` leaves it hidden. It only puts the chunk material
@@ -193,6 +226,11 @@ export class ChunkMeshes {
     this.occlusion.value = on ? 1 : 0;
   }
 
+  /** Takes effect next frame without recompiling or remeshing. */
+  setWeathering(strength: number): void {
+    this.weathering.value = Math.max(0, Math.min(1, strength));
+  }
+
   get count(): number {
     return this.meshes.size;
   }
@@ -213,6 +251,7 @@ export class ChunkMeshes {
     geometry.setAttribute('color', new BufferAttribute(data.colors, 3, true));
     geometry.setAttribute('pattern', new BufferAttribute(data.patterns, 1));
     geometry.setAttribute('occlusion', new BufferAttribute(data.occlusion, 1, true));
+    geometry.setAttribute('weather', new BufferAttribute(data.weathering, 2));
     geometry.setIndex(new BufferAttribute(data.indices, 1));
     // Tight bounds: a chunk with only ground in its bottom blocks gets a flat box, not a
     // box around the whole chunk.

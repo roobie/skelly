@@ -1,3 +1,8 @@
+---
+read_if:
+  - you're reviewing or changing procedural surface weathering and the building dilapidation look
+---
+
 # deadvox — graphics
 
 Status of the look workstream: what's in, what the default look is, what's open, and
@@ -15,7 +20,8 @@ From the 2026-10-01 discussion, ranked by mood gained per cost:
 | 2 | Sun shadows (dawn to dusk) and flashlight shadows | done |
 | 3 | Colour grading, film (vignette, grain), bloom, height fog driven by fogginess | done |
 | 4 | Wider-radius ambient occlusion from the voxel grid, computed while meshing | done |
-| 5 | Skylight: light flooding in from the sky, so interiors are dark (planned for Slice 4 in [CHALLENGES.md](CHALLENGES.md#9-lighting)) | later |
+| 5 | Procedural weathering layered over block surface patterns | d150-1 spike; BR look judgment pending |
+| 6 | Skylight: light flooding in from the sky, so interiors are dark (planned for Slice 4 in [CHALLENGES.md](CHALLENGES.md#9-lighting)) | later |
 
 Also done along the way: block colours decoded from sRGB (they were rendered as if linear,
 so paler than authored); the flashlight fades with daylight; the pause card docks right
@@ -28,7 +34,7 @@ Set in `src/core/mood.ts` (`DEFAULT_LOOK`, `DEFAULT_MOOD`, `DEFAULT_SHADOWS`) an
 
 - `auto` tone mapping, exposure 3.0, sRGB block-colour decode, surface patterns on. Auto blends three's Neutral
   and ACES Filmic by time of day: by eye, Neutral looks best in bright daylight, ACES (or AgX) at dawn and dusk,
-  and ACES at night, where it gives the dark and the flashlight their depth. The weight (0 is Neutral, 1 is ACES)
+  and ACES at night, where it gives the dark and the flashlight their depth. The weathering layer adds render-only signs of age without replacing the existing surface patterns or changing building geometry; its why and scope are in [DESIGN.md](DESIGN.md#a-world-that-feels-real), and `src/render/chunks.ts`, `chunkMaterial`, applies it. The weight (0 is Neutral, 1 is ACES)
   is the sky keyframes' `tone` field (`src/core/sky.ts`), interpolated like `bloom`: 0 for full day (08:30 to
   17:30), 0.85 at dawn (06:30) and dusk (19:30), 1 at night (21:00 to 05:00). It ramps linearly between the keyframes,
   so sunrise has no step, and the weather does not move it. `aces`, `agx`, `neutral` and `none` stay selectable
@@ -82,9 +88,7 @@ part of the greedy-merge key, so a merged quad shades as its separate faces woul
   and quads per chunk by 15% (hamlet) to 47% (city). Not yet measured on a real GPU,
   where the extra vertex attribute and quads also cost.
 
-[DESIGN.md](DESIGN.md#rendering) still describes the look as flat colour with textures
-only if needed; the surface patterns supersede that and DESIGN.md needs updating once the
-look is settled.
+BR's dilapidation direction is recorded in [DESIGN.md](DESIGN.md#a-world-that-feels-real). Procedural weathering is render-only; changing existing building geometry remains deferred to #396.
 
 ## Open
 

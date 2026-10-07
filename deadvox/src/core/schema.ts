@@ -1187,9 +1187,15 @@ const SenseSchema = strictObject({
     throwArmEnergyJoules: Positive,
   }),
 });
+/** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
 const RecipeItemSchema = ItemCountSchema;
 
-/** Counts are whole items, never millilitres; no partial-liquid storage contract exists yet. */
+const WeatheringSchema = strictObject({
+  id: Id,
+  /** Shared weathering strength for the rendered world. */
+  strength: Fraction,
+});
+
 const BodyTuningSchema = strictObject({
   id: Id,
   /** Game hours after a bleeding wound before an at-risk infection becomes early. */
@@ -1266,6 +1272,7 @@ const SECTION_DESCRIPTOR = {
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
+  weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 15 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1294,6 +1301,7 @@ export type SoundDef = InferOutput<typeof SoundSchema>;
 export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
+export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
 export type ContentSection = keyof ContentFile;

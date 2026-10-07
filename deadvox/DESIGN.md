@@ -22,6 +22,7 @@ read_if:
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
+  - you're choosing or changing the building-weathering look and its dilapidation direction
 ---
 
 # deadvox — design
@@ -1177,6 +1178,8 @@ something in play, not only decorate it.
   weeks since people left. Food rotting changes what's still worth scavenging.
   There is no plant-growth or dust-accumulation simulation.
 
+BR, 2026-10-08 01:17: “should we look into adding a bit of textures on buildings to add to the mood? right now it feels too \"clean\" and \"clear\"”; at 01:19: “go ahead on the spikes”. On 2026-10-07 23:49, BR said dilapidated walls are a general direction, “but maybe not apply for all the stuff we have just at the moment”, and asked to record it as an art/feel direction. Buildings should read as “a real place that was left behind, not a set” (BR, 2026-10-03). `src/content/base/weathering.json`, `weathering`, owns the shared weathering strength; `src/render/chunks.ts`, `chunkMaterial`, layers procedural weathering over the surface patterns. Dilapidated geometry for existing structures remains deferred to #396; this layer does not change their shapes.
+
 **Rendering and performance.** There will be a lot of trees (BR), so foliage gets
 a performance plan from the start rather than as a fix later:
 
@@ -1198,10 +1201,7 @@ a performance plan from the start rather than as a fix later:
 
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
-- **The look:** flat colour per block, with small per-block variation, ambient
-  occlusion and fog. Textures only if colour alone can't carry the look. The
-  palette is muted and grey; the saturated colours are the ones that mean
-  something: warning signs, blood, fire and the glow of hot zombies.
+- **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
 - **Day and night** from sun and sky colour and fog. Nights are dark enough
   that a flashlight matters, and darkest in the dead of night (about 23:00 to
   03:30).

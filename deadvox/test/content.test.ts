@@ -22,6 +22,15 @@ const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
 
+it('validates the shared weathering content range', () => {
+  expect(
+    validateContent({ source: 'weathering.json', data: { weathering: [{ id: 'world', strength: 0.5 }] } }),
+  ).toEqual([]);
+  expect(
+    validateContent({ source: 'weathering.json', data: { weathering: [{ id: 'world', strength: 2 }] } }),
+  ).not.toEqual([]);
+});
+
 interface WindowFrameRun {
   y: number;
   z: number;

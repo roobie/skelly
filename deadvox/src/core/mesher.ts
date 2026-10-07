@@ -20,6 +20,8 @@ import {
   OPEN_LEVEL,
   occlusionByte,
   occlusionLevel,
+  WIDE,
+  wideIndex,
 } from './occlusion.ts';
 
 export interface MeshData {
@@ -28,6 +30,7 @@ export interface MeshData {
   colors: Uint8Array; // RGB, 3 per vertex
   patterns: Uint8Array; // surface pattern id (schema.ts BLOCK_PATTERNS), 1 per vertex; constant per quad
   occlusion: Uint8Array; // wide-radius ambient factor, normalized (255 = 1), 1 per vertex
+  weathering: Float32Array; // rain exposure and nearby ground, 2 per vertex
   indices: Uint32Array;
 }
 
@@ -126,7 +129,9 @@ interface Context {
   vcolors: number[];
   vpatterns: number[];
   voccs: number[];
+  vweather: number[];
   indices: number[];
+  wide: Uint8Array | undefined;
 }
 
 /** Reused between builds: one worker builds one mesh at a time. */
@@ -216,6 +221,44 @@ const occlusionKey = (ctx: Context, face: Face, slice: number, cell: number): nu
 /** The occlusion key of a face with no occlusion data: every corner fully open. */
 const OPEN_KEY = [0, 1, 2, 3].reduce((key, corner) => key | (OPEN_LEVEL << (OCC_BITS * corner)), 0);
 
+const wideSolidAt = (wide: Uint8Array, [x, y, z]: Vec3): boolean =>
+  x >= 0 && x < WIDE && y >= 0 && y < WIDE && z >= 0 && z < WIDE && wide[wideIndex(x, y, z)] !== 0;
+
+const shelteredFromRain = (wide: Uint8Array, face: Face, [x, y, z]: Vec3): boolean => {
+  const across = face.d === 0 ? 2 : 0;
+  for (let height = 0; height < 3; height++) {
+    for (let side = -1; side <= 1; side++) {
+      const cell: Vec3 = [x + (across === 0 ? side : 0), y + height, z + (across === 2 ? side : 0)];
+      if (wideSolidAt(wide, cell)) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+const groundProximity = (wide: Uint8Array, [x, y, z]: Vec3): number => {
+  for (let down = 0; down < OCCLUSION_RADIUS; down++) {
+    if (wideSolidAt(wide, [x, y - down - 1, z])) {
+      return 1 - down / OCCLUSION_RADIUS;
+    }
+  }
+  return 0;
+};
+
+/** Grid-derived rain exposure and ground proximity at a face vertex; the shader supplies patch detail. */
+const weatherAt = (wide: Uint8Array | undefined, face: Face, pos: Vec3): [number, number] => {
+  if (!wide || face.d === 1) {
+    return [1, 0];
+  }
+  const r = OCCLUSION_RADIUS;
+  const x = Math.floor(pos[0] + face.normal[0] * 0.5) + r;
+  const y = Math.floor(pos[1]) + r;
+  const z = Math.floor(pos[2] + face.normal[2] * 0.5) + r;
+  const cell: Vec3 = [x, y, z];
+  return [shelteredFromRain(wide, face, cell) ? 0.25 : 1, groundProximity(wide, cell)];
+};
+
 /** Fills the masks for one slice of one face direction. Returns whether any face is visible. */
 const fillMask = (ctx: Context, face: Face, slice: number): boolean => {
   let any = false;
@@ -256,6 +299,7 @@ const emitQuad = (ctx: Context, face: Face, [key, occ]: Keys, [slice, u0, v0, w,
     ctx.vcolors.push(ctx.colors[id * 3]! * k, ctx.colors[id * 3 + 1]! * k, ctx.colors[id * 3 + 2]! * k);
     ctx.vpatterns.push(ctx.patterns[id] ?? 0);
     ctx.voccs.push(occlusionByte(occAt(occ, corner)));
+    ctx.vweather.push(...weatherAt(ctx.wide, face, pos));
   }
   // Split along the brighter diagonal so AO interpolates without a seam; on a tie, the diagonal with the
   // more open occlusion.
@@ -342,7 +386,9 @@ export const buildMesh = (
     vcolors: [],
     vpatterns: [],
     voccs: [],
+    vweather: [],
     indices: [],
+    wide,
   };
   for (const face of FACES) {
     for (let slice = 0; slice < CHUNK; slice++) {
@@ -357,6 +403,7 @@ export const buildMesh = (
     colors: new Uint8Array(ctx.vcolors),
     patterns: new Uint8Array(ctx.vpatterns),
     occlusion: new Uint8Array(ctx.voccs),
+    weathering: new Float32Array(ctx.vweather),
     indices: new Uint32Array(ctx.indices),
   };
 };

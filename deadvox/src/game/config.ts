@@ -1,6 +1,7 @@
 import { parseTimeOfDay, SPAWN_TIME } from '../core/clock.ts';
 import type { HandSide } from '../core/inventory.ts';
 import { BLOCK_SIZE, chunksFor, makeScale, type Scale } from '../core/scale.ts';
+import { clampWeathering } from '../core/weather.ts';
 import { BUNDLED_CONTENT } from './bundledContent.ts';
 
 /** View distances offered on the start card, in metres. 96 m is the default. */
@@ -33,6 +34,8 @@ export interface GameConfig {
   storeys: number;
   /** Fixed occupancy override (`?density=0..1`); null selects the frozen seeded field. */
   density: number | null;
+  /** Render-only weathering strength, from the base content or the debug URL override. */
+  weathering: number;
   /** Zombies are drawn as full mobgen actors (src/render/mobActors.ts) by default; `?actors=boxes` draws
    * ZombieMeshes' six boxes instead. */
   actors: ActorRenderer;
@@ -53,6 +56,7 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     site: 'hamlet',
     storeys: 1,
     density: null,
+    weathering: baseWeatheringStrength,
     actors: 'detailed',
   };
 };
@@ -90,6 +94,8 @@ const debugStartFromUrl = (params: URLSearchParams): DebugStart | undefined => {
 
 // URL parsing precedes world construction; only admitted files may contribute authored ids.
 const authoredIds = new Set(BUNDLED_CONTENT.registry.layouts.keys());
+// A rejected or absent optional tuning file leaves startup usable with weathering disabled.
+const baseWeatheringStrength = BUNDLED_CONTENT.registry.weathering.get('world')?.strength ?? 0;
 
 const MAX_STOREYS = 20;
 
@@ -121,7 +127,7 @@ export const siteFromUrl = (
 
 /**
  * Reads `?seed=`, `?radius=` (metres), `?time=HH:MM`, `?debug=1` and the site, falling back to defaults.
- * With `?debug=1` the debug tools also read and write the look parameters (`?tone=`, `?exposure=`,
+ * With `?debug=1`, `?weathering=0..1` overrides the core-content value for comparison, and the debug tools also read and write the look parameters (`?tone=`, `?exposure=`,
  * `?srgb=`, `?patterns=`), documented in src/debug/lookUrl.ts.
  */
 export const configFromUrl = (params: URLSearchParams): GameConfig => {
@@ -135,6 +141,11 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   const requestedTime = params.get('time');
   config.start = requestedTime === null ? (layoutTime ?? SPAWN_TIME) : (parseTimeOfDay(requestedTime) ?? SPAWN_TIME);
   config.debug = params.get('debug') === '1';
+  const weatheringText = params.get('weathering');
+  const weathering = weatheringText === null || weatheringText.trim() === '' ? Number.NaN : Number(weatheringText);
+  if (config.debug && Number.isFinite(weathering)) {
+    config.weathering = clampWeathering(weathering);
+  }
   const debugStart = debugStartFromUrl(params);
   if (debugStart) {
     config.debugStart = debugStart;
