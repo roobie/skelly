@@ -90,8 +90,13 @@ BR's naming ruling for #363:
 > BR, 2026-10-07 16:11: “now as for #363, we should avoid the term 'boss' - but instead we can call it the playtest#1's apex enemy maybe?”
 > BR, 2026-10-07 16:12: “agreed: Split”
 
-The role in design docs is playtest 1's apex enemy; the creature and its viewer
-template are named amalgam in code and content.
+On the card, BR chose to split the role from the creature: design docs call the
+role playtest 1's apex enemy, while code and content call the creature and its
+viewer template amalgam.
+
+BR, 2026-10-07 16:51:46 +02:00, approved #363's first look: “#363: good; renaming seems good from what i can see, and the mob looks pretty good (at some point we'll revisit it and make it even better)”
+
+Issue [#378](https://github.com/roobie/skelly/issues/378) tracks the pass to make the amalgam even better after #363.
 
 The first-look generator samples three to five complete shambler members per
 seed. This is an initial BR-tunable range rather than a budget ceiling: at least
