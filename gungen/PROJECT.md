@@ -3,6 +3,7 @@ read_if:
   - you change firearm part geometry precision or sight dimensions
   - you change the AK ADS sight alignment
   - you change optic eye-relief validation
+  - you change firearm sight metadata or its ADS contract
   - you change the AK receiver's position relative to its centered bore
   - you change the AK archetype's proportions, or map them against its golden photo
 
@@ -1412,6 +1413,27 @@ anchor. The pre-g23 length was 4.65 cm below the provided real AR-15 range of
 84–99 cm. The muzzle anchor equals the model's forward x bound.
 `deadvox/test/models.test.ts` verifies zero turn, muzzle at the forward end, and
 forward/upright orientation after the held transform.
+
+**Sight data for 3.7 optics.** BR, 2026-10-07 00:18: “2. the pump shotgun doesn't seem to work with ads (maybe it's missing iron sights? for the shotgun a simple pip at the muzzle would suffice) - when activaing ADS it simply pivots a little”
+
+Every published firearm design exports sight metadata from its resolved sight
+parts, so ADS has a physical reference and a later optic can replace irons through
+the same `src/gun/exportGlb.ts`, `sightCandidate` path. The pump's `front-bead`
+part sits on the barrel's front bead port. For g42-5, the bead solid begins at
+its connection plane so the barrel port is a true contact datum; any offset
+above that plane leaves a visible floating gap. `test/optics.test.ts` checks
+contact for every authored design with a bead. `src/gun/exportGlb.ts`,
+`frontBeadSightLine` derives the eye point from the
+receiver top and bead top, so the sight line reaches from above the receiver to
+the bead instead of placing the eye beside the muzzle or aiming down the bore.
+The revolver's frame carries the axis for its built-in rear notch; its barrel
+supplies the front post. `test/glbValidate.test.ts`
+checks sight metadata on each published design export, and
+`test/exportGlb.test.ts` checks the pump eye line and sight-line clearance across
+valid exports.
+
+A Blender-authored firearm gets a gungen export, with sights, when it becomes a
+playable item, and that swap is a BR look.
 
 **3.6 Vocabulary** (the re-scoped queue). Trigger guards are complete:
 `test/triggerGuard.test.ts` checks every lower layout, each fixture and published
