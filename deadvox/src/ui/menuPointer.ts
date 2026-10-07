@@ -34,11 +34,63 @@ export interface MenuPointer {
 export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions): MenuPointer => {
   // Inventory redraws after pointerdown, so captured move/up events go to document rather than a soon-detached item node.
   const capturedPointers = new Set<number>();
+  const capturedRanges = new Map<number, { input: HTMLInputElement; initialValue: string }>();
   let forwardingPointer = false;
-  const releasePointerTarget = (event: PointerEvent) => {
-    if (event.type === 'pointerup' || event.type === 'pointercancel') {
-      capturedPointers.delete(event.pointerId);
+  const isInputElement = (element: Element): element is HTMLInputElement => element.tagName === 'INPUT';
+  const liveRangeInput = (rangeInput: HTMLInputElement): HTMLInputElement => {
+    const current = rangeInput.id ? document.getElementById(rangeInput.id) : null;
+    return current && isInputElement(current) && current.type === 'range' ? current : rangeInput;
+  };
+  const setRangeValue = (rangeInput: HTMLInputElement, x: number) => {
+    const bounds = rangeInput.getBoundingClientRect();
+    const min = rangeInput.min === '' ? 0 : Number(rangeInput.min);
+    const max = rangeInput.max === '' ? 100 : Number(rangeInput.max);
+    if (
+      rangeInput.matches(':disabled') ||
+      bounds.width <= 0 ||
+      !Number.isFinite(min) ||
+      !Number.isFinite(max) ||
+      max <= min
+    ) {
+      return;
     }
+    const fraction = Math.max(0, Math.min(1, (x - bounds.left) / bounds.width));
+    const before = rangeInput.value;
+    rangeInput.value = String(min + fraction * (max - min));
+    if (rangeInput.value !== before) {
+      rangeInput.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+  const captureRangeInput = (event: PointerEvent, target: EventTarget): HTMLInputElement | undefined => {
+    if (event.type !== 'pointerdown') {
+      return undefined;
+    }
+    capturedPointers.add(event.pointerId);
+    if (!(target instanceof Element && isInputElement(target)) || target.type !== 'range') {
+      return undefined;
+    }
+    capturedRanges.set(event.pointerId, { input: target, initialValue: target.value });
+    return target;
+  };
+  const updateCapturedRange = (event: PointerEvent) => {
+    const capturedRange = capturedRanges.get(event.pointerId);
+    if (capturedRange) {
+      setRangeValue(liveRangeInput(capturedRange.input), input.cursorX);
+    }
+  };
+  const releasePointerTarget = (event: PointerEvent) => {
+    if (event.type !== 'pointerup' && event.type !== 'pointercancel') {
+      return;
+    }
+    capturedPointers.delete(event.pointerId);
+    const capturedRange = capturedRanges.get(event.pointerId);
+    if (capturedRange && event.type === 'pointerup') {
+      const rangeInput = liveRangeInput(capturedRange.input);
+      if (rangeInput.value !== capturedRange.initialValue) {
+        rangeInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+    capturedRanges.delete(event.pointerId);
   };
   const isForwardableMenuTarget = (target: EventTarget | null): boolean =>
     target === document || (target instanceof Element && target !== canvas && target.id !== 'game-cursor');
@@ -80,6 +132,25 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       forwardingPointer = false;
     }
   };
+  const forwardLockedMenuPointer = (event: PointerEvent) => {
+    event.stopPropagation();
+    if (event.type === 'pointermove') {
+      input.moveMenuCursor(event.movementX, event.movementY);
+      updateCapturedRange(event);
+    }
+    const target = capturedPointers.has(event.pointerId)
+      ? document
+      : document.elementFromPoint(input.cursorX, input.cursorY);
+    if (!(target && isForwardableMenuTarget(target))) {
+      return;
+    }
+    const rangeInput = captureRangeInput(event, target);
+    dispatchMenuPointer(target, event);
+    if (rangeInput) {
+      // Pointer-lock forwarding is synthetic, so the browser does not run a range input's native drag action.
+      setRangeValue(liveRangeInput(rangeInput), input.cursorX);
+    }
+  };
   const forwardMenuPointer = (event: PointerEvent) => {
     if (forwardingPointer) {
       return;
@@ -88,18 +159,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       releasePointerTarget(event);
       return;
     }
-    event.stopPropagation();
-    if (event.type === 'pointermove') {
-      input.moveMenuCursor(event.movementX, event.movementY);
-    }
-    const captured = capturedPointers.has(event.pointerId);
-    const target = captured ? document : document.elementFromPoint(input.cursorX, input.cursorY);
-    if (target && isForwardableMenuTarget(target)) {
-      if (event.type === 'pointerdown') {
-        capturedPointers.add(event.pointerId);
-      }
-      dispatchMenuPointer(target, event);
-    }
+    forwardLockedMenuPointer(event);
     releasePointerTarget(event);
   };
   for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'] as const) {
@@ -144,7 +204,7 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       if (target && target !== canvas && target.id !== 'game-cursor') {
         forwardingClick = true;
         try {
-          if (target instanceof HTMLInputElement) {
+          if (isInputElement(target)) {
             target.focus();
           }
           target.dispatchEvent(
@@ -177,6 +237,9 @@ export const mountMenuPointer = ({ input, canvas, cursor }: MenuPointerOptions):
       hoveredElement = clickable;
       hoveredElement?.classList.add('game-cursor-hover');
     },
-    releaseCaptures: () => capturedPointers.clear(),
+    releaseCaptures: () => {
+      capturedPointers.clear();
+      capturedRanges.clear();
+    },
   };
 };
