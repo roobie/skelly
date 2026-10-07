@@ -2,20 +2,35 @@
 // look"), and its handling played on it from the job alone.
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Box3, type BufferGeometry, Mesh, type Object3D, PerspectiveCamera, Quaternion, Vector3 } from 'three';
+import {
+  Box3,
+  type BufferGeometry,
+  type Matrix4,
+  Mesh,
+  type Object3D,
+  PerspectiveCamera,
+  Quaternion,
+  Vector3,
+} from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { expect, it, vi } from 'vitest';
+import { NEUTRAL_AIM } from '../src/core/aim.ts';
 import { dominantSide } from '../src/core/character.ts';
 import { buildRegistry, type Registry } from '../src/core/content.ts';
+import type { Vec3 } from '../src/core/coords.ts';
+import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
+import { handlingTurn, turnedBore } from '../src/render/handlingTurn.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { ModelLibrary } from '../src/render/models.ts';
 import { PileMeshes } from '../src/render/piles.ts';
 import { rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const BASE = 'src/content/base';
+const BLOCK = 0.5;
 const RIFLE = 'rifle_assault';
 const SPARE = 'look-fixture-magazine';
 const SPARE_MODEL = 'look-fixture-magazine-model';
@@ -102,8 +117,10 @@ const rig = async () => {
     });
     return id ?? modelOf(RIFLE);
   };
+  const slotIn = (root: Object3D): Object3D =>
+    magazineNodes(root, false).find((node) => modelOfNode(node) === modelOf(RIFLE))!;
   const magazinesIn = (root: Object3D): DrawnMagazine[] => {
-    const slot = magazineNodes(root, false).find((node) => modelOfNode(node) === modelOf(RIFLE))!;
+    const slot = slotIn(root);
     const at = (node: Object3D) => node.getWorldPosition(new Vector3());
     const turn = (node: Object3D) => node.getWorldQuaternion(new Quaternion());
     return magazineNodes(root, true).map((node) => ({
@@ -116,7 +133,7 @@ const rig = async () => {
   const inventory = new Inventory(content);
   const queue = new HandlingQueue(inventory);
   const mechanics = new FirearmMechanics(inventory, queue, {
-    blockSize: 0.5,
+    blockSize: BLOCK,
     // A magazine taken out goes to a pocket, or to the ground at these feet.
     pose: () => ({
       feet: [0, 1, 0],
@@ -124,7 +141,7 @@ const rig = async () => {
       yaw: 0,
       pitch: 0,
       aimFrame: { yaw: 0, pitch: 0 },
-      blockSize: 0.5,
+      blockSize: BLOCK,
       ready: true,
       sprinting: false,
     }),
@@ -137,7 +154,7 @@ const rig = async () => {
   }
   const hand = { kind: 'hand', side: dominantSide(inventory.character) } as const;
   const held = new HeldItems(inventory, models, content.figures.get('player')!.palette);
-  const piles = new PileMeshes(0.5, models);
+  const piles = new PileMeshes(BLOCK, models);
   const camera = new PerspectiveCamera();
   const pose = (): Object3D => {
     held.update(camera, undefined, 0, { firearms: mechanics.frames() });
@@ -151,6 +168,8 @@ const rig = async () => {
     magazine,
     spare,
     pose,
+    /** The drawn rifle's world transform, read from its own magazine node, which never moves on the rifle. */
+    heldFrame: (): Matrix4 => slotIn(pose()).matrixWorld.clone(),
     inHand: (): DrawnMagazine[] => magazinesIn(pose()),
     /** Drops the rifle where nothing else lies, draws the ground, and picks it back up. */
     onGround: (): DrawnMagazine[] => {
@@ -234,9 +253,50 @@ it('animates a change from the job alone: the fitted magazine leaves the well, t
   }
 });
 
-it('works the charging handle with the off hand through a rack, from the cycle alone', async () => {
-  const { inventory, queue, mechanics, rifle, pose, dispose } = await rig();
-  const support = dominantSide(inventory.character) === 'right' ? 'left' : 'right';
+it('turns the rifle through a rack from the cycle alone: the off hand works the handle, the crosshair follows the muzzle', async () => {
+  const { inventory, queue, mechanics, rifle, pose, heldFrame, dispose } = await rig();
+  const side = dominantSide(inventory.character);
+  const support = side === 'right' ? 'left' : 'right';
+  // The rig draws the rifle lowered, from an unturned camera at the origin; the crosshair glue in play.ts does this.
+  const model = content.models.get(modelOf(RIFLE))!;
+  const { loweredPitchRadians } = content.skills.get('firearms_combat')!.combat!.firearms!;
+  const unturned = (): FirearmBoreRay =>
+    firearmBoreRay({
+      model,
+      eye: [0, 0, 0],
+      yaw: 0,
+      pitch: 0,
+      blockSize: BLOCK,
+      side,
+      leadingSide: side,
+      twoHanded: Boolean(content.items.get(RIFLE)!.twoHanded),
+      aimFrame: NEUTRAL_AIM,
+      progress: 0,
+      loweredPitchRadians,
+    });
+  const crosshair = (): FirearmBoreRay =>
+    turnedBore(unturned(), {
+      model,
+      side,
+      turn: handlingTurn(
+        model,
+        mechanics.frames().find((frame) => frame.uid === rifle.uid),
+      ),
+      loweredPitch: -loweredPitchRadians,
+      blockSize: BLOCK,
+    });
+  const camera = new PerspectiveCamera();
+  const onScreen = ({ origin, direction }: { origin: Vec3; direction: Vec3 }): Vector3 =>
+    new Vector3(...crosshairAimPoint(origin, direction, undefined)).multiplyScalar(BLOCK).project(camera).setZ(0);
+  // The bore the drawn rifle has now: the rest bore, moved as the drawn rifle has moved since rest.
+  const restFrame = heldFrame();
+  const rest = unturned();
+  const drawn = (): { origin: Vec3; direction: Vec3 } => {
+    const moved = heldFrame().multiply(restFrame.clone().invert());
+    const muzzle = new Vector3(...rest.muzzle).multiplyScalar(BLOCK).applyMatrix4(moved).divideScalar(BLOCK);
+    const direction = new Vector3(...rest.direction).transformDirection(moved);
+    return { origin: [muzzle.x, muzzle.y, muzzle.z], direction: [direction.x, direction.y, direction.z] };
+  };
   const { action } = firearmHandlingFor(rifle, content);
   // The part only a hand moves is the handle; the hand reaches for its middle.
   const handle = Object.values(action.parts).find((part) => !part.modes.includes('fire'))!.node;
@@ -261,13 +321,18 @@ it('works the charging handle with the off hand through a rack, from the cycle a
   try {
     expect(mechanics.loadNext(rifle.uid, 0)).toBeUndefined();
     settle(queue);
-    const rest = reachLeft();
+    const restReach = reachLeft();
+    expect(crosshair()).toEqual(rest);
     expect(mechanics.cock(rifle.uid, 0)).toBeUndefined();
     advance(action.hand.rearwardSimSeconds + action.hand.dwellSimSeconds / 2);
-    expect(reachLeft()).toBeLessThan(rest / 10); // Holding the handle back.
+    expect(reachLeft()).toBeLessThan(restReach / 10); // Holding the handle back.
+    const mark = onScreen(crosshair());
+    expect(mark.distanceTo(onScreen(drawn()))).toBeCloseTo(0, 6);
+    expect(mark.distanceTo(onScreen(rest))).toBeGreaterThan(0.1);
     advance(action.hand.durationSimSeconds);
     expect(queue.busy).toBe(false);
-    expect(reachLeft()).toBeCloseTo(rest, 6);
+    expect(reachLeft()).toBeCloseTo(restReach, 6);
+    expect(crosshair()).toEqual(rest);
   } finally {
     dispose();
   }

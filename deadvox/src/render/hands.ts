@@ -56,6 +56,7 @@ import {
   rackGrip,
   sampleActionStroke,
 } from './firearmModel.ts';
+import { handlingTurn, handlingTurnRotation } from './handlingTurn.ts';
 import { itemLook } from './itemLook.ts';
 import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
@@ -66,10 +67,6 @@ import type { SkyTargets } from './sky.ts';
 /** Metres per grid cell for the stand-in box. */
 const CELL = 0.06;
 const TORSO_Y_AXIS = new Vector3(0, 1, 0);
-/** Presentation: how far a gun turns, muzzle in and up and rolled, so a magazine change or a rack is seen. */
-const PRESENT_YAW_RADIANS = 0.45;
-const PRESENT_ROLL_RADIANS = 0.5;
-const PRESENT_PITCH_RADIANS = 0.2;
 
 export interface HeldFirearmPose {
   readonly uid: number;
@@ -346,15 +343,8 @@ export class HeldItems {
     const loweredPitch = itemDefinition?.firearm ? -loweredPitchRadians * (1 - firearmReadiness) : 0;
     const readyAim = handling.readiness?.uid === item?.uid && readyAmount >= 1 ? handling.aim : undefined;
     this.poseAim(item, readyAim);
-    const shown = this.handlingPresentation(item, frame) * (side === 'right' ? 1 : -1);
-    this.rackRotation.setFromEuler(
-      this.poseEuler.set(
-        loweredPitch + Math.abs(shown) * PRESENT_PITCH_RADIANS,
-        shown * PRESENT_YAW_RADIANS,
-        cant - shown * PRESENT_ROLL_RADIANS,
-        'YXZ',
-      ),
-    );
+    const [turnPitch, turnYaw, turnRoll] = handlingTurnRotation(handlingTurn(modelDefinition, frame), side);
+    this.rackRotation.setFromEuler(this.poseEuler.set(loweredPitch + turnPitch, turnYaw, cant + turnRoll, 'YXZ'));
     this.poseRotation.multiply(this.rackRotation);
     const strength = Math.max(0, Math.min(1, recoil));
     transform.offset[1] += 0.012 * strength;
@@ -526,21 +516,6 @@ export class HeldItems {
     this.opticWindowRotation.copy(baseCamera).invert().multiply(aimedCamera);
     this.opticWindow.quaternion.copy(this.opticWindowRotation);
     this.opticWindow.visible = true;
-  }
-
-  /**
-   * How far a magazine job or a rifle's rack turns the gun to show the hands at work, 0 to 1, from the job alone. The
-   * pump turns its own port instead (`rackCant`).
-   */
-  private handlingPresentation(item: Item | undefined, frame: HeldFirearmPose | undefined): number {
-    if (!(item && frame) || this.pumpModels.has(item.uid)) {
-      return 0;
-    }
-    if (frame.mode === 'magazine' && frame.magazine && frame.duration !== undefined) {
-      return magazineMotion(frame.elapsed, frame.duration, frame.magazine.removeShare).reach;
-    }
-    const action = frame.mode === 'hand' ? this.firearmParts.get(item.uid)?.action : undefined;
-    return action ? rackGrip(action, frame.elapsed, frame.duration).reach : 0;
   }
 
   private poseAim(item: Item | undefined, aim: AimFrame | undefined): void {

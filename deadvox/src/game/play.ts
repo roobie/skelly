@@ -26,6 +26,7 @@ import type { SoundEmission } from '../core/soundPicker.ts';
 import { type RealSeconds, type RealTimestamp, realSeconds as realDuration } from '../core/time.ts';
 import { FISTS_MELEE, type MeleeWeapon } from '../core/zombies.ts';
 import { FrameTimes } from '../render/frameTimes.ts';
+import { handlingTurn, turnedBore } from '../render/handlingTurn.ts';
 import { renderMeleePose } from '../render/meleePose.ts';
 import { createPlayView } from '../render/playView.ts';
 import { renderAudioOptions } from '../ui/audioOptions.ts';
@@ -2126,22 +2127,36 @@ export const startPlay = (
     }
     const { item } = selected;
     const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
-    return firearmBoreRay({
-      model: firearmHandlingFor(item, registry).model,
+    const { model } = firearmHandlingFor(item, registry);
+    const side = inventory.hands.right?.uid === item.uid ? 'right' : 'left';
+    const progress = firearmPose?.progress ?? 0;
+    const bore = firearmBoreRay({
+      model,
       eye: eye(),
       yaw: input.yaw,
       pitch: input.pitch,
       blockSize: s,
-      side: inventory.hands.right?.uid === item.uid ? 'right' : 'left',
+      side,
       leadingSide: dominantSide(inventory.character),
       twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
       aimFrame: aim.frame,
-      progress: firearmPose?.progress ?? 0,
+      progress,
       aimingDownSights: firearmPose?.aimingDownSights ?? false,
       loweredPitchRadians: tuning.loweredPitchRadians,
       adsApertureFill: tuning.adsApertureFill,
       verticalFovDegrees: camera.fov,
       isSolid: engine.isSolid,
+    });
+    // The mark follows the muzzle where a rack or a magazine job turns the drawn rifle (BR, 2026-10-07 14:55).
+    return turnedBore(bore, {
+      model,
+      side,
+      turn: handlingTurn(
+        model,
+        firearms.frames().find((pose) => pose.uid === item.uid),
+      ),
+      loweredPitch: -tuning.loweredPitchRadians * (1 - progress),
+      blockSize: s,
     });
   };
 
