@@ -876,7 +876,7 @@ export const createSession = (options: SessionOptions) => {
       !readyGait &&
       canSprint(sim.needs, sprinting);
     survival.setSprinting(sprinting);
-    stepStamina(sim.needs, dt, sprinting);
+    stepStamina(sim.needs, dt, sprinting, bodyTuning.staminaRegenDelaySimSeconds);
     const readyMovementFactor = readyGait
       ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
       : 1;

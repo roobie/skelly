@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 31;
+export const SAVE_SCHEMA_VERSION = 33;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -230,6 +230,7 @@ const needs = obj({
   hydration: num({ min: 0, max: 100 }),
   fatigue: num({ min: 0, max: 100 }),
   stamina: num({ min: 0, max: 100 }),
+  staminaRegenDelayRemainingSimSeconds: nonNegative,
 });
 const bodyRegionDamage = obj({
   head: num({ min: 0, max: 100 }),
@@ -555,6 +556,10 @@ const meleeAction = nullable(
       cooldown: positive,
       stamina: opt(nonNegative),
       impulse: opt(nonNegative),
+      damageVariance: opt(num({ min: 0, max: 1 })),
+      headDamageMultiplier: opt(positive),
+      limbDamageMultiplier: opt(positive),
+      speedMultiplier: opt(positive),
       type: opt(enumeration(['blunt', 'cut', 'pierce'])),
     }),
   }),
