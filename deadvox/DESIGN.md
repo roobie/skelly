@@ -554,7 +554,8 @@ plain box in your hands. Files are small, and follow
   (2026-10-06): “also; now that i can properly fire from ADS on the AK, I can
   note that a firearm skill level zero (=0) is way too good at controlling
   automatic fire with a 7.62x39 AKM-looking rifle” / “it should be 3x worse”.
-  BR then said, “i think at skill=0 the handling should be even worse - like at least 4 _times_ worse”.
+  BR then said, “i think at skill=0 the handling should be even worse - like at least 4
+  _times_ worse”.
   BR chose four times what they felt at `7a8c72db` as the comparison (“1: a”). They wanted
   kick, shot-to-shot dispersion and recovery all worsened (“2: all”), mostly for automatic
   follow-ups but for singles too (“3: mostly full auto, but singles too”). BR approved
@@ -563,17 +564,28 @@ plain box in your hands. Files are small, and follow
   automatic follow-ups are separate values in `src/content/base/recipes.json`, under the
   firearms-combat skill's `skillZeroHandling`; `src/core/schema.ts`, `SkillSchema`, validates
   them. A follow-up is a committed shot from the same firearm within its burst window; see
-  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert endpoint
-  stays on the existing curve, so skill 10 is unchanged; legendary still matches expert.
+  `src/game/firearmHandling.ts`, `FirearmMechanics.handlingShotKind`. The expert
+  endpoint stays on the existing curve, so skill-10 shot handling is unchanged;
+  legendary still matches expert.
   The starting point was twice the skill-zero handling BR felt at `7a8c72db` for singles
-  and four times for follow-ups. BR approved those values: “oh yeah! Now we're talking.
-  #324 approved as such / but it's important to note that we need different factors for
-  different guns - e.g. a MP5 style SMG does not have the same kick as a AK/M pattern gun”.
-  Until d112 gives each firearm its own factors, skill-zero handling is shared across firearms.
-  `src/debug/index.ts`, `firearmsSkillEffectSlider`, places the controls in
-  the debug panel's Tools group, applies them to the running session, and can copy the
-  values. The tuning is runtime-only and resets on reload; saves carry no slider state. The
-  shared skill effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
+  and four times for follow-ups. BR approved those values and ruled that guns need different
+  factors: “oh yeah! Now we're talking. #324 approved as such / but it's important to note
+  that we need different factors for different guns - e.g. a MP5 style SMG does not have the
+  same kick as a AK/M pattern gun”. d112 puts the optional skill-zero factors beside base
+  recoil in each item's `firearm` data in `src/content/base/models-firearms.json`; the
+  `FirearmSchema` in `src/core/schema.ts` requires a complete in-range shape when present.
+  A per-gun shape replaces the shared skill-zero endpoints as a whole; absent factors use the
+  global firearms-combat endpoints. Keeping the override complete avoids mixing fields from
+  different guns. `src/game/firearmHandling.ts`, `FirearmMechanics.skillZeroHandlingFor`,
+  selects the effective factors, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`,
+  interpolates them toward the same expert endpoint. The provisional per-gun starting values
+  follow base recoil and await BR's slider review for d112. The MP5 comparison has no matching
+  in-game SMG item; d112 adds factors to existing firearms, not a new gun. `src/debug/index.ts`,
+  `firearmsSkillEffectSlider`, renders the tuning controls; `attachDebugTools`,
+  `changeFirearmsSkillZeroEffect`, applies them at runtime, and `copyFirearmsSkillZeroHandling`
+  copies the current gun's values.
+  The controls are runtime-only, reset on reload, and do not alter saves. The shared skill
+  effects are computed in `src/core/firearmsSkill.ts`, `firearmsSkillEffects`;
   per-firearm recoil and pellet spread remain firearm-owned. The pump keeps its pellet
   spread and adds no firearm cone. This reuses the already saved player pitch, so no
   aim-state field or save-schema change is needed. See
@@ -582,7 +594,19 @@ plain box in your hands. Files are small, and follow
   `src/core/aim.ts`, `AimController.recordShot`, `AimController.advance` and
   `AimController.applyViewPitchShift`, `src/game/session.ts`, `createSession`,
   `src/game/input.ts`, `adjustLookPitch`, and `src/core/saveFormat.ts`,
-  `SAVE_SCHEMA_VERSION`. BR's earlier 2026-10-05 report on the skill scale
+  `SAVE_SCHEMA_VERSION`.
+
+  BR (d117-1, 2026-10-07 00:30): “but a note: having skill=10 should be even faster
+  at loading and racking - likely 2x as fast”. The shared reload and rack curves now
+  live beside `skillZeroHandling` in `src/content/base/recipes.json`, with bounds in
+  `src/core/schema.ts`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, applies
+  them without changing skill-zero time. `src/game/firearmHandling.ts`,
+  `FirearmMechanics.load` and `FirearmMechanics.cock`, multiply their existing base
+  durations by these shared curves rather than tuning them per firearm. At skill 10,
+  each is about half the previous curve's duration; legendary remains clamped to skill 10.
+  BR, 2026-10-07 10:23: “yep, feels good” on the handling comparison for PR #343.
+
+  BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
   led to d62-4 (#262); the later ruling
   separates firearm quality's dispersion from skill-controlled handling.

@@ -13,6 +13,7 @@ import {
   type FirearmsSkillZeroHandling,
   firearmStanceEffects,
   firearmsSkillEffects,
+  skillZeroHandlingForFirearm,
 } from '../core/firearmsSkill.ts';
 import type { HandlingQueue, Job } from '../core/handling.ts';
 import { heldEjectionPose, heldFirearmTransform } from '../core/heldPose.ts';
@@ -220,10 +221,16 @@ export class FirearmMechanics {
   private readonly onShot: (shot: PelletShot, time: number, firearm: Item) => void;
   private readonly onTrajectory: (trajectory: FirearmTrajectory, time: number) => void;
   private readonly onSound: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
-  private readonly onCommittedShot: (seed: number, recoilKickRadians: number, shotKind: FirearmsSkillShotKind) => void;
+  private readonly onCommittedShot: (
+    seed: number,
+    recoilKickRadians: number,
+    shotKind: FirearmsSkillShotKind,
+    firearmUid: number,
+  ) => void;
   private readonly firearmsSkillLevel: () => number;
   private readonly firearmsSkillZeroHandling: () => FirearmsSkillZeroHandling;
   private readonly firearmsCombatTuning: FirearmsCombatTuning | undefined;
+  private readonly firearmsSkillZeroOverrides = new Map<string, FirearmsSkillZeroHandling>();
   private readonly previousShotAt = new Map<number, number>();
 
   constructor(
@@ -246,7 +253,12 @@ export class FirearmMechanics {
       onShot?: (shot: PelletShot, time: number, firearm: Item) => void;
       onTrajectory?: (trajectory: FirearmTrajectory, time: number) => void;
       onSound?: (event: SoundEventId, position: Vec3 | undefined, time: number) => void;
-      onCommittedShot?: (seed: number, recoilKickRadians: number, shotKind: FirearmsSkillShotKind) => void;
+      onCommittedShot?: (
+        seed: number,
+        recoilKickRadians: number,
+        shotKind: FirearmsSkillShotKind,
+        firearmUid: number,
+      ) => void;
       firearmsSkillLevel?: () => number;
       firearmsSkillZeroHandling?: () => FirearmsSkillZeroHandling;
     },
@@ -385,6 +397,31 @@ export class FirearmMechanics {
     return { ...tuning, skillZeroHandling: this.firearmsSkillZeroHandling() };
   }
 
+  skillZeroHandlingFor(uid: number): FirearmsSkillZeroHandling {
+    const item = this.inventory.itemByUid(uid);
+    if (!item) {
+      return this.firearmsSkillZeroHandling();
+    }
+    const override = this.firearmsSkillZeroOverrides.get(item.type);
+    const { firearm } = defOf(this.inventory.registry, item.type);
+    return structuredClone(
+      override ?? skillZeroHandlingForFirearm(firearm?.skillZeroHandling, this.firearmsSkillZeroHandling()),
+    );
+  }
+
+  setSkillZeroHandlingFor(uid: number, value: FirearmsSkillZeroHandling): boolean {
+    const item = this.inventory.itemByUid(uid);
+    if (!(item && defOf(this.inventory.registry, item.type).firearm)) {
+      return false;
+    }
+    this.firearmsSkillZeroOverrides.set(item.type, structuredClone(value));
+    return true;
+  }
+
+  hasSkillZeroHandlingOverrides(): boolean {
+    return this.firearmsSkillZeroOverrides.size > 0;
+  }
+
   /** The next shot is a follow-up only inside the same weapon's short, content-cadence burst window. */
   handlingShotKind(uid: number, time: number): FirearmsSkillShotKind {
     const item = this.inventory.itemByUid(uid);
@@ -474,7 +511,7 @@ export class FirearmMechanics {
     const pellets = pelletShotFromBasis({ ammo, origin: muzzle, basis: shotBasis, seed: input.seed, key: shotKey });
     this.onShot(pellets, input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, directions: pellets.directions }, input.simTime);
-    this.onCommittedShot(seed, data.recoilKickRadians, shotKind);
+    this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
@@ -506,7 +543,7 @@ export class FirearmMechanics {
     );
     this.onShot(projectileShot(ammo, muzzle, [direction]), input.simTime, item);
     this.onTrajectory({ eye: input.eye, muzzle, directions: [direction] }, input.simTime);
-    this.onCommittedShot(seed, data.recoilKickRadians, shotKind);
+    this.onCommittedShot(seed, data.recoilKickRadians, shotKind, item.uid);
     this.previousShotAt.set(item.uid, input.simTime);
     return true;
   }
