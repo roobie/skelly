@@ -18,6 +18,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { ejectionPoint } from '../src/gun/ejection.ts';
 import { eulerXyzDegrees, FILE_FROM_GUNGEN, gripTurn, METRES_PER_UNIT, toFileAxes } from '../src/gun/exportFrame.ts';
 import { createGunModelEntry, exportGunGlb } from '../src/gun/exportGlb.ts';
+import { getOptic } from '../src/gun/optics.ts';
 import { GUN_PALETTE, resolveAppearance } from '../src/gun/palette.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 import { type ReadGlb, readGlb } from './glbReader.ts';
@@ -41,6 +42,60 @@ const exported = (assembly: Assembly, asset: GlbAssetIdentity = ASSET, variantNa
     throw new Error(`export failed: ${JSON.stringify(result.error)}`);
   }
   return { ...result, read: readGlb(result.glb), resolved: resolve(assembly, gunDomain) };
+};
+
+type ExportedGun = ReturnType<typeof exported>;
+const sightTargetPartId = (out: ExportedGun, endpoint: Vec3, label: string): string => {
+  for (const [id, part] of out.resolved.defs) {
+    const axis = part.axes.find(({ kind }) => kind === 'sight');
+    const transform = out.resolved.placed.get(id);
+    if (!(axis && transform)) {
+      continue;
+    }
+    const { family } = out.resolved.assembly.parts[id]!;
+    const params = out.resolved.params.get(id);
+    const optic = family === 'sight' ? getOptic(params?.type?.value, params?.mountSection?.value) : undefined;
+    const localEye: Vec3 = optic ? [optic.ocularX, optic.opticalAxisY, 0] : axis.origin;
+    const eye = applyPoint(transform, localEye);
+    if (Math.hypot(eye[0] - endpoint[0], eye[1] - endpoint[1], eye[2] - endpoint[2]) < 1e-6) {
+      return id;
+    }
+  }
+  throw new Error(`${label}: exported sight endpoint does not match a sight part`);
+};
+
+const expectSightLineClear = (out: ExportedGun, label: string): void => {
+  const { sight } = out.modelEntry;
+  if (!sight) {
+    throw new Error(`${label}: export has no sight metadata`);
+  }
+  const endpoint = sight.eye.map((value) => value / S) as unknown as Vec3;
+  const targetId = sightTargetPartId(out, endpoint, label);
+  const eyeRelief = sight.eyeReliefMetres / S;
+  const eyePoint: Vec3 = [
+    endpoint[0] - sight.direction[0] * eyeRelief,
+    endpoint[1] - sight.direction[1] * eyeRelief,
+    endpoint[2] - sight.direction[2] * eyeRelief,
+  ];
+  const center: Vec3 = [
+    (eyePoint[0] + endpoint[0]) / 2,
+    (eyePoint[1] + endpoint[1]) / 2,
+    (eyePoint[2] + endpoint[2]) / 2,
+  ];
+  const sightLine = worldBox(IDENTITY, { center, half: [eyeRelief / 2, 0.05, 0.05] });
+  for (const [id, part] of out.resolved.defs) {
+    if (id === targetId) {
+      continue;
+    }
+    const placed = out.resolved.placed.get(id)!;
+    for (const solid of part.solids) {
+      // biome-ignore lint/suspicious/noMisplacedAssertion: called from the corpus sight-line test.
+      expect(
+        penetrationWorld(sightLine, worldSolid(placed, solid)),
+        `${label}: ${id}.${solid.id} blocks the sight line`,
+      ).toBeLessThanOrEqual(0);
+    }
+  }
 };
 
 const near = (a: readonly number[], b: readonly number[], digits = 6): void => {
@@ -493,24 +548,13 @@ describe('glb export: deadvox model entry', () => {
     near(exportedEyePoint, eyePoint);
     near(exportedDirection, toFileAxes(expectedDirection));
     expect(out.modelEntry.sight.kind).toBe('iron');
+  });
 
-    const center: Vec3 = [
-      (eyePoint[0] + beadTop[0]) / 2,
-      (eyePoint[1] + beadTop[1]) / 2,
-      (eyePoint[2] + beadTop[2]) / 2,
-    ];
-    const sightLine = worldBox(IDENTITY, { center, half: [sightLength / 2, 0.05, 0.05] });
-    for (const [id, part] of out.resolved.defs) {
-      if (id === beadId) {
-        continue;
-      }
-      const placed = out.resolved.placed.get(id)!;
-      for (const solid of part.solids) {
-        expect(
-          penetrationWorld(sightLine, worldSolid(placed, solid)),
-          `${id}.${solid.id} blocks the bead sight line`,
-        ).toBeLessThanOrEqual(0);
-      }
+  it('keeps every exported sight line clear of other solids', () => {
+    const corpus = loadCorpus();
+    expect(corpus.length).toBeGreaterThan(0);
+    for (const { label, assembly } of corpus) {
+      expectSightLineClear(exported(assembly), label);
     }
   });
 
