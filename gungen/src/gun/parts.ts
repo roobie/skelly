@@ -2768,7 +2768,7 @@ const muzzleBead: PartFamily = {
   build(): PartDef {
     return {
       family: 'front-sight-bead',
-      solids: [solid('bead', [-0.5, 0.25, -0.5], [0.5, 1.25, 0.5])],
+      solids: [solid('bead', [-0.5, 0, -0.5], [0.5, 1.25, 0.5])],
       ports: [
         {
           id: 'base',

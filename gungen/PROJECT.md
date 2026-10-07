@@ -1419,7 +1419,10 @@ forward/upright orientation after the held transform.
 Every published firearm design exports sight metadata from its resolved sight
 parts, so ADS has a physical reference and a later optic can replace irons through
 the same `src/gun/exportGlb.ts`, `sightCandidate` path. The pump's `front-bead`
-part sits on the barrel's front bead port. `src/gun/exportGlb.ts`,
+part sits on the barrel's front bead port. For g42-5, the bead solid begins at
+its connection plane so the barrel port is a true contact datum; any offset
+above that plane leaves a visible floating gap. `test/optics.test.ts` checks
+contact for every authored design with a bead. `src/gun/exportGlb.ts`,
 `frontBeadSightLine` derives the eye point from the
 receiver top and bead top, so the sight line reaches from above the receiver to
 the bead instead of placing the eye beside the muzzle or aiming down the bore.
