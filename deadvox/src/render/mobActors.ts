@@ -48,7 +48,7 @@
 // (a debris row counts toward MAX_CORPSES exactly like a corpse does).
 
 import type { Material } from '@mobgen/core/body.ts';
-import { generate, type Realized, realize } from '@mobgen/core/generate.ts';
+import type { Realized } from '@mobgen/core/generate.ts';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import {
   type Mat3,
@@ -489,11 +489,6 @@ export class MobActorMeshes implements ZombieRenderer {
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
     const modelIds = ['shambler', 'runner', 'crawler'] as const;
     const templatesByModel = new Map(TEMPLATES.map((template) => [template.name, template]));
-    for (const model of modelIds) {
-      if (!templatesByModel.has(model)) {
-        throw new Error(`MobActorMeshes: mobgen has no '${model}' template`);
-      }
-    }
 
     const t0 = performance.now();
     const built: {
@@ -507,13 +502,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const figureSeeds = SHAMBLER_FIGURE_SEEDS.slice(0, poolSize);
     for (const model of modelIds) {
       for (const seed of figureSeeds) {
-        const generated =
-          model === 'crawler'
-            ? (() => {
-                const genome = generate(templatesByModel.get(model)!, seed);
-                return { genome, realized: realize(genome) };
-              })()
-            : zombieFigure(model, seed);
+        const generated = zombieFigure(model, seed);
         const { genome, realized } = generated;
         const extents = footRestExtents(realized.body.bones, realized.voxels);
         const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
