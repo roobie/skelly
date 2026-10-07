@@ -8,7 +8,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { type HitImpulse, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
-import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { MobActorMeshes, mobFigurePoolSizeThrough } from '../src/render/mobActors.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BLOCK = 0.5;
@@ -136,8 +136,20 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
     touchedFloor = true;
     return true;
   };
-  const renderer = new MobActorMeshes(BLOCK, 16);
-  renderer.setWorld(isSolid, BLOCK);
+  let renderer: MobActorMeshes | undefined;
+  const system = new ZombieSystem({
+    ...senses(isSolid),
+    seed: zombieSeed,
+    onSever: (entityId, sourceZombie, severedPart, hit) =>
+      renderer?.zombieSevered(entityId, severedPart, hit, sourceZombie),
+    onDeath: (entityId, sourceZombie) => renderer?.zombieDied(entityId, sourceZombie),
+  });
+  const position: Vec3 = mode === 'rolled' ? [4, 1, 4] : [zombieSeed * 4, 2, 0];
+  const id = system.add(zombieTypeForCut(mode), position, [0, 0, -1]);
+  const zombie = system.store.get(id)!;
+  const actorMeshes = new MobActorMeshes(BLOCK, 16, { poolSize: mobFigurePoolSizeThrough(zombie.figureSeed) });
+  renderer = actorMeshes;
+  actorMeshes.setWorld(isSolid, BLOCK);
   const appliedPoints: AppliedPoint[] = [];
   const instrumentedRenderer = renderer as unknown as {
     applyDebrisHit: (body: RigidBody, center: Vec3, originOffsetY: number, hit: HitImpulse) => Vec3;
@@ -148,17 +160,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
     appliedPoints.push({ body: rigidBody, point });
     return point;
   };
-  const system = new ZombieSystem({
-    ...senses(isSolid),
-    seed: zombieSeed,
-    onSever: (entityId, sourceZombie, severedPart, hit) =>
-      renderer.zombieSevered(entityId, severedPart, hit, sourceZombie),
-    onDeath: (entityId, sourceZombie) => renderer.zombieDied(entityId, sourceZombie),
-  });
-  const position: Vec3 = mode === 'rolled' ? [4, 1, 4] : [zombieSeed * 4, 2, 0];
-  const id = system.add(zombieTypeForCut(mode), position, [0, 0, -1]);
-  const zombie = system.store.get(id)!;
-  renderer.sync(system.store, 0, 1);
+  actorMeshes.sync(system.store, 0, 1);
   const beforeBoxes = posedShamblerRegionBoxes({
     seed: zombie.figureSeed,
     position: zombie.body.pos,
@@ -190,7 +192,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
   } else {
     part = mode === 'region' ? 'upperArm.L' : 'head';
     const hit: HitImpulse = { point: targetBox.center, direction: target.direction, impulse: BAT.impulse! };
-    renderer.zombieSevered(id, part, hit, zombie);
+    actorMeshes.zombieSevered(id, part, hit, zombie);
   }
   const partBox = Object.values(beforeBoxes)
     .flat()
@@ -199,7 +201,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
     mode === 'rolled' &&
     partBox !== undefined &&
     posedRegionHitDistance([partBox], origin, target.direction, BLOCK) === undefined;
-  const { debris } = renderer as unknown as { debris: Map<string, { body: RigidBody; originOffsetY: number }> };
+  const { debris } = actorMeshes as unknown as { debris: Map<string, { body: RigidBody; originOffsetY: number }> };
   const [launch] = [...debris.values()];
   const body = launch?.body;
   const originOffsetY = launch?.originOffsetY ?? 0;
@@ -208,7 +210,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
     zombieSeed,
     figureSeed: zombie.figureSeed,
     system,
-    renderer,
+    renderer: actorMeshes,
     body,
     originOffsetY,
     appliedPoints,

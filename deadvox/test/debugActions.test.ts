@@ -179,8 +179,23 @@ const makeActions = (
       throw new Error('not exercised');
     },
   };
+  let spectatorCamera = false;
+  let perceptionLabels = false;
   const hooks = {
     sim,
+    spectatorCamera: {
+      enabled: () => spectatorCamera,
+      toggle: () => {
+        spectatorCamera = !spectatorCamera;
+      },
+    },
+    perceptionLabels: {
+      enabled: () => perceptionLabels,
+      toggle: () => {
+        perceptionLabels = !perceptionLabels;
+      },
+    },
+    emitTestNoise: () => true,
     compress() {
       sim.compression.active = true;
     },
@@ -216,6 +231,7 @@ const makeActions = (
     toggleNoclip: () => {
       noclip = !noclip;
     },
+    spawnUnawareShambler: () => undefined,
     isDanger: () => danger,
     toggleDanger: () => {
       danger = !danger;

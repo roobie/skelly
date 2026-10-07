@@ -18,6 +18,7 @@ import type { Item } from '../core/items.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
 import { doorOptions, doorPlan, toHands } from '../core/options.ts';
+import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
 import { isForwardButton, PressDedupe } from '../core/sideButton.ts';
@@ -89,6 +90,7 @@ import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample }
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
 import { resolvePlayerMeleeWeapon, shouldBlockFromEnGarde, shouldEnterMeleeReady, startPlayerMelee } from './melee.ts';
+import type { MoveIntent } from './player.ts';
 import { PlaytestObserver } from './playtestObserver.ts';
 import {
   createSnapshotHistory,
@@ -368,6 +370,10 @@ export const startPlay = (
       automaticFireUid = undefined;
     }
   };
+  let spectatorCameraEnabled = false;
+  let spectatorCameraBody: Body | undefined;
+  let spectatorBodyView: { readonly yaw: number; readonly pitch: number } | undefined;
+  let perceptionLabelsEnabled = false;
   const session = createSession({
     registry,
     handedness: config.debugHandedness ?? options.handedness,
@@ -385,7 +391,8 @@ export const startPlay = (
     zombieReady: (x, z) => replayPlayer?.isReady(x, z) ?? streamer.isReady(x, z),
     controls: {
       active: () => Boolean(options.replay) || (input.locked && !input.menuPointer),
-      intent: () => input.intent(),
+      intent: (): MoveIntent =>
+        spectatorCameraEnabled ? { forward: 0, right: 0, jump: false, sprint: false, walk: false } : input.intent(),
       sampleAtPlayerTick: samplePlayerInput,
       readyHeld: () => input.rightMouseHeld,
       blocking: () => shouldPlayerBlock(),
@@ -439,8 +446,8 @@ export const startPlay = (
           performHandUse(offSide(inventory.character));
         }
       },
-      yaw: () => input.yaw,
-      pitch: () => input.pitch,
+      yaw: () => spectatorBodyView?.yaw ?? input.yaw,
+      pitch: () => spectatorBodyView?.pitch ?? input.pitch,
       walking: () => input.walking,
       descending: () => keyboardInput.held('noclip.descend'),
     },
@@ -822,6 +829,24 @@ export const startPlay = (
     },
     roll: () => view.cameraRoll,
     zombies: () => zombieSystem,
+    spectatorCamera: {
+      enabled: () => spectatorCameraEnabled,
+      toggle: () => {
+        spectatorCameraEnabled = !spectatorCameraEnabled;
+        spectatorCameraBody = spectatorCameraEnabled
+          ? { ...body, pos: [...eye()], vel: [0, 0, 0], onGround: false }
+          : undefined;
+        spectatorBodyView = spectatorCameraEnabled ? { yaw: input.yaw, pitch: input.pitch } : undefined;
+      },
+    },
+    perceptionLabels: {
+      enabled: () => perceptionLabelsEnabled,
+      toggle: () => {
+        perceptionLabelsEnabled = !perceptionLabelsEnabled;
+      },
+    },
+    emitTestNoise: () =>
+      !replayPlayer && session.playPlayerSound('player_hurt_light', sim.time, { sourceLabel: 'debug test noise' }),
     feet,
     showNotice,
     spawnItem,
@@ -1214,7 +1239,7 @@ export const startPlay = (
     if (debugTools?.buildOn) {
       return 'build';
     }
-    return debugTools?.noclip ? 'noclip' : 'play';
+    return debugTools?.noclip || spectatorCameraEnabled ? 'noclip' : 'play';
   };
   const inputContext = (): InputContext => {
     if (options.saveController && !options.saveController.isEntered) {
@@ -2030,6 +2055,9 @@ export const startPlay = (
         yaw: input.yaw,
         pitch: input.pitch,
         eye: eye(),
+        ...(spectatorCameraEnabled && spectatorCameraBody
+          ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }
+          : {}),
         sightImpaired: sim.body.consequences.sightImpaired,
       },
       $('damage'),
@@ -2110,7 +2138,16 @@ export const startPlay = (
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
   const stepFrozenNoclip = (dt: number, frozenAndPlaying: boolean): void => {
-    if (!(frozenAndPlaying && !replayPlayer && debugTools?.noclip && input.locked && !input.menuPointer)) {
+    if (
+      !(
+        frozenAndPlaying &&
+        !replayPlayer &&
+        debugTools?.noclip &&
+        !spectatorCameraEnabled &&
+        input.locked &&
+        !input.menuPointer
+      )
+    ) {
       return;
     }
     debugTools.stepNoclip({
@@ -2189,6 +2226,17 @@ export const startPlay = (
       inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
+    if (spectatorCameraEnabled && spectatorCameraBody && input.locked && !input.menuPointer) {
+      debugTools?.stepNoclip({
+        body: spectatorCameraBody,
+        scale,
+        yaw: input.yaw,
+        pitch: input.pitch,
+        intent: input.intent(),
+        descend: keyboardInput.held('noclip.descend'),
+        dt: realDt,
+      });
+    }
     return gameFrozen;
   };
 
@@ -2259,12 +2307,14 @@ export const startPlay = (
     const { hour, sky } = view.syncWorld({
       calendar: sim.calendar,
       time: sim.time,
+      playerEye: eye().map((coordinate) => coordinate * s) as Vec3,
       lastZombieStep: session.lastZombieStep,
       lastBackgroundStep: session.lastBackgroundStep,
       dt,
       entities,
       zombies: zombieStore,
       frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
+      perceptionLabels: perceptionLabelsEnabled,
     });
     updateDebugTargets();
     updateDebugReadout(now);

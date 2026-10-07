@@ -22,7 +22,7 @@ const observation = {
     assert(code.includes(marker), 'game-loop observation point exists');
     return code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
     );
   },
 };
@@ -248,6 +248,36 @@ try {
     null,
     { timeout: 10_000 },
   );
+  const bodyBeforeSpectator = await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]);
+  await pressAction(page, 'debug.spectator-camera-toggle');
+  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), true);
+  const cameraBeforeSpectatorMove = await page.evaluate(() => globalThis.firefoxUiTest.camera.position.toArray());
+  await page.keyboard.down('w');
+  try {
+    await page.waitForFunction(
+      (before) => {
+        const after = globalThis.firefoxUiTest.camera.position.toArray();
+        return Math.hypot(after[0] - before[0], after[1] - before[1], after[2] - before[2]) > 0.01;
+      },
+      cameraBeforeSpectatorMove,
+      { timeout: 5000 },
+    );
+  } finally {
+    await page.keyboard.up('w');
+  }
+  assert.deepEqual(await page.evaluate(() => [...globalThis.firefoxUiTest.session.body.pos]), bodyBeforeSpectator);
+  await pressAction(page, 'debug.perception-labels-toggle');
+  await page.waitForFunction(
+    () => [...document.querySelectorAll('.zombie-perception-label')].some((label) => label.style.display !== 'none'),
+    null,
+    { timeout: 5000 },
+  );
+  assert.ok(await page.locator('.zombie-perception-label[data-perception-label]').count());
+  await pressAction(page, 'debug.spectator-camera-toggle');
+  assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.spectatorCameraEnabled()), false);
+  await pressAction(page, 'debug.perception-labels-toggle');
+  assert.equal(await page.locator('.zombie-perception-label').count(), 0);
+
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
   const dispatchPointer = async (eventType, pointerButton, pressedButtons) => {
