@@ -43,8 +43,24 @@ export const isFirearmTrainingAction = (job: Job): boolean =>
   job.kind === 'action' && TRAINING_ACTIONS.has(job.jobType);
 /** Single-shell handling estimate, not an exported mechanical phase. */
 export const SHELL_LOAD_SECONDS = 0.9;
-/** Gameplay handling estimate for a magazine change, before the firearms skill's reload factor. */
-const MAGAZINE_CHANGE_SIM_SECONDS = 2.2;
+/**
+ * Gameplay handling estimates for the two halves of a magazine change, before the firearms skill's reload factor
+ * (about a third at the top skill). Grounded in timed rifle reloads (Crate Club, "How Long Does It Take to Reload an
+ * Assault Rifle?"): an average shooter changes an AR magazine in 3–5 s and an AK one in 4–6 s, a proficient one an AR
+ * magazine in about 2 s, all dropping the old magazine. A change here stows it, which is slower, so skill 0 sits at
+ * the slow end. Taking a magazine out and stowing it is one half, drawing one and seating it the other: a removal
+ * or an insert into an empty gun takes only its half.
+ */
+const MAGAZINE_REMOVE_SIM_SECONDS = 3;
+const MAGAZINE_INSERT_SIM_SECONDS = 3;
+
+/** The share of a magazine job spent taking the fitted one out, so presentation can play remove, then insert. */
+const magazineRemoveShare = (removing: boolean, inserting: boolean): number => {
+  if (!removing) {
+    return 0;
+  }
+  return inserting ? MAGAZINE_REMOVE_SIM_SECONDS / (MAGAZINE_REMOVE_SIM_SECONDS + MAGAZINE_INSERT_SIM_SECONDS) : 1;
+};
 
 const unit = (vector: Vec3): Vec3 => {
   const length = Math.hypot(...vector);
@@ -201,10 +217,12 @@ interface ShotCommit {
 }
 export interface FirearmCycleFrame {
   readonly uid: number;
-  readonly mode: 'fire' | 'hand' | 'load';
+  readonly mode: 'fire' | 'hand' | 'load' | 'magazine';
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
+  /** A magazine job: the share of it spent taking the fitted magazine out, and the model of the one going in. */
+  readonly magazine?: { readonly removeShare: number; readonly incoming?: string };
 }
 
 export class FirearmMechanics {
@@ -711,13 +729,14 @@ export class FirearmMechanics {
     return undefined;
   }
 
-  /** A change names its replacement; a removal names none. */
+  /** A change names its replacement; a removal names none. Each half it does takes its own time. */
   private enqueueMagazineAction(gun: Item, label: string, time: number, replacement?: Item): void {
+    const seconds =
+      (gun.slots?.magazine ? MAGAZINE_REMOVE_SIM_SECONDS : 0) + (replacement ? MAGAZINE_INSERT_SIM_SECONDS : 0);
     this.queue.enqueueAction(
       MAGAZINE_ACTION,
       label,
-      MAGAZINE_CHANGE_SIM_SECONDS *
-        firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
+      seconds * firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
       replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
     );
     this.onSound('magazine_change', undefined, time);
@@ -895,6 +914,16 @@ export class FirearmMechanics {
     }
   }
 
+  /** A queued magazine job's motion: the fitted magazine still holds its slot until the job completes. */
+  private magazineMotion(gun: Item, magazineUid: unknown): NonNullable<FirearmCycleFrame['magazine']> {
+    const incoming = typeof magazineUid === 'number' ? this.inventory.itemByUid(magazineUid) : undefined;
+    const model = incoming && defOf(this.inventory.registry, incoming.type).model;
+    return {
+      removeShare: magazineRemoveShare(gun.slots?.magazine !== undefined, incoming !== undefined),
+      ...(model ? { incoming: model } : {}),
+    };
+  }
+
   frames(): readonly FirearmCycleFrame[] {
     return [
       ...new Set(Object.values(this.inventory.hands).flatMap((item) => (item ? [item.uid] : []))),
@@ -914,6 +943,17 @@ export class FirearmMechanics {
         ];
       }
       const [job] = this.queue.jobs;
+      if (item && job?.kind === 'action' && job.jobType === MAGAZINE_ACTION && job.params.uid === uid) {
+        return [
+          {
+            uid,
+            mode: 'magazine',
+            elapsed: job.elapsed,
+            duration: job.duration,
+            magazine: this.magazineMotion(item, job.params.magazineUid),
+          },
+        ];
+      }
       const ammo =
         job?.kind === 'action' &&
         job.jobType === LOAD_ACTION &&

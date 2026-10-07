@@ -16,7 +16,8 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { ModelDef, Registry } from '../core/content.ts';
-import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel } from './firearmModel.ts';
+import type { ItemLook, ItemLookSlot } from '../core/itemLook.ts';
+import { type ActionPartPath, actionPartPaths, cloneHeldModel, type HeldModel, namedNodes } from './firearmModel.ts';
 
 /** The base pack's model files, by their path within the pack. */
 const PACK_FILES: Readonly<Record<string, string>> = Object.fromEntries(
@@ -36,7 +37,37 @@ interface Prepared {
   ground: Object3D;
   groundParts: readonly GroundModelPart[];
   held: Object3D;
+  /** The file's scene in its own frame, for drawing this model as another model's part. */
+  scene: Object3D;
 }
+
+/** A slot in a composed model: its frame, and the fitted part's model inside it while one is fitted. */
+export interface ComposedSlot {
+  readonly frame: Object3D;
+  readonly model?: Object3D;
+  readonly modelId?: string;
+}
+
+export interface ComposedHeld extends HeldModel {
+  readonly slots: Partial<Record<ItemLookSlot['slot'], ComposedSlot>>;
+}
+
+/** Hides the baked geometry of item-owned slots: an item's look draws what is really fitted there instead. */
+export const hideSlotNodes = (def: ModelDef, scene: Object3D, parser: Parameters<typeof namedNodes>[1]): void => {
+  const names = Object.values(def.slots ?? {}).flatMap((slot) => (slot ? [slot.node] : []));
+  for (const node of namedNodes(scene, parser, names)) {
+    node.visible = false;
+  }
+};
+
+/** The frame a slot's `at` and `turn` place a part in: the base model's file frame. */
+const slotFrame = (slot: ItemLookSlot): Group => {
+  const frame = new Group();
+  frame.position.set(...slot.at);
+  const [tx, ty, tz] = slot.turn;
+  frame.rotation.set(MathUtils.degToRad(tx), MathUtils.degToRad(ty), MathUtils.degToRad(tz), 'XYZ');
+  return frame;
+};
 
 /** The empty object marking where a held light shines from. */
 export const LENS = 'lens';
@@ -59,9 +90,22 @@ const around = (scene: Object3D, origin: Vector3, lens?: Vector3): Group => {
   return new Group().add(offset);
 };
 
+/** Bounds of what is drawn: hidden slot geometry doesn't hold a model off the ground. */
+const visibleBounds = (object: Object3D): Box3 => {
+  object.updateMatrixWorld(true);
+  const box = new Box3();
+  object.traverseVisible((child) => {
+    if (child instanceof Mesh) {
+      child.geometry.computeBoundingBox();
+      box.union(child.geometry.boundingBox!.clone().applyMatrix4(child.matrixWorld));
+    }
+  });
+  return box;
+};
+
 /** Both forms of a loaded model. */
 export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
-  const box = new Box3().setFromObject(scene);
+  const box = visibleBounds(scene);
   const centre = box.getCenter(new Vector3());
   // Lying: centred on x and z over the origin, resting on y = 0.
   const ground = around(scene, new Vector3(centre.x, box.min.y, centre.z));
@@ -75,8 +119,8 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   const held = new Group().add(turned);
   ground.updateMatrixWorld(true);
   const groundParts: GroundModelPart[] = [];
-  ground.traverse((object) => {
-    if (object instanceof Mesh && object.visible) {
+  ground.traverseVisible((object) => {
+    if (object instanceof Mesh) {
       groundParts.push({ geometry: object.geometry, material: object.material, matrix: object.matrixWorld.clone() });
     }
   });
@@ -85,13 +129,19 @@ export const prepareModel = (def: ModelDef, scene: Object3D): Prepared => {
   } else {
     held.rotation.y = Math.PI / 2;
   }
-  return { ground, groundParts, held };
+  return { ground, groundParts, held, scene };
 };
+
+/** `around`'s offset group, whose frame is the model file's: ground → offset; held → turned → offset. */
+const modelFrame = (root: Object3D, form: 'ground' | 'held'): Object3D =>
+  form === 'ground' ? root.children[0]! : root.children[0]!.children[0]!;
 
 export class ModelLibrary {
   /** Goes up each time a model loads, so what's drawn can catch up. */
   version = 0;
   private readonly ready = new Map<string, Prepared & { actionParts: readonly ActionPartPath[] }>();
+  /** Composed ground looks by `ItemLook.key`, so piles build each distinct look once. */
+  private readonly composedGround = new Map<string, Object3D>();
 
   /** `report` hears about models that can't be drawn; it's never called during construction. */
   constructor(
@@ -110,6 +160,7 @@ export class ModelLibrary {
         url,
         (gltf) => {
           const actionParts = actionPartPaths(gltf.scene, def.action, gltf.parser);
+          hideSlotNodes(def, gltf.scene, gltf.parser);
           this.ready.set(def.id, { ...prepareModel(def, gltf.scene), actionParts });
           this.version += 1;
         },
@@ -137,5 +188,62 @@ export class ModelLibrary {
   held(id: string): HeldModel | undefined {
     const prepared = this.ready.get(id);
     return prepared ? cloneHeldModel(prepared.held, prepared.actionParts) : undefined;
+  }
+
+  /** A copy of a model in its own file frame, as another model's part; undefined until it loads. */
+  part(id: string): Object3D | undefined {
+    return this.ready.get(id)?.scene.clone();
+  }
+
+  /** A part model's bounds in its own file frame. */
+  partBounds(id: string): Box3 | undefined {
+    const prepared = this.ready.get(id);
+    return prepared && visibleBounds(prepared.scene);
+  }
+
+  /** An item's look held at its grip: the base model with each loaded part at its slot. */
+  heldLook(look: ItemLook): ComposedHeld | undefined {
+    const prepared = this.ready.get(look.model);
+    if (!prepared) {
+      return undefined;
+    }
+    const held = cloneHeldModel(prepared.held, prepared.actionParts);
+    return { ...held, slots: this.attachParts(modelFrame(held.root, 'held'), look) };
+  }
+
+  /** An item's look lying on the ground, resting on y = 0 with whatever is fitted; built once per look. */
+  groundLook(look: ItemLook): Object3D | undefined {
+    const cached = this.composedGround.get(look.key);
+    if (cached) {
+      return cached.clone();
+    }
+    const prepared = this.ready.get(look.model);
+    if (!prepared) {
+      return undefined;
+    }
+    const root = prepared.ground.clone();
+    const frame = modelFrame(root, 'ground');
+    const slots = Object.values(this.attachParts(frame, look));
+    if (slots.some((slot) => slot.model)) {
+      frame.position.y -= visibleBounds(root).min.y;
+    }
+    if (look.slots.every((slot) => slot.model === undefined || this.ready.has(slot.model))) {
+      this.composedGround.set(look.key, root); // A part still loading would leave this look incomplete.
+    }
+    return root.clone();
+  }
+
+  private attachParts(frame: Object3D, look: ItemLook): ComposedHeld['slots'] {
+    const slots: ComposedHeld['slots'] = {};
+    for (const slot of look.slots) {
+      const group = slotFrame(slot);
+      const model = slot.model === undefined ? undefined : this.part(slot.model);
+      if (model) {
+        group.add(model);
+      }
+      frame.add(group);
+      slots[slot.slot] = { frame: group, ...(model ? { model, modelId: slot.model } : {}) };
+    }
+    return slots;
   }
 }

@@ -14,6 +14,7 @@ import {
   Object3D,
 } from 'three';
 import { type Inventory, PILE_GRID, type Pile } from '../core/inventory.ts';
+import { itemLook } from '../core/itemLook.ts';
 import { defOf } from '../core/items.ts';
 import { pileLayout } from '../core/pileLayout.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
@@ -112,14 +113,16 @@ export class PileMeshes {
       ),
     };
     const layout = pileLayout(inventory.registry, regularPile, this.blockSize, (id) => this.models?.has(id) ?? false);
-    this.drawModels(layout.models);
+    this.drawModels(inventory, layout.models);
     this.planSpentCases(inventory, pile, casePlans);
     this.drawBundle(inventory, pile, layout.bundle);
   }
 
-  private drawModels(models: ReturnType<typeof pileLayout>['models']): void {
+  /** Each item as its own look, so a rifle on the ground shows the magazine it really has. */
+  private drawModels(inventory: Inventory, models: ReturnType<typeof pileLayout>['models']): void {
     for (const piled of models) {
-      const model = this.models?.ground(piled.model);
+      const look = itemLook(inventory.registry, piled.placed.item);
+      const model = look && this.models?.groundLook(look);
       if (!model) {
         continue;
       }

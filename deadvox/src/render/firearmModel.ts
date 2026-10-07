@@ -30,6 +30,24 @@ export interface HeldModel {
   readonly parts: readonly HeldActionPart[];
 }
 
+/** The loaded objects of the given glTF node names, found by index because Three.js sanitizes names. */
+export const namedNodes = (scene: Object3D, parser: GLTFParser, names: readonly string[]): Object3D[] => {
+  const nodes = parser.json.nodes as readonly { name?: string }[];
+  return names.map((name) => {
+    const index = nodes.findIndex((definition) => definition.name === name);
+    let node: Object3D | undefined;
+    scene.traverse((object) => {
+      if (parser.associations.get(object)?.nodes === index) {
+        node = object;
+      }
+    });
+    if (index < 0 || !node) {
+      throw new Error(`Model node ${name} is not in its file`);
+    }
+    return node;
+  });
+};
+
 export const actionPartPaths = (
   scene: Object3D,
   action: FirearmAction | undefined,
@@ -121,13 +139,45 @@ export const sampleActionStroke = (
   return Math.max(0, 1 - (time - returnAt) / cycle.forwardSimSeconds);
 };
 
+const smooth = (value: number): number => value * value * (3 - 2 * value);
+
+/** Presentation: the share of a magazine job at each end spent reaching to the magazine and back. */
+const MAGAZINE_REACH_SHARE = 0.15;
+
+export interface MagazineMotion {
+  /** How far the fitted magazine is out of the well, 0 seated to 1 clear; absent once it has left. */
+  readonly outgoing?: number;
+  /** How far the magazine going in still is from seated, 1 clear to 0 seated; absent before its turn. */
+  readonly incoming?: number;
+  /** How far the off hand has reached from its grip to the magazine. */
+  readonly reach: number;
+}
+
+/**
+ * A magazine job's pose from its progress alone: the fitted magazine leaves the well over the removal share, then
+ * the new one seats over the rest. Only presentation reads it, so it adds no simulation or save state.
+ */
+export const magazineMotion = (elapsed: number, duration: number, removeShare: number): MagazineMotion => {
+  const progress = duration > 0 ? Math.min(1, Math.max(0, elapsed / duration)) : 1;
+  const reach = smooth(Math.min(1, progress / MAGAZINE_REACH_SHARE, (1 - progress) / MAGAZINE_REACH_SHARE));
+  if (progress < removeShare) {
+    return { outgoing: smooth(progress / removeShare), reach };
+  }
+  if (removeShare >= 1) {
+    return { reach };
+  }
+  return { incoming: 1 - smooth((progress - removeShare) / (1 - removeShare)), reach };
+};
+
 /** Presentation estimate: bound the geometry-derived turn while exposing an away-facing port. */
 const MAX_RACK_CANT_RADIANS = Math.PI / 4;
 
 export const rackCant = (
   model: ModelDef | undefined,
   hand: HandSide,
-  frame: { readonly mode: FirearmMode | 'load'; readonly elapsed: number; readonly duration?: number } | undefined,
+  frame:
+    | { readonly mode: FirearmMode | 'load' | 'magazine'; readonly elapsed: number; readonly duration?: number }
+    | undefined,
   grip: { readonly x: number; readonly y: number },
 ): number => {
   if (

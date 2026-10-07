@@ -4,6 +4,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import type { ItemLook } from '../src/core/itemLook.ts';
 import { type MeleeProfile, meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { HeldItems } from '../src/render/hands.ts';
@@ -29,11 +30,16 @@ await Promise.all(
     realHeldModels.set(id, prepareModel(def, gltf.scene).held);
   }),
 );
+const heldModel = (id: string) => {
+  const root = realHeldModels.get(id)?.clone();
+  return root ? { root, parts: [] } : undefined;
+};
 const library: ModelLibrary = {
   version: 0,
-  held: (id: string) => {
-    const root = realHeldModels.get(id)?.clone();
-    return root ? { root, parts: [] } : undefined;
+  held: heldModel,
+  heldLook: (look: ItemLook) => {
+    const model = heldModel(look.model);
+    return model && { ...model, slots: {} };
   },
 } as unknown as ModelLibrary;
 const screen = (point: Vector3, camera: PerspectiveCamera): { x: number; y: number } => {
@@ -105,7 +111,8 @@ function measure(
     modelId && modelOverride
       ? ({
           ...library,
-          held: (id: string) => library.held(id === modelId ? modelOverride : id),
+          heldLook: (look: ItemLook) =>
+            library.heldLook({ ...look, model: look.model === modelId ? modelOverride : look.model }),
         } as ModelLibrary)
       : library;
   const held = new HeldItems(inventory, models, palette);

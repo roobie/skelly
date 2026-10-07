@@ -69,7 +69,10 @@ const fixture = (type: string, checkState: (before: unknown, after: unknown) => 
   if (!(inventory.locate(item) || inventory.add(item, { kind: 'hand', side: 'right' }))) {
     throw new Error('Cannot hold fixture item');
   }
-  const models = { version: 0, held: () => ({ root: new Group(), parts: [] }) } as unknown as ModelLibrary;
+  const models = {
+    version: 0,
+    heldLook: () => ({ root: new Group(), parts: [], slots: {} }),
+  } as unknown as ModelLibrary;
   const held = new HeldItems(inventory, models, { skin: '#bbaa99', shirt: '#556677', trousers: '#334455' });
   const camera = new PerspectiveCamera();
   const project = (handling: HeldHandlingFrame = { firearms: mechanics.frames(), job: queue.jobs[0] }) => {

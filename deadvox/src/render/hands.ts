@@ -33,6 +33,7 @@ import type { Vec3 } from '../core/coords.ts';
 import type { Job } from '../core/handling.ts';
 import { HOLD, heldAnchorOffset, heldFirearmTransform, heldGripOffset, modelToView } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
+import { itemLook } from '../core/itemLook.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
@@ -42,11 +43,12 @@ import {
   type FirearmAction,
   type FirearmMode,
   type HeldActionPart,
+  magazineMotion,
   poseActionParts,
   rackCant,
   sampleActionStroke,
 } from './firearmModel.ts';
-import { LENS, type ModelLibrary } from './models.ts';
+import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
 import { rummageFrame, rummageGrip } from './rummagePose.ts';
 import { shellLoadPose } from './shellLoadPose.ts';
@@ -58,10 +60,11 @@ const TORSO_Y_AXIS = new Vector3(0, 1, 0);
 
 export interface HeldFirearmPose {
   readonly uid: number;
-  readonly mode: FirearmMode | 'load';
+  readonly mode: FirearmMode | 'load' | 'magazine';
   readonly elapsed: number;
   readonly duration?: number;
   readonly roundType?: string;
+  readonly magazine?: { readonly removeShare: number; readonly incoming?: string };
 }
 
 interface HeldReadiness {
@@ -109,6 +112,9 @@ export class HeldItems {
   private readonly compasses = new Map<number, ReturnType<typeof createCompass>>();
   private readonly firearmParts = new Map<number, { action: FirearmAction; parts: readonly HeldActionPart[] }>();
   private readonly pumpModels = new Map<number, ModelDef>();
+  /** Each held gun's magazine slot, with what is really fitted there (DESIGN.md, "One item, one look"). */
+  private readonly magazineSlots = new Map<number, ComposedSlot>();
+  private readonly incomingMagazines = new Map<number, { object: Object3D; model: string }>();
   private readonly loadingShells = new Map<number, Object3D>();
   private readonly arms = new Map<HandSide, Group>();
   private readonly armLengths = new Map<Group, readonly [number, number]>();
@@ -506,11 +512,92 @@ export class HeldItems {
   private poseFirearms(frames: readonly HeldFirearmPose[]): void {
     for (const [uid, { action, parts }] of this.firearmParts) {
       const frame = frames.find((entry) => entry.uid === uid);
-      const mode = frame?.mode === 'load' ? undefined : frame?.mode;
+      const mode = frame?.mode === 'fire' || frame?.mode === 'hand' ? frame.mode : undefined;
       const stroke = frame && mode ? sampleActionStroke(action, mode, frame.elapsed, frame.duration) : 0;
       poseActionParts(parts, mode, stroke);
       this.updatePump(uid, frame, stroke);
+      this.poseMagazine(uid, frame);
     }
+  }
+
+  /** Plays a magazine job on the held gun: the fitted one leaves the well, the new one seats, the off hand helps. */
+  private poseMagazine(uid: number, frame: HeldFirearmPose | undefined): void {
+    const slot = this.magazineSlots.get(uid);
+    const held = this.shown.get(uid);
+    if (!(slot && held)) {
+      return;
+    }
+    const motion =
+      frame?.mode === 'magazine' && frame.magazine && frame.duration !== undefined
+        ? magazineMotion(frame.elapsed, frame.duration, frame.magazine.removeShare)
+        : undefined;
+    const fitted = slot.model && slot.modelId ? { object: slot.model, model: slot.modelId } : undefined;
+    if (fitted) {
+      fitted.object.visible = motion === undefined || motion.outgoing !== undefined;
+      this.placeMagazine(fitted, motion?.outgoing ?? 0);
+    }
+    const incoming = this.incomingMagazine(
+      uid,
+      slot.frame,
+      motion?.incoming === undefined ? undefined : frame?.magazine?.incoming,
+    );
+    if (incoming) {
+      this.placeMagazine(incoming, motion!.incoming!);
+    }
+    const moving = motion?.outgoing === undefined ? incoming : fitted;
+    this.reachForMagazine(uid, held, moving, motion?.reach ?? 0);
+  }
+
+  /** Slides a magazine out of its well along the slot's down axis by its own height, so it just clears. */
+  private placeMagazine({ object, model }: { object: Object3D; model: string }, out: number): void {
+    const bounds = this.models?.partBounds(model);
+    const height = bounds ? bounds.max.y - bounds.min.y : 0;
+    object.position.set(0, -out * height, 0);
+  }
+
+  /** The magazine a change is seating, drawn in the slot until the job ends; none outside its insert phase. */
+  private incomingMagazine(
+    uid: number,
+    slot: Object3D,
+    model: string | undefined,
+  ): { object: Object3D; model: string } | undefined {
+    const current = this.incomingMagazines.get(uid);
+    if (current && current.model === model) {
+      return current;
+    }
+    current?.object.removeFromParent();
+    this.incomingMagazines.delete(uid);
+    const object = model === undefined ? undefined : this.models?.part(model);
+    if (!(model && object)) {
+      return undefined;
+    }
+    slot.add(object);
+    const entry = { object, model };
+    this.incomingMagazines.set(uid, entry);
+    return entry;
+  }
+
+  /** Moves the off hand from its grip to the moving magazine's middle while a magazine job plays. */
+  private reachForMagazine(
+    uid: number,
+    held: Object3D,
+    magazine: { object: Object3D; model: string } | undefined,
+    reach: number,
+  ): void {
+    const side = this.inventory.hands.right?.uid === uid ? 'left' : 'right';
+    const arm = this.arms.get(side);
+    const base = this.handBases.get(side);
+    if (!(arm && base && arm.parent === held)) {
+      return;
+    }
+    arm.position.set(...base);
+    const bounds = magazine && this.models?.partBounds(magazine.model);
+    if (!(magazine && bounds && reach > 0)) {
+      return;
+    }
+    held.updateMatrixWorld(true);
+    const grip = held.worldToLocal(magazine.object.localToWorld(bounds.getCenter(new Vector3())));
+    arm.position.lerp(grip, reach);
   }
 
   private updatePump(uid: number, frame: HeldFirearmPose | undefined, stroke: number): void {
@@ -684,6 +771,8 @@ export class HeldItems {
     this.shown.clear();
     this.firearmParts.clear();
     this.pumpModels.clear();
+    this.magazineSlots.clear();
+    this.incomingMagazines.clear();
     this.loadingShells.clear();
     this.armLengths.clear();
     this.handBases.clear();
@@ -855,9 +944,13 @@ export class HeldItems {
       this.compasses.set(item.uid, compass);
       return compass.group;
     }
-    const model = def.model === undefined ? undefined : this.models?.held(def.model);
+    const look = itemLook(this.inventory.registry, item);
+    const model = look && this.models?.heldLook(look);
     if (model) {
       const action = this.inventory.registry.models.get(def.model!)?.action;
+      if (model.slots.magazine) {
+        this.magazineSlots.set(item.uid, model.slots.magazine);
+      }
       if (action) {
         this.firearmParts.set(item.uid, { action, parts: model.parts });
         const definition = this.inventory.registry.models.get(def.model!)!;

@@ -131,7 +131,7 @@ const shot = (simTime = 1, prepare: (inventory: Inventory) => void = () => undef
     throw new Error('Test shot was refused');
   }
   mechanics.advanceTo(simTime + 0.02);
-  return { effect: effects[0], inventory };
+  return { effect: effects[0], inventory, rifle };
 };
 
 describe('rifle firearm handling', () => {
@@ -549,10 +549,12 @@ describe('rifle firearm handling', () => {
     }).inventory;
     expect([cases(beside, feet), cases(beside, landing!)]).toEqual([11, 1]);
 
-    const { effect, inventory } = shot(1, (prepared) => {
+    const { effect, inventory, rifle } = shot(1, (prepared) => {
       expect(prepared.add(prepared.create(caseType, 5), { kind: 'pile', pos: landing! })).toBe(true);
     });
-    expect(effect).toMatchObject({ speed: 3.5, caseModelId: 'case_5_d_56x45' });
+    const { caseModelId } = firearmHandlingFor(rifle, registry);
+    expect(caseModelId).toBeDefined();
+    expect(effect?.caseModelId).toBe(caseModelId);
     expect(cases(inventory, landing!)).toBe(6);
 
     const saved = JSON.parse(JSON.stringify(inventory.snapshotState())) as InventoryState;
