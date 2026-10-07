@@ -22,10 +22,16 @@ const must = (refusal: string | undefined): void => {
   }
 };
 
-/** Runs the queue's jobs to completion on simulation time. */
-export const settle = (queue: HandlingQueue): void => {
-  while (queue.busy) {
-    queue.tick(0.05);
+/**
+ * Runs the queue's jobs to completion on simulation time, one `step` at a time (a queue tick unless the caller
+ * frames a whole session); a wedged queue fails instead of hanging the worker.
+ */
+export const settle = (queue: HandlingQueue, step: () => void = () => queue.tick(0.05)): void => {
+  for (let steps = 0; queue.busy; steps += 1) {
+    if (steps > 600) {
+      throw new Error('Handling did not finish');
+    }
+    step();
   }
 };
 
@@ -41,20 +47,26 @@ export const rifleAmmunition = (registry: Registry, type: string): { magazine: s
   return { magazine, cartridge };
 };
 
+interface RifleOptions {
+  type?: string;
+  rounds?: number;
+  side?: HandSide;
+  magazines?: MagazineHandling;
+}
+
 /**
- * Holds a rifle charged from a magazine loaded with `rounds` cartridges, on an otherwise empty-handed character.
- * Without `magazines` it registers the magazine actions on `queue`, so call it once per queue.
+ * Holds an empty rifle on an otherwise empty-handed character, with a magazine loaded with `rounds` cartridges in
+ * a worn bag. Without `magazines` it registers the magazine actions on `queue`, so call it once per queue.
  */
-export const chargedRifle = (
+export const rifleInHand = (
   inventory: Inventory,
   queue: HandlingQueue,
-  mechanics: FirearmMechanics,
   {
     type = 'rifle_assault',
     rounds = 3,
     side = dominantSide(inventory.character),
     magazines = new MagazineHandling(inventory, queue, { feet: () => [0, 1, 0], reloadDurationScale: () => 1 }),
-  }: { type?: string; rounds?: number; side?: HandSide; magazines?: MagazineHandling } = {},
+  }: RifleOptions = {},
 ): ChargedRifle => {
   const { magazine: magazineType, cartridge } = rifleAmmunition(inventory.registry, type);
   const hand = { kind: 'hand', side } as const;
@@ -78,9 +90,20 @@ export const chargedRifle = (
   if (!(inventory.move(magazine, pocket).ok && inventory.add(rifle, hand))) {
     throw new Error('Rifle fixture cannot swap the magazine for the rifle');
   }
-  must(mechanics.loadNext(rifle.uid, 0));
-  settle(queue);
-  must(mechanics.cock(rifle.uid, 0));
-  settle(queue);
   return { rifle, magazine, bag, magazines };
+};
+
+/** `rifleInHand`, then the magazine fitted with R and the charging handle worked. */
+export const chargedRifle = (
+  inventory: Inventory,
+  queue: HandlingQueue,
+  mechanics: FirearmMechanics,
+  options: RifleOptions = {},
+): ChargedRifle => {
+  const held = rifleInHand(inventory, queue, options);
+  must(mechanics.loadNext(held.rifle.uid, 0));
+  settle(queue);
+  must(mechanics.cock(held.rifle.uid, 0));
+  settle(queue);
+  return held;
 };

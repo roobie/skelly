@@ -25,7 +25,7 @@ import {
 import { adjustLookPitch, LOOK_PITCH_LIMIT } from '../src/game/input.ts';
 import { PLAYER } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
-import { chargedRifle, rifleAmmunition } from './rifleFixture.ts';
+import { chargedRifle, rifleAmmunition, rifleInHand, settle } from './rifleFixture.ts';
 
 const base = 'src/content/base';
 const { registry } = buildRegistry(
@@ -315,9 +315,7 @@ it('loading a magazine round, changing the magazine and charging each train fire
     const level = runtime.character.skills.firearms_combat!;
     const practice = runtime.character.practice.firearms_combat!;
     expect(act()).toBeUndefined();
-    while (runtime.queue.busy) {
-      runtime.frame(1 / 60);
-    }
+    settle(runtime.queue, () => runtime.frame(1 / 60));
     const after = runtime.character.skills.firearms_combat!;
     return after > level || (after === level && runtime.character.practice.firearms_combat! > practice);
   };
@@ -329,20 +327,18 @@ it('loading a magazine round, changing the magazine and charging each train fire
 
 it('keeps a ready rifle ready through a magazine change and a charge', () => {
   const original = session([], undefined, undefined, { readyHeld: true, active: true });
-  const rifle = sessionRifle(original);
+  // Inserting into the empty rifle is the same magazine-change job as a swap.
+  const { rifle, magazine } = rifleInHand(original.inventory, original.queue, { magazines: original.magazines });
   original.frame(1 / 60);
   original.frame(rifle.firearm!.readying!.duration);
   expect(original.firearms.isReady(rifle.uid)).toBe(true);
   const readyAfter = (act: () => string | undefined): boolean => {
     expect(act()).toBeUndefined();
-    while (original.queue.busy) {
-      original.frame(1 / 60);
-    }
+    settle(original.queue, () => original.frame(1 / 60));
     return original.firearms.isReady(rifle.uid);
   };
   expect(readyAfter(() => original.firearms.loadNext(rifle.uid, original.sim.time))).toBe(true);
-  expect(rifle.slots?.magazine).toBeUndefined();
-  expect(readyAfter(() => original.firearms.loadNext(rifle.uid, original.sim.time))).toBe(true);
+  expect(rifle.slots?.magazine).toBe(magazine);
   expect(readyAfter(() => original.firearms.cock(rifle.uid, original.sim.time))).toBe(true);
 });
 

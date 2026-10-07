@@ -273,7 +273,10 @@ try {
     if (refusal) {
       throw new Error(`Could not charge the fixture AR: ${refusal}`);
     }
-    while (session.queue.busy) {
+    for (let step = 0; session.queue.busy; step += 1) {
+      if (step > 600) {
+        throw new Error('Charging the fixture AR did not finish');
+      }
       session.frame(1 / 60);
     }
     const probe = globalThis.fullAutoProbe;
@@ -377,7 +380,10 @@ try {
     if (refusal) {
       throw new Error(`Could not change to the spare magazine: ${refusal}`);
     }
-    while (session.queue.busy) {
+    for (let step = 0; session.queue.busy; step += 1) {
+      if (step > 600) {
+        throw new Error('Changing to the spare magazine did not finish');
+      }
       session.frame(1 / 60);
     }
   });

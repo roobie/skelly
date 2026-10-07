@@ -639,7 +639,8 @@ export class FirearmMechanics {
 
   /**
    * Swaps in the fullest carried magazine that fits and holds more than the fitted one (lowest UID on a tie, so
-   * the choice is save-stable); with none fuller, takes the fitted magazine out so it can be refilled.
+   * the choice is save-stable). R only (re)loads (CONTROLS.md, "Reload only"), so with none fuller it refuses
+   * rather than taking the fitted magazine out.
    */
   private changeMagazine(gun: Item, time: number): string | undefined {
     if (this.queue.busy || gun.firearm?.cycle) {
@@ -647,19 +648,15 @@ export class FirearmMechanics {
     }
     const fitted = gun.slots?.magazine;
     const replacement = this.fullerMagazine(gun, fitted);
-    if (!(replacement || fitted)) {
-      return 'No magazine for this firearm is carried';
-    }
-    let label = 'Remove magazine';
-    if (replacement) {
-      label = fitted ? 'Change magazine' : 'Insert magazine';
+    if (!replacement) {
+      return fitted ? 'No fuller magazine is carried' : 'No magazine for this firearm is carried';
     }
     this.queue.enqueueAction(
       MAGAZINE_ACTION,
-      label,
+      fitted ? 'Change magazine' : 'Insert magazine',
       MAGAZINE_CHANGE_SIM_SECONDS *
         firearmsSkillEffects(this.firearmsSkillLevel(), this.requiredFirearmsCombatTuning()).reloadDuration,
-      replacement ? { uid: gun.uid, magazineUid: replacement.uid } : { uid: gun.uid },
+      { uid: gun.uid, magazineUid: replacement.uid },
     );
     this.onSound('magazine_change', undefined, time);
     return undefined;
@@ -680,19 +677,19 @@ export class FirearmMechanics {
     if (!(gun?.slots && this.held(gun.uid))) {
       return 'Firearm is no longer held';
     }
-    const replacement = magazineUid === undefined ? undefined : this.carriedFitting(gun, magazineUid);
-    if (magazineUid !== undefined && !replacement) {
+    const replacement = this.carriedFitting(gun, magazineUid);
+    if (!replacement) {
       return 'The magazine is no longer carried';
     }
-    const back = replacement && this.inventory.targetForLocation(this.inventory.locate(replacement)!);
-    if (replacement && !this.inventory.consume(replacement, replacement.count)) {
+    const back = this.inventory.targetForLocation(this.inventory.locate(replacement)!);
+    if (!this.inventory.consume(replacement, replacement.count)) {
       return 'The magazine is no longer carried';
     }
     const removed = this.inventory.fitSlot(gun, 'magazine', replacement);
     if (removed && !this.stow(gun, removed)) {
       this.inventory.fitSlot(gun, 'magazine', removed);
-      if (replacement && back) {
-        this.inventory.add(replacement, back);
+      if (!(this.inventory.add(replacement, back) || this.stow(gun, replacement))) {
+        throw new Error('Undoing a magazine change lost the replacement magazine');
       }
       return 'No room for the removed magazine';
     }

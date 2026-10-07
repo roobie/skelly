@@ -300,7 +300,7 @@
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A curated gungen AR in 5.56×45, fed from STANAG magazines. Hold R to change to the fullest carried magazine, or to take out the fitted one when none is fuller; double-press R to work the charging handle. LMB fires; hold it for automatic fire. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "description": "A curated gungen AR in 5.56×45, fed from STANAG magazines. Hold R to change to the fullest carried magazine; double-press R to work the charging handle. LMB fires; hold it for automatic fire. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
       "firearm": {
         "recoilKickRadians": 0.006,
         "dispersionRadians": 0.012
@@ -314,7 +314,7 @@
       "weight": 3500,
       "size": [1, 5],
       "twoHanded": true,
-      "description": "A curated gungen AK in 7.62×39, fed from AKM magazines, with its handle on the carrier. Hold R to change to the fullest carried magazine, or to take out the fitted one when none is fuller; double-press R to work the charging handle. LMB fires; hold it for automatic fire. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
+      "description": "A curated gungen AK in 7.62×39, fed from AKM magazines, with its handle on the carrier. Hold R to change to the fullest carried magazine; double-press R to work the charging handle. LMB fires; hold it for automatic fire. Prototype gameplay mass: 3500 g, not a sourced firearm specification.",
       "firearm": {
         "recoilKickRadians": 0.012,
         "dispersionRadians": 0.018
