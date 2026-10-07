@@ -152,8 +152,10 @@ const worldSources = (registry: Registry) => {
   const workstations = new Set<string>();
   const workstationQualities = new Map<string, number>();
   const markers = new Map<string, readonly SpawnMarker[]>();
+  // Authored sites place their buildings' containers too, so 3.11's military camp makes its loot reachable.
+  const authored = [...registry.layouts.values()].flatMap((layout) => layout.buildings.map(({ template }) => template));
   // Compiling uses the actual marked pieces/spawns, not unused palette declarations.
-  for (const id of HAMLET_TEMPLATES) {
+  for (const id of new Set([...HAMLET_TEMPLATES, ...authored])) {
     const definition = registry.templates.get(id);
     if (!definition) {
       continue; // A rejected/missing template provides no sources.
@@ -165,7 +167,9 @@ const worldSources = (registry: Registry) => {
       }
       addWorkstationSource(registry.furniture.get(piece.furniture)?.workstation, workstations, workstationQualities);
     }
-    markers.set(id, template.spawns);
+    if (HAMLET_TEMPLATES.includes(id)) {
+      markers.set(id, template.spawns);
+    }
   }
   for (const id of possibleHamletZombies(markers)) {
     const loot = registry.zombies.get(id)?.loot;

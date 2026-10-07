@@ -4,6 +4,7 @@ import { buildingBounds, lotOf, profileHeight, standingHeight, surfaceFoundation
 import type { Registry, TemplateDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import { HAMLET_BLOCK_SIZE } from './hamlet.ts';
+import { militaryLootItems } from './magazine.ts';
 import { WORLD_BOTTOM_M } from './scale.ts';
 import type { SiteLayoutDef } from './schema.ts';
 import type { Rect } from './site.ts';
@@ -23,6 +24,16 @@ const insideLayout = (bounds: Rect, [x, z]: LayoutPoint, inset = 0): boolean =>
 /** Maximum intentional levelling of the raw profile at any half-metre footprint cell. */
 const FOUNDATION_TOLERANCE = 1;
 type LayoutBuilding = SiteLayoutDef['buildings'][number];
+
+/** Why this item can't be fixed loot in a container rolling `loot`, or undefined when it can. */
+const fixedItemIssue = (registry: Registry, item: string, loot: string | undefined): string | undefined => {
+  if (!registry.items.has(item)) {
+    return `no item "${item}"`;
+  }
+  return militaryLootItems(registry).has(item) && !registry.loot.get(loot ?? '')?.military
+    ? `"${item}" is military loot only; place it where a "military" table rolls`
+    : undefined;
+};
 
 const fixedLootIssues = (
   registry: Registry,
@@ -51,8 +62,9 @@ const fixedLootIssues = (
       issues.push([`${path}.at`, `furniture at ${key} has no container`]);
     }
     for (const [itemIndex, fixed] of override.items.entries()) {
-      if (!registry.items.has(fixed.item)) {
-        issues.push([`${path}.items[${itemIndex}].item`, `no item "${fixed.item}"`]);
+      const issue = fixedItemIssue(registry, fixed.item, piece.loot);
+      if (issue !== undefined) {
+        issues.push([`${path}.items[${itemIndex}].item`, issue]);
       }
     }
   }

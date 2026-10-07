@@ -6,6 +6,7 @@
 
 import { type BaseIssue, safeParse } from 'valibot';
 import { authoredLayoutIssues } from './authoredLayout.ts';
+import { militaryLootItems } from './magazine.ts';
 import {
   type BlockDef,
   CONTENT_SECTION_KEYS,
@@ -387,6 +388,51 @@ const checkLoot = (registry: Registry, report: Report) => {
   }
 };
 
+const militaryOnly = (id: string) => `"${id}" is military loot only`;
+
+const checkMilitaryTables = (registry: Registry, military: ReadonlySet<string>, report: Report) => {
+  for (const table of registry.loot.values()) {
+    if (table.military) {
+      continue;
+    }
+    table.entries.forEach((entry, i) => {
+      if (entry.item !== undefined && military.has(entry.item)) {
+        report(
+          'loot',
+          table.id,
+          `.entries[${i}].item`,
+          `${militaryOnly(entry.item)}; only a "military" table may hold it`,
+        );
+      }
+      if (entry.table !== undefined && registry.loot.get(entry.table)?.military) {
+        report('loot', table.id, `.entries[${i}].table`, `only a "military" table may nest "${entry.table}"`);
+      }
+    });
+  }
+};
+
+/** Every source of a military-only item is a military table: no other table, craft or salvage makes one. */
+const checkMilitaryLoot = (registry: Registry, report: Report) => {
+  const military = militaryLootItems(registry);
+  checkMilitaryTables(registry, military, report);
+  for (const item of registry.items.values()) {
+    const outputs = [
+      ...(item.disassembly?.yields ?? []).map((output, i) => [`.disassembly.yields[${i}].item`, output.item] as const),
+      ...(item.salvage ?? []).map((output, i) => [`.salvage[${i}].item`, output.item] as const),
+    ];
+    for (const [path, output] of military.has(item.id) ? [] : outputs) {
+      if (military.has(output)) {
+        report('items', item.id, path, `${militaryOnly(output)}; salvage may not yield it`);
+      }
+    }
+  }
+  for (const recipe of registry.recipes.values()) {
+    if (recipe.kind !== 'repair' && military.has(recipe.result.item)) {
+      report('recipes', recipe.id, '.result.item', `${militaryOnly(recipe.result.item)}; no recipe may make it`);
+    }
+  }
+};
+
 const checkFurniture = (registry: Registry, report: Report) => {
   for (const furniture of registry.furniture.values()) {
     if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
@@ -588,6 +634,7 @@ const referenceIssues = (registry: Registry, origins: Map<string, Origin>): Cont
   }
   checkItems(registry, report);
   checkLoot(registry, report);
+  checkMilitaryLoot(registry, report);
   checkFurniture(registry, report);
   checkTemplates(registry, report);
   checkKeys(registry, report);

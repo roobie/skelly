@@ -3,7 +3,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { blockColors, buildRegistry, requiredSoundIssues, validateContent } from '../src/core/content.ts';
+import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import {
@@ -697,6 +699,106 @@ describe('content references', () => {
     };
     const { issues } = withBase(loop);
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
+  });
+
+  it('lets only a military table hold or nest military-only loot, and no salvage or recipe make it', () => {
+    const [item] = militaryLootItems(baseRegistry);
+    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
+    if (item === undefined || armoury === undefined) {
+      throw new Error('base content needs a military-only item and a military table');
+    }
+    const source = 'military-sources.json';
+    const { issues } = withBase({
+      source,
+      data: {
+        loot: [
+          {
+            id: 'fixture_shed_crate',
+            rolls: [1, 1],
+            entries: [
+              { item, weight: 1 },
+              { table: armoury.id, weight: 1 },
+              { item: 'rag', weight: 1 },
+            ],
+          },
+          {
+            id: 'fixture_ammo_crate',
+            military: true,
+            rolls: [1, 1],
+            entries: [
+              { item, weight: 1 },
+              { table: armoury.id, weight: 1 },
+            ],
+          },
+        ],
+        items: [
+          {
+            id: 'fixture_scrap',
+            name: 'Scrap',
+            category: 'material',
+            weight: 1,
+            size: [1, 1],
+            salvage: [{ item, count: 1 }],
+          },
+          {
+            id: 'fixture_box',
+            name: 'Box',
+            category: 'material',
+            weight: 1,
+            size: [1, 1],
+            unpack: { item, count: 1 },
+            disassembly: {
+              time: 1,
+              skill: 'crafting',
+              yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+            },
+          },
+        ],
+        recipes: [
+          {
+            id: 'fixture_box_press',
+            result: { item: 'fixture_box', count: 1 },
+            time: 1,
+            components: [[{ item: 'rag', count: 1 }]],
+            qualities: {},
+            skills: {},
+          },
+        ],
+      },
+    });
+    const only = (id: string) => `"${id}" is military loot only`;
+    expect(issues).toEqual([
+      { source, path: 'loot[0].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
+      { source, path: 'loot[0].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
+      { source, path: 'items[0].salvage[0].item', message: `${only(item)}; salvage may not yield it` },
+      { source, path: 'recipes[0].result.item', message: `${only('fixture_box')}; no recipe may make it` },
+    ]);
+  });
+
+  it('makes every military-only item reachable once an authored site rolls a military table', () => {
+    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
+    const authoredOnly = [...baseRegistry.layouts.values()]
+      .flatMap((layout) => layout.buildings.map(({ template }) => baseRegistry.templates.get(template)!))
+      .filter((definition) => !HAMLET_TEMPLATES.includes(definition.id));
+    const site = authoredOnly
+      .map((definition) => structuredClone(definition))
+      .find((definition) =>
+        Object.values(definition.palette).some((entry) => typeof entry === 'object' && 'loot' in entry),
+      );
+    if (armoury === undefined || site === undefined) {
+      throw new Error('base content needs a military table and an authored-only template with a loot container');
+    }
+    for (const [key, entry] of Object.entries(site.palette)) {
+      if (typeof entry === 'object' && 'loot' in entry) {
+        site.palette[key] = { ...entry, loot: armoury.id };
+      }
+    }
+    const { registry, issues } = withBase({ source: 'armoury-site.json', data: { templates: [site] } });
+    expect(issues).toEqual([]);
+    const { found } = checkReachability(registry);
+    const military = [...militaryLootItems(registry)];
+    expect(military.length).toBeGreaterThan(0);
+    expect(military.filter((id) => !found.has(id))).toEqual([]);
   });
 
   it('checks furniture, prying-skill, zombie and light references', () => {

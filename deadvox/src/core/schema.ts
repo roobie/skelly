@@ -577,6 +577,8 @@ const LootEntrySchema = pipe(
 
 const LootTableSchema = strictObject({
   id: Id,
+  /** Military supply: the only tables that may hold military-only items or nest another military table. */
+  military: optional(vBoolean()),
   /** How many times to roll, inclusive. */
   rolls: range(Count),
   entries: pipe(array(LootEntrySchema), nonEmpty('needs at least one entry')),

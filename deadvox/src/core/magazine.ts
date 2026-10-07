@@ -32,6 +32,34 @@ export const magazineFits = (registry: Registry, firearmType: string, magazineTy
   return calibre !== undefined && magazineSpec(registry, magazineType)?.calibre === calibre;
 };
 
+/**
+ * Military loot only: the magazine-fed rifles, the magazines and cartridges of their calibres, and boxes of those
+ * cartridges. BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2); their ammunition follows.
+ */
+export const militaryLootItems = (registry: Registry): ReadonlySet<string> => {
+  const calibres = new Set<string>();
+  const items = new Set<string>();
+  for (const id of registry.items.keys()) {
+    const calibre = magazineWellCalibre(registry, id);
+    if (calibre !== undefined) {
+      calibres.add(calibre);
+      items.add(id);
+    }
+  }
+  for (const [id, def] of registry.items) {
+    const calibre = magazineSpec(registry, id)?.calibre ?? def.ammo?.calibre;
+    if (calibre !== undefined && calibres.has(calibre)) {
+      items.add(id);
+    }
+  }
+  for (const [id, def] of registry.items) {
+    if (def.unpack && items.has(def.unpack.item)) {
+      items.add(id);
+    }
+  }
+  return items;
+};
+
 /** Why `slots` can't be fitted to this item, or undefined when they can. */
 export const slotsReason = (
   registry: Registry,

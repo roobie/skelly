@@ -14,6 +14,7 @@ import {
 } from '../src/core/authoredTerrain.mjs';
 import { buildRegistry } from '../src/core/content.ts';
 import { compassBearing, toChunk } from '../src/core/coords.ts';
+import { militaryLootItems } from '../src/core/magazine.ts';
 import { makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef, TemplateDef } from '../src/core/schema.ts';
 import { compileTemplate, footprint, placedSpawns } from '../src/core/templates.ts';
@@ -286,6 +287,17 @@ describe('authored layout acceptance', () => {
   it('rejects fixed loot on a non-container', () => {
     const nonContainer = fixedLootTemplate.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
     invalidWithFullPack(withFixedLoot(nonContainer.pos, 'rag'), 'has no container');
+  });
+  it('places military-only fixed loot only in a container that rolls a military table', () => {
+    const [military] = militaryLootItems(registry);
+    const rolled = registry.loot.get(fixedLootContainer.loot ?? '');
+    if (military === undefined || rolled === undefined || rolled.military) {
+      throw new Error('fixture needs a military-only item and a non-military container table');
+    }
+    const fixed = withFixedLoot(fixedLootContainer.pos, military);
+    invalidWithFullPack(fixed, 'military loot only');
+    const armoury = { loot: [{ ...rolled, military: true }], layouts: [fixed] };
+    expect(buildRegistry([...base, { source: 'layout-test.json', data: armoury }]).issues).toEqual([]);
   });
   it('rejects fixed loot without a furniture anchor', () => {
     invalidWithFullPack(withFixedLoot([0, 0, 0], 'rag'), 'no furniture anchor');
