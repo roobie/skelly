@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, readiedFirearmBore: () => readiedFirearmBore() } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, heldFirearmBore: () => heldFirearmBore() } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -320,7 +320,7 @@ try {
     'fixture rifle is ready before firing',
   );
   assert.equal(
-    await page.evaluate(() => Boolean(globalThis.fullAutoRuntime.readiedFirearmBore())),
+    await page.evaluate(() => Boolean(globalThis.fullAutoRuntime.heldFirearmBore())),
     true,
     'ready firearm publishes its bore for the crosshair',
   );
