@@ -327,33 +327,34 @@ const dominantAxis = (from: Vec3, to: Vec3): { readonly axis: 0 | 1 | 2; readonl
   return { axis, sign: d[axis] >= 0 ? 1 : -1 };
 };
 
-const directlyTouches = (grid: Grid, cells: readonly number[], childIdx: number, parentIdx: number): boolean => {
+const touchingPair = (
+  grid: Grid,
+  cells: readonly number[],
+  childIdx: number,
+  parentIdx: number,
+): readonly [number, number] | undefined => {
   const [nx, ny, nz] = grid.dims;
-  for (const idx of cells) {
-    if (grid.owner[idx] !== childIdx + 1) {
+  for (const child of cells) {
+    if (grid.owner[child] !== childIdx + 1) {
       continue;
     }
-    const k = Math.floor(idx / (nx * ny));
-    const j = Math.floor((idx - k * nx * ny) / nx);
-    const i = idx - k * nx * ny - j * nx;
+    const k = Math.floor(child / (nx * ny));
+    const j = Math.floor((child - k * nx * ny) / nx);
+    const i = child - k * nx * ny - j * nx;
     for (const [di, dj, dk] of NEIGHBOR_OFFSETS) {
       const ni = i + di;
       const nj = j + dj;
       const nk = k + dk;
-      if (
-        ni >= 0 &&
-        ni < nx &&
-        nj >= 0 &&
-        nj < ny &&
-        nk >= 0 &&
-        nk < nz &&
-        grid.owner[cellIndex(grid.dims, ni, nj, nk)] === parentIdx + 1
-      ) {
-        return true;
+      if (ni < 0 || ni >= nx || nj < 0 || nj >= ny || nk < 0 || nk >= nz) {
+        continue;
+      }
+      const parent = cellIndex(grid.dims, ni, nj, nk);
+      if (grid.owner[parent] === parentIdx + 1) {
+        return [child, parent];
       }
     }
   }
-  return false;
+  return undefined;
 };
 
 /** `cell` itself plus its 6 face-neighbours, as flattened indices (out-of-bounds ones left out). */
@@ -377,31 +378,72 @@ interface JointRepair {
   readonly sign: 1 | -1;
 }
 
-/** Assigns the joint cell to the child and its face-neighbour toward the parent to the parent,
- * guaranteeing actual 6-neighbour adjacency regardless of how the marrow rasterized. */
-const forceJointCells = (grid: Grid, repair: JointRepair): void => {
-  const { dims } = grid;
-  const [ci, cj, ck] = repair.cell;
-  const jointIdx = cellIndex(dims, ci, cj, ck);
-  grid.filled[jointIdx] = 1;
-  grid.owner[jointIdx] = repair.childIdx + 1;
+interface JointCellPair {
+  readonly child: number;
+  readonly parent: number;
+  readonly score: number;
+}
 
+const JOINT_SEARCH_OFFSETS: readonly (readonly [number, number, number])[] = [-1, 0, 1].flatMap((dk) =>
+  [-1, 0, 1].flatMap((dj) => [-1, 0, 1].map((di) => [di, dj, dk] as const)),
+);
+
+const jointCellPairAt = (
+  grid: Grid,
+  repair: JointRepair,
+  reserved: ReadonlySet<number>,
+  [di, dj, dk]: readonly [number, number, number],
+): JointCellPair | undefined => {
+  const childCell: readonly [number, number, number] = [repair.cell[0] + di, repair.cell[1] + dj, repair.cell[2] + dk];
   const parentCell: readonly [number, number, number] = [
-    ci - (repair.axis === 0 ? repair.sign : 0),
-    cj - (repair.axis === 1 ? repair.sign : 0),
-    ck - (repair.axis === 2 ? repair.sign : 0),
+    childCell[0] - (repair.axis === 0 ? repair.sign : 0),
+    childCell[1] - (repair.axis === 1 ? repair.sign : 0),
+    childCell[2] - (repair.axis === 2 ? repair.sign : 0),
   ];
-  if (inBounds(dims, ...parentCell)) {
-    const idx = cellIndex(dims, ...parentCell);
-    grid.filled[idx] = 1;
-    grid.owner[idx] = repair.parentIdx + 1;
+  if (
+    !(inBounds(grid.dims, ...childCell) && inBounds(grid.dims, ...parentCell)) ||
+    childCell[1] + grid.origin[1] < 0 ||
+    parentCell[1] + grid.origin[1] < 0
+  ) {
+    return undefined;
   }
+  const child = cellIndex(grid.dims, ...childCell);
+  const parent = cellIndex(grid.dims, ...parentCell);
+  const ownerPenalty = (idx: number, boneIdx: number): number =>
+    grid.owner[idx] === 0 || grid.owner[idx] === boneIdx + 1 ? 0 : 100;
+  const distance = Math.abs(di) + Math.abs(dj) + Math.abs(dk);
+  const score =
+    (reserved.has(child) || reserved.has(parent) ? 1000 : 0) +
+    distance * 4 +
+    ownerPenalty(child, repair.childIdx) +
+    ownerPenalty(parent, repair.parentIdx);
+  return { child, parent, score };
+};
+
+/** Assigns a nearby 6-neighbour pair without stealing cells reserved by other overlapping joints. */
+const forceJointCells = (grid: Grid, repair: JointRepair, reserved: Set<number>): void => {
+  const best = JOINT_SEARCH_OFFSETS.map((offset) => jointCellPairAt(grid, repair, reserved, offset))
+    .filter((pair): pair is JointCellPair => pair !== undefined)
+    .reduce<JointCellPair | undefined>(
+      (current, candidate) => (!current || candidate.score < current.score ? candidate : current),
+      undefined,
+    );
+  if (!best) {
+    return;
+  }
+  grid.filled[best.child] = 1;
+  grid.owner[best.child] = repair.childIdx + 1;
+  grid.filled[best.parent] = 1;
+  grid.owner[best.parent] = repair.parentIdx + 1;
+  reserved.add(best.child);
+  reserved.add(best.parent);
 };
 
 /** A joint whose segments are shorter than a voxel can have its shared boundary cell fully claimed by
  * whichever bone's marrow was rasterized last (see the `attached` rule), even though both bones are
  * present nearby. If the joint isn't already face-adjacent, force one cell to each side of it. */
-const repairJointAdjacency = (grid: Grid, body: Body, boneIndexById: ReadonlyMap<string, number>): void => {
+const repairOverlappingJointAdjacency = (grid: Grid, body: Body, boneIndexById: ReadonlyMap<string, number>): void => {
+  const reserved = new Set<number>();
   for (const bone of body.bones) {
     if (bone.parent === null) {
       continue;
@@ -413,11 +455,50 @@ const repairJointAdjacency = (grid: Grid, body: Body, boneIndexById: ReadonlyMap
       continue;
     }
     const nearby = withNeighbors(grid.dims, cell);
-    if (directlyTouches(grid, nearby, childIdx, parentIdx)) {
+    const existingPair = touchingPair(grid, nearby, childIdx, parentIdx);
+    if (existingPair) {
+      reserved.add(existingPair[0]);
+      reserved.add(existingPair[1]);
       continue;
     }
     const { axis, sign } = dominantAxis(bone.head, bone.tail);
-    forceJointCells(grid, { cell, childIdx, parentIdx, axis, sign });
+    forceJointCells(grid, { cell, childIdx, parentIdx, axis, sign }, reserved);
+  }
+};
+
+const forceJointCellsInPlace = (grid: Grid, repair: JointRepair): void => {
+  const [ci, cj, ck] = repair.cell;
+  const jointIdx = cellIndex(grid.dims, ci, cj, ck);
+  grid.filled[jointIdx] = 1;
+  grid.owner[jointIdx] = repair.childIdx + 1;
+  const parentCell: readonly [number, number, number] = [
+    ci - (repair.axis === 0 ? repair.sign : 0),
+    cj - (repair.axis === 1 ? repair.sign : 0),
+    ck - (repair.axis === 2 ? repair.sign : 0),
+  ];
+  if (inBounds(grid.dims, ...parentCell)) {
+    const idx = cellIndex(grid.dims, ...parentCell);
+    grid.filled[idx] = 1;
+    grid.owner[idx] = repair.parentIdx + 1;
+  }
+};
+
+const repairJointAdjacencyInPlace = (grid: Grid, body: Body, boneIndexById: ReadonlyMap<string, number>): void => {
+  for (const bone of body.bones) {
+    if (bone.parent === null) {
+      continue;
+    }
+    const childIdx = boneIndexById.get(bone.id)!;
+    const parentIdx = boneIndexById.get(bone.parent)!;
+    const cell = nearestIndex(bone.head, grid.size, grid.origin);
+    if (!inBounds(grid.dims, ...cell)) {
+      continue;
+    }
+    if (touchingPair(grid, withNeighbors(grid.dims, cell), childIdx, parentIdx)) {
+      continue;
+    }
+    const { axis, sign } = dominantAxis(bone.head, bone.tail);
+    forceJointCellsInPlace(grid, { cell, childIdx, parentIdx, axis, sign });
   }
 };
 
@@ -498,7 +579,11 @@ export const voxelize = (body: Body, size: number, seed: number): Voxels => {
   computeField(grid, body, addByBone, boneAabbs);
   applyCarves(grid, carves);
   applyMarrow(grid, body, boneIndexById);
-  repairJointAdjacency(grid, body, boneIndexById);
+  if (body.jointAdjacencyPolicy === 'reserve-overlaps') {
+    repairOverlappingJointAdjacency(grid, body, boneIndexById);
+  } else {
+    repairJointAdjacencyInPlace(grid, body, boneIndexById);
+  }
   const color = assignMaterials(grid, body, { addByBone, paints, seed });
 
   return { size: grid.size, origin: grid.origin, dims: grid.dims, owner: grid.owner, color };
