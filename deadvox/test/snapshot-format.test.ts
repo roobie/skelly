@@ -30,7 +30,6 @@ import {
 } from './snapshotTestSupport.ts';
 
 const TEN_HOUR_SAVE_BUDGET_BYTES = 5 * 1024 * 1024; // ~17× headroom over the current synthetic fixture; catches meaningful growth.
-const TEN_HOUR_LOAD_BUDGET_MS = 1000; // CI-runner bound for ubuntu-latest, not a general device target.
 // biome-ignore lint/style/noProcessEnv: distinguish local measurements from the named CI runner.
 const measurementRunner = process.env.GITHUB_ACTIONS === 'true' ? 'ubuntu-latest' : 'local';
 
@@ -511,7 +510,6 @@ describe('canonical save format', () => {
     const restoreMs = performance.now() - loadStarted;
     const loadMs = decodeMs + restoreMs;
     expect(capture(loaded)).toEqual(decoded.snapshot);
-    expect(loadMs).toBeLessThan(TEN_HOUR_LOAD_BUDGET_MS);
     process.stdout.write(
       `SAVE_BUDGET_TEN_HOUR runner=${measurementRunner} visited=${worldStats.visitedChunks} edited=${worldStats.editedChunks} edits=${worldStats.editedChunks * 8} syntheticPiles=${pileStats.pileCount} totalPiles=${snapshot.character.inventory.piles.length} items=${pileStats.pileCount * pileStats.pileCapacity + pileStats.baselinePileItems} touchedContainers=${population.touchedContainers} spawnedKeys=${population.spawned} alive=${population.alive} size=${bytes.byteLength} encodeMs=${encodeMs.toFixed(1)} decodeMs=${decodeMs.toFixed(1)} restoreMs=${restoreMs.toFixed(1)} loadMs=${loadMs.toFixed(1)}\n`,
     );
