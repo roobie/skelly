@@ -7,13 +7,17 @@ read_if:
 # AR / AK cycle playback
 
 Fresh debug previews: `?debug=1&loadout=ar` or `?debug=1&loadout=ak`.
-The selected rifle starts in hand; the other is in the backpack. A restored game
-never replaces its saved hands with this loadout. These rifles still use virtual
-rounds, without hits or ammunition consumption; firearm sounds are unchanged.
+The selected rifle starts in hand with a full magazine fitted and an empty
+chamber; the backpack holds the other rifle, a spare magazine and cartridges (see
+`src/debug/debugLoadout.ts`). A restored game never replaces its saved hands with
+this loadout. The rifles are real items, not debug-only: they fire chambered
+cartridges fed from the fitted magazine (DESIGN.md, "Rifles (3.2, d114)").
 
-- LMB fires the held rifle; holding LMB uses the exported rpm. These AR/AK debug
-  rifles have no player action to initiate manual cocking; the transition remains
-  in `src/game/firearmHandling.ts`, `FirearmMechanics.cock`.
+- Double-press R works the charging handle: `FirearmMechanics.cock` in
+  `src/game/firearmHandling.ts` clears the chamber and feeds the magazine's top
+  round. Hold R changes magazines (`FirearmMechanics.loadNext`).
+- LMB fires a ready rifle (CONTROLS.md, "Readiness and melee"); holding LMB uses
+  the exported rpm.
 - H moves a selected backpack rifle into the hands while inventory is open.
   Inventory hint-line keys take priority over debug shortcuts unless a debug modal
   is open. Outside inventory, H remains the God-mode shortcut; there is no `god`
@@ -51,7 +55,7 @@ next step. The renderer cannot create a case or decide its admission time.
 Ejection uses the exported anchor and direction through the same grip, roll and
 hold transforms as the held mesh, followed by simulation eye position, pitch and
 yaw. Cosmetic camera bob, roll and recoil do not change ballistics. Transient
-speed (3.5 m/s), flight duration (0.48 s), debug rifle masses and case masses are
+speed (3.5 m/s), flight duration (0.48 s), rifle masses and case masses are
 labelled gameplay estimates, not measured firearm data. Cases continue merging
 into the nearest same-calibre pile within about 20 m.
 

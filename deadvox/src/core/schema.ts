@@ -193,7 +193,7 @@ const MeleeClassSchema = strictObject({
   speedMultiplier: Positive,
 });
 
-// Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
+// A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */

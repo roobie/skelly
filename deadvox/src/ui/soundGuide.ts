@@ -158,7 +158,7 @@ const TRIGGER_ENTRIES = [
       note: 'Stand-in recording until a better fist-hit source is found.',
     },
   ],
-  ['gunshot', { trigger: 'Fire a virtual-round debug rifle; both AKM variants are selected randomly per shot.' }],
+  ['gunshot', { trigger: 'Fire the AR or AK; both AKM variants are selected randomly per shot.' }],
   ['gunshot_pbs1_reference', { trigger: 'Preview-only PBS-1 suppressed AKM alternatives; not used by gameplay.' }],
   [
     'shotgun_blast',
@@ -283,7 +283,7 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
   ],
   [
     'gunshot',
-    'Approved by BR (2026-10-02); akm_1p v1/v2 are random per-shot variants used for virtual-round debug rifles. The pump uses shotgun_blast.',
+    'Approved by BR (2026-10-02); akm_1p v1/v2 are random per-shot variants used for the AR and AK. The pump uses shotgun_blast.',
   ],
   ['gunshot_pbs1_reference', 'Reserved PBS-1 suppressed alternatives for a future suppressor; not used by gameplay.'],
   ['item_drop_wood', 'Approved by BR (2026-10-02) on wood; splitting by pile surface remains future work.'],

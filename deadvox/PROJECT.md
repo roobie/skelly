@@ -139,11 +139,14 @@ keeps mobgen source imports available; its obstruction predicate must match play
   bundle in piles and a box in your hands. Furniture is plain boxes.
 - A pile's bundle is drawn over the middle of its block, so it can overlap items
   with models lying in the same pile.
-- `models-firearms.json` has eleven firearm models: eight from "CC0 Flat Guns West"
-  on OpenGameArt and three Gungen exports: the curated AR, AK and 12-gauge pump.
-  The three debug firearm items (no loot table; spawn through the gated debug menu under `?debug=1`)
-  exercise models in hands and piles. AR/AK use exported automatic and hand
-  cycles with virtual debug rounds. The playable pump uses real 00-buck shells,
+- `models-firearms.json` holds the firearm models: models from "CC0 Flat Guns West"
+  on OpenGameArt, and Gungen exports of the curated AR, AK and 12-gauge pump.
+  The AR and AK items (`rifle_assault`, `rifle_ak`) are real rifles: magazine-fed,
+  charged by hand, with exported automatic and hand cycles (DESIGN.md, "Rifles
+  (3.2, d114)"). They have no loot placement until d114's military-site round
+  (SLICE-3.md, 3.2); `?debug=1&loadout=ar|ak` starts with one in hand. The debug
+  pump item (no loot table; spawns through the gated debug menu under `?debug=1`)
+  exercises a model in hands and piles. The playable pump uses real 00-buck shells,
   a four-shell tube plus chamber, one-shell loading jobs and manual exported
   hand racking. Its ammunition, nine pellets and loud F4 hearing require no
   automatic action metadata. It has a fresh `?debug=1&loadout=pump` fixture,
