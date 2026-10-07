@@ -8,10 +8,10 @@ const baseModel = {
   grip: { at: [0.05, 0.02, 0] },
 };
 const cycle = {
-  durationSeconds: 0.1,
-  rearwardSeconds: 0.02,
-  dwellSeconds: 0.01,
-  forwardSeconds: 0.05,
+  durationSimSeconds: 0.1,
+  rearwardSimSeconds: 0.02,
+  dwellSimSeconds: 0.01,
+  forwardSimSeconds: 0.05,
 };
 const ejectDirection = [0.34, 0.2, 0.92].map((value) => value / Math.hypot(0.34, 0.2, 0.92));
 const build = (model: unknown) => buildRegistry([{ source: SOURCE, data: { models: [model] } }]);
@@ -34,11 +34,11 @@ describe('optional action model metadata', () => {
         },
       },
       fire: cycle,
-      hand: { durationSeconds: 1.7, rearwardSeconds: 0.65, dwellSeconds: 0.3, forwardSeconds: 0.05 },
+      hand: { durationSimSeconds: 1.7, rearwardSimSeconds: 0.65, dwellSimSeconds: 0.3, forwardSimSeconds: 0.05 },
       ejectAt: 0.72,
       ejectDirection,
       holdOpen: false,
-      rpm: 600,
+      roundsPerSimMinute: 600,
     };
     const { registry, issues } = build({
       ...baseModel,
@@ -46,7 +46,7 @@ describe('optional action model metadata', () => {
       action,
     });
     expect(issues).toEqual([]);
-    expect(registry.models.get('lamp')?.action).toEqual(action);
+    expect(registry.models.get('lamp')?.action).toEqual({ ...action, roundsPerSimMinute: 10 });
     expect(registry.models.get('lamp')?.anchors?.ejection).toEqual([-0.05, 0.02, 0.03]);
   });
 
@@ -96,15 +96,15 @@ describe('optional action model metadata', () => {
         },
       },
       fire: cycle,
-      hand: { durationSeconds: 1.7, rearwardSeconds: 0.65, dwellSeconds: 0.3, forwardSeconds: 0.05 },
+      hand: { durationSimSeconds: 1.7, rearwardSimSeconds: 0.65, dwellSimSeconds: 0.3, forwardSimSeconds: 0.05 },
       ejectAt: 0.72,
       ejectDirection,
       holdOpen: false,
-      rpm: 600,
+      roundsPerSimMinute: 600,
     };
     const invalidDirection = build({ ...baseModel, action: { ...baseAction, ejectDirection: [0, 0, 2] } });
     expect(invalidDirection.issues.map(({ path }) => path)).toContain('models[0].action.ejectDirection');
-    const invalidCycle = build({ ...baseModel, action: { ...baseAction, fire: { ...cycle, forwardSeconds: 0.2 } } });
+    const invalidCycle = build({ ...baseModel, action: { ...baseAction, fire: { ...cycle, forwardSimSeconds: 0.2 } } });
     expect(invalidCycle.issues.map(({ path }) => path)).toContain('models[0].action.fire');
   });
 });

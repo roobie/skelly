@@ -11,9 +11,9 @@ interface RustleSound {
 }
 export interface RustleClock {
   cells: ReadonlySet<string>;
-  nextTime: number;
+  nextSimTimestamp: number;
 }
-export const initialRustleClock = (): RustleClock => ({ cells: new Set(), nextTime: 0 });
+export const initialRustleClock = (): RustleClock => ({ cells: new Set(), nextSimTimestamp: 0 });
 
 /** Body overlap, not ground surface: litter changes footsteps but cannot brush the actor. */
 const brushingCells = (body: Body, world: World, registry: Registry, fast: boolean): Map<string, RustleSound> => {
@@ -56,14 +56,14 @@ export const foliageRustle = (
 ): { clock: RustleClock; sound?: RustleSound } => {
   const cells = brushingCells(body, world, registry, gait === 'jogging' || gait === 'sprinting');
   const entered = [...cells].find(([key]) => !clock.cells.has(key));
-  const nextClock = { cells: new Set(cells.keys()), nextTime: clock.nextTime };
-  if (!moving || (!entered && time < clock.nextTime)) {
+  const nextClock = { cells: new Set(cells.keys()), nextSimTimestamp: clock.nextSimTimestamp };
+  if (!moving || (!entered && time < clock.nextSimTimestamp)) {
     return { clock: nextClock };
   }
   const sound = entered?.[1] ?? cells.values().next().value;
   if (!sound) {
     return { clock: nextClock };
   }
-  nextClock.nextTime = time + registry.sounds.get(sound.event)!.minIntervalSeconds;
+  nextClock.nextSimTimestamp = time + registry.sounds.get(sound.event)!.minIntervalSimSeconds;
   return { clock: nextClock, sound };
 };

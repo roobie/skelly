@@ -2,17 +2,16 @@
 // and when it was made, so rotting keeps no state and needs no ticking: food in a
 // chunk that was unloaded for a week is exactly as rotten as food you carried.
 
-import { SECONDS_PER_HOUR } from './clock.ts';
 import type { ItemDef } from './content.ts';
 import type { Item } from './items.ts';
 
 /** How far through its shelf life it is: 0 when made, 1 or more once rotten. Undefined for food that keeps. */
 export const spoilage = (def: ItemDef, item: Item, calendar: number): number | undefined => {
-  const rotsAfter = def.food?.rotsAfter;
+  const rotsAfter = def.food?.rotsAfterGameHours;
   if (rotsAfter === undefined) {
     return undefined;
   }
-  return Math.max(0, calendar - (item.made ?? 0)) / (rotsAfter * SECONDS_PER_HOUR);
+  return Math.max(0, calendar - (item.madeAtGameTimestamp ?? 0)) / rotsAfter;
 };
 
 export const isRotten = (def: ItemDef, item: Item, calendar: number): boolean =>

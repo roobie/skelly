@@ -13,7 +13,7 @@ const capabilities = [
   {
     id: 'held_blunt',
     kind: 'melee',
-    weapon: { melee: { damage: 1, reach: 1, cooldown: 1, stamina: 0, type: 'blunt' } },
+    weapon: { melee: { damage: 1, reach: 1, cooldownSimSeconds: 1, stamina: 0, type: 'blunt' } },
   },
   { id: 'held_light', kind: 'light', light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1 } },
   { id: 'held_food', kind: 'use', category: 'food', food: { calories: 1, water: 0 } },
@@ -25,7 +25,7 @@ const capabilities = [
     id: 'held_igniter',
     kind: 'ignite',
     igniter: { capacity: 2, perIgnition: 1 },
-    light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, fuelPerHour: 1 },
+    light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, fuelPerGameHour: 1 },
   },
   { id: 'held_matches', kind: 'ignite', igniter: { capacity: 2, perIgnition: 1 } },
   {
@@ -36,19 +36,23 @@ const capabilities = [
       seenFrom: 1,
       color: '#ffffff',
       intensity: 1,
-      burnTime: 2,
+      burnTimeGameHours: 2,
       burning: { ignition: 'firestarter', douse: true, sprint: 'stay', stow: 'refuse', drop: 'douse', relight: true },
     },
   },
   { id: 'held_key', kind: 'key', key: { lock: 'fixture_lock' } },
-  { id: 'held_book', kind: 'read', book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingTime: 1 } },
+  {
+    id: 'held_book',
+    kind: 'read',
+    book: { title: 'Fixture manual', recipes: ['fixture_recipe'], readingGameMinutes: 1 },
+  },
   { id: 'held_box', kind: 'unpack', unpack: { item: 'held_plain', count: 1 } },
   {
     id: 'held_plain',
     kind: 'none',
     stack: 2,
     disassembly: {
-      time: 1,
+      timeGameMinutes: 1,
       skill: 'crafting',
       yields: [{ item: 'held_blunt', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
     },
@@ -60,7 +64,13 @@ const { registry, issues } = buildRegistry([
     data: {
       skills: [{ id: 'crafting', name: 'Crafting', training: { craftingTierOffset: 2 } }],
       furniture: [
-        { id: 'fixture_door', name: 'Fixture door', size: [1, 1, 1], color: '#666666', door: { handling: 0 } },
+        {
+          id: 'fixture_door',
+          name: 'Fixture door',
+          size: [1, 1, 1],
+          color: '#666666',
+          door: { handlingSimSeconds: 0 },
+        },
       ],
       templates: [
         {
@@ -74,7 +84,7 @@ const { registry, issues } = buildRegistry([
         {
           id: 'fixture_recipe',
           result: { item: 'held_plain', count: 1 },
-          time: 1,
+          timeGameMinutes: 1,
           skills: {},
           qualities: {},
           components: [[{ item: 'held_plain', count: 1 }]],

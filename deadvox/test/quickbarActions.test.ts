@@ -55,8 +55,8 @@ const { registry } = buildRegistry([
           wearable: { slot: 'back', encumbrance: 0 },
           container: {
             pockets: [
-              { grid: [1, 1], handling: 0 },
-              { grid: [1, 1], handling: 0 },
+              { grid: [1, 1], handlingSimSeconds: 0 },
+              { grid: [1, 1], handlingSimSeconds: 0 },
             ],
           },
         },
@@ -67,7 +67,7 @@ const { registry } = buildRegistry([
           weight: 100,
           size: [1, 1],
           wearable: { slot: 'back', encumbrance: 0 },
-          container: { pockets: [{ grid: [1, 1], handling: 0 }] },
+          container: { pockets: [{ grid: [1, 1], handlingSimSeconds: 0 }] },
         },
       ],
     },

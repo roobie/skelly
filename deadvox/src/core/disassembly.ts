@@ -103,7 +103,7 @@ export const planDisassembly = (
     definition.disassembly?.yields.flatMap(({ toolModifier }) => (toolModifier ? [toolModifier.quality] : [])) ?? [],
   );
   const toolLevels = Object.fromEntries([...qualities].map((quality) => [quality, qualityLevel(quality)]));
-  const work = (definition.disassembly?.time ?? SALVAGE_DURATION / 60) * 60;
+  const work = definition.disassembly?.timeGameMinutes ?? SALVAGE_DURATION;
   return {
     kind: 'disassembly',
     source,

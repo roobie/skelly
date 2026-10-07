@@ -114,7 +114,7 @@ function measure(
   camera.rotation.order = 'YXZ';
   camera.updateProjectionMatrix();
   camera.updateMatrixWorld(true);
-  const cooldown = def?.weapon?.melee?.cooldown ?? FISTS_MELEE.cooldown;
+  const cooldown = def?.weapon?.melee?.cooldownSimSeconds ?? FISTS_MELEE.cooldown;
   const contactAt = meleeContactTime(cooldown);
   const pullTime = contactAt * 0.32;
   const followTime = contactAt + (cooldown - contactAt) * 0.22;
