@@ -1083,7 +1083,7 @@ try {
       const r = globalThis.primaryActionTest;
       return r.inventory.hands[r.dominant]?.uid === uid;
     }, throwFixture.uid),
-    throwFixture.uid,
+    true,
     'holding T drops the off-hand item before leaving the main-hand item held',
   );
   assert.equal(await page.evaluate(() => globalThis.primaryActionTest.isThrowingStance()), true);
