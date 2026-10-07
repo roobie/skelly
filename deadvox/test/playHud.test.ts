@@ -118,7 +118,7 @@ it('renders immutable HUD projections and resets text/visibility on the next fra
   expect([stats.hidden, stats.textContent]).toEqual([true, 'stamina 99%']);
 });
 
-it('projects a bore hit through the active camera into viewport coordinates', () => {
+it('projects a bore hit into the crosshair screen position', () => {
   const camera = new PerspectiveCamera(60, 2, 0.1, 100);
   const viewport = { left: 30, top: 20, width: 800, height: 400 };
   const point = [2, 1, -20] as [number, number, number];
@@ -130,6 +130,15 @@ it('projects a bore hit through the active camera into viewport coordinates', ()
   }
   expect(projected.left).toBeCloseTo(viewport.left + ((ndc.x + 1) / 2) * viewport.width);
   expect(projected.top).toBeCloseTo(viewport.top + ((1 - ndc.y) / 2) * viewport.height);
+  const roots = { hud: root(), prompt: root(), crosshair: root() };
+  renderPlayHud(roots, {
+    hud: '',
+    prompt: '',
+    crosshairVisible: true,
+    crosshairScreenPosition: projected,
+  });
+  expect(Number.parseFloat(roots.crosshair.style.left)).toBeCloseTo(projected.left, 5);
+  expect(Number.parseFloat(roots.crosshair.style.top)).toBeCloseTo(projected.top, 5);
 });
 
 it('omits expired notices and the duplicated rest interruption but retains the selected hint', () => {

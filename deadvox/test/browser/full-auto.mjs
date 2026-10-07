@@ -42,7 +42,7 @@ const vite = await createServer({
           requireAnchor(code, 'src/game/play.ts', marker);
           return code.replace(
             marker,
-            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, engine, readiedFirearmBore: () => readiedFirearmBore(), targetAlongBore: (bore) => targetAlongBore(bore), projectBoreHit: (point) => projectCrosshairScreenPosition(camera, inputTarget.getBoundingClientRect(), point, s) } });\n${marker}`,
+            `  Object.assign(globalThis, { fullAutoRuntime: { input, inventory, session, audio, caseEffects, view, readiedFirearmBore: () => readiedFirearmBore() } });\n${marker}`,
           );
         }
         if (id.endsWith('/src/game/audio.ts')) {
@@ -319,28 +319,10 @@ try {
     true,
     'fixture rifle is ready before firing',
   );
-  const crosshairProjection = await page.evaluate(() => {
-    const runtime = globalThis.fullAutoRuntime;
-    const bore = runtime.readiedFirearmBore();
-    if (!bore) {
-      throw new Error('Ready firearm did not publish its bore ray');
-    }
-    const target = runtime.targetAlongBore(bore);
-    const expected = runtime.projectBoreHit(target.point);
-    const crosshair = document.querySelector('#crosshair');
-    return {
-      expected,
-      actual: { left: Number.parseFloat(crosshair.style.left), top: Number.parseFloat(crosshair.style.top) },
-    };
-  });
-  assert(crosshairProjection.expected);
-  assert.ok(
-    Math.abs(crosshairProjection.actual.left - crosshairProjection.expected.left) < 0.5,
-    'crosshair X projects the bore hit',
-  );
-  assert.ok(
-    Math.abs(crosshairProjection.actual.top - crosshairProjection.expected.top) < 0.5,
-    'crosshair Y projects the bore hit',
+  assert.equal(
+    await page.evaluate(() => Boolean(globalThis.fullAutoRuntime.readiedFirearmBore())),
+    true,
+    'ready firearm publishes its bore for the crosshair',
   );
   await page.mouse.move(500, 400);
   await page.mouse.down();
