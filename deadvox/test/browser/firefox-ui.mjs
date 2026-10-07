@@ -279,7 +279,6 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('.zombie-perception-label').length === 0, null, {
     timeout: 5000,
   });
-  assert.equal(await page.locator('.zombie-perception-label').count(), 0);
 
   await pressAction(page, 'ui.inventory-toggle');
   await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);

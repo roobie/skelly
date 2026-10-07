@@ -130,9 +130,16 @@ const connectionAllowances = (r: Resolved): Map<string, number> => {
 
 /** Transform every placed solid once per rule check; immutable resolved transforms share geometry across probes. */
 const placedSolidCache = new WeakMap<object, { readonly definition: PartDef; readonly solids: WorldSolid[] }>();
-const placedSolids = (r: Resolved): Map<string, WorldSolid[]> => {
+const placedSolids = (r: Resolved, partIds?: readonly string[]): Map<string, WorldSolid[]> => {
   const placed = new Map<string, WorldSolid[]>();
-  for (const [part, transform] of r.placed) {
+  const entries =
+    partIds === undefined
+      ? [...r.placed]
+      : partIds.flatMap((part) => {
+          const transform = r.placed.get(part);
+          return transform ? [[part, transform] as const] : [];
+        });
+  for (const [part, transform] of entries) {
     const definition = r.defs.get(part)!;
     let cached = placedSolidCache.get(transform);
     if (!cached || cached.definition !== definition) {
@@ -158,16 +165,16 @@ const worstPenetration = (a: readonly WorldSolid[], b: readonly WorldSolid[], cu
   return worst;
 };
 
-const checkSolidOverlap = (r: Resolved, focusPart?: string): Issue[] => {
+const checkSolidOverlap = (r: Resolved, focusParts?: readonly string[]): Issue[] => {
   const issues: Issue[] = [];
   const allowances = connectionAllowances(r);
-  const solids = placedSolids(r);
-  const ids = [...r.placed.keys()];
+  const solids = placedSolids(r, focusParts?.length === 2 ? focusParts : undefined);
+  const ids = [...solids.keys()];
   for (let i = 0; i < ids.length; i++) {
     for (let j = i + 1; j < ids.length; j++) {
       const a = ids[i]!;
       const b = ids[j]!;
-      if (focusPart !== undefined && a !== focusPart && b !== focusPart) {
+      if (focusParts && !focusParts.every((part) => a === part || b === part)) {
         continue;
       }
       const allowed = allowances.get([a, b].sort().join('|')) ?? TOLERANCE.contact;
@@ -192,7 +199,11 @@ const solidOverlap: Rule = {
 };
 
 /** Existing solid-overlap rule restricted to interactions involving one newly placed part. */
-export const solidOverlapForPart = (r: Resolved, part: string): Issue[] => checkSolidOverlap(r, part);
+export const solidOverlapForPart = (r: Resolved, part: string): Issue[] => checkSolidOverlap(r, [part]);
+
+/** Existing solid-overlap rule restricted to the interaction between two newly placed parts. */
+export const solidOverlapBetweenParts = (r: Resolved, first: string, second: string): Issue[] =>
+  checkSolidOverlap(r, [first, second]);
 
 /** Solids on the two parts of every connection touch or lie within tolerance. */
 export const connectionContact: Rule = {
@@ -343,6 +354,17 @@ const checkKeepOut = (r: Resolved, focusPart?: string): Issue[] => {
 
 /** Existing keep-out rule restricted to interactions involving one newly placed part. */
 export const keepOutForPart = (r: Resolved, part: string): Issue[] => checkKeepOut(r, part);
+
+/** Existing keep-out rule restricted to the interaction between two newly placed parts. */
+export const keepOutBetweenParts = (r: Resolved, first: string, second: string): Issue[] => {
+  const solids = placedSolids(r, [first, second]);
+  const firstT = r.placed.get(first);
+  const secondT = r.placed.get(second);
+  return [
+    ...(firstT ? keepOutIssuesForOwner({ r, solids, owner: first, ownerT: firstT, focusPart: second }) : []),
+    ...(secondT ? keepOutIssuesForOwner({ r, solids, owner: second, ownerT: secondT, focusPart: first }) : []),
+  ];
+};
 
 export const keepOut: Rule = {
   id: 'keep-out',

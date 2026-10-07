@@ -8,19 +8,23 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium } from './chromium.mjs';
 import { holdAction, pressAction } from './input-actions.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
-import { browserStageArgs, browserStageMode, browserStageUrl } from './stage-mode.mjs';
+import { browserStageMode, browserStageUrl } from './stage-mode.mjs';
 
-const { chromium } = await import('playwright');
 const projectRoot = resolve(process.env.PRIMARY_ACTION_ROOT ?? fileURLToPath(new URL('../..', import.meta.url)));
 const inputBindingsModule = '/src/game/inputBindings.ts';
 const inputReplayModule = '/src/game/inputReplay.ts';
+const firearmHandlingModule = '/src/game/firearmHandling.ts';
+const magazineModule = '/src/core/magazine.ts';
+const optionsModule = '/src/core/options.ts';
+const itemLookModule = '/src/render/itemLook.ts';
 const progressingSample = ({ start }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= 0.35 };
 };
-const glowstickChargeSample = ({ start, seconds }) => {
+const throwChargeSample = ({ start, seconds }) => {
   const { session } = globalThis.primaryActionTest;
   return { time: session.sim.time, paused: session.sim.paused, reached: session.sim.time - start >= seconds };
 };
@@ -76,10 +80,10 @@ const measureGlowstickFloor = async (page, uid, label) => {
   );
 };
 const checkDroppedGlowstickPixel = async (port) => {
-  const browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
+  const browser = await launchChromium('primary-action', {
     headless: true,
-    args: browserStageArgs('primary-action', ['--enable-webgl'], 'pixel'),
+    args: ['--enable-webgl'],
+    renderMode: 'pixel',
   });
   try {
     const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
@@ -175,7 +179,7 @@ const observationPlugin = {
     debugTools,
     engine,
     caseEffects,
-    glowstickThrows,
+    itemThrows,
     audio,
     feet,
     scale,
@@ -186,7 +190,7 @@ const observationPlugin = {
     dispatchScreenCommand,
     get inputRecorder() { return inputRecorder; },
     hudOptions,
-    beginGlowstickCharge,
+    beginItemThrow,
     selectPrimaryAction,
     ignitionTargetForHand,
     useTarget,
@@ -194,7 +198,7 @@ const observationPlugin = {
     dominant: 'left', off: 'right', frames: 0, swings: [], attachments: [], trackAttachment: false,
     initialPlayerPosition: [...session.body.pos],
     getNotice: () => notice,
-    isChargingGlowstick: () => glowstickChargeStartedAt !== undefined,
+    isChargingItemThrow: () => itemThrowStartedAt !== undefined,
     clearNotice: () => showNotice(''),
     clearHand: (side) => {
       const held = inventory.hands[side];
@@ -443,10 +447,10 @@ try {
   assert(address && typeof address !== 'string');
   const renderOverride = process.env.DEADVOX_TEST_RENDER_MODE;
   const renderMode = browserStageMode('primary-action', renderOverride);
-  browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
+  browser = await launchChromium('primary-action', {
     headless: true,
-    args: browserStageArgs('primary-action', renderMode === 'pixel' ? ['--enable-webgl'] : [], renderOverride),
+    args: renderMode === 'pixel' ? ['--enable-webgl'] : [],
+    renderMode: renderOverride,
   });
   const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
   const pageErrors = [];
@@ -774,13 +778,13 @@ try {
     assert.deepEqual(after.swings, before.swings, 'light use never starts melee');
     assert.ok(after.stamina >= before.stamina, 'light use does not spend melee stamina');
   };
-  const attemptDuringHandling = async (actionSide, reservedHand, useMouse5 = false) => {
+  const attemptDuringHandling = async (actionSide, reservedHand, useMouse5 = false, tryThrow = false) => {
     await page.waitForFunction(() => {
       const combat = globalThis.primaryActionTest.session.playerCombat;
       return !combat.activeMeleeAction && combat.snapshotState().playerAttackWait === 0;
     });
     const outcome = await page.evaluate(
-      ({ primarySide, reservationSide, forwardButton }) => {
+      ({ primarySide, reservationSide, forwardButton, tryThrow: throwRequested }) => {
         const r = globalThis.primaryActionTest;
         const ensure = (condition, message) => {
           if (!condition) {
@@ -806,6 +810,12 @@ try {
         r.quickbarActions.hold(incoming);
         const expectedReason = r.getNotice();
         r.clearNotice();
+        let throwAttempt;
+        if (throwRequested) {
+          r.beginItemThrow();
+          throwAttempt = { charging: r.isChargingItemThrow(), notice: r.getNotice() };
+          r.clearNotice();
+        }
         if (forwardButton) {
           document.dispatchEvent(new MouseEvent('pointerdown', { button: 4, buttons: 16, bubbles: true }));
         } else {
@@ -823,6 +833,7 @@ try {
           after,
           expectedReason,
           actualReason: r.getNotice(),
+          throwAttempt,
         };
         r.session.queue.cancel();
         ensure(r.inventory.consume(incoming, incoming.count), 'Could not remove busy-primary fixture item');
@@ -835,7 +846,7 @@ try {
         }
         return result;
       },
-      { primarySide: actionSide, reservationSide: reservedHand, forwardButton: useMouse5 },
+      { primarySide: actionSide, reservationSide: reservedHand, forwardButton: useMouse5, tryThrow },
     );
     await page.waitForFunction(() => {
       const combat = globalThis.primaryActionTest.session.playerCombat;
@@ -993,50 +1004,120 @@ try {
   await toggleLight('hand.use-off', false);
   const throwFixture = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
     const glowstick = r.inventory.create('glowstick');
     r.setHand(r.off, glowstick);
-    const reason = r.survival.use(glowstick);
-    if (reason) {
-      throw new Error(`Could not light throw fixture: ${reason}`);
-    }
     return {
       uid: glowstick.uid,
       start: [...r.session.body.pos],
       blockSize: r.scale.blockSize,
       distance: r.inventory.registry.senses.get('player').light.throwMaxDistanceMetres,
       chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
+      minimumHoldSimSeconds: r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds,
     };
   });
-  const interruptedThrow = await holdAction(page, 'player.throw-glowstick');
-  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingGlowstick());
+  const offHandOnlyThrow = await holdAction(page, 'player.throw');
+  await offHandOnlyThrow();
+  const offHandResult = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    return { location: r.inventory.locate(r.inventory.itemByUid(uid)), expectedSide: r.off };
+  }, throwFixture.uid);
+  assert.equal(offHandResult.location?.kind, 'hand', 'an off-hand item stays held');
+  assert.equal(offHandResult.location?.side, offHandResult.expectedSide, 'T does not throw from the off hand');
+  assert.equal(await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount), 0);
+  await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    r.setHand(r.dominant, r.inventory.itemByUid(uid));
+    r.hudOptions.handling = true;
+  }, throwFixture.uid);
+  const meterThrow = await holdAction(page, 'player.throw');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    const root = document.querySelector('#handling');
+    return r.isChargingItemThrow() && !root.hidden && root.querySelector('.hd-minimum');
+  });
+  const meterStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  await waitForSimulation(
+    page,
+    throwChargeSample,
+    { start: meterStart, seconds: throwFixture.chargeSimSeconds / 2 },
+    {
+      seconds: throwFixture.chargeSimSeconds / 2 + 0.1,
+      label: 'throw handling meter advances with simulation-time charge',
+      record: (line) => process.stderr.write(`${line}\n`),
+    },
+  );
+  const meterMidpoint = await page.evaluate(() => {
+    const root = document.querySelector('#handling');
+    return {
+      fill: Number.parseFloat(root.querySelector('.hd-fill').style.width),
+      marker: Number.parseFloat(root.querySelector('.hd-minimum').style.left),
+      minimumLabel: root.querySelector('.hd-meter-minimum')?.textContent,
+    };
+  });
+  assert.ok(meterMidpoint.fill > 0 && meterMidpoint.fill < 100, 'charge meter reports partial throw force');
+  assert.equal(
+    meterMidpoint.marker,
+    Math.round((throwFixture.minimumHoldSimSeconds / throwFixture.chargeSimSeconds) * 100),
+    'meter marks the authored minimum release point',
+  );
+  assert.ok(meterMidpoint.minimumLabel?.trim(), 'minimum marker has a non-empty label');
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.handling = false;
+  });
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  await page.mouse.down({ button: 'right' });
+  await meterThrow();
+  await page.mouse.up({ button: 'right' });
+  await page.waitForFunction(() => !globalThis.primaryActionTest.isChargingItemThrow());
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  assert.equal(
+    await page.evaluate(
+      (uid) =>
+        globalThis.primaryActionTest.inventory.locate(globalThis.primaryActionTest.inventory.itemByUid(uid))?.kind,
+      throwFixture.uid,
+    ),
+    'hand',
+    'right-click cancellation hides the throw meter without releasing the item',
+  );
+  await page.evaluate(() => {
+    globalThis.primaryActionTest.hudOptions.handling = true;
+  });
+  const interruptedThrow = await holdAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  assert.equal(
+    await page.evaluate((uid) => Boolean(globalThis.primaryActionTest.inventory.itemByUid(uid)?.on), throwFixture.uid),
+    false,
+    'an unlit glowstick can begin charging a throw',
+  );
   await page.evaluate(() => {
     const { body } = globalThis.primaryActionTest.session.sim;
     body.impact(0, 'torso', { shockDamage: body.shock + 1 });
   });
   await page.waitForFunction(() => {
     const r = globalThis.primaryActionTest;
-    return r.session.sim.body.unconscious && !r.isChargingGlowstick();
+    return r.session.sim.body.unconscious && !r.isChargingItemThrow();
   });
   assert.equal(
-    await page.evaluate(() => globalThis.primaryActionTest.isChargingGlowstick()),
+    await page.evaluate(() => globalThis.primaryActionTest.isChargingItemThrow()),
     false,
-    'knockout cancels an active glowstick charge',
+    'knockout cancels an active item throw',
   );
   await interruptedThrow();
-  const rejectedThrow = await holdAction(page, 'player.throw-glowstick');
+  const rejectedThrow = await holdAction(page, 'player.throw');
   assert.equal(
-    await page.evaluate(() => globalThis.primaryActionTest.isChargingGlowstick()),
+    await page.evaluate(() => globalThis.primaryActionTest.isChargingItemThrow()),
     false,
-    'unconsciousness refuses a new glowstick charge',
+    'unconsciousness refuses a new item throw',
   );
   assert.equal(
     await page.evaluate(() => {
       const r = globalThis.primaryActionTest;
-      r.beginGlowstickCharge();
-      return r.isChargingGlowstick();
+      r.beginItemThrow();
+      return r.isChargingItemThrow();
     }),
     false,
-    'beginGlowstickCharge independently refuses unconsciousness',
+    'beginItemThrow independently refuses unconsciousness',
   );
   await rejectedThrow();
   assert.equal(
@@ -1053,7 +1134,7 @@ try {
     body.advance(body.tuning.knockoutSimSeconds);
   });
   await page.waitForFunction(() => !globalThis.primaryActionTest.session.sim.body.unconscious);
-  const cancelThrow = await holdAction(page, 'player.throw-glowstick');
+  const cancelThrow = await holdAction(page, 'player.throw');
   await page.mouse.down({ button: 'right' });
   await cancelThrow();
   await page.mouse.up({ button: 'right' });
@@ -1063,23 +1144,72 @@ try {
       'hand',
     throwFixture.uid,
   );
-  const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
-  const releaseThrow = await holdAction(page, 'player.throw-glowstick');
+  const shortStart = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  const shortRelease = await holdAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
   await waitForSimulation(
     page,
-    glowstickChargeSample,
+    throwChargeSample,
+    { start: shortStart, seconds: throwFixture.minimumHoldSimSeconds / 2 },
+    {
+      seconds: throwFixture.minimumHoldSimSeconds / 2 + 0.1,
+      label: 'release before minimum hold leaves the item in hand',
+      record: (line) => process.stderr.write(`${line}\n`),
+      stop: shortRelease,
+    },
+  );
+  const shortThrowResult = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    return { location: r.inventory.locate(r.inventory.itemByUid(uid)), expectedSide: r.dominant };
+  }, throwFixture.uid);
+  assert.equal(shortThrowResult.location?.kind, 'hand', 'a short throw release leaves the item held');
+  assert.equal(shortThrowResult.location?.side, shortThrowResult.expectedSide, 'the primary-hand item stays held');
+  assert.equal(
+    await page.evaluate(() =>
+      globalThis.primaryActionTest.inputRecorder.copyInputs().actions.some((action) => action.action === 'item.throw'),
+    ),
+    false,
+    'a short release records no throw',
+  );
+  const glowstickUseRefusal = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    return r.survival.use(r.inventory.itemByUid(uid));
+  }, throwFixture.uid);
+  assert.equal(glowstickUseRefusal, undefined, 'the fixture glowstick can be lit before throwing');
+  const releaseThrow = await holdAction(page, 'player.throw');
+  await page.waitForFunction(() => globalThis.primaryActionTest.isChargingItemThrow());
+  const chargeStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  await waitForSimulation(
+    page,
+    throwChargeSample,
     { start: chargeStartedAt, seconds: throwFixture.chargeSimSeconds },
     {
       seconds: throwFixture.chargeSimSeconds + 1,
       label: 'glowstick charge reaches its maximum throw range',
       record: (line) => process.stderr.write(`${line}\n`),
-      stop: releaseThrow,
     },
   );
+  const fullMeter = await page.evaluate(() =>
+    Number.parseFloat(document.querySelector('#handling .hd-fill').style.width),
+  );
+  assert.equal(fullMeter, 100, 'maximum charge fills the handling meter');
+  await releaseThrow();
   await page.waitForFunction((uid) => {
     const r = globalThis.primaryActionTest;
-    return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.glowstickThrows.activeCount > 0;
+    return r.inventory.locate(r.inventory.itemByUid(uid))?.kind === 'pile' && r.itemThrows.activeCount > 0;
   }, throwFixture.uid);
+  await page.waitForFunction(() => document.querySelector('#handling').hidden);
+  const thrownGlowstick = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    const location = item && r.inventory.locate(item);
+    return {
+      on: item?.on,
+      sameInstance: location?.kind === 'pile' && location.pile.items.some((placed) => placed.item === item),
+    };
+  }, throwFixture.uid);
+  assert.equal(thrownGlowstick.on, true, 'the thrown glowstick stays lit');
+  assert.equal(thrownGlowstick.sameInstance, true, 'the same glowstick instance lands in the pile');
   const thrown = await page.evaluate(({ uid, start, blockSize }) => {
     const r = globalThis.primaryActionTest;
     const location = r.inventory.locate(r.inventory.itemByUid(uid));
@@ -1091,8 +1221,8 @@ try {
   }, throwFixture);
   const landingTolerance = throwFixture.blockSize * 2;
   assert.ok(
-    await page.evaluate(() => globalThis.primaryActionTest.glowstickThrows.activeCount > 0),
-    'throw presents a visible arc to the landing point',
+    await page.evaluate(() => globalThis.primaryActionTest.itemThrows.activeCount > 0),
+    'item throw presents a visible arc to the landing point',
   );
   assert.ok(
     thrown >= throwFixture.distance - landingTolerance,
@@ -1102,6 +1232,208 @@ try {
     thrown <= throwFixture.distance + landingTolerance,
     `throw uses the tuned landing range (distance ${thrown})`,
   );
+  const loadedFirearm = await page.evaluate(async (moduleUrl) => {
+    const r = globalThis.primaryActionTest;
+    r.clearHand(r.dominant);
+    r.clearHand(r.off);
+    const { registry } = r.inventory;
+    const definition = [...registry.items.values()].find((item) => item.firearm?.pump);
+    if (!definition?.model) {
+      throw new Error('No pump firearm fixture is available');
+    }
+    const calibre = registry.models.get(definition.model)?.calibre;
+    const cartridge = [...registry.items.values()].find((item) => item.ammo?.calibre === calibre);
+    if (!cartridge) {
+      throw new Error('No compatible firearm cartridge fixture is available');
+    }
+    const firearm = r.inventory.create(definition.id);
+    const shell = r.inventory.create(cartridge.id);
+    r.setHand(r.dominant, firearm);
+    r.setHand(r.off, shell);
+    const { SHELL_LOAD_SECONDS } = await import(moduleUrl);
+    const start = r.session.sim.time;
+    const refusal = r.session.firearms.load(shell, start);
+    if (refusal) {
+      throw new Error(`Could not load firearm throw fixture: ${refusal}`);
+    }
+    r.session.queue.tick(SHELL_LOAD_SECONDS);
+    r.session.firearms.advanceTo(start + SHELL_LOAD_SECONDS);
+    const firearmState = structuredClone(firearm.firearm);
+    if (!firearmState?.tube?.length) {
+      throw new Error('Firearm throw fixture did not load its ammunition');
+    }
+    return {
+      uid: firearm.uid,
+      modelId: definition.model,
+      firearmState,
+      start: [...r.session.body.pos],
+      blockSize: r.scale.blockSize,
+      chargeSimSeconds: registry.senses.get('player').light.throwChargeSimSeconds,
+    };
+  }, firearmHandlingModule);
+  const releaseFirearmThrow = await holdAction(page, 'player.throw');
+  const firearmThrowStartedAt = await page.evaluate(() => globalThis.primaryActionTest.session.sim.time);
+  await waitForSimulation(
+    page,
+    throwChargeSample,
+    { start: firearmThrowStartedAt, seconds: loadedFirearm.chargeSimSeconds },
+    {
+      seconds: loadedFirearm.chargeSimSeconds + 0.1,
+      label: 'charged firearm throw completes',
+      record: (line) => process.stderr.write(`${line}\n`),
+      stop: releaseFirearmThrow,
+    },
+  );
+  const flightModelId = await page.waitForFunction((modelId) => {
+    const { itemThrows } = globalThis.primaryActionTest;
+    return itemThrows.activeCount > 0 && itemThrows.group.getObjectByName(modelId) ? modelId : false;
+  }, loadedFirearm.modelId);
+  assert.equal(
+    await flightModelId.jsonValue(),
+    loadedFirearm.modelId,
+    'flight uses the firearm’s own ModelLibrary model',
+  );
+  const landedFirearm = await page.evaluate((uid) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    const location = item && r.inventory.locate(item);
+    return {
+      locationKind: location?.kind,
+      sameInstance: location?.kind === 'pile' && location.pile.items.some((placed) => placed.item === item),
+      firearmState: item?.firearm,
+    };
+  }, loadedFirearm.uid);
+  assert.equal(landedFirearm.locationKind, 'pile', 'the loaded firearm lands in a pile');
+  assert.equal(landedFirearm.sameInstance, true, 'throw moves the same firearm instance');
+  assert.deepEqual(landedFirearm.firearmState, loadedFirearm.firearmState, 'throw preserves loaded firearm state');
+  const rifleFixture = await page.evaluate(
+    async ({ magazineUrl, optionsUrl }) => {
+      const r = globalThis.primaryActionTest;
+      const { magazineSpec, magazineWellCalibre } = await import(magazineUrl);
+      const { stowTarget } = await import(optionsUrl);
+      r.clearHand(r.dominant);
+      r.clearHand(r.off);
+      const { registry } = r.inventory;
+      const rifle = r.inventory.create('rifle_assault');
+      const calibre = magazineWellCalibre(registry, rifle.type);
+      const magazineType = [...registry.items.keys()]
+        .sort()
+        .find((id) => magazineSpec(registry, id)?.calibre === calibre);
+      const cartridgeType = [...registry.items.keys()]
+        .sort()
+        .find((id) => registry.items.get(id).ammo?.calibre === calibre);
+      if (!(magazineType && cartridgeType)) {
+        throw new Error('No compatible rifle magazine/cartridge fixture is available');
+      }
+      const magazine = r.inventory.create(magazineType);
+      const cartridges = r.inventory.create(cartridgeType, 2);
+      r.placePocketed(cartridges);
+      r.setHand(r.dominant, magazine);
+      const settle = () => {
+        for (let step = 0; r.session.queue.busy; step += 1) {
+          if (step > 400) {
+            throw new Error('Fixture magazine handling did not finish');
+          }
+          r.session.frame(1 / 20);
+        }
+      };
+      for (let round = 0; round < 2; round += 1) {
+        const refusal = r.session.magazines.loadNext(magazine.uid, r.session.sim.time);
+        if (refusal) {
+          throw new Error(`Could not load fixture magazine: ${refusal}`);
+        }
+        settle();
+      }
+      const target = stowTarget(r.inventory, magazine, r.feet());
+      if (target?.kind !== 'pocket' || !r.inventory.move(magazine, target).ok) {
+        throw new Error('Could not stow loaded fixture magazine');
+      }
+      r.setHand(r.dominant, rifle);
+      let refusal = r.session.firearms.loadNext(rifle.uid, r.session.sim.time);
+      if (refusal) {
+        throw new Error(`Could not fit fixture magazine: ${refusal}`);
+      }
+      settle();
+      refusal = r.session.firearms.cock(rifle.uid, r.session.sim.time);
+      if (refusal) {
+        throw new Error(`Could not chamber fixture round: ${refusal}`);
+      }
+      return { uid: rifle.uid, magazineUid: magazine.uid };
+    },
+    { magazineUrl: magazineModule, optionsUrl: optionsModule },
+  );
+  const releaseRifleThrow = await holdAction(page, 'player.throw');
+  const throwWait = await page.evaluate(() => {
+    const r = globalThis.primaryActionTest;
+    return { handling: r.session.queue.busy, charging: r.isChargingItemThrow() };
+  });
+  assert.equal(throwWait.handling, true, 'rifle rack is still being handled when T is pressed');
+  assert.equal(throwWait.charging, false, 'throw charge waits for the rifle rack to finish');
+  await page.waitForFunction(() => {
+    const r = globalThis.primaryActionTest;
+    return !(r.session.queue.busy || r.session.firearms.busy) && r.isChargingItemThrow();
+  });
+  const loadedRifle = await page.evaluate(
+    async ({ uid, magazineUid, itemLookUrl }) => {
+      const r = globalThis.primaryActionTest;
+      const { itemLook } = await import(itemLookUrl);
+      const rifle = r.inventory.itemByUid(uid);
+      const magazine = r.inventory.itemByUid(magazineUid);
+      const look = itemLook(r.inventory.registry, rifle);
+      if (!look || rifle.firearm?.chamber !== 'round' || magazine.cartridges?.length !== 1) {
+        throw new Error('Loaded rifle fixture needs a fitted magazine and a chambered round');
+      }
+      return {
+        uid,
+        magazineUid,
+        firearmState: structuredClone(rifle.firearm),
+        magazineCartridges: [...magazine.cartridges],
+        lookKey: look.key,
+        chargeSimSeconds: r.inventory.registry.senses.get('player').light.throwChargeSimSeconds,
+        chargeStartedAt: r.session.sim.time,
+      };
+    },
+    { ...rifleFixture, itemLookUrl: itemLookModule },
+  );
+  await waitForSimulation(
+    page,
+    throwChargeSample,
+    { start: loadedRifle.chargeStartedAt, seconds: loadedRifle.chargeSimSeconds },
+    {
+      seconds: loadedRifle.chargeSimSeconds + 0.1,
+      label: 'charged magazine-fed rifle throw completes',
+      record: (line) => process.stderr.write(`${line}\n`),
+      stop: releaseRifleThrow,
+    },
+  );
+  await page.waitForFunction(({ uid, lookKey }) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    return item && r.inventory.locate(item)?.kind === 'pile' && r.itemThrows.group.getObjectByName(lookKey);
+  }, loadedRifle);
+  const landedRifle = await page.evaluate(({ uid, magazineUid }) => {
+    const r = globalThis.primaryActionTest;
+    const item = r.inventory.itemByUid(uid);
+    const magazine = r.inventory.itemByUid(magazineUid);
+    const location = item && r.inventory.locate(item);
+    const locations = [...r.inventory.items()].map(({ item: candidate }) => candidate.uid);
+    return {
+      sameInstance: location?.kind === 'pile' && location.pile.items.some(({ item: placed }) => placed === item),
+      sameMagazine: item?.slots?.magazine === magazine,
+      firearmState: item?.firearm,
+      magazineCartridges: magazine?.cartridges,
+      duplicateItemUids: locations.length !== new Set(locations).size,
+    };
+  }, loadedRifle);
+  assert.equal(landedRifle.sameInstance, true, 'throw moves the same loaded rifle instance');
+  assert.equal(landedRifle.sameMagazine, true, 'throw keeps the fitted magazine instance on the rifle');
+  assert.deepEqual(landedRifle.firearmState, loadedRifle.firearmState, 'throw keeps the chambered round');
+  assert.deepEqual(
+    landedRifle.magazineCartridges,
+    loadedRifle.magazineCartridges,
+    'throw keeps the fitted magazine rounds',
+  );
+  assert.equal(landedRifle.duplicateItemUids, false, 'throw does not duplicate the nested magazine item');
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
@@ -1118,6 +1450,10 @@ try {
     hand: 'left',
   });
   await finishedSwing();
+  const throwDuringHandling = await attemptDuringHandling(roles.dominant, roles.off, false, true);
+  assertHandlingRefusal(throwDuringHandling, 'held-item throw');
+  assert.equal(throwDuringHandling.throwAttempt?.charging, false, 'a queued handling job does not charge a throw');
+  assert.ok(throwDuringHandling.throwAttempt?.notice.trim(), 'waiting for handling leaves a notice');
   assertHandlingRefusal(await attemptDuringHandling(roles.dominant, roles.off), 'held-weapon attack');
   assertHandlingRefusal(await attemptDuringHandling(roles.off, roles.dominant), 'off-hand primary action');
   const mouse5WhileHandling = await attemptDuringHandling(roles.off, roles.dominant, true);
@@ -1503,7 +1839,7 @@ try {
   browser = undefined;
   await checkDroppedGlowstickPixel(address.port);
   process.stdout.write(
-    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, thrown-glowstick arc, refusals, firearm emission, quickbar hold, held-book reading, crowbar door route and clean mouse-look sample playback.\n',
+    'Left native-form accepted launch passed with retained pointer-lock harness: physical hand actions, attachment, save identity, glowstick and loaded-firearm throws, refusals, firearm emission, quickbar hold, held-book reading, crowbar door route and clean mouse-look sample playback.\n',
   );
 } finally {
   await browser?.close();

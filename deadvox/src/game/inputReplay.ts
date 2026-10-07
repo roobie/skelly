@@ -42,11 +42,11 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'craft.start',
   'craft.continue',
   'craft.stop',
-  'glowstick.cancel',
+  'item.throw.cancel',
 ]);
 const REPLAY_SEMANTIC_ACTIONS = [
-  'glowstick.throw',
-  'glowstick.cancel',
+  'item.throw',
+  'item.throw.cancel',
   'inventory.move',
   'inventory.to-hands',
   'inventory.search',
@@ -192,7 +192,7 @@ const isValidQueuedAction = (
     return false;
   }
   const validValue =
-    action === 'glowstick.throw'
+    action === 'item.throw'
       ? typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 10_000
       : value === undefined;
   const validPayload = REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) ? payload !== undefined : true;
@@ -209,7 +209,7 @@ type ReplayActionRecord = Record<string, unknown> & {
 };
 
 const hasValidActionValue = (action: string, candidate: Record<string, unknown>): boolean =>
-  action === 'glowstick.throw'
+  action === 'item.throw'
     ? typeof candidate.value === 'number' &&
       Number.isFinite(candidate.value) &&
       candidate.value >= 0 &&
@@ -502,7 +502,7 @@ export class InputReplayRecorder {
       action: ACTION_IDS[this.actionIds[index]!]!,
       phase: this.actionPhases[index] === 0 ? 'down' : 'up',
       context: CONTEXTS[this.actionContexts[index]!]!,
-      ...(ACTION_IDS[this.actionIds[index]!] === 'glowstick.throw' ? { value: this.actionValues[index]! } : {}),
+      ...(ACTION_IDS[this.actionIds[index]!] === 'item.throw' ? { value: this.actionValues[index]! } : {}),
       ...(this.actionPayloads[index] === undefined
         ? {}
         : { payload: JSON.parse(this.actionPayloads[index]!) as ReplayActionPayload }),
@@ -786,7 +786,7 @@ export async function decodeInputReplay(
       action: candidate.action,
       phase: candidate.phase,
       context: candidate.context,
-      ...(candidate.action === 'glowstick.throw' ? { value: candidate.value as number } : {}),
+      ...(candidate.action === 'item.throw' ? { value: candidate.value as number } : {}),
       ...(Object.hasOwn(candidate, 'payload') ? { payload: candidate.payload as ReplayActionPayload } : {}),
     };
   });

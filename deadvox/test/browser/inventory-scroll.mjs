@@ -5,12 +5,10 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium, loadPlaywright } from './chromium.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
-import { browserStageArgs } from './stage-mode.mjs';
 
-const { chromium, firefox } = await import('playwright');
-// biome-ignore lint/style/noProcessEnv: the launcher accepts the installed Chromium path
-const chromeBin = process.env.CHROME_BIN;
+const { firefox } = await loadPlaywright();
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const engine = process.argv[2] ?? 'chromium';
@@ -156,11 +154,7 @@ try {
   browser =
     engine === 'firefox'
       ? await firefox.launch({ headless: false })
-      : await chromium.launch({
-          executablePath: chromeBin,
-          headless: true,
-          args: browserStageArgs('inventory-scroll'),
-        });
+      : await launchChromium('inventory-scroll', { headless: true });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
