@@ -103,7 +103,7 @@ describe('actual-slot held placement', () => {
 
   it('projects each exported sight line to screen centre within one pixel in ADS', () => {
     const firearms = registry.skills.get('firearms_combat')!.combat!.firearms!;
-    for (const modelId of ['rifle_assault', 'rifle_ak']) {
+    for (const modelId of ['rifle_assault', 'rifle_ak', 'shotgun_pump']) {
       const model = registry.models.get(modelId)!;
       expect(model.sight?.eyeReliefMetres).toBeGreaterThan(0);
       const pose = heldFirearmTransform({

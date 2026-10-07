@@ -162,6 +162,7 @@ try {
     };
   }, ids.gun);
   assert.deepEqual(rangeStock, { firearm: true, compatibleRound: true, compatibleBox: true });
+  const keys = await page.context().newCDPSession(page);
   const select = async (uid) => {
     await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
     const rows = await page
@@ -174,7 +175,12 @@ try {
       const previous = await page.evaluate(
         () => document.querySelector('#inventory [data-uid].selected')?.dataset.uid ?? null,
       );
-      await pressAction(page, 'inventory.next');
+      await pressCdpActionBurst(
+        (expression) => page.evaluate(expression),
+        (method, params) => keys.send(method, params),
+        'inventory.next',
+        1,
+      );
       await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => done(undefined))));
       // Serialize key input with the selection's next-frame DOM update.
       try {
@@ -349,7 +355,6 @@ try {
   assert.equal(loaded.rest, null);
   // Submit the effective reload binding in one protocol burst so renderer pacing cannot split the double tap.
   // No timestamp is supplied or fabricated; verify Chrome's actual event timestamps.
-  const keys = await page.context().newCDPSession(page);
   await pressCdpActionBurst(
     (expression) => page.evaluate(expression),
     (method, params) => keys.send(method, params),
