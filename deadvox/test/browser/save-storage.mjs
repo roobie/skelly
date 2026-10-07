@@ -958,7 +958,7 @@ try {
         const storage = new Storage({
           backend: 'indexeddb',
           requestTimeoutMs: 5000,
-          writeLockHoldTimeoutMs: 1000,
+          writeLockHoldTimeoutRealMs: 1000,
           testCrashAt: 'after-commit',
         });
         await storage.status();

@@ -20,7 +20,7 @@ const warnSaveLockTimeout = (message: string, details: Record<string, unknown>):
 };
 const SAVE_READ_RETRIES = 3;
 const SAVE_READ_RETRY_MS = 50;
-const SAVE_WRITE_LOCK_HOLD_TIMEOUT_MS = 30_000;
+const SAVE_WRITE_LOCK_HOLD_REAL_MS = 30_000;
 const STORAGE_METADATA_TIMEOUT_MS = 1000;
 type CrashStage =
   | 'before-truncate'
@@ -44,7 +44,7 @@ export interface SaveStorageOptions {
   /** Test-only abrupt worker termination at a named physical-write stage. */
   readonly testCrashAt?: CrashStage;
   /** Test-only override for the maximum time one writer may hold the origin lock. */
-  readonly writeLockHoldTimeoutMs?: number;
+  readonly writeLockHoldTimeoutRealMs?: number;
 }
 export interface SaveLoadResult {
   readonly generation: number;
@@ -74,7 +74,7 @@ export class SaveStorage {
   private readonly preference: SaveBackendPreference;
   private readonly timeoutMs: number;
   private readonly crashAt: CrashStage | undefined;
-  private readonly writeLockHoldTimeoutMs: number;
+  private readonly writeLockHoldTimeoutRealMs: number;
   private worker: Worker | undefined;
   private backend: SaveBackend | undefined;
   private nextId = 0;
@@ -92,7 +92,7 @@ export class SaveStorage {
     this.preference = options.backend ?? 'auto';
     this.timeoutMs = options.requestTimeoutMs ?? 15_000;
     this.crashAt = options.testCrashAt;
-    this.writeLockHoldTimeoutMs = options.writeLockHoldTimeoutMs ?? SAVE_WRITE_LOCK_HOLD_TIMEOUT_MS;
+    this.writeLockHoldTimeoutRealMs = options.writeLockHoldTimeoutRealMs ?? SAVE_WRITE_LOCK_HOLD_REAL_MS;
   }
 
   status(): Promise<SaveStorageStatus> {
@@ -283,7 +283,7 @@ export class SaveStorage {
         timedOut = true;
         this.failWorker(timeoutError);
         reject(timeoutError);
-      }, this.writeLockHoldTimeoutMs);
+      }, this.writeLockHoldTimeoutRealMs);
     });
     try {
       return await Promise.race([operation(), deadline]);
