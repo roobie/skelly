@@ -407,7 +407,7 @@ try {
     );
     assert.equal((await result.jsonValue()).open, true, "world interaction opens the resident's ordinary closed door");
   };
-  const walkTo = async (target, label) => {
+  const walkTo = async (target, label, { settleBelowTarget = false } = {}) => {
     const start = await page.evaluate((destination) => {
       const { input, session, body } = globalThis.stairsWitness;
       input.yaw = Math.atan2(-(destination[0] - body.pos[0]), -(destination[2] - body.pos[2]));
@@ -434,16 +434,16 @@ try {
     }
     await waitForSimulation(
       page,
-      (destination) => {
+      ({ height, settleBelow }) => {
         const { body, session } = globalThis.stairsWitness;
         return {
           time: session.sim.time,
           paused: session.sim.paused,
-          reached: body.onGround && Math.abs(body.pos[1] - destination[1]) < 0.01,
+          reached: body.onGround && (settleBelow ? body.pos[1] < height : Math.abs(body.pos[1] - height) < 0.01),
           feet: body.pos[1],
         };
       },
-      target,
+      { height: target[1], settleBelow: settleBelowTarget },
       { seconds: 4, label: `${label}: settle after releasing forward input`, record: state },
     );
   };
@@ -609,17 +609,18 @@ try {
     });
     await walk('movement.back', 112, false, 43);
     await state('house downstairs walked');
-    const groundProjection = await page.evaluate((id) => {
-      const { body, session } = globalThis.stairsWitness;
+    const underResident = await page.evaluate((id) => {
+      const { session } = globalThis.stairsWitness;
       const resident = session.zombieStore.get(id);
       if (!resident) {
         throw new Error('stairs_house resident left the entity store');
       }
-      return [resident.body.pos[0], body.pos[1], resident.body.pos[2]];
+      return [resident.body.pos[0], resident.body.pos[1], resident.body.pos[2]];
     }, residentId);
     const releaseResidentSprint = await holdAction(page, 'movement.sprint');
     try {
-      await walkTo(groundProjection, 'sprint below resident on the lower floor');
+      // The doorway can raise this approach, so settle relative to the resident rather than the starting floor.
+      await walkTo(underResident, 'sprint below resident on the lower floor', { settleBelowTarget: true });
     } finally {
       await releaseResidentSprint();
     }
