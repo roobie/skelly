@@ -39,8 +39,8 @@ const voxels = (
   color: new Uint8Array(owner.length),
 });
 
-const run = (b: Body, v: Voxels, feet: readonly string[], budgets: Budgets) =>
-  validate({ body: b, voxels: v, meshes: meshBones(v, b.bones.length), feet: new Set(feet), budgets });
+const run = (b: Body, v: Voxels, supportBones: readonly string[], budgets: Budgets) =>
+  validate({ body: b, voxels: v, meshes: meshBones(v, b.bones.length), supportBones: new Set(supportBones), budgets });
 
 const runSilhouette = (
   b: Body,
@@ -58,7 +58,7 @@ const runSilhouette = (
     body: b,
     voxels: v,
     meshes: meshBones(v, b.bones.length),
-    feet: new Set<string>(),
+    supportBones: new Set<string>(),
     budgets,
   });
 
@@ -69,8 +69,8 @@ const healthyBones: Body['bones'] = [
 ];
 const healthyVoxels = voxels([1, 2, 1], [1, 2]);
 
-describe('validate: a healthy body passes every rule', () => {
-  it('reports ok with no issues', () => {
+describe('validate: declared support bones ground a generic body', () => {
+  it('reports ok when the declared non-humanoid root support owns ground contact', () => {
     const report = run(body(healthyBones), healthyVoxels, ['root'], GENEROUS);
     expect(report.issues).toEqual([]);
     expect(report.ok).toBe(true);
@@ -114,7 +114,7 @@ describe('grounded', () => {
     expect(report.issues.map((i) => i.rule)).toEqual(['grounded']);
   });
 
-  it("fails when the ground layer isn't a foot bone", () => {
+  it('fails when the ground layer belongs to a non-support bone', () => {
     const report = run(body(healthyBones), healthyVoxels, ['child'], GENEROUS);
     expect(report.issues.map((i) => i.rule)).toEqual(['grounded']);
   });
@@ -170,7 +170,7 @@ describe('silhouette profile', () => {
       body: body(healthyBones),
       voxels: coarse,
       meshes: new Map([[0, { ...mesh, triangles: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP + 1 }]]),
-      feet: new Set<string>(),
+      supportBones: new Set<string>(),
       budgets: { totalTriangles: { min: 1, max: FAR_LOD_HALF_BLOCK_TRIANGLE_CAP } },
     });
     expect(report.issues).toEqual([{ rule: 'budget', message: 'Total triangles 401 is outside [1, 400].' }]);
