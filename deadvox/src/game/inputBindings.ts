@@ -12,7 +12,7 @@ export type InputContext =
   | 'noclip'
   | 'play'
   | 'interrupted';
-type PressKind = 'press' | 'held-state' | 'hold' | 'double-press';
+type PressKind = 'press' | 'held-state' | 'hold' | 'double-press' | 'tap-then-hold';
 export type Modifier = 'shift' | 'alt' | 'ctrl' | 'meta';
 export interface Chord {
   readonly code: string;
@@ -90,12 +90,20 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),
   row('hand.use-off', 'Use off hand', world, ['Equal']),
   row('world.interact', 'Interact with the world', world, ['KeyF']),
-  row('firearm.reload', 'Hold to load; double-press to rack; tap does nothing', world, ['KeyR'], 'hold', {
-    commands: [
-      { id: 'firearm.load', kind: 'hold' },
-      { id: 'firearm.rack', kind: 'double-press' },
-    ],
-  }),
+  row(
+    'firearm.reload',
+    'Hold to load; double-press to rack; tap, then hold to remove the magazine; tap does nothing',
+    world,
+    ['KeyR'],
+    'hold',
+    {
+      commands: [
+        { id: 'firearm.load', kind: 'hold' },
+        { id: 'firearm.rack', kind: 'double-press' },
+        { id: 'firearm.remove', kind: 'tap-then-hold' },
+      ],
+    },
+  ),
   row('ui.inventory-toggle', 'Open / close inventory', [...moving, 'inventory'], ['Tab']),
   row('ui.main-menu-toggle', 'Main menu', entered, ['F9'], 'press', { text: true }),
   row('hud.toggle-interaction-hints', 'Hold to toggle interaction hints', entered, ['Backquote'], 'hold', {
@@ -154,11 +162,17 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   debugRow('debug.spawn-menu-toggle', 'Spawn item menu', 'KeyG'),
   debugRow('debug.god-toggle', 'God mode', 'KeyH'),
   debugRow('debug.noclip-toggle', 'Noclip', 'KeyP'),
+  debugRow('debug.spectator-camera-toggle', 'Spectator camera', 'F6'),
+  debugRow('debug.perception-labels-toggle', 'Perception labels', 'F7'),
+  debugRow('debug.spawn-unaware-shambler', 'Spawn unaware shambler', 'Numpad3'),
+  debugRow('debug.test-noise', 'Test noise', 'F8'),
   debugRow('debug.compression-test', 'Compression test', 'KeyT'),
   debugRow('debug.interruption-test', 'Emit interruption', 'KeyN'),
   debugRow('debug.danger-test', 'Danger test', 'KeyU'),
   debugRow('debug.hurt', 'Take damage', 'KeyK'),
   debugRow('debug.spawn-shamblers', 'Spawn shamblers', 'KeyV'),
+  debugRow('debug.spawn-runner', 'Spawn runner', 'Numpad1'),
+  debugRow('debug.spawn-crawler', 'Spawn crawler', 'Numpad2'),
   debugRow('debug.melee-aim-toggle', 'Melee aim boxes', 'KeyY'),
   debugRow('debug.freeze-shamblers', 'Freeze shamblers', 'KeyO'),
   debugRow('debug.freeze-game', 'Freeze game', 'KeyM'),

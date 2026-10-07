@@ -18,7 +18,7 @@ import {
   walkPose,
 } from '../src/mob/gait.ts';
 import type { HumanoidParams } from '../src/mob/humanoid.ts';
-import { TEMPLATES } from '../src/mob/templates.ts';
+import { HUMANOID_TEMPLATES, TEMPLATES } from '../src/mob/templates.ts';
 
 const LUNGE_GRAB = ATTACK_CLIPS.LUNGE_GRAB!;
 const TOL = 1e-9;
@@ -142,7 +142,7 @@ const attackFixtureProblems = (fixture: Fixture): string[] => {
 };
 
 describe('Pose.angles recompose to the walk matrices', () => {
-  for (const template of TEMPLATES) {
+  for (const template of HUMANOID_TEMPLATES) {
     it(`${template.name}: every angle-carrying bone, seeds x speeds x phases, within ${TOL}`, () => {
       const problems: string[] = [];
       for (const seed of SEEDS) {
@@ -172,7 +172,7 @@ describe('Pose.angles recompose to the walk matrices', () => {
 });
 
 describe('attackPose clipAngles recompose to the attacked matrices', () => {
-  for (const template of TEMPLATES) {
+  for (const template of HUMANOID_TEMPLATES) {
     it(`${template.name}: walk layer x clip layer (with the arm fade weight) within ${TOL}`, () => {
       const problems = SEEDS.flatMap((seed) => attackFixtureProblems(actorFor(template.name, seed)));
       expect(problems).toEqual([]);

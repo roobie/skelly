@@ -235,7 +235,9 @@ force without a second widget or key instruction. See `src/ui/hud.ts`,
   bore plus spread, while the optional crosshair reports where that bore line
   meets the world. BR's 12:16 and 13:30 rulings in `DESIGN.md`, "Firearms",
   allow the mark to follow a wielded firearm's bore at its current raise
-  progress and disappear when its projected point leaves the viewport.
+  progress and disappear when its projected point leaves the viewport. BR's 14:55
+  ruling there turns the mark with the rifle while a rack or a magazine job turns
+  it (`src/render/handlingTurn.ts`, `turnedBore`).
   `src/game/firearmAim.ts`, `firearmBoreRay` and
   `firearmBoreTarget`, share the shot ray and its reported hit; the crosshair
   itself is projected by `src/ui/playHud.ts`, `projectCrosshairScreenPosition`.
@@ -305,6 +307,9 @@ DESIGN.md's line is amended to say so.
    readied firearm) should point where the muzzle is pointing” and BR chose the
    bore-line hit instead of the random spread. It reports the firearm's direction;
    it does not steer the shot. With `?debug=1`, the separate X marks screen centre.
+   While a rack or a magazine job turns the drawn rifle, the mark follows the
+   turned muzzle (BR, 2026-10-07 14:55: “as recommended: Follow the turned
+   muzzle”).
 
 ## Order of work
 

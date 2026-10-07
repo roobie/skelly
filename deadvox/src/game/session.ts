@@ -5,7 +5,7 @@
 // callbacks; nothing here draws or listens.
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
-import { shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { AimController } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bodyRegionForHitArea } from '../core/body.ts';
@@ -77,6 +77,7 @@ import {
   type FirearmTrajectory,
   isFirearmTrainingAction,
 } from './firearmHandling.ts';
+import { MagazineHandling } from './magazineHandling.ts';
 import {
   createPlayerBody,
   type MoveIntent,
@@ -588,16 +589,26 @@ export const createSession = (options: SessionOptions) => {
         firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale,
       );
     },
-    onShot: (shot, time) => {
+    onShot: (shot, time, firearm) => {
       const hits = zombieSystem.firePellets(shot);
       if (hits > 0 && firearmReadyWalking) {
         const training = skillActivityPractice(registry, 'firearms_combat', 'hit');
         character.awardPractice('firearms_combat', training.practice, training.tier);
       }
-      playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
+      // Other firearms' shot sounds are the player's presentation cue (play.ts, `firearmShotSound`).
+      if (registry.items.get(firearm.type)?.firearm?.pump) {
+        playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
+      }
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
+  });
+
+  const magazines = new MagazineHandling(inventory, queue, {
+    feet,
+    reloadFactor: () =>
+      firearmsSkillEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).reloadDuration,
+    onSound: (event, time) => playPlayerSound(event, time),
   });
 
   const survival = new Survival(sim, inventory, queue, {
@@ -771,14 +782,15 @@ export const createSession = (options: SessionOptions) => {
         area === 'legs'
           ? bodyRegionForHitArea('legs', legSide)
           : bodyRegionForHitArea(area === 'head' ? 'head' : 'torso');
-      sim.hit(amount, 'a shambler', region, { bleeding: true, blunt: true });
+      const attackerType = zombieStore.get(attacker)?.type.name.toLowerCase() ?? 'zombie';
+      sim.hit(amount, `a ${attackerType}`, region, { bleeding: true, blunt: true });
     },
     onSound: (event, position, zombie) => {
       if (event === 'melee_swing' || event === 'melee_hit' || event === 'melee_hit_fist') {
         playWorldSound(event, position, sim.time, {
           listenerRelative: true,
           sourceLabel: 'player melee',
-          ...(zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {}),
+          ...(zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {}),
         });
         return;
       }
@@ -786,7 +798,7 @@ export const createSession = (options: SessionOptions) => {
         event,
         position,
         sim.time,
-        zombie ? { body: shamblerFigure(zombie.figureSeed).realized.body } : {},
+        zombie ? { body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body } : {},
       );
     },
     onFootstep: (position, id, mode, zombie) => {
@@ -795,8 +807,8 @@ export const createSession = (options: SessionOptions) => {
         return registry.blocks[block]?.id ?? 'unknown';
       });
       playWorldSound(event, position, sim.time, {
-        sourceLabel: `shambler #${id} · ${mode}`,
-        body: shamblerFigure(zombie.figureSeed).realized.body,
+        sourceLabel: `${zombie.type.name.toLowerCase()} #${id} · ${mode}`,
+        body: zombieFigure(zombie.type.model, zombie.figureSeed).realized.body,
       });
     },
     onSevered: (zombie, region) => {
@@ -1142,6 +1154,7 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     firearms,
+    magazines,
     aim,
     get firearmsSkillZeroHandling() {
       return sessionFirearmsSkillZeroHandling(

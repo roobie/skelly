@@ -57,13 +57,37 @@ controls remain proposals until their issue is implemented.
   debug, rather than inventing no-op lean commands.
 - **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
   to the browser. Escape releases pointer lock and is never a game rebind.
-- **Reload only (2026-10-04):** “It shall mean only (re)load in the default
-  view”; “press and hold R to load it with shells from inventory double-press
-  R to rack”; “Single tap r does nothing”. The two gestures share one atomic
-  slot so rebinding cannot split a coupled action. `ReloadInput` in
-  `src/game/reloadInput.ts` owns classification; ammunition work belongs to its
-  existing handling owner.
-  Inventory rotation is a different visible context, not another reload gesture.
+- **Reload, rack, remove (2026-10-07 11:20):** BR, on how R treats a rifle:
+  “No, it should reload with the mag that is fullest in inventory, no matter what
+  is loaded in gun”; on double-pressing R working the charging handle, “yes,
+  correct”; and on removing the magazine, “Tap-then-press-and-hold R means remove
+  mag”. Holding R swaps in the fullest carried magazine that fits, even one with
+  fewer rounds than the fitted one. A double press racks. A tap followed by a
+  press held past the hold threshold removes the fitted magazine to a pocket or
+  the ground. Only the second press's length tells rack from remove, so neither
+  acts until it is released or held: a quick tap-tap never removes, and a plain
+  hold never removes. The gestures share one atomic slot so rebinding cannot
+  split a coupled action. `ReloadInput` in `src/game/reloadInput.ts` owns
+  classification and `RELOAD_GESTURE_MS` its timing; ammunition work belongs to
+  its existing handling owner (`src/game/firearmHandling.ts`,
+  `FirearmMechanics.loadNext` and `FirearmMechanics.removeMagazine`). Inventory
+  rotation is a different visible context, not another reload gesture.
+  - **Hold racks a gun without a magazine (2026-10-07 13:21, d114-11):** BR, on
+    what tap-then-hold does on the pump: “d114-11: i think it makes sense for it
+    to rack, but keep racking as long as the R button is held - it then reflects
+    what removing the mag means for a firearm with it -> remove the magazine
+    capacity”. On a gun without a detachable magazine, a tap followed by a held
+    press racks, then racks again each time a rack finishes, until R comes up or
+    nothing is left in the chamber or the tube. Each rack ejects what is
+    chambered and feeds the next shell, so holding through unloads the gun; live
+    shells land in the pile of the block they fall on, as spent cases do.
+    Releasing R starts no further rack, and the one under way finishes. A gun
+    with a detachable magazine keeps tap-then-hold as removal. See
+    `ReloadBinding.stillLoaded` and `FirearmMechanics.stillLoaded`.
+  - History, **Reload only (2026-10-04):** “It shall mean only (re)load in the
+    default view”; “press and hold R to load it with shells from inventory
+    double-press R to rack”; “Single tap r does nothing”. The removal ruling
+    above supersedes “only (re)load”; a single tap still does nothing.
 - **No rest or sleep keys (2026-10-04):** “`rest` shouldn't have a dedicatec
   keybind - instead, you interact with 'restable' items - e.g. beds, sofas,
   chairs, etc” and “`L` remvoed - sleep is on sleepable objects, like bed”.
@@ -113,6 +137,7 @@ controls remain proposals until their issue is implemented.
   active)”. These are the special-circumstance exception to the debug gate;
   they work only while noclip is active, and WASD remains usable during flight.
   See `src/game/inputBindings.ts`, `noclip.ascend` and `noclip.descend`.
+- **Spectator camera (d106-15):** Debug viewing moves a separate camera with the noclip flight step; it never moves the player's body. While detached, the same movement context routes flight input to the camera, and toggling back restores the body view. This is a debug view, not player noclip. See `src/game/play.ts`, `stepSimulation`, and `src/render/playView.ts`, `updateCamera`.
 - **Continue (d98; BR, 2026-10-06 11:28):** BR's choice was “1. enter”. Enter
   continues both after an interruption and a stopped craft. See
   `src/game/inputBindings.ts`, `compression.continue` and `craft.continue`.
@@ -155,10 +180,11 @@ Noclip flight is the substantive debug exception: holding the debug gate for an
 entire flight would occupy a hand and interfere with viewing. Space/C flight
 controls are ungated only in the visible noclip context; entering/exiting it
 remains gated. BR's earlier exception clause was “Unless some special circumstance
-for a key need it readily available”. Spawn selection and dismissal are ordinary
-modal navigation, not authoring. Keyboard confirmation is available only while
-that debug-only menu owns input; native activation of debug buttons still requires
-the gate. Mouse authoring remains available without it.
+for a key need it readily available”. Spawn selection and dismissal are ordinary modal navigation, not authoring.
+Keyboard confirmation is available only while that debug-only menu owns input;
+native activation of debug buttons still requires the gate. Mouse authoring remains
+available without it. The debug menu's type-spawn actions support the 3.8 first
+look without adding player bindings; see `src/debug/index.ts`, `createDebugActions`.
 
 Alt is not refused pending BR's ruling. `REFUSED_MODIFIERS` in
 `src/game/inputBindings.ts` is the one place to extend refusal; it also drives

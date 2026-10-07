@@ -234,7 +234,7 @@ const MeleeClassSchema = strictObject({
   speedMultiplier: Positive,
 });
 
-// Debug rifles use virtual rounds; a pump consumes item-owned ammunition and needs exported tube/hand data.
+// A pump feeds item-owned shells from its exported tube; other firearms feed from a fitted magazine (`magazineWellCalibre`).
 const FirearmSchema = strictObject({
   pump: optional(vBoolean()),
   /** Camera-local aim kick per committed shot, scaled by firearms control. */
@@ -244,10 +244,19 @@ const FirearmSchema = strictObject({
   /** Optional per-gun skill-zero endpoints; absent guns use firearms-combat's shared factors. */
   skillZeroHandling: optional(FirearmsSkillZeroHandlingSchema),
 });
+/** Per projectile (one rifle bullet, or each pellet); damage, push and reach are gameplay estimates, not ballistics. */
 const AmmoSchema = strictObject({
   calibre: CalibreId,
   pellets: pipe(Count, minValue(1), maxValue(64)),
   diameterMm: Positive,
+  /** Region health a projectile takes, before the zombie's per-region pierce resistance. */
+  damage: Positive,
+  /** Push in N·s on the struck body. */
+  impulse: Positive,
+  /** Hitscan reach. */
+  rangeMetres: Positive,
+  /** Scales `damage` on a head hit; absent means 1. */
+  headDamageMultiplier: optional(Positive),
 });
 
 const LightSchema = strictObject({
@@ -626,6 +635,12 @@ const ModelSchema = pipe(
     muzzleDirection: optional(UnitVector),
     /** Optional estimated action cycles and the named moving GLB nodes. */
     action: optional(ActionSchema),
+    /**
+     * Where the charging handle sits around the bore: degrees from the top of the receiver toward the gun's right
+     * (+z). A rack rolls the gun toward the off hand, further when the handle is on the far side (DESIGN.md, "Rifles
+     * (3.2, d114)"). Hand-authored: the export does not carry it.
+     */
+    chargingHandleDegrees: optional(pipe(number(), minValue(-180), maxValue(180))),
   }),
   check(
     ({ calibre, capacity, rounds }) =>
@@ -726,6 +741,8 @@ const LootEntrySchema = pipe(
 
 const LootTableSchema = strictObject({
   id: Id,
+  /** Military supply: the only tables that may hold military-only items or nest another military table. */
+  military: optional(vBoolean()),
   /** How many times to roll, inclusive. */
   rolls: range(Count),
   entries: pipe(array(LootEntrySchema), nonEmpty('needs at least one entry')),
@@ -898,6 +915,8 @@ const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
+const ZOMBIE_MODEL = picklist(['shambler', 'runner']);
+
 const ZOMBIE_ABILITIES = [
   'grab',
   'leap',
@@ -923,6 +942,8 @@ const MeleeDamageResistanceSchema = strictObject({
 const ZombieSchema = strictObject({
   id: Id,
   name: Name,
+  /** Mobgen template selected for this type's silhouette and posed hit regions. */
+  model: ZOMBIE_MODEL,
   regions: strictObject({
     head: Positive,
     torso: Positive,
@@ -930,6 +951,14 @@ const ZombieSchema = strictObject({
     rightArm: Positive,
     leftLeg: Positive,
     rightLeg: Positive,
+  }),
+  /** Relative chance that a marker naming this type produces it; 1 is the common baseline. */
+  spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
+  sounds: strictObject({
+    idle: picklist(SOUND_EVENT_IDS),
+    alert: picklist(SOUND_EVENT_IDS),
+    attack: picklist(SOUND_EVENT_IDS),
+    hurt: picklist(SOUND_EVENT_IDS),
   }),
   /** Fraction of each melee damage type resisted by each region; omitted entries are neutral. */
   meleeDamageResistance: optional(MeleeDamageResistanceSchema),
@@ -1015,6 +1044,7 @@ const ZombieSchema = strictObject({
       reach: Positive,
       cooldownSimSeconds: PositiveSimSeconds,
       windupSimSeconds: PositiveSimSeconds,
+      hitRegion: optional(picklist(['torso', 'legs'])),
     }),
     check((attack) => attack.windupSimSeconds < attack.cooldownSimSeconds, 'windup must be less than cooldown'),
   ),

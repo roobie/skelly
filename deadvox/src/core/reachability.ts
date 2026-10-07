@@ -11,7 +11,6 @@ import { compileTemplate, type SpawnMarker } from './templates.ts';
 const CONTENT_COUNT_EXCLUSIONS: ReadonlySet<string> = new Set([
   WORK_IN_PROGRESS, // Runtime-owned escrow, not an acquired content type.
   'debug_shotgun_pump',
-  'debug_rifle_assault',
   'spent_case_5_d_56x45',
   'shambler_torso',
   'shambler_left_arm',
@@ -183,7 +182,8 @@ const worldSources = (registry: Registry) => {
       markers.set(id, template.spawns);
     }
   }
-  for (const id of possibleHamletZombies(markers)) {
+  const spawnWeights = new Map([...registry.zombies].map(([id, zombie]) => [id, zombie.spawnWeight]));
+  for (const id of possibleHamletZombies(markers, spawnWeights)) {
     const loot = registry.zombies.get(id)?.loot;
     if (loot !== undefined) {
       roots.add(loot);
