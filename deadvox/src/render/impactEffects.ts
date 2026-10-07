@@ -15,12 +15,12 @@ import {
   Vector3,
 } from 'three';
 import type { Vec3 } from '../core/coords.ts';
-import { raycast, type SolidAt } from '../core/raycast.ts';
+import { SHOT_TRACE_RANGE_BLOCKS } from '../core/crosshairTarget.ts';
+import type { SolidAt } from '../core/raycast.ts';
 import type { FirearmTrajectory } from '../game/firearmHandling.ts';
 import { type ShotTrace, traceShot } from './shotTrace.ts';
 
 export const IMPACT_MARK_CAP = 96;
-const TRACE_RANGE_BLOCKS = 240;
 const DUST_SECONDS = 0.55;
 export const PING_SECONDS = 1.4;
 const LASER_SECONDS = 0.35;
@@ -119,18 +119,7 @@ export class ImpactEffects {
 
   /** Tracing, holes, pings and the laser share one resolved segment per pellet/round. */
   fire(trajectory: FirearmTrajectory, debugLaser: boolean): void {
-    const eyeToMuzzle = trajectory.muzzle.map((value, axis) => value - trajectory.eye[axis]!) as Vec3;
-    const eyeMuzzleDistance = Math.hypot(...eyeToMuzzle);
-    const muzzleBlocked =
-      eyeMuzzleDistance > 0 &&
-      raycast(
-        trajectory.eye,
-        eyeToMuzzle.map((value) => value / eyeMuzzleDistance) as Vec3,
-        eyeMuzzleDistance,
-        this.solidAt,
-      ) !== undefined;
-    const origin = muzzleBlocked ? trajectory.eye : trajectory.muzzle;
-    const traces = traceShot(origin, trajectory.directions, TRACE_RANGE_BLOCKS, this.solidAt);
+    const traces = traceShot(trajectory.origin, trajectory.directions, SHOT_TRACE_RANGE_BLOCKS, this.solidAt);
     for (const trace of traces) {
       if (!trace.hit) {
         continue;

@@ -4,7 +4,7 @@ import { type AimFrame, aimBasis, NEUTRAL_AIM } from './aim.ts';
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandSide } from './inventory.ts';
-import { readyMeleePose } from './meleePose.ts';
+import { type MeleeHand, type MeleePoseFrame, readyMeleePose } from './meleePose.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from './opticWindow.ts';
 
 export const HOLD: Readonly<Record<HandSide, Vec3>> = {
@@ -63,6 +63,14 @@ const sightAimRotation = (model: ModelDef): Vec3 => {
     Math.atan2(direction[0], -direction[2]),
     0,
   ];
+};
+
+export const readyFirearmPose = (leading: MeleeHand): MeleePoseFrame => {
+  const hands = readyMeleePose(true, leading);
+  return {
+    right: { ...hands.right, rotation: [0, 0, 0] },
+    left: { ...hands.left, rotation: [0, 0, 0] },
+  };
 };
 
 const sightEyeBehind = (model: ModelDef, fill: number | undefined, fovDegrees: number): Vec3 | undefined => {
@@ -137,7 +145,7 @@ export const heldFirearmTransform = ({
   ) {
     throw new Error(`Invalid held firearm pose for ${model.id}`);
   }
-  const pose = readyMeleePose(true, leadingSide)[side];
+  const pose = readyFirearmPose(leadingSide)[side];
   const eased = progress * progress * (3 - 2 * progress);
   const handRotation = aimingDownSights ? ([0, 0, 0] as Vec3) : (pose.rotation.map((value) => value * eased) as Vec3);
   const loweredPitch = -loweredPitchRadians * (1 - progress);

@@ -1165,6 +1165,28 @@ body.inventory-open #inventory-stats {
   z-index: 50;
   pointer-events: none;
 }
+#debug-ui-root #debug-center-x {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+#debug-ui-root #debug-center-x::before,
+#debug-ui-root #debug-center-x::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(var(--accent), var(--accent)) center / 2px 100% no-repeat;
+}
+#debug-ui-root #debug-center-x::before {
+  transform: rotate(45deg);
+}
+#debug-ui-root #debug-center-x::after {
+  transform: rotate(-45deg);
+}
 #debug-ui-root .debug-marker {
   position: fixed;
   top: 8px;

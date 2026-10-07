@@ -11,6 +11,7 @@ import { nextTimeOfDay, skipTarget } from '../core/clock.ts';
 import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
+import { crosshairTarget } from '../core/crosshairTarget.ts';
 import { pickFurniture } from '../core/furniturePick.ts';
 import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
@@ -45,10 +46,12 @@ import { mountMenuPointer } from '../ui/menuPointer.ts';
 import { computeMenuState } from '../ui/menuState.ts';
 import {
   type PlayStatus,
+  playCrosshairFrame,
   playHudText,
   playInteractionText,
   playNeedsText,
   playPromptText,
+  projectCrosshairScreenPosition,
   renderPlayHandling,
   renderPlayHud,
   renderPlayInventoryStats,
@@ -66,8 +69,10 @@ import {
   handlingMoveStartCue,
 } from './audioPresentation.ts';
 import type { DebugHooks, DebugModule, DebugRuntime, InputReplayStatusState } from './debugInterface.ts';
+import { debugTargetRay } from './debugTargetRay.ts';
 import { DOOR_ACTION } from './doorAction.ts';
 import type { Engine } from './engine.ts';
+import { firearmBoreRay, firearmBoreTarget } from './firearmAim.ts';
 import { firearmHandlingFor } from './firearmHandling.ts';
 import { DebugFirearmTrigger } from './firearmTrigger.ts';
 import { advanceLiveFrame, realNow, startRealFrames } from './frameDriver.ts';
@@ -2083,7 +2088,19 @@ export const startPlay = (
     );
   };
 
-  const updateHeldItems = (dt: number): void => {
+  const firearmReadiness = () => {
+    const selected = selectPrimaryAction(inventory);
+    if (selected.kind !== 'firearm' || !input.rightMouseActionHeld || !input.locked || input.menuPointer) {
+      return;
+    }
+    return {
+      uid: selected.item.uid,
+      progress: firearms.readyProgress(selected.item.uid),
+      aimingDownSights: isAimingDownSights(),
+    };
+  };
+
+  const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
     const ready = shouldEnterMeleeReady({
@@ -2098,21 +2115,64 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
-    const selected = selectPrimaryAction(inventory);
-    const readiness =
-      selected.kind === 'firearm' && input.rightMouseActionHeld && input.locked && !input.menuPointer
-        ? {
-            uid: selected.item.uid,
-            progress: firearms.readyProgress(selected.item.uid),
-            aimingDownSights: isAimingDownSights(),
-          }
-        : undefined;
     view.updateHeld(dt, pose, survival.lit, {
       firearms: firearms.frames(),
       ...(readiness === undefined ? {} : { readiness }),
       aim: aim.frame,
       job: queue.jobs[0],
     });
+  };
+
+  const heldFirearmBore = (readiness = firearmReadiness()) => {
+    const selected = selectPrimaryAction(inventory);
+    if (selected.kind !== 'firearm') {
+      return;
+    }
+    const tuning = registry.skills.get('firearms_combat')?.combat?.firearms;
+    if (!tuning) {
+      throw new Error('Missing firearms-combat pose tuning');
+    }
+    const { item } = selected;
+    const firearmPose = readiness?.uid === item.uid ? readiness : undefined;
+    return firearmBoreRay({
+      model: firearmHandlingFor(item, registry).model,
+      eye: eye(),
+      yaw: input.yaw,
+      pitch: input.pitch,
+      blockSize: s,
+      side: inventory.hands.right?.uid === item.uid ? 'right' : 'left',
+      leadingSide: dominantSide(inventory.character),
+      twoHanded: Boolean(registry.items.get(item.type)?.twoHanded),
+      aimFrame: aim.frame,
+      progress: firearmPose?.progress ?? 0,
+      aimingDownSights: firearmPose?.aimingDownSights ?? false,
+      loweredPitchRadians: tuning.loweredPitchRadians,
+      adsApertureFill: tuning.adsApertureFill,
+      verticalFovDegrees: camera.fov,
+      isSolid: engine.isSolid,
+    });
+  };
+
+  const targetAlongBore = (bore: ReturnType<typeof firearmBoreRay>) => {
+    const surface = crosshairTarget(
+      { world: engine.world, registry, entities, isSolid: engine.isSolid, blockSize: s },
+      bore.origin,
+      bore.direction,
+    );
+    return firearmBoreTarget({
+      eye: bore.origin,
+      direction: bore.direction,
+      surface,
+      zombies: zombieSystem,
+      blockSize: s,
+    });
+  };
+
+  const crosshairScreenPosition = (bore: ReturnType<typeof firearmBoreRay> | undefined) => {
+    if (!bore) {
+      return;
+    }
+    return projectCrosshairScreenPosition(camera, inputTarget.getBoundingClientRect(), targetAlongBore(bore).point, s);
   };
 
   /** The scheduler's player tick (which carries noclip) is stopped by the debug freeze, so noclip flight is stepped here instead. */
@@ -2199,13 +2259,24 @@ export const startPlay = (
     return gameFrozen;
   };
 
-  const updateDebugTargets = () => {
+  const updateDebugTargets = (bore: ReturnType<typeof firearmBoreRay> | undefined) => {
     if (!debugTools) {
       return;
     }
-    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(eye(), lookDir(), meleeWeapon()) : undefined;
+    const selected = selectPrimaryAction(inventory);
+    const firearmReady = selected.kind === 'firearm' && isFirearmReady(selected.item.uid);
+    const ray = debugTargetRay({
+      bore,
+      eye: eye(),
+      lookDirection: lookDir(),
+      rightMouseHeld: input.rightMouseActionHeld,
+      pointerLocked: input.locked,
+      menuPointer: input.menuPointer,
+      firearmReady,
+    });
+    const zombieAim = debugTools.aimEnabled ? zombieSystem.aimAt(ray.origin, ray.direction, meleeWeapon()) : undefined;
     debugTools.updateAim(zombieAim);
-    debugTools.updateLookedAt(eye(), lookDir(), input.locked);
+    debugTools.updateLookedAt(ray.origin, ray.direction, input.locked);
   };
 
   const updateActionInputs = (now: number): void => {
@@ -2273,7 +2344,10 @@ export const startPlay = (
       zombies: zombieStore,
       frozen: debugTools !== undefined && (zombieSystem.isFrozen || gameFrozen),
     });
-    updateDebugTargets();
+    const readiness = firearmReadiness();
+    updateHeldItems(dt, readiness);
+    const bore = heldFirearmBore(readiness);
+    updateDebugTargets(bore);
     updateDebugReadout(now);
     mark = realNow();
 
@@ -2285,11 +2359,13 @@ export const startPlay = (
     audio.updateListener([camera.position.x, camera.position.y, camera.position.z], lookDir());
     menuPointer.update();
 
+    const crosshair = playCrosshairFrame(visible.crosshair, bore !== undefined, crosshairScreenPosition(bore));
     renderPlayHud(
       { hud, prompt, crosshair: $('crosshair') },
       {
         hud: hudText(debugTools?.target(eye(), lookDir(), input.locked) ?? '', visible),
-        crosshairVisible: visible.crosshair,
+        crosshairVisible: crosshair.visible,
+        crosshairScreenPosition: crosshair.screenPosition,
         prompt: promptText(now, visible),
       },
     );
@@ -2312,7 +2388,6 @@ export const startPlay = (
       !screen.isOpen && visible.handling,
     );
     view.prepareLighting(sky);
-    updateHeldItems(dt);
     view.updateShadows(hour, sky);
     renderMs = view.render();
     frameWork.record(now, realNow() - workStart);
