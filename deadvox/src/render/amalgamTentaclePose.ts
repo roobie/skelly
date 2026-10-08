@@ -1,5 +1,5 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
-import { type Mat3, mulMV, type Transform, transpose } from '@mobgen/core/math.ts';
+import { type Mat3, mulMV, type Transform } from '@mobgen/core/math.ts';
 import type { AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 
@@ -21,13 +21,41 @@ export interface AmalgamTentaclePose {
   readonly extension: number;
 }
 
-/** Surface anchor on the posed core voxels, expressed in world metres. */
-export const amalgamCoreSurfaceAnchor = ({
+type VoxelPoint = readonly [number, number, number];
+
+const coreInteriorPoint = (centers: readonly VoxelPoint[], halfVoxel: number): VoxelPoint => {
+  const centroid = centers.reduce(
+    (sum, center) => [
+      sum[0] + center[0] / centers.length,
+      sum[1] + center[1] / centers.length,
+      sum[2] + center[2] / centers.length,
+    ],
+    [0, 0, 0] as Vec3,
+  );
+  if (
+    centers.some(
+      (center) =>
+        Math.abs(center[0] - centroid[0]) < halfVoxel &&
+        Math.abs(center[1] - centroid[1]) < halfVoxel &&
+        Math.abs(center[2] - centroid[2]) < halfVoxel,
+    )
+  ) {
+    return centroid;
+  }
+  return centers.reduce((nearest, center) => {
+    const distance = (center[0] - centroid[0]) ** 2 + (center[1] - centroid[1]) ** 2 + (center[2] - centroid[2]) ** 2;
+    const nearestDistance =
+      (nearest[0] - centroid[0]) ** 2 + (nearest[1] - centroid[1]) ** 2 + (nearest[2] - centroid[2]) ** 2;
+    return distance < nearestDistance ? center : nearest;
+  }, centers[0]!);
+};
+
+/** Interior anchor on the posed core voxels, expressed in world metres. */
+export const amalgamCoreInteriorAnchor = ({
   figure,
   transforms,
   yaw,
   position,
-  target,
   hidden,
 }: {
   readonly figure: AmalgamFigure;
@@ -35,7 +63,6 @@ export const amalgamCoreSurfaceAnchor = ({
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
-  readonly target: Vec3;
 }): Vec3 => {
   const core = transforms.get('core');
   const centers = figure.voxelCentersByBone.get('core');
@@ -45,29 +72,8 @@ export const amalgamCoreSurfaceAnchor = ({
   if (hidden.has('core')) {
     throw new Error('Amalgam tentacle anchor requires visible posed core voxels');
   }
-  const worldDirection: Vec3 = [target[0] - position[0], 0, target[2] - position[2]];
-  const projectedDirection = mulMV(transpose(core.r), mulMV(transpose(yaw), worldDirection));
-  const length = Math.hypot(...projectedDirection);
-  const localDirection: Vec3 =
-    length <= 1e-9
-      ? [0, 0, -1]
-      : [projectedDirection[0] / length, projectedDirection[1] / length, projectedDirection[2] / length];
-  let surfaceCenter = centers[0]!;
-  let furthest = Number.NEGATIVE_INFINITY;
-  for (const center of centers) {
-    const projection = center[0] * localDirection[0] + center[1] * localDirection[1] + center[2] * localDirection[2];
-    if (projection > furthest) {
-      furthest = projection;
-      surfaceCenter = center;
-    }
-  }
-  const halfVoxel = figure.realized.voxels.size / 2;
-  const localSurface: Vec3 = [
-    surfaceCenter[0] + Math.sign(localDirection[0]) * halfVoxel,
-    surfaceCenter[1] + Math.sign(localDirection[1]) * halfVoxel,
-    surfaceCenter[2] + Math.sign(localDirection[2]) * halfVoxel,
-  ];
-  const posedLocal = mulMV(core.r, localSurface.map((coordinate) => coordinate * figure.scale) as Vec3);
+  const localPoint = coreInteriorPoint(centers, figure.realized.voxels.size / 2);
+  const posedLocal = mulMV(core.r, localPoint.map((coordinate) => coordinate * figure.scale) as Vec3);
   const worldOffset = mulMV(yaw, [
     posedLocal[0] + core.t[0] * figure.scale,
     posedLocal[1] + core.t[1] * figure.scale,

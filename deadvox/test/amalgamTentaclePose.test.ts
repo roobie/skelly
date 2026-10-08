@@ -5,9 +5,9 @@ import { severedBoneSet } from '@mobgen/mob/dismember.ts';
 import { describe, expect, it } from 'vitest';
 import { AMALGAM_FIGURE_SEED, amalgamFigure } from '../src/core/amalgamFigure.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { amalgamCoreSurfaceAnchor, amalgamTentaclePose } from '../src/render/amalgamTentaclePose.ts';
+import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from '../src/render/amalgamTentaclePose.ts';
 
-const coreVoxelSurfaceDistance = ({
+const coreVoxelUnionDistance = ({
   figure,
   transforms,
   yaw,
@@ -93,7 +93,7 @@ describe('amalgam attack tentacle pose', () => {
       root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
       rotations: {},
     };
-    const flinchPose: Pose = { ...basePose, rotations: { core: rotX(-0.4) } };
+    const flinchPose: Pose = { ...basePose, rotations: { core: rotX(-15) } };
     const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
     const shedMembers = figure.manifest.parts
       .filter((part) => part.severable)
@@ -110,7 +110,7 @@ describe('amalgam attack tentacle pose', () => {
 
     for (const scenario of poses) {
       const transforms = boneTransforms(figure.realized.body.bones, scenario.pose);
-      const start = amalgamCoreSurfaceAnchor({ figure, transforms, hidden: scenario.hidden, yaw, position, target });
+      const start = amalgamCoreInteriorAnchor({ figure, transforms, hidden: scenario.hidden, yaw, position });
       const tentacle = amalgamTentaclePose({
         start,
         target,
@@ -124,10 +124,61 @@ describe('amalgam attack tentacle pose', () => {
       });
 
       expect(scenario.hidden.has('core')).toBe(false);
-      expect(
-        coreVoxelSurfaceDistance({ figure, transforms, yaw, position, point: tentacle.start }),
-      ).toBeLessThanOrEqual(halfVoxelMetres * 1e-6);
+      expect(coreVoxelUnionDistance({ figure, transforms, yaw, position, point: tentacle.start })).toBeLessThanOrEqual(
+        halfVoxelMetres * 1e-6,
+      );
       expect(Math.hypot(tentacle.end[0] - position[0], tentacle.end[2] - position[2])).toBeLessThanOrEqual(4 + 1e-9);
+    }
+  });
+
+  it('keeps the core anchor continuous around the full circle at rest and under rotation', () => {
+    const figure = amalgamFigure(AMALGAM_FIGURE_SEED, 1);
+    const basePose: Pose = {
+      root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
+      rotations: {},
+    };
+    const poses = [basePose, { ...basePose, rotations: { core: rotX(-15) } }];
+    const position: Vec3 = [0, 0, 0];
+    const yaw = rotY(0);
+    const voxelMetres = figure.realized.voxels.size * figure.scale;
+
+    for (const pose of poses) {
+      const transforms = boneTransforms(figure.realized.body.bones, pose);
+      const anchors: Vec3[] = [];
+      const tips: Vec3[] = [];
+      for (let sample = 0; sample <= 360; sample++) {
+        const bearing = (sample * Math.PI) / 180;
+        const direction: Vec3 = [Math.sin(bearing), 0, -Math.cos(bearing)];
+        const start = amalgamCoreInteriorAnchor({ figure, transforms, hidden: new Set<string>(), yaw, position });
+        const target: Vec3 = [position[0] + direction[0] * 5, start[1], position[2] + direction[2] * 5];
+        const tentacle = amalgamTentaclePose({
+          start,
+          target,
+          facing: direction,
+          reachMetres: 4,
+          anchorOffsetMetres: Math.hypot(start[0] - position[0], start[2] - position[2]),
+          attackWindupSimSeconds: 0.2,
+          attackWindupDurationSimSeconds: 0.4,
+          attackWaitSimSeconds: 0,
+          attackCooldownDurationSimSeconds: 1.8,
+        });
+        expect(
+          coreVoxelUnionDistance({ figure, transforms, yaw, position, point: tentacle.start }),
+        ).toBeLessThanOrEqual(voxelMetres * 1e-6);
+        anchors.push(tentacle.start);
+        tips.push(tentacle.end);
+      }
+
+      for (let index = 1; index < anchors.length; index++) {
+        const before = anchors[index - 1]!;
+        const after = anchors[index]!;
+        expect(Math.hypot(after[0] - before[0], after[1] - before[1], after[2] - before[2])).toBeLessThanOrEqual(
+          voxelMetres * 1.25,
+        );
+      }
+      expect(
+        Math.hypot(tips[0]![0] - tips[180]![0], tips[0]![1] - tips[180]![1], tips[0]![2] - tips[180]![2]),
+      ).toBeGreaterThan(0);
     }
   });
 

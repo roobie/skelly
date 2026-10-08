@@ -131,7 +131,7 @@ import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
-import { amalgamCoreSurfaceAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
+import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -1094,14 +1094,12 @@ export class MobActorMeshes implements ZombieRenderer {
       amalgam.realized.body.bones,
       zombie.severed.map((part) => partRoots.get(part) ?? part),
     );
-    const anchorTarget: Vec3 = [playerEye[0], placement.worldPos[1], playerEye[2]];
-    const start = amalgamCoreSurfaceAnchor({
+    const start = amalgamCoreInteriorAnchor({
       figure: amalgam,
       transforms,
       hidden,
       yaw: rotY((placement.yaw * 180) / Math.PI),
       position: placement.worldPos,
-      target: anchorTarget,
     });
     const target: Vec3 = [playerEye[0], start[1], playerEye[2]];
     const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
