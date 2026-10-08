@@ -1328,7 +1328,6 @@ describe('input replay', () => {
     const start = capture(createRuntime());
     const ticksPerWindow = 2;
     let recorder = new InputReplayRecorder(start, ticksPerWindow);
-    let previous: ReplayInputData | undefined;
     let queuedAtBoundary = false;
     let source!: ReturnType<typeof createRuntime>;
     source = createRuntime(start, false, undefined, {
@@ -1346,7 +1345,7 @@ describe('input replay', () => {
     while (!recorder.full) {
       source.session.frame(1 / 30);
     }
-    previous = recorder.copyInputs();
+    const previous = recorder.copyInputs();
     const nextRecorder = new InputReplayRecorder(capture(source), ticksPerWindow);
     recorder.transferPendingActionsTo(nextRecorder);
     recorder = nextRecorder;
