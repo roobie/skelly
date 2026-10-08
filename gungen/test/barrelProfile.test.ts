@@ -55,6 +55,8 @@ describe('octagonal barrel and gas-system geometry', () => {
       const heavy = family.build({ profile: 'heavy', bore, length: bore });
       const heavyBarrel = requireOctagon(heavy.solids.find(({ id }) => id === 'tube')!);
       const [heavyMin, heavyMax] = localSolidBounds(heavyBarrel);
+      const [heavyMuzzleX] = heavy.ports.find(({ id }) => id === 'muzzle')!.pos;
+      expect([heavyMin[0], heavyMax[0]]).toEqual([0, heavyMuzzleX]);
       expect(heavyMax[1] - heavyMin[1]).toBeGreaterThan(max[1] - min[1]);
     }
     expect(standardWidths.get('S')).toBeLessThan(standardWidths.get('M')!);
