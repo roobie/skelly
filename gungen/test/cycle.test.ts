@@ -83,16 +83,17 @@ describe('firearm cycle timelines', () => {
 });
 
 describe('motion-derived cycle geometry', () => {
-  it('sweeps the AK and M4 carriers clear through their full stroke using placed solids', () => {
-    for (const name of ['archetype-ak', 'archetype-ar']) {
+  it.each(['archetype-ak', 'archetype-ar'] as const)(
+    'sweeps the %s carrier clear through its full stroke using placed solids',
+    (name) => {
       const { resolved, motion, cycle } = motionFor(name);
       const sweep = sweepMovingPart(resolved, 'bolt-carrier', cycle.strokeUnits + 2.5);
       expect(sweep.declared).toBeCloseTo(cycle.strokeUnits, 9);
       expect(sweep.clear).toBeGreaterThanOrEqual(sweep.declared);
       expect(sweep.clashes.every(({ at }) => at >= sweep.declared)).toBe(true);
       expect(motion.end[0]).toBeGreaterThan(motion.start[0]);
-    }
-  });
+    },
+  );
 
   it('locates each case at the receiver ejection opening and transforms its throw direction', () => {
     for (const [name, action] of [
