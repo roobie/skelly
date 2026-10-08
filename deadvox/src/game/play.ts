@@ -90,9 +90,11 @@ import {
   type ReplayGeneratedColumn,
   type ReplayInputData,
   replayStateFingerprint,
+  rolloverInputReplayRecorder,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
+import { toggleWalking } from './inputReplayActions.ts';
 import { InputReplayDriver, type InputReplayDriverPorts, nextReplayInputSample } from './inputReplayDriver.ts';
 import { applyReplayLook, InputReplayPlayer } from './inputReplayPlayer.ts';
 import { startingLoadout } from './loadout.ts';
@@ -1151,7 +1153,7 @@ export const startPlay = (
     if (!inputRecorder) {
       return applyScreenCommand(payload);
     }
-    inputRecorder.queueAction(payload.kind, 'down', inputContext(), payload);
+    inputRecorder.queueAction(payload.kind, 'down', inputContext(), { payload });
     pendingPlayerTickActions.enqueue(() => {
       const reason = applyScreenCommand(payload);
       if (reason) {
@@ -1382,7 +1384,7 @@ export const startPlay = (
         input.toggleAimingDownSights();
         break;
       case 'movement.walk-toggle':
-        input.walking = !input.walking;
+        input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
         break;
       case 'player.crouch-toggle':
         withUnlockedInput(() => input.requestCrouchToggle());
@@ -1515,7 +1517,8 @@ export const startPlay = (
           action.startsWith('quickbar.assign.') ||
           action === 'handling.stop')) ||
       action === 'craft.continue';
-    if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction)) {
+    const walkToggleHandledByGameplay = action === 'movement.walk-toggle' && phase === 'down';
+    if (!(fromReplay || isGestureAction(action) || payloadBackedScreenAction || walkToggleHandledByGameplay)) {
       inputRecorder?.queueAction(action, phase, context);
     }
     const slot = quickbarSlotFor(action);
@@ -1819,10 +1822,12 @@ export const startPlay = (
     const chargeProgress = Math.min(1, heldSimSeconds / itemThrowTuning.chargeSimSeconds);
     if (!replayPlayer) {
       inputRecorder?.queueAction('item.throw', 'down', inputContext(), {
-        kind: 'item.throw',
-        itemUid: uid,
-        hand,
-        distance,
+        payload: {
+          kind: 'item.throw',
+          itemUid: uid,
+          hand,
+          distance,
+        },
       });
       pendingPlayerTickActions.enqueue(() => {
         applyToHeldItem(inventory.hands, hand, uid, (heldItem) => {
@@ -2559,7 +2564,7 @@ export const startPlay = (
     }
     if (!replayPlayer && inputRecorder?.full) {
       previousInputRecorder = inputRecorder;
-      inputRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
+      inputRecorder = rolloverInputReplayRecorder(inputRecorder, captureSnapshot(), streamer.generatedColumns());
     }
     stepFrozenNoclip(realDt, gameFrozen && !menuPaused);
     if (spectatorCameraEnabled && spectatorCameraBody && input.locked && !input.menuPointer) {
