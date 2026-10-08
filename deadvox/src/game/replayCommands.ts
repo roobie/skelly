@@ -18,7 +18,8 @@ export type ReplayActionPayload =
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
-  | { kind: 'item.throw.cancel' };
+  | { kind: 'item.throw.cancel' }
+  | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isSpot = (value: unknown): boolean =>
@@ -112,6 +113,14 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
     case 'craft.stop':
     case 'item.throw.cancel':
       return Object.keys(payload).length === 1;
+    case 'item.throw':
+      return (
+        isUid(payload.itemUid) &&
+        (payload.hand === 'left' || payload.hand === 'right') &&
+        Number.isFinite(payload.distance) &&
+        (payload.distance as number) >= 0 &&
+        (payload.distance as number) <= 10_000
+      );
     case 'craft.start':
       return (
         typeof payload.recipeId === 'string' &&
@@ -143,6 +152,7 @@ export interface ReplayCommandOwners {
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   cancelItemThrow: () => void;
+  throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
 }
 
 export const applyReplayActionPayload = (
@@ -196,6 +206,9 @@ export const applyReplayActionPayload = (
       return owners.craftStop();
     case 'item.throw.cancel':
       owners.cancelItemThrow();
+      return undefined;
+    case 'item.throw':
+      owners.throwItem(payload.itemUid, payload.hand, payload.distance);
       return undefined;
     default: {
       const exhaustive: never = payload;

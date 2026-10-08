@@ -123,6 +123,7 @@ function setup(contentRegistry = registry) {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         cancelItemThrow: () => undefined,
+        throwItem: () => undefined,
       });
     },
     searching: (target: typeof entity) => searching.has(target),
@@ -231,6 +232,7 @@ describe('inventory screen Lit rendering', () => {
         craftContinue: () => undefined,
         craftStop: () => undefined,
         cancelItemThrow: () => undefined,
+        throwItem: () => undefined,
       });
     test.screen.selected = firearm;
     test.screen.update();
