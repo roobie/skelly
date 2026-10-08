@@ -747,7 +747,11 @@ try {
     await page.waitForFunction(
       async () => {
         const { storage, namespace, controller } = globalThis.deadvoxSaveTest;
-        return !controller.writing && controller.queued === undefined && Boolean(await storage.load(namespace));
+        const record = await storage.load(namespace);
+        if (record) {
+          sessionStorage.setItem('d144-generation-before-reload', String(record.generation));
+        }
+        return !controller.writing && controller.queued === undefined && Boolean(record);
       },
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
@@ -821,6 +825,7 @@ try {
       sessionStorage.removeItem('d144-held-writer');
       sessionStorage.removeItem('d144-writer-requested');
       sessionStorage.removeItem('d144-writer-trigger');
+      sessionStorage.removeItem('d144-generation-before-reload');
       sessionStorage.removeItem('d144-lock-snapshot');
       sessionStorage.removeItem('d144-pagehide');
       sessionStorage.removeItem('d144-pageshow');
