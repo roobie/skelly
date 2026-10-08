@@ -169,6 +169,12 @@
     },
     { "path": "docs/deferred-assertions.md", "check": "citation", "text": "BR, 2026-10-04", "count": 1 },
     { "path": "docs/deferred-assertions.md", "check": "citation", "text": "BR, 2026-10-07", "count": 1 },
+    {
+      "path": "docs/deferred-assertions.md",
+      "check": "path",
+      "text": "mobgen/test/poseEquivalence.test.ts",
+      "count": 1
+    },
     { "path": "docs/PROCESS.md", "check": "citation", "text": "(BR, 2026-10-03): \"", "count": 1 },
     { "path": "docs/PROCESS.md", "check": "citation", "text": "BR, 2026-10-02", "count": 1 },
     { "path": "docs/PROCESS.md", "check": "citation", "text": "BR, 2026-10-03", "count": 2 },
