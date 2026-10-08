@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SPAWN_TIMES } from '../src/core/clock.ts';
+import { parseTimeOfDay, SPAWN_TIMES } from '../src/core/clock.ts';
 import { toChunk } from '../src/core/coords.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { STAMINA } from '../src/core/needs.ts';
@@ -327,7 +327,7 @@ describe('hamlet save/load continuation', () => {
         runtime.session.frame(planRealFrame(runtime.sim.compression, realSeconds(1 / 60)));
       }
     };
-    const start = 10 * 3600;
+    const start = parseTimeOfDay('10:00')!;
     const source = createRuntime(undefined, true, oneColumn, { start });
     expect(startRest(source, 'sleep')).toBeUndefined();
     advanceReal(source, 120);

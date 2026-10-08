@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { parseTimeOfDay } from '../src/core/clock.ts';
 import { COMPRESSION } from '../src/core/compression.ts';
 import { CHUNK } from '../src/core/coords.ts';
 import { SunExposureCache, sunExposedAt } from '../src/core/lights.ts';
@@ -15,7 +16,7 @@ import {
   startRest,
 } from './snapshotTestSupport.ts';
 
-const DAYTIME = 10 * 3600;
+const DAYTIME = parseTimeOfDay('10:00')!;
 
 it('matches vertical ray exposure above and below the top blocker in a column', () => {
   const opaqueCells = new Set(['2,8,4', '2,3,4']);
@@ -31,12 +32,16 @@ it('matches vertical ray exposure above and below the top blocker in a column', 
     [2.2, 7.1, 4.8],
     [2.2, 15, 4.8],
   ];
-  for (const position of positions) {
+  let firstColumnQueries = 0;
+  for (const [index, position] of positions.entries()) {
     expect(cache.isExposedAt(position, 12)).toBe(sunExposedAt({ position, gameHours: 12, skyTop: 15, isOpaque }));
+    if (index === 0) {
+      firstColumnQueries = cacheQueries;
+      expect(firstColumnQueries).toBeGreaterThan(0);
+    } else {
+      expect(cacheQueries).toBe(firstColumnQueries);
+    }
   }
-  const queriesAfterFirstColumn = cacheQueries;
-  expect(queriesAfterFirstColumn).toBeGreaterThan(0);
-  expect(cacheQueries).toBe(queriesAfterFirstColumn);
 });
 
 it('bounds daytime opacity queries to one column scan per source in a compressed frame', () => {
@@ -85,6 +90,7 @@ it('bounds daytime opacity queries to one column scan per source in a compressed
     ({ item }) => item.on && registry.items.get(item.type)?.light !== undefined,
   ).length;
   expect(activeLightCount).toBeGreaterThan(0);
+  // Two extra calls allow for the source and sky boundary samples.
   callBudget = (1 + activeLightCount) * ((scale.maxCy - scale.minCy + 1) * CHUNK + 2);
 
   runtime.sim.paused = false;
