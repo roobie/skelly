@@ -15,7 +15,11 @@ slot inaccessible merely because the item occupies a different column.
 The character screen groups Items, Skills and Crafting into tabs so the game,
 notably on a small zoomed screen, has room for each view. Character inventory
 and nearby piles or containers stay together on Items so drag and drop remains
-within one view. Tab selection is runtime UI state, not save or replay state.
+within one view. The You and Around you panes start balanced; a mouse-dragged
+divider lets the player favor either view without collapsing the other. Each pane
+scrolls independently, while nearby container grids remain compact within their
+content cap. Tab selection and the split are runtime UI state, not save or replay
+state.
 G, V and B open the character screen on Items, Skills or Crafting, or switch to that tab
 while it is open; Tab reopens the last tab. The keys sit beside WASD so movement can
 continue, and the letters are not mnemonics. See `src/game/inputBindings.ts`,

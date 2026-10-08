@@ -354,6 +354,7 @@ const furnitureBodyTemplate = (
 const inventoryTemplate = (
   vm: InventoryScreenViewModel,
   tab: InventoryTab,
+  splitRatio: number,
   selectTab: (tab: InventoryTab) => void,
   {
     queue,
@@ -385,7 +386,11 @@ const inventoryTemplate = (
   <div
     class="inv-body"
     data-tab-panel="items"
-    style=${vm.containerMaxWidthCells === undefined ? '' : `--inv-around-width-cap: ${vm.containerMaxWidthCells * CELL}px`}
+    style=${[
+      `--inv-you-fr: ${splitRatio}fr`,
+      `--inv-around-fr: ${1 - splitRatio}fr`,
+      vm.containerMaxWidthCells === undefined ? '' : `--inv-around-width-cap: ${vm.containerMaxWidthCells * CELL}px`,
+    ].filter(Boolean).join('; ')}
     ?hidden=${tab !== 'items'}
   >
     <section class="inv-pane" data-pane="you">
@@ -410,6 +415,16 @@ const inventoryTemplate = (
       `,
       )}
     </section>
+    <div
+      class="inv-splitter"
+      data-inventory-splitter
+      role="separator"
+      aria-label="Resize inventory and vicinity panes"
+      aria-orientation="vertical"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      aria-valuenow=${Math.round(splitRatio * 100)}
+    ></div>
     <section class="inv-pane" data-pane="around">
       <h3>Around you</h3>
       ${vm.piles.map(
@@ -542,6 +557,8 @@ export class InventoryScreen {
   private order: Item[] = [];
   private drawn = '';
   private revealedSelectionUid: number | undefined;
+  private splitRatio = 0.5;
+  private splitDrag: { startX: number; startRatio: number; availableWidth: number } | undefined;
   private drag: Drag | undefined;
 
   constructor(
@@ -597,6 +614,7 @@ export class InventoryScreen {
     this.revealedSelectionUid = undefined;
     this.root.hidden = true;
     document.body.classList.remove('inventory-open', 'inventory-tab-crafting');
+    this.splitDrag = undefined;
     this.endDrag();
   }
 
@@ -818,7 +836,7 @@ export class InventoryScreen {
     this.order = [];
     const vm = this.viewModel();
     render(
-      inventoryTemplate(vm, this.tabs.active, (tab) => this.selectTab(tab), {
+      inventoryTemplate(vm, this.tabs.active, this.splitRatio, (tab) => this.selectTab(tab), {
         queue: (item, target, operation) => {
           const refusal = this.hooks.actionRefusal?.();
           if (refusal) {
@@ -1135,6 +1153,17 @@ export class InventoryScreen {
   // ---- drag and drop ----
 
   private pointerDown(e: PointerEvent): void {
+    const splitter = (e.target as HTMLElement).closest<HTMLElement>('[data-inventory-splitter]');
+    if (splitter && e.button === 0 && (!e.pointerType || e.pointerType === 'mouse')) {
+      const body = splitter.closest<HTMLElement>('.inv-body');
+      if (!body) {
+        return;
+      }
+      e.preventDefault();
+      const availableWidth = Math.max(1, body.clientWidth - splitter.offsetWidth);
+      this.splitDrag = { startX: e.clientX, startRatio: this.splitRatio, availableWidth };
+      return;
+    }
     const refusal = this.hooks.actionRefusal?.();
     if (refusal) {
       this.refuse(refusal);
@@ -1169,6 +1198,22 @@ export class InventoryScreen {
   }
 
   private pointerMove(e: PointerEvent): void {
+    if (this.splitDrag) {
+      const minRatio = Math.min(0.5, 220 / this.splitDrag.availableWidth);
+      this.splitRatio = Math.max(
+        minRatio,
+        Math.min(
+          1 - minRatio,
+          this.splitDrag.startRatio + (e.clientX - this.splitDrag.startX) / this.splitDrag.availableWidth,
+        ),
+      );
+      const body = this.root.querySelector<HTMLElement>('.inv-body[data-tab-panel="items"]');
+      body?.style.setProperty('--inv-you-fr', `${this.splitRatio}fr`);
+      body?.style.setProperty('--inv-around-fr', `${1 - this.splitRatio}fr`);
+      const splitter = body?.querySelector<HTMLElement>('[data-inventory-splitter]');
+      splitter?.setAttribute('aria-valuenow', String(Math.round(this.splitRatio * 100)));
+      return;
+    }
     const { drag } = this;
     if (!drag) {
       return;
@@ -1185,6 +1230,10 @@ export class InventoryScreen {
   }
 
   private pointerUp(e: PointerEvent): void {
+    if (this.splitDrag) {
+      this.splitDrag = undefined;
+      return;
+    }
     const { drag } = this;
     if (!drag) {
       return;

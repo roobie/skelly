@@ -224,6 +224,64 @@ try {
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   await page.locator('#inventory .inv-tab[data-tab="items"]').click();
   await page.setViewportSize({ width: 640, height: 400 });
+  const splitAtOpen = await page.evaluate(() => {
+    const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+    const splitter = body?.querySelector('[data-inventory-splitter]');
+    const you = body?.querySelector('[data-pane="you"]');
+    const around = body?.querySelector('[data-pane="around"]');
+    if (!(body && splitter && you && around)) throw Error('Items pane divider is missing');
+    const bodyBox = body.getBoundingClientRect();
+    const dividerBox = splitter.getBoundingClientRect();
+    return {
+      ratio: Number(splitter.getAttribute('aria-valuenow')),
+      center: (dividerBox.left + dividerBox.width / 2 - bodyBox.left) / bodyBox.width,
+      widths: [you.getBoundingClientRect().width, around.getBoundingClientRect().width],
+    };
+  });
+  assert.equal(splitAtOpen.ratio, 50, `Items panes start at half: ${JSON.stringify(splitAtOpen)}`);
+  assert.ok(Math.abs(splitAtOpen.center - 0.5) < 0.03, `divider starts at half: ${JSON.stringify(splitAtOpen)}`);
+  assert.ok(Math.abs(splitAtOpen.widths[0] - splitAtOpen.widths[1]) < 2, `panes start balanced: ${JSON.stringify(splitAtOpen)}`);
+  const dragSplitter = async (fraction) => {
+    const geometry = await page.evaluate(() => {
+      const body = document.querySelector('#inventory .inv-body[data-tab-panel="items"]');
+      const splitter = body?.querySelector('[data-inventory-splitter]');
+      if (!(body && splitter)) throw Error('Items pane divider is missing');
+      const bodyBox = body.getBoundingClientRect();
+      const dividerBox = splitter.getBoundingClientRect();
+      return { body: bodyBox.toJSON(), divider: dividerBox.toJSON() };
+    });
+    const y = geometry.divider.y + geometry.divider.height / 2;
+    await page.mouse.move(geometry.divider.x + geometry.divider.width / 2, y);
+    await page.mouse.down();
+    await page.mouse.move(geometry.body.x + geometry.body.width * fraction, y);
+    await page.mouse.up();
+  };
+  await dragSplitter(0);
+  const splitAtLeftClamp = await page.evaluate(() => {
+    const you = document.querySelector('#inventory [data-pane="you"]');
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
+    return {
+      ratio: Number(splitter?.getAttribute('aria-valuenow')),
+      widths: [you?.getBoundingClientRect().width, around?.getBoundingClientRect().width],
+    };
+  });
+  assert.ok(splitAtLeftClamp.ratio < 50, `drag moves the divider: ${JSON.stringify(splitAtLeftClamp)}`);
+  assert.ok(splitAtLeftClamp.widths.every((width) => width >= 220), `left clamp preserves usable panes: ${JSON.stringify(splitAtLeftClamp)}`);
+  await dragSplitter(1);
+  const splitAtRightClamp = await page.evaluate(() => {
+    const you = document.querySelector('#inventory [data-pane="you"]');
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const splitter = document.querySelector('#inventory [data-inventory-splitter]');
+    return {
+      ratio: Number(splitter?.getAttribute('aria-valuenow')),
+      widths: [you?.getBoundingClientRect().width, around?.getBoundingClientRect().width],
+    };
+  });
+  assert.ok(splitAtRightClamp.ratio > 50, `divider moves both ways: ${JSON.stringify(splitAtRightClamp)}`);
+  assert.ok(splitAtRightClamp.widths.every((width) => width >= 220), `right clamp preserves usable panes: ${JSON.stringify(splitAtRightClamp)}`);
+  await dragSplitter(0.5);
+  assert.equal(await page.locator('#inventory [data-inventory-splitter]').getAttribute('aria-valuenow'), '50');
   const emptyAround = await page.evaluate(() => {
     const around = document.querySelector('#inventory [data-pane="around"]');
     const you = document.querySelector('#inventory [data-pane="you"]');
@@ -256,8 +314,8 @@ try {
     `vicinity fits 640×400: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
-    emptyAround.around.width < emptyAround.you.width,
-    `empty vicinity shrink-wraps beside the player: ${JSON.stringify(emptyAround)}`,
+    emptyAround.target.width < emptyAround.around.width,
+    `empty vicinity content shrink-wraps inside its pane: ${JSON.stringify(emptyAround)}`,
   );
   assert.ok(
     emptyAround.around.height < emptyAround.you.height,
