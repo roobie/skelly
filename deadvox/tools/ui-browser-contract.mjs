@@ -752,13 +752,13 @@ try {
   );
   await press('Tab', 'Tab', 9);
   assert.equal(
-    await evaluate("!document.querySelector('#inventory-stats').hidden"),
+    await evaluate("document.querySelector('#inventory .inv-needs') !== null"),
     true,
-    'inventory always shows stats',
+    'inventory always shows needs in its header',
   );
   assert.equal(
     await evaluate(
-      "['health', 'food', 'water'].every((word) => document.querySelector('#inventory-stats').textContent.includes(word))",
+      "['health', 'food', 'water'].every((word) => document.querySelector('#inventory .inv-needs').textContent.includes(word))",
     ),
     true,
   );

@@ -63,6 +63,7 @@ import {
 } from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
+  boneTransforms,
   boneTransformsInto,
   indexBonesByParent,
   type MutableTransform,
@@ -71,6 +72,7 @@ import {
 } from '@mobgen/core/pose.ts';
 import { templatePartMassProperties } from '@mobgen/core/templateMass.ts';
 import { cellIndex, materialOf, shadeOf, worldPosition } from '@mobgen/core/voxelize.ts';
+import { amalgamTemplate } from '@mobgen/mob/amalgamTemplate.ts';
 import {
   CROWD_BEGIN_VERTEX,
   CROWD_BEGINNORMAL_VERTEX,
@@ -90,12 +92,13 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { LOOK_AT_REST, type LookAtState, lookAtPose } from '@mobgen/mob/lookAt.ts';
 import { LOOK_AT_PROFILES, type LookAtProfile } from '@mobgen/mob/lookAtProfiles.ts';
 import { DEATH_FALL_DURATION, type DeathActor, deathPose } from '@mobgen/mob/reactions.ts';
-import { SHAMBLER_FIGURE_SEEDS, zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { TEMPLATES } from '@mobgen/mob/templates.ts';
 import {
   BufferAttribute,
   BufferGeometry,
   type Camera,
+  CylinderGeometry,
   DataTexture,
   FloatType,
   Frustum,
@@ -103,13 +106,16 @@ import {
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
+  Mesh,
   MeshDepthMaterial,
   MeshLambertMaterial,
   NearestFilter,
   RGBAFormat,
   Sphere,
+  SphereGeometry,
   Vector3,
 } from 'three';
+import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 import type { EntityId, EntityStore } from '../core/entities.ts';
 import {
@@ -120,10 +126,12 @@ import {
   type RigidWorld,
   stepRigidBody,
 } from '../core/rigidBody.ts';
+import { type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
-import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { amalgamCoreInteriorAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -170,6 +178,11 @@ export const mobFigurePoolSizeThrough = (figureSeed: number): number => {
   return index + 1;
 };
 
+const severedBoneIds = (variant: Variant, parts: readonly string[]): ReadonlySet<string> =>
+  severedBoneSet(
+    variant.realized.body.bones,
+    parts.map((part) => variant.severedRoots.get(part) ?? part),
+  );
 // Corpse lifecycle: death fall (mobgen's own DEATH_FALL_DURATION), then lies still, then sinks out of
 // view — see MobActorMeshes' own doc comment on why a corpse keeps its slot the whole time.
 const CORPSE_LIE_S = 8;
@@ -273,6 +286,7 @@ interface Variant {
   readonly model: string;
   readonly lookAt: LookAtProfile;
   readonly figureSeed: number;
+  readonly bodyScale?: number;
   readonly realized: Realized;
   /** Shared bones/extents/params/seed; each zombie using this variant clones it with its own GaitCache
    * (mobgen/src/mob/gait.ts's GaitCache — per zombie, not per variant, since several zombies sharing a
@@ -286,6 +300,7 @@ interface Variant {
     string,
     { mass: number; inertiaBody: RigidBody['inertiaBody']; corners: readonly Vec3[]; boneIndices: readonly number[] }
   >;
+  readonly severedRoots: ReadonlyMap<string, string>;
   readonly parentIndex: ParentIndex;
   /** Bone id -> this variant's own bone array index — translates mobgen's severedBoneSet (string ids, body-
    * plan-generic) into the indices the shared texture and its severed mask are keyed by. */
@@ -324,6 +339,11 @@ interface ZombieRenderState extends SlotHolder {
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
   lastSeenFrame: number;
+}
+
+interface TentacleMeshes {
+  readonly shaft: Mesh;
+  readonly tip: Mesh;
 }
 
 /** A dead zombie that still occupies its live slot (see MobActorMeshes' own doc comment): frozen at the
@@ -446,7 +466,92 @@ interface Debris extends SlotHolder {
 
 export interface MobActorMeshesOptions {
   readonly poolSize?: number;
+  readonly includeAmalgam?: boolean;
+  readonly amalgamType?: ZombieFigureType | undefined;
 }
+
+type ActorModel = 'shambler' | 'runner' | 'crawler' | 'amalgam';
+interface BuiltActorVariant {
+  model: ActorModel;
+  figureSeed: number;
+  bodyScale?: number;
+  realized: Realized;
+  walkActorTemplate: WalkActor;
+  bodyExtents: ReadonlyMap<string, Extent>;
+  lookAt: LookAtProfile;
+  severedRoots: ReadonlyMap<string, string>;
+}
+
+const requireAmalgamType = (type: ZombieFigureType | undefined): ZombieFigureType => {
+  if (type?.model !== 'amalgam') {
+    throw new Error('MobActorMeshes requires the amalgam content type when amalgam actors are enabled');
+  }
+  return type;
+};
+
+const severedRootsFor = (figure: ReturnType<typeof zombieFigure>): ReadonlyMap<string, string> => {
+  if (!('manifest' in figure)) {
+    return new Map();
+  }
+  const amalgam = figure as AmalgamFigure;
+  return new Map(amalgam.manifest.parts.filter((part) => part.severable).map((part) => [part.id, part.rootBone]));
+};
+
+const copyScaledTransform = (source: Transform, target: MutableTransform, scale?: number): void => {
+  for (let i = 0; i < 9; i++) {
+    target.r[i] = scale === undefined ? source.r[i]! : source.r[i]! * scale;
+  }
+  for (let i = 0; i < 3; i++) {
+    target.t[i] = scale === undefined ? source.t[i]! : source.t[i]! * scale;
+  }
+};
+
+const scaleTransformsInPlace = (transforms: readonly MutableTransform[], scale?: number): void => {
+  if (scale === undefined) {
+    return;
+  }
+  for (const transform of transforms) {
+    for (let i = 0; i < 9; i++) {
+      transform.r[i] = transform.r[i]! * scale;
+    }
+    for (let i = 0; i < 3; i++) {
+      transform.t[i] = transform.t[i]! * scale;
+    }
+  }
+};
+
+const buildActorVariant = (model: ActorModel, seed: number, amalgamType?: ZombieFigureType): BuiltActorVariant => {
+  const type = model === 'amalgam' ? requireAmalgamType(amalgamType) : { model };
+  const figure = zombieFigure(type, seed);
+  const { genome, realized } = figure;
+  const bodyScale = model === 'amalgam' ? type.bodyScale : undefined;
+  return {
+    model,
+    figureSeed: seed,
+    ...(bodyScale === undefined ? {} : { bodyScale }),
+    realized,
+    walkActorTemplate: {
+      bones: realized.body.bones,
+      extents: footRestExtents(realized.body.bones, realized.voxels),
+      params: genome.params as HumanoidParams,
+      seed: genome.seed,
+    },
+    bodyExtents: bodyRestExtents(realized.body.bones, realized.voxels),
+    lookAt: LOOK_AT_PROFILES[model === 'amalgam' ? 'shambler' : model]!,
+    severedRoots: severedRootsFor(figure),
+  };
+};
+
+const buildActorVariants = (
+  modelIds: readonly ActorModel[],
+  figureSeeds: readonly number[],
+  amalgamType?: ZombieFigureType,
+): BuiltActorVariant[] =>
+  modelIds.flatMap((model) =>
+    (model === 'amalgam' ? [AMALGAM_FIGURE_SEED] : figureSeeds).map((seed) =>
+      buildActorVariant(model, seed, amalgamType),
+    ),
+  );
 
 /** Draws zombies as full mobgen actors, one shared bone-matrix texture and one InstancedMesh per variant
  * — see this module's own header comment for the whole design and its one documented simplification. */
@@ -462,6 +567,12 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly material: MeshLambertMaterial;
   private readonly states = new Map<EntityId, ZombieRenderState>();
   private readonly corpses = new Map<EntityId, Corpse>();
+  private readonly tentacles = new Map<EntityId, TentacleMeshes>();
+  private readonly tentacleGeometry: CylinderGeometry | undefined;
+  private readonly tentacleTipGeometry: SphereGeometry | undefined;
+  private readonly tentacleMaterial: MeshLambertMaterial | undefined;
+  private readonly tentacleUp = new Vector3(0, 1, 0);
+  private readonly tentacleDirection = new Vector3();
   private readonly debris = new Map<string, Debris>();
   /** Shared by corpses and debris, so "oldest across both" (evictOldestDeadThing*) is a simple comparison
    * instead of needing to interleave two Maps' own iteration orders. */
@@ -485,42 +596,22 @@ export class MobActorMeshes implements ZombieRenderer {
   constructor(blockSize: number, capacity = DEFAULT_CAPACITY, options: MobActorMeshesOptions = {}) {
     this.blockSize = blockSize;
     this.capacity = capacity;
+    this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
+    this.tentacleTipGeometry = options.includeAmalgam ? new SphereGeometry(0.16, 8, 6) : undefined;
+    this.tentacleMaterial = options.includeAmalgam
+      ? new MeshLambertMaterial({ color: 0xb9_4c_3e, emissive: 0x2c_0b_08 })
+      : undefined;
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
-    const modelIds = ['shambler', 'runner', 'crawler'] as const;
-    const templatesByModel = new Map(TEMPLATES.map((template) => [template.name, template]));
+    if (options.includeAmalgam && options.amalgamType?.model !== 'amalgam') {
+      throw new Error('MobActorMeshes requires amalgamType when amalgam actors are enabled');
+    }
+    const templatesByModel = new Map([...TEMPLATES, amalgamTemplate].map((template) => [template.name, template]));
+    const modelIds: readonly ActorModel[] = options.includeAmalgam
+      ? ['shambler', 'runner', 'crawler', 'amalgam']
+      : ['shambler', 'runner', 'crawler'];
 
     const t0 = performance.now();
-    const built: {
-      model: string;
-      figureSeed: number;
-      realized: Realized;
-      walkActorTemplate: WalkActor;
-      bodyExtents: ReadonlyMap<string, Extent>;
-      lookAt: LookAtProfile;
-    }[] = [];
-    const figureSeeds = SHAMBLER_FIGURE_SEEDS.slice(0, poolSize);
-    for (const model of modelIds) {
-      for (const seed of figureSeeds) {
-        const generated = zombieFigure(model, seed);
-        const { genome, realized } = generated;
-        const extents = footRestExtents(realized.body.bones, realized.voxels);
-        const bodyExtents = bodyRestExtents(realized.body.bones, realized.voxels);
-        const walkActorTemplate: WalkActor = {
-          bones: realized.body.bones,
-          extents,
-          params: genome.params as HumanoidParams,
-          seed: genome.seed,
-        };
-        built.push({
-          model,
-          figureSeed: seed,
-          realized,
-          walkActorTemplate,
-          bodyExtents,
-          lookAt: LOOK_AT_PROFILES[model]!,
-        });
-      }
-    }
+    const built = buildActorVariants(modelIds, SHAMBLER_FIGURE_SEEDS.slice(0, poolSize), options.amalgamType);
     const generationMs = performance.now() - t0;
     // biome-ignore lint/suspicious/noConsole: a one-time, useful-to-see startup cost, not per-frame noise.
     console.info(`MobActorMeshes: generated ${built.length} zombie model variants in ${generationMs.toFixed(1)} ms`);
@@ -608,7 +699,7 @@ export class MobActorMeshes implements ZombieRenderer {
           boneIndices: readonly number[];
         }
       >();
-      for (const part of SEVERABLE_PARTS) {
+      for (const part of v.model === 'amalgam' ? [] : SEVERABLE_PARTS) {
         const boneIndices = [...severedBoneSet(v.realized.body.bones, [part])]
           .map((boneId) => boneIndexById.get(boneId))
           .filter((index): index is number => index !== undefined);
@@ -636,10 +727,12 @@ export class MobActorMeshes implements ZombieRenderer {
         model: v.model,
         lookAt: v.lookAt,
         figureSeed: v.figureSeed,
+        ...(v.bodyScale === undefined ? {} : { bodyScale: v.bodyScale }),
         realized: v.realized,
         walkActorTemplate: v.walkActorTemplate,
         bodyExtents: v.bodyExtents,
         rigidParts,
+        severedRoots: v.severedRoots,
         parentIndex: indexBonesByParent(v.realized.body.bones),
         boneIndexById,
         geometry,
@@ -944,7 +1037,105 @@ export class MobActorMeshes implements ZombieRenderer {
       lastSeenFrame: this.frameCounter,
     };
     this.states.set(id, state);
+    if (variant.model === 'amalgam') {
+      this.addTentacle(id);
+    }
     return state;
+  }
+
+  private addTentacle(id: EntityId): void {
+    if (!(this.tentacleGeometry && this.tentacleTipGeometry && this.tentacleMaterial)) {
+      return;
+    }
+    const shaft = new Mesh(this.tentacleGeometry, this.tentacleMaterial);
+    const tip = new Mesh(this.tentacleTipGeometry, this.tentacleMaterial);
+    shaft.visible = false;
+    tip.visible = false;
+    castsAndReceives(shaft);
+    castsAndReceives(tip);
+    this.group.add(shaft, tip);
+    this.tentacles.set(id, { shaft, tip });
+  }
+
+  private removeTentacle(id: EntityId): void {
+    const meshes = this.tentacles.get(id);
+    if (!meshes) {
+      return;
+    }
+    this.group.remove(meshes.shaft, meshes.tip);
+    this.tentacles.delete(id);
+  }
+
+  private updateTentacle(
+    id: EntityId,
+    zombie: Zombie,
+    placement: { worldPos: Vec3; yaw: number },
+    lastPose: Pose | undefined,
+  ): void {
+    const meshes = this.tentacles.get(id);
+    if (!meshes) {
+      return;
+    }
+    const playerEye = this.playerEyePosition;
+    const reachMetres = zombieAttackReachMetres(zombie);
+    if (!playerEye || reachMetres <= 0 || !lastPose) {
+      meshes.shaft.visible = false;
+      meshes.tip.visible = false;
+      return;
+    }
+    const figure = zombieFigure(zombie.type, zombie.figureSeed);
+    if (zombie.type.model !== 'amalgam') {
+      throw new Error('Amalgam tentacle requires the amalgam figure');
+    }
+    const amalgam = figure as AmalgamFigure;
+    const transforms = boneTransforms(amalgam.realized.body.bones, lastPose);
+    const partRoots = new Map(amalgam.manifest.parts.map((part) => [part.id, part.rootBone]));
+    const hidden = severedBoneSet(
+      amalgam.realized.body.bones,
+      zombie.severed.map((part) => partRoots.get(part) ?? part),
+    );
+    const start = amalgamCoreInteriorAnchor({
+      figure: amalgam,
+      transforms,
+      hidden,
+      yaw: rotY((placement.yaw * 180) / Math.PI),
+      position: placement.worldPos,
+    });
+    const target: Vec3 = [playerEye[0], start[1], playerEye[2]];
+    const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
+    const pose = amalgamTentaclePose({
+      start,
+      target,
+      facing,
+      reachMetres,
+      anchorOffsetMetres: Math.hypot(start[0] - placement.worldPos[0], start[2] - placement.worldPos[2]),
+      attackWindupSimSeconds: zombie.attackWindup,
+      attackWindupDurationSimSeconds: zombie.type.attack.windupSimSeconds,
+      attackWaitSimSeconds: zombie.attackWait,
+      attackCooldownDurationSimSeconds: zombie.type.attack.cooldownSimSeconds,
+    });
+    const deltaX = pose.end[0] - pose.start[0];
+    const deltaY = pose.end[1] - pose.start[1];
+    const deltaZ = pose.end[2] - pose.start[2];
+    const length = Math.hypot(deltaX, deltaY, deltaZ);
+    if (pose.extension <= 0 || length <= 0.01) {
+      meshes.shaft.visible = false;
+      meshes.tip.visible = false;
+      return;
+    }
+    meshes.shaft.visible = true;
+    meshes.tip.visible = true;
+    meshes.shaft.position.set(
+      (pose.start[0] + pose.end[0]) / 2,
+      (pose.start[1] + pose.end[1]) / 2,
+      (pose.start[2] + pose.end[2]) / 2,
+    );
+    meshes.shaft.quaternion.setFromUnitVectors(
+      this.tentacleUp,
+      this.tentacleDirection.set(deltaX / length, deltaY / length, deltaZ / length),
+    );
+    meshes.shaft.scale.set(1, length, 1);
+    meshes.tip.position.set(pose.end[0], pose.end[1], pose.end[2]);
   }
 
   /** Releases `entry`'s row/instance back to its variant, swap-compacting whichever key (a live zombie, a
@@ -977,6 +1168,7 @@ export class MobActorMeshes implements ZombieRenderer {
   /** A plain vanish (despawn/unload) — not a death; see this module's header comment and zombieDied. */
   private removeZombie(id: EntityId, state: ZombieRenderState): void {
     this.removePerceptionLabel(id);
+    this.removeTentacle(id);
     this.freeSlot(id, state);
     this.states.delete(id);
   }
@@ -1047,6 +1239,7 @@ export class MobActorMeshes implements ZombieRenderer {
    */
   zombieDied(id: EntityId, zombie: Zombie, playerPos?: Vec3): void {
     this.removePerceptionLabel(id);
+    this.removeTentacle(id);
     const state = this.states.get(id);
     if (!state) {
       return;
@@ -1289,11 +1482,13 @@ export class MobActorMeshes implements ZombieRenderer {
     });
   }
 
-  private shouldSkipPose(worldPelvis: Vector3): boolean {
+  /** Off-screen detailed actors can skip packing; visible actors always use the current simulation pose. */
+  private shouldSkipPose(worldPelvis: Vector3, radius = BOUNDING_RADIUS_M): boolean {
     if (!this.camera) {
       return false;
     }
     this.boundingSphere.center.copy(worldPelvis);
+    this.boundingSphere.radius = radius;
     return !this.frustum.intersectsSphere(this.boundingSphere);
   }
 
@@ -1368,16 +1563,11 @@ export class MobActorMeshes implements ZombieRenderer {
     if (transforms) {
       for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
         const source = transforms.get(variant.realized.body.bones[bone]!.id)!;
-        const target = variant.scratch[bone]!;
-        for (let i = 0; i < 9; i++) {
-          target.r[i] = source.r[i]!;
-        }
-        for (let i = 0; i < 3; i++) {
-          target.t[i] = source.t[i]!;
-        }
+        copyScaledTransform(source, variant.scratch[bone]!, variant.bodyScale);
       }
     } else {
       boneTransformsInto(variant.realized.body.bones, pose, variant.parentIndex, variant.scratch);
+      scaleTransformsInPlace(variant.scratch, variant.bodyScale);
     }
     for (let bone = 0; bone < variant.realized.body.bones.length; bone++) {
       if (severedIndices.has(bone)) {
@@ -1434,7 +1624,7 @@ export class MobActorMeshes implements ZombieRenderer {
       }),
     );
     let { pose, transforms }: { pose: Pose; transforms: ReadonlyMap<string, Transform> } = posed;
-    const hasHead = zombie.regions.head > 0 && !zombie.severed.includes('head');
+    const hasHead = zombie.type.model !== 'amalgam' && zombie.regions.head! > 0 && !zombie.severed.includes('head');
     if (hasHead) {
       const rootRotation = transpose(rotY((yaw * 180) / Math.PI));
       const eye = this.playerEyePosition ?? [this.cameraPosition.x, this.cameraPosition.y, this.cameraPosition.z];
@@ -1489,7 +1679,7 @@ export class MobActorMeshes implements ZombieRenderer {
       dt: frame.gazeFrameDelta,
       presentationSimSeconds: frame.presentationSimSeconds,
     });
-    const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, zombie.severed));
+    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
     this.packSkeleton(state.globalRow, variant, { ...posed, severedIndices });
     state.lastPose = posed.pose;
     state.lastPlacement = posed.placement;
@@ -1507,7 +1697,7 @@ export class MobActorMeshes implements ZombieRenderer {
       z: placement.worldPos[2],
       yawRad: placement.yaw,
     };
-    const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, zombie.severed));
+    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
     this.packSkeleton(state.globalRow, variant, {
       pose: state.lastPose!,
       placement: crowdPlacement,
@@ -1532,7 +1722,7 @@ export class MobActorMeshes implements ZombieRenderer {
       z: corpse.worldPos[2],
       yawRad: corpse.yaw,
     };
-    const severedIndices = this.indicesFor(variant, severedBoneSet(variant.realized.body.bones, corpse.severed));
+    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, corpse.severed));
     this.packSkeleton(corpse.globalRow, variant, { pose, placement: crowdPlacement, severedIndices });
   }
 
@@ -1582,6 +1772,21 @@ export class MobActorMeshes implements ZombieRenderer {
     packSeveredMask(this.textureData, this.layout, d.globalRow, hidden);
   }
 
+  private zombiePoseBounds(zombie: Zombie, placement: { worldPos: Vec3 }): { center: Vector3; radius: number } {
+    const halfWidth = zombie.body.halfWidth * this.blockSize;
+    const halfDepth = (zombie.body.halfDepth ?? zombie.body.halfWidth) * this.blockSize;
+    const height = zombie.body.height * this.blockSize;
+    const amalgam = zombie.type.model === 'amalgam';
+    return {
+      center: new Vector3(
+        placement.worldPos[0],
+        placement.worldPos[1] + (amalgam ? height / 2 : PELVIS_HEIGHT_M),
+        placement.worldPos[2],
+      ),
+      radius: amalgam ? Math.hypot(halfWidth, halfDepth, height / 2) : BOUNDING_RADIUS_M,
+    };
+  }
+
   private packZombiePose(
     state: ZombieRenderState,
     variant: Variant,
@@ -1592,14 +1797,9 @@ export class MobActorMeshes implements ZombieRenderer {
       presentationSimSeconds: number;
     },
   ): void {
-    const { placement } = frame;
-    const worldPelvis = new Vector3(
-      placement.worldPos[0],
-      placement.worldPos[1] + PELVIS_HEIGHT_M,
-      placement.worldPos[2],
-    );
-    if (this.shouldSkipPose(worldPelvis) && state.lastPose) {
-      this.packCachedPose(state, variant, zombie, placement);
+    const bounds = this.zombiePoseBounds(zombie, frame.placement);
+    if (this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
+      this.packCachedPose(state, variant, zombie, frame.placement);
       return;
     }
     this.packPose(state, variant, zombie, frame);
@@ -1616,6 +1816,7 @@ export class MobActorMeshes implements ZombieRenderer {
       anyDirty = true;
     }
     if (zombie.incapacitated) {
+      this.removeTentacle(id);
       if (!this.corpses.has(id)) {
         let state = this.states.get(id);
         if (!state) {
@@ -1644,6 +1845,7 @@ export class MobActorMeshes implements ZombieRenderer {
       gazeFrameDelta: gazeDt,
       presentationSimSeconds,
     });
+    this.updateTentacle(id, zombie, placement, state.lastPose);
     return true;
   }
 
@@ -1746,6 +1948,12 @@ export class MobActorMeshes implements ZombieRenderer {
    * bone; nothing more elaborate (e.g. touching the neck too) seemed necessary. */
   dispose(): void {
     this.setPerceptionLabels(false);
+    for (const id of [...this.tentacles.keys()]) {
+      this.removeTentacle(id);
+    }
+    this.tentacleGeometry?.dispose();
+    this.tentacleTipGeometry?.dispose();
+    this.tentacleMaterial?.dispose();
     this.texture.dispose();
     this.material.dispose();
     for (const variant of this.variants) {

@@ -6,6 +6,7 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
+  - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're recording or reconciling BR's crawler silhouette rulings
   - you're changing crawler gait, hit response or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
@@ -319,7 +320,7 @@ chunks can generate in any order.
   - `tool` (qualities such as `cutting: 2`, `prying: 1`)
   - `weapon` (melee or ranged stats)
   - `fuel`, `battery`, `light`, `book`
-  - `vehiclePart` (after Slice 1)
+  - `vehiclePart` (with vehicles, #322)
 
   Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled (BR, 2026-10-05), "yes, rule covers drawing too": first-person displays and ground-pile presentation follow declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`, and `src/render/piles.ts`, `PileMeshes.drawPile` and `PileMeshes.planSpentCases`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
@@ -536,7 +537,8 @@ and `src/core/content.ts`, `checkItemFirearm`.
 ## Character
 
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
-  are per game hour. Temperature comes after Slice 1.
+  are per game hour. Body temperature isn't simulated; #366's heat property
+  could later serve it.
 - **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
   defaults”. The model makes injury decisions consequential beyond a single
   health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
@@ -798,7 +800,8 @@ without modeling armour now.
     little around it.
 - **Blocks and block entities get materials.** Soil, wood, brick, concrete and
   steel, each with durability and a resistance per damage type, as content-pack
-  data (today a block has only an id and `solid`). A destroyed block is removed
+  data; a block has no material or durability fields (`src/core/schema.ts`,
+  `BlockSchema`). A destroyed block is removed
   with `World.setBlock`. Saves already store changed cells as an overlay on the
   regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
   persists without new save machinery; saves grow with the damage done.
@@ -827,8 +830,10 @@ Nights should be dark, and voxel-lit interiors pitch black, so you have to
 bring light. Light is the visual side of noise: it lets you see, and it lets
 them see you.
 
-Interiors need voxel light to become darker than the outdoors. Until that
-arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
+Interiors become darker than the outdoors through voxel light. Diffuse sky light
+already goes through the grid; light from sources inside, such as torches and
+lamps, doesn't. Until that arrives in Slice 4, don't fake the gap with a
+separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
 block light. All-around carried and dropped sources use a fixed pool of
 shadowless point lights; unused slots stay at zero intensity, and surplus
@@ -840,7 +845,7 @@ render and sense heights. The marker does not replace pool lighting. Source
 colour, intensity, radius and burn rules belong to item content. Tune that content
 against the ground and walls under the pool's shared near-field falloff, not
 against the glow. The zombie light check keeps sky visibility separate from
-carried light, so adding voxel sky light won't change the carried-light rule. The
+carried light, so voxel sky light doesn't change the carried-light rule. The
 sun-derived day phase owns simulation sun exposure and blends zombie sight through
 twilight, while time-of-day lighting stays in the sky and fog rather than being
 baked into chunks; voxel sunlight can then join AO in vertex colour. See
@@ -920,6 +925,18 @@ BR ruled (2026-10-06 15:42, d102):
 > but we will want scriptability in future, but not for jump-scares necessarily, but e.g. a computer panel opening up some door or other dynamic events
 
 A marker's optional clock window delays its one-time spawn; `src/core/zombieSpawns.ts`, `ZombieSpawner.onColumn`, queues each windowed marker, and `ZombieSpawner.advance` checks its window on zombie ticks while the column stays loaded. Since a load never spawns a windowed marker, live play and replay agree at a window edge. Windowless markers keep chunk-load behavior. Bounded windows recur daily, so a marker that missed one remains eligible at the next opening instead of expiring: a playtest threat should not be lost because the player was elsewhere when its window passed, and may arrive the next evening. An open-ended `from` is eligible from day 1's occurrence of its boundary onward, so a run started after that occurrence is already eligible. Once spawned, its saved ledger entry prevents it returning when the window closes or after it is killed. This timing serves authored beats without scripting a player action. Scriptable dynamic events, such as a computer opening a door, remain future work in #313.
+
+### Amalgam body and damage (#308)
+
+The amalgam is a debug-only type until the authored camp spawn in #308 is designed. Its `amalgam_*` sound events have separate identities but reuse shambler recordings until distinct recordings are authored; see `src/content/base/sounds.json` and `src/core/soundEvents.ts`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents, so closed doors and walls block the whole visible creature without relying on an arbitrary humanoid radius. Its empty corners are the deliberate broad-phase simplification; member hit boxes remain voxel-derived and independently targeted. See `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/physics.ts`, `Body` and `overlapsBlock`.
+
+The amalgam's `bodyScale` is authored in `src/content/base/zombies.json` because the creature read far too small in play. The zombie section contract in `src/core/schema.ts`, `SECTION_DESCRIPTOR`, requires that authored scale for the model, following `docs/decisions/0004-content-language.md`. The same scale feeds the rendered body, collision envelope, posed hit regions and melee reach through `src/core/amalgamFigure.ts`, `amalgamFigure`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/zombies.ts`, `zombieAttackReachMetres`.
+
+Severing a shambler member removes that member's hit regions and its contribution to attacks and reach; the core and every other member continue unchanged. `activeAmalgamMembers` determines which members remain capable of attacking; `zombieAttackReachMetres` disables reach when none remain and keeps shared reach while any member survives. d137-3 can add per-member attack geometry without changing the ownership contract. The save records each manifest region's health and severed member IDs, then reconstructs geometry from the saved figure seed. `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, `activeAmalgamMembers` and `zombieAttackReachMetres`, and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, own that handoff. Initial member-health values inherit the shambler region values in `src/content/base/zombies.json`, keeping authored anatomy consistent; reviewing the realized body can identify any needed tuning. Movement/attack pacing remains a separate tuning item and should not be made heavier by this body integration.
+
+The core's authored health keeps a center-mass pump blast from ending the fight immediately, while each fused member keeps its own damage regions and can be severed by focused fire. The resulting shell count is balance tuning, not a fixed gameplay contract; `test/amalgam.test.ts` protects survival of a blast and member loss before core death without pinning that count. See `src/content/base/zombies.json`, `amalgam.regions`, and `src/core/zombies.ts`, `ZombieSystem.firePellets`.
+
+A surviving amalgam signals its existing attack by extending a tentacle from its core toward the player through wind-up and strike, then retracting it. Its root starts at a fixed interior point of the posed core, so changing the player's bearing cannot switch attachment between concave lobes; depth occlusion reveals the shaft where it exits the body instead of letting a smoothed anchor cross an empty gap. It uses the renderer's packed pose so flinch and member loss cannot leave a separate anchor behind. The render-only extension is capped by `zombieAttackReachMetres`; it adds no collision, hit region or saved state. See `src/render/amalgamTentaclePose.ts`, `amalgamCoreInteriorAnchor` and `amalgamTentaclePose`, and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
 Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
 sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
@@ -1156,9 +1173,10 @@ something in play, not only decorate it.
     and `hearingTier`, own the stance's visibility and hearing effects.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
-    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Lead
-    defaults pending BR override: leaves do not muffle either simulation hearing
-    or WebAudio, and do not obstruct melee/bites; they still obstruct ray picks.
+    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
+    not muffle either simulation hearing or WebAudio, and do not obstruct
+    melee/bites; they still obstruct ray picks. These are the lead's defaults,
+    which BR may override.
   - **Materials:** branches and felled trees give sticks and wood, the same
     materials loot gives in Slice 2.
   - **Movement and landmarks:** solid trunks channel movement for you and the
@@ -1221,10 +1239,14 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   through its phases over about a month of game days. On a clear night near
   full moon you can see shapes and find your way outdoors without a light; on
   a new moon, or when it's overcast, you can't. Clouds hide the moon and stars.
-- **Voxel light**: sunlight, plus light from torches, lamps and hot zombies,
-  spread through the block grid. Inside buildings it's pitch black at night and
-  dim by day, lit only by what comes in through doors and windows. It comes
-  after Slice 1.
+- **Voxel light**: light spread through the block grid, so that inside buildings
+  it's pitch black at night and dim by day, lit only by what comes in through
+  doors and windows. Only diffuse sky light goes through the grid
+  (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
+  on their own, and carried or dropped sources are the pool's shadowless point
+  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). Light from
+  torches, lamps and hot zombies through the grid is planned for Slice 4, with
+  the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.

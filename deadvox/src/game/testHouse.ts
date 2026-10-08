@@ -49,8 +49,8 @@ export const testHouse = (origin: Vec3, b: HouseBlocks, blockSize: number): Metr
     block,
   });
   const air = 0;
-  const gateWest = GARDEN_GATE.centreX - 0.5;
-  const gateEast = GARDEN_GATE.centreX + 0.5;
+  const gateWest = GARDEN_GATE.centreX - GARDEN_GATE.widthM / 2;
+  const gateEast = GARDEN_GATE.centreX + GARDEN_GATE.widthM / 2;
   const boxes: MetreBox[] = [
     // Level lot: solid ground below the floor, nothing above it.
     box([-10, -8, -3], [13, 0, 10], b.dirt),
@@ -121,7 +121,7 @@ export const HOUSE_OFFSET: readonly [number, number] = [4, -4];
 /** On the lot, 8 m out from the front door and facing it, so the whole house is in view. */
 export const SPAWN_OFFSET: Vec3 = [-8, 0, 3.5];
 /** Local-metre waypoints through the south garden gate for the test-house walking route. */
-export const GARDEN_GATE = { approachZ: 7.75, centreX: 2.5, exitZ: 11 } as const;
+export const GARDEN_GATE = { approachZ: 7.75, centreX: 2.5, exitZ: 11, widthM: 1 } as const;
 /** Yaw that faces +x (east), toward the front door. */
 export const SPAWN_YAW = -Math.PI / 2;
 /** The lot's centre, used to pick its floor height. */

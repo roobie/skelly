@@ -27,6 +27,19 @@ const base = readdirSync(BASE)
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
+const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
+  const zombieFile = base.find((file) => file.source === 'zombies.json')!;
+  const data = structuredClone(zombieFile.data) as {
+    zombies: { id: string; regions: Record<string, number> }[];
+  };
+  const { regions } = data.zombies.find(({ id }) => id === zombieId)!;
+  if (change === 'remove') {
+    delete regions[regionId];
+  } else {
+    regions[regionId] = 1;
+  }
+  return validateContent({ source: zombieFile.source, data });
+};
 
 interface WindowFrameRun {
   y: number;
@@ -135,6 +148,32 @@ describe('content', () => {
     expect(registry.blocks[0]!.id).toBe('air');
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
+    }
+  });
+
+  it('requires non-amalgam zombie regions to match the anatomy keys exactly', () => {
+    for (const [regionId, change] of [
+      ['head', 'remove'],
+      ['leftArmm', 'add'],
+    ] as const) {
+      expect(
+        invalidZombieRegionIssues('shambler', regionId, change).some(
+          ({ message }) => message === 'zombie region keys must match the model',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it('requires amalgam zombie regions to match the manifest classes exactly', () => {
+    for (const [regionId, change] of [
+      ['member.leftLeg', 'remove'],
+      ['member.leftArmm', 'add'],
+    ] as const) {
+      expect(
+        invalidZombieRegionIssues('amalgam', regionId, change).some(
+          ({ message }) => message === 'zombie region keys must match the model',
+        ),
+      ).toBe(true);
     }
   });
 

@@ -329,7 +329,11 @@ export class Hamlet implements Site {
     this.zombieSpawns.push(
       ...hamletZombieSpawns(this.seed, this.road, markers, {
         roadHeightAt: (worldX) => this.roadHeightAt(worldX),
-        spawnWeights: new Map([...this.registry.zombies].map(([type, zombie]) => [type, zombie.spawnWeight])),
+        spawnWeights: new Map(
+          [...this.registry.zombies]
+            .filter(([, zombie]) => !zombie.debugOnly)
+            .map(([type, zombie]) => [type, zombie.spawnWeight]),
+        ),
       }),
     );
     const rng = Rng.stream(this.seed, 'hamlet-first-horde');

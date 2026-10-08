@@ -302,8 +302,8 @@ describe('simulation source fingerprint', () => {
     expect(graph.sources.has('mobgen/mob/shamblerFigure.ts')).toBe(true);
     expect(graph.sources.has('mobgen/core/pose.ts')).toBe(true);
     expect(graph.sources.has('mobgen/mob/attack.ts')).toBe(true);
-    expect(graph.sources.has('mobgen/mob/amalgamTemplate.ts')).toBe(false);
-    expect(graph.sources.has('mobgen/mob/amalgam.ts')).toBe(false);
+    expect(graph.sources.has('mobgen/mob/amalgamTemplate.ts')).toBe(true);
+    expect(graph.sources.has('mobgen/mob/amalgam.ts')).toBe(true);
     await expect(access(resolve(projectRoot, '../mobgen/src/mob/amalgamTemplate.ts'))).resolves.toBeUndefined();
   });
 

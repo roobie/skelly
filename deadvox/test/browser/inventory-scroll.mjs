@@ -75,12 +75,13 @@ for (const slot of ['legs', 'torso', 'back']) {
 for (let i = 0; i < 12; i++) {
   if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
 }
+let needsText = 'health 100% · stamina 100%';
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
   containers: () => [], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
   notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
-  body: () => body.snapshotState(),
+  body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -110,6 +111,10 @@ globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions
   resetWheels() { gameplayWheels = 0; },
   redraw() {
     if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('redraw fixture failed');
+    screen.update();
+  },
+  redrawAfterNeedsChange() {
+    needsText = needsText === 'health 100% · stamina 100%' ? 'health 100% · stamina 99%' : 'health 100% · stamina 100%';
     screen.update();
   },
 };
@@ -188,12 +193,17 @@ try {
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   const failures = [];
-  for (const selector of [
-    '#inventory [data-pane="body"]',
-    '#inventory [data-pane="you"]',
-    '#inventory [data-pane="around"]',
-    '#inventory .inv-details',
+  let activeTab;
+  for (const { tab, selector } of [
+    { tab: 'skills', selector: '#inventory [data-pane="body"]' },
+    { tab: 'items', selector: '#inventory [data-pane="you"]' },
+    { tab: 'items', selector: '#inventory [data-pane="around"]' },
+    { tab: 'items', selector: '#inventory .inv-details' },
   ]) {
+    if (activeTab !== tab) {
+      await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
+      activeTab = tab;
+    }
     const size = await page
       .locator(selector)
       .evaluate((pane) => ({ height: pane.clientHeight, scroll: pane.scrollHeight }));
@@ -257,6 +267,31 @@ try {
       }
     }
   }
+  const selectedPane = page.locator('#inventory [data-pane="you"]');
+  const scrolledAway = await selectedPane.evaluate((pane) => {
+    pane.scrollTop = pane.scrollHeight;
+    const selectedUid = String(globalThis.scrollFixture.screen.selected.uid);
+    const row = [...pane.querySelectorAll('.inv-item[data-uid]')].find(
+      (candidate) => candidate.dataset.uid === selectedUid,
+    );
+    const rowBox = row.getBoundingClientRect();
+    const paneBox = pane.getBoundingClientRect();
+    return {
+      scrollTop: pane.scrollTop,
+      rowOutsidePane: rowBox.bottom <= paneBox.top || rowBox.top >= paneBox.bottom,
+    };
+  });
+  assert.ok(
+    scrolledAway.scrollTop > 0 && scrolledAway.rowOutsidePane,
+    `selected row scrolled away: ${JSON.stringify(scrolledAway)}`,
+  );
+  await page.evaluate(() => globalThis.scrollFixture.redrawAfterNeedsChange());
+  const selectionAfterNeedsRedraw = await selectedPane.evaluate((pane) => pane.scrollTop);
+  assert.equal(
+    selectionAfterNeedsRedraw,
+    scrolledAway.scrollTop,
+    'needs redraw must preserve the player-scrolled pane even while a row remains selected',
+  );
   assert.deepEqual(errors, []);
   assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
   if (engine === 'chromium') {

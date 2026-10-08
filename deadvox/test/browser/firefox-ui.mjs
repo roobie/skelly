@@ -316,8 +316,21 @@ try {
     await pressAction(page, 'ui.inventory-toggle');
   };
   const floorItem = page.locator('#inventory .inv-grid[data-target^="pile:"] .inv-item').filter({ hasText: 'Bandage' });
+  const pocketTarget = page.locator('#inventory .inv-grid[data-target="pocket:1:0"]');
   assert.equal(await floorItem.count(), 1, 'spawned bandage is in the floor pile');
-  await drag(floorItem, page.locator('#inventory .inv-grid[data-target="pocket:1:0"]'));
+  const [youBox, pocketBox] = await Promise.all([
+    page.locator('#inventory [data-pane="you"]').boundingBox(),
+    pocketTarget.boundingBox(),
+  ]);
+  assert(youBox && pocketBox, 'character pane and first pocket have layout boxes');
+  assert.ok(
+    pocketBox.x >= youBox.x &&
+      pocketBox.x + pocketBox.width <= youBox.x + youBox.width &&
+      pocketBox.y >= youBox.y &&
+      pocketBox.y + pocketBox.height <= youBox.y + youBox.height,
+    `first pocket is visible inside the character pane before drag: ${JSON.stringify({ youBox, pocketBox })}`,
+  );
+  await drag(floorItem, pocketTarget);
   await finishMove();
   await page.waitForFunction(
     () =>

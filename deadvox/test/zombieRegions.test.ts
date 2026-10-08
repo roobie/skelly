@@ -7,12 +7,8 @@ import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { idlePose } from '@mobgen/mob/idle.ts';
 import { SHAMBLER_FIGURE_SEEDS, shamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
-import {
-  posedRegionHitDistance,
-  posedShamblerRegionBoxes,
-  ZOMBIE_REGION_NAMES,
-  type ZombieRegion,
-} from '../src/core/zombieRegions.ts';
+import { ZOMBIE_REGION_NAMES } from '../src/core/zombieRegionNames.ts';
+import { posedRegionHitDistance, posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 
 type Vec3 = [number, number, number];
 const BLOCK = 0.5;

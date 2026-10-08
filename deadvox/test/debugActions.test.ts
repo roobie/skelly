@@ -101,9 +101,11 @@ describe('debug action dispatch', () => {
     expect(spawnCounts).toEqual([25]);
     dispatchDebugAction(actions, 'debug.spawn-runner');
     dispatchDebugAction(actions, 'debug.spawn-crawler');
+    dispatchDebugAction(actions, 'debug.spawn-amalgam');
     expect(spawnRequests).toEqual([
       { typeId: 'runner', count: 1 },
       { typeId: 'crawler', count: 1 },
+      { typeId: 'amalgam', count: 1 },
     ]);
     expect(dispatchDebugAction(actions, 'fixture.unknown')).toBe(false);
   });
