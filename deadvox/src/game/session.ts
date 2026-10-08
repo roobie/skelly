@@ -16,6 +16,7 @@ import { CHUNK, type Vec3 } from '../core/coords.ts';
 import { CraftCommands } from '../core/craftCommands.ts';
 import { type CraftPreference, planCraft } from '../core/crafting.ts';
 import { craftActionHooks } from '../core/craftWork.ts';
+import { dayCycleFor, dayPhaseAt } from '../core/dayPhase.ts';
 import { type EntityId, MapEntityStore } from '../core/entities.ts';
 import {
   type FirearmsCombatTuning,
@@ -468,9 +469,11 @@ const zombieReadinessFor = (options: SessionOptions) => options.zombieReady ?? o
 
 export const createSession = (options: SessionOptions) => {
   const { registry, world, isSolid, scale, seed, controls, audio, debug } = options;
+  const dayCycle = dayCycleFor(registry.dayCycle);
   const s = scale.blockSize;
   const skyTop = (scale.maxCy + 1) * CHUNK - 1;
-  const isSunExposedAt = (pos: Vec3, hour: number): boolean => sunExposedAt(pos, hour, skyTop, options.isOpaque);
+  const isSunExposedAt = (pos: Vec3, hour: number): boolean =>
+    sunExposedAt({ position: pos, gameHours: hour, skyTop, isOpaque: options.isOpaque, cycle: dayCycle });
   const physics = physicsFor(scale);
   const restored = options.restore;
 
@@ -832,8 +835,8 @@ export const createSession = (options: SessionOptions) => {
     jumpSpeed: PLAYER.jump,
     tuning: senseTuning,
     player: playerSense,
-    hour: () => hourOfDay(sim.calendar),
-    isSunExposedAt,
+    dayPhase: () => dayPhaseAt(dayCycle, sim.calendar),
+    isSunExposedAt: (position) => isSunExposedAt(position, hourOfDay(sim.calendar)),
     hurtPlayer: (amount, area, attacker) => {
       if (
         controls.blocking?.() &&

@@ -875,6 +875,18 @@ const Degrees = pipe(
   number(),
   check((value) => Number.isFinite(value), 'must be finite'),
 );
+const CalendarDateSchema = pipe(
+  strictObject({
+    month: pipe(Count, minValue(1), maxValue(12)),
+    day: pipe(Count, minValue(1), maxValue(31)),
+  }),
+  check(({ month, day }) => day <= [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!, 'invalid date'),
+);
+const DayCycleSchema = strictObject({
+  latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
+  date: CalendarDateSchema,
+  twilight: literal('nautical'),
+});
 const HalfMetres = pipe(
   Metres,
   check((v) => Number.isInteger(v * 2), 'must be snapped to 0.5 m'),
@@ -1328,7 +1340,7 @@ const sectionSchemas = Object.fromEntries(
 ) as SectionSchemas;
 
 /** One content file: any declared section, each a list of definitions. */
-export const ContentFileSchema = strictObject(sectionSchemas);
+export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
@@ -1349,8 +1361,9 @@ export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
-export type ContentSection = keyof ContentFile;
+export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
 
 /** Also rejects independently adding a schema section without its metadata. */
 export const CONTENT_SECTIONS = SECTION_DESCRIPTOR satisfies Record<ContentSection, { label: string; order: number }>;
