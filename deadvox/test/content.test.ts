@@ -1056,6 +1056,7 @@ describe('content references', () => {
             name: 'Clerk',
             model: 'shambler',
             spawnWeight: 1,
+            canJumpObstacles: true,
             sounds: {
               idle: 'shambler_idle',
               alert: 'shambler_alert',
