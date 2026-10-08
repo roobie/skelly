@@ -363,12 +363,29 @@ try {
     null,
     { timeout: 60_000 },
   );
-  const renderedChunks = await page.evaluate(() => {
+  const weatheringRenders = await page.evaluate(() => {
     const { engine } = globalThis.firefoxUiTest;
+    const content = engine.config.weathering;
+    if (!content) {
+      throw new Error('Firefox shader probe needs the authored weathering settings');
+    }
     engine.renderer.compile(engine.scene, engine.camera);
-    return engine.meshes.count;
+    return [
+      { strength: 0, variationStrength: content.variationStrength },
+      { strength: content.strength, variationStrength: content.variationStrength },
+      { strength: 1, variationStrength: content.variationStrength },
+      { strength: content.strength, variationStrength: 0 },
+    ].map((settings) => {
+      engine.meshes.setWeathering({ ...content, ...settings });
+      engine.renderer.render(engine.scene, engine.camera);
+      return { chunks: engine.meshes.count, drawCalls: engine.renderer.info.render.calls };
+    });
   });
-  assert.ok(renderedChunks > 0, 'Firefox loaded voxel chunk meshes with rendering enabled');
+  assert.equal(weatheringRenders.length, 4, 'Firefox renders each weathering comparison state');
+  assert.ok(
+    weatheringRenders.every(({ chunks, drawCalls }) => chunks > 0 && drawCalls > 0),
+    'Firefox renders voxel chunks with weathering off, at content strength, at full strength, and with variation off',
+  );
   assert.deepEqual(
     consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
     [],
