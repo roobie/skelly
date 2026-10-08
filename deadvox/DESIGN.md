@@ -317,7 +317,7 @@ chunks can generate in any order.
   - `tool` (qualities such as `cutting: 2`, `prying: 1`)
   - `weapon` (melee or ranged stats)
   - `fuel`, `battery`, `light`, `book`
-  - `vehiclePart` (after Slice 1)
+  - `vehiclePart` (with vehicles, #322)
 
   Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled (BR, 2026-10-05), "yes, rule covers drawing too": first-person displays and ground-pile presentation follow declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`, and `src/render/piles.ts`, `PileMeshes.drawPile` and `PileMeshes.planSpentCases`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
@@ -534,7 +534,8 @@ and `src/core/content.ts`, `checkItemFirearm`.
 ## Character
 
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
-  are per game hour. Temperature comes after Slice 1.
+  are per game hour. Body temperature isn't simulated; #366's heat property
+  could later serve it.
 - **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
   defaults”. The model makes injury decisions consequential beyond a single
   health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
@@ -796,7 +797,8 @@ without modeling armour now.
     little around it.
 - **Blocks and block entities get materials.** Soil, wood, brick, concrete and
   steel, each with durability and a resistance per damage type, as content-pack
-  data (today a block has only an id and `solid`). A destroyed block is removed
+  data; a block has no material or durability fields (`src/core/schema.ts`,
+  `BlockSchema`). A destroyed block is removed
   with `World.setBlock`. Saves already store changed cells as an overlay on the
   regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
   persists without new save machinery; saves grow with the damage done.
@@ -1148,9 +1150,10 @@ something in play, not only decorate it.
     and `hearingTier`, own the stance's visibility and hearing effects.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
-    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Lead
-    defaults pending BR override: leaves do not muffle either simulation hearing
-    or WebAudio, and do not obstruct melee/bites; they still obstruct ray picks.
+    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
+    not muffle either simulation hearing or WebAudio, and do not obstruct
+    melee/bites; they still obstruct ray picks. These are the lead's defaults,
+    which BR may override.
   - **Materials:** branches and felled trees give sticks and wood, the same
     materials loot gives in Slice 2.
   - **Movement and landmarks:** solid trunks channel movement for you and the
@@ -1207,8 +1210,10 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   a new moon, or when it's overcast, you can't. Clouds hide the moon and stars.
 - **Voxel light**: sunlight, plus light from torches, lamps and hot zombies,
   spread through the block grid. Inside buildings it's pitch black at night and
-  dim by day, lit only by what comes in through doors and windows. It comes
-  after Slice 1.
+  dim by day, lit only by what comes in through doors and windows. Diffuse sky
+  light spreads through the grid (`src/core/skylight.ts`, `buildSkylight`);
+  direct sun and carried or dropped lights are lit and shadowed separately
+  (`src/render/shadows.ts`; `src/render/lightPool.ts`, `LightPool`).
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.
