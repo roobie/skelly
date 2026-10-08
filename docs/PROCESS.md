@@ -105,12 +105,17 @@ The live-checklist mechanism for proposal 1 is documented in the [Slice checklis
 
 ## Recording decisions
 
-- **Small rulings** go inline, where the thing is specified: "Decided (BR, YYYY-MM-DD): …" in the
-  subproject's `PROJECT.md`, `DESIGN.md` or `SLICE-*.md`.
-- **Cross-cutting or format-defining decisions** get an ADR in `<subproject>/docs/decisions/`
-  (e.g. deadvox 0002, saves). An ADR's context is a dated snapshot. Its decision stays true,
-  through dated rulings or a superseding ADR (BR, 2026-10-04), and its specification is cued
-  in code, not copied.
+- **Small rulings** go inline where the decision is specified, in the subproject's
+  `PROJECT.md`, `DESIGN.md` or `SLICE-*.md`. State the rule and its reason in the
+  document's own voice; keep the source quote and stamp in the commit message that
+  changes the rule.
+- **Cross-cutting or format-defining decisions** get an ADR in
+  `<subproject>/docs/decisions/` (e.g. deadvox 0002, saves). Its context explains the
+  situation, and its decision records the rule, reason and alternatives. Code cues the
+  specification instead of copying it. Keep source quotes and stamps in the commit
+  message, not the ADR. When a decision changes, rewrite the ADR's decision to the
+  current rule, or replace it with a superseding one and delete the old; the changing
+  commit carries the source.
 - **Mail and chat are transport, not the record.** A ruling that only exists in a thread isn't
   recorded. PRs, issues and commit messages are history: the final reason goes in a tracked
   doc before the merge.
