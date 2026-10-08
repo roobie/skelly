@@ -81,6 +81,12 @@ jobs:
           SAVE_AUTOSAVE_BACKEND: opfs
           SAVE_AUTOSAVE_SCENARIO: replacement
         run: node test/browser/save-storage.mjs chromium
+      - name: Save navigation — Chromium
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' }}
+        timeout-minutes: 2
+        env:
+          SAVE_NAVIGATION_ONLY: '1'
+        run: node test/browser/save-storage.mjs chromium
       - name: Save autosave — IndexedDB Continue (Chromium)
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'indexeddb' }}
         timeout-minutes: 4
@@ -129,6 +135,12 @@ jobs:
           SAVE_AUTOSAVE_ONLY: '1'
           SAVE_AUTOSAVE_BACKEND: indexeddb
           SAVE_AUTOSAVE_SCENARIO: busy-lock
+        run: xvfb-run -a node test/browser/save-storage.mjs firefox
+      - name: Firefox save navigation
+        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}
+        timeout-minutes: 2
+        env:
+          SAVE_NAVIGATION_ONLY: '1'
         run: xvfb-run -a node test/browser/save-storage.mjs firefox
       - name: Firefox autosave — IndexedDB replacement
         if: ${{ inputs.shard == 'control-check' || inputs.shard == 'firefox' }}

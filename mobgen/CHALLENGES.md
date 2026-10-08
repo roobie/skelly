@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're prioritizing mobgen's design risks and milestone scope
+  - you're measuring or changing mobgen actor budgets
+---
+
 # mobgen — challenges
 
 The hard problems between mobgen and actors that work in deadvox, roughly in
@@ -12,7 +18,7 @@ in [reference/README.md](reference/README.md). deadvox's own targets are in
 ## 1. Many detailed actors in a browser
 
 **Why it's hard.** deadvox targets 60 active and 300 background zombies at
-60 fps on an Iris Xe laptop, and today's shambler is 6 boxes drawn as 6
+60 fps on an Iris Xe laptop, and the box shambler draws six boxes as six
 instanced meshes shared by every zombie. A mobgen actor is different on every
 count:
 
@@ -39,21 +45,26 @@ count:
   recommended far level. It comes from the same genome, so an actor's colours
   and proportions match between levels.
 
-  **BR ruling (2026-09-29):** Face dimensions are metric, proportional to
-  `height × headScale`, and independent of voxel size; calibration uses the
-  median template height. Placement remains grid-snapped, so sub-voxel details
-  may disappear in the background tier. Voxel budgets scale with inverse cell
-  volume and actor height (head groups also use `headScale`); triangle budgets
-  scale with inverse cell surface area and height. `src/core/generate.ts` rounds
-  the scaled intervals and allows one extra voxel at coarse resolutions for
-  boundary quantization. This follows the root
-  [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
+  Face dimensions are metric, proportional to `height × headScale`, and
+  independent of voxel size; calibration uses the median template height.
+  Placement remains grid-snapped, so sub-voxel details may disappear in the
+  background tier. Voxel budgets scale with inverse cell volume and actor
+  height (head groups also use `headScale`); triangle budgets scale with inverse
+  cell surface area and height. `src/core/generate.ts` rounds the scaled
+  intervals and allows one extra voxel at coarse resolutions for boundary
+  quantization. This follows the root [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
 
-  **BR ruling (2026-09-29, m3; clarified 2026-09-30):** Keep `full` as the default for gameplay detail (including 1/12 and 1/16 tests); expose `full` and `silhouette` as explicit caller-selected validation profiles. `generateValid` searches only at the template's full-detail size. Far LOD is 1/2 block (0.25 m) with silhouette validation; 1/4 remains supported and tested but is not a separate recommended far level. Derive it from an already full-valid genome, re-voxelizing the full-detail body rather than searching/generating a new coarse actor.
+  Keep `full` as the default for gameplay detail, including 1/12 and 1/16
+  tests; expose `full` and `silhouette` as explicit caller-selected validation
+  profiles. `generateValid` searches only at the template's full-detail size.
+  Far LOD is 1/2 block (0.25 m) with silhouette validation; 1/4 remains
+  supported and tested but is not a separate recommended far level. Derive it
+  from an already full-valid genome, re-voxelizing the full-detail body rather
+  than searching/generating a new coarse actor.
 
   The silhouette contract checks one connected body, whole-body ground contact and balance, and X width/Y height within one cell at each grid's resolution. It enforces triangle cost only: no total-voxel or group-voxel budget at any size, because voxel occupancy is not draw cost for a 20–30 voxel far actor. The connected marrow requirement is about one cell per bone (18 bones), already consuming a large share of an inverse-volume budget. Before removing that budget, the 1/2-block 100-seed sweep measured shambler 18–24 voxels against maxima 7–13, runner 19–26 against 8–12, and brute 25–32 against 16–24. At 1/4 block, shambler and runner passed; brute measured 100–180 against maxima 125–189 and exceeded the bound on 12/100 seeds. These quantized mandatory occupancies make voxel-count budgets unsuitable for far-LOD draw cost.
 
-  Triangle minimum remains 1. At 1/2 block use the named fixed per-actor draw budget `FAR_LOD_HALF_BLOCK_TRIANGLE_CAP = 400`; the measured worst on 2026-09-30 was 336 triangles (brute, seed 89). Any future increase is a deliberate change that must state fresh measurements and rationale; larger templates may need a higher cap, and BR may revisit it. At other coarse sizes (including 1/6 and 1/4) use m1's inverse-surface-area/height-scaled upper bound with no floor or margin. The `full` profile and its budgets remain unchanged. The viewer offers 1/2, 1/4 and 1/6 block sizes plus an explicit profile selector. `recommendedProfileFor` uses the thinnest full-detail upper-arm/forearm/thigh/shin flesh diameter in cells and recommends silhouette below 1.5 cells; a roughly 10 cm limb is 0.4 cells at 1/2 block, 1.2 at 1/6, and 2.4 at 1/12. It never overrides the caller's choice. Exercise every template's full-valid actors over 100 seeds at 1/6, 1/4 and 1/2; retain the pinned 1/4 full-profile foot-resolution failures and verify silhouette passes.
+  Triangle minimum remains 1. At 1/2 block use the named fixed per-actor draw budget `FAR_LOD_HALF_BLOCK_TRIANGLE_CAP = 400`; the measured worst on 2026-09-30 was 336 triangles (brute, seed 89). Any future increase is a deliberate change that must state fresh measurements and rationale; larger templates may need a higher cap, and BR may revisit it to raise the cap. At other coarse sizes (including 1/6 and 1/4) use m1's inverse-surface-area/height-scaled upper bound with no floor or margin. The `full` profile and its budgets remain unchanged. The viewer offers 1/2, 1/4 and 1/6 block sizes plus an explicit profile selector. `recommendedProfileFor` uses the thinnest full-detail upper-arm/forearm/thigh/shin flesh diameter in cells and recommends silhouette below 1.5 cells; a roughly 10 cm limb is 0.4 cells at 1/2 block, 1.2 at 1/6, and 2.4 at 1/12. It never overrides the caller's choice. Exercise every template's full-valid actors over 100 seeds at 1/6, 1/4 and 1/2; retain the pinned 1/4 full-profile foot-resolution failures and verify silhouette passes.
 
 - **A variety pool.** Generate a few dozen variants per template and reuse
   them, rather than one per zombie.
