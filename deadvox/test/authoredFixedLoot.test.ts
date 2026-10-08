@@ -15,7 +15,7 @@ import { magazineSpec, magazineWellCalibre } from '../src/core/magazine.ts';
 import { Rng } from '../src/core/random.ts';
 import { BLOCK_SIZE, makeScale } from '../src/core/scale.ts';
 import type { SiteLayoutDef } from '../src/core/schema.ts';
-import { STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
+import { planFlight, STAIR_BODY_HALF_WIDTH, STAIR_BODY_HEIGHT } from '../src/core/stairFlight.ts';
 import { templateReachableStandingPositions, templateSpatialIssues } from '../src/core/templateSpatial.ts';
 import {
   type CompiledTemplate,
@@ -23,6 +23,7 @@ import {
   footprint,
   placedBlockAt,
   placedPieces,
+  placedPoint,
   placedSpawns,
 } from '../src/core/templates.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
@@ -254,15 +255,40 @@ const bodyClearOfSolids = (template: CompiledTemplate, [x, feet, z]: readonly [n
   return true;
 };
 
+const stairOpeningCells = (placement: AuthoredSite['placements'][number]): Set<string> => {
+  const groundLayer = placement.template.groundLayer ?? 0;
+  const cells = new Set<string>();
+  for (const stair of placement.template.access?.stairs ?? []) {
+    const flight = planFlight(stair, placement.template.size);
+    if (!flight) {
+      throw new Error(`${placement.template.id} has invalid stair geometry`);
+    }
+    if (groundLayer !== stair.upper[1] - 1) {
+      continue;
+    }
+    for (let step = 0; step < flight.rise; step++) {
+      for (const [x, , z] of flight.row(step)) {
+        const [worldX, , worldZ] = placedPoint(placement, [x + 0.5, groundLayer, z + 0.5]);
+        cells.add(`${Math.floor(worldX)},${Math.floor(worldZ)}`);
+      }
+    }
+  }
+  return cells;
+};
+
 const expectGroundedPlacement = (site: AuthoredSite, placement: AuthoredSite['placements'][number]): void => {
   const [x0, y0, z0] = placement.origin;
   const [width, depth] = footprint(placement);
   const groundY = y0 + (placement.template.groundLayer ?? 0);
+  const openings = stairOpeningCells(placement);
   let foundationCells = 0;
   for (let x = x0; x < x0 + width; x++) {
     for (let z = z0; z < z0 + depth; z++) {
       const block = placedBlockAt(placement, [x, groundY, z]);
       if (block === undefined || !result.registry.blocks[block]?.solid) {
+        expect(openings.has(`${x},${z}`), `${placement.template.id} at ${x},${z} is an access stair opening`).toBe(
+          true,
+        );
         continue;
       }
       foundationCells += 1;
@@ -322,7 +348,7 @@ const expectWallClearance = (
         continue;
       }
       checkedColumns += 1;
-      const clearance = (topY - walkY) * scale.blockSize;
+      const clearance = (topY - (walkY + 1)) * scale.blockSize;
       expect(clearance, `${placement.template.id} at ${x},${z}`).toBeGreaterThan(jumpReachMeters);
     }
   }
