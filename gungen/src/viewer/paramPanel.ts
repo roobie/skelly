@@ -312,11 +312,7 @@ export interface Overrides {
 
 export const EMPTY_OVERRIDES: Overrides = { params: {}, presence: {} };
 
-export const initialOverrides = (
-  saved: Overrides,
-  fromUrl: Overrides | undefined,
-  hasModelUrl: boolean,
-): Overrides =>
+export const initialOverrides = (saved: Overrides, fromUrl: Overrides | undefined, hasModelUrl: boolean): Overrides =>
   fromUrl ?? (hasModelUrl ? EMPTY_OVERRIDES : saved);
 
 export const hasOverrides = (o: Overrides): boolean =>
