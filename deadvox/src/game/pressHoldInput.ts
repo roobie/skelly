@@ -5,11 +5,11 @@ export class PressHoldInput<Action extends string | number> {
   private readonly hold: (action: Action) => void;
 
   constructor(actions: {
-    holdDuration: (action: Action) => number;
+    holdRealMs: (action: Action) => number;
     tap: (action: Action) => void;
     hold: (action: Action) => void;
   }) {
-    this.holdDuration = actions.holdDuration;
+    this.holdDuration = actions.holdRealMs;
     this.tap = actions.tap;
     this.hold = actions.hold;
   }

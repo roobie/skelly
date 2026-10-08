@@ -723,7 +723,13 @@ const FurnitureSchema = strictObject({
   /** The loot table rolled into its container when the chunk generates. */
   loot: optional(Id),
   /** It opens and closes, taking this many Sim seconds. */
-  door: optional(strictObject({ handlingSimSeconds: SimSeconds, prying: optional(DoorPryingSchema) })),
+  door: optional(
+    strictObject({
+      handlingSimSeconds: SimSeconds,
+      prying: optional(DoorPryingSchema),
+      openNoise: optional(strictObject({ sound: picklist([...SOUND_EVENT_IDS]) })),
+    }),
+  ),
   /** Comfort scales fatigue recovery; sleepable pieces also enable the sleep rate. */
   rest: optional(strictObject({ quality: Fraction, sleep: optional(literal(true)) })),
   /** A station available to matching recipes within reach; bonus is the fraction removed from work time. */

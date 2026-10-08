@@ -8,7 +8,7 @@ export class QuickbarInput {
 
   constructor(actions: { tap: (slot: number) => void; hold: (slot: number) => void }) {
     this.gestures = new PressHoldInput({
-      holdDuration: () => QUICKBAR_HOLD_ESTIMATE_MS,
+      holdRealMs: () => QUICKBAR_HOLD_ESTIMATE_MS,
       tap: actions.tap,
       hold: actions.hold,
     });

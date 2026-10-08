@@ -56,6 +56,7 @@ import {
   rackGrip,
   sampleActionStroke,
 } from './firearmModel.ts';
+import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
 import { itemLook } from './itemLook.ts';
 import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
@@ -94,6 +95,7 @@ export interface HeldHandlingFrame {
   readonly readiness?: HeldReadiness;
   readonly aim?: AimFrame;
   readonly job?: Readonly<Job> | undefined;
+  readonly grab?: { readonly progress: number };
 }
 
 export class HeldItems {
@@ -178,6 +180,7 @@ export class HeldItems {
     handling: HeldHandlingFrame = { firearms: [] },
   ): void {
     const { firearms: firearmPoses, readiness } = handling;
+    const renderPose = handling.grab ? grabPose(pose ?? readyMeleePose(false), handling.grab.progress) : pose;
     const baseCameraQuaternion = main.quaternion.clone();
     this.restoreRummageSupport();
     this.sync();
@@ -188,13 +191,13 @@ export class HeldItems {
     const readyPose = readiness ? readyFirearmPose(leadingSide) : undefined;
     const readyAmount = readiness ? Math.max(0, Math.min(1, readiness.progress)) : 0;
     const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
-    this.torso.rotation.y = pose?.torsoYaw ?? 0;
+    this.torso.rotation.y = renderPose?.torsoYaw ?? 0;
     this.opticWindow.visible = false;
     for (const side of ['right', 'left'] as const) {
       this.poseHeldHand({
         side,
         main,
-        pose,
+        pose: renderPose,
         recoil,
         handling,
         leadingSide,
@@ -207,7 +210,7 @@ export class HeldItems {
     this.camera.quaternion.copy(main.quaternion);
     this.view.quaternion.copy(baseCameraQuaternion);
     this.view.updateMatrixWorld(true);
-    this.poseRummage(pose, handling);
+    this.poseRummage(renderPose, handling);
     for (const compass of this.compasses.values()) {
       compass.update(main.rotation.y);
     }

@@ -13,9 +13,9 @@ import {
   MeshLambertMaterial,
   Object3D,
 } from 'three';
-import { type Inventory, PILE_GRID, type Pile } from '../core/inventory.ts';
+import type { Inventory, Pile } from '../core/inventory.ts';
 import { defOf } from '../core/items.ts';
-import { pileLayout } from '../core/pileLayout.ts';
+import { PILE_BUNDLE_WIDTH, pileBundleHeight, pileLayout } from '../core/pileLayout.ts';
 import { PILE_DISPLAY_KIND } from '../core/schema.ts';
 import { CASE_PLACEHOLDER_GEOMETRY, CASE_PLACEHOLDER_MATERIAL } from './caseVisual.ts';
 import { withHeightFog } from './heightFog.ts';
@@ -270,14 +270,9 @@ export class PileMeshes {
     if (bundle.length === 0) {
       return;
     }
-    const cells = bundle.reduce((sum, placed) => {
-      const [width, height] = defOf(inventory.registry, placed.item.type).size;
-      return sum + width * height;
-    }, 0);
-    const capacity = PILE_GRID.w * PILE_GRID.h;
-    const height = 0.06 + 0.18 * Math.min(1, cells / capacity);
+    const height = pileBundleHeight(inventory.registry, bundle);
     const mesh = new Mesh(this.geometry, this.material);
-    mesh.scale.set(this.blockSize * 0.7, height, this.blockSize * 0.7);
+    mesh.scale.set(this.blockSize * PILE_BUNDLE_WIDTH, height, this.blockSize * PILE_BUNDLE_WIDTH);
     mesh.position.set(
       (pile.pos[0] + 0.5) * this.blockSize,
       pile.pos[1] * this.blockSize + height / 2,
