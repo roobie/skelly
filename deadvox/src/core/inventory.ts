@@ -59,7 +59,6 @@ export const HANDLING = {
   wear: 2.0,
 } as const;
 
-/** What one block of floor holds. */
 const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter): number => {
   const tuning = registry.skills.get('inventory_management')?.inventory;
   if (!tuning) {
@@ -69,6 +68,7 @@ const inventoryHandlingFactor = (registry: Registry, character: HandedCharacter)
   return skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels);
 };
 
+/** What one block of floor holds. */
 export const PILE_GRID: GridSize = { w: 8, h: 6 };
 export const WORK_IN_PROGRESS = 'work_in_progress';
 
@@ -865,7 +865,12 @@ export class Inventory {
           return HANDLING.ground + perCell;
       }
     })();
-    return (out + into) * inventoryHandlingFactor(this.registry, this.character);
+    return this.scaleHandlingTime(out + into);
+  }
+
+  /** Applies Inventory Management's timing effect to another inventory-handling action. */
+  scaleHandlingTime(seconds: number): number {
+    return seconds * inventoryHandlingFactor(this.registry, this.character);
   }
 
   furnitureHandling(entity: BlockEntity, pocket: number): number {

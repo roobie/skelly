@@ -33,7 +33,7 @@ import {
   isHardLanding,
   shamblerFootstepEventAt,
 } from '../core/footsteps.ts';
-import { HandlingQueue, type MoveStart, type TickResult } from '../core/handling.ts';
+import { HandlingQueue, type Job, type MoveStart, type TickResult } from '../core/handling.ts';
 import { Inventory, type Location } from '../core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt } from '../core/lights.ts';
 import { rollLoot } from '../core/loot.ts';
@@ -117,6 +117,8 @@ const sessionFirearmsShotKind = (
   firearmUid === undefined ? 'singleShot' : mechanics.handlingShotKind(firearmUid, timeSimSeconds);
 const sessionFirearmTargetName = (registry: Registry, firearmType: string | undefined): string | undefined =>
   firearmType === undefined ? undefined : registry.items.get(firearmType)?.name;
+const isInventoryPracticeAction = (job: Job): boolean =>
+  job.kind === 'action' && (job.jobType === 'item.unpack' || job.jobType === 'furniture.search');
 const createSessionAim = ({
   tuning,
   seed,
@@ -620,6 +622,10 @@ export const createSession = (options: SessionOptions) => {
   ): boolean => admitSound(event, position, time, { ...meta, player: false });
   const playPlayerSound = (event: SoundEventId, time = sim.time, meta: SoundEmissionMeta = {}): boolean =>
     admitSound(event, chest(), time, { ...meta, listenerRelative: meta.listenerRelative ?? true, player: true });
+  const awardInventoryPractice = (): void => {
+    const training = skillActivityPractice(registry, 'inventory_management', 'handling');
+    character.awardPractice('inventory_management', training.practice, training.tier);
+  };
   const queue = new HandlingQueue(
     inventory,
     (move) =>
@@ -630,8 +636,7 @@ export const createSession = (options: SessionOptions) => {
         sim.time,
       ),
     (move) => {
-      const training = skillActivityPractice(registry, 'inventory_management', 'handling');
-      character.awardPractice('inventory_management', training.practice, training.tier);
+      awardInventoryPractice();
       options.audio.onMoveComplete?.(move, sim.time);
     },
   );
@@ -1134,6 +1139,15 @@ export const createSession = (options: SessionOptions) => {
   });
 
   let handlingPausedForKnockout = restoredHandlingPause;
+  const awardCompletedActionPractice = (job: Job): void => {
+    if (isInventoryPracticeAction(job)) {
+      awardInventoryPractice();
+    }
+    if (isFirearmTrainingAction(job)) {
+      const training = skillActivityPractice(registry, 'firearms_combat', 'handling');
+      character.awardPractice('firearms_combat', training.practice, training.tier);
+    }
+  };
   const tickHandling = (dt: number) => {
     // Handling happens in real time; compressed time belongs to long actions.
     if (sim.body.actionRefusal) {
@@ -1146,10 +1160,7 @@ export const createSession = (options: SessionOptions) => {
     }
     const result = queue.tick(dt);
     for (const job of result.done) {
-      if (isFirearmTrainingAction(job)) {
-        const training = skillActivityPractice(registry, 'firearms_combat', 'handling');
-        character.awardPractice('firearms_combat', training.practice, training.tier);
-      }
+      awardCompletedActionPractice(job);
     }
     options.onHandlingOutcomes?.(result);
     for (const { job, reason } of result.failed) {
@@ -1338,9 +1349,14 @@ export const createSession = (options: SessionOptions) => {
         return undefined;
       }
       searching.add(entity);
-      queue.enqueueAction('furniture.search', `Search the ${nameOf(entity)}`, searchTime(entities.defOf(entity)), {
-        entityUid: entity.uid,
-      });
+      queue.enqueueAction(
+        'furniture.search',
+        `Search the ${nameOf(entity)}`,
+        inventory.scaleHandlingTime(searchTime(entities.defOf(entity))),
+        {
+          entityUid: entity.uid,
+        },
+      );
       return undefined;
     },
     /** F's gaze/occlusion selection is in play; admission shares Search's live furniture reach. */

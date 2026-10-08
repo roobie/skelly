@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { searchTime } from '../src/core/blockEntities.ts';
 import { Character, practiceForNextLevel, SKILL_LEVEL_MAX, skillSaturation } from '../src/core/character.ts';
 import { buildRegistry, type ItemDef, type Registry } from '../src/core/content.ts';
 import { firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
@@ -8,7 +9,8 @@ import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { simSeconds } from '../src/core/time.ts';
 import { MagazineHandling } from '../src/game/magazineHandling.ts';
-import { capture, createRuntime } from './snapshotTestSupport.ts';
+import { BOX_UNPACK_SECONDS, Unpacking } from '../src/game/unpacking.ts';
+import { advance, capture, createRuntime } from './snapshotTestSupport.ts';
 
 const BASE = 'src/content/base';
 const { registry, issues } = buildRegistry(
@@ -144,6 +146,97 @@ describe('Inventory Management skill', () => {
       actor.awardPractice('inventory_management', practiceForNextLevel(actor.skills.inventory_management!));
     }
     expect(actor.skills.inventory_management).toBe(SKILL_LEVEL_MAX);
+  });
+
+  it('scales box unpacking and trains only after successful completion', () => {
+    const durations: number[] = [];
+    for (const level of [0, 5, 10]) {
+      const runtime = createRuntime();
+      runtime.session.character.skills.inventory_management = level;
+      const backpack = runtime.inventory.hands.right;
+      if (!(backpack && runtime.inventory.move(backpack, { kind: 'worn' }).ok)) {
+        throw new Error('Could not free the hand for the unpack fixture');
+      }
+      const box = runtime.inventory.create('shotshell_box');
+      if (!runtime.inventory.add(box, { kind: 'hand', side: 'right' })) {
+        throw new Error('Could not hold the unpack fixture box');
+      }
+      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
+      const initial = runtime.session.character.snapshotState();
+
+      expect(unpacking.activate(box)).toBeUndefined();
+      const duration = runtime.handling.jobs[0]?.duration;
+      if (duration === undefined) {
+        throw new Error('Unpacking did not enqueue its action');
+      }
+      durations.push(duration);
+      const tuning = registry.skills.get('inventory_management')!.inventory!;
+      expect(duration).toBeCloseTo(
+        BOX_UNPACK_SECONDS * skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels),
+      );
+      expect(runtime.session.character.snapshotState()).toEqual(initial);
+
+      runtime.handling.cancel();
+      expect(runtime.session.character.snapshotState()).toEqual(initial);
+      expect(unpacking.activate(box)).toBeUndefined();
+      advance(runtime, Math.ceil((duration + 0.1) * 60));
+      expect(runtime.inventory.itemByUid(box.uid)).toBeUndefined();
+      const after = runtime.session.character.snapshotState();
+      expect(
+        after.skills.inventory_management !== initial.skills.inventory_management ||
+          after.practice.inventory_management !== initial.practice.inventory_management,
+      ).toBe(level < SKILL_LEVEL_MAX);
+    }
+    expect(durations[0]).toBe(BOX_UNPACK_SECONDS);
+    expect(durations[1]).toBeLessThan(durations[0]!);
+    expect(durations[2]).toBeLessThan(durations[1]!);
+  });
+
+  it('scales furniture searches and trains only after a successful search', () => {
+    const durations: number[] = [];
+    const searchBase = searchTime(registry.furniture.get('kitchen_cupboard')!);
+    for (const level of [0, 5, 10]) {
+      const runtime = createRuntime();
+      runtime.session.character.skills.inventory_management = level;
+      const cupboard = runtime.inventory.furnish({
+        type: 'kitchen_cupboard',
+        pos: [0, 0, 0],
+        size: [2, 2, 1],
+        facing: 'n',
+      });
+      if (!cupboard) {
+        throw new Error('Could not create the furniture-search fixture');
+      }
+      runtime.inventory.canReachEntity = () => false;
+      const initial = runtime.session.character.snapshotState();
+      expect(runtime.session.search(cupboard)).toBeUndefined();
+      const duration = runtime.handling.jobs[0]?.duration;
+      if (duration === undefined) {
+        throw new Error('Furniture search did not enqueue its action');
+      }
+      durations.push(duration);
+      const tuning = registry.skills.get('inventory_management')!.inventory!;
+      expect(duration).toBeCloseTo(
+        searchBase * skillSaturation(level, tuning.handlingFactorFloor, tuning.handlingFactorHalfLifeLevels),
+      );
+      expect(runtime.session.character.snapshotState()).toEqual(initial);
+      advance(runtime, Math.ceil((duration + 0.1) * 60));
+      expect(cupboard.searched).toBe(false);
+      expect(runtime.session.character.snapshotState()).toEqual(initial);
+
+      runtime.inventory.canReachEntity = () => true;
+      expect(runtime.session.search(cupboard)).toBeUndefined();
+      advance(runtime, Math.ceil((duration + 0.1) * 60));
+      expect(cupboard.searched).toBe(true);
+      const after = runtime.session.character.snapshotState();
+      expect(
+        after.skills.inventory_management !== initial.skills.inventory_management ||
+          after.practice.inventory_management !== initial.practice.inventory_management,
+      ).toBe(level < SKILL_LEVEL_MAX);
+    }
+    expect(durations[0]).toBe(searchBase);
+    expect(durations[1]).toBeLessThan(durations[0]!);
+    expect(durations[2]).toBeLessThan(durations[1]!);
   });
 
   it('keeps firearm-owned round handling on the firearms-combat curve', () => {

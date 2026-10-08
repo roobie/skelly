@@ -31,9 +31,14 @@ export class Unpacking {
     if (this.queue.busy) {
       return 'Already handling something';
     }
-    this.queue.enqueueAction(UNPACK_ACTION, `Unpack ${this.inventory.name(item)}`, BOX_UNPACK_SECONDS, {
-      uid: item.uid,
-    });
+    this.queue.enqueueAction(
+      UNPACK_ACTION,
+      `Unpack ${this.inventory.name(item)}`,
+      this.inventory.scaleHandlingTime(BOX_UNPACK_SECONDS),
+      {
+        uid: item.uid,
+      },
+    );
     return undefined;
   }
 

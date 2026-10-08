@@ -42,6 +42,7 @@ import {
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
 import { PHYSICS_RATE } from '../src/game/session.ts';
+import { Unpacking } from '../src/game/unpacking.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
@@ -191,12 +192,23 @@ const recordActiveSession = (
     initialColumnSite?: Site;
     commands?: readonly { tick: number; context: 'inventory' | 'play'; payload: ReplayActionPayload }[];
     frameDts?: number[];
+    recordedTicks?: number;
+    useDominantAtTick?: number;
+    useDominant?: (runtime: ReturnType<typeof createRuntime>) => void;
   } = {},
 ) => {
-  const { ready, columns, commands = [], frameDts = [1 / 90, 1 / 60, 1 / 120] } = options;
+  const {
+    ready,
+    columns,
+    commands = [],
+    frameDts = [1 / 90, 1 / 60, 1 / 120],
+    recordedTicks = 96,
+    useDominant = () => undefined,
+  } = options;
   const pendingCommands: ReplayActionPayload[] = [];
   const generatedColumns = new Set(columns?.initial.map(([cx, cz]) => `${cx},${cz}`) ?? []);
-  const source = createRuntime(
+  let source!: ReturnType<typeof createRuntime>;
+  source = createRuntime(
     start,
     false,
     options.initialColumns?.map(([cx, cz]) => [cx, cz] as [number, number]),
@@ -207,6 +219,7 @@ const recordActiveSession = (
             zombieReady: (x, z) => generatedColumnsReady(generatedColumns, x, z),
           }
         : {}),
+      useDominant: () => useDominant(source),
       sampleAtPlayerTick: (_tick, live, _time, compression) => {
         while (commands[nextCommand]?.tick === recorder.tickCount) {
           const { context, payload } = commands[nextCommand]!;
@@ -244,7 +257,7 @@ const recordActiveSession = (
   let sentDown = false;
   let sentUp = false;
   let nextCommand = 0;
-  for (let frame = 0; recorder.tickCount < 96; frame += 1) {
+  for (let frame = 0; recorder.tickCount < recordedTicks; frame += 1) {
     if (!sentDown && recorder.tickCount >= 12) {
       dispatchWalkToggle(source, 'down', recorder);
       sentDown = true;
@@ -253,6 +266,7 @@ const recordActiveSession = (
       dispatchWalkToggle(source, 'up', recorder);
       sentUp = true;
     }
+    source.view.intent.useDominant = recorder.tickCount === options.useDominantAtTick;
     source.view.yaw += 0.007;
     source.view.pitch += 0.001;
     advanceLiveFrame(source.sim, realDuration(frameDts[frame % frameDts.length]!), undefined, (simDt, until) =>
@@ -298,6 +312,7 @@ const playSession = (
   options: {
     endSimTimestamp?: number;
     startState?: ReplayStartState;
+    useDominant?: (runtime: ReturnType<typeof createRuntime>) => void;
     initialColumns?: readonly ReplayGeneratedColumn[];
     initialColumnSite?: Site;
     onCreated?: (runtime: ReturnType<typeof createRuntime>) => void;
@@ -332,7 +347,7 @@ const playSession = (
               replay.inventory.move(held, { kind: 'pile', pos: replay.player.body.pos });
             }
           },
-          () => undefined,
+          () => options.useDominant?.(replay),
         );
       },
     },
@@ -1458,6 +1473,66 @@ describe('input replay', () => {
     const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
     const decoded = await decodeInputReplay(bytes, { contentLookup });
     const replay = playSession(start, decoded.inputs, { endSimTimestamp: decoded.endSimTimestamp });
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
+  it('replays scaled unpacking and furniture search with their completed practice awards', async () => {
+    const initial = createRuntime();
+    initial.session.character.skills.inventory_management = 5;
+    const backpack = initial.inventory.hands.right;
+    if (!(backpack && initial.inventory.move(backpack, { kind: 'worn' }).ok)) {
+      throw new Error('Could not free the hand for the replay unpack fixture');
+    }
+    const box = initial.inventory.create('shotshell_box');
+    if (!initial.inventory.add(box, { kind: 'hand', side: 'right' })) {
+      throw new Error('Could not hold the replay unpack fixture box');
+    }
+    const cupboard = initial.inventory.furnish({
+      type: 'kitchen_cupboard',
+      pos: [0, 0, 0],
+      size: [2, 2, 1],
+      facing: 'n',
+    });
+    if (!cupboard) {
+      throw new Error('Could not create the replay furniture fixture');
+    }
+    const start = capture(initial);
+    const initialPractice = initial.session.character.practice.inventory_management!;
+    const command = {
+      tick: 72,
+      context: 'inventory' as const,
+      payload: { kind: 'inventory.search' as const, entityUid: cupboard.uid },
+    };
+    const useDominant = (runtime: ReturnType<typeof createRuntime>) => {
+      runtime.inventory.canReachEntity = () => true;
+      const held = runtime.inventory.hands.right;
+      if (!held) {
+        throw new Error('Replay unpack fixture lost its held box');
+      }
+      const unpacking = new Unpacking(runtime.inventory, runtime.handling, () => runtime.player.body.pos);
+      const refusal = unpacking.activate(held);
+      if (refusal) {
+        throw new Error(`Replay unpack was refused: ${refusal}`);
+      }
+    };
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder, {
+      commands: [command],
+      recordedTicks: 220,
+      useDominantAtTick: 12,
+      useDominant,
+    });
+    const sourceEnd = capture(source);
+    expect(source.inventory.itemByUid(box.uid)).toBeUndefined();
+    expect(source.entities.byUid(cupboard.uid)?.searched).toBe(true);
+    expect(source.session.character.practice.inventory_management).toBeGreaterThan(initialPractice);
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replay = playSession(start, decoded.inputs, {
+      endSimTimestamp: decoded.endSimTimestamp,
+      useDominant,
+    });
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
