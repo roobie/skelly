@@ -371,15 +371,14 @@ describe('passable but opaque vegetation', () => {
   it('keeps the seeded forest-density field smooth and seed-dependent', () => {
     const heading = [-0.9, 0.44];
     const unit = heading.map((value) => value / Math.hypot(...heading));
+    const { gain, wavelengthMetres } = FOREST_DENSITY_FIELD;
     const sampleStepMetres = 0.5;
-    const stretchStartMetres = 48;
-    const stretchEndMetres = 56;
-    const sampleCount = Math.floor((stretchEndMetres - stretchStartMetres) / sampleStepMetres) + 1;
+    const stretchHalfExtentMetres = wavelengthMetres / 8;
+    const sampleCount = Math.floor((2 * stretchHalfExtentMetres) / sampleStepMetres) + 1;
     const samples = Array.from({ length: sampleCount }, (_, index) => {
-      const distance = stretchStartMetres + index * sampleStepMetres;
+      const distance = -stretchHalfExtentMetres + index * sampleStepMetres;
       return forestDensityAt(1, unit[0]! * distance, unit[1]! * distance);
     });
-    const { gain, wavelengthMetres } = FOREST_DENSITY_FIELD;
     const maxStepDifference = (3 * gain * sampleStepMetres) / wavelengthMetres;
 
     expect(samples.every((sampledDensity) => sampledDensity >= 0 && sampledDensity <= 1)).toBe(true);
