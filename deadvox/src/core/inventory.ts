@@ -43,6 +43,7 @@ import {
 } from './items.ts';
 import { itemIds, itemRoots, savedItemTree, type TreeLocation, walkItemTree } from './itemTree.ts';
 import type { Rolled } from './loot.ts';
+import { magazineWellCalibre, slotsReason } from './magazine.ts';
 import type { WearSlot } from './schema.ts';
 import { freezeSnapshot } from './snapshotData.ts';
 
@@ -395,17 +396,32 @@ export class Inventory {
     return this.factory.create(this.registry, type, count, condition);
   }
 
-  /** Fills or empties an owner's slot with an item outside the tree; the caller places the item it returns. */
-  fitSlot(owner: Item, slot: 'magazine', item: Item | undefined): Item | undefined {
+  /** Fills or empties an owner's slot with a loose, certified item; returns the item displaced. */
+  fitSlot(owner: Item, slot: string, item: Item | undefined): Item | undefined {
     const { slots } = owner;
-    if (!slots || (item && this.locate(item))) {
-      throw new Error('Only a loose item fits a slot');
+    const ownerDef = defOf(this.registry, owner.type);
+    const model = ownerDef.model === undefined ? undefined : this.registry.models.get(ownerDef.model);
+    const knownSlot =
+      (slot === 'magazine' && magazineWellCalibre(this.registry, owner.type) !== undefined) ||
+      (slot === 'battery' && ownerDef.light?.power !== undefined) ||
+      model?.attachmentSlots?.some(({ id }) => id === slot) === true;
+    if (!(slots && knownSlot) || (item && this.locate(item))) {
+      throw new Error('Only a loose item fits a known slot');
     }
     const previous = slots[slot];
     if (item) {
       slots[slot] = item;
     } else {
       delete slots[slot];
+    }
+    const reason = slotsReason(this.registry, owner.type, slots);
+    if (reason) {
+      if (previous) {
+        slots[slot] = previous;
+      } else {
+        delete slots[slot];
+      }
+      throw new Error(reason);
     }
     this.version += 1;
     return previous;
@@ -955,7 +971,8 @@ export class Inventory {
     target: Extract<Target, { kind: 'pocket' | 'pile' | 'furniture' }>,
   ): Plan {
     const { at } = target;
-    if (target.kind !== 'pile' && !isEmpty(item)) {
+    const hasNestedContents = item.work !== undefined || (item.pockets ?? []).some((pocket) => pocket.length > 0);
+    if (target.kind !== 'pile' && hasNestedContents) {
       return refuse('Only empty bags go inside other containers');
     }
     if (!couldFit(this.registry, grid.size, item)) {

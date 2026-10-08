@@ -9,6 +9,11 @@
       "anchors": {
         "lens": [0.199, 0, 0]
       }
+    },
+    {
+      "id": "glowstick",
+      "file": "assets/models/glowstick.glb",
+      "emissiveMaterial": "chemical-light tube"
     }
   ],
   "meleeClasses": [
@@ -41,7 +46,7 @@
       "category": "tool",
       "weight": 120,
       "size": [1, 2],
-      "description": "A small electronic compass with an illuminated heading display. Hold it to read it. Prototype: battery use is not yet modeled.",
+      "description": "A small electronic compass with an illuminated heading display. Prototype: battery use is not yet modeled.",
       "heldDisplay": "compass"
     },
     {
@@ -326,13 +331,14 @@
       "category": "light",
       "weight": 30,
       "size": [1, 2],
-      "description": "A sealed chemical light. Snap once to start it.",
+      "description": "A sealed chemical light.",
+      "model": "glowstick",
       "light": {
         "radius": 2,
         "seenFrom": 15,
         "color": "#62ff81",
-        "intensity": 0.5,
-        "emissive": 0.12,
+        "intensity": 1,
+        "emissive": 0.8,
         "burnTimeGameHours": 8,
         "burning": {
           "ignition": "snap",

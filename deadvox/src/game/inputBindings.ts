@@ -92,7 +92,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('world.interact', 'Tap to interact or pocket a ground item; hold to wield it', world, ['KeyF']),
   row(
     'firearm.reload',
-    'Hold to load; double-press to rack; tap, then hold to remove the magazine; tap does nothing',
+    'Hold to load or change to the fullest carried magazine; double-press to work the charging handle or rack; tap, then hold to remove the magazine; tap does nothing',
     world,
     ['KeyR'],
     'hold',
@@ -206,7 +206,11 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   ),
 ];
 export const POINTER_ACTIONS = [
-  { id: 'hand.use-dominant', description: 'Use dominant hand', label: 'Left click' },
+  {
+    id: 'hand.use-dominant',
+    description: 'Use dominant hand; hold to fire automatically when ready',
+    label: 'Left click',
+  },
   { id: 'hand.off-instant', description: 'Instant off-hand use', label: 'Mouse 5' },
   { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde', label: 'Right mouse' },
   { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },
@@ -625,6 +629,16 @@ const editable = (target: EventTarget | null): boolean =>
   target instanceof HTMLElement &&
   !target.closest('[hidden]') &&
   (target.isContentEditable || Boolean(target.closest('input,textarea,select,[contenteditable="true"]')));
+export type InputCancellationReason =
+  | 'manual'
+  | 'context-change'
+  | 'window-blur'
+  | 'document-hidden'
+  | 'pointer-lock-lost';
+
+export const shouldCancelInputForViewerFocus = (reason: InputCancellationReason, replaying: boolean): boolean =>
+  !(replaying && (reason === 'window-blur' || reason === 'document-hidden' || reason === 'pointer-lock-lost'));
+
 export class KeyboardInput {
   private readonly down = new Set<string>();
   private readonly blocked = new Set<string>();
@@ -633,7 +647,7 @@ export class KeyboardInput {
   private removeListeners: (() => void) | undefined;
   context: () => KeyboardState = () => this.state;
   command: (command: InputCommand) => void = () => undefined;
-  cancelled: (preservePointer?: boolean) => void = () => undefined;
+  cancelled: (preservePointer?: boolean, reason?: InputCancellationReason) => void = () => undefined;
   escape: () => void = () => undefined;
   capture: ((chord: Chord | string | undefined) => void) | undefined;
   readonly registry: BindingRegistry;
@@ -651,11 +665,11 @@ export class KeyboardInput {
   sync(): void {
     const next = this.context();
     if (next.context !== this.state.context || next.debug !== this.state.debug) {
-      this.cancel(true);
+      this.cancel(true, false, 'context-change');
       this.state = next;
     }
   }
-  cancel(keepGate = false, preservePointer = false): void {
+  cancel(keepGate = false, preservePointer = false, reason: InputCancellationReason = 'manual'): void {
     for (const code of this.down) {
       if ((keepGate && this.active.get(code) === 'debug.gate') || (preservePointer && code.startsWith('Mouse'))) {
         continue;
@@ -663,7 +677,7 @@ export class KeyboardInput {
       this.blocked.add(code);
       this.active.delete(code);
     }
-    this.cancelled(preservePointer);
+    this.cancelled(preservePointer, reason);
   }
   release(event: KeyEvent): void {
     this.down.delete(event.code);
@@ -809,15 +823,15 @@ export class KeyboardInput {
         event.stopPropagation();
       }
     };
-    const blur = () => this.cancel();
+    const blur = () => this.cancel(false, false, 'window-blur');
     const visibility = () => {
       if (document.hidden) {
-        this.cancel();
+        this.cancel(false, false, 'document-hidden');
       }
     };
     const lock = () => {
       if (!document.pointerLockElement) {
-        this.cancel();
+        this.cancel(false, false, 'pointer-lock-lost');
       }
     };
     const focus = (event: FocusEvent) => {

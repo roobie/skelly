@@ -239,7 +239,7 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
-      mood.render(() => held.render(renderer, camera, engine.sky));
+      mood.render(() => held.render(renderer, camera, engine.sky), held.opticLensFrame);
       return performance.now() - start;
     },
     warmUp: () => {

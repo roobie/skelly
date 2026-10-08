@@ -28,7 +28,7 @@ when its rounded degree changes; the pointer follows every rendered camera yaw.
 This avoids a new raise-to-read key or a second gameplay/input authority.
 
 An ordinary magnetic dial with printed rotating cardinals was not chosen: small
-rotated letters are harder to read, and held objects currently receive sky lights,
+rotated letters are harder to read, and held objects receive sky lights,
 not the world's flashlight beam. The electronic display is honestly self-lit,
 including at night without another light; it does not pretend to receive torch light.
 The prototype models neither battery consumption nor light spill onto the hand/world.

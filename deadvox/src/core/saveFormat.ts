@@ -1,4 +1,4 @@
-import { type AimState, assertAimState } from './aim.ts';
+import { type AimSnapshotState, assertAimState, assertAimWobbleNoiseState } from './aim.ts';
 import type { BlockEntityState } from './blockEntities.ts';
 import { BODY_REGIONS, BODY_TREATMENTS } from './body.ts';
 import {
@@ -114,7 +114,7 @@ interface WirePayload {
     id: string;
     simulation: Omit<SaveSnapshot['character']['simulation'], 'seed' | 'clock'>;
     player: SaveSnapshot['character']['player'];
-    aim: AimState;
+    aim: AimSnapshotState;
     inventory: Omit<InventoryState, 'piles' | 'entities'>;
     progression: SaveSnapshot['character']['progression'];
     longAction: SaveSnapshot['character']['longAction'];
@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 37;
+export const SAVE_SCHEMA_VERSION = 41;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -301,7 +301,7 @@ itemSchema = obj({
   madeAtGameTimestamp: opt(nonNegative),
   pockets: opt(arr(arr(lazy(() => placedSchema)))),
   cartridges: opt(arr(str({ id: true }))),
-  slots: opt(obj({ magazine: opt(lazy(() => itemSchema)) })),
+  slots: opt(record(lazy(() => itemSchema))),
   firearm: opt(
     obj({
       chamber: enumeration(['empty', 'round', 'case']),
@@ -580,6 +580,11 @@ const aim = obj({
   lastPitch: finite,
   hasLookSample: bool,
   frame: obj({ yaw: finite, pitch: finite }),
+  wobbleNoise: obj({
+    yaw: obj({ raw: finite, smooth: finite }),
+    pitch: obj({ raw: finite, smooth: finite }),
+    rng: tuple(safeInt, safeInt, safeInt, safeInt),
+  }),
 });
 const playerStateInventory = obj({
   ...inventoryCore.fields,
@@ -1161,6 +1166,8 @@ function validateWire(wire: WirePayload, lookup?: SaveContentLookup): SaveSnapsh
     spawnKeys.add(key);
   }
   const snapshot = restoreWirePayload(wire);
+  assertAimState(snapshot.character.aim);
+  assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   validateActionReferences(snapshot);
   collectItemIds(savedItemTree(snapshot.character.inventory), snapshot.character.inventory.nextItemUid);
   for (const { item, path } of savedItemTree(snapshot.character.inventory)) {
@@ -1391,6 +1398,7 @@ function assertSnapshot(snapshot: SaveSnapshot): void {
     'snapshot',
   );
   assertAimState(snapshot.character.aim);
+  assertAimWobbleNoiseState(snapshot.character.aim.wobbleNoise);
   validateActionReferences(snapshot);
   const hordes = new Map<string, HordeState>();
   for (const hordeState of snapshot.world.zombies.hordes) {

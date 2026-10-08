@@ -425,7 +425,6 @@ describe('real pump ammunition', () => {
     { holdCycles: Number.POSITIVE_INFINITY, label: 'until the gun is empty' },
     { holdCycles: 1.5, label: 'released mid-rack, finishing that rack only' },
   ])('a tap, then a held press, racks the pump again and again: $label', ({ holdCycles }) => {
-    // BR, 2026-10-07 13:21 (CONTROLS.md, "Reload, rack, remove"): keep racking while R is held.
     const f = fixture();
     for (let i = 0; i < f.capacity; i++) {
       f.load(i);

@@ -1,5 +1,6 @@
 import { encodeSave, type SaveVersionComponents, type SaveWorldOptions } from '../core/saveFormat.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
+import { createDurableWriteTransaction } from '../game/indexedDbCommit.ts';
 import { SAVE_RECORD_HEADER_BYTES, SAVE_RECORD_MAX_BYTES, sealSaveSlot } from '../game/saveStorageRecord.ts';
 
 const DATABASE = 'deadvox-save-slots';
@@ -338,7 +339,7 @@ const writeIdb = async (request: RequestMessage, packed: Uint8Array): Promise<'c
   if (injectCrash(request, 'before-transaction')) {
     return hangAfterInjectedCrash();
   }
-  const tx = db.transaction(STORE, 'readwrite');
+  const tx = createDurableWriteTransaction(db, STORE);
   const store = tx.objectStore(STORE);
   const current: Partial<Record<SlotName, ArrayBuffer | null>> = {};
   let compared = 0;

@@ -105,6 +105,12 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('noise');
     loaded.zombies.tickBackground(0.5, forgetAt, 0, BACKGROUND_ZOMBIE_SLICE_COUNT);
     expect(loaded.zombies.snapshotState().hordes[0]?.mode).toBe('roam');
+
+    const forgottenNoiseSave = capture(loaded);
+    expect(plainDataTree(forgottenNoiseSave)).toBe(true);
+    const forgottenNoiseBytes = await encodeFixture(forgottenNoiseSave);
+    const forgottenNoiseDecoded = await decodeSave(forgottenNoiseBytes, { version: formatVersion, contentLookup });
+    expect(forgottenNoiseDecoded.snapshot.world.zombies).toEqual(forgottenNoiseSave.world.zombies);
   });
 
   it('loads a closed-window marker from a save and spawns it in the background tier when the window opens', () => {
@@ -348,8 +354,10 @@ describe('hamlet save/load continuation', () => {
     }
     expect(source.sim.compression.active).toBe(true);
     expect(loaded.sim.compression.active).toBe(true);
-    expect(source.inventory.hands.left?.charges).toBeDefined();
-    expect(loaded.inventory.hands.left?.charges).toBe(source.inventory.hands.left?.charges);
+    const sourceBattery = source.inventory.hands.left?.slots?.battery;
+    const loadedBattery = loaded.inventory.hands.left?.slots?.battery;
+    expect(sourceBattery?.charges).toBeDefined();
+    expect(loadedBattery?.charges).toBe(sourceBattery?.charges);
     expect(loaded.sim.needs).toEqual(source.sim.needs);
     expect(loaded.sim.needs).not.toEqual(savedNeeds);
     expect(loaded.sim.actions.snapshotState()).toEqual(source.sim.actions.snapshotState());

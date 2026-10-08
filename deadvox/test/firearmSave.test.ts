@@ -142,6 +142,63 @@ it('runtime firearm skill sliders tune the held gun and reset when its save is l
   expect(session([], saved).firearmsSkillZeroHandling).toEqual(contentTuning);
 });
 
+it('saves and restores fitted attachment identity and a nested light battery', async () => {
+  const firearm = registry.items.get('rifle_assault')!;
+  const firearmModel = registry.models.get(firearm.model!)!;
+  const [defaultAttachment] = firearmModel.attachments ?? [];
+  const defaultItem =
+    defaultAttachment &&
+    [...registry.items.values()].find((item) => {
+      const model = item.model === undefined ? undefined : registry.models.get(item.model);
+      return model?.attachment?.id === defaultAttachment.id;
+    });
+  if (!(defaultAttachment && defaultItem)) {
+    throw new Error('The firearm export has no registered default attachment');
+  }
+  const original = session([]);
+  const rifle = original.inventory.create('rifle_assault');
+  const optic = rifle.slots?.[defaultAttachment.mountedAt];
+  const flashlight = original.inventory.create('flashlight');
+  const battery = flashlight.slots?.battery;
+  if (!(optic && battery)) {
+    throw new Error('fitted-item fixtures were not created');
+  }
+  optic.condition = 0.43;
+  battery.charges = 0.37;
+  if (
+    !(
+      original.inventory.add(rifle, { kind: 'hand', side: 'right' }) &&
+      original.inventory.add(flashlight, { kind: 'hand', side: 'left' })
+    )
+  ) {
+    throw new Error('could not put fitted-item save fixtures in the hands');
+  }
+
+  const bytes = await encodeSave(original.snapshot({ worldId: 'world', characterId: 'character' }), {
+    generation: 1,
+    version,
+    worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+  });
+  const decoded = await decodeSave(bytes, { version, contentLookup });
+  const restored = session([], decoded.snapshot);
+  const restoredOptic = restored.inventory.hands.right?.slots?.[defaultAttachment.mountedAt];
+  const restoredBattery = restored.inventory.hands.left?.slots?.battery;
+  if (!(restoredOptic && restoredBattery)) {
+    throw new Error('fitted-item save state did not restore its children');
+  }
+
+  expect([restoredOptic.uid, restoredOptic.type, restoredOptic.condition]).toEqual([
+    optic.uid,
+    optic.type,
+    optic.condition,
+  ]);
+  expect([restoredBattery.uid, restoredBattery.type, restoredBattery.charges]).toEqual([
+    battery.uid,
+    battery.type,
+    battery.charges,
+  ]);
+});
+
 it('committed shots use the held firearm skill-zero recoil factors', () => {
   const sourceGun = registry.items.get('rifle_assault')!;
   const makeFixture = (id: string, weight: number, recoilKickScale: number) => {
@@ -211,11 +268,15 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     firing: false,
     recoilRecoveryRate: 1,
     stridePhase: 0,
-    stepIndex: 0,
   };
   original.aim.advance(prior);
   original.aim.recordShot(129, 0.02);
   const snapshot = original.snapshot({ worldId: 'world', characterId: 'character' });
+  expect(
+    [snapshot.character.aim.wobbleNoise.yaw, snapshot.character.aim.wobbleNoise.pitch].some(
+      (axis) => axis.raw !== 0 || axis.smooth !== 0,
+    ),
+  ).toBe(true);
   const bytes = await encodeSave(snapshot, {
     generation: 1,
     version,
@@ -228,6 +289,18 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
   const originalFrame = original.aim.advance(next);
   const resumedFrame = resumed.aim.advance(next);
   expect(resumedFrame).toEqual(originalFrame);
+
+  const withoutWobbleState = structuredClone(snapshot) as SaveSnapshot;
+  Reflect.deleteProperty(withoutWobbleState.character.aim, 'wobbleNoise');
+  await expect(
+    encodeSave(withoutWobbleState, {
+      generation: 1,
+      version,
+      worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
+    }),
+  ).rejects.toThrow();
+  const resumedWithoutWobbleState = session([], withoutWobbleState);
+  expect(resumedWithoutWobbleState.aim.advance(next)).not.toEqual(originalFrame);
   const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
   expect(
     pelletShot({ ammo, origin: [1, 2, 3], yaw: 0.2, pitch: -0.1, aimFrame: resumedFrame, seed: 83, key: 'resume' }),

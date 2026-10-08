@@ -5,6 +5,7 @@ import { type DesignLoadInputs, loadDesign, loadDesignValue } from '../src/core/
 import { generateValid } from '../src/core/generate.ts';
 import type { Assembly } from '../src/core/schema.ts';
 import type { Template } from '../src/core/template.ts';
+import { validate } from '../src/core/validate.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from '../src/gun/akMagazineCalibre.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -56,6 +57,54 @@ const expectFatal = (result: ReturnType<typeof load>) => {
   }
   return result;
 };
+
+describe('loadDesign: feasibility evaluation', () => {
+  it('evaluates an explicit-calibre design once per load', () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template?.calibre) {
+      throw new Error('the AK template must specify its generated calibre');
+    }
+    const generatedAk = generateValid(template, gunDomain, 0);
+    if (!generatedAk) {
+      throw new Error('the AK template must generate a valid assembly');
+    }
+    const { receiver } = generatedAk.assembly.parts;
+    if (!receiver) {
+      throw new Error('the generated AK must have a receiver');
+    }
+    const { family: familyName } = receiver;
+    const receiverFamily = gunDomain.families[familyName];
+    if (!receiverFamily) {
+      throw new Error('the generated AK must have a registered receiver family');
+    }
+
+    let receiverBuilds = 0;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        [familyName]: {
+          ...receiverFamily,
+          build: (params: Parameters<typeof receiverFamily.build>[0]) => {
+            receiverBuilds += 1;
+            return receiverFamily.build(params);
+          },
+        },
+      },
+    };
+    const design = makeDesign({ template: 'ak', assembly: generatedAk.assembly, calibre: template.calibre });
+
+    receiverBuilds = 0;
+    validate(generatedAk.assembly, domain);
+    const directValidationBuilds = receiverBuilds;
+    expect(directValidationBuilds).toBeGreaterThan(0);
+
+    receiverBuilds = 0;
+    const result = load(design, { domain, template });
+    expect(result.ok).toBe(true);
+    expect(receiverBuilds).toBe(directValidationBuilds);
+  });
+});
 
 describe('loadDesign: parse and round trip', () => {
   it('loads a clean design with no issues and keeps declaredStatus', () => {
@@ -298,7 +347,7 @@ describe('loadDesign: change policy', () => {
       });
     }
   });
-  it('a family default change leaves a design untouched: defaults are never stored', () => {
+  it('a family default change does not store the new default in a design', () => {
     const family = gunDomain.families.barrel;
     if (!family?.params.length) {
       throw new Error('barrel.length expected');
@@ -310,13 +359,28 @@ describe('loadDesign: change policy', () => {
         barrel: { ...family, params: { ...family.params, length: { ...family.params.length, default: 'L' } } },
       },
     };
+    const fixture = loadFixture('archetype-ar');
+    const handguard = fixture.parts.handguard!;
     const design = makeDesign({
-      assembly: { ...baseAssembly, parts: { ...baseAssembly.parts, barrel: { family: 'barrel' } } },
+      assembly: {
+        ...fixture,
+        parts: {
+          ...fixture.parts,
+          barrel: { family: 'barrel' },
+          handguard: { ...handguard, params: { ...handguard.params, mount: 'clamped' } },
+        },
+      },
     });
     const before = load(design);
     const after = load(design, { domain: changed });
-    expect(before.ok && after.ok && after.design).toEqual(before.ok && before.design);
-    expect(after.ok && after.design.assembly.parts.barrel).toEqual({ family: 'barrel' });
+    expect(before.ok && after.ok).toBe(true);
+    if (before.ok && after.ok) {
+      expect(after.design.assembly).toEqual(before.design.assembly);
+      expect(after.design.locks).toEqual(before.design.locks);
+      expect(after.design.origin).toEqual(before.design.origin);
+      expect(after.design.assembly.parts.barrel).toEqual({ family: 'barrel' });
+      expect(after.design.assembly.parts.handguard?.params?.length).toBeUndefined();
+    }
   });
 
   it('a default change that makes the design infeasible loads as a draft with issues', () => {
@@ -371,7 +435,17 @@ describe('loadDesign: change policy', () => {
       slots: ar.slots.map((s) => (s.id === 'barrel' ? { ...s, params: { length: 'S' } } : s)),
     };
     const design = makeDesign({
-      assembly: withPart({ family: 'barrel', params: { length: 'M' } }, 'barrel'),
+      assembly: {
+        ...baseAssembly,
+        parts: {
+          ...baseAssembly.parts,
+          barrel: { family: 'barrel', params: { length: 'M' } },
+          handguard: {
+            ...baseAssembly.parts.handguard!,
+            params: { ...baseAssembly.parts.handguard!.params, length: 'M' },
+          },
+        },
+      },
     });
     const result = load(design, { template: narrowed });
     expect(result.ok).toBe(true);

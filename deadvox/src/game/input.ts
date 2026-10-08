@@ -41,9 +41,15 @@ export class Input {
   cursorY = globalThis.innerHeight / 2;
   private readonly target: HTMLElement;
   private readonly dominantUseAllowed: () => boolean;
-  constructor(target: HTMLElement, dominantUseAllowed: () => boolean = () => true) {
+  private readonly cancelOnBlurAllowed: () => boolean;
+  constructor(
+    target: HTMLElement,
+    dominantUseAllowed: () => boolean = () => true,
+    cancelOnBlurAllowed: () => boolean = () => true,
+  ) {
     this.target = target;
     this.dominantUseAllowed = dominantUseAllowed;
+    this.cancelOnBlurAllowed = cancelOnBlurAllowed;
     target.addEventListener('mousedown', (event) => {
       const mouse = event as MouseEvent;
       if (mouse.button === 2) {
@@ -74,7 +80,11 @@ export class Input {
         this.dominantUseDown = false;
       }
     });
-    globalThis.addEventListener('blur', () => this.cancel());
+    globalThis.addEventListener('blur', () => {
+      if (this.cancelOnBlurAllowed()) {
+        this.cancel();
+      }
+    });
     document.addEventListener('mousemove', (event) => {
       if (!(this.locked && !this.menuPointer)) {
         return;
