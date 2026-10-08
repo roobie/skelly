@@ -196,6 +196,16 @@ void main() {
       height: canvas.height,
       boxes,
     });
+    const maskPixelCounts = masks.map((mask) => {
+      let count = 0;
+      for (let offset = 0; offset < mask.length; offset += 4) {
+        if (mask[offset] > 127) {
+          count += 1;
+        }
+      }
+      return count;
+    });
+    const meshBounds = new Three.Box3().setFromObject(maskGroup);
     const buildingMask = maskReader(masks[0], canvas.width, canvas.height);
     const weatherableMask = maskReader(masks[1], canvas.width, canvas.height);
     const buildingPixels = [];
@@ -264,6 +274,12 @@ void main() {
       weatherablePixels: weatherablePixels.length,
       weatherableFraction: weatherablePixels.length / buildingPixels.length,
       materialPixels: Object.fromEntries(Object.entries(materialPixels).map(([id, pixels]) => [id, pixels.length])),
+      diagnostics: {
+        maskPixelCounts,
+        camera: cameraPose(activeCamera),
+        meshBounds: { min: meshBounds.min.toArray(), max: meshBounds.max.toArray() },
+        weatheringMaterialBoxes: boxes,
+      },
       differences: profilesCompared,
       maxWeatherablePixelChange,
       maxZeroStrengthPixelChange,
@@ -287,6 +303,7 @@ export const measureWeatheringMaterials = async (page) => {
         buildingPixels: result.buildingPixels,
         weatherablePixels: result.weatherablePixels,
         materialPixels: result.materialPixels,
+        diagnostics: result.diagnostics,
       })}`,
     );
   }
