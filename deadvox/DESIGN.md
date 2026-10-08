@@ -820,7 +820,7 @@ is not a substitute for the pool: tune item light content against the ground and
 walls under the shared near-field falloff. Source colour, intensity, radius and
 burn rules belong to item content. The zombie light check keeps sky visibility
 separate from carried light, so adding voxel sky light
-won't change the carried-light rule. Keep time of day in the sky/fog renderer,
+won't change the carried-light rule. For #316, the glowstick's dropped silhouette uses its item model, and its content-owned emissive look complements the fixed pool rather than changing its sensory reach or the separation between render and sense heights. See `src/content/base/items-tools.json`, `src/render/piles.ts`, `PileMeshes.drawModels` and `drawEmissiveLights`, `src/render/lightPool.ts`, `LightPool.update`, and `src/core/lights.ts`, `lightSenseSourceFor`. Keep time of day in the sky/fog renderer,
 not baked into chunks; voxel sunlight can then join AO in vertex colour. See
 `src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
 `LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,

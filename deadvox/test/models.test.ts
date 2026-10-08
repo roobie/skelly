@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory, PILE_GRID, type Pile } from '../src/core/inventory.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
 import { prepareModel } from '../src/render/models.ts';
 
@@ -87,6 +88,29 @@ describe('piles with models', () => {
       S,
     );
     expect(layout.models.map((m) => m.yaw)).toEqual([Math.PI / 2, 0]);
+  });
+
+  it('lays a lit dropped glowstick with its own model instead of the bundle fallback', async () => {
+    const glowstick = inventory.create('glowstick');
+    expect(toggleLight(registry, glowstick, 0)).toBeUndefined();
+    expect(glowstick.on).toBe(true);
+
+    const definition = registry.items.get('glowstick')!;
+    expect(definition.model).toBe('glowstick');
+    const model = registry.models.get(definition.model!)!;
+    const { scene } = await parseGlb(readFileSync(`${BASE}/${model.file}`));
+    expect(new Box3().setFromObject(prepareModel(model, scene).ground).isEmpty()).toBe(false);
+
+    const layout = pileLayout(
+      registry,
+      { pos: [0, 0, 0], items: [{ item: glowstick, x: 0, y: 0, rotated: false }] },
+      S,
+      (id) => registry.models.has(id),
+    );
+    expect(layout.models.map(({ placed, model: modelId }) => [placed.item.type, modelId])).toEqual([
+      ['glowstick', 'glowstick'],
+    ]);
+    expect(layout.bundle).toEqual([]);
   });
 });
 
