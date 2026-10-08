@@ -317,6 +317,7 @@ export const startPlay = (
     inputTarget,
     () => !debugTools?.buildOn,
     () => shouldCancelForViewerFocus('window-blur'),
+    () => replayPlayer === undefined,
   );
   input.yaw = playerStart.yaw;
   let performHandUse: (hand: 'right' | 'left') => void = () => undefined;
@@ -1028,6 +1029,9 @@ export const startPlay = (
     return state;
   };
   const resume = () => {
+    if (replayPlayer) {
+      return;
+    }
     resumeRequested = true;
     if (input.locked) {
       syncMenuState();
@@ -1454,7 +1458,7 @@ export const startPlay = (
         input.rightMouseHeld = true;
         break;
       case 'aim.ads-toggle':
-        input.toggleAimingDownSights();
+        input.toggleAimingDownSights(replayPlayer !== undefined);
         break;
       case 'movement.walk-toggle':
         input.walking = toggleWalking(input.walking, replayPlayer ? undefined : inputRecorder, inputContext());
