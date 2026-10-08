@@ -1,6 +1,6 @@
 // A held grip is shared by the rendered model and gameplay rays in the same metres/axes.
 // AimFrame moves both the firearm and its bore; camera bob and damage roll stay presentation-only.
-import { type AimFrame, aimBasis } from './aim.ts';
+import { type AimFrame, aimBasis, NEUTRAL_AIM } from './aim.ts';
 import type { ModelDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
 import type { HandSide } from './inventory.ts';
@@ -74,6 +74,26 @@ const sightFrame = (model: ModelDef): { right: Vec3; up: Vec3; forward: Vec3 } |
 
 const alignToSight = (vector: Vec3, sight: ReturnType<typeof sightFrame>): Vec3 =>
   sight ? [dot(vector, sight.right), dot(vector, sight.up), -dot(vector, sight.forward)] : vector;
+
+export const throwStanceHandOffset = (side: HandSide, active: boolean, chargeProgress = 0): Vec3 => {
+  if (!(Number.isFinite(chargeProgress) && chargeProgress >= 0 && chargeProgress <= 1)) {
+    throw new Error('Invalid throw stance pose progress');
+  }
+  if (!active) {
+    return [0, 0, 0];
+  }
+  return [side === 'right' ? 0.025 : -0.025, 0.09 + chargeProgress * 0.035, 0.1 + chargeProgress * 0.09];
+};
+
+export const throwStanceWorldOffset = (side: HandSide, yaw: number, pitch: number, chargeProgress: number): Vec3 => {
+  const basis = aimBasis(yaw, pitch, NEUTRAL_AIM);
+  const [right, up, back] = throwStanceHandOffset(side, true, chargeProgress);
+  return [
+    basis.right[0] * right + basis.up[0] * up - basis.forward[0] * back,
+    basis.right[1] * right + basis.up[1] * up - basis.forward[1] * back,
+    basis.right[2] * right + basis.up[2] * up - basis.forward[2] * back,
+  ];
+};
 
 export const readyFirearmPose = (leading: MeleeHand): MeleePoseFrame => {
   const hands = readyMeleePose(true, leading);

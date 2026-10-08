@@ -84,7 +84,7 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   row('movement.sprint', 'Sprint', moving, ['ShiftLeft', 'ShiftRight'], 'held-state'),
   row('movement.walk-toggle', 'Walk / jog', moving, ['KeyZ']),
   row('player.crouch-toggle', 'Toggle crouch', ['play', 'build'], ['KeyC']),
-  row('player.throw', 'Throw the held item', ['play'], ['KeyT']),
+  row('player.throw', 'Tap to toggle throwing stance; hold to drop a held item', ['play'], ['KeyT']),
   row('movement.jump', 'Jump', ['play', 'build'], ['Space'], 'held-state'),
   row('noclip.ascend', 'Ascend while flying', ['noclip'], ['Space'], 'held-state'),
   row('noclip.descend', 'Descend while flying', ['noclip'], ['KeyC'], 'held-state'),

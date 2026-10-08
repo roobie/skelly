@@ -22,10 +22,13 @@ mattering at v1.0 beta.
 ## No host-specific information in tracked files
 
 Tracked files describe the project, not the machine the team happens to work on. Every
-tracked file must work for anyone who clones the repo and for CI. This covers code, tests,
-docs, review reports, content and credits. Never commit:
+tracked file must work for anyone who clones the repo and for CI. This covers code,
+tests, docs, content and credits. Never commit:
 
-- **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`;
+- **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`. A location a tool
+  defines the same way for every clone, such as Playwright's browser cache, is fine; the
+  checker allows each one by value (see `tools/zero-drift-check.mjs`,
+  `HOST_PATH_VALUE_EXEMPTIONS`), so add new locations there.
 - **addresses:** host names, LAN IPs and LAN URLs (`http://<ip>:<port>/…`), and the ports
   of this host's own services (preview servers, proxies). A port the project or its tools
   configure, such as Vite's `localhost:5173`, is the same for every clone and is fine;
@@ -63,12 +66,17 @@ a comment or a PR:
 - Tracked docs state rules and reasons in plain words, without source attributions or
   timestamps. Keep the verbatim source quote and stamp in the commit message that adds
   or changes the rule, preserving provenance without turning the doc into a history log.
+- Reviews, retros and superseded ADRs are not kept as files: git history holds them, so every
+  tracked doc is a current record.
 - Write a comment only for a special why.
 - Every tracked doc starts with front matter whose `read_if` lists the reasons to read
   it. Add or update it whenever you add or change a doc.
 - When you touch a doc, trim the whole part you touch of what, how and history, not
   only the lines you change. Keep the current rule instead of accumulated amendments.
-  Reviews flag an amendment trail left in the section you touched.
+  An amendment trail left in a touched section is a FIX because each section is a
+  current record, not change history.
+- Run one deep docs pass per slice while closing it; Slice 3's trigger is the exit item
+  on #293, as planned in r50.
 - A false doc is a defect: a review returns FIX for it.
 
 ## Work item IDs
@@ -130,14 +138,11 @@ Keep this copy aligned with `.claude/CLAUDE.md` so either entry point gives the 
 ## Installing check dependencies
 
 Root lint resolves imports across every subproject, so install them all, as CI does, before
-you trust a lint failure (a missing `node_modules` looks like an unresolved import):
+you trust a lint failure (a missing `node_modules` looks like an unresolved import). The setup
+command includes `deadvox/tools/lit-check`, which deadvox's Lit lint and root Knip need:
 
 ```sh
-npm ci
-npm ci --prefix gungen
-npm ci --prefix deadvox
-npm ci --prefix mobgen
-npm ci --prefix deadvox/tools/lit-check   # deadvox lint:lit and input-literal AST guard; root Knip
+npm run setup
 ```
 
 Firefox and xvfb for deadvox's `test:browser:firefox`: see `.github/workflows/deadvox.yml`.
@@ -163,9 +168,9 @@ So:
   - waits on wall-clock time for simulated work;
   - can pass vacuously;
   - near-duplicates another test.
-- **No flaky tests.** A test that fails and then passes on a rerun is a flake. Fix it; if
-  it cannot be made un-flaky, disable it from CI and investigate the cause. Track the issue;
-  never retry until green or raise its timeout.
+- **No flaky tests.** A test that fails and then passes on a rerun is a flake. Fix it. If
+  it cannot be made un-flaky, disable it from CI, investigate the cause and file an issue
+  for its root cause; never retry until green or raise its timeout.
 - Mutation proof is for tricky invariants only (ordering, reach, persistence, concurrency):
   show one mutant its test catches. Plain mappings and data-driven rows don't need one.
 - Browser stages stay few: a handful of smoke flows plus the stages that must check

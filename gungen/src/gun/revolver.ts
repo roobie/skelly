@@ -32,7 +32,7 @@ export const REVOLVER_PROPORTIONS = {
   overallLength: dimension('S&W Model 686 Plus Mountain Gun published overall length: 9.75 in', 247.65, 24.75),
   overallHeight: dimension('S&W Model 686 Plus Mountain Gun published overall height: 5.68 in', 144.272, 14.5),
   cylinderDiameter: dimension('686-class top/left photo estimate: 40 mm', 40, 4),
-  cylinderLength: dimension('BR 2026-10-02: extend approved 4.00u cylinder by 25% to 5.00u', 39, 5),
+  cylinderLength: dimension('686-class cylinder length: 25% extension from 4.00u to 5.00u', 39, 5),
   chamberOrbit: dimension('686-class top photo estimate: 13.5 mm', 13.5, 1.25),
   frameWidth: dimension('686-class top photo estimate: 35 mm', 35, 3.5),
   topstrapWidth: photoControl('686 photo-derived narrow roof width; BR-approved 1.75u across frames', 1.75),
