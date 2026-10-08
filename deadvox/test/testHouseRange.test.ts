@@ -96,12 +96,12 @@ const buildRangeWalkFixture = () => {
   const startX = spawn.pos[0] / blockSize;
   const startZ = spawn.pos[2] / blockSize;
   const corridorZ = (HOUSE_OFFSET[1] + GARDEN_GATE.approachZ) / blockSize;
-  const gateX = (HOUSE_OFFSET[0] + GARDEN_GATE.centreX) / blockSize;
+  const gateCentreX = (HOUSE_OFFSET[0] + GARDEN_GATE.centreX) / blockSize;
   const beyondGateZ = (HOUSE_OFFSET[1] + GARDEN_GATE.exitZ) / blockSize;
   const enterX = range.rect.x0 + 2;
   const rackZ = rackSpec.pos[2] + rackSpec.size[2] / 2;
   const minX = Math.floor(startX - 2);
-  const maxX = Math.ceil(Math.max(gateX, enterX) + 2);
+  const maxX = Math.ceil(Math.max(gateCentreX, enterX) + 2);
   const minZ = Math.floor(Math.min(startZ, corridorZ) - 2);
   const maxZ = Math.ceil(Math.max(startZ, corridorZ, beyondGateZ, rackZ) + 2);
   const terrain: Terrain = {
@@ -134,6 +134,11 @@ const buildRangeWalkFixture = () => {
   }
   const inventory = new Inventory(registry, undefined, entities);
   const body = createPlayerBody(scale, startX, spawn.pos[1] / blockSize + 0.01, startZ);
+  const gateClearance = GARDEN_GATE.widthM / (2 * blockSize) - body.halfWidth;
+  if (gateClearance <= 0) {
+    throw new Error('Player does not fit through the test-house garden gate');
+  }
+  const gateX = gateCentreX - gateClearance / 2;
   const waypoints: RangeWalkWaypoint[] = [
     { axis: 2, target: corridorZ, forward: 0, right: 1 },
     { axis: 0, target: gateX, forward: 1, right: 0 },

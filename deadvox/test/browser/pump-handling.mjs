@@ -241,10 +241,17 @@ try {
       if (!rack) {
         throw new Error('Test-house weapon locker is missing');
       }
+      const gateCentreX = (houseOffset[0] + gardenGate.centreX) / blockSize;
+      const gateClearance = gardenGate.widthM / (2 * blockSize) - session.body.halfWidth;
+      if (gateClearance <= 0) {
+        throw new Error('Player does not fit through the test-house garden gate');
+      }
+      // The eastward sprint may step past its target; aim inside the gap so the body stays clear of the east post.
+      const gateX = gateCentreX - gateClearance / 2;
       return {
         lockerUid: rack.uid,
         corridorZ: (houseOffset[1] + gardenGate.approachZ) / blockSize,
-        gateX: (houseOffset[0] + gardenGate.centreX) / blockSize,
+        gateX,
         beyondGateZ: (houseOffset[1] + gardenGate.exitZ) / blockSize,
         enterX: rack.pos[0] - 1,
         rackZ: rack.pos[2] + rack.size[2] / 2,
