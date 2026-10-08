@@ -35,10 +35,11 @@ controls remain proposals until their issue is implemented.
   a key need it readily available”. The noclip flight keys are that special
   circumstance; see `noclip.ascend` and `noclip.descend` in
   `src/game/inputBindings.ts`.
-- **No Ctrl, Cmd/Meta or Alt as game modifiers (br-94, br-97; #435):**
-  BR chose one refusal rule for browser-owned keyboard modifiers. Alt is browser-owned
-  too: Alt+Left/Right are Back and Forward, and on Windows/Linux tapping Alt or
-  Alt+letter opens Firefox's menu bar. The binding registry refuses Ctrl, Cmd/Meta and Alt; see
+- **No Ctrl, Cmd/Meta or Alt as game modifiers (2026-10-04):** “due to the
+  browser being the browser, we cannot use Ctrl or Cmd for anything, ever.” Issue #435
+  applies the same boundary to Alt because the browser owns it: Alt+Left/Right are
+  Back and Forward, and on Windows/Linux tapping Alt or Alt+letter opens Firefox's
+  menu bar. The binding registry refuses Ctrl, Cmd/Meta and Alt; see
   `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and `KeyboardInput.press`. Outside
   that registry, Ctrl+click is a plain click, Ctrl+scroll is plain scroll, and quick
   move stays T+click (below). Native text editing and browser shortcuts stay native.
