@@ -21,7 +21,10 @@
       "entry": [
         "index.html!",
         "sounds.html!",
+        "map.html!",
         "vehicle-spike.html!",
+        // Vite dev-only pages are deliberately outside the production build inputs.
+        "src/siteMapPage.ts!",
         // Vite dev-only page is deliberately outside the production build inputs.
         "src/debug/vehicleSpike.ts!",
         "src/soundsPage.ts!",
