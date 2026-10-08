@@ -150,7 +150,8 @@ const frameFromState = ({
   const archPhase = phase + shape.phaseOffsetRadians * Math.sin(2 * phase) ** 2;
   const pitchArch = 1 - 2 * Math.abs(Math.sin(archPhase)) ** shape.archPower;
   const wobble = boundVector(
-    (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance + wobbleNoise.yaw * variance * wobbleNoiseStrengthScale,
+    (state.lookYaw + gait * speed * MOVE_YAW_PER_SPEED) * variance +
+      wobbleNoise.yaw * variance * wobbleNoiseStrengthScale,
     (state.lookPitch + pitchArch * speed * MOVE_YAW_PER_SPEED * shape.verticalToHorizontalRatio) * variance +
       wobbleNoise.pitch * variance * wobbleNoiseStrengthScale,
     wobbleLimitRadians,
@@ -180,7 +181,9 @@ const isValidWobbleShape = (shape: AimWobbleShape): boolean =>
   shape.verticalToHorizontalRatio <= 1 &&
   Number.isFinite(shape.archPower) &&
   shape.archPower > 0 &&
-  Number.isFinite(shape.phaseOffsetRadians) && shape.phaseOffsetRadians >= 0 && shape.phaseOffsetRadians <= 0.45;
+  Number.isFinite(shape.phaseOffsetRadians) &&
+  shape.phaseOffsetRadians >= 0 &&
+  shape.phaseOffsetRadians <= 0.45;
 
 const initialAimState = (): AimState => ({
   lookYaw: 0,

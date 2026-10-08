@@ -114,7 +114,7 @@ it('OU drift stays bounded and contracts differences over a long run', () => {
     sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
     smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
   };
-  const dt = step().dt;
+  const { dt } = step();
   const steps = 6000;
   const decay = 1 - tuning.reversionRatePerSimSecond * dt;
   const injectionBound = 3 * tuning.sigmaRadiansPerSqrtSecond * Math.sqrt(dt);
@@ -132,10 +132,7 @@ it('OU drift stays bounded and contracts differences over a long run', () => {
     expect(Math.abs(baseline.smooth)).toBeLessThanOrEqual(stateBound + Number.EPSILON);
   }
 
-  expect(Math.abs(displaced.raw - baseline.raw)).toBeCloseTo(
-    Math.abs(initialDifference * decay ** steps),
-    12,
-  );
+  expect(Math.abs(displaced.raw - baseline.raw)).toBeCloseTo(Math.abs(initialDifference * decay ** steps), 12);
 });
 
 const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: number): number => {
