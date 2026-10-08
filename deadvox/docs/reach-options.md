@@ -34,7 +34,7 @@ an actor's work; no migration is owed before the compatibility milestone.
 Survival retains registered queue actions and effects, not separate eligibility.
 The ordinary best-pocket command chooses the quickest pocket; ordinary to-hands
 and drop ordering are retained. Quick move uses hold T and click in the default
-profile, as BR ruled on 2026-10-04 (`CONTROLS.md`). Its rebindable gate is declared
+profile, as described in `CONTROLS.md`. Its rebindable gate is declared
 in `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and read by
 `src/ui/inventoryScreen.ts`, `InventoryScreen.pointerDown`; no browser modifier
 selects the quick move.

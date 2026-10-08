@@ -6,7 +6,7 @@ read_if:
 
 # Gunshot playback and automatic fire (d18-2 / d18-3)
 
-BR's 2026-10-02 listening verdict exposed two presentation defects:
+Listening exposed two presentation defects:
 
 - Both AKM samples last 2.171s. The four-voice admission check **dropped** new
   triggers while their tails played; pending fetch/decode callbacks also occupied
@@ -21,8 +21,9 @@ Every accepted shot selects its seeded variant and starts after the shared
 variant load resolves. Pending loads do not occupy playback slots. Fetch/decode
 remain deduplicated per variant; no separate audio queue or scheduler is added.
 
-Following BR's browser-limit clarification, **32** full voices are retained per gunshot event. A new shot steals the oldest
-full voice: its gain ramps linearly to zero over **10ms**, then WebAudio stops it.
+Each gunshot event keeps up to **32** full voices (the per-event cap in
+`src/game/audio.ts`). A new shot steals the oldest full voice: its gain ramps
+linearly to zero over **10ms**, then WebAudio stops it.
 d18-3 retains up to **32** retiring crossfade tails per event, so all eight retirees
 in the review's 40-shot same-quantum cold burst receive the full fade instead of
 hard-stopping seven of them. The physical ceiling is **64 connected sources** per
@@ -31,8 +32,8 @@ Already-stopped tails are disconnected even if `onended` delivery is late.
 Cleanup is idempotent; a late ended callback cannot release a replacement voice.
 A pathological burst exceeding 64 simultaneous starts still finishes the oldest
 retiree early to enforce that ceiling. The supported 75/100ms sustained cadence
-exceeds the 10ms fade window and never needs that fallback. Actual perceived
-cadence/clicks require BR's ears.
+exceeds the 10ms fade window and never needs that fallback. Perceived cadence
+and clicks require BR's listening.
 
 The player's `firearmShotSound` cue is listener-relative. It bypasses the panner,
 distance attenuation and world occlusion, while retaining the gunshot's **world**

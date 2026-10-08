@@ -7,7 +7,7 @@ read_if:
   - you change how paint wear is placed or drawn
   - you model a vehicle that isn't a car, such as a motorbike
   - you change what a vehicle owns, or how part types are named, coloured and shared
-  - you pick up a deferred vehicle item or one of BR's open vehicle questions
+  - you pick up a deferred vehicle item or one of BR's open vehicle decisions
 ---
 
 # Vehicle spike: vehicles built from parts (r43)
@@ -23,22 +23,18 @@ and the page state, `src/debug/vehicleSpikePanel.ts` the lit-html control panel 
 and `src/vehicles/` the model. The goal these builds test is in
 [DESIGN.md](../DESIGN.md#vehicles), "Vehicles".
 
-## BR's rulings
+## Decided
 
-Verbatim, with the question each answers (2026-10-06):
-
-- **On r43-5's 4×4** (16:27): "the 4x4 is really frickin' cool! Nice job"
-- **Is noise a derived stat, mainly the engine's?** (16:28): "yes, it's mainly a property of
-  the engine, but the chassis/hull can factor in too"
-- **Rebuild the pickup and the motorbike on the part model, or drop them?** (16:28): "yes,
-  do it"
-- **Is the 4×4's sand paint right?** (16:28): "sand is good! But maybe, if not too
-  difficult, adding wear and scratches and stuf like that"
-- **Make the design review's three model changes now, in this PR?** (18:07): "310 as
-  recommended". A one-pass design review of the spike against the vehicle goal found the
-  part model sound but a vehicle's state shaped for a customizer. The lead recommended its
-  change-now set (vehicles that own their fittings, one id per part type across one
-  catalogue, mirrored fittings stored at their own position), and BR approved it.
+- **4×4:** BR approved r43-5's 4×4.
+- **Noise:** BR ruled that vehicle noise is mainly an engine property; the chassis
+  and hull can contribute too.
+- **Pickup and motorbike:** BR chose to rebuild both on the part model rather
+  than drop them from the spike.
+- **Sand paint:** BR approved the sand finish and asked for wear and scratches if
+  they are not too difficult to add.
+- **Model changes:** BR chose the three recommended changes in r43:
+  vehicle-owned fittings, one id per part type across one catalogue, and mirrored
+  fittings stored at their own positions.
 
 ## Catalogue, blueprints and vehicles
 
@@ -93,8 +89,8 @@ no update when a part is reshaped or a blueprint is added to its list.
 
 ## Noise comes from the build
 
-BR's ruling above. See `model.ts`, `PartNoise` and `noiseRadius`; the values sit on the
-part types.
+The noise decision in [Decided](#decided) sets the source. See `model.ts`,
+`PartNoise` and `noiseRadius`; the values sit on the part types.
 
 - **The unit is Deadvox's hearing radius in metres:** a source is like a sound's
   `noise.radiusMetres` (`src/content/base/sounds.json`), and a damper scales it like a
@@ -109,7 +105,8 @@ part types.
 
 ## Paint wear
 
-BR's ruling above. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`, and
+The sand-paint decision in [Decided](#decided) sets the finish and its wear
+request. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`, and
 `vehicleSpike.ts`, `fittingMeshes`.
 
 - **One amount per fitting,** spread around the vehicle's level by a hash of the vehicle
@@ -124,8 +121,8 @@ BR's ruling above. See `src/vehicles/wear.ts`, `fittingWear` and `wearGrid`, and
   mesh avoids. Measured on the 4×4 in r43-6: draw calls stayed
   the same, triangles grew by about half at the page's default wear and nearly doubled at
   full wear, and assembly took about a fifth longer.
-- **At 20 m it reads as grime around the arches;** scratches and rust show up close. BR
-  asked for it "if not too difficult", and this is the depth that cost allowed.
+- **At 20 m it reads as grime around the arches;** scratches and rust show up close.
+  The spike limits detail to what its rendering cost allows.
 
 ## Grain
 
@@ -168,9 +165,10 @@ fittings of its file in `src/vehicles/`:
 
 ## The motorbike: where the model stretched
 
-BR's ruling above asked for it. Two wheels, no body shell and a frame that is the
-structure needed no model change: the wheels are fittings on the centre plane with no
-mirror, a layer holds whatever parts a vehicle has, and support works as described above.
+The decision in [Decided](#decided) keeps the motorbike in the spike. Two wheels,
+no body shell and a frame that is the structure needed no model change: the wheels
+are fittings on the centre plane with no mirror, a layer holds whatever parts a
+vehicle has, and support works as described above.
 
 - **One change: a rider position.** `PartType.rider` marks where a rider's hips sit on a
   part. The bike's seat carries it, and the page puts the bike's rider's-eye view there
@@ -204,19 +202,18 @@ None of these is built, and each waits for the event that needs it:
   vehicles enter the save.
 - **A baked mesh per parked vehicle, and a distance level of detail:** when several
   vehicles share a view in the game.
-- **The content schema, pack loading and validation of the baked voxel grids:** once BR
-  answers the source-of-truth question below. The workshop's TypeScript blueprint reference is an
-  interim placement, following BR's 2026-10-07 16:32 request, "can't we use the example from the
-  vehicle spike?" It does not establish the vehicle-content source of truth.
+- **The content schema, pack loading and validation of the baked voxel grids:** after
+  BR chooses the source of truth below. The workshop's TypeScript blueprint reference is an
+  interim placement based on the spike. It does not establish the vehicle-content source of truth.
 - **Cargo as items in storage rather than fittings** (the 4×4's spare wheel is a fitting):
   when storage is built.
 
 Derived stats take one route: mass, centre of mass and noise come from the fitted parts
 (`measure`, `noiseRadius`), and handling, power and fuel would too.
 
-## Open (BR)
+## Open decisions for BR
 
-Questions the design review raised that are BR's to decide, by topic:
+Questions the design review raised for BR to decide, by topic:
 
 1. **Reach of building:** how far "build things the designers didn't foresee" goes.
 2. **Welded structure:** whether a factory car's welded structure is one thing to the

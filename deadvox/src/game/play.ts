@@ -1661,6 +1661,7 @@ export const startPlay = (
       direction: lookDir(),
       maxDistance: USE_REACH / s,
       blockSize: s,
+      worldSeed: config.seed,
       isSolid: engine.isOpaque,
       hasModel: (id) => view.models.has(id),
     });
