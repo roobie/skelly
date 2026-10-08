@@ -172,6 +172,10 @@ if (uWeathering > 0.0) {
   diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
 }`,
       );
+    shader.fragmentShader = shader.fragmentShader.replace(
+      '#include <opaque_fragment>',
+      '#include <opaque_fragment>\ngl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);',
+    );
   };
   material.customProgramCacheKey = () => 'deadvox-chunk-weathering-variation';
   return material;
