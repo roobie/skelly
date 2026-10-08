@@ -857,7 +857,7 @@ describe('content references', () => {
       {
         source: 'military-fixture.json',
         data: {
-          models: [{ ...firearmModel, id: item }],
+          models: [{ ...firearmModel, id: item, attachments: [] }],
           items: [
             { id: item, name: 'Fixture rifle', category: 'weapon', weight: 1, size: [1, 1], firearm, model: item },
             { id: cartridge, name: 'Fixture cartridge', category: 'material', weight: 1, size: [1, 1], ammo },
