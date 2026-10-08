@@ -316,7 +316,8 @@ export const initialOverrides = (
   saved: Overrides,
   fromUrl: Overrides | undefined,
   hasModelUrl: boolean,
-): Overrides => fromUrl ?? (hasModelUrl ? EMPTY_OVERRIDES : saved);
+): Overrides =>
+  fromUrl ?? (hasModelUrl ? EMPTY_OVERRIDES : saved);
 
 export const hasOverrides = (o: Overrides): boolean =>
   Object.keys(o.params).length > 0 || Object.keys(o.presence).length > 0;
