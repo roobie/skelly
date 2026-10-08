@@ -51,8 +51,8 @@ const carryCrowbar = (runtime: ReturnType<typeof createRuntime>) => {
   return crowbar;
 };
 const nearSpawn: [number, number, number] = [0, 1, 0];
-const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0]) => {
-  const runtime = createRuntime(snapshot, false, undefined, { spawn: nearSpawn });
+const makePryRuntime = (snapshot?: Parameters<typeof createRuntime>[0], active = false) => {
+  const runtime = createRuntime(snapshot, false, undefined, { spawn: nearSpawn, active });
   const floor = registry.blockIds.get('planks')!;
   for (let x = -1; x <= 1; x++) {
     for (let z = 0; z <= 6; z++) {
@@ -165,6 +165,22 @@ it('an interruption cancels normal-speed prying without locking input', () => {
   expect(runtime.sim.compression.c).toBe(1);
   expect(runtime.sim.compression.active).toBe(false);
   expect(runtime.sim.compression.locksInput).toBe(false);
+});
+
+it('movement cancels normal-speed prying', () => {
+  const runtime = makePryRuntime(undefined, true);
+  const door = makeDoor(runtime);
+  const crowbar = carryCrowbar(runtime);
+  expect(runtime.session.pryDoor(door, crowbar.uid)).toBeUndefined();
+  const before = [...runtime.session.body.pos];
+
+  runtime.view.intent.forward = 1;
+  runtime.sim.frame(0.1);
+
+  expect(runtime.sim.actions.job).toBeUndefined();
+  expect(
+    Math.hypot(runtime.session.body.pos[0]! - before[0]!, runtime.session.body.pos[2]! - before[2]!),
+  ).toBeGreaterThan(0);
 });
 
 it('the matching key still unlocks a pryable door silently', () => {
