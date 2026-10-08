@@ -1758,6 +1758,12 @@ describe('input replay', () => {
     ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
     expect(unheldEncoded).toBe(false);
 
+    const flatRuntime = createRuntime(undefined, false, undefined, { wobbleFlatOverride: 0 });
+    expect(flatRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
+    expect(() =>
+      withReplayExportGuard(flatRuntime.session.hasFirearmHandlingOverrides(), () => new Uint8Array([1])),
+    ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
+
     const scaledRuntime = createRuntime(undefined, false, undefined, { wobbleNoiseScaleOverride: 2 });
     expect(scaledRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
     expect(() =>

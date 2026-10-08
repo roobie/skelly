@@ -121,12 +121,14 @@ const createSessionAim = ({
   seed,
   restored,
   character,
+  wobbleFlatOverride,
   wobbleNoiseScaleOverride,
 }: {
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
   character: Character;
+  wobbleFlatOverride: number | undefined;
   wobbleNoiseScaleOverride: number | undefined;
 }): AimController => {
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
@@ -134,7 +136,7 @@ const createSessionAim = ({
   return new AimController({
     wobbleLimitRadians: tuning.wobbleLimitRadians,
     wobbleShape: {
-      verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
+      verticalToHorizontalRatio: wobbleFlatOverride ?? tuning.wobbleVerticalToHorizontalRatio,
       archPower: tuning.wobbleLuneArchPower,
       phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
     },
@@ -329,6 +331,8 @@ export interface SessionOptions {
   };
   /** Debug tools, once attached; read each time they matter. */
   debug?: () => SessionDebug | undefined;
+  /** Debug-only vertical/horizontal ratio override for the walking lune. */
+  wobbleFlatOverride?: number | undefined;
   /** Debug-only multiplier for authored OU noise strength. */
   wobbleNoiseScaleOverride?: number | undefined;
   /**
@@ -496,6 +500,7 @@ export const createSession = (options: SessionOptions) => {
     seed,
     restored,
     character,
+    wobbleFlatOverride: options.wobbleFlatOverride,
     wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
   const { entities } = inventory;
@@ -1230,6 +1235,7 @@ export const createSession = (options: SessionOptions) => {
       return sessionFirearmTargetName(registry, firearmInHands()?.type);
     },
     hasFirearmHandlingOverrides: () =>
+      options.wobbleFlatOverride !== undefined ||
       options.wobbleNoiseScaleOverride !== undefined ||
       firearms.hasSkillZeroHandlingOverrides() ||
       !sameFirearmsSkillZeroHandling(

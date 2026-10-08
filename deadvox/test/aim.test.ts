@@ -8,7 +8,7 @@ import {
   aimDirection,
   NEUTRAL_AIM,
 } from '../src/core/aim.ts';
-import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
+import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX, SKILL_LEVEL_MIN } from '../src/core/character.ts';
 import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { advanceFootsteps, initialFootstepClock, STEP_DISTANCE_METRES } from '../src/core/footsteps.ts';
 import { Rng } from '../src/core/random.ts';
@@ -43,7 +43,7 @@ const createAim = (
     wobbleNoise: quietNoise,
     variance,
   });
-const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning) =>
+const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning, variance = 1) =>
   new AimController({
     wobbleLimitRadians: stanceTuning.wobbleLimitRadians,
     wobbleShape: {
@@ -53,6 +53,7 @@ const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning) =>
     },
     wobbleSeed,
     wobbleNoise,
+    variance,
   });
 
 type AimStepOverrides = Partial<Parameters<AimController['advance']>[0]>;
@@ -87,6 +88,29 @@ it('OU noise reverts without diffusion and bounds each Brownian step', () => {
   expect(Math.abs(fromRest.smooth)).toBeLessThanOrEqual(Math.abs(fromRest.raw));
 });
 
+it('OU smoothing reduces total per-tick variation over a run', () => {
+  const tuning: AimWobbleNoiseTuning = {
+    reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
+    sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+    smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
+  };
+  const dt = 1 / 60;
+  const rng = Rng.stream(73, 'ou-smoothing-property');
+  let state = { raw: 0, smooth: 0 };
+  let rawVariation = 0;
+  let smoothVariation = 0;
+
+  for (let tick = 0; tick < 240; tick++) {
+    const previous = state;
+    state = advanceOrnsteinUhlenbeckAxis(state, dt, tuning, (rng.next() * 2 - 1) * 3);
+    rawVariation += Math.abs(state.raw - previous.raw);
+    smoothVariation += Math.abs(state.smooth - previous.smooth);
+  }
+
+  expect(rawVariation).toBeGreaterThan(0);
+  expect(smoothVariation).toBeLessThan(rawVariation);
+});
+
 it('seeded OU wobble is deterministic and sways while standing still', () => {
   const tuning = {
     reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
@@ -106,6 +130,30 @@ it('seeded OU wobble is deterministic and sways while standing still', () => {
         index > 0 && (yaw !== firstPath[index - 1]!.yaw || pitch !== firstPath[index - 1]!.pitch),
     ),
   ).toBe(true);
+});
+
+it('firearms skill scales standing OU drift by the content variance ratio', () => {
+  const tuning: AimWobbleNoiseTuning = {
+    reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
+    sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+    smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
+  };
+  const levels = [SKILL_LEVEL_MIN, SKILL_LEVEL_MAX];
+  const variances = levels.map((level) => skillEffects(level).variance);
+  const driftAmplitudes = levels.map((_, index) => {
+    const variance = variances[index]!;
+    const aim = createNoiseAim(tuning, variance);
+    let amplitude = 0;
+    for (let tick = 0; tick < 240; tick++) {
+      const frame = aim.advance(step({ variance }));
+      amplitude += Math.hypot(frame.yaw, frame.pitch);
+    }
+    return amplitude;
+  });
+
+  expect(driftAmplitudes[0]).toBeGreaterThan(0);
+  expect(driftAmplitudes[1]).toBeGreaterThan(0);
+  expect(driftAmplitudes[1]! / driftAmplitudes[0]!).toBeCloseTo(variances[1]! / variances[0]!, 10);
 });
 
 it('OU drift stays bounded and contracts differences over a long run', () => {

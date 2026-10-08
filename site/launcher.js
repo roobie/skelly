@@ -128,6 +128,7 @@ const makeDeadvoxUrl = () => {
       params.set('debug', '1');
       setUnlessDefault(params, 'at', deadvoxForm.elements.namedItem('at').value.trim(), '');
       setUnlessDefault(params, 'handedness', deadvoxForm.elements.namedItem('handedness').value, '');
+      setUnlessDefault(params, 'wobbleFlat', deadvoxForm.elements.namedItem('wobbleFlat').value.trim(), '');
     }
   }
 
