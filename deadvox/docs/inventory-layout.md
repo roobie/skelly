@@ -16,7 +16,10 @@ The character screen groups Items, Skills and Crafting into tabs so the game,
 notably on a small zoomed screen, has room for each view. Character inventory
 and nearby piles or containers stay together on Items so drag and drop remains
 within one view. Tab selection is runtime UI state, not save or replay state.
-Per-tab hotkeys are pending BR's choice on #435.
+G, V and B open the character screen on Items, Skills or Crafting, or switch to that tab
+while it is open; Tab reopens the last tab. The keys sit beside WASD so movement can
+continue, and the letters are not mnemonics. See `src/game/inputBindings.ts`,
+`inventoryTabForAction`, and `src/ui/inventoryScreen.ts`, `InventoryScreen.openOnTab`.
 
 Container grids scroll in their bounded region on both axes so a large or wide
 container cannot expand the nearby pane and push other useful contents out of
