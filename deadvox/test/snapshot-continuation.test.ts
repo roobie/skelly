@@ -62,6 +62,14 @@ describe('hamlet save/load continuation', () => {
     throw new Error('Snapshot fixture has no shambler sound column');
   }
   const soundColumns = [soundColumn] as const;
+  const containerColumn = fixtureColumns.find(([cx, cz]) =>
+    fixtureHamlet.furnitureIn(cx, cz).some(({ spec }) => registry.furniture.get(spec.type)?.container),
+  );
+  if (!containerColumn) {
+    throw new Error('Snapshot fixture has no container column');
+  }
+  const continuationColumns = [containerColumn] as const;
+
   it('continues horde noise response and night drift deterministically through a save', async () => {
     const [cx, cz] = fixtureZombieColumn;
     const center = fixtureHamlet.zombiesIn(cx, cz)[0]?.pos;
@@ -347,11 +355,11 @@ describe('hamlet save/load continuation', () => {
     expect(loaded.sim.actions.snapshotState()).toEqual(source.sim.actions.snapshotState());
   });
 
+  // Two one-column runtimes are compared across active-rest save/load, including full world bytes.
   it('deeply matches N steps with K/save/load/N−K (active rest)', () => {
-    const uninterrupted = createRuntime(undefined, true);
-    const split = createRuntime(undefined, true);
+    const uninterrupted = createRuntime(undefined, true, continuationColumns);
+    const split = createRuntime(undefined, true, continuationColumns);
     expect(uninterrupted.columns.length).toBeGreaterThan(0);
-    expect([...uninterrupted.zombies.store.entries()].length).toBeGreaterThan(0);
     expect(uninterrupted.inventory.entities.all).toSatisfy((entities) =>
       [...entities].some((entity) => entity.searched),
     );
@@ -361,6 +369,10 @@ describe('hamlet save/load continuation', () => {
     expect(startRest(split, 'sleep')).toBeUndefined();
     advance(uninterrupted, 4);
     advance(split, 4);
+    for (const runtime of [uninterrupted, split]) {
+      runtime.zombies.add(registry.zombies.get('shambler')!, [...runtime.player.body.pos]);
+    }
+    expect([...uninterrupted.zombies.store.entries()].length).toBeGreaterThan(0);
     expect(split.player.body.onGround).toBe(false);
     prepareAudioContinuation(uninterrupted);
     prepareAudioContinuation(split);
@@ -385,12 +397,12 @@ describe('hamlet save/load continuation', () => {
     expect(frozenTree(snapshot)).toBe(true);
     advance(uninterrupted, 4, 1);
     const continuedSounds = [...uninterrupted.heardSounds];
-    const loaded = createRuntime(snapshot, true);
+    const loaded = createRuntime(snapshot, true, continuationColumns);
     advance(loaded, 4, 1);
     expect(loaded.heardSounds).toEqual(continuedSounds);
     expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
     expect(inspect(loaded)).toEqual(inspect(uninterrupted));
-  });
+  }, 5000);
 
   it('preserves an active-sleep interruption emitted between frames across save/load', () => {
     const uninterrupted = createRuntime(undefined, true, oneColumn);

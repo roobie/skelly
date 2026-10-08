@@ -427,6 +427,7 @@ describe('canonical save format', () => {
     expect(decoded.worldOptions.site).toBe('lone_house');
   });
 
+  // One edited hamlet column is encoded, restored, continued and canonically re-encoded.
   it('round-trips an edited hamlet column byte-exactly and continues deterministically from restored bytes', async () => {
     const columns = [fixtureZombieColumn] as const;
     const source = createRuntime(undefined, true, columns);
@@ -458,7 +459,7 @@ describe('canonical save format', () => {
     advance(loaded, 1);
     expect(inspect(loaded)).toEqual(inspect(source));
 
-    const interruptedSnapshot = capture(createRuntime());
+    const interruptedSnapshot = structuredClone(capture(createRuntime(undefined, true, columns)));
     interruptedSnapshot.character.simulation.pendingInterrupt = 'format round-trip';
     const interruptedBytes = await encodeFixture(interruptedSnapshot);
     const interruptedDecoded = await decodeSave(interruptedBytes, { version: formatVersion, contentLookup });

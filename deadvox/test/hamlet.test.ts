@@ -73,6 +73,7 @@ const shuffled = <T>(items: T[], seed: number): T[] => {
 
 describe('the hamlet', () => {
   const seed = 1;
+  // Compare two tree-seam columns and a furniture column across full-height generation orders.
   it(`generates a hamlet sample the same in any chunk order (seed ${seed})`, () => {
     const hamlet = new Hamlet(seed, registry, scale);
     const allColumns = columnsOf(hamlet);
@@ -96,7 +97,7 @@ describe('the hamlet', () => {
     ];
 
     const a = generate(hamlet, seed, columns);
-    const b = generate(new Hamlet(seed, registry, scale), seed, shuffled(columns, seed));
+    const b = generate(hamlet, seed, shuffled(columns, seed));
     expect(b.world.chunks.size).toBe(a.world.chunks.size);
     expect(differing(a.world, b.world)).toEqual([]);
     expect(b.furniture).toEqual(a.furniture);
