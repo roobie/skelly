@@ -83,7 +83,10 @@ describe('pointer input', () => {
   it('ignores viewer mouse transitions during replay while live input remains admitted', () => {
     const run = (viewerAllowed: boolean, locked: boolean) => {
       const allowed = viewerAllowed;
-      const { input, target, document, targetListeners, windowListeners } = fixture(() => true, () => allowed);
+      const { input, target, document, targetListeners, windowListeners } = fixture(
+        () => true,
+        () => allowed,
+      );
       document.pointerLockElement = locked ? target : null;
       input.rightMouseHeld = true;
       input.suppressRightMouseUntilRelease();
