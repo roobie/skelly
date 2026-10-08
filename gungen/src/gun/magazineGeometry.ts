@@ -39,6 +39,32 @@ const sectionDepthAt = (centerline: MagazineCenterlineData, distance: number): n
   return centerline.sectionDepths.at(-1)!;
 };
 
+const sectionWidthAt = (centerline: MagazineCenterlineData, distance: number): number => {
+  const lengths = centerline.points
+    .slice(1)
+    .map((point, index) =>
+      Math.hypot(point[0] - centerline.points[index]![0], point[1] - centerline.points[index]![1]),
+    );
+  let remaining = Math.max(
+    0,
+    Math.min(
+      distance,
+      lengths.reduce((sum, length) => sum + length, 0),
+    ),
+  );
+  for (let index = 0; index < lengths.length; index++) {
+    const length = lengths[index]!;
+    if (remaining <= length || index === lengths.length - 1) {
+      const fraction = Math.min(remaining / length, 1);
+      const startWidth = centerline.sectionWidths[index]!;
+      const endWidth = centerline.sectionWidths[index + 1]!;
+      return startWidth + (endWidth - startWidth) * fraction;
+    }
+    remaining -= length;
+  }
+  return centerline.sectionWidths.at(-1)!;
+};
+
 const validateColumnInsideMagazine = (
   column: Column,
   centerline: MagazineCenterlineData,
@@ -48,12 +74,12 @@ const validateColumnInsideMagazine = (
   const totalLength = polylineLength(centerline.points);
   const topProud = MAGAZINE_TOP_PROUD_DIAMETERS * roundDiameter;
   const radius = roundDiameter / 2;
-  const interiorHalfWidth = centerline.width / 2 - MAGAZINE_WALL_U;
   for (const round of column.rounds) {
     const sectionClearance = sectionDepthAt(centerline, round.distance) - 2 * MAGAZINE_WALL_U - roundLength;
     if (sectionClearance < -BODY_CLEARANCE_EPSILON_U) {
       throw new Error('magazine body section is narrower than the loaded round length plus wall clearance');
     }
+    const interiorHalfWidth = sectionWidthAt(centerline, round.distance) / 2 - MAGAZINE_WALL_U;
     if (Math.abs(round.z) + radius > interiorHalfWidth + BODY_CLEARANCE_EPSILON_U) {
       throw new Error('magazine round crosses a side wall');
     }
@@ -68,7 +94,7 @@ const validateColumnInsideMagazine = (
 
 /** Staggered round column fitted to the generated magazine shell, in gungen units. */
 /** Curated magazine labels carry known nominal capacities; other geometries use the dimension-derived fit. */
-const nominalCapacity = (params: Readonly<Record<string, string>>): number | undefined => {
+export const nominalCapacityForMagazine = (params: Readonly<Record<string, string>>): number | undefined => {
   if (params.length === '5-round') {
     return 5;
   }
@@ -78,7 +104,7 @@ const nominalCapacity = (params: Readonly<Record<string, string>>): number | und
   if (params.length === 'L' && (params.profile === 'ak-curved' || params.profile === 'stanag-curved')) {
     return 30;
   }
-  if (params.length === 'M' && params.profile === 'stanag-curved') {
+  if (params.length === 'M' && params.profile === 'stanag-straight') {
     return 20;
   }
   return undefined;
@@ -99,7 +125,8 @@ export const magazineRoundColumn = (
   const diameter = Math.max(...profiles.loadedCase.map(([, radius]) => radius)) * 2 * UNITS_PER_MM;
   const roundAxialCoordinates = [...profiles.loadedCase, ...profiles.bullet].map(([axial]) => axial);
   const roundLength = (Math.max(...roundAxialCoordinates) - Math.min(...roundAxialCoordinates)) * UNITS_PER_MM;
-  const interiorWidth = physicalCenterline.width - 2 * MAGAZINE_WALL_U;
+  const minimumPhysicalWidth = Math.min(...physicalCenterline.sectionWidths);
+  const interiorWidth = minimumPhysicalWidth - 2 * MAGAZINE_WALL_U;
   if (interiorWidth < diameter) {
     throw new Error(`magazine interior width ${interiorWidth} is narrower than round diameter ${diameter}`);
   }
@@ -111,7 +138,11 @@ export const magazineRoundColumn = (
   };
   const fittedColumn = layoutColumn({ ...columnInput, centerline: centerline.points });
   const physicalCapacity = layoutColumn({ ...columnInput, centerline: physicalCenterline.points }).capacity;
-  const capacity = Math.min(fittedColumn.capacity, physicalCapacity, nominalCapacity(params) ?? fittedColumn.capacity);
+  const capacity = Math.min(
+    fittedColumn.capacity,
+    physicalCapacity,
+    nominalCapacityForMagazine(params) ?? fittedColumn.capacity,
+  );
   const column =
     capacity === fittedColumn.capacity
       ? fittedColumn

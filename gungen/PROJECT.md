@@ -8,6 +8,7 @@ read_if:
   - you change the AK archetype's proportions, or map them against its golden photo
   - you change attachment parts, mount slots or their Deadvox export
   - you change firearm design/template calibre or AK magazine selection
+  - you change STANAG magazine geometry or its Deadvox export
   - you change default sweep coverage or timeout policy
   - you change the firearm action/ejection export contract with Deadvox
 ---
@@ -345,18 +346,19 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
-Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
-The lengths below remain abstract units on the existing grid. Optic reference sources and modeled envelopes are recorded in `docs/optics.md`.
+Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`. Optic references are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
-- Magazine S/M/L body lengths by profile are: standard, SMG, and pistol
-  `6/10/16u`; AK-74 curved `6/10/16.5u`; STANAG curved `6/10/15.75u`. These
-  curved L values follow the traced reference lengths: the AK-74 ratio and
-  STANAG 30-round, with STANAG 20-round anchoring M near `10u`. The AKM curved
-  band is in `src/gun/parts.ts`, `MAGAZINE_PROFILE_LENGTHS_U`; its L is fitted
-  to the AK's golden photo (g41-4).
-  Ordinary S begins at the plausible 10-round length (`6u`).
+- The 20-round STANAG body uses the Brownells listing's outer box, snapped to
+  the model grid. The listing's delivery dimensions (127 × 66 × 25 mm) are
+  package dimensions that corroborate that box. Side-view proportions estimate
+  the floorplate slant and transition into the shared upper section, which
+  preserves feed and magwell fit. The curved STANAG-30 length follows its traced
+  30-round reference. Other
+  STANAG capacities are deferred to #414. See `src/gun/parts.ts`,
+  `STANAG20_BODY_BOX_U` and `magazineGeometryFor`. The AKM curved band is fitted
+  to its golden photo (g41-4).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
@@ -388,15 +390,6 @@ The lengths below remain abstract units on the existing grid. Optic reference so
   layout instead ends at the rear face of the A2 sight collar. Free-float rails
   end behind the barrel's front-sight station and muzzle; `free-float-clearance`
   reports contact or an undersized gap.
-
-| Family/profile | S (u / mm) | M (u / mm) | L (u / mm) | Measurement basis |
-| --- | ---: | ---: | ---: | --- |
-| Grip | 7.5 / 86 | 8.5 / 98 | 9.5 / 109 | Hand-sized bands, along grip axis; pistol-integrated grip uses the same bands |
-| Standard, SMG, pistol magazine | 6 / 69 | 10 / 115 | 16 / 184 | Abstract length bands; STANAG top depth anchors 1u ≈ 11.5mm |
-| AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
-| STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
-| Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
-| Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |
 
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
@@ -1099,8 +1092,8 @@ ammunition interchangeability (`src/core/template.ts`, `Template`; `src/core/des
   `at` is each round centre in metres in magazine-model coordinates; `tilt` is
   degrees about +z, nose-up positive. Left/right stagger is the sign of `at[2]`.
   Geometry determines the fit, capped to the nominal count for labelled
-  5/10-round, STANAG M/L (20/30), and AK-curved L (30) profiles; other magazine
-  profiles report the dimension-derived fit.
+  5/10-round, STANAG straight M (20), STANAG curved L (30), and AK-curved L (30)
+  profiles; other magazine profiles report the dimension-derived fit.
 - Round and case cartridge entries carry the same `calibre` and use real-size
   millimetre source dimensions converted to metres for their GLBs. `5.56x45.json`
   cites NATO AOP-4172; where its reference drawing is ambiguous, C.I.P. .223 Rem
@@ -1280,12 +1273,11 @@ versioned design JSON downloads, opens those files again, and provides param and
 optional-part locks plus family-filtered prefab pickers. Editing a prefab-fixed
 param detaches its reference; loaded mismatches remain marked stale.
 
-Known issue (BR, 2026-09-29; noted, not yet addressed): `stanag-20` is built as
-`profile: stanag-curved` at length M, a shortened curved magazine. A real
-20-round STANAG is straight; only the 30-round one is curved. Fixing it means a
-straight STANAG profile (or `standard`, if its section matches) and a decision
-on the AR design's magazine, which references `stanag-20` today: a straight
-20, a curved `stanag-30`, or its current curved M without a prefab.
+The `stanag-20` prefab selects the straight profile at M length. Resolving a
+non-M straight profile reports a structure issue that points to #414 for the
+deferred capacities. The shared upper preserves feed and magwell fit, and
+`stanag-30` uses the curved profile. See `src/gun/prefabs.ts`, `GUN_PREFABS`,
+`src/gun/parts.ts`, `magazine`, and `src/core/resolve.ts`, `resolveParams`.
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
