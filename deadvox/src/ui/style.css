@@ -429,9 +429,6 @@ body.unconscious::after {
   max-width: var(--inv-around-width-cap, 100%);
   max-height: 100%;
 }
-#inventory .inv-pane[data-pane="around"] .inv-grid-scroll {
-  flex: 0 0 auto;
-}
 .inv-body[data-tab-panel="items"] .inv-details {
   grid-column: 1 / -1;
 }
@@ -543,6 +540,9 @@ body.unconscious::after {
   max-width: 100%;
   overflow: auto;
   overscroll-behavior: contain;
+}
+#inventory .inv-pane[data-pane="around"] .inv-grid-scroll {
+  flex: 0 0 auto;
 }
 .inv-grid {
   position: relative;
