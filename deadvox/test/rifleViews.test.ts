@@ -22,6 +22,7 @@ import { crosshairAimPoint } from '../src/core/crosshairTarget.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { heldFirearmTransform } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
+import { Rng } from '../src/core/random.ts';
 import { type FirearmBoreRay, firearmBoreRay } from '../src/game/firearmAim.ts';
 import { FirearmMechanics, firearmHandlingFor } from '../src/game/firearmHandling.ts';
 import { handlingRotation } from '../src/render/handlingTurn.ts';
@@ -378,7 +379,18 @@ const heldGun = async (type: string) => {
 
 it('keeps over-limit view pitch changes in ADS while the held pose takes the recoil frame', async () => {
   const { mechanics, gun, camera, heldFrame, dispose } = await heldGun(RIFLE);
-  const aim = new AimController();
+  const tuning = registry.skills.get('firearms_combat')!.combat!.firearms!;
+  const aim = new AimController({
+    wobbleLimitRadians: tuning.wobbleLimitRadians,
+    wobbleShape: {
+      verticalToHorizontalRatio: tuning.wobbleVerticalToHorizontalRatio,
+      archPower: tuning.wobbleLuneArchPower,
+      phaseOffsetRadians: tuning.wobbleLunePhaseOffsetRadians,
+      jitterShare: tuning.wobbleJitterShare,
+      jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
+    },
+    jitterSeed: Rng.stream(73, 'rifle-view-tests').int(0, 0xff_ff_ff_ff),
+  });
   aim.recordShot(1, 0.3);
   aim.advance({
     dt: 1 / 60,
@@ -389,6 +401,8 @@ it('keeps over-limit view pitch changes in ADS while the held pose takes the rec
     variance: 1,
     firing: true,
     recoilRecoveryRate: 1,
+    stridePhase: 0,
+    stepIndex: 0,
   });
   const viewShift = aim.pendingViewPitchShift;
   expect(viewShift).toBeGreaterThan(0);

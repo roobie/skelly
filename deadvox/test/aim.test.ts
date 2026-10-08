@@ -3,13 +3,39 @@ import { expect, it } from 'vitest';
 import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
+import { advanceFootsteps, initialFootstepClock, STEP_DISTANCE_METRES } from '../src/core/footsteps.ts';
+import { Rng } from '../src/core/random.ts';
 import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { PLAYER } from '../src/game/player.ts';
 
 const stanceTuning = BUNDLED_CONTENT.registry.skills.get('firearms_combat')!.combat!.firearms!;
+const pumpHandling = BUNDLED_CONTENT.registry.items.get('pump_shotgun')!.firearm!.skillZeroHandling!;
+const pumpTuning = { ...stanceTuning, skillZeroHandling: pumpHandling };
 const skillEffects = (level: number, kind: FirearmsSkillShotKind = 'singleShot') =>
   firearmsSkillEffects(level, stanceTuning, kind);
+const pumpSkillEffects = (level: number) => firearmsSkillEffects(level, pumpTuning);
+const createAim = (
+  variance = 1,
+  wobbleLimitRadians = stanceTuning.wobbleLimitRadians,
+  jitterShare = stanceTuning.wobbleJitterShare,
+  verticalToHorizontalRatio = stanceTuning.wobbleVerticalToHorizontalRatio,
+) =>
+  new AimController({
+    wobbleLimitRadians,
+    wobbleShape: {
+      verticalToHorizontalRatio,
+      archPower: stanceTuning.wobbleLuneArchPower,
+      phaseOffsetRadians: stanceTuning.wobbleLunePhaseOffsetRadians,
+      jitterShare,
+      jitterAmplitudeFraction: stanceTuning.wobbleJitterAmplitudeFraction,
+    },
+    jitterSeed: Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff),
+    variance,
+  });
 
-const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) => ({
+type AimStepOverrides = Partial<Parameters<AimController['advance']>[0]> & { stridePhase?: number };
+
+const step = (overrides: AimStepOverrides = {}) => ({
   dt: 1 / 60,
   velocity: [0, 0, 0] as [number, number, number],
   blockSize: 0.5,
@@ -18,11 +44,13 @@ const step = (overrides: Partial<Parameters<AimController['advance']>[0]> = {}) 
   variance: 1,
   firing: false,
   recoilRecoveryRate: 1,
+  stridePhase: 0,
+  stepIndex: 0,
   ...overrides,
 });
 
 const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: number): number => {
-  const aim = new AimController(undefined, variance);
+  const aim = createAim(variance);
   const dt = 1 / 60;
   const burstSeconds = 2;
   let nextShotAt = 0;
@@ -62,14 +90,14 @@ it('uses camera pitch and yaw without presentation roll at neutral sway', () => 
 });
 
 it('actual movement and quick look turns increase isolated aim deviation', () => {
-  const still = new AimController();
-  const moving = new AimController();
+  const still = createAim();
+  const moving = createAim();
   const stillFrame = still.advance(step());
   const movingFrame = moving.advance(step({ velocity: [2, 0, 0] }));
   expect(Math.hypot(movingFrame.yaw, movingFrame.pitch)).toBeGreaterThan(Math.hypot(stillFrame.yaw, stillFrame.pitch));
 
-  const turning = new AimController();
-  const steady = new AimController();
+  const turning = createAim();
+  const steady = createAim();
   turning.advance(step());
   steady.advance(step());
   const turnedFrame = turning.advance(step({ yaw: 0.6 }));
@@ -77,9 +105,34 @@ it('actual movement and quick look turns increase isolated aim deviation', () =>
   expect(Math.abs(turnedFrame.yaw)).toBeGreaterThan(Math.abs(steadyFrame.yaw));
 });
 
+it('keeps quick-look lag symmetric across axes and independent of vertical flattening', () => {
+  const contentRatio = stanceTuning.wobbleVerticalToHorizontalRatio;
+  const alternateRatio = contentRatio < 0.5 ? contentRatio + (1 - contentRatio) / 2 : contentRatio / 2;
+  const quickLook = 0.05;
+  const response = (axis: 'yaw' | 'pitch', ratio: number) => {
+    const aim = createAim(1, stanceTuning.wobbleLimitRadians, stanceTuning.wobbleJitterShare, ratio);
+    aim.advance(step());
+    return aim.advance(
+      step({
+        yaw: axis === 'yaw' ? quickLook : 0,
+        pitch: axis === 'pitch' ? quickLook : 0,
+      }),
+    );
+  };
+  const yawAtContentRatio = response('yaw', contentRatio).yaw;
+  const pitchAtContentRatio = response('pitch', contentRatio).pitch;
+  const yawAtAlternateRatio = response('yaw', alternateRatio).yaw;
+  const pitchAtAlternateRatio = response('pitch', alternateRatio).pitch;
+
+  expect(Math.abs(yawAtContentRatio)).toBeGreaterThan(0);
+  expect(Math.abs(pitchAtContentRatio)).toBeCloseTo(Math.abs(yawAtContentRatio), 8);
+  expect(pitchAtAlternateRatio).toBeCloseTo(pitchAtContentRatio, 8);
+  expect(yawAtAlternateRatio).toBeCloseTo(yawAtContentRatio, 8);
+});
+
 it('committed recoil recovers in simulation time and equal inputs stay deterministic', () => {
-  const first = new AimController();
-  const second = new AimController();
+  const first = createAim();
+  const second = createAim();
   first.recordShot(73, 0.02);
   second.recordShot(73, 0.02);
   const initial = first.advance(step());
@@ -94,7 +147,7 @@ it('committed recoil recovers in simulation time and equal inputs stay determini
 });
 
 it('keeps held-fire recoil climbing while shifting over-limit pitch into the view', () => {
-  const aim = new AimController();
+  const aim = createAim();
   const dt = 1 / 60;
   const cadence = 60 / 800;
   const burstSeconds = 2;
@@ -112,7 +165,7 @@ it('keeps held-fire recoil climbing while shifting over-limit pitch into the vie
     const time = tick * dt;
     if (tick > 0) {
       const recoilBefore = aim.snapshotState().recoilPitch;
-      aim.advance(step({ dt, firing: true }));
+      aim.advance(step({ dt, pitch: viewPitch, firing: true }));
       expect(aim.snapshotState().recoilPitch).toBe(recoilBefore);
       applyViewShift();
     }
@@ -136,15 +189,36 @@ it('keeps held-fire recoil climbing while shifting over-limit pitch into the vie
   const heldOffset = Math.hypot(aim.frame.yaw, aim.frame.pitch);
   const retainedViewPitch = viewPitch;
   for (let tick = 0; tick < 30; tick++) {
-    aim.advance(step({ dt, firing: false }));
+    aim.advance(step({ dt, pitch: viewPitch, firing: false }));
     applyViewShift();
   }
   expect(viewPitch).toBeCloseTo(retainedViewPitch, 8);
   expect(Math.hypot(aim.frame.yaw, aim.frame.pitch)).toBeLessThan(heldOffset);
 });
 
+it('keeps recoil view-shift and recovery independent of stronger gait wobble', () => {
+  const recoilAfterMotion = (velocity: [number, number, number], variance: number) => {
+    const aim = createAim(variance);
+    aim.recordShot(1, 0.3);
+    aim.advance(step({ velocity, variance, firing: true }));
+    const shift = aim.pendingViewPitchShift;
+    aim.applyViewPitchShift(shift, shift);
+    aim.advance(step({ velocity, pitch: shift, variance, firing: false }));
+    const recoil = aim.snapshotState();
+    return { shift, recoilYaw: recoil.recoilYaw, recoilPitch: recoil.recoilPitch };
+  };
+  const neutral = recoilAfterMotion([0, 0, 0], 1);
+  const moving = recoilAfterMotion(
+    [0, 0, -(PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor) / step().blockSize],
+    pumpSkillEffects(0).variance,
+  );
+  expect(moving.shift).toBeCloseTo(neutral.shift, 8);
+  expect(moving.recoilYaw).toBeCloseTo(neutral.recoilYaw, 8);
+  expect(moving.recoilPitch).toBeCloseTo(neutral.recoilPitch, 8);
+});
+
 it('hands pitch beyond the aim-frame boundary to the view without losing it', () => {
-  const aim = new AimController();
+  const aim = createAim();
   aim.recordShot(1, 0.3);
   const before = aim.frame;
   const rawPitch = aim.snapshotState().recoilPitch;
@@ -189,15 +263,20 @@ it('skill-zero handling is worse for automatic follow-ups than single shots, and
   expect(single.recoilRecoveryRate).toBeLessThan(expert.recoilRecoveryRate);
 });
 
-it('expert firearm effects retain the established curve endpoint regardless of skill-zero tuning', () => {
+it('skill-ten wobble uses its content endpoint independent of skill-zero handling', () => {
   const alternate = {
     ...stanceTuning,
+    wobbleSkillTenVariance: stanceTuning.wobbleSkillTenVariance / 2,
     skillZeroHandling: {
       singleShot: { variance: 17, recoilKickScale: 23, recoilRecoveryScale: 0.07 },
       automaticFollowup: { variance: 31, recoilKickScale: 41, recoilRecoveryScale: 0.03 },
     },
   };
-  expect(skillEffects(SKILL_LEVEL_MAX)).toEqual(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate));
+  expect(skillEffects(SKILL_LEVEL_MAX).variance).toBe(stanceTuning.wobbleSkillTenVariance);
+  expect(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate).variance).toBe(alternate.wobbleSkillTenVariance);
+  expect(firearmsSkillEffects(SKILL_LEVEL_MAX, alternate).recoilKickScale).toBe(
+    skillEffects(SKILL_LEVEL_MAX).recoilKickScale,
+  );
   expect(skillEffects(SKILL_LEVEL_LEGENDARY)).toEqual(skillEffects(SKILL_LEVEL_MAX));
 });
 
@@ -218,8 +297,8 @@ it('changing a content skill-zero value changes the matching skill effect', () =
 });
 
 it('skill-zero kick scale increases the immediate recoil from the same shot', () => {
-  const novice = new AimController();
-  const expert = new AimController();
+  const novice = createAim();
+  const expert = createAim();
   novice.recordShot(73, 0.02, skillEffects(0).recoilKickScale);
   expert.recordShot(73, 0.02, skillEffects(SKILL_LEVEL_MAX).recoilKickScale);
   expect(novice.snapshotState().recoilPitch).toBeGreaterThan(expert.snapshotState().recoilPitch);
@@ -227,8 +306,8 @@ it('skill-zero kick scale increases the immediate recoil from the same shot', ()
 });
 
 it('expert recovery scale decays the same released recoil faster', () => {
-  const novice = new AimController();
-  const expert = new AimController();
+  const novice = createAim();
+  const expert = createAim();
   novice.recordShot(73, 0.02);
   expert.recordShot(73, 0.02);
   const noviceRecoveryScale = skillEffects(0).recoilRecoveryRate;
@@ -244,12 +323,273 @@ it('expert recovery scale decays the same released recoil faster', () => {
   );
 });
 
-it('expert firearms skill reduces moving sway', () => {
-  const novice = new AimController();
-  const expert = new AimController();
-  const noviceFrame = novice.advance(step({ velocity: [2, 0, 0], variance: skillEffects(0).variance }));
-  const expertFrame = expert.advance(step({ velocity: [2, 0, 0], variance: skillEffects(SKILL_LEVEL_MAX).variance }));
-  expect(Math.hypot(expertFrame.yaw, expertFrame.pitch)).toBeLessThan(Math.hypot(noviceFrame.yaw, noviceFrame.pitch));
+const readiedWalkWobble = (level: number): number => {
+  const effects = pumpSkillEffects(level);
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const { blockSize } = step();
+  const aim = createAim(effects.variance);
+  let clock = initialFootstepClock();
+  let peak = 0;
+  for (let tick = 0; tick < 240; tick++) {
+    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60));
+    const frame = aim.advance(
+      step({
+        velocity: [0, 0, -speed / blockSize],
+        variance: effects.variance,
+        stridePhase: clock.stridePhase,
+        stepIndex: clock.stepIndex,
+      }),
+    );
+    peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));
+  }
+  return peak;
+};
+
+it('step-clock wobble forms an open, concave-down lune once per stride', () => {
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const stepDistance = STEP_DISTANCE_METRES.walking;
+  const sample = (distance: number) => {
+    const { clock } = advanceFootsteps(initialFootstepClock(), 'walking', distance);
+    return createAim(1, stanceTuning.wobbleLimitRadians, 0).advance(
+      step({
+        stridePhase: clock.stridePhase,
+        stepIndex: clock.stepIndex,
+        velocity: [0, 0, -speed / step().blockSize],
+      }),
+    );
+  };
+  const center = sample(stepDistance / 2);
+  const rightSide = sample(stepDistance);
+  const nextCenter = sample(stepDistance * 1.5);
+  const leftSide = sample(stepDistance * 2);
+  const fullStride = sample(stepDistance * 2.5);
+  const outgoing = sample(stepDistance * 0.75);
+  const returning = sample(stepDistance * 1.25);
+
+  expect(center.pitch).toBeGreaterThan(rightSide.pitch);
+  expect(nextCenter.pitch).toBeGreaterThan(leftSide.pitch);
+  expect(center.pitch).toBeCloseTo(nextCenter.pitch, 8);
+  expect(rightSide.pitch).toBeCloseTo(leftSide.pitch, 8);
+  expect(center.yaw).toBeCloseTo(nextCenter.yaw, 8);
+  expect(center.yaw).toBeCloseTo(fullStride.yaw, 8);
+  expect(center.pitch).toBeCloseTo(fullStride.pitch, 8);
+  expect(rightSide.yaw).toBeGreaterThan(center.yaw);
+  expect(leftSide.yaw).toBeLessThan(center.yaw);
+  expect(outgoing.yaw).toBeCloseTo(returning.yaw, 8);
+  expect(outgoing.pitch).not.toBeCloseTo(returning.pitch, 8);
+});
+
+it('bounds aim changes at gait switches and airborne freezes by steady-walk motion', () => {
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const travel = speed / 60;
+  const { blockSize } = step();
+  const aimStep = (stridePhase: number, stepIndex: number) =>
+    step({ velocity: [0, 0, -speed / blockSize], stridePhase, stepIndex });
+  const steadyAim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  let steadyClock = initialFootstepClock();
+  let steadyFrame = NEUTRAL_AIM;
+  let steadyWalkBound = 0;
+  for (let tick = 0; tick < 480; tick++) {
+    const next = advanceFootsteps(steadyClock, 'walking', travel);
+    const frame = steadyAim.advance(aimStep(next.clock.stridePhase, next.clock.stepIndex));
+    if (tick > 0) {
+      steadyWalkBound = Math.max(
+        steadyWalkBound,
+        Math.hypot(frame.yaw - steadyFrame.yaw, frame.pitch - steadyFrame.pitch),
+      );
+    }
+    steadyClock = next.clock;
+    steadyFrame = frame;
+  }
+
+  const transitionAim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  let transitionClock = initialFootstepClock();
+  let transitionFrame = NEUTRAL_AIM;
+  for (let tick = 0; tick < 120; tick++) {
+    const next = advanceFootsteps(transitionClock, 'walking', travel);
+    transitionFrame = transitionAim.advance(aimStep(next.clock.stridePhase, next.clock.stepIndex));
+    transitionClock = next.clock;
+  }
+  const jogging = advanceFootsteps(transitionClock, 'jogging', travel);
+  const joggingFrame = transitionAim.advance(aimStep(jogging.clock.stridePhase, jogging.clock.stepIndex));
+  const gaitChange = Math.hypot(joggingFrame.yaw - transitionFrame.yaw, joggingFrame.pitch - transitionFrame.pitch);
+  const airborne = advanceFootsteps(jogging.clock, 'still', 0);
+  const airborneFrame = transitionAim.advance(aimStep(airborne.clock.stridePhase, airborne.clock.stepIndex));
+  const takeoff = Math.hypot(airborneFrame.yaw - joggingFrame.yaw, airborneFrame.pitch - joggingFrame.pitch);
+  const landed = advanceFootsteps(airborne.clock, 'walking', travel);
+  const landedFrame = transitionAim.advance(aimStep(landed.clock.stridePhase, landed.clock.stepIndex));
+  const landing = Math.hypot(landedFrame.yaw - airborneFrame.yaw, landedFrame.pitch - airborneFrame.pitch);
+
+  expect(steadyWalkBound).toBeGreaterThan(0);
+  expect(gaitChange).toBeLessThanOrEqual(steadyWalkBound + 1e-10);
+  expect(takeoff).toBeLessThanOrEqual(steadyWalkBound + 1e-10);
+  expect(landing).toBeLessThanOrEqual(steadyWalkBound + 1e-10);
+});
+
+it('sets lune vertical extent as the content fraction of its horizontal extent', () => {
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const { blockSize } = step();
+  const aim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  const yaw: number[] = [];
+  const pitch: number[] = [];
+  for (let sample = 0; sample < 1024; sample++) {
+    const frame = aim.advance(
+      step({
+        velocity: [0, 0, -speed / blockSize],
+        stridePhase: sample / 1024,
+      }),
+    );
+    yaw.push(frame.yaw);
+    pitch.push(frame.pitch);
+  }
+  const horizontalExtent = Math.max(...yaw) - Math.min(...yaw);
+  const verticalExtent = Math.max(...pitch) - Math.min(...pitch);
+
+  expect(horizontalExtent).toBeGreaterThan(0);
+  expect(verticalExtent / horizontalExtent).toBeCloseTo(stanceTuning.wobbleVerticalToHorizontalRatio, 2);
+});
+
+it('scales the vertical jitter with the lune without changing horizontal swing', () => {
+  const ratio = stanceTuning.wobbleVerticalToHorizontalRatio;
+  const flatterRatio = ratio / 2;
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const { blockSize } = step();
+  const authored = createAim(1, stanceTuning.wobbleLimitRadians, 1, ratio);
+  const flatter = createAim(1, stanceTuning.wobbleLimitRadians, 1, flatterRatio);
+  const plainLune = createAim(1, stanceTuning.wobbleLimitRadians, 0, ratio);
+  let observedVerticalJitter = false;
+  for (let sample = 0; sample < 128; sample++) {
+    const stridePhase = sample / 128;
+    const aimStep = step({
+      velocity: [0, 0, -speed / blockSize],
+      stridePhase,
+      stepIndex: 1,
+    });
+    const authoredFrame = authored.advance(aimStep);
+    const flatterFrame = flatter.advance(aimStep);
+    const plainFrame = plainLune.advance(aimStep);
+    expect(flatterFrame.yaw).toBeCloseTo(authoredFrame.yaw, 12);
+    expect(flatterFrame.pitch).toBeCloseTo(authoredFrame.pitch * (flatterRatio / ratio), 10);
+    observedVerticalJitter ||= Math.abs(authoredFrame.pitch - plainFrame.pitch) > 1e-10;
+  }
+  expect(observedVerticalJitter).toBe(true);
+});
+
+it('seeded jitter keeps the configured share of the walking path off the lune', () => {
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const { blockSize } = step();
+  const samplesPerStep = 16;
+  const sampledSteps = 128;
+  const sampleDistance = STEP_DISTANCE_METRES.walking / samplesPerStep;
+  const jittered = createAim();
+  const lune = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  let clock = initialFootstepClock();
+  let offLune = 0;
+  let samples = 0;
+  for (let stepIndex = 0; stepIndex < sampledSteps; stepIndex++) {
+    for (let sample = 0; sample < samplesPerStep; sample++) {
+      ({ clock } = advanceFootsteps(clock, 'walking', sampleDistance));
+      const aimStep = step({
+        velocity: [0, 0, -speed / blockSize],
+        stridePhase: clock.stridePhase,
+        stepIndex: clock.stepIndex,
+      });
+      const withJitter = jittered.advance(aimStep);
+      const onLune = lune.advance(aimStep);
+      if (Math.hypot(withJitter.yaw - onLune.yaw, withJitter.pitch - onLune.pitch) > 1e-10) {
+        offLune += 1;
+      }
+      samples += 1;
+    }
+  }
+  const observedShare = offLune / samples;
+  const expectedShare = stanceTuning.wobbleJitterShare;
+  const samplingMargin = 1 / samplesPerStep + 3 * Math.sqrt((expectedShare * (1 - expectedShare)) / sampledSteps);
+  expect(Math.abs(observedShare - expectedShare)).toBeLessThan(samplingMargin);
+});
+
+it('eases seeded jitter within the lune speed bound across footfalls', () => {
+  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
+  const stepDistance = STEP_DISTANCE_METRES.walking;
+  const { blockSize } = step();
+  const travelPerFrame = speed / 60;
+  const jittered = createAim();
+  const lune = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  let clock = initialFootstepClock();
+  let previousJittered: ReturnType<AimController['advance']> | undefined;
+  let previousLune: ReturnType<AimController['advance']> | undefined;
+  let lunePeak = 0;
+  for (let tick = 0; tick < 480; tick++) {
+    ({ clock } = advanceFootsteps(clock, 'walking', travelPerFrame));
+    const aimStep = step({
+      velocity: [0, 0, -speed / blockSize],
+      stridePhase: clock.stridePhase,
+      stepIndex: clock.stepIndex,
+    });
+    const currentJittered = jittered.advance(aimStep);
+    const currentLune = lune.advance(aimStep);
+    lunePeak = Math.max(lunePeak, Math.hypot(currentLune.yaw, currentLune.pitch));
+    if (previousJittered && previousLune) {
+      const jitteredDelta = Math.hypot(
+        currentJittered.yaw - previousJittered.yaw,
+        currentJittered.pitch - previousJittered.pitch,
+      );
+      const luneDelta = Math.hypot(currentLune.yaw - previousLune.yaw, currentLune.pitch - previousLune.pitch);
+      const easedDeviationBound =
+        2 * stanceTuning.wobbleJitterAmplitudeFraction * lunePeak * Math.PI * (travelPerFrame / stepDistance);
+      expect(jitteredDelta).toBeLessThanOrEqual(luneDelta + easedDeviationBound + 1e-10);
+    }
+    previousJittered = currentJittered;
+    previousLune = currentLune;
+  }
+});
+
+it('pump skill-zero readied-walk wobble fits its content bound', () => {
+  const wobble = readiedWalkWobble(0);
+  expect(wobble).toBeGreaterThan(0);
+  expect(wobble).toBeLessThan(stanceTuning.wobbleLimitRadians);
+});
+
+it('wobble can use its larger content bound without merging it into recoil', () => {
+  const { variance } = pumpSkillEffects(0);
+  const aim = createAim(variance);
+  const speed = 3;
+  const { blockSize } = step();
+  let clock = initialFootstepClock();
+  let peak = 0;
+  for (let tick = 0; tick < 240; tick++) {
+    ({ clock } = advanceFootsteps(clock, 'walking', speed / 60));
+    const frame = aim.advance(
+      step({
+        velocity: [0, 0, -speed / blockSize],
+        variance,
+        stridePhase: clock.stridePhase,
+        stepIndex: clock.stepIndex,
+      }),
+    );
+    peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));
+  }
+  expect(peak).toBeCloseTo(stanceTuning.wobbleLimitRadians, 8);
+});
+
+it('readied-walk wobble shrinks with firearms skill at equal movement', () => {
+  const levels = [0, Math.floor(SKILL_LEVEL_MAX / 2), SKILL_LEVEL_MAX];
+  const wobble = levels.map(readiedWalkWobble);
+  expect(wobble[1]).toBeLessThan(wobble[0]!);
+  expect(wobble[2]).toBeLessThan(wobble[1]!);
+  const configuredExpertFraction = stanceTuning.wobbleSkillTenVariance / pumpHandling.singleShot.variance;
+  expect(wobble[2]! / wobble[0]!).toBeCloseTo(configuredExpertFraction, 4);
+});
+
+it('quick-look lag follows the skill-scaled wobble endpoint', () => {
+  const turnLag = (level: number): number => {
+    const effects = pumpSkillEffects(level);
+    const aim = createAim(effects.variance);
+    aim.advance(step({ variance: effects.variance }));
+    const frame = aim.advance(step({ yaw: 0.01, variance: effects.variance }));
+    return Math.abs(frame.yaw);
+  };
+  expect(turnLag(SKILL_LEVEL_MAX)).toBeLessThan(turnLag(0));
 });
 
 it('firearms skill reduces climb over the same full-auto burst', () => {
@@ -284,9 +624,8 @@ it('firearms skill effects improve through expert level and legendary matches ex
   const legendary = skillEffects(SKILL_LEVEL_LEGENDARY);
   expect(experienced.variance).toBeLessThan(novice.variance);
   expect(experienced.recoilKickScale).toBeLessThan(novice.recoilKickScale);
-  expect(experienced.recoilKickScale).toBe(experienced.variance);
-  expect(experienced.recoilRecoveryRate).toBe(2 - experienced.variance);
   expect(experienced.recoilRecoveryRate).toBeGreaterThan(novice.recoilRecoveryRate);
+  expect(experienced.variance).toBe(stanceTuning.wobbleSkillTenVariance);
   expect(experienced.reloadDuration).toBeLessThan(novice.reloadDuration);
   expect(experienced.rackDuration).toBeLessThan(novice.rackDuration);
   const noviceStance = firearmStanceEffects(0, stanceTuning);
