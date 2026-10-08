@@ -19,9 +19,12 @@ interface BrokenVariant {
 }
 
 /** Every way a part can end up unplaced: cut off from the root, wired to a missing port, or no usable root. */
-const brokenVariants = (assembly: Assembly): BrokenVariant[] => {
+const brokenVariants = (assembly: Assembly, sampleOnly = false): BrokenVariant[] => {
   const out: BrokenVariant[] = [];
   const edit = (kind: BrokenVariant['kind'], name: string, fn: (a: MutableAssembly) => void): void => {
+    if (sampleOnly && out.some((candidate) => candidate.kind === kind)) {
+      return;
+    }
     const copy = structuredClone(assembly) as MutableAssembly;
     fn(copy);
     out.push({ kind, name: `${assembly.name}: ${name}`, assembly: copy });
@@ -45,18 +48,6 @@ const brokenVariants = (assembly: Assembly): BrokenVariant[] => {
   return out;
 };
 
-/** The first variant of each kind: enough to hit every way of breaking a fixture, a fraction of the cost. */
-const sampleVariants = (variants: BrokenVariant[]): BrokenVariant[] => {
-  const seen = new Set<BrokenVariant['kind']>();
-  return variants.filter(({ kind }) => {
-    if (seen.has(kind)) {
-      return false;
-    }
-    seen.add(kind);
-    return true;
-  });
-};
-
 interface ResolvedVariant {
   name: string;
   resolved: ReturnType<typeof resolve> | undefined;
@@ -75,33 +66,41 @@ const resolveAll = (variants: BrokenVariant[]): ResolvedVariant[] =>
   });
 
 /**
- * Per-rule timeout, proportional to the number of variants. solid-overlap, the slowest rule, took
- * about 15 ms per variant on the sample and 40 ms on the full set (23 s for 587) on a host at load 6-8;
- * 100 ms leaves headroom for a loaded host without a flat, oversized limit.
+ * Per-rule timeout scales with the number of variants, keeping exhaustive runs bounded without a flat limit.
  */
 const MS_PER_VARIANT = 100;
 
-const defineRuleChecks = (resolvedVariants: ResolvedVariant[]): void => {
+const defineRuleChecks = (resolvedVariants: ResolvedVariant[], timeoutMs?: number): void => {
   for (const rule of ALL_RULES) {
-    it(
-      `${rule.id} does not throw on any unplaced-part variant`,
-      () => {
-        const failures: string[] = [];
-        for (const { name, resolved, error } of resolvedVariants) {
-          if (error || !resolved) {
-            failures.push(`${name}: ${error?.message}`);
-            continue;
-          }
-          try {
-            rule.check(resolved);
-          } catch (checkError) {
-            failures.push(`${name}: ${(checkError as Error).message}`);
-          }
+    const failures = (): string[] => {
+      const out: string[] = [];
+      for (const { name, resolved, error } of resolvedVariants) {
+        if (error || !resolved) {
+          out.push(`${name}: ${error?.message}`);
+          continue;
         }
-        expect(failures).toEqual([]);
-      },
-      resolvedVariants.length * MS_PER_VARIANT,
-    );
+        try {
+          rule.check(resolved);
+        } catch (checkError) {
+          out.push(`${name}: ${(checkError as Error).message}`);
+        }
+      }
+      return out;
+    };
+    const name = `${rule.id} does not throw on any unplaced-part variant`;
+    if (timeoutMs === undefined) {
+      it(name, () => {
+        expect(failures()).toEqual([]);
+      });
+    } else {
+      it(
+        name,
+        () => {
+          expect(failures()).toEqual([]);
+        },
+        timeoutMs,
+      );
+    }
   }
 };
 
@@ -124,13 +123,11 @@ describe('rules on assemblies with unplaced parts', () => {
     expect(() => validate(a, gunDomain)).not.toThrow();
   });
 
-  const perFixture = loadFixtures().map(brokenVariants);
-  const allVariants = perFixture.flat();
-  const sampled = perFixture.flatMap(sampleVariants);
+  const fixtures = loadFixtures();
+  const sampled = fixtures.flatMap((fixture) => brokenVariants(fixture, true));
 
-  it('has variants to sweep', () => {
-    expect(sampled.length).toBeGreaterThan(50);
-    expect(allVariants.length).toBeGreaterThan(sampled.length);
+  it('samples one fixture variant for every unplaced-part cause', () => {
+    expect(new Set(sampled.map(({ kind }) => kind))).toEqual(new Set(['disconnected', 'missing-port', 'missing-root']));
   });
 
   describe('on the first variant of each kind per fixture', () => {
@@ -138,8 +135,8 @@ describe('rules on assemblies with unplaced parts', () => {
   });
 
   sweepGroup('on every variant of every fixture', () => {
-    // A skipped group still runs its body, so resolve nothing in the default run.
-    defineRuleChecks(resolveAll(runSweeps ? allVariants : []));
+    const allVariants = runSweeps ? fixtures.flatMap((fixture) => brokenVariants(fixture)) : [];
+    defineRuleChecks(resolveAll(allVariants), allVariants.length * MS_PER_VARIANT);
   });
 
   it('leaves reporting the unplaced part to the structure and required-ports checks', () => {

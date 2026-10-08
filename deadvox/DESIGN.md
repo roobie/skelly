@@ -513,9 +513,10 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Where materials come from:** your hands and pockets, and piles and
   containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
-- **Disassembly** is a recipe run in reverse. It returns part of the
-  components, depending on skill and the tools used. In Slice 2, that reverse is
-  an authored yield or salvage list (see [SLICE-2.md](SLICE-2.md), "2.7").
+- **Disassembly** is a recipe run in reverse. An authored yield or salvage list
+  keeps the result specific to the item's design; it isn't calculated by
+  reversing every alternative or every recipe that could make the item. See
+  `docs/crafting.md`, `planDisassembly`.
 - **Crafting runs compressed**, like other long actions, and can be interrupted
   and resumed. An interrupted craft leaves an "in progress" item that holds its
   components.
@@ -745,7 +746,13 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Magazines (3.2, d114):** BR, 2026-10-05 21:04: "magazines are real, you load them one by one, like in dayz". A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (CONTROLS.md, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor, extending d62's per-shell reading to per-round handling. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
 - **Rifles (3.2, d114):** the AR and AK are real firearms that fire chambered cartridges in any mode; the debug rifles' virtual rounds are gone. A magazine-fed firearm owns a slot map, and the fitted magazine is its `magazine` entry. It is a whole item that saves inside the rifle, so the same magazine comes back out. The map leaves room for 3.7's attachments to add slot kinds without reshaping saves (SLICE-3.md, "3.7 Modular weapons"). Firing and working the charging handle feed the magazine's top round; with no magazine or an empty one, the chamber stays empty. A rifle round is one hitscan ray through the posed zombie regions, on the path pellets and melee already use, so it damages the region it actually crosses (d114-5). Damage, push, reach and a head multiplier come from the cartridge's `ammo` content and are gameplay estimates, so calibres differ by data alone; the shotgun shell's pellets read the same fields. BR, 2026-10-07 11:27, asked whether one headshot should kill, two torso hits down a shambler and one hit sever a limb: "depends on gun (or really mainly caliber and ammunition)". So no rule outside the cartridge's data sets how many hits a body takes. A region's pierce resistance applies as it does in melee, and a round draws no damage spread. The hit resolves before the trajectory reaches presentation, so impact marks can't change damage ("Shot impacts" above). See `src/core/pellets.ts`, `projectileShot`, and `src/core/zombies.ts`, `ZombieSystem.firePellets`. BR, 2026-10-07 11:20 (CONTROLS.md, "Reload, rack, remove"): "No, it should reload with the mag that is fullest in inventory, no matter what is loaded in gun"; double-pressing R works the charging handle, "yes, correct"; "Tap-then-press-and-hold R means remove mag". So hold R starts one magazine change that swaps in the fullest carried magazine that fits, even one with fewer rounds than the fitted one, and the swapped-out magazine goes to a pocket, or to the ground. With no fitting magazine carried, R refuses. A change is one motion, so it neither repeats while R is held nor cancels on release, unlike shell-by-shell loading. A tap, then a held press, removes the fitted magazine by the same destination rule, so a lone magazine can come out to be refilled. BR, 2026-10-07 13:21 (d114-11), on what that gesture does on the pump: "d114-11: i think it makes sense for it to rack, but keep racking as long as the R button is held - it then reflects what removing the mag means for a firearm with it -> remove the magazine capacity". So on a gun without a detachable magazine it racks, then racks again after each rack while R is held and anything is left in the chamber or the tube, which unloads the gun. Each live shell lands in the pile of the block it falls on, as a spent case does ("Spent cases per block" below), and stacks with the identical shells there. Releasing R lets the rack under way finish and starts no other. See `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`, `src/game/firearmHandling.ts`, `FirearmMechanics.loadNext`, `FirearmMechanics.removeMagazine` and `FirearmMechanics.cock`, and `src/game/reloadInput.ts`, `ReloadInput` and `ReloadBinding.oneAction`. BR's FIX on #337, 2026-10-07 12:09 (d114-11): "#337: missing animation, too fast, and removing the magazine doesn't actually remove it: Screenshot_2026-10-07_12-09-28.png - i.e. the model should reflect reality"; and at 12:11: "to be clear: #337: missing animation for cocking the charging handle, and removing mag and inserting mag". So a gun is drawn with the magazine it has ("One item, one look" in "Items and inventory"), and each handling job plays on the held gun from the job's progress alone, adding no simulation, save or replay state. A removal draws the magazine out of the well, an insertion seats the new one, and a change plays one, then the other. Working the charging handle has the off hand take the handle, ride it back and let go. Meanwhile the rifle turns so the hands' work shows in first person, and the crosshair turns with it (BR's 14:55 ruling under "Firearms" above). BR, 2026-10-07 15:34 (d114-13), on the rack: "#337: / AR: animation for charging the rifle currently turns it somewhat away from the player during animation - whereas it should somewhat turn toward. That is: / currently: rotates clockwise on the X axis and counter-clockwise on the Y axis / whereas, I would think it's better if it did exactly the opposite / AK: more or less the same as for the AR; HOWEVER, the AK needs to be tilted _more_ (i.e larger rotation ccw on the X axis) / this is due to the AR's charging handle being more accessible for the left hand (on top of receiver) whereas the charging handle on the AK is on the right side on the receiver. / _however_ the opposite is true for a lefty"; and at 15:42: "yeah, my axes are relation to gungen's axes on the weapon" / "x is forward along bore" / "y is up" / "z is side". So a rack turns the rifle's far side toward the player and rolls its charging handle toward the off hand, further when the handle sits on the far side. The AK's handle is on its right and the AR's on top, so a right-hander's AK rolls more than the AR, and a left-hander's less. The model's `chargingHandleDegrees` says where the handle sits; it is hand-authored, since the gungen export does not carry it. A magazine job keeps its turn, muzzle in. Removing and inserting each take their own time, so a removal alone is quicker than a change, and the firearms skill's reload factor shortens both; the times and their source are on `MAGAZINE_REMOVE_SIM_SECONDS` in `src/game/firearmHandling.ts`. See `src/render/firearmModel.ts`, `magazineMotion` and `rackGrip`; `src/render/hands.ts`, `HeldItems.poseMagazine` and `HeldItems.rackHandGrip`; `src/render/handlingTurn.ts`, `handlingRotation`; and `docs/firearm-cycle-playback.md`.
 - **Military loot (3.2, d114):** BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2). Their magazines and cartridges, loose or boxed, follow them, so a hamlet find can't feed a rifle. Which items are military-only follows from content: the magazine-fed firearms, the magazines and cartridges of their calibres, and any package that unpacks into one of those, however deeply nested, so content order can't change the set. Validation enforces this as a property of authored content. Only a loot table marked `military` may hold such an item or nest another military table. No salvage, disassembly or crafting recipe may yield one. An authored site's fixed loot may place one only in a container that rolls a military table. The reachability report walks the buildings of authored sites not marked `demo` (#346, docs/content.md) as well as the hamlet's, so the rifles become reachable when 3.11 places the military camp (#181, beat 6) with a container that rolls the military table. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
-- **Spent cases per block (3.2, d114):** BR, 2026-10-07 11:27, asked whether to save spent cases per block with a deterministic scatter or each at its exact landing point: "keep it simple in code, so i guess per block?" A case joins the pile of the block it lands on, as a count of `spent_case_<calibre>` items that saves like any pile (BR, 2026-10-05 22:17: "they should be saved"). The pile draws its cases as a deterministic scatter ("Piles" above). This replaces ADR 0003's first counter per area of about 20 m (docs/decisions/0003-firearm-handling.md), which put a case in a same-calibre pile it hadn't landed in. See `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`, `spentCaseScatter`.
+- **Spent cases per block:** Save a calibre-specific case count in the block where
+  each case lands; this keeps recoverable cases with their actual landing place
+  without saving an individual physics body for every shot. A deterministic
+  scatter represents the pile visually. See
+  `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
+  `FirearmMechanics.ejectionDrop`, and `src/render/spentCaseScatter.ts`,
+  `spentCaseScatter`.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
@@ -857,45 +864,9 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 ## Held-item throws
 
-BR, 2026-10-07 14:27:
+A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `throwHeldItem`.
 
-> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
-
-BR, 2026-10-07 15:48:
-
-> "hmm, yeah holding T works for throwing - however, when throwing the AR: during flight, it looks like a lit candle (or perhaps uncolored glowstick)"
->
-> "also: when handling progress is on: a throwing meter showing force should show based on throwing-charge"
-
-The rebindable T action throws only the primary-hand item; an empty primary hand
-refuses instead of reaching into the off hand. A release before BR's minimum held-time threshold throws nothing. With no rack
-or magazine job active, range charge starts on press and grows through the
-minimum hold, so the minimum is a release gate rather than an extra delay before
-charging. If T is pressed during a handling job, the throw waits to charge until
-the job finishes rather than interrupting the rack or magazine turn; releasing
-while it waits cancels the throw. Item weight limits launch range through arm
-speed and energy; a light item retains the existing maximum, while a heavier one
-travels no farther. A thrown item keeps its identity and state when it lands,
-including a firearm's fitted magazine, its rounds and chamber state. A lit
-glowstick remains lit at its landing pile. Flight uses the same item look as a
-ground pile, so a firearm carries its fitted magazine through the arc; ordinary
-items without a model use the same low bundle fallback as a ground pile,
-scattered cases keep the pile placeholder, and an active glowstick keeps its
-emissive marker. The optional Handling progress HUD shows charge while it is
-accumulating and marks the minimum-release point, so the release gate is visible
-without changing the throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
-`src/render/itemLook.ts`, `itemLook`, `src/ui/hud.ts`, `handlingViewModel`, and
-`src/game/play.ts`, `beginItemThrow` and `advancePendingItemThrow`.
-
-BR first ruled that holding T longer should throw farther and right-click should
-cancel (2026-10-06 14:24). BR then ruled (2026-10-07 14:35):
-
-> "yes. And at some point, likely not before playtest, atmospheric drag will affect too - i.e. a flimsy glowstick doesn't get as far as a hand grenade"
-
-Drag is deliberately absent until [#368](https://github.com/roobie/skelly/issues/368).
-The range uses the existing item `weight` and `senses` tuning; see
-`src/core/itemThrow.ts`, `throwDistanceForItem`, and `src/game/play.ts`,
-`finishItemThrow`. Throwing adds no hit damage or landing lure.
+Mass limits range so a light item does not fly as far as a heavy one; when #368 adds atmospheric drag, it can further limit light items without replacing that mass-based limit. Throwing adds no hit damage or landing lure.
 
 ## Zombies
 
@@ -1226,8 +1197,15 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Zombie bodies:** each mobgen model/seed variant owns a block of pose rows,
   one per drawn actor. Missing per-actor rows leave the shared bone texture
-  unable to place that actor's mesh in the world. See `src/render/mobActors.ts`,
-  `MobActorMeshes`.
+  unable to place that actor's mesh in the world. Each live actor with an
+  allocated row keeps its root placement current on every sync, including while
+  off-screen; its cached pose moves the bones with that root until full pose
+  packing resumes. Skipping both left stale bones in rows still drawn by the
+  instanced mesh, so re-entry could snap by the movement accumulated while
+  culled. A despawn or streamed unload can reuse a variant row, so the new actor
+  must build its own pose before drawing. See `src/render/mobActors.ts`,
+  `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
+  `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
   is still a little jaggedness. But we won't pursue this more right now, so I'll
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.

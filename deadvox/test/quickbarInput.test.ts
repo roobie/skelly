@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { HUD_HINTS_HOLD_MS, INPUT_BINDINGS } from '../src/game/inputBindings.ts';
 import { PressHoldInput } from '../src/game/pressHoldInput.ts';
 import { QuickbarInput } from '../src/game/quickbarInput.ts';
-import { RELOAD_GESTURE_MS } from '../src/game/reloadInput.ts';
 
 const fixture = () => {
   const taps: number[] = [];
@@ -14,29 +14,6 @@ const fixture = () => {
   };
 };
 describe('quickbar gesture admission', () => {
-  it('fires a hold at the threshold and a tap just below it', () => {
-    const action = INPUT_BINDINGS.find(({ id }) => id === 'world.interact')?.id;
-    if (!action) {
-      throw new Error('F interaction binding is missing');
-    }
-    const events: string[] = [];
-    const input = new PressHoldInput<string>({
-      holdRealMs: () => RELOAD_GESTURE_MS.hold,
-      tap: (value) => events.push(`tap:${value}`),
-      hold: (value) => events.push(`hold:${value}`),
-    });
-    input.keyDown(action, 10);
-    input.update(10 + RELOAD_GESTURE_MS.hold - 1);
-    expect(events).toEqual([]);
-    input.keyUp(action, 10 + RELOAD_GESTURE_MS.hold - 1);
-    expect(events).toEqual(['tap:world.interact']);
-
-    input.keyDown(action, 50);
-    input.update(50 + RELOAD_GESTURE_MS.hold);
-    expect(events).toEqual(['tap:world.interact', 'hold:world.interact']);
-    input.keyUp(action, 50 + RELOAD_GESTURE_MS.hold);
-    expect(events).toEqual(['tap:world.interact', 'hold:world.interact']);
-  });
   it('dispatches a quick release as a tap only', () => {
     const { input, taps, holds } = fixture();
     input.keyDown(2, 10);
@@ -73,6 +50,26 @@ describe('quickbar gesture admission', () => {
     input.keyUp(action, 50 + HUD_HINTS_HOLD_MS * 2);
     expect(toggles).toEqual([action]);
   });
+  it('classifies T release below the authored stance threshold as a tap and the boundary as a drop', () => {
+    const holdMs = BUNDLED_CONTENT.registry.senses.get('player')!.light.throwStanceDropHoldRealSeconds * 1000;
+    const actions: string[] = [];
+    const input = new PressHoldInput<string>({
+      holdRealMs: () => holdMs,
+      tap: () => actions.push('stance-toggle'),
+      hold: () => actions.push('drop'),
+    });
+
+    input.keyDown('player.throw', 0);
+    input.update(holdMs - 1);
+    input.keyUp('player.throw', holdMs - 1);
+    expect(actions).toEqual(['stance-toggle']);
+
+    input.keyDown('player.throw', holdMs + 10);
+    input.update(holdMs * 2 + 10);
+    input.keyUp('player.throw', holdMs * 2 + 10);
+    expect(actions).toEqual(['stance-toggle', 'drop']);
+  });
+
   it('cancels a held gesture without dispatching when input is lost', () => {
     const { input, taps, holds } = fixture();
     input.keyDown(0, 0);

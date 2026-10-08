@@ -11,6 +11,7 @@ read_if:
   - you add a pointer, click or wheel action
   - you implement or inspect input recording and replay
   - you change how a locked door advertises its crowbar fallback
+  - you change stance hints or first-person held poses
 ---
 
 # Controls and input ownership
@@ -217,28 +218,25 @@ becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
 
 ## Input recording and replay (d101)
 
-Replay capture is sampled at the fixed player-tick boundary so timing follows simulation
-steps rather than browser event timestamps. The downloadable artifact embeds its starting
-save and compatibility identity; it is explicit and does not change world-save state.
-The debug actions make import and export available without adding another input-binding
-surface. Retaining an earlier segment preserves recent history across bounded storage
-rollover while its start snapshot keeps the exported input replayable. An end-state
-fingerprint surfaces simulation drift from uncovered input rather than silently implying
-reproduction. The scope question was whether replay should cover inventory and crafting
-screen use. BR asked on 2026-10-06:
+Replay samples controls at fixed player ticks so action order does not depend on browser
+event timing. Hand-changing gestures apply at the sample that records them, in recorded
+order. A throw and a following hand gesture therefore use the same pose and remaining items
+in live play and replay. The replay rationale remains in
+[SLICE-3.md](SLICE-3.md), 3.10. Replay fingerprints in `src/game/inputReplay.ts`,
+`replayStateFingerprint`, compare simulation times exactly. Playback in
+`src/game/inputReplayDriver.ts`, `InputReplayDriver`, advances to the next restored player
+scheduler cursor and then to the recorded end time, so live and replay share the same tick
+boundaries.
 
-> "how much effort is it to scope it to inventory and crafting too?"
-> "yes, do inventory and crafting in the validation too"
-
-Inventory and crafting screen actions therefore carry UID-based command payloads through
-the shared dispatcher; see `applyReplayActionPayload` in `src/game/replayCommands.ts`,
-`InventoryScreen` in `src/ui/inventoryScreen.ts`, and `startPlay` in `src/game/play.ts`.
-Replay export stays disabled after any firearm-handling slider is used in a session, even if
-set back to content values: using a slider means the session no longer uses content handling,
-and a reload clears the override. See `withReplayExportGuard` in `src/game/inputReplay.ts`.
-The replay rationale remains in [SLICE-3.md](SLICE-3.md), 3.10. See `INPUT_BINDINGS` in
-`src/game/inputBindings.ts` for the debug export and import actions, `InputReplayRecorder`
-and `replayStateFingerprint` in `src/game/inputReplay.ts`.
+Replay covers inventory and crafting because those player flows should be reproducible,
+not just movement. Its starting save and compatibility identity keep the recording separate
+from world-save state; end-state fingerprints reveal uncovered input. Export is disabled
+after firearm handling is overridden because the session no longer represents content
+handling. Replay payloads are applied by `src/game/replayCommands.ts`,
+`applyReplayActionPayload`, and routed by `src/game/play.ts`, `startPlay`. Hand-changing
+order follows `src/game/playerTickActions.ts`, `PlayerTickActions`. Export and replay state
+are handled by `src/game/inputReplay.ts`, `withReplayExportGuard`, `InputReplayRecorder`,
+and `replayStateFingerprint`.
 
 ## Readiness and melee (2026-10-05, #267)
 
@@ -256,9 +254,9 @@ blocking”. See [SLICE-3.md](SLICE-3.md), 3.1,
 `src/game/inputBindings.ts` describes the mouse actions, while the registry owns
 keyboard bindings.
 
-## Held-item throw
+## Throwing stance
 
-**BR, 2026-10-06 14:24:** “press-and-hold T -> the longer held -> the longer the throw. Cancel by right-clicking mouse”. **BR, 2026-10-07 14:27:** “It requires to be held 1 second before throwing”. T is the rebindable `player.throw` action; it throws the primary-hand item and never falls back to the off hand. The minimum is measured in simulation time. With no rack or magazine job active, range grows from the initial press to the charged maximum. If T is pressed during either job, the throw waits until it finishes before charging; releasing while it waits cancels the throw. A shorter release throws nothing, and right-click cancels. Item weight limits range through the one item-range function; BR later approved a range reduction by weight. See `src/game/inputBindings.ts`, `INPUT_BINDINGS`, and `src/game/play.ts`, `beginItemThrow` and `finishItemThrow`.
+Tap T to toggle throwing stance; holding it through the authored real-time threshold drops one held item, choosing off hand before dominant hand, without toggling. The hold gesture separates a deliberate drop from the stance toggle, and T keeps its separate inventory quick-move role. In stance, hold mouse-1 to charge and release to throw; the off-hand item takes priority, mouse-1 never fires a firearm, and right mouse cancels a charge. The stance remains after a throw while either hand is occupied and ends when both are empty. T tap exits and cancels an active charge. The raised, drawn-back held-item pose makes the stance legible without a HUD cue; the optional THROW hint follows the interaction HUD setting. R is ignored rather than queued during charge, so a held throw cannot unexpectedly start a reload, rack or magazine removal after it ends. See `src/content/base/senses.json`, `throwStanceDropHoldRealSeconds`, `src/core/heldPose.ts`, `throwStanceHandOffset`, `src/render/hands.ts`, `HeldItems`, `src/game/pressHoldInput.ts`, `PressHoldInput`, `src/game/play.ts`, `toggleThrowingStance`, `beginItemThrow`, `finishItemThrow`, `reloadBinding`, and `throwStanceCueVisible`.
 
 ## Remaining questions
 

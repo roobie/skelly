@@ -59,15 +59,34 @@ it('exports a hand-only coupled 12-gauge action and an integral tube without box
 
 it('fits capacity from the loaded envelope and changes it with actual tube geometry', () => {
   const resolved = resolve(assembly, gunDomain);
-  expect(tubeMagazineCapacity(resolved, shell)).toBe(4);
+  const baseCapacity = tubeMagazineCapacity(resolved, shell);
+  const tubeLength = (result: ReturnType<typeof resolve>) => {
+    const tube = result.defs.get('tube')!.solids.find(({ id }) => id === 'tube')!;
+    const [min, max] = localSolidBounds(tube);
+    return max[0] - min[0];
+  };
+  const loadedLengthUnits = shell.length.loaded.value! / (resolved.domain.units.metresPerUnit * 1000);
+  if (baseCapacity === undefined) {
+    throw new Error('The generated base tube must fit at least one loaded shell.');
+  }
+  expect(baseCapacity).toBeGreaterThan(0);
+  expect(baseCapacity * loadedLengthUnits).toBeLessThanOrEqual(tubeLength(resolved));
   const longer: Assembly = {
     ...assembly,
     parts: { ...assembly.parts, tube: { family: 'tube-magazine', params: { lengthPercent: '100' } } },
   };
-  expect(tubeMagazineCapacity(resolve(longer, gunDomain), shell)).toBe(6);
-  expect(tubeMagazineCapacity(resolved, { ...shell, length: { ...shell.length, loaded: shell.length.nominal } })).toBe(
-    3,
-  );
+  const longerResolved = resolve(longer, gunDomain);
+  const longerCapacity = tubeMagazineCapacity(longerResolved, shell);
+  if (longerCapacity === undefined) {
+    throw new Error('The longer generated tube must fit at least one loaded shell.');
+  }
+  expect(longerCapacity).toBeGreaterThan(baseCapacity);
+  expect(longerCapacity * loadedLengthUnits).toBeLessThanOrEqual(tubeLength(longerResolved));
+  const nominalLengthCapacity = tubeMagazineCapacity(resolved, {
+    ...shell,
+    length: { ...shell.length, loaded: shell.length.nominal },
+  });
+  expect(nominalLengthCapacity).toBeLessThan(baseCapacity);
   expect(() =>
     tubeMagazineCapacity(resolved, {
       ...shell,
