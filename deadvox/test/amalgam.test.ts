@@ -21,8 +21,8 @@ import { makeScale } from '../src/core/scale.ts';
 import { compileTemplate } from '../src/core/templates.ts';
 import { World } from '../src/core/world.ts';
 import { zombieFigure } from '../src/core/zombieFigure.ts';
-import { posedShambler, zombiePoseInputFor } from '../src/core/zombiePose.ts';
-import { posedAllRegionBoxes, posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
+import { zombiePoseInputFor } from '../src/core/zombiePose.ts';
+import { posedAmalgamRegionBoxes } from '../src/core/zombieRegions.ts';
 import {
   activeAmalgamMembers,
   FISTS_MELEE,
@@ -286,7 +286,7 @@ describe('amalgam body and combat seam', () => {
         const chasing = simulation.store.get(id)!;
         if (type.id === 'amalgam' && chasing.mode === 'chase') {
           const alignment = stepHeadingAlignment(before, chasing.body.pos, seenPlayer.pos);
-          expect(alignment ?? 1).toBeGreaterThan(Math.cos(Math.PI / 12));
+          expect(alignment ?? 1).toBeGreaterThan(Math.cos(Math.PI / 180));
           checkedAmalgamHeading ||= alignment !== undefined;
         }
       }
@@ -298,7 +298,7 @@ describe('amalgam body and combat seam', () => {
       return Math.hypot(seenPlayer.pos[0] - zombie.body.pos[0], seenPlayer.pos[2] - zombie.body.pos[2]) * BLOCK_SIZE;
     };
     const initialDistance = seenPlayer.pos[2] * BLOCK_SIZE;
-    const amalgamRemainingDistance = chase(amalgam, 73);
+    const amalgamRemainingDistance = chase(amalgam);
     const shamblerRemainingDistance = chase(shambler);
     expect(amalgamRemainingDistance).toBeLessThan(initialDistance);
     expect(amalgamRemainingDistance).toBeGreaterThan(shamblerRemainingDistance);
@@ -460,17 +460,15 @@ describe('amalgam body and combat seam', () => {
     const poseInput = zombiePoseInputFor(zombie, id, BLOCK_SIZE);
     const { hitFlinchTime, ...withoutFlinch } = poseInput;
     expect(hitFlinchTime).toBeGreaterThan(0);
-    const posed = posedShambler(poseInput);
-    const unflinched = posedShambler(withoutFlinch);
-    expect(posed.pose.rotations.core).toBeDefined();
-    expect(posed.pose.rotations.core).not.toEqual(unflinched.pose.rotations.core);
 
     const memberRegion = activeAmalgamMembers(zombie)[0]!.regionIds[0]!;
-    const renderedBoxes = posedAllRegionBoxes(poseInput)[memberRegion] ?? [];
-    expect(posedAmalgamRegionBoxes(poseInput)[memberRegion]).toEqual(renderedBoxes);
-    expect(
-      findRegionRay({ simulation: combatSystem, id, regionId: memberRegion, boxes: renderedBoxes }),
-    ).not.toBeNull();
+    const posedBoxes = posedAmalgamRegionBoxes(poseInput)[memberRegion] ?? [];
+    const unflinchedBoxes = posedAmalgamRegionBoxes(withoutFlinch)[memberRegion] ?? [];
+    const aim = combatSystem.aimAt(ray.origin, ray.direction, FISTS_MELEE);
+    expect(aim?.id).toBe(id);
+    expect(aim?.region).toBe(memberRegion);
+    expect(aim?.boxes).toEqual(posedBoxes);
+    expect(aim?.boxes).not.toEqual(unflinchedBoxes);
   });
 
   it('uses the realized envelope to stop at a wall', () => {
