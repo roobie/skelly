@@ -1,5 +1,5 @@
 // biome-ignore-all lint/correctness/noUndeclaredDependencies: @mobgen/* resolves through this package's aliases.
-import { type Mat3, mulMV, type Transform, transpose } from '@mobgen/core/math.ts';
+import { type Mat3, mulMV, type Transform } from '@mobgen/core/math.ts';
 import type { AmalgamFigure } from '../core/amalgamFigure.ts';
 import type { Vec3 } from '../core/coords.ts';
 
@@ -23,7 +23,7 @@ export interface AmalgamTentaclePose {
 
 type VoxelPoint = readonly [number, number, number];
 
-const coreRayOrigin = (centers: readonly VoxelPoint[], halfVoxel: number): VoxelPoint => {
+const coreInteriorPoint = (centers: readonly VoxelPoint[], halfVoxel: number): VoxelPoint => {
   const centroid = centers.reduce(
     (sum, center) => [
       sum[0] + center[0] / centers.length,
@@ -35,9 +35,9 @@ const coreRayOrigin = (centers: readonly VoxelPoint[], halfVoxel: number): Voxel
   if (
     centers.some(
       (center) =>
-        Math.abs(center[0] - centroid[0]) <= halfVoxel &&
-        Math.abs(center[1] - centroid[1]) <= halfVoxel &&
-        Math.abs(center[2] - centroid[2]) <= halfVoxel,
+        Math.abs(center[0] - centroid[0]) < halfVoxel &&
+        Math.abs(center[1] - centroid[1]) < halfVoxel &&
+        Math.abs(center[2] - centroid[2]) < halfVoxel,
     )
   ) {
     return centroid;
@@ -50,62 +50,12 @@ const coreRayOrigin = (centers: readonly VoxelPoint[], halfVoxel: number): Voxel
   }, centers[0]!);
 };
 
-const rayVoxelInterval = (
-  origin: VoxelPoint,
-  direction: VoxelPoint,
-  center: VoxelPoint,
-  halfVoxel: number,
-): [number, number] | undefined => {
-  let entry = Number.NEGATIVE_INFINITY;
-  let exit = Number.POSITIVE_INFINITY;
-  for (let axis = 0; axis < 3; axis++) {
-    const component = direction[axis]!;
-    const minimum = center[axis]! - halfVoxel;
-    const maximum = center[axis]! + halfVoxel;
-    if (Math.abs(component) <= 1e-12) {
-      if (origin[axis]! < minimum - 1e-9 || origin[axis]! > maximum + 1e-9) {
-        return undefined;
-      }
-      continue;
-    }
-    const first = (minimum - origin[axis]!) / component;
-    const second = (maximum - origin[axis]!) / component;
-    entry = Math.max(entry, Math.min(first, second));
-    exit = Math.min(exit, Math.max(first, second));
-    if (entry > exit + 1e-9) {
-      return undefined;
-    }
-  }
-  return exit >= Math.max(0, entry) - 1e-9 ? [Math.max(0, entry), exit] : undefined;
-};
-
-const rayExitDistance = (
-  origin: VoxelPoint,
-  direction: VoxelPoint,
-  centers: readonly VoxelPoint[],
-  halfVoxel: number,
-): number => {
-  const intervals = centers
-    .map((center) => rayVoxelInterval(origin, direction, center, halfVoxel))
-    .filter((interval): interval is [number, number] => interval !== undefined)
-    .sort((a, b) => a[0] - b[0]);
-  let distance = 0;
-  for (const [entry, exit] of intervals) {
-    if (entry > distance + 1e-8) {
-      break;
-    }
-    distance = Math.max(distance, exit);
-  }
-  return distance;
-};
-
-/** Surface anchor on the posed core voxels, expressed in world metres. */
-export const amalgamCoreSurfaceAnchor = ({
+/** Interior anchor on the posed core voxels, expressed in world metres. */
+export const amalgamCoreInteriorAnchor = ({
   figure,
   transforms,
   yaw,
   position,
-  target,
   hidden,
 }: {
   readonly figure: AmalgamFigure;
@@ -113,7 +63,6 @@ export const amalgamCoreSurfaceAnchor = ({
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
-  readonly target: Vec3;
 }): Vec3 => {
   const core = transforms.get('core');
   const centers = figure.voxelCentersByBone.get('core');
@@ -123,25 +72,8 @@ export const amalgamCoreSurfaceAnchor = ({
   if (hidden.has('core')) {
     throw new Error('Amalgam tentacle anchor requires visible posed core voxels');
   }
-  const worldDirection: Vec3 = [target[0] - position[0], 0, target[2] - position[2]];
-  const projectedDirection = mulMV(transpose(core.r), mulMV(transpose(yaw), worldDirection));
-  const length = Math.hypot(...projectedDirection);
-  const localDirection: Vec3 =
-    length <= 1e-9
-      ? [0, 0, -1]
-      : [projectedDirection[0] / length, projectedDirection[1] / length, projectedDirection[2] / length];
-  const halfVoxel = figure.realized.voxels.size / 2;
-  const rayOrigin = coreRayOrigin(centers, halfVoxel);
-  const exitDistance = rayExitDistance(rayOrigin, localDirection, centers, halfVoxel);
-  if (exitDistance <= 0) {
-    throw new Error('Amalgam tentacle bearing does not cross the posed core surface');
-  }
-  const localSurface: Vec3 = [
-    rayOrigin[0] + localDirection[0] * exitDistance,
-    rayOrigin[1] + localDirection[1] * exitDistance,
-    rayOrigin[2] + localDirection[2] * exitDistance,
-  ];
-  const posedLocal = mulMV(core.r, localSurface.map((coordinate) => coordinate * figure.scale) as Vec3);
+  const localPoint = coreInteriorPoint(centers, figure.realized.voxels.size / 2);
+  const posedLocal = mulMV(core.r, localPoint.map((coordinate) => coordinate * figure.scale) as Vec3);
   const worldOffset = mulMV(yaw, [
     posedLocal[0] + core.t[0] * figure.scale,
     posedLocal[1] + core.t[1] * figure.scale,
