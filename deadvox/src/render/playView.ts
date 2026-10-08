@@ -3,6 +3,7 @@
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
+import { dayCycleFor } from '../core/dayPhase.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
@@ -82,6 +83,7 @@ export const createPlayView = (
   page: Pick<EventTarget, 'addEventListener'> = globalThis,
 ) => {
   const { config, registry, renderer, meshes, scene, camera, mood, shadows } = engine;
+  const dayCycle = dayCycleFor(registry.dayCycle);
   const s = config.scale.blockSize;
   // Play's look defaults are presentation; benchmark mode never applies them.
   if (renderer) {
@@ -126,7 +128,13 @@ export const createPlayView = (
   scene.add(piles.group, furniture.group, playerMeshes.group);
   // Both actors implement the same presentation contract. Gameplay keeps synchronous
   // death/sever callbacks so an actor is removed before a subsequent sync/prune.
-  const zombieMeshes: ZombieRenderer = config.actors === 'detailed' ? new MobActorMeshes(s) : new ZombieMeshes(s);
+  const zombieMeshes: ZombieRenderer =
+    config.actors === 'detailed'
+      ? new MobActorMeshes(s, undefined, {
+          includeAmalgam: true,
+          amalgamType: registry.zombies.get('amalgam'),
+        })
+      : new ZombieMeshes(s);
   zombieMeshes.setWorld?.(engine.isSolid, s);
   scene.add(zombieMeshes.group);
   const cameraStepOffset = new StepOffset(PLAYER.stepHeight);
@@ -171,7 +179,7 @@ export const createPlayView = (
     }: PlayWorldFrame) => {
       itemThrows.update(dt);
       const hour = hourOfDay(calendar);
-      const sky = skyInWeather(skyAt(hour), weather);
+      const sky = skyInWeather(skyAt(hour, dayCycle), weather);
       applySky(engine.sky, sky);
       engine.mood?.setSky(sky);
       piles.sync(inventory);
@@ -192,7 +200,7 @@ export const createPlayView = (
       flashlight.shadowsAllowed = engine.shadows?.torchOn ?? false;
     },
     updateShadows: (hour: number, sky: ReturnType<typeof skyInWeather>) => {
-      engine.shadows?.update(sunShadowStrength(sunDirection(hour)[1], sky.lightIntensity), camera.position);
+      engine.shadows?.update(sunShadowStrength(sunDirection(hour, dayCycle)[1], sky.lightIntensity), camera.position);
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
       const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;
@@ -233,7 +241,7 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
-      mood.render(() => held.render(renderer, camera, engine.sky));
+      mood.render(() => held.render(renderer, camera, engine.sky), held.opticLensFrame);
       return performance.now() - start;
     },
     warmUp: () => {

@@ -2,8 +2,9 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
-import { hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { parseTimeOfDay } from '../core/clock.ts';
 import { buildRegistry } from '../core/content.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import { BACKGROUND_ZOMBIE_RATE, BACKGROUND_ZOMBIE_SLICE_COUNT, ZombieSystem } from '../core/zombies.ts';
 import { PLAYER, physicsFor } from '../game/player.ts';
 import { ACTIVE_SHAMBLER_TARGET, parseShamblerSeed } from './plan.ts';
@@ -72,7 +73,6 @@ const player = {
   lightSeenFrom: 40,
 };
 const startTime = parseTimeOfDay('23:30');
-const hour = hourOfDay(startTime);
 
 for (const count of counts) {
   const activeCount = Math.min(count, ACTIVE_SHAMBLER_TARGET);
@@ -85,7 +85,7 @@ for (const count of counts) {
     jumpSpeed: PLAYER.jump,
     tuning: registry.senses.get('player'),
     player: () => player,
-    hour: () => hour,
+    dayPhase: () => dayPhaseAt(DEFAULT_DAY_CYCLE, startTime),
     hurtPlayer: () => undefined,
   });
   spawnShamblerRing({

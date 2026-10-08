@@ -32,6 +32,7 @@ import { AR_HANDLE_CHANNEL, arChargingHandle } from './arChargingHandle.ts';
 import { AR_ACTION_LAYOUT } from './arLayout.ts';
 import { ATTACHMENT_FAMILIES } from './attachmentParts.ts';
 import { EJECTION_PORT_MARGIN_U as SHARED_EJECTION_PORT_MARGIN_U } from './ejectionPort.ts';
+import { METRES_PER_UNIT } from './exportFrame.ts';
 import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
 import { gunPort } from './portData.ts';
 import {
@@ -191,6 +192,15 @@ const PUMP_TUBE_LENGTH_PERCENTAGES = ['50', '75', '100'] as const;
 // 3 × 2 box, snapped so each half-extent stays on the 0.25u grid.
 const MAGAZINE_DEPTH = 5.5;
 const MAGAZINE_WIDTH = 2.5;
+const mmToMagazineUnits = (millimetres: number): number => millimetres / (METRES_PER_UNIT * 1000);
+const snapMagazineDimension = (millimetres: number): number => Math.round(mmToMagazineUnits(millimetres) / GRID) * GRID;
+// Brownells listing for the USGI straight 20-round magazine: https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983
+// Its delivery dimensions (127 x 66 x 25 mm) corroborate the outer box within about 3 mm; they are package dimensions, not the body envelope.
+const STANAG20_BODY_BOX_U = {
+  length: snapMagazineDimension(4.895 * 25.4),
+  depth: snapMagazineDimension(2.54 * 25.4),
+  width: snapMagazineDimension(0.975 * 25.4),
+} as const;
 const MAGAZINE_WELL_CLEARANCE = 0.25;
 const MAGAZINE_WELL_DEPTH = MAGAZINE_DEPTH + 2 * MAGAZINE_WELL_CLEARANCE;
 const MAGAZINE_WELL_WIDTH = MAGAZINE_WIDTH + 2 * MAGAZINE_WELL_CLEARANCE;
@@ -205,9 +215,13 @@ const magazineSection = (profile: string | undefined): { readonly depth: number;
   const smg = profile === 'smg';
   return { depth: MAGAZINE_DEPTH * (smg ? 0.6 : 1), width: MAGAZINE_WIDTH * (smg ? 0.8 : 1) };
 };
+const magazineBodySection = (profile: MagazineProfile): { readonly depth: number; readonly width: number } =>
+  profile === 'stanag-straight' ? STANAG20_BODY_BOX_U : magazineSection(profile);
 type MagazineLength = '5-round' | '10-round' | SizeClass;
-type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved';
+type MagazineProfile = 'standard' | 'smg' | 'pistol' | 'ak-curved' | 'stanag-curved' | 'stanag-straight';
 type MagazineBands = Readonly<Record<SizeClass, number>>;
+const STRAIGHT_STANAG_LENGTH_REFUSAL =
+  'The straight STANAG magazine is available only at M length; other capacities are deferred to issue #414.';
 const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   readonly compact: Readonly<Record<'5-round' | '10-round', number>>;
   readonly standard: MagazineBands;
@@ -215,6 +229,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
   readonly pistol: MagazineBands;
   readonly 'ak-curved': Readonly<Record<'ak74' | 'akm', MagazineBands>>;
   readonly 'stanag-curved': MagazineBands;
+  readonly 'stanag-straight': Readonly<Pick<MagazineBands, 'M'>>;
 }> = {
   compact: { '5-round': 4.5, '10-round': 5.5 },
   standard: { S: 6, M: 10, L: 16 },
@@ -225,6 +240,7 @@ const MAGAZINE_PROFILE_LENGTHS_U: Readonly<{
     akm: { S: 6, M: 10, L: 16.75 },
   },
   'stanag-curved': { S: 6, M: 10, L: 15.75 },
+  'stanag-straight': { M: STANAG20_BODY_BOX_U.length },
 };
 const magazineLengthData = (
   value: string | undefined,
@@ -235,6 +251,9 @@ const magazineLengthData = (
   const sizeClass = requested === '5-round' || requested === '10-round' ? 'S' : requested;
   if (requested === '5-round' || requested === '10-round') {
     return { size: sizeClass, length: MAGAZINE_PROFILE_LENGTHS_U.compact[requested] };
+  }
+  if (profile === 'stanag-straight') {
+    return { size: 'M', length: MAGAZINE_PROFILE_LENGTHS_U['stanag-straight'].M };
   }
   const bands =
     profile === 'ak-curved'
@@ -261,6 +280,8 @@ interface CurvedMagazineProfile {
   readonly straightBottom: number;
   readonly topSlopeDegrees: number;
 }
+// Visual estimate from side-view photos; the body-to-top transition follows the shared 30-round upper body's existing edge.
+const STANAG20_ESTIMATED_FLOORPLATE_ANGLE_DEGREES = 12;
 const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', CurvedMagazineProfile>> = {
   ak74: {
     seat: 'face',
@@ -277,6 +298,7 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 6,
   },
+  // Its L length follows the traced 30-round magazine reference.
   stanag30: {
     seat: 'well',
     straightTop: 7.1,
@@ -376,6 +398,7 @@ const HANDLE_REFERENCE_ENVELOPES = {
 } as const;
 const BOLT_TRAVEL = {
   short: { length: 3, restX: -7 },
+  ar: { length: AR_ACTION_LAYOUT.carrierTravelU, restX: -7 },
   standard: { length: 6.5, restX: -7 },
   ak: { length: 6.5, restX: -5.75 },
   // Grow the pump receiver forward with the carrier; travel stays the shell-derived 5.5u.
@@ -452,7 +475,7 @@ const PISTOL_GRIP_HALF_Z = PISTOL_WELL_WIDTH / 2 + MAGAZINE_WELL_CLEARANCE;
 const PISTOL_WELL_HEIGHT = 6;
 const PISTOL_MAGAZINE_INSERTION = PISTOL_WELL_HEIGHT - MAGAZINE_WELL_CLEARANCE;
 const PISTOL_BARREL_LENGTH: Record<SizeClass, number> = { S: 12, M: 16, L: 20 };
-const PISTOL_CROWN_LENGTH = 1;
+export const PISTOL_CROWN_LENGTH_U = 1;
 const PISTOL_BARREL_RADIUS: Record<SizeClass, number> = { S: 0.75, M: 1, L: 1.25 };
 const PISTOL_SLIDE_CHANNEL_CLEARANCE = 0.125;
 const PISTOL_SLIDE_WALL_THICKNESS = 0.5;
@@ -562,7 +585,7 @@ export const EJECTION_PORT_RULES = {
   pumpShellMinimum: { lengthU: PUMP_SHELL_LOADED_LENGTH_U, endClearanceU: EJECTION_PORT_MARGIN_U },
 } as const;
 
-const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY: number) => {
+const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY: number, useArFrame = false) => {
   const envelope = BOLT_CARRIER_ENVELOPES[pattern];
   const margin = EJECTION_PORT_MARGIN_U;
   let xMin = restX - envelope.x[1] - margin;
@@ -575,6 +598,20 @@ const ejectionPortWindow = (pattern: BoltCarrierPattern, restX: number, carrierY
     const center = (xMin + xMax) / 2;
     xMin = center - pumpMinimum / 2;
     xMax = center + pumpMinimum / 2;
+  }
+  if (useArFrame) {
+    const centerX = (xMin + xMax) / 2;
+    const centerY = carrierY + (envelope.y[0] + envelope.y[1]) / 2;
+    return {
+      x: [
+        centerX - AR_ACTION_LAYOUT.ejectionPortLengthU / 2,
+        centerX + AR_ACTION_LAYOUT.ejectionPortLengthU / 2,
+      ] as const,
+      y: [
+        centerY - AR_ACTION_LAYOUT.ejectionPortHeightU / 2,
+        centerY + AR_ACTION_LAYOUT.ejectionPortHeightU / 2,
+      ] as const,
+    };
   }
   return {
     x: [xMin, xMax] as const,
@@ -658,8 +695,14 @@ export const carrierCavityBounds = (pattern: BoltCarrierPattern, carrierY: numbe
   };
 };
 
+export const RECEIVER_SECTION_WALL_U = 0.5;
+
 export const RECEIVER_SECTION = {
   ar: {
+    magazineWellX: [
+      MAGAZINE_WELL_CENTER_X - AR_ACTION_LAYOUT.magwellOpeningLengthU / 2,
+      MAGAZINE_WELL_CENTER_X + AR_ACTION_LAYOUT.magwellOpeningLengthU / 2,
+    ] as const,
     outline: [
       [-2.5, -1.75],
       [-2.25, -2],
@@ -671,12 +714,12 @@ export const RECEIVER_SECTION = {
       [-2.5, 1.75],
     ] as const,
     faces: {
-      top: { y: 2.5, halfWidth: 1.75 },
+      top: { y: AR_ACTION_LAYOUT.receiverHeightU / 2, halfWidth: 1.75 },
       portSide: 2,
       handleSides: [-2, 2],
       front: 0,
       rear: -AR_ACTION_LAYOUT.receiverLengthU,
-      bottom: -2.5,
+      bottom: -AR_ACTION_LAYOUT.receiverHeightU / 2,
     } as const,
   },
   ak: {
@@ -745,10 +788,8 @@ const receiverShellSolids = ({
   frontFaceX,
   internalPockets = [],
   farPortWindow,
-  bore = 'M',
 }: {
   section: string;
-  bore?: SizeClass;
   feed: string;
   magazineWell: string;
   receiverBottom: number;
@@ -779,8 +820,9 @@ const receiverShellSolids = ({
       id: `receiver-${section}`,
       outline: data.outline.map(([y, z]) => [y - receiverDrop, z] as const),
       x: [xMin, xMax] as const,
-      wall: 0.5,
-      cavity: rearSlopeRun === undefined ? cavity : { ...cavity, x: [xMin + rearSlopeRun, xMax - 0.5] },
+      wall: RECEIVER_SECTION_WALL_U,
+      cavity:
+        rearSlopeRun === undefined ? cavity : { ...cavity, x: [xMin + rearSlopeRun, xMax - RECEIVER_SECTION_WALL_U] },
       port: {
         x: portWindow.x,
         sectionAxis: 0,
@@ -796,7 +838,10 @@ const receiverShellSolids = ({
             magazineWell: {
               x: 'magazineWellX' in data ? data.magazineWellX : ([-7, -1.5] as const),
               sectionAxis: 1 as const,
-              section: [-1.25, 1.25] as const,
+              section:
+                section === 'ar'
+                  ? ([-AR_ACTION_LAYOUT.magwellOpeningWidthU / 2, AR_ACTION_LAYOUT.magwellOpeningWidthU / 2] as const)
+                  : ([-1.25, 1.25] as const),
             },
           }
         : {}),
@@ -807,7 +852,7 @@ const receiverShellSolids = ({
     // The barrel extension has its own front seat. Do not enlarge the running
     // cavity behind the breech or cap the carrier's path into the buffer tube.
     const breechX = xMax - AR_ACTION_LAYOUT.barrelExtensionLengthU;
-    const seatRadius = BARREL_RADIUS[bore] + BOLT_CARRIER_RUNNING_CLEARANCE_U;
+    const seatRadius = AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 + BOLT_CARRIER_RUNNING_CLEARANCE_U;
     const spans = [
       { ...spec, x: [xMin, breechX] as const },
       {
@@ -1093,7 +1138,7 @@ const receiverTravelClass = (params: Readonly<Record<string, string>>): BoltTrav
     return 'ak';
   }
   if (params.section === 'ar') {
-    return 'standard';
+    return 'ar';
   }
   if (params.action === 'pump' || params.section === 'pump') {
     return 'pump';
@@ -1362,7 +1407,6 @@ const receiverSolids = (context: ReceiverContext): Solid[] => {
   }
   const shell = receiverShellSolids({
     section: params.section ?? 'standard',
-    bore,
     feed: params.feed!,
     magazineWell: params.magazineWell ?? 'standard',
     receiverBottom,
@@ -1401,6 +1445,7 @@ const receiver: PartFamily = {
   params: {
     /** auto: charging handle. bolt: bolt travel/handle. pump: forend-driven. */
     action: choice('auto', 'bolt', 'pump'),
+    actionFrame: choice(AR_ACTION_LAYOUT.frameId),
     /** box: magazine through the lower. top: loaded from above. tube: tube magazine. */
     feed: choice('box', 'top', 'tube'),
     section: choice('standard', 'ar', 'pump', 'ak'),
@@ -1428,6 +1473,9 @@ const receiver: PartFamily = {
   build(params): PartDef {
     const bore = cls(params, 'bore');
     const tubeFed = params.feed === 'tube';
+    if (params.section === 'ar' && (params.actionFrame ?? AR_ACTION_LAYOUT.frameId) !== AR_ACTION_LAYOUT.frameId) {
+      throw new Error(`AR receiver requires the selected action frame "${AR_ACTION_LAYOUT.frameId}".`);
+    }
     const receiverDrop = params.action === 'pump' && tubeFed ? PUMP_RECEIVER_DROP : 0;
     const sectionData = Object.hasOwn(RECEIVER_SECTION, params.section ?? 'standard')
       ? RECEIVER_SECTION[params.section as keyof typeof RECEIVER_SECTION]
@@ -1460,7 +1508,7 @@ const receiver: PartFamily = {
       receiverBottom,
       receiverTop,
       carrierPattern,
-      portWindow: ejectionPortWindow(carrierPattern, travel.restX, carrierY),
+      portWindow: ejectionPortWindow(carrierPattern, travel.restX, carrierY, params.section === 'ar'),
       travel,
       carrierY,
     };
@@ -2068,7 +2116,7 @@ const lower: PartFamily = {
       from: [{ port: 'magazine', param: 'orientation' }],
     },
     magazineProfile: {
-      values: ['standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved'],
+      values: ['standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved', 'stanag-straight'],
       default: 'standard',
       from: [{ port: 'magazine', param: 'profile' }],
     },
@@ -2085,8 +2133,10 @@ const lower: PartFamily = {
     const section = params.magazineWell === 'recessed' ? magazineSection(magazineProfile) : undefined;
     // Half-extents round up to the grid (the SMG magazine is 3.3u deep).
     const wellSpan = (extent: number) => 2 * Math.ceil((extent / 2 + MAGAZINE_WELL_CLEARANCE) / GRID) * GRID;
-    const wellDepth = section ? wellSpan(section.depth) : MAGAZINE_WELL_DEPTH;
-    const wellWidth = section ? wellSpan(section.width) : MAGAZINE_WELL_WIDTH;
+    const defaultWellDepth = layout === 'ar' ? AR_ACTION_LAYOUT.magwellOpeningLengthU : MAGAZINE_WELL_DEPTH;
+    const defaultWellWidth = layout === 'ar' ? AR_ACTION_LAYOUT.magwellOpeningWidthU : MAGAZINE_WELL_WIDTH;
+    const wellDepth = section ? wellSpan(section.depth) : defaultWellDepth;
+    const wellWidth = section ? wellSpan(section.width) : defaultWellWidth;
     const top: PortDef = {
       id: 'top',
       mount: 'lower',
@@ -2615,7 +2665,16 @@ const barrel: PartFamily = {
         : [];
     const tube = octagonalPrism('tube', r, [0, len]);
     const breechX = params.section === 'ar' ? -AR_ACTION_LAYOUT.barrelExtensionLengthU : 0;
-    const extension = breechX < 0 ? [octagonalPrism('barrel-extension', BARREL_RADIUS[bore], [breechX, 0])] : [];
+    const extension =
+      breechX < 0
+        ? [
+            octagonalPrism(
+              'barrel-extension',
+              params.section === 'ar' ? AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 : BARREL_RADIUS[bore],
+              [breechX, 0],
+            ),
+          ]
+        : [];
     const gasPortX = params.section === 'ak' ? akGasStationX(lengthClass) : gasStationX(lengthClass);
     return {
       family: 'barrel',
@@ -3510,7 +3569,7 @@ const integratedPistolGrip = (gripLength: string): PartDef => {
   };
 };
 
-const pistolSlideEnd = (length: string): number => PISTOL_BARREL_LENGTH[length as SizeClass] - PISTOL_CROWN_LENGTH;
+const pistolSlideEnd = (length: string): number => PISTOL_BARREL_LENGTH[length as SizeClass] - PISTOL_CROWN_LENGTH_U;
 
 const pistolFrame: PartFamily = {
   name: 'frame',
@@ -3705,6 +3764,53 @@ const magazineGeometryFor = (
   if (params.profile === 'stanag-curved') {
     return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30);
   }
+  if (params.profile === 'stanag-straight') {
+    const referenceShape = {
+      ...shape,
+      depth: MAGAZINE_DEPTH,
+      width: MAGAZINE_WIDTH,
+      bodyLength: MAGAZINE_PROFILE_LENGTHS_U['stanag-curved'].L,
+    };
+    const sharedTop = curvedMagazineGeometry(referenceShape, CURVED_MAGAZINE_PROFILES.stanag30).collision[0]!;
+    if (sharedTop.kind !== 'extruded-polygon') {
+      throw new Error('the STANAG magazine top must be an extruded profile');
+    }
+    const [topRearX, topRearY] = sharedTop.profile[0]!;
+    const [topFrontX, topFrontY] = sharedTop.profile[1]!;
+    const topCentreX = (topRearX + topFrontX) / 2;
+    const rearX = topCentreX - shape.depth / 2;
+    const frontX = topCentreX + shape.depth / 2;
+    const bottomRearY = shape.insertion - shape.bodyLength;
+    const floorplateRise =
+      Math.round((shape.depth * Math.tan((STANAG20_ESTIMATED_FLOORPLATE_ANGLE_DEGREES * Math.PI) / 180)) / GRID) * GRID;
+    const bottomFrontY = bottomRearY + floorplateRise;
+    const plateThickness = GRID; // One grid step, the thinnest plate the grid draws.
+    const body = extrudedPolygon(
+      'straight-body',
+      [
+        [rearX, topRearY],
+        [rearX, bottomRearY + plateThickness],
+        [frontX, bottomFrontY + plateThickness],
+        [frontX, topFrontY],
+      ],
+      [-shape.width / 2, shape.width / 2],
+    );
+    const floorplate = {
+      ...extrudedPolygon(
+        'floorplate',
+        [
+          [rearX, bottomRearY],
+          [frontX, bottomFrontY],
+          [frontX, bottomFrontY + plateThickness],
+          [rearX, bottomRearY + plateThickness],
+        ],
+        [-shape.width / 2, shape.width / 2],
+      ),
+      material: 'steel-blued' as const,
+      slot: 'accent' as const,
+    };
+    return { collision: [sharedTop, body, floorplate], display: [sharedTop, body, floorplate] };
+  }
   const style = orientationParts(params.orientation ?? 'straight');
   const solids =
     style.kind === 'slant'
@@ -3739,16 +3845,21 @@ export const magazine: PartFamily = {
   name: 'magazine',
   params: {
     length: { values: ['5-round', '10-round', ...SIZE_CLASSES], default: 'M' },
-    profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved'),
+    profile: choice('standard', 'smg', 'pistol', 'ak-curved', 'stanag-curved', 'stanag-straight'),
     orientation: choice(...MAGAZINE_ORIENTATIONS),
     variant: choice(...AK_MAGAZINE_CURVE_VARIANTS),
   },
+  validateParams: (params) =>
+    params.profile === 'stanag-straight' && (params.length ?? 'M') !== 'M' ? STRAIGHT_STANAG_LENGTH_REFUSAL : undefined,
   build(params): PartDef {
     const profile = (params.profile ?? 'standard') as MagazineProfile;
+    if (profile === 'stanag-straight' && (params.length ?? 'M') !== 'M') {
+      throw new Error(STRAIGHT_STANAG_LENGTH_REFUSAL);
+    }
     const magazineLength = magazineLengthData(params.length, profile, params.variant);
     const isCompactBoltMagazine = params.length === '5-round' || params.length === '10-round';
     const len = magazineLength.length;
-    const { depth, width } = magazineSection(params.profile);
+    const { depth, width } = magazineBodySection(profile);
     let curveProfile: CurvedMagazineProfile | undefined;
     if (params.profile === 'ak-curved') {
       curveProfile = CURVED_MAGAZINE_PROFILES[params.variant === 'akm' ? 'akm' : 'ak74'];

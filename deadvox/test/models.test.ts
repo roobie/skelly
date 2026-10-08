@@ -1,12 +1,24 @@
-import { readFileSync } from 'node:fs';
-import { Box3, type Loader, LoadingManager, Mesh, Vector3 } from 'three';
+import { readdirSync, readFileSync } from 'node:fs';
+import {
+  Box3,
+  InstancedMesh,
+  type Loader,
+  LoadingManager,
+  Mesh,
+  type MeshBasicMaterial,
+  type MeshStandardMaterial,
+  Vector3,
+} from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory, PILE_GRID, type Pile } from '../src/core/inventory.ts';
+import { toggleLight } from '../src/core/lights.ts';
 import { pileLayout } from '../src/core/pileLayout.ts';
 import { spentCaseItemId } from '../src/game/firearmHandling.ts';
-import { prepareModel } from '../src/render/models.ts';
+import { itemLook } from '../src/render/itemLook.ts';
+import { fittedPartFrame, prepareModel } from '../src/render/models.ts';
+import { PileMeshes } from '../src/render/piles.ts';
 
 const BASE = 'src/content/base';
 const MODEL_FILE = /^assets\/models\/[a-z0-9_]+\.glb$/;
@@ -14,11 +26,7 @@ const AXIS_INDEX = { x: 0, y: 1, z: 2 } as const;
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
 const base = (file: string): ContentSource => {
   const source = `${BASE}/${file}`;
-  const data = JSON.parse(readFileSync(source, 'utf8'));
-  if (file === 'items-tools.json') {
-    data.items = data.items.filter((item: { id: string }) => !['torch', 'candle'].includes(item.id));
-  }
-  return { source, data };
+  return { source, data: JSON.parse(readFileSync(source, 'utf8')) };
 };
 const imageLoader = {
   isImageBitmapLoader: true,
@@ -36,9 +44,10 @@ const anchorIsInBounds = (anchor: readonly [number, number, number], bounds: Box
     return coordinate >= bounds.min[axis] - 0.02 && coordinate <= bounds.max[axis] + 0.02;
   });
 const { registry, issues } = buildRegistry([
-  ...['items-food.json', 'items-other.json', 'items-tools.json', 'items-wearables.json'].map(base),
-  read(`${BASE}/models-melee.json`),
-  read(`${BASE}/models-firearms.json`),
+  ...readdirSync(BASE)
+    .filter((file) => file.endsWith('.json'))
+    .sort()
+    .map(base),
   read('test/fixtures/packs/lamp/lamp.json'),
 ]);
 
@@ -88,13 +97,95 @@ describe('piles with models', () => {
     );
     expect(layout.models.map((m) => m.yaw)).toEqual([Math.PI / 2, 0]);
   });
+
+  it('keeps a glowstick’s lit look on its model, and uses a marker only for the bundle fallback', async () => {
+    const definition = registry.items.get('glowstick')!;
+    expect(definition.model).toBeDefined();
+    const modelDefinition = registry.models.get(definition.model!)!;
+    expect(modelDefinition.emissiveMaterial).toBeDefined();
+    const { scene } = await parseGlb(readFileSync(`${BASE}/${modelDefinition.file}`));
+    const { ground } = prepareModel(modelDefinition, scene);
+    expect(new Box3().setFromObject(ground).isEmpty()).toBe(false);
+    let authoredTube = false;
+    ground.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      authoredTube ||= materials.some((material) => material.name === modelDefinition.emissiveMaterial);
+    });
+    expect(authoredTube).toBe(true);
+
+    const models = {
+      version: 1,
+      has: (id: string) => id === modelDefinition.id,
+      groundLook: () => ground.clone(),
+    } as unknown as import('../src/render/models.ts').ModelLibrary;
+    const render = (on: boolean, withModel = true) => {
+      const source = withModel
+        ? registry
+        : {
+            ...registry,
+            items: new Map(registry.items).set('glowstick', { ...definition, model: undefined }),
+          };
+      const items = new Inventory(source);
+      const glowstick = items.create('glowstick');
+      if (on) {
+        expect(toggleLight(source, glowstick, 0)).toBeUndefined();
+      }
+      expect(items.add(glowstick, { kind: 'pile', pos: [0, 0, 0] })).toBe(true);
+      const piles = new PileMeshes(S, withModel ? models : undefined);
+      piles.sync(items);
+      return piles;
+    };
+
+    const unlit = render(false);
+    expect(unlit.group.children.some((child) => child instanceof InstancedMesh)).toBe(false);
+    unlit.dispose();
+
+    const lit = render(true);
+    const itemModel = lit.group.children.find((child) => !(child instanceof InstancedMesh))!;
+    const modelBounds = new Box3().setFromObject(itemModel);
+    let litTube: Mesh | undefined;
+    itemModel.traverse((object) => {
+      if (!(object instanceof Mesh)) {
+        return;
+      }
+      const materials = Array.isArray(object.material) ? object.material : [object.material];
+      if (materials.some((material) => material.name === modelDefinition.emissiveMaterial)) {
+        litTube = object;
+      }
+    });
+    expect(litTube).toBeDefined();
+    const tubeBounds = new Box3().setFromObject(litTube!);
+    expect(modelBounds.containsPoint(tubeBounds.min)).toBe(true);
+    expect(modelBounds.containsPoint(tubeBounds.max)).toBe(true);
+    const litMaterial = (Array.isArray(litTube!.material) ? litTube!.material : [litTube!.material]).find(
+      (material) => material.name === modelDefinition.emissiveMaterial,
+    ) as MeshStandardMaterial;
+    expect(litMaterial.emissive.getHexString()).not.toBe('000000');
+    expect(litMaterial.toneMapped).toBe(false);
+    expect(lit.group.children.some((child) => child instanceof InstancedMesh)).toBe(false);
+    lit.dispose();
+
+    const bundle = render(true, false);
+    const marker = bundle.group.children.find((child) => child instanceof InstancedMesh) as InstancedMesh;
+    expect(marker).toBeDefined();
+    expect((marker.material as MeshBasicMaterial).toneMapped).toBe(false);
+    expect((marker.material as MeshBasicMaterial).vertexColors).toBe(false);
+    bundle.dispose();
+  });
 });
 
 it('loads the curated pump through preparation and resolves separate movers by glTF node index, not sanitized name', async () => {
   const def = registry.models.get('shotgun_pump')!;
   const gltf = await parseGlb(readFileSync(`${BASE}/${def.file}`));
-  expect(def.calibre).toBe('12-gauge-00-buck');
-  expect(def.tube?.capacity).toBe(4);
+  expect(def.tube?.capacity).toBeGreaterThan(0);
+  expect(def.calibre).toBeDefined();
+  expect(
+    [...registry.items.values()].some((item) => item.ammo?.calibre === def.calibre),
+    'the pump calibre resolves to an ammunition item',
+  ).toBe(true);
   expect(def.action?.fire).toBeUndefined();
   expect(def.grip?.turn).toEqual([0, 0, 0]);
   expect(def.sight?.kind).toBe('iron');
@@ -172,6 +263,74 @@ describe('model forms', () => {
   });
 });
 
+describe('fitted attachment model frames', () => {
+  it('maps every exported connector frame to the firearm slot frame', () => {
+    const attachments = [...registry.models.values()].filter((model) => model.attachment);
+    expect(attachments.length).toBeGreaterThan(0);
+    for (const model of attachments) {
+      const { mountFrame } = model.attachment!;
+      const frame = fittedPartFrame({
+        slot: 'fixture',
+        at: [0, 0, 0],
+        direction: [0, 1, 0],
+        up: [1, 0, 0],
+        mountFrame,
+        model: model.id,
+      });
+      const normal = new Vector3(...mountFrame.normal).applyQuaternion(frame.quaternion);
+      const up = new Vector3(...mountFrame.up).applyQuaternion(frame.quaternion);
+      expect(normal.dot(new Vector3(0, -1, 0)), model.id).toBeCloseTo(1, 8);
+      expect(up.dot(new Vector3(1, 0, 0)), model.id).toBeCloseTo(1, 8);
+    }
+  });
+
+  it('keeps the default fitted optic along the bore and seated on its rail', async () => {
+    const firearm = registry.models.get('rifle_assault')!;
+    const optic = firearm.attachments?.find(({ kind }) => kind === 'optic');
+    if (!optic) {
+      throw new Error('Exported firearm has no default optic');
+    }
+    const mount = firearm.attachmentSlots!.find(({ id }) => id === optic.mountedAt)!;
+    const look = itemLook(registry, new Inventory(registry).create('rifle_assault'))!;
+    const slot = look.slots.find(({ slot: id }) => id === optic.mountedAt)!;
+    if (!(slot.model && slot.mountFrame)) {
+      throw new Error('Default optic look is incomplete');
+    }
+    const gunScene = (await parseGlb(readFileSync(`${BASE}/${firearm.file}`))).scene;
+    const opticScene = (await parseGlb(readFileSync(`${BASE}/${registry.models.get(slot.model)!.file}`))).scene;
+    const { held } = prepareModel(firearm, gunScene);
+    const modelFrame = held.children[0]!.children[0]!;
+    const fitted = fittedPartFrame(slot).add(opticScene);
+    modelFrame.add(fitted);
+    held.updateMatrixWorld(true);
+    const origin = fitted.getWorldPosition(new Vector3());
+    const bore = modelFrame
+      .localToWorld(new Vector3(1, 0, 0))
+      .sub(modelFrame.localToWorld(new Vector3()))
+      .normalize();
+    const tube = new Vector3(1, 0, 0).transformDirection(opticScene.matrixWorld);
+    expect(tube.dot(bore)).toBeCloseTo(1, 6);
+
+    const railNormal = modelFrame
+      .localToWorld(new Vector3(...mount.direction))
+      .sub(modelFrame.localToWorld(new Vector3()))
+      .normalize();
+    const railPosition = origin.dot(railNormal);
+    const corners = new Box3().setFromObject(opticScene);
+    const lowest = [
+      new Vector3(corners.min.x, corners.min.y, corners.min.z),
+      new Vector3(corners.min.x, corners.min.y, corners.max.z),
+      new Vector3(corners.min.x, corners.max.y, corners.min.z),
+      new Vector3(corners.min.x, corners.max.y, corners.max.z),
+      new Vector3(corners.max.x, corners.min.y, corners.min.z),
+      new Vector3(corners.max.x, corners.min.y, corners.max.z),
+      new Vector3(corners.max.x, corners.max.y, corners.min.z),
+      new Vector3(corners.max.x, corners.max.y, corners.max.z),
+    ].reduce((min, point) => Math.min(min, point.dot(railNormal)), Number.POSITIVE_INFINITY);
+    expect(lowest).toBeCloseTo(railPosition, 6);
+  });
+});
+
 describe('base pack melee', () => {
   const melee = buildRegistry([read(`${BASE}/models-melee.json`)]).registry;
   const models = [...melee.models.values()];
@@ -185,21 +344,22 @@ describe('base pack melee', () => {
     return new Vector3(...def.anchors![name]!).applyMatrix4(offset.matrixWorld);
   };
 
-  it('maps the seven matching Slice 1 items to their melee models', () => {
-    expect(
-      ['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe', 'machete', 'kabar'].map(
-        (id) => registry.items.get(id)?.model,
-      ),
-    ).toEqual(['crowbar', 'hammer', 'kitchen_knife', 'baseball_bat', 'steel_pipe', 'machete', 'kabar']);
-  });
+  it('maps melee weapons to models with attack-compatible hold poses', () => {
+    expect(models.length).toBeGreaterThan(0);
+    for (const model of models) {
+      expect(['forward', 'upright']).toContain(model.hold);
+    }
 
-  it('assigns forward holds to stabbing blades and the machete slash', () => {
-    const forward = models
-      .filter((model) => model.hold === 'forward')
-      .map((model) => model.id)
-      .sort();
-    expect(forward).toEqual(['kabar', 'kitchen_knife', 'machete', 'pocket_knife', 'tanto']);
-    expect(models.filter((model) => model.hold !== 'forward').every((model) => model.hold === 'upright')).toBe(true);
+    const weapons = [...registry.items.values()].filter((item) => item.weapon?.melee);
+    expect(weapons.length).toBeGreaterThan(0);
+    for (const item of weapons) {
+      expect(item.model, `${item.id} model`).toBeDefined();
+      const model = melee.models.get(item.model!);
+      expect(model, `${item.id} melee model`).toBeDefined();
+      if (model!.hold === 'forward') {
+        expect(item.weapon!.melee!.type, `${item.id} forward hold`).not.toBe('blunt');
+      }
+    }
   });
 
   it('requires a hold pose for every melee model', () => {
@@ -393,7 +553,7 @@ describe('base pack shotshells', () => {
 });
 
 describe('base pack guns', () => {
-  const firearms = buildRegistry([read('src/content/base/models-firearms.json')]).registry;
+  const firearms = registry;
   const { models } = firearms;
   const guns = [...models.values()].filter((m) => m.anchors?.muzzle);
 

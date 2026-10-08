@@ -1,6 +1,7 @@
 {
   "format": 1,
   "template": "ar",
+  "calibre": "5.56x45",
   "assembly": {
     "name": "archetype-ar-free-float",
     "description": "Free-floating AR-pattern rifle with a detachable front sight on the forward handguard rail.",
@@ -51,7 +52,7 @@
         "family": "magazine",
         "params": {
           "length": "M",
-          "profile": "stanag-curved"
+          "profile": "stanag-straight"
         }
       },
       "stock": {

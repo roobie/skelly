@@ -44,6 +44,7 @@ import {
   simRate,
   simSeconds,
 } from './time.ts';
+import { ZOMBIE_REGION_NAMES } from './zombieRegionNames.ts';
 
 const ID_PATTERN = /^[a-z0-9_]+$/;
 const CALIBRE_ID_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
@@ -291,6 +292,18 @@ const LightSchema = strictObject({
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
+const FirearmAttachmentEffectsSchema = strictObject({
+  /** Fraction of the firearm's committed recoil kick removed at full condition. */
+  recoilReduction: optional(Fraction),
+  /** Condition lost per committed shot. */
+  wearPerShot: optional(Fraction),
+  /** Multipliers applied to the existing aim and stance response. */
+  swayScale: optional(Positive),
+  recoveryScale: optional(Positive),
+  raiseScale: optional(Positive),
+  swingScale: optional(Positive),
+});
+
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
   capacity: Positive,
@@ -391,6 +404,10 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
+  opticMagnification: optional(Positive),
+  /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
+  firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
@@ -527,9 +544,11 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
+  /** Geometry-derived gungen mass, explicitly in kilograms. */
+  massKg: Positive,
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
-  massKg: Positive,
+  mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
   sight: optional(AttachmentSightSchema),
 });
@@ -604,6 +623,8 @@ const ModelSchema = pipe(
     id: Id,
     /** The `.glb` file, as a path within the pack. */
     file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
+    /** Material to light from the item's light component while this model is drawn. */
+    emissiveMaterial: optional(Name),
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
@@ -854,6 +875,18 @@ const Degrees = pipe(
   number(),
   check((value) => Number.isFinite(value), 'must be finite'),
 );
+const CalendarDateSchema = pipe(
+  strictObject({
+    month: pipe(Count, minValue(1), maxValue(12)),
+    day: pipe(Count, minValue(1), maxValue(31)),
+  }),
+  check(({ month, day }) => day <= [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!, 'invalid date'),
+);
+const DayCycleSchema = strictObject({
+  latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
+  date: CalendarDateSchema,
+  twilight: literal('nautical'),
+});
 const HalfMetres = pipe(
   Metres,
   check((v) => Number.isInteger(v * 2), 'must be snapped to 0.5 m'),
@@ -936,7 +969,14 @@ const SiteLayoutSchema = strictObject({
 
 // ---- zombies ----
 
-const ZOMBIE_MODEL = picklist(['shambler', 'runner']);
+export type ShamblerHitRegion = 'head' | 'torso' | 'leftArm' | 'rightArm' | 'leftLeg' | 'rightLeg';
+export type ZombieRegion = ShamblerHitRegion;
+export type ZombieHitRegion = ZombieRegion | 'core.trunk' | `member.${number}.${ShamblerHitRegion}`;
+export type ZombieRegions = Record<string, number>;
+
+const AMALGAM_REGION_KEYS = ['core.trunk', ...ZOMBIE_REGION_NAMES.map((region) => `member.${region}`)];
+
+const ZOMBIE_MODEL = picklist(['shambler', 'runner', 'amalgam']);
 
 const ZOMBIE_ABILITIES = [
   'grab',
@@ -965,16 +1005,16 @@ const ZombieSchema = strictObject({
   name: Name,
   /** Mobgen template selected for this type's silhouette and posed hit regions. */
   model: ZOMBIE_MODEL,
-  regions: strictObject({
-    head: Positive,
-    torso: Positive,
-    leftArm: Positive,
-    rightArm: Positive,
-    leftLeg: Positive,
-    rightLeg: Positive,
-  }),
-  /** Relative chance that a marker naming this type produces it; 1 is the common baseline. */
+  /** Uniform scale for this model's realized body, in addition to the mobgen template's dimensions. */
+  bodyScale: optional(Positive),
+  /** Overrides body-height pitch scaling for this type's voice cues. */
+  soundPitchMultiplier: optional(Positive),
+  /** Health keyed by hit-region id; ordinary shamblers use six anatomy keys, amalgams use manifest ids. */
+  regions: record(pipe(string(), nonEmpty('must not be empty')), Positive),
+  /** Relative chance that an ordinary hamlet spawn chooses this type; 1 is the common baseline. */
   spawnWeight: pipe(Positive, maxValue(1, 'must be at most 1')),
+  /** Excludes debug fixtures from ordinary hamlet selection while keeping authored/debug spawns available. */
+  debugOnly: optional(vBoolean()),
   sounds: strictObject({
     idle: picklist(SOUND_EVENT_IDS),
     alert: picklist(SOUND_EVENT_IDS),
@@ -987,6 +1027,8 @@ const ZombieSchema = strictObject({
   speed: strictObject({ wanderMetresPerSimSecond: SimRate, chaseMetresPerSimSecond: SimRate }),
   /** Metres advanced by one half-cycle of the leg gait. */
   stepLength: Positive,
+  /** Whether this type tries to jump low obstacles when grounded. */
+  canJumpObstacles: vBoolean(),
   /** Metres by day. */
   sight: Positive,
   /** Metres by night. */
@@ -1078,6 +1120,12 @@ const ZombieSchema = strictObject({
   loot: optional(Id),
 });
 
+const zombieRegionsMatchModel = (zombie: InferOutput<typeof ZombieSchema>): boolean => {
+  const expected = zombie.model === 'amalgam' ? AMALGAM_REGION_KEYS : ZOMBIE_REGION_NAMES;
+  const keys = Object.keys(zombie.regions);
+  return keys.length === expected.length && expected.every((key) => Object.hasOwn(zombie.regions, key));
+};
+
 /** Actor palettes are content so appearance doesn't live in renderer code. */
 const FigureSchema = strictObject({
   id: Id,
@@ -1129,8 +1177,9 @@ const SkillSchema = pipe(
             wobbleVerticalToHorizontalRatio: pipe(Positive, maxValue(1)),
             wobbleLuneArchPower: pipe(Positive, maxValue(4)),
             wobbleLunePhaseOffsetRadians: pipe(NonNegative, maxValue(0.45)),
-            wobbleJitterShare: Fraction,
-            wobbleJitterAmplitudeFraction: pipe(Positive, maxValue(1)),
+            wobbleNoiseReversionRatePerSimSecond: pipe(Positive, maxValue(30)),
+            wobbleNoiseSigmaRadiansPerSqrtSecond: pipe(NonNegative, maxValue(1)),
+            wobbleNoiseSmoothingSimSeconds: pipe(Positive, maxValue(1)),
             reloadFactorFloor: Fraction,
             reloadFactorHalfLifeLevels: Positive,
             rackFactorFloor: Fraction,
@@ -1190,6 +1239,7 @@ const SenseSchema = strictObject({
     throwMaxDistanceMetres: Positive,
     throwChargeSimSeconds: PositiveSimSeconds,
     throwMinimumHoldSimSeconds: PositiveSimSeconds,
+    throwStanceDropHoldRealSeconds: Positive,
     throwArmSpeedMetresPerRealSecond: Positive,
     throwArmEnergyJoules: Positive,
   }),
@@ -1277,7 +1327,20 @@ const SECTION_DESCRIPTOR = {
   furniture: { schema: optional(array(FurnitureSchema)), label: 'furniture', order: 2 },
   loot: { schema: optional(array(LootTableSchema)), label: 'loot tables', order: 4 },
   templates: { schema: optional(array(TemplateSchema)), label: 'templates', order: 5 },
-  zombies: { schema: optional(array(ZombieSchema)), label: 'zombie types', order: 6 },
+  zombies: {
+    schema: optional(
+      pipe(
+        array(ZombieSchema),
+        check(
+          (types) => types.every((zombie) => zombie.model !== 'amalgam' || zombie.bodyScale !== undefined),
+          'amalgam must define bodyScale',
+        ),
+        check((types) => types.every(zombieRegionsMatchModel), 'zombie region keys must match the model'),
+      ),
+    ),
+    label: 'zombie types',
+    order: 6,
+  },
   figures: { schema: optional(array(FigureSchema)), label: 'figures', order: 3 },
   models: { schema: optional(array(ModelSchema)), label: 'models', order: 7 },
   sounds: { schema: optional(array(SoundSchema)), label: 'sound events', order: 8 },
@@ -1287,7 +1350,7 @@ const SECTION_DESCRIPTOR = {
   body: { schema: optional(array(BodyTuningSchema)), label: 'body tuning', order: 12 },
   senses: { schema: optional(array(SenseSchema)), label: 'sense tuning', order: 13 },
   meleeClasses: { schema: optional(array(MeleeClassSchema)), label: 'melee classes', order: 14 },
-  weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 15 },
+  weathering: { schema: optional(array(WeatheringSchema)), label: 'weathering', order: 16 },
 } as const;
 
 type SectionSchemas = { [S in keyof typeof SECTION_DESCRIPTOR]: (typeof SECTION_DESCRIPTOR)[S]['schema'] };
@@ -1296,7 +1359,7 @@ const sectionSchemas = Object.fromEntries(
 ) as SectionSchemas;
 
 /** One content file: any declared section, each a list of definitions. */
-export const ContentFileSchema = strictObject(sectionSchemas);
+export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
@@ -1318,8 +1381,9 @@ export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type WeatheringDef = InferOutput<typeof WeatheringSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
-export type ContentSection = keyof ContentFile;
+export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
 
 /** Also rejects independently adding a schema section without its metadata. */
 export const CONTENT_SECTIONS = SECTION_DESCRIPTOR satisfies Record<ContentSection, { label: string; order: number }>;

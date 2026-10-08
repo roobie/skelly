@@ -9,7 +9,6 @@ import {
   playPromptText,
   projectCrosshairScreenPosition,
   renderPlayHud,
-  renderPlayInventoryStats,
 } from '../src/ui/playHud.ts';
 import { playReadout } from '../src/ui/playReadout.ts';
 
@@ -112,11 +111,6 @@ it('renders immutable HUD projections and resets text/visibility on the next fra
   expect([roots.crosshair.style.left, roots.crosshair.style.top]).toEqual(['12px', '34px']);
   renderPlayHud(roots, { hud: '', prompt: '', crosshairVisible: true });
   expect([roots.crosshair.style.left, roots.crosshair.style.top]).toEqual(['', '']);
-  const stats = root();
-  renderPlayInventoryStats(stats, true, 'stamina 100%');
-  expect([stats.hidden, stats.textContent]).toEqual([false, 'stamina 100%']);
-  renderPlayInventoryStats(stats, false, 'stamina 99%');
-  expect([stats.hidden, stats.textContent]).toEqual([true, 'stamina 99%']);
 });
 
 it('projects a bore hit into the crosshair screen position', () => {

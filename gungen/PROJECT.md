@@ -8,6 +8,10 @@ read_if:
   - you change the AK archetype's proportions, or map them against its golden photo
   - you change attachment parts, mount slots or their Deadvox export
   - you change firearm design/template calibre or AK magazine selection
+  - you change STANAG magazine geometry or its Deadvox export
+  - you change default sweep coverage or timeout policy
+  - you change the firearm action/ejection export contract with Deadvox
+---
 
 # gungen — low-poly firearm designer
 
@@ -179,8 +183,8 @@ can rotate.
 
 **Units per domain.** A domain declares `units` (`src/core/schema.ts#DomainUnits`):
 metres per unit, the snap grid and the bevel, all in its own u. The gun domain
-declares today's values in `src/gun/units.ts#GUN_UNITS`: 1u = 11.5mm, a 0.25u
-grid and a 0.125u bevel (about 1.4mm). The core reads them from
+declares its values in `src/gun/units.ts#GUN_UNITS`, built from
+`METRES_PER_UNIT`, `GRID` and `BEVEL`. The core reads them from
 `resolved.domain.units`: the glb export scales by `metresPerUnit`, the
 connection-contact rule allows a gap of one `grid` step, and meshes are
 chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). That contact tolerance
@@ -246,14 +250,14 @@ the generator later has something independent to be tested against (§9).
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
   | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
-  | `connection-contact` | Solids on connected parts touch or are within one grid step of the domain (0.25u for guns) |
+  | `connection-contact` | Solids on connected parts touch or are within one grid step of the domain |
   | `keep-out` | No solid is inside another part's keep-out volume, except parts attached at an allowed port or from an explicitly allowed family |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
 
   The contact rule checks minimum Euclidean separation between the connected
   parts' convex solids; overlap remains solely governed by `solid-overlap`.
-  A separated pair is covered in `test/fixtures/broken-connection-contact.json`.
+  A separated pair is covered in `test/fixtures/synthetic-connection-contact-gap.json`.
   A file that can't be resolved (unknown family, part, port or param; bad slot
   or roll) is reported under `structure`.
 - **Parts** (`src/gun/parts.ts`, since reworked in Milestone 1.1): receiver,
@@ -278,9 +282,9 @@ the generator later has something independent to be tested against (§9).
 
 ### Out of scope for Milestone 1
 
-The generator and grammar (§6), the human rig (§5; the trigger-finger volume
-stands in for now), final meshes and merging (§7), the metrics in §9, and
-more archetypes.
+The generator and grammar (§6), the human rig (§5; the trigger-finger keep-out
+volume stands in until it exists), final meshes and merging (§7), the metrics in
+§9, and more archetypes.
 
 ## Milestone 1.1: receiver split, domain rules, archetype smoke tests
 
@@ -342,18 +346,19 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
-Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`.
-The lengths below remain abstract units on the existing grid. Optic reference sources and modeled envelopes are recorded in `docs/optics.md`.
+Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`. Optic references are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
-- Magazine S/M/L body lengths by profile are: standard, SMG, and pistol
-  `6/10/16u`; AK-74 curved `6/10/16.5u`; STANAG curved `6/10/15.75u`. These
-  curved L values follow the traced reference lengths: the AK-74 ratio and
-  STANAG 30-round, with STANAG 20-round anchoring M near `10u`. The AKM curved
-  band is in `src/gun/parts.ts`, `MAGAZINE_PROFILE_LENGTHS_U`; its L is fitted
-  to the AK's golden photo (g41-4).
-  Ordinary S begins at the plausible 10-round length (`6u`).
+- The 20-round STANAG body uses the Brownells listing's outer box, snapped to
+  the model grid. The listing's delivery dimensions (127 × 66 × 25 mm) are
+  package dimensions that corroborate that box. Side-view proportions estimate
+  the floorplate slant and transition into the shared upper section, which
+  preserves feed and magwell fit. The curved STANAG-30 length follows its traced
+  30-round reference. Other
+  STANAG capacities are deferred to #414. See `src/gun/parts.ts`,
+  `STANAG20_BODY_BOX_U` and `magazineGeometryFor`. The AKM curved band is fitted
+  to its golden photo (g41-4).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
   `4.5u/5.5u`, seated in a recessed well. Their floorplates protrude `0.25u`
   and `1.25u` below the well/stock line respectively. The top-loaded bolt rifle
@@ -386,15 +391,6 @@ The lengths below remain abstract units on the existing grid. Optic reference so
   end behind the barrel's front-sight station and muzzle; `free-float-clearance`
   reports contact or an undersized gap.
 
-| Family/profile | S (u / mm) | M (u / mm) | L (u / mm) | Measurement basis |
-| --- | ---: | ---: | ---: | --- |
-| Grip | 7.5 / 86 | 8.5 / 98 | 9.5 / 109 | Hand-sized bands, along grip axis; pistol-integrated grip uses the same bands |
-| Standard, SMG, pistol magazine | 6 / 69 | 10 / 115 | 16 / 184 | Abstract length bands; STANAG top depth anchors 1u ≈ 11.5mm |
-| AK-74 curved magazine | 6 / 69 | 10 / 115 | 16.5 / 190 | Pixel-traced body centreline ratio, `br-ref-ak74-mag.jpg` |
-| STANAG curved magazine | 6 / 69 | 10 / 115 | 15.75 / 181 | 30-round trace; 20-round reference anchors M, `br-ref-stanag-20-30.png` |
-| Standard and free-float AR handguard | 17 / 196 | 23.5 / 270 | 30 / 345 | 65% of S/M/L exposed barrel lengths (26/36/46u), snapped to the grid |
-| Fixed AR handguard | 18.75 / 216 | 25.75 / 296 | 33 / 380 | Rear face meets the A2 collar at the existing gas-port station |
-
 Pump tubes choose `lengthPercent` from `50`, `75`, or `100`; their reach is that
 percentage of the actual barrel span (26/36/46u for S/M/L), snapped to the grid.
 A bore-aware drop keeps a 0.5u gap between the tube and barrel. The forward
@@ -424,8 +420,8 @@ archetype:
 - **The SMG differs from the battle rifle only in proportions and bore.** Nothing
   models what makes an SMG distinct, such as a simpler action.
 - **The forend can overrun the shortest tube.** With an S barrel and 50% tube,
-  the tube ends at x=13 while the fixed forend reaches x=17.6. This is currently
-  allowed; decide later whether forend length should scale with tube coverage.
+  the fixed forend reaches past the tube's end, and no rule refuses it. Whether
+  forend length should scale with tube coverage is open in #457.
 - **Neighbour params are discrete values, not computed geometry.** A tube's
   percentage and the barrel's size class are resolved across their lugs; each
   part builder must still compute the matching physical station from both.
@@ -825,9 +821,9 @@ BR's rulings:
 - **The generator stays, as a variant suggester.**
 - **Export to deadvox.** deadvox reads a model as a `.glb` plus a `grip`
   (position and turn) and named `anchors`, in metres
-  (`deadvox/src/core/schema.ts:197-212`). Its renderer uses only the grip and
-  the flashlight's `lens` anchor today (`deadvox/src/render/models.ts:50-52`).
-  The `muzzle` anchors in `models-firearms.json` are accepted but unused.
+  (`deadvox/src/core/schema.ts`, `ModelSchema`). Deadvox reads named anchors
+  through `deadvox/src/core/heldPose.ts`, `heldAnchorOffset`, and the
+  flashlight's lens through `deadvox/src/render/models.ts`, `prepareModel`.
 
 Already in place: the parameter panel (param edits, optional parts, URL
 overrides, connections dropped when a port disappears), fixtures (a hand-made
@@ -871,13 +867,12 @@ Current limits the plan works within:
 
 ### Work packages
 
-**3.0 Contracts**, in two steps, both owned by lane A:
+**3.0 Contracts**, in two steps:
 
-- **3.0a Freeze:** types and this document only, no behaviour. It releases
-  lanes B and C.
+- **3.0a Freeze:** types and this document only, no behaviour, so the export
+  and suggester work could build against them.
 - **3.0b Implement:** parsing, anchors for every archetype, and the palette
-  migration. Done (2026-09-29, see "3.0b (implemented)"). B and C didn't
-  wait for it.
+  migration. Done (see "3.0b (implemented)").
 
 Core stays free of gun data: every core function takes what it needs as
 explicit inputs, and the gun domain supplies them. The core `Domain` has no
@@ -933,7 +928,7 @@ palette as arguments.
   material, design finish, variant finish, then role material. Missing palette
   material ids remain absent from metadata rather than being fabricated. Legacy
   family/special/fallback colours still support generic domains.
-- **Export metadata** (frozen here for lane B), per port: stable id
+- **Export metadata** (frozen here for the 3.4 export), per port: stable id
   `<part>.<port>`, mount, gender, optional size, and the full assembly-space
   mating frame (position, normal, up). Rails carry one count/pitch record for
   the whole port and export one node per rail, not per slot. The core exporter
@@ -950,8 +945,8 @@ The viewer's rendering is unchanged after the palette moves.
 
 #### 3.0a contracts (frozen)
 
-"Frozen" here, and elsewhere in this file, meant fixed so parallel lanes could
-build against each other; it isn't a compatibility promise. Pre-pre-alpha, these
+"Frozen" here, and elsewhere in this file, meant fixed so parallel work could
+build against it; it isn't a compatibility promise. Pre-pre-alpha, these
 contracts change whenever that makes the code simpler (AGENTS.md, "Project stage").
 
 Types only; 3.0b supplies parsing and values. The contracts live in
@@ -1013,7 +1008,7 @@ Decisions where the plan left representation open:
   to metres and deadvox axes (`+x` forward, `+y` up) before emitting `grip.at`
   and optional anchor positions. `grip.turn` is always emitted; deadvox
   `hold` and `roll` are intentionally omitted.
-- **Firearm action/ejection export (ADR 0003, accepted 2026-10-02).** All
+- **Firearm action/ejection export (Deadvox ADR 0006).** All
   additions to `DeadvoxModelEntry` are optional. `anchors.ejection` is a plain
   `[x, y, z]` point in metres in model coordinates (`+x` forward, `+y` up,
   `+z` right). `action.ejectDirection` is a unit `[x, y, z]` vector in the same frame.
@@ -1061,7 +1056,7 @@ Decisions where the plan left representation open:
   package adds no parser, anchor values, palette migration, suggester, or
   exporter implementation.
 
-#### Firearm/ammunition export extension (ADR 0003, accepted 2026-10-02)
+#### Firearm/ammunition export extension (Deadvox ADR 0006)
 
 The firearm metadata extends the 3.0a `DeadvoxModelEntry`. New metadata fields
 are optional in the schema; byte-identical output is not a compatibility
@@ -1096,8 +1091,8 @@ ammunition interchangeability (`src/core/template.ts`, `Template`; `src/core/des
   `at` is each round centre in metres in magazine-model coordinates; `tilt` is
   degrees about +z, nose-up positive. Left/right stagger is the sign of `at[2]`.
   Geometry determines the fit, capped to the nominal count for labelled
-  5/10-round, STANAG M/L (20/30), and AK-curved L (30) profiles; other magazine
-  profiles report the dimension-derived fit.
+  5/10-round, STANAG straight M (20), STANAG curved L (30), and AK-curved L (30)
+  profiles; other magazine profiles report the dimension-derived fit.
 - Round and case cartridge entries carry the same `calibre` and use real-size
   millimetre source dimensions converted to metres for their GLBs. `5.56x45.json`
   cites NATO AOP-4172; where its reference drawing is ambiguous, C.I.P. .223 Rem
@@ -1242,11 +1237,12 @@ used for labels. `familyColors` remains the role-only geometry-check palette.
 build can report and fails if any solid of any archetype or template sweep
 would use the fallback grey.
 
-**Note for lane B (3.4 export).** Hold frames follow the grip's own lean: the
-`grip` and `frame` frames use the grip's local axes, so once the part is
-placed the frame is tilted with the grip, and a `grip.turn` derived from it
-reflects that tilt. Lane B must decide whether deadvox wants the tilted frame
-or an upright one. The anchor data doesn't decide it.
+**Hold frames and the export.** Hold frames follow the grip's own lean: the
+`grip` and `frame` frames use the grip's local axes, so once the part is placed
+the frame is tilted with the grip. The 3.4 export doesn't pass that tilt to
+deadvox: `grip.turn` carries only the model file's orientation, and the tilted
+frame stays in the anchor data for hand posing. See "Grip orientation" under
+3.4, and `src/gun/exportFrame.ts`, `gripTurn`.
 
 **Proof tests.**
 
@@ -1277,12 +1273,11 @@ versioned design JSON downloads, opens those files again, and provides param and
 optional-part locks plus family-filtered prefab pickers. Editing a prefab-fixed
 param detaches its reference; loaded mismatches remain marked stale.
 
-Known issue (BR, 2026-09-29; noted, not yet addressed): `stanag-20` is built as
-`profile: stanag-curved` at length M, a shortened curved magazine. A real
-20-round STANAG is straight; only the 30-round one is curved. Fixing it means a
-straight STANAG profile (or `standard`, if its section matches) and a decision
-on the AR design's magazine, which references `stanag-20` today: a straight
-20, a curved `stanag-30`, or its current curved M without a prefab.
+The `stanag-20` prefab selects the straight profile at M length. Resolving a
+non-M straight profile reports a structure issue that points to #414 for the
+deferred capacities. The shared upper preserves feed and magwell fit, and
+`stanag-30` uses the curved profile. See `src/gun/prefabs.ts`, `GUN_PREFABS`,
+`src/gun/parts.ts`, `magazine`, and `src/core/resolve.ts`, `resolveParams`.
 
 - Designs are files in `gungen/designs/`. Fixtures stay test cases; designs
   are the curated product.
@@ -1339,9 +1334,9 @@ built on `mesh.ts`:
 
 The mapping between gungen's axes and deadvox's is derived and tested:
 deadvox holds a model with +x forward and +y up
-(`deadvox/src/core/schema.ts:202-204`).
+(`deadvox/src/core/schema.ts`, `ModelSchema`, its `grip` field).
 
-**3.4 (implemented, lane B).**
+**3.4 (implemented).**
 
 - API. `src/core/glb.ts#exportGlb` is the frozen `ExportGlb`; it also exports
   `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
@@ -1491,13 +1486,13 @@ not part of the export's acceptance:
   existing stock styles stay unchanged. The 870 follow-up uses authored curved
   side profiles partitioned into convex extruded-polygon cells, with clipped side
   planes for width taper; no new solid kind is needed:
-  - **stock — done** (reference `.agent-mail/scratch/br-ref-stock-taper.png`,
-    an 870-style wood stock): a narrow wrist at the receiver that widens to a
+  - **stock — done** (BR's side-view reference photo of an 870-style wood
+    stock, which set this profile): a narrow wrist at the receiver that widens to a
     tall butt; the comb line drops toward the butt while the belly line runs
     down to the toe;
-  - **pistol grip — deferred** (reference `.agent-mail/scratch/br-ref-grip-slant.png`,
-    AR-style): raked, with slanted front and back faces rather than a
-    constant-width slab.
+  - **pistol grip — deferred** (BR's side-view reference photo of an AR-style
+    pistol grip, which sets this profile): raked, with slanted front and back
+    faces rather than a constant-width slab.
   Keep port positions, `hold` anchors, magazine-well clearance, the stock's
   `FIRING_GRIP` role, and every existing rule passing. The follow-up narrows the
   wrist in width as well as height, using those existing clipping planes;
@@ -1561,8 +1556,8 @@ not part of the export's acceptance:
   Candidates beyond these three, for BR to choose from: the AR forward assist,
   magazine and bolt releases, and the safety selector;
 - **Deferred (BR, 2026-09-30):** revolute `PartMotion` for lifting the bolt handle
-  and folding the FAL handle. For now both remain deployed and move linearly (or
-  are fixed to the receiver).
+  and folding the FAL handle. Both stay deployed and move linearly, or are fixed
+  to the receiver.
 - **Deferred (BR, 2026-09-30):** if automatic shotguns are added, reuse the AK-like
   stick/paddle charging-handle style. Pump shotguns remain handle-free.
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
@@ -1581,8 +1576,8 @@ not part of the export's acceptance:
   neither requires nor retains these hints. The viewer honours no-bevel and
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
-  `Solid` type in `src/core/schema.ts`, so lane A owns it;
-- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors so Deadvox can hide the baked magazine when no magazine is fitted (d114-11, #337); see `deadvox/docs/decisions/0003-firearm-handling.md`.
+  `Solid` type in `src/core/schema.ts`;
+- g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors so Deadvox can hide the baked magazine when no magazine is fitted (d114-11, #337); see `deadvox/docs/decisions/0006-firearm-handling.md`.
   Gungen's attachment mass is a geometry/material estimate, not a product specification; d118-3 uses the exported model fact when reconciling inventory weight and attachment handling. BR tunes the cited density and fill assumptions before mass figures become fixed; see `src/gun/attachmentMass.ts`, `attachmentMassKg`, and `docs/deferred-assertions.md`.
   BR, 2026-10-07 11:27, verbatim: “#347 let's stick to 7.62x39 for now” and “but we will add 5.45x39 at some point”; generated AKs stay 7.62x39-only, and 5.45x39 is follow-up #362.
 - **Bullpup archetype — suspended (BR, 2026-10-01):** part-family geometry remains,
@@ -1594,32 +1589,6 @@ not part of the export's acceptance:
   directories, restore launcher/corpus references, and regenerate the scoped snapshots.
   The default finish, palette, and `exportFile` variant entries remain as harmless dormant
   data; the family code stays available for restoration.
-
-### Parallel lanes
-
-3.0a (the frozen types) released B and C, and 3.0b is merged, so both lanes
-are free to work. 3.0b's anchor data is in `src/gun/anchorData.ts`, not
-`parts.ts`, so there is no last `parts.ts` edit to hand over. `parts.ts` stays
-A's until A says otherwise, because a parts and rules fix batch is in progress
-on A's lane; D starts only after 3.5 and after A says so. After that, the rule
-is one writer at a time per hot file:
-
-- `src/viewer/main.ts`, `src/viewer/paramPanel.ts`, `src/viewer/scene.ts`;
-- `src/gun/parts.ts`, `src/gun/templates.ts`;
-- `src/core/schema.ts`;
-- `package.json`, `.github/workflows/gungen.yml`;
-- this file (each lane only adds its own subsection).
-
-| Lane | Who | Work | Owns | Starts |
-| --- | --- | --- | --- | --- |
-| A | coder@gungen | gungen.3, then 3.0a, 3.0b, 3.1, 3.2, and 3.3's viewer strip | viewer, `schema.ts`, the design format, `prefabs.ts`, `designs/`, the palette; `parts.ts` until A says otherwise (a parts/rules fix batch is in progress) | now; 3.0a and 3.0b are merged |
-| B | subagent | 3.4 glTF export | new `src/core` export files, its CLI; asks A for `package.json` and CI changes | released by 3.0a; 3.0b is merged |
-| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | released by 3.0a; 3.0b is merged |
-| D | subagent | 3.6 vocabulary after 3.5: gungen.7, gungen.6, then the later items | `parts.ts`, `templates.ts` | after 3.5, and after A hands over `parts.ts` |
-| E | coder@main | 3.5 deadvox import | `deadvox/` | after saves.2b and 3.4 |
-
-B and C add new files but depend on 3.0a's types. Neither may change
-`schema.ts` or the design format; a needed change goes back to lane A.
 
 ### Proof per package
 
@@ -1734,14 +1703,19 @@ in `docs/deferred-assertions.md`.
   `params`. `test/parts.test.ts` lists the array-sampled families in one place,
   `ARRAY_SAMPLED_KEYS`; every family not listed gets the full product. Add an
   explicit case for an interaction the array is known to miss.
+- **Browser tests.** Viewer browser tests launch managed Chromium through
+  `test/chromium.mjs`, `launchChromium`, and the Playwright install shared with
+  Deadvox; see `deadvox/TROUBLESHOOTING.md` for the shared launch-boundary rationale.
 - **Removals need a reason.** The commit says what the removed tests protected
   and which remaining test or sample still protects it, ideally with a mutation
   or coverage result as evidence.
 - **Timeouts.** A test that takes about 1 s or more and still has the 5 s
   default gets its own timeout, about 5x its measured time, with a comment
   saying why. A sweep is split into smaller tests where it can be; one that
-  cannot (`unplacedParts.test.ts`) gets a timeout proportional to its case
-  count.
+  cannot gets a timeout proportional to its case count. Default runs build only
+  sampled variants and cull solids outside a part's swept bounds before collision
+  checks, so no default case races its timeout; see `test/unplacedParts.test.ts`,
+  `defineRuleChecks`, and `src/gun/cycle.ts`, `sweepMovingPart`.
 
 ## Running it
 

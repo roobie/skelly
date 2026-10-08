@@ -17,8 +17,8 @@ export type PrefabCatalogue = readonly PrefabCatalogueEntry[];
 
 /** Curated, versioned part variants available to designs. */
 export const GUN_PREFABS: PrefabCatalogue = [
-  // STANAG M = 10u (20-round reference); L = 15.75u (30-round curve).
-  { id: 'stanag-20', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-curved' } },
+  // The 20-round body is straight with a slanted floorplate; the 30-round body remains curved.
+  { id: 'stanag-20', version: 1, family: 'magazine', fixedParams: { length: 'M', profile: 'stanag-straight' } },
   { id: 'stanag-30', version: 1, family: 'magazine', fixedParams: { length: 'L', profile: 'stanag-curved' } },
   // The variant selects the AK curve geometry; its L band is in `MAGAZINE_PROFILE_LENGTHS_U` (parts.ts).
   {

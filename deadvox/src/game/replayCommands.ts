@@ -13,10 +13,13 @@ export type ReplayActionPayload =
   | { kind: 'inventory.work'; itemUid: number; operation: WorkOperation }
   | { kind: 'inventory.assign'; slot: number; itemUid: number }
   | { kind: 'inventory.cancel-handling' }
+  | { kind: 'firearm.attachment.fit'; firearmUid: number; slotId: string; attachmentUid: number }
+  | { kind: 'firearm.attachment.remove'; firearmUid: number; slotId: string }
   | { kind: 'craft.start'; recipeId: string; preference?: CraftPreference }
   | { kind: 'craft.continue' }
   | { kind: 'craft.stop' }
-  | { kind: 'item.throw.cancel' };
+  | { kind: 'item.throw.cancel' }
+  | { kind: 'item.throw'; itemUid: number; hand: 'left' | 'right'; distance: number };
 
 const isUid = (value: unknown): value is number => Number.isSafeInteger(value) && (value as number) > 0;
 const isSpot = (value: unknown): boolean =>
@@ -61,6 +64,11 @@ const isTargetState = (value: unknown): value is TargetState => {
   }
 };
 
+const isAttachmentPayload = (payload: Record<string, unknown>): boolean =>
+  isUid(payload.firearmUid) &&
+  typeof payload.slotId === 'string' &&
+  (payload.kind !== 'firearm.attachment.fit' || isUid(payload.attachmentUid));
+
 export const isReplayActionPayload = (value: unknown): value is ReplayActionPayload => {
   if (!(value && typeof value === 'object' && !Array.isArray(value))) {
     return false;
@@ -101,11 +109,22 @@ export const isReplayActionPayload = (value: unknown): value is ReplayActionPayl
         (payload.slot as number) < QUICKBAR_SLOTS &&
         isUid(payload.itemUid)
       );
+    case 'firearm.attachment.fit':
+    case 'firearm.attachment.remove':
+      return isAttachmentPayload(payload);
     case 'inventory.cancel-handling':
     case 'craft.continue':
     case 'craft.stop':
     case 'item.throw.cancel':
       return Object.keys(payload).length === 1;
+    case 'item.throw':
+      return (
+        isUid(payload.itemUid) &&
+        (payload.hand === 'left' || payload.hand === 'right') &&
+        Number.isFinite(payload.distance) &&
+        (payload.distance as number) >= 0 &&
+        (payload.distance as number) <= 10_000
+      );
     case 'craft.start':
       return (
         typeof payload.recipeId === 'string' &&
@@ -128,6 +147,8 @@ export interface ReplayCommandOwners {
   quickbar: Pick<Quickbar, 'assign'>;
   search: (entityUid: number) => string | undefined;
   work: (itemUid: number, operation: WorkOperation) => string | undefined;
+  fitAttachment?: (firearmUid: number, slotId: string, attachmentUid: number) => string | undefined;
+  removeAttachment?: (firearmUid: number, slotId: string) => string | undefined;
   toHands: (itemUid: number, feet: [number, number, number]) => string | undefined;
   pickup: (itemUid: number, mode: 'pocket' | 'wield', feet: [number, number, number]) => string | undefined;
   interact: (entityUid: number) => string | undefined;
@@ -135,6 +156,7 @@ export interface ReplayCommandOwners {
   craftContinue: () => string | undefined;
   craftStop: () => string | undefined;
   cancelItemThrow: () => void;
+  throwItem: (itemUid: number, hand: 'left' | 'right', distance: number) => void;
 }
 
 export const applyReplayActionPayload = (
@@ -169,6 +191,14 @@ export const applyReplayActionPayload = (
       owners.quickbar.assign(payload.slot, item);
       return undefined;
     }
+    case 'firearm.attachment.fit':
+      return owners.fitAttachment
+        ? owners.fitAttachment(payload.firearmUid, payload.slotId, payload.attachmentUid)
+        : 'Attachment handling is unavailable';
+    case 'firearm.attachment.remove':
+      return owners.removeAttachment
+        ? owners.removeAttachment(payload.firearmUid, payload.slotId)
+        : 'Attachment handling is unavailable';
     case 'inventory.cancel-handling':
       owners.queue.cancel();
       return undefined;
@@ -180,6 +210,9 @@ export const applyReplayActionPayload = (
       return owners.craftStop();
     case 'item.throw.cancel':
       owners.cancelItemThrow();
+      return undefined;
+    case 'item.throw':
+      owners.throwItem(payload.itemUid, payload.hand, payload.distance);
       return undefined;
     default: {
       const exhaustive: never = payload;

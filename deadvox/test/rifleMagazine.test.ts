@@ -48,10 +48,11 @@ const rig = () => {
 };
 
 /** The empty AR in hand, and a worn bag holding one magazine loaded round by round per entry of `loads`. */
-const carrying = (loads: readonly number[]) => {
+const carrying = (loads: readonly number[], magazineOverride?: string) => {
   const rigged = rig();
   const { inventory, queue } = rigged;
-  const { magazine: magazineType, cartridge } = rifleAmmunition(registry, 'rifle_assault');
+  const { magazine: rifleMagazine, cartridge } = rifleAmmunition(registry, 'rifle_assault');
+  const magazineType = magazineOverride ?? rifleMagazine;
   const magazines = new MagazineHandling(inventory, queue, { feet: () => pose.feet, reloadFactor: () => 1 });
   const bag = inventory.create('hiking_backpack');
   const pocket = { kind: 'pocket', owner: bag, pocket: 0 } as const;
@@ -79,6 +80,22 @@ const carrying = (loads: readonly number[]) => {
 };
 
 describe('magazine-fed rifles', () => {
+  it('fits, restores and fires the 20-round STANAG in the AR magazine well', () => {
+    const { inventory, queue, mechanics, fired, rifle, loaded } = carrying([1], 'magazine_stanag_20');
+    const [magazine] = loaded;
+    expect(mechanics.loadNext(rifle.uid, 0)).toBeUndefined();
+    settle(queue);
+    expect(rifle.slots?.magazine).toBe(magazine);
+    const saved = inventory.snapshotState();
+    expect(Inventory.restoreState(registry, saved).snapshotState()).toEqual(saved);
+    expect(mechanics.cock(rifle.uid, 1)).toBeUndefined();
+    settle(queue);
+    expect(mechanics.fire(shot(rifle, 2))).toBe(true);
+    settle(queue);
+    mechanics.advanceTo(3);
+    expect(fired()).toBe(1);
+  });
+
   it('conserves rounds across carried, loaded, chambered, dropped and fired through fire, charge and change', () => {
     const { inventory, queue, mechanics, fired, cartridge, rifle, loaded, total } = carrying([5, 3]);
     const [first, spare] = loaded;

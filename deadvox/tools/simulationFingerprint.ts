@@ -68,6 +68,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/sideButton.ts',
   'src/core/sky.ts',
   'src/core/mood.ts',
+  // Optic lens projection is rendered presentation; it changes neither simulation nor save state.
+  'src/core/opticView.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
   'src/core/weather.ts',
   'src/core/mesher.ts',

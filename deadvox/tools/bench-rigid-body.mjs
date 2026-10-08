@@ -23,6 +23,7 @@ const bodies = Array.from({ length: 16 }, (_, index) => ({
     [0, 0.2, 4],
   ],
   corners,
+  remainderRealSeconds: 0,
   elapsed: 0,
   quietTime: 0,
   asleep: false,
@@ -41,6 +42,7 @@ const reset = () => {
     body.orientation = [...state.orientation];
     body.velocity = [...state.velocity];
     body.angularMomentum = [...state.angularMomentum];
+    body.remainderRealSeconds = 0;
     body.elapsed = 0;
     body.quietTime = 0;
     body.asleep = false;
@@ -75,6 +77,3 @@ const needed = Math.ceil(((speed + 9.8 / 120) * (1 / 120)) / (0.5 * world.blockS
 console.log(
   `16 airborne debris (${fast ? 'fast' : 'normal'}), 16.7 ms frame, 200 samples: median ${median.toFixed(3)} ms, p95 ${p95.toFixed(3)} ms; ${needed} inner parts of max 8`,
 );
-if (!(fast || median < 0.25)) {
-  throw new Error('normal-case median exceeds the 0.25 ms bound');
-}

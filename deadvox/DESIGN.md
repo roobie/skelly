@@ -6,9 +6,11 @@ read_if:
   - you're changing world block shapes or slab geometry
   - you're changing the rules for time, survival, light or zombies
   - you're changing the rendering of zombie actor models
+  - you're integrating a mobgen amalgam body, its collision envelope or member hit ownership (#308)
   - you're recording or reconciling BR's crawler silhouette rulings
   - you're changing crawler gait, hit response or generation validation
   - you're changing clock boundaries, temporal field names or time conversion arithmetic
+  - you're changing the derived day phases that drive the sky, zombie sight, hordes or spawn words
   - you change shambler attention, movement, obstacle response or floor-transition behavior
   - you're reviewing Slice 3 milestone 3.9 background simulation and its first horde
   - you're restructuring the per-tick zombie simulation
@@ -18,11 +20,13 @@ read_if:
   - you're changing game audio or its relationship to simulation events
   - you're changing the debug test-house scene or firearm-handling range
   - you're changing firearm recoil, dispersion or aim control
+  - you're changing firearm attachments, nested item slots or their save behavior
   - you're changing melee weapon contact behavior, stamina recovery timing or seeded damage variation
   - you're changing the quiet-key and noisy-prying alternatives for locked doors
   - you change what vehicles are for, or how their parts fit, come off and behave
   - you're changing held-item throwing or its range tuning
   - you're choosing or changing the building-weathering look and its dilapidation direction
+  - you're changing player-facing item descriptions or their boundary with control guidance
 ---
 
 # deadvox — design
@@ -316,7 +320,7 @@ chunks can generate in any order.
   - `tool` (qualities such as `cutting: 2`, `prying: 1`)
   - `weapon` (melee or ranged stats)
   - `fuel`, `battery`, `light`, `book`
-  - `vehiclePart` (after Slice 1)
+  - `vehiclePart` (with vehicles, #322)
 
   Behaviour comes only from components; the game never checks an item's id. For d59-1, BR ruled (BR, 2026-10-05), "yes, rule covers drawing too": first-person displays and ground-pile presentation follow declared components as well; see `src/render/hands.ts`, `HeldItems.syncHand` and `HeldItems.shape`, and `src/render/piles.ts`, `PileMeshes.drawPile` and `PileMeshes.planSpentCases`.
 - **Space is a grid**, as in DayZ. An item takes w × h cells and can be
@@ -333,6 +337,10 @@ chunks can generate in any order.
   slows you down and costs stamina.
 - **Condition** reads as a word: pristine, worn, damaged, badly damaged or
   ruined. Inspecting an item shows the exact numbers.
+- Item descriptions describe the item, not how to operate it. Bindings can change,
+  so operating instructions belong in the binding table and its displayed controls
+  list (`src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`), not
+  in the description.
 
 ### Hands: what you see is what's there
 
@@ -514,9 +522,10 @@ and `src/core/content.ts`, `checkItemFirearm`.
 - **Where materials come from:** your hands and pockets, and piles and
   containers within 2 m (see [Hands](#hands-what-you-see-is-whats-there)). A workbench within reach provides its qualities and a
   speed bonus.
-- **Disassembly** is a recipe run in reverse. It returns part of the
-  components, depending on skill and the tools used. In Slice 2, that reverse is
-  an authored yield or salvage list (see [SLICE-2.md](SLICE-2.md), "2.7").
+- **Disassembly** is a recipe run in reverse. An authored yield or salvage list
+  keeps the result specific to the item's design; it isn't calculated by
+  reversing every alternative or every recipe that could make the item. See
+  `docs/crafting.md`, `planDisassembly`.
 - **Crafting runs compressed**, like other long actions, and can be interrupted
   and resumed. An interrupted craft leaves an "in progress" item that holds its
   components.
@@ -528,7 +537,8 @@ and `src/core/content.ts`, `checkItemFirearm`.
 ## Character
 
 - **Needs:** calories, hydration, fatigue, stamina and body temperature. Rates
-  are per game hour. Temperature comes after Slice 1.
+  are per game hour. Body temperature isn't simulated; #366's heat property
+  could later serve it.
 - **Body.** BR (2026-10-06 07:23) approved the five defaults: “yes, take the five
   defaults”. The model makes injury decisions consequential beyond a single
   health value: see `src/core/body.ts`, `Body`; `src/core/needs.ts`, `stepNeeds`;
@@ -711,13 +721,9 @@ and `src/core/content.ts`, `checkItemFirearm`.
   each is about half the previous curve's duration; legendary remains clamped to skill 10.
   BR, 2026-10-07 10:23: “yep, feels good” on the handling comparison for PR #343.
 
-  Readied-gait sway and look lag scale with firearms skill, while dispersion and recoil remain separate. The per-firearm novice endpoint and shared expert endpoint and wobble bound are content-owned in `src/content/base/models-firearms.json` and `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, selects the skill scale. `src/core/aim.ts`, `frameFromState`, bounds wobble separately from recoil so enlarging the former does not retune the latter. Hip and ADS share this aim frame; ADS sight/view rules and firearm spread do not change. This makes an unskilled readied walk visibly unsteady without making recoil or dispersion a skill-scaled substitute.
+  Aim sway remains separate from dispersion and recoil so firearms skill affects steadiness without changing weapon accuracy or kick. Sharing `src/core/footsteps.ts`, `FootstepClock`, keeps the stride-synced path aligned with gait; content-owned shape settings allow a shallower path without changing cadence. See `src/core/aim.ts`, `frameFromState`, and `src/core/firearmsSkill.ts`, `firearmsSkillEffects`.
 
-  `src/core/footsteps.ts`, `FootstepClock`, owns the shared stride phase read by footfall emission, `src/render/playView.ts`, and `src/core/aim.ts`, `AimController`; a single cadence keeps the sway and rendered gait synchronized rather than running a second oscillator. The lune's arch and pass offset are content tunings in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the concave-down path can be adjusted without changing the established amplitude endpoints.
-
-  `FootstepClock.stepIndex` in `src/core/footsteps.ts` selects deterministic per-step deviations from the simulation-seeded stream, and `AimController` eases each deviation across its step. The content share is the fraction of steps that carry jitter; easing means the visible off-lune time is lower. Share and relative size belong to `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`, so the path varies without twitching or changing gait cadence and skill-scaled amplitude.
-
-  The vertical-to-horizontal wobble ratio is content-owned in `src/content/base/recipes.json`, validated by `src/core/schema.ts`, `SkillSchema`; `src/core/aim.ts`, `frameFromState`, applies it to the lune depth and vertical jitter without changing horizontal swing, cadence, or jitter share. A shallower trajectory feels less circular while preserving the established timing and skill-scaled amplitude. The debug-only `?wobbleFlat=` comparison supports tuning the ratio without a rebuild.
+  Mean-reverting Brownian drift replaces stride-eased jitter; the shared walking lune remains separate, and firearms skill continues to scale sway. Mean reversion avoids unbounded drift, while smoothing keeps fixed-tick noise from reading as frame-level twitch. Content owns the noise tuning. Saving the running state lets Continue and replay segments preserve the exact path, avoiding a motion discontinuity in the drift chosen by feel. The vertical/horizontal lune ratio remains independently tunable for BR's shape comparisons; it does not change the OU drift. See `src/core/aim.ts`, `advanceOrnsteinUhlenbeckAxis` and `AimController.snapshotState`, `src/core/saveState.ts`, `snapshotSession`, `src/game/inputReplay.ts`, `encodeInputReplay`, `src/game/config.ts`, `configFromUrl`, and `src/content/base/recipes.json`, `firearms_combat`.
 
   BR's earlier 2026-10-05 report on the skill scale
   before d83 (#274)—that skill 12 still had "too much dispersion/sway at full auto"—
@@ -744,9 +750,21 @@ and `src/core/content.ts`, `checkItemFirearm`.
   questions triggers expansion.
 - **Shot impacts (BR, 2026-10-05):** "yes, let's do #1 which is the real gameplay diegesis thing". Each round that meets world geometry leaves a surface mark; marks and dust are presentation, not simulation damage or save state. `src/game/firearmHandling.ts`, `FirearmMechanics.fire`, publishes committed round directions, while `src/render/shotTrace.ts`, `traceShot`, gives marks and debug lines one shared world trace; `src/render/impactEffects.ts`, `ImpactEffects.fire`, owns the bounded display. When a wall lies between the eye and muzzle, starting from the eye leaves the near wall visibly marked even if the muzzle has passed it. The test-house practice prop declares `FurnitureSchema.shotTarget` in `src/core/schema.ts` and is placed by `src/game/worldSetup.ts`, `DebugTestHouseSite.furnitureIn`. BR's firearm ruling, planned in [SLICE-3.md](SLICE-3.md), settles real ammunition and magazine loading plus body-region damage by calibre. Visible shambler marks are desired ("ideally, yes") and await the 3.2 first look.
 - **Magazines (3.2, d114):** BR, 2026-10-05 21:04: "magazines are real, you load them one by one, like in dayz". A detachable magazine is an item whose exported model carries gungen's fitted round column. Its calibre and capacity come from that model, as the pump's tube capacity does, so the geometry that fits the rounds also sets how many go in. Its cartridges are item state in feed order, top round first, and save with the magazine; loading pushes onto the top and stripping takes from it, as with a real spring-fed box. Each round loaded or stripped is one handling job, so releasing R loses nothing and the inputs replay deterministically. Hold R loads; stripping is the held magazine's item action, not an R gesture, because R's gestures load, rack and remove (CONTROLS.md, "Reload, rack, remove"). Loading and stripping a round both use the firearms skill's reload factor, extending d62's per-shell reading to per-round handling. See `src/core/magazine.ts`, `magazineSpec`, and `src/game/magazineHandling.ts`, `MagazineHandling`.
-- **Rifles (3.2, d114):** the AR and AK are real firearms that fire chambered cartridges in any mode; the debug rifles' virtual rounds are gone. A magazine-fed firearm owns a slot map, and the fitted magazine is its `magazine` entry. It is a whole item that saves inside the rifle, so the same magazine comes back out. The map leaves room for 3.7's attachments to add slot kinds without reshaping saves (SLICE-3.md, "3.7 Modular weapons"). Firing and working the charging handle feed the magazine's top round; with no magazine or an empty one, the chamber stays empty. A rifle round is one hitscan ray through the posed zombie regions, on the path pellets and melee already use, so it damages the region it actually crosses (d114-5). Damage, push, reach and a head multiplier come from the cartridge's `ammo` content and are gameplay estimates, so calibres differ by data alone; the shotgun shell's pellets read the same fields. BR, 2026-10-07 11:27, asked whether one headshot should kill, two torso hits down a shambler and one hit sever a limb: "depends on gun (or really mainly caliber and ammunition)". So no rule outside the cartridge's data sets how many hits a body takes. A region's pierce resistance applies as it does in melee, and a round draws no damage spread. The hit resolves before the trajectory reaches presentation, so impact marks can't change damage ("Shot impacts" above). See `src/core/pellets.ts`, `projectileShot`, and `src/core/zombies.ts`, `ZombieSystem.firePellets`. BR, 2026-10-07 11:20 (CONTROLS.md, "Reload, rack, remove"): "No, it should reload with the mag that is fullest in inventory, no matter what is loaded in gun"; double-pressing R works the charging handle, "yes, correct"; "Tap-then-press-and-hold R means remove mag". So hold R starts one magazine change that swaps in the fullest carried magazine that fits, even one with fewer rounds than the fitted one, and the swapped-out magazine goes to a pocket, or to the ground. With no fitting magazine carried, R refuses. A change is one motion, so it neither repeats while R is held nor cancels on release, unlike shell-by-shell loading. A tap, then a held press, removes the fitted magazine by the same destination rule, so a lone magazine can come out to be refilled. BR, 2026-10-07 13:21 (d114-11), on what that gesture does on the pump: "d114-11: i think it makes sense for it to rack, but keep racking as long as the R button is held - it then reflects what removing the mag means for a firearm with it -> remove the magazine capacity". So on a gun without a detachable magazine it racks, then racks again after each rack while R is held and anything is left in the chamber or the tube, which unloads the gun. Each live shell lands in the pile of the block it falls on, as a spent case does ("Spent cases per block" below), and stacks with the identical shells there. Releasing R lets the rack under way finish and starts no other. See `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`, `src/game/firearmHandling.ts`, `FirearmMechanics.loadNext`, `FirearmMechanics.removeMagazine` and `FirearmMechanics.cock`, and `src/game/reloadInput.ts`, `ReloadInput` and `ReloadBinding.oneAction`. BR's FIX on #337, 2026-10-07 12:09 (d114-11): "#337: missing animation, too fast, and removing the magazine doesn't actually remove it: Screenshot_2026-10-07_12-09-28.png - i.e. the model should reflect reality"; and at 12:11: "to be clear: #337: missing animation for cocking the charging handle, and removing mag and inserting mag". So a gun is drawn with the magazine it has ("One item, one look" in "Items and inventory"), and each handling job plays on the held gun from the job's progress alone, adding no simulation, save or replay state. A removal draws the magazine out of the well, an insertion seats the new one, and a change plays one, then the other. Working the charging handle has the off hand take the handle, ride it back and let go. Meanwhile the rifle turns so the hands' work shows in first person, and the crosshair turns with it (BR's 14:55 ruling under "Firearms" above). BR, 2026-10-07 15:34 (d114-13), on the rack: "#337: / AR: animation for charging the rifle currently turns it somewhat away from the player during animation - whereas it should somewhat turn toward. That is: / currently: rotates clockwise on the X axis and counter-clockwise on the Y axis / whereas, I would think it's better if it did exactly the opposite / AK: more or less the same as for the AR; HOWEVER, the AK needs to be tilted _more_ (i.e larger rotation ccw on the X axis) / this is due to the AR's charging handle being more accessible for the left hand (on top of receiver) whereas the charging handle on the AK is on the right side on the receiver. / _however_ the opposite is true for a lefty"; and at 15:42: "yeah, my axes are relation to gungen's axes on the weapon" / "x is forward along bore" / "y is up" / "z is side". So a rack turns the rifle's far side toward the player and rolls its charging handle toward the off hand, further when the handle sits on the far side. The AK's handle is on its right and the AR's on top, so a right-hander's AK rolls more than the AR, and a left-hander's less. The model's `chargingHandleDegrees` says where the handle sits; it is hand-authored, since the gungen export does not carry it. A magazine job keeps its turn, muzzle in. Removing and inserting each take their own time, so a removal alone is quicker than a change, and the firearms skill's reload factor shortens both; the times and their source are on `MAGAZINE_REMOVE_SIM_SECONDS` in `src/game/firearmHandling.ts`. See `src/render/firearmModel.ts`, `magazineMotion` and `rackGrip`; `src/render/hands.ts`, `HeldItems.poseMagazine` and `HeldItems.rackHandGrip`; `src/render/handlingTurn.ts`, `handlingRotation`; and `docs/firearm-cycle-playback.md`.
-- **Military loot (3.2, d114):** BR: "AR and AK are only found in military loot sources" (SLICE-3.md, 3.2). Their magazines and cartridges, loose or boxed, follow them, so a hamlet find can't feed a rifle. Which items are military-only follows from content: the magazine-fed firearms, the magazines and cartridges of their calibres, and any package that unpacks into one of those, however deeply nested, so content order can't change the set. Validation enforces this as a property of authored content. Only a loot table marked `military` may hold such an item or nest another military table. No salvage, disassembly or crafting recipe may yield one. An authored site's fixed loot may place one only in a container that rolls a military table. The reachability report walks the buildings of authored sites not marked `demo` (#346, docs/content.md) as well as the hamlet's, so the rifles become reachable when 3.11 places the military camp (#181, beat 6) with a container that rolls the military table. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
-- **Spent cases per block (3.2, d114):** BR, 2026-10-07 11:27, asked whether to save spent cases per block with a deterministic scatter or each at its exact landing point: "keep it simple in code, so i guess per block?" A case joins the pile of the block it lands on, as a count of `spent_case_<calibre>` items that saves like any pile (BR, 2026-10-05 22:17: "they should be saved"). The pile draws its cases as a deterministic scatter ("Piles" above). This replaces ADR 0003's first counter per area of about 20 m (docs/decisions/0003-firearm-handling.md), which put a case in a same-calibre pile it hadn't landed in. See `src/game/firearmHandling.ts`, `FirearmMechanics.ejectionDrop`, and `src/render/spentCaseScatter.ts`, `spentCaseScatter`.
+- **Rifles (3.2, d114):** A magazine is a child item of its firearm, so removing it preserves its identity and state; nested accessories and batteries use the same ownership. Cartridge data owns calibre-specific damage. A magazine change is one handling motion, so holding R does not repeat it and releasing R does not cancel it. Deadvox hand-authors `chargingHandleDegrees` because Gungen exports no value for it. See `CONTROLS.md`, “Reload, rack, remove,” and `docs/firearm-cycle-playback.md` for the player actions and their presentation; `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`; `src/core/pellets.ts`, `projectileShot`; `src/core/zombies.ts`, `ZombieSystem.firePellets`; `src/core/magazine.ts`, `magazineWellCalibre` and `slotsReason`; `src/game/firearmHandling.ts`, `FirearmMechanics`; and `src/render/handlingTurn.ts`, `handlingRotation`.
+- **Modular weapons (3.7, d118):** Fitted accessories remain complete child items so removal and saving preserve identity, condition and nested contents. Default and fitted models use the same slot-frame contract; connector axes keep distinct attachment shapes aligned without per-kind guesses. Dynamic fitting trusts gungen's certificates instead of duplicating its geometry solver, while rail footprints remain separate because a slot anchor does not describe the full occupied span. These boundaries keep rendering, saves and compatibility consistent. See `src/core/items.ts`, `ItemFactory.create`, `snapshotItem` and `restoreItem`; `src/core/itemTree.ts`, `walkItemTree`; `src/render/itemLook.ts`, `itemLook`; and `src/render/models.ts`, `hideSlotNodes` and `ModelLibrary.attachParts`.
+
+  Optics keep their authored reticle and use one content-authored magnification setting, preserving a recognizable sight picture without adding a cycling input. Magnification stays within gungen's supported range. The digital thermal optic stays out of loot, fitting and ADS until its thermal view exists; exposing an optic without its defining view would mislead the player. See `src/core/opticView.ts`, `opticViewSettings` and `projectLensAperture`; `src/render/opticLens.ts`, `OpticLensRenderer`; and `src/game/firearmAttachmentHandling.ts`, `FirearmAttachmentHandling.fitReason`.
+
+  Gungen's geometry and material export is the single source for attachment mass; `weightOf` uses `massKg` for attachment items, so their required content `weight` is not authoritative. `muzzleLoad` combines fitted attachment mass with mount distance from the grip to feed the existing handling response. Runtime skill-zero tuning remains separate from attachment response so editing a debug endpoint cannot apply the attachment effect twice. Suppressors affect recoil, noise and wear; foregrips affect aim and stance; a powered light nested under a held firearm remains exposed to carried-light and sense behavior and drains its owned battery on simulation time. Effect estimates remain tunable until attachment behavior has been playtested. See `src/core/firearmAttachments.ts`, `muzzleLoad`, `firearmAttachmentResponse` and `wearFirearmAttachments`; `src/game/firearmHandling.ts`, `skillZeroHandlingSettingFor` and `skillZeroHandlingFor`; `src/core/items.ts`, `weightOf`; and `src/core/lights.ts`, `lightExposureFor`. Heat (#366), improvised accuracy, fouling and smoke (#365, all in #367) are deferred until after the playtest.
+
+- **Military loot (3.2):** Restricting magazine-fed firearms and their compatible ammunition to military sources keeps ordinary scavenging from supplying a rifle. Recursive validation covers military items acquired through nesting, repackaging, crafting, salvage and fixed loot. Exported attachments use military loot in playtest 1 without being validation-locked to it, allowing later sites to carry optics. Reachability checks keep authored military sites part of the progression. See `src/core/magazine.ts`, `militaryLootItems`, `src/core/content.ts`, `checkMilitaryLoot`, and `src/core/reachability.ts`, `worldSources`.
+- **Spent cases per block:** Save a calibre-specific case count in the block where
+  each case lands; this keeps recoverable cases with their actual landing place
+  without saving an individual physics body for every shot. A deterministic
+  scatter represents the pile visually. See
+  `docs/decisions/0006-firearm-handling.md`, `src/game/firearmHandling.ts`,
+  `FirearmMechanics.ejectionDrop`, and `src/core/scatterPile.ts`,
+  `spentCaseScatter`.
 - **Noise** is an event with a loudness and position. Footsteps (worse when
   sprinting), melee, gunshots, doors, breaking glass and engines all make noise.
   Walls reduce how far noise travels. Zombies hear, investigate, and pass it on
@@ -782,7 +800,8 @@ without modeling armour now.
     little around it.
 - **Blocks and block entities get materials.** Soil, wood, brick, concrete and
   steel, each with durability and a resistance per damage type, as content-pack
-  data (today a block has only an id and `solid`). A destroyed block is removed
+  data; a block has no material or durability fields (`src/core/schema.ts`,
+  `BlockSchema`). A destroyed block is removed
   with `World.setBlock`. Saves already store changed cells as an overlay on the
   regenerated base chunks (`src/core/saveState.ts`, `SaveSnapshot`), so destruction
   persists without new save machinery; saves grow with the damage done.
@@ -811,20 +830,32 @@ Nights should be dark, and voxel-lit interiors pitch black, so you have to
 bring light. Light is the visual side of noise: it lets you see, and it lets
 them see you.
 
-Interiors need voxel light to become darker than the outdoors. Until that
-arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
+Interiors become darker than the outdoors through voxel light. Diffuse sky light
+already goes through the grid; light from sources inside, such as torches and
+lamps, doesn't. Until that arrives in Slice 4, don't fake the gap with a
+separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
 block light. All-around carried and dropped sources use a fixed pool of
 shadowless point lights; unused slots stay at zero intensity, and surplus
-emissive glowsticks remain visible without lighting the world. An emissive marker
-is not a substitute for the pool: tune item light content against the ground and
-walls under the shared near-field falloff. Source colour, intensity, radius and
-burn rules belong to item content. The zombie light check keeps sky visibility
-separate from carried light, so adding voxel sky light
-won't change the carried-light rule. Keep time of day in the sky/fog renderer,
-not baked into chunks; voxel sunlight can then join AO in vertex colour. See
-`src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
-`LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,
+emissive glowsticks remain visible without lighting the world. An item's lit look
+stays on its own model in hand, on the ground and in flight; an emissive marker is
+only a fallback when the model cannot be drawn. This keeps glow attached to the
+visible item without changing the light pool or zombie sensing reach, or merging
+render and sense heights. The marker does not replace pool lighting. Source
+colour, intensity, radius and burn rules belong to item content. Tune that content
+against the ground and walls under the pool's shared near-field falloff, not
+against the glow. The zombie light check keeps sky visibility separate from
+carried light, so voxel sky light doesn't change the carried-light rule. The
+sun-derived day phase owns simulation sun exposure and blends zombie sight through
+twilight, while time-of-day lighting stays in the sky and fog rather than being
+baked into chunks; voxel sunlight can then join AO in vertex colour. See
+`src/render/flashlight.ts`, `Flashlight.update`,
+`src/render/itemEmissive.ts`, `applyItemEmissive`, `src/render/piles.ts`,
+`PileMeshes.drawModels`, `drawEmissiveLights`, `src/render/itemThrows.ts`,
+`ItemThrows.spawn`, `src/render/lightPool.ts`, `LightPool.update`,
+`src/core/lights.ts`, `lightSenseSourceFor`, `sunExposedAt`,
+`src/core/dayPhase.ts`, `dayPhaseAt`, `src/game/session.ts`, `createSession`,
+`isSunExposedAt`, `src/core/zombies.ts`, `seesPlayer`, `src/render/sky.ts`,
 `applySky`, and `src/core/mesher.ts`, `buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
@@ -858,45 +889,9 @@ not baked into chunks; voxel sunlight can then join AO in vertex colour. See
 
 ## Held-item throws
 
-BR, 2026-10-07 14:27:
+A throw preserves the held item's identity and state through flight and landing, so fitted parts, loaded ammunition and a lit glowstick remain the same item rather than a throw-specific copy. Item mass limits its range through arm speed and energy. The flight presentation uses the ground item's look, keeping firearm attachments and light markers visible; the handling HUD makes force and the release minimum legible. See `src/core/itemThrow.ts`, `throwDistanceForItem` and `traceItemLanding`, `src/render/itemThrows.ts`, `ItemThrows.spawn`, `src/ui/hud.ts`, `handlingViewModel`, and `src/game/play.ts`, `throwHeldItem`.
 
-> "T only throws a lit glowstick :D / it should of course throw whatever it is is wielded in primary hand. It requires to be held 1 second before throwing"
-
-BR, 2026-10-07 15:48:
-
-> "hmm, yeah holding T works for throwing - however, when throwing the AR: during flight, it looks like a lit candle (or perhaps uncolored glowstick)"
->
-> "also: when handling progress is on: a throwing meter showing force should show based on throwing-charge"
-
-The rebindable T action throws only the primary-hand item; an empty primary hand
-refuses instead of reaching into the off hand. A release before BR's minimum held-time threshold throws nothing. With no rack
-or magazine job active, range charge starts on press and grows through the
-minimum hold, so the minimum is a release gate rather than an extra delay before
-charging. If T is pressed during a handling job, the throw waits to charge until
-the job finishes rather than interrupting the rack or magazine turn; releasing
-while it waits cancels the throw. Item weight limits launch range through arm
-speed and energy; a light item retains the existing maximum, while a heavier one
-travels no farther. A thrown item keeps its identity and state when it lands,
-including a firearm's fitted magazine, its rounds and chamber state. A lit
-glowstick remains lit at its landing pile. Flight uses the same item look as a
-ground pile, so a firearm carries its fitted magazine through the arc; ordinary
-items without a model use the same low bundle fallback as a ground pile,
-scattered cases keep the pile placeholder, and an active glowstick keeps its
-emissive marker. The optional Handling progress HUD shows charge while it is
-accumulating and marks the minimum-release point, so the release gate is visible
-without changing the throw controls. See `src/render/itemThrows.ts`, `ItemThrows.spawn`,
-`src/render/itemLook.ts`, `itemLook`, `src/ui/hud.ts`, `handlingViewModel`, and
-`src/game/play.ts`, `beginItemThrow` and `advancePendingItemThrow`.
-
-BR first ruled that holding T longer should throw farther and right-click should
-cancel (2026-10-06 14:24). BR then ruled (2026-10-07 14:35):
-
-> "yes. And at some point, likely not before playtest, atmospheric drag will affect too - i.e. a flimsy glowstick doesn't get as far as a hand grenade"
-
-Drag is deliberately absent until [#368](https://github.com/roobie/skelly/issues/368).
-The range uses the existing item `weight` and `senses` tuning; see
-`src/core/itemThrow.ts`, `throwDistanceForItem`, and `src/game/play.ts`,
-`finishItemThrow`. Throwing adds no hit damage or landing lure.
+Mass limits range so a light item does not fly as far as a heavy one; when #368 adds atmospheric drag, it can further limit light items without replacing that mass-based limit. Throwing adds no hit damage or landing lure.
 
 ## Zombies
 
@@ -930,6 +925,22 @@ BR ruled (2026-10-06 15:42, d102):
 > but we will want scriptability in future, but not for jump-scares necessarily, but e.g. a computer panel opening up some door or other dynamic events
 
 A marker's optional clock window delays its one-time spawn; `src/core/zombieSpawns.ts`, `ZombieSpawner.onColumn`, queues each windowed marker, and `ZombieSpawner.advance` checks its window on zombie ticks while the column stays loaded. Since a load never spawns a windowed marker, live play and replay agree at a window edge. Windowless markers keep chunk-load behavior. Bounded windows recur daily, so a marker that missed one remains eligible at the next opening instead of expiring: a playtest threat should not be lost because the player was elsewhere when its window passed, and may arrive the next evening. An open-ended `from` is eligible from day 1's occurrence of its boundary onward, so a run started after that occurrence is already eligible. Once spawned, its saved ledger entry prevents it returning when the window closes or after it is killed. This timing serves authored beats without scripting a player action. Scriptable dynamic events, such as a computer opening a door, remain future work in #313.
+
+### Amalgam body and damage (#308)
+
+The amalgam is a debug-only type until the authored camp spawn in #308 is designed. Its `amalgam_*` sound events have separate identities but reuse shambler recordings; an authored type pitch multiplier overrides the ordinary body-height rule so the fused creature can keep a distinct low voice. See `src/content/base/zombies.json`, `soundPitchMultiplier`, `src/core/schema.ts`, `ZombieSchema`, and `src/game/session.ts`, `admitSound`. Deadvox realizes its mobgen body from the saved figure seed and uses the part manifest as the authority for collision bounds, member-owned hit regions and severable roots; it does not maintain a second hand-written anatomy list. The axis-aligned collision envelope follows the realized voxel bounds, with independent X/Z extents, so walls, fences, closed doors and solid containers block the whole visible creature without relying on an arbitrary humanoid radius. Its empty corners are the deliberate broad-phase simplification; member hit boxes remain voxel-derived and independently targeted. The amalgam's no-jump rule is authored in its type data, so fence and container blocking does not depend on the jump probe's position relative to its broad collision envelope. See `src/content/base/zombies.json`, the amalgam type; `src/core/schema.ts`, `ZombieSchema`; `src/core/zombies.ts`, `ZombieSystem.stepZombieBody`; `src/core/amalgamFigure.ts`, `amalgamFigure` and `amalgamCollisionEnvelope`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/physics.ts`, `Body` and `overlapsBlock`.
+
+The amalgam's `bodyScale` is authored in `src/content/base/zombies.json` because the creature read far too small in play. The zombie section contract in `src/core/schema.ts`, `SECTION_DESCRIPTOR`, requires that authored scale for the model, following `docs/decisions/0004-content-language.md`. The same scale feeds the rendered body, collision envelope, posed hit regions and melee reach through `src/core/amalgamFigure.ts`, `amalgamFigure`; `src/core/zombieRegions.ts`, `posedAmalgamRegionBoxes`; and `src/core/zombies.ts`, `zombieAttackReachMetres`.
+
+Severing a shambler member removes that member's hit regions and its contribution to attacks and reach; the core and every other member continue unchanged. `activeAmalgamMembers` determines which members remain capable of attacking; `zombieAttackReachMetres` disables reach when none remain and keeps shared reach while any member survives. The save records each manifest region's health and severed member IDs, then reconstructs geometry from the saved figure seed. `src/core/zombies.ts`, `ZombieSystem.applyMeleeHit`, `activeAmalgamMembers` and `zombieAttackReachMetres`, and `src/core/saveFormat.ts`, `SAVE_SCHEMA_VERSION`, own that handoff. Initial member-health values inherit the shambler region values in `src/content/base/zombies.json`, keeping authored anatomy consistent; reviewing the realized body can identify any needed tuning.
+
+The core's authored health keeps a center-mass pump blast from ending the fight immediately, while each fused member keeps its own damage regions and can be severed by focused fire. The resulting shell count is balance tuning, not a fixed gameplay contract; `test/amalgam.test.ts` protects survival of a blast and member loss before core death without pinning that count. See `src/content/base/zombies.json`, `amalgam.regions`, and `src/core/zombies.ts`, `ZombieSystem.firePellets`.
+
+The amalgam reuses `ZombieSystem`'s perception, attention, movement and attack lifecycle: it wanders slowly until it notices the player, then takes a direct, heavy approach, telegraphing its more severe attack before damage resolves. Its pace and attack severity live in the zombie type data rather than a scripted phase or code default. A hit snaps the shared `core` pose so the fused body reacts as one while renderer and hit-region FK stay aligned. See `src/content/base/zombies.json`, the amalgam type; `src/core/zombies.ts`, `ZombieSystem`; and `src/core/zombiePose.ts`, `posedShambler`.
+
+For #424, debug-spawned amalgams start beyond their type-scaled attack reach so the preview shows the approach rather than beginning in melee range. The debug placement also uses the realized collision envelope, avoiding spawns embedded in nearby solid geometry. This changes the preview's starting distance, not the amalgam's attack reach or chase pace. See `src/debug/shamblerSpawning.ts`, `spawnZombieType`; `src/bench/shamblerPlacement.ts`, `placeShamblerRing`; and `src/core/zombies.ts`, `zombieAttackReachForType` and `zombieBodyDimensions`.
+
+A surviving amalgam signals its attack by extending a tentacle from its core toward the player through wind-up and strike, then retracting it. Its root starts at a fixed interior point of the posed core, so changing the player's bearing cannot switch attachment between concave lobes; depth occlusion reveals the shaft where it exits the body instead of letting a smoothed anchor cross an empty gap. It uses the renderer's packed pose so flinch and member loss cannot leave a separate anchor behind. The render-only extension is capped by `zombieAttackReachMetres`; it adds no collision, hit region or saved state. See `src/render/amalgamTentaclePose.ts`, `amalgamCoreInteriorAnchor` and `amalgamTentaclePose`, and `src/render/mobActors.ts`, `MobActorMeshes.updateTentacle`.
 
 Slice 3.8 adds the runner and crawler before horde-specific types: the runner makes
 sight-driven pursuit an immediate sprint threat, while the crawler uses the body's
@@ -984,19 +995,24 @@ worse the world gets.
 
 ### Senses and AI
 
-- **Senses:** sight (a view cone and range, worse at night and when you
-  crouch), hearing (noise events) and smell (a trail the player leaves, which
-  rain washes out). Terrain height alone should not end a clear pursuit; sight
+- **Senses:** sight (a view cone and range, blended smoothly from day range to
+  night range through twilight and reduced when you crouch), hearing (noise events)
+  and smell (a trail the player leaves, which rain washes out). The base pack's
+  latitude, fixed date and nautical-twilight choice own the sun-derived day phases;
+  the date and any seasonal change remain BR's decision. Hordes roam from sunset
+  through dusk, night and dawn until sunrise, and spawn words resolve from those
+  same boundaries. Terrain height alone should not end a clear pursuit; sight
   over a rise is bounded by occlusion, not by spending range on vertical distance.
-  See `src/core/zombies.ts`, `seesPlayer`.
+  See `src/core/dayPhase.ts`, `dayPhaseAt`; `src/core/zombies.ts`, `seesPlayer`
+  and `ZombieSystem.updateHordes`; and `src/core/clock.ts`, `parseSpawnTime`.
 - **Movement (BR, 2026-10-05 20:27–20:33):** “also, it's still the case that the shamblers are stalling when the player moves”; “i think we should greatly simplify how the shamblers brains work”; “they aren't smart creatures”; “they beeline towards whatever grabs their attention”; and at 20:33, “yes, I think we should make them primarily beeline and slide off of obstacles like walls / if low enough, they prefer jumping over / but they should have some randomness in that even if they normally beeline, when they hit an obstacle they might just randomly wander a bit - e.g. pick an open direction and try to walk 10 meters (for example) / but if something bashable is in the way, they would tend to bash it (e.g. doors) / (what is bashable is depending on the strength of the mob - but we haven't modelled this, right? I mean a 2nd evolution brute might breach a brick wall, for example)”. A shambler moves directly toward its current attention target in the horizontal plane. Collision resolution preserves available tangential motion; when a head-on intent has none, `ZombieSystem.tick` uses the seeded `obstacleSlideSide` to supply it. `canJumpObstacle` gives low obstacles a jump attempt. On some obstacle contacts, `ZombieSystem.tick` selects a tested open heading from the shambler's seeded behavior stream, walks the distance configured in `src/content/base/zombies.json`, then resumes toward its current target. There is no route planning, stair traversal or waiting for a route. Height changes are handled only by ordinary collision and jumping. See `deadvox/src/core/zombies.ts`, `ZombieSystem.tick` and `openWanderHeadings`.
 - **Height (BR, 2026-10-05 20:29):** “but yeah, heightwise (Y axis) it may be a bit difficult. Maybe we should just let them wander at some point, rather than intelligently traverse Y-levels”. Shamblers do not gain stair knowledge from an attention target on another floor.
 - **Seen prey (BR, 2026-10-05 21:52–21:53; #281):** “well, when i stood there high on the slope, the shamblers tracked and pursued, but since it's steep, they'd stop and wander off for a bit, even though they'd reasonably would "see" me (given that there were no obstacles, other than the steep climb)”; “i'd lean (A) because it feels most reasonable for the shambler mentality that if they _see_ their prey, they just go after it straight”; “but still sliding”. For #281, visible prey suppresses obstacle wandering; an active wander ends when the prey becomes visible, and the shambler resumes beelining while retaining its slide. Unseen targets and idle strolling can still wander. See `deadvox/src/core/zombies.ts`, `seesPlayer` and `ZombieSystem.tick`.
 - **Simulation structure (BR, 2026-10-06 06:14; d93-1):** “Start with a refactoring trial on the worst offender”. The named phases in `src/core/zombies.ts`, `ZombieSystem.tick`, make the established order reviewable because later steps consume state produced by earlier simulation steps; keep that order when changing the per-tick behavior. See `ZombieSystem.updateAttention`, `ZombieSystem.stepZombieBody`, `ZombieSystem.updateObstacleContact`, `ZombieSystem.resolveZombieAttack` and `ZombieSystem.emitFootsteps`.
 - **Attention and attacks:** Sight, hearing, `lastPerceived`, chase/investigate transitions and `withinAttackReach` remain the authorities for choosing and acting on targets. Far-hearing direction stays uncertain: a grounded listener projects it onto known terrain rather than learning the source's height. See `deadvox/src/core/zombies.ts`, `seesPlayer`, `farBearingTarget` and `withinAttackReach`.
 - **Background movement (BR, 2026-10-05 21:32):** “yes”: background zombies beeline in big, cheap steps.
-- **Distant attention and noise persistence (d104-4):** Daylight changes a horde's roaming choice, not its response to a heard event; a daytime home preference cannot replace a noise target before arrival. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
-- **Stimulus memory (d104-5):** The question for BR was how long a zombie or horde should retain an unreachable stimulus instead of resuming its hour-driven wandering. BR answered, “after some time, they should forget about what drew them there (or anywhere) so they'd resume drifting and roaming after 3 minutes”. The real-time versus game-time interpretation remains open; the shared content duration is counted in simulation seconds, so compression affects elapsed wall time. Both tiers use that duration, and the stimulus timestamp is saved so loading does not restart the wait. See `src/core/schema.ts`, `ZombieSchema`; and `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.forgetIndividualStimulus`.
+- **Distant attention and noise persistence:** A horde retains a heard noise target until it arrives or forgets it; its sun-derived preference for home or roaming does not replace an active noise target. Once the target ends, the horde roams only from sunset to sunrise. A background zombie with no horde or stimulus uses idle behavior instead of treating the player as an implicit target, because distance alone must not make an unseen zombie pursue. See `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.tickBackground`.
+- **Stimulus memory:** Individual zombies and hordes forget unreachable stimuli after the shared content duration, counted in simulation seconds, so compression affects elapsed wall time. The stimulus timestamp is saved so loading does not restart the wait. A horde resumes the sun-derived roam or home behavior after forgetting. Whether this duration should be real time or game time remains BR's open question. See `src/core/schema.ts`, `ZombieSchema`; and `src/core/zombies.ts`, `ZombieSystem.updateHordes` and `ZombieSystem.forgetIndividualStimulus`.
 - **Background cadence persistence (d104-4):** Save/load resumes the background scheduler's actor phase so a mid-cycle save does not reorder attention and movement updates. See `src/game/session.ts`, `zombie-background`.
 
 - **Level of detail:**
@@ -1044,7 +1060,7 @@ skeleton roots come in: a zombie's body is a small assembly of connected parts.
 - **Construction is crafting that places blocks and block entities:** walls,
   doors, barricades, furniture, workbenches, machines. Deconstruction is
   disassembly.
-- **Doors and locks.** The armoury needs a fallback if its key stays on the clinic corpse; the crowbar trades time and noise for entry, while the matching key remains quiet. BR said at 19:03, “#320 the prying should take a bit longer - maybe 5 ingame seconds? Eyeballin” and at 19:05, “yeah, let's not make it a long action” / “but it should be skill dependent - starting at 15 seconds - gets faster by 'fabrication' or similar woodworking skill”. Asked whether to add `fabrication`, use `mechanics`, or use `crafting`, BR answered “1b”: use the existing `mechanics` skill. BR also answered “2 sounds like a good start” to the proposed level-10 duration of 7.5 real seconds—half the 15-second level-0 duration—with 30 strikes retained. The lead reads the starting duration as real play time; keep prying out of time compression so attracted shamblers approach at normal pace. The speed curve follows the saturation shape of `src/core/firearmsSkill.ts`, `firearmsSkillEffects`, through `src/core/character.ts`, `skillSaturation`; both endpoint durations are authored in content. See `src/core/prying.ts`, `pryPlan`, and `src/core/longAction.ts`, `LongActions.beginPrying`. BR answered #309 at 19:31, “it's destroyed”: prying destroys the padlock and leaves the door unlocked, making the forced route one-way. See `src/core/blockEntities.ts`, `BlockEntities.breakLock`. On the #320 first look at 19:33, BR said “prying is better now, but doesn't show a progress bar when they are enabled”; use the existing handling-progress option and bar, not another HUD control, so resumable work remains visible when requested. See `src/game/play.ts`, `renderPlayHandling`, `src/ui/playHud.ts`, `renderPlayHandling`, and `src/ui/hudOptions.ts`, `handling`. BR said “defer the bashing” for #273 because mob and obstacle strength are not modeled. Closed doors block a shambler like other solids; see `src/core/zombies.ts`, `ZombieSystem.tick`.
+- **Doors and locks.** A matching key opens a locked door quietly; a crowbar is the noisy fallback. Prying takes 15 seconds of simulation time at mechanics 0 and 7.5 seconds at mechanics 10, with 30 strikes. It uses the existing mechanics skill, runs outside time compression, and destroys the padlock when complete. The handling-progress option shows its progress. A normal-speed interruption stops the pry with progress kept and input free. Bashing is deferred because mob and obstacle strength are not modeled; closed doors block shamblers like other solids. See `src/core/prying.ts`, `pryPlan`, `src/core/longAction.ts`, `LongActions.beginPrying`, `LongActions.interruptPrying`, `src/core/sim.ts`, `Simulation.checkInterruptions`, `src/game/play.ts`, `renderPlayHandling`, and `src/ui/hudOptions.ts`, `handling`.
 - **Electricity** is a graph:
   - **Nodes:** generators (burn fuel), solar panels (depend on the time of
     day), batteries (store energy), and consumers (lights, fridges, radios,
@@ -1161,9 +1177,10 @@ something in play, not only decorate it.
     and `hearingTier`, own the stance's visibility and hearing effects.
   - **Noise:** pushing through a bush admits positioned rustle and hearing
     together through F4, on entry and a moving cooldown, faster/louder when
-    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Lead
-    defaults pending BR override: leaves do not muffle either simulation hearing
-    or WebAudio, and do not obstruct melee/bites; they still obstruct ray picks.
+    moving faster. Leaf litter changes footsteps (`footstep_leaves`). Leaves do
+    not muffle either simulation hearing or WebAudio, and do not obstruct
+    melee/bites; they still obstruct ray picks. These are the lead's defaults,
+    which BR may override.
   - **Materials:** branches and felled trees give sticks and wood, the same
     materials loot gives in Slice 2.
   - **Movement and landmarks:** solid trunks channel movement for you and the
@@ -1210,24 +1227,36 @@ a performance plan from the start rather than as a fix later:
 The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS.md).
 
 - **The look:** per-block colour and procedural surface patterns, with weathering layered through `src/render/chunks.ts`, `chunkMaterial`, plus ambient occlusion and fog. The palette is muted and grey; the saturated colours are the ones that mean something: warning signs, blood, fire and the glow of hot zombies.
-- **Day and night** from sun and sky colour and fog. Nights are dark enough
-  that a flashlight matters, and darkest in the dead of night (about 23:00 to
-  03:30).
+- **Day and night** follow one sun model derived from the base pack's latitude,
+  fixed date and nautical twilight. The sky and fog follow the resulting phases;
+  light and night looks blend through dusk and dawn, and a flashlight matters
+  most in full night.
 - **The night sky:** the moon and stars show on clear nights. The moon goes
   through its phases over about a month of game days. On a clear night near
   full moon you can see shapes and find your way outdoors without a light; on
   a new moon, or when it's overcast, you can't. Clouds hide the moon and stars.
-- **Voxel light**: sunlight, plus light from torches, lamps and hot zombies,
-  spread through the block grid. Inside buildings it's pitch black at night and
-  dim by day, lit only by what comes in through doors and windows. It comes
-  after Slice 1.
+- **Voxel light**: light spread through the block grid, so that inside buildings
+  it's pitch black at night and dim by day, lit only by what comes in through
+  doors and windows. Only diffuse sky light goes through the grid
+  (`src/core/skylight.ts`, `buildSkylight`). The sun and the carried beam are lit
+  on their own, and carried or dropped sources are the pool's shadowless point
+  lights (`src/render/lightPool.ts`, `LightPool`; see "Light"). Light from
+  torches, lamps and hot zombies through the grid is planned for Slice 4, with
+  the interior light "Light" describes.
 - **Far terrain:** chunks beyond the near radius switch to low-detail meshes.
   The targets are 96–128 m near detail and 512 m or more of far terrain; to be
   measured.
 - **Zombie bodies:** each mobgen model/seed variant owns a block of pose rows,
   one per drawn actor. Missing per-actor rows leave the shared bone texture
-  unable to place that actor's mesh in the world. See `src/render/mobActors.ts`,
-  `MobActorMeshes`.
+  unable to place that actor's mesh in the world. Each live actor with an
+  allocated row keeps its root placement current on every sync, including while
+  off-screen; its cached pose moves the bones with that root until full pose
+  packing resumes. Skipping both left stale bones in rows still drawn by the
+  instanced mesh, so re-entry could snap by the movement accumulated while
+  culled. A despawn or streamed unload can reuse a variant row, so the new actor
+  must build its own pose before drawing. See `src/render/mobActors.ts`,
+  `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
+  `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
   is still a little jaggedness. But we won't pursue this more right now, so I'll
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.

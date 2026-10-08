@@ -8,6 +8,7 @@
 
 import type { Template } from '../core/template.ts';
 import { AK_MAGAZINE_VARIANT_BY_CALIBRE } from './akMagazineCalibre.ts';
+import { AR_FRAME_BY_CALIBRE } from './arFrames.ts';
 import type { OpticTypeId } from './optics.ts';
 
 const sightMix = (...weights: readonly (readonly [OpticTypeId, number])[]): readonly OpticTypeId[] =>
@@ -79,6 +80,8 @@ export const ar: Template = {
   name: 'ar',
   description:
     'AR-pattern rifle: clamped A2 front sight or a free-float handguard with an optional rail-mounted front post.',
+  calibre: '5.56x45',
+  calibreParams: [{ slot: 'receiver', param: 'actionFrame', byCalibre: AR_FRAME_BY_CALIBRE }],
   root: 'receiver',
   slots: [
     {
@@ -87,10 +90,11 @@ export const ar: Template = {
       params: {
         action: 'auto',
         feed: 'box',
-        bore: ['S', 'M'],
+        bore: 'M',
         chargingHandle: 'rear-top',
         rail: 'full',
         section: 'ar',
+        actionFrame: ['small'],
       },
     },
     { id: 'bolt-carrier', family: 'bolt-carrier', params: { pattern: 'ar' } },
@@ -107,7 +111,7 @@ export const ar: Template = {
       },
     },
     { id: 'grip', family: 'grip', params: { length: ['S', 'M'] } },
-    { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-curved' } },
+    { id: 'magazine', family: 'magazine', params: { length: 'M', profile: 'stanag-straight' } },
     { id: 'stock', family: 'stock', params: { length: 'M', style: 'm4' } },
     {
       id: 'front-sight',

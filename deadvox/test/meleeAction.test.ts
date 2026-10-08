@@ -20,6 +20,7 @@ import {
   startPlayerMelee,
 } from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -60,7 +61,7 @@ const makeSystem = (
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
     onMeleeResult: (result) => results.push(result.id === undefined ? 'miss' : 'hit'),
     onSound: (event) => sounds.push(event),
@@ -227,7 +228,7 @@ describe('player melee action', () => {
     const { id, zombie } = makeTarget(system);
     const ray = headRay(zombie, id);
     expect(system.aimAt(ray.origin, ray.direction, BASE_WEAPON)?.inReach).toBe(true);
-    const initialHealth = zombie.regions.head;
+    const initialHealth = zombie.regions.head!;
     const needs = { stamina: 100, staminaRegenDelayRemainingSimSeconds: 0 };
     expect(
       startPlayerMelee(combatFor(system), needs, {
@@ -426,7 +427,7 @@ describe('player melee action', () => {
     for (let tick = 0; tick < 4; tick++) {
       advance(original, 0.05);
     }
-    const initialHealth = zombie.regions.head;
+    const initialHealth = zombie.regions.head!;
     const state = original.snapshotState();
     const actionState = combatFor(original).snapshotState();
     const restoredResults: string[] = [];
@@ -589,7 +590,7 @@ describe('player melee action', () => {
       ...SHAMBLER,
       dismember: { chance: 0, headOnKillChance: 0 },
     };
-    const armHealth = SHAMBLER.regions.leftArm;
+    const armHealth = SHAMBLER.regions.leftArm!;
     const bluntScale = registry.meleeClasses.get('blunt')!.limbDamageMultiplier;
     const cutScale = registry.meleeClasses.get('cut')!.limbDamageMultiplier;
     const sameBaseDamage = armHealth / ((bluntScale + cutScale) / 2);
@@ -602,7 +603,7 @@ describe('player melee action', () => {
       );
       const ray = regionRay(zombie, id, 'leftArm');
       system.swing(ray.origin, ray.direction, weapon);
-      return zombie.regions.leftArm;
+      return zombie.regions.leftArm!;
     };
 
     expect(remainingArm('cut')).toBe(0);
@@ -649,7 +650,7 @@ describe('player melee action', () => {
       );
       const ray = regionRay(zombie, id, 'torso');
       system.swing(ray.origin, ray.direction, weapon);
-      return SHAMBLER.regions.torso - zombie.regions.torso;
+      return SHAMBLER.regions.torso! - zombie.regions.torso!;
     };
     const seeds = [1, 2, 3, 4, 5, 6, 7, 8];
     const span = (type: 'blunt' | 'cut' | 'pierce') => {

@@ -48,6 +48,18 @@ const makeSession = (play: SessionAudio['play'], content: Registry = registry) =
   });
 
 describe('simulation sound admission', () => {
+  it('applies the player noise radius scale to hearing and the emitted noise event', () => {
+    const session = makeSession(() => undefined);
+    const emissions = session.sim.events.reader();
+    const event = 'player_strain';
+    const radiusScale = 0.25;
+    const expectedRadius = registry.sounds.get(event)!.noise.radiusMetres * radiusScale;
+
+    expect(session.playPlayerSound(event, 0, { noiseRadiusScale: radiusScale })).toBe(true);
+    expect(session.playerAudio.vocalNoise?.radiusMetres).toBe(expectedRadius);
+    expect(emissions.read().find((emission) => emission.kind === 'noise')?.radiusMetres).toBe(expectedRadius);
+  });
+
   it('commits hearing and the seeded choice once even when the output rejects it', () => {
     const selected: Readonly<SoundEmission>[] = [];
     const audible = makeSession((sound) => {
@@ -97,6 +109,20 @@ describe('simulation sound admission', () => {
         (sound) => Object.isFrozen(sound) && Object.isFrozen(sound.pick) && Object.isFrozen(sound.position),
       ),
     ).toBe(true);
+  });
+
+  it('applies a zombie type’s authored pitch multiplier to its mob sound', () => {
+    const selected: Readonly<SoundEmission>[] = [];
+    const session = makeSession((emission) => selected.push(emission));
+    const type = registry.zombies.get('amalgam')!;
+    session.zombies.add(type, [6, 8, 9], [0, 0, 1]);
+    session.zombies.tick(1 / 60);
+
+    const sound = selected.find(({ event }) => event.startsWith('amalgam_'));
+    expect(sound).toBeDefined();
+    const unscaled = new SoundPicker(seed, registry.sounds).pick(sound!.event, sound!.time)!;
+    expect(sound!.pick.pitch).toBeCloseTo(unscaled.pitch * type.soundPitchMultiplier!, 10);
+    expect(sound!.pick.pitch).toBeLessThan(1);
   });
 
   it('admits a noisy player event with an unbundled asset without hiding the playback error', () => {

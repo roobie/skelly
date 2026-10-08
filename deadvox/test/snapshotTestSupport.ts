@@ -133,7 +133,10 @@ export function createRuntime(
     intent?: () => MoveIntent;
     ready?: (x: number, z: number) => boolean;
     zombieReady?: (x: number, z: number) => boolean;
+    readyHeld?: () => boolean;
+    useDominant?: () => void;
     wobbleFlatOverride?: number;
+    wobbleNoiseScaleOverride?: number;
     sampleAtPlayerTick?: (
       tick: number,
       live: PlayerInputSample,
@@ -198,12 +201,15 @@ export function createRuntime(
     start: options.start ?? defaultClock.start,
     spawn,
     wobbleFlatOverride: options.wobbleFlatOverride,
+    wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
     ready: options.ready ?? (() => true),
     ...(options.zombieReady ? { zombieReady: options.zombieReady } : {}),
     controls: {
       active: () => options.active ?? Boolean(sampleAtPlayerTick),
       intent: options.intent ?? (() => view.intent),
       ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
+      ...(options.readyHeld ? { readyHeld: options.readyHeld } : {}),
+      ...(options.useDominant ? { useDominant: options.useDominant } : {}),
       consumeCrouchToggle: () => {
         const pressed = view.crouchToggle;
         view.crouchToggle = false;
@@ -340,7 +346,7 @@ export const inspect = (runtime: Runtime): unknown => {
   return {
     chunks: [...runtime.world.chunks.entries()]
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([key, chunk]) => [key, [...chunk.toArray()], chunk.edited]),
+      .map(([key, chunk]) => [key, chunk.toArray(), chunk.edited]),
     deltas: [...deltas.entries()].sort(([a], [b]) => a.localeCompare(b)),
     simulation: {
       seed: runtime.sim.seed,
@@ -498,7 +504,7 @@ export const prepareAudioContinuation = (runtime: Runtime): void => {
 export const formatVersion: SaveVersionComponents = {
   simulationHash: 'a'.repeat(64),
   schemaVersion: SAVE_SCHEMA_VERSION,
-  generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
+  generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
   contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: '0'.repeat(64) }],
 };
 export const formatWorldOptions = { blockSize: 0.5, site: 'forest' as const, storeys: 1, density: 0.75 };

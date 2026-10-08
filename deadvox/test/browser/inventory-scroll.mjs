@@ -6,7 +6,9 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
 import { launchChromium, loadPlaywright } from './chromium.mjs';
+import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const { firefox } = await loadPlaywright();
 
@@ -73,12 +75,13 @@ for (const slot of ['legs', 'torso', 'back']) {
 for (let i = 0; i < 12; i++) {
   if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
 }
+let needsText = 'health 100% · stamina 100%';
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
   feet: () => [0, 0, 0], nearby: () => [...inventory.piles.values()], distance: () => 0,
-  containers: () => [], entityDistance: () => 0, search: () => undefined, searching: () => false,
-  notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), assign: () => {}, workOptions: () => [], work: () => undefined,
-  body: () => body.snapshotState(),
+  containers: () => [], entityDistance: () => 0, dispatch: () => undefined, searching: () => false,
+  notice: () => {}, describe: () => Array.from({ length: 40 }, (_, i) => 'Detail line ' + i), workOptions: () => [],
+  body: () => body.snapshotState(), character: () => ({ skills: {}, practice: {} }), needs: () => needsText,
 });
 const rag = inventory.create('rag');
 if (!inventory.add(rag, { kind: 'hand', side: 'right' })) throw Error('treatment item fixture failed');
@@ -108,6 +111,10 @@ globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions
   resetWheels() { gameplayWheels = 0; },
   redraw() {
     if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [0, 0, 0] })) throw Error('redraw fixture failed');
+    screen.update();
+  },
+  redrawAfterNeedsChange() {
+    needsText = needsText === 'health 100% · stamina 100%' ? 'health 100% · stamina 99%' : 'health 100% · stamina 100%';
     screen.update();
   },
 };
@@ -144,6 +151,21 @@ const vite = await createServer({
         }
       },
     },
+    {
+      name: 'foregrip-fit-game-observer',
+      enforce: 'pre',
+      transform(code, id) {
+        if (!id.split('?')[0].endsWith('/src/game/play.ts')) {
+          return;
+        }
+        const marker = '  const onForwardPress = (e: MouseEvent) => {';
+        assert.ok(code.includes(marker), 'game instrumentation marker still exists');
+        return code.replace(
+          marker,
+          `  globalThis.foregripFitTest = { session, screen, input, dispatches: [] };\n  const originalScreenDispatch = screen.hooks.dispatch.bind(screen.hooks);\n  screen.hooks.dispatch = (payload) => { globalThis.foregripFitTest.dispatches.push(payload); return originalScreenDispatch(payload); };\n${marker}`,
+        );
+      },
+    },
   ],
 });
 let browser;
@@ -159,19 +181,29 @@ try {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(`http://127.0.0.1:${address.port}/__scroll.html`);
-  await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+  try {
+    await page.waitForFunction(() => Boolean(globalThis.scrollFixture));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`${message}${errors.length > 0 ? `; page errors: ${errors.join('; ')}` : ''}`, { cause: error });
+  }
   assert.equal(
-    await page.locator('[data-body-region]').count(),
+    await page.locator('#inventory [data-body-region]').count(),
     await page.evaluate(() => globalThis.scrollFixture.bodyRegions.length),
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
   const failures = [];
-  for (const selector of [
-    '#inventory [data-pane="body"]',
-    '#inventory [data-pane="you"]',
-    '#inventory [data-pane="around"]',
-    '#inventory .inv-details',
+  let activeTab;
+  for (const { tab, selector } of [
+    { tab: 'skills', selector: '#inventory [data-pane="body"]' },
+    { tab: 'items', selector: '#inventory [data-pane="you"]' },
+    { tab: 'items', selector: '#inventory [data-pane="around"]' },
+    { tab: 'items', selector: '#inventory .inv-details' },
   ]) {
+    if (activeTab !== tab) {
+      await page.locator(`#inventory .inv-tab[data-tab="${tab}"]`).click();
+      activeTab = tab;
+    }
     const size = await page
       .locator(selector)
       .evaluate((pane) => ({ height: pane.clientHeight, scroll: pane.scrollHeight }));
@@ -235,8 +267,257 @@ try {
       }
     }
   }
+  const selectedPane = page.locator('#inventory [data-pane="you"]');
+  const scrolledAway = await selectedPane.evaluate((pane) => {
+    pane.scrollTop = pane.scrollHeight;
+    const selectedUid = String(globalThis.scrollFixture.screen.selected.uid);
+    const row = [...pane.querySelectorAll('.inv-item[data-uid]')].find(
+      (candidate) => candidate.dataset.uid === selectedUid,
+    );
+    const rowBox = row.getBoundingClientRect();
+    const paneBox = pane.getBoundingClientRect();
+    return {
+      scrollTop: pane.scrollTop,
+      rowOutsidePane: rowBox.bottom <= paneBox.top || rowBox.top >= paneBox.bottom,
+    };
+  });
+  assert.ok(
+    scrolledAway.scrollTop > 0 && scrolledAway.rowOutsidePane,
+    `selected row scrolled away: ${JSON.stringify(scrolledAway)}`,
+  );
+  await page.evaluate(() => globalThis.scrollFixture.redrawAfterNeedsChange());
+  const selectionAfterNeedsRedraw = await selectedPane.evaluate((pane) => pane.scrollTop);
+  assert.equal(
+    selectionAfterNeedsRedraw,
+    scrolledAway.scrollTop,
+    'needs redraw must preserve the player-scrolled pane even while a row remains selected',
+  );
   assert.deepEqual(errors, []);
   assert.deepEqual(failures, [], 'each pane scrolls without page/input-surface wheel leakage and survives #67 redraw');
+  if (engine === 'chromium') {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await page.addInitScript(() => {
+      let locked = null;
+      Object.defineProperty(document, 'pointerLockElement', { configurable: true, get: () => locked });
+      Element.prototype.requestPointerLock = function () {
+        locked = this;
+        document.dispatchEvent(new Event('pointerlockchange'));
+        return Promise.resolve();
+      };
+      document.exitPointerLock = () => {
+        locked = null;
+        document.dispatchEvent(new Event('pointerlockchange'));
+      };
+    });
+    await page.goto(
+      browserStageUrl(
+        'inventory-scroll',
+        `http://127.0.0.1:${address.port}/?debug=1&seed=73&radius=64&post=0&sunshadow=0&torchshadow=0`,
+      ),
+    );
+    await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+      timeout: 30_000,
+    });
+    await page.locator('#go').click();
+    await page.waitForFunction(() => globalThis.foregripFitTest && document.querySelector('#overlay')?.hidden, null, {
+      timeout: 20_000,
+    });
+    const clickThroughMenuCursor = async (selector) => {
+      const targetLocator = typeof selector === 'string' ? page.locator(selector) : selector;
+      const bounds = await targetLocator.boundingBox();
+      assert.ok(bounds, `visible target: ${selector}`);
+      const target = { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
+      await page.mouse.move(target.x, target.y);
+      const current = await page.evaluate(() => ({
+        x: globalThis.foregripFitTest.input.cursorX,
+        y: globalThis.foregripFitTest.input.cursorY,
+      }));
+      if (Math.abs(current.x - target.x) > 1 || Math.abs(current.y - target.y) > 1) {
+        await page.evaluate(dispatchMenuPointerMove, {
+          canvasSelector: '#view',
+          movementX: target.x - current.x,
+          movementY: target.y - current.y,
+          centerClient: true,
+          alsoDispatchMouseMove: true,
+        });
+      }
+      await page.mouse.click(target.x, target.y);
+    };
+    const spawn = async (type) => {
+      await pressAction(page, 'debug.spawn-menu-toggle');
+      await page.locator('#spawn input').fill(type);
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.querySelector('#spawn')?.hidden, null, { timeout: 5000 });
+      await page.waitForFunction(
+        (itemType) =>
+          [...globalThis.foregripFitTest.session.inventory.items()].some(({ item }) => item.type === itemType),
+        type,
+        { timeout: 5000 },
+      );
+    };
+    await spawn('foregrip');
+    await spawn('rifle_assault');
+    await pressAction(page, 'ui.inventory-toggle');
+    await page.waitForFunction(() => !document.querySelector('#inventory')?.hidden);
+    const uidFor = (type) =>
+      page.evaluate(
+        (itemType) =>
+          [...globalThis.foregripFitTest.session.inventory.items()].find(({ item }) => item.type === itemType)?.item
+            .uid,
+        type,
+      );
+    const gripUid = await uidFor('foregrip');
+    const rifleUid = await uidFor('rifle_assault');
+    assert.ok(Number.isSafeInteger(gripUid) && Number.isSafeInteger(rifleUid));
+    await clickThroughMenuCursor(`#inventory [data-uid="${gripUid}"]`);
+    await pressAction(page, 'inventory.best-pocket');
+    await page.waitForFunction(
+      (uid) =>
+        globalThis.foregripFitTest.session.inventory.locate(globalThis.foregripFitTest.session.inventory.itemByUid(uid))
+          ?.kind === 'pocket',
+      gripUid,
+      { timeout: 10_000 },
+    );
+    await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    await pressAction(page, 'inventory.hands');
+    await page.waitForFunction(
+      (uid) => Object.values(globalThis.foregripFitTest.session.inventory.hands).some((item) => item?.uid === uid),
+      rifleUid,
+      { timeout: 10_000 },
+    );
+    await clickThroughMenuCursor(`#inventory [data-uid="${rifleUid}"]`);
+    const fitButtons = page.locator('#inventory .inv-details button.inv-option').filter({ hasText: /Fit .*foregrip/i });
+    assert.ok((await fitButtons.count()) > 0, 'held AR offers the pocketed foregrip as a fit action');
+    const fitButton = fitButtons.first();
+    await fitButton.scrollIntoViewIfNeeded();
+    const slotId = await fitButton.evaluate((button) =>
+      button.closest('[data-attachment-slot]')?.getAttribute('data-attachment-slot'),
+    );
+    assert.ok(slotId, 'the fit control identifies its attachment slot');
+    const before = await page.evaluate(() => ({
+      dispatches: globalThis.foregripFitTest.dispatches.length,
+      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+    }));
+    assert.equal(before.jobs, 0, 'the fit begins with an idle handling queue');
+    const pageErrorsBeforeFit = errors.length;
+    await clickThroughMenuCursor(fitButton);
+    await page.waitForFunction(
+      (dispatchCount) => globalThis.foregripFitTest.dispatches.length > dispatchCount,
+      before.dispatches,
+      { timeout: 5000 },
+    );
+    const fitResult = await page.evaluate(
+      ({ dispatchesBefore, rifleUid: expectedRifleUid, gripUid: expectedGripUid, slotId: expectedSlotId }) => {
+        const { dispatches } = globalThis.foregripFitTest;
+        const fitActions = dispatches
+          .slice(dispatchesBefore)
+          .filter((action) => action.kind === 'firearm.attachment.fit');
+        return {
+          fitActions: fitActions.map(({ kind, firearmUid, attachmentUid, slotId: actionSlot }) => ({
+            kind,
+            firearmUid,
+            attachmentUid,
+            slotId: actionSlot,
+          })),
+          expected: {
+            kind: 'firearm.attachment.fit',
+            firearmUid: expectedRifleUid,
+            attachmentUid: expectedGripUid,
+            slotId: expectedSlotId,
+          },
+        };
+      },
+      { dispatchesBefore: before.dispatches, rifleUid, gripUid, slotId },
+    );
+    assert.deepEqual(
+      fitResult.fitActions,
+      [fitResult.expected],
+      'the production fit control dispatches once for its slot',
+    );
+    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
+    const fitJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    assert.equal(fitJobs - before.jobs, 1, 'the fit dispatch creates exactly one handling job');
+    const fitSettled = await page.evaluate(
+      ({ rifleUid: expectedRifleUid, gripUid: expectedGripUid, slotId: expectedSlotId }) => {
+        const { session } = globalThis.foregripFitTest;
+        const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
+        let frames = 0;
+        while (session.queue.jobs.length > 0 && frames < maxFrames) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        const rifle = session.inventory.itemByUid(expectedRifleUid);
+        const grip = session.inventory.itemByUid(expectedGripUid);
+        const location = grip && session.inventory.locate(grip);
+        return {
+          frames,
+          queueJobs: session.queue.jobs.length,
+          attachedUid: rifle?.slots?.[expectedSlotId]?.uid,
+          gripLocation:
+            location?.kind === 'slot'
+              ? { kind: location.kind, ownerUid: location.owner.uid, slot: location.slot }
+              : { kind: location?.kind },
+        };
+      },
+      { rifleUid, gripUid, slotId },
+    );
+    assert.equal(fitSettled.queueJobs, 0, 'simulation frames finish the fit handling job');
+    assert.equal(fitSettled.attachedUid, gripUid, 'the grip is fitted in the clicked slot');
+    assert.deepEqual(fitSettled.gripLocation, { kind: 'slot', ownerUid: rifleUid, slot: slotId });
+    assert.deepEqual(errors.slice(pageErrorsBeforeFit), [], 'fitting does not raise a page error');
+
+    const removeButton = page.locator(`#inventory [data-attachment-slot="${slotId}"] button.inv-option`).filter({
+      hasText: /^Remove\b/,
+    });
+    await removeButton.waitFor({ state: 'visible', timeout: 5000 });
+    assert.equal(await removeButton.count(), 1, 'the fitted slot offers its production removal control');
+    const beforeRemove = await page.evaluate(() => ({
+      dispatches: globalThis.foregripFitTest.dispatches.length,
+      jobs: globalThis.foregripFitTest.session.queue.jobs.length,
+    }));
+    const pageErrorsBeforeRemove = errors.length;
+    await clickThroughMenuCursor(removeButton);
+    await page.waitForFunction(
+      (dispatchCount) =>
+        globalThis.foregripFitTest.dispatches
+          .slice(dispatchCount)
+          .some((action) => action.kind === 'firearm.attachment.remove'),
+      beforeRemove.dispatches,
+      { timeout: 5000 },
+    );
+    const removeResult = await page.evaluate(
+      ({ dispatchesBefore }) => {
+        const { dispatches } = globalThis.foregripFitTest;
+        return dispatches.slice(dispatchesBefore).filter((action) => action.kind === 'firearm.attachment.remove')
+          .length;
+      },
+      { dispatchesBefore: beforeRemove.dispatches },
+    );
+    assert.equal(removeResult, 1, 'the production removal control dispatches once');
+    await page.evaluate(() => globalThis.foregripFitTest.session.frame(0.1));
+    const removeJobs = await page.evaluate(() => globalThis.foregripFitTest.session.queue.jobs.length);
+    assert.equal(removeJobs - beforeRemove.jobs, 1, 'the removal dispatch creates exactly one handling job');
+    const removalSettled = await page.evaluate(
+      ({ rifleUid: expectedRifleUid, slotId: expectedSlotId }) => {
+        const { session } = globalThis.foregripFitTest;
+        const maxFrames = Math.ceil(session.queue.remaining / 0.1) + 2;
+        let frames = 0;
+        while (session.queue.jobs.length > 0 && frames < maxFrames) {
+          session.frame(0.1);
+          frames += 1;
+        }
+        const rifle = session.inventory.itemByUid(expectedRifleUid);
+        return { frames, queueJobs: session.queue.jobs.length, attachedUid: rifle?.slots?.[expectedSlotId]?.uid };
+      },
+      { rifleUid, slotId },
+    );
+    assert.equal(removalSettled.queueJobs, 0, 'simulation frames finish the removal handling job');
+    assert.equal(removalSettled.attachedUid, undefined, 'the production removal control empties the clicked slot');
+    assert.deepEqual(errors.slice(pageErrorsBeforeRemove), [], 'removal does not raise a page error');
+    process.stdout.write(
+      `${engine}: live held-AR pocketed-foregrip fit/removal via locked menu click ${JSON.stringify({ fitSettled, removalSettled })}\n`,
+    );
+  }
   process.stdout.write(
     `${engine}: inventory/vicinity/details wheel and redraw contract passed (free pointer + synthetic locked cursor)\n`,
   );

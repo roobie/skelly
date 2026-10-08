@@ -75,22 +75,19 @@ describe('explicit storeys and ordinary-block flights', () => {
     authored.id = 'authored_ceiling';
     authored.layers.splice(13, 1);
     authored.size = [16, 15, 16];
-    const admit = () => buildRegistry([...sources, { source: 'ceiling.json', data: { templates: [authored] } }]);
-    const ordinary = admit();
-    expect(ordinary.issues).toEqual([]);
-    const compiled = compileTemplate(ordinary.registry, ordinary.registry.templates.get(authored.id)!);
+    const ordinary = compileTemplate(registry, authored);
+    expect(templateSpatialIssues(registry, ordinary)).toEqual([]);
     for (const x of [10, 11]) {
       for (const z of [4, 5]) {
-        expect(compiled.blocks[x + 16 * (z + 16 * 14)]).toBe(planks);
+        expect(ordinary.blocks[x + 16 * (z + 16 * 14)]).toBe(planks);
       }
     }
     authored.layers.splice(11, 2);
     authored.size = [16, 13, 16];
-    expect(
-      admit()
-        .issues.filter((issue) => issue.path.includes('access.stairs'))
-        .map((issue) => issue.message),
-    ).toContain('flight needs standing and step-up headroom; blocked cell [8,12,4]');
+    expect(templateSpatialIssues(registry, compileTemplate(registry, authored))).toContainEqual([
+      '.access.stairs[0]',
+      'flight needs standing and step-up headroom; blocked cell [8,12,4]',
+    ]);
   });
   it('rejects an entrance disconnected from the outside when the doorway is walled up', () => {
     const authored = structuredClone(registry.templates.get('stairs_house')!) as TemplateDef;
@@ -98,8 +95,11 @@ describe('explicit storeys and ordinary-block flights', () => {
     for (const y of [1, 2, 3, 4]) {
       authored.layers[y]![0] = 'wwwwwwwwwwwwwwww';
     }
-    const result = buildRegistry([...sources, { source: 'sealed.json', data: { templates: [authored] } }]);
-    expect(result.issues.some((issue) => issue.path.includes('access.entrance'))).toBe(true);
+    const template = compileTemplate(registry, authored);
+    expect(templateSpatialIssues(registry, template)).toContainEqual([
+      '.access.entrance',
+      'entrance must reach a standing opening at the footprint edge on the ground storey',
+    ]);
   });
   it('rejects upstairs floor space isolated behind a non-openable wall', () => {
     const template = house();

@@ -40,10 +40,13 @@ import {
   heldGripOffset,
   modelToView,
   readyFirearmPose,
+  throwStanceHandOffset,
 } from '../core/heldPose.ts';
 import type { HandSide, Inventory } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
 import { interpolateHandPose, type MeleePoseFrame, readyMeleePose } from '../core/meleePose.ts';
+import type { OpticLensFrame, OpticViewSettings } from '../core/opticView.ts';
+import { opticViewSettings, projectLensAperture } from '../core/opticView.ts';
 import { opticWindowDistance, PLAYER_VIEW_FOV_DEGREES } from '../core/opticWindow.ts';
 import { HELD_DISPLAY_KIND } from '../core/schema.ts';
 import { createCompass } from './compass.ts';
@@ -58,6 +61,7 @@ import {
 } from './firearmModel.ts';
 import { grabPose } from './grabPose.ts';
 import { handlingRotation } from './handlingTurn.ts';
+import { applyItemEmissive, disposeItemEmissiveMaterials } from './itemEmissive.ts';
 import { itemLook } from './itemLook.ts';
 import { type ComposedSlot, LENS, type ModelLibrary } from './models.ts';
 import { createFirstPersonArm, FIRST_PERSON_SHOULDER, placeFirstPersonSegment } from './playerFigure.ts';
@@ -93,6 +97,7 @@ interface HeldReadiness {
 export interface HeldHandlingFrame {
   readonly firearms: readonly HeldFirearmPose[];
   readonly readiness?: HeldReadiness;
+  readonly throwing?: { readonly chargeProgress: number };
   readonly aim?: AimFrame;
   readonly job?: Readonly<Job> | undefined;
   readonly grab?: { readonly progress: number };
@@ -140,6 +145,7 @@ export class HeldItems {
   private readonly heldByHand = new Map<HandSide, Object3D>();
   private readonly relativeCamera = new Quaternion();
   private opticWindowShape = '';
+  private opticViewFrame: OpticLensFrame | undefined;
   private readonly lockedCamera = new Quaternion();
   private readonly poseRotation = new Quaternion();
   private readonly recoilRotation = new Quaternion();
@@ -149,6 +155,17 @@ export class HeldItems {
   private readonly poseEuler = new Euler();
   private readonly handPosition = new Vector3();
   private readonly pivotPosition = new Vector3();
+  private readonly opticRootRight = new Vector3();
+  private readonly opticRootUp = new Vector3();
+  private readonly opticRootBack = new Vector3();
+  private readonly opticForward = new Vector3();
+  private readonly opticUp = new Vector3();
+  private readonly opticRight = new Vector3();
+  private readonly opticEye = new Vector3();
+  private readonly opticEyeOffset = new Vector3();
+  private readonly opticBack = new Vector3();
+  private readonly opticBaseRotation = new Quaternion();
+  private readonly opticBaseInverse = new Quaternion();
   private rummageSupportRest: { arm: Group; position: Vector3 } | undefined;
 
   private readonly palette: FigureDef['palette'];
@@ -193,6 +210,7 @@ export class HeldItems {
     const easedReady = readyAmount * readyAmount * (3 - 2 * readyAmount);
     this.torso.rotation.y = renderPose?.torsoYaw ?? 0;
     this.opticWindow.visible = false;
+    this.opticViewFrame = undefined;
     for (const side of ['right', 'left'] as const) {
       this.poseHeldHand({
         side,
@@ -334,13 +352,20 @@ export class HeldItems {
       this.poseRotation.multiply(this.rackRotation);
     }
     const strength = Math.max(0, Math.min(1, recoil));
+    const throwOffset = throwStanceHandOffset(
+      side,
+      handling.throwing !== undefined,
+      handling.throwing?.chargeProgress ?? 0,
+    );
+    transform.offset = transform.offset.map((value, axis) => value + throwOffset[axis]!) as Vec3;
     transform.offset[1] += 0.012 * strength;
     transform.offset[2] += 0.025 * strength;
     this.recoilRotation.setFromEuler(this.poseEuler.set(-0.08 * strength, 0, 0, 'YXZ'));
     this.poseRotation.multiply(this.recoilRotation);
     this.placeHandAndHeldItem(side, arm, transform, firearmPose);
     if (item && itemDefinition?.firearm) {
-      const opticSight = Boolean(aimingDownSights && modelDefinition?.sight?.kind === 'optic');
+      const opticSettings = this.mountedOpticSettings(item);
+      const opticSight = Boolean(aimingDownSights && modelDefinition?.sight?.kind === 'optic' && opticSettings);
       const heldModel = this.shown.get(item.uid);
       if (heldModel) {
         heldModel.visible = !opticSight;
@@ -349,10 +374,14 @@ export class HeldItems {
       const apertureFill = this.inventory.registry.skills.get('firearms_combat')?.combat?.firearms?.adsApertureFill;
       this.updateOpticWindow({
         active: opticSight,
+        settings: opticSettings,
         diameter: ocularDiameter,
         fill: apertureFill,
         fov: main.fov,
-        rootOffset: firearmPose?.rootOffset,
+        aspect: main.aspect,
+        rootOffset: transform.offset,
+        rootRotation: firearmPose?.rootRotation,
+        heldRotation: this.poseRotation,
         sightEyeOffset: firearmPose?.sightEyeOffset,
         sightDirection: firearmPose?.sightDirection,
         sightUp: firearmPose?.sightUp,
@@ -474,19 +503,27 @@ export class HeldItems {
 
   private updateOpticWindow({
     active,
+    settings,
     diameter,
     fill,
     fov,
+    aspect,
     rootOffset,
+    rootRotation,
+    heldRotation,
     sightEyeOffset,
     sightDirection,
     sightUp,
   }: {
     active: boolean;
+    settings: OpticViewSettings | undefined;
     diameter: number | undefined;
     fill: number | undefined;
     fov: number;
+    aspect: number;
     rootOffset: Vec3 | undefined;
+    rootRotation: readonly [Vec3, Vec3, Vec3] | undefined;
+    heldRotation: Quaternion;
     sightEyeOffset: Vec3 | undefined;
     sightDirection: Vec3 | undefined;
     sightUp: Vec3 | undefined;
@@ -497,6 +534,7 @@ export class HeldItems {
         diameter !== undefined &&
         fill !== undefined &&
         rootOffset &&
+        rootRotation &&
         sightEyeOffset &&
         sightDirection &&
         sightUp
@@ -514,15 +552,56 @@ export class HeldItems {
       this.opticWindow.geometry = new RingGeometry(innerRadius, outerRadius, 64);
       this.opticWindowShape = shape;
     }
-    const forward = new Vector3(...sightDirection).normalize();
-    const up = new Vector3(...sightUp).normalize();
-    const right = forward.clone().cross(up).normalize();
-    const correctedUp = right.clone().cross(forward).normalize();
-    this.poseMatrix.makeBasis(right, correctedUp, forward.clone().negate());
+    this.opticRootRight.fromArray(rootRotation[0]);
+    this.opticRootUp.fromArray(rootRotation[1]);
+    this.opticRootBack.fromArray(rootRotation[2]);
+    this.poseMatrix.makeBasis(this.opticRootRight, this.opticRootUp, this.opticRootBack);
+    this.opticBaseRotation.setFromRotationMatrix(this.poseMatrix);
+    this.opticBaseInverse.copy(this.opticBaseRotation).invert();
+    this.opticForward
+      .fromArray(sightDirection)
+      .applyQuaternion(this.opticBaseInverse)
+      .applyQuaternion(heldRotation)
+      .normalize();
+    this.opticUp.fromArray(sightUp).applyQuaternion(this.opticBaseInverse).applyQuaternion(heldRotation).normalize();
+    this.opticRight.crossVectors(this.opticForward, this.opticUp).normalize();
+    this.opticUp.crossVectors(this.opticRight, this.opticForward).normalize();
+    this.opticBack.copy(this.opticForward).negate();
+    this.poseMatrix.makeBasis(this.opticRight, this.opticUp, this.opticBack);
     this.opticWindow.quaternion.setFromRotationMatrix(this.poseMatrix);
-    const eye = new Vector3(...rootOffset).add(new Vector3(...sightEyeOffset));
-    this.opticWindow.position.copy(eye.addScaledVector(forward, distance));
+    this.opticEyeOffset.fromArray(sightEyeOffset).applyQuaternion(this.opticBaseInverse).applyQuaternion(heldRotation);
+    this.opticEye.fromArray(rootOffset).add(this.opticEyeOffset);
+    this.opticWindow.position.copy(this.opticEye.addScaledVector(this.opticForward, distance));
     this.opticWindow.visible = true;
+    if (settings) {
+      const center = this.opticWindow.position;
+      const aperture = projectLensAperture({
+        center: [center.x, center.y, center.z],
+        right: [this.opticRight.x, this.opticRight.y, this.opticRight.z],
+        up: [this.opticUp.x, this.opticUp.y, this.opticUp.z],
+        radius: innerRadius,
+        verticalFovDegrees: fov,
+        aspect,
+      });
+      if (aperture) {
+        this.opticViewFrame = { ...settings, ...aperture };
+      }
+    }
+  }
+
+  private mountedOpticSettings(firearm: Item): OpticViewSettings | undefined {
+    for (const child of Object.values(firearm.slots ?? {})) {
+      const item = this.inventory.registry.items.get(child.type);
+      const model = item?.model === undefined ? undefined : this.inventory.registry.models.get(item.model);
+      if (model?.attachment?.kind === 'optic' && item) {
+        return opticViewSettings(item, model);
+      }
+    }
+    return undefined;
+  }
+
+  get opticLensFrame(): OpticLensFrame | undefined {
+    return this.opticViewFrame;
   }
 
   private poseAim(item: Item | undefined, aim: AimFrame | undefined): void {
@@ -812,6 +891,9 @@ export class HeldItems {
     this.drawn = version;
     this.disposeCompasses();
     this.clearArms();
+    for (const held of this.shown.values()) {
+      disposeItemEmissiveMaterials(held);
+    }
     this.view.clear();
     this.view.add(this.torso, this.opticWindow);
     this.shown.clear();
@@ -852,6 +934,9 @@ export class HeldItems {
     this.flameGeometry.dispose();
     this.opticWindow.geometry.dispose();
     (this.opticWindow.material as MeshBasicMaterial).dispose();
+    for (const held of this.shown.values()) {
+      disposeItemEmissiveMaterials(held);
+    }
     this.view.clear();
     this.shown.clear();
     this.heldByHand.clear();
@@ -993,6 +1078,7 @@ export class HeldItems {
     const look = itemLook(this.inventory.registry, item);
     const model = look && this.models?.heldLook(look);
     if (model) {
+      applyItemEmissive(model.root, item, def, this.inventory.registry.models.get(def.model!));
       const action = this.inventory.registry.models.get(def.model!)?.action;
       if (model.slots.magazine) {
         this.magazineSlots.set(item.uid, model.slots.magazine);

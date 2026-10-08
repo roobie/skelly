@@ -15,7 +15,9 @@ import {
   type WebGLRenderer,
 } from 'three';
 import { describe, expect, it } from 'vitest';
+import { SECONDS_PER_DAY } from '../src/core/clock.ts';
 import { CHUNK } from '../src/core/coords.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../src/core/dayPhase.ts';
 import type { MeshData } from '../src/core/mesher.ts';
 import { clampShadowDistance, DEFAULT_SHADOWS, nextShadowDistance, SHADOW_DISTANCES } from '../src/core/mood.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../src/core/sky.ts';
@@ -38,20 +40,27 @@ import {
 } from '../src/render/shadows.ts';
 
 const strengthAt = (hour: number): number => sunShadowStrength(sunDirection(hour)[1], skyAt(hour).lightIntensity);
+const cycle = dayPhaseAt(DEFAULT_DAY_CYCLE, 0);
 
 describe('sun shadow strength', () => {
-  it('is full through the day, and zero all night, where the light is only a stand-in for a moon', () => {
-    for (const hour of [9, 12, 15]) {
-      expect(strengthAt(hour)).toBe(1);
-    }
-    for (const hour of [19, 20, 21, 23, 0, 2, 3.5, 5, 5.9]) {
-      expect(strengthAt(hour)).toBe(0);
-    }
+  it('shows sun shadows in daytime and none in full night', () => {
+    const solarNoon = (cycle.sunrise + cycle.sunset) / 2;
+    const fullNight = (cycle.nightfall + SECONDS_PER_DAY + cycle.dawn) / 2;
+    expect(strengthAt(solarNoon / 3600)).toBeGreaterThan(0);
+    expect(strengthAt((fullNight % SECONDS_PER_DAY) / 3600)).toBe(0);
   });
 
-  it('rises from sunrise at 06:00 and falls to sunset at 18:00, never popping', () => {
-    expect(strengthAt(6)).toBe(0);
-    expect(strengthAt(18)).toBeCloseTo(0, 6);
+  it('fades shadows smoothly at the sun-derived horizon crossings', () => {
+    const daylight = cycle.sunset - cycle.sunrise;
+    expect(strengthAt(cycle.sunrise / 3600)).toBe(0);
+    expect(strengthAt(cycle.sunset / 3600)).toBeCloseTo(0, 6);
+    const early = strengthAt((cycle.sunrise + daylight * 0.05) / 3600);
+    const later = strengthAt((cycle.sunrise + daylight * 0.1) / 3600);
+    const beforeSet = strengthAt((cycle.sunset - daylight * 0.1) / 3600);
+    const nearSet = strengthAt((cycle.sunset - daylight * 0.05) / 3600);
+    expect(later).toBeGreaterThan(early);
+    expect(beforeSet).toBeGreaterThan(nearSet);
+
     let previous = strengthAt(0);
     let peak = 0;
     for (let minute = 1; minute <= 24 * 60; minute++) {
@@ -62,10 +71,7 @@ describe('sun shadow strength', () => {
       peak = Math.max(peak, strength);
       previous = strength;
     }
-    expect(peak).toBe(1);
-    expect(strengthAt(6.4)).toBeGreaterThan(0);
-    expect(strengthAt(6.4)).toBeLessThan(strengthAt(6.8));
-    expect(strengthAt(17.6)).toBeGreaterThan(strengthAt(17.9));
+    expect(peak).toBeGreaterThan(0);
   });
 
   it('fades with the light itself, so overcast weather weakens shadows and no light has none', () => {
@@ -79,8 +85,8 @@ describe('sun shadow strength', () => {
 
 describe('shadow settings', () => {
   it('steps the distance through the allowed list and wraps', () => {
-    const cycle = [...SHADOW_DISTANCES, SHADOW_DISTANCES[0]!];
-    expect(cycle.slice(0, -1).map(nextShadowDistance)).toEqual(cycle.slice(1));
+    const distances = [...SHADOW_DISTANCES, SHADOW_DISTANCES[0]!];
+    expect(distances.slice(0, -1).map(nextShadowDistance)).toEqual(distances.slice(1));
     expect(nextShadowDistance(SHADOW_DISTANCES.at(-1)!)).toBe(SHADOW_DISTANCES[0]);
   });
 

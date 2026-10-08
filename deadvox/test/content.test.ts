@@ -7,13 +7,20 @@ import { HAMLET_TEMPLATES } from '../src/core/hamlet.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { militaryLootItems } from '../src/core/magazine.ts';
 import { blockPatterns } from '../src/core/meshInput.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { checkReachability } from '../src/core/reachability.ts';
 import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDef } from '../src/core/schema.ts';
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
+import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 
 const BASE = 'src/content/base';
+const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
+const INPUT_GESTURE =
+  /\b(?:hold|press|tap|click|double[ -]press|wield|activate|throw|scroll|wheel|drag|rotate|snap|spawn)\b/i;
+const LMB_ALIAS = /\bLMB\b/i;
+const RMB_ALIAS = /\bRMB\b/i;
 const base = readdirSync(BASE)
   .filter((f) => f.endsWith('.json'))
   .sort()
@@ -21,6 +28,19 @@ const base = readdirSync(BASE)
 const baseBuild = buildRegistry(base);
 const baseRegistry = baseBuild.registry;
 const missingSoundsRegistry = { ...baseRegistry, sounds: new Map() };
+const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: 'remove' | 'add') => {
+  const zombieFile = base.find((file) => file.source === 'zombies.json')!;
+  const data = structuredClone(zombieFile.data) as {
+    zombies: { id: string; regions: Record<string, number> }[];
+  };
+  const { regions } = data.zombies.find(({ id }) => id === zombieId)!;
+  if (change === 'remove') {
+    delete regions[regionId];
+  } else {
+    regions[regionId] = 1;
+  }
+  return validateContent({ source: zombieFile.source, data });
+};
 
 it('validates weathering strength and world-variation settings', () => {
   const settings = {
@@ -94,6 +114,56 @@ const runHasAirOpening = (definition: TemplateDef, run: WindowFrameRun, air: str
 };
 
 describe('content', () => {
+  it('keeps the base day cycle authoritative over mod overrides', () => {
+    const baseCycle = baseRegistry.dayCycle!;
+    const modCycle = {
+      ...baseCycle,
+      latitudeDegrees: baseCycle.latitudeDegrees > 80 ? baseCycle.latitudeDegrees - 7 : baseCycle.latitudeDegrees + 7,
+    };
+    const { registry } = buildRegistry([
+      { source: 'base/dayCycle.json', data: { dayCycle: baseCycle } },
+      { source: 'mod/dayCycle.json', data: { dayCycle: modCycle } },
+    ]);
+    expect(registry.dayCycle).toEqual(baseCycle);
+  });
+
+  it('keeps input instructions out of item descriptions', () => {
+    const bindingLabels = [
+      ...INPUT_BINDINGS.flatMap((binding) =>
+        binding.defaults.map((_, index) => inputBindings.alternativeLabel(binding.id, index).split(' + ').at(-1)!),
+      ),
+      ...POINTER_ACTIONS.map(({ label }) => label),
+    ];
+    const controlPatterns = [...new Set(bindingLabels)].map((label) => {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
+      if (CONTEXTUAL_KEY_LABEL.test(label)) {
+        return new RegExp(`(?:${INPUT_GESTURE.source}\\s+|\\b(?:key|button)\\s+)${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+      }
+      return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+    });
+    const buttonAliases = POINTER_ACTIONS.flatMap(({ id }) => {
+      if (id === 'hand.use-dominant') {
+        return [LMB_ALIAS];
+      }
+      if (id === 'stance.ready') {
+        return [RMB_ALIAS];
+      }
+      return [];
+    });
+    const namesInput = (description: string) =>
+      [...controlPatterns, ...buttonAliases].some((pattern) => pattern.test(description)) ||
+      INPUT_GESTURE.test(description);
+    expect(namesInput(`Hold ${inputBindings.label('firearm.reload')} to load`)).toBe(true);
+    expect(namesInput(`${inputBindings.label('ui.main-menu-toggle')} key`)).toBe(true);
+    expect(namesInput('LMB fires')).toBe(true);
+    expect(namesInput('AR-pattern rifle')).toBe(false);
+    expect(namesInput('A magazine that holds 30 rounds.')).toBe(false);
+    const offenders = [...baseRegistry.items.values()].flatMap((item) =>
+      item.description !== undefined && namesInput(item.description) ? [`${item.id}: ${item.description}`] : [],
+    );
+    expect(offenders).toEqual([]);
+  });
+
   it('base content has no issues', () => {
     const { registry, issues } = baseBuild;
     expect(issues).toEqual([]);
@@ -101,6 +171,42 @@ describe('content', () => {
     for (const id of ['grass', 'dirt', 'stone', 'sand']) {
       expect(registry.blockIds.has(id)).toBe(true);
     }
+  });
+
+  it('requires non-amalgam zombie regions to match the anatomy keys exactly', () => {
+    for (const [regionId, change] of [
+      ['head', 'remove'],
+      ['leftArmm', 'add'],
+    ] as const) {
+      expect(
+        invalidZombieRegionIssues('shambler', regionId, change).some(
+          ({ message }) => message === 'zombie region keys must match the model',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it('requires amalgam zombie regions to match the manifest classes exactly', () => {
+    for (const [regionId, change] of [
+      ['member.leftLeg', 'remove'],
+      ['member.leftArmm', 'add'],
+    ] as const) {
+      expect(
+        invalidZombieRegionIssues('amalgam', regionId, change).some(
+          ({ message }) => message === 'zombie region keys must match the model',
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it('keeps the thermal optic out of loot, fitting and ADS', () => {
+    expect(
+      [...baseRegistry.loot.values()].some((table) =>
+        table.entries.some((entry) => entry.item === 'optic_digital_thermal'),
+      ),
+    ).toBe(false);
+    const thermal = baseRegistry.items.get('optic_digital_thermal')!;
+    expect(opticViewSettings(thermal, baseRegistry.models.get(thermal.model!)!)).toBeUndefined();
   });
 
   it('rejects a non-positive firearms skill-zero handling value', () => {
@@ -130,6 +236,26 @@ describe('content', () => {
     const { issues } = buildRegistry([{ source: source.source, data }]);
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.reloadFactorFloor'))).toBe(true);
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackFactorHalfLifeLevels'))).toBe(true);
+  });
+
+  it('rejects invalid OU wobble tuning', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+    };
+    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    firearms.wobbleNoiseReversionRatePerSimSecond = 0;
+    firearms.wobbleNoiseSigmaRadiansPerSqrtSecond = -0.01;
+    firearms.wobbleNoiseSmoothingSimSeconds = 0;
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseReversionRatePerSimSecond'))).toBe(
+      true,
+    );
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSigmaRadiansPerSqrtSecond'))).toBe(
+      true,
+    );
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
   });
 
   it('rejects incomplete per-firearm skill-zero factors', () => {
@@ -755,8 +881,46 @@ describe('content references', () => {
     source: 'broken-reference.json',
     data: JSON.parse(readFileSync('test/fixtures/content/broken-reference.json', 'utf8')) as unknown,
   };
-  const withBase = (...extra: { source: string; data: unknown }[]) => buildRegistry([...base, ...extra]);
+  const baseContent = (source: string) => base.find((file) => file.source === source)!.data as ContentFile;
+  const zombieSounds = {
+    idle: 'shambler_idle',
+    alert: 'shambler_alert',
+    attack: 'shambler_attack',
+    hurt: 'shambler_hurt',
+  };
+  const referenceDependencies = {
+    source: 'reference-dependencies.json',
+    data: {
+      items: baseContent('items-other.json').items!.filter(({ id }) => id === 'bandage'),
+      skills: baseContent('recipes.json').skills,
+      sounds: baseContent('sounds.json').sounds!.filter(({ id }) => Object.values(zombieSounds).includes(id)),
+    },
+  };
   const paths = (issues: { path: string }[]) => issues.map((i) => i.path);
+
+  it('requires a model material for an emissive modeled light', () => {
+    const { issues } = buildRegistry([
+      {
+        source: 'emissive-light.json',
+        data: {
+          items: [
+            {
+              id: 'glowstick',
+              name: 'Glowstick',
+              category: 'light',
+              weight: 1,
+              size: [1, 1],
+              model: 'glowstick',
+              light: { radius: 1, seenFrom: 1, color: '#ffffff', intensity: 1, emissive: 1 },
+            },
+          ],
+          models: [{ id: 'glowstick', file: 'assets/models/glowstick.glb' }],
+        },
+      },
+    ]);
+
+    expect(issues.some((issue) => issue.message === 'an emissive light model needs an emissive material')).toBe(true);
+  });
 
   it('requires an explicit disassembly yield for a recipe result', () => {
     const missingYield = {
@@ -841,101 +1005,133 @@ describe('content references', () => {
   });
 
   it('lets only a military table hold military-only loot, boxed at any depth, and no salvage or recipe make it', () => {
-    const military = [...militaryLootItems(baseRegistry)];
-    const [item] = military;
-    const cartridge = military.find((id) => baseRegistry.items.get(id)?.ammo);
-    const armoury = [...baseRegistry.loot.values()].find((table) => table.military);
-    if (item === undefined || cartridge === undefined || armoury === undefined) {
-      throw new Error('base content needs a military-only item, a military cartridge and a military table');
+    const military = militaryLootItems(baseRegistry);
+    const baseFirearm = [...military]
+      .map((id) => baseRegistry.items.get(id))
+      .find((candidate) => candidate?.firearm !== undefined && candidate.model !== undefined);
+    const baseCartridge = [...military]
+      .map((id) => baseRegistry.items.get(id))
+      .find((candidate) => candidate?.ammo !== undefined);
+    const firearm = baseFirearm?.firearm;
+    const firearmModel = baseFirearm?.model === undefined ? undefined : baseRegistry.models.get(baseFirearm.model);
+    const ammo = baseCartridge?.ammo;
+    if (firearm === undefined || firearmModel === undefined || ammo === undefined) {
+      throw new Error('base content needs a magazine-fed firearm and matching cartridge for the fixture');
     }
+    const item = 'fixture_rifle';
+    const cartridge = 'fixture_cartridge';
+    const armoury = {
+      id: 'fixture_armoury',
+      military: true,
+      rolls: [1, 1],
+      entries: [
+        { item, weight: 1 },
+        { item: cartridge, weight: 1 },
+      ],
+    };
     const source = 'military-sources.json';
-    const { issues } = withBase({
-      source,
-      data: {
-        loot: [
-          {
-            id: 'fixture_shed_crate',
-            rolls: [1, 1],
-            entries: [
-              { item, weight: 1 },
-              { table: armoury.id, weight: 1 },
-              { item: 'rag', weight: 1 },
-              { item: 'fixture_ammo_case', weight: 1 },
-            ],
-          },
-          {
-            id: 'fixture_ammo_crate',
-            military: true,
-            rolls: [1, 1],
-            entries: [
-              { item, weight: 1 },
-              { table: armoury.id, weight: 1 },
-            ],
-          },
-        ],
-        items: [
-          {
-            id: 'fixture_scrap',
-            name: 'Scrap',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            salvage: [{ item, count: 1 }],
-          },
-          {
-            id: 'fixture_parts',
-            name: 'Parts',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            disassembly: {
-              timeGameMinutes: gameMinutes(1),
-              skill: 'crafting',
-              yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
-            },
-          },
-          // Listed before the box it holds, so finding boxes in one pass would miss it.
-          {
-            id: 'fixture_ammo_case',
-            name: 'Case',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            unpack: { item: 'fixture_box', count: 1 },
-          },
-          {
-            id: 'fixture_box',
-            name: 'Box',
-            category: 'material',
-            weight: 1,
-            size: [1, 1],
-            unpack: { item: cartridge, count: 1 },
-            disassembly: {
-              timeGameMinutes: gameMinutes(1),
-              skill: 'crafting',
-              yields: [{ item: 'rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
-            },
-          },
-        ],
-        recipes: [
-          {
-            id: 'fixture_box_press',
-            result: { item: 'fixture_box', count: 1 },
-            timeGameMinutes: gameMinutes(1),
-            components: [[{ item: 'rag', count: 1 }]],
-            qualities: {},
-            skills: {},
-          },
-        ],
+    const { issues } = buildRegistry([
+      {
+        source: 'military-fixture.json',
+        data: {
+          models: [{ ...firearmModel, id: item, attachments: [] }],
+          items: [
+            { id: item, name: 'Fixture rifle', category: 'weapon', weight: 1, size: [1, 1], firearm, model: item },
+            { id: cartridge, name: 'Fixture cartridge', category: 'material', weight: 1, size: [1, 1], ammo },
+          ],
+        },
       },
-    });
-    const only = (id: string) => `"${id}" is military loot only`;
-    expect(issues).toEqual([
-      { source, path: 'loot[0].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
-      { source, path: 'loot[0].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
       {
         source,
-        path: 'loot[0].entries[3].item',
+        data: {
+          loot: [
+            armoury,
+            {
+              id: 'fixture_shed_crate',
+              rolls: [1, 1],
+              entries: [
+                { item, weight: 1 },
+                { table: armoury.id, weight: 1 },
+                { item: 'fixture_rag', weight: 1 },
+                { item: 'fixture_ammo_case', weight: 1 },
+              ],
+            },
+            {
+              id: 'fixture_ammo_crate',
+              military: true,
+              rolls: [1, 1],
+              entries: [
+                { item, weight: 1 },
+                { table: armoury.id, weight: 1 },
+              ],
+            },
+          ],
+          skills: [{ id: 'fixture_crafting', name: 'Fixture crafting' }],
+          items: [
+            {
+              id: 'fixture_scrap',
+              name: 'Scrap',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              salvage: [{ item, count: 1 }],
+            },
+            {
+              id: 'fixture_parts',
+              name: 'Parts',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              disassembly: {
+                timeGameMinutes: gameMinutes(1),
+                skill: 'fixture_crafting',
+                yields: [{ item, count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+              },
+            },
+            // Listed before the box it holds, so finding boxes in one pass would miss it.
+            {
+              id: 'fixture_ammo_case',
+              name: 'Case',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              unpack: { item: 'fixture_box', count: 1 },
+            },
+            {
+              id: 'fixture_box',
+              name: 'Box',
+              category: 'material',
+              weight: 1,
+              size: [1, 1],
+              unpack: { item: cartridge, count: 1 },
+              disassembly: {
+                timeGameMinutes: gameMinutes(1),
+                skill: 'fixture_crafting',
+                yields: [{ item: 'fixture_rag', count: 1, fractions: [0.5, 1], rounding: 'floor' }],
+              },
+            },
+            { id: 'fixture_rag', name: 'Rag', category: 'material', weight: 1, size: [1, 1] },
+          ],
+          recipes: [
+            {
+              id: 'fixture_box_press',
+              result: { item: 'fixture_box', count: 1 },
+              timeGameMinutes: gameMinutes(1),
+              components: [[{ item: 'fixture_rag', count: 1 }]],
+              qualities: {},
+              skills: {},
+            },
+          ],
+        },
+      },
+    ]);
+    const only = (id: string) => `"${id}" is military loot only`;
+    expect(issues).toEqual([
+      { source, path: 'loot[1].entries[0].item', message: `${only(item)}; only a "military" table may hold it` },
+      { source, path: 'loot[1].entries[1].table', message: `only a "military" table may nest "${armoury.id}"` },
+      {
+        source,
+        path: 'loot[1].entries[3].item',
         message: `${only('fixture_ammo_case')}; only a "military" table may hold it`,
       },
       { source, path: 'items[0].salvage[0].item', message: `${only(item)}; salvage may not yield it` },
@@ -959,13 +1155,18 @@ describe('content references', () => {
     if (armoury === undefined || site === undefined) {
       throw new Error('base content needs a military table and an authored-only template with a loot container');
     }
+    const baseFound = checkReachability(baseRegistry).found;
+    const baseMilitaryItems = [...militaryLootItems(baseRegistry)];
+    expect(baseMilitaryItems.some((id) => !baseFound.has(id))).toBe(true);
     for (const [key, entry] of Object.entries(site.palette)) {
       if (typeof entry === 'object' && 'loot' in entry) {
         site.palette[key] = { ...entry, loot: armoury.id };
       }
     }
-    const { registry, issues } = withBase({ source: 'armoury-site.json', data: { templates: [site] } });
-    expect(issues).toEqual([]);
+    // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
+    const templates = new Map(baseRegistry.templates);
+    templates.set(site.id, site);
+    const registry = { ...baseRegistry, templates };
     const { found } = checkReachability(registry);
     const military = [...militaryLootItems(registry)];
     expect(military.length).toBeGreaterThan(0);
@@ -1001,12 +1202,8 @@ describe('content references', () => {
             name: 'Clerk',
             model: 'shambler',
             spawnWeight: 1,
-            sounds: {
-              idle: 'shambler_idle',
-              alert: 'shambler_alert',
-              attack: 'shambler_attack',
-              hurt: 'shambler_hurt',
-            },
+            canJumpObstacles: true,
+            sounds: zombieSounds,
             regions: { head: 50, torso: 50, leftArm: 20, rightArm: 20, leftLeg: 20, rightLeg: 20 },
             speed: { wanderMetresPerSimSecond: 0.8, chaseMetresPerSimSecond: 2.5 },
             stepLength: 0.6,
@@ -1072,7 +1269,7 @@ describe('content references', () => {
         ],
       },
     };
-    expect(paths(withBase(mod).issues).sort()).toEqual([
+    expect(paths(buildRegistry([referenceDependencies, mod]).issues).sort()).toEqual([
       'furniture[0].loot',
       'furniture[0].loot',
       'furniture[1].door.prying.skill',
@@ -1122,6 +1319,40 @@ describe('templates', () => {
   });
   const check = (t: { source: string; data: unknown }) =>
     buildRegistry([...templateBase, t]).issues.map((i) => `${i.path}: ${i.message}`);
+
+  it('reports spatial template issues during registry validation', () => {
+    const wall = ['#####', '#...#', '#...#', '#...#', '#####'];
+    const sealed = {
+      source: 'sealed-entrance.json',
+      data: {
+        templates: [
+          {
+            id: 'sealed_entrance',
+            size: [5, 5, 5],
+            palette: { '#': 'brick', '.': 'air' },
+            layers: [
+              ['#####', '#####', '#####', '#####', '#####'],
+              wall,
+              wall,
+              wall,
+              ['.....', '.....', '.....', '.....', '.....'],
+            ],
+            access: {
+              ground: 'ground',
+              entrance: [2.5, 1, 2.5],
+              storeys: [{ id: 'ground', floor: 1 }],
+              stairs: [],
+            },
+          },
+        ],
+      },
+    };
+    expect(buildRegistry([...templateBase, sealed]).issues).toContainEqual({
+      source: 'sealed-entrance.json',
+      path: 'templates[0].access.entrance',
+      message: 'entrance must reach a standing opening at the footprint edge on the ground storey',
+    });
+  });
 
   it('leaves an open air cell beside every window-frame run', () => {
     const frameRuns = [...baseRegistry.templates.values()].flatMap((definition) => {

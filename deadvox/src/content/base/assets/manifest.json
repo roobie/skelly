@@ -100,8 +100,12 @@
       "author": "Skelly contributors",
       "licence": "CC0-1.0",
       "download": null,
-      "files": ["assets/models/magazine_stanag_30.glb", "assets/models/magazine_akm_30.glb"],
-      "changes": "Generated in metres from gungen's stanag-30 and akm-30 magazine prefabs with its export:magazine CLI, against the sourced 5.56x45 and 7.62x39 cartridge data; the round column, capacity and one pose per round come from the fitted geometry; original project-built geometry"
+      "files": [
+        "assets/models/magazine_stanag_20.glb",
+        "assets/models/magazine_stanag_30.glb",
+        "assets/models/magazine_akm_30.glb"
+      ],
+      "changes": "Generated in metres from gungen's stanag-20, stanag-30 and akm-30 magazine prefabs with its export:magazine CLI, against the sourced 5.56x45 and 7.62x39 cartridge data; the round column, capacity and one pose per round come from the fitted geometry; original project-built geometry"
     },
     {
       "title": "Gungen hunting-cabin pump design export",
@@ -377,7 +381,6 @@
         "assets/models/hand_saw.glb",
         "assets/models/screwdriver.glb",
         "assets/models/wire_spool.glb",
-        "assets/models/improvised_suppressor.glb",
         "assets/models/lamp_oil_bottle.glb",
         "assets/models/glass_shards.glb",
         "assets/models/tape_roll.glb",
@@ -402,9 +405,10 @@
         "assets/models/flashlight_mount.glb",
         "assets/models/scrap_foregrip.glb",
         "assets/models/hinge_set.glb",
-        "assets/models/glass_bulb.glb"
+        "assets/models/glass_bulb.glb",
+        "assets/models/glowstick.glb"
       ],
-      "changes": "Built from primitive meshes for readable ground-pile silhouettes; no external asset source or texture is used."
+      "changes": "Built from primitive meshes for readable ground-pile silhouettes, including the glowstick's tube and end caps; no external asset source or texture is used."
     },
     {
       "title": "Heartbeat Sounds",
@@ -423,6 +427,28 @@
       "download": null,
       "files": ["assets/audio/player-nope-01.ogg"],
       "changes": "Recorded by BR for the project; converted from 48 kHz stereo PCM WAV to 48 kHz mono Opus in an Ogg container without gain processing."
+    },
+    {
+      "title": "Gungen standalone firearm attachments",
+      "url": "https://github.com/roobie/skelly/blob/main/gungen/src/gun/attachmentExport.ts",
+      "author": "Skelly contributors",
+      "licence": "CC0-1.0",
+      "download": null,
+      "files": [
+        "assets/models/foregrip.glb",
+        "assets/models/improvised_suppressor.glb",
+        "assets/models/optic_digital_thermal.glb",
+        "assets/models/optic_fixed_prism_4x.glb",
+        "assets/models/optic_high_mag_5_25x.glb",
+        "assets/models/optic_holographic.glb",
+        "assets/models/optic_lpvo_1_6x.glb",
+        "assets/models/optic_mini_reflex.glb",
+        "assets/models/optic_tube_dot.glb",
+        "assets/models/rail_front_sight.glb",
+        "assets/models/real_suppressor.glb",
+        "assets/models/tactical_flashlight_mount.glb"
+      ],
+      "changes": "Exported by gungen from original project-built part geometry as standalone models at each mount base, +x forward and +y up."
     }
   ]
 }

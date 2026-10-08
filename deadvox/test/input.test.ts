@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Input, nextMenuCursor } from '../src/game/input.ts';
-import { keyboardInput } from '../src/game/inputBindings.ts';
+import { keyboardInput, shouldCancelInputForViewerFocus } from '../src/game/inputBindings.ts';
 
-const fixture = (allowed: () => boolean = () => true) => {
+const fixture = (allowed: () => boolean = () => true, viewerInputAllowed: () => boolean = () => true) => {
   const targetListeners = new Map<string, (event: MouseEvent) => void>();
   const windowListeners = new Map<string, (event: MouseEvent) => void>();
   const target = {
@@ -33,7 +33,7 @@ const fixture = (allowed: () => boolean = () => true) => {
       input.toggleAimingDownSights();
     }
   };
-  input = new Input(target, allowed);
+  input = new Input(target, allowed, () => true, viewerInputAllowed);
   keyboardInput.cancelled = (preservePointer) => input.cancel(preservePointer);
   return { input, target, document, targetListeners, windowListeners };
 };
@@ -59,6 +59,14 @@ afterEach(() => {
 });
 
 describe('pointer input', () => {
+  it('cancels each viewer-focus reason live but not during replay', () => {
+    for (const reason of ['window-blur', 'document-hidden', 'pointer-lock-lost'] as const) {
+      expect(shouldCancelInputForViewerFocus(reason, false)).toBe(true);
+      expect(shouldCancelInputForViewerFocus(reason, true)).toBe(false);
+    }
+    expect(shouldCancelInputForViewerFocus('context-change', true)).toBe(true);
+    expect(shouldCancelInputForViewerFocus('manual', true)).toBe(true);
+  });
   it('surfaces native pointer-lock refusal without an unhandled rejection', async () => {
     const { input, target } = fixture();
     const error = new Error('Pointer lock refused');
@@ -70,6 +78,48 @@ describe('pointer input', () => {
       expect(warn).toHaveBeenCalledWith('Pointer lock request failed', error);
     } finally {
       warn.mockRestore();
+    }
+  });
+  it('ignores viewer mouse transitions during replay while live input remains admitted', () => {
+    const run = (viewerAllowed: boolean, locked: boolean) => {
+      const allowed = viewerAllowed;
+      const { input, target, document, targetListeners, windowListeners } = fixture(
+        () => true,
+        () => allowed,
+      );
+      document.pointerLockElement = locked ? target : null;
+      input.rightMouseHeld = true;
+      input.suppressRightMouseUntilRelease();
+      const read = () => ({
+        rightMousePressed: input.consumeRightMousePressed(),
+        rightMouseSuppressed: input.rightMouseHeld && !input.rightMouseActionHeld,
+        dominantUsePressed: input.intent().useDominant,
+        dominantUseDown: input.dominantUseHeld,
+      });
+      type MouseState = ReturnType<typeof read>;
+      const initial = read();
+      const transitions: MouseState[] = [];
+      for (const button of [0, 1, 2]) {
+        targetListeners.get('mousedown')!({ button } as MouseEvent);
+        transitions.push(read());
+        windowListeners.get('mouseup')!({ button } as MouseEvent);
+        transitions.push(read());
+      }
+      return { initial, transitions };
+    };
+
+    for (const locked of [false, true]) {
+      const replay = run(false, locked);
+      expect(replay.transitions, `replay mouse events with pointer lock=${locked}`).toEqual(
+        Array.from({ length: 6 }, () => replay.initial),
+      );
+      const live = run(true, locked);
+      expect(live.transitions.some((state) => state.rightMousePressed)).toBe(true);
+      expect(live.transitions.some((state) => !state.rightMouseSuppressed)).toBe(true);
+      if (locked) {
+        expect(live.transitions.some((state) => state.dominantUsePressed)).toBe(true);
+        expect(live.transitions.some((state) => state.dominantUseDown)).toBe(true);
+      }
     }
   });
   it('does not retain a dominant press refused by the active owner', () => {

@@ -4,7 +4,7 @@ import type { Resolved } from '../core/resolve.ts';
 import type { PartDef } from '../core/schema.ts';
 import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
-import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
+import { getOptic, OPTIC_TYPE_IDS, opticRailContactSolids } from './optics.ts';
 
 type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'flashlight-mount' | 'foregrip';
 
@@ -32,10 +32,14 @@ interface AttachmentSightMetadata {
   readonly ocularDiameterMetres?: number;
 }
 
+type AttachmentCoreMetadata = Omit<AttachmentMetadata, 'mountFrame'>;
+
 export interface AttachmentMetadata {
   readonly id: string;
   readonly kind: AttachmentKind;
   readonly mount: MountKind;
+  /** Local connector frame of the standalone attachment model; its normal opposes the firearm slot normal. */
+  readonly mountFrame: { readonly normal: Vec3; readonly up: Vec3 };
   readonly massKg: number;
   readonly properties: AttachmentProperties;
   /** Local sight frame for runtime fitting; the host gun transform is applied by Deadvox. */
@@ -96,16 +100,16 @@ export const attachmentMountSlot = (resolved: Resolved, partId: string, mount: M
   return undefined;
 };
 
-const railSpanNotches = (part: PartDef | undefined, mount: MountKind) => {
+const railSpanNotches = (part: PartDef | undefined, mount: MountKind, solids = part?.solids) => {
   const pitch = MOUNT_STANDARDS[mount].slotPitchU;
-  if (pitch === undefined || !part) {
+  if (pitch === undefined || !part || !solids) {
     return;
   }
   const port = part.ports.find(({ gender, mount: portMount }) => gender === 'male' && portMount === mount);
   if (!port) {
     return;
   }
-  const bounds = part.solids.map(localSolidBounds);
+  const bounds = solids.map(localSolidBounds);
   if (bounds.length === 0) {
     throw new Error(`Rail attachment ${part.family} has no solids to define its span`);
   }
@@ -168,9 +172,9 @@ const opticMetadata = (
   params: Readonly<Record<string, string>> | undefined,
   metresPerUnit: number,
   part?: PartDef,
-): AttachmentMetadata => {
+): AttachmentCoreMetadata => {
   const optic = getOptic(params?.type, params?.mountSection);
-  const span = railSpanNotches(part, optic.mount.kind);
+  const span = railSpanNotches(part, optic.mount.kind, part ? opticRailContactSolids(part.solids) : undefined);
   if (!part) {
     throw new Error(`Optic ${optic.id} has no geometry for mass metadata`);
   }
@@ -199,7 +203,7 @@ const opticMetadata = (
   };
 };
 
-const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): AttachmentMetadata => {
+const railFrontSightMetadata = (metresPerUnit: number, part?: PartDef): AttachmentCoreMetadata => {
   const axis = part?.axes.find(({ kind }) => kind === 'sight');
   const span = railSpanNotches(part, 'rail-top');
   if (!part) {
@@ -229,7 +233,7 @@ const suppressorMetadata = (
   params: Readonly<Record<string, string>> | undefined,
   part: PartDef | undefined,
   metresPerUnit: number,
-): AttachmentMetadata | undefined => {
+): AttachmentCoreMetadata | undefined => {
   const type = params?.type as keyof typeof suppressors | undefined;
   const properties = type && suppressors[type];
   if (!properties) {
@@ -247,7 +251,7 @@ const suppressorMetadata = (
   };
 };
 
-const flashlightMountMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentMetadata => {
+const flashlightMountMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentCoreMetadata => {
   const span = railSpanNotches(part, 'rail-side');
   if (!part) {
     throw new Error('Flashlight mount has no geometry for mass metadata');
@@ -261,7 +265,7 @@ const flashlightMountMetadata = (part: PartDef | undefined, metresPerUnit: numbe
   };
 };
 
-const foregripMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentMetadata => {
+const foregripMetadata = (part: PartDef | undefined, metresPerUnit: number): AttachmentCoreMetadata => {
   const span = railSpanNotches(part, 'rail-bottom');
   if (!part) {
     throw new Error('Foregrip has no geometry for mass metadata');
@@ -281,18 +285,28 @@ export const attachmentMetadata = (
   metresPerUnit: number,
   part?: PartDef,
 ): AttachmentMetadata | undefined => {
-  switch (family) {
-    case 'sight':
-      return opticMetadata(params, metresPerUnit, part);
-    case 'rail-front-sight':
-      return railFrontSightMetadata(metresPerUnit, part);
-    case 'suppressor':
-      return suppressorMetadata(params, part, metresPerUnit);
-    case 'tactical-flashlight-mount':
-      return flashlightMountMetadata(part, metresPerUnit);
-    case 'foregrip':
-      return foregripMetadata(part, metresPerUnit);
-    default:
-      return undefined;
+  const metadata = (() => {
+    switch (family) {
+      case 'sight':
+        return opticMetadata(params, metresPerUnit, part);
+      case 'rail-front-sight':
+        return railFrontSightMetadata(metresPerUnit, part);
+      case 'suppressor':
+        return suppressorMetadata(params, part, metresPerUnit);
+      case 'tactical-flashlight-mount':
+        return flashlightMountMetadata(part, metresPerUnit);
+      case 'foregrip':
+        return foregripMetadata(part, metresPerUnit);
+      default:
+        return;
+    }
+  })();
+  if (!metadata) {
+    return undefined;
   }
+  const port = part?.ports.find(({ gender, mount }) => gender === 'male' && mount === metadata.mount);
+  if (!port) {
+    throw new Error(`Attachment ${metadata.id} has no male ${metadata.mount} connector`);
+  }
+  return { ...metadata, mountFrame: { normal: port.normal, up: port.up } };
 };

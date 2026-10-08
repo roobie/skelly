@@ -1,3 +1,9 @@
+---
+read_if:
+  - you're prioritizing mobgen's design risks and milestone scope
+  - you're measuring or changing mobgen actor budgets
+---
+
 # mobgen — challenges
 
 The hard problems between mobgen and actors that work in deadvox, roughly in
@@ -12,8 +18,8 @@ in [reference/README.md](reference/README.md). deadvox's own targets are in
 ## 1. Many detailed actors in a browser
 
 **Why it's hard.** deadvox targets 60 active and 300 background zombies at
-60 fps on an Iris Xe laptop, and today's shambler is 6 boxes drawn as 6
-instanced meshes shared by every zombie. A mobgen actor is different on every
+60 fps on an Iris Xe laptop, and every one of them is a mobgen actor. Unlike a
+figure of a few shared instanced boxes, a mobgen actor is costly on every
 count:
 
 - **Draw calls.** One mesh per bone is 18 draws per actor: about 1,080 for 60
@@ -39,69 +45,47 @@ count:
   recommended far level. It comes from the same genome, so an actor's colours
   and proportions match between levels.
 
-  **BR ruling (2026-09-29):** Face dimensions are metric, proportional to
-  `height × headScale`, and independent of voxel size; calibration uses the
-  median template height. Placement remains grid-snapped, so sub-voxel details
-  may disappear in the background tier. Voxel budgets scale with inverse cell
-  volume and actor height (head groups also use `headScale`); triangle budgets
-  scale with inverse cell surface area and height. `src/core/generate.ts` rounds
-  the scaled intervals and allows one extra voxel at coarse resolutions for
-  boundary quantization. This follows the root
-  [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
+  Face dimensions are metric, proportional to `height × headScale`, and
+  independent of voxel size; calibration uses the median template height.
+  Placement remains grid-snapped, so sub-voxel details may disappear in the
+  background tier. Voxel budgets scale with inverse cell volume and actor
+  height (head groups also use `headScale`); triangle budgets scale with inverse
+  cell surface area and height. `src/core/generate.ts` rounds the scaled
+  intervals and allows one extra voxel at coarse resolutions for boundary
+  quantization. This follows the root [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected).
 
-  **BR ruling (2026-09-29, m3; clarified 2026-09-30):** Keep `full` as the default for gameplay detail (including 1/12 and 1/16 tests); expose `full` and `silhouette` as explicit caller-selected validation profiles. `generateValid` searches only at the template's full-detail size. Far LOD is 1/2 block (0.25 m) with silhouette validation; 1/4 remains supported and tested but is not a separate recommended far level. Derive it from an already full-valid genome, re-voxelizing the full-detail body rather than searching/generating a new coarse actor.
+  Keep `full` as the default for gameplay detail, including 1/12 and 1/16
+  tests; expose `full` and `silhouette` as explicit caller-selected validation
+  profiles. `generateValid` searches only at the template's full-detail size.
+  Far LOD is 1/2 block (0.25 m) with silhouette validation; 1/4 remains
+  supported and tested but is not a separate recommended far level. Derive it
+  from an already full-valid genome, re-voxelizing the full-detail body rather
+  than searching/generating a new coarse actor.
 
   The silhouette contract checks one connected body, whole-body ground contact and balance, and X width/Y height within one cell at each grid's resolution. It enforces triangle cost only: no total-voxel or group-voxel budget at any size, because voxel occupancy is not draw cost for a 20–30 voxel far actor. The connected marrow requirement is about one cell per bone (18 bones), already consuming a large share of an inverse-volume budget. Before removing that budget, the 1/2-block 100-seed sweep measured shambler 18–24 voxels against maxima 7–13, runner 19–26 against 8–12, and brute 25–32 against 16–24. At 1/4 block, shambler and runner passed; brute measured 100–180 against maxima 125–189 and exceeded the bound on 12/100 seeds. These quantized mandatory occupancies make voxel-count budgets unsuitable for far-LOD draw cost.
 
-  Triangle minimum remains 1. At 1/2 block use the named fixed per-actor draw budget `FAR_LOD_HALF_BLOCK_TRIANGLE_CAP = 400`; the measured worst on 2026-09-30 was 336 triangles (brute, seed 89). Any future increase is a deliberate change that must state fresh measurements and rationale; larger templates may need a higher cap, and BR may revisit it. At other coarse sizes (including 1/6 and 1/4) use m1's inverse-surface-area/height-scaled upper bound with no floor or margin. The `full` profile and its budgets remain unchanged. The viewer offers 1/2, 1/4 and 1/6 block sizes plus an explicit profile selector. `recommendedProfileFor` uses the thinnest full-detail upper-arm/forearm/thigh/shin flesh diameter in cells and recommends silhouette below 1.5 cells; a roughly 10 cm limb is 0.4 cells at 1/2 block, 1.2 at 1/6, and 2.4 at 1/12. It never overrides the caller's choice. Exercise every template's full-valid actors over 100 seeds at 1/6, 1/4 and 1/2; retain the pinned 1/4 full-profile foot-resolution failures and verify silhouette passes.
+  Triangle minimum remains 1. At 1/2 block use the named fixed per-actor draw budget `FAR_LOD_HALF_BLOCK_TRIANGLE_CAP` in `src/core/generate.ts`, set with headroom over the worst measured actor. Any increase is a deliberate change that must state fresh measurements and rationale; larger templates may need a higher cap, and BR may revisit it to raise the cap. At other coarse sizes (including 1/6 and 1/4) use m1's inverse-surface-area/height-scaled upper bound with no floor or margin. The `full` profile and its budgets remain unchanged. The viewer offers 1/2, 1/4 and 1/6 block sizes plus an explicit profile selector. `recommendedProfileFor` uses the thinnest full-detail upper-arm/forearm/thigh/shin flesh diameter in cells and recommends silhouette below 1.5 cells; a roughly 10 cm limb is 0.4 cells at 1/2 block, 1.2 at 1/6, and 2.4 at 1/12. It never overrides the caller's choice. Exercise every template's full-valid actors over 100 seeds at 1/6, 1/4 and 1/2; retain the pinned 1/4 full-profile foot-resolution failures and verify silhouette passes.
 
 - **A variety pool.** Generate a few dozen variants per template and reuse
   them, rather than one per zombie.
 
-**When.** Before actors go into deadvox (after milestone 1). Milestone 1 only
-measures triangles and voxels per actor (`npm run stats`).
+**Where it stands.** deadvox draws every zombie on the crowd path below; see
+`deadvox/src/render/mobActors.ts`, `MobActorMeshes`. `npm run stats` reports
+triangles and voxels per actor.
 
 **How we'll know.** deadvox's benchmark with mobgen actors: 60 active and 300
 background at 60 fps on the reference laptop, with actor rendering inside
 the frame budget. *Measure.*
 
-**Measured** (2026-09-28, `stress.html` sweep on the reference laptop, 11th
-gen Intel with Iris Xe; actors walking on flat ground, no game running):
-
-| Actors | One mesh per bone: CPU ms (pose + render), fps | One skinned mesh per actor: CPU ms, fps |
-| --- | --- | --- |
-| 60 | 4.3 + 3.5, 60 | 4.6 + 1.5, 60 |
-| 120 | 8.4 + 7.7, 56.5 | 8.1 + 3.0, 59.8 |
-| 240 | 18.0 + 16.9, 28.5 | 18.2 + 6.3, 30.1 |
-
-The GPU is not the limit: 365k triangles in 121 draws held 60 fps. One draw
-per actor cuts render CPU by about 2.5×. The limit is posing in JavaScript,
-about 75 µs per actor per frame, so 60 actors take about 6 ms of the frame
-before the game does anything. Next: make posing allocation-free, pose far
-actors less often, and cache per-step work, aiming for about 20 µs per actor.
-
-After that work (2026-09-29, same laptop, distance LOD on: re-pose every 2nd
-frame beyond 15 m, every 3rd beyond 30 m):
-
-| Actors | One mesh per bone: CPU ms (pose + render), fps | One skinned mesh per actor: CPU ms, fps |
-| --- | --- | --- |
-| 60 | 1.2 + 6.0, 60 | 1.1 + 1.9, 60 |
-| 120 | 1.7 + 9.2, 60 | 2.6 + 5.2, 60 |
-| 240 | 3.5 + 21.4, 39.6 | 3.9 + 9.1, 43.1 |
-
-Posing 60 skinned actors fell from 4.6 ms to 1.1 ms, so 60 actors now cost
-about 3 ms of CPU in all. Render CPU is now the larger share, and at 240
-actors the frame no longer fits even though the CPU work does (13 ms): the
-GPU (731k triangles) or unmeasured browser work is the limit there. The
-skinned 240 run also had a 1% low of 2.2 fps, one long stall that is not yet
-explained.
-
-A later run (same day) had skinned losing to one mesh per bone at 240 (40
-against 53 fps) with the same kind of stall at 120 and 240, so a third
-path was added. **Crowd**: one `InstancedMesh` per variant, every actor's
-bone matrices in one shared float texture uploaded once per frame, and one
-matrix fetch per vertex (three.js skinning does four). With it
-(2026-09-29, same laptop, LOD on, 12 variants):
+**Measured** (`stress.html` sweep on the reference laptop, 11th gen Intel with
+Iris Xe; actors walking on flat ground, no game running). One mesh per bone and
+one skinned mesh per actor were measured first. The GPU was not the limit;
+posing in JavaScript was, until posing became allocation-free and far actors
+were re-posed less often. Render CPU then grew with the actor count on both
+paths, so a third path was added. **Crowd**: one `InstancedMesh` per variant,
+every actor's bone matrices in one shared float texture uploaded once per
+frame, and one matrix fetch per vertex (three.js skinning does four). With it
+(2026-09-29, distance LOD on, 12 variants):
 
 | Actors | One mesh per bone | One skinned mesh per actor | Crowd |
 | --- | --- | --- | --- |
@@ -110,12 +94,9 @@ matrix fetch per vertex (three.js skinning does four). With it
 | 240 | 2.2 + 12.1, 60 | 2.7 + 5.7, 60 | 3.8 + 0.8, 60 |
 
 Crowd draws 13 calls at any count, and its render CPU stays under 1 ms, so
-240 actors cost under 5 ms of CPU and posing is again the larger share. In
-this run all three paths held 60 fps and no frame took over 100 ms, so the
-laptop was faster than in the run before, and the stalls can't be credited
-to the crowd path; the long-frame log will say where they come from if they
-return. Crowd is the path for deadvox: it's the only one whose render cost
-doesn't grow with the number of actors.
+240 actors cost under 5 ms of CPU and posing is again the larger share. Crowd
+is the path for deadvox: it's the only one whose render cost doesn't grow with
+the number of actors.
 
 ## 2. Reading well at game distance
 
@@ -135,7 +116,7 @@ voxel count, not the look.
   the template's size are painted, not carved: eye sockets are carved only at
   3.5 cm voxels or smaller.
 - **Test in the game's scene.** Place actors in deadvox lighting (day, dusk,
-  night with fog, flashlight) at 5, 15 and 40 m, next to the old box shambler.
+  night with fog, flashlight) at 5, 15 and 40 m.
 - **Per-vertex ambient occlusion,** as deadvox's chunks have, if faces read
   flat.
 
