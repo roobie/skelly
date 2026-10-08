@@ -41,6 +41,8 @@ vec3 srgbToLinear(vec3 c) {
 // the group only scales, so it is the world normal too).
 // The id is `flat` (provoking vertex; never interpolated, so it can't extrapolate).
 const PATTERN_VARYING = 'flat varying float vPattern;\ncentroid varying vec3 vWorld;\ncentroid varying vec3 vFaceN;';
+export const WEATHERING_BASE_GRIME_FLOOR = 0.22;
+export const WEATHERING_MIN_RED_TINT = 0.72;
 
 // Wide-radius ambient occlusion (core/occlusion.ts), a per-vertex factor in 0..1 from the mesher. It
 // scales only the indirect irradiance (hemisphere and ambient light), never the sun or flashlight.
@@ -151,7 +153,7 @@ if (uWeathering > 0.0) {
   float sheltered = clamp(vOcclusion, 0.0, 1.0);
   float broadNoise = vnoise(patUV / uWeatheringVariationScale);
   float broadStrength = mix(1.0, 0.24 + 1.52 * broadNoise, uWeatheringVariation);
-  float cornerGrime = (1.0 - sheltered) * (0.22 + 0.34 * weatherPatch) + vWeather.y * 0.3;
+  float cornerGrime = (1.0 - sheltered) * (${WEATHERING_BASE_GRIME_FLOOR} + 0.34 * weatherPatch) + vWeather.y * 0.3;
   float grime = cornerGrime * broadStrength;
   float streakNoise = vnoise(vec2(patUV.x * 3.1 + patSeed, patUV.y * 0.16));
   float streak = verticalFace * vWeather.x * smoothstep(0.48, 0.78, streakNoise) * (1.0 - smoothstep(0.0, 0.75, fract(patUV.y * 0.42))) * broadStrength;
@@ -166,7 +168,7 @@ if (uWeathering > 0.0) {
   float mossCutoff = uMossThreshold - uMossBias * environment;
   float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uWeatheringVariation;
   float moss = baseMoss * broadStrength + mossPatches;
-  vec3 tint = vec3(0.72, 0.72 + 0.08 * moss, 0.68 - 0.06 * streak);
+  vec3 tint = vec3(${WEATHERING_MIN_RED_TINT}, ${WEATHERING_MIN_RED_TINT} + 0.08 * moss, 0.68 - 0.06 * streak);
   diffuseColor.rgb *= mix(vec3(1.0), tint, weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78));
 }`,
       );

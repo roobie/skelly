@@ -8,6 +8,7 @@ import { createServer } from 'vite';
 import { pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { browserStageUrl } from './stage-mode.mjs';
+import { measureHamletWeathering } from './weatheringPixels.mjs';
 
 const { firefox } = await import('playwright');
 const projectRoot = fileURLToPath(new URL('../..', import.meta.url));
@@ -20,10 +21,11 @@ const observation = {
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(
+    const exposed = code.replace(
       marker,
-      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
+      `  Object.assign(globalThis, { firefoxUiTest: { engine, session, input, registry, view, camera, spectatorCameraEnabled: () => spectatorCameraEnabled, THREE: FirefoxTHREE, corrugatedPattern: FirefoxBlockPatterns.indexOf('corrugated'), minimumShaderSignal: FirefoxGrimeFloor * (1 - FirefoxMinRedTint) } });\n${marker}`,
     );
+    return `import * as FirefoxTHREE from 'three';\nimport { BLOCK_PATTERNS as FirefoxBlockPatterns } from '../core/schema.ts';\nimport { WEATHERING_BASE_GRIME_FLOOR as FirefoxGrimeFloor, WEATHERING_MIN_RED_TINT as FirefoxMinRedTint } from '../render/chunks.ts';\n${exposed}`;
   },
 };
 const vite = await createServer({
@@ -348,11 +350,7 @@ try {
   pageErrors.length = 0;
   consoleErrors.length = 0;
   await page.goto(
-    browserStageUrl(
-      'firefox-ui',
-      `http://127.0.0.1:${address.port}/?debug=1&site=testHouse&seed=1&radius=64&post=0&sunshadow=0&torchshadow=0`,
-      'pixel',
-    ),
+    browserStageUrl('firefox-ui', `http://127.0.0.1:${address.port}/?debug=1&site=hamlet&seed=73&radius=64`, 'pixel'),
   );
   await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
     timeout: 30_000,
@@ -363,6 +361,18 @@ try {
     null,
     { timeout: 60_000 },
   );
+  await page.waitForFunction(
+    () => {
+      const { engine } = globalThis.firefoxUiTest;
+      const { blockSize } = engine.config.scale;
+      return engine.streamer.unmeshedColumns(engine.spawn.pos[0] / blockSize, engine.spawn.pos[2] / blockSize, 2) === 0;
+    },
+    null,
+    { timeout: 60_000 },
+  );
+  await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
+  await pressAction(page, 'ui.main-menu-toggle');
+  await page.waitForFunction(() => globalThis.firefoxUiTest.session.sim.paused, null, { timeout: 5000 });
   const weatheringRenders = await page.evaluate(() => {
     const { engine } = globalThis.firefoxUiTest;
     const content = engine.config.weathering;
@@ -391,9 +401,45 @@ try {
     [],
     'Firefox chunk shaders compile',
   );
+  const weatheringPixels = await measureHamletWeathering(page);
+  process.stdout.write(
+    `Weathering pixel measurement: ${JSON.stringify({
+      size: weatheringPixels.size,
+      metric: weatheringPixels.metric,
+      buildingPixels: weatheringPixels.buildingPixels,
+      weatherablePixels: weatheringPixels.weatherablePixels,
+      weatherableFraction: weatheringPixels.weatherableFraction,
+      differences: weatheringPixels.differences,
+      maxRelativeWeatherableChange: weatheringPixels.maxRelativeWeatherableChange,
+      maxRelativeZeroStrengthChange: weatheringPixels.maxRelativeZeroStrengthChange,
+      zeroStrengthWouldPass: weatheringPixels.maxRelativeZeroStrengthChange > weatheringPixels.derivedRelativeThreshold,
+      derivedRelativeThreshold: weatheringPixels.derivedRelativeThreshold,
+      closeupPixels: weatheringPixels.groundWallPixels,
+      artifactDirectory: 'test-results/weathering/',
+    })}\n`,
+  );
+  assert.deepEqual(
+    consoleErrors.filter((error) => error.includes('THREE.WebGLProgram: Shader Error')),
+    [],
+    'Firefox measurement mask shader compiles',
+  );
+  assert.deepEqual(
+    weatheringPixels.beforeCamera,
+    weatheringPixels.afterCamera,
+    'weathering states share one paused camera',
+  );
+  assert.equal(
+    weatheringPixels.maxRelativeZeroStrengthChange > weatheringPixels.derivedRelativeThreshold,
+    false,
+    'the positive pixel assertion fails for the zero-strength control',
+  );
+  assert.ok(
+    weatheringPixels.maxRelativeWeatherableChange > weatheringPixels.derivedRelativeThreshold,
+    `full-strength weathering changes a weatherable building pixel by ${weatheringPixels.maxRelativeWeatherableChange.toFixed(5)} relative luminance; shader-derived minimum is ${weatheringPixels.derivedRelativeThreshold.toFixed(5)}`,
+  );
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
-    'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer and rendered chunk shader compilation. Native lock acquisition is NOT tested.\n',
+    'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer and visible weathering changes on hamlet building pixels. Native lock acquisition is NOT tested.\n',
   );
 } finally {
   await browser?.close();
