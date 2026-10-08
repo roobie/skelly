@@ -975,6 +975,12 @@ describe('content references', () => {
         site.palette[key] = { ...entry, loot: armoury.id };
       }
     }
+    expect(armoury.military).toBe(true);
+    expect(
+      Object.values(site.palette).some(
+        (entry) => typeof entry === 'object' && 'loot' in entry && entry.loot === armoury.id,
+      ),
+    ).toBe(true);
     // Reuse the already validated base registry; this scenario only changes a known loot table on an existing template.
     const templates = new Map(baseRegistry.templates);
     templates.set(site.id, site);
