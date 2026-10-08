@@ -14,7 +14,7 @@ const fixture = () => {
   };
 };
 describe('quickbar gesture admission', () => {
-  it('defers F interaction until release or R’s hold threshold', () => {
+  it('fires a hold at the threshold and a tap just below it', () => {
     const action = INPUT_BINDINGS.find(({ id }) => id === 'world.interact')?.id;
     if (!action) {
       throw new Error('F interaction binding is missing');

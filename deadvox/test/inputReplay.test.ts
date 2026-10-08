@@ -119,9 +119,8 @@ const applyCommand = (runtime: ReturnType<typeof createRuntime>, payload: Replay
       }
       return pocketGroundItem(runtime.inventory, runtime.handling, item);
     },
-    interact: (uid) => {
-      const entity = runtime.entities.byUid(uid);
-      return entity ? runtime.session.search(entity) : 'The target is no longer available';
+    interact: () => {
+      throw new Error('Furniture interaction is not implemented in the replay test harness');
     },
     craftStart: (recipeId, preference) => runtime.session.crafting.start(recipeId, preference),
     craftContinue: () => {

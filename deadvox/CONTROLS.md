@@ -55,14 +55,12 @@ controls remain proposals until their issue is implemented.
 - **Interaction and reserved lean inputs (2026-09-27):** F interacts; Q and E
   remain reserved. Reserve their physical positions across contexts, including
   debug, rather than inventing no-op lean commands.
-- **Loose-item pickup (BR, 2026-10-07 22:57:03, br-44):** “it should be possible to
-  pick up loose items directly from the normal game view - i.e. point center of
-  screen at an item on the ground and press F to grab it and put it in inventory,
-  or press-and-hold F to grab it and keep it in hands, wielded. We owe it an
-  animation”. When the nearest center target is a ground item, tap F to pocket it
-  and hold F to wield it; doors and containers keep their tap interaction. F uses
-  one shared reach and target choice: exact ties favor furniture, while tied ground
-  items resolve by item UID. `src/game/play.ts`, `interactionTargetAt` and
+- **Loose-item pickup:** Players can grab ground items directly from the normal
+  game view, tapping F to pocket an item or holding F to wield it. This keeps
+  looting in the normal game flow, while a simple reach animation makes the action
+  visible. Doors and containers keep their tap interaction. F uses one shared
+  reach and target choice: exact ties favor furniture, while tied ground items
+  resolve by item UID. `src/game/play.ts`, `interactionTargetAt` and
   `completeWorldInteraction`, route the gesture through the existing inventory
   handling owner; `src/render/grabPose.ts`, `grabPose`, supplies the visual-only reach.
 - **Main menu and browser menu (2026-09-28):** F9 is the main menu; F10 belongs
