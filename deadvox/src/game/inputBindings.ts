@@ -205,7 +205,11 @@ export const INPUT_BINDINGS: readonly Binding[] = [
   ),
 ];
 export const POINTER_ACTIONS = [
-  { id: 'hand.use-dominant', description: 'Use dominant hand', label: 'Left click' },
+  {
+    id: 'hand.use-dominant',
+    description: 'Use dominant hand; hold to fire automatically when ready',
+    label: 'Left click',
+  },
   { id: 'hand.off-instant', description: 'Instant off-hand use', label: 'Mouse 5' },
   { id: 'stance.ready', description: 'Hold to ready a firearm or enter en-garde', label: 'Right mouse' },
   { id: 'aim.ads-toggle', description: 'Toggle sights while firearm is ready', label: 'Mouse 3' },
