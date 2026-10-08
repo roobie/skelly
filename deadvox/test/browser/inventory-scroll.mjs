@@ -27,7 +27,7 @@ const content = [
           name: 'Scroll rack',
           size: [1, 1, 1],
           color: '#494b4e',
-          container: { pockets: [{ name: 'Rack', grid: [5, 2], handlingSimSeconds: 0.1 }] },
+          container: { pockets: [{ name: 'Rack', grid: [5, 6], handlingSimSeconds: 0.1 }] },
         },
       ],
       items: [
@@ -202,7 +202,11 @@ try {
   browser =
     engine === 'firefox'
       ? await firefox.launch({ headless: false })
-      : await launchChromium('inventory-scroll', { headless: true });
+      : await launchChromium('inventory-scroll', {
+          headless: true,
+          // Exercise the double-scrollbar width budget with desktop-style scrollbars.
+          ignoreDefaultArgs: ['--hide-scrollbars'],
+        });
   const page = await browser.newPage({ viewport: { width: 1280, height: 480 } });
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
