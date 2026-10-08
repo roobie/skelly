@@ -21,8 +21,9 @@ Every accepted shot selects its seeded variant and starts after the shared
 variant load resolves. Pending loads do not occupy playback slots. Fetch/decode
 remain deduplicated per variant; no separate audio queue or scheduler is added.
 
-The browser playback limit retains **32** full voices per gunshot event. A new shot steals the oldest
-full voice: its gain ramps linearly to zero over **10ms**, then WebAudio stops it.
+Each gunshot event keeps up to **32** full voices (the per-event cap in
+`src/game/audio.ts`). A new shot steals the oldest full voice: its gain ramps
+linearly to zero over **10ms**, then WebAudio stops it.
 d18-3 retains up to **32** retiring crossfade tails per event, so all eight retirees
 in the review's 40-shot same-quantum cold burst receive the full fade instead of
 hard-stopping seven of them. The physical ceiling is **64 connected sources** per

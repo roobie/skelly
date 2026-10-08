@@ -138,8 +138,9 @@ invalidates cached paths.
 background beelines in Slice 3. Abstract hordes remain Slice 4 work.
 
 **How we'll know.** 60 active and 300 background zombies at 60 fps on the
-reference laptop, with the simulation under 4 ms a frame. *Measure.* A run with
-100 detailed shamblers reached 60 fps, but the zombie tick used 11 ms p95 and
+reference laptop, with the simulation under 4 ms a frame. *Measure.* A
+reference-laptop run with 100 detailed shamblers reached 60 fps, but the zombie
+tick used 11 ms p95 and
 1% of frames exceeded 18 ms. That limited headroom is why active simulation
 needs a strict cap and cheaper tiers.
 `src/bench/shamblers-cpu.mjs` isolates simulation cost from rendering, while

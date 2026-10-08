@@ -91,6 +91,6 @@ The same-workload cut-out experiment applied an alpha mask to camera and depth
 shadows, retaining about 63.6% of each leaf face. It changed neither voxel rules
 nor geometry, draw-call totals or peak mesh payload bytes; ordered runs showed
 no reliable budget advantage. Opaque drawing remains. The reference-GPU runs
-met the frame budget for fixed density and the frozen field by day and night:
-60 fps, no slow frames and no sprint holes. Semi-occluding leaves and
+met the frame budget for fixed density 0.75 by day, and for the frozen field by
+day and night: 60 fps, no slow frames and no sprint holes. Semi-occluding leaves and
 ground-level foliage remain follow-ups in #187.

@@ -93,7 +93,7 @@ the trigger for that change.
 Starting recipes are explicit and filtered to loaded IDs;
 workbench-dependent base recipes join that source, while new arbitrary recipes
 are not automatically known. Reachable books add recipe knowledge without
-changing item ownership. Books teach recipes only. Practice may come from any
+changing item ownership. Books teach recipes only, for now. Practice may come from any
 activity; craft completion is its first source. In Slice 2, only finishing a
 craft awards practice; take-apart work does not.
 `src/core/bookReading.ts`, `bookReadingHooks`, owns reading admission and
@@ -244,4 +244,4 @@ The panel remains a projection: `src/ui/crafting.ts`, `renderCrafting`, forwards
 This is mixed feature/validation/consolidation work, **not an isolated or
 line-reducing refactor**. The staged report names source, test, doc and content
 deltas separately; the final slice is still gated by long-action proofs and
-BR's in-game panel review.
+in-game panel approval.

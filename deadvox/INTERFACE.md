@@ -80,9 +80,9 @@ The rules for a cue:
 - **It never spams.** Each cue has a minimum interval that shrinks with severity,
   and two cues don't start in the same second.
 - **It's tunable data** (thresholds, intervals, strengths) in the content pack,
-  like the other tunables, and tuned by BR in game.
+  like the other tunables, and judged by BR in game.
 
-Cues per state (initial set; sound column):
+Cues per state (a starting set; the sound column is BR's choice):
 
 | State | Seen | Heard |
 |---|---|---|
@@ -159,7 +159,8 @@ so class 4 is made mechanical:
 
 ## Readying before acting (#267; Slice 3.1)
 
-**Combat is modal.** Holding a weapon is not the same as being ready to use it.
+**Combat is modal, as in DayZ.** Holding a weapon is not the same as being
+ready to use it.
 Firearms fire only while ready and never while sprinting; ready movement stacks
 with crouch pace. Firearms combat governs ready movement and related handling;
 melee combat governs block success. The tiered practice contract is in
@@ -226,9 +227,9 @@ second widget or key instruction. See `src/ui/hud.ts`,
   `src/game/firearmAim.ts`, `firearmBoreRay` and
   `firearmBoreTarget`, share the shot ray and its reported hit; the crosshair
   itself is projected by `src/ui/playHud.ts`, `projectCrosshairScreenPosition`.
-  The firearm's ready pose keeps the wrist rotation on the hand rather than
-  shifting the gun angle; `src/core/heldPose.ts`, `readyFirearmPose`, retains
-  the hand placement.
+  The firearm's ready pose uses the melee-ready hand placement without its wrist
+  rotation, so the gun keeps its own angle; see `src/core/heldPose.ts`,
+  `readyFirearmPose`.
   A separate X at screen centre lives in `src/debug/index.ts`, apart from
   the optional crosshair. In ADS the undeviated sight aligns to the fixed view;
   recoil and handling then move the firearm, its optic window and its bore
@@ -253,7 +254,7 @@ second widget or key instruction. See `src/ui/hud.ts`,
 | Clock readout | meta, opt-in | diegetic | a watch, when you look at your wrist or hold one |
 | Crosshair | meta, opt-in | none | shipped: none, ever; the optional development mark follows a wielded firearm's bore at its current raise progress, disappearing when its projected point leaves the viewport |
 | Interaction hints ("looking at…", "F: open") | meta, opt-in | spatial | a faint outline on the one usable thing you look at within reach; no text, no key name |
-| Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text (the fix just requested) |
+| Quickbar | meta, opt-in | meta | fine as a frame of slots; no instructional text |
 | Damage vignette and tilt | bodily | bodily | shipped as it is |
 | Rest and sleep screen | meta | bodily plus meta | the spinning clock and edge darkening can stay; the stop hint is built by `src/ui/rest.ts`, `stopHint` |
 | Interruption prompt | meta, instruction | meta, choice | `src/ui/rest.ts`, `restTemplate`, offers Stop only when the action can be cancelled; key names come from the hint channel |
@@ -283,6 +284,7 @@ simulation facts accessible without undermining diegesis.
    from `src/debug`.
 6. **Character sounds:** vocal pain and strain sounds are noise events with a
    radius in data, so BR can judge their effect in play and tune or disable them.
+   Variation comes from random but curated picks for the events we have.
 7. **Ready-firearm crosshair:** the optional mark reports where the bore line
    meets the world, not the random spread, and does not steer the shot. With
    `?debug=1`, a separate X marks screen centre. During a rack or magazine job,
@@ -290,9 +292,9 @@ simulation facts accessible without undermining diegesis.
 
 ## Order of work
 
-1. Keep the hint channel, bindings-sourced key labels and guard test in place.
-2. Move instructional strings into the hint table.
-3. Keep the playtest profile separate from debug tools.
-4. Maintain the player-sound system with Web Audio and content-owned CC0 sources.
+1. Add the spatial outline for the one usable thing within reach.
+2. Move remaining procedural notices into the hint table.
+3. Shape the diegetic first-run introduction from playtest findings.
+4. Make the clock diegetic through a watch the player can inspect or hold.
 5. Develop bodily cues one state at a time; retire a HUD line only after BR has
    judged its replacement cue in play.

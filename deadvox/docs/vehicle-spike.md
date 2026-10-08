@@ -205,7 +205,7 @@ None of these is built, and each waits for the event that needs it:
 - **A baked mesh per parked vehicle, and a distance level of detail:** when several
   vehicles share a view in the game.
 - **The content schema, pack loading and validation of the baked voxel grids:** after
-  choosing the source of truth below. The workshop's TypeScript blueprint reference is an
+  BR chooses the source of truth below. The workshop's TypeScript blueprint reference is an
   interim placement based on the spike. It does not establish the vehicle-content source of truth.
 - **Cargo as items in storage rather than fittings** (the 4×4's spare wheel is a fitting):
   when storage is built.
