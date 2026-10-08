@@ -8,6 +8,7 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { PLAYER } from '../../src/game/player.ts';
 import { RELOAD_GESTURE_MS } from '../../src/game/reloadInput.ts';
 import { GARDEN_GATE, HOUSE_OFFSET } from '../../src/game/testHouse.ts';
 import { launchChromium } from './chromium.mjs';
@@ -191,8 +192,8 @@ try {
     const releaseMove = await holdAction(page, action);
     try {
       const result = await page.evaluate(
-        ({ coordinate, goal }) => {
-          const { session } = globalThis.pumpHandlingTest;
+        ({ coordinate, goal, speedMetresPerSecond }) => {
+          const { engine, session } = globalThis.pumpHandlingTest;
           const start = [...session.body.pos];
           const startCoordinate = start[coordinate];
           const direction = Math.sign(goal - startCoordinate);
@@ -206,10 +207,11 @@ try {
           // This synchronous loop blocks the live RAF loop; as in waitForWork, these are the only
           // frames advancing the session while the actual held input drives the player.
           const frameSeconds = 1 / 60;
+          const distanceMetres = Math.abs(goal - startCoordinate) * engine.config.scale.blockSize;
+          const expectedFrames = Math.ceil(distanceMetres / speedMetresPerSecond / frameSeconds);
+          // Authored walking pace plus margin covers load/stance slowdown and tick quantization; initial velocity is zero.
+          const frameLimit = Math.max(1, Math.ceil(expectedFrames * 4) + 2);
           session.frame(frameSeconds);
-          const speed = Math.abs(session.body.vel[coordinate]);
-          const expectedFrames = speed > 0 ? Math.ceil(Math.abs(goal - startCoordinate) / speed / frameSeconds) : 0;
-          const frameLimit = Math.max(1, Math.ceil(expectedFrames * 1.5) + 2);
           let frames = 1;
           while (!complete() && frames < frameLimit) {
             session.frame(frameSeconds);
@@ -220,12 +222,12 @@ try {
             start,
             current: [...session.body.pos],
             goal,
-            speed,
+            speedMetresPerSecond,
             frames,
             frameLimit,
           };
         },
-        { coordinate: axis, goal: target },
+        { coordinate: axis, goal: target, speedMetresPerSecond: PLAYER.walk },
       );
       assert.equal(result.complete, true, `player could not reach route target: ${JSON.stringify(result)}`);
     } finally {
@@ -247,10 +249,12 @@ try {
         throw new Error('Player does not fit through the test-house garden gate');
       }
       // The eastward sprint may step past its target; aim inside the gap so the body stays clear of the east post.
-      const gateX = gateCentreX - gateClearance / 2;
+      const gateX = gateCentreX - gateClearance;
       return {
         lockerUid: rack.uid,
         corridorZ: (houseOffset[1] + gardenGate.approachZ) / blockSize,
+        gateCentreX,
+        gateClearance,
         gateX,
         beyondGateZ: (houseOffset[1] + gardenGate.exitZ) / blockSize,
         enterX: rack.pos[0] - 1,
@@ -261,6 +265,35 @@ try {
   );
   await moveTo('movement.right', 2, lockerRoute.corridorZ);
   await moveTo('movement.forward', 0, lockerRoute.gateX);
+  const gatePosition = await page.evaluate(
+    ({ centre, clearance }) => {
+      const { session } = globalThis.pumpHandlingTest;
+      const [x] = session.body.pos;
+      const minX = centre - clearance;
+      const maxX = centre + clearance;
+      return { x, centre, minX, maxX, inside: x >= minX && x <= maxX };
+    },
+    { centre: lockerRoute.gateCentreX, clearance: lockerRoute.gateClearance },
+  );
+  if (!gatePosition.inside) {
+    await moveTo(gatePosition.x > gatePosition.maxX ? 'movement.backward' : 'movement.forward', 0, gatePosition.centre);
+  }
+  const alignedGatePosition = await page.evaluate(
+    ({ centre, clearance }) => {
+      const [x] = globalThis.pumpHandlingTest.session.body.pos;
+      return {
+        x,
+        minX: centre - clearance,
+        maxX: centre + clearance,
+        inside: x >= centre - clearance && x <= centre + clearance,
+      };
+    },
+    { centre: lockerRoute.gateCentreX, clearance: lockerRoute.gateClearance },
+  );
+  assert.ok(
+    alignedGatePosition.inside,
+    `player does not fit inside garden gate opening: ${JSON.stringify(alignedGatePosition)}`,
+  );
   await moveTo('movement.right', 2, lockerRoute.beyondGateZ);
   await moveTo('movement.forward', 0, lockerRoute.enterX);
   await moveTo('movement.left', 2, lockerRoute.rackZ);

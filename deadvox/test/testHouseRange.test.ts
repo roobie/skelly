@@ -138,7 +138,7 @@ const buildRangeWalkFixture = () => {
   if (gateClearance <= 0) {
     throw new Error('Player does not fit through the test-house garden gate');
   }
-  const gateX = gateCentreX - gateClearance / 2;
+  const gateX = gateCentreX - gateClearance;
   const waypoints: RangeWalkWaypoint[] = [
     { axis: 2, target: corridorZ, forward: 0, right: 1 },
     { axis: 0, target: gateX, forward: 1, right: 0 },
