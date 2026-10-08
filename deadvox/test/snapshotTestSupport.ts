@@ -134,6 +134,8 @@ export function createRuntime(
     ready?: (x: number, z: number) => boolean;
     zombieReady?: (x: number, z: number) => boolean;
     wobbleFlatOverride?: number;
+    wobbleNoiseOverride?: boolean;
+    wobbleNoiseScaleOverride?: number;
     sampleAtPlayerTick?: (
       tick: number,
       live: PlayerInputSample,
@@ -198,6 +200,8 @@ export function createRuntime(
     start: options.start ?? defaultClock.start,
     spawn,
     wobbleFlatOverride: options.wobbleFlatOverride,
+    wobbleNoiseOverride: options.wobbleNoiseOverride,
+    wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
     ready: options.ready ?? (() => true),
     ...(options.zombieReady ? { zombieReady: options.zombieReady } : {}),
     controls: {

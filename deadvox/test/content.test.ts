@@ -111,6 +111,26 @@ describe('content', () => {
     expect(issues.some(({ path }) => path.endsWith('.combat.firearms.rackFactorHalfLifeLevels'))).toBe(true);
   });
 
+  it('rejects invalid OU wobble tuning', () => {
+    const source = base.find((file) => file.source === 'recipes.json')!;
+    const data = structuredClone(source.data) as {
+      skills: { id: string; combat?: { firearms?: Record<string, unknown> } }[];
+    };
+    const firearms = data.skills.find(({ id }) => id === 'firearms_combat')!.combat!.firearms!;
+    firearms.wobbleNoiseReversionRatePerSimSecond = 0;
+    firearms.wobbleNoiseSigmaRadiansPerSqrtSecond = -0.01;
+    firearms.wobbleNoiseSmoothingSimSeconds = 0;
+    const { issues } = buildRegistry([{ source: source.source, data }]);
+
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseReversionRatePerSimSecond'))).toBe(
+      true,
+    );
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSigmaRadiansPerSqrtSecond'))).toBe(
+      true,
+    );
+    expect(issues.some(({ path }) => path.endsWith('.combat.firearms.wobbleNoiseSmoothingSimSeconds'))).toBe(true);
+  });
+
   it('rejects incomplete per-firearm skill-zero factors', () => {
     const issues = validateContent({
       source: 'fixture-firearm.json',

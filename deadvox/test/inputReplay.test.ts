@@ -1342,6 +1342,12 @@ describe('input replay', () => {
       }),
     ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
     expect(flatEncoded).toBe(false);
+
+    const noiseRuntime = createRuntime(undefined, false, undefined, { wobbleNoiseOverride: true });
+    expect(noiseRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
+    expect(() =>
+      withReplayExportGuard(noiseRuntime.session.hasFirearmHandlingOverrides(), () => new Uint8Array([1])),
+    ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
   });
 
   it('rejects a replay whose embedded start save has an incompatible simulation identity', async () => {

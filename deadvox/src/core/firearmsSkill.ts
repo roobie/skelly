@@ -53,6 +53,9 @@ export interface FirearmsCombatTuning {
   readonly wobbleLunePhaseOffsetRadians: number;
   readonly wobbleJitterShare: number;
   readonly wobbleJitterAmplitudeFraction: number;
+  readonly wobbleNoiseReversionRatePerSimSecond: number;
+  readonly wobbleNoiseSigmaRadiansPerSqrtSecond: number;
+  readonly wobbleNoiseSmoothingSimSeconds: number;
   readonly reloadFactorFloor: number;
   readonly reloadFactorHalfLifeLevels: number;
   readonly rackFactorFloor: number;

@@ -53,6 +53,18 @@ export const TEMPORAL_FIELDS = [
   },
   { path: 'skills.combat.firearms.raiseMinimumSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'skills.combat.firearms.raiseRangeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
+  {
+    path: 'skills.combat.firearms.wobbleNoiseReversionRatePerSimSecond',
+    clock: 'Sim',
+    unit: 'PerSecond',
+    dimension: 'rate',
+  },
+  {
+    path: 'skills.combat.firearms.wobbleNoiseSmoothingSimSeconds',
+    clock: 'Sim',
+    unit: 'Seconds',
+    dimension: 'duration',
+  },
   { path: 'senses.crouch.speedMetresPerSimSecond', clock: 'Sim', unit: 'PerSecond', dimension: 'rate' },
   { path: 'senses.light.throwChargeSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },
   { path: 'senses.light.throwMinimumHoldSimSeconds', clock: 'Sim', unit: 'Seconds', dimension: 'duration' },

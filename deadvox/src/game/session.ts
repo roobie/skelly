@@ -6,7 +6,7 @@
 
 import type { Body as MobBody } from '@mobgen/core/body.ts';
 import { zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
-import { AimController } from '../core/aim.ts';
+import { AimController, type AimWobbleNoiseTuning } from '../core/aim.ts';
 import { type BlockEntity, searchTime } from '../core/blockEntities.ts';
 import { bodyRegionForHitArea } from '../core/body.ts';
 import { bookReadingHooks } from '../core/bookReading.ts';
@@ -122,12 +122,16 @@ const createSessionAim = ({
   restored,
   character,
   wobbleFlatOverride,
+  wobbleNoiseOverride,
+  wobbleNoiseScaleOverride,
 }: {
   tuning: FirearmsCombatTuning;
   seed: number;
   restored: SaveSnapshot | undefined;
   character: Character;
   wobbleFlatOverride: number | undefined;
+  wobbleNoiseOverride: boolean | undefined;
+  wobbleNoiseScaleOverride: number | undefined;
 }): AimController => {
   const footstepClock = restored?.character.playerAudio.footstepClock ?? initialFootstepClock();
   const jitterSeed = Rng.stream(restored?.character.simulation.seed ?? seed, 'player-aim-wobble').int(0, 0xff_ff_ff_ff);
@@ -141,6 +145,16 @@ const createSessionAim = ({
       jitterAmplitudeFraction: tuning.wobbleJitterAmplitudeFraction,
     },
     jitterSeed,
+    ...(wobbleNoiseOverride
+      ? {
+          wobbleNoise: {
+            reversionRatePerSimSecond: tuning.wobbleNoiseReversionRatePerSimSecond,
+            sigmaRadiansPerSqrtSecond: tuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+            smoothingSimSeconds: tuning.wobbleNoiseSmoothingSimSeconds,
+          } satisfies AimWobbleNoiseTuning,
+          wobbleNoiseStrengthScale: wobbleNoiseScaleOverride ?? 1,
+        }
+      : {}),
     ...(restored ? { state: restored.character.aim } : {}),
     variance: firearmsSkillEffects(firearmsSkillLevel(character), tuning).variance,
     stridePhase: footstepClock.stridePhase,
@@ -331,6 +345,10 @@ export interface SessionOptions {
   debug?: () => SessionDebug | undefined;
   /** Debug-only wobble vertical/horizontal ratio override. */
   wobbleFlatOverride?: number | undefined;
+  /** Debug-only replacement of per-step aim jitter with OU noise. */
+  wobbleNoiseOverride?: boolean | undefined;
+  /** Debug-only multiplier for authored OU noise strength. */
+  wobbleNoiseScaleOverride?: number | undefined;
   /**
    * Continue from a save. Inventory and block-entity state are restored into the
    * game's shared `entities` object. Re-streamed columns are safe: entity anchors and
@@ -497,6 +515,8 @@ export const createSession = (options: SessionOptions) => {
     restored,
     character,
     wobbleFlatOverride: options.wobbleFlatOverride,
+    wobbleNoiseOverride: options.wobbleNoiseOverride,
+    wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
   });
   const { entities } = inventory;
   const quickbar = new Quickbar();
@@ -1232,6 +1252,8 @@ export const createSession = (options: SessionOptions) => {
     },
     hasFirearmHandlingOverrides: () =>
       options.wobbleFlatOverride !== undefined ||
+      options.wobbleNoiseOverride === true ||
+      options.wobbleNoiseScaleOverride !== undefined ||
       firearms.hasSkillZeroHandlingOverrides() ||
       !sameFirearmsSkillZeroHandling(
         firearmsCombatTuning.skillZeroHandling,

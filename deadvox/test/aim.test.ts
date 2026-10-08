@@ -1,6 +1,13 @@
 import { Euler, Vector3 } from 'three';
 import { expect, it } from 'vitest';
-import { AimController, aimBasis, aimDirection, NEUTRAL_AIM } from '../src/core/aim.ts';
+import {
+  AimController,
+  type AimWobbleNoiseTuning,
+  advanceOrnsteinUhlenbeckAxis,
+  aimBasis,
+  aimDirection,
+  NEUTRAL_AIM,
+} from '../src/core/aim.ts';
 import { SKILL_LEVEL_LEGENDARY, SKILL_LEVEL_MAX } from '../src/core/character.ts';
 import { type FirearmsSkillShotKind, firearmStanceEffects, firearmsSkillEffects } from '../src/core/firearmsSkill.ts';
 import { advanceFootsteps, initialFootstepClock, STEP_DISTANCE_METRES } from '../src/core/footsteps.ts';
@@ -32,6 +39,19 @@ const createAim = (
     jitterSeed: Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff),
     variance,
   });
+const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning) =>
+  new AimController({
+    wobbleLimitRadians: stanceTuning.wobbleLimitRadians,
+    wobbleShape: {
+      verticalToHorizontalRatio: stanceTuning.wobbleVerticalToHorizontalRatio,
+      archPower: stanceTuning.wobbleLuneArchPower,
+      phaseOffsetRadians: stanceTuning.wobbleLunePhaseOffsetRadians,
+      jitterShare: stanceTuning.wobbleJitterShare,
+      jitterAmplitudeFraction: stanceTuning.wobbleJitterAmplitudeFraction,
+    },
+    jitterSeed: Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff),
+    wobbleNoise,
+  });
 
 type AimStepOverrides = Partial<Parameters<AimController['advance']>[0]> & { stridePhase?: number };
 
@@ -47,6 +67,44 @@ const step = (overrides: AimStepOverrides = {}) => ({
   stridePhase: 0,
   stepIndex: 0,
   ...overrides,
+});
+
+it('OU noise reverts without diffusion and bounds each Brownian step', () => {
+  const tuning: AimWobbleNoiseTuning = {
+    reversionRatePerSimSecond: 2.4,
+    sigmaRadiansPerSqrtSecond: 0.01,
+    smoothingSimSeconds: 0.12,
+  };
+  const dt = 1 / 60;
+  const offset = { raw: 0.1, smooth: 0.1 };
+  const decayed = advanceOrnsteinUhlenbeckAxis(offset, dt, { ...tuning, sigmaRadiansPerSqrtSecond: 0 }, 0);
+  expect(decayed.raw).toBeCloseTo(offset.raw * (1 - tuning.reversionRatePerSimSecond * dt), 12);
+  expect(decayed.raw).toBeLessThan(offset.raw);
+
+  const fromRest = advanceOrnsteinUhlenbeckAxis({ raw: 0, smooth: 0 }, dt, tuning, 20);
+  expect(Math.abs(fromRest.raw)).toBeLessThanOrEqual(3 * tuning.sigmaRadiansPerSqrtSecond * Math.sqrt(dt));
+  expect(Math.abs(fromRest.smooth)).toBeLessThanOrEqual(Math.abs(fromRest.raw));
+});
+
+it('seeded OU wobble is deterministic and sways while standing still', () => {
+  const tuning = {
+    reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
+    sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+    smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
+  };
+  const first = createNoiseAim(tuning);
+  const second = createNoiseAim(tuning);
+  const firstPath = Array.from({ length: 120 }, () => first.advance(step()));
+  const secondPath = Array.from({ length: 120 }, () => second.advance(step()));
+
+  expect(secondPath).toEqual(firstPath);
+  expect(firstPath.some(({ yaw, pitch }) => Math.hypot(yaw, pitch) > 0)).toBe(true);
+  expect(
+    firstPath.some(
+      ({ yaw, pitch }, index) =>
+        index > 0 && (yaw !== firstPath[index - 1]!.yaw || pitch !== firstPath[index - 1]!.pitch),
+    ),
+  ).toBe(true);
 });
 
 const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: number): number => {
