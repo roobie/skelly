@@ -823,16 +823,25 @@ arrives in Slice 4, don't fake the gap with a separate interior-darkness rule.
 A carried beam remains a three.js light because it moves every frame, unlike
 block light. All-around carried and dropped sources use a fixed pool of
 shadowless point lights; unused slots stay at zero intensity, and surplus
-emissive glowsticks remain visible without lighting the world. An emissive marker
-is not a substitute for the pool: tune item light content against the ground and
-walls under the shared near-field falloff. Source colour, intensity, radius and
-burn rules belong to item content. The zombie light check keeps sky visibility
-separate from carried light, so adding voxel sky light
-won't change the carried-light rule. Keep time of day in the sky/fog renderer,
-not baked into chunks; voxel sunlight can then join AO in vertex colour. See
-`src/render/flashlight.ts`, `Flashlight.update`, `src/render/lightPool.ts`,
-`LightPool.update`, `src/core/zombies.ts`, `isLit`, `src/render/sky.ts`,
-`applySky`, and `src/core/mesher.ts`, `buildMesh`.
+emissive glowsticks remain visible without lighting the world. An item's lit
+look stays on its own model in hand, on the ground and in flight; a separate
+emissive marker is used only when the model cannot be drawn and the item is shown
+as a fallback. This keeps the glow attached to the thing the player sees without
+changing the light pool or zombie sensing reach, or merging render and sense
+heights. Source colour, intensity, radius and burn rules belong to item content.
+Tune item light content against the ground and walls under the pool's shared
+near-field falloff, not against the glow. The zombie light check keeps sky
+visibility separate from carried light, so adding voxel sky light won't change the
+carried-light rule. See `src/core/zombies.ts`, `seesPlayer`; and
+`src/render/itemEmissive.ts`, `applyItemEmissive`, `src/render/piles.ts`,
+`PileMeshes.drawModels` and `drawEmissiveLights`, `src/render/itemThrows.ts`,
+`ItemThrows.spawn`, `src/render/lightPool.ts`, `LightPool.update`, and
+`src/core/lights.ts`, `lightSenseSourceFor`. Keep time of day in the sky/fog
+renderer, not baked into chunks; voxel sunlight can then join AO in vertex
+colour. See `src/render/flashlight.ts`, `Flashlight.update`,
+`src/render/lightPool.ts`, `LightPool.update`, `src/core/zombies.ts`,
+`seesPlayer`, `src/render/sky.ts`, `applySky`, and `src/core/mesher.ts`,
+`buildMesh`.
 
 - **Sources you carry** (the numbers are starting points):
 

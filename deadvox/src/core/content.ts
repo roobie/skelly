@@ -310,6 +310,16 @@ const checkBook = (item: ItemDef, registry: Registry, report: Report) => {
   });
 };
 
+const checkItemLightModel = (item: ItemDef, registry: Registry, report: Report) => {
+  if (
+    item.light?.emissive !== undefined &&
+    item.model !== undefined &&
+    !registry.models.get(item.model)?.emissiveMaterial
+  ) {
+    report('items', item.id, '.model', 'an emissive light model needs an emissive material');
+  }
+};
+
 const checkItemLight = (item: ItemDef, hasIgniter: boolean, registry: Registry, report: Report) => {
   const { light, igniter } = item;
   const battery = light?.power?.battery;
@@ -352,6 +362,7 @@ const checkItems = (registry: Registry, report: Report) => {
   const hasIgniter = items.some((item) => item.igniter !== undefined);
   for (const item of items) {
     checkItemLight(item, hasIgniter, registry, report);
+    checkItemLightModel(item, registry, report);
     checkItemFirearm(item, registry, report);
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);

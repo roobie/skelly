@@ -1,4 +1,4 @@
-import { Color, Group, Mesh, MeshBasicMaterial, PointLight } from 'three';
+import { BoxGeometry, Color, Group, Mesh, MeshBasicMaterial, MeshStandardMaterial, PointLight } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Registry } from '../src/core/content.ts';
 import type { Item } from '../src/core/items.ts';
@@ -109,7 +109,42 @@ describe('held-item throws', () => {
 
     expect(marker).toBeDefined();
     expect((marker.material as MeshBasicMaterial).color.equals(expected)).toBe(true);
+    expect((marker.material as MeshBasicMaterial).toneMapped).toBe(false);
+    expect((marker.material as MeshBasicMaterial).vertexColors).toBe(false);
     throws.dispose();
+  });
+
+  it('keeps the lit look on the glowstick model during flight', () => {
+    const light = { color: '#62ff81', emissive: 0.3, burning: { drop: 'stay' } };
+    const registry = testRegistry({ glow: 30 });
+    registry.items.set('glow', { id: 'glow', weight: 30, size: [1, 2], model: 'glowstick', light } as never);
+    registry.models.set('glowstick', { emissiveMaterial: 'chemical-light tube' } as never);
+    const geometry = new BoxGeometry(1, 0.1, 0.1);
+    const sourceMaterial = new MeshStandardMaterial({ color: '#62ff81' });
+    sourceMaterial.name = 'chemical-light tube';
+    const model = new Group();
+    model.add(new Mesh(geometry, sourceMaterial));
+    const models = { groundLook: () => model.clone() } as unknown as import('../src/render/models.ts').ModelLibrary;
+    const throws = new ItemThrows(registry, models, 1);
+    throws.spawn([0, 1, 0], [2, 1, 0], { ...testItem('glow'), on: true });
+    const flight = throws.group.children[0] as Group;
+    const shownModel = flight.children[0] as Group;
+    let tube: Mesh | undefined;
+    shownModel.traverse((object) => {
+      if (object instanceof Mesh && object.material instanceof MeshStandardMaterial) {
+        tube = object;
+      }
+    });
+
+    expect(flight.children).toHaveLength(1);
+    expect(tube).toBeDefined();
+    const material = tube!.material as MeshStandardMaterial;
+    expect(material.emissive.getHexString()).not.toBe('000000');
+    expect(material.emissiveIntensity).toBe(light.emissive);
+    expect(material.toneMapped).toBe(false);
+    throws.dispose();
+    geometry.dispose();
+    sourceMaterial.dispose();
   });
 
   it('presents an item flight without adding a point light to the shader pool', () => {
