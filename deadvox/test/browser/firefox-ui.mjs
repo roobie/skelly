@@ -20,9 +20,15 @@ const observation = {
     }
     const marker = '  const onForwardPress = (e: MouseEvent) => {';
     assert(code.includes(marker), 'game-loop observation point exists');
-    return code.replace(
+    const exposed = code.replace(
       marker,
       `  Object.assign(globalThis, { firefoxUiTest: { session, input, registry, view, camera, engine, spectatorCameraEnabled: () => spectatorCameraEnabled } });\n${marker}`,
+    );
+    const startupHintMarker = '    updateStartupHint();';
+    assert(exposed.includes(startupHintMarker), 'startup hint observation point exists');
+    return exposed.replace(
+      startupHintMarker,
+      `${startupHintMarker}\n    if (!startupHint.hidden && startupProgress.value < startupProgress.max && !globalThis.firefoxUiStartupSample) {\n      globalThis.firefoxUiStartupSample = { meshes: Array.from(engine.meshes.keys()).length };\n    }`,
     );
   },
 };
@@ -62,6 +68,7 @@ try {
       document.dispatchEvent(new Event('pointerlockchange'));
     };
     globalThis.firefoxUiFrames = 0;
+    globalThis.firefoxUiStartupSample = undefined;
     const frame = () => {
       globalThis.firefoxUiFrames += 1;
       requestAnimationFrame(frame);
@@ -86,23 +93,7 @@ try {
     { timeout: 10_000 },
   );
   try {
-    await page.waitForFunction(
-      () => {
-        const hint = document.querySelector('#startup-hint');
-        const progress = document.querySelector('#startup-hint-progress');
-        const meshes = globalThis.firefoxUiTest?.engine?.meshes;
-        return (
-          hint &&
-          !hint.hidden &&
-          progress &&
-          progress.value < progress.max &&
-          meshes?.keys &&
-          Array.from(meshes.keys()).length === 0
-        );
-      },
-      null,
-      { timeout: 10_000 },
-    );
+    await page.waitForFunction(() => globalThis.firefoxUiStartupSample?.meshes === 0, null, { timeout: 10_000 });
   } catch (error) {
     const state = await page.evaluate(() => {
       const hint = document.querySelector('#startup-hint');
@@ -111,6 +102,7 @@ try {
       return {
         hintHidden: hint?.hidden,
         progress: progress ? { value: progress.value, max: progress.max } : null,
+        firstVisibleSample: globalThis.firefoxUiStartupSample,
         meshes: runtime?.engine?.meshes ? Array.from(runtime.engine.meshes.keys()).length : null,
         locked: runtime?.input?.locked,
         menuPointer: runtime?.input?.menuPointer,
