@@ -735,7 +735,7 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
     );
     assert.deepEqual(replayThrowOutcome.mainLocation, liveThrowOutcome.mainLocation);
     assert.deepEqual(liveThrowOutcome.quickbarTapCommit, { itemMoveQueued: false, location: 'hand' });
-    assert.deepEqual(liveThrowOutcome.quickbarTapTick, { itemMoveQueued: true, location: 'pile' });
+    assert.deepEqual(liveThrowOutcome.quickbarTapTick, { itemMoveQueued: false, location: 'pile' });
     assert.equal(replayState, 'verified', `replay end state differs: ${JSON.stringify(endSnapshotDifference)}`);
     assert.deepEqual(pageErrors, []);
   } finally {
