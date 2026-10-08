@@ -226,7 +226,7 @@
         "hurt": "amalgam_hurt"
       },
       "regions": {
-        "core.trunk": 60,
+        "core.trunk": 2400,
         "member.head": 60,
         "member.torso": 60,
         "member.leftArm": 24,

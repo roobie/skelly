@@ -97,6 +97,7 @@ import {
   BufferAttribute,
   BufferGeometry,
   type Camera,
+  CylinderGeometry,
   DataTexture,
   FloatType,
   Frustum,
@@ -104,11 +105,13 @@ import {
   InstancedBufferAttribute,
   InstancedMesh,
   Matrix4,
+  Mesh,
   MeshDepthMaterial,
   MeshLambertMaterial,
   NearestFilter,
   RGBAFormat,
   Sphere,
+  SphereGeometry,
   Vector3,
 } from 'three';
 import { AMALGAM_FIGURE_SEED, type AmalgamFigure } from '../core/amalgamFigure.ts';
@@ -124,9 +127,10 @@ import {
 } from '../core/rigidBody.ts';
 import { type ZombieFigureType, zombieFigure } from '../core/zombieFigure.ts';
 import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
-import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie } from '../core/zombies.ts';
+import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
+import { amalgamTentaclePose } from './amalgamTentaclePose.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -336,6 +340,11 @@ interface ZombieRenderState extends SlotHolder {
   lastPose: Pose | undefined;
   lastPlacement: CrowdPlacement | undefined;
   lastSeenFrame: number;
+}
+
+interface TentacleMeshes {
+  readonly shaft: Mesh;
+  readonly tip: Mesh;
 }
 
 /** A dead zombie that still occupies its live slot (see MobActorMeshes' own doc comment): frozen at the
@@ -559,6 +568,12 @@ export class MobActorMeshes implements ZombieRenderer {
   private readonly material: MeshLambertMaterial;
   private readonly states = new Map<EntityId, ZombieRenderState>();
   private readonly corpses = new Map<EntityId, Corpse>();
+  private readonly tentacles = new Map<EntityId, TentacleMeshes>();
+  private readonly tentacleGeometry: CylinderGeometry | undefined;
+  private readonly tentacleTipGeometry: SphereGeometry | undefined;
+  private readonly tentacleMaterial: MeshLambertMaterial | undefined;
+  private readonly tentacleUp = new Vector3(0, 1, 0);
+  private readonly tentacleDirection = new Vector3();
   private readonly debris = new Map<string, Debris>();
   /** Shared by corpses and debris, so "oldest across both" (evictOldestDeadThing*) is a simple comparison
    * instead of needing to interleave two Maps' own iteration orders. */
@@ -582,6 +597,9 @@ export class MobActorMeshes implements ZombieRenderer {
   constructor(blockSize: number, capacity = DEFAULT_CAPACITY, options: MobActorMeshesOptions = {}) {
     this.blockSize = blockSize;
     this.capacity = capacity;
+    this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.045, 0.14, 1, 6) : undefined;
+    this.tentacleTipGeometry = options.includeAmalgam ? new SphereGeometry(0.12, 8, 6) : undefined;
+    this.tentacleMaterial = options.includeAmalgam ? new MeshLambertMaterial({ color: 0x88_43_3d }) : undefined;
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
     if (options.includeAmalgam && options.amalgamType?.model !== 'amalgam') {
       throw new Error('MobActorMeshes requires amalgamType when amalgam actors are enabled');
@@ -1018,7 +1036,86 @@ export class MobActorMeshes implements ZombieRenderer {
       lastSeenFrame: this.frameCounter,
     };
     this.states.set(id, state);
+    if (variant.model === 'amalgam') {
+      this.addTentacle(id);
+    }
     return state;
+  }
+
+  private addTentacle(id: EntityId): void {
+    if (!(this.tentacleGeometry && this.tentacleTipGeometry && this.tentacleMaterial)) {
+      return;
+    }
+    const shaft = new Mesh(this.tentacleGeometry, this.tentacleMaterial);
+    const tip = new Mesh(this.tentacleTipGeometry, this.tentacleMaterial);
+    shaft.visible = false;
+    tip.visible = false;
+    castsAndReceives(shaft);
+    castsAndReceives(tip);
+    this.group.add(shaft, tip);
+    this.tentacles.set(id, { shaft, tip });
+  }
+
+  private removeTentacle(id: EntityId): void {
+    const meshes = this.tentacles.get(id);
+    if (!meshes) {
+      return;
+    }
+    this.group.remove(meshes.shaft, meshes.tip);
+    this.tentacles.delete(id);
+  }
+
+  private updateTentacle(id: EntityId, zombie: Zombie, placement: { worldPos: Vec3; yaw: number }): void {
+    const meshes = this.tentacles.get(id);
+    if (!meshes) {
+      return;
+    }
+    const playerEye = this.playerEyePosition;
+    const reachMetres = zombieAttackReachMetres(zombie);
+    if (!playerEye || reachMetres <= 0) {
+      meshes.shaft.visible = false;
+      meshes.tip.visible = false;
+      return;
+    }
+    const start: Vec3 = [
+      placement.worldPos[0],
+      placement.worldPos[1] + zombie.body.height * this.blockSize * 0.62,
+      placement.worldPos[2],
+    ];
+    const target: Vec3 = [playerEye[0], start[1], playerEye[2]];
+    const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
+    const pose = amalgamTentaclePose({
+      start,
+      target,
+      facing,
+      reachMetres,
+      attackWindup: zombie.attackWindup,
+      attackWindupSeconds: zombie.type.attack.windupSimSeconds,
+      attackWait: zombie.attackWait,
+      attackCooldownSeconds: zombie.type.attack.cooldownSimSeconds,
+    });
+    const deltaX = pose.end[0] - pose.start[0];
+    const deltaY = pose.end[1] - pose.start[1];
+    const deltaZ = pose.end[2] - pose.start[2];
+    const length = Math.hypot(deltaX, deltaY, deltaZ);
+    if (pose.extension <= 0 || length <= 0.01) {
+      meshes.shaft.visible = false;
+      meshes.tip.visible = false;
+      return;
+    }
+    meshes.shaft.visible = true;
+    meshes.tip.visible = true;
+    meshes.shaft.position.set(
+      (pose.start[0] + pose.end[0]) / 2,
+      (pose.start[1] + pose.end[1]) / 2,
+      (pose.start[2] + pose.end[2]) / 2,
+    );
+    meshes.shaft.quaternion.setFromUnitVectors(
+      this.tentacleUp,
+      this.tentacleDirection.set(deltaX / length, deltaY / length, deltaZ / length),
+    );
+    meshes.shaft.scale.set(1, length, 1);
+    meshes.tip.position.set(pose.end[0], pose.end[1], pose.end[2]);
   }
 
   /** Releases `entry`'s row/instance back to its variant, swap-compacting whichever key (a live zombie, a
@@ -1051,6 +1148,7 @@ export class MobActorMeshes implements ZombieRenderer {
   /** A plain vanish (despawn/unload) — not a death; see this module's header comment and zombieDied. */
   private removeZombie(id: EntityId, state: ZombieRenderState): void {
     this.removePerceptionLabel(id);
+    this.removeTentacle(id);
     this.freeSlot(id, state);
     this.states.delete(id);
   }
@@ -1121,6 +1219,7 @@ export class MobActorMeshes implements ZombieRenderer {
    */
   zombieDied(id: EntityId, zombie: Zombie, playerPos?: Vec3): void {
     this.removePerceptionLabel(id);
+    this.removeTentacle(id);
     const state = this.states.get(id);
     if (!state) {
       return;
@@ -1657,6 +1756,7 @@ export class MobActorMeshes implements ZombieRenderer {
       anyDirty = true;
     }
     if (zombie.incapacitated) {
+      this.removeTentacle(id);
       if (!this.corpses.has(id)) {
         let state = this.states.get(id);
         if (!state) {
@@ -1680,6 +1780,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const variant = this.variants[state.variantIndex]!;
     const placement = this.currentRenderPlacement(zombie);
     this.updatePerceptionLabel(id, zombie, state, placement);
+    this.updateTentacle(id, zombie, placement);
     const bounds = this.zombiePoseBounds(zombie, placement);
     if (this.shouldSkipPose(bounds.center, bounds.radius)) {
       return anyDirty;
@@ -1791,6 +1892,12 @@ export class MobActorMeshes implements ZombieRenderer {
    * bone; nothing more elaborate (e.g. touching the neck too) seemed necessary. */
   dispose(): void {
     this.setPerceptionLabels(false);
+    for (const id of [...this.tentacles.keys()]) {
+      this.removeTentacle(id);
+    }
+    this.tentacleGeometry?.dispose();
+    this.tentacleTipGeometry?.dispose();
+    this.tentacleMaterial?.dispose();
     this.texture.dispose();
     this.material.dispose();
     for (const variant of this.variants) {

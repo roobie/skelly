@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { voxelBounds } from '@mobgen/core/massProperties.ts';
 import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { describe, expect, it } from 'vitest';
+import { aimBasis, NEUTRAL_AIM } from '../src/core/aim.ts';
 import {
   AMALGAM_FIGURE_SEED,
   amalgamCollisionEnvelope,
@@ -13,7 +14,7 @@ import {
 import { BlockEntities } from '../src/core/blockEntities.ts';
 import { buildRegistry } from '../src/core/content.ts';
 import type { Vec3 } from '../src/core/coords.ts';
-import { projectileShot } from '../src/core/pellets.ts';
+import { pelletShotFromBasis, projectileShot } from '../src/core/pellets.ts';
 import { type Body, stepBodyHorizontal } from '../src/core/physics.ts';
 import { decodeSave } from '../src/core/saveFormat.ts';
 import { makeScale } from '../src/core/scale.ts';
@@ -69,19 +70,26 @@ const MEMBER_RAY_DIRECTIONS: Vec3[] = [
   [0, -1, 0],
 ];
 
-const findRegionRay = (
-  simulation: ZombieSystem,
-  id: number,
-  regionId: string,
-  boxes: readonly ReturnType<typeof posedAmalgamRegionBoxes>[string][number][],
-): { origin: Vec3; direction: Vec3 } | null => {
-  const weapon = { damage: 0, reach: 4, cooldown: 0 };
+const findRegionRay = ({
+  simulation,
+  id,
+  regionId,
+  boxes,
+  distanceMetres = 3,
+}: {
+  simulation: ZombieSystem;
+  id: number;
+  regionId: string;
+  boxes: readonly ReturnType<typeof posedAmalgamRegionBoxes>[string][number][];
+  distanceMetres?: number;
+}): { origin: Vec3; direction: Vec3 } | null => {
+  const weapon = { damage: 0, reach: Math.max(4, distanceMetres), cooldown: 0 };
   for (const box of boxes) {
     for (const direction of MEMBER_RAY_DIRECTIONS) {
       const origin: Vec3 = [
-        box.voxelCentroid[0] - (direction[0] * 3) / BLOCK_SIZE,
-        box.voxelCentroid[1] - (direction[1] * 3) / BLOCK_SIZE,
-        box.voxelCentroid[2] - (direction[2] * 3) / BLOCK_SIZE,
+        box.voxelCentroid[0] - (direction[0] * distanceMetres) / BLOCK_SIZE,
+        box.voxelCentroid[1] - (direction[1] * distanceMetres) / BLOCK_SIZE,
+        box.voxelCentroid[2] - (direction[2] * distanceMetres) / BLOCK_SIZE,
       ];
       const aim = simulation.aimAt(origin, direction, weapon);
       if (aim?.id === id && aim.region === regionId) {
@@ -92,7 +100,7 @@ const findRegionRay = (
   return null;
 };
 
-const findMemberRay = (simulation: ZombieSystem, id: number) => {
+const findMemberRay = (simulation: ZombieSystem, id: number, distanceMetres = 3) => {
   const zombie = simulation.store.get(id)!;
   const figure = amalgamFigureForType(zombie.type, zombie.figureSeed);
   const regions = posedAmalgamRegionBoxes(figure, {
@@ -103,7 +111,7 @@ const findMemberRay = (simulation: ZombieSystem, id: number) => {
   });
   for (const member of activeAmalgamMembers(zombie)) {
     for (const regionId of member.regionIds) {
-      const ray = findRegionRay(simulation, id, regionId, regions[regionId] ?? []);
+      const ray = findRegionRay({ simulation, id, regionId, boxes: regions[regionId] ?? [], distanceMetres });
       if (ray) {
         return { ...ray, partId: member.partId, regionId };
       }
@@ -347,6 +355,55 @@ describe('amalgam body and combat seam', () => {
     ).toBe(1);
     expect(zombie.regions[ray.regionId]).toBeLessThan(before[ray.regionId]!);
     expect(Object.keys(before).filter((region) => zombie.regions[region] !== before[region])).toEqual([ray.regionId]);
+  });
+
+  it('survives a pump blast and loses a member before the core dies', () => {
+    const simulation = system();
+    const type = registry.zombies.get('amalgam')!;
+    const id = simulation.add(type, [0, 1, 0]);
+    const zombie = simulation.store.get(id)!;
+    const ammo = registry.items.get('shell_12_gauge_00_buck')!.ammo!;
+    const fire = (origin: Vec3, basis: ReturnType<typeof aimBasis>, key: string): number =>
+      simulation.firePellets(pelletShotFromBasis({ ammo, origin, basis, seed: 73, key }));
+    const coreBoxes = posedAmalgamRegionBoxes(amalgamFigureForType(type, zombie.figureSeed), {
+      position: zombie.body.pos,
+      facing: zombie.facing,
+      blockSize: BLOCK_SIZE,
+      severed: zombie.severed,
+    });
+    const coreCenter = coreBoxes['core.trunk']?.[0]?.voxelCentroid;
+    expect(coreCenter).toBeDefined();
+    const rangeMetres = 6;
+    const coreOrigin: Vec3 = [coreCenter![0], coreCenter![1], coreCenter![2] + rangeMetres / BLOCK_SIZE];
+    const coreBasis = aimBasis(0, 0, NEUTRAL_AIM);
+    const coreBefore = zombie.regions['core.trunk']!;
+
+    expect(fire(coreOrigin, coreBasis, 'opening-core-shot')).toBeGreaterThan(0);
+    expect(simulation.store.get(id)).toBe(zombie);
+    expect(zombie.regions['core.trunk']).toBeLessThan(coreBefore);
+
+    const member = findMemberRay(simulation, id, rangeMetres);
+    const memberDirection = member.direction;
+    const memberBasis = aimBasis(
+      Math.atan2(memberDirection[0], -memberDirection[2]),
+      Math.atan2(memberDirection[1], Math.hypot(memberDirection[0], memberDirection[2])),
+      NEUTRAL_AIM,
+    );
+    expect(fire(member.origin, memberBasis, 'member-shot')).toBeGreaterThan(0);
+    expect(simulation.store.get(id)).toBe(zombie);
+    expect(zombie.severed).toContain(member.partId);
+
+    let followup = 0;
+    while (simulation.store.get(id) !== undefined) {
+      const healthBefore = zombie.regions['core.trunk']!;
+      expect(fire(coreOrigin, coreBasis, `core-followup-${followup}`)).toBeGreaterThan(0);
+      followup += 1;
+      if (simulation.store.get(id) !== undefined) {
+        expect(zombie.regions['core.trunk']).toBeLessThan(healthBefore);
+      }
+    }
+    expect(zombie.regions['core.trunk']).toBe(0);
+    expect(zombie.severed).toContain(member.partId);
   });
 
   it('removes a severed member from attack reach while preserving the other members', () => {
