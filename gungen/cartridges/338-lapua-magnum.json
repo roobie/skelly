@@ -1,0 +1,164 @@
+{
+  "format": 1,
+  "kind": "metallic",
+  "id": "338-lapua-magnum",
+  "designation": ".338 Lapua Magnum",
+  "aliases": [{ "name": "8,6 (mm) x 70", "cite": { "source": "cip338", "locator": "Tab. I, Alternative Names" } }],
+  "sources": {
+    "cip338": {
+      "body": "C.I.P.",
+      "reliability": "standard",
+      "title": "C.I.P. TDCC Tab. I, 338 Lapua Mag.: cartridge maximum dimensions",
+      "url": "https://bobp.cip-bobp.org/uploads/tdcc/tab-i/338-lapua-mag-en.pdf",
+      "retrieved": "2026-10-08",
+      "revision": "sheet Date 89-09-09, Revision 16-10-18",
+      "sha256": "4305c15d069113c2c0d90b555ecb41dd7418afb30e31bc7d451951cd97d2b947"
+    }
+  },
+  "primarySource": "cip338",
+  "relatedTo": [],
+  "case": {
+    "length": {
+      "value": 69.2,
+      "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L3", "verbatim": "L3 1) = 69.20" }
+    },
+    "bodyStart": {
+      "value": 3.12,
+      "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E", "verbatim": "E = 3.12" },
+      "note": "Read from the C.I.P. drawing; the sheet has no symbol legend"
+    },
+    "rim": {
+      "diameter": {
+        "value": 14.93,
+        "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R1", "verbatim": "R1 = 14.93" }
+      },
+      "thickness": {
+        "value": 1.52,
+        "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: R", "verbatim": "R = 1.52" },
+        "note": "Read from the C.I.P. drawing; the sheet has no symbol legend"
+      }
+    },
+    "head": {
+      "type": "rimless",
+      "extractorGroove": {
+        "diameter": {
+          "value": 13.24,
+          "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Case Head: E1", "verbatim": "E1 = 13.24" }
+        },
+        "width": {
+          "value": 0.9,
+          "cite": {
+            "source": "cip338",
+            "locator": "Tab. I, CARTRIDGE MAXI, Case Head: e min",
+            "verbatim": "e min = 0.90"
+          }
+        },
+        "bevelAngle": {
+          "value": 50.08,
+          "cite": {
+            "source": "cip338",
+            "locator": "Tab. I, CARTRIDGE MAXI, Case Head: δ",
+            "verbatim": "δ = 50°04'48\""
+          },
+          "note": "Read from the C.I.P. drawing; the sheet has no symbol legend"
+        }
+      }
+    },
+    "body": {
+      "type": "bottleneck",
+      "diameterAtHead": {
+        "value": 14.91,
+        "cite": {
+          "source": "cip338",
+          "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P1",
+          "verbatim": "P1 = 14.91"
+        }
+      },
+      "diameterAtShoulderStart": {
+        "value": 13.82,
+        "cite": {
+          "source": "cip338",
+          "locator": "Tab. I, CARTRIDGE MAXI, Powder Chamber: P2",
+          "verbatim": "P2 1)* = 13.82 -0.20"
+        },
+        "tolerance": { "minus": 0.2 },
+        "basic": true
+      },
+      "shoulder": {
+        "startPosition": {
+          "value": 54.9,
+          "cite": {
+            "source": "cip338",
+            "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L1",
+            "verbatim": "L1 1)* = 54.90 -0.20"
+          },
+          "tolerance": { "minus": 0.2 },
+          "basic": true
+        },
+        "endPosition": {
+          "value": 60.89,
+          "cite": {
+            "source": "cip338",
+            "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L2",
+            "verbatim": "L2 1)* = 60.89 -0.20"
+          },
+          "tolerance": { "minus": 0.2 },
+          "basic": true
+        },
+        "angle": {
+          "value": 39.9969,
+          "cite": {
+            "source": "cip338",
+            "locator": "Tab. I, CARTRIDGE MAXI, Junction Cone: α",
+            "verbatim": "α = 39°59'49\""
+          },
+          "note": "Converted from the printed angle to decimal degrees; read from the C.I.P. drawing"
+        }
+      },
+      "neck": {
+        "diameterAtBase": {
+          "value": 9.46,
+          "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H1", "verbatim": "H1* = 9.46" },
+          "basic": true
+        },
+        "diameterAtMouth": {
+          "value": 9.41,
+          "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Collar: H2", "verbatim": "H2 1) = 9.41" }
+        }
+      }
+    },
+    "materials": [],
+    "primer": {
+      "options": [],
+      "diameter": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give primer-pocket dimensions" },
+      "designation": { "value": null, "cite": null, "note": "The C.I.P. sheet does not specify a primer designation" }
+    }
+  },
+  "payload": {
+    "type": "bullet",
+    "diameter": {
+      "value": 8.61,
+      "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Projectile: G1", "verbatim": "G1 1) = 8.61" }
+    },
+    "length": {
+      "min": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give bullet length" },
+      "max": { "value": null, "cite": null, "note": "The C.I.P. sheet does not give bullet length" }
+    },
+    "variants": []
+  },
+  "overallLength": {
+    "max": {
+      "value": 93.5,
+      "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 93.50" }
+    },
+    "typical": {
+      "value": 93.5,
+      "cite": { "source": "cip338", "locator": "Tab. I, CARTRIDGE MAXI, Lengths: L6", "verbatim": "L6 = 93.50" },
+      "note": "The sheet gives a maximum, not a typical loaded length; the maximum is used as the representative model length"
+    }
+  },
+  "notes": [
+    "The C.I.P. sheet provides the cartridge-maximum profile. It does not establish compatibility with any particular rifle chamber or action frame.",
+    "The C.I.P. sheet has no symbol legend. Mapped dimensions are read from its drawing and callouts; unmapped values, including primer details, bullet length and case materials, remain unspecified. The C.I.P. footnote 1) says to check marked dimensions for safety reasons; the CHAMBER MINI column is not modelled."
+  ]
+}
