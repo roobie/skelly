@@ -629,7 +629,11 @@ export const createSession = (options: SessionOptions) => {
         chest(),
         sim.time,
       ),
-    (move) => options.audio.onMoveComplete?.(move, sim.time),
+    (move) => {
+      const training = skillActivityPractice(registry, 'inventory_management', 'handling');
+      character.awardPractice('inventory_management', training.practice, training.tier);
+      options.audio.onMoveComplete?.(move, sim.time);
+    },
   );
 
   const firearms = new FirearmMechanics(inventory, queue, {

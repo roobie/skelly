@@ -1,6 +1,7 @@
 ---
 read_if:
   - you change content schemas, validation, registry merging, or recipe/workstation data
+  - "you're implementing the Inventory Management skill for #478"
   - you're authoring or changing base template geometry or palettes
   - you change content references, static reachability, or disassembly-output contracts
   - you change how content-loading tests build their registry fixtures
@@ -45,7 +46,7 @@ unchanged item `ToolSchema` levels. A recipe may have at most
 **1,024 combinations**, inclusive: the product of its group lengths. Validation
 uses exact integer multiplication and reports the count when refusing a file.
 
-- `skills` definitions contain only an id and name; character state is 2.5.
+- Skill definitions own effect tuning and training activities. An activity grants either fixed practice or practice per simulation second; a tiered activity stops at its declared tier and discards excess, while an untiered activity trains to ordinary level 10. The Inventory Management activity uses untiered fixed practice on each completed inventory move. Its starting practice amount is a proposal for first look, not an approved tuning value. Character progression is saved as defined in 2.5.
 - Quality IDs are keys declared by loaded items' `tool.qualities` (including
   mod keys) or furniture `workstation.qualities`, not a new top-level section.
   A missing declaration is an error. Whether a reachable item or placed

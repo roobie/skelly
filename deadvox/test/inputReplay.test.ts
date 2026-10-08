@@ -1429,6 +1429,38 @@ describe('input replay', () => {
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
+  it('replays a skill-scaled inventory move and its completed practice award', async () => {
+    const runtime = createRuntime();
+    runtime.session.character.skills.inventory_management = 9;
+    const backpack = runtime.inventory.hands.right!;
+    const start = capture(runtime);
+    const initialPractice = runtime.session.character.practice.inventory_management!;
+    const command = {
+      tick: 12,
+      context: 'inventory' as const,
+      payload: {
+        kind: 'inventory.move' as const,
+        itemUid: backpack.uid,
+        target: runtime.inventory.targetState({ kind: 'worn' }),
+        count: 1,
+      },
+    };
+    const recorder = new InputReplayRecorder(start);
+    const source = recordActiveSession(start, recorder, { commands: [command], frameDts: [0.1] });
+    const sourceEnd = capture(source);
+    const moved = source.inventory.itemByUid(backpack.uid);
+    if (!moved) {
+      throw new Error('Replay fixture lost the moved item');
+    }
+    expect(source.inventory.locate(moved)?.kind).toBe('worn');
+    expect(source.session.character.practice.inventory_management).toBeGreaterThan(initialPractice);
+
+    const bytes = await encodeInputReplay(start, recorder.copyInputs(), formatWorldOptions, sourceEnd);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    const replay = playSession(start, decoded.inputs, { endSimTimestamp: decoded.endSimTimestamp });
+    expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(sourceEnd));
+  });
+
   it('replays craft start, stop and continue commands to the same fingerprint', async () => {
     const { runtime, recipe } = createCraftReplayFixture();
     const start = capture(runtime);
