@@ -59,6 +59,7 @@ export interface ScreenHooks {
   workOptions: (uid: number) => readonly WorkOption[];
   body: () => Readonly<BodyState>;
   actionRefusal?: () => string | undefined;
+  attachmentCandidates?: (firearmUid: number, slotId: string) => readonly Item[];
 }
 
 interface Drag {
@@ -125,6 +126,15 @@ interface OptionViewModel {
   readonly operation?: WorkOperation;
 }
 
+interface AttachmentSlotViewModel {
+  readonly id: string;
+  readonly label: string;
+  readonly occupied?: string;
+  readonly attachmentUid?: number;
+  readonly battery?: string;
+  readonly candidates: readonly { readonly uid: number; readonly name: string }[];
+}
+
 interface DetailsViewModel {
   readonly item?: Item;
   readonly empty: boolean;
@@ -134,6 +144,7 @@ interface DetailsViewModel {
   readonly description?: string | undefined;
   readonly lines: readonly string[];
   readonly options: readonly OptionViewModel[];
+  readonly attachmentSlots?: readonly AttachmentSlotViewModel[];
 }
 
 interface BodyRegionViewModel {
@@ -219,9 +230,33 @@ const optionTemplate = (
         </div>
       `;
 
+const attachmentSlotTemplate = (
+  firearm: Item,
+  slot: AttachmentSlotViewModel,
+  attachmentAction: (payload: ReplayActionPayload) => void,
+): TemplateResult => html`
+  <div class="inv-line" data-attachment-slot=${slot.id} data-occupied=${slot.attachmentUid !== undefined}>
+    <span>${slot.label}: ${slot.occupied ?? 'Open'}</span>
+    ${
+      slot.attachmentUid === undefined
+        ? slot.candidates.map(
+            (candidate) =>
+              html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.fit', firearmUid: firearm.uid, slotId: slot.id, attachmentUid: candidate.uid })}>Fit ${candidate.name}</button>`,
+          )
+        : html`<button class="inv-option" type="button" @click=${() => attachmentAction({ kind: 'firearm.attachment.remove', firearmUid: firearm.uid, slotId: slot.id })}>Remove</button>`
+    }
+  </div>
+  ${
+    slot.battery === undefined
+      ? nothing
+      : html`<div class="inv-line" data-attachment-slot=${`${slot.id}.battery`} data-occupied=${slot.battery !== 'Open'}>Battery: ${slot.battery}</div>`
+  }
+`;
+
 const detailsTemplate = (
   vm: DetailsViewModel,
   queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
+  attachmentAction: (payload: ReplayActionPayload) => void,
 ): TemplateResult => {
   if (vm.empty) {
     return html`<aside class="inv-details"><p class="inv-muted">Pick an item to see what it is and where it can go.</p></aside>`;
@@ -237,6 +272,11 @@ const detailsTemplate = (
       ${vm.lines.map((line) => html`<div class="inv-line">${line}</div>`)}
       <div class="inv-kicker">Where it can go</div>
       ${vm.options.map((option) => optionTemplate(option, item, queue))}
+      ${
+        vm.attachmentSlots?.length
+          ? html`<div class="inv-kicker">Firearm slots</div>${vm.attachmentSlots.map((slot) => attachmentSlotTemplate(item, slot, attachmentAction))}`
+          : nothing
+      }
     </aside>
   `;
 };
@@ -261,6 +301,7 @@ const inventoryTemplate = (
   vm: InventoryScreenViewModel,
   queue: (item: Item, target?: Target, operation?: WorkOperation) => void,
   search: (uid: number) => void,
+  attachmentAction: (payload: ReplayActionPayload) => void,
 ): TemplateResult => html`
   <header class="inv-head">
     <h2>Inventory</h2>
@@ -340,7 +381,7 @@ const inventoryTemplate = (
         `,
       )}
     </section>
-    ${detailsTemplate(vm.details, queue)}
+    ${detailsTemplate(vm.details, queue, attachmentAction)}
   </div>
   <footer class="inv-queue"></footer>
 `;
@@ -661,6 +702,14 @@ export class InventoryScreen {
             this.report(this.hooks.dispatch({ kind: 'inventory.search', entityUid: entity.uid }));
           }
         },
+        (payload) => {
+          const refusal = this.hooks.actionRefusal?.();
+          if (refusal) {
+            this.refuse(refusal);
+          } else {
+            this.report(this.hooks.dispatch(payload));
+          }
+        },
       ),
       this.root,
     );
@@ -801,6 +850,29 @@ export class InventoryScreen {
       return { empty: true, lines: [], options: [] };
     }
     const def = defOf(this.inv.registry, item.type);
+    const firearmModelId = def.firearm ? def.model : undefined;
+    const firearmModel = firearmModelId === undefined ? undefined : this.inv.registry.models.get(firearmModelId);
+    const attachmentSlots = firearmModel?.attachmentSlots?.map((slot): AttachmentSlotViewModel => {
+      const fitted = item.slots?.[slot.id];
+      const batteryDef = fitted && defOf(this.inv.registry, fitted.type);
+      let battery: string | undefined;
+      if (batteryDef?.light?.power) {
+        const batteryItem = fitted?.slots?.battery;
+        battery = batteryItem ? workName(this.inv.registry, batteryItem) : 'Open';
+      }
+      return {
+        id: slot.id,
+        label: slot.id,
+        ...(fitted ? { occupied: workName(this.inv.registry, fitted), attachmentUid: fitted.uid } : {}),
+        ...(battery === undefined ? {} : { battery }),
+        candidates: fitted
+          ? []
+          : (this.hooks.attachmentCandidates?.(item.uid, slot.id) ?? []).map((candidate) => ({
+              uid: candidate.uid,
+              name: workName(this.inv.registry, candidate),
+            })),
+      };
+    });
     return {
       item,
       empty: false,
@@ -809,6 +881,7 @@ export class InventoryScreen {
       condition: conditionWord(item.condition),
       description: def.description,
       lines: this.inspect(item),
+      ...(attachmentSlots ? { attachmentSlots } : {}),
       options: [
         ...options(item, this.hooks.reach()).filter((option) => option.kind !== 'use'),
         ...this.hooks.workOptions(item.uid),

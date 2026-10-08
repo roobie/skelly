@@ -23,7 +23,6 @@ import {
   type FirearmsCombatTuning,
   type FirearmsSkillShotKind,
   type FirearmsSkillZeroHandling,
-  firearmStanceEffects,
   firearmsSkillEffects,
   sameFirearmsSkillZeroHandling,
 } from '../core/firearmsSkill.ts';
@@ -73,6 +72,7 @@ import {
 } from '../core/zombies.ts';
 import type { DebugNoclipStep } from './debugInterface.ts';
 import { registerDoorAction } from './doorAction.ts';
+import { FirearmAttachmentHandling } from './firearmAttachmentHandling.ts';
 import {
   FirearmMechanics,
   type FirearmShotEffect,
@@ -108,7 +108,7 @@ const sessionFirearmsSkillZeroHandling = (
   mechanics: FirearmMechanics,
   firearmUid: number | undefined,
   shared: FirearmsSkillZeroHandling,
-): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingFor(firearmUid));
+): FirearmsSkillZeroHandling => (firearmUid === undefined ? shared : mechanics.skillZeroHandlingSettingFor(firearmUid));
 const sessionFirearmsShotKind = (
   mechanics: FirearmMechanics,
   firearmUid: number | undefined,
@@ -553,6 +553,7 @@ export const createSession = (options: SessionOptions) => {
       player,
       sourceLabel = null,
       listenerRelative = false,
+      noiseRadiusScale = 1,
       body: mobBody,
       noiseRadiusMetres,
     }: SoundEmissionMeta & {
@@ -568,7 +569,7 @@ export const createSession = (options: SessionOptions) => {
     const pitch = mobBody ? selected.pitch * shamblerBodyPitch(mobBody) : selected.pitch;
     const pick = { ...selected, pitch };
     const emittedAsNoise = noiseRadiusMetres !== undefined || (player && definition.noise.enabled);
-    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres;
+    const emittedNoiseRadius = noiseRadiusMetres ?? definition.noise.radiusMetres * noiseRadiusScale;
     const sound = freezeSnapshot({
       event,
       position: [...position] as Vec3,
@@ -653,7 +654,8 @@ export const createSession = (options: SessionOptions) => {
       aim.recordShot(
         shotSeed,
         recoilKickRadians,
-        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale,
+        firearmsSkillEffects(firearmsSkillLevel(character), tuning, shotKind).recoilKickScale *
+          firearms.recoilScaleFor(firearmUid),
       );
     },
     onShot: (shot, time, firearm) => {
@@ -664,12 +666,17 @@ export const createSession = (options: SessionOptions) => {
       }
       // Other firearms' shot sounds are the player's presentation cue (play.ts, `firearmShotSound`).
       if (registry.items.get(firearm.type)?.firearm?.pump) {
-        playPlayerSound('shotgun_blast', time, { sourceLabel: 'pump shotgun' });
+        playPlayerSound('shotgun_blast', time, {
+          sourceLabel: 'pump shotgun',
+          noiseRadiusScale: firearms.noiseFactorFor(firearm),
+        });
       }
     },
     onSound: (event, position, time) =>
       position ? playWorldSound(event, position, time) : playPlayerSound(event, time),
   });
+
+  const firearmAttachments = new FirearmAttachmentHandling(inventory, queue, feet);
 
   const magazines = new MagazineHandling(inventory, queue, {
     feet,
@@ -1062,9 +1069,9 @@ export const createSession = (options: SessionOptions) => {
       canSprint(sim.needs, sprinting);
     survival.setSprinting(sprinting);
     stepStamina(sim.needs, dt, sprinting, bodyTuning.staminaRegenDelaySimSeconds);
-    const readyMovementFactor = readyGait
-      ? firearmStanceEffects(firearmsSkillLevel(character), currentFirearmsCombatTuning()).readyMovementFactor
-      : 1;
+    const readyFirearm = Object.values(inventory.hands).find((item) => item && registry.items.get(item.type)?.firearm);
+    const readyMovementFactor =
+      readyGait && readyFirearm ? firearms.stanceEffectsFor(readyFirearm.uid).readyMovementFactor : 1;
     const pacedIntent = movementPace(
       { ...intent, sprint: sprinting, crouch: crouching },
       {
@@ -1225,6 +1232,7 @@ export const createSession = (options: SessionOptions) => {
     entities,
     queue,
     firearms,
+    firearmAttachments,
     magazines,
     aim,
     get firearmsSkillZeroHandling() {

@@ -22,6 +22,7 @@ import { HOLD } from '../src/core/heldPose.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { toggleLight } from '../src/core/lights.ts';
 import { meleeContactTime, meleePoseAndContact, readyMeleePose } from '../src/core/meleePose.ts';
+import { opticViewSettings } from '../src/core/opticView.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { FISTS_MELEE } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER } from '../src/game/player.ts';
@@ -135,6 +136,42 @@ describe('held light presentation', () => {
     held.dispose();
     geometry.dispose();
     tubeMaterial.dispose();
+  });
+});
+
+describe('optic lens presentation', () => {
+  it('carries the mounted optic export into the ADS lens frame', () => {
+    const inventory = new Inventory(registry);
+    const firearm = inventory.create('rifle_assault');
+    if (!inventory.add(firearm, { kind: 'hand', side: 'right' })) {
+      throw new Error('Fixture firearm could not be held');
+    }
+    const optic = Object.values(firearm.slots ?? {}).find((item) => {
+      const definition = registry.items.get(item.type);
+      const model = definition?.model === undefined ? undefined : registry.models.get(definition.model);
+      return model?.attachment?.kind === 'optic';
+    });
+    if (!optic) {
+      throw new Error('Fixture firearm needs a mounted optic');
+    }
+    const definition = registry.items.get(optic.type)!;
+    const model = registry.models.get(definition.model!)!;
+    const expected = opticViewSettings(definition, model);
+    if (!expected) {
+      throw new Error('Fixture optic needs a supported view');
+    }
+    const held = new HeldItems(inventory, undefined, palette);
+    const camera = new PerspectiveCamera(75, 16 / 9, 0.05, 128);
+    const handling = { firearms: [], readiness: { uid: firearm.uid, progress: 1, aimingDownSights: true } } as const;
+    held.update(camera, undefined, 0, handling);
+    const settled = held.opticLensFrame;
+    held.update(camera, undefined, 0.5, handling);
+    const recoiling = held.opticLensFrame;
+
+    expect(settled).toMatchObject(expected);
+    expect(settled?.radius.every((radius) => radius > 0)).toBe(true);
+    expect(recoiling?.center).not.toEqual(settled?.center);
+    held.dispose();
   });
 });
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry } from '../src/core/content.ts';
 import { HandlingQueue } from '../src/core/handling.ts';
 import { Inventory } from '../src/core/inventory.ts';
-import { BATTERY_SWAP } from '../src/core/lights.ts';
+import { BATTERY_SWAP, chargeOf } from '../src/core/lights.ts';
 import { bindReach } from '../src/core/reach.ts';
 import { Quickbar } from '../src/game/quickbar.ts';
 import { Survival } from '../src/game/survival.ts';
@@ -92,19 +92,24 @@ describe('non-owning item bindings', () => {
     expect(survival.snapshotState()).toEqual({});
   });
 
-  it('empties a battery binding after the actual queued swap consumes it', () => {
+  it('keeps a battery binding when the queued swap fits that item into the light', () => {
     const { inventory, quickbar, survival, queue } = runtime();
     const light = inventory.create('flashlight');
     const battery = inventory.create('aa_battery');
-    light.charges = 0.25;
+    const oldBattery = light.slots?.battery;
+    if (!oldBattery) {
+      throw new Error('powered-light fixture has no fitted battery');
+    }
+    oldBattery.charges = 0.25;
     expect(inventory.add(light, { kind: 'hand', side: 'left' })).toBe(true);
     expect(inventory.add(battery, { kind: 'hand', side: 'right' })).toBe(true);
     quickbar.assign(0, battery);
     expect(survival.use(battery)).toBeUndefined();
     queue.tick(BATTERY_SWAP + 0.1);
-    expect(inventory.itemByUid(battery.uid)).toBeUndefined();
-    expect(quickbar.snapshotState(inventory)[0]).toBeNull();
-    expect(light.charges).toBeGreaterThan(0.25);
+    expect(inventory.itemByUid(battery.uid)).toBe(battery);
+    expect(light.slots?.battery).toBe(battery);
+    expect(quickbar.snapshotState(inventory)[0]).toBe(battery.uid);
+    expect(chargeOf(registry, battery)).toBeGreaterThan(0.25);
   });
 
   it('retains the same binding through a drop and a move into a container', () => {

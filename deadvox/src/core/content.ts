@@ -362,16 +362,118 @@ const checkItemFirearm = (item: ItemDef, registry: Registry, report: Report): vo
   if (magazineWellCalibre(registry, item.id) !== undefined && !registry.models.get(item.model!)?.slots?.magazine) {
     report('items', item.id, '.model', 'a magazine-fed firearm needs a model with a magazine slot');
   }
+  const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  for (const attachment of model?.attachments ?? []) {
+    const registered = [...registry.items.values()].some((candidate) => {
+      const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
+      return attachmentModel?.attachment?.id === attachment.id;
+    });
+    if (!registered) {
+      report('items', item.id, '.model', `no item model registered for attachment "${attachment.id}"`);
+    }
+  }
+};
+
+const addLootTableItems = (
+  registry: Registry,
+  tableId: string,
+  items: Set<string>,
+  visitedTables: Set<string>,
+): void => {
+  if (visitedTables.has(tableId)) {
+    return;
+  }
+  visitedTables.add(tableId);
+  for (const entry of registry.loot.get(tableId)?.entries ?? []) {
+    if (entry.item) {
+      items.add(entry.item);
+    } else if (entry.table) {
+      addLootTableItems(registry, entry.table, items, visitedTables);
+    }
+  }
+};
+
+const addDerivedItems = (registry: Registry, item: ItemDef, items: Set<string>): void => {
+  for (const yieldItem of item.disassembly?.yields ?? []) {
+    items.add(yieldItem.item);
+  }
+  const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  for (const fitted of model?.attachments ?? []) {
+    const child = [...registry.items.values()].find((candidate) => {
+      const attachmentModel = candidate.model === undefined ? undefined : registry.models.get(candidate.model);
+      return attachmentModel?.attachment?.id === fitted.id;
+    });
+    if (child) {
+      items.add(child.id);
+    }
+  }
+};
+
+const addFixedLootItems = (registry: Registry, items: Set<string>): void => {
+  for (const layout of registry.layouts.values()) {
+    for (const building of layout.buildings) {
+      for (const override of building.fixedLoot ?? []) {
+        for (const fixed of override.items) {
+          items.add(fixed.item);
+        }
+      }
+    }
+  }
+};
+
+const obtainableItems = (registry: Registry): ReadonlySet<string> => {
+  const items = new Set<string>();
+  const visitedTables = new Set<string>();
+  for (const tableId of registry.loot.keys()) {
+    addLootTableItems(registry, tableId, items, visitedTables);
+  }
+  for (const recipe of registry.recipes.values()) {
+    items.add(recipe.result.item);
+  }
+  for (const item of registry.items.values()) {
+    addDerivedItems(registry, item, items);
+  }
+  addFixedLootItems(registry, items);
+  return items;
+};
+
+const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlySet<string>, report: Report): void => {
+  const model = item.model === undefined ? undefined : registry.models.get(item.model);
+  const attachment = model?.attachment;
+  const range = attachment?.properties.magnification;
+  if (item.opticMagnification !== undefined && attachment?.kind !== 'optic') {
+    report('items', item.id, '.opticMagnification', 'a fixed ADS magnification needs an optic model');
+    return;
+  }
+  if (item.opticMagnification !== undefined && range === undefined) {
+    report('items', item.id, '.opticMagnification', 'the optic model exports no magnification range');
+  } else if (
+    item.opticMagnification !== undefined &&
+    range &&
+    (item.opticMagnification < range.min || item.opticMagnification > range.max)
+  ) {
+    report('items', item.id, '.opticMagnification', 'the fixed ADS magnification is outside the exported range');
+  }
+  if (obtainable.has(item.id) && range && range.min < range.max && item.opticMagnification === undefined) {
+    report(
+      'items',
+      item.id,
+      '.opticMagnification',
+      'an obtainable variable-power optic needs a fixed ADS magnification',
+    );
+  }
 };
 
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
+  const obtainable = obtainableItems(registry);
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
   for (const item of items) {
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemFirearm(item, registry, report);
+    checkItemOptic(item, registry, obtainable, report);
     checkUnpacking(item, registry, report);
     checkDisassembly(item, registry, qualities, report);
     checkBook(item, registry, report);

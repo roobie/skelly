@@ -50,7 +50,6 @@
     },
     "core/firearmsSkill.ts": {
       "rackDuration": 2,
-      "raiseDuration": 2,
       "reloadDuration": 2
     },
     "core/firearmState.ts": {

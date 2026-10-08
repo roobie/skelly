@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-// Sun-derived day phases and replayed play state change decisions, so older recordings no longer resolve identically.
+// Recordings from older schemas don't resolve identically.
 export const INPUT_REPLAY_SCHEMA_VERSION = 18;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
@@ -42,6 +42,8 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'inventory.work',
   'inventory.assign',
   'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
   'craft.start',
   'craft.continue',
   'craft.stop',
@@ -61,6 +63,8 @@ const REPLAY_SEMANTIC_ACTIONS = [
   'inventory.work',
   'inventory.assign',
   'inventory.cancel-handling',
+  'firearm.attachment.fit',
+  'firearm.attachment.remove',
   'craft.start',
   'craft.continue',
   'craft.stop',

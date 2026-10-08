@@ -1232,7 +1232,26 @@ describe('input replay', () => {
     expect(decoded.snapshot.character.inventory.hands[side]).toMatchObject({ uid: firearm.uid, type: firearm.type });
   });
 
-  it('validates replay pickup identities and gesture modes', () => {
+  it('round-trips firearm attachment fit and removal commands from the inventory', async () => {
+    const start = capture(createRuntime());
+    const recorder = new InputReplayRecorder(start);
+    const commands = [
+      { kind: 'firearm.attachment.fit', firearmUid: 1, slotId: 'handguard.rail-bottom.0', attachmentUid: 2 },
+      { kind: 'firearm.attachment.remove', firearmUid: 1, slotId: 'handguard.rail-bottom.0' },
+    ] as const;
+    for (const command of commands) {
+      recorder.queueAction(command.kind, 'down', 'inventory', { payload: command });
+      recorder.recordTick(replaySample);
+    }
+
+    const bytes = await encodeInputReplay(recorder.startSnapshot, recorder.copyInputs(), formatWorldOptions, start);
+    const decoded = await decodeInputReplay(bytes, { contentLookup });
+    expect(decoded.inputs.actions.map(({ action, context, payload }) => ({ action, context, payload }))).toEqual(
+      commands.map((payload) => ({ action: payload.kind, context: 'inventory', payload })),
+    );
+  });
+
+  it('validates replay command identities and pickup modes', () => {
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 0 })).toBe(false);
     expect(isReplayActionPayload({ kind: 'inventory.assign', slot: 0, itemUid: 1 })).toBe(true);
     expect(isReplayActionPayload({ kind: 'item.pickup', itemUid: 0, mode: 'wield', feet: [0, 0, 0] })).toBe(false);

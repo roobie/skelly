@@ -800,6 +800,7 @@ export const startPlay = (
     workOptions: (uid) => session.crafting.options(uid),
     body: () => sim.body.snapshotState(),
     actionRefusal: () => sim.body.actionRefusal,
+    attachmentCandidates: (firearmUid, slotId) => session.firearmAttachments.candidates(firearmUid, slotId),
   });
 
   const craftPanel = mountCraftPanel($('crafting'), $('craft-status'), session, {
@@ -1184,6 +1185,9 @@ export const startPlay = (
       return search(entity);
     },
     work: actOnWork,
+    fitAttachment: (firearmUid, slotId, attachmentUid) =>
+      session.firearmAttachments.fit(firearmUid, slotId, attachmentUid),
+    removeAttachment: (firearmUid, slotId) => session.firearmAttachments.remove(firearmUid, slotId),
     toHands: (uid, feetPosition) => {
       const item = inventory.itemByUid(uid);
       return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';
@@ -2107,6 +2111,7 @@ export const startPlay = (
   };
 
   const fireWeapon = (item: Item, time: number): boolean => {
+    const noiseRadiusScale = firearms.noiseFactorFor(item);
     const fired = firearms.fire({
       aimFrame: aim.frame,
       ready: isFirearmReady(item.uid),
@@ -2128,7 +2133,7 @@ export const startPlay = (
       return true;
     }
     const shot = firearmShotSound(item.type);
-    session.playPlayerSound(shot.event, time, shot);
+    session.playPlayerSound(shot.event, time, { ...shot, noiseRadiusScale });
     return true;
   };
 
