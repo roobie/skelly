@@ -57,6 +57,45 @@ const expectFatal = (result: ReturnType<typeof load>) => {
   return result;
 };
 
+describe('loadDesign: feasibility evaluation', () => {
+  it('builds each part once while reusing calibration and validation results', () => {
+    const template = TEMPLATES.find(({ name }) => name === 'ak');
+    if (!template?.calibre) {
+      throw new Error('the AK template must specify its generated calibre');
+    }
+    const generatedAk = generateValid(template, gunDomain, 0);
+    if (!generatedAk) {
+      throw new Error('the AK template must generate a valid assembly');
+    }
+    const receiver = generatedAk.assembly.parts.receiver;
+    const familyName = receiver?.family;
+    const receiverFamily = familyName && gunDomain.families[familyName];
+    if (!familyName || !receiverFamily) {
+      throw new Error('the generated AK must have a registered receiver family');
+    }
+
+    let receiverBuilds = 0;
+    const domain = {
+      ...gunDomain,
+      families: {
+        ...gunDomain.families,
+        [familyName]: {
+          ...receiverFamily,
+          build: (params: Parameters<typeof receiverFamily.build>[0]) => {
+            receiverBuilds += 1;
+            return receiverFamily.build(params);
+          },
+        },
+      },
+    };
+    const design = makeDesign({ template: 'ak', assembly: generatedAk.assembly, calibre: template.calibre });
+
+    const result = load(design, { domain, template });
+    expect(result.ok).toBe(true);
+    expect(receiverBuilds).toBe(1);
+  });
+});
+
 describe('loadDesign: parse and round trip', () => {
   it('loads a clean design with no issues and keeps declaredStatus', () => {
     const design = makeDesign();
