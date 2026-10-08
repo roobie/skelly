@@ -33,6 +33,7 @@ function content() {
     'templates-stairs.json',
     'templates-playtest.json',
     'templates-medical.json',
+    'templates-workshop.json',
     'camp.json',
   ];
   const templates = [];

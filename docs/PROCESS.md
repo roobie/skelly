@@ -5,6 +5,7 @@ read_if:
   - you record a decision by BR and need to know where it goes
   - you plan refactoring, a maintainability survey or a slice retrospective
   - you hit a working rule's situation (shared host, test pool, run bounds, units, CI cost)
+  - you change Deadvox browser CI's browser installation or launch source
   - you apply BR's standing rules for visual work, playtest discoveries, review causes, test budgets or hosted-CI outages
 ---
 
@@ -77,7 +78,7 @@ approved anything visual. Install each worktree's check dependencies as CI does;
 |---|---|
 | Root, every change | `npm run ci` and `npm run test:site` (the installed pre-push hook runs both for pushes that update refs) |
 | gungen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `validate`, `check:designs`, `build`. Regenerate deadvox's exported models when the export changes |
-| deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with `CHROME_BIN`), `test:browser:firefox` (under xvfb), `validate`, `build` (Vite also verifies the simulation fingerprint; `build` includes the favicon check) |
+| deadvox | `lint:lit`, `typecheck`, `test`, `test:ui-browser` (with Playwright-managed Chromium), `test:browser:firefox` (under xvfb), `validate`, `build` (Vite also verifies the simulation fingerprint; `build` includes the favicon check) |
 | mobgen | `typecheck`, `test:sweeps` (the normal suite plus the sweeps CI enables), `build` |
 
 A plain `test` skips the sweeps that CI runs, which has turned main red before (#85). Use
@@ -104,12 +105,17 @@ The live-checklist mechanism for proposal 1 is documented in the [Slice checklis
 
 ## Recording decisions
 
-- **Small rulings** go inline, where the thing is specified: "Decided (BR, YYYY-MM-DD): …" in the
-  subproject's `PROJECT.md`, `DESIGN.md` or `SLICE-*.md`.
-- **Cross-cutting or format-defining decisions** get an ADR in `<subproject>/docs/decisions/`
-  (e.g. deadvox 0002, saves). An ADR's context is a dated snapshot. Its decision stays true,
-  through dated rulings or a superseding ADR (BR, 2026-10-04), and its specification is cued
-  in code, not copied.
+- **Small rulings** go inline where the decision is specified, in the subproject's
+  `PROJECT.md`, `DESIGN.md` or `SLICE-*.md`. State the rule and its reason in the
+  document's own voice; keep the source quote and stamp in the commit message that
+  changes the rule.
+- **Cross-cutting or format-defining decisions** get an ADR in
+  `<subproject>/docs/decisions/` (e.g. deadvox 0002, saves). Its context explains the
+  situation, and its decision records the rule, reason and alternatives. Code cues the
+  specification instead of copying it. Keep source quotes and stamps in the commit
+  message, not the ADR. When a decision changes, rewrite the ADR's decision to the
+  current rule, or replace it with a superseding one and delete the old; the changing
+  commit carries the source.
 - **Mail and chat are transport, not the record.** A ruling that only exists in a thread isn't
   recorded. PRs, issues and commit messages are history: the final reason goes in a tracked
   doc before the merge.

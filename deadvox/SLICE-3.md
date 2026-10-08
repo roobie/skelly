@@ -7,6 +7,7 @@ read_if:
   - you're changing crawler gait, hit response or generation validation
   - you're preparing the end-of-slice playtest or its authored map
   - you're detailing the military site's armoury access and its noisy fallback
+  - you're authoring the military compound, its buildings or its routes
   - you're changing or measuring input-replay capture and playback
 ---
 
@@ -58,7 +59,9 @@ The eleven milestones are:
 - Shared flow fields: dropped by BR in the 3.9 ruling. Background zombies use the beeline in big, cheap steps instead; d84 (#279) is the carried-in attention brain. The remaining route follow-up in #244 is obsolete under that direction.
 - Legendary effects beyond vanity. BR's direction is “mostly vanity thing, but we might come up with something along the way” (2026-10-05 21:29).
 
-Beat details in #181 are settled one turn at a time before their dependent map rounds. The medical site's pharmacy key remains accessible through the existing key-or-crowbar lock at the front counter (see `docs/locks.md`, “Medical hall pharmacy”). The military camp is part of the authored playtest map; its templates are in `src/content/base/camp.json`.
+- **Military compound:** guard posts keep their floors at walking height and exits open; the separate three-storey HQ shares a solid wall with the armoury without opening into its locked interior. `src/content/base/camp.json` defines the interiors, `maps/playtest.tmj` places them, and `test/authoredFixedLoot.test.ts` checks post exits, HQ access and the shared wall.
+- **Grounding and camp scale:** layer-zero foundations prevent template air from carving the terrain beneath structures. The raised lookout stands on ground-supported legs and has a cabin floor with an authored stair flight; the expanded compound keeps its existing buildings and armoury route around a larger three-storey HQ, with open ground for the later amalgam encounter. `src/content/base/camp.json` defines the structures and access; `maps/extensions/deadvox.mjs`, `exportLayout`, exports their placements from `maps/playtest.tmj`.
+- **FOB perimeter:** ground-standing walls make the camp defensible without sealing its approaches. The northern gate stays operable, while the named southern breach route remains passable; uneven top courses show the perimeter's abandonment. New structures follow this dilapidation direction starting with the camp walls in #385; retrofits to existing structures are tracked in #396. `src/content/base/camp.json`, `camp_wall_run` and `camp_gate`, define the perimeter; `test/authoredFixedLoot.test.ts` checks grounding, access and the breach route.
 
 ## How this slice runs
 

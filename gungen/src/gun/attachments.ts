@@ -81,6 +81,21 @@ export const ATTACHMENT_IDS = [
 
 const MOUNT_SET = new Set<MountKind>(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']);
 
+export const attachmentMountSlot = (resolved: Resolved, partId: string, mount: MountKind): string | undefined => {
+  for (const { conn, from, to } of resolved.connections) {
+    if (from.part === partId) {
+      if (from.port.gender === 'male' && from.port.mount === mount && to.port.gender === 'female') {
+        return `${to.part}.${to.port.id}.0`;
+      }
+      continue;
+    }
+    if (to.part === partId && to.port.gender === 'male' && to.port.mount === mount && from.port.gender === 'female') {
+      return `${from.part}.${from.port.id}.${conn.slot ?? 0}`;
+    }
+  }
+  return undefined;
+};
+
 const railSpanNotches = (part: PartDef | undefined, mount: MountKind) => {
   const pitch = MOUNT_STANDARDS[mount].slotPitchU;
   if (pitch === undefined || !part) {

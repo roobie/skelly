@@ -12,14 +12,14 @@ import { SKIP_COMPRESSION } from '../core/compression.ts';
 import { CHUNK, type Vec3 } from '../core/coords.ts';
 import type { WorkOperation } from '../core/craftCommands.ts';
 import { crosshairTarget } from '../core/crosshairTarget.ts';
-import { pickFurniture } from '../core/furniturePick.ts';
-import { chargedThrowDistance, traceGlowstickLanding } from '../core/glowstickThrow.ts';
 import { heldFirearmTransform } from '../core/heldPose.ts';
+import { type InteractionTarget, pickInteractionTarget } from '../core/interactionPick.ts';
 import type { HandSide, Pile, Target } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
+import { hasMetThrowMinimumHold, throwDistanceForItem, traceItemLanding } from '../core/itemThrow.ts';
 import { chargeShare, offHandUse } from '../core/lights.ts';
 import type { LongJob, RestKind } from '../core/longAction.ts';
-import { doorOptions, doorPlan, toHands } from '../core/options.ts';
+import { doorOptions, doorPlan, pocketGroundItem, toHands } from '../core/options.ts';
 import type { Body } from '../core/physics.ts';
 import { pryPlan } from '../core/prying.ts';
 import type { SaveSnapshot } from '../core/saveState.ts';
@@ -111,7 +111,7 @@ import { ignitionTargetForHand, selectPrimaryAction } from './primaryAction.ts';
 import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { QuickbarActions } from './quickbarActions.ts';
 import { QuickbarInput } from './quickbarInput.ts';
-import { type ReloadBinding, reloadTarget } from './reloadInput.ts';
+import { RELOAD_GESTURE_MS, type ReloadBinding, reloadTarget } from './reloadInput.ts';
 import { applyReplayActionPayload, type ReplayActionPayload, type ReplayCommandOwners } from './replayCommands.ts';
 import { restKindForFurniture } from './rest.ts';
 import { createSession, type PlayerInputSample } from './session.ts';
@@ -126,7 +126,10 @@ export const USE_REACH = 2;
 const SKIP_SLACK = 1e-6;
 const QUICKBAR_ACTION = /^quickbar\.(tap|hold)\.(\d+)$/;
 const isGestureAction = (action: string): boolean =>
-  action === 'firearm.reload' || action === 'player.throw-glowstick' || action.startsWith('quickbar.use.');
+  action === 'firearm.reload' ||
+  action === 'player.throw' ||
+  action === 'world.interact' ||
+  action.startsWith('quickbar.use.');
 
 type InputReplayVerification = 'matched' | 'diverged' | 'unavailable' | undefined;
 interface InputReplayStatusOptions {
@@ -213,14 +216,20 @@ const createInputReplayDriver = (
 const handlingPresentationFor = (
   job: Readonly<LongJob> | undefined,
   queue: HandlingPresentationSource,
-): HandlingPresentationSource =>
-  job?.jobType === 'pry' && !job.stopped
-    ? {
-        jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
-        cancelLabel: 'X pauses',
-        movementLabel: '',
-      }
-    : queue;
+  throwCharge?: HandlingPresentationSource['throwCharge'],
+): HandlingPresentationSource => {
+  if (throwCharge) {
+    return { jobs: [], throwCharge };
+  }
+  if (job?.jobType === 'pry' && !job.stopped) {
+    return {
+      jobs: [{ label: 'Prying padlock', duration: job.duration, elapsed: job.elapsed }],
+      cancelLabel: 'X pauses',
+      movementLabel: '',
+    };
+  }
+  return queue;
+};
 
 const createPlayRefusalPresenter = (
   registry: Engine['registry'],
@@ -279,9 +288,22 @@ export const startPlay = (
   if (!playerSenseTuning) {
     throw new Error('Missing player sense tuning');
   }
-  const { throwMaxDistanceMetres, throwChargeSimSeconds: throwChargeSeconds } = playerSenseTuning.light;
-  let glowstickChargeStartedAt: number | undefined;
-  let glowstickChargeItemUid: number | undefined;
+  const {
+    throwMaxDistanceMetres,
+    throwChargeSimSeconds,
+    throwMinimumHoldSimSeconds,
+    throwArmSpeedMetresPerRealSecond,
+    throwArmEnergyJoules,
+  } = playerSenseTuning.light;
+  const itemThrowTuning = {
+    maximumDistanceMetres: throwMaxDistanceMetres,
+    chargeSimSeconds: throwChargeSimSeconds,
+    armSpeedMetresPerRealSecond: throwArmSpeedMetresPerRealSecond,
+    armEnergyJoules: throwArmEnergyJoules,
+  };
+  let itemThrowStartedAt: number | undefined;
+  let itemThrowItemUid: number | undefined;
+  let interactionPressTarget: InteractionTarget | undefined;
   const audio = new GameAudio({
     registry,
     blockSize: s,
@@ -389,6 +411,7 @@ export const startPlay = (
     isOpaque: engine.isOpaque,
     scale,
     seed: config.seed,
+    wobbleFlatOverride: config.debugWobbleFlat,
     start: config.start,
     spawn: playerStart.position,
     entities: engine.entities,
@@ -593,7 +616,7 @@ export const startPlay = (
     const box = $('errors');
     box.textContent = [box.textContent, message].filter(Boolean).join('\n');
   });
-  const { weather, caseEffects, glowstickThrows, impactEffects, flashlight, zombieMeshes } = view;
+  const { weather, caseEffects, itemThrows, impactEffects, flashlight, zombieMeshes } = view;
   const damageEvents = sim.events.reader();
 
   // ---- UI ----
@@ -1070,6 +1093,8 @@ export const startPlay = (
       const item = inventory.itemByUid(uid);
       return item ? toHands(inventory, queue, item, feetPosition) : 'The item is no longer available';
     },
+    pickup: pickupGroundItem,
+    interact: interactFurniture,
     craftStart: (recipeId, preference) => session.crafting.start(recipeId, preference),
     craftContinue: () => {
       continueAction();
@@ -1077,7 +1102,7 @@ export const startPlay = (
     craftStop: () => {
       stopAction();
     },
-    cancelGlowstick: cancelGlowstickCharge,
+    cancelItemThrow,
   };
   const applyScreenCommand = (payload: ReplayActionPayload): string | undefined => {
     const reason = applyReplayActionPayload(payload, replayCommandOwners);
@@ -1171,8 +1196,13 @@ export const startPlay = (
     quickbarActions.hold(item);
   };
   const quickbarInput = new QuickbarInput({ tap: quickbarTap, hold: quickbarHold });
+  const interactInput = new PressHoldInput<string>({
+    holdRealMs: () => RELOAD_GESTURE_MS.hold,
+    tap: () => completeWorldInteraction('pocket'),
+    hold: () => completeWorldInteraction('wield'),
+  });
   const hintToggleInput = new PressHoldInput<string>({
-    holdDuration: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
+    holdRealMs: (action) => keyboardInput.registry.binding(action)?.holdMs ?? 0,
     tap: () => undefined,
     hold: (action) => {
       if (action === 'hud.toggle-interaction-hints' && !sim.body.actionRefusal) {
@@ -1258,7 +1288,7 @@ export const startPlay = (
   keyboardInput.context = () => ({ debug: config.debug, context: inputContext() });
   keyboardInput.cancelled = (preservePointer) => {
     input.cancel(preservePointer);
-    cancelGlowstickCharge();
+    cancelItemThrow();
     quickbarInput.cancel();
     hintToggleInput.cancel();
   };
@@ -1316,8 +1346,8 @@ export const startPlay = (
       case 'player.crouch-toggle':
         withUnlockedInput(() => input.requestCrouchToggle());
         break;
-      case 'player.throw-glowstick':
-        withUnlockedInput(() => beginGlowstickCharge(at));
+      case 'player.throw':
+        withUnlockedInput(() => beginItemThrow());
         break;
       case 'hand.use-off':
         if (!replayPlayer) {
@@ -1328,7 +1358,10 @@ export const startPlay = (
         input.reload.keyDown(at, reloadBinding());
         break;
       case 'world.interact':
-        withUnlockedInput(use);
+        withUnlockedInput(() => {
+          interactionPressTarget = interactionTargetAt();
+          interactInput.keyDown(action, at);
+        });
         break;
       case 'craft.continue':
         if (session.crafting.currentUid !== undefined) {
@@ -1351,8 +1384,12 @@ export const startPlay = (
     if (action === 'firearm.reload') {
       input.reload.keyUp(at);
     }
-    if (action === 'player.throw-glowstick') {
-      finishGlowstickCharge(at);
+    if (action === 'world.interact') {
+      interactInput.keyUp(action, at);
+      interactionPressTarget = undefined;
+    }
+    if (action === 'player.throw') {
+      finishItemThrow();
     }
     if (slot !== undefined) {
       quickbarInput.keyUp(slot, at);
@@ -1382,6 +1419,8 @@ export const startPlay = (
   const cancelHeldInput = (): void => {
     input.reload.cancel();
     quickbarInput.cancel();
+    interactInput.cancel();
+    interactionPressTarget = undefined;
   };
   const rejectRefusedInput = (): boolean => {
     const refusal = sim.body.actionRefusal;
@@ -1468,15 +1507,15 @@ export const startPlay = (
       case 'firearm.remove':
         reloadBinding()?.remove();
         return true;
-      case 'glowstick.throw': {
-        const glowstick = [inventory.hands.right, inventory.hands.left].find((item) => item?.type === 'glowstick');
-        if (glowstick && action.value !== undefined) {
-          throwHeldGlowstick(glowstick, action.value);
+      case 'item.throw': {
+        const item = inventory.hands[dominantSide(inventory.character)];
+        if (item && action.value !== undefined) {
+          throwHeldItem(item, action.value);
         }
         return true;
       }
-      case 'glowstick.cancel':
-        cancelGlowstickCharge();
+      case 'item.throw.cancel':
+        cancelItemThrow();
         return true;
       default:
         return dispatchReplayQuickbar(action);
@@ -1524,15 +1563,21 @@ export const startPlay = (
   const eye = (): Vec3 => [body.pos[0], body.pos[1] + session.playerEyeHeightMetres / s, body.pos[2]];
 
   /** The nearest visible furniture panel or cell in the crosshair. */
-  const lookedAt = (): BlockEntity | undefined =>
-    pickFurniture({
+  const interactionTargetAt = (): InteractionTarget | undefined =>
+    pickInteractionTarget({
+      inventory,
       entities,
       origin: eye(),
       direction: lookDir(),
       maxDistance: USE_REACH / s,
       blockSize: s,
       isSolid: engine.isOpaque,
+      hasModel: (id) => view.models.has(id),
     });
+  const lookedAt = (): BlockEntity | undefined => {
+    const target = interactionTargetAt();
+    return target?.kind === 'furniture' ? target.entity : undefined;
+  };
 
   const keyLockHint = (entity: BlockEntity): string | undefined => {
     if (!entities.defOf(entity).door) {
@@ -1585,76 +1630,126 @@ export const startPlay = (
     });
   };
 
-  /** F: doors first, then readable/restable furniture, then container search/inventory. */
-  function use(): void {
-    const entity = lookedAt();
-    if (!entity || (compression.locksInput && rest.action?.furnitureUid !== entity.uid)) {
+  function completeWorldInteraction(mode: 'pocket' | 'wield'): void {
+    const target = interactionPressTarget;
+    interactionPressTarget = undefined;
+    if (!target) {
       return;
     }
-    useTarget(entity);
+    const payload: ReplayActionPayload =
+      target.kind === 'item'
+        ? { kind: 'item.pickup', itemUid: target.item.uid, mode, feet: feet() }
+        : { kind: 'furniture.interact', entityUid: target.entity.uid };
+    const reason = dispatchScreenCommand(payload);
+    if (reason) {
+      showRefusal(reason, sim.time);
+    }
   }
 
-  function beginGlowstickCharge(at: number): void {
+  function pickupGroundItem(uid: number, mode: 'pocket' | 'wield', feetPosition: Vec3): string | undefined {
+    const item = inventory.itemByUid(uid);
+    if (!item) {
+      return 'The item is no longer available';
+    }
+    return mode === 'wield' ? toHands(inventory, queue, item, feetPosition) : pocketGroundItem(inventory, queue, item);
+  }
+
+  function interactFurniture(uid: number): string | undefined {
+    const entity = entities.byUid(uid);
+    if (!entity) {
+      return 'The target is no longer available';
+    }
+    if (compression.locksInput && rest.action?.furnitureUid !== entity.uid) {
+      return undefined;
+    }
+    useTarget(entity);
+    return undefined;
+  }
+
+  function beginItemThrow(): void {
     const refusal = sim.body.actionRefusal;
     if (refusal) {
       showRefusal(refusal, sim.time);
       return;
     }
-    if (glowstickChargeStartedAt !== undefined || refusePrimaryUseWhileHandling()) {
+    if (itemThrowStartedAt !== undefined || itemThrowItemUid !== undefined) {
       return;
     }
-    const item = [
-      inventory.hands[dominantSide(inventory.character)],
-      inventory.hands[offSide(inventory.character)],
-    ].find((held) => held?.type === 'glowstick');
+    const item = inventory.hands[dominantSide(inventory.character)];
     if (!item) {
-      showRefusal('Hold a glowstick to throw it', sim.time);
+      showRefusal('Nothing in your primary hand to throw', sim.time);
       return;
     }
-    if (!item.on) {
-      showRefusal('Light the glowstick first', sim.time);
+    itemThrowItemUid = item.uid;
+    if (queue.busy || firearms.busy) {
+      showNotice('Waiting for handling to finish');
       return;
     }
-    glowstickChargeStartedAt = at;
-    glowstickChargeItemUid = item.uid;
+    itemThrowStartedAt = sim.time;
   }
 
-  function finishGlowstickCharge(at: number): void {
-    if (glowstickChargeStartedAt === undefined || glowstickChargeItemUid === undefined) {
+  function finishItemThrow(): void {
+    if (itemThrowStartedAt === undefined) {
+      cancelItemThrow();
       return;
     }
-    const heldSeconds = Math.max(0, (at - glowstickChargeStartedAt) / 1000);
-    const uid = glowstickChargeItemUid;
-    cancelGlowstickCharge();
+    if (itemThrowItemUid === undefined) {
+      return;
+    }
+    const heldSimSeconds = Math.max(0, sim.time - itemThrowStartedAt);
+    const uid = itemThrowItemUid;
+    cancelItemThrow();
     if (input.consumeRightMousePressed() || input.rightMouseHeld) {
-      dispatchScreenCommand({ kind: 'glowstick.cancel' });
+      dispatchScreenCommand({ kind: 'item.throw.cancel' });
       input.suppressRightMouseUntilRelease();
       return;
     }
+    if (!hasMetThrowMinimumHold(heldSimSeconds, throwMinimumHoldSimSeconds)) {
+      return;
+    }
     const item = inventory.itemByUid(uid);
-    if (!(item && [inventory.hands.right, inventory.hands.left].includes(item))) {
+    if (!(item && inventory.hands[dominantSide(inventory.character)] === item)) {
       return;
     }
-    const distance = chargedThrowDistance(throwMaxDistanceMetres, throwChargeSeconds, heldSeconds);
+    const distance = throwDistanceForItem(item, registry, itemThrowTuning, heldSimSeconds);
     if (!replayPlayer) {
-      inputRecorder?.queueAction('glowstick.throw', 'down', inputContext(), distance);
+      inputRecorder?.queueAction('item.throw', 'down', inputContext(), distance);
     }
-    throwHeldGlowstick(item, distance);
+    throwHeldItem(item, distance);
   }
 
-  function cancelGlowstickCharge(): void {
-    glowstickChargeStartedAt = undefined;
-    glowstickChargeItemUid = undefined;
+  function cancelItemThrow(): void {
+    itemThrowStartedAt = undefined;
+    itemThrowItemUid = undefined;
   }
 
-  function throwHeldGlowstick(item: Item, distanceMetres: number): void {
-    if (!item.on) {
-      showRefusal('Light the glowstick first', sim.time);
+  function advancePendingItemThrow(): void {
+    if (itemThrowItemUid === undefined || itemThrowStartedAt !== undefined) {
       return;
     }
-    const target = glowstickLandingTarget(distanceMetres);
+    if (!keyboardInput.held('player.throw')) {
+      cancelItemThrow();
+      return;
+    }
+    if (sim.paused || queue.busy || firearms.busy) {
+      return;
+    }
+    if (inventory.hands[dominantSide(inventory.character)]?.uid !== itemThrowItemUid) {
+      cancelItemThrow();
+      showRefusal('The item left your primary hand before the throw began', sim.time);
+      return;
+    }
+    itemThrowStartedAt = sim.time;
+    showNotice('');
+  }
+
+  function throwHeldItem(item: Item, distanceMetres: number): void {
+    if (inventory.hands[dominantSide(inventory.character)] !== item) {
+      return;
+    }
+    const target = itemLandingTarget(distanceMetres);
     if (!target) {
-      showRefusal("Can't find ground for the glowstick to land on", sim.time);
+      showRefusal("Can't find a place for it to land", sim.time);
       return;
     }
     const placement = inventory.planAdd(item, target);
@@ -1668,17 +1763,17 @@ export const startPlay = (
     }
     if (!inventory.add(item, target)) {
       inventory.add(item, { kind: 'hand', side: location.side });
-      showRefusal("Couldn't land the glowstick there", sim.time);
+      showRefusal("Couldn't land the item there", sim.time);
       return;
     }
     const origin: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
     const landing: Vec3 = [(target.pos[0] + 0.5) * s, (target.pos[1] + 0.15) * s, (target.pos[2] + 0.5) * s];
-    glowstickThrows.spawn(origin, landing, registry.items.get(item.type)?.light?.color ?? '#b8ff64');
+    itemThrows.spawn(origin, landing, item);
   }
 
-  function glowstickLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
+  function itemLandingTarget(distanceMetres: number): Extract<Target, { kind: 'pile' }> | undefined {
     const from: Vec3 = [body.pos[0] * s, body.pos[1] * s + session.playerEyeHeightMetres, body.pos[2] * s];
-    const pos = traceGlowstickLanding({
+    const pos = traceItemLanding({
       from,
       direction: lookDir(),
       distanceMetres,
@@ -2008,10 +2103,8 @@ export const startPlay = (
         pending: streamer.pending,
         looking: [
           looking,
-          ...(visible.interaction && glowstickChargeStartedAt !== undefined
-            ? [
-                `${labelForAction('player.throw-glowstick')} ${Math.round(Math.min(1, (sim.time - glowstickChargeStartedAt) / throwChargeSeconds) * 100)}% · right-click cancels`,
-              ]
+          ...(visible.interaction && itemThrowStartedAt !== undefined
+            ? [`${labelForAction('player.throw')} held · right-click cancels`]
             : []),
         ]
           .filter(Boolean)
@@ -2020,13 +2113,19 @@ export const startPlay = (
       visible,
     );
   const promptText = (now: number, visible: Readonly<HudOptionsState>): string => {
-    const entity = visible.interaction && input.locked && !debugTools?.buildOn ? lookedAt() : undefined;
+    const target = visible.interaction && input.locked && !debugTools?.buildOn ? interactionTargetAt() : undefined;
+    let interactionHint: string | undefined;
+    if (target?.kind === 'item') {
+      interactionHint = `${labelForAction('world.interact')}: pocket the ${inventory.name(target.item)}; hold to wield`;
+    } else if (target?.kind === 'furniture') {
+      interactionHint = useText(target.entity);
+    }
     return playPromptText(
       {
         now,
         notice,
         noticeUntil,
-        interactionHint: entity ? useText(entity) : undefined,
+        interactionHint,
         itemActionHint:
           visible.interaction && input.locked && !debugTools?.buildOn ? survival.wieldedItemActionHint() : undefined,
         interruption: compression.interruption,
@@ -2060,6 +2159,7 @@ export const startPlay = (
         noclip: debugTools?.noclip ?? false,
         yaw: input.yaw,
         pitch: input.pitch,
+        stridePhase: session.playerStridePhase,
         eye: eye(),
         ...(spectatorCameraEnabled && spectatorCameraBody
           ? { spectator: { position: [...spectatorCameraBody.pos], yaw: input.yaw, pitch: input.pitch } }
@@ -2122,6 +2222,17 @@ export const startPlay = (
     };
   };
 
+  const handlingPresentation = () => {
+    const [job] = queue.jobs;
+    const item = job?.kind === 'move' ? inventory.itemByUid(job.itemUid) : undefined;
+    const location = item ? inventory.locate(item) : undefined;
+    const progress =
+      job?.kind === 'move' && location?.kind === 'pile' && job.duration > 0
+        ? Math.max(0, Math.min(1, job.elapsed / job.duration))
+        : undefined;
+    return { job, progress };
+  };
+
   const updateHeldItems = (dt: number, readiness = firearmReadiness()): void => {
     camera.updateMatrixWorld(); // the beam follows this frame's view, not the last one's
     const selectedMelee = meleeSelection();
@@ -2137,11 +2248,13 @@ export const startPlay = (
       ? Math.min(action.cooldown, action.elapsed + (sim.paused ? 0 : Math.max(0, sim.time - session.lastPlayerStep)))
       : 0;
     const pose = renderMeleePose(action, elapsed, ready, dominantSide(inventory.character));
+    const { job: handlingJob, progress: grabProgress } = handlingPresentation();
     view.updateHeld(dt, pose, survival.lit, {
       firearms: firearms.frames(),
       ...(readiness === undefined ? {} : { readiness }),
       aim: aim.frame,
-      job: queue.jobs[0],
+      job: handlingJob,
+      ...(grabProgress === undefined ? {} : { grab: { progress: grabProgress } }),
     });
   };
 
@@ -2255,13 +2368,13 @@ export const startPlay = (
     );
   };
 
-  const cancelGlowstickChargeOnRightClick = (): void => {
-    if (sim.body.actionRefusal && glowstickChargeStartedAt !== undefined) {
-      cancelGlowstickCharge();
+  const cancelItemThrowOnRightClick = (): void => {
+    if (sim.body.actionRefusal && itemThrowItemUid !== undefined) {
+      cancelItemThrow();
       return;
     }
-    if (!replayPlayer && input.consumeRightMousePressed() && glowstickChargeStartedAt !== undefined) {
-      dispatchScreenCommand({ kind: 'glowstick.cancel' });
+    if (!replayPlayer && input.consumeRightMousePressed() && itemThrowItemUid !== undefined) {
+      dispatchScreenCommand({ kind: 'item.throw.cancel' });
       input.suppressRightMouseUntilRelease();
     }
   };
@@ -2284,7 +2397,7 @@ export const startPlay = (
 
   /** Advances the simulation one frame; returns whether the debug game freeze (M) is on. */
   const stepSimulation = (realDt: RealSeconds, menuPaused: boolean): boolean => {
-    cancelGlowstickChargeOnRightClick();
+    cancelItemThrowOnRightClick();
     // The freeze stops the sim like the pause menu does, but without the overlay or pointer release.
     const gameFrozen = debugTools?.frozen ?? false;
     if (replayPlayer) {
@@ -2341,14 +2454,19 @@ export const startPlay = (
     if (actionRefusal) {
       input.reload.cancel();
       quickbarInput.cancel();
+      interactInput.cancel();
+      interactionPressTarget = undefined;
     } else {
       input.reload.advance(now, reloadBinding());
     }
     const inputLocked = replaySample?.inputLocked ?? compression.locksInput;
     if (screen.isOpen || mainMenuOpen || inputLocked || sim.dead || actionRefusal) {
       quickbarInput.cancel();
+      interactInput.cancel();
+      interactionPressTarget = undefined;
     } else {
       quickbarInput.update(now);
+      interactInput.update(now);
     }
     hintToggleInput.update(now);
   };
@@ -2370,6 +2488,7 @@ export const startPlay = (
     playtestObserver?.beforeFrame(queue, inventory);
     mark = realNow();
     const gameFrozen = stepSimulation(dt, menuState.paused);
+    advancePendingItemThrow();
     caseEffects.update(dt, engine.isSolid);
     impactEffects.update(dt, config.debug && debugLaserEnabled);
     simulationMs = realNow() - mark;
@@ -2444,7 +2563,17 @@ export const startPlay = (
     quickbarBox.hidden = (debugTools?.buildOn ?? false) || !visible.quickbar;
     renderPlayHandling(
       handlingBox,
-      handlingPresentationFor(sim.actions.job, queue),
+      handlingPresentationFor(
+        sim.actions.job,
+        queue,
+        itemThrowStartedAt === undefined
+          ? undefined
+          : {
+              elapsedSimSeconds: Math.max(0, sim.time - itemThrowStartedAt),
+              chargeSimSeconds: throwChargeSimSeconds,
+              minimumHoldSimSeconds: throwMinimumHoldSimSeconds,
+            },
+      ),
       !screen.isOpen && visible.handling,
     );
     view.prepareLighting(sky);

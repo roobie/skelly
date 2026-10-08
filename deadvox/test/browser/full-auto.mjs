@@ -7,8 +7,9 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const anchors = new Map([
@@ -26,7 +27,6 @@ const requireAnchor = (code, file, marker) => {
 for (const [file, marker] of anchors) {
   requireAnchor(readFileSync(resolve(root, file), 'utf8'), file, marker);
 }
-const { chromium } = await import('playwright');
 const vite = await createServer({
   root,
   configFile: resolve(root, 'vite.config.ts'),
@@ -62,11 +62,7 @@ try {
   await vite.listen();
   const address = vite.httpServer.address();
   assert(address && typeof address !== 'string');
-  browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN,
-    headless: true,
-    args: browserStageArgs('full-auto'),
-  });
+  browser = await launchChromium('full-auto', { headless: true });
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -500,7 +496,7 @@ try {
     const state = session.aim.snapshotState();
     return {
       finite: [
-        state.gaitPhase,
+        session.playerStridePhase,
         state.lookYaw,
         state.lookPitch,
         state.recoilYaw,

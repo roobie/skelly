@@ -8,12 +8,12 @@ import { resolve } from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { createServer } from 'vite';
+import { launchChromium } from './chromium.mjs';
 import { holdAction as holdInputAction, pressAction } from './input-actions.mjs';
 import { dispatchMenuPointerClick, dispatchMenuPointerMove } from './menu-pointer.mjs';
 import { waitForSimulation } from './simulation-wait.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
-const { chromium } = await import('playwright');
 const [, , mode] = process.argv;
 assert.ok(mode === 'consumer' || mode === 'lifecycle', 'choose consumer or lifecycle');
 const root = fileURLToPath(new URL('../..', import.meta.url));
@@ -46,11 +46,7 @@ let browser;
 try {
   await vite.listen();
   const { port } = vite.httpServer.address();
-  browser = await chromium.launch({
-    executablePath: process.env.CHROME_BIN ?? chromium.executablePath(),
-    headless: true,
-    args: browserStageArgs('reading'),
-  });
+  browser = await launchChromium('reading', { headless: true });
   const page = await browser.newPage({
     viewport: mode === 'consumer' ? { width: 640, height: 400 } : { width: 1280, height: 800 },
   });

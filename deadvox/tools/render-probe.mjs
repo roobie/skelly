@@ -40,9 +40,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import process from 'node:process';
 
-const { chromium } = await import('playwright');
-
-import { browserStageArgs, browserStageUrl } from '../test/browser/stage-mode.mjs';
+import { launchChromium } from '../test/browser/chromium.mjs';
+import { browserStageUrl } from '../test/browser/stage-mode.mjs';
 
 const USAGE =
   'usage: node tools/render-probe.mjs <url> [--out shot.png] [--wait ms] [--scan cyan,magenta|none] [--window x,y,w,h]';
@@ -210,8 +209,8 @@ const out = opts.out ?? join(await mkdtemp(join(tmpdir(), 'render-probe-')), 'sh
 
 let browser;
 try {
-  browser = await chromium.launch({
-    args: browserStageArgs('render-probe', ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist']),
+  browser = await launchChromium('render-probe', {
+    args: ['--use-gl=angle', '--use-angle=swiftshader', '--ignore-gpu-blocklist'],
   });
 } catch (error) {
   console.error(`could not launch Chromium: ${error.message.split('\n')[0]}`);

@@ -220,7 +220,6 @@
       "cooldown": 1,
       "duration": 1,
       "elapsed": 1,
-      "holdDuration": 1,
       "recordSnapshotDuration": 1,
       "setTimeOfDay": 1,
       "simTime": 1,
@@ -267,11 +266,8 @@
       "uiSeconds": 1
     },
     "game/pressHoldInput.ts": {
-      "holdDuration": 2,
+      "holdDuration": 1,
       "startedAt": 2
-    },
-    "game/quickbarInput.ts": {
-      "holdDuration": 1
     },
     "game/saveStorage.ts": {
       "requestTimeoutMs": 1,
@@ -323,8 +319,7 @@
     },
     "ui/hud.ts": {
       "duration": 1,
-      "elapsed": 1,
-      "time": 3
+      "elapsed": 1
     },
     "ui/inventoryScreen.ts": {
       "duration": 1,

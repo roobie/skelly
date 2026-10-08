@@ -16,10 +16,11 @@
         "camp_armoury",
         "camp_command_tent",
         "camp_container",
-        "camp_fence_run",
+        "camp_gate",
         "camp_hq",
         "camp_sandbag_post",
         "camp_tent",
+        "camp_wall_run",
         "camp_watchtower",
         "corner_store",
         "dads_cabin",
@@ -41,7 +42,11 @@
         "stairs_cabin",
         "stairs_house",
         "triage_tent",
-        "woodshed"
+        "woodshed",
+        "workshop_hall",
+        "workshop_office",
+        "workshop_parts_store",
+        "workshop_yard"
       ],
       "valuesAsFlags": false
     },

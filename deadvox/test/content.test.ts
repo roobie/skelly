@@ -792,6 +792,33 @@ describe('content references', () => {
     expect(issues.map((i) => i.message)).toContain('nested tables loop: a → b → a');
   });
 
+  it('requires an opening-noise door to select a sound event with hearing noise', () => {
+    const doorOpen = (base.find(({ source }) => source === 'sounds.json')!.data as ContentFile).sounds!.find(
+      ({ id }) => id === 'door_open',
+    )!;
+    const quietDoorOpen = { ...doorOpen, noise: { ...doorOpen.noise, enabled: false } };
+    const quietDoor = {
+      source: 'quiet-door.json',
+      data: {
+        furniture: [
+          {
+            id: 'fixture_quiet_door',
+            name: 'Fixture door',
+            size: [1, 1, 1],
+            color: '#333333',
+            door: { handlingSimSeconds: 0.4, openNoise: { sound: 'door_open' } },
+          },
+        ],
+      },
+    };
+    const { issues } = buildRegistry([{ source: 'door-sound.json', data: { sounds: [quietDoorOpen] } }, quietDoor]);
+    expect(issues).toContainEqual({
+      source: 'quiet-door.json',
+      path: 'furniture[0].door.openNoise.sound',
+      message: 'opening sound must emit hearing noise',
+    });
+  });
+
   it('lets only a military table hold military-only loot, boxed at any depth, and no salvage or recipe make it', () => {
     const military = [...militaryLootItems(baseRegistry)];
     const [item] = military;

@@ -26,13 +26,13 @@ jobs:
       - run: npm ci
         timeout-minutes: 3
       - name: Cache Playwright Chromium
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' || inputs.shard == 'opfs' || inputs.shard == 'indexeddb' }}
+        if: ${{ inputs.shard != 'firefox' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('deadvox/package-lock.json') }}
       - name: Install Playwright Chromium
-        if: ${{ inputs.shard == 'control-check' || inputs.shard == 'save-other' || inputs.shard == 'opfs' || inputs.shard == 'indexeddb' }}
+        if: ${{ inputs.shard != 'firefox' }}
         timeout-minutes: 3
         run: npx playwright install chromium
       - if: ${{ inputs.shard == 'control-check' }}

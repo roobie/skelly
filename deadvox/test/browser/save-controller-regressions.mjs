@@ -7,15 +7,14 @@
 import assert from 'node:assert/strict';
 import { stat } from 'node:fs/promises';
 import { resolve as resolvePath } from 'node:path';
-import process from 'node:process';
 import test from 'node:test';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { launchChromium } from './chromium.mjs';
 import { pressAction } from './input-actions.mjs';
-import { browserStageArgs, browserStageUrl } from './stage-mode.mjs';
+import { browserStageUrl } from './stage-mode.mjs';
 
 const root = resolvePath(fileURLToPath(new URL('../..', import.meta.url)));
 const { createServer } = await import(pathToFileURL(`${root}/node_modules/vite/dist/node/index.js`));
-const { chromium } = await import(pathToFileURL(`${root}/node_modules/playwright/index.mjs`));
 const { decodeSave } = await import(pathToFileURL(`${root}/src/core/saveFormat.ts`));
 const observation = {
   name: 'save-controller-game-ready',
@@ -37,11 +36,7 @@ const server = await createServer({
   plugins: [observation],
 });
 await server.listen();
-const browser = await chromium.launch({
-  executablePath: process.env.CHROME_BIN ?? chromium.executablePath(),
-  headless: true,
-  args: browserStageArgs('save-controller-regressions'),
-});
+const browser = await launchChromium('save-controller-regressions', { headless: true });
 const address = server.httpServer.address();
 assert(address && typeof address !== 'string');
 const url = browserStageUrl(
