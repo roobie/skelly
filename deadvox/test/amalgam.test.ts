@@ -394,7 +394,8 @@ describe('amalgam body and combat seam', () => {
     expect(zombie.severed).toContain(member.partId);
 
     let followup = 0;
-    while (simulation.store.get(id) !== undefined) {
+    const maxFollowupBlasts = 256;
+    while (simulation.store.get(id) !== undefined && followup < maxFollowupBlasts) {
       const healthBefore = zombie.regions['core.trunk']!;
       expect(fire(coreOrigin, coreBasis, `core-followup-${followup}`)).toBeGreaterThan(0);
       followup += 1;
@@ -402,6 +403,7 @@ describe('amalgam body and combat seam', () => {
         expect(zombie.regions['core.trunk']).toBeLessThan(healthBefore);
       }
     }
+    expect(simulation.store.get(id), 'amalgam should die within a bounded number of follow-up blasts').toBeUndefined();
     expect(zombie.regions['core.trunk']).toBe(0);
     expect(zombie.severed).toContain(member.partId);
   });

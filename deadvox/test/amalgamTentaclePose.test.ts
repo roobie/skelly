@@ -5,7 +5,7 @@ describe('amalgam attack tentacle pose', () => {
   it('extends toward the player through windup and strike, then retracts within attack reach', () => {
     const start: [number, number, number] = [0, 0, 0];
     const target: [number, number, number] = [3, 0, 4];
-    const reachMetres = Math.hypot(target[0] - start[0], target[1] - start[1], target[2] - start[2]);
+    const reachMetres = 3;
     const windupSeconds = 0.4;
     const cooldownSeconds = 1.8;
     const pose = (attackWindup: number, attackWait: number) =>
@@ -37,6 +37,8 @@ describe('amalgam attack tentacle pose', () => {
     const dy = strike.end[1] - start[1];
     const dz = strike.end[2] - start[2];
     expect(Math.hypot(dx, dy, dz)).toBeLessThanOrEqual(reachMetres + 1e-9);
+    const targetGap = Math.hypot(strike.end[0] - target[0], strike.end[1] - target[1], strike.end[2] - target[2]);
+    expect(targetGap).toBeGreaterThan(1e-9);
     expect(dx * (target[0] - start[0]) + dy * (target[1] - start[1]) + dz * (target[2] - start[2])).toBeGreaterThan(0);
   });
 
