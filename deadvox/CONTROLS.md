@@ -217,7 +217,10 @@ becoming controls; see `BindingRegistry` in `src/game/inputBindings.ts`.
 Replay samples controls at fixed player ticks so action order does not depend on browser
 event timing. Hand-changing gestures apply at the sample that records them, in recorded
 order. A throw and a following hand gesture therefore use the same pose and remaining items
-in live play and replay.
+in live play and replay. Replay fingerprints in `src/game/inputReplay.ts`,
+`replayStateFingerprint`, compare time fields at player-tick precision because variable live
+frame accumulation and fixed-step playback can leave a sub-tick clock remainder; the other
+state still compares exactly.
 
 Replay covers inventory and crafting because those player flows should be reproducible,
 not just movement. Its starting save and compatibility identity keep the recording separate

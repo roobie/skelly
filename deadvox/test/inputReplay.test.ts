@@ -34,6 +34,7 @@ import {
   isReplayActionPayload,
   type ReplayActionPayload,
 } from '../src/game/replayCommands.ts';
+import { PHYSICS_RATE } from '../src/game/session.ts';
 import { rifleAmmunition } from './rifleFixture.ts';
 import {
   addFixtureColumn,
@@ -1288,6 +1289,18 @@ describe('input replay', () => {
     const inputs = joinInputReplayWindows(previous, recorder.copyInputs());
     const replay = playSession(start, inputs);
     expect(await replayStateFingerprint(capture(replay))).toBe(await replayStateFingerprint(capture(source)));
+  });
+
+  it('replay fingerprints ignore sub-tick clock residue but retain a full-tick difference', async () => {
+    const baseline = capture(createRuntime());
+    const subTick = structuredClone(baseline);
+    subTick.character.simulation.time += 1 / (PHYSICS_RATE * 4);
+    const nextTick = structuredClone(baseline);
+    nextTick.character.simulation.time += 1 / PHYSICS_RATE;
+
+    const baselineFingerprint = await replayStateFingerprint(baseline);
+    expect(await replayStateFingerprint(subTick)).toBe(baselineFingerprint);
+    expect(await replayStateFingerprint(nextTick)).not.toBe(baselineFingerprint);
   });
 
   it('replay export allows an unmodified held gun but refuses any per-type override', () => {

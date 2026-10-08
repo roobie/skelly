@@ -634,15 +634,19 @@ export async function replayStateFingerprint(snapshot: Readonly<SaveSnapshot>): 
     throw new Error('Replay state verification requires Web Crypto');
   }
   // Live frame accumulation and fixed-step replay can differ below simulation precision.
-  const normalize = (value: unknown): unknown => {
+  const normalize = (value: unknown, key?: string): unknown => {
     if (typeof value === 'number' && Number.isFinite(value)) {
-      return Number(value.toFixed(9));
+      return key === 'time'
+        ? Number((Math.round(value * PHYSICS_RATE) / PHYSICS_RATE).toFixed(9))
+        : Number(value.toFixed(9));
     }
     if (Array.isArray(value)) {
-      return value.map(normalize);
+      return value.map((entry) => normalize(entry));
     }
     if (value && typeof value === 'object') {
-      return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, normalize(entry)]));
+      return Object.fromEntries(
+        Object.entries(value).map(([entryKey, entry]) => [entryKey, normalize(entry, entryKey)]),
+      );
     }
     return value;
   };
