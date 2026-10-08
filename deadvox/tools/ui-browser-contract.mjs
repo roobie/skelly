@@ -768,7 +768,10 @@ try {
     assert.ok(itemsBody && splitter, 'Items divider is available to resize Around you');
     await page.mouse.move(splitter.x + splitter.width / 2, splitter.y + splitter.height / 2);
     await page.mouse.down();
-    await page.mouse.move(itemsBody.x + itemsBody.width * fraction - (fraction === 1 ? 1 : 0), splitter.y + splitter.height / 2);
+    await page.mouse.move(
+      itemsBody.x + itemsBody.width * fraction - (fraction === 1 ? 1 : 0),
+      splitter.y + splitter.height / 2,
+    );
     await page.mouse.up();
     cursor = await evaluate(`(() => {
       const rect = document.querySelector('#game-cursor').getBoundingClientRect();
@@ -815,7 +818,9 @@ try {
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - inventoryScroll.top) <= 1, 'scroll survives queueing a move');
   const selectedTarget = () =>
-    evaluate(`document.querySelector('#inventory .inv-item[data-uid="${inventoryScroll.uid}"]')?.closest('.inv-grid')?.dataset.target`);
+    evaluate(
+      `document.querySelector('#inventory .inv-item[data-uid="${inventoryScroll.uid}"]')?.closest('.inv-grid')?.dataset.target`,
+    );
   await waitFor(
     () => selectedTarget().then((target) => target !== undefined && target !== inventoryScroll.target),
     'selected item moves into inventory',
@@ -885,8 +890,14 @@ try {
     'Tab reopens inventory to verify the drop',
   );
   const transferTarget = () =>
-    evaluate("[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans')?.closest('.inv-grid')?.dataset.target");
-  await waitFor(() => transferTarget().then((target) => target === transfer.target), 'container move completes', 15_000);
+    evaluate(
+      "[...document.querySelectorAll('#inventory .inv-item')].find((node) => node.querySelector('.inv-item-name')?.textContent === 'Can of beans')?.closest('.inv-grid')?.dataset.target",
+    );
+  await waitFor(
+    () => transferTarget().then((target) => target === transfer.target),
+    'container move completes',
+    15_000,
+  );
   assert.equal(await transferTarget(), transfer.target, 'dropped item lands in the target inventory pocket');
   paneTop = await evaluate('document.querySelector(\'#inventory [data-pane="around"]\').scrollTop');
   assert.ok(Math.abs(paneTop - transfer.paneTop) <= 1, 'scroll survives handling completion');
