@@ -108,7 +108,7 @@ Bisect a visual bug by flipping one toggle at a time before theorising.
 
 ## Save-lock timeouts
 
-The same-tab `&loadout=pump` failure was a back/forward-cache lock retention. In the production-preview probe, Chromium reported `pagehide.persisted=true`; the outgoing `SaveController` requested the exclusive save lock, and the new document's first lock snapshot showed it held while its own controller was not ready. The lock callback had not run, so the save worker had not started a write. The destination could not load the saved world. See `test/browser/save-storage.mjs`, `navigationOnly`, and `src/game/saveStorage.ts`, `SaveStorage.withLock`.
+Same-tab navigation to `&loadout=pump` exposed back/forward-cache lock retention: the outgoing page kept the exclusive save lock while the destination tried to read the saved world. In the production-preview probe, Chromium reported `pagehide.persisted=true`; the outgoing `SaveController` requested the exclusive save lock, and the new document's first lock snapshot showed it held while its own controller was not ready. The lock callback had not run, so the save worker had not started a write. The destination could not load the saved world. See `test/browser/save-storage.mjs`, `navigationOnly`, and `src/game/saveStorage.ts`, `SaveStorage.withLock`.
 
 `SaveController` marks the document as leaving on `pagehide`, skips that capture when the page is persisted, and suppresses a later hidden-visibility capture. A persisted `pageshow` clears the leaving state; ordinary hidden tabs and non-persisted pagehide still capture. The fixed Chromium probe loads the last committed world in the destination, then restores the original running world with no lock held after Back.
 
