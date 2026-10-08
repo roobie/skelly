@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MetallicCartridge } from '../src/ammo/cartridge.ts';
 import { roundProfiles } from '../src/ammo/roundProfile.ts';
+import { GRID } from '../src/core/conventions.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Solid } from '../src/core/schema.ts';
 import { gunDomain } from '../src/gun/domain.ts';
@@ -14,7 +15,7 @@ import {
   nominalCapacityForMagazine,
   UNITS_PER_MM,
 } from '../src/gun/magazineGeometry.ts';
-import { magazine } from '../src/gun/parts.ts';
+import { magazine, STANAG20_SOURCED_WIDTH_MM } from '../src/gun/parts.ts';
 import { GUN_PREFABS } from '../src/gun/prefabs.ts';
 import { loadCartridgeFile } from './ammoHelpers.ts';
 
@@ -92,8 +93,9 @@ describe('generated magazine round columns', () => {
     expect(new Set(thirtyCenterline.sectionWidths.slice(2))).toEqual(new Set([twentyCenterline.sectionWidths.at(-1)]));
     const maximumWidthMm =
       Math.max(...twentyCenterline.sectionWidths, ...thirtyCenterline.sectionWidths) * METRES_PER_UNIT * 1000;
-    expect(maximumWidthMm).toBeGreaterThan(0);
-    expect(maximumWidthMm).toBeLessThanOrEqual(24.8);
+    const gridStepMm = GRID * METRES_PER_UNIT * 1000;
+    const nearestGridWidthMm = Math.round(STANAG20_SOURCED_WIDTH_MM / gridStepMm) * gridStepMm;
+    expect(maximumWidthMm).toBeCloseTo(nearestGridWidthMm, 7);
     if (!(body?.kind === 'extruded-polygon' && floorplate?.kind === 'extruded-polygon')) {
       throw new Error('Expected an extruded straight STANAG body and floorplate.');
     }

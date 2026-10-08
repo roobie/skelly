@@ -196,11 +196,11 @@ const mmToMagazineUnits = (millimetres: number): number => millimetres / (METRES
 const snapMagazineDimension = (millimetres: number): number => Math.round(mmToMagazineUnits(millimetres) / GRID) * GRID;
 // Brownells listing for the USGI straight 20-round magazine: https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983
 // Its delivery dimensions (127 x 66 x 25 mm) corroborate the outer box within about 3 mm; they are package dimensions, not the body envelope.
-// Round the sourced maximum width down so grid snapping cannot exceed the body envelope.
+export const STANAG20_SOURCED_WIDTH_MM = 24.8;
 const STANAG20_BODY_BOX_U = {
   length: snapMagazineDimension(4.895 * 25.4),
   depth: snapMagazineDimension(2.54 * 25.4),
-  width: Math.floor(mmToMagazineUnits(24.8) / GRID) * GRID,
+  width: snapMagazineDimension(STANAG20_SOURCED_WIDTH_MM),
 } as const;
 const STANAG30_CENTERLINE_LENGTH_U = snapMagazineDimension(190);
 const STANAG30_BODY_DEPTH_U = snapMagazineDimension(65);

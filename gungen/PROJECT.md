@@ -350,18 +350,19 @@ Scale anchor: keep the gun-domain unit calibration; the Brownells STANAG-20 prod
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
-- The 20-round STANAG body follows the Brownells listing, including its sourced
-  side-to-side envelope. The 30-round body shares that width, while its length
-  and depth follow the HK SA80-compatible steel listing. This is a visible
-  reference, not a claim that the 30 is a USGI aluminium magazine; its length
-  remains an open BR confirmation. The shared upper and feed lips fit within
-  the narrower body envelope, and the AR magwell is assessed without changing
-  the frame. The curve and floorplate details remain photo estimates. The HK
+- The 20-round STANAG body follows the Brownells listing, with each sourced
+  dimension snapped to the nearest 0.25u grid step. The 30-round body shares
+  its width, while its length and depth follow the HK SA80-compatible steel
+  listing and are snapped to the nearest grid step. This is a visible reference,
+  not a claim that the 30 is a USGI aluminium magazine. The shared upper and
+  feed lips use the same snapped width as both bodies. The AR frame and magwell
+  are unchanged. The curve and floorplate details remain photo estimates. The HK
   listing's approximate empty weight is for steel, so Deadvox retains a gameplay
   mass estimate unless an aluminium STANAG-30 mass is sourced; see
   `deadvox/src/content/base/items-ammunition.json`, `magazine_stanag_30`. See
-  `src/gun/parts.ts`, `STANAG20_BODY_BOX_U`, `STANAG30_CENTERLINE_LENGTH_U`,
-  `STANAG30_BODY_WIDTH_U`, `magazineBodySection` and `magazineGeometryFor`.
+  `src/gun/parts.ts`, `STANAG20_SOURCED_WIDTH_MM`, `STANAG20_BODY_BOX_U`,
+  `STANAG30_CENTERLINE_LENGTH_U`, `STANAG30_BODY_WIDTH_U`, `magazineBodySection`
+  and `magazineGeometryFor`.
   Sources: [Brownells 20-round listing](https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983);
   [HK SA80 30-round listing](https://www.meanandgreen.com/army/British_Army/SA80_5.56mm_30_Round_NATO_Magazine/3850/2876.html).
   Other STANAG capacities are deferred to #414. The AKM curved band is fitted
@@ -1368,11 +1369,13 @@ deadvox holds a model with +x forward and +y up
   (standard sRGB transfer function), metallic 0, roughness 0.85. The writer has
   its own copy of the special, role, fallback lookup, since core can't import
   `src/gun/palette.ts#solidColor`; a test checks the two agree.
-- Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm, from the STANAG top depth
-  of 5.5u = 63 mm) is the gun domain's value; the writer scales by the
-  resolved domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions
-  times that; normals are unscaled. `conventions.ts` still says "roughly a centimetre" for `u`; the
-  export uses 11.5 mm.
+- Units: `METRES_PER_UNIT = 0.0115` (1u = 11.5 mm) is the gun domain's chosen
+  calibration; its 5.5u magazine top is 63.25 mm. The Brownells STANAG-20
+  product-box cross-section of 64.5 mm corroborates that scale within one grid
+  step, but is package rather than body data. The writer scales by the resolved
+  domain's `units.metresPerUnit`. Vertices are `mesh.ts` positions times that;
+  normals are unscaled. `conventions.ts` still says "roughly a centimetre" for
+  `u`; the export uses 11.5 mm.
 - Axes. gungen is right-handed, +X forward, +Y up, +Z right; glTF is
   right-handed Y-up; deadvox's held model is +x forward, +y up. So the file
   keeps gungen's axes (`FILE_FROM_GUNGEN`, identity) and `grip.at` and the
