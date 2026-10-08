@@ -13,8 +13,12 @@ import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
 import { makeConfig } from '../src/game/config.ts';
 import { ammoMatchesCalibre, firearmModelForType } from '../src/game/firearmHandling.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
-import { GARDEN_GATE, HOUSE_OFFSET, SPAWN_YAW } from '../src/game/testHouse.ts';
-import { isTestHouseRangeStockItem, testHouseRangeStock } from '../src/game/testHouseRange.ts';
+import { SPAWN_YAW } from '../src/game/testHouse.ts';
+import {
+  buildTestHouseRangeRoute,
+  isTestHouseRangeStockItem,
+  testHouseRangeStock,
+} from '../src/game/testHouseRange.ts';
 import { buildDebugTestHouseSite, DebugTestHouseSite, testHouseScene } from '../src/game/worldSetup.ts';
 
 const withRangeStockFixtures = (): { registry: Registry; firearm: string; ammo: string; box: string } => {
@@ -57,13 +61,6 @@ const stockedTypes = (registry: Registry, stock: ReturnType<typeof testHouseRang
   return new Set(rack.pockets.flat().map(({ item }) => item.type));
 };
 
-interface RangeWalkWaypoint {
-  axis: 0 | 2;
-  target: number;
-  forward: number;
-  right: number;
-}
-
 const rangeFurnitureFor = (site: DebugTestHouseSite): ReturnType<DebugTestHouseSite['furnitureIn']> => {
   const { range } = site;
   const furniture: ReturnType<DebugTestHouseSite['furnitureIn']> = [];
@@ -85,7 +82,7 @@ const buildRangeWalkFixture = () => {
   if (!site) {
     throw new Error('debug test-house site is missing');
   }
-  const { range, spawn } = site;
+  const { spawn } = site;
   const rangeFurniture = rangeFurnitureFor(site);
   const rackSpec = rangeFurniture.find(({ spec }) => spec.type === 'range_rack')?.spec;
   if (!rackSpec) {
@@ -95,15 +92,14 @@ const buildRangeWalkFixture = () => {
   const { blockSize } = scale;
   const startX = spawn.pos[0] / blockSize;
   const startZ = spawn.pos[2] / blockSize;
-  const corridorZ = (HOUSE_OFFSET[1] + GARDEN_GATE.approachZ) / blockSize;
-  const gateCentreX = (HOUSE_OFFSET[0] + GARDEN_GATE.centreX) / blockSize;
-  const beyondGateZ = (HOUSE_OFFSET[1] + GARDEN_GATE.exitZ) / blockSize;
-  const enterX = range.rect.x0 + 2;
-  const rackZ = rackSpec.pos[2] + rackSpec.size[2] / 2;
-  const minX = Math.floor(startX - 2);
-  const maxX = Math.ceil(Math.max(gateCentreX, enterX) + 2);
-  const minZ = Math.floor(Math.min(startZ, corridorZ) - 2);
-  const maxZ = Math.ceil(Math.max(startZ, corridorZ, beyondGateZ, rackZ) + 2);
+  const body = createPlayerBody(scale, startX, spawn.pos[1] / blockSize + 0.01, startZ);
+  const route = buildTestHouseRangeRoute({ blockSize, playerHalfWidth: body.halfWidth, rack: rackSpec });
+  const routeXs = route.waypoints.filter(({ axis }) => axis === 0).map(({ target }) => target);
+  const routeZs = route.waypoints.filter(({ axis }) => axis === 2).map(({ target }) => target);
+  const minX = Math.floor(Math.min(startX, ...routeXs) - 2);
+  const maxX = Math.ceil(Math.max(startX, ...routeXs) + 2);
+  const minZ = Math.floor(Math.min(startZ, ...routeZs) - 2);
+  const maxZ = Math.ceil(Math.max(startZ, ...routeZs) + 2);
   const terrain: Terrain = {
     seed: config.seed,
     scale,
@@ -133,19 +129,6 @@ const buildRangeWalkFixture = () => {
     throw new Error('debug range rack entity is missing');
   }
   const inventory = new Inventory(registry, undefined, entities);
-  const body = createPlayerBody(scale, startX, spawn.pos[1] / blockSize + 0.01, startZ);
-  const gateClearance = GARDEN_GATE.widthM / (2 * blockSize) - body.halfWidth;
-  if (gateClearance <= 0) {
-    throw new Error('Player does not fit through the test-house garden gate');
-  }
-  const gateX = gateCentreX - gateClearance;
-  const waypoints: RangeWalkWaypoint[] = [
-    { axis: 2, target: corridorZ, forward: 0, right: 1 },
-    { axis: 0, target: gateX, forward: 1, right: 0 },
-    { axis: 2, target: beyondGateZ, forward: 0, right: 1 },
-    { axis: 0, target: enterX, forward: 1, right: 0 },
-    { axis: 2, target: rackZ, forward: 0, right: -1 },
-  ];
   return {
     blockSize,
     scale,
@@ -154,7 +137,7 @@ const buildRangeWalkFixture = () => {
     body,
     isSolid: worldSolid(world, registry, entities),
     physics: physicsFor(scale),
-    waypoints,
+    ...route,
   };
 };
 
@@ -163,13 +146,15 @@ type RangeWalkFixture = ReturnType<typeof buildRangeWalkFixture>;
 const crossedWaypoint = (position: number, target: number, direction: number): boolean =>
   direction > 0 ? position >= target : position <= target;
 
-const movePlayerTo = (fixture: RangeWalkFixture, waypoint: RangeWalkWaypoint): boolean => {
+const movePlayerTo = (fixture: RangeWalkFixture, waypoint: RangeWalkFixture['waypoints'][number]): boolean => {
   const { body, blockSize, scale, isSolid, physics } = fixture;
-  const { axis, target, forward, right } = waypoint;
+  const { axis, target } = waypoint;
   const direction = Math.sign(target - body.pos[axis]);
   if (!direction) {
     return true;
   }
+  const forward = axis === 0 ? direction : 0;
+  const right = axis === 2 ? direction : 0;
   const maxFrames = Math.ceil(((Math.abs(target - body.pos[axis]) * blockSize) / PLAYER.sprint + 1) * 120);
   for (let frame = 0; frame < maxFrames && !crossedWaypoint(body.pos[axis], target, direction); frame++) {
     steer(body, scale, SPAWN_YAW, { forward, right, jump: false, sprint: true, walk: false });
@@ -218,11 +203,16 @@ describe('the debug test-house range', () => {
     expect(buildDebugTestHouseSite(nonTestHouse, registry, undefined)).toBeUndefined();
   });
 
-  it('walks from the house spawn to the rack over generated terrain', () => {
+  it('walks every shared route leg to a clear, reachable rack-facing stop', () => {
     const fixture = buildRangeWalkFixture();
+    expect(fixture.waypoints).not.toHaveLength(0);
     for (const waypoint of fixture.waypoints) {
-      expect(movePlayerTo(fixture, waypoint), `route waypoint ${waypoint.axis}=${waypoint.target}`).toBe(true);
+      expect(movePlayerTo(fixture, waypoint), `route leg ${waypoint.id}`).toBe(true);
+      if (waypoint.id === 'centre-in-gate') {
+        expect(Math.abs(fixture.body.pos[0] - fixture.gateCentreX)).toBeLessThanOrEqual(fixture.gateClearance);
+      }
     }
+    expect(fixture.body.pos[2] - fixture.body.halfWidth).toBeGreaterThan(fixture.rack.pos[2] + fixture.rack.size[2]);
     expect(
       furnitureDistance(
         { inventory: fixture.inventory, position: fixture.body.pos, blockSize: fixture.blockSize },
