@@ -334,8 +334,9 @@ chunks can generate in any order.
 - **Condition** reads as a word: pristine, worn, damaged, badly damaged or
   ruined. Inspecting an item shows the exact numbers.
 - Item descriptions describe the item, not how to operate it. Bindings can change,
-  so controls belong in the binding table and its displayed controls list
-  (`src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`).
+  so operating instructions belong in the binding table and its displayed controls
+  list (`src/game/inputBindings.ts`, `INPUT_BINDINGS` and `POINTER_ACTIONS`), not
+  in the description.
 
 ### Hands: what you see is what's there
 
