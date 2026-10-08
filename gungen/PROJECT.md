@@ -359,7 +359,7 @@ Scale anchor: the STANAG top depth of `5.5u` is about 63mm, so `1u ≈ 11.5mm`. 
   `STANAG20_BODY_BOX_U`, `STANAG30_CENTERLINE_LENGTH_U`, `STANAG30_BODY_WIDTH_U`,
   `magazineBodySection` and `magazineGeometryFor`.
   Sources: [Brownells 20-round listing](https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983);
-  [HK SA80 30-round listing](https://www.meanandgreen.com/army/British_Army/SA80_5.56mm_30_Round_NATO_Magazine/3850/2876.html) (BR br-98).
+  [HK SA80 30-round listing](https://www.meanandgreen.com/army/British_Army/SA80_5.56mm_30_Round_NATO_Magazine/3850/2876.html).
   Other STANAG capacities are deferred to #414. The AKM curved band is fitted
   to its golden photo (g41-4).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths
