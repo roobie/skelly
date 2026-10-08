@@ -24,6 +24,8 @@ const BAT_DEF = registry.items.get('baseball_bat')!.weapon!.melee!;
 const BAT = { ...BAT_DEF, cooldown: BAT_DEF.cooldownSimSeconds };
 const HEALTHY_REGIONS = { head: 1000, torso: 1000, leftArm: 1000, rightArm: 1000, leftLeg: 1000, rightLeg: 1000 };
 const ROLLED_CUT_SEEDS = [3, 11, 19, 23, 29] as const;
+// Keep the four renderer pools identical; these cases vary severing paths, not figure seeds.
+const CUT_FIXTURE_SEED = 5;
 const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   isSolid,
   isOpaque: isSolid,
@@ -42,7 +44,7 @@ const senses = (isSolid: (x: number, y: number, z: number) => boolean) => ({
   hurtPlayer: () => undefined,
 });
 
-type CutMode = 'region' | 'rolled' | 'head';
+type CutMode = 'region' | 'rolled' | 'head' | 'offRay';
 interface AppliedPoint {
   readonly body: RigidBody;
   readonly point: Vec3;
@@ -122,6 +124,8 @@ const targetForCut = (mode: CutMode): { region: ZombieRegion; bone: string; dire
       return { region: 'leftArm', bone: 'forearm.L', direction: [0, 0, -1], distanceM: 0.45 };
     case 'head':
       return { region: 'head', bone: 'head', direction: [0, 0, -1], distanceM: 0.45 };
+    case 'offRay':
+      return { region: 'torso', bone: 'chest', direction: [0, 0.2, -0.979_795_897_1], distanceM: 0.9 };
     default:
       throw new Error(`Unknown cut mode: ${mode satisfies never}`);
   }
@@ -144,7 +148,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
       renderer?.zombieSevered(entityId, severedPart, hit, sourceZombie),
     onDeath: (entityId, sourceZombie) => renderer?.zombieDied(entityId, sourceZombie),
   });
-  const position: Vec3 = mode === 'rolled' ? [4, 1, 4] : [zombieSeed * 4, 2, 0];
+  const position: Vec3 = mode === 'rolled' || mode === 'offRay' ? [4, 1, 4] : [zombieSeed * 4, 2, 0];
   const id = system.add(zombieTypeForCut(mode), position, [0, 0, -1]);
   const zombie = system.store.get(id)!;
   const actorMeshes = new MobActorMeshes(BLOCK, 16, { poolSize: mobFigurePoolSizeThrough(zombie.figureSeed) });
@@ -190,7 +194,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
     swingHit = system.swing(origin, target.direction, BAT);
     part = zombie.severed[0] ?? '';
   } else {
-    part = mode === 'region' ? 'upperArm.L' : 'head';
+    part = mode === 'region' || mode === 'offRay' ? 'upperArm.L' : 'head';
     const hit: HitImpulse = { point: targetBox.center, direction: target.direction, impulse: BAT.impulse! };
     actorMeshes.zombieSevered(id, part, hit, zombie);
   }
@@ -198,7 +202,7 @@ const createSeveredHit = (zombieSeed: number, mode: CutMode): Harness => {
     .flat()
     .find((box) => box.bone === part);
   const missedRandomPart =
-    mode === 'rolled' &&
+    (mode === 'rolled' || mode === 'offRay') &&
     partBox !== undefined &&
     posedRegionHitDistance([partBox], origin, target.direction, BLOCK) === undefined;
   const { debris } = actorMeshes as unknown as { debris: Map<string, { body: RigidBody; originOffsetY: number }> };
@@ -258,24 +262,18 @@ const bounceApexesAndFreeFlightEnergyRise = (harness: Harness) => {
 
 describe('severed limb energy', () => {
   it('clamps application points inside region, random-roll, and head-cut debris', () => {
-    const reports = [createSeveredHit(31, 'region'), createSeveredHit(37, 'rolled'), createSeveredHit(41, 'head')];
+    const reports = (['region', 'rolled', 'head', 'offRay'] as const).map((mode) =>
+      createSeveredHit(CUT_FIXTURE_SEED, mode),
+    );
     try {
+      const offRay = reports[3]!;
+      expect(offRay.targetRayHitsRegion).toBe(true);
+      expect(offRay.missedRandomPart).toBe(true);
       for (const report of reports) {
         expect(report.appliedPoints).toHaveLength(1);
         expect(impactPointIsInside(report.appliedPoints[0]!)).toBe(true);
         expect(Math.hypot(...angularVelocity(report.body!))).toBeLessThanOrEqual(20.000_001);
       }
-    } finally {
-      for (const report of reports) {
-        report.renderer.dispose();
-      }
-    }
-  });
-
-  it('includes a rolled seed whose severed part misses the bat ray', () => {
-    const reports = ROLLED_CUT_SEEDS.map((seed) => createSeveredHit(seed, 'rolled'));
-    try {
-      expect(reports.some(({ missedRandomPart }) => missedRandomPart)).toBe(true);
     } finally {
       for (const report of reports) {
         report.renderer.dispose();
