@@ -55,4 +55,8 @@ an untested commit.
 Diagnostic artifacts distinguish source, run, attempt and layout so sibling jobs
 or reruns cannot overwrite the evidence. Native inputs, render-free contracts,
 pixels and operator appearance judgments retain their separate meanings; CI
-partitioning changes none of those contracts.
+partitioning changes none of those contracts. For #469, the workflow separates the
+primary-action interaction/replay and glowstick pixel checks so SwiftShader rendering
+cannot consume the logic contract's wall budget; their assertions remain in
+`deadvox/test/browser/primary-action.mjs` and
+`deadvox/test/browser/primary-action-pixel.mjs`.

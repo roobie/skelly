@@ -5,6 +5,7 @@ const modes = Object.freeze({
   'ui-browser-contract': 'render-free',
   'melee-build-click': 'render-free',
   'primary-action': 'render-free',
+  'primary-action-pixel': 'pixel',
   'pump-handling': 'render-free',
   'full-auto': 'render-free',
   'case-visual-pool': 'pixel',
