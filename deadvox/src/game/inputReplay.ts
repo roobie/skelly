@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 9;
+const INPUT_REPLAY_SCHEMA_VERSION = 10;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -45,10 +45,13 @@ const REPLAY_PAYLOAD_ACTIONS = new Set<ReplayActionPayload['kind']>([
   'craft.continue',
   'craft.stop',
   'item.throw.cancel',
+  'item.throw',
 ]);
 const REPLAY_SEMANTIC_ACTIONS = [
   'item.throw',
   'item.throw.cancel',
+  'throw.stance.toggle',
+  'item.drop',
   'inventory.move',
   'inventory.to-hands',
   'item.pickup',
@@ -116,7 +119,6 @@ export interface ReplayAction {
   readonly action: string;
   readonly phase: 'down' | 'up';
   readonly context: InputContext;
-  readonly value?: number;
   readonly payload?: ReplayActionPayload;
 }
 
@@ -189,20 +191,13 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isValidQueuedAction = (
   action: string,
   context: InputContext,
-  value: number | undefined,
   payload: ReplayActionPayload | undefined,
 ): boolean => {
   if (!(ACTION_INDEX.has(action) && CONTEXT_INDEX.has(context))) {
     return false;
   }
-  const validValue =
-    action === 'item.throw'
-      ? typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 10_000
-      : value === undefined;
   const validPayload = REPLAY_PAYLOAD_ACTIONS.has(action as ReplayActionPayload['kind']) ? payload !== undefined : true;
-  return (
-    validValue && validPayload && (payload === undefined || (isReplayActionPayload(payload) && payload.kind === action))
-  );
+  return validPayload && (payload === undefined || (isReplayActionPayload(payload) && payload.kind === action));
 };
 
 type ReplayActionRecord = Record<string, unknown> & {
@@ -211,14 +206,6 @@ type ReplayActionRecord = Record<string, unknown> & {
   phase: 'down' | 'up';
   context: InputContext;
 };
-
-const hasValidActionValue = (action: string, candidate: Record<string, unknown>): boolean =>
-  action === 'item.throw'
-    ? typeof candidate.value === 'number' &&
-      Number.isFinite(candidate.value) &&
-      candidate.value >= 0 &&
-      candidate.value <= 10_000
-    : !Object.hasOwn(candidate, 'value');
 
 const hasValidActionPayload = (action: string, candidate: Record<string, unknown>): boolean => {
   const hasPayload = Object.hasOwn(candidate, 'payload');
@@ -266,7 +253,7 @@ const isReplayActionRecord = (
     (candidate.phase === 'down' || candidate.phase === 'up') &&
     typeof candidate.context === 'string' &&
     CONTEXT_INDEX.has(candidate.context as InputContext) &&
-    hasValidActionValue(action, candidate) &&
+    !Object.hasOwn(candidate, 'value') &&
     hasValidActionPayload(action, candidate)
   );
 };
@@ -334,13 +321,11 @@ export class InputReplayRecorder {
   private readonly actionIds = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionContexts = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
-  private readonly actionValues = new Float64Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionPayloads: (string | undefined)[] = new Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private pending: {
     action: string;
     phase: 'down' | 'up';
     context: InputContext;
-    value?: number;
     payload?: string;
   }[] = [];
   private actionPayloadBytes = 0;
@@ -410,7 +395,6 @@ export class InputReplayRecorder {
       this.actionIds.byteLength +
       this.actionPhases.byteLength +
       this.actionContexts.byteLength +
-      this.actionValues.byteLength +
       this.actionPayloadBytes * 2 +
       this.generatedColumns.length * 16 +
       this.columnChanges.length * 32 +
@@ -418,21 +402,14 @@ export class InputReplayRecorder {
     );
   }
 
-  queueAction(
-    action: string,
-    phase: 'down' | 'up',
-    context: InputContext,
-    valueOrPayload?: number | ReplayActionPayload,
-  ): void {
+  queueAction(action: string, phase: 'down' | 'up', context: InputContext, payload?: ReplayActionPayload): void {
     if (
       this.frameCount >= this.bufferTicks ||
       this.actionCount + this.pending.length >= INPUT_REPLAY_ACTIONS_PER_WINDOW
     ) {
       return;
     }
-    const value = typeof valueOrPayload === 'number' ? valueOrPayload : undefined;
-    const payload = typeof valueOrPayload === 'object' ? valueOrPayload : undefined;
-    if (!isValidQueuedAction(action, context, value, payload)) {
+    if (!isValidQueuedAction(action, context, payload)) {
       throw new Error(`Input replay cannot encode ${action} in ${context}`);
     }
     const payloadText = payload === undefined ? undefined : new TextDecoder().decode(canonicalJsonBytes(payload));
@@ -445,7 +422,6 @@ export class InputReplayRecorder {
       action,
       phase,
       context,
-      ...(value === undefined ? {} : { value }),
       ...(payloadText === undefined ? {} : { payload: payloadText }),
     });
   }
@@ -470,9 +446,6 @@ export class InputReplayRecorder {
       this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
       this.actionPhases[index] = pending.phase === 'down' ? 0 : 1;
       this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
-      if (pending.value !== undefined) {
-        this.actionValues[index] = pending.value;
-      }
       if (pending.payload !== undefined) {
         this.actionPayloads[index] = pending.payload;
       }
@@ -506,7 +479,6 @@ export class InputReplayRecorder {
       action: ACTION_IDS[this.actionIds[index]!]!,
       phase: this.actionPhases[index] === 0 ? 'down' : 'up',
       context: CONTEXTS[this.actionContexts[index]!]!,
-      ...(ACTION_IDS[this.actionIds[index]!] === 'item.throw' ? { value: this.actionValues[index]! } : {}),
       ...(this.actionPayloads[index] === undefined
         ? {}
         : { payload: JSON.parse(this.actionPayloads[index]!) as ReplayActionPayload }),
@@ -631,16 +603,15 @@ export async function replayStateFingerprint(snapshot: Readonly<SaveSnapshot>): 
   if (!globalThis.crypto?.subtle) {
     throw new Error('Replay state verification requires Web Crypto');
   }
-  // Live frame accumulation and fixed-step replay can differ below simulation precision.
   const normalize = (value: unknown): unknown => {
     if (typeof value === 'number' && Number.isFinite(value)) {
       return Number(value.toFixed(9));
     }
     if (Array.isArray(value)) {
-      return value.map(normalize);
+      return value.map((entry) => normalize(entry));
     }
     if (value && typeof value === 'object') {
-      return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, normalize(entry)]));
+      return Object.fromEntries(Object.entries(value).map(([entryKey, entry]) => [entryKey, normalize(entry)]));
     }
     return value;
   };
@@ -790,7 +761,6 @@ export async function decodeInputReplay(
       action: candidate.action,
       phase: candidate.phase,
       context: candidate.context,
-      ...(candidate.action === 'item.throw' ? { value: candidate.value as number } : {}),
       ...(Object.hasOwn(candidate, 'payload') ? { payload: candidate.payload as ReplayActionPayload } : {}),
     };
   });
