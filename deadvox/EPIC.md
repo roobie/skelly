@@ -11,8 +11,8 @@ read_if:
 
 This document defines what version 1 is, then breaks the way there into
 slices. Each slice is playable and deployed to GitHub Pages. The first real
-playtest is at the end of Slice 3, before Slice 4 starts; later slices are
-playtested before the next one starts. The systems are described in
+playtest is at the end of Slice 3, before Slice 4 starts (BR, 2026-10-02); later
+slices are playtested before the next one starts. The systems are described in
 [DESIGN.md](DESIGN.md), and the risks in [CHALLENGES.md](CHALLENGES.md).
 
 ## What version 1 is
@@ -129,20 +129,21 @@ as this slice's first step, was done in Slice 1 (#105), which completed
 
 ### 3. Flesh and noise
 
-The first real playtest is at this slice's end, before Slice 4 starts. This
-lets players assess the base game before the region work begins. It combines
+The first real playtest is at this slice's end (BR, 2026-10-02), before Slice 4
+starts. BR chose this timing because the base game will be in place. It combines
 the questions below with those added by Slice 2 in [SLICE-2.md](SLICE-2.md) and
-by this slice. Slice 3's milestone plan, rulings, dependencies, open questions
-and completion gates are in [SLICE-3.md](SLICE-3.md). Plan one milestone per
-turn.
+by this slice. Slice 3's milestone plan, BR rulings, dependencies, open questions
+and completion gates are in [SLICE-3.md](SLICE-3.md); BR's process rule is to
+deal with one milestone per turn.
 
 #### Playtest plan
 
 Use the authored map specified in
 [#181](https://github.com/roobie/skelly/issues/181) and detailed in
 [SLICE-3.md](SLICE-3.md). Test at least three people, including someone new to
-both CDDA and DayZ, in a 45-minute session on Pages. Use the prompt “find the
-military camp.” Do not teach the systems first.
+both CDDA and DayZ, in a 45-minute session on Pages. BR confirmed the prompt
+“find the military camp” in conversation at 13:05 on 2026-10-06; #181 records
+that confirmation. Do not teach the systems first.
 
 For #181, open the Pages build, read the controls card and start in late
 afternoon at the lone house. Follow the authored progression through the first
@@ -191,8 +192,8 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 - Towns from templates plus procedural houses. Room types choose furniture and
   loot.
 - Far-terrain level of detail, and worldgen in workers.
-- A world that feels real (see [DESIGN.md](DESIGN.md#a-world-that-feels-real)):
-  vegetation by biome (trees,
+- A world that feels real (BR, 2026-10-03; see
+  [DESIGN.md](DESIGN.md#a-world-that-feels-real)): vegetation by biome (trees,
   shrubs, hedges, overgrowth) that gives cover, makes noise and yields wood;
   cosmetic wind and motion; the sound of the place; and wildlife as scenery.
   Trees are voxels near the player and simplified shapes in the far terrain,
@@ -242,20 +243,18 @@ zombie types, hordes, input replay and authored playtest map are planned there.
   save migration.
 - Content filled up to the minimums.
 
-### Sound polish
+### Sound polish — BR 2026-10-01
 
-The d13-selected recordings are accepted. Explicit placeholders and rejected or
-deferred work below remain open, including a better fist hit, a hard-landing
-sound, a distinct stuck-door cue and replacement mud/stone footsteps.
+**Re-listen — BR 2026-10-02:** BR approved the current d13-selected recordings presented for re-listen. Prior explicit placeholders and rejected/deferred work below remain open (including a better fist hit, a hard-landing-specific sound, a distinct stuck-door cue, and the rejected mud/stone footsteps).
 
 - Surface-hit sounds by weapon type and surface: blade on stone has recordings parked as `melee-swing-01..03.ogg`; blunt on a wall and blunt on wood still need recordings. Implement after d7's deferred surface-hit result.
-- Split item-drop sounds by pile surface; the wood clips play on every surface because piles expose no surface classification.
+- Split item-drop sounds by pile surface; the wood clips currently play on every surface because piles expose no surface classification.
 - Short drop onto a hard floor: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/hard_floor_drop--bfh1_wood_hit_02.ogg` is in the mail scratch and intentionally not in the repo.
 - Wood tap or knock: still needed; candidate `.agent-mail/scratch/sounds-101/deferred/wood_tap--thwack-02.wav` is in the mail scratch and intentionally not in the repo.
 - New sources for `footstep_mud` and `shambler_step_mud` (all current variants rejected).
-- More `footstep_leaves` variants; `footstep-leaves-02.ogg` sounds like linoleum.
+- More `footstep_leaves` variants (BR rejected `footstep-leaves-02.ogg`: it sounds like linoleum).
 - New sources for `footstep_stone` and `shambler_step_stone`; park the current gravel-sounding clips for a future gravel surface.
-- More `door_open` variants; only `door-open-03.ogg` is accepted.
+- More `door_open` variants; only `door-open-03.ogg` is currently accepted.
 - A distinct stuck-door sound; `door_close` and `door_blocked_close` temporarily share `door_blocked_close-01.ogg`.
 - Wire eating, drinking, and flashlight on/off sounds to their use actions; add
   sustained or periodic breathing when stamina is low.
@@ -276,26 +275,29 @@ sound, a distinct stuck-door cue and replacement mud/stone footsteps.
 
 ## Later, after the game is more playable
 
-**Shambler polish — not scheduled until the game is more playable.** Follow-up
-work includes a sickly, fleshy appearance; recognizable anatomy; dismemberment
-when damage warrants it, with the head as the lethal region; and at least three
-basic attacks plus damage reactions. See [Damage, destruction and
-dismemberment](DESIGN.md#damage-destruction-and-dismemberment) for the body and
-material rules. Q and E remain available for future actions and have no world
-binding.
+**Shambler polish — not scheduled; take up once the game is more playable.** BR's
+later notes (2026-09-27):
+- “a sickly, fleshy look, not a swamp monster”;
+- “minor details: nose, neck, feet, hands”;
+- “dismemberment when hit hard enough”. Designed on 2026-09-28: see
+  [Damage, destruction and dismemberment](DESIGN.md#damage-destruction-and-dismemberment)
+  (body regions, death only when the head is destroyed, damage types against
+  materials);
+- “at least three basic attack animations, and animations for taking damage”.
+- “Q and E are reserved for later actions” (nothing is bound to them in the world today).
 
-**Crafting and condition.**
+**Crafting and condition, later (BR, 2026-10-03, from the Slice 2 plan).**
 - Items carried in clothing can be damaged when that clothing is hit.
 - Condition affects how an item performs, not only whether it's ruined.
 - Books may also speed up skill practice, not only teach recipes.
-- **Learning from books:** Reading can introduce a recipe; the book remains a reference while the player practices it until mastery.
+- **Learning from books, later (BR, 2026-10-05):** “at this point it's ok to just 'learn' the recipes, but we will transition to a more in-depth leaning system in future - i.e. you don't just learn the recipe by reading it once, but rather you det to know it, and then you can use the book as reference while performing it, until learned fully”.
 - Condition may lower salvage yield.
 
-**Player melee polish (not scheduled).** Fist variations: cross, hook and
-uppercut.
+**Player melee polish (not scheduled).** BR's note (2026-09-30): “fists are OK. At some point we might wanna add variations (cross/hook/uppercut) but let's just note those down for now.”
+- Fist variations: cross, hook, uppercut (BR).
 - Per-weapon motion overrides where a weapon does not fit its damage-type profile.
-- The combat query should expose surface hits for wall-impact feedback such as a thud or recoil.
-- A full player figure (`playerFigure.ts`) follows first-person swings; third-person views have no animation.
+- Surface-hit result from the combat query for a thud or recoil when a swing hits a wall (today it counts as a miss).
+- Full player figure (`playerFigure.ts`) following first-person swings; third-person views do not animate yet.
 
 ## Cut list
 
@@ -325,8 +327,9 @@ qualities, the body model, saves, dark nights and sound. They are the game.
    metrics. Revisit dated backlog decisions throughout the slice, not just at
    its end.
 3. **Playtest:** at least 3 people follow a short script, and the build logs
-   local metrics. The first real playtest is at the end of Slice 3, covering
-   questions from Slices 1, 2 and 3.
+   local metrics. The first real playtest is scheduled for the end of Slice 3
+   (BR, 2026-10-02), covering the first-slice questions recorded above plus
+   questions from Slices 2 and 3.
 4. **Review the slice:** run the exit consolidation surveys and report the
    process metrics: findings and their dispositions, per-item line/site changes,
    regressions including review-caught defects, standalone/folded capacity,
