@@ -135,8 +135,16 @@ describe('validate CLI', () => {
   });
 
   it('fails when an item references a missing model', () => {
-    const run = validate('test/fixtures/content/missing-model.json');
-    expect(run.status).toBe(1);
-    expect(run.stdout).toContain('FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"');
+    const root = makeMinimalPack('content');
+    const output: string[] = [];
+    try {
+      const status = runValidation(['test/fixtures/content/missing-model.json'], (line) => output.push(line), root);
+      expect(status).toBe(1);
+      expect(output.join('\n')).toContain(
+        'FAIL  test/fixtures/content/missing-model.json items[0].model: no model "lamp"',
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });
