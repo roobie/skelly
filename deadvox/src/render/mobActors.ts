@@ -63,6 +63,7 @@ import {
 } from '@mobgen/core/math.ts';
 import {
   allocateBoneTransforms,
+  boneTransforms,
   boneTransformsInto,
   indexBonesByParent,
   type MutableTransform,
@@ -130,7 +131,7 @@ import { posedShambler, zombiePoseInputFor } from '../core/zombiePose.ts';
 import { BACKGROUND_ZOMBIE_RATE, type HitImpulse, type Zombie, zombieAttackReachMetres } from '../core/zombies.ts';
 import { PLAYER } from '../game/player.ts';
 import { ZOMBIE_RATE } from '../game/simulationRates.ts';
-import { amalgamTentaclePose } from './amalgamTentaclePose.ts';
+import { amalgamCoreSurfaceAnchor, amalgamTentaclePose } from './amalgamTentaclePose.ts';
 import { patchHeightFog } from './heightFog.ts';
 import { castsAndReceives } from './shadowFlags.ts';
 
@@ -1065,40 +1066,51 @@ export class MobActorMeshes implements ZombieRenderer {
     this.tentacles.delete(id);
   }
 
-  private updateTentacle(id: EntityId, zombie: Zombie, placement: { worldPos: Vec3; yaw: number }): void {
+  private updateTentacle(
+    id: EntityId,
+    zombie: Zombie,
+    placement: { worldPos: Vec3; yaw: number },
+    lastPose: Pose | undefined,
+  ): void {
     const meshes = this.tentacles.get(id);
     if (!meshes) {
       return;
     }
     const playerEye = this.playerEyePosition;
     const reachMetres = zombieAttackReachMetres(zombie);
-    if (!playerEye || reachMetres <= 0) {
+    if (!playerEye || reachMetres <= 0 || !lastPose) {
       meshes.shaft.visible = false;
       meshes.tip.visible = false;
       return;
     }
-    const start: Vec3 = [
-      placement.worldPos[0],
-      placement.worldPos[1] + zombie.body.height * this.blockSize * 0.62,
-      placement.worldPos[2],
-    ];
+    const figure = zombieFigure(zombie.type, zombie.figureSeed);
+    if (zombie.type.model !== 'amalgam') {
+      throw new Error('Amalgam tentacle requires the amalgam figure');
+    }
+    const amalgam = figure as AmalgamFigure;
+    const transforms = boneTransforms(amalgam.realized.body.bones, lastPose);
+    const partRoots = new Map(amalgam.manifest.parts.map((part) => [part.id, part.rootBone]));
+    const hidden = severedBoneSet(
+      amalgam.realized.body.bones,
+      zombie.severed.map((part) => partRoots.get(part) ?? part),
+    );
+    const anchorTarget: Vec3 = [playerEye[0], placement.worldPos[1], playerEye[2]];
+    const start = amalgamCoreSurfaceAnchor({
+      figure: amalgam,
+      transforms,
+      hidden,
+      yaw: rotY((placement.yaw * 180) / Math.PI),
+      position: placement.worldPos,
+      target: anchorTarget,
+    });
     const target: Vec3 = [playerEye[0], start[1], playerEye[2]];
     const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
-    const halfWidth = zombie.body.halfWidth * this.blockSize;
-    const halfDepth = (zombie.body.halfDepth ?? zombie.body.halfWidth) * this.blockSize;
-    const horizontalX = target[0] - start[0];
-    const horizontalZ = target[2] - start[2];
-    const horizontalLength = Math.hypot(horizontalX, horizontalZ);
-    const directionX = horizontalLength > 1e-9 ? horizontalX / horizontalLength : facing[0];
-    const directionZ = horizontalLength > 1e-9 ? horizontalZ / horizontalLength : facing[2];
-    const radialLength = Math.hypot(directionX / halfWidth, directionZ / halfDepth);
-    const anchorOffsetMetres = radialLength > 1e-9 ? 1 / radialLength : 0;
     const pose = amalgamTentaclePose({
       start,
       target,
       facing,
       reachMetres,
-      anchorOffsetMetres,
+      anchorOffsetMetres: Math.hypot(start[0] - placement.worldPos[0], start[2] - placement.worldPos[2]),
       attackWindupSimSeconds: zombie.attackWindup,
       attackWindupDurationSimSeconds: zombie.type.attack.windupSimSeconds,
       attackWaitSimSeconds: zombie.attackWait,
@@ -1830,12 +1842,12 @@ export class MobActorMeshes implements ZombieRenderer {
     const variant = this.variants[state.variantIndex]!;
     const placement = this.currentRenderPlacement(zombie);
     this.updatePerceptionLabel(id, zombie, state, placement);
-    this.updateTentacle(id, zombie, placement);
     this.packZombiePose(state, variant, zombie, {
       placement,
       gazeFrameDelta: gazeDt,
       presentationSimSeconds,
     });
+    this.updateTentacle(id, zombie, placement, state.lastPose);
     return true;
   }
 
