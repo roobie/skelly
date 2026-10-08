@@ -30,6 +30,14 @@ magazines. Hand- and body-contact dimensions remain human-sized, while their
 attachment, reach and placement follow the frame—for example, a charging-handle
 shaft must reach a larger carrier.
 
+Frame eligibility is dimensional, not a claim that cartridges or components are
+interchangeable. A .300 BLK and a 5.56 AR can share the small frame without
+sharing their chamber or bore. The family template keeps its recognizable
+layout across frames by placing features relative to each frame's dimensions,
+so every frame reads as that family. Other parts may default from the frame
+while remaining adjustable: barrel, handguard, muzzle device and ring height,
+because ergonomics do not scale with cartridge size.
+
 `MagazineBands` remains in `src/gun/parts.ts` for families without frame data.
 A family leaves it when its designs use frame-based magwells and magazines.
 Cartridge sources and design selection are cued by `cartridges/` and

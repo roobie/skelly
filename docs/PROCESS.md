@@ -142,8 +142,7 @@ The repository keeps no review or retrospective snapshots.
   failure triggers a targeted survey, not automatically another full survey.
   Reports live in #159 or an issue linked from it, not in files.
 - **At slice closure:** commission one deep docs pass, as tracked by the exit item
-  on #293 and planned in r50. A recurring smell or repeated boundary failure can
-  still trigger a targeted maintainability survey.
+  on #293 and planned in r50.
 - **Decide and date:** the lead records each finding's owner, rationale, scope,
   affected milestone and decision: do separately, fold into named work, defer,
   or drop. Every open owned finding has an actual calendar revisit date, including
@@ -182,8 +181,9 @@ completed, carried and dropped; per-item line/site figures; review-caught defect
 escaped regressions and review/CI rework separately; standalone and folded counts
 with their denominator; and whether each finding is persistent or reintroduced. For
 milestones said to be unblocked, record ready, start, review-ready and merge
-dates, plus known waits. Decide whether the cadence earned its cost and date the
-next review. Keep unknown effort or time saved unknown.
+dates, plus known waits. Decide whether the cadence and capacity check are worth
+their cost, then date the next review. Claim a speedup only with a defensible
+comparison; keep unknown effort or time saved unknown.
 
 ## Working rules
 

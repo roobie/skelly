@@ -26,7 +26,7 @@ magazine contents and saved case counts must not depend on renderer timing.
 Animation, sound, muzzle flash, recoil display and flying cases are presentation.
 Cycle differences such as hold-open behavior remain firearm data because they
 change how the weapon behaves and feels. Cycle timelines are estimates checked
-by eye against slow-motion footage, not measured timing constants.
+by eye in slow motion, not measured timing constants.
 
 Spent cases are saved as a calibre-specific count on the block where each case
 lands. A deterministic scatter represents that count visually. This gives cases
@@ -37,12 +37,13 @@ shot, and keeps a case with the place it actually landed. See
 
 Fitted attachments affect the firearm through their authored geometry and
 properties. Gungen derives suppressor mass from geometry and material. The only
-hand-set suppressor effect is each type's recoil reduction, with the improvised
-type less effective. One shared muzzle rule uses weight multiplied by distance
-from the hands to slow raising and swinging, add sway and slow recovery between
-shots. Each type has noise reduction and wear; suppression falls with condition,
-and the improvised type wears quickly and eventually breaks. The unresolved AK
-muzzle-device host is tracked by #364. Heat, smoke, improvised-suppressor
+hand-set suppressor effect is each type's recoil reduction, which follows trapped
+gas; the improvised type is less effective. One shared muzzle rule uses weight
+multiplied by distance from the hands to slow raising and swinging, add sway and
+slow recovery between shots. Each type has noise reduction and wear. Condition
+falls per shot, so suppression falls with condition; the improvised type wears
+quickly and eventually breaks. The unresolved AK muzzle-device host is tracked
+by #364. Heat, smoke, improvised-suppressor
 accuracy loss and fouling remain deferred in #367 because they depend on broader
 physical, ballistic or maintenance systems.
 

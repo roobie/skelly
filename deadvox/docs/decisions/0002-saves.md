@@ -46,7 +46,7 @@ These safeguards reduce corruption risk but are not backups.
 Cross-version restore and migration are not supported. A changed simulation,
 schema, generator or content identity is a different save world, not an input
 to an implicit upgrade. This strict policy defers EPIC.md's v1 exit criterion
-Old saves migrate; it does not waive it. Before v1.0 beta, BR owns the hard-fork
+“Old saves migrate”; it does not waive it. Before v1.0 beta, BR owns the hard-fork
 choice between selecting a matching build and migrating old saves. Until then,
 preserve and refuse mismatched records.
 

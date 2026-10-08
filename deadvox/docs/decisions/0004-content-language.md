@@ -49,7 +49,8 @@ and extraction of existing TypeScript content and tunables.
   so composed content can be hashed and replayed deterministically. The
   mechanism remains open.
 - Mind Over Matter is the golden standard the content format should aim to
-  support, not only a capability benchmark; its scope is still open.
+  support, not only a capability benchmark, and not a mandate to clone its
+  implementation; its scope is still open.
 
 A later spike should compare a small runtime expression evaluator with CEL and
 establish an authoring and runtime boundary before a format is treated as
