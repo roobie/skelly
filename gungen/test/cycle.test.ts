@@ -102,8 +102,22 @@ describe('motion-derived cycle geometry', () => {
     const start = resolved.placed.get('bolt-carrier')!;
     const limit = cycle.strokeUnits + 2.5;
     const end = compose(start, translation(scale(sub(motion.end, motion.start), limit / cycle.strokeUnits)));
+    const carrierTail = carrier.solids.find(({ id }) => id === 'carrier-tail');
+    if (!(carrierTail?.kind === 'extruded-polygon' && carrierTail.axis === 'x')) {
+      throw new Error('AR carrier has no x-extruded carrier tail');
+    }
+    const blocker = {
+      ...carrier,
+      solids: [
+        {
+          id: 'endpoint-blocker',
+          kind: 'box' as const,
+          box: { center: [carrierTail.z[1] - 0.25, 0, 0] as const, half: [0.1, 0.1, 0.1] as const },
+        },
+      ],
+    };
     const withBlockerAt = (transform: typeof start) => {
-      const defs = new Map(resolved.defs).set('sweep-blocker', carrier);
+      const defs = new Map(resolved.defs).set('sweep-blocker', blocker);
       const placed = new Map(resolved.placed).set('sweep-blocker', transform);
       return sweepMovingPart({ ...resolved, defs, placed }, 'bolt-carrier', limit);
     };
@@ -113,7 +127,11 @@ describe('motion-derived cycle geometry', () => {
     expect(atStart.clashes.some(({ pair, at }) => pair.includes('sweep-blocker') && at === 0)).toBe(true);
 
     const atEnd = withBlockerAt(end);
-    expect(atEnd.clashes.some(({ pair, at }) => pair.includes('sweep-blocker') && at >= cycle.strokeUnits)).toBe(true);
+    expect(
+      atEnd.clashes.some(
+        ({ pair, at }) => pair === 'carrier-tail x sweep-blocker.endpoint-blocker' && at >= cycle.strokeUnits,
+      ),
+    ).toBe(true);
   });
 
   it('locates each case at the receiver ejection opening and transforms its throw direction', () => {
