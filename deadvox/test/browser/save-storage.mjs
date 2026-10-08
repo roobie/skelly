@@ -177,7 +177,7 @@ try {
           const ready = globalThis.deadvoxSaveTest?.controller.ready === true;
           const writerWaiting = [...held, ...pending].some((lock) => lock.mode === 'exclusive');
           if (writerWaiting || ready || frames >= 120) {
-            sessionStorage.setItem('d144-lock-snapshot', JSON.stringify({ held, pending, ready }));
+            sessionStorage.setItem('d144-lock-snapshot', JSON.stringify({ held, pending, ready, writerWaiting }));
             return;
           }
           frames += 1;
@@ -864,6 +864,7 @@ try {
         locks: await navigator.locks.query(),
         pageshowPersisted: sessionStorage.getItem('d144-pageshow') === 'true',
         controllerEntered: globalThis.deadvoxSaveTest?.controller?.isEntered ?? null,
+        pageIsLeaving: globalThis.deadvoxSaveTest?.controller?.pageIsLeaving ?? null,
         visibilityState: document.visibilityState,
         generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
       }));
@@ -874,8 +875,7 @@ try {
       assert.equal(result.writerRequested, null, 'leaving for bfcache must not request a save lock');
       assert.equal(result.writerTrigger, null);
       assert.equal(result.heldWriter, null, 'the cached page has not entered a lock-holding save');
-      assert.deepEqual(result.lockSnapshot.held, [], 'the new page has no held lock');
-      assert.deepEqual(result.lockSnapshot.pending, [], 'the new page has no reader queued behind a cached writer');
+      assert.equal(result.lockSnapshot.writerWaiting, false, 'no exclusive writer holds or blocks the new page');
       assert.equal(result.lockSnapshot.ready, true);
       assert.equal(result.held.length, 0, 'the cached page leaves no exclusive writer lock');
       assert.equal(result.pending.length, 0, 'the new page has no shared request waiting on a cached writer');
@@ -886,6 +886,7 @@ try {
       assert.equal(result.warnings.length, 0);
       assert.equal(restored?.pageshowPersisted, true, 'Back restores the original world from bfcache');
       assert.equal(restored?.controllerEntered, true, 'Back restores the running world');
+      assert.equal(restored?.pageIsLeaving, false, 'pageshow clears the leaving state');
       assert.equal(
         restored?.locks.held.some((lock) => lock.name === 'deadvox-save-storage'),
         false,
@@ -912,6 +913,17 @@ try {
         restored.generation,
         { timeout: STAGE_TIMEOUT_MS },
       );
+      const postBackSave = await page.evaluate(async () => ({
+        pageIsLeaving: globalThis.deadvoxSaveTest.controller.pageIsLeaving,
+        statusText: globalThis.deadvoxSaveTest.controller.statusText,
+        generation: (await globalThis.deadvoxSaveTest.storage.load(globalThis.deadvoxSaveTest.namespace))?.generation,
+      }));
+      await page.evaluate(() =>
+        Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' }),
+      );
+      assert.equal(postBackSave.pageIsLeaving, false, 'the restored page remains eligible for lifecycle saves');
+      assert.match(postBackSave.statusText, /^Saved generation \d+ · visibilitychange$/);
+      assert.equal(postBackSave.generation > restored.generation, true);
     } else {
       assert.equal(result.ready, true, 'saved world did not load after in-tab navigation');
       assert.equal(result.hasSavedWorld, true);
