@@ -15,7 +15,6 @@ import { browserStageUrl } from './stage-mode.mjs';
 
 const STAGE_TIMEOUT_MS = 30_000;
 const OVERALL_TIMEOUT_MS = 180_000;
-const SAVED_GENERATION_STATUS = /^Saved generation (\d+)\b/;
 const browserName = process.argv[2] ?? 'chromium';
 const autosaveOnly = process.env.SAVE_AUTOSAVE_ONLY === '1';
 const navigationOnly = process.env.SAVE_NAVIGATION_ONLY === '1';
@@ -496,7 +495,7 @@ try {
   const testTitleAndAutosave = async (backend) => {
     const appUrl = browserStageUrl(
       stageId,
-      `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}${autosaveOnly ? '&save-test=1' : ''}`,
+      `http://127.0.0.1:${address.port}/?seed=73&save-backend=${backend}&save-test=1`,
     );
     if (!autosaveOnly) {
       await probePage.evaluate(async (preferredBackend) => {
@@ -529,13 +528,14 @@ try {
       try {
         const result = await page.waitForFunction(
           ({ minimum }) => {
-            const status = document.querySelector('#save-status')?.textContent ?? '';
-            if (status.startsWith('Save failed')) {
-              return { failure: status };
+            const state = globalThis.deadvoxSaveTest?.saveState?.();
+            if (!state) {
+              return false;
             }
-            const match = status.match(SAVED_GENERATION_STATUS);
-            const generation = match ? Number(match[1]) : undefined;
-            return generation !== undefined && (minimum === undefined || generation > minimum) ? { generation } : false;
+            if (state.failure) {
+              return { failure: state.failure };
+            }
+            return state.savedGeneration > (minimum ?? 0) ? { generation: state.savedGeneration } : false;
           },
           { minimum: previous },
           { timeout: STAGE_TIMEOUT_MS },
@@ -558,10 +558,10 @@ try {
       }
     };
     await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
+    await page.waitForFunction(() => globalThis.deadvoxSaveTest?.saveState !== undefined, undefined, {
+      timeout: STAGE_TIMEOUT_MS,
+    });
     if (autosaveOnly) {
-      await page.waitForFunction(() => globalThis.deadvoxSaveTest !== undefined, undefined, {
-        timeout: STAGE_TIMEOUT_MS,
-      });
       await page.evaluate(() => {
         const { storage, namespace } = globalThis.deadvoxSaveTest;
         globalThis.__d5SaveTest = { storage, namespace };

@@ -104,11 +104,11 @@ budget”.
 `SaveStorage.withLock` reports the cause and held/pending lock summary, including
 whether the holder is another client, and explains the other-page failure to the
 player. For #467, `test/browser/save-storage.mjs`, `testTitleAndAutosave`, waits
-for the committed generation displayed by `SaveController` instead of polling a
-second storage client during the OPFS write. That avoids adding an observer
-that can contend for the same origin lock, and leaves one timeout to report save status,
-last read failure, last observed generation and page errors. Direct storage reads
-remain for postcondition checks. The
+on `SaveController`'s committed generation and failure state instead of parsing
+UI wording or polling a second storage client during the OPFS write. That avoids
+adding an observer that can contend for the same origin lock, and leaves one
+timeout to report save status, last read failure, last observed generation and
+page errors. Direct storage reads remain for postcondition checks. The
 Chromium navigation and busy-lock contracts are in `navigationOnly` and
 `busyLockOnly`; the leaving-state rule is in `src/ui/saveController.ts`,
 `SaveController`.
