@@ -49,8 +49,8 @@
             "max": 12
           },
           "railSpanNotches": {
-            "minOffset": -7,
-            "maxOffset": 7
+            "minOffset": -3,
+            "maxOffset": 3
           }
         },
         "sight": {
@@ -109,8 +109,8 @@
             "max": 25
           },
           "railSpanNotches": {
-            "minOffset": -8,
-            "maxOffset": 8
+            "minOffset": -3,
+            "maxOffset": 3
           }
         },
         "sight": {
@@ -135,8 +135,8 @@
         "properties": {
           "reticleKind": "dot",
           "railSpanNotches": {
-            "minOffset": -2,
-            "maxOffset": 2
+            "minOffset": -1,
+            "maxOffset": 1
           }
         },
         "sight": {
@@ -165,8 +165,8 @@
             "max": 6
           },
           "railSpanNotches": {
-            "minOffset": -5,
-            "maxOffset": 6
+            "minOffset": -3,
+            "maxOffset": 3
           }
         },
         "sight": {

@@ -12,7 +12,6 @@ const sources = readdirSync(base)
   .map((file) => ({ source: file, data: JSON.parse(readFileSync(join(base, file), 'utf8')) as unknown }));
 const { registry, issues } = buildRegistry(sources);
 const ASSAULT_RIFLE = 'rifle_assault';
-const FOOTPRINT_OUTSIDE_RAIL = /Attachment footprint does not fit the exported notches/;
 describe('fitted firearm items', () => {
   it('creates removable default attachments as owned child items and renders them through the slot frame', () => {
     expect(issues).toEqual([]);
@@ -26,7 +25,7 @@ describe('fitted firearm items', () => {
     expect(defaultItem).toBeDefined();
     const rival = [...registry.items.values()].find((item) => {
       const model = item.model === undefined ? undefined : registry.models.get(item.model);
-      return model?.attachment?.mount === defaultAttachment!.mount && model.attachment.id !== defaultAttachment!.id;
+      return model?.attachment && model.attachment.mount !== defaultAttachment!.mount;
     });
     expect(rival).toBeDefined();
 
@@ -40,7 +39,7 @@ describe('fitted firearm items', () => {
     expect(weightOf(registry, rifle)).toBeGreaterThan(defOf(registry, rifle.type).weight);
 
     const wrong = inventory.create(rival!.id);
-    expect(() => inventory.fitSlot(rifle, defaultAttachment!.mountedAt, wrong)).toThrow(FOOTPRINT_OUTSIDE_RAIL);
+    expect(() => inventory.fitSlot(rifle, defaultAttachment!.mountedAt, wrong)).toThrow(/Uncertified attachment in slot/);
     expect(inventory.fitSlot(rifle, defaultAttachment!.mountedAt, undefined)).toBe(optic);
     expect(inventory.itemByUid(optic!.uid)).toBeUndefined();
   });

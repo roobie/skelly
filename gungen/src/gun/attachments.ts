@@ -4,7 +4,7 @@ import type { Resolved } from '../core/resolve.ts';
 import type { PartDef } from '../core/schema.ts';
 import { attachmentMassKg } from './attachmentMass.ts';
 import { MOUNT_STANDARDS, type MountKind } from './mounts.ts';
-import { getOptic, OPTIC_TYPE_IDS } from './optics.ts';
+import { getOptic, opticRailContactSolids, OPTIC_TYPE_IDS } from './optics.ts';
 
 type AttachmentKind = 'optic' | 'iron-sight' | 'suppressor' | 'flashlight-mount' | 'foregrip';
 
@@ -100,16 +100,16 @@ export const attachmentMountSlot = (resolved: Resolved, partId: string, mount: M
   return undefined;
 };
 
-const railSpanNotches = (part: PartDef | undefined, mount: MountKind) => {
+const railSpanNotches = (part: PartDef | undefined, mount: MountKind, solids = part?.solids) => {
   const pitch = MOUNT_STANDARDS[mount].slotPitchU;
-  if (pitch === undefined || !part) {
+  if (pitch === undefined || !part || !solids) {
     return;
   }
   const port = part.ports.find(({ gender, mount: portMount }) => gender === 'male' && portMount === mount);
   if (!port) {
     return;
   }
-  const bounds = part.solids.map(localSolidBounds);
+  const bounds = solids.map(localSolidBounds);
   if (bounds.length === 0) {
     throw new Error(`Rail attachment ${part.family} has no solids to define its span`);
   }
@@ -174,7 +174,7 @@ const opticMetadata = (
   part?: PartDef,
 ): AttachmentCoreMetadata => {
   const optic = getOptic(params?.type, params?.mountSection);
-  const span = railSpanNotches(part, optic.mount.kind);
+  const span = railSpanNotches(part, optic.mount.kind, part ? opticRailContactSolids(part.solids) : undefined);
   if (!part) {
     throw new Error(`Optic ${optic.id} has no geometry for mass metadata`);
   }

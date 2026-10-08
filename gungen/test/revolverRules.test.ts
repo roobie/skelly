@@ -346,30 +346,29 @@ describe('revolver alignment rules', () => {
     });
   });
 
-  it('keeps every distinct revolver display group watertight across its geometry variants', () => {
-    const variants: readonly [string, readonly Record<string, string>[]][] = [
-      [
-        'revolver-frame',
-        ['S', 'M', 'L'].flatMap((frameSize) => ['S', 'M'].map((bore) => ({ frameSize, bore, butt: 'round' }))),
-      ],
-      [
-        'revolver-cylinder',
-        Array.from({ length: 6 }, (_, chamberIndex) => ({ chamberCount: '6', chamberIndex: String(chamberIndex) })),
-      ],
-      [
-        'revolver-barrel',
-        ['S', 'M', 'L'].flatMap((length) => ['classic', 'vented'].map((style) => ({ bore: 'M', length, style }))),
-      ],
-      ['revolver-grip', ['S', 'M', 'L'].flatMap((length) => ['round', 'square'].map((butt) => ({ length, butt })))],
-    ];
-    for (const [familyName, cases] of variants) {
-      const family = FAMILIES[familyName]!;
-      for (const params of cases) {
-        const def = family.build(params);
-        for (const item of displayItems(def.displaySolids ?? def.solids)) {
-          const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(item.solids[0]!);
-          expectWatertightMesh(mesh, `${familyName} ${JSON.stringify(params)} ${item.id}`);
-        }
+  const displayVariants: readonly [string, readonly Record<string, string>[]][] = [
+    [
+      'revolver-frame',
+      ['S', 'M', 'L'].flatMap((frameSize) => ['S', 'M'].map((bore) => ({ frameSize, bore, butt: 'round' }))),
+    ],
+    [
+      'revolver-cylinder',
+      Array.from({ length: 6 }, (_, chamberIndex) => ({ chamberCount: '6', chamberIndex: String(chamberIndex) })),
+    ],
+    [
+      'revolver-barrel',
+      ['S', 'M', 'L'].flatMap((length) => ['classic', 'vented'].map((style) => ({ bore: 'M', length, style }))),
+    ],
+    ['revolver-grip', ['S', 'M', 'L'].flatMap((length) => ['round', 'square'].map((butt) => ({ length, butt })))],
+  ];
+
+  it.each(displayVariants)('keeps $0 display parts watertight across their geometry variants', (familyName, cases) => {
+    const family = FAMILIES[familyName]!;
+    for (const params of cases) {
+      const def = family.build(params);
+      for (const item of displayItems(def.displaySolids ?? def.solids)) {
+        const mesh = item.merged ? meshForSolidGroup(item.solids) : meshForSolid(item.solids[0]!);
+        expectWatertightMesh(mesh, `${familyName} ${JSON.stringify(params)} ${item.id}`);
       }
     }
   });

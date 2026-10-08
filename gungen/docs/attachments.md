@@ -36,10 +36,16 @@ the pair check then tests pair-dependent solid overlap and keep-out on both plac
 choices. A pair is allowed only when both singles and their pair are certified;
 absence denies, and the present list is complete. Solid overlap and keep-out are
 relations between two parts, so a set of three attachments conflicts only if at
-least one of its pairs conflicts; no triple certificate is needed. Deadvox separately enforces rail-notch
-ownership and overlap. Attachment
-`massKg` is a model fact, not Deadvox inventory `weight`; d118 owns deriving or
-validating item weight against this single source.
+least one of its pairs conflicts; no triple certificate is needed. For optics,
+`src/gun/attachments.ts`, `railSpanNotches`, describes the cells under the mount
+feet rather than the optic's full visual envelope. `src/gun/rules.ts`,
+`opticMountFitForPart`, checks that those feet are supported, while the pair
+certificates cover body collisions. This lets long scopes overhang the rail
+without treating unsupported feet as a valid mount. Deadvox's
+`src/core/firearmFitting.ts`, `railFootprint`, enforces rail-notch ownership and
+mount-foot overlap. Attachment `massKg` is a model fact, not Deadvox inventory
+`weight`; d118 owns deriving or validating item weight against this single
+source.
 
 Computed class comparisons and their review trigger are tracked in
 `docs/deferred-assertions.md`; BR tunes those assumptions before they become

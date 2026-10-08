@@ -27,7 +27,7 @@ import { gunDomain } from '../src/gun/domain.ts';
 import { eulerXyzDegrees, toFileAxes } from '../src/gun/exportFrame.ts';
 import { exportGunGlb } from '../src/gun/exportGlb.ts';
 import { MOUNT_STANDARDS, mountCanAccept } from '../src/gun/mounts.ts';
-import { OPTIC_CATALOG } from '../src/gun/optics.ts';
+import { opticRailContactSolids, OPTIC_CATALOG } from '../src/gun/optics.ts';
 import { FAMILIES } from '../src/gun/parts.ts';
 import { TEMPLATES } from '../src/gun/templates.ts';
 import { readGlb } from './glbReader.ts';
@@ -380,9 +380,9 @@ const attachmentBuild = (id: string) => {
   return { familyName, params, part: family.build(params) };
 };
 
-const railExtent = (part: PartDef, port: PortDef, pitch: number) => {
+const railExtent = (part: PartDef, port: PortDef, pitch: number, solids = part.solids) => {
   const offsets: number[] = [];
-  for (const solid of part.solids) {
+  for (const solid of solids) {
     const [low, high] = localSolidBounds(solid);
     for (const x of [low[0], high[0]]) {
       for (const y of [low[1], high[1]]) {
@@ -412,7 +412,13 @@ const railSpanExtent = (id: string) => {
   if (!(span && port && pitch !== undefined)) {
     throw new Error(`${id} has no rail span, male mount port, or notch pitch`);
   }
-  return { id, span, extent: railExtent(part, port, pitch) };
+  const contactSolids = familyName === 'sight' ? opticRailContactSolids(part.solids) : part.solids;
+  return {
+    id,
+    span,
+    extent: railExtent(part, port, pitch, contactSolids),
+    ...(familyName === 'sight' ? { bodyExtent: railExtent(part, port, pitch) } : {}),
+  };
 };
 
 describe('attachment parts and export metadata', () => {
@@ -810,12 +816,19 @@ describe('attachment parts and export metadata', () => {
     }
   });
 
-  it('exports tight rail spans that contain every attachment solid extent', () => {
+  it('exports rail spans from attachment contacts rather than optic-body envelopes', () => {
     const spans = ATTACHMENT_IDS.flatMap((id) => {
       const span = railSpanExtent(id);
       return span ? [span] : [];
     });
     expect(spans.length).toBeGreaterThan(0);
+    expect(
+      spans.some(
+        ({ span, bodyExtent }) =>
+          bodyExtent &&
+          (bodyExtent.min < span.minOffset - 0.5 - 1e-9 || bodyExtent.max > span.maxOffset + 0.5 + 1e-9),
+      ),
+    ).toBe(true);
     for (const { id, span, extent } of spans) {
       expect(extent.min, `${id}: lower rail-cell edge`).toBeGreaterThanOrEqual(span.minOffset - 0.5 - 1e-9);
       expect(extent.max, `${id}: upper rail-cell edge`).toBeLessThanOrEqual(span.maxOffset + 0.5 + 1e-9);
