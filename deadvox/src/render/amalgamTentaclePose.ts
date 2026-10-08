@@ -5,6 +5,7 @@ export interface AmalgamTentaclePoseInput {
   readonly target: Vec3;
   readonly facing: Vec3;
   readonly reachMetres: number;
+  readonly anchorOffsetMetres: number;
   readonly attackWindup: number;
   readonly attackWindupSeconds: number;
   readonly attackWait: number;
@@ -26,6 +27,7 @@ export const amalgamTentaclePose = ({
   target,
   facing,
   reachMetres,
+  anchorOffsetMetres,
   attackWindup,
   attackWindupSeconds,
   attackWait,
@@ -51,10 +53,21 @@ export const amalgamTentaclePose = ({
   } else {
     direction = [0, 0, -1];
   }
-  const length = Math.min(distance, Math.max(0, reachMetres)) * extension;
+  const anchorDistance = Math.min(distance, Math.max(0, anchorOffsetMetres), Math.max(0, reachMetres));
+  const meshStart: Vec3 = [
+    start[0] + direction[0] * anchorDistance,
+    start[1] + direction[1] * anchorDistance,
+    start[2] + direction[2] * anchorDistance,
+  ];
+  const length =
+    Math.min(Math.max(0, distance - anchorDistance), Math.max(0, reachMetres - anchorDistance)) * extension;
   return {
-    start: [...start],
-    end: [start[0] + direction[0] * length, start[1] + direction[1] * length, start[2] + direction[2] * length],
+    start: meshStart,
+    end: [
+      meshStart[0] + direction[0] * length,
+      meshStart[1] + direction[1] * length,
+      meshStart[2] + direction[2] * length,
+    ],
     extension,
   };
 };

@@ -14,6 +14,7 @@ describe('amalgam attack tentacle pose', () => {
         target,
         facing: [0, 0, -1],
         reachMetres,
+        anchorOffsetMetres: 1,
         attackWindup,
         attackWindupSeconds: windupSeconds,
         attackWait,
@@ -31,9 +32,10 @@ describe('amalgam attack tentacle pose', () => {
     expect(windupMidpoint.extension).toBeGreaterThan(windupStart.extension);
     expect(strike.extension).toBeGreaterThan(windupMidpoint.extension);
     expect(retracting.extension).toBeLessThan(strike.extension);
-    const dx = strike.end[0] - strike.start[0];
-    const dy = strike.end[1] - strike.start[1];
-    const dz = strike.end[2] - strike.start[2];
+    expect(strike.start).not.toEqual(start);
+    const dx = strike.end[0] - start[0];
+    const dy = strike.end[1] - start[1];
+    const dz = strike.end[2] - start[2];
     expect(Math.hypot(dx, dy, dz)).toBeLessThanOrEqual(reachMetres + 1e-9);
     expect(dx * (target[0] - start[0]) + dy * (target[1] - start[1]) + dz * (target[2] - start[2])).toBeGreaterThan(0);
   });
@@ -44,6 +46,7 @@ describe('amalgam attack tentacle pose', () => {
       target: [1, 0, 0],
       facing: [1, 0, 0],
       reachMetres: 0,
+      anchorOffsetMetres: 1,
       attackWindup: 0.1,
       attackWindupSeconds: 0.4,
       attackWait: 0.3,

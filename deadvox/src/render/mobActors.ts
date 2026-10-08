@@ -597,9 +597,11 @@ export class MobActorMeshes implements ZombieRenderer {
   constructor(blockSize: number, capacity = DEFAULT_CAPACITY, options: MobActorMeshesOptions = {}) {
     this.blockSize = blockSize;
     this.capacity = capacity;
-    this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.045, 0.14, 1, 6) : undefined;
-    this.tentacleTipGeometry = options.includeAmalgam ? new SphereGeometry(0.12, 8, 6) : undefined;
-    this.tentacleMaterial = options.includeAmalgam ? new MeshLambertMaterial({ color: 0x88_43_3d }) : undefined;
+    this.tentacleGeometry = options.includeAmalgam ? new CylinderGeometry(0.08, 0.22, 1, 8) : undefined;
+    this.tentacleTipGeometry = options.includeAmalgam ? new SphereGeometry(0.16, 8, 6) : undefined;
+    this.tentacleMaterial = options.includeAmalgam
+      ? new MeshLambertMaterial({ color: 0xb9_4c_3e, emissive: 0x2c_0b_08 })
+      : undefined;
     const poolSize = Math.min(SHAMBLER_FIGURE_SEEDS.length, Math.max(1, options.poolSize ?? DEFAULT_POOL_SIZE));
     if (options.includeAmalgam && options.amalgamType?.model !== 'amalgam') {
       throw new Error('MobActorMeshes requires amalgamType when amalgam actors are enabled');
@@ -1084,11 +1086,21 @@ export class MobActorMeshes implements ZombieRenderer {
     ];
     const target: Vec3 = [playerEye[0], start[1], playerEye[2]];
     const facing: Vec3 = [-Math.sin(placement.yaw), 0, -Math.cos(placement.yaw)];
+    const halfWidth = zombie.body.halfWidth * this.blockSize;
+    const halfDepth = (zombie.body.halfDepth ?? zombie.body.halfWidth) * this.blockSize;
+    const horizontalX = target[0] - start[0];
+    const horizontalZ = target[2] - start[2];
+    const horizontalLength = Math.hypot(horizontalX, horizontalZ);
+    const directionX = horizontalLength > 1e-9 ? horizontalX / horizontalLength : facing[0];
+    const directionZ = horizontalLength > 1e-9 ? horizontalZ / horizontalLength : facing[2];
+    const radialLength = Math.hypot(directionX / halfWidth, directionZ / halfDepth);
+    const anchorOffsetMetres = radialLength > 1e-9 ? 1 / radialLength : 0;
     const pose = amalgamTentaclePose({
       start,
       target,
       facing,
       reachMetres,
+      anchorOffsetMetres,
       attackWindup: zombie.attackWindup,
       attackWindupSeconds: zombie.type.attack.windupSimSeconds,
       attackWait: zombie.attackWait,
