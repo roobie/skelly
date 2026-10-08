@@ -8,7 +8,7 @@ import { QUICKBAR_SLOTS } from './quickbar.ts';
 import { isReplayActionPayload, type ReplayActionPayload } from './replayCommands.ts';
 import { PHYSICS_RATE } from './session.ts';
 
-const INPUT_REPLAY_SCHEMA_VERSION = 10;
+const INPUT_REPLAY_SCHEMA_VERSION = 12;
 
 export const withReplayExportGuard = <T>(hasOverrides: boolean, exportReplay: () => T): T => {
   if (hasOverrides) {
@@ -28,6 +28,7 @@ const INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS =
   INPUT_REPLAY_MAX_COLUMN_CHANGE_EVENTS_PER_WINDOW * 2 + INPUT_REPLAY_MAX_GENERATED_COLUMNS * 2;
 export const INPUT_REPLAY_MAX_BYTES = 5 * 1024 * 1024;
 const INPUT_REPLAY_MAX_ACTION_PAYLOAD_BYTES = 256 * 1024;
+const SNAPSHOT_REFLECTED_REPLAY_ACTIONS = new Set(['movement.walk-toggle']);
 
 const MAGIC = 'DEADVOX_REPLAY';
 const FINGERPRINT_PATTERN = /^[0-9a-f]{64}$/;
@@ -247,7 +248,7 @@ const isReplayActionRecord = (
   const { action } = candidate;
   return (
     tick >= 0 &&
-    tick < frameCount &&
+    tick <= frameCount &&
     tick >= lastTick &&
     ACTION_INDEX.has(action) &&
     (candidate.phase === 'down' || candidate.phase === 'up') &&
@@ -318,8 +319,8 @@ export class InputReplayRecorder {
   private readonly movement: Int8Array;
   private readonly flags: Uint16Array;
   private readonly bufferTicks: number;
-  private readonly ticksPerWindow: number;
-  private readonly columnChangeEventLimit: number;
+  readonly ticksPerWindow: number;
+  readonly columnChangeEventLimit: number;
   private readonly actionTicks = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionIds = new Uint16Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
   private readonly actionPhases = new Uint8Array(INPUT_REPLAY_ACTIONS_PER_WINDOW);
@@ -457,15 +458,24 @@ export class InputReplayRecorder {
     this.pendingColumnChanges.length = 0;
   }
 
-  transferPendingActionsTo(next: InputReplayRecorder): void {
+  resolvePendingActionsAtRollover(next: InputReplayRecorder): void {
+    let transferredPayloadBytes = 0;
     for (const pending of this.pending) {
+      if (this.frameCount > 0 && pending.phase === 'down' && SNAPSHOT_REFLECTED_REPLAY_ACTIONS.has(pending.action)) {
+        const index = this.actionCount;
+        this.actionCount += 1;
+        this.actionTicks[index] = this.frameCount;
+        this.actionIds[index] = ACTION_INDEX.get(pending.action)!;
+        this.actionPhases[index] = 0;
+        this.actionContexts[index] = CONTEXT_INDEX.get(pending.context)!;
+        continue;
+      }
       const payload = pending.payload === undefined ? undefined : (JSON.parse(pending.payload) as ReplayActionPayload);
       next.queueAction(pending.action, pending.phase, pending.context, payload);
+      if (pending.payload !== undefined) {
+        transferredPayloadBytes += new TextEncoder().encode(pending.payload).byteLength;
+      }
     }
-    const transferredPayloadBytes = this.pending.reduce(
-      (total, { payload }) => total + (payload === undefined ? 0 : new TextEncoder().encode(payload).byteLength),
-      0,
-    );
     this.actionPayloadBytes -= transferredPayloadBytes;
     this.pending = [];
   }
@@ -554,6 +564,22 @@ export class InputReplayRecorder {
     };
   }
 }
+
+export const rolloverInputReplayRecorder = (
+  current: InputReplayRecorder,
+  startSnapshot: Readonly<SaveSnapshot>,
+  generatedColumns: readonly ReplayGeneratedColumn[] = current.generatedColumns,
+): InputReplayRecorder => {
+  const next = new InputReplayRecorder(
+    startSnapshot,
+    current.ticksPerWindow,
+    generatedColumns,
+    current.columnChangeEventLimit,
+  );
+  current.resolvePendingActionsAtRollover(next);
+  current.transferPendingColumnChangesTo(next);
+  return next;
+};
 
 const applyColumnChanges = (generated: Set<string>, changes: readonly ReplayColumnChange[]): void => {
   for (const [, cx, cz, isGenerated] of changes) {

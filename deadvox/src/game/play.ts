@@ -90,6 +90,7 @@ import {
   type ReplayGeneratedColumn,
   type ReplayInputData,
   replayStateFingerprint,
+  rolloverInputReplayRecorder,
   stashInputReplay,
   withReplayExportGuard,
 } from './inputReplay.ts';
@@ -2551,11 +2552,13 @@ export const startPlay = (
     if (!inputRecorder) {
       return;
     }
-    previousInputRecorder = inputRecorder;
-    const nextRecorder = new InputReplayRecorder(captureSnapshot(), undefined, streamer.generatedColumns());
-    inputRecorder.transferPendingActionsTo(nextRecorder);
-    inputRecorder.transferPendingColumnChangesTo(nextRecorder);
-    inputRecorder = nextRecorder;
+    const previousRecorder = inputRecorder;
+    previousInputRecorder = previousRecorder;
+    inputRecorder = rolloverInputReplayRecorder(
+      previousRecorder,
+      captureSnapshot(),
+      streamer.generatedColumns(),
+    );
   };
 
   const handleInputRecorderColumnOverflow = (): void => {
