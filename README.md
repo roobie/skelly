@@ -41,11 +41,7 @@ Reviews that find an amendment trail return FIX. Obsolete or superseded ADRs are
 Install the dependencies for repository-wide checks:
 
 ```sh
-npm ci
-npm ci --prefix gungen
-npm ci --prefix deadvox
-npm ci --prefix mobgen
-npm ci --prefix deadvox/tools/lit-check
+npm run setup
 ```
 
 Run a subproject's dev server from the repository root:
