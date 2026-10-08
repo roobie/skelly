@@ -143,6 +143,10 @@ const debugWeatheringSplitFromUrl = (params: URLSearchParams, debug: boolean, si
   if (Number.isFinite(value) && value >= -256 && value <= 256) {
     return value;
   }
+  if (raw !== null && raw.trim() !== '') {
+    // biome-ignore lint/suspicious/noConsole: a malformed debug URL needs a visible fallback warning.
+    console.warn(`Ignoring invalid weatheringSplit value "${raw}"; expected a number from -256 to 256 metres.`);
+  }
   return site === 'weatheringTest' && raw === null ? 0 : undefined;
 };
 

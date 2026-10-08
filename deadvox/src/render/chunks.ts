@@ -177,7 +177,7 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
   float moss = baseMoss * broadStrength + mossPatches;
   vec3 tint = vec3(${WEATHERING_MIN_RED_TINT}, ${WEATHERING_MIN_RED_TINT} + 0.08 * moss, 0.68 - 0.06 * streak);
   float weatheringMix = clamp(weatherable * uWeathering * clamp(grime + 0.22 * streak + 0.2 * moss, 0.0, 0.78), 0.0, 1.0);
-diffuseColor.rgb *= mix(vec3(1.0), tint, weatheringMix);
+  diffuseColor.rgb *= mix(vec3(1.0), tint, weatheringMix);
 }`,
       );
   };

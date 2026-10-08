@@ -1,4 +1,5 @@
 import { expect, it, vi } from 'vitest';
+import { SPAWN_TIMES } from '../src/core/clock.ts';
 import { configFromUrl } from '../src/game/config.ts';
 
 it('restricts handedness overrides to debug URL configuration', () => {
@@ -25,8 +26,18 @@ it('accepts bounded weathering splits only in debug URLs and defaults the compar
   expect(configFromUrl(new URLSearchParams('debug=1&weatheringSplit=-257')).weatheringSplit).toBeUndefined();
   const comparison = configFromUrl(new URLSearchParams('debug=1&site=weatheringTest'));
   expect(comparison.weatheringSplit).toBe(0);
-  expect(comparison.start).toBe(12 * 60 * 60);
+  expect(comparison.start).toBe(SPAWN_TIMES.noon);
   expect(configFromUrl(new URLSearchParams('site=weatheringTest')).site).toBe('hamlet');
+});
+
+it('warns and falls back when a debug weathering split is malformed', () => {
+  const warning = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+  try {
+    expect(configFromUrl(new URLSearchParams('debug=1&weatheringSplit=abc')).weatheringSplit).toBeUndefined();
+    expect(warning).toHaveBeenCalledOnce();
+  } finally {
+    warning.mockRestore();
+  }
 });
 
 it('turns off only world-scale weathering variation through a debug URL override', () => {

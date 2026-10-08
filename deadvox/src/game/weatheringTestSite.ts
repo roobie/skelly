@@ -29,11 +29,13 @@ export class DebugWeatheringTestSite implements Site {
     this.padTop = floor / blockSize - 1;
     this.surface = {
       height: (x, z, natural) =>
-        x * blockSize >= -12 && x * blockSize < 12 && z * blockSize >= -16 && z * blockSize < 8 ? this.padTop : natural,
+        x * blockSize >= -12 && x * blockSize < 12 && z * blockSize >= -16 && z * blockSize < 16
+          ? this.padTop
+          : natural,
       top: (x, z) =>
         x * blockSize >= -10 && x * blockSize < 10 && z * blockSize >= -2 && z * blockSize < 1 ? concrete : undefined,
     };
-    this.spawn = { pos: [0, floor, -12], yaw: Math.PI };
+    this.spawn = { pos: [0, floor, 12], yaw: 0 };
   }
 
   stamp(chunk: Parameters<Site['stamp']>[0]): void {

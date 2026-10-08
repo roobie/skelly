@@ -190,7 +190,7 @@ const buildSite = (config: GameConfig, registry: Registry): Site | undefined => 
   if (layout) {
     return new AuthoredSite(config.seed, registry, config.scale, layout);
   }
-  if (!['hamlet', 'city', 'forest', 'testHouse', 'weatheringTest'].includes(config.site)) {
+  if (!['hamlet', 'city', 'forest', 'testHouse'].includes(config.site)) {
     throw new Error(`Content does not define site "${config.site}"`);
   }
   if (config.site === 'forest') {
