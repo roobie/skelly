@@ -72,6 +72,7 @@ const makeSession = (restore?: Parameters<typeof createSession>[0]['restore'], h
     seed: 13,
     start: 43_200,
     spawn: [0, 4, 0],
+    wobbleNoiseScaleOverride: 0,
     ready: () => false,
     controls: {
       active: () => true,

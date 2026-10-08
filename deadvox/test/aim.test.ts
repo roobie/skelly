@@ -21,10 +21,15 @@ const pumpTuning = { ...stanceTuning, skillZeroHandling: pumpHandling };
 const skillEffects = (level: number, kind: FirearmsSkillShotKind = 'singleShot') =>
   firearmsSkillEffects(level, stanceTuning, kind);
 const pumpSkillEffects = (level: number) => firearmsSkillEffects(level, pumpTuning);
+const wobbleSeed = Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff);
+const quietNoise: AimWobbleNoiseTuning = {
+  reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
+  sigmaRadiansPerSqrtSecond: 0,
+  smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
+};
 const createAim = (
   variance = 1,
   wobbleLimitRadians = stanceTuning.wobbleLimitRadians,
-  jitterShare = stanceTuning.wobbleJitterShare,
   verticalToHorizontalRatio = stanceTuning.wobbleVerticalToHorizontalRatio,
 ) =>
   new AimController({
@@ -33,10 +38,9 @@ const createAim = (
       verticalToHorizontalRatio,
       archPower: stanceTuning.wobbleLuneArchPower,
       phaseOffsetRadians: stanceTuning.wobbleLunePhaseOffsetRadians,
-      jitterShare,
-      jitterAmplitudeFraction: stanceTuning.wobbleJitterAmplitudeFraction,
     },
-    jitterSeed: Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff),
+    wobbleSeed,
+    wobbleNoise: quietNoise,
     variance,
   });
 const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning) =>
@@ -46,14 +50,12 @@ const createNoiseAim = (wobbleNoise: AimWobbleNoiseTuning) =>
       verticalToHorizontalRatio: stanceTuning.wobbleVerticalToHorizontalRatio,
       archPower: stanceTuning.wobbleLuneArchPower,
       phaseOffsetRadians: stanceTuning.wobbleLunePhaseOffsetRadians,
-      jitterShare: stanceTuning.wobbleJitterShare,
-      jitterAmplitudeFraction: stanceTuning.wobbleJitterAmplitudeFraction,
     },
-    jitterSeed: Rng.stream(73, 'aim-controller-tests').int(0, 0xff_ff_ff_ff),
+    wobbleSeed,
     wobbleNoise,
   });
 
-type AimStepOverrides = Partial<Parameters<AimController['advance']>[0]> & { stridePhase?: number };
+type AimStepOverrides = Partial<Parameters<AimController['advance']>[0]>;
 
 const step = (overrides: AimStepOverrides = {}) => ({
   dt: 1 / 60,
@@ -65,15 +67,14 @@ const step = (overrides: AimStepOverrides = {}) => ({
   firing: false,
   recoilRecoveryRate: 1,
   stridePhase: 0,
-  stepIndex: 0,
   ...overrides,
 });
 
 it('OU noise reverts without diffusion and bounds each Brownian step', () => {
   const tuning: AimWobbleNoiseTuning = {
-    reversionRatePerSimSecond: 2.4,
-    sigmaRadiansPerSqrtSecond: 0.01,
-    smoothingSimSeconds: 0.12,
+    reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
+    sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+    smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
   };
   const dt = 1 / 60;
   const offset = { raw: 0.1, smooth: 0.1 };
@@ -105,6 +106,36 @@ it('seeded OU wobble is deterministic and sways while standing still', () => {
         index > 0 && (yaw !== firstPath[index - 1]!.yaw || pitch !== firstPath[index - 1]!.pitch),
     ),
   ).toBe(true);
+});
+
+it('OU drift stays bounded and contracts differences over a long run', () => {
+  const tuning: AimWobbleNoiseTuning = {
+    reversionRatePerSimSecond: stanceTuning.wobbleNoiseReversionRatePerSimSecond,
+    sigmaRadiansPerSqrtSecond: stanceTuning.wobbleNoiseSigmaRadiansPerSqrtSecond,
+    smoothingSimSeconds: stanceTuning.wobbleNoiseSmoothingSimSeconds,
+  };
+  const dt = step().dt;
+  const steps = 6000;
+  const decay = 1 - tuning.reversionRatePerSimSecond * dt;
+  const injectionBound = 3 * tuning.sigmaRadiansPerSqrtSecond * Math.sqrt(dt);
+  const stateBound = injectionBound / (1 - Math.abs(decay));
+  const rng = Rng.stream(73, 'long-ou-property');
+  let baseline = { raw: 0, smooth: 0 };
+  let displaced = { raw: stateBound / 2, smooth: stateBound / 2 };
+  const initialDifference = displaced.raw - baseline.raw;
+
+  for (let tick = 0; tick < steps; tick++) {
+    const sample = (rng.next() * 2 - 1) * 3;
+    baseline = advanceOrnsteinUhlenbeckAxis(baseline, dt, tuning, sample);
+    displaced = advanceOrnsteinUhlenbeckAxis(displaced, dt, tuning, sample);
+    expect(Math.abs(baseline.raw)).toBeLessThanOrEqual(stateBound + Number.EPSILON);
+    expect(Math.abs(baseline.smooth)).toBeLessThanOrEqual(stateBound + Number.EPSILON);
+  }
+
+  expect(Math.abs(displaced.raw - baseline.raw)).toBeCloseTo(
+    Math.abs(initialDifference * decay ** steps),
+    12,
+  );
 });
 
 const burstPeak = (recoilKickRadians: number, variance: number, cadenceSeconds: number): number => {
@@ -168,7 +199,7 @@ it('keeps quick-look lag symmetric across axes and independent of vertical flatt
   const alternateRatio = contentRatio < 0.5 ? contentRatio + (1 - contentRatio) / 2 : contentRatio / 2;
   const quickLook = 0.05;
   const response = (axis: 'yaw' | 'pitch', ratio: number) => {
-    const aim = createAim(1, stanceTuning.wobbleLimitRadians, stanceTuning.wobbleJitterShare, ratio);
+    const aim = createAim(1, stanceTuning.wobbleLimitRadians, ratio);
     aim.advance(step());
     return aim.advance(
       step({
@@ -395,7 +426,6 @@ const readiedWalkWobble = (level: number): number => {
         velocity: [0, 0, -speed / blockSize],
         variance: effects.variance,
         stridePhase: clock.stridePhase,
-        stepIndex: clock.stepIndex,
       }),
     );
     peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));
@@ -408,10 +438,9 @@ it('step-clock wobble forms an open, concave-down lune once per stride', () => {
   const stepDistance = STEP_DISTANCE_METRES.walking;
   const sample = (distance: number) => {
     const { clock } = advanceFootsteps(initialFootstepClock(), 'walking', distance);
-    return createAim(1, stanceTuning.wobbleLimitRadians, 0).advance(
+    return createAim().advance(
       step({
         stridePhase: clock.stridePhase,
-        stepIndex: clock.stepIndex,
         velocity: [0, 0, -speed / step().blockSize],
       }),
     );
@@ -441,15 +470,14 @@ it('bounds aim changes at gait switches and airborne freezes by steady-walk moti
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const travel = speed / 60;
   const { blockSize } = step();
-  const aimStep = (stridePhase: number, stepIndex: number) =>
-    step({ velocity: [0, 0, -speed / blockSize], stridePhase, stepIndex });
-  const steadyAim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  const aimStep = (stridePhase: number) => step({ velocity: [0, 0, -speed / blockSize], stridePhase });
+  const steadyAim = createAim();
   let steadyClock = initialFootstepClock();
   let steadyFrame = NEUTRAL_AIM;
   let steadyWalkBound = 0;
   for (let tick = 0; tick < 480; tick++) {
     const next = advanceFootsteps(steadyClock, 'walking', travel);
-    const frame = steadyAim.advance(aimStep(next.clock.stridePhase, next.clock.stepIndex));
+    const frame = steadyAim.advance(aimStep(next.clock.stridePhase));
     if (tick > 0) {
       steadyWalkBound = Math.max(
         steadyWalkBound,
@@ -460,22 +488,22 @@ it('bounds aim changes at gait switches and airborne freezes by steady-walk moti
     steadyFrame = frame;
   }
 
-  const transitionAim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  const transitionAim = createAim();
   let transitionClock = initialFootstepClock();
   let transitionFrame = NEUTRAL_AIM;
   for (let tick = 0; tick < 120; tick++) {
     const next = advanceFootsteps(transitionClock, 'walking', travel);
-    transitionFrame = transitionAim.advance(aimStep(next.clock.stridePhase, next.clock.stepIndex));
+    transitionFrame = transitionAim.advance(aimStep(next.clock.stridePhase));
     transitionClock = next.clock;
   }
   const jogging = advanceFootsteps(transitionClock, 'jogging', travel);
-  const joggingFrame = transitionAim.advance(aimStep(jogging.clock.stridePhase, jogging.clock.stepIndex));
+  const joggingFrame = transitionAim.advance(aimStep(jogging.clock.stridePhase));
   const gaitChange = Math.hypot(joggingFrame.yaw - transitionFrame.yaw, joggingFrame.pitch - transitionFrame.pitch);
   const airborne = advanceFootsteps(jogging.clock, 'still', 0);
-  const airborneFrame = transitionAim.advance(aimStep(airborne.clock.stridePhase, airborne.clock.stepIndex));
+  const airborneFrame = transitionAim.advance(aimStep(airborne.clock.stridePhase));
   const takeoff = Math.hypot(airborneFrame.yaw - joggingFrame.yaw, airborneFrame.pitch - joggingFrame.pitch);
   const landed = advanceFootsteps(airborne.clock, 'walking', travel);
-  const landedFrame = transitionAim.advance(aimStep(landed.clock.stridePhase, landed.clock.stepIndex));
+  const landedFrame = transitionAim.advance(aimStep(landed.clock.stridePhase));
   const landing = Math.hypot(landedFrame.yaw - airborneFrame.yaw, landedFrame.pitch - airborneFrame.pitch);
 
   expect(steadyWalkBound).toBeGreaterThan(0);
@@ -487,7 +515,7 @@ it('bounds aim changes at gait switches and airborne freezes by steady-walk moti
 it('sets lune vertical extent as the content fraction of its horizontal extent', () => {
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const { blockSize } = step();
-  const aim = createAim(1, stanceTuning.wobbleLimitRadians, 0);
+  const aim = createAim();
   const yaw: number[] = [];
   const pitch: number[] = [];
   for (let sample = 0; sample < 1024; sample++) {
@@ -507,98 +535,20 @@ it('sets lune vertical extent as the content fraction of its horizontal extent',
   expect(verticalExtent / horizontalExtent).toBeCloseTo(stanceTuning.wobbleVerticalToHorizontalRatio, 2);
 });
 
-it('scales the vertical jitter with the lune without changing horizontal swing', () => {
+it('scales the vertical walking lune without changing horizontal swing', () => {
   const ratio = stanceTuning.wobbleVerticalToHorizontalRatio;
   const flatterRatio = ratio / 2;
   const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
   const { blockSize } = step();
-  const authored = createAim(1, stanceTuning.wobbleLimitRadians, 1, ratio);
-  const flatter = createAim(1, stanceTuning.wobbleLimitRadians, 1, flatterRatio);
-  const plainLune = createAim(1, stanceTuning.wobbleLimitRadians, 0, ratio);
-  let observedVerticalJitter = false;
+  const authored = createAim(1, stanceTuning.wobbleLimitRadians, ratio);
+  const flatter = createAim(1, stanceTuning.wobbleLimitRadians, flatterRatio);
   for (let sample = 0; sample < 128; sample++) {
     const stridePhase = sample / 128;
-    const aimStep = step({
-      velocity: [0, 0, -speed / blockSize],
-      stridePhase,
-      stepIndex: 1,
-    });
+    const aimStep = step({ velocity: [0, 0, -speed / blockSize], stridePhase });
     const authoredFrame = authored.advance(aimStep);
     const flatterFrame = flatter.advance(aimStep);
-    const plainFrame = plainLune.advance(aimStep);
     expect(flatterFrame.yaw).toBeCloseTo(authoredFrame.yaw, 12);
     expect(flatterFrame.pitch).toBeCloseTo(authoredFrame.pitch * (flatterRatio / ratio), 10);
-    observedVerticalJitter ||= Math.abs(authoredFrame.pitch - plainFrame.pitch) > 1e-10;
-  }
-  expect(observedVerticalJitter).toBe(true);
-});
-
-it('seeded jitter keeps the configured share of the walking path off the lune', () => {
-  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
-  const { blockSize } = step();
-  const samplesPerStep = 16;
-  const sampledSteps = 128;
-  const sampleDistance = STEP_DISTANCE_METRES.walking / samplesPerStep;
-  const jittered = createAim();
-  const lune = createAim(1, stanceTuning.wobbleLimitRadians, 0);
-  let clock = initialFootstepClock();
-  let offLune = 0;
-  let samples = 0;
-  for (let stepIndex = 0; stepIndex < sampledSteps; stepIndex++) {
-    for (let sample = 0; sample < samplesPerStep; sample++) {
-      ({ clock } = advanceFootsteps(clock, 'walking', sampleDistance));
-      const aimStep = step({
-        velocity: [0, 0, -speed / blockSize],
-        stridePhase: clock.stridePhase,
-        stepIndex: clock.stepIndex,
-      });
-      const withJitter = jittered.advance(aimStep);
-      const onLune = lune.advance(aimStep);
-      if (Math.hypot(withJitter.yaw - onLune.yaw, withJitter.pitch - onLune.pitch) > 1e-10) {
-        offLune += 1;
-      }
-      samples += 1;
-    }
-  }
-  const observedShare = offLune / samples;
-  const expectedShare = stanceTuning.wobbleJitterShare;
-  const samplingMargin = 1 / samplesPerStep + 3 * Math.sqrt((expectedShare * (1 - expectedShare)) / sampledSteps);
-  expect(Math.abs(observedShare - expectedShare)).toBeLessThan(samplingMargin);
-});
-
-it('eases seeded jitter within the lune speed bound across footfalls', () => {
-  const speed = PLAYER.walk * firearmStanceEffects(0, stanceTuning).readyMovementFactor;
-  const stepDistance = STEP_DISTANCE_METRES.walking;
-  const { blockSize } = step();
-  const travelPerFrame = speed / 60;
-  const jittered = createAim();
-  const lune = createAim(1, stanceTuning.wobbleLimitRadians, 0);
-  let clock = initialFootstepClock();
-  let previousJittered: ReturnType<AimController['advance']> | undefined;
-  let previousLune: ReturnType<AimController['advance']> | undefined;
-  let lunePeak = 0;
-  for (let tick = 0; tick < 480; tick++) {
-    ({ clock } = advanceFootsteps(clock, 'walking', travelPerFrame));
-    const aimStep = step({
-      velocity: [0, 0, -speed / blockSize],
-      stridePhase: clock.stridePhase,
-      stepIndex: clock.stepIndex,
-    });
-    const currentJittered = jittered.advance(aimStep);
-    const currentLune = lune.advance(aimStep);
-    lunePeak = Math.max(lunePeak, Math.hypot(currentLune.yaw, currentLune.pitch));
-    if (previousJittered && previousLune) {
-      const jitteredDelta = Math.hypot(
-        currentJittered.yaw - previousJittered.yaw,
-        currentJittered.pitch - previousJittered.pitch,
-      );
-      const luneDelta = Math.hypot(currentLune.yaw - previousLune.yaw, currentLune.pitch - previousLune.pitch);
-      const easedDeviationBound =
-        2 * stanceTuning.wobbleJitterAmplitudeFraction * lunePeak * Math.PI * (travelPerFrame / stepDistance);
-      expect(jitteredDelta).toBeLessThanOrEqual(luneDelta + easedDeviationBound + 1e-10);
-    }
-    previousJittered = currentJittered;
-    previousLune = currentLune;
   }
 });
 
@@ -622,7 +572,6 @@ it('wobble can use its larger content bound without merging it into recoil', () 
         velocity: [0, 0, -speed / blockSize],
         variance,
         stridePhase: clock.stridePhase,
-        stepIndex: clock.stepIndex,
       }),
     );
     peak = Math.max(peak, Math.hypot(frame.yaw, frame.pitch));

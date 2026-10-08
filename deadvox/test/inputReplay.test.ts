@@ -291,6 +291,7 @@ const playSession = (
   inputs: ReplayInputData,
   options: {
     endSimTimestamp?: number;
+    wobbleNoiseScaleOverride?: number;
     initialColumns?: readonly ReplayGeneratedColumn[];
     initialColumnSite?: Site;
     onCreated?: (runtime: ReturnType<typeof createRuntime>) => void;
@@ -314,6 +315,9 @@ const playSession = (
           ? (x, z) => player.isReady(x, z)
           : () => true,
       sampleAtPlayerTick: () => replayInputSample(replay, player),
+      ...(options.wobbleNoiseScaleOverride === undefined
+        ? {}
+        : { wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride }),
     },
   );
   const generatedColumns = new Set(replay.columns.map(([cx, cz]) => `${cx},${cz}`));
@@ -1455,12 +1459,13 @@ describe('input replay', () => {
   });
 
   it('keeps a toggle already in the rollover snapshot at the previous seam, so each segment verifies', async () => {
-    const start = capture(createRuntime());
+    const start = capture(createRuntime(undefined, false, undefined, { wobbleNoiseScaleOverride: 0 }));
     const ticksPerWindow = 2;
     let recorder = new InputReplayRecorder(start, ticksPerWindow);
     let queuedAtBoundary = false;
     let source!: ReturnType<typeof createRuntime>;
     source = createRuntime(start, false, undefined, {
+      wobbleNoiseScaleOverride: 0,
       sampleAtPlayerTick: (_tick, live, _time, compression) => {
         recorder.recordTick(live, compression);
         if (recorder.tickCount === ticksPerWindow && !queuedAtBoundary) {
@@ -1502,11 +1507,20 @@ describe('input replay', () => {
       context: 'play',
     });
 
-    const previousReplay = playSession(start, previous, { endSimTimestamp: nextStart.character.simulation.time });
+    const previousReplay = playSession(start, previous, {
+      endSimTimestamp: nextStart.character.simulation.time,
+      wobbleNoiseScaleOverride: 0,
+    });
     expect(await replayStateFingerprint(capture(previousReplay))).toBe(await replayStateFingerprint(nextStart));
-    const joinedReplay = playSession(start, inputs, { endSimTimestamp: sourceEnd.character.simulation.time });
+    const joinedReplay = playSession(start, inputs, {
+      endSimTimestamp: sourceEnd.character.simulation.time,
+      wobbleNoiseScaleOverride: 0,
+    });
     expect(await replayStateFingerprint(capture(joinedReplay))).toBe(await replayStateFingerprint(sourceEnd));
-    const segmentReplay = playSession(nextStart, current, { endSimTimestamp: sourceEnd.character.simulation.time });
+    const segmentReplay = playSession(nextStart, current, {
+      endSimTimestamp: sourceEnd.character.simulation.time,
+      wobbleNoiseScaleOverride: 0,
+    });
     expect(await replayStateFingerprint(capture(segmentReplay))).toBe(await replayStateFingerprint(sourceEnd));
   });
 
@@ -1551,12 +1565,13 @@ describe('input replay', () => {
   });
 
   it('rolls a deferred throw into the next segment, which verifies alone and joined', async () => {
-    const start = capture(createRuntime());
+    const start = capture(createRuntime(undefined, false, undefined, { wobbleNoiseScaleOverride: 0 }));
     const ticksPerWindow = 1;
     let recorder = new InputReplayRecorder(start, ticksPerWindow);
     let pendingThrow: ReplayActionPayload | undefined;
     let source!: ReturnType<typeof createRuntime>;
     source = createRuntime(start, false, undefined, {
+      wobbleNoiseScaleOverride: 0,
       sampleAtPlayerTick: (_tick, live, _time, compression) => {
         recorder.recordTick(live, compression);
         if (pendingThrow) {
@@ -1603,7 +1618,10 @@ describe('input replay', () => {
     const previous = previousRecorder.copyInputs();
     expect(current.actions).toEqual([{ tick: 0, action: 'item.throw', phase: 'down', context: 'play', payload }]);
     const joined = joinInputReplayWindows(previous, current);
-    const previousReplay = playSession(start, previous, { endSimTimestamp: nextStart.character.simulation.time });
+    const previousReplay = playSession(start, previous, {
+      endSimTimestamp: nextStart.character.simulation.time,
+      wobbleNoiseScaleOverride: 0,
+    });
     expect(await replayStateFingerprint(capture(previousReplay))).toBe(await replayStateFingerprint(nextStart));
     const discardThrownItem = (runtime: ReturnType<typeof createRuntime>, itemUid: number): void => {
       const item = runtime.inventory.itemByUid(itemUid);
@@ -1613,10 +1631,12 @@ describe('input replay', () => {
     };
     const standaloneReplay = playSession(nextStart, current, {
       endSimTimestamp: sourceEnd.character.simulation.time,
+      wobbleNoiseScaleOverride: 0,
       throwItem: (runtime, itemUid) => discardThrownItem(runtime, itemUid),
     });
     const joinedReplay = playSession(start, joined, {
       endSimTimestamp: sourceEnd.character.simulation.time,
+      wobbleNoiseScaleOverride: 0,
       throwItem: (runtime, itemUid) => discardThrownItem(runtime, itemUid),
     });
     expect(await replayStateFingerprint(capture(standaloneReplay))).toBe(await replayStateFingerprint(sourceEnd));
@@ -1722,21 +1742,10 @@ describe('input replay', () => {
     ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
     expect(unheldEncoded).toBe(false);
 
-    const flatRuntime = createRuntime(undefined, false, undefined, { wobbleFlatOverride: 0 });
-    let flatEncoded = false;
-    expect(flatRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
+    const scaledRuntime = createRuntime(undefined, false, undefined, { wobbleNoiseScaleOverride: 2 });
+    expect(scaledRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
     expect(() =>
-      withReplayExportGuard(flatRuntime.session.hasFirearmHandlingOverrides(), () => {
-        flatEncoded = true;
-        return new Uint8Array([1]);
-      }),
-    ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
-    expect(flatEncoded).toBe(false);
-
-    const noiseRuntime = createRuntime(undefined, false, undefined, { wobbleNoiseOverride: true });
-    expect(noiseRuntime.session.hasFirearmHandlingOverrides()).toBe(true);
-    expect(() =>
-      withReplayExportGuard(noiseRuntime.session.hasFirearmHandlingOverrides(), () => new Uint8Array([1])),
+      withReplayExportGuard(scaledRuntime.session.hasFirearmHandlingOverrides(), () => new Uint8Array([1])),
     ).toThrow(REPLAY_EXPORT_OVERRIDE_MESSAGE);
   });
 

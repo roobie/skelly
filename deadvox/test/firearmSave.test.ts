@@ -81,6 +81,7 @@ const session = (
     readonly readyHeld?: boolean | (() => boolean);
     readonly active?: boolean;
     readonly registry?: typeof registry;
+    readonly wobbleNoiseScaleOverride?: number;
   } = {},
 ) =>
   createSession({
@@ -116,6 +117,7 @@ const session = (
     notice: () => undefined,
     onRead: () => undefined,
     onFirearmEjection: (effect) => effects.push(effect),
+    wobbleNoiseScaleOverride: options.wobbleNoiseScaleOverride,
     ...(restore ? { restore } : {}),
   });
 
@@ -200,7 +202,7 @@ it('committed shots use the held firearm skill-zero recoil factors', () => {
 });
 
 it('a codec save restores the immediate aim frame, recoil and next pellet rays', async () => {
-  const original = session([]);
+  const original = session([], undefined, undefined, { wobbleNoiseScaleOverride: 0 });
   const prior: AimStep = {
     dt: 1 / 60,
     velocity: [1.2, 0, -0.4],
@@ -211,7 +213,6 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     firing: false,
     recoilRecoveryRate: 1,
     stridePhase: 0,
-    stepIndex: 0,
   };
   original.aim.advance(prior);
   original.aim.recordShot(129, 0.02);
@@ -222,7 +223,7 @@ it('a codec save restores the immediate aim frame, recoil and next pellet rays',
     worldOptions: { blockSize: 0.5, site: 'hamlet', storeys: 1, density: null },
   });
   const decoded = await decodeSave(bytes, { version, contentLookup });
-  const resumed = session([], decoded.snapshot);
+  const resumed = session([], decoded.snapshot, undefined, { wobbleNoiseScaleOverride: 0 });
   expect(resumed.aim.frame).toEqual(original.aim.frame);
   const next: AimStep = { ...prior, yaw: -Math.PI + 0.03, pitch: 0.12 };
   const originalFrame = original.aim.advance(next);

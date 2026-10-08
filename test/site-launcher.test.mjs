@@ -12,8 +12,7 @@ const JSON_FILE = /\.json$/;
 const intentionallyUnofferedDeadvoxParams = {
   'save-backend': 'A storage-backend override used by save-storage browser contracts.',
   'save-test': 'A browser-contract-only gate for deterministic autosave testing.',
-  wobbleNoise: 'A debug-only first-person aim comparison; use seeded review URLs, not the general launcher.',
-  wobbleNoiseScale: 'A debug-only multiplier meaningful only with the OU aim comparison.',
+  wobbleNoiseScale: 'A debug-only multiplier for content-authored Brownian aim drift.',
 };
 const intentionallyUnofferedGungenParams = {
   camera:

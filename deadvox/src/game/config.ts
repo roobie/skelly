@@ -22,10 +22,6 @@ export interface GameConfig {
   debug: boolean;
   /** Fresh debug games may override the start-card hand (`?handedness=left`). */
   debugHandedness?: HandSide;
-  /** Debug-only vertical/horizontal wobble ratio comparison (`?wobbleFlat=0..1`). */
-  debugWobbleFlat?: number;
-  /** Debug-only OU aim-noise mode (`?wobbleNoise=ou`). */
-  debugWobbleNoise?: boolean;
   /** Debug-only OU noise strength multiplier (`?wobbleNoiseScale=0..8`). */
   debugWobbleNoiseScale?: number;
   /** Debug-only fresh-session start in metres (`?at=x,z[,yawDegrees]`). */
@@ -75,23 +71,8 @@ export interface DebugStart {
   yawDegrees?: number;
 }
 
-const debugWobbleFlatFromUrl = (params: URLSearchParams): number | undefined => {
-  if (params.get('debug') !== '1') {
-    return undefined;
-  }
-  const raw = params.get('wobbleFlat');
-  if (raw === null || raw.trim() === '') {
-    return undefined;
-  }
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 && value <= 1 ? value : undefined;
-};
-
-const debugWobbleNoiseFromUrl = (params: URLSearchParams): boolean =>
-  params.get('debug') === '1' && params.get('wobbleNoise') === 'ou';
-
 const debugWobbleNoiseScaleFromUrl = (params: URLSearchParams): number | undefined => {
-  if (!debugWobbleNoiseFromUrl(params)) {
+  if (params.get('debug') !== '1') {
     return undefined;
   }
   const raw = params.get('wobbleNoiseScale');
@@ -174,13 +155,6 @@ export const configFromUrl = (params: URLSearchParams): GameConfig => {
   }
   if (config.debug && params.get('handedness') === 'left') {
     config.debugHandedness = 'left';
-  }
-  const debugWobbleFlat = debugWobbleFlatFromUrl(params);
-  if (debugWobbleFlat !== undefined) {
-    config.debugWobbleFlat = debugWobbleFlat;
-  }
-  if (debugWobbleNoiseFromUrl(params)) {
-    config.debugWobbleNoise = true;
   }
   const debugWobbleNoiseScale = debugWobbleNoiseScaleFromUrl(params);
   if (debugWobbleNoiseScale !== undefined) {
