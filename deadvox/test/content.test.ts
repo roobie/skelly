@@ -13,7 +13,7 @@ import { BLOCK_PATTERNS, CONTENT_SECTION_KEYS, type ContentFile, type TemplateDe
 import { furnitureOf } from '../src/core/site.ts';
 import { compileTemplate, type Placement } from '../src/core/templates.ts';
 import { gameMinutes, simSeconds } from '../src/core/time.ts';
-import { WEATHERING_RANGES } from '../src/core/weather.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_RANGES } from '../src/core/weather.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 
 const BASE = 'src/content/base';
@@ -44,11 +44,11 @@ const invalidZombieRegionIssues = (zombieId: string, regionId: string, change: '
 };
 
 it('validates weathering profile bounds without pinning authored tuning', () => {
-  const profile = baseRegistry.weathering.get('proper')!;
+  const profile = baseRegistry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID)!;
   const validate = (candidate: typeof profile) =>
     validateContent({ source: 'weathering.json', data: { weathering: [candidate] } });
   expect(validate(profile)).toEqual([]);
-  expect([...baseRegistry.weathering.keys()]).toEqual(expect.arrayContaining(['proper', 'overgrown']));
+  expect(validate({ ...profile, weatheringBlend: 1 })).not.toEqual([]);
   for (const [field, range] of Object.entries(WEATHERING_RANGES)) {
     expect(validate({ ...profile, [field]: range.min } as typeof profile)).toEqual([]);
     expect(validate({ ...profile, [field]: range.max } as typeof profile)).toEqual([]);

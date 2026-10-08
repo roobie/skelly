@@ -20,7 +20,7 @@ From the 2026-10-01 discussion, ranked by mood gained per cost:
 | 2 | Sun shadows (dawn to dusk) and flashlight shadows | done |
 | 3 | Colour grading, film (vignette, grain), bloom, height fog driven by fogginess | done |
 | 4 | Wider-radius ambient occlusion from the voxel grid, computed while meshing | done |
-| 5 | Procedural weathering layered over block surface patterns | Named profiles and live tuning; BR's `overgrown` proposal awaits visual judgment |
+| 5 | Procedural weathering layered over block surface patterns | Named profiles, live tuning and per-material pixel checks |
 | 6 | Skylight: light flooding in from the sky, so interiors are dark (planned for Slice 4 in [CHALLENGES.md](CHALLENGES.md#9-lighting)) | later |
 
 Also done along the way: block colours decoded from sRGB (they were rendered as if linear,
@@ -34,7 +34,7 @@ Set in `src/core/mood.ts` (`DEFAULT_LOOK`, `DEFAULT_MOOD`, `DEFAULT_SHADOWS`) an
 
 - `auto` tone mapping, exposure 3.0, sRGB block-colour decode, surface patterns on. Auto blends three's Neutral
   and ACES Filmic by time of day: by eye, Neutral looks best in bright daylight, ACES (or AgX) at dawn and dusk,
-  and ACES at night, where it gives the dark and the flashlight their depth. The weathering layer adds render-only signs of age without replacing the existing surface patterns or changing building geometry; its why and scope are in [DESIGN.md](DESIGN.md#a-world-that-feels-real), and `src/render/chunks.ts`, `chunkMaterial`, applies it. Layouts select a named weathering profile or use the default; `proper` preserves the look BR viewed at strength 4, while `overgrown` is the stronger proposal following BR's request and dark-material observation. The debug Weathering group edits and shares profile values without reloading or remeshing; the debug comparison pad and Firefox pixel stage show concrete, brick and wood under the same clean/weathered split. `src/core/weatheringUrl.ts`, `resolveWeatheringUrl`, owns profile selection and URL edits. The weight (0 is Neutral, 1 is ACES)
+  and ACES at night, where it gives the dark and the flashlight their depth. The weathering layer adds render-only signs of age while preserving surface patterns and recognizable material hue; the blend is bounded below full replacement. Its mood rationale is in [DESIGN.md](DESIGN.md#a-world-that-feels-real), and `src/render/chunks.ts`, `chunkMaterial`, applies it. Layouts select a named profile or use the default. The debug Weathering group edits and shares profile values without reloading or remeshing; the debug comparison pad and Firefox pixel stage compare concrete, brick and wood on clean and weathered halves. The weight (0 is Neutral, 1 is ACES)
   is the sky keyframes' `tone` field (`src/core/sky.ts`), interpolated like `bloom`: 0 for full day (08:30 to
   17:30), 0.85 at dawn (06:30) and dusk (19:30), 1 at night (21:00 to 05:00). It ramps linearly between the keyframes,
   so sunrise has no step, and the weather does not move it. `aces`, `agx`, `neutral` and `none` stay selectable
@@ -88,7 +88,7 @@ part of the greedy-merge key, so a merged quad shades as its separate faces woul
   and quads per chunk by 15% (hamlet) to 47% (city). Not yet measured on a real GPU,
   where the extra vertex attribute and quads also cost.
 
-The weathering rationale and geometry scope are in [DESIGN.md](DESIGN.md#a-world-that-feels-real). Procedural weathering is render-only; changing existing building geometry remains deferred to #396.
+The weathering rationale and geometry scope are in [DESIGN.md](DESIGN.md#a-world-that-feels-real). Procedural weathering changes rendering only; #396 covers building-geometry changes.
 
 ## Open
 

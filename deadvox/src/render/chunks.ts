@@ -205,7 +205,10 @@ if (uWeathering > 0.0 && (uWeatheringSplitEnabled < 0.5 || vWorld.x >= uWeatheri
   vec3 tint = uWeatheringTintColor;
   tint = mix(tint, uWeatheringMossColor, moss);
   tint = mix(tint, uWeatheringStreakColor, streak);
-  float weatheringMix = clamp(weatherable * uWeathering * clamp(uWeatheringTintDarkness * grime + uWeatheringStreakStrength * streak + uWeatheringMossStrength * moss, 0.0, uWeatheringMixCeiling), 0.0, 1.0);
+  float weatheringMix = clamp(
+    weatherable * uWeathering * (uWeatheringTintDarkness * grime + uWeatheringStreakStrength * streak + uWeatheringMossStrength * moss),
+    0.0, uWeatheringMixCeiling
+  );
   vec3 multiplicativeWeathering = diffuseColor.rgb * mix(vec3(1.0), tint, weatheringMix);
   vec3 blendedWeathering = mix(diffuseColor.rgb, tint, weatheringMix);
   diffuseColor.rgb = mix(multiplicativeWeathering, blendedWeathering, uWeatheringBlend);

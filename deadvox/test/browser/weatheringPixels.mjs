@@ -16,6 +16,8 @@ const measureInPage = async (page) =>
           uBuildingMax: { value: materialBoxes.map(({ max }) => new threeLib.Vector3(...max)) },
           uMode: { value: 0 },
           uSelectedBuilding: { value: 0 },
+          uSide: { value: 0 },
+          uWeatheringSplit: { value: 0 },
         },
         vertexShader: `
 attribute float pattern;
@@ -34,6 +36,8 @@ uniform vec3 uBuildingMin[${count}];
 uniform vec3 uBuildingMax[${count}];
 uniform int uMode;
 uniform int uSelectedBuilding;
+uniform int uSide;
+uniform float uWeatheringSplit;
 varying vec3 vWorld;
 varying vec3 vNormal;
 varying float vPattern;
@@ -46,7 +50,8 @@ void main() {
       vWorld.z >= uBuildingMin[i].z && vWorld.z <= uBuildingMax[i].z;
     bool wall = abs(vNormal.y) < 0.5;
     building = building || (inside && wall);
-    selectedBuilding = selectedBuilding || (i == uSelectedBuilding && inside && wall);
+    bool side = uSide == 0 || (uSide == 1 ? vWorld.x >= uWeatheringSplit : vWorld.x < uWeatheringSplit);
+    selectedBuilding = selectedBuilding || (i == uSelectedBuilding && inside && wall && side);
   }
   bool weatherable = ${weatherablePattern};
   bool selected = uMode == 0 ? building : (uMode == 1 ? building && weatherable : selectedBuilding && weatherable);
@@ -81,9 +86,10 @@ void main() {
       const clearColor = maskRenderer.getClearColor(new threeLib.Color()).clone();
       const clearAlpha = maskRenderer.getClearAlpha();
       const previousTarget = maskRenderer.getRenderTarget();
-      const renderOne = (mode, selectedBuilding = 0) => {
+      const renderOne = (mode, selectedBuilding = 0, side = 0) => {
         material.uniforms.uMode.value = mode;
         material.uniforms.uSelectedBuilding.value = selectedBuilding;
+        material.uniforms.uSide.value = side;
         maskRenderer.setRenderTarget(target);
         maskRenderer.setClearColor(0x00_00_00, 1);
         maskRenderer.clear(true, true, true);
@@ -95,7 +101,8 @@ void main() {
         renderOne(0);
         renderOne(1);
         materialBoxes.forEach((_, index) => {
-          renderOne(2, index);
+          renderOne(2, index, 2);
+          renderOne(2, index, 1);
         });
       } finally {
         maskRenderer.setRenderTarget(previousTarget);
@@ -181,9 +188,10 @@ void main() {
   float mossCutoff = uMossThreshold - uMossBias * environment;
   float mossPatches = smoothstep(mossCutoff, mossCutoff + 0.18, mossNoise) * environment * uVariation;
   float moss = baseMoss * broadStrength + mossPatches;
-  float mixAmount = clamp(weatherable * uStrength * clamp(
-    uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss, 0.0, uMixCeiling
-  ), 0.0, 1.0);
+  float mixAmount = clamp(
+    weatherable * uStrength * (uTintDarkness * grime + uStreakStrength * streak + uMossStrength * moss),
+    0.0, uMixCeiling
+  );
   gl_FragColor = vec4(vec3(mixAmount), 1.0);
 }`,
         side: threeLib.DoubleSide,
@@ -273,18 +281,21 @@ void main() {
     }
     const profiles = [...engine.registry.weathering.values()];
     const { weathering: weatheringMeshes } = meshes;
-    const overgrown = engine.registry.weathering.get('overgrown');
-    if (!overgrown) {
-      throw new Error('weathering material measurement needs the overgrown profile');
+    const [weatheringProfile] = [...profiles]
+      .filter(({ strength }) => strength > 0)
+      .sort((left, right) => right.weatheringBlend - left.weatheringBlend);
+    if (!weatheringProfile) {
+      throw new Error('weathering material measurement needs a non-default weathering profile');
     }
     const strongProfile = {
-      ...overgrown,
-      strength: Math.min(overgrown.strength + 1, globalThis.firefoxUiTest.weatheringStrengthMax),
+      ...weatheringProfile,
+      strength: Math.min(weatheringProfile.strength + 1, globalThis.firefoxUiTest.weatheringStrengthMax),
     };
     const settings = [
       ['off', undefined],
       ...profiles.map((profile) => [profile.id, profile]),
-      ['zero-control', { ...overgrown, strength: 0 }],
+      ['baseline-d150-11', { ...weatheringProfile, mixCeiling: 1, weatheringBlend: 0.9 }],
+      ['zero-control', { ...weatheringProfile, strength: 0 }],
       ['strong', strongProfile],
     ];
     const images = {};
@@ -350,30 +361,115 @@ void main() {
       }
     }
     const materialMasks = Object.fromEntries(
-      boxes.map(({ id }, index) => [id, maskReader(masks[index + 2], canvas.width, canvas.height)]),
+      boxes.map(({ id }, index) => [
+        id,
+        {
+          clean: maskReader(masks[index * 2 + 2], canvas.width, canvas.height),
+          weathered: maskReader(masks[index * 2 + 3], canvas.width, canvas.height),
+        },
+      ]),
+    );
+    const materialHalves = Object.fromEntries(
+      Object.entries(materialMasks).map(([id, sides]) => [
+        id,
+        Object.fromEntries(
+          Object.entries(sides).map(([side, mask]) => [
+            side,
+            buildingPixels.filter(([x, y]) => mask(x, y) && weatherableMask(x, y)),
+          ]),
+        ),
+      ]),
     );
     const materialPixels = Object.fromEntries(
-      Object.entries(materialMasks).map(([id, mask]) => [
-        id,
-        buildingPixels.filter(([x, y]) => mask(x, y) && weatherableMask(x, y)),
-      ]),
+      Object.entries(materialHalves).map(([id, sides]) => [id, [...sides.clean, ...sides.weathered]]),
     );
-    const mixPixels = renderMixAmounts({
-      THREE: Three,
-      renderer: webglRenderer,
-      group: engine.meshes.group,
-      camera: activeCamera,
-      width: canvas.width,
-      height: canvas.height,
-      profile: overgrown,
-    });
-    const nearFullReplacementShares = Object.fromEntries(
-      Object.entries(materialPixels).map(([id, pixels]) => [
-        id,
-        pixels.filter(([x, y]) => (mixPixels[(y * canvas.width + x) * 4] / 255) * overgrown.weatheringBlend >= 0.85)
-          .length / pixels.length,
-      ]),
-    );
+    const renderProfileMix = (profile) =>
+      renderMixAmounts({
+        THREE: Three,
+        renderer: webglRenderer,
+        group: engine.meshes.group,
+        camera: activeCamera,
+        width: canvas.width,
+        height: canvas.height,
+        profile,
+      });
+    const mixPixelsAfter = renderProfileMix(weatheringProfile);
+    // Reconstruct the d150-11 defaults, which differ only in these two authored values.
+    const mixPixelsBefore = renderProfileMix({ ...weatheringProfile, mixCeiling: 1 });
+    const replacementShares = (mixPixels, blend) =>
+      Object.fromEntries(
+        Object.entries(materialHalves).map(([id, { weathered: pixels }]) => [
+          id,
+          pixels.filter(([x, y]) => (mixPixels[((canvas.height - 1 - y) * canvas.width + x) * 4] / 255) * blend >= 0.85)
+            .length / pixels.length,
+        ]),
+      );
+    const nearFullReplacementShares = replacementShares(mixPixelsBefore, 0.9);
+    const boundedNearFullReplacementShares = replacementShares(mixPixelsAfter, weatheringProfile.weatheringBlend);
+    const meanColor = (imageName, pixels) => {
+      const { data } = decoded[imageName];
+      const total = pixels.reduce(
+        (sum, [x, y]) => {
+          const offset = (y * canvas.width + x) * 4;
+          return [sum[0] + data[offset], sum[1] + data[offset + 1], sum[2] + data[offset + 2]];
+        },
+        [0, 0, 0],
+      );
+      return total.map((channel) => channel / pixels.length / 255);
+    };
+    const colorDistance = (left, right) => Math.hypot(...left.map((channel, index) => channel - right[index]));
+    const textureContrast = (imageName, pixels) => {
+      const selected = new Set(pixels.map(([x, y]) => y * canvas.width + x));
+      const { data } = decoded[imageName];
+      let total = 0;
+      let pairs = 0;
+      for (const [x, y] of pixels) {
+        const luminance = pixelLuminance(data, (y * canvas.width + x) * 4);
+        for (const [nextX, nextY] of [
+          [x + 1, y],
+          [x, y + 1],
+        ]) {
+          if (selected.has(nextY * canvas.width + nextX)) {
+            total += Math.abs(luminance - pixelLuminance(data, (nextY * canvas.width + nextX) * 4));
+            pairs += 1;
+          }
+        }
+      }
+      return pairs > 0 ? total / pairs : 0;
+    };
+    const materialReadability = (imageName) => {
+      const means = Object.fromEntries(
+        Object.entries(materialHalves).map(([id, sides]) => [
+          id,
+          {
+            clean: meanColor('off', sides.clean),
+            weathered: meanColor(imageName, sides.weathered),
+            cleanTextureContrast: textureContrast('off', sides.clean),
+            weatheredTextureContrast: textureContrast(imageName, sides.weathered),
+          },
+        ]),
+      );
+      return Object.fromEntries(
+        Object.entries(means).map(([id, colors]) => {
+          const own = colorDistance(colors.weathered, colors.clean);
+          const nearestOther = Math.min(
+            ...Object.entries(means)
+              .filter(([otherId]) => otherId !== id)
+              .map(([, other]) => colorDistance(colors.weathered, other.weathered)),
+          );
+          return [
+            id,
+            {
+              ownCleanDistance: own,
+              nearestOtherWeatheredDistance: nearestOther,
+              retainsIdentity: own < nearestOther,
+              ...colors,
+              retainsTexture: colors.weatheredTextureContrast > 0,
+            },
+          ];
+        }),
+      );
+    };
     const materialDifferences = (imageName, baselineName) =>
       Object.fromEntries(
         Object.entries(materialPixels).map(([id, pixels]) => [
@@ -419,6 +515,7 @@ void main() {
       weatherableFraction: weatherablePixels.length / buildingPixels.length,
       materialPixels: Object.fromEntries(Object.entries(materialPixels).map(([id, pixels]) => [id, pixels.length])),
       nearFullReplacementShares,
+      boundedNearFullReplacementShares,
       materialPixelTotal: Object.values(materialPixels).reduce((total, pixels) => total + pixels.length, 0),
       diagnostics: {
         maskPixelCounts,
@@ -427,11 +524,13 @@ void main() {
         weatheringMaterialBoxes: boxes,
       },
       differences: profilesCompared,
+      materialReadability: Object.fromEntries(profiles.map((profile) => [profile.id, materialReadability(profile.id)])),
+      baselineMaterialReadability: materialReadability('baseline-d150-11'),
       maxWeatherablePixelChange,
       maxZeroStrengthPixelChange,
       images,
       uniforms,
-      authoredStrength: overgrown.strength,
+      authoredStrength: weatheringProfile.strength,
       strongStrength: strongProfile.strength,
       strengthCeiling: globalThis.firefoxUiTest.weatheringStrengthMax,
       profileStrengths: Object.fromEntries(profiles.map((profile) => [profile.id, profile.strength])),

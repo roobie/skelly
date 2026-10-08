@@ -6,7 +6,7 @@ import { showReport } from './bench/report.ts';
 import { benchRunFromUrl, currentConfig, startBench } from './bench/run.ts';
 import { shamblerRunFromUrl, startShamblerBench } from './bench/shamblers.ts';
 import { parseTimeOfDay } from './core/clock.ts';
-import { configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
+import { applyWeatheringConfig, configFromUrl, DEFAULT_RADIUS_M, makeConfig, siteFromUrl } from './game/config.ts';
 import { mountControlsCard } from './game/controls.ts';
 import { createEngine } from './game/engine.ts';
 import { inputBindings, keyboardInput, labelForAction } from './game/inputBindings.ts';
@@ -65,6 +65,7 @@ if (bench === 'report') {
       replayConfig.site = identity.site;
       replayConfig.storeys = identity.storeys;
       replayConfig.density = identity.density;
+      applyWeatheringConfig(replayConfig, params);
       const engine = createEngine(replayConfig, view, undefined, { render: !renderFree });
       const decoded = await decodeInputReplay(pendingReplay, {
         contentLookup: (kind, id) => contentLookup(engine.registry, kind, id),
@@ -117,6 +118,7 @@ if (bench === 'report') {
       resumed.site = savedWorld.site;
       resumed.storeys = savedWorld.storeys;
       resumed.density = savedWorld.density;
+      applyWeatheringConfig(resumed, params);
       config = resumed;
     }
     const engine = createEngine(config, view, undefined, { render: !renderFree });

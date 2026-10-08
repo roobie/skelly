@@ -33,8 +33,8 @@ export const WEATHERING_RANGES = {
   variationStrength: { min: 0, max: 2, step: 0.01 },
   mossThreshold: { min: -1, max: 2, step: 0.01 },
   mossBias: { min: -1, max: 2, step: 0.01 },
-  mixCeiling: { min: 0, max: 1.56, step: 0.01 },
-  weatheringBlend: { min: 0, max: 1, step: 0.01 },
+  mixCeiling: { min: 0, max: 1, step: 0.01 },
+  weatheringBlend: { min: 0, max: 0.75, step: 0.01 },
 } as const;
 
 /** Clamped to [0, 1] and rounded to a tenth, so repeated steps don't accumulate float error. */

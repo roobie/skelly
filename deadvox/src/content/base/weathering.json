@@ -14,7 +14,7 @@
       "variationStrength": 0.85,
       "mossThreshold": 0.68,
       "mossBias": 0.5,
-      "mixCeiling": 0.78,
+      "mixCeiling": 1,
       "weatheringBlend": 0
     },
     {
@@ -31,8 +31,8 @@
       "variationStrength": 1.2,
       "mossThreshold": 0.55,
       "mossBias": 0.7,
-      "mixCeiling": 1.1,
-      "weatheringBlend": 0.9
+      "mixCeiling": 0.75,
+      "weatheringBlend": 0.55
     }
   ]
 }

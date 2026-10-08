@@ -1,4 +1,5 @@
 import { html, nothing, render, type TemplateResult } from 'lit-html';
+import { live } from 'lit-html/directives/live.js';
 import { dominantSide, offSide } from '../core/character.ts';
 import { formatClock } from '../core/clock.ts';
 import type { Vec3 } from '../core/coords.ts';
@@ -291,7 +292,7 @@ const weatheringSlider = (
   const { min, max, step } = WEATHERING_RANGES[field];
   return html`
     <label for=${id}>${WEATHERING_LABELS[field]}</label>
-    <input id=${id} type="range" min=${min} max=${max} step=${step} .value=${String(value)}
+    <input id=${id} type="range" min=${min} max=${max} step=${step} .value=${live(String(value))}
       @input=${(event: Event) => change(field, Number((event.currentTarget as HTMLInputElement).value))} />
   `;
 };
@@ -305,7 +306,7 @@ const weatheringColorInput = (
   const id = `weathering-${field}`;
   return html`
     <label for=${id}>${label}</label>
-    <input id=${id} type="color" .value=${state.settings[field]}
+    <input id=${id} type="color" .value=${live(state.settings[field])}
       @input=${(event: Event) => change(field, (event.currentTarget as HTMLInputElement).value)} />
   `;
 };
@@ -405,9 +406,9 @@ const panelTemplate = ({
     weathering: weatheringState
       ? html`
           <label for="weathering-profile">Weathering profile</label>
-          <select id="weathering-profile" .value=${weatheringState.profileId}
+          <select id="weathering-profile"
             @change=${(event: Event) => selectWeatheringProfile((event.currentTarget as HTMLSelectElement).value)}>
-            ${weatheringProfiles.map(({ id }) => html`<option value=${id}>${id}</option>`)}
+            ${weatheringProfiles.map(({ id }) => html`<option value=${id} ?selected=${id === weatheringState.profileId}>${id}</option>`)}
           </select>
           ${Object.keys(WEATHERING_RANGES).map((field) =>
             weatheringSlider(weatheringState, field as WeatheringNumberField, changeWeatheringNumber),
@@ -1156,7 +1157,7 @@ export const attachDebugTools: DebugModule['attachDebugTools'] = (hooks: DebugHo
     }
     const content = JSON.stringify({ weathering: [state.settings] }, null, 2);
     const copied = await copyTextOrSelect(content, globalThis.navigator.clipboard, () => undefined);
-    weatheringCopyStatus = copied ? 'Profile JSON copied' : 'Clipboard unavailable';
+    weatheringCopyStatus = copied ? 'Profile JSON copied' : `Clipboard unavailable — copy this:\n${content}`;
     shellKey = '';
     drawShell();
   };

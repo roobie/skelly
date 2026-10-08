@@ -401,6 +401,9 @@ try {
       materialPixels: weatheringPixels.materialPixels,
       materialPixelTotal: weatheringPixels.materialPixelTotal,
       nearFullReplacementShares: weatheringPixels.nearFullReplacementShares,
+      boundedNearFullReplacementShares: weatheringPixels.boundedNearFullReplacementShares,
+      materialReadability: weatheringPixels.materialReadability,
+      baselineMaterialReadability: weatheringPixels.baselineMaterialReadability,
       profileStrengths: weatheringPixels.profileStrengths,
       strengthCeiling: weatheringPixels.strengthCeiling,
       uniforms: weatheringPixels.uniforms,
@@ -416,8 +419,9 @@ try {
     'Firefox chunk and mask shaders compile',
   );
   assert.equal(weatheringPixels.uniforms.off, 0);
-  assert.equal(weatheringPixels.uniforms.proper, weatheringPixels.profileStrengths.proper);
-  assert.equal(weatheringPixels.uniforms.overgrown, weatheringPixels.profileStrengths.overgrown);
+  for (const [profileId, strength] of Object.entries(weatheringPixels.profileStrengths)) {
+    assert.equal(weatheringPixels.uniforms[profileId], strength);
+  }
   assert.equal(weatheringPixels.uniforms.strong, weatheringPixels.strongStrength);
   assert.equal(weatheringPixels.uniforms['zero-control'], 0);
   assert.ok(weatheringPixels.strongStrength <= weatheringPixels.authoredStrength + 1);
@@ -437,11 +441,27 @@ try {
     weatheringPixels.maxWeatherablePixelChange > 0,
     `full-strength weathering changes a weatherable comparison pixel by ${weatheringPixels.maxWeatherablePixelChange.toFixed(5)} absolute luminance`,
   );
-  for (const [material, difference] of Object.entries(weatheringPixels.differences.overgrown)) {
-    assert.ok(
-      difference.pixels > 0 && difference.changedShare > 0,
-      `overgrown weathering changes ${material} pixels: ${JSON.stringify(difference)}`,
-    );
+  for (const [profileId, profileStrength] of Object.entries(weatheringPixels.profileStrengths)) {
+    if (profileStrength <= 0) {
+      continue;
+    }
+    for (const [material, difference] of Object.entries(weatheringPixels.differences[profileId])) {
+      assert.ok(
+        difference.pixels > 0 && difference.changedShare > 0,
+        `weathering profile ${profileId} changes ${material} pixels: ${JSON.stringify(difference)}`,
+      );
+      const readability = weatheringPixels.materialReadability[profileId][material];
+      assert.equal(
+        readability.retainsIdentity,
+        true,
+        `weathered ${material} remains closer to its own clean surface than to other weathered materials: ${JSON.stringify(readability)}`,
+      );
+      assert.equal(
+        readability.retainsTexture,
+        true,
+        `weathered ${material} retains spatial surface variation: ${JSON.stringify(readability)}`,
+      );
+    }
   }
   await pressAction(page, 'ui.main-menu-toggle');
   await page.waitForFunction(() => document.querySelector('#overlay').hidden, null, { timeout: 10_000 });
@@ -451,7 +471,13 @@ try {
   if ((await weatheringGroupHeader.getAttribute('aria-expanded')) !== 'true') {
     await weatheringGroupHeader.click();
   }
-  await weatheringGroup.locator('#weathering-profile').selectOption('overgrown');
+  const alternateProfileId = await page.evaluate(() =>
+    [...globalThis.firefoxUiTest.engine.registry.weathering.keys()].find(
+      (id) => id !== globalThis.firefoxUiTest.engine.config.weatheringDefaultProfileId,
+    ),
+  );
+  assert.ok(alternateProfileId, 'a second weathering profile exists for profile-switch coverage');
+  await weatheringGroup.locator('#weathering-profile').selectOption(alternateProfileId);
   const strengthSlider = weatheringGroup.locator('#weathering-strength');
   const sliderStart = Number(await strengthSlider.inputValue());
   const sliderStep = Number(await strengthSlider.getAttribute('step'));
@@ -460,11 +486,47 @@ try {
     input.value = String(value);
     input.dispatchEvent(new Event('input', { bubbles: true }));
   }, sliderNext);
-  assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), 'overgrown');
+  assert.equal(new URL(page.url()).searchParams.get('weatheringProfile'), alternateProfileId);
   assert.equal(Number(new URL(page.url()).searchParams.get('weathering')), sliderNext);
   assert.equal(await page.evaluate(() => globalThis.firefoxUiTest.engine.meshes.weathering.value), sliderNext);
+  assert.equal(
+    await page.evaluate(() => {
+      const settings = globalThis.firefoxUiTest.engine.config.weathering;
+      return [...document.querySelectorAll('#debug-ui-root input[id^="weathering-"]')].every((input) => {
+        const field = input.id.slice('weathering-'.length);
+        return input.value === String(settings[field]);
+      });
+    }),
+    true,
+    'weathering inputs reflect applied profile values',
+  );
   assert.equal(await weatheringGroup.locator('#weathering-tintColor').isVisible(), true);
   assert.equal(await weatheringGroup.locator('#copy-weathering-values').isVisible(), true);
+  await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined }));
+  await weatheringGroup.locator('#copy-weathering-values').click();
+  await page.waitForFunction(() =>
+    document
+      .querySelector('.debug-group[data-group="weathering"] output[aria-live="polite"]')
+      ?.textContent.includes('Clipboard unavailable'),
+  );
+  assert.match(
+    await weatheringGroup.locator('output[aria-live="polite"]').textContent(),
+    /Clipboard unavailable[\s\S]*weathering/,
+  );
+  await page.reload();
+  await page.waitForFunction(() => document.querySelector('#go')?.getAttribute('aria-disabled') === 'false', null, {
+    timeout: 30_000,
+  });
+  await page.locator('#go').click();
+  await page.waitForFunction(() => globalThis.firefoxUiTest?.engine.renderer, null, { timeout: 60_000 });
+  await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').waitFor({ state: 'visible' });
+  await page.locator('#debug-ui-root .debug-marker:not(.debug-frozen)').click();
+  const reloadedWeatheringGroup = page.locator('.debug-group[data-group="weathering"]');
+  const reloadedHeader = reloadedWeatheringGroup.locator('.debug-group-header');
+  if ((await reloadedHeader.getAttribute('aria-expanded')) !== 'true') {
+    await reloadedHeader.click();
+  }
+  assert.equal(await reloadedWeatheringGroup.locator('#weathering-profile').inputValue(), alternateProfileId);
   assert.deepEqual(pageErrors, []);
   process.stdout.write(
     'Firefox UI and voxel-shader checks passed: F2-gated debug, synthetic-lock time advance/pause/resume, F10/F9, audio controls, spawn, inventory transfer, shareable live weathering controls, and visible weathering changes on comparison-pad concrete, brick and wood. Native lock acquisition is NOT tested.\n',

@@ -58,6 +58,7 @@ export type ActorRenderer = 'boxes' | 'detailed';
 /** The benchmark passes other block sizes; the game always uses BLOCK_SIZE. */
 export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE): GameConfig => {
   const scale = makeScale(blockSize);
+  const profile = BUNDLED_CONTENT.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID);
   return {
     seed,
     scale,
@@ -70,7 +71,7 @@ export const makeConfig = (seed: number, radiusM: number, blockSize = BLOCK_SIZE
     density: null,
     weatheringProfileId: DEFAULT_WEATHERING_PROFILE_ID,
     weatheringDefaultProfileId: DEFAULT_WEATHERING_PROFILE_ID,
-    weathering: BUNDLED_CONTENT.registry.weathering.get(DEFAULT_WEATHERING_PROFILE_ID),
+    weathering: profile ? { ...profile } : undefined,
     actors: 'detailed',
   };
 };
@@ -179,15 +180,14 @@ export const siteFromUrl = (
   };
 };
 
-const applyWeatheringConfig = (config: GameConfig, params: URLSearchParams): void => {
+export const applyWeatheringConfig = (
+  config: GameConfig,
+  params: URLSearchParams,
+  registry: Pick<typeof BUNDLED_CONTENT.registry, 'layouts' | 'weathering'> = BUNDLED_CONTENT.registry,
+): void => {
   config.weatheringDefaultProfileId =
-    BUNDLED_CONTENT.registry.layouts.get(config.site)?.weatheringProfile ?? DEFAULT_WEATHERING_PROFILE_ID;
-  const weathering = resolveWeatheringUrl(
-    params,
-    BUNDLED_CONTENT.registry.weathering,
-    config.weatheringDefaultProfileId,
-    config.debug,
-  );
+    registry.layouts.get(config.site)?.weatheringProfile ?? DEFAULT_WEATHERING_PROFILE_ID;
+  const weathering = resolveWeatheringUrl(params, registry.weathering, config.weatheringDefaultProfileId, config.debug);
   config.weatheringProfileId = weathering?.profileId ?? config.weatheringDefaultProfileId;
   config.weathering = weathering?.settings;
 };

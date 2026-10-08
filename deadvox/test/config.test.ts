@@ -1,12 +1,35 @@
 import { expect, it, vi } from 'vitest';
 import { SPAWN_TIMES } from '../src/core/clock.ts';
-import { WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
-import { configFromUrl } from '../src/game/config.ts';
+import { DEFAULT_WEATHERING_PROFILE_ID, WEATHERING_STRENGTH_MAX } from '../src/core/weather.ts';
+import { BUNDLED_CONTENT } from '../src/game/bundledContent.ts';
+import { applyWeatheringConfig, configFromUrl, makeConfig } from '../src/game/config.ts';
 
 it('restricts handedness overrides to debug URL configuration', () => {
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=left')).debugHandedness).toBe('left');
   expect(configFromUrl(new URLSearchParams('handedness=left')).debugHandedness).toBeUndefined();
   expect(configFromUrl(new URLSearchParams('debug=1&handedness=unknown')).debugHandedness).toBeUndefined();
+});
+
+it('copies site-selected weathering into replay and resumed configurations', () => {
+  const profiles = BUNDLED_CONTENT.registry.weathering;
+  const defaultProfile = profiles.get(DEFAULT_WEATHERING_PROFILE_ID)!;
+  const siteProfile = [...profiles.values()].find(({ id }) => id !== defaultProfile.id)!;
+  const config = makeConfig(1, 96);
+  config.site = 'fixture-site';
+  const layouts = new Map(BUNDLED_CONTENT.registry.layouts);
+  const baseLayout = [...layouts.values()][0]!;
+  layouts.set(config.site, { ...baseLayout, id: config.site, weatheringProfile: siteProfile.id });
+  applyWeatheringConfig(config, new URLSearchParams(), {
+    layouts,
+    weathering: profiles,
+  });
+  expect(config.weatheringProfileId).toBe(siteProfile.id);
+  expect(config.weatheringDefaultProfileId).toBe(siteProfile.id);
+  expect(config.weathering).toEqual(siteProfile);
+  expect(config.weathering).not.toBe(siteProfile);
+  const original = { ...siteProfile };
+  config.weathering!.strength += 0.1;
+  expect(siteProfile).toEqual(original);
 });
 
 it('uses content weathering by default and applies only debug URL overrides', () => {
