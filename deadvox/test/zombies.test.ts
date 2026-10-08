@@ -2061,11 +2061,9 @@ describe('shambler scenarios', () => {
     const meshes = new ZombieMeshes(BLOCK_SIZE);
     meshes.sync(system.store);
     const renderedParts = meshes.group.children as InstancedMesh[];
-    const rendered = new Map(
-      FIGURE_PARTS.map((part, index) => [part, instanceBox(renderedParts[index]!)] as const),
-    );
+    const rendered = new Map(FIGURE_PARTS.map((part, index) => [part, instanceBox(renderedParts[index]!)] as const));
     const ranges = (part: (typeof FIGURE_PARTS)[number]) => {
-      const points = rendered.get(part)!.points;
+      const { points } = rendered.get(part)!;
       return ([0, 1, 2] as const).map((axis) => {
         const coordinates = points.map((point) => point.getComponent(axis));
         return [Math.min(...coordinates), Math.max(...coordinates)] as const;
