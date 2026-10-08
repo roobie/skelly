@@ -76,7 +76,7 @@ const replaySample = {
 const encodeFixtureReplay = (startSave: Uint8Array, inputs: ReplayInputData): Uint8Array =>
   canonicalJsonBytes({
     magic: 'DEADVOX_REPLAY',
-    schemaVersion: 12,
+    schemaVersion: 13,
     endStateFingerprint: '0'.repeat(64),
     endSimTimestamp: 0,
     startSave: btoa(Array.from(startSave, (byte) => String.fromCharCode(byte)).join('')),
@@ -1093,7 +1093,7 @@ describe('input replay', () => {
       { kind: 'firearm.attachment.remove', firearmUid: 1, slotId: 'handguard.rail-bottom.0' },
     ] as const;
     for (const command of commands) {
-      recorder.queueAction(command.kind, 'down', 'inventory', command);
+      recorder.queueAction(command.kind, 'down', 'inventory', { payload: command });
       recorder.recordTick(replaySample);
     }
 
