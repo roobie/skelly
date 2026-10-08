@@ -8,6 +8,8 @@ export interface Body {
   pos: Vec3;
   vel: Vec3;
   halfWidth: number;
+  /** Half extent along Z; omitted for square bodies. */
+  halfDepth?: number;
   height: number;
   onGround: boolean;
 }
@@ -28,28 +30,32 @@ const MAX_STEP = 0.45; // per-axis move per substep; below 1 so only one new blo
 
 type Axis = 0 | 1 | 2;
 
+const halfExtent = (body: Body, axis: Axis): number =>
+  axis === 2 ? (body.halfDepth ?? body.halfWidth) : body.halfWidth;
 const offsets = (body: Body, axis: Axis): [number, number] =>
-  axis === 1 ? [0, body.height] : [-body.halfWidth, body.halfWidth];
+  axis === 1 ? [0, body.height] : [-halfExtent(body, axis), halfExtent(body, axis)];
 
 const overlapsBlock = (body: Body, block: Vec3): boolean => {
   const [x, y, z] = body.pos;
-  const w = body.halfWidth;
+  const halfX = body.halfWidth;
+  const halfZ = body.halfDepth ?? halfX;
   return (
-    block[0] + 1 > x - w &&
-    block[0] < x + w &&
+    block[0] + 1 > x - halfX &&
+    block[0] < x + halfX &&
     block[1] + 1 > y &&
     block[1] < y + body.height &&
-    block[2] + 1 > z - w &&
-    block[2] < z + w
+    block[2] + 1 > z - halfZ &&
+    block[2] < z + halfZ
   );
 };
 
 const overlapsTerrain = (body: Body, isSolid: SolidAt): boolean => {
   const [x, y, z] = body.pos;
-  const w = body.halfWidth;
+  const halfX = body.halfWidth;
+  const halfZ = body.halfDepth ?? halfX;
   for (let by = Math.floor(y); by < Math.ceil(y + body.height); by++) {
-    for (let bz = Math.floor(z - w); bz < Math.ceil(z + w); bz++) {
-      for (let bx = Math.floor(x - w); bx < Math.ceil(x + w); bx++) {
+    for (let bz = Math.floor(z - halfZ); bz < Math.ceil(z + halfZ); bz++) {
+      for (let bx = Math.floor(x - halfX); bx < Math.ceil(x + halfX); bx++) {
         if (isSolid(bx, by, bz) && overlapsBlock(body, [bx, by, bz])) {
           return true;
         }
@@ -64,8 +70,8 @@ const overlapsBody = (body: Body, other: Body): boolean =>
   body.pos[0] + body.halfWidth > other.pos[0] - other.halfWidth &&
   body.pos[1] < other.pos[1] + other.height &&
   body.pos[1] + body.height > other.pos[1] &&
-  body.pos[2] - body.halfWidth < other.pos[2] + other.halfWidth &&
-  body.pos[2] + body.halfWidth > other.pos[2] - other.halfWidth;
+  body.pos[2] - (body.halfDepth ?? body.halfWidth) < other.pos[2] + (other.halfDepth ?? other.halfWidth) &&
+  body.pos[2] + (body.halfDepth ?? body.halfWidth) > other.pos[2] - (other.halfDepth ?? other.halfWidth);
 
 const overlapsSolid = (body: Body, isSolid: SolidAt, bodies: readonly Body[]): boolean =>
   overlapsTerrain(body, isSolid) || bodies.some((other) => overlapsBody(body, other));
@@ -82,7 +88,7 @@ const bodyContact = (body: Body, other: Body, axis: Axis, delta: number): number
   if (axis === 1) {
     return onNegativeSide ? other.pos[1] - body.height : other.pos[1] + other.height;
   }
-  const halfWidths = body.halfWidth + other.halfWidth;
+  const halfWidths = halfExtent(body, axis) + halfExtent(other, axis);
   return onNegativeSide ? other.pos[axis] - halfWidths : other.pos[axis] + halfWidths;
 };
 
@@ -216,32 +222,49 @@ export const stepBodyHorizontal = (
   }
 };
 
-const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: CollisionContext): void => {
-  if (!overlapsBody(first, second)) {
-    return;
-  }
-  const deltaX = second.pos[0] - first.pos[0];
-  const deltaZ = second.pos[2] - first.pos[2];
-  const overlapX = first.halfWidth + second.halfWidth - Math.abs(deltaX);
-  const overlapZ = first.halfWidth + second.halfWidth - Math.abs(deltaZ);
-  if (overlapX <= 0 || overlapZ <= 0) {
-    return;
-  }
-  const axis: Axis = overlapX <= overlapZ ? 0 : 2;
-  const overlap = axis === 0 ? overlapX : overlapZ;
-  const component = axis === 0 ? deltaX : deltaZ;
-  const direction = component === 0 ? 1 : Math.sign(component);
-  const push = Math.min(overlap / 2, maxPushBlocks);
-  const firstStart = [...first.pos] as Vec3;
-  const secondStart = [...second.pos] as Vec3;
+const pushPairAlongAxis = ({
+  first,
+  second,
+  axis,
+  direction,
+  push,
+  collision,
+}: {
+  first: Body;
+  second: Body;
+  axis: Axis;
+  direction: number;
+  push: number;
+  collision: CollisionContext;
+}): readonly [number, number] => {
+  const firstStart = first.pos[axis]!;
+  const secondStart = second.pos[axis]!;
   moveAxis(first, axis, -direction * push, collision);
   moveAxis(second, axis, direction * push, collision);
+  return [Math.abs(first.pos[axis]! - firstStart), Math.abs(second.pos[axis]! - secondStart)];
+};
 
-  const firstMoved = Math.abs(first.pos[axis]! - firstStart[axis]!);
-  const secondMoved = Math.abs(second.pos[axis]! - secondStart[axis]!);
-  if (firstMoved >= push - CONTACT_SKIN && secondMoved >= push - CONTACT_SKIN) {
-    return;
-  }
+const separateOnOtherAxis = ({
+  first,
+  second,
+  axis,
+  overlapX,
+  overlapZ,
+  firstMoved,
+  secondMoved,
+  maxPushBlocks,
+  collision,
+}: {
+  first: Body;
+  second: Body;
+  axis: Axis;
+  overlapX: number;
+  overlapZ: number;
+  firstMoved: number;
+  secondMoved: number;
+  maxPushBlocks: number;
+  collision: CollisionContext;
+}): void => {
   const otherAxis: Axis = axis === 0 ? 2 : 0;
   const otherOverlap = otherAxis === 0 ? overlapX : overlapZ;
   if (otherOverlap <= 0) {
@@ -257,6 +280,38 @@ const separatePair = (first: Body, second: Body, maxPushBlocks: number, collisio
   }
   if (secondBudget > 0) {
     moveAxis(second, otherAxis, otherDirection * Math.min(otherPush, secondBudget), collision);
+  }
+};
+
+const separatePair = (first: Body, second: Body, maxPushBlocks: number, collision: CollisionContext): void => {
+  if (!overlapsBody(first, second)) {
+    return;
+  }
+  const deltaX = second.pos[0] - first.pos[0];
+  const deltaZ = second.pos[2] - first.pos[2];
+  const overlapX = first.halfWidth + second.halfWidth - Math.abs(deltaX);
+  const overlapZ = (first.halfDepth ?? first.halfWidth) + (second.halfDepth ?? second.halfWidth) - Math.abs(deltaZ);
+  if (overlapX <= 0 || overlapZ <= 0) {
+    return;
+  }
+  const axis: Axis = overlapX <= overlapZ ? 0 : 2;
+  const overlap = axis === 0 ? overlapX : overlapZ;
+  const component = axis === 0 ? deltaX : deltaZ;
+  const direction = component === 0 ? 1 : Math.sign(component);
+  const push = Math.min(overlap / 2, maxPushBlocks);
+  const [firstMoved, secondMoved] = pushPairAlongAxis({ first, second, axis, direction, push, collision });
+  if (firstMoved < push - CONTACT_SKIN || secondMoved < push - CONTACT_SKIN) {
+    separateOnOtherAxis({
+      first,
+      second,
+      axis,
+      overlapX,
+      overlapZ,
+      firstMoved,
+      secondMoved,
+      maxPushBlocks,
+      collision,
+    });
   }
 };
 

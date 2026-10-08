@@ -8,14 +8,18 @@ import { footRestExtents, type GaitClock, type WalkActor, walkPose } from '@mobg
 import type { HumanoidParams } from '@mobgen/mob/humanoid.ts';
 import { applyIdleMotion, type IdleStance, idleBasePose } from '@mobgen/mob/idle.ts';
 import { flinchPose, flinchPoseWithClip, HIT_FLINCH, RUNNER_HIT_FLINCH } from '@mobgen/mob/reactions.ts';
-import { type ShamblerFigure, zombieFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { zombieFigure as humanoidFigure, type ShamblerFigure } from '@mobgen/mob/shamblerFigure.ts';
+import { amalgamFigure } from './amalgamFigure.ts';
 import type { Vec3 } from './coords.ts';
+import type { ZombieFigure } from './zombieFigure.ts';
 import type { Zombie } from './zombies.ts';
 
 export interface ShamblerPoseInput {
   readonly id?: number;
   readonly seed: number;
   readonly model?: string;
+  /** Authored scale for amalgam's generated body. */
+  readonly bodyScale?: number;
   /** Simulation position in block units. */
   readonly position: Vec3;
   readonly facing: Vec3;
@@ -55,6 +59,7 @@ export const zombiePoseInputFor = (
     id,
     seed: zombie.figureSeed,
     model: zombie.type.model,
+    ...(zombie.type.bodyScale === undefined ? {} : { bodyScale: zombie.type.bodyScale }),
     position: [position[0], position[1] + (zombie.stepOffset ?? 0) / blockSize, position[2]],
     facing: root?.facing ?? zombie.facing,
     headYaw: root?.headYaw ?? zombie.headYaw,
@@ -77,7 +82,7 @@ export interface PosedShambler {
   readonly pose: Pose;
   readonly transforms: ReturnType<typeof boneTransforms>;
   readonly bones: readonly Bone[];
-  readonly figure: ShamblerFigure;
+  readonly figure: ZombieFigure;
   readonly hidden: ReadonlySet<string>;
   readonly yaw: Mat3;
   readonly position: Vec3;
@@ -116,7 +121,7 @@ const actorForSeed = (model: string, seed: number): ReturnType<typeof actorForFi
   const key = `${model}:${seed}`;
   let actor = actorCache.get(key);
   if (!actor) {
-    actor = actorForFigure(zombieFigure(model, seed));
+    actor = actorForFigure(humanoidFigure(model, seed));
     actorCache.set(key, actor);
   }
   return actor;
@@ -193,7 +198,30 @@ export const advanceStanceWeight = (current: number, target: number, dt: number)
 /** The shared living-zombie pose source. Rendering and hit-region FK consume the same simulation-driven pose. */
 export const posedShambler = (input: ShamblerPoseInput): PosedShambler => {
   const model = input.model ?? 'shambler';
-  const figure = zombieFigure(model, input.seed);
+  if (model === 'amalgam') {
+    if (input.bodyScale === undefined) {
+      throw new Error('Amalgam pose is missing its authored bodyScale');
+    }
+    const figure = amalgamFigure(input.seed, input.bodyScale);
+    const { bones } = figure.realized.body;
+    const pose: Pose = {
+      root: figure.originOffset.map((coordinate) => coordinate / figure.scale) as Vec3,
+      rotations: {},
+    };
+    const partRoots = new Map(figure.manifest.parts.map((part) => [part.id, part.rootBone]));
+    const cuts = input.severed.map((part) => partRoots.get(part) ?? part);
+    return {
+      pose,
+      transforms: boneTransforms(bones, pose),
+      bones,
+      figure,
+      hidden: severedBoneSet(bones, cuts),
+      yaw: rotY((Math.atan2(-input.facing[0], -input.facing[2]) * 180) / Math.PI),
+      position: input.position,
+      blockSize: input.blockSize,
+    };
+  }
+  const figure = humanoidFigure(model, input.seed);
   const { actor, bones, idleBases } = actorForSeed(model, input.seed);
   const phase = ((input.gaitPhase % Math.PI) + Math.PI) % Math.PI;
   const clock: GaitClock = { stepIndex: Math.floor(input.gaitPhase / Math.PI), progress: phase / Math.PI };

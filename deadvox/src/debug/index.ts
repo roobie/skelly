@@ -630,6 +630,12 @@ export const createDebugActions = ({
         run: () => spawnZombie('crawler', 1),
       },
       {
+        id: 'debug.spawn-amalgam',
+        label: 'Spawn amalgam',
+        group: 'shamblers',
+        run: () => spawnZombie('amalgam', 1),
+      },
+      {
         id: 'debug.melee-aim-toggle',
         label: 'Melee aim boxes',
         group: 'shamblers',

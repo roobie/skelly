@@ -357,7 +357,7 @@ describe('canonical save format', () => {
         hands,
       }),
     ).toBe('started');
-    const initialHealth = zombie.regions.head;
+    const initialHealth = zombie.regions.head!;
     const snapshot = capture(source);
     const bytes = await encodeFixture(snapshot);
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
@@ -382,7 +382,8 @@ describe('canonical save format', () => {
       runtime.session.playerCombat.tick(1 / 60, held);
       runtime.zombies.tick(0.05, 0.25, held);
       const contactHealth = runtime.zombies.store.get(id)?.regions.head;
-      expect(contactHealth).toBeLessThan(initialHealth);
+      expect(contactHealth).toBeDefined();
+      expect(contactHealth!).toBeLessThan(initialHealth);
       if (restoredContactHealth === undefined) {
         restoredContactHealth = contactHealth;
       } else {

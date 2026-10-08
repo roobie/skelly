@@ -137,7 +137,7 @@ interface Envelope {
 }
 
 const MAGIC = 'DEADVOX_SAVE';
-export const SAVE_SCHEMA_VERSION = 39;
+export const SAVE_SCHEMA_VERSION = 41;
 const WORLD_REGION_METRES = 512;
 const DEFAULT_MAX_PAYLOAD_BYTES = 50 * 1024 * 1024;
 const ID = /^[a-z0-9_]+$/;
@@ -154,7 +154,7 @@ function defaultVersion(): SaveVersionComponents {
     return {
       simulationHash: __DEADVOX_SIMULATION_HASH__,
       schemaVersion: SAVE_SCHEMA_VERSION,
-      generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1' },
+      generators: { worldgen: 'worldgen-v1', shamblerFigure: 'shambler-figure-v1', amalgamFigure: 'amalgam-figure-v1' },
       contentPacks: [{ id: 'deadvox.base', version: '1', canonicalHash: __DEADVOX_BASE_CONTENT_HASH__ }],
     };
   } catch (error) {
@@ -224,7 +224,14 @@ const progression = obj({
 const positive = num({ min: Number.MIN_VALUE });
 const vec3 = tuple(finite, finite, finite);
 const bodyRegionValues = BODY_REGIONS;
-const body = obj({ pos: vec3, vel: vec3, halfWidth: positive, height: positive, onGround: bool });
+const body = obj({
+  pos: vec3,
+  vel: vec3,
+  halfWidth: positive,
+  halfDepth: opt(positive),
+  height: positive,
+  onGround: bool,
+});
 const needs = obj({
   calories: num({ min: 0, max: 100 }),
   hydration: num({ min: 0, max: 100 }),
@@ -506,14 +513,7 @@ const zombie = obj({
   stumbleFactor: finite,
   stumbleElapsed: finite,
   stumbleDuration: finite,
-  regions: obj({
-    head: positive,
-    torso: nonNegative,
-    leftArm: nonNegative,
-    rightArm: nonNegative,
-    leftLeg: nonNegative,
-    rightLeg: nonNegative,
-  }),
+  regions: record(nonNegative),
   lastPerceived: opt(vec3),
   stimulusAt: opt(nonNegative),
   attackWait: finite,

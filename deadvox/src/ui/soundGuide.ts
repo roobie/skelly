@@ -141,8 +141,8 @@ const TRIGGER_ENTRIES = [
       debugHint: "?debug=1: Use the debug panel's spawn action to spawn shamblers nearby.",
     },
   ],
-  ...(['runner', 'crawler'] as const).flatMap((type) => {
-    const subject = type === 'runner' ? 'A runner' : 'A crawler';
+  ...(['runner', 'crawler', 'amalgam'] as const).flatMap((type) => {
+    const subject = { runner: 'A runner', crawler: 'A crawler', amalgam: 'An amalgam' }[type];
     return (['idle', 'alert', 'attack', 'hurt'] as const).map((action) => {
       const event = {
         idle: 'idles nearby',
@@ -315,6 +315,13 @@ const BR_STATUS_NOTES = new Map<SoundEventId, string>([
     (['idle', 'alert', 'attack', 'hurt'] as const).map(
       (action) => [`${type}_${action}`, 'Stand-in mapping; awaiting BR review of this zombie type’s sounds.'] as const,
     ),
+  ),
+  ...(['idle', 'alert', 'attack', 'hurt'] as const).map(
+    (action) =>
+      [
+        `amalgam_${action}`,
+        'Stand-in mapping: reuses shambler recordings pitched down; bespoke amalgam recordings remain future work.',
+      ] as const,
   ),
   ['door_open', 'Approved by BR (2026-10-02) with door-open-03 only; more variants are future work.'],
   [
