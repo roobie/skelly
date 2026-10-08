@@ -25,9 +25,6 @@
       "startedAt": 1,
       "time": 2
     },
-    "bench/shamblers-cpu.mjs": {
-      "hour": 1
-    },
     "bench/shamblers.ts": {
       "startedAt": 1,
       "time": 2
