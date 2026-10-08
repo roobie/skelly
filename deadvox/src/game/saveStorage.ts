@@ -14,6 +14,10 @@ type SaveBackend = 'opfs' | 'indexeddb';
 export type SaveBackendPreference = 'auto' | SaveBackend;
 type SlotName = 'a' | 'b';
 const SAVE_WRITE_LOCK = 'deadvox-save-storage';
+const warnSaveLockTimeout = (message: string, details: Record<string, unknown>): void => {
+  // biome-ignore lint/suspicious/noConsole: a lock timeout must name its holder in the browser console.
+  console.warn(message, details);
+};
 const SAVE_READ_RETRIES = 3;
 const SAVE_READ_RETRY_MS = 50;
 const STORAGE_METADATA_TIMEOUT_MS = 1000;
@@ -197,18 +201,74 @@ export class SaveStorage {
   }
 
   private async withLock<T>(mode: 'shared' | 'exclusive', operation: () => Promise<T>): Promise<T> {
-    // The worker deadline starts only after acquisition; bound the queue wait separately.
-    // Aborting a pending request never steals or releases an existing writer's lock.
-    const signal = AbortSignal.timeout(this.timeoutMs);
-    try {
-      return await navigator.locks.request(SAVE_WRITE_LOCK, { mode, signal }, operation);
-    } catch (error) {
-      if (signal.aborted && error === signal.reason) {
-        throw new Error('World is still open or saving in another tab. Retry saved worlds after it finishes.', {
-          cause: error,
+    // Inspect the live queue before aborting so the warning can identify the client holding the lock.
+    const controller = new AbortController();
+    let acquired = false;
+    let timedOut = false;
+    let timer: ReturnType<typeof globalThis.setTimeout> | undefined = globalThis.setTimeout(() => {
+      navigator.locks
+        .query()
+        .then(({ held = [], pending = [] }) => {
+          if (acquired) {
+            return;
+          }
+          const relevantHeld = held.filter((lock) => lock.name === SAVE_WRITE_LOCK);
+          const relevantPending = pending.filter((lock) => lock.name === SAVE_WRITE_LOCK);
+          const waiter = [...relevantPending].reverse().find((lock) => lock.mode === mode);
+          const comparableHolders = relevantHeld.filter((lock) => lock.clientId !== undefined);
+          const holderIsAnotherClient =
+            waiter?.clientId === undefined || comparableHolders.length === 0
+              ? null
+              : comparableHolders.some((lock) => lock.clientId !== waiter.clientId);
+          warnSaveLockTimeout('Deadvox save lock request timed out', {
+            cause: 'lock acquisition exceeded its deadline',
+            requestedMode: mode,
+            held: relevantHeld.map(({ mode: heldMode, clientId }) => ({ mode: heldMode, clientId })),
+            pending: relevantPending.map(({ mode: pendingMode, clientId }) => ({ mode: pendingMode, clientId })),
+            holderIsAnotherClient,
+          });
+          timedOut = true;
+          controller.abort();
+        })
+        .catch((error: unknown) => {
+          if (acquired) {
+            return;
+          }
+          warnSaveLockTimeout('Deadvox save lock request timed out', {
+            cause: 'lock acquisition exceeded its deadline',
+            requestedMode: mode,
+            held: [],
+            pending: [],
+            holderIsAnotherClient: null,
+            queryError: error instanceof Error ? error.message : String(error),
+          });
+          timedOut = true;
+          controller.abort();
         });
+    }, this.timeoutMs);
+    try {
+      return await navigator.locks.request(SAVE_WRITE_LOCK, { mode, signal: controller.signal }, () => {
+        acquired = true;
+        if (timer !== undefined) {
+          globalThis.clearTimeout(timer);
+          timer = undefined;
+        }
+        return operation();
+      });
+    } catch (error) {
+      if (timedOut) {
+        throw new Error(
+          'World is still open or saving in another page (possibly in the back/forward cache). Retry saved worlds after it finishes.',
+          {
+            cause: error,
+          },
+        );
       }
       throw error;
+    } finally {
+      if (timer !== undefined) {
+        globalThis.clearTimeout(timer);
+      }
     }
   }
 

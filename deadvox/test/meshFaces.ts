@@ -66,5 +66,16 @@ const blockFaces = (padded: Uint16Array, block: readonly number[]): string[] => 
 };
 
 /** The faces a mesher that draws every visible block face separately would produce. */
-export const culledFaces = (padded: Uint16Array): Set<string> =>
-  new Set(cells([0, 0, 0], [CHUNK, CHUNK, CHUNK]).flatMap((block) => blockFaces(padded, block)));
+export const culledFaces = (padded: Uint16Array): Set<string> => {
+  const faces = new Set<string>();
+  for (let x = 0; x < CHUNK; x++) {
+    for (let y = 0; y < CHUNK; y++) {
+      for (let z = 0; z < CHUNK; z++) {
+        for (const face of blockFaces(padded, [x, y, z])) {
+          faces.add(face);
+        }
+      }
+    }
+  }
+  return faces;
+};

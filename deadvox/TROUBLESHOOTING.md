@@ -11,6 +11,7 @@ read_if:
   - you diagnose a stalled Deadvox CI browser dependency install (#388)
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
+  - you investigate save-lock timeouts
 ---
 
 # deadvox — troubleshooting
@@ -104,6 +105,21 @@ player has turned that aid off. See `src/game/play.ts`, `frame`,
 `panelTemplate`.
 
 Bisect a visual bug by flipping one toggle at a time before theorising.
+
+## Save-lock timeouts
+
+Continue can be blocked while another page holds the origin-wide save lock. A
+live hung writer releases it when `SaveStorage.request` times out; nothing in a
+frozen page can release a lock it holds. The back/forward-cache exception and
+recovery point are in `docs/decisions/0002-saves.md`, “Snapshot timing and frame
+budget”.
+
+`SaveStorage.withLock` reports the cause and held/pending lock summary, including
+whether the holder is another client, and explains the other-page failure to the
+player. The Chromium navigation and busy-lock contracts and the autosave
+contract are in `test/browser/save-storage.mjs`, `navigationOnly`, `busyLockOnly`,
+and `testTitleAndAutosave`; the leaving-state rule is in
+`src/ui/saveController.ts`, `SaveController`.
 
 ## Deadvox CI browser dependency stalls
 
