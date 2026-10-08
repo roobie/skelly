@@ -335,6 +335,8 @@ body.unconscious::after {
 
 /* ---- inventory screen ---- */
 #inventory {
+  --inv-pane-padding-inline: 12px;
+  --inv-pane-border-width: 1px;
   position: fixed;
   z-index: 20;
   inset: 24px;
@@ -426,8 +428,19 @@ body.unconscious::after {
 }
 #inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
   align-self: start;
-  max-width: min(100%, calc(var(--inv-around-width-cap, 100%) + 26px + 1.25em));
+  max-width: min(
+    100%,
+    calc(
+      var(--inv-around-width-cap, 100%) +
+      var(--inv-pane-padding-inline) +
+      var(--inv-pane-padding-inline) +
+      var(--inv-pane-border-width) +
+      var(--inv-pane-border-width) +
+      1.25em
+    )
+  );
   max-height: 100%;
+  scrollbar-gutter: stable;
 }
 .inv-body[data-tab-panel="items"] .inv-details {
   grid-column: 1 / -1;
@@ -440,8 +453,8 @@ body.unconscious::after {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid #2a3038;
+  padding: 10px var(--inv-pane-padding-inline);
+  border: var(--inv-pane-border-width) solid #2a3038;
   border-radius: 8px;
   background: #15171b;
 }
@@ -530,8 +543,7 @@ body.unconscious::after {
   color: var(--muted);
 }
 .inv-pile[data-entity-uid] {
-  flex: 0 0 auto;
-  min-height: 0;
+  flex: 0 1 auto;
 }
 .inv-grid-scroll {
   flex: 1;

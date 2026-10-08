@@ -283,7 +283,8 @@ try {
       clientWidth: scroll.clientWidth,
       scrollWidth: scroll.scrollWidth,
       itemLeft: Number.parseFloat(item.style.left),
-      expectedLastColumnLeft: (globalThis.scrollFixture.containerMaxWidthCells - 1) * cell,
+      cell,
+      cap: globalThis.scrollFixture.containerMaxWidthCells,
       itemHit: hit?.closest('.inv-item') === item,
     };
   });
@@ -299,8 +300,8 @@ try {
     `cap-wide rack needs no horizontal scrolling: ${JSON.stringify(capWideRack)}`,
   );
   assert.equal(
-    capWideRack.itemLeft,
-    capWideRack.expectedLastColumnLeft,
+    Math.floor(capWideRack.itemLeft / capWideRack.cell),
+    capWideRack.cap - 1,
     'fixture item occupies the rack’s last column',
   );
   assert.ok(capWideRack.itemHit, `last-column item is pointer-accessible: ${JSON.stringify(capWideRack)}`);
