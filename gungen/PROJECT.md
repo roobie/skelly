@@ -346,7 +346,7 @@ Each is valid and passes every rule. Files are in `fixtures/`.
 | `archetype-pistol` | Semi-automatic pistol | integrated frame/grip, hollow slide, internal barrel with 1u crown, grip magazine |
 | `archetype-revolver` | Revolver | dedicated top-strapped frame, cylinder/barrel alignment, and separate grip |
 
-Scale anchor: keep the gun-domain unit calibration; the Brownells listing's stated 2.54 in (64.5 mm) STANAG-20 body depth corroborates the authored magazine top within one grid step. Its 127 × 66 × 25 mm delivery dimensions are package data, not body data. The listing's other stated body dimensions govern body sizing. Optic references are recorded in `docs/optics.md`.
+Scale anchor: keep the gun-domain unit calibration; the Brownells listing's stated 2.54 in (64.5 mm) STANAG-20 body depth corroborates the authored body depth within one grid step. Its 127 × 66 × 25 mm delivery dimensions are package data, not body data. The listing's other stated body dimensions govern body sizing. Optic references are recorded in `docs/optics.md`.
 
 - Grip S/M/L lengths are `7.5/8.5/9.5u` along the grip axis, including the
   integrated pistol-frame grip.
@@ -356,8 +356,18 @@ Scale anchor: keep the gun-domain unit calibration; the Brownells listing's stat
   listing and are snapped to the nearest grid step. This is a visible reference,
   not a claim that the 30 is a USGI aluminium magazine. The shared upper and
   feed lips use the same snapped width as both bodies. Both STANAG bodies fit
-  the AR magwell as modelled. The STANAG-30 arc includes BR's five-degree
-  eyeballed adjustment; the floorplate detail is a photo estimate. The HK
+  the AR magwell as modelled. For g52-7, the raised magazine needs an open path
+  through the AR lower; its former interior roof is omitted while the outer
+  frame and magwell dimensions stay fixed. The 30-round side profile follows the
+  public paired-magazine photo: the straight 20-round body provides the photo-skew
+  correction, and the 30's bend begins about halfway down the 20's body.
+  Correcting for that photo skew leaves the 30 appearing longer than the
+  listing's approximate length, so the sourced dimension remains the model basis. Its
+  floorplate detail remains a photo estimate. For AR seating, the feed lips
+  follow the receiver's modeled bolt-path and barrel-extension clearance; no
+  sourced feed-lip-to-bore dimension was available. The lower's `magwell` anchor
+  follows that well seat through `src/gun/anchorData.ts`; see `src/gun/parts.ts`,
+  `BOLT_CARRIER_ENVELOPES`, and `magazine` for the derived clearance. The HK
   listing's approximate empty weight is for steel, so Deadvox uses a gameplay
   mass estimate unless an aluminium STANAG-30 mass is sourced; see
   `deadvox/src/content/base/items-ammunition.json`, `magazine_stanag_30`. See
@@ -365,7 +375,8 @@ Scale anchor: keep the gun-domain unit calibration; the Brownells listing's stat
   `STANAG30_CENTERLINE_LENGTH_U`, `STANAG30_BODY_WIDTH_U`, `magazineBodySection`
   and `magazineGeometryFor`.
   Sources: [Brownells 20-round listing](https://www.brownells.se/AR-15-MAGAZINE-20-ROUND-USGI-BROWNELLS-AR-15-STRAIGHT-MAGAZINE-20-ROUND-GRAY-Aluminum-Gra-556-x-45-430110983);
-  [HK SA80 30-round listing](https://www.meanandgreen.com/army/British_Army/SA80_5.56mm_30_Round_NATO_Magazine/3850/2876.html).
+  [HK SA80 30-round listing](https://www.meanandgreen.com/army/British_Army/SA80_5.56mm_30_Round_NATO_Magazine/3850/2876.html);
+  [paired STANAG magazine photo](https://upload.wikimedia.org/wikipedia/commons/c/ca/Stanag_mags.jpg).
   Other STANAG capacities are deferred to #414. The AKM curved band is fitted
   to its golden photo (g41-4).
 - The detachable-box bolt rifle alone has compact `5-round`/`10-round` lengths

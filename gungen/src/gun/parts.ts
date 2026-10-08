@@ -316,19 +316,14 @@ const CURVED_MAGAZINE_PROFILES: Readonly<Record<'ak74' | 'akm' | 'stanag30', Cur
     straightBottom: 0,
     topSlopeDegrees: 6,
   },
-  // Retain the existing profile for the shared upper and compact profile variants.
+  // The paired-magazine reference shows this straight upper length and bend before the arc.
   stanag30: {
     seat: 'well',
-    straightTop: 7.1,
-    arc: { radius: 32, sweepDegrees: 10, collisionFacets: 4, displayFacets: 16 },
+    straightTop: 4.25,
+    arc: { radius: 32, sweepDegrees: 10.25, collisionFacets: 4, displayFacets: 16 },
     straightBottom: 3.11,
     topSlopeDegrees: 0,
   },
-};
-// BR requested five more degrees of sweep by eye than the photo estimate.
-const STANAG30_BODY_PROFILE: CurvedMagazineProfile = {
-  ...CURVED_MAGAZINE_PROFILES.stanag30,
-  arc: { ...CURVED_MAGAZINE_PROFILES.stanag30.arc, sweepDegrees: 7 },
 };
 const AK_MAGAZINE_CURVE_VARIANTS = ['ak74', 'akm'] as const;
 const AK_MAGAZINE_ROCK_IN_SWEEP = 4;
@@ -2180,7 +2175,14 @@ const lower: PartFamily = {
     // The magazine well at x, with a sloped opening only for the G3-style fit.
     const well = (x: number) => {
       let portY = -1.5;
-      if (orientation.kind === 'tilt' && supportsTiltedMagazineWell) {
+      if (layout === 'ar' && orientation.kind === 'straight') {
+        const feedLipY = Math.min(
+          BOLT_CARRIER_ENVELOPES.ar.y[0] - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+          -AR_ACTION_LAYOUT.barrelExtensionDiameterU / 2 - BOLT_CARRIER_RUNNING_CLEARANCE_U,
+        );
+        const targetPortY = AR_ACTION_LAYOUT.receiverHeightU / 2 + feedLipY - MAGAZINE_INSERTION;
+        portY = Math.round(targetPortY / GRID) * GRID;
+      } else if (orientation.kind === 'tilt' && supportsTiltedMagazineWell) {
         portY = -1.5 - (MAGAZINE_HOUSING_FRONT_LENGTH + MAGAZINE_HOUSING_REAR_LENGTH) / 2;
       } else if (params.magazineWell === 'recessed') {
         portY = RECESSED_MAGAZINE_PORT_Y;
@@ -2265,7 +2267,10 @@ const lower: PartFamily = {
         solid('frame-front', [x1, -1.5, -outerZ], [maxX, 0, outerZ]),
         solid('well-wall-left', [x0, -1.5, -outerZ], [x1, 0, -z0]),
         solid('well-wall-right', [x0, -1.5, z0], [x1, 0, outerZ]),
-        ...(params.magazineWell === 'recessed' ? [] : [solid('well-roof', [x0, roofY, -z0], [x1, 0, z0])]),
+        // The AR well opens through the lower so the seated magazine can reach the feed path.
+        ...(params.magazineWell === 'recessed' || params.layout === 'ar'
+          ? []
+          : [solid('well-roof', [x0, roofY, -z0], [x1, 0, z0])]),
       ];
     };
     // Conventional: the rear face meets the trigger-finger volume (it ends at
@@ -3813,7 +3818,7 @@ const magazineGeometryFor = (
       if (sharedUpper?.kind !== 'extruded-polygon') {
         throw new Error('the STANAG magazine top must be an extruded profile');
       }
-      return curvedMagazineGeometry(shape, STANAG30_BODY_PROFILE, sharedUpper);
+      return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30, sharedUpper);
     }
     return curvedMagazineGeometry(shape, CURVED_MAGAZINE_PROFILES.stanag30);
   }
