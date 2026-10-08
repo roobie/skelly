@@ -10,7 +10,7 @@ read_if:
   - you change item activation, crafting or appliance ownership boundaries
   - you change how handling gates primary actions
   - you change movement or action input during long actions
-  - you reconcile BR's interaction rulings with actor handedness
+  - you change primary-action rules for actor handedness
   - you change quickbar hand displacement or automatic item-stow behavior
   - you change long-action admission or interruption behavior
 ---
@@ -109,7 +109,7 @@ The arrow only points one way: `ui` reads `core` and calls its commands;
 Each item in it carries its location and the handling time to bring it to your
 hands, from `Inventory.handlingTime`. The "around" pane of the inventory, the
 crafting planner, gathering, the appliance panel and a dead light's search for a
-spare battery all read it. Today those use four different calls
+spare battery all read it. Those actions use four different calls
 (`pilesNear`, `containersNear`, `carried`, and the walk in `Survival.findBattery`).
 
 The snapshot is cached against the versions it was built from (the inventory's,
@@ -142,13 +142,11 @@ source of the "use" options and commands.
 
 ## Quickbar hand transfers
 
-> BR, 2026-10-05: "atomic: no - we should do best effort, but do _not_ drop any item automatically"
-
 `src/core/options.ts`, `quickbarTake`, stows displaced hand items where they
 fit. An item with no free cell stays in its hand; any other item already stowed
 stays put. The requested item is taken only when its required hands are free,
 and the notice names each item that could not be stowed. Quickbar transfers do
-not drop items automatically.
+not drop items automatically: best-effort stowing avoids silently losing gear.
 
 ## Crafting
 
@@ -312,12 +310,11 @@ don't need compression.
 
 - **View models.** Each screen has a function in `src/ui` that builds a plain
   object from core queries (reach, options, plans), and a lit-html template that
-  draws that object. View models are tested in Node without a DOM, which the
-  UI code can't do today.
+  draws that object. View models are tested in Node without a DOM; UI code
+  cannot run there.
 - **Redraw.** Each frame, a screen builds a key from the versions it depends on
-  and its UI state; when the key changes it calls `render()`. This is today's
-  pattern (`InventoryScreen.update`), except that lit-html updates only what
-  changed, so scroll position, focus and hover survive.
+  and its UI state; `InventoryScreen.update` calls `render()` on a key change.
+  lit-html updates only what changed, so scroll position, focus and hover survive.
 - **Events send commands.** A click or a key sends a command and shows the
   reason if it's refused. The screen never changes the model directly.
 - **Drag and drop stays a controller.** It's UI state (what's dragged, where the
@@ -363,14 +360,12 @@ values), known recipes and skill levels. Two consequences for 1.9:
    recovery rates; their authored values are placeholders, not balance claims.
    `src/core/longAction.ts`, `RestAction`, retains that furniture identity;
    `src/game/rest.ts`, `RestController.resume`, refuses a resume if it is no
-   longer reachable. BR (2026-10-05 20:13) said "as for sleeping: that's not
-   something you actively stop - you wake up for reasons (whatever they may
-   be)" and "resting is the same as reading -> no actions are allowed (other
-   than cancelling resting)". `RestController.canStop` owns sleep
-   cancellability, which `src/ui/rest.ts`, `restViewModel`, uses for its hint.
-   An interrupt wakes the sleeper and clears its action. BR (2026-10-05 20:14)
-   added "as for crafting: same as reading". Sleep starts by interacting with
-   sleepable furniture; there is no dedicated sleep key.
+   longer reachable. `RestController.canStop` owns sleep cancellability, which
+   `src/ui/rest.ts`, `restViewModel`, uses for its hint. An interrupt wakes the
+   sleeper and clears its action. Rest permits only cancellation; sleep cannot
+   be actively stopped and has no dedicated key. Sleep starts by interacting
+   with sleepable furniture. Crafting follows the same input restrictions as
+   reading.
 3. **1.9, saves:** long actions and item state as plain data, as above.
 4. **Slice 2:** the inventory screen already moved to lit-html in Slice 1
    (#105), which completed ADR 0001. Slice 2 starts with the reach query and `options`, then recipes in the schema and the
@@ -381,39 +376,24 @@ values), known recipes and skill levels. Two consequences for 1.9:
 
 ## Long-action input and wake behavior
 
-BR (2026-10-05 20:09) ruled: "long actions disable all actions". Movement and
-gameplay action input are ignored while reading, resting, sleeping or crafting.
-Each kind keeps its own close, cancel or wake behavior:
+Movement and gameplay actions are ignored while reading, resting, sleeping or
+crafting. Each kind keeps its own close, cancel or wake behavior:
 
 - Reading: `src/game/inputBindings.ts`, `KeyboardInput`, routes reading controls
   separately from world input; the world continues to move while the page is open.
-- Rest: BR (2026-10-05 20:13): "resting is the same as reading -> no actions are
-  allowed (other than cancelling resting)". F on the anchor and X cancel it;
-  movement does not.
-- Sleep: BR (2026-10-05 20:13): "as for sleeping: that's not something you
-  actively stop - you wake up for reasons (whatever they may be)". Movement and X
-  do not stop it. An interrupt wakes the player, clears sleep and frees
-  input. Existing wake triggers remain. Interacting with sleepable furniture starts
-  sleep; there is no dedicated sleep key.
-- Craft: BR (2026-10-05 20:14): "as for crafting: same as reading". Movement does
-  not stop it; its cancel key and interrupt events still do. Enter resumes
-  after an interruption.
+- Rest: F on the anchor and X cancel it; movement does not.
+- Sleep: movement and X do not stop it. An interrupt wakes the player, clears
+  sleep and frees input. Interacting with sleepable furniture starts sleep; no
+  dedicated sleep key exists.
+- Craft: movement does not stop it; its cancel key and interrupt events do. Enter
+  resumes after an interruption.
 
-BR (2026-10-05 morning playtest) said "if the player wants to do a long running
-op with shamblers close, that's OK". BR (2026-10-05 20:09) answered "fast
-forward". BR (2026-10-05 22:28) chose option B; the lead's wording for B was
-"No: only a hit or another real event (hunger, thirst...) wakes you". BR said
-"it's up to the player to make the area safe for them to do the long action.
-We're not holding hands". A hostile nearby or noticing the player neither
-refuses nor interrupts a long action; emitted interrupt events, such as a hit or
-critical need, still stop it.
-`src/core/longAction.ts`, `LongActions.syncInterruption`, wakes a sleeper and
-clears the interruption; `src/core/sim.ts`, `Simulation.checkInterruptions`,
-keeps emitted events live.
-
+A nearby or aware hostile neither refuses nor interrupts a long action. Only
+emitted interrupt events, such as a hit or critical need, stop it. The player is
+responsible for making the area safe before starting the action. `src/core/longAction.ts`,
+`LongActions.syncInterruption`, wakes a sleeper and clears the interruption;
+`src/core/sim.ts`, `Simulation.checkInterruptions`, keeps emitted events live.
 ## Decisions
-
-The draft's open questions, answered by BR on 2026-09-27 (issue #26):
 
 1. **Hands for crafting.** A craft refuses until both hands are empty. Putting
    things away is a deliberate act of the player, never done for them.
@@ -425,29 +405,25 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    time.
 4. **Partial stacks.** Gathering uses smaller stacks first when the gathering
    time is equal, so leftovers get used up.
-5. **Per-place versions.** Not a decision yet: redrawing on the one inventory
-   counter stays until profiling in Slice 5 shows it costs too much.
-6. **Held-item primary action (BR, 2026-09-26, issue #27):** "Left click does
-   the thing with the thing you're holding." Dispatch by item capability, not
-   id. The initial hand mapping (BR, 2026-10-01; open to revision) was "left click
-   for the right hand and `=` for the left". BR's 2026-10-04 handedness ruling
-   maps right to the dominant role and left to the off-hand role, rather than
-   changing physical inventory slots. See `src/core/character.ts`, `dominantSide`
-   and `offSide`, and `src/game/primaryAction.ts`, `selectPrimaryAction`.
-   A held item must never become a fist or redirect to the other hand, and a
-   restored physical fist sequence must not be reseeded from dominance.
-7. **Long-action start and speed near a hostile (BR, 2026-10-05 morning playtest; 20:09):** "without any UI hints, I didn't know that 'a shambler was close' blocked me from reading. I don't think we should have that sort of block - if the player wants to do a long running op with shamblers close, that's OK". To the 20:09 question about speed, BR answered "fast forward". BR (2026-10-05 22:28) chose option B; the lead's wording was "No: only a hit or another real event (hunger, thirst...) wakes you". BR said "it's up to the player to make the area safe for them to do the long action. We're not holding hands". A nearby or aware hostile neither refuses nor interrupts an action; emitted interrupt events still stop it.
-8. **Handling gates primary actions (`d77-1`, 2026-10-05):** BR reported,
-   "bug: while in the process of wielding something, you can attack". While handling
-   is busy, primary actions from either hand are refused. Whether a one-handed job
-   should leave the free hand usable remains open for BR.
-9. **Held igniter activates the other hand's light (BR, #252 re-look,
-   2026-10-05 13:44).** BR's report:
-
-   > right hand: matches / left hand: candle / left-click->"nothing to do with box of matches"
-
-   This identified the missing primary action. Activating a held igniter lights
-   an unlit light in the other hand when that light requires a firestarter;
+5. **Per-place versions.** Redraws use one inventory counter until Slice 5
+   profiling. Per-place counters remain an option for BR if building view models
+   costs too much.
+6. **Held-item primary action.** Left click invokes the held item's capability,
+   not an action selected by item id. Inputs follow the dominant and off-hand
+   roles without changing physical inventory slots. See
+   `src/core/character.ts`, `dominantSide` and `offSide`, and
+   `src/game/primaryAction.ts`, `selectPrimaryAction`. A held item must never
+   become a fist or redirect to the other hand, and a restored physical fist
+   sequence must not be reseeded from dominance.
+7. **Long actions near hostiles.** A nearby or aware hostile neither refuses nor
+   interrupts a long action. Only emitted interrupt events, such as a hit or
+   critical need, stop it. The player is responsible for making the area safe
+   before starting.
+8. **Handling gates primary actions (`d77-1`).** Primary actions from either
+   hand are refused during a handling job. Whether a one-handed job should leave
+   the free hand usable remains open for BR.
+9. **Held igniter activates the other hand's light (`#252`).** A held igniter
+   lights an unlit light in the other hand if that light requires a firestarter.
    `src/game/primaryAction.ts`, `ignitionTargetForHand`, selects it, and
    `src/game/survival.ts`, `Survival.use`, checks the other hand and spends one
    ignition's charge. An igniter in reach but not held does not qualify. Without
@@ -455,10 +431,8 @@ The draft's open questions, answered by BR on 2026-09-27 (issue #26):
    charge. Whether matches alone strike one match for a brief light remains open
    for BR and is not implied by this rule.
 
-10. **Held consumables (BR, 2026-10-05):** answering “What should left-clicking
-   held food, drink or a bandage do?” BR ruled: “activate them”. The primary
-   action selects food and drink by their `food` component and medical items by
-   category, then calls `Survival.use`; quickbar actions remain owned by
-   `Survival.useFromQuickbar`. Until Slice 3's body model includes wounds, using
-   a bandage follows that owner and is refused; see `src/game/survival.ts`,
-   `Survival.use`.
+10. **Held consumables.** The primary action selects food and drink by their
+   `food` component and medical items by category, then calls `Survival.use`;
+   quickbar actions remain owned by `Survival.useFromQuickbar`. Until the body
+   model includes wounds, using a bandage is refused; see
+   `src/game/survival.ts`, `Survival.use`.
