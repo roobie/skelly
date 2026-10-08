@@ -1226,8 +1226,15 @@ The current state of the look, and its open items, are in [GRAPHICS.md](GRAPHICS
   measured.
 - **Zombie bodies:** each mobgen model/seed variant owns a block of pose rows,
   one per drawn actor. Missing per-actor rows leave the shared bone texture
-  unable to place that actor's mesh in the world. See `src/render/mobActors.ts`,
-  `MobActorMeshes`.
+  unable to place that actor's mesh in the world. Each live actor with an
+  allocated row keeps its root placement current on every sync, including while
+  off-screen; its cached pose moves the bones with that root until full pose
+  packing resumes. Skipping both left stale bones in rows still drawn by the
+  instanced mesh, so re-entry could snap by the movement accumulated while
+  culled. A despawn or streamed unload can reuse a variant row, so the new actor
+  must build its own pose before drawing. See `src/render/mobActors.ts`,
+  `MobActorMeshes.syncZombie`, `test/runnerRenderContinuity.test.ts`,
+  `runEngagement`, and `test/mobActors.test.ts`, `MobActorMeshes`.
 - **Sun-shadow quality (BR approval, 2026-10-05):** “Markedly better, but there
   is still a little jaggedness. But we won't pursue this more right now, so I'll
   approve it.” The remaining jaggedness is a known limit BR chose not to pursue.
