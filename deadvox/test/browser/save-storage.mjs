@@ -203,17 +203,65 @@ try {
   }
   let page = await withTimeout('initial page creation', context.newPage());
   const pageErrors = [];
-  const recordRequestFailure = (request) => {
+  const navigationDiagnostics = new WeakMap();
+  const trackPageNavigation = (trackedPage) => {
+    const state = { generation: 0, requestGeneration: new WeakMap(), navigationByGeneration: new Map() };
+    navigationDiagnostics.set(trackedPage, state);
+    trackedPage.on('request', (request) => {
+      if (!request.isNavigationRequest()) {
+        state.requestGeneration.set(request, state.generation);
+      }
+    });
+    trackedPage.on('framenavigated', (frame) => {
+      if (frame === trackedPage.mainFrame()) {
+        state.generation += 1;
+      }
+    });
+    trackedPage.on('pageerror', (error) => pageErrors.push(error.message));
+    trackedPage.on('requestfailed', (request) => recordRequestFailure(trackedPage, request));
+  };
+  const navigatePage = async (label, action) => {
+    const state = navigationDiagnostics.get(page);
+    const source = await page
+      .evaluate(() => {
+        const controller = globalThis.deadvoxSaveTest?.controller;
+        const save = globalThis.deadvoxSaveTest?.saveState?.();
+        return {
+          url: location.href,
+          readyState: document.readyState,
+          status: document.querySelector('#save-status')?.textContent ?? null,
+          controller: controller
+            ? {
+                ready: controller.ready === true,
+                entered: controller.isEntered,
+                restored: controller.restored !== undefined,
+                savedGeneration: save?.savedGeneration ?? null,
+                failure: save?.failure ?? null,
+              }
+            : null,
+        };
+      })
+      .catch((error) => ({ url: page.url(), error: String(error) }));
+    const navigation = { label, source };
+    state.navigationByGeneration.set(state.generation, navigation);
+    process.stdout.write(`${browserName}: ${label} from ${JSON.stringify(source)}\n`);
+    return action();
+  };
+  const recordRequestFailure = (trackedPage, request) => {
     const failure = request.failure()?.errorText;
-    const { pathname } = new URL(request.url());
-    // Same-tab navigation may cancel the old page's renderer-worker module fetch.
-    if (navigationOnly && failure === 'NS_BINDING_ABORTED' && pathname.startsWith('/assets/mesh.worker-')) {
+    const state = navigationDiagnostics.get(trackedPage);
+    const generation = state?.requestGeneration.get(request);
+    const navigation = generation === undefined ? undefined : state?.navigationByGeneration.get(generation);
+    // Firefox cancels outgoing-document module fetches during reload; destination-page failures remain errors.
+    if (failure === 'NS_BINDING_ABORTED' && !request.isNavigationRequest() && navigation) {
+      process.stdout.write(
+        `${browserName}: ignored outgoing-page request cancellation during ${navigation.label}: ${request.url()} from ${JSON.stringify(navigation.source)}\n`,
+      );
       return;
     }
     pageErrors.push(`${request.url()} failed: ${failure}`);
   };
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('requestfailed', recordRequestFailure);
+  trackPageNavigation(page);
   if (!autosaveOnly && !navigationOnly) {
     await page.goto(testUrl, { timeout: STAGE_TIMEOUT_MS });
     await page.waitForSelector('#ready', { timeout: STAGE_TIMEOUT_MS });
@@ -484,8 +532,7 @@ try {
 
   await page.close();
   page = await context.newPage();
-  page.on('pageerror', (error) => pageErrors.push(error.message));
-  page.on('requestfailed', recordRequestFailure);
+  trackPageNavigation(page);
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: browser contract exercises save entry, recovery, and replacement end to end.
   const testTitleAndAutosave = async (backend) => {
     const appUrl = browserStageUrl(
@@ -538,7 +585,7 @@ try {
         );
       }
     };
-    await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
+    await navigatePage('autosave initial goto', () => page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS }));
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.saveState !== undefined, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
@@ -575,7 +622,9 @@ try {
     await page.evaluate(() => globalThis.dispatchEvent(new Event('pagehide')));
     const firstGeneration = await waitForGeneration(visibilityGeneration, 'pagehide');
 
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+    await navigatePage('reload after pagehide checkpoint', () =>
+      page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+    );
     try {
       await page.waitForFunction(
         () => {
@@ -620,7 +669,9 @@ try {
     if ((await readGeneration('after title-screen pagehide')) !== beforeContinue) {
       throw new Error(`${backend} title-screen pagehide wrote before Continue or New world was selected`);
     }
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+    await navigatePage('reload after title-pagehide check', () =>
+      page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+    );
     await page.waitForFunction(
       () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
       undefined,
@@ -628,10 +679,12 @@ try {
     );
     await page.waitForSelector('#view', { timeout: STAGE_TIMEOUT_MS });
     if (autosaveScenario === 'continue') {
-      await Promise.all([
-        page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
-        page.click('#continue', { timeout: STAGE_TIMEOUT_MS }),
-      ]);
+      await navigatePage('continue from restored title screen', () =>
+        Promise.all([
+          page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+          page.click('#continue', { timeout: STAGE_TIMEOUT_MS }),
+        ]),
+      );
       try {
         await page.waitForFunction(
           () => (document.querySelector('#save-status')?.textContent ?? '').includes('Saved world continued'),
@@ -688,7 +741,9 @@ try {
     await page.evaluate(() => {
       globalThis.deadvoxSaveTest.controller.entered = false;
     });
-    await page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS });
+    await navigatePage('reload after failed replacement write', () =>
+      page.reload({ waitUntil: 'domcontentloaded', timeout: STAGE_TIMEOUT_MS }),
+    );
     await page.waitForFunction(
       () => (document.querySelector('#save-status')?.textContent ?? '').includes('Title screen ready'),
       undefined,
@@ -718,7 +773,9 @@ try {
       browserStageUrl(stageId, `http://127.0.0.1:${address.port}/?seed=73&debug=1&save-backend=indexeddb&save-test=1`),
     );
     appUrl.searchParams.set('freeze', '1');
-    await page.goto(appUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    await navigatePage('navigation-only initial goto', () =>
+      page.goto(appUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
+    );
     await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
@@ -760,7 +817,9 @@ try {
       undefined,
       { timeout: STAGE_TIMEOUT_MS },
     );
-    await page.reload({ timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' });
+    await navigatePage('navigation-only reload after checkpoint', () =>
+      page.reload({ timeout: STAGE_TIMEOUT_MS, waitUntil: 'domcontentloaded' }),
+    );
     await page.waitForFunction(
       () =>
         globalThis.deadvoxSaveTest?.controller.ready &&
@@ -831,7 +890,9 @@ try {
     }
     const pumpUrl = new URL(appUrl);
     pumpUrl.searchParams.set('loadout', 'pump');
-    await page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' });
+    await navigatePage('navigation-only goto pump loadout', () =>
+      page.goto(pumpUrl.href, { timeout: STAGE_TIMEOUT_MS, waitUntil: 'commit' }),
+    );
     await page.waitForFunction(() => sessionStorage.getItem('d144-lock-snapshot') !== null, undefined, {
       timeout: STAGE_TIMEOUT_MS,
     });
@@ -862,7 +923,9 @@ try {
     process.stdout.write(`${browserName}: in-tab loadout navigation ${JSON.stringify(result)}\n`);
     let restored;
     if (browserName === 'chromium' && result.pagehide?.persisted === true) {
-      await page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS });
+      await navigatePage('navigation-only browser Back', () =>
+        page.goBack({ waitUntil: 'commit', timeout: STAGE_TIMEOUT_MS }),
+      );
       await page.waitForFunction(() => sessionStorage.getItem('d144-pageshow') !== null, undefined, {
         timeout: STAGE_TIMEOUT_MS,
       });
@@ -968,8 +1031,7 @@ try {
     if (index > 0) {
       await page.close();
       page = await context.newPage();
-      page.on('pageerror', (error) => pageErrors.push(error.message));
-      page.on('requestfailed', recordRequestFailure);
+      trackPageNavigation(page);
     }
     autosaveResults.push(await testTitleAndAutosave(backend));
   }
@@ -1024,8 +1086,7 @@ try {
       // Closing the seed session triggers its lifecycle checkpoint; it cannot steal the held writer lock.
       await page.close();
       page = await withTimeout('busy-lock relaunch page creation', context.newPage());
-      page.on('pageerror', (error) => pageErrors.push(error.message));
-      page.on('requestfailed', recordRequestFailure);
+      trackPageNavigation(page);
       await page.goto(appUrl, { timeout: STAGE_TIMEOUT_MS });
       try {
         await page.waitForFunction(() => globalThis.deadvoxSaveTest?.controller.ready, undefined, {

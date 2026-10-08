@@ -12,6 +12,7 @@ read_if:
   - you're choosing render-free or pixel mode for a browser stage
   - you diagnose keyboard rebinding, debug gates or native browser interception
   - you investigate save-lock timeouts
+  - you investigate navigation-aborted save-test requests (#474)
 ---
 
 # deadvox — troubleshooting
@@ -108,11 +109,16 @@ on `SaveController`'s committed generation and failure (`save-test` hook's
 `saveState`) rather than status wording or storage reads during the write. A
 reader polling during an OPFS write takes the shared save lock against the
 writer's exclusive lock; #467 suspects this but has not shown it caused the
-failure. A wait timeout reports save status and page errors; postcondition read
-errors identify the backend and step. The
-Chromium navigation and busy-lock contracts are in `navigationOnly` and
-`busyLockOnly`; the leaving-state rule is in `src/ui/saveController.ts`,
-`SaveController`.
+failure. Wait timeouts report save status and page errors; postcondition read
+errors identify the backend and step.
+
+For #474, Firefox can cancel outstanding fetches as a document is replaced by
+its own navigation. That cancellation is not a save failure; the destination
+page must still load and pass its save checks. `test/browser/save-storage.mjs`,
+`recordRequestFailure` and `navigatePage`, distinguish outgoing-page requests
+from requests in the destination document. The leaving-state rule is in
+`src/ui/saveController.ts`, `SaveController`; navigation and busy-lock contracts
+are in `navigationOnly` and `busyLockOnly`.
 
 ## Deadvox CI browser dependency stalls
 
