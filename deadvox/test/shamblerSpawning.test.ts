@@ -3,9 +3,15 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { bodyIsClear, placeShamblerRing } from '../src/bench/shamblerPlacement.ts';
 import { buildRegistry } from '../src/core/content.ts';
+import { type Body, bodyOverlapsBlock } from '../src/core/physics.ts';
 import { makeScale } from '../src/core/scale.ts';
-import { ZombieSystem } from '../src/core/zombies.ts';
-import { spawnShamblers } from '../src/debug/shamblerSpawning.ts';
+import {
+  ZombieSystem,
+  zombieAttackReachForType,
+  zombieAttackReachMetres,
+  zombieBodyDimensions,
+} from '../src/core/zombies.ts';
+import { spawnShamblers, spawnZombieType } from '../src/debug/shamblerSpawning.ts';
 import type { Engine } from '../src/game/engine.ts';
 import { createPlayerBody, PLAYER, physicsFor } from '../src/game/player.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
@@ -20,9 +26,9 @@ const { registry } = buildRegistry(
 const SCALE = makeScale(0.5);
 const player = () => createPlayerBody(SCALE, 0, 1, 0);
 
-const testEngine = (isSolid: (x: number, y: number, z: number) => boolean): Engine =>
+const testEngine = (isSolid: (x: number, y: number, z: number) => boolean, seed = 2026): Engine =>
   ({
-    config: { seed: 2026, scale: SCALE },
+    config: { seed, scale: SCALE },
     registry,
     spawn: { pos: [0, SCALE.blockSize, 0], yaw: 0 },
     groundAt: () => SCALE.blockSize,
@@ -87,6 +93,78 @@ describe('debug shambler spawning', () => {
         expect(horizontalOverlap(bodies[i]!, bodies[j]!)).toBe(false);
       }
     }
+  });
+
+  it('debug-spawned amalgams pursue from beyond their scaled attack reach', () => {
+    const body = player();
+    const solid = (_x: number, y: number) => y === 0;
+    const engine = testEngine(solid, 73);
+    const zombies = zombiesFor(body, solid);
+
+    expect(spawnZombieType(engine, body, zombies, { typeId: 'amalgam', count: 1 })).toBe(1);
+    const [id, zombie] = [...zombies.store.entries()][0]!;
+    const initialDistance =
+      Math.hypot(body.pos[0] - zombie.body.pos[0], body.pos[2] - zombie.body.pos[2]) * SCALE.blockSize;
+    expect(bodyIsClear(zombie.body, solid)).toBe(true);
+    expect(initialDistance).toBeGreaterThan(zombieAttackReachMetres(zombie));
+    for (let tick = 0; tick < 20 * 60; tick++) {
+      zombies.tick(1 / 60);
+    }
+    const remainingDistance =
+      Math.hypot(body.pos[0] - zombie.body.pos[0], body.pos[2] - zombie.body.pos[2]) * SCALE.blockSize;
+
+    expect(zombies.store.get(id)!.mode).toBe('chase');
+    expect(remainingDistance).toBeLessThan(initialDistance);
+  });
+
+  it('keeps the realized amalgam envelope clear when the debug path places it', () => {
+    const type = registry.zombies.get('amalgam')!;
+    const body = player();
+    const floor = (_x: number, y: number) => y === 0;
+    const openEngine = testEngine(floor, 73);
+    const minRadiusMetres = Math.max(8, zombieAttackReachForType(type) + 1);
+    const [position] = placeShamblerRing({
+      count: 1,
+      seed: openEngine.config.seed,
+      player: body,
+      engine: openEngine,
+      minRadiusMetres,
+    });
+    expect(position).toBeDefined();
+
+    const smallBody: Body = {
+      pos: position!,
+      vel: [0, 0, 0],
+      halfWidth: 0.28 / SCALE.blockSize,
+      height: 1.7 / SCALE.blockSize,
+      onGround: true,
+    };
+    const largeBody: Body = { ...smallBody, ...zombieBodyDimensions(type, SCALE.blockSize) };
+    const blocks: [number, number, number][] = [];
+    for (
+      let x = Math.floor(position![0] - largeBody.halfWidth);
+      x <= Math.ceil(position![0] + largeBody.halfWidth);
+      x++
+    ) {
+      for (
+        let z = Math.floor(position![2] - (largeBody.halfDepth ?? largeBody.halfWidth));
+        z <= Math.ceil(position![2] + (largeBody.halfDepth ?? largeBody.halfWidth));
+        z++
+      ) {
+        blocks.push([x, 1, z]);
+      }
+    }
+    const obstacle = blocks.find(
+      (block) => bodyOverlapsBlock(largeBody, block) && !bodyOverlapsBlock(smallBody, block),
+    );
+    expect(obstacle).toBeDefined();
+    const solid = (x: number, y: number, z: number) =>
+      y === 0 || (obstacle?.every((coordinate, axis) => coordinate === [x, y, z][axis]) ?? false);
+    const engine = testEngine(solid, 73);
+    const zombies = zombiesFor(body, solid);
+
+    expect(spawnZombieType(engine, body, zombies, { typeId: 'amalgam', count: 1 })).toBe(1);
+    expect(bodyIsClear([...zombies.store.entries()][0]![1].body, solid)).toBe(true);
   });
 
   it('returns the partial placement count when the ring runs out of clear space', () => {
