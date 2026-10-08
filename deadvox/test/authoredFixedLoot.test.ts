@@ -85,11 +85,19 @@ const possibleLootItems = (tableId: string): Set<string> => {
   if (!table) {
     throw new Error(`Unknown loot table: ${tableId}`);
   }
-  return new Set(
-    table.entries.flatMap((entry) =>
-      entry.item !== undefined ? [entry.item] : entry.table !== undefined ? [...possibleLootItems(entry.table)] : [],
-    ),
-  );
+  const items = new Set<string>();
+  for (const entry of table.entries) {
+    if (entry.item !== undefined) {
+      items.add(entry.item);
+      continue;
+    }
+    if (entry.table !== undefined) {
+      for (const item of possibleLootItems(entry.table)) {
+        items.add(item);
+      }
+    }
+  }
+  return items;
 };
 
 const withTestEntrance = (template: CompiledTemplate, target: readonly [number, number, number]): CompiledTemplate => {
