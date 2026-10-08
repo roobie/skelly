@@ -8,9 +8,8 @@ read_if:
 
 ## Acceptance
 
-BR approved #209 as-is on 2026-10-04: "i'll approve 209 as is - there's still
-improvements to be made, but we're deferring". This closes the pump, rack-cant
-and sound look/listening gate. It does not freeze presentation or balance
+The pump, rack-cant and sound look/listening gate passed for #209; remaining
+improvements are deferred. Acceptance does not freeze presentation or balance
 estimates into release specifications. Their assertion policy remains in
 `docs/deferred-assertions.md`.
 
@@ -32,8 +31,8 @@ not destroy committed ammunition.
 
 A port hidden by the held pose makes the manual action hard to read. The cant
 exists to expose that action, not to change aim or ammunition state. See
-`deadvox/src/render/firearmModel.ts`, `rackCant`. BR's acceptance of the look is
-not a reason to assert a particular angle.
+`deadvox/src/render/firearmModel.ts`, `rackCant`. Acceptance of the look is not
+a reason to assert a particular angle.
 
 The dedicated shell feed makes insertion readable without giving rendering a
 second ammunition owner or clock. The visible round is a model clone, not an
@@ -43,8 +42,8 @@ inventory item; the load job still owns consumption and cancellation. See
 occupied physical slot, not actor preference, so moving the gun does not move
 its authored port or reverse its geometry. Reprojecting from rest each frame
 lets cancellation and late model availability converge without replaying work.
-The path and apparent thumb push are presentation estimates for BR's look,
-not a reason to freeze pose coordinates or change handling duration. A wrist
+The path and apparent thumb push are presentation estimates for BR's visual
+review, not a reason to freeze pose coordinates or change handling duration. A wrist
 merely leaving its rest grip does not establish that insertion reaches the port;
 `deadvox/test/shellLoadPose.test.ts` samples the visible round against the authored
 target through the owner clock, keeping that contract independent of pose tuning.
