@@ -421,7 +421,16 @@ body.unconscious::after {
 }
 /* Keep nearby grids tall enough for a usable scrollport on short displays; the body scrolls when both rows don't fit. */
 #inventory .inv-body[data-tab-panel="items"] {
+  grid-template-columns: minmax(0, 1fr) max-content;
   grid-template-rows: minmax(160px, 3fr) minmax(96px, 1fr);
+}
+#inventory .inv-body[data-tab-panel="items"] .inv-pane[data-pane="around"] {
+  align-self: start;
+  max-width: var(--inv-around-width-cap, 100%);
+  max-height: 100%;
+}
+#inventory .inv-pane[data-pane="around"] .inv-grid-scroll {
+  flex: 0 0 auto;
 }
 .inv-body[data-tab-panel="items"] .inv-details {
   grid-column: 1 / -1;
@@ -524,7 +533,7 @@ body.unconscious::after {
   color: var(--muted);
 }
 .inv-pile[data-entity-uid] {
-  flex: 1;
+  flex: 0 0 auto;
   min-height: 0;
 }
 .inv-grid-scroll {

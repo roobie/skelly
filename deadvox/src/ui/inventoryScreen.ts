@@ -23,6 +23,7 @@ import { type InventoryTab, InventoryTabState } from './inventoryTabs.ts';
 
 /** Pixels per inventory cell. */
 const CELL = 32;
+const EMPTY_DROP_GRID: GridSize = { w: 2, h: 2 };
 
 /** Wear slots always shown, so there's somewhere to drop clothing. */
 const SHOWN_SLOTS: readonly WearSlot[] = ['torso', 'legs', 'back', 'waist'];
@@ -178,6 +179,7 @@ interface InventoryScreenViewModel {
   };
   readonly skills: readonly SkillViewModel[];
   readonly needs: string;
+  readonly containerMaxWidthCells?: number | undefined;
   readonly weight: string;
   readonly hands: readonly SlotViewModel[];
   readonly worn: readonly SlotViewModel[];
@@ -380,7 +382,12 @@ const inventoryTemplate = (
       <span>Drag items · Hold ${labelForAction('inventory.quick-action-gate')} and click for quick move · ${['inventory.hands', 'inventory.wear', 'inventory.drop', 'inventory.best-pocket', 'inventory.rotate', 'inventory.search', 'handling.stop', 'ui.inventory-toggle'].map((id) => `${labelForAction(id)}: ${inputBindings.binding(id)!.description}`).join(' · ')} · ${Array.from({ length: 5 }, (_, i) => labelForAction(`quickbar.assign.${i + 1}`)).join(' / ')}: assign quickbar</span>
     </details>
   </header>
-  <div class="inv-body" data-tab-panel="items" ?hidden=${tab !== 'items'}>
+  <div
+    class="inv-body"
+    data-tab-panel="items"
+    style=${vm.containerMaxWidthCells === undefined ? '' : `--inv-around-width-cap: ${vm.containerMaxWidthCells * CELL}px`}
+    ?hidden=${tab !== 'items'}
+  >
     <section class="inv-pane" data-pane="you">
       <h3>You</h3>
       <div class="inv-hands">
@@ -426,7 +433,7 @@ const inventoryTemplate = (
           ? nothing
           : html`
         <div class="inv-pile">
-          <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: PILE_GRID.w * CELL, height: PILE_GRID.h * CELL, items: [] })}
+          <div class="inv-pile-label">At your feet</div>${gridTemplate({ target: `pile:${vm.feetTarget}`, width: EMPTY_DROP_GRID.w * CELL, height: EMPTY_DROP_GRID.h * CELL, items: [] })}
         </div>
       `
       }
@@ -947,6 +954,7 @@ export class InventoryScreen {
       body: bodyView,
       skills,
       needs: this.hooks.needs(),
+      containerMaxWidthCells: this.inv.registry.inventory.get('player')?.containerMaxWidthCells,
       weight: kg(this.inv.carriedWeight()),
       hands,
       worn,

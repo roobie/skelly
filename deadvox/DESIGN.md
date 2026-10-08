@@ -422,6 +422,11 @@ HTML over the game view, and keyboard-first:
   grids) and **around** (piles, and containers within reach, also as grids).
   Items move by drag and drop, with the cells where the item fits highlighted,
   or with keys. R rotates.
+- For #435's compact inventory view, an empty **At your feet** target must not
+  reserve the space empty contents do not need. A mod-owned width limit keeps
+  one oversized locker from dominating the nearby pane; a wider container must
+  carry its reason. See `src/ui/inventoryScreen.ts`, `InventoryScreen.viewModel`,
+  and `src/core/content.ts`, `checkContainerWidth`.
 - Each item shows its name, a stack count and its condition word. Each pocket
   shows its handling time. Weight, exact condition and times are in the item's
   details.

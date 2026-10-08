@@ -20,6 +20,7 @@ const content = [
   {
     source: 'inventory-scroll-fixture',
     data: {
+      inventory: [{ id: 'player', containerMaxWidthCells: 5 }],
       items: [
         ...['legs', 'torso', 'back'].map((slot) => ({
           id: `scroll_${slot}`,
@@ -72,9 +73,12 @@ body.impact(1, 'leftArm', { bleeding: true });
 for (const slot of ['legs', 'torso', 'back']) {
   if (!inventory.add(inventory.create('scroll_' + slot), { kind: 'worn' })) throw Error('worn fixture failed');
 }
-for (let i = 0; i < 12; i++) {
-  if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
-}
+const populatePiles = () => {
+  for (let i = 0; i < 12; i++) {
+    if (!inventory.add(inventory.create('scroll_token'), { kind: 'pile', pos: [i % 3, 0, Math.floor(i / 3)] })) throw Error('pile fixture failed');
+  }
+  screen.update();
+};
 let needsText = 'health 100% · stamina 100%';
 const screen = new InventoryScreen(document.querySelector('#inventory'), inventory, new HandlingQueue(inventory), {
   reach: bindReach({ inventory, position: [0, 0, 0], blockSize: 0.5 }),
@@ -107,6 +111,8 @@ const menu = mountMenuPointer({ input, canvas: target, cursor: document.querySel
 let gameplayWheels = 0;
 target.addEventListener('wheel', () => gameplayWheels++);
 globalThis.scrollFixture = { input, screen, inventory, target, menu, bodyRegions: BODY_REGIONS,
+  containerMaxWidthCells: registry.inventory.get('player')?.containerMaxWidthCells,
+  populatePiles,
   get gameplayWheels() { return gameplayWheels; },
   resetWheels() { gameplayWheels = 0; },
   redraw() {
@@ -192,6 +198,66 @@ try {
     await page.evaluate(() => globalThis.scrollFixture.bodyRegions.length),
   );
   assert.equal(await page.locator('[data-body-region="leftArm"] button').count(), 0);
+  await page.locator('#inventory .inv-tab[data-tab="items"]').click();
+  await page.setViewportSize({ width: 640, height: 400 });
+  const emptyAround = await page.evaluate(() => {
+    const around = document.querySelector('#inventory [data-pane="around"]');
+    const you = document.querySelector('#inventory [data-pane="you"]');
+    const grid = around?.querySelector('.inv-grid');
+    if (!around) {
+      throw new Error('empty vicinity pane is missing');
+    }
+    if (!you) {
+      throw new Error('player pane is missing');
+    }
+    if (!grid) {
+      throw new Error('empty-feet drop target is missing');
+    }
+    const aroundBox = around.getBoundingClientRect();
+    const youBox = you.getBoundingClientRect();
+    const targetBox = grid.getBoundingClientRect();
+    const cell = Number.parseFloat(getComputedStyle(grid).backgroundSize.split(' ')[0]);
+    const hit = document.elementFromPoint(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
+    return {
+      around: { width: aroundBox.width, height: aroundBox.height, right: aroundBox.right, bottom: aroundBox.bottom },
+      you: { width: youBox.width, height: youBox.height },
+      target: { width: targetBox.width, height: targetBox.height },
+      cell,
+      maxWidth: Number.parseFloat(getComputedStyle(around).maxWidth),
+      cap: globalThis.scrollFixture.containerMaxWidthCells,
+      targetIsHit: hit?.closest('.inv-grid') === grid,
+    };
+  });
+  assert.ok(
+    emptyAround.around.right <= 640 && emptyAround.around.bottom <= 400,
+    `vicinity fits 640×400: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.ok(
+    emptyAround.around.width < emptyAround.you.width,
+    `empty vicinity shrink-wraps beside the player: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.ok(
+    emptyAround.around.height < emptyAround.you.height,
+    `empty vicinity shrink-wraps vertically: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.ok(
+    emptyAround.target.width >= 2 * emptyAround.cell && emptyAround.target.height >= 2 * emptyAround.cell,
+    `feet target remains a usable two-cell hit area: ${JSON.stringify(emptyAround)}`,
+  );
+  assert.equal(
+    emptyAround.maxWidth,
+    emptyAround.cap * emptyAround.cell,
+    'vicinity width reads the content-owned cell cap',
+  );
+  assert.ok(emptyAround.targetIsHit, 'the visible empty-feet target receives a centre pointer hit');
+  await page.setViewportSize({ width: 960, height: 540 });
+  const fittedAround = await page.locator('#inventory [data-pane="around"]').boundingBox();
+  assert.ok(
+    fittedAround && fittedAround.x + fittedAround.width <= 960 && fittedAround.y + fittedAround.height <= 540,
+    `vicinity stays within the fitted screen: ${JSON.stringify(fittedAround)}`,
+  );
+  await page.setViewportSize({ width: 1280, height: 480 });
+  await page.evaluate(() => globalThis.scrollFixture.populatePiles());
   const failures = [];
   let activeTab;
   for (const { tab, selector } of [

@@ -464,12 +464,44 @@ const checkItemOptic = (item: ItemDef, registry: Registry, obtainable: ReadonlyS
   }
 };
 
+const checkContainerWidth = ({
+  section,
+  id,
+  container,
+  registry,
+  report,
+}: {
+  section: 'items' | 'furniture';
+  id: string;
+  container: NonNullable<ItemDef['container']>;
+  registry: Registry;
+  report: Report;
+}): void => {
+  const limit = registry.inventory.get('player')?.containerMaxWidthCells;
+  if (limit === undefined || container.wideReason) {
+    return;
+  }
+  container.pockets.forEach((pocket, index) => {
+    if (pocket.grid[0] > limit) {
+      report(
+        section,
+        id,
+        `.container.pockets[${index}].grid[0]`,
+        `pocket width ${pocket.grid[0]} exceeds inventory limit ${limit}; add a wideReason for an exception`,
+      );
+    }
+  });
+};
+
 const checkItems = (registry: Registry, report: Report) => {
   const items = [...registry.items.values()];
   const obtainable = obtainableItems(registry);
   const qualities = new Set(items.flatMap((item) => Object.keys(item.tool?.qualities ?? {})));
   const hasIgniter = items.some((item) => item.igniter !== undefined);
   for (const item of items) {
+    if (item.container) {
+      checkContainerWidth({ section: 'items', id: item.id, container: item.container, registry, report });
+    }
     checkItemLight(item, hasIgniter, registry, report);
     checkItemLightModel(item, registry, report);
     checkItemFirearm(item, registry, report);
@@ -575,6 +607,9 @@ const checkMilitaryLoot = (registry: Registry, report: Report) => {
 
 const checkFurniture = (registry: Registry, report: Report) => {
   for (const furniture of registry.furniture.values()) {
+    if (furniture.container) {
+      checkContainerWidth({ section: 'furniture', id: furniture.id, container: furniture.container, registry, report });
+    }
     checkDoorOpenNoise(registry, furniture, report);
     if (furniture.door?.prying && !registry.skills.has(furniture.door.prying.skill)) {
       report('furniture', furniture.id, '.door.prying.skill', `no skill "${furniture.door.prying.skill}"`);

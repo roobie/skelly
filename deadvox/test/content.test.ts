@@ -694,6 +694,54 @@ describe('content', () => {
 });
 
 describe('content references', () => {
+  it('uses the content container-width limit and requires a reason for wider pockets', () => {
+    const content = {
+      inventory: [{ id: 'player', containerMaxWidthCells: 4 }],
+      items: [
+        {
+          id: 'fixture_at_limit',
+          name: 'At limit',
+          category: 'tool',
+          weight: 1,
+          size: [1, 1],
+          container: { pockets: [{ grid: [4, 1], handlingSimSeconds: 1 }] },
+        },
+        {
+          id: 'fixture_too_wide',
+          name: 'Too wide',
+          category: 'tool',
+          weight: 1,
+          size: [1, 1],
+          container: { pockets: [{ grid: [5, 1], handlingSimSeconds: 1 }] },
+        },
+      ],
+      furniture: [
+        {
+          id: 'fixture_wide_furniture',
+          name: 'Too wide',
+          size: [1, 1, 1],
+          color: '#ffffff',
+          container: { pockets: [{ grid: [5, 1], handlingSimSeconds: 1 }] },
+        },
+      ],
+    };
+    expect(buildRegistry([{ source: 'container-width.json', data: content }]).issues.map(({ path }) => path)).toEqual([
+      'items[1].container.pockets[0].grid[0]',
+      'furniture[0].container.pockets[0].grid[0]',
+    ]);
+
+    const exception = {
+      inventory: content.inventory,
+      furniture: [
+        {
+          ...content.furniture[0],
+          container: { ...content.furniture[0]!.container, wideReason: 'This test needs a broader fixture.' },
+        },
+      ],
+    };
+    expect(buildRegistry([{ source: 'container-width-exception.json', data: exception }]).issues).toEqual([]);
+  });
+
   const recipeDependencies = {
     source: 'recipe-component-items.json',
     data: {

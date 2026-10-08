@@ -251,6 +251,22 @@ describe('the debug test-house range', () => {
     }
   });
 
+  it('fits every registry firearm in the debug rack with direct or rotated placement', () => {
+    const { registry } = BUNDLED_CONTENT;
+    const pocket = registry.furniture.get('range_rack')?.container?.pockets[0];
+    if (!pocket) {
+      throw new Error('debug range rack has no inventory pocket');
+    }
+    const firearms = [...registry.items.values()].filter((item) => item.firearm);
+    expect(firearms.length).toBeGreaterThan(0);
+    for (const firearm of firearms) {
+      const [width, height] = firearm.size;
+      const fits =
+        (width <= pocket.grid[0] && height <= pocket.grid[1]) || (height <= pocket.grid[0] && width <= pocket.grid[1]);
+      expect(fits, firearm.id).toBe(true);
+    }
+  });
+
   it('stocks every firearm and compatible ammunition item discovered from registry data', () => {
     const { registry, firearm, ammo, box } = withRangeStockFixtures();
     const stock = testHouseRangeStock(registry);
