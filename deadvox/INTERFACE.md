@@ -137,18 +137,25 @@ Text on screen falls into four classes, and only three of them ship:
 ### How it's encoded
 
 A rule that lives only in prose gets broken the next time someone is in a hurry,
-so class 4 is to be made mechanical. Only the key-name rule is built; the hint
-channel, its profile and its guard test are planned work, "Order of work" item 2.
+so class 4 is to be made mechanical. Only part of the key-name rule is built; the
+rest, the hint channel, its profile and its guard test are planned work, "Order
+of work" item 2.
 
-- **Key names come from the bindings (built).** UI text that names a key reads
-  its label from the binding registry, so a rebinding can't leave a stale "press
-  E" behind. See `src/game/inputBindings.ts`, `labelForAction`.
+- **Key names come from the bindings (partly built).** The HUD lines, the
+  inventory screen and the rest card read key labels from the binding registry,
+  so a rebinding can't leave a stale "press E" behind; see
+  `src/game/inputBindings.ts`, `labelForAction`. Two places still name keys
+  directly: the how-to-hear lines on the listening sheet (`src/ui/soundGuide.ts`,
+  shown on `sounds.html`, a build input the main menu links), and the throw
+  readout in `src/game/play.ts`.
 - **One hint channel (planned).** Every instruction becomes an entry in one table
   of hints (id, text, the binding it names), shown through one function. Nothing
   else in the UI may then name a key or give a procedure. Until it exists,
-  instructions sit in the UI modules that show them, behind the player's
+  instructions sit in the UI modules that show them. Most sit behind the player's
   `interaction` and `messages` HUD options (`src/ui/hudOptions.ts`,
-  `hudVisibility`).
+  `hudVisibility`), but the inventory help line (`src/ui/inventoryScreen.ts`, the
+  `inv-help` span) and the rest card's stop hint (`src/ui/rest.ts`,
+  `restViewModel`) show regardless of them.
 - **A profile decides whether hints show (planned).** Development and playtest
   builds show hints; the shipped profile doesn't. A first-run tutorial, if the
   game gets one, is a *diegetic* problem to solve first (a note, a radio
@@ -249,9 +256,10 @@ second widget or key instruction. See `src/ui/hud.ts`,
   the instructions it still needs. No such flag exists yet: `src/game/config.ts`,
   `configFromUrl`, reads none.
 - **The shipped profile** shows no debug, and its HUD options start off
-  (`src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`), so hints show only if the
-  player turns them on. The optional crosshair remains development-only; the
-  debug center X is part of `?debug=1` and never ships.
+  (`src/ui/hudOptions.ts`, `DEFAULT_HUD_OPTIONS`), so HUD hints show only if the
+  player turns them on. The inventory help line and the rest card's stop hint
+  ignore those options ("How it's encoded"). The optional crosshair remains
+  development-only; the debug center X is part of `?debug=1` and never ships.
 
 ## Where the current interface stands
 
@@ -302,8 +310,9 @@ simulation facts accessible without undermining diegesis.
 1. Add the spatial outline for the one usable thing within reach.
 2. Build the hint channel ("How it's encoded"): the hint table and its one
    function, the profile that decides whether hints show, and the guard test.
-   Then move the instructions the UI modules show, such as the interruption
-   prompt, into the table.
+   Then move the instructions the UI modules show into the table, including the
+   interruption prompt, the ones that ignore the HUD options and the ones that
+   still name keys directly.
 3. Add the playtest profile, `?playtest=1` ("Development and playtest").
 4. Shape the diegetic first-run introduction from playtest findings.
 5. Make the clock diegetic through a watch the player can inspect or hold.

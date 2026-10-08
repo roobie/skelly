@@ -180,7 +180,6 @@
     { "path": "gungen/docs/anti-materiel.md", "check": "path", "text": "viewer/scene.ts", "count": 1 },
     { "path": "gungen/docs/anti-materiel.md", "check": "symbol", "text": "viewer/scene.ts, glb.ts", "count": 1 },
     { "path": "gungen/docs/decisions/0001-calibre-driven-sizing.md", "check": "citation", "text": "br-75", "count": 1 },
-    { "path": "gungen/PROJECT.md", "check": "citation", "text": "(2026-09-29, see \"3.0b (implemented)\"", "count": 1 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR 18:36", "count": 1 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR 20:27", "count": 2 },
     { "path": "gungen/PROJECT.md", "check": "citation", "text": "BR 20:34", "count": 1 },

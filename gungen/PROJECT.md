@@ -421,7 +421,7 @@ archetype:
   models what makes an SMG distinct, such as a simpler action.
 - **The forend can overrun the shortest tube.** With an S barrel and 50% tube,
   the fixed forend reaches past the tube's end, and no rule refuses it. Whether
-  forend length should scale with tube coverage is an open question.
+  forend length should scale with tube coverage is open in #457.
 - **Neighbour params are discrete values, not computed geometry.** A tube's
   percentage and the barrel's size class are resolved across their lugs; each
   part builder must still compute the matching physical station from both.
@@ -821,10 +821,9 @@ BR's rulings:
 - **The generator stays, as a variant suggester.**
 - **Export to deadvox.** deadvox reads a model as a `.glb` plus a `grip`
   (position and turn) and named `anchors`, in metres
-  (`deadvox/src/core/schema.ts`, `ModelSchema`). Deadvox reads the anchors it
-  needs by name: a held firearm's `muzzle`, `ejection` and `support` through
-  `deadvox/src/core/heldPose.ts`, `heldAnchorOffset`, and the flashlight's
-  `lens` through `deadvox/src/render/models.ts`, `prepareModel`.
+  (`deadvox/src/core/schema.ts`, `ModelSchema`). Deadvox reads named anchors
+  through `deadvox/src/core/heldPose.ts`, `heldAnchorOffset`, and the
+  flashlight's lens through `deadvox/src/render/models.ts`, `prepareModel`.
 
 Already in place: the parameter panel (param edits, optional parts, URL
 overrides, connections dropped when a port disappears), fixtures (a hand-made
@@ -868,13 +867,12 @@ Current limits the plan works within:
 
 ### Work packages
 
-**3.0 Contracts**, in two steps, both owned by lane A:
+**3.0 Contracts**, in two steps:
 
-- **3.0a Freeze:** types and this document only, no behaviour. It releases
-  lanes B and C.
+- **3.0a Freeze:** types and this document only, no behaviour, so the export
+  and suggester work could build against them.
 - **3.0b Implement:** parsing, anchors for every archetype, and the palette
-  migration. Done (2026-09-29, see "3.0b (implemented)"). B and C didn't
-  wait for it.
+  migration. Done (see "3.0b (implemented)").
 
 Core stays free of gun data: every core function takes what it needs as
 explicit inputs, and the gun domain supplies them. The core `Domain` has no
@@ -930,7 +928,7 @@ palette as arguments.
   material, design finish, variant finish, then role material. Missing palette
   material ids remain absent from metadata rather than being fabricated. Legacy
   family/special/fallback colours still support generic domains.
-- **Export metadata** (frozen here for lane B), per port: stable id
+- **Export metadata** (frozen here for the 3.4 export), per port: stable id
   `<part>.<port>`, mount, gender, optional size, and the full assembly-space
   mating frame (position, normal, up). Rails carry one count/pitch record for
   the whole port and export one node per rail, not per slot. The core exporter
@@ -947,8 +945,8 @@ The viewer's rendering is unchanged after the palette moves.
 
 #### 3.0a contracts (frozen)
 
-"Frozen" here, and elsewhere in this file, meant fixed so parallel lanes could
-build against each other; it isn't a compatibility promise. Pre-pre-alpha, these
+"Frozen" here, and elsewhere in this file, meant fixed so parallel work could
+build against it; it isn't a compatibility promise. Pre-pre-alpha, these
 contracts change whenever that makes the code simpler (AGENTS.md, "Project stage").
 
 Types only; 3.0b supplies parsing and values. The contracts live in
@@ -1239,11 +1237,12 @@ used for labels. `familyColors` remains the role-only geometry-check palette.
 build can report and fails if any solid of any archetype or template sweep
 would use the fallback grey.
 
-**Note for lane B (3.4 export).** Hold frames follow the grip's own lean: the
-`grip` and `frame` frames use the grip's local axes, so once the part is
-placed the frame is tilted with the grip, and a `grip.turn` derived from it
-reflects that tilt. Lane B must decide whether deadvox wants the tilted frame
-or an upright one. The anchor data doesn't decide it.
+**Hold frames and the export.** Hold frames follow the grip's own lean: the
+`grip` and `frame` frames use the grip's local axes, so once the part is placed
+the frame is tilted with the grip. The 3.4 export doesn't pass that tilt to
+deadvox: `grip.turn` carries only the model file's orientation, and the tilted
+frame stays in the anchor data for hand posing. See "Grip orientation" under
+3.4, and `src/gun/exportFrame.ts`, `gripTurn`.
 
 **Proof tests.**
 
@@ -1337,7 +1336,7 @@ The mapping between gungen's axes and deadvox's is derived and tested:
 deadvox holds a model with +x forward and +y up
 (`deadvox/src/core/schema.ts`, `ModelSchema`, its `grip` field).
 
-**3.4 (implemented, lane B).**
+**3.4 (implemented).**
 
 - API. `src/core/glb.ts#exportGlb` is the frozen `ExportGlb`; it also exports
   `partNodeName` and `srgbToLinear`. `src/gun/exportGlb.ts#exportGunGlb(assembly,
