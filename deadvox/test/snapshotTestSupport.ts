@@ -133,6 +133,8 @@ export function createRuntime(
     intent?: () => MoveIntent;
     ready?: (x: number, z: number) => boolean;
     zombieReady?: (x: number, z: number) => boolean;
+    readyHeld?: () => boolean;
+    useDominant?: () => void;
     wobbleFlatOverride?: number;
     sampleAtPlayerTick?: (
       tick: number,
@@ -204,6 +206,8 @@ export function createRuntime(
       active: () => options.active ?? Boolean(sampleAtPlayerTick),
       intent: options.intent ?? (() => view.intent),
       ...(sampleAtPlayerTick ? { sampleAtPlayerTick } : {}),
+      ...(options.readyHeld ? { readyHeld: options.readyHeld } : {}),
+      ...(options.useDominant ? { useDominant: options.useDominant } : {}),
       consumeCrouchToggle: () => {
         const pressed = view.crouchToggle;
         view.crouchToggle = false;

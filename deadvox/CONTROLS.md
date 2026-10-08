@@ -234,6 +234,13 @@ order follows `src/game/playerTickActions.ts`, `PlayerTickActions`. Export and r
 are handled by `src/game/inputReplay.ts`, `withReplayExportGuard`, `InputReplayRecorder`,
 and `replayStateFingerprint`.
 
+For #432, each replay segment also starts with the play state that changes recorded-action
+routing but is not part of the save snapshot: throwing stance, held readiness and whether the
+inventory modal is open. `src/game/play.ts`, `captureReplayStartState`, captures those values
+at each window boundary and `startPlay` restores them before replay. ADS changes firearm
+presentation rather than simulation action resolution, and inventory tab selection only
+changes presentation, so neither belongs in replay state.
+
 ## Readiness and melee (2026-10-05, #267)
 
 Firearms fire only while ready and never while sprinting. Ready movement is a
