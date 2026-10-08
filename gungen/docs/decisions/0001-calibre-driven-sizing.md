@@ -33,6 +33,6 @@ selection are cued by `cartridges/` and `src/gun/actionFrame.ts`, `selectFrame`.
 
 The AR family is the frame-selection pilot. Add new families or frames only
 when their cartridge fit and platform dimensions are represented by the
-family's data; the SVD remains tracked in #333. Real AR frame dimensions stay
-blocked on BR's sourcing rule in br-75; g52 owns that work after the ruling, so
-no frame values are invented ahead of it.
+family's data; the SVD remains tracked in #333. Real AR frame dimensions stay blocked until BR rules on their source in br-75;
+g52 owns that work after the ruling, so no frame values are invented ahead of
+it.

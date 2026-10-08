@@ -27,13 +27,14 @@ not settled. The engine owns exact simulation, persistence and lifecycle work.
 A mod-facing rule may describe a consequence, but must not mutate an owner
 outside the engine's validated boundary.
 
-## Open design questions
+## Open design decisions for BR
 
-The next design pass must choose how rules read state, which events and effects
-cross the engine/mod boundary, how composition and conflicts work, and how
-mod-owned state is saved. Open design issue #313 records dynamic world-event
-needs and the remaining boundary questions. #393 tracks inventory and
-extraction of existing TypeScript content and tunables.
+The content-language and runtime-function format remain proposed pending BR's
+decision. The next design pass must choose how rules read state, which events
+and effects cross the engine/mod boundary, how composition and conflicts work,
+and how mod-owned state is saved. Open design issue #313 records dynamic
+world-event needs and the remaining boundary questions. #393 tracks inventory
+and extraction of existing TypeScript content and tunables.
 
 The Mind Over Matter content for Cataclysm: DDA is a capability benchmark, not
 an implementation mandate. A later spike should compare a small runtime

@@ -15,7 +15,7 @@ tags: [deadvox, adr, saves, persistence, determinism]
 
 A save is an exact, versioned snapshot of one world and its bound character.
 The world is the root; a character cannot be transferred to another world. A
-new character entering the same world after death remains undecided.
+new character entering the same world after death is an open decision for BR.
 
 Restore only when the running build has the same simulation source fingerprint,
 save schema, deterministic generator versions and ordered content identities.
