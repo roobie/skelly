@@ -22,8 +22,7 @@ mattering at v1.0 beta.
 ## No host-specific information in tracked files
 
 Tracked files describe the project, not the machine the team happens to work on. Every
-tracked file must work for anyone who clones the repo and for CI. This covers code, tests,
-docs, review reports, content and credits. Never commit:
+tracked file must work for anyone who clones the repo and for CI. This covers code, tests, docs, content and credits. Never commit:
 
 - **local paths:** `/home/…`, `~/…`, `/run/user/<uid>/…`, `/tmp/…`. A location a tool
   defines the same way for every clone, such as Playwright's browser cache, is fine; the
@@ -73,7 +72,10 @@ a comment or a PR:
   it. Add or update it whenever you add or change a doc.
 - When you touch a doc, trim the whole part you touch of what, how and history, not
   only the lines you change. Keep the current rule instead of accumulated amendments.
-  Reviews flag an amendment trail left in the section you touched.
+  An amendment trail left in a touched section is a FIX because each section is a
+  current record, not change history.
+- Run one deep docs pass per slice while closing it; Slice 3's trigger is the exit item
+  on #293, as planned in r50.
 - A false doc is a defect: a review returns FIX for it.
 
 ## Work item IDs

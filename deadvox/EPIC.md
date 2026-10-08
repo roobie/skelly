@@ -109,9 +109,8 @@ The order follows dependencies:
 
 ### 2. Craft and mend
 
-See [SLICE-2.md](SLICE-2.md). The inventory screen's move to lit-html, planned
-as this slice's first step, was done in Slice 1 (#105), which completed
-[ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md). It covers:
+[ADR 0001](docs/decisions/0001-ui-rendering-with-lit-html.md) keeps screen
+rendering separate from simulation state. Craft and mend covers:
 
 - Recipes with tool qualities and groups of alternative components, and crafting
   in compressed time that can be interrupted and resumed.
@@ -129,12 +128,10 @@ as this slice's first step, was done in Slice 1 (#105), which completed
 
 ### 3. Flesh and noise
 
-The first real playtest is at this slice's end (BR, 2026-10-02), before Slice 4
-starts. BR chose this timing because the base game will be in place. It combines
-the questions below with those added by Slice 2 in [SLICE-2.md](SLICE-2.md) and
-by this slice. Slice 3's milestone plan, BR rulings, dependencies, open questions
-and completion gates are in [SLICE-3.md](SLICE-3.md); BR's process rule is to
-deal with one milestone per turn.
+The first real playtest is at this slice's end, before Slice 4 starts, so the
+base game is in place. It combines the questions below with those about crafting,
+wear and light. Slice 3's milestone scope and gates are in
+[SLICE-3.md](SLICE-3.md); work proceeds one milestone at a time.
 
 #### Playtest plan
 
@@ -170,6 +167,15 @@ Ask each player:
 8. Do non-respawning shamblers make the second night too safe?
 9. Is combat readable and visceral? Do noise and wounds change what the player
    does? Do they listen before moving?
+10. Do players pick up materials for what they could make, and plan loot runs
+    around recipes?
+11. Can players tell what crafting is missing and where those materials might
+    be found?
+12. Is compressed crafting time, including interruption and resumption, readable
+    and fair?
+13. Do players notice wear and find repair worth the materials?
+14. Do players make light, and does carrying a burning torch change how they move
+    at night?
 
 Watch how long people spend in the inventory screen, pocket choices, reactions
 to unseen sounds and interruptions, and any point where players stall or
@@ -192,12 +198,12 @@ zombie types, hordes, input replay and authored playtest map are planned there.
 - Towns from templates plus procedural houses. Room types choose furniture and
   loot.
 - Far-terrain level of detail, and worldgen in workers.
-- A world that feels real (BR, 2026-10-03; see
-  [DESIGN.md](DESIGN.md#a-world-that-feels-real)): vegetation by biome (trees,
-  shrubs, hedges, overgrowth) that gives cover, makes noise and yields wood;
-  cosmetic wind and motion; the sound of the place; and wildlife as scenery.
-  Trees are voxels near the player and simplified shapes in the far terrain,
-  measured against a forest benchmark. Slice 2's tree sneak peek (2.13) comes first.
+- A world that feels real (see [DESIGN.md](DESIGN.md#a-world-that-feels-real)):
+  vegetation by biome (trees, shrubs, hedges, overgrowth) that gives cover,
+  makes noise and yields wood; cosmetic wind and motion; the sound of the place;
+  and wildlife as scenery. Vegetation starts in the hamlet and expands across
+  the region; trees are voxels near the player and simplified shapes in the far
+  terrain, measured against a forest benchmark.
 - Voxel light: interiors pitch black at night and dim by day. Light through
   windows and doors can be seen from outside.
 - Body temperature, clothing warmth, and rain.

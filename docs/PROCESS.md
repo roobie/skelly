@@ -64,9 +64,7 @@ The agents work over agent mail. Their roles and protocol are in agent-kit's
 
 ## Slice checklist
 
-After checklist drift recorded in `deadvox/docs/retro-slice-2.md`, “What hurt,” BR accepted proposal 1, “Keep the checklist live” (2026-10-06 06:54): “accept”. BR approved option A, a merge-time action (2026-10-06 06:56): “yes, queue A”.
-
-For the open issue labelled `slice-checklist` (Slice 3: #293), milestone PRs carry a `Slice-Milestone: <id>` line. `.github/workflows/slice-checklist.yml` ticks it only for merges into the repository's default branch and serializes the issue update through `tools/slice-checklist.mjs`, `milestonesFromPrBody` and `tickMilestone`. The lead adds evidence and carried-forward links by hand. A burst of three merges can leave the middle run visibly `cancelled`; the lead ticks that milestone manually. The workflow uses `pull_request`, not `pull_request_target`; GitHub withholds issue-write permission for fork PRs, so the lead also handles those merges manually.
+The active slice checklist issue is the record of milestone evidence and carried-forward work; keeping it live prevents a parallel plan from drifting. The merge workflow updates milestone status on default-branch merges (`.github/workflows/slice-checklist.yml`, `tickMilestone`). The lead reconciles cases the workflow cannot update, including fork merges and cancelled runs. Slice 3's checklist is #293.
 
 ## Done, per subproject
 
@@ -101,43 +99,38 @@ A plain `test` skips the sweeps that CI runs, which has turned main red before (
 - **Test-budget overruns.** BR, 2026-10-06 07:06: “p5 accept”. Profile the suite, make named cuts that each say what coverage they protected and which test still catches it, and record the result before closure. Measure with alternating back-to-back baseline and candidate runs. Raising a budget is BR's call.
 - **Hosted-CI outages.** BR, 2026-10-06 07:09: “p6: accept”. Keep affected PRs open and report them as “blocked on hosted CI”. Checklist and milestone status stay open; nothing merges on local checks alone.
 
-The live-checklist mechanism for proposal 1 is documented in the [Slice checklist](#slice-checklist) section.
-
 ## Recording decisions
 
-- **Small rulings** go inline where the decision is specified, in the subproject's
-  `PROJECT.md`, `DESIGN.md` or `SLICE-*.md`. State the rule and its reason in the
-  document's own voice; keep the source quote and stamp in the commit message that
-  changes the rule.
-- **Cross-cutting or format-defining decisions** get an ADR in
-  `<subproject>/docs/decisions/` (e.g. deadvox 0002, saves). Its context explains the
-  situation, and its decision records the rule, reason and alternatives. Code cues the
-  specification instead of copying it. Keep source quotes and stamps in the commit
-  message, not the ADR. When a decision changes, rewrite the ADR's decision to the
-  current rule, or replace it with a superseding one and delete the old; the changing
-  commit carries the source.
-- **Mail and chat are transport, not the record.** A ruling that only exists in a thread isn't
-  recorded. PRs, issues and commit messages are history: the final reason goes in a tracked
-  doc before the merge.
+- A small ruling belongs beside the rule it governs in `PROJECT.md`, `DESIGN.md` or
+  `SLICE-*.md`. State the current rule and its reason in the document's own voice.
+- A cross-cutting or format-defining decision belongs in an ADR under
+  `<subproject>/docs/decisions/`. Each ADR states one current decision and why; it
+  does not accumulate amendments. When a decision changes, add an ADR with the next
+  free number, delete the superseded ADR and repoint every reference. Name the
+  superseded ADR in the changing commit message; the PR body identifies that tracing
+  convention as the lead's choice for BR to veto.
+- Keep source quotations and timestamps out of tracked docs; preserve the source in
+  the commit message that adds or changes the rule. Mail and chat carry rulings but
+  do not record them. The reason that governs the current rule must be in a tracked
+  doc before merge.
 
 ## Continuous consolidation
 
-We refactor actively while pre-pre-alpha, against real change costs and the next
-planned work, not a deletion target. [#159](https://github.com/roobie/skelly/issues/159)
-is the ranked backlog; survey reports live beside each subproject's code.
+Refactor actively while pre-pre-alpha against real change costs and planned work,
+not as a deletion target. [#159](https://github.com/roobie/skelly/issues/159) is
+the ranked backlog. Review records stay in their working layer: code reviews in
+PRs, maintainability and consolidation surveys in #159 or an issue linked from it,
+and slice retrospectives as comments on the slice checklist issue (#293 for Slice 3).
+The repository keeps no review or retrospective snapshots.
 
 - **Every brief and review:** name the ownership or duplicated decision worth
   consolidating, or say none. Name the old authorities, intended consumers and
-  deliberate distinctions. Review the callers and secondary consumers, not only
-  the new owner. Prove the risky boundary with a discriminating test or mutation;
-  do not add near-duplicate tests for a larger count.
-- **At slice start and exit:** the lead commissions a history-and-planned-change
-  maintainability survey for each subproject. Use the `maintainability-review`
-  method: checks first, ranked and refutation-tested findings, stable IDs, and
-  explicit disposition of earlier findings. An exit survey may serve as the next
-  start survey if its base and next-change assumptions still hold; record reuse
-  and inspect the intervening delta. A recurring smell or a repeated boundary
-  failure triggers a targeted survey, not automatically another full survey.
+  deliberate distinctions. Review callers and secondary consumers, not only the
+  new owner. Prove a risky boundary with a discriminating test or mutation; do not
+  add near-duplicate tests for a larger count.
+- **At slice closure:** commission one deep docs pass, as tracked by the exit item
+  on #293 and planned in r50. A recurring smell or repeated boundary failure can
+  still trigger a targeted maintainability survey.
 - **Decide and date:** the lead records each finding's owner, rationale, scope,
   affected milestone and decision: do separately, fold into named work, defer,
   or drop. Every open owned finding has an actual calendar revisit date, including
@@ -169,18 +162,10 @@ deletions and net lines. Separate source, tests, docs, content and generated
 snapshots; distinguish whole-delivery totals from refactor-only totals. If mixed
 changes cannot be isolated, say so rather than estimate.
 
-The slice plan leaves the tree at its retrospective, after its live content moves;
-git and GitHub history keep it. Closing a slice includes one deep docs pass before the
-retrospective: each tracked doc is read whole and trimmed to its current rules, reasons
-and cues, and the zero-drift baseline loses every row the pass fixes. The slice
-retrospective reports findings opened, completed, partially completed, carried and
-dropped; per-item line/site figures; review-caught defects, escaped regressions and
-review/CI rework separately; and standalone/folded capacity counts with their
-denominator. Distinguish a persistent finding from a reintroduced one.
-For milestones said to be unblocked, record ready/start/review-ready/merge dates
-and known waits; claim a speedup only with a defensible comparison. Unknown effort
-or time saved stays unknown. Decide whether the cadence and capacity check earned
-their cost, and date the next review.
+At slice closure, remove the plan after its live content has moved to current
+owners. Record the retrospective as a comment on that slice's checklist issue
+(#293 for Slice 3), not as a tracked file. This keeps the repository a current
+record while the issue preserves the slice's findings and follow-up decisions.
 
 ## Working rules
 
