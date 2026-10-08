@@ -49,6 +49,8 @@ export interface PlayWorldFrame {
   readonly calendar: number;
   readonly time: number;
   readonly playerEye: Vec3;
+  /** Where zombie attacks aim, in metres (core/zombies.ts, `PLAYER_CHEST_METRES`). */
+  readonly playerChest: Vec3;
   readonly lastZombieStep: number;
   readonly lastBackgroundStep: number;
   readonly dt: number;
@@ -169,6 +171,7 @@ export const createPlayView = (
       calendar,
       time,
       playerEye,
+      playerChest,
       lastZombieStep,
       lastBackgroundStep,
       dt,
@@ -188,6 +191,7 @@ export const createPlayView = (
       const backgroundAlpha = Math.max(0, Math.min(1, (time - lastBackgroundStep) * BACKGROUND_ZOMBIE_RATE));
       zombieMeshes.setCamera?.(camera);
       zombieMeshes.setPlayerEyePosition?.(playerEye);
+      zombieMeshes.setPlayerChestPosition?.(playerChest);
       zombieMeshes.setPerceptionLabels?.(perceptionLabels);
       zombieMeshes.sync(zombies, dt, alpha, frozen, backgroundAlpha, time);
       return { hour, sky };
