@@ -21,6 +21,7 @@
         "throwMaxDistanceMetres": 8,
         "throwChargeSimSeconds": 1.25,
         "throwMinimumHoldSimSeconds": 1,
+        "throwStanceDropHoldRealSeconds": 0.5,
         "throwArmSpeedMetresPerRealSecond": 9,
         "throwArmEnergyJoules": 60
       }

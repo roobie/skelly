@@ -1,4 +1,11 @@
-import { penetrationWorld, type WorldSolid, worldSolid } from '../core/geometry.ts';
+import {
+  boundsOfPoints,
+  lowerBoundDistanceWorld,
+  obbPolyhedron,
+  penetrationWorld,
+  type WorldSolid,
+  worldSolid,
+} from '../core/geometry.ts';
 import { compose, length, scale, sub, translation, type Vec3 } from '../core/math.ts';
 import type { Resolved } from '../core/resolve.ts';
 import type { PartMotion, Solid } from '../core/schema.ts';
@@ -252,14 +259,36 @@ export interface SweepResult {
   readonly clashes: readonly { readonly pair: string; readonly at: number }[];
 }
 
-const obstaclesFor = (resolved: Resolved, partId: string) =>
+type Bounds = ReturnType<typeof boundsOfPoints>;
+
+const pointsOfWorldSolid = (solid: WorldSolid) =>
+  'vertices' in solid ? solid.vertices : obbPolyhedron(solid).vertices;
+
+const boundsOfWorldSolid = (solid: WorldSolid): Bounds => boundsOfPoints(pointsOfWorldSolid(solid));
+
+const boundsDistance = (a: Bounds, b: Bounds): number =>
+  Math.hypot(...([0, 1, 2] as const).map((axis) => Math.max(0, a[0][axis] - b[1][axis], b[0][axis] - a[1][axis])));
+
+const sweptBounds = (
+  solids: readonly Solid[],
+  start: ReturnType<typeof translation>,
+  end: ReturnType<typeof translation>,
+): Bounds =>
+  boundsOfPoints(
+    solids.flatMap((solid) => [
+      ...pointsOfWorldSolid(worldSolid(start, solid)),
+      ...pointsOfWorldSolid(worldSolid(end, solid)),
+    ]),
+  );
+
+const obstaclesFor = (resolved: Resolved, partId: string, swept: Bounds) =>
   [...resolved.defs]
     .filter(([id]) => id !== partId && resolved.placed.has(id))
     .flatMap(([id, other]) =>
-      other.solids.map((solid) => ({
-        label: `${id}.${solid.id}`,
-        world: worldSolid(resolved.placed.get(id)!, solid),
-      })),
+      other.solids.flatMap((solid) => {
+        const world = worldSolid(resolved.placed.get(id)!, solid);
+        return boundsDistance(swept, boundsOfWorldSolid(world)) > 0 ? [] : [{ label: `${id}.${solid.id}`, world }];
+      }),
     );
 
 const overlapsAt = (
@@ -270,7 +299,7 @@ const overlapsAt = (
   solids.flatMap((solid) => {
     const ownWorld = worldSolid(transform, solid);
     return obstacles
-      .filter(({ world }) => penetrationWorld(ownWorld, world) > 1e-6)
+      .filter(({ world }) => lowerBoundDistanceWorld(ownWorld, world) === 0 && penetrationWorld(ownWorld, world) > 1e-6)
       .map(({ label }) => `${solid.id} x ${label}`);
   });
 
@@ -284,7 +313,8 @@ export const sweepMovingPart = (resolved: Resolved, partId: string, limit: numbe
   }
   const delta = sub(motion.end, motion.start);
   const declared = length(delta);
-  const obstacles = obstaclesFor(resolved, partId);
+  const end = compose(placed, translation(scale(delta, limit / (declared || 1))));
+  const obstacles = obstaclesFor(resolved, partId, sweptBounds(def.solids, placed, end));
   const first = new Map<string, number>();
   let clear = limit;
   for (let distance = 0; distance <= limit + 1e-9; distance += step) {

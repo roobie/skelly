@@ -165,6 +165,9 @@ export interface ZombieRenderer {
 const DEFAULT_POOL_SIZE = SHAMBLER_FIGURE_SEEDS.length;
 const DEFAULT_CAPACITY = 64; // matches ZombieMeshes' own default
 
+const PELVIS_HEIGHT_M = 0.9;
+const BOUNDING_RADIUS_M = 1.2;
+
 /** Keeps severing-energy tests within the selected fixture seed instead of allocating every renderer variant. */
 export const mobFigurePoolSizeThrough = (figureSeed: number): number => {
   const index = SHAMBLER_FIGURE_SEEDS.indexOf(figureSeed as (typeof SHAMBLER_FIGURE_SEEDS)[number]);
@@ -174,16 +177,11 @@ export const mobFigurePoolSizeThrough = (figureSeed: number): number => {
   return index + 1;
 };
 
-// Rough pelvis height and bounding radius used only for frustum culling.
-const PELVIS_HEIGHT_M = 0.9;
-const BOUNDING_RADIUS_M = 1.2;
-
 const severedBoneIds = (variant: Variant, parts: readonly string[]): ReadonlySet<string> =>
   severedBoneSet(
     variant.realized.body.bones,
     parts.map((part) => variant.severedRoots.get(part) ?? part),
   );
-
 // Corpse lifecycle: death fall (mobgen's own DEATH_FALL_DURATION), then lies still, then sinks out of
 // view — see MobActorMeshes' own doc comment on why a corpse keeps its slot the whole time.
 const CORPSE_LIE_S = 8;
@@ -1320,6 +1318,7 @@ export class MobActorMeshes implements ZombieRenderer {
       angularMomentum: [0, 0, 0],
       inertiaBody: partData.inertiaBody,
       corners: partData.corners,
+      remainderRealSeconds: 0,
       elapsed: 0,
       quietTime: 0,
       asleep: false,
@@ -1676,6 +1675,27 @@ export class MobActorMeshes implements ZombieRenderer {
     state.lastPlacement = posed.placement;
   }
 
+  private packCachedPose(
+    state: ZombieRenderState,
+    variant: Variant,
+    zombie: Zombie,
+    placement: { worldPos: Vec3; yaw: number },
+  ): void {
+    const crowdPlacement: CrowdPlacement = {
+      x: placement.worldPos[0],
+      y: placement.worldPos[1],
+      z: placement.worldPos[2],
+      yawRad: placement.yaw,
+    };
+    const severedIndices = this.indicesFor(variant, severedBoneIds(variant, zombie.severed));
+    this.packSkeleton(state.globalRow, variant, {
+      pose: state.lastPose!,
+      placement: crowdPlacement,
+      severedIndices,
+    });
+    state.lastPlacement = crowdPlacement;
+  }
+
   /** A corpse's own per-frame pose+pack: deathPose from its frozen basePose, sinking (an extra downward Y
    * offset, no re-posing needed) once it's been lying long enough. No LOD/frustum culling — the global
    * MAX_CORPSES cap already bounds this to a small, fixed extra cost regardless of camera or distance. */
@@ -1757,6 +1777,24 @@ export class MobActorMeshes implements ZombieRenderer {
     };
   }
 
+  private packZombiePose(
+    state: ZombieRenderState,
+    variant: Variant,
+    zombie: Zombie,
+    frame: {
+      placement: { position: Vec3; worldPos: Vec3; yaw: number; headYaw: number };
+      gazeFrameDelta: number;
+      presentationSimSeconds: number;
+    },
+  ): void {
+    const bounds = this.zombiePoseBounds(zombie, frame.placement);
+    if (this.shouldSkipPose(bounds.center, bounds.radius) && state.lastPose) {
+      this.packCachedPose(state, variant, zombie, frame.placement);
+      return;
+    }
+    this.packPose(state, variant, zombie, frame);
+  }
+
   private syncZombie(
     { id, zombie }: { id: EntityId; zombie: Zombie },
     gazeDt: number,
@@ -1793,11 +1831,7 @@ export class MobActorMeshes implements ZombieRenderer {
     const placement = this.currentRenderPlacement(zombie);
     this.updatePerceptionLabel(id, zombie, state, placement);
     this.updateTentacle(id, zombie, placement);
-    const bounds = this.zombiePoseBounds(zombie, placement);
-    if (this.shouldSkipPose(bounds.center, bounds.radius)) {
-      return anyDirty;
-    }
-    this.packPose(state, variant, zombie, {
+    this.packZombiePose(state, variant, zombie, {
       placement,
       gazeFrameDelta: gazeDt,
       presentationSimSeconds,

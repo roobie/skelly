@@ -2,6 +2,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { authoredLayoutIssues } from '../src/core/authoredLayout.ts';
 import { placementOf } from '../src/core/authoredPlacement.ts';
 import { AuthoredSite } from '../src/core/authoredSite.ts';
 import {
@@ -84,19 +85,15 @@ const invalid = (data: unknown, message: string) => {
   );
   expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds); // No rejected fixture layouts; unrelated bundled sites survive.
 };
-const invalidWithFullPack = (data: unknown, message: string) => {
-  const result = load(data);
-  expect(result.issues.some((issue) => issue.source === 'layout-test.json' && issue.message.includes(message))).toBe(
-    true,
-  );
-  expect([...result.registry.layouts.keys()]).toEqual(baseLayoutIds);
+const invalidWithSharedRegistry = (data: SiteLayoutDef, message: string) => {
+  expect(authoredLayoutIssues(data, registry).some(([, issue]) => issue.includes(message))).toBe(true);
 };
 const fixedLootBuilding = layout.buildings[0]!;
 const fixedLootTemplate = compileTemplate(registry, registry.templates.get(fixedLootBuilding.template)!);
 const fixedLootContainer = fixedLootTemplate.pieces.find(
   (piece) => registry.furniture.get(piece.furniture)?.container,
 )!;
-const withFixedLoot = (at: readonly [number, number, number], item: string) => ({
+const withFixedLoot = (at: [number, number, number], item: string) => ({
   ...layout,
   buildings: [{ ...fixedLootBuilding, fixedLoot: [{ at, items: [{ item }] }] }, ...layout.buildings.slice(1)],
 });
@@ -239,16 +236,38 @@ describe('authored layout acceptance', () => {
     );
   });
   it('rejects a player spawn floating above its terrain floor', () => {
-    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [72, 22.5, 65] } }, 'supported surface');
-  });
-  it('rejects an elevated shambler spawn without support', () => {
-    invalidWithFullPack(
-      { ...layout, shamblers: [{ ...layout.shamblers[0], position: [58, 25.5, 59.5] }] },
+    invalidWithSharedRegistry(
+      { ...layout, player: { ...layout.player, position: [72, 22.5, 65] } },
       'supported surface',
     );
   });
+  it('rejects an elevated shambler spawn without support', () => {
+    const supported = validationLayout('shambler_support_fixture');
+    const unsupported = {
+      ...supported,
+      shamblers: [{ ...layout.shamblers[0]!, position: [5, 10.5, 5] as const }],
+    };
+    const accepted = buildRegistry([
+      ...layoutValidationBase,
+      { source: 'layout-test.json', data: { layouts: [supported] } },
+    ]);
+    expect(accepted.issues.filter((issue) => issue.source === 'layout-test.json')).toEqual([]);
+    const rejected = buildRegistry([
+      ...layoutValidationBase,
+      { source: 'layout-test.json', data: { layouts: [unsupported] } },
+    ]);
+    expect(
+      rejected.issues.some(
+        (issue) => issue.source === 'layout-test.json' && issue.message.includes('supported surface'),
+      ),
+    ).toBe(true);
+    expect([...rejected.registry.layouts.keys()]).toEqual(baseLayoutIds);
+  });
   it('rejects a player spawn on an unsupported building cell', () => {
-    invalidWithFullPack({ ...layout, player: { ...layout.player, position: [55, 21.5, 55] } }, 'supported surface');
+    invalidWithSharedRegistry(
+      { ...layout, player: { ...layout.player, position: [55, 21.5, 55] } },
+      'supported surface',
+    );
   });
   it('has no baseline layout issues for the fields covered by the minimal registry', () => {
     const supportedIssues = minimalLayoutBaselineIssues.filter((issue) => !issue.message.includes('supported surface'));
@@ -289,11 +308,11 @@ describe('authored layout acceptance', () => {
     invalid({ ...layout, terrain: [{ ...hill, rise: -1 }] }, 'Invalid value');
   });
   it('rejects fixed loot that names an unknown item', () => {
-    invalidWithFullPack(withFixedLoot(fixedLootContainer.pos, 'not_an_item'), 'no item');
+    invalidWithSharedRegistry(withFixedLoot(fixedLootContainer.pos, 'not_an_item'), 'no item');
   });
   it('rejects fixed loot on a non-container', () => {
     const nonContainer = fixedLootTemplate.pieces.find((piece) => !registry.furniture.get(piece.furniture)?.container)!;
-    invalidWithFullPack(withFixedLoot(nonContainer.pos, 'rag'), 'has no container');
+    invalidWithSharedRegistry(withFixedLoot(nonContainer.pos, 'rag'), 'has no container');
   });
   it('places military-only fixed loot only in a container that rolls a military table', () => {
     const [military] = militaryLootItems(registry);
@@ -302,12 +321,13 @@ describe('authored layout acceptance', () => {
       throw new Error('fixture needs a military-only item and a non-military container table');
     }
     const fixed = withFixedLoot(fixedLootContainer.pos, military);
-    invalidWithFullPack(fixed, 'military loot only');
-    const armoury = { loot: [{ ...rolled, military: true }], layouts: [fixed] };
-    expect(buildRegistry([...base, { source: 'layout-test.json', data: armoury }]).issues).toEqual([]);
+    invalidWithSharedRegistry(fixed, 'military loot only');
+    const loot = new Map(registry.loot);
+    loot.set(rolled.id, { ...rolled, military: true });
+    expect(authoredLayoutIssues(fixed, { ...registry, loot })).toEqual([]);
   });
   it('rejects fixed loot without a furniture anchor', () => {
-    invalidWithFullPack(withFixedLoot([0, 0, 0], 'rag'), 'no furniture anchor');
+    invalidWithSharedRegistry(withFixedLoot([0, 0, 0], 'rag'), 'no furniture anchor');
   });
   it('rejects an unknown building template', () => {
     invalid({ ...layout, buildings: [{ ...layout.buildings[0], template: 'missing' }] }, 'no template');

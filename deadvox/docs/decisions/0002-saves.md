@@ -426,16 +426,19 @@ browser profile or device.
 ### Snapshot timing and frame budget
 
 Autosave every 2 in-game hours, on `visibilitychange` to hidden and best-effort
-`pagehide`, and before starting sleep/rest compression. Take the immutable
-snapshot synchronously at the next simulation barrier, then transfer its own
-buffers (never detach live `Chunk` arrays) to a dedicated worker for RLE,
-canonical encoding, checksum and storage. Coalesce triggers while a write is in
-flight; the newest generation follows the current write under the same lock.
-`pagehide` is best effort—browser termination is not guaranteed to wait for a
-new async write—so periodic autosave and A/B recovery remain the durability
-mechanism. Before sleep, capture the pre-compression state before beginning the
-long action; later autosaves preserve the active `RestAction` and compression
-state.
+`pagehide`, and before starting sleep/rest compression. A page entering the
+back/forward cache skips its pagehide capture and the hidden capture after it;
+a lock requested while the page freezes stays held by that frozen page and
+blocks the next page, so the last committed generation remains the recovery
+point. Take the immutable snapshot synchronously at the next simulation
+barrier, then transfer its own buffers (never detach live `Chunk` arrays) to a
+dedicated worker for RLE, canonical encoding, checksum and storage. Coalesce
+triggers while a write is in flight; the newest generation follows the current
+write under the same lock. `pagehide` is best effort—browser termination is not
+guaranteed to wait for a new async write—so periodic autosave and A/B recovery
+remain the durability mechanism. Before sleep, capture the pre-compression
+state before beginning the long action; later autosaves preserve the active
+`RestAction` and compression state.
 
 The measured reference-laptop budget at 96 m is 16.7 ms/frame; existing main-
 thread work p95 is 3 ms looking, 4 ms jogging and 10 ms sprinting. The benchmark

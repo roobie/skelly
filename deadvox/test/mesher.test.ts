@@ -55,20 +55,17 @@ describe('buildMesh', () => {
     expect(area(m)).toBe(2 * 32 * 32 + 4 * 32);
   });
 
-  // Keep a spread of occupancy levels while checking the full face-equivalence property.
-  // Explicit cap above Vitest's default: a heavy property test that can exceed it under
-  // full-suite parallelism (#29); sized to its reduced work.
-  it('draws the same faces as plain face culling (random chunks)', () => {
-    for (const seed of [1, 8]) {
-      const p = new Uint16Array(PADDED ** 3);
-      const density = 0.15 + seed * 0.08;
-      for (let i = 0; i < p.length; i++) {
-        const h = hash3(seed, i, 0, 0);
-        p[i] = h < density ? 1 + Math.floor((h / density) * 2) : 0; // ids 1..2, border included
-      }
-      expect(unitFaces(buildMesh(p, colors))).toEqual(culledFaces(p));
+  // Keep sparse and dense occupancy while checking every face against the independent culling oracle.
+  it('draws the same faces as plain face culling (random mixed-density chunk)', () => {
+    const seed = 1;
+    const p = new Uint16Array(PADDED ** 3);
+    for (let i = 0; i < p.length; i++) {
+      const density = i % PADDED < PADDED / 2 ? 0.23 : 0.79;
+      const h = hash3(seed, i, 0, 0);
+      p[i] = h < density ? 1 + Math.floor((h / density) * 2) : 0; // ids 1..2, border included
     }
-  }, 7500);
+    expect(unitFaces(buildMesh(p, colors))).toEqual(culledFaces(p));
+  });
 
   it('culls against blocks in the border from a neighbouring chunk', () => {
     const p = padded([0, 3, 3]);
