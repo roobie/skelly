@@ -4,7 +4,7 @@ read_if:
   - you change a shotshell's visual proxies or its gameplay mass estimates
 ---
 
-# Shotshell export (g39)
+# Shotshell export
 
 Both `MetallicCartridge` and `Shotshell` use `exportCartridgeModels` in
 `src/gun/cartridgeExport.ts`, the shared GLB writer, and the same
@@ -42,20 +42,22 @@ truly open mouth; a centreline ray reaches the head, not a mouth cap. Fold
 closure data selects six star leaves instead of the roll lip. The shared
 `shotshellGeometry` also supplies the viewer, not a separate preview shape.
 Profile chamfers implement the metallic export's bevel style. Revolved surfaces
-follow the existing smooth, no-outline rendering convention; exports use96facets.
+follow the existing smooth, no-outline rendering convention, with the facet
+count set in `src/gun/cartridgeExport.ts` (`revolveFacets`).
 
 ## Proxies and estimates — not manufacturer claims
 
-Lead authorised these explicitly on 2026-10-03, following the generic metallic
-bullet seating proxy. **The cartridge JSON is unchanged.**
+These follow the generic metallic bullet seating proxy. **The cartridge JSON
+holds only sourced values;** each proxy is a named constant in
+`src/gun/shotshellGeometry.ts`.
 
 | Choice | Meaning |
 | --- | --- |
-| `UNKNOWN_CLOSURE_PROXY = 'roll-crimp'` | Generic presentation at the already-cited conservative62.23mm envelope. Federal's crimp is still unknown; `closure.value` stays null. |
-| `ROLL_CRIMP_PROXY_MM = 1.2` | Lip depth/inward curl and closure-card setback; visual approximation, not source geometry. |
-| `SHOTSHELL_WALL_MM = 0.65` | Uniform visible wall for the open hull; wall thickness is absent from cartridge data. |
-| `SHOTSHELL_EDGE_MM = 0.12` | Display chamfer, not a tolerance or cartridge dimension. |
-| `FOLD_CRIMP_LEAVES = 6` | Generic fold presentation; a known fold closure does not source the leaf count or seams. |
+| `UNKNOWN_CLOSURE_PROXY` | Generic presentation at the already-cited conservative envelope. Federal's crimp is unknown, so `closure.value` stays null. |
+| `ROLL_CRIMP_PROXY_MM` | Lip depth/inward curl and closure-card setback; visual approximation, not source geometry. |
+| `SHOTSHELL_WALL_MM` | Uniform visible wall for the open hull; wall thickness is absent from cartridge data. |
+| `SHOTSHELL_EDGE_MM` | Display chamfer, not a tolerance or cartridge dimension. |
+| `FOLD_CRIMP_LEAVES` | Generic fold presentation; a known fold closure does not source the leaf count or seams. |
 | Primer omitted | The primer diameter stays null; no guessed primer is drawn. |
 | Plastic-looking hull / brass-coloured head | Rendering choices, not proof of material composition. Empty hull/head material arrays stay empty. Red comes from the cited colour; a named sRGB shade makes it readable. |
 | Generic closure card | Inset visual seal; not a sourced wad, shot cup or Federal component. |
@@ -68,24 +70,25 @@ or runtime ammo consumption is claimed by this export task.
 
 ### Named gameplay mass estimates
 
-Deadvox's `shell_12_gauge_00_buck` uses **loaded-shell estimate40g**;
-`spent_case_12_h_gauge_h_00_h_buck` uses **fired-hull estimate5g**. Both descriptions
-say estimate, not manufacturer specification. These are balancing values, not
-new fields in the sourced cartridge record.
+Deadvox's `shell_12_gauge_00_buck` and `spent_case_12_h_gauge_h_00_h_buck`
+(`deadvox/src/content/base/items-other.json`) carry a loaded-shell and a
+fired-hull mass estimate. Both descriptions say estimate, not manufacturer
+specification. These are balancing values, not fields in the sourced cartridge
+record.
 
-Sanity reasoning: nine spheres of diameter8.38mm at roughly11.3g/cm³ lead density
-are about `9 × π/6 × 0.838³ × 11.3 ≈ 31.3g` of shot. Allow roughly8.7g for hull,
-head, primer, propellant and wad to reach40g. For the empty hull, the display wall
-has roughly2.8cm³ of material; a plastic-like density around1g/cm³ plus a couple
-of grams for a thin stamped metal head/primer gives a few grams, rounded to5g.
-Neither density, allowance nor inner construction is claimed as Federal data;
-the display head is not a mass-bearing solid-metal model.
+Sanity reasoning for the loaded shell: nine 00 buck spheres of lead come to
+about three quarters of it, and the rest allows for hull, head, primer,
+propellant and wad. For the empty hull, the display wall's volume at a
+plastic-like density plus a couple of grams for a thin stamped metal head and
+primer gives a few grams. Neither density, allowance nor inner construction is
+claimed as Federal data; the display head is not a mass-bearing solid-metal
+model.
 
-Inventory footprint `[1,1]` is a game grid choice for these small items, not a
-conversion of millimetres into grid cells. Loaded shells stack25 (a convenient
-box-size gameplay limit); empty hulls stack10000 like the existing spent-case
-counter. The new `ammo` category is inventory classification only; calibre lives
-on the model entry. Actual ammo loading/firing belongs to later firearm work.
+The one-cell inventory footprint is a game grid choice for these small items,
+not a conversion of millimetres into grid cells. Loaded shells stack to a
+convenient box-size gameplay limit; empty hulls stack like the existing
+spent-case counter. The `ammo` category is inventory classification only;
+calibre lives on the model entry.
 
 ## Checks
 
