@@ -72,9 +72,7 @@ describe('M4-only AR stock', () => {
         true,
       );
       expect(
-        radiiAcrossFlats.some(
-          (radius) => Math.abs(radius - M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats / 2) < 1e-8,
-        ),
+        radiiAcrossFlats.some((radius) => Math.abs(radius - M4_STOCK_GEOMETRY.bufferTubeBoreAcrossFlats / 2) < 1e-8),
       ).toBe(true);
       expect(radiiAcrossFlats.every((radius) => radius <= M4_STOCK_GEOMETRY.bufferTubeAcrossFlats / 2 + 1e-8)).toBe(
         true,

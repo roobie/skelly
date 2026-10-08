@@ -37,13 +37,14 @@ describe('octagonal barrel and gas-system geometry', () => {
       const standard = family.build({ profile: 'standard', bore, length: bore });
       const standardBarrel = requireOctagon(standard.solids.find(({ id }) => id === 'tube')!);
       const [min, max] = localSolidBounds(standardBarrel);
-      const muzzleX = standard.ports.find(({ id }) => id === 'muzzle')!.pos[0];
+      const [muzzleX] = standard.ports.find(({ id }) => id === 'muzzle')!.pos;
       expect([min[0], max[0]]).toEqual([0, muzzleX]);
       standardWidths.set(bore, max[2] - min[2]);
       const pistol = family.build({ profile: 'pistol', bore, length: bore });
       const pistolBarrel = requireOctagon(pistol.solids.find(({ id }) => id === 'tube')!);
       const [pistolMin, pistolMax] = localSolidBounds(pistolBarrel);
-      expect([pistolMin[0], pistolMax[0]]).toEqual([0, pistol.ports.find(({ id }) => id === 'muzzle')!.pos[0]]);
+      const [pistolMuzzleX] = pistol.ports.find(({ id }) => id === 'muzzle')!.pos;
+      expect([pistolMin[0], pistolMax[0]]).toEqual([0, pistolMuzzleX]);
       const boreAxis = standard.axes.find(({ kind }) => kind === 'bore')!.origin;
       expect(min[1] + max[1]).toBeCloseTo(2 * boreAxis[1]);
       expect(min[2] + max[2]).toBeCloseTo(2 * boreAxis[2]);

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { Mesh, type MeshStandardMaterial } from 'three';
+import type { Mesh, MeshStandardMaterial } from 'three';
 import { describe, expect, it } from 'vitest';
 import type { Vec3 } from '../src/core/math.ts';
 import { validate } from '../src/core/validate.ts';
@@ -103,5 +103,4 @@ describe('viewer geometry', () => {
       }
     }
   });
-
 });
