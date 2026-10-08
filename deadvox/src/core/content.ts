@@ -13,6 +13,7 @@ import {
   type ContentFile,
   ContentFileSchema,
   type ContentSection,
+  type DayCycleDef,
   type FurnitureDef,
   type ItemDef,
   type RecipeDef,
@@ -59,6 +60,7 @@ export interface Registry extends RegistryMaps {
   modelOrigins: Map<string, { source: string; path: string }>;
   /** Where each sound event was defined; variant paths are relative to this content file's pack. */
   soundOrigins: Map<string, { source: string; path: string }>;
+  dayCycle: DayCycleDef | undefined;
 }
 
 const AIR: BlockDef = { id: 'air', name: 'Air', color: '#000000', solid: false };
@@ -205,6 +207,7 @@ const emptyRegistry = (): Registry => ({
   blockIds: new Map([[AIR.id, 0]]),
   modelOrigins: new Map(),
   soundOrigins: new Map(),
+  dayCycle: undefined,
 });
 
 const merge = (files: readonly { source: string; file: ContentFile }[]) => {
@@ -214,6 +217,11 @@ const merge = (files: readonly { source: string; file: ContentFile }[]) => {
     origins.set(`${section}:${id}`, { source, path: `${section}[${i}]` });
 
   for (const { source, file } of files) {
+    // Named spawn times are resolved during schema parsing against the authored base cycle.
+    // Keep that cycle authoritative so later mods cannot make parsed dawn/dusk values drift.
+    if (file.dayCycle !== undefined && registry.dayCycle === undefined) {
+      registry.dayCycle = file.dayCycle;
+    }
     (file.blocks ?? []).forEach((block, i) => {
       const existing = registry.blockIds.get(block.id);
       if (existing === undefined) {

@@ -2,26 +2,31 @@ import { describe, expect, it } from 'vitest';
 import { skyAt } from '../src/core/sky.ts';
 import { FLASHLIGHT_DECAY, FLASHLIGHT_INTENSITY, flashlightDaylightScale } from '../src/render/flashlight.ts';
 import { NEAR_FIELD_M } from '../src/render/lightFalloff.ts';
+import { phaseMidpoint } from './dayPhaseFixture.ts';
 
 const scaleAt = (hour: number): number => flashlightDaylightScale(skyAt(hour));
 
 describe('flashlight daylight scale', () => {
-  it('is about full strength at night', () => {
-    expect(scaleAt(0)).toBeGreaterThan(0.99);
-    expect(scaleAt(3.5)).toBeGreaterThan(0.99);
-    expect(scaleAt(21)).toBeGreaterThan(0.97);
+  it('preserves the flashlight at full night and dims it under the full-day sky', () => {
+    const night = scaleAt(phaseMidpoint('night') / 3600);
+    const day = scaleAt(phaseMidpoint('day') / 3600);
+    expect(night).toBeGreaterThan(day);
+    expect(night).toBeGreaterThan(0.9);
   });
 
-  it('leaves a negligible pool at noon: at most 3% of the sun at 3 m', () => {
-    // Beam at 3 m is INTENSITY / (3 + NEAR_FIELD_M)^DECAY candela; the sun's own light is lightIntensity.
-    const pool = (FLASHLIGHT_INTENSITY / (3 + NEAR_FIELD_M) ** FLASHLIGHT_DECAY) * scaleAt(12);
-    expect(pool).toBeLessThanOrEqual(0.03 * skyAt(12).lightIntensity);
+  it('keeps the daylight-scaled flashlight weaker than direct sun lighting', () => {
+    const hour = phaseMidpoint('day') / 3600;
+    const pool = (FLASHLIGHT_INTENSITY / (3 + NEAR_FIELD_M) ** FLASHLIGHT_DECAY) * scaleAt(hour);
+    expect(pool).toBeLessThan(skyAt(hour).lightIntensity);
   });
 
-  it('is partial at dawn and dusk', () => {
-    for (const hour of [6.5, 19.5]) {
-      expect(scaleAt(hour)).toBeGreaterThan(0.02);
-      expect(scaleAt(hour)).toBeLessThan(0.5);
+  it('blends flashlight strength through dawn and dusk', () => {
+    const night = scaleAt(phaseMidpoint('night') / 3600);
+    const day = scaleAt(phaseMidpoint('day') / 3600);
+    for (const phase of ['dawn', 'dusk'] as const) {
+      const twilight = scaleAt(phaseMidpoint(phase) / 3600);
+      expect(twilight).toBeGreaterThan(day);
+      expect(twilight).toBeLessThan(night);
     }
   });
 

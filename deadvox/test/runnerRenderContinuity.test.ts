@@ -10,6 +10,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { type PlayerMovement, type PlayerSense, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { createPlayerBody, PLAYER, physicsFor, steer } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -72,7 +73,7 @@ const runEngagement = (seed: number): EngagementResult => {
     player,
     isSolid: FLOOR,
     isOpaque: FLOOR,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
@@ -202,7 +203,7 @@ const runTierHandoff = (): TierResult => {
     player,
     isSolid: FLOOR,
     isOpaque: FLOOR,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,

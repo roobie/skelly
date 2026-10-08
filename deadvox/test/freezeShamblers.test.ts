@@ -7,6 +7,7 @@ import { makeScale } from '../src/core/scale.ts';
 import { posedShamblerRegionBoxes, type ZombieRegion } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type MeleeResult, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -36,7 +37,7 @@ const makeSystem = (
     player: () => player(target),
     isSolid: FLOOR,
     isOpaque: FLOOR,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
@@ -92,7 +93,7 @@ describe('debug shambler freeze', () => {
       player: () => player(target),
       isSolid: FLOOR,
       isOpaque: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
