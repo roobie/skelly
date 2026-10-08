@@ -18,6 +18,7 @@ import {
   contentLookup,
   createRuntime,
   encodeFixture,
+  fixtureColumns,
   fixtureHamlet,
   fixtureZombieColumn,
   formatVersion,
@@ -54,6 +55,13 @@ describe('zombie attack causes', () => {
 
 describe('hamlet save/load continuation', () => {
   const oneColumn = [fixtureZombieColumn] as const;
+  const soundColumn = fixtureColumns.find(([cx, cz]) =>
+    fixtureHamlet.zombiesIn(cx, cz).some(({ type }) => type === 'shambler'),
+  );
+  if (!soundColumn) {
+    throw new Error('Snapshot fixture has no shambler sound column');
+  }
+  const soundColumns = [soundColumn] as const;
   it('continues horde noise response and night drift deterministically through a save', async () => {
     const [cx, cz] = fixtureZombieColumn;
     const center = fixtureHamlet.zombiesIn(cx, cz)[0]?.pos;
@@ -121,8 +129,8 @@ describe('hamlet save/load continuation', () => {
   });
 
   it('preserves the whole sound-event stream across save and load', async () => {
-    const uninterrupted = createRuntime(undefined, true);
-    const split = createRuntime(undefined, true);
+    const uninterrupted = createRuntime(undefined, false, soundColumns);
+    const split = createRuntime(undefined, false, soundColumns);
     const framesBeforeSave = 290;
     const framesAfterSave = 900;
     advance(uninterrupted, framesBeforeSave);
@@ -130,12 +138,13 @@ describe('hamlet save/load continuation', () => {
     const soundCountAtSave = uninterrupted.heardSounds.length;
     const bytes = await encodeFixture(capture(split));
     const decoded = await decodeSave(bytes, { version: formatVersion, contentLookup });
-    const loaded = createRuntime(decoded.snapshot, true);
+    const loaded = createRuntime(decoded.snapshot, false, soundColumns);
 
     advance(uninterrupted, framesAfterSave);
     advance(loaded, framesAfterSave);
 
     const continuedSounds = uninterrupted.heardSounds.slice(soundCountAtSave);
+    expect(continuedSounds.some(({ event }) => event === 'shambler_idle')).toBe(true);
     expect(continuedSounds.length).toBeGreaterThan(0);
     expect(loaded.heardSounds).toEqual(continuedSounds);
   });

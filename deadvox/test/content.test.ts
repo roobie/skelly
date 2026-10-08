@@ -970,6 +970,9 @@ describe('content references', () => {
     if (armoury === undefined || site === undefined) {
       throw new Error('base content needs a military table and an authored-only template with a loot container');
     }
+    const baseFound = checkReachability(baseRegistry).found;
+    const baseMilitaryItems = [...militaryLootItems(baseRegistry)];
+    expect(baseMilitaryItems.some((id) => !baseFound.has(id))).toBe(true);
     for (const [key, entry] of Object.entries(site.palette)) {
       if (typeof entry === 'object' && 'loot' in entry) {
         site.palette[key] = { ...entry, loot: armoury.id };
