@@ -195,10 +195,12 @@ both. `checkItems` in `src/core/content.ts` rejects mixed declarations, and
 `planDisassembly` in `src/core/disassembly.ts` calculates yield from the skill and
 reachable tools at start, and the work item keeps that output snapshot. Stop and
 Continue therefore preserve the original yield rather than recalculating after a
-skill change. Salvage uses the fixed work duration in `SALVAGE_DURATION`; gathering
-adds its handling time. Finishing places disassembly outputs at the player's feet,
-while cancelling returns the exact source item. These rules keep taking apart an
-item a resumable action without changing its promised output or losing the source.
+skill change. Salvage yield does not depend on item condition; condition-sensitive
+yields remain a possible later design. Salvage uses the fixed work duration in
+`SALVAGE_DURATION`; gathering adds its handling time. Finishing places disassembly
+outputs at the player's feet, while cancelling returns the exact source item.
+These rules keep taking apart an item a resumable action without changing its
+promised output or losing the source.
 
 ## Repair-corner stock
 

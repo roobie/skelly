@@ -253,8 +253,7 @@ Because the components live inside the work item, nothing else can take them
 mid-craft, there is no reservation table to keep in step with the world, and a
 save holds the whole craft as ordinary item data.
 
-Disassembly runs the item's authored yield or salvage list as the reverse
-operation in Slice 2.7 (see [SLICE-2.md](SLICE-2.md), "2.7").
+Disassembly runs the item's authored yield or salvage list in reverse.
 
 ## Appliances
 
@@ -335,8 +334,7 @@ values), known recipes and skill levels. Two consequences for 1.9:
   (for a craft, that's the work item), never as a closure. Handling jobs are
   tagged data with their handlers in the runtime; a save snapshot cancels
   ordinary pending handling jobs in the snapshot copy, without changing the
-  live queue. Slice 2's long actions have their own saved continuation data
-  ([SLICE-2.md](SLICE-2.md), 2.4).
+  live queue.
 - **Settle before saving.** Saving projects every running process to the save
   time in the snapshot copy, so a loaded save continues from exact values. The
   running process itself isn't changed: taking a snapshot is pure
