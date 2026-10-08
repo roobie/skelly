@@ -26,7 +26,7 @@ with a walk cycle that follows its speed. It works the same way gungen takes a
 template and a seed to a firearm that fits together: the generator only makes
 choices, and a validator with named rules decides what's feasible.
 
-### Creature range (BR, 2026-09-29)
+### Creature range
 
 mobgen's actors are monsters, not people. Their proportions are stylized
 (the heads are oversized so the face fits), and planned enemies range from
@@ -59,57 +59,44 @@ Slice 3.8's crawler is an exception to the humanoid milestone scope: its body
 uses `src/mob/humanoid.ts`, `amputateCrawlerLegs`, and its pose uses
 `src/mob/crawler.ts`, `crawlerPose`. Rig-specific gaze limits live in
 `src/mob/lookAtProfiles.ts`, `LOOK_AT_PROFILES`, and the render-only pose
-adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. BR approved the silhouette
-at 2026-10-07 10:03. The crawler's generated support bones resolve from voxel
-ground contacts through `src/core/generate.ts`, `resolveSupportBones`, so the
-`grounded` rule validates its body plan without humanoid foot assumptions.
-`src/mob/crawler.ts`, `crawlerPose`, grounds the pose per realized figure;
-`crawlerGaitPose` and `crawlerHitPose` layer movement and hit response over it.
-BR's 2026-10-07 17:00:03 +02:00 ruling on `crawlerGaitPose`'s rearward reach
-was: “#377: it'd be nice if we could have the arms' range of motion (by having
-the elbows move by the side/along the ground) fully go rear-of the shoulders”.
-`test/crawler.test.ts` guards that pull-end reach. In the viewer,
-`src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera because
-the viewer has no perception state. BR's form ruling, 2026-10-06 21:49, was
-verbatim: “crawler: (A)”; this means a prone ground-crawler dragging itself on
-its arms with trailing legs, not either of the other proposed humanoid forms.
-Gameplay stagger, slowdown, knockdown and per-type clip tuning remain open BR
-decisions.
+adjustment lives in `src/mob/lookAt.ts`, `lookAtPose`. The crawler's generated
+support bones resolve from voxel ground contacts through
+`src/core/generate.ts`, `resolveSupportBones`, so the `grounded` rule validates
+its body plan without humanoid foot assumptions. `src/mob/crawler.ts`,
+`crawlerPose`, grounds the pose per realized figure; `crawlerGaitPose` and
+`crawlerHitPose` layer movement and hit response over it. `crawlerGaitPose`
+allows the arms to reach behind the shoulders, with elbows moving beside or
+along the ground; `test/crawler.test.ts` guards that pull-end reach. In the
+viewer, `src/viewer/main.ts`, `applyLookAt`, keeps gaze directed at the camera
+because the viewer has no perception state. The crawler is a prone
+ground-crawler dragging itself on its arms with trailing legs, not a humanoid
+form. Gameplay stagger, slowdown, knockdown and per-type clip tuning remain
+open design questions.
 
 ## Playtest 1 apex enemy: amalgam (m1)
 
 Issue #308 calls for “an amalgamation of several shamblers - an enemy the
 size of a car” and says “it makes it end with something new and exciting”.
-BR's 2026-10-07 11:27 ruling on how it is beaten was “(c)”: firearms and
-melee, with constituent shamblers as severable parts that each weaken it.
-This is the reason for an amalgam body plan rather than several independent
-actors: a severable member must be a subtree in one connected body, while the
-shared trunk remains a distinct, non-severable core.
+The amalgam is defeated by firearms and melee, with constituent shamblers as
+severable parts that each weaken it. This calls for an amalgam body plan rather
+than several independent actors: each severable member is a subtree in one
+connected body, while the shared trunk remains a distinct, non-severable core.
 
-BR, 2026-10-07 13:16, requested: “good start - but can we make it procedural
-how many shamblers are part of it? Not all needs to be in contact with floor -
-it can be more random. And actually - the body parts can be randomy distributed
-too - like a leg from a shambler can be pointing straight up, while it's head
-is at floor, like a foot” / “think of John Carpenter's "The Thing" kind of”
+The member count and body-part arrangement vary procedurally. Members need not
+contact the floor, and parts may be distributed in arbitrary orientations, such
+as a leg pointing upward while the head rests near the floor like a foot.
 
-BR's naming ruling for #363:
-
-> BR, 2026-10-07 16:11: “now as for #363, we should avoid the term 'boss' - but instead we can call it the playtest#1's apex enemy maybe?”
-> BR, 2026-10-07 16:12: “agreed: Split”
-
-On the card, BR chose to split the role from the creature: design docs call the
-role playtest 1's apex enemy, while code and content call the creature and its
-viewer template amalgam.
-
-BR, 2026-10-07 16:51:46 +02:00, approved #363's first look: “#363: good; renaming seems good from what i can see, and the mob looks pretty good (at some point we'll revisit it and make it even better)”
+The naming separates the role from the creature: design docs call the role the
+playtest 1 apex enemy, while code and content call the creature and its viewer
+template amalgam.
 
 Issue [#378](https://github.com/roobie/skelly/issues/378) tracks the pass to make the amalgam even better after #363.
 
 The first-look generator samples three to five complete shambler members per
-seed. This is an initial BR-tunable range rather than a budget ceiling: at least
-three distinct bodies give the car-scale apex enemy the requested mass and
-grotesque multiplicity, while five is a first-look cap for BR to tune, not a
-limit imposed by the current budget math. Members are independently scaled,
+seed. This is an initial range rather than a budget ceiling: at least three
+distinct bodies give the car-scale apex enemy the requested mass and grotesque
+multiplicity, while five is a first-look cap rather than a limit imposed by the
+budget math. Members are independently scaled,
 anchored around the core, lifted by seeded gaps, and turned in quarter-turn
 orientations on all three axes, so a head or hand may bear weight and other
 members may hang. The first look keeps each module a complete shambler rather
@@ -117,12 +104,9 @@ than adding partial-body variants; the resolved member subtrees remain
 individually severable. The core's merged, lobed lower flesh forms the shared
 floor-bearing mass, so severing any member leaves a valid, supported body.
 
-BR, 2026-10-07 15:11, FIX: “going in the right direction! Only main FIX I see
-is the blocky/non-organic 'platform' grafted at the bottom ->
-Screenshot_blocky-amalgam.png”. Replace the platform with overlapping flesh
-lobes owned by the non-severable core: their uneven, spreading outline reads as
-part of the body rather than a plinth, while avoiding pseudopods that could
-look like extra limbs.
+The non-severable core's base uses overlapping flesh lobes rather than a
+blocky platform. Their uneven, spreading outline reads as part of the body
+instead of a plinth, without pseudopods that could look like extra limbs.
 
 The m1 mobgen contribution is the generated body, its resolved part/region
 manifest, support bones derived from the actual ground-contact voxel owners,
@@ -148,7 +132,7 @@ viewer does not apply gaze to it: its members can turn heads upside down or
 sideways, and the current humanoid gaze solver does not provide per-member head
 transforms. Amalgam gaze must handle those orientations before it is enabled;
 amalgam gait and Deadvox integration remain open for the #308 follow-up. The
-other open design questions from #308 remain open until BR rules on them:
+the remaining design questions from #308 are:
 
 - Does the procedural, full-shambler composition read as a grotesque fusion,
   or should the silhouette use partial members or a different arrangement?
@@ -169,7 +153,7 @@ other open design questions from #308 remain open until BR rules on them:
 | Core | Pure library in `src/core`: no DOM, three.js or Node imports, so it runs in tests, workers and the game. Domain-agnostic: bones, shapes, voxels, rules. The humanoid lives in `src/mob` |
 | Conventions | Metres, +Y up, right-handed. Figures face −Z (left is −X), matching deadvox, where yaw 0 faces −Z. Ground at y = 0. Voxel centres at x = i·v, y = (j + 0.5)·v, z = k·v: the midline is a voxel centre, so symmetric bodies give exactly symmetric voxels, and the ground is a voxel face |
 | Voxel size | Set per template, and templates may differ (a coarser brute next to finer shamblers is accepted). Default 1/12 of a deadvox block (0.5 m / 12 ≈ 4.17 cm): the reference voxelization found this gives a head of about 50 voxels and a 1.75 m figure of about 800. The viewer and CLI can override it; coarser LOD re-voxelizes the same genome, preserving metric proportions while fine details may disappear (CHALLENGES §1) |
-| Face / LOD scale | BR ruling (2026-09-29): skull, face plate, brow, nose, jaw and mouth dimensions use `height × headScale`, calibrated at the median template height; voxel size only controls sampling and placement snapping. See the root [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected) |
+| Face / LOD scale | Skull, face plate, brow, nose, jaw and mouth dimensions use `height × headScale`, calibrated at the median template height; voxel size only controls sampling and placement snapping. See the root [maintainable-choice-wins pillar](../README.md#the-maintainable-choice-wins-churn-is-expected) |
 | Source of truth | Template + seed → **Genome**, a plain JSON record of the sampled params and wounds that carries its seed. Everything after it is a deterministic function of the genome: builder → **Body** → voxelizer → mesher → validator |
 | Body | A skeleton of bones plus shape features, as signed distance shapes (tapered capsules, ellipsoids, rounded boxes). A feature adds flesh, carves it away, or paints colour without changing the shape |
 | Humanoid | 18 bones: pelvis (root), spine, chest, neck, head, jaw, and left and right upperArm, forearm, hand, thigh, shin, foot. Default joint positions come from the CC0 `fgc_skeleton` rig in `reference/`, converted from Blender's Z-up, −Y-forward axes |
