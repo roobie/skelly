@@ -15,10 +15,9 @@ import { gameMinutes, simSeconds } from '../src/core/time.ts';
 import { INPUT_BINDINGS, inputBindings, POINTER_ACTIONS } from '../src/game/inputBindings.ts';
 
 const BASE = 'src/content/base';
-const KEY_LABEL = /^[A-Z][A-Z0-9]*$/;
-const SINGLE_KEY_LABEL = /^[A-Z]$/;
-const POINTER_LABEL = /^(?:Left click|(?:Left|Middle|Right) mouse|Mouse \d+)$/i;
-const INPUT_GESTURE = /\b(?:hold|press|tap|click|double[ -]press|wield|activate|scroll|wheel|drag|rotate|snap)\b/i;
+const CONTEXTUAL_KEY_LABEL = /^(?:[A-Za-z]+|[0-9]|[^\p{L}\p{N}\s]+)$/u;
+const INPUT_GESTURE =
+  /\b(?:hold|press|tap|click|double[ -]press|wield|activate|scroll|wheel|drag|rotate|snap|spawn)\b/i;
 const LMB_ALIAS = /\bLMB\b/i;
 const RMB_ALIAS = /\bRMB\b/i;
 const base = readdirSync(BASE)
@@ -87,16 +86,13 @@ describe('content', () => {
       ),
       ...POINTER_ACTIONS.map(({ label }) => label),
     ];
-    const controlPatterns = [...new Set(bindingLabels)]
-      .filter((label) => KEY_LABEL.test(label) || POINTER_LABEL.test(label))
-      .filter((label) => label !== 'A')
-      .map((label) => {
-        const escaped = label.replaceAll(' ', '\\s+');
-        const standaloneKey = SINGLE_KEY_LABEL.test(label);
-        const boundary = standaloneKey ? '(?<![\\p{L}\\p{N}.])' : '(?<![\\p{L}\\p{N}])';
-        const endBoundary = standaloneKey ? '(?![\\p{L}\\p{N}.])' : '(?![\\p{L}\\p{N}])';
-        return new RegExp(`${boundary}${escaped}${endBoundary}`, standaloneKey ? 'u' : 'iu');
-      });
+    const controlPatterns = [...new Set(bindingLabels)].map((label) => {
+      const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replaceAll(' ', '\\s+');
+      if (CONTEXTUAL_KEY_LABEL.test(label)) {
+        return new RegExp(`(?:${INPUT_GESTURE.source}\\s+|\\b(?:key|button)\\s+)${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+      }
+      return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, 'iu');
+    });
     const buttonAliases = POINTER_ACTIONS.flatMap(({ id }) => {
       if (id === 'hand.use-dominant') {
         return [LMB_ALIAS];
@@ -110,6 +106,7 @@ describe('content', () => {
       [...controlPatterns, ...buttonAliases].some((pattern) => pattern.test(description)) ||
       INPUT_GESTURE.test(description);
     expect(namesInput(`Hold ${inputBindings.label('firearm.reload')} to load`)).toBe(true);
+    expect(namesInput(`${inputBindings.label('ui.main-menu-toggle')} key`)).toBe(true);
     expect(namesInput('LMB fires')).toBe(true);
     expect(namesInput('AR-pattern rifle')).toBe(false);
     expect(namesInput('A magazine that holds 30 rounds.')).toBe(false);
