@@ -371,6 +371,42 @@ describe('feet at body.pos.y (mobgen pose convention)', () => {
 });
 
 describe('MobActorMeshes', () => {
+  it('reposes a runner that reuses an offscreen variant slot before it can draw', () => {
+    const renderer = new MobActorMeshes(0.5, 1, { poolSize: 1 });
+    try {
+      const camera = new PerspectiveCamera(55, 1, 0.01, 50);
+      camera.position.set(0, 1.6, 0);
+      camera.lookAt(0, 0.85, -2.5);
+      camera.updateMatrixWorld(true);
+      renderer.setCamera(camera);
+      const store = new MapEntityStore<Zombie>();
+      const firstId = store.add(makeZombie([0, 0, -5], [0, 0, -1], [], { type: RUNNER, figureSeed: 1 }));
+      renderer.sync(store, 1 / 60, 1);
+      const internal = renderer as unknown as {
+        states: Map<number, { localSlot: number; lastPlacement: { x: number; y: number; z: number } | undefined }>;
+      };
+      const firstState = internal.states.get(firstId)!;
+      expect(firstState.lastPlacement).toBeDefined();
+      const firstMatrix = renderer.boneMatrix(firstId, 'head')!;
+
+      store.remove(firstId);
+      renderer.sync(store, 1 / 60, 1);
+      const secondZombie = makeZombie([20, 0, -5], [0, 0, -1], [], { type: RUNNER, figureSeed: 1 });
+      const secondId = store.add(secondZombie);
+      renderer.sync(store, 1 / 60, 1);
+
+      const secondState = internal.states.get(secondId)!;
+      expect(secondState.localSlot).toBe(firstState.localSlot);
+      expect(secondState.lastPlacement).toBeDefined();
+      expect([secondState.lastPlacement?.x, secondState.lastPlacement?.y, secondState.lastPlacement?.z]).toEqual(
+        secondZombie.body.pos.map((coordinate) => coordinate * 0.5),
+      );
+      expect(renderer.boneMatrix(secondId, 'head')).not.toEqual(firstMatrix);
+    } finally {
+      renderer.dispose();
+    }
+  });
+
   it('tracks the player with every live model without mutating zombie simulation state', () => {
     const renderer = new MobActorMeshes(0.5, 4, { poolSize: 1 });
     try {
