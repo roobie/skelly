@@ -182,8 +182,8 @@ can rotate.
 
 **Units per domain.** A domain declares `units` (`src/core/schema.ts#DomainUnits`):
 metres per unit, the snap grid and the bevel, all in its own u. The gun domain
-declares today's values in `src/gun/units.ts#GUN_UNITS`: 1u = 11.5mm, a 0.25u
-grid and a 0.125u bevel (about 1.4mm). The core reads them from
+declares its values in `src/gun/units.ts#GUN_UNITS`, built from
+`METRES_PER_UNIT`, `GRID` and `BEVEL`. The core reads them from
 `resolved.domain.units`: the glb export scales by `metresPerUnit`, the
 connection-contact rule allows a gap of one `grid` step, and meshes are
 chamfered by `bevel` (`src/core/mesh.ts#displayBevel`). That contact tolerance
@@ -249,14 +249,14 @@ the generator later has something independent to be tested against (§9).
   | `port-compat` | Mount types match, genders are opposite, sizes match, and no port or slot is used twice |
   | `axis-alignment` | Bore axes lie on the bore line; sight axes are parallel to it |
   | `solid-overlap` | Solids don't overlap. Direct connections use a mount-specific allowance (0.75u fallback) |
-  | `connection-contact` | Solids on connected parts touch or are within one grid step of the domain (0.25u for guns) |
+  | `connection-contact` | Solids on connected parts touch or are within one grid step of the domain |
   | `keep-out` | No solid is inside another part's keep-out volume, except parts attached at an allowed port or from an explicitly allowed family |
   | `required-ports` | Every required port has something attached |
   | `loop-closure` | Connections that close a loop actually meet |
 
   The contact rule checks minimum Euclidean separation between the connected
   parts' convex solids; overlap remains solely governed by `solid-overlap`.
-  A separated pair is covered in `test/fixtures/broken-connection-contact.json`.
+  A separated pair is covered in `test/fixtures/synthetic-connection-contact-gap.json`.
   A file that can't be resolved (unknown family, part, port or param; bad slot
   or roll) is reported under `structure`.
 - **Parts** (`src/gun/parts.ts`, since reworked in Milestone 1.1): receiver,
@@ -281,9 +281,9 @@ the generator later has something independent to be tested against (§9).
 
 ### Out of scope for Milestone 1
 
-The generator and grammar (§6), the human rig (§5; the trigger-finger volume
-stands in for now), final meshes and merging (§7), the metrics in §9, and
-more archetypes.
+The generator and grammar (§6), the human rig (§5; the trigger-finger keep-out
+volume stands in until it exists), final meshes and merging (§7), the metrics in
+§9, and more archetypes.
 
 ## Milestone 1.1: receiver split, domain rules, archetype smoke tests
 
@@ -427,8 +427,8 @@ archetype:
 - **The SMG differs from the battle rifle only in proportions and bore.** Nothing
   models what makes an SMG distinct, such as a simpler action.
 - **The forend can overrun the shortest tube.** With an S barrel and 50% tube,
-  the tube ends at x=13 while the fixed forend reaches x=17.6. This is currently
-  allowed; decide later whether forend length should scale with tube coverage.
+  the fixed forend reaches past the tube's end, and no rule refuses it. Whether
+  forend length should scale with tube coverage is an open question.
 - **Neighbour params are discrete values, not computed geometry.** A tube's
   percentage and the barrel's size class are resolved across their lugs; each
   part builder must still compute the matching physical station from both.
@@ -828,9 +828,10 @@ BR's rulings:
 - **The generator stays, as a variant suggester.**
 - **Export to deadvox.** deadvox reads a model as a `.glb` plus a `grip`
   (position and turn) and named `anchors`, in metres
-  (`deadvox/src/core/schema.ts:197-212`). Its renderer uses only the grip and
-  the flashlight's `lens` anchor today (`deadvox/src/render/models.ts:50-52`).
-  The `muzzle` anchors in `models-firearms.json` are accepted but unused.
+  (`deadvox/src/core/schema.ts`, `ModelSchema`). Deadvox reads the anchors it
+  needs by name: a held firearm's `muzzle`, `ejection` and `support` through
+  `deadvox/src/core/heldPose.ts`, `heldAnchorOffset`, and the flashlight's
+  `lens` through `deadvox/src/render/models.ts`, `prepareModel`.
 
 Already in place: the parameter panel (param edits, optional parts, URL
 overrides, connections dropped when a port disappears), fixtures (a hand-made
@@ -1342,7 +1343,7 @@ built on `mesh.ts`:
 
 The mapping between gungen's axes and deadvox's is derived and tested:
 deadvox holds a model with +x forward and +y up
-(`deadvox/src/core/schema.ts:202-204`).
+(`deadvox/src/core/schema.ts`, `ModelSchema`, its `grip` field).
 
 **3.4 (implemented, lane B).**
 
@@ -1494,13 +1495,13 @@ not part of the export's acceptance:
   existing stock styles stay unchanged. The 870 follow-up uses authored curved
   side profiles partitioned into convex extruded-polygon cells, with clipped side
   planes for width taper; no new solid kind is needed:
-  - **stock — done** (reference `.agent-mail/scratch/br-ref-stock-taper.png`,
-    an 870-style wood stock): a narrow wrist at the receiver that widens to a
+  - **stock — done** (BR's side-view reference photo of an 870-style wood
+    stock, which set this profile): a narrow wrist at the receiver that widens to a
     tall butt; the comb line drops toward the butt while the belly line runs
     down to the toe;
-  - **pistol grip — deferred** (reference `.agent-mail/scratch/br-ref-grip-slant.png`,
-    AR-style): raked, with slanted front and back faces rather than a
-    constant-width slab.
+  - **pistol grip — deferred** (BR's side-view reference photo of an AR-style
+    pistol grip, which sets this profile): raked, with slanted front and back
+    faces rather than a constant-width slab.
   Keep port positions, `hold` anchors, magazine-well clearance, the stock's
   `FIRING_GRIP` role, and every existing rule passing. The follow-up narrows the
   wrist in width as well as height, using those existing clipping planes;
@@ -1564,8 +1565,8 @@ not part of the export's acceptance:
   Candidates beyond these three, for BR to choose from: the AR forward assist,
   magazine and bolt releases, and the safety selector;
 - **Deferred (BR, 2026-09-30):** revolute `PartMotion` for lifting the bolt handle
-  and folding the FAL handle. For now both remain deployed and move linearly (or
-  are fixed to the receiver).
+  and folding the FAL handle. Both stay deployed and move linearly, or are fixed
+  to the receiver.
 - **Deferred (BR, 2026-09-30):** if automatic shotguns are added, reuse the AK-like
   stick/paddle charging-handle style. Pump shotguns remain handle-free.
 - per-solid opt-out of bevels and outlines (BR, 2026-09-28; deferred). Some
@@ -1584,7 +1585,7 @@ not part of the export's acceptance:
   neither requires nor retains these hints. The viewer honours no-bevel and
   no-outline; glTF export honours no-bevel (it draws no outlines). Collision
   and rule checks ignore the metadata. This changes the
-  `Solid` type in `src/core/schema.ts`, so lane A owns it;
+  `Solid` type in `src/core/schema.ts`;
 - g44: Attachment exports preserve the host pose when a default mod is removed and give Deadvox enough data to reject another item on an already-covered rail notch. `src/gun/attachments.ts`, `attachmentSlots` describes base-firearm interfaces and `attachmentMetadata` derives each item's footprint, including every half-pitch notch cell its solid enters; `src/gun/exportGlb.ts`, `attachmentData` links the fitted node to its host slot. `src/gun/attachmentExport.ts`, `exportAttachmentGlb` preserves authored mount frames in standalone item exports while making their ports optional. Gungen omits female ports on attachment nodes from firearm slots because those parts are not intended as hosts. The magazine replacement slot stays separate from presentation anchors so Deadvox can hide the baked magazine when no magazine is fitted (d114-11, #337); see `deadvox/docs/decisions/0006-firearm-handling.md`.
   Gungen's attachment mass is a geometry/material estimate, not a product specification; d118-3 uses the exported model fact when reconciling inventory weight and attachment handling. BR tunes the cited density and fill assumptions before mass figures become fixed; see `src/gun/attachmentMass.ts`, `attachmentMassKg`, and `docs/deferred-assertions.md`.
   BR, 2026-10-07 11:27, verbatim: “#347 let's stick to 7.62x39 for now” and “but we will add 5.45x39 at some point”; generated AKs stay 7.62x39-only, and 5.45x39 is follow-up #362.
@@ -1597,32 +1598,6 @@ not part of the export's acceptance:
   directories, restore launcher/corpus references, and regenerate the scoped snapshots.
   The default finish, palette, and `exportFile` variant entries remain as harmless dormant
   data; the family code stays available for restoration.
-
-### Parallel lanes
-
-3.0a (the frozen types) released B and C, and 3.0b is merged, so both lanes
-are free to work. 3.0b's anchor data is in `src/gun/anchorData.ts`, not
-`parts.ts`, so there is no last `parts.ts` edit to hand over. `parts.ts` stays
-A's until A says otherwise, because a parts and rules fix batch is in progress
-on A's lane; D starts only after 3.5 and after A says so. After that, the rule
-is one writer at a time per hot file:
-
-- `src/viewer/main.ts`, `src/viewer/paramPanel.ts`, `src/viewer/scene.ts`;
-- `src/gun/parts.ts`, `src/gun/templates.ts`;
-- `src/core/schema.ts`;
-- `package.json`, `.github/workflows/gungen.yml`;
-- this file (each lane only adds its own subsection).
-
-| Lane | Who | Work | Owns | Starts |
-| --- | --- | --- | --- | --- |
-| A | coder@gungen | gungen.3, then 3.0a, 3.0b, 3.1, 3.2, and 3.3's viewer strip | viewer, `schema.ts`, the design format, `prefabs.ts`, `designs/`, the palette; `parts.ts` until A says otherwise (a parts/rules fix batch is in progress) | now; 3.0a and 3.0b are merged |
-| B | subagent | 3.4 glTF export | new `src/core` export files, its CLI; asks A for `package.json` and CI changes | released by 3.0a; 3.0b is merged |
-| C | subagent | 3.3 suggester core | new `src/core/suggest.ts`, tests | released by 3.0a; 3.0b is merged |
-| D | subagent | 3.6 vocabulary after 3.5: gungen.7, gungen.6, then the later items | `parts.ts`, `templates.ts` | after 3.5, and after A hands over `parts.ts` |
-| E | coder@main | 3.5 deadvox import | `deadvox/` | after saves.2b and 3.4 |
-
-B and C add new files but depend on 3.0a's types. Neither may change
-`schema.ts` or the design format; a needed change goes back to lane A.
 
 ### Proof per package
 
