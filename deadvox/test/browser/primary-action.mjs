@@ -1357,6 +1357,9 @@ try {
   assert.equal(roundTrip.restoredHand, 'left');
   await toggleLight('hand.use-off', false);
   await page.evaluate(() => globalThis.primaryActionTest.startInputReplayRecording());
+  const interactionHintsBeforeThrowStance = await page.evaluate(
+    () => globalThis.primaryActionTest.hudOptions.interaction,
+  );
   const throwFixture = await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.clearHand(r.dominant);
@@ -1986,6 +1989,9 @@ try {
     'throw keeps the fitted magazine rounds',
   );
   assert.equal(landedRifle.duplicateItemUids, false, 'throw does not duplicate the nested magazine item');
+  await page.evaluate((enabled) => {
+    globalThis.primaryActionTest.hudOptions.interaction = enabled;
+  }, interactionHintsBeforeThrowStance);
   await page.evaluate(() => {
     const r = globalThis.primaryActionTest;
     r.setHand(r.off, r.inventory.itemByUid(r.lightUid));
