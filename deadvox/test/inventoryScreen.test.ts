@@ -15,9 +15,11 @@ import {
   BindingRegistry,
   INPUT_BINDINGS,
   inputBindings,
+  inventoryTabForAction,
   KeyboardInput,
   keyboardInput,
 } from '../src/game/inputBindings.ts';
+import { routeModalCommand } from '../src/game/modalCommand.ts';
 import { applyReplayActionPayload, type ReplayActionPayload } from '../src/game/replayCommands.ts';
 import { mountMenuPointer } from '../src/ui/menuPointer.ts';
 import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
@@ -200,13 +202,31 @@ describe('inventory screen Lit rendering', () => {
     expect(root.querySelector<HTMLElement>('[data-tab-panel="items"]')?.hidden).toBe(true);
   });
 
-  it('switches tabs without closing an already-open screen', () => {
+  it('routes a hotkey to an open screen before its generic action handler', () => {
     const { screen } = setup();
-    screen.openOnTab('crafting');
+    const handled = routeModalCommand('ui.inventory-tab-skills', {
+      toggleMainMenu: () => undefined,
+      readingOpen: false,
+      readingAction: () => undefined,
+      toggleInventory: () => undefined,
+      inventoryTabAction: (action) => {
+        const tab = inventoryTabForAction(action);
+        if (!tab) {
+          return false;
+        }
+        screen.openOnTab(tab);
+        return true;
+      },
+      screenOpen: screen.isOpen,
+      screenAction: (action) => {
+        screen.onAction(action);
+      },
+      mainMenuOpen: false,
+      timeKeyAction: () => false,
+    });
 
-    expect(screen.isOpen).toBe(true);
-    expect(screen.activeTab).toBe('crafting');
-    expect(document.body.classList.contains('inventory-tab-crafting')).toBe(true);
+    expect(handled).toBe(true);
+    expect(screen.activeTab).toBe('skills');
   });
 
   it('keeps live needs in the character-screen header on every tab', () => {

@@ -18,7 +18,8 @@ read_if:
 
 Read with [INTERFACE.md](INTERFACE.md), especially “Afford, don't instruct” and
 “Readying before acting”. Settled controls are recorded here as rationale; future
-controls remain proposals until their issue is implemented.
+controls remain proposals until their issue is implemented. Character-screen tab
+shortcuts and their rationale are described in [the inventory layout](docs/inventory-layout.md).
 
 ## BR's rulings
 
@@ -35,14 +36,14 @@ controls remain proposals until their issue is implemented.
   a key need it readily available”. The noclip flight keys are that special
   circumstance; see `noclip.ascend` and `noclip.descend` in
   `src/game/inputBindings.ts`.
-- **No Ctrl, Cmd/Meta or Alt as game modifiers (2026-10-04):** “due to the
-  browser being the browser, we cannot use Ctrl or Cmd for anything, ever.” Issue #435
-  applies the same boundary to Alt because the browser owns it: Alt+Left/Right are
-  Back and Forward, and on Windows/Linux tapping Alt or Alt+letter opens Firefox's
-  menu bar. The binding registry refuses Ctrl, Cmd/Meta and Alt; see
-  `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and `KeyboardInput.press`. Outside
-  that registry, Ctrl+click is a plain click, Ctrl+scroll is plain scroll, and quick
-  move stays T+click (below). Native text editing and browser shortcuts stay native.
+- **No Ctrl, Cmd/Meta or Alt as game modifiers:** The browser owns them (Ctrl/Cmd
+  shortcuts; Alt+Left/Right go back and forward; on Windows and Linux, Alt or
+  Alt+letter opens the menu bar). The registry refuses these modifiers; see
+  `src/game/inputBindings.ts`, `REFUSED_MODIFIERS` and `KeyboardInput.press`.
+  Outside that registry, Ctrl+click is a plain click, Ctrl+scroll is plain scroll,
+  and quick move stays T+click (below). Native text editing and browser shortcuts
+  stay native. A deliverable key does not prove immunity from desktop OS
+  interception. Chromium and Firefox checks do not cover Safari or macOS.
   - **Where the wheel goes:** with the pointer locked in play it steps the
     wielded item's action. In a menu it scrolls the pane under the cursor, even
     at the pane's edge and with Ctrl held (`src/ui/menuPointer.ts`,
