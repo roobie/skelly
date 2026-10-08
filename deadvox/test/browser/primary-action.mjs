@@ -566,7 +566,10 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
         mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
         bodyPosition: [...r.session.body.pos],
         look: [r.input.yaw, r.input.pitch],
-        hands: Object.values(r.inventory.hands).filter(Boolean).map(({ uid }) => uid).sort((a, b) => a - b),
+        hands: Object.values(r.inventory.hands)
+          .filter(Boolean)
+          .map(({ uid }) => uid)
+          .sort((a, b) => a - b),
       };
     }, fixture);
     const command = async (action) =>
@@ -637,7 +640,10 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
           mainLocation: mainLocation?.kind === 'pile' ? mainLocation.pos : mainLocation?.kind,
           bodyPosition: [...r.session.body.pos],
           look: [r.input.yaw, r.input.pitch],
-          hands: Object.values(r.inventory.hands).filter(Boolean).map(({ uid }) => uid).sort((a, b) => a - b),
+          hands: Object.values(r.inventory.hands)
+            .filter(Boolean)
+            .map(({ uid }) => uid)
+            .sort((a, b) => a - b),
         },
       };
     }, fixture);
