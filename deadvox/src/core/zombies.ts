@@ -1023,17 +1023,16 @@ export class ZombieSystem {
     return freezeSnapshot({
       nextEntityId: this.store.nextId,
       zombies: [...this.store.entries()].map(([id, zombie]) => snapshotZombie(id, zombie)),
-      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => ({
-        id: horde.id,
-        type: horde.type,
-        home: [...horde.home],
-        target: [...horde.target],
-        mode: horde.mode,
-        roamTimer: horde.roamTimer,
-        ...(horde.stimulusAt === undefined ? {} : { stimulusAt: horde.stimulusAt }),
-        lastNoiseId: horde.lastNoiseId,
-        rng: [...rng.state()] as RngState,
-      })),
+      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => {
+        const { stimulusAt, ...state } = horde;
+        return {
+          ...state,
+          home: [...horde.home],
+          target: [...horde.target],
+          ...(stimulusAt === undefined ? {} : { stimulusAt }),
+          rng: [...rng.state()] as RngState,
+        };
+      }),
     });
   }
 
