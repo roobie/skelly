@@ -535,19 +535,6 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.clearHand(r.off);
       const mainItem = r.inventory.create('glowstick');
       const offItem = r.inventory.create('glowstick');
-      const hasFreeWornPocket = () =>
-        Object.values(r.inventory.worn).some((owner) =>
-          owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
-        );
-      if (!hasFreeWornPocket()) {
-        for (const type of ['fanny_pack', 'hiking_backpack', 'school_backpack', 'utility_vest', 'hoodie', 'jacket']) {
-          const slot = r.inventory.registry.items.get(type)?.wearable?.slot;
-          if (!slot || r.inventory.worn[slot]) continue;
-          const container = r.inventory.create(type);
-          if (r.inventory.add(container, { kind: 'worn' }) && hasFreeWornPocket()) break;
-        }
-      }
-      if (!hasFreeWornPocket()) throw new Error('Could not provide a worn pocket for the replay fixture');
       r.setHand(r.dominant, mainItem);
       r.setHand(r.off, offItem);
       const minimumHoldSimSeconds = r.inventory.registry.senses.get('player').light.throwMinimumHoldSimSeconds;
@@ -555,6 +542,25 @@ const verifyStanceThrowReplay = async (browserInstance, port, renderOverride) =>
       r.quickbar.assign(quickbarSlot, offItem);
       return { mainUid: mainItem.uid, offUid: offItem.uid, minimumHoldSimSeconds, quickbarSlot };
     });
+    await page.evaluate((offUid) => {
+      const r = globalThis.primaryActionTest;
+      const offItem = r.inventory.itemByUid(offUid);
+      const hasFreeWornPocket = () =>
+        Object.values(r.inventory.worn).some((owner) =>
+          owner?.pockets?.some((_, pocket) => r.inventory.plan(offItem, { kind: 'pocket', owner, pocket }).ok),
+        );
+      if (!offItem) {
+        throw new Error('The replay fixture off-hand item is missing');
+      }
+      const freeSlot = ['waist', 'back', 'torso'].find((slot) => !r.inventory.worn[slot]);
+      if (!hasFreeWornPocket() && freeSlot) {
+        const type = { waist: 'fanny_pack', back: 'hiking_backpack', torso: 'utility_vest' }[freeSlot];
+        r.inventory.add(r.inventory.create(type), { kind: 'worn' });
+      }
+      if (!hasFreeWornPocket()) {
+        throw new Error('Could not provide a worn pocket for the replay fixture');
+      }
+    }, fixture.offUid);
     await page.waitForFunction(() => {
       const hands = globalThis.primaryActionTest.view.held.heldByHand;
       return hands.has('left') && hands.has('right');
