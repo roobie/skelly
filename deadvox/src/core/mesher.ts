@@ -224,18 +224,12 @@ const OPEN_KEY = [0, 1, 2, 3].reduce((key, corner) => key | (OPEN_LEVEL << (OCC_
 const wideSolidAt = (wide: Uint8Array, x: number, y: number, z: number): boolean =>
   x >= 0 && x < WIDE && y >= 0 && y < WIDE && z >= 0 && z < WIDE && wide[wideIndex(x, y, z)] !== 0;
 
+// biome-ignore lint/complexity/useMaxParams: Numeric cell coordinates avoid a per-vertex tuple allocation.
 const shelteredFromRain = (wide: Uint8Array, face: Face, x: number, y: number, z: number): boolean => {
   const across = face.d === 0 ? 2 : 0;
   for (let height = 0; height < 3; height++) {
     for (let side = -1; side <= 1; side++) {
-      if (
-        wideSolidAt(
-          wide,
-          x + (across === 0 ? side : 0),
-          y + height,
-          z + (across === 2 ? side : 0),
-        )
-      ) {
+      if (wideSolidAt(wide, x + (across === 0 ? side : 0), y + height, z + (across === 2 ? side : 0))) {
         return true;
       }
     }
@@ -253,6 +247,7 @@ const groundProximity = (wide: Uint8Array, x: number, y: number, z: number): num
 };
 
 /** Grid-derived rain exposure and ground proximity at a face vertex; the shader supplies patch detail. */
+// biome-ignore lint/complexity/useMaxParams: Numeric coordinates avoid a per-vertex tuple allocation.
 const weatherAt = (
   target: number[],
   wide: Uint8Array | undefined,
