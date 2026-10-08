@@ -20,6 +20,7 @@ import {
   startPlayerMelee,
 } from '../src/game/melee.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { BODY_TUNING_FIXTURE } from './simulationFixture.ts';
 
@@ -60,7 +61,7 @@ const makeSystem = (
     physics: physicsFor(SCALE),
     jumpSpeed: PLAYER.jump,
     tuning: TEST_SENSE_TUNING,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     hurtPlayer: () => undefined,
     onMeleeResult: (result) => results.push(result.id === undefined ? 'miss' : 'hit'),
     onSound: (event) => sounds.push(event),

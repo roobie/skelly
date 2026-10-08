@@ -292,6 +292,18 @@ const LightSchema = strictObject({
 
 const IgniterSchema = strictObject({ capacity: Positive, perIgnition: Positive });
 
+const FirearmAttachmentEffectsSchema = strictObject({
+  /** Fraction of the firearm's committed recoil kick removed at full condition. */
+  recoilReduction: optional(Fraction),
+  /** Condition lost per committed shot. */
+  wearPerShot: optional(Fraction),
+  /** Multipliers applied to the existing aim and stance response. */
+  swayScale: optional(Positive),
+  recoveryScale: optional(Positive),
+  raiseScale: optional(Positive),
+  swingScale: optional(Positive),
+});
+
 const BatterySchema = strictObject({
   /** Charge when full, in the units lights use per hour. */
   capacity: Positive,
@@ -392,6 +404,10 @@ const ItemSchema = strictObject({
   pileDisplay: optional(picklist(PILE_DISPLAY_KINDS)),
   book: optional(BookSchema),
   battery: optional(BatterySchema),
+  /** Fixed ADS power for a variable-power optic; constrained by its exported range. */
+  opticMagnification: optional(Positive),
+  /** Deadvox-owned handling/wear tuning for a fitted firearm attachment. */
+  firearmAttachmentEffects: optional(FirearmAttachmentEffectsSchema),
   /** One authored/global lock id; no per-placement key payload. */
   key: optional(strictObject({ lock: Id })),
   /** Its model (the `models` section); without one it's a bundle in a pile and a box in the hand. */
@@ -528,9 +544,11 @@ const AttachmentSightSchema = strictObject({
 });
 const AttachmentFieldsSchema = strictObject({
   id: pipe(string(), nonEmpty('must not be empty')),
+  /** Geometry-derived gungen mass, explicitly in kilograms. */
+  massKg: Positive,
   kind: picklist(['optic', 'iron-sight', 'suppressor', 'flashlight-mount', 'foregrip']),
   mount: picklist(['rail-top', 'rail-side', 'rail-bottom', 'muzzle']),
-  massKg: Positive,
+  mountFrame: strictObject({ normal: UnitVector, up: UnitVector }),
   properties: AttachmentPropertiesSchema,
   sight: optional(AttachmentSightSchema),
 });
@@ -605,6 +623,8 @@ const ModelSchema = pipe(
     id: Id,
     /** The `.glb` file, as a path within the pack. */
     file: pipe(string(), regex(/^assets\/models\/[a-z0-9_-]+\.glb$/, 'expected "assets/models/<name>.glb"')),
+    /** Material to light from the item's light component while this model is drawn. */
+    emissiveMaterial: optional(Name),
     /** Cartridge-data id (not a display designation); punctuation is normalized only in model slugs. */
     calibre: optional(CalibreId),
     /** Full magazine capacity and one centre/tilt pose per round, ordered top to bottom. */
@@ -855,6 +875,18 @@ const Degrees = pipe(
   number(),
   check((value) => Number.isFinite(value), 'must be finite'),
 );
+const CalendarDateSchema = pipe(
+  strictObject({
+    month: pipe(Count, minValue(1), maxValue(12)),
+    day: pipe(Count, minValue(1), maxValue(31)),
+  }),
+  check(({ month, day }) => day <= [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!, 'invalid date'),
+);
+const DayCycleSchema = strictObject({
+  latitudeDegrees: pipe(Degrees, minValue(-90), maxValue(90)),
+  date: CalendarDateSchema,
+  twilight: literal('nautical'),
+});
 const HalfMetres = pipe(
   Metres,
   check((v) => Number.isInteger(v * 2), 'must be snapped to 0.5 m'),
@@ -1145,8 +1177,9 @@ const SkillSchema = pipe(
             wobbleVerticalToHorizontalRatio: pipe(Positive, maxValue(1)),
             wobbleLuneArchPower: pipe(Positive, maxValue(4)),
             wobbleLunePhaseOffsetRadians: pipe(NonNegative, maxValue(0.45)),
-            wobbleJitterShare: Fraction,
-            wobbleJitterAmplitudeFraction: pipe(Positive, maxValue(1)),
+            wobbleNoiseReversionRatePerSimSecond: pipe(Positive, maxValue(30)),
+            wobbleNoiseSigmaRadiansPerSqrtSecond: pipe(NonNegative, maxValue(1)),
+            wobbleNoiseSmoothingSimSeconds: pipe(Positive, maxValue(1)),
             reloadFactorFloor: Fraction,
             reloadFactorHalfLifeLevels: Positive,
             rackFactorFloor: Fraction,
@@ -1311,7 +1344,7 @@ const sectionSchemas = Object.fromEntries(
 ) as SectionSchemas;
 
 /** One content file: any declared section, each a list of definitions. */
-export const ContentFileSchema = strictObject(sectionSchemas);
+export const ContentFileSchema = strictObject({ ...sectionSchemas, dayCycle: optional(DayCycleSchema) });
 
 export type BlockDef = InferOutput<typeof BlockSchema>;
 export type ItemDef = InferOutput<typeof ItemSchema>;
@@ -1332,8 +1365,9 @@ export type RecipeDef = InferOutput<typeof RecipeSchema>;
 export type MeleeClassDef = InferOutput<typeof MeleeClassSchema>;
 export type BodyTuningDef = InferOutput<typeof BodyTuningSchema>;
 export type SenseDef = InferOutput<typeof SenseSchema>;
+export type DayCycleDef = InferOutput<typeof DayCycleSchema>;
 export type ContentFile = InferOutput<typeof ContentFileSchema>;
-export type ContentSection = keyof ContentFile;
+export type ContentSection = keyof typeof SECTION_DESCRIPTOR;
 
 /** Also rejects independently adding a schema section without its metadata. */
 export const CONTENT_SECTIONS = SECTION_DESCRIPTOR satisfies Record<ContentSection, { label: string; order: number }>;

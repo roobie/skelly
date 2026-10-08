@@ -510,6 +510,16 @@ export class LongActions {
     }
     this.sim.compression.stop();
   }
+  interruptPrying(reason: string): void {
+    const job = this.current;
+    if (job?.jobType !== 'pry' || job.stopped) {
+      return;
+    }
+    this.advance(this.sim.time);
+    if (this.current === job && !job.stopped) {
+      this.stopPry(job, reason);
+    }
+  }
   cancel(): void {
     const job = this.current;
     this.current = undefined; // Clear before the effect: reentry cannot return inputs twice.
@@ -525,8 +535,27 @@ export class LongActions {
   private failedEffect(job: LongJob, error: unknown): void {
     // Native effects preflight before structural transfer; a refusal retains the owned work.
     this.current = job;
+    const reason = error instanceof Error ? error.message : 'Action effect refused';
+    if (job.jobType === 'pry') {
+      this.stopPry(job, reason);
+    } else {
+      job.stopped = true;
+      this.sim.compression.interrupt(reason);
+    }
+  }
+  private stopPry(job: Extract<LongJob, { jobType: 'pry' }>, reason: string): void {
     job.stopped = true;
-    this.sim.compression.interrupt(error instanceof Error ? error.message : 'Action effect refused');
+    this.sim.compression.stop();
+    this.sim.compression.snap();
+    this.notice(reason);
+  }
+  private stopOrInterrupt(job: LongJob, reason: string): void {
+    if (job.jobType === 'pry') {
+      this.stopPry(job, reason);
+    } else {
+      job.stopped = true;
+      this.sim.compression.interrupt(reason);
+    }
   }
   syncInterruption(): void {
     const job = this.current;
@@ -536,7 +565,7 @@ export class LongActions {
     const reason = this.sim.compression.interruption;
     if (job.jobType === 'pry') {
       if (reason !== undefined) {
-        job.stopped = true;
+        this.stopPry(job, reason);
       }
       return;
     }
@@ -627,14 +656,12 @@ export class LongActions {
     }
     const { actionRefusal } = this.sim.body;
     if (actionRefusal) {
-      job.stopped = true;
-      this.sim.compression.interrupt(actionRefusal);
+      this.stopOrInterrupt(job, actionRefusal);
       return;
     }
     const reason = this.validateOwner(job);
     if (reason) {
-      job.stopped = true;
-      this.sim.compression.interrupt(reason);
+      this.stopOrInterrupt(job, reason);
       return;
     }
     const fromTime = job.last;

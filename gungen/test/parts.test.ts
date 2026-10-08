@@ -44,6 +44,7 @@ const EXPLICIT_CASES: Readonly<Record<string, readonly Record<string, string>[]>
   receiver: [
     {
       action: 'pump',
+      actionFrame: 'small',
       feed: 'tube',
       section: 'pump',
       carrierPattern: 'auto',

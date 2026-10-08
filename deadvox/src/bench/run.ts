@@ -4,6 +4,7 @@
 // holes (nearby columns not meshed yet). The next run starts from a fresh page.
 
 import { CLOCK_RATIO, hourOfDay, parseTimeOfDay } from '../core/clock.ts';
+import { DEFAULT_DAY_CYCLE, dayPhaseAt } from '../core/dayPhase.ts';
 import type { Body } from '../core/physics.ts';
 import { Simulation } from '../core/sim.ts';
 import { skyAt } from '../core/sky.ts';
@@ -291,7 +292,7 @@ export const startBench = (engine: RenderedEngine, run: BenchRun, stats: Streame
           lit: true,
           lightSeenFrom,
         }),
-        hour: () => hourOfDay(startTime),
+        dayPhase: () => dayPhaseAt(DEFAULT_DAY_CYCLE, startTime),
         hurtPlayer: (amount) => simulation.hurt(amount, 'a shambler'),
       });
       spawnShamblerRing({

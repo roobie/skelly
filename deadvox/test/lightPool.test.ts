@@ -4,12 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { buildRegistry, type ContentSource } from '../src/core/content.ts';
 import { Inventory } from '../src/core/inventory.ts';
 import { lightSenseSourceFor, sunExposedAt, toggleLight } from '../src/core/lights.ts';
+import { slotsReason } from '../src/core/magazine.ts';
 import type { SolidAt } from '../src/core/raycast.ts';
 import { makeScale } from '../src/core/scale.ts';
 import { ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { HeldItems } from '../src/render/hands.ts';
 import { LightPool, POINT_LIGHT_POOL_SIZE } from '../src/render/lightPool.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
+import { withDefaultMountedLight } from './firearmAttachmentFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const read = (source: string): ContentSource => ({ source, data: JSON.parse(readFileSync(source, 'utf8')) });
@@ -108,7 +111,7 @@ describe('made-light point pool', () => {
       }),
       isSolid: floor,
       isOpaque: floor,
-      hour: () => 0,
+      dayPhase: () => dayStateAtHour(0),
       blockSize: SCALE.blockSize,
       physics: physicsFor(SCALE),
       jumpSpeed: PLAYER.jump,
@@ -122,15 +125,17 @@ describe('made-light point pool', () => {
   });
 
   it('shares exposure for carried pockets but excludes lights stored in furniture', () => {
-    const inventory = new Inventory(registry);
+    const mounted = withDefaultMountedLight(registryWithTestLights(), 'rifle_assault', 'flashlight');
+    const fixtureRegistry = mounted.registry;
+    const inventory = new Inventory(fixtureRegistry);
     const backpack = inventory.create('school_backpack');
     expect(inventory.add(backpack, { kind: 'worn' })).toBe(true);
     const pocketLight = inventory.create('glowstick');
-    expect(toggleLight(registry, pocketLight, 0)).toBeUndefined();
+    expect(toggleLight(fixtureRegistry, pocketLight, 0)).toBeUndefined();
     expect(inventory.add(pocketLight, { kind: 'pocket', owner: backpack, pocket: 0 })).toBe(true);
     const pocketEntry = [...inventory.items()].find(({ item }) => item === pocketLight)!;
     const pocketSource = lightSenseSourceFor({
-      registry,
+      registry: fixtureRegistry,
       item: pocketLight,
       location: pocketEntry.location,
       path: pocketEntry.path,
@@ -139,14 +144,44 @@ describe('made-light point pool', () => {
     });
     expect(pocketSource?.carried).toBe(true);
 
+    const heldGun = inventory.create('rifle_assault');
+    expect(inventory.add(heldGun, { kind: 'hand', side: 'right' })).toBe(true);
+    const mountedLight = heldGun.slots?.[mounted.fitted.mountedAt];
+    if (!mountedLight) {
+      throw new Error('Factory-created mounted light default is missing');
+    }
+    expect(slotsReason(fixtureRegistry, heldGun.type, heldGun.slots)).toBeUndefined();
+    expect(toggleLight(fixtureRegistry, mountedLight, 0)).toBeUndefined();
+    const mountedEntry = [...inventory.items()].find(({ item }) => item === mountedLight)!;
+    const mountedSource = lightSenseSourceFor({
+      registry: fixtureRegistry,
+      item: mountedLight,
+      location: mountedEntry.location,
+      path: mountedEntry.path,
+      playerPosition: [4, 1, 0],
+      eyeHeightMetres: 1.3,
+    });
+    expect(mountedSource?.carried).toBe(true);
+    mountedLight.slots!.battery!.charges = 0;
+    expect(
+      lightSenseSourceFor({
+        registry: fixtureRegistry,
+        item: mountedLight,
+        location: mountedEntry.location,
+        path: mountedEntry.path,
+        playerPosition: [4, 1, 0],
+        eyeHeightMetres: 1.3,
+      }),
+    ).toBeUndefined();
+
     const cupboard = inventory.furnish({ type: 'kitchen_cupboard', pos: [0, 0, 0], size: [2, 2, 1], facing: 'n' }, [])!;
     const storedLight = inventory.create('glowstick');
-    expect(toggleLight(registry, storedLight, 0)).toBeUndefined();
+    expect(toggleLight(fixtureRegistry, storedLight, 0)).toBeUndefined();
     expect(inventory.add(storedLight, { kind: 'furniture', entity: cupboard, pocket: 0 })).toBe(true);
     const storedEntry = [...inventory.items()].find(({ item }) => item === storedLight)!;
     expect(
       lightSenseSourceFor({
-        registry,
+        registry: fixtureRegistry,
         item: storedLight,
         location: storedEntry.location,
         path: storedEntry.path,
@@ -167,11 +202,16 @@ describe('made-light point pool', () => {
   });
 
   it('uses daytime sky exposure for light gating, not direct sun angle', () => {
-    const wallShadow: SolidAt = (_x, y, z) => y >= 2 && z === -1;
-    const open = sunExposedAt([0.5, 1, 0.5], 12, 20, () => false);
-    const roofed = sunExposedAt([0.5, 1, 0.5], 12, 20, (_x, y) => y === 2);
-    const shadow = sunExposedAt([0.5, 1, 0.5], 12, 20, wallShadow);
-    const night = sunExposedAt([0.5, 1, 0.5], 0, 20, () => false);
+    const wallShadow: SolidAt = (_x, y, z) => y >= 0 && z === -1;
+    const open = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: () => false });
+    const roofed = sunExposedAt({
+      position: [0.5, 1, 0.5],
+      gameHours: 12,
+      skyTop: 20,
+      isOpaque: (_x, y) => y === 2,
+    });
+    const shadow = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 12, skyTop: 20, isOpaque: wallShadow });
+    const night = sunExposedAt({ position: [0.5, 1, 0.5], gameHours: 0, skyTop: 20, isOpaque: () => false });
 
     expect(open).toBe(true);
     expect(roofed).toBe(false);

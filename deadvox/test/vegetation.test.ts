@@ -30,6 +30,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { perceivePlayer, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { createSession, IDLE } from '../src/game/session.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 
 const { registry, issues } = buildRegistry(
   readdirSync('src/content/base')
@@ -122,7 +123,8 @@ describe('passable but opaque vegetation', () => {
         from: [0, 2, 0],
         facing: [1, 0, 0],
         player: { pos: [10, 2, 0], facing: [-1, 0, 0], movement: 'still', lit: false, lightSeenFrom: 40 },
-        hour: 12,
+        dayPhase: dayStateAtHour(12).phase,
+        sightBlend: dayStateAtHour(12).sightBlend,
         blockSize: 0.5,
         isSolid: opaque,
         tuning: senseTuning,
@@ -177,7 +179,7 @@ describe('passable but opaque vegetation', () => {
       jumpSpeed: PLAYER.jump,
       tuning: senseTuning,
       player: () => player,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       hurtPlayer: () => undefined,
       onMeleeResult: (result) => hits.push(result.damage),
     });

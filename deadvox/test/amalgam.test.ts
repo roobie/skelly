@@ -31,6 +31,7 @@ import {
   zombieAttackReachMetres,
 } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 import { capture, contentLookup, createRuntime, encodeFixture, formatVersion } from './snapshotTestSupport.ts';
 
@@ -59,7 +60,7 @@ const system = (
     player: sense,
     isSolid: FLOOR,
     isOpaque: FLOOR,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
     jumpSpeed: PLAYER.jump,
@@ -244,7 +245,7 @@ const runObstacleCase = (
     player: () => seenPlayer,
     isSolid,
     isOpaque: () => false,
-    hour: () => 12,
+    dayPhase: () => dayStateAtHour(12),
     blockSize: BLOCK_SIZE,
     physics: physicsFor(makeScale(0.5)),
     jumpSpeed: PLAYER.jump,
@@ -409,7 +410,7 @@ describe('amalgam body and combat seam', () => {
       player: () => noisyPlayer,
       isSolid: FLOOR,
       isOpaque: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(makeScale(0.5)),
       jumpSpeed: PLAYER.jump,
@@ -435,7 +436,7 @@ describe('amalgam body and combat seam', () => {
       player,
       isSolid: FLOOR,
       isOpaque: FLOOR,
-      hour: () => 12,
+      dayPhase: () => dayStateAtHour(12),
       blockSize: BLOCK_SIZE,
       physics: physicsFor(makeScale(0.5)),
       jumpSpeed: PLAYER.jump,

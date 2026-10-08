@@ -2,6 +2,7 @@ import { SHAMBLER_FIGURE_SEEDS } from '@mobgen/mob/shamblerFigure.ts';
 import { AMALGAM_FIGURE_SEED, amalgamCollisionEnvelope, amalgamFigureForType } from './amalgamFigure.ts';
 import type { ZombieDef } from './content.ts';
 import type { Vec3 } from './coords.ts';
+import type { DayPhase, DayPhaseState } from './dayPhase.ts';
 import { type EntityId, type EntityStore, MapEntityStore } from './entities.ts';
 import { advanceShamblerFootsteps, initialShamblerFootstepClock, type ShamblerFootstepClock } from './footsteps.ts';
 import { lightSenseRangeScale } from './lights.ts';
@@ -421,8 +422,8 @@ export interface ZombieSystemOptions {
   jumpSpeed: number;
   tuning: SenseDef;
   player: () => PlayerSense;
-  hour: () => number;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  dayPhase: () => DayPhaseState;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   hurtPlayer: (amount: number, area: PlayerHitArea, attacker: EntityId) => void;
   /** The id is what a renderer keys its corpse on; the zombie is already out of the store. */
   onDeath?: (id: EntityId, zombie: Zombie) => void;
@@ -688,18 +689,16 @@ const canJumpObstacle = ({ body, direction, isSolid, physics, jumpSpeed, blockSi
   return true;
 };
 
-/** Daylight follows the sky's 06:30 dawn and 19:30 dusk keys. */
-const isDaylight = (hour: number): boolean => hour >= 6.5 && hour < 19.5;
-
 export interface PerceptionInput {
   zombie: ZombieDef;
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
-  hour: number;
+  dayPhase: DayPhase;
+  sightBlend: number;
   blockSize: number;
   isSolid: SolidAt;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   tuning: SenseDef;
 }
 
@@ -719,7 +718,7 @@ interface ZombieTickScratch {
   dt: number;
   time: number;
   player: PlayerSense;
-  hour: number;
+  dayState: DayPhaseState;
   blockSize: number;
   isSolid: SolidAt;
   isOpaque: SolidAt;
@@ -763,7 +762,7 @@ const createZombieTickScratch = (): ZombieTickScratch => ({
   dt: 0,
   time: 0,
   player: undefined as unknown as PlayerSense,
-  hour: 0,
+  dayState: undefined as unknown as DayPhaseState,
   blockSize: 0,
   isSolid: undefined as unknown as SolidAt,
   isOpaque: undefined as unknown as SolidAt,
@@ -932,7 +931,8 @@ const seesPlayer = ({
   from,
   facing,
   player,
-  hour,
+  dayPhase,
+  sightBlend,
   blockSize,
   isSolid,
   isSunExposedAt,
@@ -957,8 +957,8 @@ const seesPlayer = ({
   };
   const clear = clearAtHeight(eyeHeight);
   const lightClear = !player.lit || clearAtHeight(lightHeight);
-  let sightRange = isDaylight(hour) ? zombie.sight : zombie.nightSight;
-  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos, hour) ?? isDaylight(hour);
+  let sightRange = zombie.nightSight + (zombie.sight - zombie.nightSight) * sightBlend;
+  const playerSunlit = player.sunlit ?? isSunExposedAt?.(player.pos) ?? dayPhase === 'day';
   const playerLightScale = lightSenseRangeScale('carried', playerSunlit, tuning.light);
   if (player.lit && lightClear && playerLightScale > 0) {
     sightRange = Math.max(sightRange, player.lightSeenFrom * playerLightScale);
@@ -973,7 +973,7 @@ const canSeeLight = ({
   from,
   look,
   source,
-  hour,
+  dayPhase,
   blockSize,
   isOpaque,
   isSunExposedAt,
@@ -983,15 +983,15 @@ const canSeeLight = ({
   from: Vec3;
   look: Vec3;
   source: ZombieLightSource;
-  hour: number;
+  dayPhase: DayPhase;
   blockSize: number;
   isOpaque: SolidAt;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   tuning: SenseDef;
 }): number | undefined => {
   const delta = sub(source.pos, from);
   const distance = Math.hypot(delta[0], delta[2]) * blockSize;
-  const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos, hour) ?? isDaylight(hour);
+  const sunlit = source.sunlit ?? isSunExposedAt?.(source.pos) ?? dayPhase === 'day';
   const exposure = source.carried ? 'carried' : 'world';
   if (distance <= 0 || distance > source.seenFrom * lightSenseRangeScale(exposure, sunlit, tuning.light)) {
     return undefined;
@@ -1013,7 +1013,7 @@ const visibleLightTarget = ({
   from,
   facing,
   player,
-  hour,
+  dayPhase,
   blockSize,
   isOpaque,
   isSunExposedAt,
@@ -1023,17 +1023,17 @@ const visibleLightTarget = ({
   from: Vec3;
   facing: Vec3;
   player: PlayerSense;
-  hour: number;
+  dayPhase: DayPhase;
   blockSize: number;
   isOpaque: SolidAt;
-  isSunExposedAt?: ((position: Vec3, hour: number) => boolean) | undefined;
+  isSunExposedAt?: ((position: Vec3) => boolean) | undefined;
   tuning: SenseDef;
 }): Vec3 | undefined => {
   const look = unit(facing);
   let nearest: ZombieLightSource | undefined;
   let nearestDistance = Number.POSITIVE_INFINITY;
   for (const source of player.lightSources ?? []) {
-    const distance = canSeeLight({ zombie, from, look, source, hour, blockSize, isOpaque, isSunExposedAt, tuning });
+    const distance = canSeeLight({ zombie, from, look, source, dayPhase, blockSize, isOpaque, isSunExposedAt, tuning });
     if (distance !== undefined && distance < nearestDistance) {
       nearest = source;
       nearestDistance = distance;
@@ -1046,54 +1046,184 @@ const visibleLightTarget = ({
 export const perceivePlayer = (input: PerceptionInput): boolean =>
   seesPlayer(input) || hearingTier(input) !== undefined;
 
-const snapshotZombie = (id: number, zombie: Zombie): { id: number; zombie: ZombieState } => {
-  const {
-    type,
-    behaviorRng,
-    soundRng,
-    dismemberRng,
-    tier: _tier,
-    renderPrevious: _renderPrevious,
-    searchAnchor,
-    obstacleWanderHeading,
-    lastPerceived,
-    investigationTier,
-    stanceWeight,
-    hitFlinchTime,
-    hordeId,
-    stimulusAt,
-    stepOffset,
-    ...state
-  } = zombie;
-  return {
-    id,
-    zombie: {
-      ...state,
-      regions: { ...zombie.regions },
-      type: type.id,
-      behaviorRng: [...behaviorRng.state()] as RngState,
-      soundRng: [...soundRng.state()] as RngState,
-      dismemberRng: [...dismemberRng.state()] as RngState,
-      lastVocalNoiseId: zombie.lastVocalNoiseId ?? null,
-      ...(investigationTier === undefined ? {} : { investigationTier }),
-      ...(stanceWeight === undefined ? {} : { stanceWeight }),
-      ...(hitFlinchTime === undefined ? {} : { hitFlinchTime }),
-      ...(hordeId === undefined ? {} : { hordeId }),
-      ...(stimulusAt === undefined ? {} : { stimulusAt }),
-      ...(stepOffset === undefined ? {} : { stepOffset }),
-      body: { ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] },
-      facing: [...zombie.facing],
-      home: [...zombie.home],
-      ...(searchAnchor === undefined ? {} : { searchAnchor: [...searchAnchor] }),
-      searchHeading: [...zombie.searchHeading],
-      strollHeading: [...zombie.strollHeading],
-      ...(lastPerceived === undefined ? {} : { lastPerceived: [...lastPerceived] }),
-      ...(obstacleWanderHeading === undefined ? {} : { obstacleWanderHeading: [...obstacleWanderHeading] as Vec3 }),
-      ...(zombie.hordeOffset === undefined ? {} : { hordeOffset: [...zombie.hordeOffset] as Vec3 }),
-      severed: [...zombie.severed],
-    },
-  };
-};
+const zombieSnapshotFields = [
+  'type',
+  'hordeId',
+  'hordeOffset',
+  'body',
+  'facing',
+  'home',
+  'mode',
+  'investigationTier',
+  'behaviorRng',
+  'soundRng',
+  'dismemberRng',
+  'idleSoundTimer',
+  'lastVocalNoiseId',
+  'modeTimer',
+  'searchAnchor',
+  'searchTimer',
+  'searchStrolling',
+  'searchHeading',
+  'strollHeading',
+  'horizontalSpeed',
+  'obstacleWanderHeading',
+  'obstacleWanderRemaining',
+  'obstacleContact',
+  'obstacleSlideSide',
+  'bodyLookTarget',
+  'headYaw',
+  'headYawTarget',
+  'lookTimer',
+  'swayValue',
+  'swayStart',
+  'swayTarget',
+  'swayElapsed',
+  'swayDuration',
+  'lurchValue',
+  'lurchStart',
+  'lurchTarget',
+  'lurchElapsed',
+  'lurchDuration',
+  'stumbleFactor',
+  'stumbleElapsed',
+  'stumbleDuration',
+  'regions',
+  'figureSeed',
+  'incapacitated',
+  'lastPerceived',
+  'stimulusAt',
+  'attackWait',
+  'attackWindup',
+  'gaitPhase',
+  'footstepClock',
+  'wanderClock',
+  'stanceWeight',
+  'stepOffset',
+  'hitFlinchTime',
+  'severed',
+] as const satisfies readonly (keyof ZombieState)[];
+type ZombieSnapshotField = (typeof zombieSnapshotFields)[number];
+type ZombieSnapshot = Pick<ZombieState, ZombieSnapshotField> &
+  Record<Exclude<keyof ZombieState, ZombieSnapshotField>, never>;
+
+const hordeSnapshotFields = [
+  'id',
+  'type',
+  'home',
+  'target',
+  'mode',
+  'roamTimer',
+  'stimulusAt',
+  'lastNoiseId',
+  'rng',
+] as const satisfies readonly (keyof HordeState)[];
+type HordeSnapshotField = (typeof hordeSnapshotFields)[number];
+type HordeSnapshot = Pick<HordeState, HordeSnapshotField> &
+  Record<Exclude<keyof HordeState, HordeSnapshotField>, never>;
+
+type ZombieSnapshotProjectors = {
+  [K in ZombieSnapshotField]-?: (zombie: Zombie) => ZombieSnapshot[K];
+} & Record<Exclude<keyof ZombieState, ZombieSnapshotField>, never>;
+
+interface HordeSnapshotInput {
+  readonly horde: Omit<HordeState, 'rng'>;
+  readonly rng: Rng;
+}
+
+type HordeSnapshotProjectors = {
+  [K in HordeSnapshotField]-?: (input: HordeSnapshotInput) => HordeSnapshot[K];
+} & Record<Exclude<keyof HordeState, HordeSnapshotField>, never>;
+
+const projectSnapshot = <Source extends object>(
+  source: Source,
+  projectors: Record<string, (source: Source) => unknown>,
+): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(projectors).flatMap(([key, project]) => {
+      const value = project(source);
+      return value === undefined ? [] : [[key, value]];
+    }),
+  );
+
+const zombieSnapshotProjectors = {
+  type: (zombie) => zombie.type.id,
+  hordeId: (zombie) => zombie.hordeId,
+  hordeOffset: (zombie) => (zombie.hordeOffset === undefined ? undefined : ([...zombie.hordeOffset] as Vec3)),
+  body: (zombie) => ({ ...zombie.body, pos: [...zombie.body.pos], vel: [...zombie.body.vel] }),
+  facing: (zombie) => [...zombie.facing],
+  home: (zombie) => [...zombie.home],
+  mode: (zombie) => zombie.mode,
+  investigationTier: (zombie) => zombie.investigationTier,
+  behaviorRng: (zombie) => [...zombie.behaviorRng.state()] as RngState,
+  soundRng: (zombie) => [...zombie.soundRng.state()] as RngState,
+  dismemberRng: (zombie) => [...zombie.dismemberRng.state()] as RngState,
+  idleSoundTimer: (zombie) => zombie.idleSoundTimer,
+  lastVocalNoiseId: (zombie) => zombie.lastVocalNoiseId ?? null,
+  modeTimer: (zombie) => zombie.modeTimer,
+  searchAnchor: (zombie) => (zombie.searchAnchor === undefined ? undefined : [...zombie.searchAnchor]),
+  searchTimer: (zombie) => zombie.searchTimer,
+  searchStrolling: (zombie) => zombie.searchStrolling,
+  searchHeading: (zombie) => [...zombie.searchHeading],
+  strollHeading: (zombie) => [...zombie.strollHeading],
+  horizontalSpeed: (zombie) => zombie.horizontalSpeed,
+  obstacleWanderHeading: (zombie) =>
+    zombie.obstacleWanderHeading === undefined ? undefined : ([...zombie.obstacleWanderHeading] as Vec3),
+  obstacleWanderRemaining: (zombie) => zombie.obstacleWanderRemaining,
+  obstacleContact: (zombie) => zombie.obstacleContact,
+  obstacleSlideSide: (zombie) => zombie.obstacleSlideSide,
+  bodyLookTarget: (zombie) => zombie.bodyLookTarget,
+  headYaw: (zombie) => zombie.headYaw,
+  headYawTarget: (zombie) => zombie.headYawTarget,
+  lookTimer: (zombie) => zombie.lookTimer,
+  swayValue: (zombie) => zombie.swayValue,
+  swayStart: (zombie) => zombie.swayStart,
+  swayTarget: (zombie) => zombie.swayTarget,
+  swayElapsed: (zombie) => zombie.swayElapsed,
+  swayDuration: (zombie) => zombie.swayDuration,
+  lurchValue: (zombie) => zombie.lurchValue,
+  lurchStart: (zombie) => zombie.lurchStart,
+  lurchTarget: (zombie) => zombie.lurchTarget,
+  lurchElapsed: (zombie) => zombie.lurchElapsed,
+  lurchDuration: (zombie) => zombie.lurchDuration,
+  stumbleFactor: (zombie) => zombie.stumbleFactor,
+  stumbleElapsed: (zombie) => zombie.stumbleElapsed,
+  stumbleDuration: (zombie) => zombie.stumbleDuration,
+  regions: (zombie) => ({ ...zombie.regions }),
+  figureSeed: (zombie) => zombie.figureSeed,
+  incapacitated: (zombie) => zombie.incapacitated,
+  lastPerceived: (zombie) => (zombie.lastPerceived === undefined ? undefined : [...zombie.lastPerceived]),
+  stimulusAt: (zombie) => zombie.stimulusAt,
+  attackWait: (zombie) => zombie.attackWait,
+  attackWindup: (zombie) => zombie.attackWindup,
+  gaitPhase: (zombie) => zombie.gaitPhase,
+  footstepClock: (zombie) => ({ ...zombie.footstepClock }),
+  wanderClock: (zombie) => zombie.wanderClock,
+  stanceWeight: (zombie) => zombie.stanceWeight,
+  stepOffset: (zombie) => zombie.stepOffset,
+  hitFlinchTime: (zombie) => zombie.hitFlinchTime,
+  severed: (zombie) => [...zombie.severed],
+} satisfies ZombieSnapshotProjectors;
+
+const hordeSnapshotProjectors = {
+  id: ({ horde }) => horde.id,
+  type: ({ horde }) => horde.type,
+  home: ({ horde }) => [...horde.home],
+  target: ({ horde }) => [...horde.target],
+  mode: ({ horde }) => horde.mode,
+  roamTimer: ({ horde }) => horde.roamTimer,
+  stimulusAt: ({ horde }) => horde.stimulusAt,
+  lastNoiseId: ({ horde }) => horde.lastNoiseId,
+  rng: ({ rng }) => [...rng.state()] as RngState,
+} satisfies HordeSnapshotProjectors;
+
+const snapshotZombie = (id: number, zombie: Zombie): { id: number; zombie: ZombieSnapshot } => ({
+  id,
+  zombie: projectSnapshot(zombie, zombieSnapshotProjectors) as ZombieSnapshot,
+});
+
+const snapshotHorde = (horde: Omit<HordeState, 'rng'>, rng: Rng): HordeSnapshot =>
+  projectSnapshot({ horde, rng }, hordeSnapshotProjectors) as HordeSnapshot;
 
 export class ZombieSystem {
   readonly store: EntityStore<Zombie>;
@@ -1141,16 +1271,7 @@ export class ZombieSystem {
     return freezeSnapshot({
       nextEntityId: this.store.nextId,
       zombies: [...this.store.entries()].map(([id, zombie]) => snapshotZombie(id, zombie)),
-      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => {
-        const { stimulusAt, ...state } = horde;
-        return {
-          ...state,
-          home: [...horde.home],
-          target: [...horde.target],
-          ...(stimulusAt === undefined ? {} : { stimulusAt }),
-          rng: [...rng.state()] as RngState,
-        };
-      }),
+      hordes: [...this.hordes.values()].map(({ state: horde, rng }) => snapshotHorde(horde, rng)),
     });
   }
 
@@ -1614,7 +1735,7 @@ export class ZombieSystem {
   }
 
   // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: Keep ordered noise, arrival, and night-roam transitions together as one horde state machine.
-  private updateHordes(dt: number, time: number, player: PlayerSense): void {
+  private updateHordes(dt: number, time: number, player: PlayerSense, dayPhase: DayPhase): void {
     const { blockSize, isSolid } = this.options;
     for (const { state: horde, rng } of this.hordes.values()) {
       const center = this.hordeCenter(horde.id);
@@ -1641,7 +1762,7 @@ export class ZombieSystem {
           horde.stimulusAt = time;
         }
       }
-      const night = this.options.hour() >= 20 || this.options.hour() < 6;
+      const night = dayPhase !== 'day';
       const arrived = horizontalDistance(center, horde.target) * blockSize <= 3;
       if (
         horde.mode === 'noise' &&
@@ -1681,8 +1802,9 @@ export class ZombieSystem {
       return;
     }
     const player = this.options.player();
+    const dayState = this.options.dayPhase();
     if (sliceIndex === 0) {
-      this.updateHordes(dt, time, player);
+      this.updateHordes(dt, time, player, dayState.phase);
     }
     const { blockSize, isSolid } = this.options;
     const physics = { ...this.options.physics, obstacles: player.body ? [player.body] : [] };
@@ -1690,7 +1812,7 @@ export class ZombieSystem {
     scratch.dt = dt;
     scratch.time = time;
     scratch.player = player;
-    scratch.hour = this.options.hour();
+    scratch.dayState = dayState;
     scratch.blockSize = blockSize;
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;
@@ -1777,12 +1899,13 @@ export class ZombieSystem {
 
   private updatePerception(): void {
     const scratch = this.tickScratch;
-    const { zombie, type, pos, player, hour, blockSize, isOpaque, isSolid, time, rng, perception } = scratch;
+    const { zombie, type, pos, player, dayState, blockSize, isOpaque, isSolid, time, rng, perception } = scratch;
     perception.zombie = type;
     perception.from = pos;
     perception.facing = zombie.facing;
     perception.player = player;
-    perception.hour = hour;
+    perception.dayPhase = dayState.phase;
+    perception.sightBlend = dayState.sightBlend;
     perception.blockSize = blockSize;
     perception.isSolid = isOpaque;
     perception.isSunExposedAt = this.options.isSunExposedAt;
@@ -1793,7 +1916,7 @@ export class ZombieSystem {
       from: pos,
       facing: zombie.facing,
       player,
-      hour,
+      dayPhase: dayState.phase,
       blockSize,
       isOpaque,
       isSunExposedAt: this.options.isSunExposedAt,
@@ -2399,14 +2522,14 @@ export class ZombieSystem {
       this.tickFrozen(dt, entries);
       return;
     }
-    const hour = this.options.hour();
+    const dayState = this.options.dayPhase();
     const { blockSize, isSolid } = this.options;
     const groundedAtTickStart = new Map<Zombie, boolean>();
     const scratch = this.tickScratch;
     scratch.dt = dt;
     scratch.time = time;
     scratch.player = player;
-    scratch.hour = hour;
+    scratch.dayState = dayState;
     scratch.blockSize = blockSize;
     scratch.isSolid = isSolid;
     scratch.isOpaque = this.options.isOpaque;

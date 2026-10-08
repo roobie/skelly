@@ -9,6 +9,7 @@ import { freshnessWord, isRotten } from '../core/food.ts';
 import type { HandlingQueue, JobParams, JobValue } from '../core/handling.ts';
 import type { HandSide, Inventory, Target, TargetState } from '../core/inventory.ts';
 import { defOf, type Item } from '../core/items.ts';
+import { isInHeldItemSlotTree } from '../core/itemTree.ts';
 import { chargeOf, chargeShare, drainBurnLight, drainLight, swapBattery, toggleLight } from '../core/lights.ts';
 import { consume, FOOD_POISONING } from '../core/needs.ts';
 import { DRINK_TIME, EAT_TIME, useOption } from '../core/options.ts';
@@ -28,11 +29,11 @@ const numberParam = (params: JobParams, key: string): number => {
 
 type LightSpec = NonNullable<ReturnType<typeof defOf>['light']>;
 type LightLocation = NonNullable<ReturnType<Inventory['locate']>>;
-
-const shouldDouse = (spec: LightSpec, location: LightLocation, sprinting: boolean): boolean => {
+const shouldDouse = (spec: LightSpec, location: LightLocation, path: string, sprinting: boolean): boolean => {
   const { burning } = spec;
   const wornHeadlamp = location.kind === 'worn' && location.slot === 'head' && spec.beam !== undefined;
-  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp;
+  const inHeldItemSlotTree = location.kind === 'slot' && isInHeldItemSlotTree(path);
+  const movedOutOfHand = location.kind !== 'hand' && !wornHeadlamp && !inHeldItemSlotTree;
   const dropped = location.kind === 'pile';
   return (
     (dropped ? burning?.drop !== 'stay' : movedOutOfHand && burning?.stow !== 'stay') ||
@@ -405,27 +406,27 @@ export class Survival {
 
   /** Applies owner rules and burns every active item source, including pocketed and dropped lights. */
   private tickLights(dt: number): void {
-    for (const { item, location } of this.inventory.items()) {
-      this.tickLight(item, location, dt);
+    for (const { item, location, path } of this.inventory.items()) {
+      this.tickLight(item, location, path, dt);
     }
   }
 
-  private tickLight(item: Item, location: LightLocation, dt: number): void {
+  private tickLight(item: Item, location: LightLocation, path: string, dt: number): void {
     const { registry } = this.inventory;
     const spec = defOf(registry, item.type).light;
     if (!(spec && item.on)) {
       return;
     }
-    if (shouldDouse(spec, location, this.sprinting)) {
+    if (shouldDouse(spec, location, path, this.sprinting)) {
       this.douseLight(item, spec);
       return;
     }
-    const beforeCharge = item.charges;
+    const beforeCharge = chargeOf(registry, item);
     const expired =
       spec.burnTimeGameHours === undefined
         ? drainLight(registry, item, simToGameSeconds(this.sim.clock, simSeconds(dt))) !== undefined
         : drainBurnLight(item, this.sim.calendar);
-    if (item.charges !== beforeCharge || expired) {
+    if (chargeOf(registry, item) !== beforeCharge || expired) {
       this.inventory.version += 1;
     }
     if (!expired) {

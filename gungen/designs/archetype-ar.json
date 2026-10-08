@@ -1,6 +1,7 @@
 {
   "format": 1,
   "template": "ar",
+  "calibre": "5.56x45",
   "assembly": {
     "name": "archetype-ar",
     "description": "Classic AR-pattern rifle with an A2 front-sight block at the gas station.",

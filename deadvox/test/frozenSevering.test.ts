@@ -8,6 +8,7 @@ import { posedShamblerRegionBoxes } from '../src/core/zombieRegions.ts';
 import { FISTS_MELEE, type Zombie, ZombieSystem } from '../src/core/zombies.ts';
 import { PLAYER, physicsFor } from '../src/game/player.ts';
 import { MobActorMeshes } from '../src/render/mobActors.ts';
+import { dayStateAtHour } from './dayPhaseFixture.ts';
 import { TEST_SENSE_TUNING } from './senseFixture.ts';
 
 const BASE = 'src/content/base';
@@ -69,7 +70,7 @@ describe('melee while debug-frozen', () => {
         }),
         isSolid: FLOOR,
         isOpaque: FLOOR,
-        hour: () => 12,
+        dayPhase: () => dayStateAtHour(12),
         blockSize: BLOCK_SIZE,
         physics: physicsFor(SCALE),
         jumpSpeed: PLAYER.jump,
