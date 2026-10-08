@@ -1,5 +1,15 @@
-import { HalfFloatType, PerspectiveCamera, type Scene, Vector2, type WebGLRenderer, WebGLRenderTarget } from 'three';
+import {
+  Fog,
+  HalfFloatType,
+  PerspectiveCamera,
+  type Scene,
+  Vector2,
+  Vector3,
+  type WebGLRenderer,
+  WebGLRenderTarget,
+} from 'three';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import type { ScopeFog } from '../core/opticFog.ts';
 import type { OpticLensFrame } from '../core/opticView.ts';
 import { opticFieldOfView } from '../core/opticView.ts';
 
@@ -63,6 +73,9 @@ void main() {
 }`,
 };
 
+/** A lens frame, plus the zoom pass's lifted fog when the scope sees past the main view's. */
+export type ScopedLensFrame = OpticLensFrame & { readonly scopeFog?: ScopeFog };
+
 export class OpticLensRenderer {
   private readonly zoomCamera = new PerspectiveCamera();
   private readonly target = new WebGLRenderTarget(1, 1, { type: HalfFloatType });
@@ -71,7 +84,13 @@ export class OpticLensRenderer {
     return this.target.texture;
   }
 
-  prepare(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, frame: OpticLensFrame): void {
+  /**
+   * Renders the zoom view. The frame's `scopeFog`, when given, replaces the scene's distance fog and
+   * the zoom camera's far plane for this render only (core/opticFog.ts); both are put back before
+   * returning, so the main view is unchanged.
+   */
+  prepare(renderer: WebGLRenderer, scene: Scene, camera: PerspectiveCamera, frame: ScopedLensFrame): void {
+    const { scopeFog } = frame;
     const pass = renderer.getDrawingBufferSize(new Vector2());
     if (this.target.width !== pass.x || this.target.height !== pass.y) {
       this.target.setSize(pass.x, pass.y);
@@ -80,13 +99,26 @@ export class OpticLensRenderer {
       return;
     }
     const previous = renderer.getRenderTarget();
+    const fog = scene.fog instanceof Fog ? scene.fog : undefined;
+    const lift = fog && scopeFog ? { fog, saved: { near: fog.near, far: fog.far }, to: scopeFog } : undefined;
     this.zoomCamera.copy(camera);
     this.zoomCamera.fov = opticFieldOfView(camera.fov, frame.magnification);
+    if (lift) {
+      this.zoomCamera.far = lift.to.far;
+    }
     this.zoomCamera.updateProjectionMatrix();
     try {
+      if (lift) {
+        lift.fog.near = lift.to.near;
+        lift.fog.far = lift.to.far;
+      }
       renderer.setRenderTarget(this.target);
       renderer.render(scene, this.zoomCamera);
     } finally {
+      if (lift) {
+        lift.fog.near = lift.saved.near;
+        lift.fog.far = lift.saved.far;
+      }
       renderer.setRenderTarget(previous);
     }
   }
@@ -97,3 +129,19 @@ export class OpticLensRenderer {
 }
 
 export const opticLensPass = (): ShaderPass => new ShaderPass(OPTIC_LENS_SHADER);
+
+/** The zoom camera's four frustum corner rays per metre of depth, reduced to their horizontal (x, z) parts. */
+export const zoomFrustumCorners = (camera: PerspectiveCamera, magnification: number): [number, number][] => {
+  const halfHeight = Math.tan((opticFieldOfView(camera.fov, magnification) * Math.PI) / 360);
+  const halfWidth = halfHeight * camera.aspect;
+  const ray = new Vector3();
+  return [
+    [-1, -1],
+    [-1, 1],
+    [1, -1],
+    [1, 1],
+  ].map(([sx, sy]) => {
+    ray.set(sx! * halfWidth, sy! * halfHeight, -1).applyQuaternion(camera.quaternion);
+    return [ray.x, ray.z];
+  });
+};

@@ -48,6 +48,7 @@ import {
   targetColorScale,
   VIGNETTE,
 } from '../core/mood.ts';
+import type { ScopeFog } from '../core/opticFog.ts';
 import type { OpticLensFrame, ReticleKind } from '../core/opticView.ts';
 import type { Sky } from '../core/sky.ts';
 import { autoToneUniforms, installAutoToneMapping, setAutoToneWeight } from './autoTone.ts';
@@ -235,7 +236,7 @@ export class Mood {
    * Draws the frame. `drawHands` draws the held items on top of the scene: into the post chain
    * when post is on, onto the screen when it's off.
    */
-  render(drawHands: () => void, opticFrame?: OpticLensFrame): void {
+  render(drawHands: () => void, opticFrame?: OpticLensFrame, scopeFog?: ScopeFog): void {
     // Crack check: only the clear colour changes (the fog on geometry keeps the sky colour), so
     // magenta shows exactly where no geometry covered the sample. Post-on scales it like the sky.
     const { background } = this.scene;
@@ -247,7 +248,7 @@ export class Mood {
       this.scene.background = this.crackColor;
     }
     try {
-      this.draw(drawHands, opticFrame);
+      this.draw(drawHands, opticFrame, scopeFog);
     } finally {
       this.scene.background = background;
     }
@@ -262,7 +263,7 @@ export class Mood {
     this.crackOn = on;
   }
 
-  private draw(drawHands: () => void, opticFrame?: OpticLensFrame): void {
+  private draw(drawHands: () => void, opticFrame?: OpticLensFrame, scopeFog?: ScopeFog): void {
     if (!(this.state.post || opticFrame)) {
       const { renderer } = this;
       const chosen = renderer.toneMapping;
@@ -301,7 +302,12 @@ export class Mood {
     mist.multiplyScalar(scale);
     try {
       if (opticFrame) {
-        this.opticLens.prepare(this.renderer, this.scene, this.camera, opticFrame);
+        this.opticLens.prepare(
+          this.renderer,
+          this.scene,
+          this.camera,
+          scopeFog ? { ...opticFrame, scopeFog } : opticFrame,
+        );
       }
       composer.render(0);
     } finally {

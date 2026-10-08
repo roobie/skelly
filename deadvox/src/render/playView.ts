@@ -2,13 +2,14 @@
 // actions/effects and samples input before calling this renderer; nothing here advances a session.
 import type { BlockEntities } from '../core/blockEntities.ts';
 import { hourOfDay } from '../core/clock.ts';
-import type { Vec3 } from '../core/coords.ts';
+import { CHUNK, toChunk, type Vec3 } from '../core/coords.ts';
 import { dayCycleFor } from '../core/dayPhase.ts';
 import type { EntityStore } from '../core/entities.ts';
 import type { Inventory } from '../core/inventory.ts';
 import type { Item } from '../core/items.ts';
 import type { MeleePoseFrame } from '../core/meleePose.ts';
 import { DEFAULT_LOOK, DEFAULT_MOOD, DEFAULT_SHADOWS } from '../core/mood.ts';
+import { liftedScopeFog, type ScopeFog, scopeEdgeDepth, scopeFogLiftWeight } from '../core/opticFog.ts';
 import type { Body } from '../core/physics.ts';
 import { skyAt, sunDirection, sunShadowStrength } from '../core/sky.ts';
 import { DEFAULT_FOGGINESS, skyInWeather, type Weather } from '../core/weather.ts';
@@ -26,6 +27,7 @@ import { LightPool } from './lightPool.ts';
 import { applyLook } from './look.ts';
 import { MobActorMeshes, type ZombieRenderer } from './mobActors.ts';
 import { ModelLibrary } from './models.ts';
+import { zoomFrustumCorners } from './opticLens.ts';
 import { PileMeshes } from './piles.ts';
 import { PlayerMeshes } from './playerFigure.ts';
 import { applySky } from './sky.ts';
@@ -142,6 +144,21 @@ export const createPlayView = (
   let cameraRoll = 0;
   let meleeRecoilStrength = 0;
   let meleeRecoilTime = 0;
+  // Spike (d172): how much of the scope's fog lift applies this frame, and the streamer's centre column.
+  let scopeLiftWeight = 0;
+  let streamerCentre: [number, number] = [0, 0];
+  const scopeFogFor = (magnification: number | undefined): ScopeFog | undefined => {
+    const { fog } = scene;
+    if (!(magnification && magnification > 1 && scopeLiftWeight > 0 && fog && 'far' in fog)) {
+      return undefined;
+    }
+    const edge = scopeEdgeDepth([camera.position.x, camera.position.z], zoomFrustumCorners(camera, magnification), {
+      centre: streamerCentre,
+      radiusChunks: config.radiusChunks,
+      chunkMetres: CHUNK * s,
+    });
+    return liftedScopeFog({ near: fog.near, far: fog.far }, edge, scopeLiftWeight);
+  };
 
   return {
     models,
@@ -179,7 +196,9 @@ export const createPlayView = (
     }: PlayWorldFrame) => {
       itemThrows.update(dt);
       const hour = hourOfDay(calendar);
-      const sky = skyInWeather(skyAt(hour, dayCycle), weather);
+      const timeOfDaySky = skyAt(hour, dayCycle);
+      const sky = skyInWeather(timeOfDaySky, weather);
+      scopeLiftWeight = scopeFogLiftWeight(timeOfDaySky.fogFar, weather.fogginess);
       applySky(engine.sky, sky);
       engine.mood?.setSky(sky);
       piles.sync(inventory);
@@ -204,6 +223,7 @@ export const createPlayView = (
     },
     updateCamera: (frame: PlayCameraFrame, damage: HTMLElement) => {
       const { dt, body, paused, noclip, yaw, pitch, stridePhase, eye, spectator, sightImpaired } = frame;
+      streamerCentre = [toChunk(Math.floor(body.pos[0])), toChunk(Math.floor(body.pos[2]))];
       const offset = cameraStepOffset.update(
         [body.pos[0] * s, body.pos[1] * s, body.pos[2] * s],
         body.onGround,
@@ -241,7 +261,8 @@ export const createPlayView = (
         return null;
       }
       const start = performance.now();
-      mood.render(() => held.render(renderer, camera, engine.sky), held.opticLensFrame);
+      const opticFrame = held.opticLensFrame;
+      mood.render(() => held.render(renderer, camera, engine.sky), opticFrame, scopeFogFor(opticFrame?.magnification));
       return performance.now() - start;
     },
     warmUp: () => {

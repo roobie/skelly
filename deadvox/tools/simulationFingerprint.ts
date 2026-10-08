@@ -70,6 +70,8 @@ export const SIMULATION_EXCLUSIONS = [
   'src/core/mood.ts',
   // Optic lens projection is rendered presentation; it changes neither simulation nor save state.
   'src/core/opticView.ts',
+  // The scope's zoom-pass fog (d172 spike): presentation only, like the sky it reads.
+  'src/core/opticFog.ts',
   // Render-only until weather affects the simulation; then remove this entry and save its state (ADR 0002).
   'src/core/weather.ts',
   'src/core/mesher.ts',

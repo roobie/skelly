@@ -122,6 +122,11 @@ const DUSK: Look = {
   tone: 0.85,
 };
 
+/** Full daylight's fog end: there the fog stands in for draw distance alone (core/opticFog.ts). */
+export const DAYLIGHT_FOG_FAR = DAY.fogFar;
+/** Dawn and dusk's fog end: below it the fog stands in for darkness too. */
+export const TWILIGHT_FOG_FAR = Math.max(DAWN.fogFar, DUSK.fogFar);
+
 // Look keys belong to solar phases. Their positions move with latitude and date;
 // the DAWN key is at sunrise and the DUSK key is at sunset.
 interface LookKey {
