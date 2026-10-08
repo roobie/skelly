@@ -6,6 +6,7 @@ import { worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, extrusionPoint, IDENTITY, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Solid } from '../src/core/schema.ts';
+import { SMALL_AR_CARTRIDGE } from '../src/gun/arFrames.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixtures } from './helpers.ts';
@@ -71,6 +72,20 @@ const mustLoad = (text: string) => {
 };
 
 describe('published design corpus', () => {
+  it('routes every curated AR design from 5.56x45 to the small action frame', () => {
+    const arFiles = designFiles().filter((file) => {
+      const design = JSON.parse(readFileSync(join(DESIGNS, file), 'utf8')) as { template: string };
+      return design.template === 'ar';
+    });
+    expect(arFiles.length).toBeGreaterThan(0);
+    for (const file of arFiles) {
+      const loaded = mustLoad(readFileSync(join(DESIGNS, file), 'utf8'));
+      expect(loaded.design.calibre, file).toBe(SMALL_AR_CARTRIDGE.id);
+      const resolved = resolve(loaded.design.assembly, gunDomain);
+      expect(resolved.params.get('receiver')?.actionFrame?.value, file).toBe('small');
+    }
+  });
+
   // Loads and compares the full published-design corpus against its fixtures.
   it('loads every published design and agrees with its source fixture', { timeout: 15_000 }, () => {
     const files = designFiles();

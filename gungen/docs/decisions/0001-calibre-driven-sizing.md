@@ -40,12 +40,22 @@ because ergonomics do not scale with cartridge size.
 
 `MagazineBands` remains in `src/gun/parts.ts` for families without frame data.
 A family leaves it when its designs use frame-based magwells and magazines.
-Cartridge sources and design selection are cued by `cartridges/` and
-`src/gun/actionFrame.ts`, `selectFrame`.
+Cartridge measurements are sourced under `cartridges/`; `src/gun/arFrames.ts`,
+`AR_FRAME_BY_CALIBRE` applies `selectFrame` to curated AR designs.
 
-The AR family is the frame-selection pilot. Add new families or frames only
-when their cartridge fit and platform dimensions are represented by the
-family's data; the SVD remains tracked in #333. The anti-materiel rifle keeps
-its own cartridge sizing until its frame data is added. Real AR frame dimensions
-stay blocked until BR rules on their source in br-75; g52 owns that work after
-the ruling, so no frame values are invented ahead of it.
+The AR family is the frame-selection pilot. Frame dimensions may be derived
+from a cartridge's sourced case length and head dimensions with explicit
+clearances; receiver length and height may be estimated from published
+specifications and photographs. Record the derivation or estimate with each
+measure. BR's visual review is the acceptance check because public drawings do
+not supply every frame dimension. Review one frame at a time, and wait for BR's
+look to accept it before deriving another.
+
+The small AR frame combines cartridge-derived action and magwell clearances
+with receiver estimates, and supplies those dimensions to curated AR designs. `src/gun/templates.ts`, `ar`, keeps one bore choice until its
+free-float and optic clearances support more. `src/gun/parts.ts`,
+`ejectionPortWindow`, applies frame-sized ejection-port apertures only to the
+AR receiver section; other action patterns retain their section-specific fit
+rules. br-75 requires BR to accept the small frame before
+additional AR frames are derived. The anti-materiel rifle retains its separate
+cartridge-sizing path; the SVD remains tracked in #333.
