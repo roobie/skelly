@@ -30,7 +30,7 @@ import {
   parseRecord,
   parseStringArray,
 } from './parseAssembly.ts';
-import { resolve } from './resolve.ts';
+import type { Resolved } from './resolve.ts';
 import type { Assembly, Domain, PartInstance } from './schema.ts';
 import type { ConditionalChoice, ParamReference, SlotTemplate, Template } from './template.ts';
 import { validate } from './validate.ts';
@@ -287,7 +287,7 @@ const slotIssues = (slot: SlotTemplate, assembly: Assembly, domain: Domain): Des
   return issues;
 };
 
-const calibreIssues = (design: Design, template: Template, domain: Domain): DesignIssue[] => {
+const calibreIssues = (design: Design, template: Template, resolved: Resolved): DesignIssue[] => {
   if (design.calibre === undefined) {
     return [];
   }
@@ -303,7 +303,7 @@ const calibreIssues = (design: Design, template: Template, domain: Domain): Desi
         ]
       : [];
   }
-  const resolvedParams = resolve(design.assembly, domain).params;
+  const resolvedParams = resolved.params;
   return mappings.flatMap(({ slot, param, byCalibre }) => {
     const expected = byCalibre[design.calibre!];
     if (expected === undefined) {
@@ -332,7 +332,7 @@ const calibreIssues = (design: Design, template: Template, domain: Domain): Desi
   });
 };
 
-const templateIssues = (design: Design, template: Template, domain: Domain): DesignIssue[] => {
+const templateIssues = (design: Design, template: Template, domain: Domain, resolved: Resolved): DesignIssue[] => {
   const issues: DesignIssue[] = [];
   if (design.template !== template.name) {
     issues.push({
@@ -341,7 +341,7 @@ const templateIssues = (design: Design, template: Template, domain: Domain): Des
       path: 'template',
     });
   }
-  issues.push(...calibreIssues(design, template, domain));
+  issues.push(...calibreIssues(design, template, resolved));
   if (design.assembly.root !== template.root) {
     issues.push({
       code: 'template-choice',
@@ -423,10 +423,9 @@ const toDesignIssues = (issues: readonly Issue[]): DesignIssue[] =>
   issues.map((issue) => ({ code: 'infeasible', message: `[${issue.rule}] ${issue.message}`, parts: issue.parts }));
 
 /** Domain rules lint the placed portions of a build even when its structure is broken. */
-const feasibilityIssues = (assembly: Assembly, domain: Domain): DesignIssue[] => {
-  const resolved = resolve(assembly, domain);
+const feasibilityIssues = (resolved: Resolved, validationIssues: readonly Issue[]): DesignIssue[] => {
   const unplaced = [...resolved.defs.keys()].filter((id) => !resolved.placed.has(id));
-  const issues = toDesignIssues(validate(assembly, domain).issues);
+  const issues = toDesignIssues(validationIssues);
   const unreported = unplaced.filter((id) => !resolved.issues.some((issue) => issue.parts.includes(id)));
   if (unreported.length > 0) {
     // Retain the loader's disconnected-part message where a required-port or
@@ -470,10 +469,11 @@ export const loadDesignValue = (raw: unknown, inputs: DesignLoadInputs): DesignL
   if (unknown) {
     return fatal(raw, unknown);
   }
+  const validation = validate(design.assembly, inputs.domain);
   const issues = [
-    ...templateIssues(design, inputs.template, inputs.domain),
+    ...templateIssues(design, inputs.template, inputs.domain, validation.resolved),
     ...prefabIssues(design.assembly, inputs.prefabs),
-    ...feasibilityIssues(design.assembly, inputs.domain),
+    ...feasibilityIssues(validation.resolved, validation.issues),
   ];
   if (!isNonEmpty(issues)) {
     return { ok: true, declaredStatus: design.status, design, issues: [] };
