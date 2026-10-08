@@ -71,7 +71,10 @@ describe('AR action-frame selection', () => {
       ...SMALL_AR_FRAME,
       dimensions: {
         ...SMALL_AR_FRAME.dimensions,
-        carrierLengthMm: { ...carrier, value: caseLengthMm + basis.clearanceMm - 0.1 },
+        carrierLengthMm: {
+          ...carrier,
+          value: caseLengthMm * (basis.multiplier ?? 1) + basis.clearanceMm - 0.1,
+        },
       },
     };
     expect(

@@ -6,7 +6,7 @@ import { worldSolid } from '../src/core/geometry.ts';
 import { applyPoint, extrusionPoint, IDENTITY, type Vec3 } from '../src/core/math.ts';
 import { resolve } from '../src/core/resolve.ts';
 import type { Assembly, Solid } from '../src/core/schema.ts';
-import { SMALL_AR_CARTRIDGE } from '../src/gun/arFrames.ts';
+import { SMALL_AR_CARTRIDGE, SMALL_AR_FRAME } from '../src/gun/arFrames.ts';
 import { loadGunDesign } from '../src/gun/designLoader.ts';
 import { gunDomain } from '../src/gun/domain.ts';
 import { loadFixtures } from './helpers.ts';
@@ -82,7 +82,7 @@ describe('published design corpus', () => {
       const loaded = mustLoad(readFileSync(join(DESIGNS, file), 'utf8'));
       expect(loaded.design.calibre, file).toBe(SMALL_AR_CARTRIDGE.id);
       const resolved = resolve(loaded.design.assembly, gunDomain);
-      expect(resolved.params.get('receiver')?.actionFrame?.value, file).toBe('small');
+      expect(resolved.params.get('receiver')?.actionFrame?.value, file).toBe(SMALL_AR_FRAME.id);
     }
   });
 
